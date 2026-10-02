@@ -1,5 +1,5 @@
 import { useState, type CSSProperties } from 'react'
-import { Tag, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconPlayOutlineRegular, Tag, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import { worldCoverPath, type WorldSummary } from '../../../shared/worlds.ts'
 import css from './WorldCard.module.css'
 
@@ -11,7 +11,12 @@ function hueOf(name: string): number {
 }
 
 /** A world as a card. It fills the grid cell it is placed in. */
-export function WorldCard({ world }: { world: WorldSummary }) {
+export function WorldCard({ world, playLabel, onPlay }: {
+  world: WorldSummary
+  /** Accessible name of the play button; the button is shown only with `onPlay`. */
+  playLabel?: string
+  onPlay?: (world: WorldSummary) => void
+}) {
   const coverSrc = world.coverVersion === undefined ? undefined : worldCoverPath(world.id, world.coverVersion)
   const [failedSrc, setFailedSrc] = useState<string | undefined>()
   const showCover = coverSrc !== undefined && coverSrc !== failedSrc
@@ -27,6 +32,17 @@ export function WorldCard({ world }: { world: WorldSummary }) {
                 {Array.from(world.name)[0]}
               </div>
             )}
+          {onPlay !== undefined && (
+            <button
+              type="button"
+              className={css.play}
+              aria-label={playLabel}
+              data-testid="world-play"
+              onClick={() => { onPlay(world) }}
+            >
+              <IconPlayOutlineRegular size={14} />
+            </button>
+          )}
         </div>
         <div className={css.info}>
           <div className={css.name}>{world.name}</div>

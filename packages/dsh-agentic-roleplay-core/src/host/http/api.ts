@@ -1,9 +1,12 @@
 import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
+import type { OpenedSession, SessionsPayload, StartedSession, StartSessionRequest, WorldCharactersPayload } from '../../shared/sessions.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
+import { AgentUnavailableError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
-import { sendError, sendJson } from './respond.ts'
+import { readJsonBody } from './body.ts'
+import { HttpError, sendError, sendJson } from './respond.ts'
 
 /** The slice of DSH's connection service this API relies on for browser authentication. */
 export interface ApiConnection {
@@ -12,19 +15,78 @@ export interface ApiConnection {
 
 export interface ApiDeps {
   worlds: WorldCatalog
+  worldCharacters(worldId: string): Promise<WorldCharactersPayload>
+  sessions: {
+    list(): SessionsPayload
+    start(request: StartSessionRequest): Promise<StartedSession>
+    open(id: string): Promise<OpenedSession>
+    delete(id: string): Promise<void>
+  }
   connection: ApiConnection
 }
 
 type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void>
 
 /** Build the request handler mounted at `/${API_PREFIX}`. */
-export function createApiHandler({ worlds, connection }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, worldCharacters, sessions, connection }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
     },
     '/worlds/refresh': {
       POST: async (_req, res) => { sendJson(res, 200, await worlds.list({ refresh: true })) },
+    },
+    '/worlds/characters': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, await worldCharacters(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions': {
+      GET: async (_req, res) => { sendJson(res, 200, sessions.list()) },
+      POST: async (req, res) => {
+        const { worldId, playerCharacterId, name } = await readJsonBody(req)
+        if (typeof worldId !== 'string' || worldId.trim() === '') return sendError(res, 400, '"worldId" is required')
+        if (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '') return sendError(res, 400, '"playerCharacterId" is required')
+        if (name !== undefined && typeof name !== 'string') return sendError(res, 400, '"name" must be a string')
+        try {
+          sendJson(res, 201, await sessions.start({ worldId, playerCharacterId, ...(name === undefined ? {} : { name }) }))
+        } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidStartError) return sendError(res, 422, error.message)
+          if (error instanceof InvalidWorldError) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/open': {
+      POST: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, await sessions.open(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/item': {
+      DELETE: async (_req, res, url) => {
+        try {
+          await sessions.delete(url.searchParams.get('id') ?? '')
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+        res.statusCode = 204
+        res.end()
+      },
     },
     '/worlds/cover': {
       GET: async (_req, res, url) => {
@@ -64,6 +126,7 @@ export function createApiHandler({ worlds, connection }: ApiDeps): (req: Incomin
       await route(req, res, url)
     } catch (error) {
       if (res.headersSent) res.destroy()
+      else if (error instanceof HttpError) sendError(res, error.status, error.message)
       else sendError(res, 500, error instanceof Error ? error.message : 'internal error')
     }
   }

@@ -5,10 +5,12 @@ import { ConflictError, CorruptDataError, NotFoundError } from '../errors.ts'
 import type { MetadataRepository } from '../repositories.ts'
 
 const SESSION_ID = 'session.id'
-const SESSION_TITLE = 'session.title'
+const SESSION_NAME = 'session.name'
 const SESSION_CREATED_AT = 'session.created_at'
+const SESSION_LAST_PLAYED_AT = 'session.last_played_at'
+const SESSION_TURNS = 'session.turns'
 const WORLD = 'world'
-const RESERVED = new Set([SESSION_ID, SESSION_TITLE, SESSION_CREATED_AT, WORLD])
+const RESERVED = new Set([SESSION_ID, SESSION_NAME, SESSION_CREATED_AT, SESSION_LAST_PLAYED_AT, SESSION_TURNS, WORLD])
 
 function parseJson(text: string, key: string): JsonValue {
   try {
@@ -32,11 +34,13 @@ export class SqliteMetadataRepository implements MetadataRepository {
   /** Write the session's identity; only the store does this, once, when the database is created. */
   create(session: NewSession): SessionMetadata {
     if (session.id.trim() === '') throw new RangeError('a session needs an id')
+    if (session.name.trim() === '') throw new RangeError('a session needs a name')
     return this.db.transaction(() => {
       if (this.read(SESSION_ID) !== undefined) throw new ConflictError('the session already has metadata')
       this.write(SESSION_ID, session.id)
+      this.write(SESSION_NAME, session.name.trim())
       this.write(SESSION_CREATED_AT, this.clock().toISOString())
-      if (session.title !== undefined) this.write(SESSION_TITLE, session.title)
+      this.write(SESSION_TURNS, '0')
       this.write(WORLD, JSON.stringify(session.world))
       return this.get()
     })
@@ -44,16 +48,34 @@ export class SqliteMetadataRepository implements MetadataRepository {
 
   get(): SessionMetadata {
     const id = this.read(SESSION_ID)
+    const name = this.read(SESSION_NAME)
     const createdAt = this.read(SESSION_CREATED_AT)
     const world = this.read(WORLD)
-    if (id === undefined || createdAt === undefined || world === undefined) throw new NotFoundError('the session has no metadata')
-    const title = this.read(SESSION_TITLE)
-    return { id, ...(title === undefined ? {} : { title }), createdAt, world: parseWorld(world) }
+    if (id === undefined || name === undefined || createdAt === undefined || world === undefined) {
+      throw new NotFoundError('the session has no metadata')
+    }
+    const lastPlayedAt = this.read(SESSION_LAST_PLAYED_AT)
+    return {
+      id,
+      name,
+      world: parseWorld(world),
+      createdAt,
+      ...(lastPlayedAt === undefined ? {} : { lastPlayedAt }),
+      turns: this.turns(),
+    }
   }
 
-  setTitle(title: string | null): void {
-    if (title === null) this.db.run('DELETE FROM metadata WHERE key = ?', [SESSION_TITLE])
-    else this.write(SESSION_TITLE, title)
+  setName(name: string): void {
+    if (name.trim() === '') throw new RangeError('a session needs a name')
+    this.write(SESSION_NAME, name.trim())
+  }
+
+  recordTurn(): SessionMetadata {
+    return this.db.transaction(() => {
+      this.write(SESSION_TURNS, String(this.turns() + 1))
+      this.write(SESSION_LAST_PLAYED_AT, this.clock().toISOString())
+      return this.get()
+    })
   }
 
   setWorld(world: WorldReference): void {
@@ -74,6 +96,12 @@ export class SqliteMetadataRepository implements MetadataRepository {
   deleteValue(key: string): boolean {
     this.assertFree(key)
     return this.db.run('DELETE FROM metadata WHERE key = ?', [key]).changes > 0
+  }
+
+  private turns(): number {
+    const count = Number(this.read(SESSION_TURNS) ?? '0')
+    if (!Number.isInteger(count) || count < 0) throw new CorruptDataError('metadata "session.turns" is not a count')
+    return count
   }
 
   private assertFree(key: string): void {

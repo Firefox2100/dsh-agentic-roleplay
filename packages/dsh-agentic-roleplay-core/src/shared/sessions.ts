@@ -1,0 +1,62 @@
+import type { CharacterKind, CharacterRole, CharacterTier } from 'dsh-roleplay-model'
+import type { WorldProblem } from './worlds.ts'
+
+/** A character as the start dialog lists it. */
+export interface CharacterSummary {
+  /** The character's id in its world's files. */
+  id: string
+  name: string
+  summary: string
+  role: CharacterRole
+  tier: CharacterTier
+  kind: CharacterKind
+}
+
+export interface WorldCharactersPayload {
+  characters: readonly CharacterSummary[]
+  problems: readonly WorldProblem[]
+}
+
+export interface StartSessionRequest {
+  worldId: string
+  /** Defaults to the world's name. */
+  name?: string
+  /** Id of the playable character the player takes. */
+  playerCharacterId: string
+}
+
+export interface StartedSession {
+  id: string
+  /** The DSH chat session to open. */
+  chatSessionId: string
+  name: string
+  worldId: string
+  worldName: string
+  characterCount: number
+}
+
+export interface SessionSummary {
+  id: string
+  /** The DSH chat session this session is played in. */
+  chatSessionId: string
+  name: string
+  worldId: string
+  worldName: string
+  createdAt: string
+  /** Absent for a session that has not been played yet. */
+  lastPlayedAt?: string
+  turns: number
+}
+
+export interface OpenedSession {
+  id: string
+  chatSessionId: string
+}
+
+export interface SessionsPayload {
+  /** Absolute path of the folder sessions are kept in. */
+  directory: string
+  /** Most recently played first. */
+  sessions: readonly SessionSummary[]
+  problems: readonly WorldProblem[]
+}

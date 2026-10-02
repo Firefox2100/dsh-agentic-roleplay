@@ -16,6 +16,7 @@
   ],
   "license": "GPL-3.0-only",
   "dependencies": {
-    "dsh-agentic-roleplay-core": "workspace:*"
+    "dsh-agentic-roleplay-core": "workspace:*",
+    "dsh-roleplay-state": "workspace:*"
   }
 }

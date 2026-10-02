@@ -31,12 +31,17 @@ export interface WorldReference {
 export interface NewSession {
   /** Also the name of the session's folder. */
   id: string
-  title?: string
+  /** What the player calls the session; usually starts as the world's name. */
+  name: string
   world: WorldReference
 }
 
 export interface SessionMetadata extends NewSession {
   createdAt: string
+  /** When the last turn was played; absent for a session that has not been played yet. */
+  lastPlayedAt?: string
+  /** Turns played so far. */
+  turns: number
 }
 
 /** A character in a session: the definition without its start state, under a session-local id. */

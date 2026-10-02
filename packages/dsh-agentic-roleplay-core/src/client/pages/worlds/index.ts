@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import { createChatOpener } from '../../chat/open-chat.ts'
 import type {} from '../../panel/slot-contract.ts'
 import { WorldsPage } from './WorldsPage.tsx'
 import { dictionaries, type WorldsLocaleKey } from './locales.ts'
@@ -19,7 +20,7 @@ export function registerWorldsPage(ctx: Context): void {
   const t = ctx.locale.bind(NAMESPACE)
   ctx.effect(() => ctx.locale.register(NAMESPACE, dictionaries), 'roleplay: worlds dictionaries')
 
-  const worlds = new WorldsController()
+  const worlds = new WorldsController(createChatOpener(ctx))
   ctx.effect(() => () => { worlds.dispose() }, 'roleplay: worlds requests')
 
   ctx.slots.inject('roleplay.page', () => ctx.slots.register({

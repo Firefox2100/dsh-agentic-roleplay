@@ -26,9 +26,11 @@ import type {
 
 export interface MetadataRepository {
   get(): SessionMetadata
-  /** `null` removes the title. */
-  setTitle(title: string | null): void
+  /** @throws {RangeError} when the name is blank. */
+  setName(name: string): void
   setWorld(world: WorldReference): void
+  /** Count one more played turn and set the time of the last play to now. */
+  recordTurn(): SessionMetadata
   /**
    * Free-form entries for whatever else wants to remember something about the
    * session. Keys should be namespaced, such as `mymodule.lastExport`; the

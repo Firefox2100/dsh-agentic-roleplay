@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, IconChevronLeftOutlineRegular, IconChevronRightOutlineRegular, IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconRefreshOutlineRegular, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import { pageCount, pageStart, pagingFor } from '../../paging/paging.ts'
 import type {} from '../../panel/slot-contract.ts'
+import { Pager } from '../../widgets/pager/Pager.tsx'
+import { ProblemList } from '../../widgets/problem-list/ProblemList.tsx'
 import { WorldCard } from '../../widgets/world-card/WorldCard.tsx'
-import { pageCount, pageStart, pagingFor } from './grid-layout.ts'
+import { StartSessionDialog } from './StartSessionDialog.tsx'
 import { useGridFit } from './use-grid-fit.ts'
 import type { WorldsFace } from './worlds-controller.ts'
 import css from './WorldsPage.module.css'
@@ -14,7 +17,7 @@ export type WorldsPageProps =
   & InjectFace<WorldsFace>
 
 /** The worlds, one page of cards at a time. */
-export function WorldsPage({ t, useWorlds, load, refresh }: WorldsPageProps) {
+export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, closeStartDialog, startSession, dismissStarted }: WorldsPageProps) {
   const state = useWorlds(snapshot => snapshot)
   const viewport = useRef<HTMLDivElement>(null)
   const { pageSize, scrolls } = pagingFor(useGridFit(viewport))
@@ -23,7 +26,6 @@ export function WorldsPage({ t, useWorlds, load, refresh }: WorldsPageProps) {
   useEffect(() => { load() }, [load])
 
   const worlds = state.payload?.worlds ?? []
-  const problems = state.payload?.problems ?? []
   const start = pageStart(requestedStart, worlds.length, pageSize)
   const pages = pageCount(worlds.length, pageSize)
   const visible = worlds.slice(start, start + pageSize)
@@ -52,16 +54,7 @@ export function WorldsPage({ t, useWorlds, load, refresh }: WorldsPageProps) {
       {state.error !== undefined && !failedWithoutData && (
         <p className={css.notice} role="alert">{t('loadFailed', { message: state.error })}</p>
       )}
-      {problems.length > 0 && (
-        <details className={css.problems}>
-          <summary>{t('problems', { count: problems.length })}</summary>
-          <ul>
-            {problems.map(problem => (
-              <li key={`${problem.path}:${problem.message}`}><code>{problem.path}</code> {problem.message}</li>
-            ))}
-          </ul>
-        </details>
-      )}
+      <ProblemList summary={t('problems', { count: state.payload?.problems.length ?? 0 })} problems={state.payload?.problems ?? []} />
 
       <div ref={viewport} className={`${css.viewport} ${scrolls ? css.scrolls : css.fits}`}>
         {state.status === 'loading' || state.status === 'idle'
@@ -72,31 +65,37 @@ export function WorldsPage({ t, useWorlds, load, refresh }: WorldsPageProps) {
               ? <p className={css.message}>{t('empty', { directory: state.payload?.directory ?? '' })}</p>
               : (
                 <ul className={css.grid}>
-                  {visible.map(world => <li key={world.id} className={css.cell}><WorldCard world={world} /></li>)}
+                  {visible.map(world => (
+                    <li key={world.id} className={css.cell}>
+                      <WorldCard
+                        world={world}
+                        playLabel={t('play')}
+                        onPlay={() => { openStartDialog(world.id, world.name) }}
+                      />
+                    </li>
+                  ))}
                 </ul>
               )}
       </div>
 
       {pages > 1 && (
-        <nav className={css.pager} aria-label={t('nav')}>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<IconChevronLeftOutlineRegular />}
-            aria-label={t('previousPage')}
-            disabled={start === 0}
-            onClick={() => { setRequestedStart(start - pageSize) }}
-          />
-          <span className={css.pageLabel}>{t('pageOf', { page: start / pageSize + 1, pages })}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            icon={<IconChevronRightOutlineRegular />}
-            aria-label={t('nextPage')}
-            disabled={start + pageSize >= worlds.length}
-            onClick={() => { setRequestedStart(start + pageSize) }}
-          />
-        </nav>
+        <Pager
+          label={t('nav')}
+          previousLabel={t('previousPage')}
+          nextLabel={t('nextPage')}
+          positionLabel={t('pageOf', { page: start / pageSize + 1, pages })}
+          hasPrevious={start > 0}
+          hasNext={start + pageSize < worlds.length}
+          onPrevious={() => { setRequestedStart(start - pageSize) }}
+          onNext={() => { setRequestedStart(start + pageSize) }}
+        />
+      )}
+
+      {state.dialog !== undefined && (
+        <StartSessionDialog key={state.dialog.worldId} t={t} dialog={state.dialog} onStart={startSession} onClose={closeStartDialog} />
+      )}
+      {state.started !== undefined && (
+        <Toast key={state.started.sequence} text={t('chatNotOpened', { name: state.started.sessionName, message: state.started.reason })} onDone={dismissStarted} />
       )}
     </div>
   )

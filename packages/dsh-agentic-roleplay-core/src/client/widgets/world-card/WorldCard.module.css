@@ -51,6 +51,39 @@
   user-select: none;
 }
 
+.play {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 35%);
+  color: #fff;
+  opacity: 0.6;
+  cursor: pointer;
+  transition: opacity 120ms ease, background-color 120ms ease;
+}
+
+.card:hover .play,
+.play:focus-visible {
+  opacity: 1;
+}
+
+.play:hover {
+  background: rgb(0 0 0 / 55%);
+}
+
+.play:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color);
+  outline-offset: 2px;
+}
+
 .info {
   display: flex;
   flex: none;

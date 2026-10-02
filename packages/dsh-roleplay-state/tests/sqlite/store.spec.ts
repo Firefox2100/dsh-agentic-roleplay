@@ -11,7 +11,7 @@ import { newCharacter, newIntent, steppingClock } from '../helpers.ts'
 let dir: string
 let file: string
 
-const session: NewSession = { id: '3f2b8c1e-1c1a-4a4e-9d0f-2d8f9b6a7c11', world: { id: 'blackwater-observatory', name: 'The Blackwater Observatory' } }
+const session: NewSession = { name: 'Night one', id: '3f2b8c1e-1c1a-4a4e-9d0f-2d8f9b6a7c11', world: { id: 'blackwater-observatory', name: 'The Blackwater Observatory' } }
 
 beforeEach(async () => {
   dir = await mkdtemp(join(tmpdir(), 'state-store-'))

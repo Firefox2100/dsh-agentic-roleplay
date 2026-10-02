@@ -57,6 +57,7 @@
     "@types/node": "^22.20.0",
     "@types/react": "~18.3.1",
     "dsh-roleplay-model": "workspace:*",
+    "dsh-roleplay-state": "workspace:*",
     "lightningcss": "^1.33.0",
     "react": "^18.3.1",
     "tsdown": "^0.22.2",

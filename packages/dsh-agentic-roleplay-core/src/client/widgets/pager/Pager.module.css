@@ -1,0 +1,14 @@
+.pager {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.position {
+  min-width: 120px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--dsw-alias-label-tertiary);
+}

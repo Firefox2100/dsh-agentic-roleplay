@@ -6,6 +6,9 @@ export type WorldsLocaleKey =
   | 'refresh' | 'refreshing'
   | 'previousPage' | 'nextPage' | 'pageOf'
   | 'problems'
+  | 'play' | 'chatNotOpened'
+  | 'startTitle' | 'sessionName' | 'playAs' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
+  | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
 
 export const dictionaries: Dictionaries<WorldsLocaleKey> = {
   en: {
@@ -21,6 +24,19 @@ export const dictionaries: Dictionaries<WorldsLocaleKey> = {
     nextPage: 'Next page',
     pageOf: 'Page {page} of {pages}',
     problems: '{count} problem(s) found while reading worlds',
+    play: 'Start a new session',
+    chatNotOpened: 'Started the session "{name}", but could not open its chat: {message}',
+    startTitle: 'Start a new session',
+    sessionName: 'Session name',
+    playAs: 'Play as',
+    loadingCharacters: 'Loading characters…',
+    charactersFailed: 'Could not load the characters: {message}',
+    noPlayable: 'This world has no playable characters, so a session cannot be started.',
+    start: 'Start',
+    starting: 'Starting…',
+    cancel: 'Cancel',
+    close: 'Close',
+    startFailed: 'Could not start the session: {message}',
   },
   zh: {
     nav: '世界卡',
@@ -35,5 +51,18 @@ export const dictionaries: Dictionaries<WorldsLocaleKey> = {
     nextPage: '下一页',
     pageOf: '第 {page} 页，共 {pages} 页',
     problems: '读取世界卡时发现 {count} 个问题',
+    play: '开始新存档',
+    chatNotOpened: '已开始存档“{name}”，但无法打开对话：{message}',
+    startTitle: '开始新存档',
+    sessionName: '存档名称',
+    playAs: '扮演角色',
+    loadingCharacters: '正在加载角色…',
+    charactersFailed: '无法加载角色：{message}',
+    noPlayable: '这张世界卡没有可扮演的角色，无法开始存档。',
+    start: '开始',
+    starting: '正在开始…',
+    cancel: '取消',
+    close: '关闭',
+    startFailed: '无法开始存档：{message}',
   },
 }

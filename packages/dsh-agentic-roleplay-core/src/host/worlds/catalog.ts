@@ -41,10 +41,15 @@ export class WorldCatalog extends Service {
     }
   }
 
+  /** A world known to the catalog, by its id. */
+  async find(id: string): Promise<WorldRecord | undefined> {
+    const snapshot = await this.snapshot(false)
+    return snapshot.worlds.find(record => record.summary.id === id)
+  }
+
   /** Cover of a world known to the catalog; undefined for an unknown id or a world without one. */
   async cover(id: string): Promise<WorldCover | undefined> {
-    const snapshot = await this.snapshot(false)
-    return snapshot.worlds.find(record => record.summary.id === id)?.cover
+    return (await this.find(id))?.cover
   }
 
   private snapshot(refresh: boolean): Promise<Snapshot> {

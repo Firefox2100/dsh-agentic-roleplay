@@ -1,34 +1,64 @@
 # dsh-roleplay-state
 
-The state of one roleplay session, stored in one SQLite database and reached
-through repositories over canonical models. Nothing here knows about the agent,
-the UI or how a session is started; a plugin that exposes the repositories as
-tools can be built on top.
+A DeepSeek Harness plugin that keeps the state of roleplay sessions: one SQLite
+database per session, reached through repositories over canonical models. It
+does no orchestration and has no UI, so it can be installed on its own to get a
+roleplay database and state management without the rest of the roleplay bundle.
+Other plugins use it through the `roleplayState` service. Model-facing tools
+will be added to the same plugin later.
 
-Requires Node 22.19 or later (it uses the built-in `node:sqlite`).
+Requires DSH 0.2 and Node 22.19 or later (it uses the built-in `node:sqlite`).
+
+```sh
+dsh plugin --profile <name> add dsh-roleplay-state
+```
+
+## Using it from another plugin
 
 ```ts
-import { createSessionStore, openSessionStore } from 'dsh-roleplay-state'
+import type {} from 'dsh-roleplay-state'            // types `ctx.roleplayState`
+import type { Context } from '@deepseek-ai/cordis'
 
-// The folder must exist. The file holds everything about the session.
-const store = createSessionStore('sessions/3f2b…/session.sqlite', {
-  id: '3f2b…',
-  title: 'First night',
-  world: { id: 'blackwater-observatory', name: 'The Blackwater Observatory' },
-})
+export const inject = ['roleplayState']
 
-store.transaction(() => {
-  const mayor = store.characters.add({ name: 'Eleanor Graves', /* … */ control: 'agent' })
-  store.characterStates.create(mayor.id, { publicState: '…', innerState: '…', activity: '…' })
-  store.intents.add(mayor.id, { type: 'agenda', name: '…', /* … */ })
-})
+export function apply(ctx: Context) {
+  // Creates sessions/<uuid>/session.sqlite and opens it.
+  const session = ctx.roleplayState.createSession('/path/to/sessions', {
+    name: 'First night',
+    world: { id: 'blackwater-observatory', name: 'The Blackwater Observatory' },
+  })
 
-store.characters.findByName('the mayor')          // by name or alias, ignoring case
-store.characterStates.update(1, { activity: 'looking for the key' }, { expectedVersion: 3 })
-store.close()
+  session.transaction(() => {
+    const mayor = session.characters.add({ name: 'Eleanor Graves', /* … */ control: 'agent' })
+    session.characterStates.create(mayor.id, { publicState: '…', innerState: '…', activity: '…' })
+    session.intents.add(mayor.id, { type: 'agenda', name: '…', /* … */ })
+  })
 
-const again = openSessionStore('sessions/3f2b…/session.sqlite') // migrates an older schema
+  session.characters.findByName('the mayor')       // by name or alias, ignoring case
+  session.characterStates.update(1, { activity: 'looking for the key' }, { expectedVersion: 3 })
+}
 ```
+
+The service creates and opens sessions under a sessions folder you give it,
+shares one connection per session, and closes them all when the plugin unloads:
+
+| Method | Does |
+|---|---|
+| `createSession(sessionsDir, init)` | Creates the session folder and database and returns its repositories. The id is generated (UUID v4) unless given. Nothing is left behind if it fails. |
+| `openSession(sessionsDir, id)` | Returns the repositories of an existing session. |
+| `listSessions(sessionsDir)` | The metadata of every session under the folder (name, world, creation time, last played time, turns). A session that cannot be read is reported in `problems`, not thrown. |
+| `closeSession(sessionsDir, id)` | Releases the connection; opening again reconnects. |
+| `deleteSession(sessionsDir, id)` | Closes the session and removes its folder. |
+
+Session ids become folder names, so only a UUID v4 is accepted. The package also
+exports the same operations as plain functions (`createSession`, `openSession`,
+`createSessionStore`, …) for code that does not run inside DSH, such as tests.
+
+## Configuration
+
+| Field | Default | Meaning |
+|---|---|---|
+| `journalMode` | `delete` | `delete` keeps each session in a single file that can be copied; `wal` allows readers during writes. |
 
 ## Layers
 
@@ -37,16 +67,15 @@ const again = openSessionStore('sessions/3f2b…/session.sqlite') // migrates an
 | Canonical model | The types in `dsh-roleplay-model` (re-exported here): `Character`, `CharacterState`, `CharacterIntent`, `SessionMetadata`, … |
 | Repositories | `MetadataRepository`, `CharacterRepository`, `CharacterStateRepository`, `IntentRepository`: the only access to the data. They take and return canonical models and throw the errors below. |
 | SQLite implementation | Maps rows to models and back; the only place that knows tables and SQL. |
-| Driver | `SqlDriver` / `SqlDatabase`: the few operations the implementation needs (`exec`, `run`, `get`, `all`, `transaction`). `nodeSqliteDriver` is built on `node:sqlite`; pass another driver in the options to use a different SQLite library. |
+| Driver | `SqlDriver` / `SqlDatabase`: the few operations the implementation needs (`exec`, `run`, `get`, `all`, `transaction`). `nodeSqliteDriver` is built on `node:sqlite`. |
 
 Everything is synchronous, as the embedded SQLite libraries are.
 
 ## The session
 
 A session is the folder `sessions/<uuid>/` with its database `session.sqlite`.
-The database is the only file the state needs; it uses a rollback journal by
-default, so it stays a single file that can be copied or archived (`journalMode:
-'wal'` is available).
+The database is the only file the state needs; with the default journal mode it
+stays a single file that can be copied or archived.
 
 The world itself is not stored. `metadata` keeps a **world reference**: the
 world's stable id (the `id` in its `world.json`, not a database id), its name,
@@ -54,15 +83,20 @@ and optionally a version, a fingerprint of the content the session was started
 from, its source, and free-form `extra` fields. It is saved as one document, so
 provenance can grow without a schema change.
 
-Characters have session-local integer ids. `source_id` keeps the provisional id
-the character had in the world, so a session can be traced back to its world;
+The metadata also carries what a list of sessions shows: the session's `name`
+(chosen when it is created), its creation time, the time of the last play
+(absent until a turn has been played) and the number of turns played. Whatever
+plays a turn calls `metadata.recordTurn()`, which counts it and sets the time.
+
+Characters have session-local integer ids. `source_id` keeps the id the
+character had in the world, so a session can be traced back to its world;
 characters created during play have none.
 
 ## Schema (version 1)
 
 | Table | Holds |
 |---|---|
-| `metadata` | Key/value rows: `session.id`, `session.title`, `session.created_at`, `world` (JSON), plus free-form namespaced entries. |
+| `metadata` | Key/value rows: `session.id`, `session.name`, `session.created_at`, `session.last_played_at`, `session.turns`, `world` (JSON), plus free-form namespaced entries. |
 | `characters` | The definition: name, age, gender, pronouns, kind, tier, role, summary, personality, background, appearance, speech, and `control` (`player` or `agent`, chosen for the session). `source_id` is unique. |
 | `character_aliases` | One row per alias, in order, with a case-folded key for lookup. |
 | `character_state` | The state that changes in play: public state, inner state, activity, `version`, `updated_at`. One row per character. |
@@ -79,9 +113,7 @@ application id, so a file that is not a session database is refused.
 Migrations are applied in order when a session is opened and are never edited
 once released: a change is a new entry in `src/sqlite/schema.ts`. Before the
 first release the schema is still being shaped, and migration 1 is edited in
-place. A database from
-a newer version is refused rather than damaged. The migration spells its
-enumerations out, and a test keeps them equal to the model's.
+place. A database from a newer version is refused rather than damaged.
 
 ## Errors
 

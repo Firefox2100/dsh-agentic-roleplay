@@ -1,9 +1,24 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["ES2024"],
-    "types": ["node"]
+    "lib": [
+      "ES2024"
+    ],
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "dsh-roleplay-state": [
+        "../dsh-roleplay-state/src/index.ts"
+      ]
+    }
   },
-  "include": ["src", "tests", "tsdown.config.ts"],
-  "exclude": ["src/client"]
+  "include": [
+    "src",
+    "tests",
+    "tsdown.config.ts"
+  ],
+  "exclude": [
+    "src/client"
+  ]
 }

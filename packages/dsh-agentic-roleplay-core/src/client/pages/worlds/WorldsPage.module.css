@@ -42,27 +42,6 @@
   color: var(--dsw-alias-state-error-primary);
 }
 
-.problems {
-  flex: none;
-  font-size: 12px;
-  color: var(--dsw-alias-state-warn-primary);
-}
-
-.problems summary {
-  cursor: pointer;
-}
-
-.problems ul {
-  margin: 8px 0 0;
-  padding-left: 20px;
-  color: var(--dsw-alias-label-secondary);
-}
-
-.problems code {
-  font-family: var(--dsw-font-mono);
-  color: var(--dsw-alias-label-primary);
-}
-
 /* The grid's sizes are read from here by the page, which sizes pages from what fits. */
 .viewport {
   --rp-card-width: 168px;
@@ -103,19 +82,4 @@
   font-size: 13px;
   text-align: center;
   color: var(--dsw-alias-label-secondary);
-}
-
-.pager {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.pageLabel {
-  min-width: 120px;
-  font-size: 12px;
-  text-align: center;
-  color: var(--dsw-alias-label-tertiary);
 }

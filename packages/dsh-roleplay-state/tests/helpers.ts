@@ -16,7 +16,7 @@ export function steppingClock(start = '2026-01-01T00:00:00.000Z'): () => Date {
 export function memoryStore(): SessionStore {
   return createSessionStore(
     ':memory:',
-    { id: 'session-1', title: 'First night', world: { id: 'blackwater-observatory', name: 'The Blackwater Observatory' } },
+    { id: 'session-1', name: 'First night', world: { id: 'blackwater-observatory', name: 'The Blackwater Observatory' } },
     { clock: steppingClock() },
   )
 }
