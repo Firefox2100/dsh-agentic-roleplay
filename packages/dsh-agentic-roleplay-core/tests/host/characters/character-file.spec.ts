@@ -1,0 +1,214 @@
+import { describe, expect, it } from 'vitest'
+import { parseCharacterFile } from '../../../src/host/characters/character-file.ts'
+import type { CharacterDefinition } from 'dsh-roleplay-model'
+import { formatIssue } from '../../../src/host/validation.ts'
+
+function parse(input: unknown, folder = 'folder-name'): CharacterDefinition {
+  const result = parseCharacterFile(typeof input === 'string' ? input : JSON.stringify(input), folder)
+  if (!result.ok) throw new Error(result.issues.map(formatIssue).join('; '))
+  return result.value
+}
+
+function issues(input: unknown, folder = 'folder-name'): string[] {
+  const result = parseCharacterFile(typeof input === 'string' ? input : JSON.stringify(input), folder)
+  return result.ok ? [] : result.issues.map(formatIssue)
+}
+
+const full = {
+  id: 'eleanor-graves',
+  name: 'Eleanor Graves',
+  aliases: ['Ellie', ' the Mayor ', 'Ellie', 'eleanor graves'],
+  age: 42,
+  gender: 'female',
+  pronouns: 'she/her',
+  kind: 'person',
+  tier: 'principal',
+  role: 'npc',
+  summary: 'Mayor of Blackwater Ridge.',
+  personality: 'Calculating and practical.',
+  background: 'Born in the town.',
+  appearance: 'Sharp features.',
+  speech: { style: 'Formal, clipped.', examples: ['Let us not make a scene.', ''] },
+  start: {
+    public_state: 'Greeting guests.',
+    inner_state: 'Wondering what the visitor wants.',
+    activity: 'managing festival appearances',
+    emotion: {
+      baseline: { valence: -0.1, arousal: 0.3, dominance: 0.5 },
+      immediate: { valence: -0.3 },
+    },
+    intents: [{
+      type: 'agenda',
+      name: 'Contain the scandal',
+      description: 'Keep the disappearance quiet.',
+      status: 'active',
+      horizon: 'day',
+      priority: 0.8,
+      urgency: 0.6,
+      plan: ['Charm the visitor', 'Move the records'],
+      open_threads: ['What does he know?'],
+      constraints: ['Never be seen to panic'],
+      deadline: '1912-09-22',
+    }],
+  },
+}
+
+describe('parseCharacterFile', () => {
+  it('reads a complete character into the canonical model', () => {
+    expect(parse(full)).toEqual({
+      id: 'eleanor-graves',
+      name: 'Eleanor Graves',
+      aliases: ['Ellie', 'the Mayor'],
+      age: '42',
+      gender: 'female',
+      pronouns: 'she/her',
+      kind: 'person',
+      tier: 'principal',
+      role: 'npc',
+      summary: 'Mayor of Blackwater Ridge.',
+      personality: 'Calculating and practical.',
+      background: 'Born in the town.',
+      appearance: 'Sharp features.',
+      speech: { style: 'Formal, clipped.', examples: ['Let us not make a scene.'] },
+      start: {
+        publicState: 'Greeting guests.',
+        innerState: 'Wondering what the visitor wants.',
+        activity: 'managing festival appearances',
+        emotion: {
+          baseline: { valence: -0.1, arousal: 0.3, dominance: 0.5 },
+          immediate: { valence: -0.3, arousal: 0, dominance: 0 },
+        },
+        intents: [{
+          type: 'agenda',
+          name: 'Contain the scandal',
+          description: 'Keep the disappearance quiet.',
+          status: 'active',
+          horizon: 'day',
+          priority: 0.8,
+          urgency: 0.6,
+          plan: ['Charm the visitor', 'Move the records'],
+          openThreads: ['What does he know?'],
+          constraints: ['Never be seen to panic'],
+          deadline: '1912-09-22T00:00:00.000Z',
+        }],
+      },
+    })
+  })
+
+  it('needs only a name, and takes the id from the folder', () => {
+    expect(parse({ name: 'Mira' }, 'mira-vale')).toEqual({
+      id: 'mira-vale',
+      name: 'Mira',
+      aliases: [],
+      kind: 'person',
+      tier: 'principal',
+      role: 'npc',
+      summary: '',
+      personality: '',
+      background: '',
+      appearance: '',
+      speech: { style: '', examples: [] },
+      start: { publicState: '', innerState: '', activity: '', intents: [] },
+    })
+  })
+
+  it('prefers an explicit id over the folder name', () => {
+    expect(parse({ id: ' mira ', name: 'Mira' }, 'folder').id).toBe('mira')
+  })
+
+  it('starts the immediate emotion at the baseline when it is not given', () => {
+    const emotion = parse({ name: 'A', start: { emotion: { baseline: { arousal: 0.5 } } } }).start.emotion
+    expect(emotion).toEqual({
+      baseline: { valence: 0, arousal: 0.5, dominance: 0 },
+      immediate: { valence: 0, arousal: 0.5, dominance: 0 },
+    })
+  })
+
+  it('gives intents neutral defaults', () => {
+    expect(parse({ name: 'A', start: { intents: [{ name: 'Rest' }] } }).start.intents).toEqual([{
+      type: 'agenda',
+      name: 'Rest',
+      description: '',
+      status: 'active',
+      horizon: 'short',
+      priority: 0.5,
+      urgency: 0.5,
+      plan: [],
+      openThreads: [],
+      constraints: [],
+    }])
+  })
+
+  it('accepts a string age, treats null as absent and ignores unknown fields', () => {
+    const character = parse({ name: 'A', age: 'looks thirty', gender: null, pronouns: null, nickname: 'x', start: { future: 1 } })
+    expect(character.age).toBe('looks thirty')
+    expect(character.gender).toBeUndefined()
+    expect(character.pronouns).toBeUndefined()
+  })
+
+  it('lets pronouns differ from gender', () => {
+    const character = parse({ name: 'A', gender: 'male', pronouns: 'she/her' })
+    expect([character.gender, character.pronouns]).toEqual(['male', 'she/her'])
+  })
+
+  describe('playable characters', () => {
+    it('may be a principal or supporting person', () => {
+      expect(parse({ name: 'A', role: 'playable' }).role).toBe('playable')
+      expect(parse({ name: 'A', role: 'playable', tier: 'supporting' }).tier).toBe('supporting')
+    })
+
+    it.each([
+      ['a group', { kind: 'group' }, 'role: a playable character must be a person'],
+      ['a background character', { tier: 'background' }, 'role: a playable character cannot be a background character'],
+    ])('cannot be %s', (_label, extra, message) => {
+      expect(issues({ name: 'A', role: 'playable', ...extra })).toEqual([message])
+    })
+  })
+
+  describe('problems', () => {
+    it('are all reported, each with its path', () => {
+      expect(issues({
+        age: -1,
+        kind: 'robot',
+        aliases: 'x',
+        speech: { examples: [1] },
+        start: {
+          public_state: 3,
+          emotion: { baseline: { valence: 2 } },
+          intents: [{ name: 'ok', priority: 5 }, { type: 'dream' }, 'text'],
+        },
+      }).sort()).toEqual([
+        'age: must be a string or a non-negative number',
+        'aliases: must be an array of strings',
+        'kind: must be one of: person, group',
+        'name: is required',
+        'speech.examples[0]: must be a string',
+        'start.emotion.baseline.valence: must be between -1 and 1',
+        'start.intents[0].priority: must be between 0 and 1',
+        'start.intents[1].name: is required',
+        'start.intents[1].type: must be one of: need, obligation, quest, agenda, aspiration, relationship, habit, reaction',
+        'start.intents[2]: must be an object',
+        'start.public_state: must be a string',
+      ])
+    })
+
+    it('include malformed JSON', () => {
+      expect(issues('{ "name": ')[0]).toContain('invalid JSON')
+    })
+
+    it('require an emotion to give a baseline', () => {
+      expect(issues({ name: 'A', start: { emotion: { immediate: { valence: 0.2 } } } }))
+        .toEqual(['start.emotion.baseline: is required'])
+    })
+
+    it('reject a deadline that is not a date', () => {
+      expect(issues({ name: 'A', start: { intents: [{ name: 'x', deadline: 'soon' }] } }))
+        .toEqual(['start.intents[0].deadline: must be an ISO 8601 date-time'])
+    })
+
+    it('reject an id that is too long', () => {
+      expect(issues({ name: 'A', id: 'x'.repeat(101) })[0]).toContain('id: must be at most 100 characters')
+      expect(issues({ name: 'A' }, 'y'.repeat(101))[0]).toContain('id: must be at most 100 characters')
+    })
+  })
+})

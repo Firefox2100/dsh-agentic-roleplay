@@ -12,7 +12,7 @@ const root = { path: '' }
 async function addWorld(rootPath: string, id: string, name = id): Promise<void> {
   const folder = join(rootPath, 'worlds', id)
   await mkdir(folder, { recursive: true })
-  await writeFile(join(folder, 'world.json'), JSON.stringify({ name }))
+  await writeFile(join(folder, 'world.json'), JSON.stringify({ id, name }))
 }
 
 function catalog(): WorldCatalog {
@@ -73,7 +73,7 @@ describe('WorldCatalog', () => {
   it('answers cover lookups only for known worlds with a cover', async () => {
     const folder = join(base, 'worlds', 'w')
     await mkdir(join(folder, 'media', 'files'), { recursive: true })
-    await writeFile(join(folder, 'world.json'), JSON.stringify({ name: 'W', cover_media_id: 'm' }))
+    await writeFile(join(folder, 'world.json'), JSON.stringify({ id: 'w', name: 'W', cover_media_id: 'm' }))
     await writeFile(join(folder, 'media', 'manifest.jsonl'), '{"id":"m","file":"media/files/m.png"}\n')
     await writeFile(join(folder, 'media', 'files', 'm.png'), 'x')
     await addWorld(base, 'plain')

@@ -20,7 +20,7 @@ beforeEach(async () => {
   allowed = true
   const folder = join(base, 'worlds', 'harbor')
   await mkdir(join(folder, 'media', 'files'), { recursive: true })
-  await writeFile(join(folder, 'world.json'), JSON.stringify({ name: 'Harbor', metadata: { tags: ['noir'] }, cover_media_id: 'm' }))
+  await writeFile(join(folder, 'world.json'), JSON.stringify({ id: 'harbor', name: 'Harbor', metadata: { tags: ['noir'] }, cover_media_id: 'm' }))
   await writeFile(join(folder, 'media', 'manifest.jsonl'), '{"id":"m","file":"media/files/m.png"}\n')
   await writeFile(join(folder, 'media', 'files', 'm.png'), 'png-bytes')
   await writeFile(join(base, 'worlds', 'secret.png'), 'secret')
@@ -54,7 +54,7 @@ describe('roleplay API', () => {
     await fetch(`${origin}/worlds`)
     const folder = join(base, 'worlds', 'later')
     await mkdir(folder)
-    await writeFile(join(folder, 'world.json'), '{"name":"Later"}')
+    await writeFile(join(folder, 'world.json'), '{"id":"later","name":"Later"}')
     const cached = await (await fetch(`${origin}/worlds`)).json() as { worlds: unknown[] }
     expect(cached.worlds).toHaveLength(1)
     const refreshed = await (await fetch(`${origin}/worlds/refresh`, { method: 'POST' })).json() as { worlds: unknown[] }

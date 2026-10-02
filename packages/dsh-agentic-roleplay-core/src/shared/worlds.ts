@@ -7,7 +7,7 @@ export interface WorldAuthor {
 }
 
 export interface WorldSummary {
-  /** Folder of the world relative to the worlds directory, with `/` separators. */
+  /** Stable identity of the world, kept in its `world.json`. */
   id: string
   name: string
   description: string

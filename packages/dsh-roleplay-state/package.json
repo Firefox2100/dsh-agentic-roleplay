@@ -1,0 +1,36 @@
+{
+  "name": "dsh-roleplay-state",
+  "version": "0.0.0",
+  "description": "Session state for roleplay: one SQLite database per session, accessed through repositories over canonical models.",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "engines": {
+    "node": "^22.19.0 || >=24.0.0"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "watch": "tsdown --watch",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "license": "GPL-3.0-only",
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "dsh-roleplay-model": "workspace:*",
+    "tsdown": "^0.22.2",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

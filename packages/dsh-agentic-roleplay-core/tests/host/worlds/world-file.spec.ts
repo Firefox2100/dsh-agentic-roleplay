@@ -1,9 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { parseWorldFile, WorldFileError } from '../../../src/host/worlds/world-file.ts'
+import { parseWorldFile, type WorldFile } from '../../../src/host/worlds/world-file.ts'
+import { formatIssue } from '../../../src/host/validation.ts'
+
+function parse(text: string): WorldFile {
+  const result = parseWorldFile(text)
+  if (!result.ok) throw new Error(result.issues.map(formatIssue).join('; '))
+  return result.value
+}
+
+function issues(text: string): string[] {
+  const result = parseWorldFile(text)
+  return result.ok ? [] : result.issues.map(formatIssue)
+}
 
 describe('parseWorldFile', () => {
   it('reads the fields of a world-simulation-engine export', () => {
-    const world = parseWorldFile(JSON.stringify({
+    expect(parse(JSON.stringify({
       id: 'world_blackwater_observatory',
       name: ' The Blackwater Observatory ',
       description: ' The year is 1912. ',
@@ -14,8 +26,8 @@ describe('parseWorldFile', () => {
       metadata: { tags: ['mystery', ' mystery ', '', 'gothic'] },
       creation_time: '2026-01-01T00:00:00Z',
       cover_media_id: 'media-1',
-    }))
-    expect(world).toEqual({
+    }))).toEqual({
+      id: 'world_blackwater_observatory',
       name: 'The Blackwater Observatory',
       description: 'The year is 1912.',
       tags: ['mystery', 'gothic'],
@@ -24,45 +36,59 @@ describe('parseWorldFile', () => {
     })
   })
 
-  it('needs only a name', () => {
-    expect(parseWorldFile('{"name":"Plain"}')).toEqual({ name: 'Plain', description: '', tags: [] })
+  it('needs only a name; a file that has never been indexed has no id', () => {
+    expect(parse('{"name":"Plain"}')).toEqual({ name: 'Plain', description: '', tags: [] })
+  })
+
+  it('reads the id, treating a blank or null one as missing', () => {
+    expect(parse('{"id":" w-1 ","name":"A"}').id).toBe('w-1')
+    expect(parse('{"id":null,"name":"A"}')).not.toHaveProperty('id')
+    expect(parse('{"id":"  ","name":"A"}')).not.toHaveProperty('id')
   })
 
   it('treats null like a missing field', () => {
-    expect(parseWorldFile('{"name":"A","description":null,"metadata":{"tags":null},"cover_media_id":null}'))
+    expect(parse('{"name":"A","description":null,"metadata":{"tags":null},"cover_media_id":null,"author":null}'))
       .toEqual({ name: 'A', description: '', tags: [] })
-    expect(parseWorldFile('{"name":"A","metadata":null}').tags).toEqual([])
-    expect(parseWorldFile('{"name":"A","author":null}').author).toBeUndefined()
+    expect(parse('{"name":"A","metadata":null}').tags).toEqual([])
   })
 
   it('accepts an author with only a name', () => {
-    expect(parseWorldFile('{"name":"A","author":{"name":"Me"}}').author).toEqual({ name: 'Me' })
+    expect(parse('{"name":"A","author":{"name":"Me"}}').author).toEqual({ name: 'Me' })
   })
 
   it('does not read tags from the top level', () => {
-    expect(parseWorldFile('{"name":"A","tags":["x"]}').tags).toEqual([])
+    expect(parse('{"name":"A","tags":["x"]}').tags).toEqual([])
   })
 
-  it('ignores a byte order mark and unknown fields', () => {
-    expect(parseWorldFile('﻿{"name":"A","future":{"x":1}}').name).toBe('A')
+  it('ignores unknown fields', () => {
+    expect(parse('{"name":"A","future":{"x":1}}').name).toBe('A')
   })
 
   it.each([
     ['not json', '{', 'invalid JSON'],
-    ['not an object', '[]', 'JSON object'],
-    ['missing name', '{}', '"name" is required'],
-    ['blank name', '{"name":"  "}', '"name" is required'],
-    ['non-string name', '{"name":3}', '"name" must be a string'],
-    ['non-string description', '{"name":"A","description":1}', '"description" must be a string'],
-    ['metadata not an object', '{"name":"A","metadata":[]}', '"metadata" must be an object'],
-    ['tags not an array', '{"name":"A","metadata":{"tags":"x"}}', '"metadata.tags" must be an array'],
-    ['non-string tag', '{"name":"A","metadata":{"tags":["x",2]}}', '"metadata.tags" must be an array'],
-    ['author not an object', '{"name":"A","author":"me"}', '"author" must be an object'],
-    ['author without a name', '{"name":"A","author":{"url":"x"}}', '"author.name" is required'],
-    ['non-string author url', '{"name":"A","author":{"name":"B","url":3}}', '"author.url" must be a string'],
-    ['non-string cover id', '{"name":"A","cover_media_id":5}', '"cover_media_id" must be a string'],
+    ['not an object', '[]', 'expected a JSON object'],
+    ['missing name', '{}', 'name: is required'],
+    ['blank name', '{"name":"  "}', 'name: is required'],
+    ['non-string name', '{"name":3}', 'name: must be a string'],
+    ['non-string id', '{"id":3,"name":"A"}', 'id: must be a string'],
+    ['id that is too long', `{"id":"${'x'.repeat(101)}","name":"A"}`, 'id: must be at most 100 characters'],
+    ['non-string description', '{"name":"A","description":1}', 'description: must be a string'],
+    ['metadata not an object', '{"name":"A","metadata":[]}', 'metadata: must be an object'],
+    ['tags not an array', '{"name":"A","metadata":{"tags":"x"}}', 'metadata.tags: must be an array of strings'],
+    ['non-string tag', '{"name":"A","metadata":{"tags":["x",2]}}', 'metadata.tags[1]: must be a string'],
+    ['author not an object', '{"name":"A","author":"me"}', 'author: must be an object'],
+    ['author without a name', '{"name":"A","author":{"url":"x"}}', 'author.name: is required'],
+    ['non-string author url', '{"name":"A","author":{"name":"B","url":3}}', 'author.url: must be a string'],
+    ['non-string cover id', '{"name":"A","cover_media_id":5}', 'cover_media_id: must be a string'],
   ])('rejects %s', (_label, text, message) => {
-    expect(() => parseWorldFile(text)).toThrow(WorldFileError)
-    expect(() => parseWorldFile(text)).toThrow(message)
+    expect(issues(text).some(issue => issue.startsWith(message))).toBe(true)
+  })
+
+  it('reports every problem at once', () => {
+    expect(issues('{"description":1,"metadata":{"tags":"x"}}').sort()).toEqual([
+      'description: must be a string',
+      'metadata.tags: must be an array of strings',
+      'name: is required',
+    ])
   })
 })

@@ -1,13 +1,14 @@
-import { readdir, readFile, realpath, stat } from 'node:fs/promises'
+import { readFile, realpath, stat } from 'node:fs/promises'
 import { extname, isAbsolute, join, relative, resolve } from 'node:path'
 import type { WorldProblem, WorldSummary } from '../../shared/worlds.ts'
-import { parseWorldFile, WORLD_FILE_NAME, WorldFileError } from './world-file.ts'
+import { errorMessage } from '../errors.ts'
+import { subfolders } from '../folders.ts'
+import { readDocument } from '../read-document.ts'
+import { assignWorldId } from './world-id.ts'
+import { parseWorldFile, WORLD_FILE_NAME } from './world-file.ts'
 
 /** Where a world bundle lists its media files. */
 const MEDIA_MANIFEST = 'media/manifest.jsonl'
-
-/** A world file is a small description; anything larger is not one. */
-const MAX_WORLD_FILE_BYTES = 1024 * 1024
 
 /** Raster formats only: they cannot carry script when opened directly. */
 const COVER_CONTENT_TYPES: Readonly<Record<string, string>> = {
@@ -28,6 +29,10 @@ export interface WorldCover {
 }
 
 export interface WorldRecord {
+  /** Name of the world's folder. */
+  folder: string
+  /** Absolute path of the world's folder. */
+  directory: string
   summary: WorldSummary
   cover?: WorldCover
 }
@@ -37,36 +42,41 @@ export interface ScanResult {
   problems: WorldProblem[]
 }
 
-function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error)
-}
-
 /**
  * Read the worlds of `worldsDir`: each direct subfolder holding a
  * `world.json` is one world. Folders without one and symbolic links are
- * skipped.
+ * skipped. A world file without an id gets one written into it, so the world
+ * keeps its identity from then on; ids must be unique, and a repeated one
+ * (a copied folder) is reported and the later world skipped.
  */
 export async function scanWorlds(worldsDir: string): Promise<ScanResult> {
   const result: ScanResult = { worlds: [], problems: [] }
 
-  let entries
+  let folders: string[]
   try {
-    entries = await readdir(worldsDir, { withFileTypes: true })
+    folders = await subfolders(worldsDir)
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return result
     result.problems.push({ path: worldsDir, message: errorMessage(error) })
     return result
   }
 
-  for (const entry of entries.filter(candidate => candidate.isDirectory()).sort((a, b) => a.name.localeCompare(b.name))) {
-    const dir = join(worldsDir, entry.name)
+  const folderById = new Map<string, string>()
+  for (const folder of folders) {
+    const dir = join(worldsDir, folder)
     const file = join(dir, WORLD_FILE_NAME)
     try {
-      if (!(await stat(file).catch(() => undefined))?.isFile()) continue
-      const record = await loadWorld(entry.name, dir, file, result.problems)
+      const record = await loadWorld(folder, dir, file, result.problems)
+      if (record === undefined) continue
+      const owner = folderById.get(record.summary.id)
+      if (owner !== undefined) {
+        result.problems.push({ path: file, message: `id "${record.summary.id}" is already used by ${owner}` })
+        continue
+      }
+      folderById.set(record.summary.id, folder)
       result.worlds.push(record)
     } catch (error) {
-      result.problems.push({ path: file, message: errorMessage(error) })
+      // A folder without a world.json is not a world.
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') result.problems.push({ path: file, message: errorMessage(error) })
     }
   }
 
@@ -75,10 +85,22 @@ export async function scanWorlds(worldsDir: string): Promise<ScanResult> {
   return result
 }
 
-async function loadWorld(id: string, dir: string, file: string, problems: WorldProblem[]): Promise<WorldRecord> {
-  if ((await stat(file)).size > MAX_WORLD_FILE_BYTES) throw new WorldFileError('file is too large')
-  const world = parseWorldFile(await readFile(file, 'utf8'))
+async function loadWorld(folder: string, dir: string, file: string, problems: WorldProblem[]): Promise<WorldRecord | undefined> {
+  const world = await readDocument(file, parseWorldFile, problems)
+  if (world === undefined) return undefined
+  let id = world.id
+  if (id === undefined) {
+    // Without a stored id the world could not be found again, so it cannot be listed.
+    try {
+      id = await assignWorldId(file)
+    } catch (error) {
+      problems.push({ path: file, message: `has no id and one could not be added: ${errorMessage(error)}` })
+      return undefined
+    }
+  }
   const record: WorldRecord = {
+    folder,
+    directory: dir,
     summary: {
       id,
       name: world.name,
