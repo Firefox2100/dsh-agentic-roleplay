@@ -1,0 +1,5 @@
+# One row per plugin in the bundle. The core row id is the settings form id
+# and must match ENTRY_ID in the core package.
+- insert:
+    - id: roleplay
+      name: dsh-agentic-roleplay-core

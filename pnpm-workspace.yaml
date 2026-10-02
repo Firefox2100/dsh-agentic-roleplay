@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+
+# Only type packages are consumed here; none of their native install scripts are needed.
+allowBuilds:
+  '@deepseek-ai/dsh-subprocess-local': false
+  '@google/genai': false
+  koffi: false
+  node-pty: false
+  protobufjs: false

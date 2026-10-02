@@ -1,0 +1,21 @@
+{
+  "name": "dsh-agentic-roleplay",
+  "version": "0.0.0",
+  "description": "Agentic roleplay bundle for DeepSeek Harness. Install this one package to get every roleplay plugin.",
+  "type": "module",
+  "dsh": {
+    "engines": {
+      "dsh": ">=0.2.0-rc.2"
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "cordis.patch.yml"
+  ],
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "dsh-agentic-roleplay-core": "workspace:*"
+  }
+}
