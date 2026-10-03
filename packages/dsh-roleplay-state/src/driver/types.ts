@@ -30,6 +30,8 @@ export interface OpenOptions {
   journalMode?: 'delete' | 'wal'
   /** How long to wait for another connection's lock. Default 5000. */
   busyTimeoutMs?: number
+  /** Paths of loadable SQLite extensions to load into the connection; opening fails if one cannot be loaded. */
+  extensions?: readonly string[]
 }
 
 export interface SqlDriver {

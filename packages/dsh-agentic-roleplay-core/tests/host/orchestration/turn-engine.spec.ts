@@ -396,20 +396,48 @@ describe('writing the records', () => {
   const aliceSucceeds = [outcome('alice', 'succeeded', 'Alice greets him', 'smiling')]
   const hello = [{ type: 'utterance' as const, character: 'alice', text: 'Hello.' }]
   let problems: string[]
+  let written: string[]
 
   beforeEach(() => {
     problems = []
-    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), (message) => { problems.push(message) })
+    written = []
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), (message) => { problems.push(message) }, (chat) => { written.push(chat) })
   })
 
-  it('queues the round at once, and writes it while the game master goes on', async () => {
+  /** One round of Alice, resolved. */
+  const play = async (runner = scriptedRunner(voices)) => {
+    await only(runner)
+    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    return runner
+  }
+
+  it('queues each round durably and writes nothing until the game master asks', async () => {
+    let calls = 0
+    boundaries.committer = { commit: () => { calls += 1; return Promise.resolve({ writes: 1, notes: '' }) } }
+    await play()
+    await engine.flush(owner)
+    expect(store.queue).toHaveLength(1)
+    expect(engine.waiting(owner)).toBe(1)
+    expect(calls).toBe(0)
+    await engine.narrate(owner, hello)
+    expect(calls).toBe(0)
+    expect(store.completed).toBe(1)
+    expect(store.queue).toHaveLength(1)
+    expect(written).toEqual([])
+  })
+
+  it('applies what the game master decided about each character at once, without the keeper', async () => {
+    await play()
+    expect(store.commits).toHaveLength(1)
+    expect(store.commits[0]?.[0]?.patch).toEqual({ activity: 'Alice greets him', publicState: 'smiling' })
+  })
+
+  it('writes the waiting rounds in the background when asked, and the turn waits for that run', async () => {
     const started: number[] = []
     let release!: () => void
     boundaries.committer = { commit: job => new Promise((done) => { started.push(job.rounds.length); release = () => { done({ writes: 1, notes: '' }) } }) }
-    const runner = scriptedRunner(voices)
-    await only(runner)
-    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
-    expect(store.queue).toHaveLength(1)
+    await play()
+    expect(engine.record(owner)).toBe(1)
     await Promise.resolve()
     expect(started).toEqual([1])
     expect(store.completed).toBe(0)
@@ -420,24 +448,53 @@ describe('writing the records', () => {
     await delivering
     expect(store.completed).toBe(1)
     expect(store.queue).toEqual([])
+    expect(written).toEqual(['session-1'])
   })
 
-  it('is given the round: the moment, what each character did and what became of it', async () => {
+  it('refuses to record when no round is waiting', async () => {
+    expect(() => engine.record(owner)).toThrow(/nothing is waiting/)
+    boundaries.committer = { commit: () => Promise.resolve({ writes: 0, notes: '' }) }
+    await play()
+    engine.record(owner)
+    await engine.flush(owner)
+    expect(() => engine.record(owner)).toThrow(/nothing is waiting/)
+  })
+
+  it('gives the keeper the rounds, with what the game master said is worth keeping', async () => {
     const jobs: Parameters<Boundaries['committer']['commit']>[0][] = []
     boundaries.committer = { commit: (job) => { jobs.push(job); return Promise.resolve({ writes: 0, notes: '' }) } }
     const runner = scriptedRunner({ ...voices, bob: { intent: 'b', commitment: 'low' } })
     await engine.activate(owner, { situation, characters: ['alice', 'bob'] }, runner.run, signal)
     await engine.resolve(owner, [aliceSucceeds[0]!, { ...outcome('bob', 'failed', 'Bob is stopped'), spoken: false }], runner.run, signal)
+    engine.record(owner, '  Bob was stopped at the door  ')
     await engine.flush(owner)
     const [round] = jobs[0]!.rounds
-    expect(jobs[0]).toMatchObject({ chat: 'session-1', store })
+    expect(jobs[0]).toMatchObject({ chat: 'session-1', store, focus: ['Bob was stopped at the door'] })
     expect(round).toMatchObject({ turn: 1, round: 1, situation })
     expect(round?.entries.find(entry => entry.character === 'alice')).toEqual({
       character: 'alice', name: 'Alice', intent: 'a', utterance: 'Hello.', commitment: 'low', result: 'succeeded', summary: 'Alice greets him', publicState: 'smiling', spoken: true,
     })
   })
 
-  it('writes one run at a time, so the rounds of a turn are written in order', async () => {
+  it('writes every round still waiting, from earlier turns as well, in one run', async () => {
+    const seen: number[][] = []
+    boundaries.committer = { commit: ({ rounds }) => { seen.push(rounds.map(round => round.turn * 10 + round.round)); return Promise.resolve({ writes: 1, notes: '' }) } }
+    const runner = scriptedRunner({ alice: [voices.alice, { ...voices.alice }, { ...voices.alice }] })
+    await play(runner)
+    await engine.narrate(owner, hello)
+    const second = { chat: 'session-1', turn: 2 }
+    await engine.activate(second, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(second, aliceSucceeds, runner.run, signal)
+    await engine.activate(second, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(second, aliceSucceeds, runner.run, signal)
+    expect(engine.waiting(second)).toBe(3)
+    engine.record(second, 'the second turn')
+    await engine.flush(second)
+    expect(seen).toEqual([[11, 21, 22]])
+    expect(store.queue).toEqual([])
+  })
+
+  it('writes one run at a time, so asking again waits for the run before', async () => {
     const order: string[] = []
     boundaries.committer = {
       commit: async ({ rounds }) => {
@@ -448,18 +505,17 @@ describe('writing the records', () => {
       },
     }
     const runner = scriptedRunner({ alice: [voices.alice, { ...voices.alice }] })
+    await play(runner)
+    engine.record(owner)
     await only(runner)
     await engine.resolve(owner, aliceSucceeds, runner.run, signal)
-    await only(runner)
-    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    engine.record(owner)
     await engine.narrate(owner, [...hello, ...hello])
-    expect(order[0]).toBe('start 1')
-    expect(order.filter(entry => entry.startsWith('start'))).toHaveLength(order.filter(entry => entry.startsWith('end')).length)
-    expect(order.indexOf('end 1')).toBeLessThan(order.findIndex((entry, index) => index > 1 && entry.startsWith('start')))
+    expect(order).toEqual(['start 1', 'end 1', 'start 2', 'end 2'])
     expect(store.queue).toEqual([])
   })
 
-  it('keeps a round whose records failed, and writes it with the next round, silently as far as the player is concerned', async () => {
+  it('keeps a round whose records failed, silently, and writes it with the next run', async () => {
     const seen: number[][] = []
     let fail = true
     boundaries.committer = {
@@ -469,25 +525,26 @@ describe('writing the records', () => {
       },
     }
     const runner = scriptedRunner({ alice: [voices.alice, { ...voices.alice }] })
-    await only(runner)
-    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    await play(runner)
+    engine.record(owner)
     await engine.flush(owner)
     expect(store.queue.map(round => round.round)).toEqual([1])
     expect(problems).toEqual(['the records of 1.1 were not written: the model is down'])
+    expect(written).toEqual([])
     fail = false
     await only(runner)
     await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    engine.record(owner)
     await engine.flush(owner)
     expect(seen.at(-1)).toEqual([1, 2])
     expect(store.queue).toEqual([])
   })
 
-  it('tries once more at delivery for rounds that are still waiting, and goes on without them when that fails too', async () => {
+  it('tries once more at delivery when the records were asked for, and goes on without them when that fails too', async () => {
     let calls = 0
     boundaries.committer = { commit: () => { calls += 1; return Promise.reject(new Error('down')) } }
-    const runner = scriptedRunner(voices)
-    await only(runner)
-    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    await play()
+    engine.record(owner)
     const output = await engine.narrate(owner, hello)
     expect(calls).toBe(2)
     expect(output).toEqual({ segments: [expect.objectContaining({ type: 'utterance' })], repaired: false })
@@ -498,29 +555,32 @@ describe('writing the records', () => {
   it('is saved by the second try when the first one failed', async () => {
     let calls = 0
     boundaries.committer = { commit: () => { calls += 1; return calls === 1 ? Promise.reject(new Error('flaky')) : Promise.resolve({ writes: 1, notes: '' }) } }
-    const runner = scriptedRunner(voices)
-    await only(runner)
-    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    await play()
+    engine.record(owner)
     await engine.narrate(owner, hello)
+    expect(store.queue).toEqual([])
+  })
+
+  it('runs the keeper at delivery anyway once too many rounds are waiting', async () => {
+    let calls = 0
+    boundaries.committer = { commit: () => { calls += 1; return Promise.resolve({ writes: 1, notes: '' }) } }
+    const base = store.settings
+    store.settings = () => ({ ...base(), memory: { ...base().memory, backlogRounds: 2 } })
+    const runner = scriptedRunner({ alice: [voices.alice, { ...voices.alice }] })
+    await play(runner)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    await engine.narrate(owner, [...hello, ...hello])
+    expect(calls).toBe(1)
     expect(store.queue).toEqual([])
   })
 
   it('does not hold back a refused output: only a delivered one waits for the records', async () => {
     boundaries.committer = { commit: () => new Promise(() => undefined) }
-    const runner = scriptedRunner(voices)
-    await only(runner)
-    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    await play()
+    engine.record(owner)
     await expect(engine.narrate(owner, [{ type: 'utterance', character: 'alice', text: 'Changed.' }])).rejects.toThrow(/not acceptable/)
     engine.forget('session-1')
-  })
-
-  it('by default writes what the game master decided for each character', async () => {
-    const runner = scriptedRunner(voices)
-    await only(runner)
-    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
-    await engine.narrate(owner, hello)
-    expect(store.commits).toHaveLength(1)
-    expect(store.commits[0]?.[0]?.patch).toEqual({ activity: 'Alice greets him', publicState: 'smiling' })
   })
 })
 

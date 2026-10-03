@@ -164,6 +164,26 @@ export interface RecallCandidate {
 
 /** What a semantic match is worth next to the cues: a perfect match counts as much as being named twice and sharing words. */
 const SEMANTIC_WEIGHT = 6
+/** The search of the session's index: a text that matches by words as well as the best match does counts about as much as a few shared cues. */
+const LEXICAL_WEIGHT = 4
+/** A vector match is worth the most: a text with the same meaning as the moment. */
+const DENSE_WEIGHT = 6
+/** Cosine similarities below this are noise for the models used, and from here to this plus the range they count from nothing to full. */
+const DENSE_FLOOR = 0.3
+const DENSE_RANGE = 0.5
+
+/** From a cosine similarity to how much a match counts, from 0 to 1. */
+export const denseScore = (similarity: number): number => Math.min(1, Math.max(0, (similarity - DENSE_FLOOR) / DENSE_RANGE))
+
+/** What else says how well each candidate matches the moment, by candidate key, each from 0 to 1. */
+export interface RecallEvidence {
+  /** From a ranker given the candidates (an embedding made on the fly, a reranker). */
+  semantic?: ReadonlyMap<string, number>
+  /** From the search of the session's index by words. */
+  lexical?: ReadonlyMap<string, number>
+  /** From the search of the session's stored vectors, already mapped by {@link denseScore}. */
+  dense?: ReadonlyMap<string, number>
+}
 
 function gather(source: RecallSource, { characterId, characters, situation, turn }: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn'>): Candidate[] {
   const names = new Map(characters.map(character => [character.id, character.name]))
@@ -205,13 +225,20 @@ export function recallCandidates(source: RecallSource, query: Pick<RecallQuery, 
  * they are. With flaky memory on, how much of each comes back depends on its age and
  * importance, so old trivia is vague or gone and old things that mattered stay.
  *
- * `semantic` is how well each candidate matches the moment by meaning, from 0 to 1, by candidate
- * key, as an embedding or a reranker gives it; it adds to the cues, and a good match also
- * counts as a cue for what had faded. Without it the cues alone decide.
+ * `evidence` is how well each candidate matches the moment by other means, from 0 to 1, by candidate
+ * key: a ranker's judgement, the search of the index by words, the search of stored vectors by meaning.
+ * Each adds to the cues, and a good match also counts as a cue for what had faded. Without it the cues
+ * alone decide.
  */
-export function recall(source: RecallSource, query: RecallQuery, semantic?: ReadonlyMap<string, number>): Recalled[] {
+export function recall(source: RecallSource, query: RecallQuery, evidence: RecallEvidence = {}): Recalled[] {
   const { policy } = query
-  const candidates = gather(source, query).map(candidate => ({ ...candidate, relevance: candidate.relevance + SEMANTIC_WEIGHT * (semantic?.get(candidate.key) ?? 0) }))
+  const candidates = gather(source, query).map(candidate => ({
+    ...candidate,
+    relevance: candidate.relevance
+      + SEMANTIC_WEIGHT * (evidence.semantic?.get(candidate.key) ?? 0)
+      + LEXICAL_WEIGHT * (evidence.lexical?.get(candidate.key) ?? 0)
+      + DENSE_WEIGHT * (evidence.dense?.get(candidate.key) ?? 0),
+  }))
 
   const scored = candidates.flatMap((candidate) => {
     let clarity: Clarity | undefined = 'clear'

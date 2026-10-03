@@ -9,7 +9,7 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, sessionFolder, type Session } from 'dsh-roleplay-state'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoleplayOrchestration } from '../../../src/host/orchestration/service.ts'
 import { writeSettings } from '../../../src/host/sessions/settings.ts'
 import { decodeOutput } from '../../../src/shared/narration.ts'
@@ -93,6 +93,8 @@ interface Script {
   lookup?: boolean
   /** Plays a second round of characters (Bob answering Alice) before delivering, when it is allowed. */
   twoRounds?: boolean
+  /** The game master does not ask for the round to be recorded: nothing worth remembering happened. */
+  skipRecord?: boolean
 }
 
 const aliceOnly = [{ character: 'alice', result: 'succeeded', summary: 'Alice greets him' }]
@@ -101,13 +103,15 @@ const alicesWords = { type: 'utterance', character: 'alice', text: 'That is not 
 const bobsWords = { type: 'utterance', character: 'bob', text: 'Why is he here?' }
 
 /** A game master that lets Bob answer Alice in a second round, and stops when it is told there are no more. */
-function twoRounds(request: GenerateOptions, activated: number, resolved: number): StreamChunk[] {
+function twoRounds(request: GenerateOptions, activated: number, resolved: number, record: boolean): StreamChunk[] {
   const turn = thisTurn(request)
-  if (turn.includes('most this chat allows')) return call('m-stop', 'narrate', { segments: [alicesWords, { type: 'narration', text: 'Alice greets him.' }] })
+  const recording = record && timesCalled(request, 'record_memory') === 0
+  if (turn.includes('most this chat allows')) return recording ? call('m-rec', 'record_memory', { focus: 'Alice greeted him.' }) : call('m-stop', 'narrate', { segments: [alicesWords, { type: 'narration', text: 'Alice greets him.' }] })
   if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur enters.', characters: ['alice'] })
   if (resolved === 0) return call('m2', 'resolve_round', { outcomes: aliceOnly })
   if (activated === 1) return call('m3', 'activate_characters', { situation: 'Alice has greeted Arthur.', characters: ['bob'] })
   if (resolved === 1) return call('m4', 'resolve_round', { outcomes: bobOnly })
+  if (recording) return call('m-rec', 'record_memory', { focus: 'Alice greeted him and Bob objected.' })
   return call('m5', 'narrate', { segments: [alicesWords, { type: 'narration', text: 'Alice greets him; Bob frowns.' }, bobsWords] })
 }
 
@@ -204,12 +208,13 @@ function answerFor(script: Script = {}) {
     if (script.early === true && !objected) return text('The scene is over, I think.')
     if (thisTurn(request).includes('input is refused')) return text('I cannot do that.')
     if (script.lookup === true && timesCalled(request, 'search_events') === 0) return call('m0', 'search_events', { text: 'key' })
-    if (script.twoRounds === true) return twoRounds(request, activated, resolved)
+    if (script.twoRounds === true) return twoRounds(request, activated, resolved, script.skipRecord !== true)
     if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.' })
     if (resolved === 0) return call('m2', 'resolve_round', { outcomes: round1 })
     if (resolved === 1 && thisTurn(request).includes('tried once more')) {
       return call('m3', 'resolve_round', { outcomes: [{ character: 'dan', result: 'succeeded', summary: 'Dan takes the lantern too' }] })
     }
+    if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'The key changed hands.' })
     const delivery = script.delivery ?? 'good'
     if (thisTurn(request).includes('has been delivered to the player')) return text('')
     if (delivery === 'none') return text('Done.')
@@ -578,6 +583,79 @@ describe('a turn with the real agent loop', () => {
       const perceptions = session.events.perceptionsOf(event!.id)
       expect(perceptions).toHaveLength(4)
       expect(perceptions.every(entry => entry.mode === 'witnessed' && entry.accuracy === 'accurate' && entry.content === event!.text)).toBe(true)
+    })
+
+    it('runs only when the game master asks: quiet rounds wait, and the next record writes them with the one that matters', async () => {
+      const { session, id } = await addSession('Vault')
+      const script: Script = { keeper: 'careful', skipRecord: true }
+      const adapter = new ScriptedAdapter(answerFor(script))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(keeperRequests(adapter)).toHaveLength(0)
+      expect(session.events.list()).toEqual([])
+      expect(session.pendingCommits.list()).toHaveLength(1)
+      expect(session.metadata.get().turns).toBe(1)
+      expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
+      script.skipRecord = false
+      agent.followup(say('I look around.'))
+      await agent.whenIdle()
+      const brief = briefOf(keeperRequests(adapter).at(-1)!)
+      expect(brief).toContain('2 rounds are due for records')
+      expect(brief).toContain('The game master says this is worth keeping: The key changed hands.')
+      expect(session.pendingCommits.list()).toEqual([])
+      expect(session.events.list().map(event => event.turn)).toEqual([1, 2])
+    })
+
+    it('has the game master ask through record_memory, which no character or keeper has', async () => {
+      const { adapter } = await play('careful')
+      expect(masterRequests(adapter).every(request => toolNames(request).includes('record_memory'))).toBe(true)
+      expect(characterRequests(adapter).some(request => toolNames(request).includes('record_memory'))).toBe(false)
+      expect(keeperRequests(adapter).some(request => toolNames(request).includes('record_memory'))).toBe(false)
+    })
+
+    it('seals the events once the run is complete, so they cannot be changed afterwards', async () => {
+      const { session } = await play('careful')
+      const [event] = session.events.list()
+      expect(event?.sealed).toBe(true)
+      expect(() => session.events.update(event!.id, { text: 'changed' })).toThrow(/sealed/)
+    })
+
+    it('runs anyway at the end of the turn when more rounds wait than the chat allows', async () => {
+      const { session, id } = await addSession('Vault')
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { memory: { backlogRounds: 1 } })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', skipRecord: true }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
+      expect(session.pendingCommits.list()).toEqual([])
+      expect(session.events.list()).toHaveLength(1)
+    })
+
+    it('has the vectors of what was written made afterwards by the embedding service, when there is one', async () => {
+      const seen: { texts: readonly string[]; options: Record<string, unknown> | undefined }[] = []
+      ctx.provide('embeddings')
+      ctx.set('embeddings', {
+        embed: (texts: readonly string[], options?: Record<string, unknown>) => {
+          seen.push({ texts, options })
+          return Promise.resolve({ vectors: texts.map(() => [0.5, 0.5, 0.5]), model: 'fake', dimensions: 3 })
+        },
+      })
+      const { session, id } = await addSession('Vault')
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { embedding: { options: { dimensions: 3 } } })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      await vi.waitFor(() => { expect(session.recallIndex.info()).toMatchObject({ model: 'fake', dimensions: 3, pending: 0 }) })
+      expect(session.recallIndex.info()?.embedded).toBe(5)
+      const documents = seen.filter(call => call.options?.['inputType'] === 'document')
+      expect(documents.length).toBeGreaterThan(0)
+      expect(documents[0]?.options).toMatchObject({ dimensions: 3 })
+      agent.followup(say('I look around.'))
+      await agent.whenIdle()
+      expect(seen.some(call => call.options?.['inputType'] === 'query')).toBe(true)
     })
 
     it('is told whether characters remember imperfectly, as the chat\'s settings say', async () => {

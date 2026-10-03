@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { FORM_FIELDS, boundsOf, fromDrafts, keyOf, problemsOf, toDrafts } from '../../../src/client/settings-form/fields.ts'
+import type { RequestOption } from 'dsh-ai-core'
+import { FORM_FIELDS, boundsOf, fromDrafts, keyOf, optionKey, problemsOf, toDrafts } from '../../../src/client/settings-form/fields.ts'
 import { DEFAULT_SETTINGS, parseSettings } from '../../../src/shared/settings.ts'
 
 describe('the settings form', () => {
   it('starts from the settings, with a share shown as a percentage', () => {
-    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.lookup': true, 'memory.verify': true, 'context.limitTokens': '24000', 'context.retainRatio': '50' })
+    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'context.limitTokens': '24000', 'context.retainRatio': '50' })
   })
 
   it('gives back settings that parse, with what the form does not show left as it was', () => {
@@ -26,5 +27,39 @@ describe('the settings form', () => {
     const retain = FORM_FIELDS.find(field => keyOf(field) === 'context.retainRatio')!
     expect(boundsOf(retain)).toEqual({ min: 10, max: 90 })
     expect(boundsOf(FORM_FIELDS[0]!)).toEqual({ min: 1, max: 10 })
+  })
+})
+
+describe('the request options of the embedding provider in the form', () => {
+  const options: RequestOption[] = [
+    { key: 'dimensions', type: 'integer', label: 'Dimensions', min: 1, max: 4096, atStart: true },
+    { key: 'user', type: 'string', label: 'User' },
+    { key: 'normalize', type: 'boolean', label: 'Normalize' },
+    { key: 'temperature', type: 'number', label: 'T', min: 0 },
+  ]
+
+  it('start empty, so that the provider\'s own setting applies, and show what the chat already chose', () => {
+    expect(toDrafts(DEFAULT_SETTINGS, options)).toMatchObject({ 'embedding.options.dimensions': '', 'embedding.options.user': '', 'embedding.options.normalize': false, 'embedding.options.temperature': '' })
+    const chosen = { ...DEFAULT_SETTINGS, embedding: { options: { dimensions: 256, user: 'u', normalize: true } } }
+    expect(toDrafts(chosen, options)).toMatchObject({ 'embedding.options.dimensions': '256', 'embedding.options.user': 'u', 'embedding.options.normalize': true })
+    expect(optionKey(options[0]!)).toBe('embedding.options.dimensions')
+  })
+
+  it('are written typed, left out when empty, and options the form does not offer are kept', () => {
+    const base = { ...DEFAULT_SETTINGS, embedding: { options: { dimensions: 64, other: 'kept' } } }
+    const drafts = { ...toDrafts(base, options), 'embedding.options.dimensions': '', 'embedding.options.user': ' me ', 'embedding.options.normalize': true, 'embedding.options.temperature': '0.5' }
+    const next = fromDrafts(base, drafts, options)
+    expect(next.embedding.options).toEqual({ other: 'kept', user: 'me', normalize: true, temperature: 0.5 })
+    expect(parseSettings(next).ok).toBe(true)
+    expect(fromDrafts(DEFAULT_SETTINGS, toDrafts(DEFAULT_SETTINGS, options), options).embedding.options).toEqual({ normalize: false })
+    expect(base.embedding.options).toEqual({ dimensions: 64, other: 'kept' })
+  })
+
+  it('are checked against what the provider says about them', () => {
+    const drafts = toDrafts(DEFAULT_SETTINGS, options)
+    expect([...problemsOf(drafts, options)]).toEqual([])
+    expect([...problemsOf({ ...drafts, 'embedding.options.dimensions': '2.5', 'embedding.options.temperature': '-1' }, options)].sort()).toEqual(['embedding.options.dimensions', 'embedding.options.temperature'])
+    expect([...problemsOf({ ...drafts, 'embedding.options.dimensions': '5000' }, options)]).toEqual(['embedding.options.dimensions'])
+    expect([...problemsOf({ ...drafts, 'embedding.options.dimensions': '0' }, options)]).toEqual(['embedding.options.dimensions'])
   })
 })

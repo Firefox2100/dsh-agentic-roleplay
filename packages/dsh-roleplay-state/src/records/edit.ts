@@ -54,6 +54,20 @@ export interface EventEdit {
   perceivedBy?: PerceivedBy[]
 }
 
+/** A character's version of an event, revised: it learned more, or remembers it differently. Works on sealed events too. */
+export interface PerceptionEdit {
+  id: number
+  mode?: PerceptionMode
+  content?: string
+  gist?: string
+  accuracy?: Accuracy
+}
+
+/** One more character took in an event, possibly long after: it was told, or worked it out. Works on sealed events too. */
+export interface PerceptionAddition extends PerceivedBy {
+  event: number
+}
+
 export interface NewBelief {
   character: string
   kind: MemoryKind
@@ -80,6 +94,8 @@ export interface RecordsEdit {
   events?: NewEvent[]
   eventEdits?: EventEdit[]
   eventRetractions?: number[]
+  perceptionEdits?: PerceptionEdit[]
+  perceptionsAdded?: PerceptionAddition[]
   beliefs?: NewBelief[]
   beliefEdits?: BeliefEdit[]
   beliefRetractions?: number[]
@@ -156,11 +172,35 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
     const where = `event_edits[${index}]`
     const current = target.events.get(change.id)
     if (current === undefined) problems.push(`${where}: there is no event ${change.id}`)
+    else if (current.sealed) problems.push(`${where}: event ${change.id} is sealed and cannot change; what a character took in of it can be revised with perception_edits, and later knowledge added with perceptions_added`)
     if (change.text !== undefined && !present(change.text)) problems.push(`${where}: say what happened`)
     importance(change.importance, where)
     return { change, current, involves: change.involves === undefined ? undefined : ids(change.involves, `${where}.involves`), perceived: change.perceivedBy === undefined ? undefined : perceptions((change.text ?? current?.text ?? '').trim(), change.perceivedBy, where) }
   })
-  for (const id of list(edit.eventRetractions)) if (target.events.get(id) === undefined) problems.push(`event_retractions: there is no event ${id}`)
+  for (const id of list(edit.eventRetractions)) {
+    const current = target.events.get(id)
+    if (current === undefined) problems.push(`event_retractions: there is no event ${id}`)
+    else if (current.sealed) problems.push(`event_retractions: event ${id} is sealed and cannot be removed`)
+  }
+
+  const perceptionEdits = list(edit.perceptionEdits).map((change, index) => {
+    const where = `perception_edits[${index}]`
+    const current = target.events.getPerception(change.id)
+    if (current === undefined) problems.push(`${where}: there is no perception ${change.id}`)
+    if (change.mode !== undefined && !PERCEPTION_MODES.includes(change.mode)) problems.push(`${where}: unknown mode "${String(change.mode)}"`)
+    if (change.accuracy !== undefined && !ACCURACIES.includes(change.accuracy)) problems.push(`${where}: unknown accuracy "${String(change.accuracy)}"`)
+    if (change.content !== undefined && !present(change.content)) problems.push(`${where}: content cannot be empty`)
+    return change
+  })
+  const perceptionsAdded = list(edit.perceptionsAdded).flatMap((added, index) => {
+    const where = `perceptions_added[${index}]`
+    const event = target.events.get(added.event)
+    if (event === undefined) { problems.push(`${where}: there is no event ${added.event}`); return [] }
+    const [one] = perceptions(event.text, [added], where)
+    const characterId = byKey.get(added.character)?.id
+    if (characterId !== undefined && target.events.perceptionsOf(added.event).some(entry => entry.characterId === characterId)) problems.push(`${where}: ${added.character} already has a perception of event ${added.event}: revise it with perception_edits`)
+    return one === undefined ? [] : [{ eventId: added.event, perception: one }]
+  })
 
   const beliefs = list(edit.beliefs).flatMap((belief, index) => {
     const where = `beliefs[${index}]`
@@ -217,6 +257,16 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
       result.writes += 1
     }
     for (const id of list(edit.eventRetractions)) { target.events.remove(id); result.writes += 1 }
+    for (const change of perceptionEdits) {
+      target.events.updatePerception(change.id, {
+        ...(change.mode === undefined ? {} : { mode: change.mode }),
+        ...(change.content === undefined ? {} : { content: change.content.trim() }),
+        ...(change.gist === undefined ? {} : { gist: change.gist.trim() }),
+        ...(change.accuracy === undefined ? {} : { accuracy: change.accuracy }),
+      })
+      result.writes += 1
+    }
+    for (const { eventId, perception } of perceptionsAdded) { target.events.addPerception(eventId, perception); result.writes += 1 }
     for (const { belief, character, about } of beliefs) {
       result.beliefIds.push(target.memories.add({ characterId: character, kind: belief.kind, text: belief.text.trim(), about, importance: belief.importance, turn: edit.turn }).id)
       result.writes += 1
@@ -299,6 +349,13 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       id: num(entry, 'id') ?? 0, text: text(entry, 'text'), importance: num(entry, 'importance'), tags: strings(entry, 'tags'), involves: strings(entry, 'involves'), perceivedBy: perceived(entry),
     })),
     eventRetractions: numbers('event_retractions'),
+    perceptionEdits: array('perception_edits').map((entry): PerceptionEdit => defined<PerceptionEdit>({
+      id: num(entry, 'id') ?? 0, mode: text(entry, 'mode') as PerceptionMode | undefined, content: text(entry, 'content'), gist: text(entry, 'gist'), accuracy: text(entry, 'accuracy') as Accuracy | undefined,
+    })),
+    perceptionsAdded: array('perceptions_added').map((entry): PerceptionAddition => defined<PerceptionAddition>({
+      event: num(entry, 'event') ?? 0, character: text(entry, 'character') ?? '', mode: (text(entry, 'mode') ?? '') as PerceptionMode,
+      content: text(entry, 'content'), gist: text(entry, 'gist'), accuracy: text(entry, 'accuracy') as Accuracy | undefined,
+    })),
     beliefs: array('beliefs').map((entry): NewBelief => defined<NewBelief>({
       character: text(entry, 'character') ?? '', kind: (text(entry, 'kind') ?? '') as MemoryKind, text: text(entry, 'text') ?? '', about: strings(entry, 'about'), importance: num(entry, 'importance') ?? 0,
     })),
@@ -403,7 +460,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
     Object.assign(properties, {
       event_edits: {
         type: 'array',
-        description: 'Corrections to recorded events. Give only what changes; perceived_by replaces the whole list.',
+        description: 'Corrections to draft events of this run (a sealed event cannot change). Give only what changes; perceived_by replaces the whole list.',
         items: {
           type: 'object',
           properties: { id: { type: 'integer' }, text: { type: 'string' }, importance: IMPORTANCE, tags: { type: 'array', items: { type: 'string' } }, involves: keys, perceived_by: perceivedBy },
@@ -412,6 +469,39 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
         },
       },
       event_retractions: { type: 'array', items: { type: 'integer' }, description: 'Ids of recorded events that did not happen or duplicate another.' },
+      perception_edits: {
+        type: 'array',
+        description: 'Revisions of what a character took in of an event (the ids are in read_records): it learned more, or remembers it differently. Allowed on any event.',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            mode: { type: 'string', enum: [...PERCEPTION_MODES] },
+            content: { type: 'string' },
+            gist: { type: 'string' },
+            accuracy: { type: 'string', enum: [...ACCURACIES] },
+          },
+          required: ['id'],
+          additionalProperties: false,
+        },
+      },
+      perceptions_added: {
+        type: 'array',
+        description: 'A character that took in an earlier event only now (it was told, or worked it out). Allowed on any event.',
+        items: {
+          type: 'object',
+          properties: {
+            event: { type: 'integer' },
+            character,
+            mode: { type: 'string', enum: [...PERCEPTION_MODES] },
+            content: { type: 'string' },
+            gist: { type: 'string' },
+            accuracy: { type: 'string', enum: [...ACCURACIES] },
+          },
+          required: ['event', 'character', 'mode'],
+          additionalProperties: false,
+        },
+      },
       belief_edits: {
         type: 'array',
         items: { type: 'object', properties: { id: { type: 'integer' }, text: { type: 'string' }, about: keys, importance: IMPORTANCE }, required: ['id'], additionalProperties: false },

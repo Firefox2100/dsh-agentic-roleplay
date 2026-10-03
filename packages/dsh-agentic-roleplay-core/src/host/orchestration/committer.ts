@@ -14,14 +14,16 @@ You work only from the material you are given and from what your tools show. You
 
 You work in a loop with your tools:
 1. Write the records for the rounds due with edit_records. One call may hold state changes, events, beliefs and threads together; it is applied entirely or not at all. If it is refused, the reasons come back: correct them and call again.
-2. Check your work when the prompt says verification is on: read the records back with read_records for those rounds and compare them with the rounds, item by item: an event the rounds do not support (correct or retract it); something clearly stated and missing (add it); two events saying the same thing (retract the later); a perception by someone who could not have perceived the event, or missing for the character who did or said it; a character state that is a log of events or leaks a private thought into public_state; a belief the rounds do not support (retract it); an importance clearly out of proportion. Fix what you find with edit_records (event_edits, event_retractions, belief_edits, belief_retractions, new events) and read again. Do not change wording for style.
+2. Check your work when the prompt says verification is on: read the records back with read_records for those rounds and compare them with the rounds, item by item: an event the rounds do not support (correct or retract it: only events you wrote in this run can be corrected); something clearly stated and missing (add it); two events saying the same thing (retract the later); a perception by someone who could not have perceived the event, or missing for the character who did or said it; a character state that is a log of events or leaks a private thought into public_state; a belief the rounds do not support (retract it); an importance clearly out of proportion. Fix what you find with edit_records (event_edits, event_retractions, belief_edits, belief_retractions, new events) and read again. Do not change wording for style.
 3. Finish with submit_result.
 
 What to write:
 - events: one for each distinct thing that happened (an action, a statement that matters, a revelation, a change), in the past tense ("Bob took the key."), one sentence, no interpretation, no narration. Never repeat an event that is already recorded. Usually one to four per round. Give each its turn and round, its tags (lowercase words: objects, places, topics) and the characters it involves.
 - importance: 1 a passing detail, 2 minor, 3 notable, 4 important, 5 turns the story. Most events are 2 or 3.
 - perceived_by: only characters who could actually perceive the event, each once, with how (witnessed, heard, told, inferred). The character who does or says something always perceives it. A character who was not there does not.
-- states: only for characters whose state changed because of these rounds, and only the fields that changed. public_state is a short present-tense description of what can be seen now (position, posture, expression, what it holds), never a log of events and never a thought. inner_state is what it now thinks or feels, and only if the rounds show it. activity is what it is doing now. emotion only when the rounds show a clear change.
+- The rounds you are given may be several, from this turn and earlier ones, because the game master records only when the story moves on. Write each event at the turn and round it belongs to. Routine rounds (small talk, movement) do not each need an event: fold them into the event that matters, or leave them out. If the game master named what is worth keeping, write that first.
+- Events are final once your run is complete, and events recorded before this run cannot be changed or removed. What a character took in can: when the rounds show a character learning of an earlier event, or remembering it differently, add it with perceptions_added (event id, character) or revise it with perception_edits (the perception id from read_records). Never write the same event twice.
+- states: what the game master decided about each character's activity and public_state is already written. Write a state only for inner_state or emotion, or to fix a public_state that the rounds clearly contradict, and only the fields that changed. public_state is a short present-tense description of what can be seen now (position, posture, expression, what it holds), never a log of events and never a thought. inner_state is what it now thinks or feels, and only if the rounds show it. activity is what it is doing now. emotion only when the rounds show a clear change.
 - beliefs: only when a character clearly learns, suspects or concludes something beyond the single event; written from that character's point of view; kind is belief, relationship or knowledge.
 - threads_opened: only a promise, mystery or goal that the rounds clearly leave unsettled and that is not already open. threads_resolved: ids of open threads that the rounds settle.`
 
@@ -56,7 +58,8 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
       ? 'Verification is on: you cannot submit until you have read the records back after your last change.'
       : 'Verification is off: submit as soon as the records are written.',
     '',
-    job.rounds.length > 1 ? `${job.rounds.length} rounds are due for records (an earlier attempt did not finish): write all of them, oldest first.` : `${label(first)} is due for records.`,
+    job.rounds.length > 1 ? `${job.rounds.length} rounds are due for records: write all of them, oldest first.` : `${label(first)} is due for records.`,
+    ...(job.focus === undefined || job.focus.length === 0 ? [] : ['', `The game master says this is worth keeping: ${job.focus.join('; ')}`]),
     '',
     ...job.rounds.flatMap(describeRound),
     '## State of the characters now',
@@ -88,7 +91,7 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
   const turn = Math.max(...job.rounds.map(round => round.turn))
   const keys = job.store.story.characters.list().map(characterKey)
   const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads'])
-  return createTools(() => ({ session: job.store.story, turn, policy: memory }), { write: true, characters: keys })
+  return createTools(() => ({ session: job.store.story, turn, policy: memory, queryVector: job.store.queryVector }), { write: true, characters: keys })
     .filter(tool => wanted.has(tool.name))
     .map((tool): ToolDefinition => {
       if (tool.name === 'edit_records') {

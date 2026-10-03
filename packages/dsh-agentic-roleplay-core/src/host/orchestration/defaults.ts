@@ -120,11 +120,11 @@ const REMINDED_EVENTS = 5
 
 /**
  * The state of the scene, what is still open in the story, and the earlier events that the
- * player's move brings to mind: those already folded out of the conversation into the
- * summaries, whose detail the summaries may have lost.
+ * player's move brings to mind (by the session's search of words and meaning, and by who is named):
+ * those already folded out of the conversation into the summaries, whose detail the summaries may have lost.
  */
 export const castSummary: SceneContextProvider = {
-  scene({ cast, turn, input, story }) {
+  scene({ cast, turn, input, queryVector, story }) {
     const lines = cast.map(({ key, character, state }) => {
       const role = character.control === 'player' ? 'the player\'s character' : `acts through "${key}"`
       const seen = [state?.publicState, state?.activity].filter(text => text !== undefined && text.trim() !== '')
@@ -138,12 +138,14 @@ export const castSummary: SceneContextProvider = {
       const mentionedIds = mentioned(input, cast.map(({ character }) => character))
       const cues = tokens(input)
       const names = new Map(cast.map(({ character }) => [character.id, character.name]))
-      const relevant = story.events.list({ toTurn: folded })
+      const byMeaning = story.searchEvents({ text: input, ...(queryVector === undefined ? {} : { vector: queryVector }), toTurn: folded, limit: REMINDED_EVENTS })
+      const byCues = story.events.list({ toTurn: folded })
+        .filter(event => !byMeaning.some(found => found.id === event.id))
         .map(event => ({ event, score: 3 * event.involves.filter(id => mentionedIds.has(id)).length + overlap(cues, event.text, event.tags) }))
         .filter(({ score }) => score >= 2)
         .sort((a, b) => b.score + 0.5 * b.event.importance - a.score - 0.5 * a.event.importance || b.event.turn - a.event.turn)
-        .slice(0, REMINDED_EVENTS)
-        .sort((a, b) => a.event.turn - b.event.turn)
+        .map(({ event }) => event)
+      const relevant = [...byMeaning, ...byCues].slice(0, REMINDED_EVENTS).sort((a, b) => a.turn - b.turn).map(event => ({ event }))
       if (relevant.length > 0) {
         parts.push(`Earlier events that bear on what the player just did (from the records of the story):\n${relevant.map(({ event }) => {
           const who = event.involves.map(id => names.get(id)).filter(name => name !== undefined).join(', ')
@@ -217,27 +219,18 @@ export const exactUtterances: NarrationChecker = {
   },
 }
 
-/** What a character is reminded of is what the story's records bring back for it. */
+/** What a character is reminded of is what the story's records bring back for it: by the cues of the moment, by its words, and by its meaning when vectors exist. */
 export const recordsRecall: Recaller = {
-  recall: ({ member, situation, turn, policy }, story, signal) => story.recallRanked({ characterId: member.character.id, situation, turn, policy }, signal),
+  recall: ({ member, situation, turn, policy, queryVector }, story, signal) =>
+    story.recallRanked({ characterId: member.character.id, situation, turn, policy }, signal, queryVector === undefined ? {} : { queryVector }),
 }
 
-/** Writes what the game master decided: each character's activity and what can be seen of it. */
-export const writesOutcomes: Committer = {
-  commit({ rounds, store }) {
-    const cast = store.cast()
-    let writes = 0
-    for (const round of rounds) {
-      const updates = round.entries.flatMap((entry) => {
-        const member = cast.find(candidate => candidate.key === entry.character)
-        if (member === undefined) return []
-        return [{ character: member.character.id, patch: { activity: entry.summary, ...(entry.publicState === undefined ? {} : { publicState: entry.publicState }) } }]
-      })
-      store.commit(updates)
-      writes += updates.length
-    }
-    return Promise.resolve({ writes, notes: '' })
-  },
+/**
+ * Writes no memory. What the game master decided about each character is applied when the round is
+ * recorded, so without a memory keeper the story keeps its states and no events.
+ */
+export const writesNothing: Committer = {
+  commit: () => Promise.resolve({ writes: 0, notes: '' }),
 }
 
 export function defaultBoundaries(): Boundaries {
@@ -249,7 +242,7 @@ export function defaultBoundaries(): Boundaries {
     inputValidator: acceptsAnyInput,
     narrator: gameMasterNarrates,
     narrationChecker: exactUtterances,
-    committer: writesOutcomes,
+    committer: writesNothing,
     recaller: recordsRecall,
     sceneContext: castSummary,
   }

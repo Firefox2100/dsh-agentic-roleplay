@@ -1,19 +1,21 @@
 import { existsSync } from 'node:fs'
-import type { NewSession } from 'dsh-roleplay-model'
+import type { NewSession, StoryEvent } from 'dsh-roleplay-model'
 import { systemClock, type Clock } from './clock.ts'
 import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  PendingCommitRepository, SummaryRepository, ThreadRepository,
+  PendingCommitRepository, RecallIndexRepository, SummaryRepository, ThreadRepository, VectorSupport,
 } from './repositories.ts'
-import { recall, recallCandidates, type MemoryPolicy, type RecallCandidate, type RecallQuery, type Recalled } from './memory/recall.ts'
+import { denseScore, recall, recallCandidates, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
 import { readRecords, type RecordsScope, type RecordsView } from './records/read.ts'
 import { SqliteEventRepository } from './sqlite/event-repository.ts'
 import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
 import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
+import { SqliteRecallIndex } from './sqlite/recall-index.ts'
+import { vectorExtension } from './sqlite/vector-extension.ts'
 import { SqliteCharacterRepository } from './sqlite/character-repository.ts'
 import { SqliteIntentRepository } from './sqlite/intent-repository.ts'
 import { SqliteMetadataRepository } from './sqlite/metadata-repository.ts'
@@ -26,6 +28,8 @@ export interface StoreOptions extends OpenOptions {
   driver?: SqlDriver
   /** Supplies the time stamped on rows; defaults to the system clock. */
   clock?: Clock
+  /** Whether to load the sqlite-vec extension for vector search. On by default; a session works without it when it is missing. */
+  vectors?: boolean
 }
 
 /** One session: everything stored about it, reached through repositories. */
@@ -39,24 +43,46 @@ export interface SessionStore {
   readonly threads: ThreadRepository
   readonly summaries: SummaryRepository
   readonly pendingCommits: PendingCommitRepository
+  /** What the session can be searched by: its texts by words, and by meaning once vectors are stored. */
+  readonly recallIndex: RecallIndexRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
   transaction<T>(fn: () => T): T
   /**
    * What a character is reminded of at this moment: what it took in and believes, chosen by what
    * the situation calls to mind and, with flaky memory, by how much of it is left.
    */
-  recall(query: Omit<RecallQuery, 'characters'>, semantic?: ReadonlyMap<string, number>): Recalled[]
+  recall(query: Omit<RecallQuery, 'characters'>, evidence?: RecallEvidence): Recalled[]
+  /**
+   * What a character is reminded of, using the session's index as well as the cues: texts that match the
+   * moment by words, and, when the vector of the moment is given (from the model that made the stored
+   * vectors), texts that match it by meaning.
+   * @throws {InvalidValueError} when the vector has other dimensions than the stored ones.
+   */
+  recallStored(query: Omit<RecallQuery, 'characters'>, options?: { queryVector?: readonly number[] }): Recalled[]
+  /** What the session's index says about each candidate for a moment: by words, and by meaning when the vector of the moment is given. */
+  storedEvidence(query: Omit<RecallQuery, 'characters'>, queryVector?: readonly number[]): Pick<RecallEvidence, 'lexical' | 'dense'>
+  /**
+   * Look up what happened (not what any character took in) by words and, with a vector, by meaning, best first.
+   * The two searches are merged by reciprocal rank, so what ranks well in either comes first.
+   */
+  searchEvents(search: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number }): StoryEvent[]
   /** What a character could be reminded of, to be ranked by meaning before {@link recall}. */
   recallCandidates(query: Omit<RecallQuery, 'characters' | 'policy'>): RecallCandidate[]
   /**
    * Change the story's records (state, events and who took them in, beliefs, threads), together or not at all.
    * @throws {InvalidEditError} naming every problem; nothing was written then.
    */
-  edit(edit: RecordsEdit): EditResult
+  /** Apply an edit atomically; with `seal`, the events it adds are final at once (otherwise they stay drafts until sealed). */
+  edit(edit: RecordsEdit, options?: { seal?: boolean }): EditResult
   /** Read the records back in the form models read them. */
   records(scope?: RecordsScope): RecordsView
   close(): void
 }
+
+/** How many hits of each search are weighed when recalling. */
+const STORED_CANDIDATES = 50
+/** Reciprocal rank fusion: how much the first places count against the later ones. */
+const RANK_OFFSET = 60
 
 class SqliteSessionStore implements SessionStore {
   readonly metadata: SqliteMetadataRepository
@@ -68,14 +94,16 @@ class SqliteSessionStore implements SessionStore {
   readonly threads: ThreadRepository
   readonly summaries: SummaryRepository
   readonly pendingCommits: PendingCommitRepository
+  readonly recallIndex: SqliteRecallIndex
 
-  constructor(private readonly db: SqlDatabase, clock: Clock) {
+  constructor(private readonly db: SqlDatabase, clock: Clock, vectors: VectorSupport) {
     this.metadata = new SqliteMetadataRepository(db, clock)
+    this.recallIndex = new SqliteRecallIndex(db, this.metadata, vectors)
     this.characters = new SqliteCharacterRepository(db, clock)
     this.characterStates = new SqliteCharacterStateRepository(db, clock)
     this.intents = new SqliteIntentRepository(db, clock)
-    this.events = new SqliteEventRepository(db, clock)
-    this.memories = new SqliteMemoryRepository(db, clock)
+    this.events = new SqliteEventRepository(db, clock, this.recallIndex)
+    this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)
     this.threads = new SqliteThreadRepository(db, clock)
     this.summaries = new SqliteSummaryRepository(db, clock)
     this.pendingCommits = new SqlitePendingCommitRepository(db, clock)
@@ -89,15 +117,44 @@ class SqliteSessionStore implements SessionStore {
     return recallCandidates(this, { ...query, characters: this.characters.list() })
   }
 
-  recall(query: Omit<RecallQuery, 'characters'>, semantic?: ReadonlyMap<string, number>): Recalled[] {
-    const found = recall(this, { ...query, characters: this.characters.list() }, semantic)
+  recall(query: Omit<RecallQuery, 'characters'>, evidence?: RecallEvidence): Recalled[] {
+    const found = recall(this, { ...query, characters: this.characters.list() }, evidence)
     this.events.touchPerceptions(found.flatMap(entry => (entry.source.kind === 'perception' ? [entry.source.id] : [])), query.turn)
     this.memories.touch(found.flatMap(entry => (entry.source.kind === 'memory' ? [entry.source.id] : [])), query.turn)
     return found
   }
 
-  edit(edit: RecordsEdit): EditResult {
-    return applyRecordsEdit(this, edit)
+  storedEvidence(query: Omit<RecallQuery, 'characters'>, queryVector?: readonly number[]): Pick<RecallEvidence, 'lexical' | 'dense'> {
+    const found = (hits: { key: string; score: number }[], map: (score: number) => number = score => score): ReadonlyMap<string, number> =>
+      new Map(hits.map(hit => [hit.key, map(hit.score)]))
+    const lexical = found(this.recallIndex.lexical({ text: query.situation, characterId: query.characterId, kinds: ['perception', 'memory'], limit: STORED_CANDIDATES }))
+    const dense = queryVector === undefined ? undefined : found(this.recallIndex.vector({ vector: queryVector, characterId: query.characterId, limit: STORED_CANDIDATES }), denseScore)
+    return { lexical, ...(dense === undefined ? {} : { dense }) }
+  }
+
+  recallStored(query: Omit<RecallQuery, 'characters'>, options: { queryVector?: readonly number[] } = {}): Recalled[] {
+    return this.recall(query, this.storedEvidence(query, options.queryVector))
+  }
+
+  searchEvents({ text, vector, limit = 10, fromTurn, toTurn, minImportance }: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number }): StoryEvent[] {
+    const lexical = this.recallIndex.lexical({ text, kinds: ['event'], limit: STORED_CANDIDATES })
+    const dense = vector === undefined ? [] : this.recallIndex.vector({ vector, characterId: 0, limit: STORED_CANDIDATES })
+    const scores = new Map<number, number>()
+    for (const hits of [lexical, dense]) hits.forEach((hit, rank) => { scores.set(hit.refId, (scores.get(hit.refId) ?? 0) + 1 / (RANK_OFFSET + rank)) })
+    return [...scores].sort((a, b) => b[1] - a[1]).flatMap(([id]) => {
+      const event = this.events.get(id)
+      if (event === undefined) return []
+      if ((fromTurn !== undefined && event.turn < fromTurn) || (toTurn !== undefined && event.turn > toTurn) || (minImportance !== undefined && event.importance < minImportance)) return []
+      return [event]
+    }).slice(0, limit)
+  }
+
+  edit(edit: RecordsEdit, options: { seal?: boolean } = {}): EditResult {
+    return this.transaction(() => {
+      const result = applyRecordsEdit(this, edit)
+      if (options.seal === true) this.events.seal(result.eventIds)
+      return result
+    })
   }
 
   records(scope?: RecordsScope): RecordsView {
@@ -109,9 +166,17 @@ class SqliteSessionStore implements SessionStore {
   }
 }
 
-function connect(location: string, options: StoreOptions): SqlDatabase {
-  const { driver = nodeSqliteDriver, clock: _clock, ...open } = options
-  return driver.open(location, open)
+/** Open the database, with the vector extension when there is one; without it the session still works, minus vector search. */
+function connect(location: string, options: StoreOptions): { db: SqlDatabase; vectors: VectorSupport } {
+  const { driver = nodeSqliteDriver, clock: _clock, vectors: wanted = true, ...open } = options
+  if (!wanted) return { db: driver.open(location, open), vectors: { available: false, error: 'switched off' } }
+  const extension = vectorExtension()
+  if ('error' in extension) return { db: driver.open(location, open), vectors: { available: false, error: extension.error } }
+  try {
+    return { db: driver.open(location, { ...open, extensions: [extension.path] }), vectors: { available: true } }
+  } catch (error) {
+    return { db: driver.open(location, open), vectors: { available: false, error: error instanceof Error ? error.message : String(error) } }
+  }
 }
 
 /**
@@ -120,11 +185,11 @@ function connect(location: string, options: StoreOptions): SqlDatabase {
  * @throws {ConflictError} when the location already holds a session database.
  */
 export function createSessionStore(location: string, session: NewSession, options: StoreOptions = {}): SessionStore {
-  const db = connect(location, options)
+  const { db, vectors } = connect(location, options)
   try {
     if (inspect(db).version > 0) throw new ConflictError(`${location} already holds a session database`)
     migrate(db)
-    const store = new SqliteSessionStore(db, options.clock ?? systemClock)
+    const store = new SqliteSessionStore(db, options.clock ?? systemClock, vectors)
     store.metadata.create(session)
     return store
   } catch (error) {
@@ -140,12 +205,12 @@ export function createSessionStore(location: string, session: NewSession, option
  */
 export function openSessionStore(location: string, options: StoreOptions = {}): SessionStore {
   if (location !== ':memory:' && !existsSync(location)) throw new NotFoundError(`no session database at ${location}`)
-  const db = connect(location, options)
+  const { db, vectors } = connect(location, options)
   try {
     const state = inspect(db)
     if (state.version === 0 || state.applicationId !== APPLICATION_ID) throw new SchemaError(`${location} is not a session database`)
     migrate(db)
-    return new SqliteSessionStore(db, options.clock ?? systemClock)
+    return new SqliteSessionStore(db, options.clock ?? systemClock, vectors)
   } catch (error) {
     db.close()
     throw error

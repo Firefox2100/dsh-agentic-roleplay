@@ -75,6 +75,7 @@
     "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
     "@types/node": "^22.20.0",
     "@types/react": "~18.3.1",
+    "dsh-ai-core": "link:../../../dsh-ai-providers/packages/dsh-ai-core",
     "dsh-roleplay-model": "workspace:*",
     "dsh-roleplay-state": "workspace:*",
     "lightningcss": "^1.33.0",

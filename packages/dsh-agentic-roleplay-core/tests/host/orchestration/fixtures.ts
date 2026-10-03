@@ -53,6 +53,7 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     pendingCommits: () => [...store.queue],
     completeCommits: (rounds) => { store.queue = store.queue.filter(entry => !rounds.some(round => round.turn === entry.turn && round.round === entry.round)) },
     story: withRanking(createSessionStore(':memory:', { id: 'fake', name: 'Fake', world: { id: 'w', name: 'W' } })),
+    queryVector: () => Promise.resolve(undefined),
     queue: [],
   }
   return store

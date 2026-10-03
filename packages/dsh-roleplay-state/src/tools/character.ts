@@ -1,6 +1,6 @@
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { CharacterId } from 'dsh-roleplay-model'
-import type { AgentLink } from './index.ts'
+import { vectorOf, type AgentLink } from './index.ts'
 
 /**
  * The tools of one character's own agent. They are built for that character and registered
@@ -20,8 +20,9 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
       },
       isConcurrencySafe: () => false,
       async execute(args, exec) {
-        const { session, turn, policy } = link()
-        return (await session.recallRanked({ characterId, situation: args.about, turn, policy }, exec.signal)).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
+        const agent = link()
+        const { session, turn, policy } = agent
+        return (await session.recallRanked({ characterId, situation: args.about, turn, policy }, exec.signal, await vectorOf(agent, args.about, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
       },
     }),
   ]

@@ -14,6 +14,7 @@ import { storesOf } from './host/orchestration/store.ts'
 import { sessionFolder } from 'dsh-roleplay-state'
 import { currentTurn } from './host/orchestration/current-turn.ts'
 import { createTools } from './host/orchestration/tools.ts'
+import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
@@ -28,16 +29,33 @@ export const inject = ['roleplayOrchestration', 'roleplayState', 'roleplayRoot',
 
 export function apply(ctx: Context): void {
   const boundaries = () => ctx.roleplayOrchestration.boundaries
-  const stores = storesOf(ctx.roleplayState, () => join(ctx.roleplayRoot.path, 'sessions'), message => { ctx.logger.warn(`roleplay: ${message}`) })
-  const engine = new TurnEngine(boundaries, stores, message => { ctx.logger.warn(`roleplay: ${message}`) })
+  const problem = (message: string): void => { ctx.logger.warn(`roleplay: ${message}`) }
+  const sessionsDir = () => join(ctx.roleplayRoot.path, 'sessions')
+  // The embedding plugin is optional: without it, or while it fails, memory is searched by words alone.
+  const index = new EmbeddingIndex({
+    embedder: () => (ctx as Context & { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'),
+    story: (chat) => {
+      const id = roleplaySessionOf(chat)
+      if (id === undefined) return undefined
+      const folder = sessionFolder(sessionsDir(), id)
+      return { story: ctx.roleplayState.openSession(sessionsDir(), id), options: () => liveSettings(folder, problem).embedding.options }
+    },
+    problem,
+  })
+  const stores = storesOf(ctx.roleplayState, sessionsDir, problem, (chat, text, signal) => index.queryVector(chat, text, signal))
+  const engine = new TurnEngine(boundaries, stores, problem, chat => { index.schedule(chat) })
 
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
     const id = roleplaySessionOf(agentSessionId)
     const agent = ctx.agents.get(SessionId(agentSessionId))
     if (id === undefined || agent === undefined) return undefined
-    const sessionsDir = join(ctx.roleplayRoot.path, 'sessions')
-    return { session: ctx.roleplayState.openSession(sessionsDir, id), turn: currentTurn(agent), policy: liveSettings(sessionFolder(sessionsDir, id)).memory }
+    return {
+      session: ctx.roleplayState.openSession(sessionsDir(), id),
+      turn: currentTurn(agent),
+      policy: liveSettings(sessionFolder(sessionsDir(), id)).memory,
+      queryVector: (text, signal) => index.queryVector(agentSessionId, text, signal),
+    }
   }), 'roleplay: state tools')
   ctx.systemPrompt.section({
     name: PROTOCOL_SECTION,

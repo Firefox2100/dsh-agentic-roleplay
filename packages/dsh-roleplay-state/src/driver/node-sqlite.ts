@@ -64,8 +64,10 @@ export const nodeSqliteDriver: SqlDriver = {
   open(location: string, options: OpenOptions = {}): SqlDatabase {
     const busyTimeout = options.busyTimeoutMs ?? 5000
     if (!Number.isInteger(busyTimeout) || busyTimeout < 0) throw new RangeError('busyTimeoutMs must be a non-negative integer')
-    const db = new DatabaseSync(location)
+    const extensions = options.extensions ?? []
+    const db = new DatabaseSync(location, { allowExtension: extensions.length > 0 })
     try {
+      for (const path of extensions) db.loadExtension(path)
       db.exec('PRAGMA foreign_keys = ON')
       db.exec(`PRAGMA busy_timeout = ${busyTimeout}`)
       if (location !== ':memory:') db.exec(`PRAGMA journal_mode = ${options.journalMode === 'wal' ? 'WAL' : 'DELETE'}`)

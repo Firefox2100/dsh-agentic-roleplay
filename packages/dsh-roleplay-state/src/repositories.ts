@@ -1,4 +1,10 @@
 import type {
+  EmbeddingIndexInfo,
+  PerceptionId,
+  PerceptionPatch,
+  PendingEmbedding,
+  RecallHit,
+  RecallItemKind,
   CharacterMemory,
   CharacterMemoryPatch,
   EventId,
@@ -108,16 +114,28 @@ export interface EventRepository {
   get(id: EventId): StoryEvent | undefined
   /** In story order: by turn, round, then the order recorded. */
   list(filter?: StoryEventFilter): StoryEvent[]
-  /** @throws {NotFoundError} */
+  /** @throws {NotFoundError} @throws {ConflictError} when the event is sealed. */
   update(id: EventId, patch: StoryEventPatch): StoryEvent
-  /** Replace what the characters took in of an event. @throws {NotFoundError} */
+  /** Replace what the characters took in of a draft event. @throws {NotFoundError} @throws {ConflictError} when the event is sealed. */
   setPerceptions(id: EventId, perceptions: readonly NewPerception[]): Perception[]
+  /** Make events final: they can no longer be changed or removed. Without ids, every draft event is sealed. Returns how many were sealed. */
+  seal(ids?: readonly EventId[]): number
   perceptionsOf(id: EventId): Perception[]
+  getPerception(id: PerceptionId): Perception | undefined
+  /**
+   * Add what one more character took in of an event, also a sealed one (it learns of it later). A
+   * character has one perception of an event.
+   * @throws {NotFoundError} when the event or the character does not exist.
+   * @throws {ConflictError} when the character already has a perception of the event: revise that one.
+   */
+  addPerception(id: EventId, perception: NewPerception): Perception
+  /** Revise a perception, of a sealed event too. @throws {NotFoundError} */
+  updatePerception(id: PerceptionId, patch: PerceptionPatch): Perception
   /** What one character took in, with the events, in story order. */
   perceivedBy(characterId: CharacterId, filter?: { fromTurn?: number; toTurn?: number }): PerceivedEvent[]
   /** Count a perception as recalled in `turn`. */
   touchPerceptions(ids: readonly number[], turn: number): void
-  /** Whether an event was removed, with its perceptions. */
+  /** Whether a draft event was removed, with its perceptions. @throws {ConflictError} when the event is sealed. */
   remove(id: EventId): boolean
 }
 
@@ -156,4 +174,53 @@ export interface PendingCommitRepository {
   /** In story order. */
   list(): PendingCommit[]
   complete(rounds: readonly { turn: number; round: number }[]): void
+}
+
+/** Whether vector search works in this session, and why not when it does not. */
+export interface VectorSupport {
+  available: boolean
+  error?: string
+}
+
+export interface RecallSearch {
+  /** What to look for: matched by its words. */
+  text: string
+  /** Only what this character took in or believes. Events belong to no character, so leave it out to search them. */
+  characterId?: number
+  kinds?: readonly RecallItemKind[]
+  limit: number
+}
+
+export interface VectorSearch {
+  /** The vector of what to look for, from the same model as the stored ones. */
+  vector: readonly number[]
+  characterId?: number
+  limit: number
+}
+
+/**
+ * What a session can be searched by: its texts, indexed by words and, once vectors are stored,
+ * by meaning. The repositories keep the index of their own texts up to date; vectors come from
+ * whoever has an embedding model.
+ */
+export interface RecallIndexRepository {
+  readonly vectors: VectorSupport
+  /** Matches by words, best first; each score is relative to the best hit. */
+  lexical(search: RecallSearch): RecallHit[]
+  /** Nearest by meaning, best first; each score is the cosine similarity. Empty when no vectors are stored or support is missing. */
+  vector(search: VectorSearch): RecallHit[]
+  /** What the stored vectors are made by, or `undefined` while there are none. */
+  info(): EmbeddingIndexInfo | undefined
+  /** Texts without a vector, oldest first. */
+  pending(limit: number): PendingEmbedding[]
+  /**
+   * Store vectors for texts, by the ids `pending` gave. The first call fixes the model and the number of
+   * dimensions of the session's vectors.
+   * @throws {ConflictError} when the model or dimensions differ from the stored ones, or vector search is not available.
+   * @throws {InvalidValueError} when the vectors differ in size.
+   * @returns how many were stored.
+   */
+  store(model: string, vectors: readonly { id: number; vector: readonly number[] }[]): number
+  /** Forget every vector (the texts stay), to start again with another model. */
+  reset(): void
 }

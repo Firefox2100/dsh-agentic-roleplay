@@ -27,7 +27,7 @@ describe('recalling by meaning', () => {
   it('lets a semantic match bring back what no cue would: the gold is not a word of the treasure event', () => {
     expect(recall(store, { ...query('where is the gold buried?'), ...all }).map(entry => entry.text)).toEqual(['The band played a march.'])
     const semantic = new Map([['p:1', 0.9], ['p:2', 0.05]])
-    expect(recall(store, { ...query('where is the gold buried?'), ...all }, semantic).map(entry => entry.text)).toEqual(['The treasure is under the old oak.'])
+    expect(recall(store, { ...query('where is the gold buried?'), ...all }, { semantic }).map(entry => entry.text)).toEqual(['The treasure is under the old oak.'])
   })
 })
 

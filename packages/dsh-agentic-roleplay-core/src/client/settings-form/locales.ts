@@ -1,8 +1,9 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
-  | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp'
+  | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp'
   | 'limitTokens' | 'limitTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
+  | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -16,11 +17,16 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     lookupHelp: 'While it decides, a character can ask itself about something it remembers beyond what the moment already brought to mind. Each character only reaches its own memories. It makes a character\'s turn a little longer.',
     verify: 'Check the records',
     verifyHelp: 'The record keeper reads back what it wrote about each round, compares it with the round and fixes mistakes before it finishes. It runs in the background of the narration, so it rarely delays you; turn it off for speed or to save model calls.',
+    backlogRounds: 'Most rounds waiting to be remembered',
+    backlogRoundsHelp: 'The game master decides when what happened is worth recording as memories, so quiet rounds are not recorded one by one. When this many rounds are waiting, they are recorded anyway at the end of the turn.',
     limitTokens: 'Conversation limit (tokens)',
     limitTokensHelp: 'The whole conversation is sent to the model until it reaches this size. Then the oldest turns are folded into a long-term and a short-term summary built from the story\'s recorded events.',
     retainRatio: 'Kept after folding (%)',
     retainRatioHelp: 'The share of the limit that stays word for word when the oldest turns are folded.',
     invalid: 'Enter a number from {min} to {max}.',
+    localeId: 'en',
+    embeddingOptions: 'Embedding',
+    embeddingOptionsHelp: 'What the selected embedding provider lets this chat set for each request. Empty uses the provider\'s own setting.',
   },
   zh: {
     maxRounds: '每条消息的角色回合数',
@@ -33,10 +39,15 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     lookupHelp: '角色在决定行动时，可以主动向自己追问更多记忆，超出当前情境已唤起的部分。每个角色只能查到自己的记忆。会让角色的回合稍长一些。',
     verify: '核对记录',
     verifyHelp: '记录员在结束前会回读自己写入的记录，对照回合内容并纠正错误。它在叙述的同时于后台运行，通常不会拖慢你；追求速度或想节省模型调用时可以关闭。',
+    backlogRounds: '等待记录的回合上限',
+    backlogRoundsHelp: '什么时候值得把发生的事记成记忆，由主持人决定，所以平淡的回合不会逐个记录。积压到这么多回合时，会在本轮结束时强制记录。',
     limitTokens: '对话长度上限（token）',
     limitTokensHelp: '在达到此长度之前，整段对话都会发送给模型。达到后，最早的几轮会折叠进长期和短期摘要，摘要由故事已记录的事件生成。',
     retainRatio: '折叠后保留比例（%）',
     retainRatioHelp: '折叠最早几轮时，占上限比例的这部分对话会原文保留。',
     invalid: '请输入 {min} 到 {max} 之间的数字。',
+    localeId: 'zh',
+    embeddingOptions: '嵌入',
+    embeddingOptionsHelp: '所选嵌入提供方允许本对话为每次请求设置的内容。留空则使用提供方自己的设置。',
   },
 }

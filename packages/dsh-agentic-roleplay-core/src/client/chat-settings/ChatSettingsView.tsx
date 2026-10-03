@@ -6,6 +6,7 @@ import type { SettingsPayload } from '../../shared/settings.ts'
 import css from './ChatSettingsView.module.css'
 import { NotRoleplayError, loadSettings, saveSettings } from './settings-api.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
+import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { SettingsFields } from '../settings-form/SettingsFields.tsx'
 
 export type ChatSettingsViewProps = PropsRuntime<'conversation.view'> & PropsLocale<'roleplay.chatSettings'>
@@ -24,28 +25,29 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | undefined>()
+  const options = useEmbeddingOptions('all')
 
   useEffect(() => {
     if (session === undefined) return undefined
     const abort = new AbortController()
     setLoad({ status: 'loading' })
     loadSettings(session, abort.signal).then(
-      (payload) => { setLoad({ status: 'ready', payload }); setDrafts(toDrafts(payload.settings)) },
+      (payload) => { setLoad({ status: 'ready', payload }); setDrafts(toDrafts(payload.settings, options)) },
       (failure: unknown) => {
         if (abort.signal.aborted) return
         setLoad(failure instanceof NotRoleplayError ? { status: 'not-roleplay' } : { status: 'failed', message: failure instanceof Error ? failure.message : String(failure) })
       },
     )
     return () => { abort.abort() }
-  }, [session])
+  }, [session, options])
 
   if (load.status === 'loading') return <p className={css.message}>{t('loading')}</p>
   if (load.status === 'not-roleplay') return <p className={css.message}>{t('notRoleplay')}</p>
   if (load.status === 'failed') return <p className={css.message} role="alert">{t('loadFailed', { message: load.message })}</p>
 
   const { payload } = load
-  const bad = problemsOf(drafts)
-  const changed = bad.size === 0 && JSON.stringify(fromDrafts(payload.settings, drafts)) !== JSON.stringify(payload.settings)
+  const bad = problemsOf(drafts, options)
+  const changed = bad.size === 0 && JSON.stringify(fromDrafts(payload.settings, drafts, options)) !== JSON.stringify(payload.settings)
 
   const change = (key: string, value: string | boolean): void => {
     setDrafts({ ...drafts, [key]: value })
@@ -57,8 +59,8 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     setSaving(true)
     setError(undefined)
     setSaved(false)
-    saveSettings(session, fromDrafts(payload.settings, drafts), new AbortController().signal).then(
-      (next) => { setLoad({ status: 'ready', payload: next }); setDrafts(toDrafts(next.settings)); setSaved(true) },
+    saveSettings(session, fromDrafts(payload.settings, drafts, options), new AbortController().signal).then(
+      (next) => { setLoad({ status: 'ready', payload: next }); setDrafts(toDrafts(next.settings, options)); setSaved(true) },
       (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) },
     ).finally(() => { setSaving(false) })
   }
@@ -68,7 +70,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       <h2 className={css.title}>{t('title')}</h2>
       <p className={css.description}>{t('description')}</p>
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
-      <SettingsFields t={t} drafts={drafts} onChange={change} disabled={saving} />
+      <SettingsFields t={t} drafts={drafts} onChange={change} options={options} disabled={saving} />
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}
       <div className={css.actions}>
         <Button variant="primary" size="sm" type="submit" disabled={!changed || saving}>{saving ? t('saving') : t('save')}</Button>

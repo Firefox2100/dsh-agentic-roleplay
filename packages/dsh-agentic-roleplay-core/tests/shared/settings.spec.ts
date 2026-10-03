@@ -36,3 +36,30 @@ describe('parseSettings', () => {
     for (const bad of [null, [], 'x', 3]) expect(parseSettings(bad)).toEqual({ ok: false, problems: ['the settings must be an object'] })
   })
 })
+
+
+
+describe('the options of the embedding provider', () => {
+  it('are none by default, and kept as given when they are numbers, text or flags', () => {
+    expect(DEFAULT_SETTINGS.embedding).toEqual({ options: {} })
+    const given = { embedding: { options: { dimensions: 256, user: 'u', normalize: true } } }
+    expect(parseSettings(given)).toEqual({ ok: true, value: { ...DEFAULT_SETTINGS, ...given } })
+    expect(parseSettings({}).ok && (parseSettings({}) as { value: typeof DEFAULT_SETTINGS }).value.embedding.options).toEqual({})
+  })
+
+  it('are not shared between settings: a default is a fresh object', () => {
+    const first = parseSettings({}) as { ok: true; value: typeof DEFAULT_SETTINGS }
+    first.value.embedding.options['x'] = 1
+    expect((parseSettings({}) as { ok: true; value: typeof DEFAULT_SETTINGS }).value.embedding.options).toEqual({})
+  })
+
+  it('are refused when they are not a flat set of values under plain names, or too many', () => {
+    const bad = 'must be a number, text or true/false, under a name of letters, digits and underscores'
+    expect(parseSettings({ embedding: { options: { nested: { a: 1 } } } })).toEqual({ ok: false, problems: [`"embedding.options.nested" ${bad}`] })
+    expect(parseSettings({ embedding: { options: { 'bad name': 1 } } })).toEqual({ ok: false, problems: [`"embedding.options.bad name" ${bad}`] })
+    expect(parseSettings({ embedding: { options: { x: Number.NaN } } }).ok).toBe(false)
+    expect(parseSettings({ embedding: { options: [1] } })).toEqual({ ok: false, problems: ['"embedding.options" must be an object'] })
+    expect(parseSettings({ embedding: { options: Object.fromEntries(Array.from({ length: 21 }, (_, index) => [`o${index}`, index])) } })).toEqual({ ok: false, problems: ['"embedding.options" may have at most 20 options'] })
+    expect(parseSettings({ embedding: { colour: 1 } })).toEqual({ ok: false, problems: ['"embedding.colour" is not a setting'] })
+  })
+})

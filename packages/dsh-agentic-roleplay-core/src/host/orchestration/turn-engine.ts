@@ -33,6 +33,8 @@ export interface ResolveReport {
     utterances: Utterance[]
     /** What was said in the whole turn so far; the output must carry all of it, in this order. */
     spoken: Utterance[]
+    /** How many recorded rounds, this one included, are waiting for their memory to be written. */
+    waiting: number
   }
 }
 
@@ -75,6 +77,10 @@ interface TurnState {
   limit?: number
   /** Writing the records of the rounds: one run at a time, while the game master goes on. */
   writing: Promise<void>
+  /** What the game master said is worth keeping, when it asked for the records to be written. */
+  focus: string[]
+  /** Whether the game master asked for the records to be written in this turn. */
+  requested: boolean
   cancel: AbortController
   /** What each character was reminded of in the first attempt of the round, so a retry is reminded of the same. */
   recalled: Map<string, readonly Recalled[]>
@@ -99,6 +105,8 @@ export class TurnEngine {
     private readonly stores: (chat: string) => TurnStore | undefined,
     /** Told about a run of the records that failed; the rounds stay queued and the next run writes them with its own. */
     private readonly problem: (message: string) => void = () => undefined,
+    /** Told when the records of a chat were written, so that what is new in them can be indexed. */
+    private readonly written: (chat: string) => void = () => undefined,
   ) {}
 
   /** Mark a turn as one that needs no round, for example because the player's input was refused. */
@@ -218,7 +226,7 @@ export class TurnEngine {
   private stateFor({ chat, turn }: TurnOwner): TurnState {
     const known = this.states.get(chat)
     if (known?.turn === turn) return known
-    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0, writing: Promise.resolve(), cancel: new AbortController(), recalled: new Map() }
+    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0, writing: Promise.resolve(), focus: [], requested: false, cancel: new AbortController(), recalled: new Map() }
     this.states.set(chat, fresh)
     return fresh
   }
@@ -282,12 +290,14 @@ export class TurnEngine {
     const store = this.stores(owner.chat)
     const { outputValidator } = this.boundaries()
     const reaction = number === 2 ? this.reactions(state) : undefined
+    // One vector of the moment serves every character; the search of what each remembers is its own.
+    const queryVector = number === 1 && store !== undefined ? await store.queryVector(state.situation, signal) : undefined
     const answers = await Promise.all(keys.map(async (key): Promise<CharacterReport | CharacterFailure> => {
       const member = cast.find(candidate => candidate.key === key)
       if (member === undefined) return { character: key, name: key, reason: 'no such character' }
       const previous = number === 2 ? state.first?.reports.find(report => report.character === key) : undefined
       const memories = number === 1 && store !== undefined
-        ? await this.boundaries().recaller.recall({ member, situation: state.situation, turn: owner.turn, policy: store.settings().memory }, store.story, signal)
+        ? await this.boundaries().recaller.recall({ member, situation: state.situation, turn: owner.turn, policy: store.settings().memory, ...(queryVector === undefined ? {} : { queryVector }) }, store.story, signal)
         : state.recalled.get(key) ?? []
       if (number === 1 && memories.length > 0) state.recalled.set(key, memories)
       const request: CharacterRequest = {
@@ -363,8 +373,32 @@ export class TurnEngine {
         spoken: outcome.spoken !== false,
       })),
     })
+    // What the game master decided about each character is applied at once; the memory of what happened is written when it is asked for.
+    store.commit([...decided.values()].flatMap(({ outcome, report }) => {
+      const member = state.cast.find(candidate => candidate.key === report.character)
+      return member === undefined ? [] : [{ character: member.character.id, patch: { activity: outcome.summary, ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }) } }]
+    }))
+    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances], waiting: store.pendingCommits().length }
+  }
+
+  /**
+   * The game master asks for what happened to be written into the story's lasting records. The memory
+   * keeper runs in the background and writes every round still waiting, not only the latest.
+   * @throws {Error} when no recorded round is waiting.
+   */
+  record(owner: TurnOwner, focus?: string): number {
+    const state = this.stateFor(owner)
+    const waiting = this.storeOf(owner).pendingCommits().length
+    if (waiting === 0) throw new Error('nothing is waiting to be recorded: the rounds so far are already in the story\'s records')
+    if (focus !== undefined && focus.trim() !== '') state.focus.push(focus.trim())
+    state.requested = true
     this.write(owner, state)
-    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances] }
+    return waiting
+  }
+
+  /** How many recorded rounds wait for their memory to be written. */
+  waiting(owner: TurnOwner): number {
+    return this.stores(owner.chat)?.pendingCommits().length ?? 0
   }
 
   /**
@@ -377,18 +411,25 @@ export class TurnEngine {
       const rounds = store?.pendingCommits() ?? []
       if (store === undefined || rounds.length === 0) return
       try {
-        await this.boundaries().committer.commit({ chat: owner.chat, rounds, store }, state.cancel.signal)
+        await this.boundaries().committer.commit({ chat: owner.chat, rounds, store, ...(state.focus.length === 0 ? {} : { focus: [...state.focus] }) }, state.cancel.signal)
         store.completeCommits(rounds)
+        state.focus = []
+        this.written(owner.chat)
       } catch (error) {
         if (!state.cancel.signal.aborted) this.problem(`the records of ${rounds.map(round => `${round.turn}.${round.round}`).join(', ')} were not written: ${error instanceof Error ? error.message : String(error)}`)
       }
     })
   }
 
-  /** Wait for the records to be written, and try once more for rounds a run failed to write. */
+  /**
+   * Before the turn ends: wait for a run in flight, and run again when the records are due, because
+   * the game master asked and a run failed, or because too many rounds are waiting for it to ask.
+   */
   private async settle(owner: TurnOwner, state: TurnState): Promise<void> {
     await state.writing
-    if ((this.stores(owner.chat)?.pendingCommits().length ?? 0) > 0) {
+    const store = this.stores(owner.chat)
+    const waiting = store?.pendingCommits().length ?? 0
+    if (store !== undefined && waiting > 0 && (state.requested || waiting >= store.settings().memory.backlogRounds)) {
       this.write(owner, state)
       await state.writing
     }

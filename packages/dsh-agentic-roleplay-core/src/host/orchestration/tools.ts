@@ -9,6 +9,7 @@ import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } 
 export const ACTIVATE_TOOL = 'activate_characters'
 export const RESOLVE_TOOL = 'resolve_round'
 export const NARRATE_TOOL = 'narrate'
+export const RECORD_TOOL = 'record_memory'
 
 export interface ToolDeps {
   engine: TurnEngine
@@ -57,12 +58,15 @@ function renderResolution(report: ResolveReport): string {
   lines.push(left > 0
     ? `Now decide. If the story genuinely flows from what just happened (someone is directly answered, a reaction is natural, something is left unresolved that the characters would act on), call activate_characters for the next round: ${left} round(s) are left for this message. Otherwise give control back to the player now.`
     : 'That was the last round allowed for this message: give control back to the player now.')
+  lines.push(done.waiting === 0
+    ? 'Nothing is waiting to be recorded.'
+    : `${done.waiting} round${done.waiting === 1 ? ' is' : 's are'} waiting to be recorded in the story's memory. Memory is not written after every round: call ${RECORD_TOOL} when the story just moved on (a decision made, a secret or fact revealed, a promise, an injury, a relationship changed, the scene or time moved); skip it for small talk and routine movement, which are kept and recorded together with the next thing that matters.`)
   lines.push(OUTPUT_RULES)
   lines.push('Narrate only what the player\'s character can perceive.')
   return lines.join('\n')
 }
 
-/** The three tools the game master plays a turn with. */
+/** The tools the game master plays a turn with. */
 export function createTools(deps: ToolDeps): ToolDefinition[] {
   const ownerOf = (agent: Agent | undefined): { agent: Agent; owner: TurnOwner } => {
     if (agent === undefined) throw new Error('the roleplay tools can only be called by an agent')
@@ -178,5 +182,19 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [activate, resolve, narrate]
+  const remember = defineTool({
+    name: RECORD_TOOL,
+    description: 'Have the memory keeper write what happened since the last record into the story\'s lasting memory: the events, what each character took in of them, what they now believe, and the threads left open. It works in the background and covers every round still waiting, from this turn and earlier ones. Call it when the story changes phase, not after every round; rounds you do not record are kept and recorded together later.',
+    parameters: {
+      focus: { type: 'string', description: 'What is worth keeping, in a sentence: the decision, revelation or change that matters. The keeper writes it first and may leave out incidental detail.' },
+    },
+    output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: `The memory keeper is writing ${(value as unknown as { rounds: number }).rounds} round${(value as unknown as { rounds: number }).rounds === 1 ? '' : 's'} into the story's memory.` }] },
+    isConcurrencySafe: () => false,
+    execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      return Promise.resolve(record({ rounds: deps.engine.record(owner, args.focus) }))
+    },
+  })
+
+  return [activate, resolve, remember, narrate]
 }

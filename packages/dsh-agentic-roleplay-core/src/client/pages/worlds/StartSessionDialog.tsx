@@ -3,6 +3,7 @@ import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { DEFAULT_SETTINGS } from '../../../shared/settings.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../../settings-form/fields.ts'
+import { useEmbeddingOptions } from '../../settings-form/embedding-options.ts'
 import { SettingsFields } from '../../settings-form/SettingsFields.tsx'
 import type { StartDialog, StartOptions } from './worlds-controller.ts'
 import css from './StartSessionDialog.module.css'
@@ -19,10 +20,12 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const [choice, setChoice] = useState<string | undefined>()
   const [showSettings, setShowSettings] = useState(false)
   const [drafts, setDrafts] = useState<Drafts | undefined>()
+  // Only what has to be chosen before the first request; the rest can be changed in the chat's settings.
+  const options = useEmbeddingOptions('start')
   const playable = dialog.characters.filter(character => character.role === 'playable')
   const selected = choice ?? playable[0]?.id
-  const shown = drafts ?? toDrafts(DEFAULT_SETTINGS)
-  const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting && problemsOf(shown).size === 0
+  const shown = { ...toDrafts(DEFAULT_SETTINGS, options), ...drafts }
+  const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting && problemsOf(shown, options).size === 0
 
   return (
     <Modal
@@ -45,7 +48,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, playerCharacterId: selected, ...(drafts === undefined ? {} : { settings: fromDrafts(DEFAULT_SETTINGS, drafts) }) })
+          if (canStart) onStart({ name, playerCharacterId: selected, ...(drafts === undefined ? {} : { settings: fromDrafts(DEFAULT_SETTINGS, drafts, options) }) })
         }}
       >
         <label className={css.field}>
@@ -88,7 +91,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
           {showSettings && (
             <div className={css.advancedBody}>
               <p className={css.message}>{t('advancedHelp')}</p>
-              <SettingsFields t={t} drafts={shown} disabled={dialog.submitting} onChange={(key, value) => { setDrafts({ ...shown, [key]: value }) }} />
+              <SettingsFields t={t} drafts={shown} options={options} disabled={dialog.submitting} onChange={(key, value) => { setDrafts({ ...shown, [key]: value }) }} />
             </div>
           )}
         </div>

@@ -64,7 +64,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])))
       .join('\n')
     const verdict = boundaries().inputValidator.validate({ text, turn: payload.turn, cast })
-    const lines = [boundaries().sceneContext.scene({ cast, turn: payload.turn, input: text, story: store.story })]
+    const queryVector = await store.queryVector(text)
+    const lines = [boundaries().sceneContext.scene({ cast, turn: payload.turn, input: text, story: store.story, ...(queryVector === undefined ? {} : { queryVector }) })]
     if (!verdict.ok) {
       engine.skip(owner)
       lines.push(`The player's input is refused: ${verdict.reason}. Do not ask any character to act; tell the player briefly why.`)

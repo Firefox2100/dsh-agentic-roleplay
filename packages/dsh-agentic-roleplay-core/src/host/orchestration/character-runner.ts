@@ -15,7 +15,7 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
   return async (request, signal) => {
     const brief = deps.boundaries().characterContext.brief(request)
     const tools = request.lookup
-      ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: deps.store.settings().memory }), request.member.character.id)
+      ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: deps.store.settings().memory, queryVector: deps.store.queryVector }), request.member.character.id)
       : []
     const result = await runChild({ parent: deps.parent, signal, persona: brief.persona, prompt: brief.prompt, tools, result: CHARACTER_ACTION_SCHEMA })
     return parseCharacterAction(result)

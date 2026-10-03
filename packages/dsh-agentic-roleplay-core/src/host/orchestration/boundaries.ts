@@ -136,6 +136,8 @@ export interface CommitJob {
   chat: string
   rounds: readonly RoundRecord[]
   store: TurnStore
+  /** What the game master said is worth keeping, when it asked for the records to be written. */
+  focus?: readonly string[]
 }
 
 export interface CommitReport {
@@ -159,12 +161,12 @@ export interface Committer {
  * through `roleplayState.rankMemories`); replace it to recall in another way altogether.
  */
 export interface Recaller {
-  recall(query: { member: CastMember; situation: string; turn: number; policy: MemoryPolicy }, story: TurnStore['story'], signal: AbortSignal): Promise<Recalled[]>
+  recall(query: { member: CastMember; situation: string; turn: number; policy: MemoryPolicy; /** The vector of the situation, when stored vectors exist to compare it with. */ queryVector?: readonly number[] }, story: TurnStore['story'], signal: AbortSignal): Promise<Recalled[]>
 }
 
 /** The state of the scene the game master is told at the start of a turn. */
 export interface SceneContextProvider {
-  scene(input: { cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; story: TurnStore['story'] }): string
+  scene(input: { cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story'] }): string
 }
 
 export interface Boundaries {
@@ -183,7 +185,7 @@ export interface Boundaries {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'edit' | 'records'>
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
@@ -195,6 +197,11 @@ export interface TurnStore {
   queueCommit(record: RoundRecord): void
   /** The rounds waiting for their records to be written, oldest first. */
   pendingCommits(): RoundRecord[]
-  /** Forgets rounds whose records are written. */
+  /** Forgets rounds whose records are written, and makes the events written for them final. */
   completeCommits(rounds: readonly { turn: number; round: number }[]): void
+  /**
+   * The vector of a text of the moment, to search the story's stored vectors with; `undefined` when
+   * there is nothing to compare with, and a search then goes by words alone.
+   */
+  queryVector(text: string, signal?: AbortSignal): Promise<readonly number[] | undefined>
 }

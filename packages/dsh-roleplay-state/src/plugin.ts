@@ -35,7 +35,7 @@ export type Session = Omit<SessionStore, 'close'> & {
    * {@link SessionStore.recall}, ranked by meaning when a ranker is registered with
    * `roleplayState.rankMemories`. The one call for anything that reminds a character of something.
    */
-  recallRanked(query: Omit<RecallQuery, 'characters'>, signal?: AbortSignal): Promise<Recalled[]>
+  recallRanked(query: Omit<RecallQuery, 'characters'>, signal?: AbortSignal, options?: { queryVector?: readonly number[] }): Promise<Recalled[]>
 }
 
 /**
@@ -132,22 +132,27 @@ export class RoleplayState extends Service {
       threads: store.threads,
       summaries: store.summaries,
       pendingCommits: store.pendingCommits,
+      recallIndex: store.recallIndex,
       transaction: fn => store.transaction(fn),
-      recall: (query, semantic) => store.recall(query, semantic),
+      recall: (query, evidence) => store.recall(query, evidence),
+      recallStored: (query, options) => store.recallStored(query, options),
+      searchEvents: search => store.searchEvents(search),
       recallCandidates: query => store.recallCandidates(query),
-      recallRanked: async (query, signal) => {
+      storedEvidence: (query, queryVector) => store.storedEvidence(query, queryVector),
+      recallRanked: async (query, signal, options = {}) => {
+        const stored = store.storedEvidence(query, options.queryVector)
         const ranker = this.rankers.at(-1)
-        if (ranker === undefined) return store.recall(query)
+        if (ranker === undefined) return store.recall(query, stored)
         try {
           const candidates = store.recallCandidates(query)
-          return store.recall(query, await ranker({ situation: query.situation, candidates, ...(signal === undefined ? {} : { signal }) }))
+          return store.recall(query, { ...stored, semantic: await ranker({ situation: query.situation, candidates, ...(signal === undefined ? {} : { signal }) }) })
         } catch (error) {
           if (signal?.aborted === true) throw error
           this.ctx.logger.warn(`roleplay-state: ranking memories by meaning failed, using the cues alone: ${error instanceof Error ? error.message : String(error)}`)
-          return store.recall(query)
+          return store.recall(query, stored)
         }
       },
-      edit: edit => store.edit(edit),
+      edit: (edit, options) => store.edit(edit, options),
       records: scope => store.records(scope),
     }
     this.sessions.set(key, { store, session })

@@ -61,6 +61,11 @@ describe('starting with settings', () => {
     expect(ensured).toHaveLength(1)
   })
 
+  it('keeps the options of the embedding provider that the chat chose at start, for the requests it will make', async () => {
+    const started = await startSession(deps, { ...playAsArthur, settings: { embedding: { options: { dimensions: 256 } } } })
+    expect(readSettings(join(root, 'sessions', started.id)).embedding.options).toEqual({ dimensions: 256 })
+  })
+
   it('has the defaults when none are given, and leaves no file', async () => {
     const started = await startSession(deps, playAsArthur)
     expect(await readdir(join(root, 'sessions', started.id))).toEqual(['session.sqlite'])

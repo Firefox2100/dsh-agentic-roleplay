@@ -7,10 +7,22 @@ import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'edit'>
+  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit'>
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
   turn: number
   policy: MemoryPolicy
+  /**
+   * The vector of a text of the moment, from the model that made the session's stored vectors, so that
+   * a search also finds what means the same in other words. `undefined` (or a promise of it) when
+   * there is none, and the search then goes by words alone.
+   */
+  queryVector?: (text: string, signal?: AbortSignal) => Promise<readonly number[] | undefined>
+}
+
+/** The vector of a text for a search, or nothing when the agent has no way to make one. */
+export async function vectorOf(agent: AgentLink, text: string, signal?: AbortSignal): Promise<{ queryVector: readonly number[] } | Record<string, never>> {
+  const vector = await agent.queryVector?.(text, signal)
+  return vector === undefined ? {} : { queryVector: vector }
 }
 
 /** Finds the session behind an agent, by the id of the agent's own session; `undefined` when it works in none. */
@@ -81,14 +93,14 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
     }),
     defineTool({
       name: 'search_events',
-      description: 'Look up what objectively happened in the story, in the order it happened. Narrow by character, turns, importance or words.',
+      description: 'Look up what objectively happened in the story, in the order it happened. Narrow by character, turns, importance or what it is about.',
       parameters: {
         character: { type: 'string', description: 'Only events this character is involved in.' },
-        text: { type: 'string', description: 'Only events whose text or tags contain this.' },
+        text: { type: 'string', description: 'Only events about this, found by its words or its meaning; with it, the best matches come first.' },
         from_turn: { type: 'integer' },
         to_turn: { type: 'integer' },
         min_importance: { type: 'integer', description: `From ${IMPORTANCE_MIN} to ${IMPORTANCE_MAX}.` },
-        limit: { type: 'integer', description: `At most this many, the most recent first (at most ${MAX_EVENTS}).` },
+        limit: { type: 'integer', description: `At most this many (at most ${MAX_EVENTS}): the most recent, or the best matches when text is given.` },
       },
       output: {
         schema: {
@@ -99,21 +111,38 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
       },
       isConcurrencySafe: () => true,
       async execute(args, exec) {
-        const { session } = link(resolve, exec.agent)
+        const agent = link(resolve, exec.agent)
+        const { session } = agent
         const characters = session.characters.list()
         const involving = args.character === undefined ? undefined : characters.find(character => characterKey(character) === args.character)
         if (args.character !== undefined && involving === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
         const needle = args.text?.trim().toLowerCase()
-        const found = session.events.list({
+        const filter = {
           ...(involving === undefined ? {} : { involving: involving.id }),
           ...(args.from_turn === undefined ? {} : { fromTurn: args.from_turn }),
           ...(args.to_turn === undefined ? {} : { toTurn: args.to_turn }),
           ...(args.min_importance === undefined ? {} : { minImportance: args.min_importance }),
-        }).filter(event => needle === undefined || event.text.toLowerCase().includes(needle) || event.tags.some(tag => tag.includes(needle)))
+        }
+        const listed = session.events.list(filter)
+        const limit = Math.min(Math.max(args.limit ?? MAX_EVENTS, 1), MAX_EVENTS)
         const keyOf = (id: number): string => { const owner = characters.find(character => character.id === id); return owner === undefined ? String(id) : characterKey(owner) }
-        return found.slice(-Math.min(Math.max(args.limit ?? MAX_EVENTS, 1), MAX_EVENTS)).map(event => ({
+        const shown = (events: readonly (typeof listed)[number][]) => events.map(event => ({
           id: event.id, turn: event.turn, round: event.round, text: event.text, importance: event.importance, tags: event.tags, involves: event.involves.map(keyOf),
         }))
+        if (needle === undefined || needle === '') return shown(listed.slice(-limit))
+        // What matches the words or the meaning of the text comes first, best first; a plain substring match still counts.
+        const { queryVector } = await vectorOf(agent, needle, exec.signal)
+        const ranked = session.searchEvents({
+          text: needle, limit: 50,
+          ...(queryVector === undefined ? {} : { vector: queryVector }),
+          ...(filter.fromTurn === undefined ? {} : { fromTurn: filter.fromTurn }),
+          ...(filter.toTurn === undefined ? {} : { toTurn: filter.toTurn }),
+          ...(filter.minImportance === undefined ? {} : { minImportance: filter.minImportance }),
+        })
+        const allowed = new Set(listed.map(event => event.id))
+        const first = ranked.filter(event => allowed.has(event.id))
+        const rest = listed.filter(event => !first.some(hit => hit.id === event.id) && (event.text.toLowerCase().includes(needle) || event.tags.some(tag => tag.includes(needle))))
+        return shown([...first, ...rest].slice(0, limit))
       },
     }),
     defineTool({
@@ -126,10 +155,11 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
       output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { clarity: str, turn: int, text: str } } }, render: pretty },
       isConcurrencySafe: () => false,
       async execute(args, exec) {
-        const { session, turn, policy } = link(resolve, exec.agent)
+        const agent = link(resolve, exec.agent)
+        const { session, turn, policy } = agent
         const found = session.characters.list().find(character => characterKey(character) === args.character)
         if (found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-        return (await session.recallRanked({ characterId: found.id, situation: args.situation, turn, policy }, exec.signal)).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
+        return (await session.recallRanked({ characterId: found.id, situation: args.situation, turn, policy }, exec.signal, await vectorOf(agent, args.situation, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
       },
     }),
     defineTool({
@@ -225,6 +255,7 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
       output: { schema: done, render: summary('Event recorded') },
       async execute(args, exec) {
         const { session, turn } = link(resolve, exec.agent)
+        // Written directly, not by a keeper that checks it afterwards: the event is final at once.
         return written(session.edit({
           turn,
           events: [{
@@ -233,7 +264,7 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
             ...(args.involves === undefined ? {} : { involves: args.involves }),
             perceivedBy: (args.perceived_by ?? []).map(entry => ({ character: entry.character, mode: (entry.mode ?? 'witnessed') as (typeof PERCEPTION_MODES)[number], ...(entry.content === undefined ? {} : { content: entry.content }), ...(entry.gist === undefined ? {} : { gist: entry.gist }), ...(entry.accuracy === undefined ? {} : { accuracy: entry.accuracy as (typeof ACCURACIES)[number] }) })),
           }],
-        }))
+        }, { seal: true }))
       },
     }),
     defineTool({

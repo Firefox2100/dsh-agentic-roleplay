@@ -96,6 +96,7 @@ export const MIGRATIONS: readonly Migration[] = [
         text TEXT NOT NULL,
         importance INTEGER NOT NULL CHECK (importance BETWEEN 1 AND 5),
         tags TEXT NOT NULL DEFAULT '[]',
+        sealed INTEGER NOT NULL DEFAULT 0 CHECK (sealed IN (0, 1)),
         created_at TEXT NOT NULL
       ) STRICT;
       CREATE INDEX events_turn ON events (turn, round, id);
@@ -154,6 +155,21 @@ export const MIGRATIONS: readonly Migration[] = [
         created_at TEXT NOT NULL
       ) STRICT;
       CREATE INDEX summaries_range ON summaries (level, from_turn);
+
+      CREATE TABLE recall_items (
+        id INTEGER PRIMARY KEY,
+        kind TEXT NOT NULL CHECK (kind IN ('perception', 'memory', 'event')),
+        ref_id INTEGER NOT NULL,
+        character_id INTEGER NOT NULL DEFAULT 0,
+        text TEXT NOT NULL,
+        embedded INTEGER NOT NULL DEFAULT 0 CHECK (embedded IN (0, 1)),
+        UNIQUE (kind, ref_id)
+      ) STRICT;
+      CREATE INDEX recall_items_character ON recall_items (character_id, kind);
+      CREATE INDEX recall_items_pending ON recall_items (embedded, id);
+
+      CREATE VIRTUAL TABLE recall_fts USING fts5(tokens, tokenize = 'unicode61 remove_diacritics 2');
+      CREATE VIRTUAL TABLE recall_vocab USING fts5vocab(recall_fts, 'row');
 
       CREATE TABLE pending_commits (
         turn INTEGER NOT NULL,

@@ -25,7 +25,8 @@ export interface RecordsView {
     importance: number
     tags: string[]
     involves: string[]
-    perceived_by: { character: string; mode: string; accuracy: string; content: string; gist: string }[]
+    sealed: boolean
+    perceived_by: { id: number; character: string; mode: string; accuracy: string; content: string; gist: string }[]
   }[]
   beliefs: { id: number; character: string; kind: string; text: string; about: string[]; importance: number; turn: number }[]
   open_threads: { id: number; text: string; opened_turn: number }[]
@@ -55,8 +56,8 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
     }),
     events: target.events.list().filter(event => inScope(event.turn, event.round)).map(event => ({
       id: event.id, turn: event.turn, round: event.round, text: event.text, importance: event.importance, tags: event.tags,
-      involves: event.involves.map(keyOf),
-      perceived_by: target.events.perceptionsOf(event.id).map(entry => ({ character: keyOf(entry.characterId), mode: entry.mode, accuracy: entry.accuracy, content: entry.content, gist: entry.gist })),
+      involves: event.involves.map(keyOf), sealed: event.sealed,
+      perceived_by: target.events.perceptionsOf(event.id).map(entry => ({ id: entry.id, character: keyOf(entry.characterId), mode: entry.mode, accuracy: entry.accuracy, content: entry.content, gist: entry.gist })),
     })),
     beliefs: characters.flatMap(character => target.memories.list(character.id)
       .filter(belief => inScope(belief.turn))

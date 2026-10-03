@@ -3,6 +3,7 @@ import type { Clock } from '../clock.ts'
 import type { SqlDatabase } from '../driver/types.ts'
 import { NotFoundError } from '../errors.ts'
 import type { MemoryRepository } from '../repositories.ts'
+import type { IndexWrites } from './event-repository.ts'
 import { guard, parseNumberList, toJson } from './support.ts'
 
 interface MemoryRow {
@@ -32,7 +33,7 @@ const toMemory = (row: MemoryRow): CharacterMemory => ({
 })
 
 export class SqliteMemoryRepository implements MemoryRepository {
-  constructor(private readonly db: SqlDatabase, private readonly clock: Clock) {}
+  constructor(private readonly db: SqlDatabase, private readonly clock: Clock, private readonly index: IndexWrites) {}
 
   add(memory: NewCharacterMemory): CharacterMemory {
     return guard(() => {
@@ -40,7 +41,9 @@ export class SqliteMemoryRepository implements MemoryRepository {
         'INSERT INTO memories (character_id, kind, text, about, importance, turn, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
         [memory.characterId, memory.kind, memory.text, toJson(memory.about), memory.importance, memory.turn, this.clock().toISOString()],
       )
-      return this.require(Number(lastInsertRowid))
+      const added = this.require(Number(lastInsertRowid))
+      this.index.put({ kind: 'memory', refId: added.id, characterId: added.characterId, text: added.text })
+      return added
     })
   }
 
@@ -59,7 +62,9 @@ export class SqliteMemoryRepository implements MemoryRepository {
       this.db.run('UPDATE memories SET text = ?, about = ?, importance = ? WHERE id = ?', [
         patch.text ?? current.text, toJson(patch.about ?? current.about), patch.importance ?? current.importance, id,
       ])
-      return this.require(id)
+      const changed = this.require(id)
+      this.index.put({ kind: 'memory', refId: id, characterId: changed.characterId, text: changed.text })
+      return changed
     })
   }
 
@@ -70,6 +75,7 @@ export class SqliteMemoryRepository implements MemoryRepository {
   }
 
   remove(id: MemoryId): boolean {
+    this.index.remove('memory', id)
     return this.db.run('DELETE FROM memories WHERE id = ?', [id]).changes > 0
   }
 

@@ -39,10 +39,15 @@ export interface StoryEvent {
   tags: string[]
   /** The characters the event is about: who acted, and who it was done to. */
   involves: CharacterId[]
+  /**
+   * Events are ground truth and cannot change once sealed, which happens when the records of the rounds they
+   * belong to are complete. Until then they are a draft that its writer may still correct.
+   */
+  sealed: boolean
   createdAt: string
 }
 
-export type NewStoryEvent = Omit<StoryEvent, 'id' | 'createdAt'>
+export type NewStoryEvent = Omit<StoryEvent, 'id' | 'createdAt' | 'sealed'>
 
 export interface StoryEventPatch {
   text?: string
@@ -75,6 +80,9 @@ export interface Perception {
   lastRecalledTurn?: number
   createdAt: string
 }
+
+/** What may change about a perception: a character's version of an event is revised as it learns more or remembers it differently. */
+export type PerceptionPatch = Partial<Pick<Perception, 'mode' | 'content' | 'gist' | 'accuracy'>>
 
 export interface NewPerception {
   characterId: CharacterId
@@ -140,4 +148,36 @@ export interface PendingCommit {
   round: number
   payload: JsonValue
   createdAt: string
+}
+
+/** What a stored text belongs to: what a character took in, what it believes, or what happened (not any character's). */
+export const RECALL_ITEM_KINDS = ['perception', 'memory', 'event'] as const
+export type RecallItemKind = (typeof RECALL_ITEM_KINDS)[number]
+
+/** One thing found by a search, by the key the recall uses for it: `p:<id>`, `m:<id>`, `e:<id>`. */
+export interface RecallHit {
+  key: string
+  kind: RecallItemKind
+  /** The id of the perception, memory or event. */
+  refId: number
+  /** From 0 (not related) to 1 (the best match of the search); for a lexical search relative to the best hit, for a vector search the cosine similarity. */
+  score: number
+}
+
+/** What the vectors of a session were made by. They are only comparable with each other. */
+export interface EmbeddingIndexInfo {
+  model: string
+  dimensions: number
+  /** How many texts have a vector. */
+  embedded: number
+  /** How many texts still wait for one. */
+  pending: number
+}
+
+/** A text that has no vector yet. */
+export interface PendingEmbedding {
+  /** The id to give back with its vector. */
+  id: number
+  kind: RecallItemKind
+  text: string
 }
