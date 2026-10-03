@@ -23,6 +23,8 @@ export interface StartSessionRequest {
   name?: string
   /** Id of the playable character the player takes. */
   playerCharacterId: string
+  /** The settings of the chat from its first message; what is left out takes its default. They can be changed later. */
+  settings?: unknown
 }
 
 export interface StartedSession {

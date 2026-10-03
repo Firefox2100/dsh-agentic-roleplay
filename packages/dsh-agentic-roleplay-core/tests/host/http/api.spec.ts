@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApiHandler } from '../../../src/host/http/api.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
+import { DEFAULT_SETTINGS, SETTINGS_SPEC } from '../../../src/shared/settings.ts'
 import { InvalidSettingsError } from '../../../src/host/sessions/settings.ts'
 import { AgentUnavailableError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
@@ -70,12 +71,12 @@ beforeEach(async () => {
       },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
-        return { settings: { maxRounds: 3 }, limits: { minRounds: 1, maxRounds: 10 } }
+        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0 }
       },
       writeSettings: (_id, value) => {
         if (settingsError !== undefined) throw settingsError
         writtenSettings = value
-        return { settings: { maxRounds: (value as { maxRounds: number }).maxRounds }, limits: { minRounds: 1, maxRounds: 10 } }
+        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0 }
       },
       delete: (id) => {
         if (deleteError !== undefined) return Promise.reject(deleteError)
@@ -338,7 +339,7 @@ describe('roleplay API', () => {
     it('are read, with the bounds', async () => {
       const response = await fetch(url())
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ settings: { maxRounds: 3 }, limits: { minRounds: 1, maxRounds: 10 } })
+      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0 })
     })
 
     it('are replaced by the body', async () => {

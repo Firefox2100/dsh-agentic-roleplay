@@ -4,7 +4,6 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import type { TurnEngine, TurnOwner } from './turn-engine.ts'
 import { roleplaySessionOf } from './store.ts'
-import { currentTurn } from './tools.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -36,9 +35,11 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
 
   // A turn cannot end before the round is resolved and recorded; the model decides
   // nothing about that, the data does.
-  ctx.on('agent/turn-stopping', ({ agent, turn }) => {
+  ctx.on('agent/turn-stopping', async ({ agent, turn }) => {
     const owner = ownerOf(agent, turn)
     if (owner === undefined) return
+    // The turn does not end while the records of its rounds are still being written.
+    await engine.flush(owner)
     const missing = engine.missing(owner)
     if (missing === undefined) return
     if (!engine.object(owner)) {
@@ -63,7 +64,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])))
       .join('\n')
     const verdict = boundaries().inputValidator.validate({ text, turn: payload.turn, cast })
-    const lines = [boundaries().sceneContext.scene({ cast, turn: payload.turn })]
+    const lines = [boundaries().sceneContext.scene({ cast, turn: payload.turn, input: text, story: store.story })]
     if (!verdict.ok) {
       engine.skip(owner)
       lines.push(`The player's input is refused: ${verdict.reason}. Do not ask any character to act; tell the player briefly why.`)
@@ -72,4 +73,3 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   })
 }
 
-export { currentTurn }

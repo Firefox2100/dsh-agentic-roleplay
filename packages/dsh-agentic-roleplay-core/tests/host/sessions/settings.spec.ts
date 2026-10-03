@@ -6,8 +6,8 @@ import { RoleplayState } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readChatSettings, writeChatSettings } from '../../../src/host/sessions/chat-settings.ts'
 import { SessionNotFoundError } from '../../../src/host/sessions/errors.ts'
-import { InvalidSettingsError, SETTINGS_FILE, readSettings, writeSettings } from '../../../src/host/sessions/settings.ts'
-import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
+import { InvalidSettingsError, SETTINGS_FILE, liveSettings, readSettings, writeSettings } from '../../../src/host/sessions/settings.ts'
+import { DEFAULT_SETTINGS, SETTINGS_SPEC } from '../../../src/shared/settings.ts'
 
 let root: string
 beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'settings-')) })
@@ -19,10 +19,10 @@ describe('the settings file', () => {
   })
 
   it('is stored whole and read back, leaving no temporary file behind', async () => {
-    expect(writeSettings(root, { maxRounds: 6 })).toEqual({ maxRounds: 6 })
-    expect(readSettings(root)).toEqual({ maxRounds: 6 })
+    expect(writeSettings(root, { maxRounds: 6 }).maxRounds).toBe(6)
+    expect(readSettings(root).maxRounds).toBe(6)
     expect(await readdir(root)).toEqual([SETTINGS_FILE])
-    expect(JSON.parse(await readFile(join(root, SETTINGS_FILE), 'utf8'))).toEqual({ maxRounds: 6 })
+    expect(JSON.parse(await readFile(join(root, SETTINGS_FILE), 'utf8')).maxRounds).toBe(6)
   })
 
   it('refuses a value that is not acceptable, and writes nothing', async () => {
@@ -38,19 +38,60 @@ describe('the settings file', () => {
   })
 })
 
+describe('the settings in force', () => {
+  it('are the defaults until a file exists, and follow it as soon as it changes', async () => {
+    expect(liveSettings(root)).toEqual(DEFAULT_SETTINGS)
+    writeSettings(root, { maxRounds: 2 })
+    expect(liveSettings(root).maxRounds).toBe(2)
+    await writeFile(join(root, SETTINGS_FILE), '{"maxRounds": 7}')
+    expect(liveSettings(root).maxRounds).toBe(7)
+    writeSettings(root, { maxRounds: 4 })
+    expect(liveSettings(root).maxRounds).toBe(4)
+  })
+
+  it('do not read the file again while it is unchanged', async () => {
+    writeSettings(root, { maxRounds: 2 })
+    expect(liveSettings(root).maxRounds).toBe(2)
+    const file = join(root, SETTINGS_FILE)
+    const { mtimeMs } = await import('node:fs').then(fs => fs.statSync(file))
+    await writeFile(file, '{"maxRounds": 9}')
+    await import('node:fs').then(fs => fs.utimesSync(file, mtimeMs / 1000, mtimeMs / 1000))
+    expect(liveSettings(root).maxRounds).toBe(2)
+  })
+
+  it('keep the last good settings when the file is edited into something invalid, and say so once', async () => {
+    const problems: string[] = []
+    writeSettings(root, { maxRounds: 6 })
+    expect(liveSettings(root, message => problems.push(message)).maxRounds).toBe(6)
+    await writeFile(join(root, SETTINGS_FILE), '{"maxRounds": 99}')
+    expect(liveSettings(root, message => problems.push(message)).maxRounds).toBe(6)
+    expect(liveSettings(root, message => problems.push(message)).maxRounds).toBe(6)
+    expect(problems).toHaveLength(1)
+    expect(problems[0]).toMatch(/maxRounds.*the last good settings stay in force/)
+    await writeFile(join(root, SETTINGS_FILE), '{"maxRounds": 3}')
+    expect(liveSettings(root).maxRounds).toBe(3)
+  })
+
+  it('fall back on the defaults when the first file there is invalid', async () => {
+    await writeFile(join(root, SETTINGS_FILE), '{nope')
+    expect(liveSettings(root, () => undefined)).toEqual(DEFAULT_SETTINGS)
+  })
+})
+
 describe('the settings of a session', () => {
   const sessionsDir = () => join(root, 'sessions')
+  const deps = { sessionsDir, pendingRecords: () => 2 }
   const state = new RoleplayState(new Context(), { journalMode: 'delete' })
 
   it('are read and written through the session, with the bounds the form needs', () => {
     const { id } = state.createSession(sessionsDir(), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
-    expect(readChatSettings({ sessionsDir }, id)).toEqual({ settings: DEFAULT_SETTINGS, limits: { minRounds: 1, maxRounds: 10 } })
-    expect(writeChatSettings({ sessionsDir }, id, { maxRounds: 4 }).settings).toEqual({ maxRounds: 4 })
-    expect(readChatSettings({ sessionsDir }, id).settings).toEqual({ maxRounds: 4 })
+    expect(readChatSettings(deps, id)).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 2 })
+    expect(writeChatSettings(deps, id, { maxRounds: 4 }).settings.maxRounds).toBe(4)
+    expect(readChatSettings(deps, id).settings.maxRounds).toBe(4)
   })
 
   it('belong to a session that exists', () => {
-    expect(() => readChatSettings({ sessionsDir }, '3f1c1d6e-6f6b-4f55-9d0f-0d6a1c2b3a4d')).toThrow(SessionNotFoundError)
-    expect(() => writeChatSettings({ sessionsDir }, '../worlds', { maxRounds: 2 })).toThrow(SessionNotFoundError)
+    expect(() => readChatSettings(deps, '3f1c1d6e-6f6b-4f55-9d0f-0d6a1c2b3a4d')).toThrow(SessionNotFoundError)
+    expect(() => writeChatSettings(deps, '../worlds', { maxRounds: 2 })).toThrow(SessionNotFoundError)
   })
 })

@@ -7,12 +7,13 @@
   "exports": {
     ".": "./lib/index.js",
     "./orchestration": "./lib/orchestration.js",
+    "./compaction": "./lib/compaction.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },
   "dsh": {
     "engines": {
-      "dsh": ">=0.2.0-rc.2"
+      "dsh": ">=0.2.0-rc.2 <0.3.0"
     },
     "client": {
       "inject": [
@@ -37,7 +38,7 @@
   ],
   "license": "GPL-3.0-only",
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.0-rc.2"
+    "@deepseek-ai/dsh": ">=0.2.0-rc.2 <0.3.0"
   },
   "dependencies": {
     "@deepseek-ai/schemastery": "^3.18.4"
@@ -59,6 +60,8 @@
     "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-compaction": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-compaction-basic": "0.2.0-rc.2",
     "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.2",
     "@deepseek-ai/dsh-invariants": "0.2.0-rc.2",
     "@deepseek-ai/dsh-llm": "0.2.0-rc.2",
@@ -68,6 +71,7 @@
     "@deepseek-ai/dsh-subagent-in-process-driver": "0.2.0-rc.2",
     "@deepseek-ai/dsh-subagent-spawn-in-process": "0.2.0-rc.2",
     "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-token-meter": "0.2.0-rc.2",
     "@deepseek-ai/dsh-tools": "0.2.0-rc.2",
     "@types/node": "^22.20.0",
     "@types/react": "~18.3.1",

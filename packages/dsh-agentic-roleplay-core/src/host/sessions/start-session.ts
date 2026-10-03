@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import type { RoleplayState } from 'dsh-roleplay-state'
+import { sessionFolder, type RoleplayState } from 'dsh-roleplay-state'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
 import type { WorldProblem } from '../../shared/worlds.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
@@ -7,6 +7,8 @@ import { loadCharacters } from '../characters/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
+import { parseSettings } from '../../shared/settings.ts'
+import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
 import { populateCharacters } from './populate.ts'
 
@@ -42,6 +44,11 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const name = request.name?.trim() || world.summary.name
   if (name.length > MAX_NAME_LENGTH) throw new InvalidStartError(`the name must be at most ${MAX_NAME_LENGTH} characters`)
 
+  if (request.settings !== undefined) {
+    const settings = parseSettings(request.settings)
+    if (!settings.ok) throw new InvalidStartError(`the settings are not acceptable: ${settings.problems.join('; ')}`)
+  }
+
   const sessionsDir = deps.sessionsDir()
   const session = deps.state.createSession(sessionsDir, {
     name,
@@ -51,6 +58,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   let chatSessionId: string
   try {
     session.transaction(() => { populateCharacters(session, characters, player.id) })
+    if (request.settings !== undefined) writeSettings(sessionFolder(sessionsDir, id), request.settings)
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {
     deps.state.deleteSession(sessionsDir, id)

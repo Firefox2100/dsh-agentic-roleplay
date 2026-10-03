@@ -1,0 +1,42 @@
+import type { Dictionaries } from '../i18n.ts'
+
+export type SettingsFormKey =
+  | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp'
+  | 'limitTokens' | 'limitTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
+
+export const dictionaries: Dictionaries<SettingsFormKey> = {
+  en: {
+    maxRounds: 'Rounds of characters per message',
+    maxRoundsHelp: 'How many times the game master may hand the scene to the characters before it comes back to you. 1 means one round per message; more lets conversations between characters flow, but it will still stop earlier when the story has a natural pause.',
+    flaky: 'Imperfect memory',
+    flakyHelp: 'Characters remember like people do: details fade with time and unimportance, old trivia is forgotten, and a character can take something in wrongly. Turn off for exact recall, for example when the chat is an assistant.',
+    recall: 'Things a character is reminded of',
+    recallHelp: 'The most memories brought back to a character each time it acts, chosen by what the moment calls to mind.',
+    lookup: 'Characters can look up memories',
+    lookupHelp: 'While it decides, a character can ask itself about something it remembers beyond what the moment already brought to mind. Each character only reaches its own memories. It makes a character\'s turn a little longer.',
+    verify: 'Check the records',
+    verifyHelp: 'The record keeper reads back what it wrote about each round, compares it with the round and fixes mistakes before it finishes. It runs in the background of the narration, so it rarely delays you; turn it off for speed or to save model calls.',
+    limitTokens: 'Conversation limit (tokens)',
+    limitTokensHelp: 'The whole conversation is sent to the model until it reaches this size. Then the oldest turns are folded into a long-term and a short-term summary built from the story\'s recorded events.',
+    retainRatio: 'Kept after folding (%)',
+    retainRatioHelp: 'The share of the limit that stays word for word when the oldest turns are folded.',
+    invalid: 'Enter a number from {min} to {max}.',
+  },
+  zh: {
+    maxRounds: '每条消息的角色回合数',
+    maxRoundsHelp: '主持人在把场面交还给你之前，最多可以让角色行动多少轮。1 表示每条消息只有一轮；更多轮可以让角色之间的对话自然展开，但故事出现自然停顿时仍会提前交还给你。',
+    flaky: '不完美的记忆',
+    flakyHelp: '角色像真人一样记忆：细节会随时间和不重要而淡忘，陈年琐事会被遗忘，角色也可能记错或看错。需要精确回忆时（例如把对话当作助手使用）可以关闭。',
+    recall: '角色每次回想的条数',
+    recallHelp: '角色每次行动时最多被唤起的记忆条数，按当前情境联想到的内容挑选。',
+    lookup: '角色可主动回忆',
+    lookupHelp: '角色在决定行动时，可以主动向自己追问更多记忆，超出当前情境已唤起的部分。每个角色只能查到自己的记忆。会让角色的回合稍长一些。',
+    verify: '核对记录',
+    verifyHelp: '记录员在结束前会回读自己写入的记录，对照回合内容并纠正错误。它在叙述的同时于后台运行，通常不会拖慢你；追求速度或想节省模型调用时可以关闭。',
+    limitTokens: '对话长度上限（token）',
+    limitTokensHelp: '在达到此长度之前，整段对话都会发送给模型。达到后，最早的几轮会折叠进长期和短期摘要，摘要由故事已记录的事件生成。',
+    retainRatio: '折叠后保留比例（%）',
+    retainRatioHelp: '折叠最早几轮时，占上限比例的这部分对话会原文保留。',
+    invalid: '请输入 {min} 到 {max} 之间的数字。',
+  },
+}

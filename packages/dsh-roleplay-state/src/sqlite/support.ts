@@ -31,3 +31,13 @@ export function parseStringList(text: string, column: string): string[] {
   }
   throw new CorruptDataError(`${column} does not hold a list of strings`)
 }
+
+export function parseNumberList(text: string, column: string): number[] {
+  try {
+    const value: unknown = JSON.parse(text)
+    if (Array.isArray(value) && value.every(entry => typeof entry === 'number')) return value as number[]
+  } catch {
+    // reported below
+  }
+  throw new CorruptDataError(`${column} does not hold a list of numbers`)
+}

@@ -45,8 +45,8 @@ describe('plugin', () => {
 
   it('has a configuration with a single-file journal by default', () => {
     const parse = plugin.Config as unknown as (value: unknown) => unknown
-    expect(parse({})).toEqual({ journalMode: 'delete' })
-    expect(parse({ journalMode: 'wal' })).toEqual({ journalMode: 'wal' })
+    expect(parse({})).toEqual({ journalMode: 'delete', writeTools: false })
+    expect(parse({ journalMode: 'wal' })).toEqual({ journalMode: 'wal', writeTools: false })
     expect(() => parse({ journalMode: 'nope' })).toThrow()
   })
 })

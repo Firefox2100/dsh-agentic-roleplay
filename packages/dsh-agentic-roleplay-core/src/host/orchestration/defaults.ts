@@ -1,8 +1,9 @@
 import type { Character } from 'dsh-roleplay-model'
 import type {
-  ActivationPlanner, Boundaries, CastMember, CharacterContextProvider, CharacterOutputValidator, CharacterRequest,
-  InputValidator, NarrationChecker, Narrator, RetryPolicy, SceneContextProvider,
+  ActivationPlanner, Boundaries, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  InputValidator, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
+import { mentioned, overlap, tokens, type Recalled } from 'dsh-roleplay-state'
 import type { NarrationSegment, Utterance } from './protocol.ts'
 
 function describe(character: Character): string {
@@ -35,11 +36,28 @@ function said(entry: { name: string; utterance?: string; intent: string; result:
   return `- ${entry.name}${entry.utterance === undefined ? '' : ` said "${entry.utterance}" and`} intended: ${entry.intent} (${entry.result}) ${entry.summary}`
 }
 
-/** Every character is told the same thing about the scene, plus who it is. */
+function age(turn: number, now: number): string {
+  const ago = now - turn
+  return ago <= 2 ? 'just now' : ago <= 15 ? 'a while ago' : 'long ago'
+}
+
+/** What a character remembers, in the way it remembers it: what is faded or vague is told as such. */
+function remembered(memories: readonly Recalled[], now: number): string {
+  return memories.map((memory) => {
+    if (memory.clarity === 'clear') return `- (${age(memory.turn, now)}) ${memory.text}`
+    if (memory.clarity === 'faded') return `- (${age(memory.turn, now)}, the details are fuzzy) ${memory.text}`
+    return `- (${age(memory.turn, now)}, you barely remember) ${memory.text}`
+  }).join('\n')
+}
+
+/** Every character is told the same thing about the scene, plus who it is and what it remembers. */
 export const sharedContext: CharacterContextProvider = {
   brief(request: CharacterRequest) {
-    const { member, cast, situation, attempt, earlier, reaction, previous } = request
+    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn } = request
     const sections = [`Situation:\n${situation}`, `Present:\n${present(cast, member.key)}`]
+    if (memories !== undefined && memories.length > 0) {
+      sections.splice(1, 0, `What you remember that bears on this (only what you took in yourself; do not claim to remember more, and be unsure of what is fuzzy):\n${remembered(memories, turn)}`)
+    }
     if (earlier !== undefined && earlier.length > 0) {
       sections.push(`Earlier in this scene, before this moment:\n${earlier.map(said).join('\n')}`)
     }
@@ -47,9 +65,15 @@ export const sharedContext: CharacterContextProvider = {
       sections.push(`What just happened, and what you are reacting to:\n${reaction.map(said).join('\n')}`)
       if (previous !== undefined) sections.push(`Your earlier intent did not work out: ${previous.intent}\nYou are trying again, knowing the above. Decide again what you do now.`)
     }
-    sections.push(`Decide what ${member.character.name} does now. Answer with what you do (intent), anything you say aloud (utterance, word for word, in your own voice; leave it out if you stay silent), and your commitment: how hard you will keep trying if it does not work out.`)
+    // Everything that stays the same from one activation to the next is in the persona, which
+    // starts every request; only what changes is in the prompt, so the provider's cache holds.
     return {
-      persona: `${describe(member.character)}\n\nYou act only as ${member.character.name} and never describe what other characters do.`,
+      persona: [
+        describe(member.character),
+        `Rules that always hold: you act only as ${member.character.name}. You know only what is in the situation you are given, who is present and what you remember; never use anything else, and do not claim to remember more. You never describe, decide or speak for another character, and you never narrate the world. Stay in character.`,
+        ...(request.lookup ? ['If you need to remember something that the situation does not give you, ask yourself with recall_my_memories. Do not use it otherwise.'] : []),
+        `Each time you are asked, decide what ${member.character.name} does now and answer with exactly three things: intent (one action, in one or two sentences, no speech), utterance (the words said aloud, word for word, in your own voice; leave it out if you stay silent) and commitment (low gives up at once, medium tries again if it is easy, high persists).`,
+      ].join('\n\n'),
       prompt: sections.join('\n\n'),
     }
   },
@@ -91,14 +115,43 @@ export function sameWords(a: string, b: string): boolean {
   return plain(a) === plain(b)
 }
 
+/** How many earlier events the game master is reminded of at most. */
+const REMINDED_EVENTS = 5
+
+/**
+ * The state of the scene, what is still open in the story, and the earlier events that the
+ * player's move brings to mind: those already folded out of the conversation into the
+ * summaries, whose detail the summaries may have lost.
+ */
 export const castSummary: SceneContextProvider = {
-  scene({ cast, turn }) {
+  scene({ cast, turn, input, story }) {
     const lines = cast.map(({ key, character, state }) => {
       const role = character.control === 'player' ? 'the player\'s character' : `acts through "${key}"`
       const seen = [state?.publicState, state?.activity].filter(text => text !== undefined && text.trim() !== '')
       return `- ${character.name} (${role})${character.summary === '' ? '' : `: ${character.summary}`}${seen.length > 0 ? ` Currently: ${seen.join('; ')}` : ''}`
     })
-    return `Scene before turn ${turn}:\n${lines.join('\n')}`
+    const parts = [`Scene before turn ${turn}:\n${lines.join('\n')}`]
+    const threads = story.threads.list('open')
+    if (threads.length > 0) parts.push(`Still open in the story:\n${threads.map(thread => `- ${thread.text}`).join('\n')}`)
+    const folded = story.summaries.list().reduce((latest, summary) => Math.max(latest, summary.toTurn), 0)
+    if (folded > 0) {
+      const mentionedIds = mentioned(input, cast.map(({ character }) => character))
+      const cues = tokens(input)
+      const names = new Map(cast.map(({ character }) => [character.id, character.name]))
+      const relevant = story.events.list({ toTurn: folded })
+        .map(event => ({ event, score: 3 * event.involves.filter(id => mentionedIds.has(id)).length + overlap(cues, event.text, event.tags) }))
+        .filter(({ score }) => score >= 2)
+        .sort((a, b) => b.score + 0.5 * b.event.importance - a.score - 0.5 * a.event.importance || b.event.turn - a.event.turn)
+        .slice(0, REMINDED_EVENTS)
+        .sort((a, b) => a.event.turn - b.event.turn)
+      if (relevant.length > 0) {
+        parts.push(`Earlier events that bear on what the player just did (from the records of the story):\n${relevant.map(({ event }) => {
+          const who = event.involves.map(id => names.get(id)).filter(name => name !== undefined).join(', ')
+          return `- (turn ${event.turn}) ${event.text}${who === '' ? '' : ` [${who}]`}`
+        }).join('\n')}`)
+      }
+    }
+    return parts.join('\n\n')
   },
 }
 
@@ -164,6 +217,29 @@ export const exactUtterances: NarrationChecker = {
   },
 }
 
+/** What a character is reminded of is what the story's records bring back for it. */
+export const recordsRecall: Recaller = {
+  recall: ({ member, situation, turn, policy }, story, signal) => story.recallRanked({ characterId: member.character.id, situation, turn, policy }, signal),
+}
+
+/** Writes what the game master decided: each character's activity and what can be seen of it. */
+export const writesOutcomes: Committer = {
+  commit({ rounds, store }) {
+    const cast = store.cast()
+    let writes = 0
+    for (const round of rounds) {
+      const updates = round.entries.flatMap((entry) => {
+        const member = cast.find(candidate => candidate.key === entry.character)
+        if (member === undefined) return []
+        return [{ character: member.character.id, patch: { activity: entry.summary, ...(entry.publicState === undefined ? {} : { publicState: entry.publicState }) } }]
+      })
+      store.commit(updates)
+      writes += updates.length
+    }
+    return Promise.resolve({ writes, notes: '' })
+  },
+}
+
 export function defaultBoundaries(): Boundaries {
   return {
     planner: everyoneActs,
@@ -173,6 +249,8 @@ export function defaultBoundaries(): Boundaries {
     inputValidator: acceptsAnyInput,
     narrator: gameMasterNarrates,
     narrationChecker: exactUtterances,
+    committer: writesOutcomes,
+    recaller: recordsRecall,
     sceneContext: castSummary,
   }
 }

@@ -14,6 +14,8 @@ import { RoleplayOrchestration } from '../../../src/host/orchestration/service.t
 import { writeSettings } from '../../../src/host/sessions/settings.ts'
 import { decodeOutput } from '../../../src/shared/narration.ts'
 import * as orchestrationPlugin from '../../../src/orchestration.ts'
+import compactionPlugin from '../../../src/compaction.ts'
+import TokenMeter from '@deepseek-ai/dsh-token-meter'
 import { mountAgentServices } from '../../support/mount.ts'
 import { ScriptedAdapter } from '../../support/scripted-adapter.ts'
 
@@ -77,6 +79,18 @@ interface Script {
   early?: boolean
   /** How the game master delivers the output: well, with a changed utterance until corrected, with one it never corrects, not at all, or by leaving it to a narrator. */
   delivery?: 'good' | 'changed-once' | 'stubborn' | 'none' | 'narrator'
+  /**
+   * How the record keeper works: carefully; trying to submit before it checked; writing a duplicate event that it finds
+   * and retracts when it reads back; naming a round it was not given at first and correcting it when refused; or never
+   * answering.
+   */
+  keeper?: 'careful' | 'hasty' | 'duplicating' | 'refused' | 'stuck'
+  /** Every character asks itself about the key before it decides. */
+  characterLookup?: boolean
+  /** Makes every delivered output this many characters longer, so the conversation grows. */
+  padding?: number
+  /** The game master looks up the records before it acts. */
+  lookup?: boolean
   /** Plays a second round of characters (Bob answering Alice) before delivering, when it is allowed. */
   twoRounds?: boolean
 }
@@ -97,16 +111,91 @@ function twoRounds(request: GenerateOptions, activated: number, resolved: number
   return call('m5', 'narrate', { segments: [alicesWords, { type: 'narration', text: 'Alice greets him; Bob frowns.' }, bobsWords] })
 }
 
+const lastToolText = (request: GenerateOptions): string => lastTool(request)?.text ?? ''
+
+const briefOf = (request: GenerateOptions): string => {
+  const prompt = request.messages.find(message => message.role === 'user')
+  return prompt === undefined ? '' : prompt.content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('')
+}
+
+interface BriefRound { turn: number; round: number; entries: { character: string; summary: string; seen?: string }[] }
+
+/** The rounds the record keeper is asked to write, read from its brief. */
+function keeperRounds(request: GenerateOptions): BriefRound[] {
+  const rounds: BriefRound[] = []
+  for (const line of briefOf(request).split('\n')) {
+    const heading = /^## turn (\d+), round (\d+)$/.exec(line)
+    if (heading !== null) rounds.push({ turn: Number(heading[1]), round: Number(heading[2]), entries: [] })
+    const entry = /^- (\w+) \([^)]*\): intended ".*" \[commitment: \w+\]; \w+: (.*)$/.exec(line)
+    if (entry !== null && rounds.length > 0) rounds.at(-1)!.entries.push({ character: entry[1]!, summary: entry[2]! })
+    const seen = /^ {2}the game master says anyone present can now see: (.*)$/.exec(line)
+    if (seen !== null && rounds.length > 0) rounds.at(-1)!.entries.at(-1)!.seen = seen[1]!
+  }
+  return rounds
+}
+
+const lastTool = (request: GenerateOptions): { isError: boolean; text: string } | undefined => {
+  const message = request.messages.findLast(candidate => candidate.role === 'tool')
+  return message === undefined ? undefined : { isError: message.isError === true, text: message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('') }
+}
+
+/** The change the keeper writes for the rounds it was given: the state of each character that acted, and one event for the round that all of them perceived. */
+function keeperEdit(rounds: BriefRound[], flaws: { wrong?: boolean; duplicate?: boolean; badRound?: boolean } = {}): object {
+  return {
+    turn: Math.max(...rounds.map(round => round.turn)),
+    states: rounds.flatMap(round => round.entries).map(entry => ({
+      character: entry.character, activity: flaws.wrong === true && entry.character === 'alice' ? 'WRONG' : entry.summary, ...(entry.seen === undefined ? {} : { public_state: entry.seen }),
+    })),
+    events: rounds.flatMap(round => [round, ...(flaws.duplicate === true ? [round] : [])]).map(round => ({
+      turn: flaws.badRound === true ? 99 : round.turn, round: round.round, text: 'The characters acted at the vault.', importance: 3, tags: ['vault'],
+      involves: round.entries.slice(0, 2).map(entry => entry.character),
+      perceived_by: [...new Set(round.entries.map(entry => entry.character))].map(character => ({ character, mode: 'witnessed' })),
+    })),
+  }
+}
+
+/** The record keeper's loop: write, read back to check, fix what it finds, submit. */
+function keeperAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
+  const mode = script.keeper ?? 'careful'
+  if (mode === 'stuck') return text('I think that is all.')
+  const rounds = keeperRounds(request)
+  const edits = timesCalled(request, 'edit_records')
+  const reads = timesCalled(request, 'read_records')
+  const submits = timesCalled(request, 'submit_result')
+  const last = lastTool(request)
+  const verifying = briefOf(request).includes('Verification is on')
+  const submit = call('k-submit', 'submit_result', { complete: true, notes: 'recorded' })
+  if (edits === 0) return call('k-edit', 'edit_records', keeperEdit(rounds, { wrong: mode === 'duplicating', duplicate: mode === 'duplicating', badRound: mode === 'refused' }))
+  if (mode === 'refused' && edits === 1 && last?.isError === true) return call('k-edit-again', 'edit_records', keeperEdit(rounds))
+  if (verifying) {
+    if (mode === 'hasty' && submits === 0) return submit
+    if (reads === 0) return call('k-read', 'read_records', { rounds: rounds.map(({ turn, round }) => ({ turn, round })) })
+    if (mode === 'duplicating' && edits === 1) {
+      const stored = JSON.parse(last!.text) as { events: { id: number; text: string }[]; characters: { character: string; activity: string }[] }
+      return call('k-fix', 'edit_records', {
+        turn: Math.max(...rounds.map(round => round.turn)),
+        event_retractions: stored.events.filter((event, index) => stored.events.findIndex(other => other.text === event.text) !== index).map(event => event.id),
+        states: stored.characters.filter(entry => entry.activity === 'WRONG').map(entry => ({ character: entry.character, activity: `${entry.character} takes the lantern` })),
+      })
+    }
+    if (mode === 'duplicating' && reads === 1) return call('k-read-again', 'read_records', {})
+  }
+  return submit
+}
+
 /** The game master, following the protocol, and characters answering from their own sheets. */
 function answerFor(script: Script = {}) {
   return (request: GenerateOptions): StreamChunk[] => {
+    if (systemOf(request).includes('record keeper of an interactive story')) return keeperAnswer(request, script)
     const who = /You are (Alice|Bob|Carol|Dan)\./.exec(systemOf(request))?.[1]
     if (who !== undefined) {
       const retry = asText(request).includes('trying again')
       const later = asText(request).includes('Earlier in this scene')
-      if (later && who === 'Bob') return call('s-Bob-later', STRUCTURED_OUTPUT_TOOL, { intent: 'Bob objects', utterance: 'Why is he here?', commitment: 'low' })
-      return call(`s-${who}`, STRUCTURED_OUTPUT_TOOL, retry ? { intent: `${who} grabs the lantern instead`, utterance: 'Give it here!', commitment: 'medium' } : intents[who]!)
+      if (script.characterLookup === true && timesCalled(request, 'recall_my_memories') === 0) return call(`s-${who}-recall`, 'recall_my_memories', { about: 'the key' })
+      if (later && who === 'Bob') return call('s-Bob-later', 'submit_result', { intent: 'Bob objects', utterance: 'Why is he here?', commitment: 'low' })
+      return call(`s-${who}`, 'submit_result', retry ? { intent: `${who} grabs the lantern instead`, utterance: 'Give it here!', commitment: 'medium' } : intents[who]!)
     }
+    if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
     if (!toolNames(request).includes('activate_characters')) return text('a title')
     const activated = timesCalled(request, 'activate_characters')
     const resolved = timesCalled(request, 'resolve_round')
@@ -114,6 +203,7 @@ function answerFor(script: Script = {}) {
     const objected = thisTurn(request).includes('You may not end the turn yet')
     if (script.early === true && !objected) return text('The scene is over, I think.')
     if (thisTurn(request).includes('input is refused')) return text('I cannot do that.')
+    if (script.lookup === true && timesCalled(request, 'search_events') === 0) return call('m0', 'search_events', { text: 'key' })
     if (script.twoRounds === true) return twoRounds(request, activated, resolved)
     if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.' })
     if (resolved === 0) return call('m2', 'resolve_round', { outcomes: round1 })
@@ -127,7 +217,8 @@ function answerFor(script: Script = {}) {
     const refused = thisTurn(request).includes('the output is not acceptable')
     if (delivered === 0 || refused) {
       const changed = delivery === 'stubborn' || (delivery === 'changed-once' && delivered === 0)
-      return call(`n${delivered}`, 'narrate', { segments: changed ? [{ ...alice, text: 'This is unexpected.' }, ...goodOutput.slice(1)] : goodOutput })
+      const output = script.padding === undefined ? goodOutput : [alice, { type: 'narration', text: `Alice stands and walks to the door while Bob stares at you. ${'z'.repeat(script.padding)}` }, ...goodOutput.slice(2)]
+      return call(`n${delivered}`, 'narrate', { segments: changed ? [{ ...alice, text: 'This is unexpected.' }, ...output.slice(1)] : output })
     }
     return text('')
   }
@@ -144,6 +235,7 @@ async function addSession(name: string): Promise<{ session: Session; id: string 
 }
 
 let registered = false
+let withCompaction = false
 
 async function chat(chatId: string, adapter: ScriptedAdapter) {
   if (!registered) ctx.llm.registerAdapter(['mock'], adapter)
@@ -151,7 +243,10 @@ async function chat(chatId: string, adapter: ScriptedAdapter) {
   const handle = await ctx.agents.create({
     sessionId: SessionId(chatId),
     agentOptions: { provider: 'mock', model: 'mock' },
-    async setup(agentCtx) { await agentCtx.plugin(orchestrationPlugin) },
+    async setup(agentCtx) {
+      await agentCtx.plugin(orchestrationPlugin)
+      if (withCompaction) await agentCtx.plugin(compactionPlugin)
+    },
   })
   return handle.agent
 }
@@ -172,10 +267,12 @@ const masterRequests = (adapter: ScriptedAdapter) => adapter.requests.filter(req
 
 beforeEach(async () => {
   registered = false
+  withCompaction = false
   root = await mkdtemp(join(tmpdir(), 'orchestration-'))
   ctx = new Context()
   await mountAgentServices(ctx)
   await ctx.plugin(AgentLoop, { agents: [] })
+  await ctx.plugin(TokenMeter)
   await ctx.plugin(SubagentRuntime)
   await ctx.plugin(spawn, { providerName: 'spawn' })
   orchestration = new RoleplayOrchestration(ctx)
@@ -246,7 +343,7 @@ describe('a turn with the real agent loop', () => {
     expect(asText(master[0]!)).toContain('Alice (acts through')
 
     for (const request of characterRequests(adapter)) {
-      expect(toolNames(request)).toEqual([STRUCTURED_OUTPUT_TOOL])
+      expect(toolNames(request)).toEqual(['recall_my_memories', 'submit_result'])
       expect(systemOf(request)).not.toContain('game master')
       expect(asText(request)).not.toContain('Scene before turn')
       expect(asText(request)).toContain('Arthur opens the vault door')
@@ -365,6 +462,273 @@ describe('a turn with the real agent loop', () => {
     expect(masterRequests(adapter).some(request => asText(request).includes('1 round of characters were already played'))).toBe(true)
     expect(outputsOf(agent)).toHaveLength(1)
     expect(session.metadata.get().turns).toBe(1)
+  })
+
+  describe('the record keeper', () => {
+    const keeperRequests = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('record keeper of an interactive story'))
+    const keeperCalls = (adapter: ScriptedAdapter): string[] => {
+      const last = keeperRequests(adapter).at(-1)
+      return last === undefined ? [] : [...JSON.stringify(last.messages).matchAll(/"type":"tool-call","id":"[^"]*","name":"(\w+)"/g)].map(match => match[1]!)
+    }
+
+    async function play(keeper: NonNullable<Script['keeper']>, settings?: object) {
+      const { session, id } = await addSession('Vault')
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      const adapter = new ScriptedAdapter(answerFor({ keeper }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      return { session, adapter, agent }
+    }
+
+    it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
+      const { session, adapter, agent } = await play('careful')
+      expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'list_threads', 'read_records', 'search_events', 'submit_result'])
+      expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
+      expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
+      expect(publicStateOf(session, 'bob')).toBe('holding a brass key')
+      expect(session.events.list().map(event => event.text)).toEqual(['The characters acted at the vault.'])
+      expect(session.metadata.get().turns).toBe(1)
+      expect(outputsOf(agent)).toHaveLength(1)
+      expect(session.pendingCommits.list()).toEqual([])
+    })
+
+    it('has tools the game master and the characters do not have', async () => {
+      const { adapter } = await play('careful')
+      expect(masterRequests(adapter).every(request => !toolNames(request).some(name => ['edit_records', 'submit_result'].includes(name)))).toBe(true)
+      expect(characterRequests(adapter).every(request => !toolNames(request).includes('edit_records'))).toBe(true)
+      expect(toolNames(masterRequests(adapter)[0]!)).toEqual(expect.arrayContaining(['search_events', 'get_character', 'recall_memories', 'list_threads', 'list_characters', 'read_records']))
+    })
+
+    it('is told the rounds, the state, what is recorded and what is open, and nothing of the narration', async () => {
+      const { adapter } = await play('careful')
+      const brief = briefOf(keeperRequests(adapter)[0]!)
+      expect(brief).toContain('## turn 1, round 1')
+      expect(brief).toContain('Arthur opens the vault door')
+      expect(brief).toContain('bob (Bob): intended "Bob takes the key"')
+      expect(brief).toContain('## State of the characters now')
+      expect(brief).toContain('## Open story threads')
+      expect(brief).toContain('Verification is on')
+      expect(brief).not.toContain('stands and walks to the door')
+    })
+
+    it('cannot submit before it has read the records back, and is told so', async () => {
+      const { adapter } = await play('hasty')
+      expect(JSON.stringify(keeperRequests(adapter).at(-1)!.messages)).toContain('read the records back with read_records')
+      expect(keeperCalls(adapter)).toEqual(['edit_records', 'submit_result', 'read_records'])
+    })
+
+    it('finds a repeated event and a state that does not match when it reads back, and corrects them', async () => {
+      const { session, adapter } = await play('duplicating')
+      expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records', 'edit_records', 'read_records'])
+      expect(session.events.list().map(event => event.text)).toEqual(['The characters acted at the vault.'])
+      expect(activityOf(session, 'alice')).toBe('alice takes the lantern')
+    })
+
+    it('gets the reasons when an edit is refused, writes nothing from it, and corrects it in the same run', async () => {
+      const { session, adapter } = await play('refused')
+      expect(keeperRequests(adapter).length).toBeGreaterThan(2)
+      expect(JSON.stringify(keeperRequests(adapter)[1]!.messages)).toContain('turn 99, round 1')
+      expect(session.events.list()).toHaveLength(1)
+      expect(session.events.get(1)?.turn).toBe(1)
+    })
+
+    it('skips the check when the chat turns verification off, and submits right after writing', async () => {
+      const { session, adapter } = await play('careful', { memory: { verify: false } })
+      expect(keeperCalls(adapter)).toEqual(['edit_records'])
+      expect(briefOf(keeperRequests(adapter)[0]!)).toContain('Verification is off')
+      expect(session.events.list()).toHaveLength(1)
+    })
+
+    it('that never submits does not lose the turn, and does not put a word of it in the output', async () => {
+      const { session, agent } = await play('stuck')
+      const results = JSON.stringify(agent.session.snapshotEvents().filter(event => event.type === 'tool/result'))
+      expect(results).not.toMatch(/records|Warning|could not be/)
+      expect(outputsOf(agent)).toHaveLength(1)
+      expect(session.metadata.get().turns).toBe(1)
+      expect(session.pendingCommits.list().map(entry => [entry.turn, entry.round])).toEqual([[1, 1]])
+    })
+
+    it('that failed is caught up with the next turn, which writes both, silently', async () => {
+      const { session, id } = await addSession('Vault')
+      const script: Script = { keeper: 'stuck' }
+      const adapter = new ScriptedAdapter(answerFor(script))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(session.pendingCommits.list()).toHaveLength(1)
+      script.keeper = 'careful'
+      agent.followup(say('I look around.'))
+      await agent.whenIdle()
+      expect(session.pendingCommits.list()).toEqual([])
+      const brief = briefOf(keeperRequests(adapter).at(-1)!)
+      expect(brief).toContain('2 rounds are due for records')
+      expect(brief).toContain('## turn 1, round 1')
+      expect(brief).toContain('## turn 2, round 1')
+      expect(session.events.list().map(event => event.turn)).toEqual([1, 2])
+      expect(session.metadata.get().turns).toBe(2)
+    })
+
+    it('writes the events of the round with who took each in', async () => {
+      const { session } = await play('careful')
+      const [event] = session.events.list()
+      expect(event).toMatchObject({ turn: 1, round: 1, importance: 3, tags: ['vault'] })
+      expect(event?.involves).toHaveLength(2)
+      const perceptions = session.events.perceptionsOf(event!.id)
+      expect(perceptions).toHaveLength(4)
+      expect(perceptions.every(entry => entry.mode === 'witnessed' && entry.accuracy === 'accurate' && entry.content === event!.text)).toBe(true)
+    })
+
+    it('is told whether characters remember imperfectly, as the chat\'s settings say', async () => {
+      const first = await play('careful')
+      expect(briefOf(keeperRequests(first.adapter)[0]!)).toContain('characters do not perceive perfectly')
+      const { id } = await addSession('Exact')
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { memory: { flaky: false } })
+      const agent = await chat(`session-${id}`, first.adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(briefOf(keeperRequests(first.adapter).at(-1)!)).toContain('every character perceives exactly what happened')
+    })
+
+    it('keeps the start of every request the same from one run to the next, so the provider\'s cache holds', async () => {
+      const { adapter } = await play('careful')
+      const second = await addSession('Again')
+      const agent = await chat(`session-${second.id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const runs = keeperRequests(adapter).filter(request => !request.messages.some(message => message.role === 'tool'))
+      expect(runs.length).toBeGreaterThan(1)
+      expect(new Set(runs.map(systemOf)).size).toBe(1)
+      expect(new Set(runs.map(request => JSON.stringify(request.tools))).size).toBe(1)
+      const alices = characterRequests(adapter).filter(request => /You are Alice\./.test(systemOf(request)) && !request.messages.some(message => message.role === 'tool'))
+      expect(alices.length).toBeGreaterThan(1)
+      expect(new Set(alices.map(systemOf)).size).toBe(1)
+      expect(new Set(alices.map(request => JSON.stringify(request.tools))).size).toBe(1)
+    })
+  })
+
+  describe('characters acting at the same time', () => {
+    it('each reach only their own memories through the same tool, whatever the others ask in the meantime', async () => {
+      const { session, id } = await addSession('Vault')
+      const idOf = (sourceId: string) => session.characters.getBySourceId(sourceId)!.id
+      session.edit({ turn: 1, events: [
+        { turn: 1, round: 1, text: 'Alice hid the brass key.', importance: 3, tags: ['key'], involves: ['alice'], perceivedBy: [{ character: 'alice', mode: 'witnessed', content: 'ALICE-ONLY: I hid the brass key under the floor.' }] },
+        { turn: 1, round: 1, text: 'Bob found the brass key.', importance: 3, tags: ['key'], involves: ['bob'], perceivedBy: [{ character: 'bob', mode: 'witnessed', content: 'BOB-ONLY: I found the brass key in the hall.' }] },
+      ] })
+      const adapter = new ScriptedAdapter(answerFor({ characterLookup: true }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const result = (who: string) => {
+        const request = characterRequests(adapter).find(candidate => new RegExp(`You are ${who}\\.`).test(systemOf(candidate)) && lastToolText(candidate).length > 0)
+        return request === undefined ? '' : lastToolText(request)
+      }
+      expect(result('Alice')).toContain('ALICE-ONLY')
+      expect(result('Alice')).not.toContain('BOB-ONLY')
+      expect(result('Bob')).toContain('BOB-ONLY')
+      expect(result('Bob')).not.toContain('ALICE-ONLY')
+      expect(result('Carol')).toBe('You do not remember anything about that.')
+      expect(session.events.perceivedBy(idOf('alice'))[0]?.perception.recalls).toBeGreaterThan(0)
+    })
+
+    it('are not offered the tool when the chat turns it off', async () => {
+      const { id } = await addSession('Vault')
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { memory: { lookup: false } })
+      const adapter = new ScriptedAdapter(answerFor())
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(characterRequests(adapter).every(request => toolNames(request).join() === 'submit_result')).toBe(true)
+      expect(characterRequests(adapter).every(request => !systemOf(request).includes('recall_my_memories'))).toBe(true)
+    })
+  })
+
+  it('reminds a character by meaning when another plugin supplies a ranker, though no word of the moment matches', async () => {
+    const { session, id } = await addSession('Vault')
+    session.edit({ turn: 1, events: [
+      { turn: 1, round: 1, text: 'The treasure is buried under the old oak.', importance: 2, tags: [], perceivedBy: [{ character: 'alice', mode: 'witnessed' }] },
+      { turn: 1, round: 1, text: 'The band played a march.', importance: 3, tags: [], perceivedBy: [{ character: 'alice', mode: 'witnessed' }] },
+    ] })
+    writeSettings(sessionFolder(join(root, 'sessions'), id), { memory: { recall: 1 } })
+    const unrank = state.rankMemories(({ candidates }) => Promise.resolve(new Map(candidates.map(candidate => [candidate.key, candidate.text.includes('treasure') ? 1 : 0]))))
+    try {
+      const adapter = new ScriptedAdapter(answerFor())
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door and look for the gold.'))
+      await agent.whenIdle()
+      const asAlice = characterRequests(adapter).find(request => /You are Alice\./.test(systemOf(request)))
+      expect(asText(asAlice!)).toContain('The treasure is buried under the old oak.')
+      expect(asText(asAlice!)).not.toContain('The band played a march.')
+    } finally {
+      unrank()
+    }
+  })
+
+  it('reminds each character of what it took in itself, and of nothing it did not', async () => {
+    const { session, id } = await addSession('Vault')
+    const idOf = (sourceId: string) => session.characters.getBySourceId(sourceId)!.id
+    session.events.add(
+      { turn: 1, round: 1, text: 'Dan stole the vault key at night.', importance: 4, tags: ['vault', 'key'], involves: [idOf('dan')] },
+      [{ characterId: idOf('alice'), mode: 'witnessed', content: 'I saw Dan sneak out with a key under his coat.', gist: 'Dan sneaked out with a key', accuracy: 'accurate' }],
+    )
+    const adapter = new ScriptedAdapter(answerFor())
+    const agent = await chat(`session-${id}`, adapter)
+    agent.followup(say('I open the vault door.'))
+    await agent.whenIdle()
+    const asAlice = characterRequests(adapter).find(request => /You are Alice\./.test(systemOf(request)))
+    const asBob = characterRequests(adapter).find(request => /You are Bob\./.test(systemOf(request)))
+    expect(asText(asAlice!)).toContain('What you remember that bears on this')
+    expect(asText(asAlice!)).toContain('I saw Dan sneak out with a key under his coat.')
+    expect(asText(asBob!)).not.toContain('sneak out')
+    expect(asText(asBob!)).not.toContain('What you remember')
+    expect(session.events.perceivedBy(idOf('alice'))[0]?.perception.recalls).toBe(1)
+  })
+
+  describe('a long conversation', () => {
+    async function playLong(turns: number, settings: object) {
+      withCompaction = true
+      const { session, id } = await addSession('Vault')
+      writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      const adapter = new ScriptedAdapter(answerFor({ padding: 7000 }))
+      const agent = await chat(`session-${id}`, adapter)
+      for (let turn = 1; turn <= turns; turn++) {
+        agent.followup(say(`Move number ${turn} of the player.`))
+        await agent.whenIdle()
+      }
+      return { session, adapter, agent }
+    }
+    const chronicleRequests = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('chronicler of an interactive story'))
+
+    it('is sent whole until the limit, then the oldest turns are folded into summaries written from the events', async () => {
+      const { session, adapter } = await playLong(6, { context: { limitTokens: 4000, retainRatio: 0.3 } })
+      const summaries = session.summaries.list()
+      expect(summaries.length).toBeGreaterThan(0)
+      expect(summaries[0]).toMatchObject({ level: 'digest', fromTurn: 1 })
+      const chronicle = chronicleRequests(adapter)
+      expect(chronicle.length).toBeGreaterThan(0)
+      expect(JSON.stringify(chronicle[0]!.messages)).toContain('The characters acted at the vault.')
+      const last = masterRequests(adapter).at(-1)!
+      expect(asText(last)).toContain('Recently (short term)')
+      expect(asText(last)).toContain('The chronicler wrote this account of the earlier turns.')
+      expect(asText(last)).not.toContain('Move number 1 of the player.')
+      expect(asText(last)).toContain('Move number 6 of the player.')
+    })
+
+    it('sends the whole conversation while it is under the limit, and does not fold', async () => {
+      const { session, adapter } = await playLong(3, { context: { limitTokens: 200_000 } })
+      expect(session.summaries.list()).toEqual([])
+      const last = masterRequests(adapter).at(-1)!
+      expect(asText(last)).toContain('Move number 1 of the player.')
+      expect(asText(last)).not.toContain('Recently (short term)')
+    })
+
+    it('keeps the head of the conversation the same between folds, so the provider\'s cache holds', async () => {
+      const { adapter } = await playLong(7, { context: { limitTokens: 4000, retainRatio: 0.3 } })
+      const heads = masterRequests(adapter).map(request => JSON.stringify(request.messages.slice(0, 3)))
+      const changes = heads.filter((head, index) => index > 0 && head !== heads[index - 1]).length
+      expect(changes).toBeLessThan(heads.length / 2)
+    })
   })
 
   it('plays another turn from the new state of the characters', async () => {

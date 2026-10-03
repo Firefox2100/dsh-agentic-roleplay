@@ -1,4 +1,5 @@
 import type { Character, CharacterState, CharacterStatePatch } from 'dsh-roleplay-model'
+import type { MemoryPolicy, Recalled, Session } from 'dsh-roleplay-state'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { CharacterAction, CharacterReport, NarrationSegment, Outcome, Utterance } from './protocol.ts'
 
@@ -34,6 +35,12 @@ export interface CharacterRequest {
   reaction?: readonly Reaction[]
   /** On the retry: what this character itself intended before. */
   previous?: CharacterAction
+  /** The turn being played. */
+  turn: number
+  /** What the moment reminds this character of, as it comes back to it. */
+  memories?: readonly Recalled[]
+  /** Whether the character can ask itself about more of what it remembers, while it decides. */
+  lookup: boolean
 }
 
 /** What one character is told: who it is, and what it is asked. */
@@ -101,9 +108,63 @@ export interface NarrationChecker {
   repair(segments: readonly NarrationSegment[], required: readonly Utterance[]): NarrationSegment[]
 }
 
+/** What one character did in a recorded round and how it turned out. */
+export interface CommitEntry {
+  character: string
+  name: string
+  intent: string
+  utterance?: string
+  commitment: CharacterReport['commitment']
+  result: Outcome['result']
+  summary: string
+  publicState?: string
+  /** Whether the character got to say its utterance. */
+  spoken: boolean
+}
+
+/** One recorded round, as it is kept until its records are written. */
+export interface RoundRecord {
+  turn: number
+  round: number
+  /** What the round was about, including what the player's character did. */
+  situation: string
+  entries: CommitEntry[]
+}
+
+/** Every recorded round whose records are not written yet, oldest first: normally one, more when an earlier attempt failed. */
+export interface CommitJob {
+  chat: string
+  rounds: readonly RoundRecord[]
+  store: TurnStore
+}
+
+export interface CommitReport {
+  /** How many records were written. */
+  writes: number
+  notes: string
+}
+
+/**
+ * Writes what a recorded round changed into the story's records, while the output of
+ * the turn is being written. It may check its own work; it throws when it cannot
+ * leave the records right, which holds the turn back.
+ */
+export interface Committer {
+  commit(job: CommitJob, signal: AbortSignal): Promise<CommitReport>
+}
+
+/**
+ * Chooses what a character is reminded of when it acts. The default asks the story's records
+ * (cues, importance and fading memory, and the ranking by meaning when a plugin supplies one
+ * through `roleplayState.rankMemories`); replace it to recall in another way altogether.
+ */
+export interface Recaller {
+  recall(query: { member: CastMember; situation: string; turn: number; policy: MemoryPolicy }, story: TurnStore['story'], signal: AbortSignal): Promise<Recalled[]>
+}
+
 /** The state of the scene the game master is told at the start of a turn. */
 export interface SceneContextProvider {
-  scene(input: { cast: readonly CastMember[]; turn: number }): string
+  scene(input: { cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; story: TurnStore['story'] }): string
 }
 
 export interface Boundaries {
@@ -114,11 +175,15 @@ export interface Boundaries {
   inputValidator: InputValidator
   narrator: Narrator
   narrationChecker: NarrationChecker
+  committer: Committer
+  recaller: Recaller
   sceneContext: SceneContextProvider
 }
 
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
+  /** What the story has recorded: events, what characters know, threads and summaries. */
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'edit' | 'records'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
@@ -126,4 +191,10 @@ export interface TurnStore {
   commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch }[]): void
   /** Counts the turn as played, once its output is delivered. */
   completeTurn(): void
+  /** Keeps a recorded round until its records are written, so that a failure loses nothing. */
+  queueCommit(record: RoundRecord): void
+  /** The rounds waiting for their records to be written, oldest first. */
+  pendingCommits(): RoundRecord[]
+  /** Forgets rounds whose records are written. */
+  completeCommits(rounds: readonly { turn: number; round: number }[]): void
 }

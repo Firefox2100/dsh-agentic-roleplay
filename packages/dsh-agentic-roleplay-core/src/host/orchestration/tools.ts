@@ -1,10 +1,9 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { Boundaries } from './boundaries.ts'
-import { subagentRunner } from './character-runner.ts'
+import type { Boundaries, TurnStore } from './boundaries.ts'
+import { characterRunner } from './character-runner.ts'
 import { encodeOutput } from '../../shared/narration.ts'
-import { COMMITMENTS, RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
+import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } from './turn-engine.ts'
 
 export const ACTIVATE_TOOL = 'activate_characters'
@@ -14,19 +13,9 @@ export const NARRATE_TOOL = 'narrate'
 export interface ToolDeps {
   engine: TurnEngine
   boundaries: () => Boundaries
-  subagents: Pick<SubagentRuntime, 'start'>
+  stores: (chat: string) => TurnStore | undefined
   /** The turn the agent is in. */
   turnOf: (agent: Agent) => number
-}
-
-/** The last turn the session started. */
-export function currentTurn(agent: Agent): number {
-  const events = agent.session.snapshotEvents()
-  for (let index = events.length - 1; index >= 0; index--) {
-    const event = events[index]
-    if (event?.type === 'turn/start') return event.data.turn
-  }
-  return 0
 }
 
 /** The JSON value the tool records; the model reads the rendered text. */
@@ -80,6 +69,12 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     return { agent, owner: { chat: agent.session.id, turn: deps.turnOf(agent) } }
   }
 
+  const storeOf = (chat: string): TurnStore => {
+    const store = deps.stores(chat)
+    if (store === undefined) throw new Error('this chat is not a roleplay session')
+    return store
+  }
+
   const activate = defineTool({
     name: ACTIVATE_TOOL,
     description: 'Let the characters act: one round of the turn. Each character asked is asked, separately and at the same time, what it intends to do and say in the situation you describe and how committed it is. Call it after reading what the player did, and again for a later round only when the story genuinely needs the characters to react to what just happened; the number of rounds for one player message is limited.',
@@ -99,14 +94,14 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const { agent, owner } = ownerOf(exec.agent)
-      const run = subagentRunner(deps.subagents, deps.boundaries, agent)
+      const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) })
       return record(await deps.engine.activate(owner, { situation: args.situation, ...(args.characters === undefined ? {} : { characters: args.characters }) }, run, exec.signal))
     },
   })
 
   const resolve = defineTool({
     name: RESOLVE_TOOL,
-    description: 'Decide what actually happens to each character that acted in the current round. Intents can conflict; settle them fairly and consistently with the scene. A character whose intent fails and who was highly committed gets one more chance to react, and you resolve that attempt too. When nobody retries, the round is recorded and you decide whether another round is needed or the turn goes back to the player.',
+    description: 'Decide what actually happens to each character that acted in the current round, from their intents and the scene only. Intents can conflict; settle them consistently. A character whose intent fails and who was highly committed gets one more chance, and you resolve that attempt too. When nobody retries, the round is recorded and you decide whether another round is needed or the turn goes back to the player.',
     parameters: {
       outcomes: {
         type: 'array',
@@ -128,7 +123,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const { agent, owner } = ownerOf(exec.agent)
-      const run = subagentRunner(deps.subagents, deps.boundaries, agent)
+      const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) })
       const outcomes: Outcome[] = args.outcomes.map(outcome => ({
         character: outcome.character,
         result: outcome.result as Outcome['result'],
@@ -185,5 +180,3 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
 
   return [activate, resolve, narrate]
 }
-
-export { COMMITMENTS }

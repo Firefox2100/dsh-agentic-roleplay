@@ -5,13 +5,26 @@ export type { OpenOptions, RunResult, SqlDatabase, SqlDriver, SqlValue } from '.
 export {
   ConflictError,
   CorruptDataError,
+  InvalidEditError,
   InvalidValueError,
   NotFoundError,
   SchemaError,
   StateError,
 } from './errors.ts'
-export type { CharacterRepository, CharacterStateRepository, IntentRepository, MetadataRepository } from './repositories.ts'
+export type {
+  CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
+  PendingCommitRepository, SummaryRepository, ThreadRepository,
+} from './repositories.ts'
 export { apply, Config, name, RoleplayState, type Session } from './plugin.ts'
+export type { SemanticRanker } from './memory/ranker.ts'
+export { createTools, type AgentLink, type AgentResolver } from './tools/index.ts'
+export { createCharacterTools } from './tools/character.ts'
+export {
+  applyRecordsEdit, characterKey, parseRecordsEdit, recordsEditSchema,
+  type BeliefEdit, type EditResult, type EventEdit, type NewBelief, type NewEvent, type PerceivedBy, type RecordsEdit, type RecordsTarget, type StatePatch,
+} from './records/edit.ts'
+export { readRecords, type RecordsScope, type RecordsView } from './records/read.ts'
+export { clarityAt, DEFAULT_MEMORY_POLICY, jitter, mentioned, overlap, recall, recallCandidates, retention, tokens, type Clarity, type MemoryPolicy, type RecallCandidate, type RecallQuery, type RecallSource, type Recalled } from './memory/recall.ts'
 export {
   createSession,
   deleteSession,

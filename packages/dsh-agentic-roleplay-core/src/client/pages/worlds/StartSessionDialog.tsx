@@ -1,6 +1,9 @@
 import { useId, useState } from 'react'
 import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
+import { DEFAULT_SETTINGS } from '../../../shared/settings.ts'
+import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../../settings-form/fields.ts'
+import { SettingsFields } from '../../settings-form/SettingsFields.tsx'
 import type { StartDialog, StartOptions } from './worlds-controller.ts'
 import css from './StartSessionDialog.module.css'
 
@@ -14,9 +17,12 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const formId = useId()
   const [name, setName] = useState(dialog.worldName)
   const [choice, setChoice] = useState<string | undefined>()
+  const [showSettings, setShowSettings] = useState(false)
+  const [drafts, setDrafts] = useState<Drafts | undefined>()
   const playable = dialog.characters.filter(character => character.role === 'playable')
   const selected = choice ?? playable[0]?.id
-  const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting
+  const shown = drafts ?? toDrafts(DEFAULT_SETTINGS)
+  const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting && problemsOf(shown).size === 0
 
   return (
     <Modal
@@ -39,7 +45,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, playerCharacterId: selected })
+          if (canStart) onStart({ name, playerCharacterId: selected, ...(drafts === undefined ? {} : { settings: fromDrafts(DEFAULT_SETTINGS, drafts) }) })
         }}
       >
         <label className={css.field}>
@@ -68,6 +74,24 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
             </label>
           ))}
         </fieldset>
+
+        <div className={css.advanced}>
+          <button
+            type="button"
+            className={css.advancedToggle}
+            aria-expanded={showSettings}
+            onClick={() => { setShowSettings(!showSettings) }}
+          >
+            <span aria-hidden>{showSettings ? '▾' : '▸'}</span>
+            {t('advanced')}
+          </button>
+          {showSettings && (
+            <div className={css.advancedBody}>
+              <p className={css.message}>{t('advancedHelp')}</p>
+              <SettingsFields t={t} drafts={shown} disabled={dialog.submitting} onChange={(key, value) => { setDrafts({ ...shown, [key]: value }) }} />
+            </div>
+          )}
+        </div>
 
         {dialog.status === 'ready' && dialog.error !== undefined && (
           <p className={css.error} role="alert">{t('startFailed', { message: dialog.error })}</p>

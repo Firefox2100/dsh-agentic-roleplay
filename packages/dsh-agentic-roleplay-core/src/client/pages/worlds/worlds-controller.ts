@@ -1,5 +1,6 @@
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { OpenChat } from '../../chat/open-chat.ts'
+import type { ChatSettings } from '../../../shared/settings.ts'
 import type { CharacterSummary, StartedSession, WorldCharactersPayload } from '../../../shared/sessions.ts'
 import { API_PREFIX, type WorldProblem, type WorldsPayload } from '../../../shared/worlds.ts'
 
@@ -35,6 +36,8 @@ export interface WorldsState {
 export interface StartOptions {
   name: string
   playerCharacterId: string
+  /** Left out unless the player changed them: the defaults apply. */
+  settings?: ChatSettings
 }
 
 export interface WorldsFace {
@@ -132,7 +135,7 @@ export class WorldsController {
       const started = await request<StartedSession>('/sessions', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, playerCharacterId: options.playerCharacterId }),
+        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, playerCharacterId: options.playerCharacterId, ...(options.settings === undefined ? {} : { settings: options.settings }) }),
       }, this.abort.signal)
       this.dialogs++
       this.store.update((draft) => { delete draft.dialog })

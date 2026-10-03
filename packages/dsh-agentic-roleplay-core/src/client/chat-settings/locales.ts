@@ -1,20 +1,20 @@
-import type { Dictionaries } from '../i18n.ts'
+import { withDictionaries, type Dictionaries } from '../i18n.ts'
+import { dictionaries as form, type SettingsFormKey } from '../settings-form/locales.ts'
 
 export type ChatSettingsLocaleKey =
+  | SettingsFormKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
-  | 'maxRounds' | 'maxRoundsHelp' | 'invalid' | 'save' | 'saving' | 'saved' | 'saveFailed'
+  | 'pendingRecords' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
-export const dictionaries: Dictionaries<ChatSettingsLocaleKey> = {
+const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
   en: {
     tab: 'Chat settings',
     title: 'Chat settings',
-    description: 'These apply to this chat only and take effect from the next round.',
+    description: 'These apply to this chat only and take effect from the next round, with no restart.',
     loading: 'Loading settings…',
     loadFailed: 'Could not load the settings: {message}',
     notRoleplay: 'This chat is not a roleplay session, so it has no roleplay settings.',
-    maxRounds: 'Rounds of characters per message',
-    maxRoundsHelp: 'How many times the game master may hand the scene to the characters before it comes back to you. 1 means one round per message; more lets conversations between characters flow, but it will still stop earlier when the story has a natural pause.',
-    invalid: 'Enter a whole number from {min} to {max}.',
+    pendingRecords: '{count} round(s) are not yet written into the story\'s records. They will be written with the next turn.',
     save: 'Save',
     saving: 'Saving…',
     saved: 'Saved.',
@@ -23,16 +23,16 @@ export const dictionaries: Dictionaries<ChatSettingsLocaleKey> = {
   zh: {
     tab: '对话设置',
     title: '对话设置',
-    description: '这些设置只对当前对话生效，从下一轮开始起作用。',
+    description: '这些设置只对当前对话生效，从下一轮开始起作用，无需重启。',
     loading: '正在加载设置…',
     loadFailed: '无法加载设置：{message}',
     notRoleplay: '此对话不是角色扮演存档，没有角色扮演设置。',
-    maxRounds: '每条消息的角色回合数',
-    maxRoundsHelp: '主持人在把场面交还给你之前，最多可以让角色行动多少轮。1 表示每条消息只有一轮；更多轮可以让角色之间的对话自然展开，但故事出现自然停顿时仍会提前交还给你。',
-    invalid: '请输入 {min} 到 {max} 之间的整数。',
+    pendingRecords: '有 {count} 个回合尚未写入故事记录，将在下一轮一并写入。',
     save: '保存',
     saving: '正在保存…',
     saved: '已保存。',
     saveFailed: '无法保存设置：{message}',
   },
 }
+
+export const dictionaries = withDictionaries(own, form)

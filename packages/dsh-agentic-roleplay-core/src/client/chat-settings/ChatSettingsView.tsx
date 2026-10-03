@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import css from './ChatSettingsView.module.css'
 import { NotRoleplayError, loadSettings, saveSettings } from './settings-api.ts'
+import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
+import { SettingsFields } from '../settings-form/SettingsFields.tsx'
 
 export type ChatSettingsViewProps = PropsRuntime<'conversation.view'> & PropsLocale<'roleplay.chatSettings'>
 
@@ -18,7 +20,7 @@ type Load =
 export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
   const session = roleplaySessionOf(sessionId)
   const [load, setLoad] = useState<Load>(session === undefined ? { status: 'not-roleplay' } : { status: 'loading' })
-  const [draft, setDraft] = useState('')
+  const [drafts, setDrafts] = useState<Drafts>({})
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | undefined>()
@@ -28,7 +30,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     const abort = new AbortController()
     setLoad({ status: 'loading' })
     loadSettings(session, abort.signal).then(
-      (payload) => { setLoad({ status: 'ready', payload }); setDraft(String(payload.settings.maxRounds)) },
+      (payload) => { setLoad({ status: 'ready', payload }); setDrafts(toDrafts(payload.settings)) },
       (failure: unknown) => {
         if (abort.signal.aborted) return
         setLoad(failure instanceof NotRoleplayError ? { status: 'not-roleplay' } : { status: 'failed', message: failure instanceof Error ? failure.message : String(failure) })
@@ -42,18 +44,21 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
   if (load.status === 'failed') return <p className={css.message} role="alert">{t('loadFailed', { message: load.message })}</p>
 
   const { payload } = load
-  const { minRounds, maxRounds } = payload.limits
-  const value = Number(draft)
-  const valid = draft.trim() !== '' && Number.isInteger(value) && value >= minRounds && value <= maxRounds
-  const changed = valid && value !== payload.settings.maxRounds
+  const bad = problemsOf(drafts)
+  const changed = bad.size === 0 && JSON.stringify(fromDrafts(payload.settings, drafts)) !== JSON.stringify(payload.settings)
+
+  const change = (key: string, value: string | boolean): void => {
+    setDrafts({ ...drafts, [key]: value })
+    setSaved(false)
+  }
 
   const save = (): void => {
     if (session === undefined || !changed) return
     setSaving(true)
     setError(undefined)
     setSaved(false)
-    saveSettings(session, { maxRounds: value }, new AbortController().signal).then(
-      (next) => { setLoad({ status: 'ready', payload: next }); setDraft(String(next.settings.maxRounds)); setSaved(true) },
+    saveSettings(session, fromDrafts(payload.settings, drafts), new AbortController().signal).then(
+      (next) => { setLoad({ status: 'ready', payload: next }); setDrafts(toDrafts(next.settings)); setSaved(true) },
       (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) },
     ).finally(() => { setSaving(false) })
   }
@@ -62,20 +67,8 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     <form className={css.view} data-testid="roleplay-chat-settings" onSubmit={(event) => { event.preventDefault(); save() }}>
       <h2 className={css.title}>{t('title')}</h2>
       <p className={css.description}>{t('description')}</p>
-      <label className={css.field}>
-        <span className={css.label}>{t('maxRounds')}</span>
-        <Input
-          type="number"
-          min={minRounds}
-          max={maxRounds}
-          step={1}
-          value={draft}
-          aria-invalid={!valid}
-          onChange={(event) => { setDraft(event.target.value); setSaved(false) }}
-        />
-      </label>
-      <p className={css.help}>{t('maxRoundsHelp')}</p>
-      {!valid && <p className={css.error}>{t('invalid', { min: minRounds, max: maxRounds })}</p>}
+      {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
+      <SettingsFields t={t} drafts={drafts} onChange={change} disabled={saving} />
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}
       <div className={css.actions}>
         <Button variant="primary" size="sm" type="submit" disabled={!changed || saving}>{saving ? t('saving') : t('save')}</Button>

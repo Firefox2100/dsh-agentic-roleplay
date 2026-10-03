@@ -5,7 +5,7 @@
   "type": "module",
   "dsh": {
     "engines": {
-      "dsh": ">=0.2.0-rc.2"
+      "dsh": ">=0.2.0-rc.2 <0.3.0"
     },
     "bundle": {
       "patch": "./cordis.patch.yml"

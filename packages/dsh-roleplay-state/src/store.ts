@@ -4,7 +4,16 @@ import { systemClock, type Clock } from './clock.ts'
 import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
-import type { CharacterRepository, CharacterStateRepository, IntentRepository, MetadataRepository } from './repositories.ts'
+import type {
+  CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
+  PendingCommitRepository, SummaryRepository, ThreadRepository,
+} from './repositories.ts'
+import { recall, recallCandidates, type MemoryPolicy, type RecallCandidate, type RecallQuery, type Recalled } from './memory/recall.ts'
+import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
+import { readRecords, type RecordsScope, type RecordsView } from './records/read.ts'
+import { SqliteEventRepository } from './sqlite/event-repository.ts'
+import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
+import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
 import { SqliteCharacterRepository } from './sqlite/character-repository.ts'
 import { SqliteIntentRepository } from './sqlite/intent-repository.ts'
 import { SqliteMetadataRepository } from './sqlite/metadata-repository.ts'
@@ -25,8 +34,27 @@ export interface SessionStore {
   readonly characters: CharacterRepository
   readonly characterStates: CharacterStateRepository
   readonly intents: IntentRepository
+  readonly events: EventRepository
+  readonly memories: MemoryRepository
+  readonly threads: ThreadRepository
+  readonly summaries: SummaryRepository
+  readonly pendingCommits: PendingCommitRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
   transaction<T>(fn: () => T): T
+  /**
+   * What a character is reminded of at this moment: what it took in and believes, chosen by what
+   * the situation calls to mind and, with flaky memory, by how much of it is left.
+   */
+  recall(query: Omit<RecallQuery, 'characters'>, semantic?: ReadonlyMap<string, number>): Recalled[]
+  /** What a character could be reminded of, to be ranked by meaning before {@link recall}. */
+  recallCandidates(query: Omit<RecallQuery, 'characters' | 'policy'>): RecallCandidate[]
+  /**
+   * Change the story's records (state, events and who took them in, beliefs, threads), together or not at all.
+   * @throws {InvalidEditError} naming every problem; nothing was written then.
+   */
+  edit(edit: RecordsEdit): EditResult
+  /** Read the records back in the form models read them. */
+  records(scope?: RecordsScope): RecordsView
   close(): void
 }
 
@@ -35,16 +63,45 @@ class SqliteSessionStore implements SessionStore {
   readonly characters: CharacterRepository
   readonly characterStates: CharacterStateRepository
   readonly intents: IntentRepository
+  readonly events: EventRepository
+  readonly memories: MemoryRepository
+  readonly threads: ThreadRepository
+  readonly summaries: SummaryRepository
+  readonly pendingCommits: PendingCommitRepository
 
   constructor(private readonly db: SqlDatabase, clock: Clock) {
     this.metadata = new SqliteMetadataRepository(db, clock)
     this.characters = new SqliteCharacterRepository(db, clock)
     this.characterStates = new SqliteCharacterStateRepository(db, clock)
     this.intents = new SqliteIntentRepository(db, clock)
+    this.events = new SqliteEventRepository(db, clock)
+    this.memories = new SqliteMemoryRepository(db, clock)
+    this.threads = new SqliteThreadRepository(db, clock)
+    this.summaries = new SqliteSummaryRepository(db, clock)
+    this.pendingCommits = new SqlitePendingCommitRepository(db, clock)
   }
 
   transaction<T>(fn: () => T): T {
     return this.db.transaction(fn)
+  }
+
+  recallCandidates(query: Omit<RecallQuery, 'characters' | 'policy'>): RecallCandidate[] {
+    return recallCandidates(this, { ...query, characters: this.characters.list() })
+  }
+
+  recall(query: Omit<RecallQuery, 'characters'>, semantic?: ReadonlyMap<string, number>): Recalled[] {
+    const found = recall(this, { ...query, characters: this.characters.list() }, semantic)
+    this.events.touchPerceptions(found.flatMap(entry => (entry.source.kind === 'perception' ? [entry.source.id] : [])), query.turn)
+    this.memories.touch(found.flatMap(entry => (entry.source.kind === 'memory' ? [entry.source.id] : [])), query.turn)
+    return found
+  }
+
+  edit(edit: RecordsEdit): EditResult {
+    return applyRecordsEdit(this, edit)
+  }
+
+  records(scope?: RecordsScope): RecordsView {
+    return readRecords(this, scope)
   }
 
   close(): void {
@@ -96,3 +153,4 @@ export function openSessionStore(location: string, options: StoreOptions = {}): 
 }
 
 export { LATEST_VERSION as SCHEMA_VERSION }
+export type { MemoryPolicy }

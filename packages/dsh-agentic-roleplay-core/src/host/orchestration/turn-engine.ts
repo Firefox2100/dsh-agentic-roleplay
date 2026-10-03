@@ -1,3 +1,4 @@
+import type { Recalled } from 'dsh-roleplay-state'
 import type { Boundaries, CastMember, CharacterRequest, Reaction, TurnStore } from './boundaries.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 
@@ -72,6 +73,11 @@ interface TurnState {
   refused: number
   /** The most rounds the chat's settings allowed when last asked. */
   limit?: number
+  /** Writing the records of the rounds: one run at a time, while the game master goes on. */
+  writing: Promise<void>
+  cancel: AbortController
+  /** What each character was reminded of in the first attempt of the round, so a retry is reminded of the same. */
+  recalled: Map<string, readonly Recalled[]>
 }
 
 const MAX_OBJECTIONS = 3
@@ -91,6 +97,8 @@ export class TurnEngine {
   constructor(
     private readonly boundaries: () => Boundaries,
     private readonly stores: (chat: string) => TurnStore | undefined,
+    /** Told about a run of the records that failed; the rounds stay queued and the next run writes them with its own. */
+    private readonly problem: (message: string) => void = () => undefined,
   ) {}
 
   /** Mark a turn as one that needs no round, for example because the player's input was refused. */
@@ -117,9 +125,10 @@ export class TurnEngine {
     if (keys.length === 0) throw new Error('there is no character to activate')
     state.situation = situation
     state.cast = cast
+    state.recalled.clear()
     delete state.first
     delete state.second
-    const attempt = await this.runAttempt(1, keys, cast, state, run, signal)
+    const attempt = await this.runAttempt(owner, 1, keys, cast, state, run, signal)
     if (attempt.reports.length === 0) return { attempt: 1, reports: [], failures: attempt.failures }
     state.first = attempt
     state.phase = 'resolving'
@@ -143,7 +152,7 @@ export class TurnEngine {
       const retrying = this.boundaries().retryPolicy.select({ reports: attempt.reports, outcomes: attempt.outcomes })
         .filter(key => attempt.reports.some(report => report.character === key))
       if (retrying.length > 0) {
-        const second = await this.runAttempt(2, retrying, state.cast, state, run, signal)
+        const second = await this.runAttempt(owner, 2, retrying, state.cast, state, run, signal)
         state.second = second
         if (second.reports.length > 0) {
           state.phase = 'retrying'
@@ -167,12 +176,12 @@ export class TurnEngine {
     if (segments.length === 0) {
       const written = await this.boundaries().narrator.narrate({ situations: state.situations, outcomes: state.outcomes, reports: state.reports, utterances: state.utterances })
       if (written === undefined) throw new Error('deliver the output: give its segments')
-      return this.deliver(owner, state, written, true)
+      return await this.deliver(owner, state, written, true)
     }
     const typed = segments.map((segment): NarrationSegment => segment.type === 'utterance'
       ? { type: 'utterance', character: segment.character ?? '', name: state.cast.find(member => member.key === segment.character)?.character.name ?? segment.character ?? '', text: segment.text }
       : { type: 'narration', text: segment.text })
-    return this.deliver(owner, state, typed, false)
+    return await this.deliver(owner, state, typed, false)
   }
 
   /** What still has to happen before the turn may end, or nothing when it may. */
@@ -180,6 +189,11 @@ export class TurnEngine {
     const state = this.stateFor(owner)
     if (state.phase === 'done' || state.phase === 'skipped') return undefined
     return this.explain(state, undefined)
+  }
+
+  /** Wait until the records of the rounds recorded so far are written or have failed. */
+  async flush(owner: TurnOwner): Promise<void> {
+    await this.stateFor(owner).writing
   }
 
   /** What has been said in the turn so far. */
@@ -196,6 +210,7 @@ export class TurnEngine {
   }
 
   forget(chat: string): void {
+    this.states.get(chat)?.cancel.abort()
     this.states.delete(chat)
     for (const key of this.objections.keys()) if (key.startsWith(`${chat}#`)) this.objections.delete(key)
   }
@@ -203,7 +218,7 @@ export class TurnEngine {
   private stateFor({ chat, turn }: TurnOwner): TurnState {
     const known = this.states.get(chat)
     if (known?.turn === turn) return known
-    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0 }
+    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0, writing: Promise.resolve(), cancel: new AbortController(), recalled: new Map() }
     this.states.set(chat, fresh)
     return fresh
   }
@@ -263,15 +278,21 @@ export class TurnEngine {
   }
 
   /** Every character acts at the same time; one that fails or answers badly is reported, not fatal. */
-  private async runAttempt(number: 1 | 2, keys: readonly string[], cast: readonly CastMember[], state: TurnState, run: RunCharacter, signal: AbortSignal): Promise<Attempt> {
+  private async runAttempt(owner: TurnOwner, number: 1 | 2, keys: readonly string[], cast: readonly CastMember[], state: TurnState, run: RunCharacter, signal: AbortSignal): Promise<Attempt> {
+    const store = this.stores(owner.chat)
     const { outputValidator } = this.boundaries()
     const reaction = number === 2 ? this.reactions(state) : undefined
     const answers = await Promise.all(keys.map(async (key): Promise<CharacterReport | CharacterFailure> => {
       const member = cast.find(candidate => candidate.key === key)
       if (member === undefined) return { character: key, name: key, reason: 'no such character' }
       const previous = number === 2 ? state.first?.reports.find(report => report.character === key) : undefined
+      const memories = number === 1 && store !== undefined
+        ? await this.boundaries().recaller.recall({ member, situation: state.situation, turn: owner.turn, policy: store.settings().memory }, store.story, signal)
+        : state.recalled.get(key) ?? []
+      if (number === 1 && memories.length > 0) state.recalled.set(key, memories)
       const request: CharacterRequest = {
-        member, cast, situation: state.situation, attempt: number,
+        member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false,
+        ...(memories.length === 0 ? {} : { memories }),
         ...(state.history.length === 0 ? {} : { earlier: [...state.history] }),
         ...(reaction === undefined ? {} : { reaction }),
         ...(previous === undefined ? {} : { previous: { intent: previous.intent, commitment: previous.commitment } }),
@@ -315,15 +336,6 @@ export class TurnEngine {
   private finishRound(owner: TurnOwner, state: TurnState): NonNullable<ResolveReport['done']> {
     const store = this.storeOf(owner)
     const decided = this.decisions(state)
-    const updates = [...decided.values()].flatMap(({ outcome }) => {
-      const member = state.cast.find(candidate => candidate.key === outcome.character)
-      if (member === undefined) return []
-      return [{
-        character: member.character.id,
-        patch: { activity: outcome.summary, ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }) },
-      }]
-    })
-    store.commit(updates)
     const limit = store.settings().maxRounds
     const round = state.rounds + 1
     const spoken = [...decided.values()].flatMap(({ outcome, report }): Utterance[] =>
@@ -341,10 +353,48 @@ export class TurnEngine {
     }
     state.limit = limit
     state.phase = 'between'
+    store.queueCommit({
+      turn: owner.turn, round, situation: state.situation,
+      entries: [...decided.values()].map(({ outcome, report }) => ({
+        character: report.character, name: report.name, intent: report.intent, commitment: report.commitment,
+        ...(report.utterance === undefined ? {} : { utterance: report.utterance }),
+        result: outcome.result, summary: outcome.summary,
+        ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }),
+        spoken: outcome.spoken !== false,
+      })),
+    })
+    this.write(owner, state)
     return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances] }
   }
 
-  private deliver(owner: TurnOwner, state: TurnState, segments: readonly NarrationSegment[], silent: boolean): TurnOutput {
+  /**
+   * Write the records of every round still waiting, while the game master goes on. Runs
+   * follow one another, and a failed run leaves its rounds queued for the next one.
+   */
+  private write(owner: TurnOwner, state: TurnState): void {
+    state.writing = state.writing.then(async () => {
+      const store = this.stores(owner.chat)
+      const rounds = store?.pendingCommits() ?? []
+      if (store === undefined || rounds.length === 0) return
+      try {
+        await this.boundaries().committer.commit({ chat: owner.chat, rounds, store }, state.cancel.signal)
+        store.completeCommits(rounds)
+      } catch (error) {
+        if (!state.cancel.signal.aborted) this.problem(`the records of ${rounds.map(round => `${round.turn}.${round.round}`).join(', ')} were not written: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    })
+  }
+
+  /** Wait for the records to be written, and try once more for rounds a run failed to write. */
+  private async settle(owner: TurnOwner, state: TurnState): Promise<void> {
+    await state.writing
+    if ((this.stores(owner.chat)?.pendingCommits().length ?? 0) > 0) {
+      this.write(owner, state)
+      await state.writing
+    }
+  }
+
+  private async deliver(owner: TurnOwner, state: TurnState, segments: readonly NarrationSegment[], silent: boolean): Promise<TurnOutput> {
     const { narrationChecker } = this.boundaries()
     const problems = [
       ...segments.flatMap((segment, index) => (segment.type === 'utterance' && segment.character === '' ? [`segment ${index + 1}: an utterance needs the character who says it`] : [])),
@@ -360,6 +410,7 @@ export class TurnEngine {
       }
       output = { segments: narrationChecker.repair(segments.filter(segment => segment.type !== 'utterance' || segment.character !== ''), state.utterances), repaired: true }
     }
+    await this.settle(owner, state)
     this.storeOf(owner).completeTurn()
     state.phase = 'done'
     return output

@@ -29,10 +29,14 @@ export function apply(ctx: Context, config: Config): void {
   new RoleplayOrchestration(ctx)
   const worlds = new WorldCatalog(ctx, root)
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
+  const settingsDeps = {
+    sessionsDir: () => join(root.path, 'sessions'),
+    pendingRecords: (id: string) => ctx.roleplayState.openSession(join(root.path, 'sessions'), id).pendingCommits.list().length,
+  }
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions') }
   registerApi(ctx, {
     worlds,
     worldCharacters: worldId => worldCharacters(worlds, worldId),
-    sessions: { list: () => listSessions(deps), start: request => startSession(deps, request), open: id => openSession(deps, id), delete: id => deleteSession(deps, id), readSettings: id => readChatSettings(deps, id), writeSettings: (id, value) => writeChatSettings(deps, id, value) },
+    sessions: { list: () => listSessions(deps), start: request => startSession(deps, request), open: id => openSession(deps, id), delete: id => deleteSession(deps, id), readSettings: id => readChatSettings(settingsDeps, id), writeSettings: (id, value) => writeChatSettings(settingsDeps, id, value) },
   })
 }

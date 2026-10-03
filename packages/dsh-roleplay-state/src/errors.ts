@@ -19,3 +19,10 @@ export class SchemaError extends StateError {}
 
 /** Stored data cannot be read back as a canonical model. */
 export class CorruptDataError extends StateError {}
+
+/** An edit of the story's records cannot be applied; it names every problem, and nothing was written. */
+export class InvalidEditError extends StateError {
+  constructor(readonly problems: readonly string[]) {
+    super(`the edit is not acceptable: ${problems.join('; ')}`)
+  }
+}

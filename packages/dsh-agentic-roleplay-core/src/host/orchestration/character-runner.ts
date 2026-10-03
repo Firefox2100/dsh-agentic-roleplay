@@ -1,32 +1,23 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
-import type { Boundaries } from './boundaries.ts'
+import { createCharacterTools } from 'dsh-roleplay-state'
+import { runChild } from '../agents/child.ts'
+import type { Boundaries, TurnStore } from './boundaries.ts'
 import { CHARACTER_ACTION_SCHEMA, parseCharacterAction } from './protocol.ts'
 import type { RunCharacter } from './turn-engine.ts'
 
 /**
- * Runs each character as a one-shot sub-agent of the game master. The sub-agent
- * gets the character as its persona and no tools, so it sees nothing but what
- * the character's brief gives it.
+ * Runs each character as a one-shot child of the game master. It is the character and nothing
+ * else: it knows what its brief gives it, and its only tool (when the chat allows it) reaches
+ * the memory of that character alone, so characters acting at the same time cannot see each
+ * other's memories.
  */
-export function subagentRunner(subagents: Pick<SubagentRuntime, 'start'>, boundaries: () => Boundaries, parent: Agent): RunCharacter {
+export function characterRunner(deps: { parent: Agent; boundaries: () => Boundaries; store: TurnStore }): RunCharacter {
   return async (request, signal) => {
-    const brief = boundaries().characterContext.brief(request)
-    const run = await subagents.start('spawn', {
-      parent,
-      signal,
-      label: request.member.character.name,
-      prompt: [{ type: 'text', text: brief.prompt }],
-      persona: brief.persona,
-      toolFilter: { allow: [] },
-      outputSchema: CHARACTER_ACTION_SCHEMA,
-    })
-    try {
-      const result = await run.result
-      if (result.stopReason !== 'completed') throw new Error(`${request.member.character.name} did not finish (${result.stopReason})`)
-      return parseCharacterAction(result.structured)
-    } finally {
-      await run.dispose()
-    }
+    const brief = deps.boundaries().characterContext.brief(request)
+    const tools = request.lookup
+      ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: deps.store.settings().memory }), request.member.character.id)
+      : []
+    const result = await runChild({ parent: deps.parent, signal, persona: brief.persona, prompt: brief.prompt, tools, result: CHARACTER_ACTION_SCHEMA })
+    return parseCharacterAction(result)
   }
 }

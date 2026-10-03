@@ -1,5 +1,7 @@
 import type { Character, CharacterState } from 'dsh-roleplay-model'
-import type { CastMember, TurnStore } from '../../../src/host/orchestration/boundaries.ts'
+import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
+import type { CastMember, RoundRecord, TurnStore } from '../../../src/host/orchestration/boundaries.ts'
+import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import type { CharacterAction } from '../../../src/host/orchestration/protocol.ts'
 import type { RunCharacter } from '../../../src/host/orchestration/turn-engine.ts'
 
@@ -22,12 +24,19 @@ export const bob = member('bob', 'Bob')
 export const carol = member('carol', 'Carol')
 export const dan = member('dan', 'Dan')
 
+/** A session store as the state plugin hands it out: with recall that can be ranked by meaning (nothing ranks here). */
+export function withRanking(store: SessionStore): TurnStore['story'] {
+  return Object.assign(Object.create(store) as SessionStore, { recallRanked: (query: Parameters<SessionStore['recall']>[0]) => Promise.resolve(store.recall(query)) })
+}
+
 export interface FakeStore extends TurnStore {
   commits: { character: number; patch: Record<string, unknown> }[][]
   /** How many turns were counted as played. */
   completed: number
   /** What the chat's settings allow; change it to change the settings the engine reads. */
   maxRounds: number
+  /** The rounds whose records are not written yet. */
+  queue: RoundRecord[]
 }
 
 export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
@@ -37,9 +46,14 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     completed: 0,
     maxRounds,
     cast: () => cast,
-    settings: () => ({ maxRounds: store.maxRounds }),
+    settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds }),
     commit: (updates) => { commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch } }))) },
     completeTurn: () => { store.completed += 1 },
+    queueCommit: (record) => { store.queue = [...store.queue.filter(entry => entry.turn !== record.turn || entry.round !== record.round), record] },
+    pendingCommits: () => [...store.queue],
+    completeCommits: (rounds) => { store.queue = store.queue.filter(entry => !rounds.some(round => round.turn === entry.turn && round.round === entry.round)) },
+    story: withRanking(createSessionStore(':memory:', { id: 'fake', name: 'Fake', world: { id: 'w', name: 'W' } })),
+    queue: [],
   }
   return store
 }

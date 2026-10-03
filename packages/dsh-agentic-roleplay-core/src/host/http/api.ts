@@ -53,12 +53,12 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
     '/sessions': {
       GET: async (_req, res) => { sendJson(res, 200, sessions.list()) },
       POST: async (req, res) => {
-        const { worldId, playerCharacterId, name } = await readJsonBody(req)
+        const { worldId, playerCharacterId, name, settings } = await readJsonBody(req)
         if (typeof worldId !== 'string' || worldId.trim() === '') return sendError(res, 400, '"worldId" is required')
         if (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '') return sendError(res, 400, '"playerCharacterId" is required')
         if (name !== undefined && typeof name !== 'string') return sendError(res, 400, '"name" must be a string')
         try {
-          sendJson(res, 201, await sessions.start({ worldId, playerCharacterId, ...(name === undefined ? {} : { name }) }))
+          sendJson(res, 201, await sessions.start({ worldId, playerCharacterId, ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
         } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidStartError) return sendError(res, 422, error.message)

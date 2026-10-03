@@ -1,6 +1,8 @@
-import type { Dictionaries } from '../../i18n.ts'
+import { withDictionaries, type Dictionaries } from '../../i18n.ts'
+import { dictionaries as form, type SettingsFormKey } from '../../settings-form/locales.ts'
 
 export type WorldsLocaleKey =
+  | SettingsFormKey | 'advanced' | 'advancedHelp'
   | 'nav' | 'loading' | 'loadFailed' | 'empty'
   | 'countOne' | 'countOther'
   | 'refresh' | 'refreshing'
@@ -10,7 +12,7 @@ export type WorldsLocaleKey =
   | 'startTitle' | 'sessionName' | 'playAs' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
 
-export const dictionaries: Dictionaries<WorldsLocaleKey> = {
+const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey>> = {
   en: {
     nav: 'Worlds',
     loading: 'Loading worlds…',
@@ -26,6 +28,8 @@ export const dictionaries: Dictionaries<WorldsLocaleKey> = {
     problems: '{count} problem(s) found while reading worlds',
     play: 'Start a new session',
     chatNotOpened: 'Started the session "{name}", but could not open its chat: {message}',
+    advanced: 'Advanced settings',
+    advancedHelp: 'These are used from the first message. You can change them later in the chat\'s settings tab.',
     startTitle: 'Start a new session',
     sessionName: 'Session name',
     playAs: 'Play as',
@@ -53,6 +57,8 @@ export const dictionaries: Dictionaries<WorldsLocaleKey> = {
     problems: '读取世界卡时发现 {count} 个问题',
     play: '开始新存档',
     chatNotOpened: '已开始存档“{name}”，但无法打开对话：{message}',
+    advanced: '高级设置',
+    advancedHelp: '从第一条消息起就按这些设置运行，之后可在对话的“对话设置”页中修改。',
     startTitle: '开始新存档',
     sessionName: '存档名称',
     playAs: '扮演角色',
@@ -66,3 +72,5 @@ export const dictionaries: Dictionaries<WorldsLocaleKey> = {
     startFailed: '无法开始存档：{message}',
   },
 }
+
+export const dictionaries = withDictionaries(own, form)

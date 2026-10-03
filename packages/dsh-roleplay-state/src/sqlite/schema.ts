@@ -88,6 +88,80 @@ export const MIGRATIONS: readonly Migration[] = [
         updated_at TEXT NOT NULL
       ) STRICT;
       CREATE INDEX intents_character ON intents (character_id, status);
+
+      CREATE TABLE events (
+        id INTEGER PRIMARY KEY,
+        turn INTEGER NOT NULL,
+        round INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        importance INTEGER NOT NULL CHECK (importance BETWEEN 1 AND 5),
+        tags TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX events_turn ON events (turn, round, id);
+
+      CREATE TABLE event_involves (
+        event_id INTEGER NOT NULL REFERENCES events (id) ON DELETE CASCADE,
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        PRIMARY KEY (event_id, character_id)
+      ) STRICT;
+      CREATE INDEX event_involves_character ON event_involves (character_id);
+
+      CREATE TABLE perceptions (
+        id INTEGER PRIMARY KEY,
+        event_id INTEGER NOT NULL REFERENCES events (id) ON DELETE CASCADE,
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        mode TEXT NOT NULL CHECK (mode IN ('witnessed', 'heard', 'told', 'inferred')),
+        content TEXT NOT NULL,
+        gist TEXT NOT NULL,
+        accuracy TEXT NOT NULL CHECK (accuracy IN ('accurate', 'partial', 'mistaken')),
+        recalls INTEGER NOT NULL DEFAULT 0,
+        last_recalled_turn INTEGER,
+        created_at TEXT NOT NULL,
+        UNIQUE (event_id, character_id)
+      ) STRICT;
+      CREATE INDEX perceptions_character ON perceptions (character_id, event_id);
+
+      CREATE TABLE memories (
+        id INTEGER PRIMARY KEY,
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        kind TEXT NOT NULL CHECK (kind IN ('belief', 'relationship', 'knowledge')),
+        text TEXT NOT NULL,
+        about TEXT NOT NULL DEFAULT '[]',
+        importance INTEGER NOT NULL CHECK (importance BETWEEN 1 AND 5),
+        turn INTEGER NOT NULL,
+        recalls INTEGER NOT NULL DEFAULT 0,
+        last_recalled_turn INTEGER,
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX memories_character ON memories (character_id, id);
+
+      CREATE TABLE story_threads (
+        id INTEGER PRIMARY KEY,
+        text TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN ('open', 'resolved')),
+        opened_turn INTEGER NOT NULL,
+        resolved_turn INTEGER,
+        created_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE summaries (
+        id INTEGER PRIMARY KEY,
+        level TEXT NOT NULL CHECK (level IN ('digest', 'chapter')),
+        from_turn INTEGER NOT NULL,
+        to_turn INTEGER NOT NULL,
+        text TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX summaries_range ON summaries (level, from_turn);
+
+      CREATE TABLE pending_commits (
+        turn INTEGER NOT NULL,
+        round INTEGER NOT NULL,
+        payload TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (turn, round)
+      ) STRICT;
     `,
   },
 ]

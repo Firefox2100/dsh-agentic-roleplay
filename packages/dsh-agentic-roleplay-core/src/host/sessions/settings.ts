@@ -1,8 +1,10 @@
-import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
 
 export const SETTINGS_FILE = 'settings.json'
+
+const known = new Map<string, { modified: number; value: ChatSettings }>()
 
 /** The settings are not acceptable; `problems` say what to fix. */
 export class InvalidSettingsError extends Error {
@@ -41,5 +43,30 @@ export function writeSettings(folder: string, value: unknown): ChatSettings {
   const temporary = `${file}.${process.pid}.tmp`
   writeFileSync(temporary, `${JSON.stringify(parsed.value, null, 2)}\n`)
   renameSync(temporary, file)
+  known.delete(folder)
   return parsed.value
+}
+
+/**
+ * The settings to use right now. Called before each use, so an edit to the file applies at the
+ * next round, step or run without a restart; the file is parsed again only when it changed.
+ * A file that is not valid is reported once through `problem` and the last good settings
+ * (the defaults when there were none) stay in force, so a typo cannot stop a story in the middle.
+ */
+export function liveSettings(folder: string, problem: (message: string) => void = () => undefined): ChatSettings {
+  let modified = -1
+  try { modified = statSync(join(folder, SETTINGS_FILE)).mtimeMs } catch { /* no file yet: the defaults */ }
+  const last = known.get(folder)
+  if (last?.modified === modified) return last.value
+  try {
+    const value = readSettings(folder)
+    known.set(folder, { modified, value })
+    return value
+  } catch (error) {
+    if (!(error instanceof InvalidSettingsError)) throw error
+    problem(`${error.message} (the last good settings stay in force)`)
+    const value = last?.value ?? { ...DEFAULT_SETTINGS }
+    known.set(folder, { modified, value })
+    return value
+  }
 }

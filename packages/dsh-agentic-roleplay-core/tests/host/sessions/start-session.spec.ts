@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, isSessionId } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { readSettings } from '../../../src/host/sessions/settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { startSession, type StartSessionDeps } from '../../../src/host/sessions/start-session.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
@@ -51,6 +52,26 @@ beforeEach(async () => {
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
 
 const playAsArthur = { worldId: 'blackwater', playerCharacterId: 'arthur' }
+
+describe('starting with settings', () => {
+  it('writes them into the session before its first message, with what is left out at its default', async () => {
+    const started = await startSession(deps, { ...playAsArthur, settings: { maxRounds: 2, memory: { flaky: false }, context: { limitTokens: 8000 } } })
+    const settings = readSettings(join(root, 'sessions', started.id))
+    expect(settings).toMatchObject({ maxRounds: 2, memory: { flaky: false, recall: 12 }, context: { limitTokens: 8000, retainRatio: 0.5 } })
+    expect(ensured).toHaveLength(1)
+  })
+
+  it('has the defaults when none are given, and leaves no file', async () => {
+    const started = await startSession(deps, playAsArthur)
+    expect(await readdir(join(root, 'sessions', started.id))).toEqual(['session.sqlite'])
+  })
+
+  it('refuses settings that are not acceptable, naming them, before anything is created', async () => {
+    await expect(startSession(deps, { ...playAsArthur, settings: { maxRounds: 0, colour: 'red' } })).rejects.toThrow(/"colour" is not a setting; "maxRounds" must be a whole number from 1 to 10/)
+    expect(ensured).toEqual([])
+    expect(await readdir(root)).not.toContain('sessions')
+  })
+})
 
 describe('startSession', () => {
   it('creates a session folder and fills the database from the world', async () => {

@@ -1,4 +1,24 @@
 import type {
+  CharacterMemory,
+  CharacterMemoryPatch,
+  EventId,
+  MemoryId,
+  NewCharacterMemory,
+  NewPerception,
+  NewStoryEvent,
+  NewSummary,
+  PendingCommit,
+  PerceivedEvent,
+  Perception,
+  StoryEvent,
+  StoryEventFilter,
+  StoryEventPatch,
+  StoryThread,
+  Summary,
+  SummaryLevel,
+  SummaryId,
+  ThreadId,
+  ThreadStatus,
   Character,
   CharacterControl,
   CharacterFilter,
@@ -77,4 +97,63 @@ export interface IntentRepository {
   update(id: IntentId, patch: IntentPatch): CharacterIntent
   /** Whether an intent was removed. */
   remove(id: IntentId): boolean
+}
+
+export interface EventRepository {
+  /**
+   * Record an event together with what each character took in of it, atomically.
+   * @throws {NotFoundError} when a character does not exist.
+   */
+  add(event: NewStoryEvent, perceptions: readonly NewPerception[]): { event: StoryEvent; perceptions: Perception[] }
+  get(id: EventId): StoryEvent | undefined
+  /** In story order: by turn, round, then the order recorded. */
+  list(filter?: StoryEventFilter): StoryEvent[]
+  /** @throws {NotFoundError} */
+  update(id: EventId, patch: StoryEventPatch): StoryEvent
+  /** Replace what the characters took in of an event. @throws {NotFoundError} */
+  setPerceptions(id: EventId, perceptions: readonly NewPerception[]): Perception[]
+  perceptionsOf(id: EventId): Perception[]
+  /** What one character took in, with the events, in story order. */
+  perceivedBy(characterId: CharacterId, filter?: { fromTurn?: number; toTurn?: number }): PerceivedEvent[]
+  /** Count a perception as recalled in `turn`. */
+  touchPerceptions(ids: readonly number[], turn: number): void
+  /** Whether an event was removed, with its perceptions. */
+  remove(id: EventId): boolean
+}
+
+export interface MemoryRepository {
+  /** @throws {NotFoundError} when the character does not exist. */
+  add(memory: NewCharacterMemory): CharacterMemory
+  get(id: MemoryId): CharacterMemory | undefined
+  list(characterId: CharacterId): CharacterMemory[]
+  /** @throws {NotFoundError} */
+  update(id: MemoryId, patch: CharacterMemoryPatch): CharacterMemory
+  /** Count a memory as recalled in `turn`. */
+  touch(ids: readonly MemoryId[], turn: number): void
+  remove(id: MemoryId): boolean
+}
+
+export interface ThreadRepository {
+  open(text: string, turn: number): StoryThread
+  get(id: ThreadId): StoryThread | undefined
+  list(status?: ThreadStatus): StoryThread[]
+  /** @throws {NotFoundError} */
+  resolve(id: ThreadId, turn: number): StoryThread
+  /** Whether a thread was removed. */
+  remove(id: ThreadId): boolean
+}
+
+export interface SummaryRepository {
+  add(summary: NewSummary): Summary
+  /** Oldest first. */
+  list(level?: SummaryLevel): Summary[]
+  remove(ids: readonly SummaryId[]): void
+}
+
+export interface PendingCommitRepository {
+  /** Replaces what is stored for the same round. */
+  enqueue(turn: number, round: number, payload: PendingCommit['payload']): void
+  /** In story order. */
+  list(): PendingCommit[]
+  complete(rounds: readonly { turn: number; round: number }[]): void
 }

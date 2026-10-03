@@ -54,11 +54,24 @@ Session ids become folder names, so only a UUID v4 is accepted. The package also
 exports the same operations as plain functions (`createSession`, `openSession`,
 `createSessionStore`, …) for code that does not run inside DSH, such as tests.
 
+## The records API and the model-facing tools
+
+The package owns how a story is remembered, not only where it is stored:
+
+- `session.edit(edit)` changes the story's records (character states, events with who took each in, beliefs, threads) together or not at all. It checks the whole edit first and throws `InvalidEditError` naming every problem, so a model's mistakes can be reported back to it. `parseRecordsEdit(json)` reads the wire format models write (snake_case) and `recordsEditSchema({ characters, changes })` is its JSON schema, for a model's structured output or a tool's parameters.
+- `session.records(scope)` reads the records back in the same wire format.
+- `session.recall({ characterId, situation, turn, policy })` is what a character is reminded of: events it took in and things it believes, by who the situation mentions, shared words and tags, importance and recency; with `policy.flaky` the older and less important are told as faded or vague, or are gone. It counts what it brings back as recalled, which makes it last longer.
+- `session.recallRanked(query, signal)` is the call for anything that reminds a character of something: `recall`, ranked by meaning when a plugin has registered a ranker with `roleplayState.rankMemories(ranker)` (an embedding model, a reranker; see `docs/capabilities.md`). `session.recallCandidates(query)` gives what could be recalled, with the text to match, for a ranker.
+- `roleplayState.bind(resolver)` tells the tools which roleplay session an agent works in (the plugin that runs the agents supplies it, with the turn being played and the memory policy).
+
+Tools registered with the DSH tool registry (`defineTool`, typed output, honoring the call's `signal`), resolved through that binding: `list_characters`, `get_character`, `search_events`, `recall_memories`, `list_threads`, and, only when the plugin is configured with `writeTools: true`, `update_character_state`, `record_event`, `remember`, `open_thread`, `resolve_thread`. They fail with a plain message for an agent that works in no roleplay session. Characters and other one-shot sub-agents see none of them (they are started with no tools).
+
 ## Configuration
 
 | Field | Default | Meaning |
 |---|---|---|
 | `journalMode` | `delete` | `delete` keeps each session in a single file that can be copied; `wal` allows readers during writes. |
+| `writeTools` | `false` | Also register the model-facing tools that change the records. Leave off where another agent is responsible for them. |
 
 ## Layers
 
@@ -102,6 +115,14 @@ characters created during play have none.
 | `character_state` | The state that changes in play: public state, inner state, activity, `version`, `updated_at`. One row per character. |
 | `character_emotion` | Optional baseline and immediate valence/arousal/dominance of a state. |
 | `intents` | A character's intents: type, name, description, status, horizon, priority, urgency, plan, open threads, constraints, deadline. |
+| `events` | What objectively happened: turn, round, text, importance (1 to 5), tags. `event_involves` lists the characters an event is about. |
+| `perceptions` | What one character took in of an event, in its own terms: mode (witnessed, heard, told, inferred), content, a gist for when it fades, an accuracy label (never shown to the character), and how often it was recalled. One per character and event. |
+| `memories` | What a character believes or knows beyond single events: kind (belief, relationship, knowledge), text, the characters it is about, importance, the turn it formed in. |
+| `story_threads` | Things not settled yet: promises, mysteries, goals; open or resolved. |
+| `summaries` | The account of the story for the conversation's head: digests of recent turns and chapters of older ones, each with the turns it covers. |
+| `pending_commits` | Recorded rounds whose events and memories are not written yet, kept so that a failure loses nothing. |
+
+Events are the ground truth; perceptions, memories and summaries are derived from them and can be rebuilt. The repositories are `events`, `memories`, `threads`, `summaries` and `pendingCommits` next to the ones for characters.
 
 Deleting a character deletes everything that belongs to it. The tables are
 `STRICT`, enumerations and ranges are `CHECK` constraints, and foreign keys are
