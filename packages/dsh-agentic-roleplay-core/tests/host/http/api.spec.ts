@@ -7,6 +7,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createApiHandler } from '../../../src/host/http/api.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
+import { InvalidSettingsError } from '../../../src/host/sessions/settings.ts'
 import { AgentUnavailableError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
@@ -23,6 +24,8 @@ let deleted: string | undefined
 let deleteError: Error | undefined
 let opened: string | undefined
 let openError: Error | undefined
+let settingsError: Error | undefined
+let writtenSettings: unknown
 const started = { id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', characterCount: 2 }
 const listed = { directory: '/root/sessions', sessions: [{ id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', createdAt: '2026-01-01T00:00:00.000Z', turns: 0 }], problems: [] }
 const cast = { characters: [{ id: 'arthur', name: 'Arthur', summary: '', role: 'playable' as const, tier: 'principal' as const, kind: 'person' as const }], problems: [] }
@@ -37,6 +40,8 @@ beforeEach(async () => {
   deleteError = undefined
   opened = undefined
   openError = undefined
+  settingsError = undefined
+  writtenSettings = undefined
   const folder = join(base, 'worlds', 'harbor')
   await mkdir(join(folder, 'media', 'files'), { recursive: true })
   await writeFile(join(folder, 'world.json'), JSON.stringify({ id: 'harbor', name: 'Harbor', metadata: { tags: ['noir'] }, cover_media_id: 'm' }))
@@ -62,6 +67,15 @@ beforeEach(async () => {
         if (openError !== undefined) return Promise.reject(openError)
         opened = id
         return Promise.resolve({ id, chatSessionId: `session-${id}` })
+      },
+      readSettings: () => {
+        if (settingsError !== undefined) throw settingsError
+        return { settings: { maxRounds: 3 }, limits: { minRounds: 1, maxRounds: 10 } }
+      },
+      writeSettings: (_id, value) => {
+        if (settingsError !== undefined) throw settingsError
+        writtenSettings = value
+        return { settings: { maxRounds: (value as { maxRounds: number }).maxRounds }, limits: { minRounds: 1, maxRounds: 10 } }
       },
       delete: (id) => {
         if (deleteError !== undefined) return Promise.reject(deleteError)
@@ -314,6 +328,45 @@ describe('roleplay API', () => {
       allowed = true
       expect((await fetch(`${origin}/sessions/open?id=x`)).status).toBe(405)
       expect(opened).toBeUndefined()
+    })
+  })
+
+  describe('the settings of a session', () => {
+    const url = (id = 'session-id') => `${origin}/sessions/settings?id=${encodeURIComponent(id)}`
+    const put = (body: string, headers: Record<string, string> = { 'content-type': 'application/json' }) => fetch(url(), { method: 'PUT', headers, body })
+
+    it('are read, with the bounds', async () => {
+      const response = await fetch(url())
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual({ settings: { maxRounds: 3 }, limits: { minRounds: 1, maxRounds: 10 } })
+    })
+
+    it('are replaced by the body', async () => {
+      const response = await put('{"maxRounds":6}')
+      expect(response.status).toBe(200)
+      expect(((await response.json()) as { settings: { maxRounds: number } }).settings.maxRounds).toBe(6)
+      expect(writtenSettings).toEqual({ maxRounds: 6 })
+    })
+
+    it('answer 404 for an unknown session and 422, with the problems, for settings that are not acceptable', async () => {
+      settingsError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(url())).status).toBe(404)
+      expect((await put('{"maxRounds":1}')).status).toBe(404)
+      settingsError = new InvalidSettingsError(['"maxRounds" must be a whole number from 1 to 10'])
+      const response = await put('{"maxRounds":99}')
+      expect(response.status).toBe(422)
+      expect(await response.json()).toEqual({ message: expect.stringContaining('not acceptable'), problems: ['"maxRounds" must be a whole number from 1 to 10'] })
+      expect((await fetch(url())).status).toBe(422)
+    })
+
+    it('reject a body that is not declared as JSON, are refused without authentication and allow no other method', async () => {
+      expect((await put('{"maxRounds":2}', { 'content-type': 'text/plain' })).status).toBe(415)
+      allowed = false
+      expect((await fetch(url())).status).toBe(401)
+      allowed = true
+      const wrong = await fetch(url(), { method: 'POST' })
+      expect(wrong.status).toBe(405)
+      expect(wrong.headers.get('allow')).toBe('GET, PUT')
     })
   })
 })

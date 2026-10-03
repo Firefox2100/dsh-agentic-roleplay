@@ -27,8 +27,8 @@ export interface Removal {
 
 export interface SessionsFace {
   hooks: {
-    /** Bound by the renderer as `useSessions`. */
-    sessions: SnapshotStore<SessionsState>
+    /** Bound by the renderer as `useRoleplaySessions`; plain `useSessions` is DSH's own list of chats. */
+    roleplaySessions: SnapshotStore<SessionsState>
   }
   /** Read the list again, keeping what is shown meanwhile. */
   load: () => void
@@ -45,7 +45,7 @@ export class SessionsController {
   private readonly abort = new AbortController()
   private readonly openChat: OpenChat
   private readonly face: SessionsFace = {
-    hooks: { sessions: this.store },
+    hooks: { roleplaySessions: this.store },
     load: () => { void this.read(false) },
     refresh: () => { void this.read(true) },
     open: (id) => { void this.open(id) },

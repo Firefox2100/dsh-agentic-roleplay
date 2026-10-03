@@ -1,8 +1,10 @@
 import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
+import type { SettingsPayload } from '../../shared/settings.ts'
 import type { OpenedSession, SessionsPayload, StartedSession, StartSessionRequest, WorldCharactersPayload } from '../../shared/sessions.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
+import { InvalidSettingsError } from '../sessions/settings.ts'
 import { AgentUnavailableError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { readJsonBody } from './body.ts'
@@ -21,6 +23,8 @@ export interface ApiDeps {
     start(request: StartSessionRequest): Promise<StartedSession>
     open(id: string): Promise<OpenedSession>
     delete(id: string): Promise<void>
+    readSettings(id: string): SettingsPayload
+    writeSettings(id: string, value: unknown): SettingsPayload
   }
   connection: ApiConnection
 }
@@ -71,6 +75,27 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
         } catch (error) {
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/settings': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.readSettings(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidSettingsError) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+      PUT: async (req, res, url) => {
+        const body = await readJsonBody(req)
+        try {
+          sendJson(res, 200, sessions.writeSettings(url.searchParams.get('id') ?? '', body))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidSettingsError) return sendJson(res, 422, { message: error.message, problems: error.problems })
           throw error
         }
       },

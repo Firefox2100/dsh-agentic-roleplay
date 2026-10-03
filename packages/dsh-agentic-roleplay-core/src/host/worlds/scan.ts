@@ -5,7 +5,7 @@ import { errorMessage } from '../errors.ts'
 import { subfolders } from '../folders.ts'
 import { readDocument } from '../read-document.ts'
 import { assignWorldId } from './world-id.ts'
-import { parseWorldFile, WORLD_FILE_NAME } from './world-file.ts'
+import { parseWorldFile, WORLD_FILE_NAME, type OpeningSegment } from './world-file.ts'
 
 /** Where a world bundle lists its media files. */
 const MEDIA_MANIFEST = 'media/manifest.jsonl'
@@ -35,6 +35,8 @@ export interface WorldRecord {
   directory: string
   summary: WorldSummary
   cover?: WorldCover
+  /** The opening of the world, when it has one. */
+  opening?: OpeningSegment[]
 }
 
 export interface ScanResult {
@@ -108,6 +110,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
       tags: world.tags,
       ...(world.author === undefined ? {} : { author: world.author }),
     },
+    ...(world.opening === undefined ? {} : { opening: world.opening }),
   }
   // The cover is optional; a world that names one it cannot supply is still listed, with the reason reported.
   if (world.coverMediaId !== undefined) {

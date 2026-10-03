@@ -6,7 +6,8 @@
     - id: roleplay
       name: dsh-agentic-roleplay-core
     # The agent preset roleplay chats run under; its id must match AGENT_PRESET
-    # in the core package. It mounts no agent tools: roleplay needs none.
+    # in the core package. It mounts no agent tools: the orchestration plugin
+    # brings the game master's own tools, hooks and instructions.
     - id: preset-roleplay
       name: '@deepseek-ai/dsh-agent-preset'
       config:
@@ -16,5 +17,7 @@
           - id: persona
             name: '@deepseek-ai/dsh-persona'
             config:
-              prefix: You are the game master of a roleplay session.
+              prefix: You are the game master of an interactive roleplay.
               suffix: ''
+          - id: orchestration
+            name: dsh-agentic-roleplay-core/orchestration

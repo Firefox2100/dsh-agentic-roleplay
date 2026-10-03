@@ -1,5 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis'
+import { chatSessionId } from '../../shared/chat.ts'
+import type { NarrationSegment } from '../../shared/narration.ts'
 import { AgentUnavailableError } from '../sessions/errors.ts'
+import { storeOpening, type SessionPersistenceLike } from './opening.ts'
 
 /** Title of the DSH project that groups every roleplay chat. */
 export const PROJECT_TITLE = 'Roleplay'
@@ -10,26 +13,21 @@ export const AGENT_PRESET = 'roleplay'
 /** The slice of DSH's session controller used to create a chat. */
 export interface SessionControllerLike {
   create(request: { workspaceId: string; sessionId: string; agentPreset: string }): Promise<{ sessionId: string }>
+  /** Pins the chat's title, so no title is made from the first message. */
+  rename(request: { sessionId: string; title: string }): Promise<unknown>
 }
 
 /** The slice of DSH's workspace registry used to group and hide chats. */
 export interface WorkspaceRegistryLike {
-  create(path: string, title?: string): Promise<{ id: string }>
+  create(path: string, title?: string): Promise<{ id: string; path: string; sessionIds: readonly string[] }>
   archiveSession(sessionId: string, options?: { stopActivity?: boolean }): Promise<void>
 }
 
 export interface AgentServices {
   controller: SessionControllerLike
   registry: WorkspaceRegistryLike
-}
-
-/**
- * The DSH chat of a roleplay session is addressed by a name derived from the
- * roleplay session's id, so the two never need a stored link and creating the
- * chat twice finds the one that exists.
- */
-export function chatSessionId(sessionId: string): string {
-  return `session-${sessionId}`
+  /** Needed only to start a chat with an opening message. */
+  persistence?: SessionPersistenceLike
 }
 
 /** Looks the services up on first use: profiles without the web app do not have them. */
@@ -40,7 +38,8 @@ export function agentServicesOf(ctx: Context): () => AgentServices {
     if (controller === undefined || registry === undefined) {
       throw new AgentUnavailableError('this DSH profile has no session services, so a roleplay chat cannot be opened')
     }
-    return { controller, registry }
+    const persistence = ctx.get('sessionPersistence') as SessionPersistenceLike | undefined
+    return { controller, registry, ...(persistence === undefined ? {} : { persistence }) }
   }
 }
 
@@ -55,11 +54,23 @@ export class AgentSessions {
     private readonly projectPath: () => string,
   ) {}
 
-  /** Create the chat of a roleplay session unless it exists; returns its DSH session id. */
-  async ensure(sessionId: string): Promise<string> {
-    const { controller, registry } = this.services()
+  /**
+   * Create the chat of a roleplay session unless it exists; returns its DSH session id.
+   * @param title - the name to give a chat that is new; one that exists keeps its own.
+   * @param opening - what a chat that is new opens with: narration and lines of its characters, shown before the player says anything.
+   * @throws {AgentUnavailableError} when there is an opening and no way to store it.
+   */
+  async ensure(sessionId: string, title: string, opening?: readonly NarrationSegment[]): Promise<string> {
+    const { controller, registry, persistence } = this.services()
     const project = await registry.create(this.projectPath(), PROJECT_TITLE)
-    const { sessionId: chat } = await controller.create({ workspaceId: project.id, sessionId: chatSessionId(sessionId), agentPreset: AGENT_PRESET })
+    const wanted = chatSessionId(sessionId)
+    const existed = project.sessionIds.includes(wanted)
+    if (opening !== undefined && !existed) {
+      if (persistence === undefined) throw new AgentUnavailableError('this DSH profile cannot store a chat with an opening message')
+      await storeOpening(persistence, { id: wanted, cwd: project.path, agentPreset: AGENT_PRESET }, opening)
+    }
+    const { sessionId: chat } = await controller.create({ workspaceId: project.id, sessionId: wanted, agentPreset: AGENT_PRESET })
+    if (!existed) await controller.rename({ sessionId: chat, title })
     return chat
   }
 
@@ -72,3 +83,5 @@ export class AgentSessions {
     }
   }
 }
+
+export { chatSessionId }

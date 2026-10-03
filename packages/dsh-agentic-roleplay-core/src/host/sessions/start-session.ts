@@ -1,8 +1,12 @@
+import { join } from 'node:path'
 import type { RoleplayState } from 'dsh-roleplay-state'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
+import type { WorldProblem } from '../../shared/worlds.ts'
+import type { NarrationSegment } from '../../shared/narration.ts'
 import { loadCharacters } from '../characters/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
+import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
 import { populateCharacters } from './populate.ts'
 
@@ -11,7 +15,7 @@ const MAX_NAME_LENGTH = 200
 export interface StartSessionDeps {
   worlds: Pick<WorldCatalog, 'find'>
   state: Pick<RoleplayState, 'createSession' | 'deleteSession'>
-  agent: Pick<AgentSessions, 'ensure'>
+  agent: Pick<AgentSessions, 'ensure' | 'retire'>
   /** Read for each session, because the roleplay root can move. */
   sessionsDir: () => string
 }
@@ -31,6 +35,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const { characters, problems } = await loadCharacters(world.directory)
   if (problems.length > 0) throw new InvalidWorldError(`the characters of "${world.summary.name}" have ${problems.length} problem(s)`, problems)
 
+  const opening = openingOf(world, characters)
   const player = characters.find(character => character.id === request.playerCharacterId)
   if (player === undefined) throw new InvalidStartError(`"${world.summary.name}" has no character "${request.playerCharacterId}"`)
   if (player.role !== 'playable') throw new InvalidStartError(`${player.name} cannot be played`)
@@ -46,10 +51,26 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   let chatSessionId: string
   try {
     session.transaction(() => { populateCharacters(session, characters, player.id) })
-    chatSessionId = await deps.agent.ensure(id)
+    chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {
     deps.state.deleteSession(sessionsDir, id)
+    // The chat may have been made before the failure; a chat with no session behind it is not wanted.
+    await deps.agent.retire(id).catch(() => undefined)
     throw error
   }
   return { id, chatSessionId, name, worldId: world.summary.id, worldName: world.summary.name, characterCount: characters.length }
+}
+
+/** The opening of the world with each speaker's name, or the reason it cannot be used. */
+function openingOf(world: { directory: string; summary: { name: string }; opening?: readonly OpeningSegment[] }, characters: readonly { id: string; name: string }[]): NarrationSegment[] | undefined {
+  if (world.opening === undefined) return undefined
+  const problems: WorldProblem[] = []
+  const segments = world.opening.map((segment): NarrationSegment => {
+    if (segment.type === 'narration') return segment
+    const speaker = characters.find(character => character.id === segment.character)
+    if (speaker === undefined) problems.push({ path: join(world.directory, WORLD_FILE_NAME), message: `opening_message: "${segment.character}" is not a character of this world` })
+    return { type: 'utterance', character: segment.character, name: speaker?.name ?? segment.character, text: segment.text }
+  })
+  if (problems.length > 0) throw new InvalidWorldError(`the opening of "${world.summary.name}" has ${problems.length} problem(s)`, problems)
+  return segments
 }

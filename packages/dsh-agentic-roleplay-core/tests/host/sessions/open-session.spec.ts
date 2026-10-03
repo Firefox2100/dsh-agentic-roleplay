@@ -9,10 +9,11 @@ import { openSession } from '../../../src/host/sessions/open-session.ts'
 
 let root: string
 let state: RoleplayState
-let ensured: string[]
+let ensured: [string, string][]
 
 const deps = () => ({
-  agent: { ensure: (id: string) => { ensured.push(id); return Promise.resolve(`session-${id}`) } },
+  state,
+  agent: { ensure: (id: string, title: string) => { ensured.push([id, title]); return Promise.resolve(`session-${id}`) } },
   sessionsDir: () => join(root, 'sessions'),
 })
 
@@ -27,7 +28,7 @@ describe('openSession', () => {
   it('makes sure the session has its chat and names it', async () => {
     const { id } = state.createSession(join(root, 'sessions'), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
     expect(await openSession(deps(), id)).toEqual({ id, chatSessionId: `session-${id}` })
-    expect(ensured).toEqual([id])
+    expect(ensured).toEqual([[id, 'Night one']])
   })
 
   it('refuses an id that names no session, without creating a chat', async () => {

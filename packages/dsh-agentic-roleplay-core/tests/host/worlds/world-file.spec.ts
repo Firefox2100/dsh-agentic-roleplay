@@ -14,6 +14,35 @@ function issues(text: string): string[] {
 }
 
 describe('parseWorldFile', () => {
+  describe('the opening', () => {
+    it('is plain text read as one narration, trimmed, and left out when there is none', () => {
+      expect(parse(JSON.stringify({ name: 'W', opening_message: '  The lanterns sway.\n\nYou arrive.  ' })).opening).toEqual([{ type: 'narration', text: 'The lanterns sway.\n\nYou arrive.' }])
+      expect(parse(JSON.stringify({ name: 'W', opening_message: '   ' }))).not.toHaveProperty('opening')
+      expect(parse(JSON.stringify({ name: 'W' }))).not.toHaveProperty('opening')
+      expect(parse(JSON.stringify({ name: 'W', opening_message: [] }))).not.toHaveProperty('opening')
+    })
+
+    it('can be a list of narration and the lines of characters, in order', () => {
+      expect(parse(JSON.stringify({ name: 'W', opening_message: [
+        { type: 'narration', text: ' Dusk. ' },
+        { type: 'utterance', character: 'clara', text: 'You are late.' },
+        { text: 'No type means narration.' },
+      ] })).opening).toEqual([
+        { type: 'narration', text: 'Dusk.' },
+        { type: 'utterance', character: 'clara', text: 'You are late.' },
+        { type: 'narration', text: 'No type means narration.' },
+      ])
+    })
+
+    it('is refused when it is not text or a list, or a part has no words or an utterance no speaker', () => {
+      expect(issues(JSON.stringify({ name: 'W', opening_message: 5 }))).toEqual(['opening_message: must be text or a list of parts'])
+      expect(issues(JSON.stringify({ name: 'W', opening_message: [{ type: 'narration' }] }))).toHaveLength(1)
+      expect(issues(JSON.stringify({ name: 'W', opening_message: [{ type: 'narration', text: '  ' }] }))).toHaveLength(1)
+      expect(issues(JSON.stringify({ name: 'W', opening_message: [{ type: 'utterance', text: 'Hi' }] }))).toEqual(['opening_message[0].character: is required'])
+      expect(issues(JSON.stringify({ name: 'W', opening_message: ['text'] }))).toHaveLength(1)
+    })
+  })
+
   it('reads the fields of a world-simulation-engine export', () => {
     expect(parse(JSON.stringify({
       id: 'world_blackwater_observatory',

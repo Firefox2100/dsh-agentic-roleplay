@@ -1,10 +1,11 @@
 import { existsSync } from 'node:fs'
-import { isSessionId, sessionDatabase } from 'dsh-roleplay-state'
+import { isSessionId, sessionDatabase, type RoleplayState } from 'dsh-roleplay-state'
 import type { OpenedSession } from '../../shared/sessions.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import { SessionNotFoundError } from './errors.ts'
 
 export interface OpenSessionDeps {
+  state: Pick<RoleplayState, 'openSession'>
   agent: Pick<AgentSessions, 'ensure'>
   sessionsDir: () => string
 }
@@ -12,5 +13,6 @@ export interface OpenSessionDeps {
 /** Make sure a session has its DSH chat, so that it can be opened. */
 export async function openSession(deps: OpenSessionDeps, id: string): Promise<OpenedSession> {
   if (!isSessionId(id) || !existsSync(sessionDatabase(deps.sessionsDir(), id))) throw new SessionNotFoundError(`no session "${id}"`)
-  return { id, chatSessionId: await deps.agent.ensure(id) }
+  const { name } = deps.state.openSession(deps.sessionsDir(), id).metadata.get()
+  return { id, chatSessionId: await deps.agent.ensure(id, name) }
 }

@@ -12,7 +12,8 @@ import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 let root: string
 let state: RoleplayState
 let deps: StartSessionDeps
-let ensured: string[]
+let ensured: [string, string, readonly { type: string; text: string }[] | undefined][]
+let retired: string[]
 let ensureError: Error | undefined
 
 async function write(path: string, content: unknown): Promise<void> {
@@ -23,6 +24,7 @@ async function write(path: string, content: unknown): Promise<void> {
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'start-session-'))
   ensured = []
+  retired = []
   ensureError = undefined
   state = new RoleplayState(new Context(), { journalMode: 'delete' })
   await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory' })
@@ -37,10 +39,11 @@ beforeEach(async () => {
     worlds: new WorldCatalog(new Context(), { path: root } as RoleplayRoot),
     state,
     agent: {
-      ensure: (id) => {
-        ensured.push(id)
+      ensure: (id, title, opening) => {
+        ensured.push([id, title, opening])
         return ensureError === undefined ? Promise.resolve(`session-${id}`) : Promise.reject(ensureError)
       },
+      retire: (id) => { retired.push(id); return Promise.resolve() },
     },
     sessionsDir: () => join(root, 'sessions'),
   }
@@ -74,15 +77,43 @@ describe('startSession', () => {
     expect(session.intents.list(arthur?.id ?? 0).map(intent => intent.name)).toEqual(['Investigate'])
   })
 
-  it('creates the chat of the new session', async () => {
+  it('creates the chat of the new session, named after it', async () => {
+    const started = await startSession(deps, { ...playAsArthur, name: 'Night one' })
+    expect(ensured).toEqual([[started.id, 'Night one', undefined]])
+    expect((await startSession(deps, playAsArthur)).name).toBe('The Blackwater Observatory')
+    expect(ensured.at(-1)?.[1]).toBe('The Blackwater Observatory')
+  })
+
+  it('starts the chat with the opening of the world, plain text as one narration', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: ' The festival lanterns sway. ' })
     const started = await startSession(deps, playAsArthur)
-    expect(ensured).toEqual([started.id])
+    expect(ensured).toEqual([[started.id, 'The Blackwater Observatory', [{ type: 'narration', text: 'The festival lanterns sway.' }]]])
+  })
+
+  it('names the characters who speak in the opening', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: [
+      { type: 'narration', text: 'Dusk.' }, { type: 'utterance', character: 'clara', text: 'You are late.' },
+    ] })
+    await startSession(deps, playAsArthur)
+    expect(ensured[0]?.[2]).toEqual([
+      { type: 'narration', text: 'Dusk.' }, { type: 'utterance', character: 'clara', name: 'Clara Whitlock', text: 'You are late.' },
+    ])
+  })
+
+  it('refuses a world whose opening has someone speak who is not in it, before anything is created', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: [
+      { type: 'utterance', character: 'nobody', text: 'Hello.' },
+    ] })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(InvalidWorldError)
+    expect(ensured).toEqual([])
+    expect(await readdir(root)).not.toContain('sessions')
   })
 
   it('leaves nothing behind when the chat cannot be created', async () => {
     ensureError = new Error('no session services')
     await expect(startSession(deps, playAsArthur)).rejects.toThrow('no session services')
     expect(await readdir(join(root, 'sessions'))).toEqual([])
+    expect(retired).toHaveLength(1)
   })
 
   it('lets the player choose which playable character to take', async () => {
