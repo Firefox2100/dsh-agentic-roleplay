@@ -1,5 +1,5 @@
 import { locationKey as placeKey, type Recalled } from 'dsh-roleplay-state'
-import type { Boundaries, CastMember, CharacterRequest, Reaction, TurnStore } from './boundaries.ts'
+import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TurnStore } from './boundaries.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 
 /** Asks one character to act; what the game master calls a character is the character's key. */
@@ -89,6 +89,8 @@ interface TurnState {
 }
 
 const MAX_OBJECTIONS = 3
+/** Something made up that has waited this many turns is fitted into the world even if few are waiting. */
+const STALE_AFTER_TURNS = 4
 /** The game master is asked to correct its output this many times before it is corrected for it. */
 const MAX_REFUSALS = 2
 
@@ -101,6 +103,8 @@ const MAX_REFUSALS = 2
 export class TurnEngine {
   private readonly states = new Map<string, TurnState>()
   private readonly objections = new Map<string, number>()
+  /** Chats whose made-up characters and places are being fitted into the world now: one run at a time. */
+  private readonly consolidating = new Set<string>()
 
   constructor(
     private readonly boundaries: () => Boundaries,
@@ -192,6 +196,52 @@ export class TurnEngine {
       ? { type: 'utterance', character: segment.character ?? '', name: state.cast.find(member => member.key === segment.character)?.character.name ?? segment.character ?? '', text: segment.text }
       : { type: 'narration', text: segment.text })
     return await this.deliver(owner, state, typed, false)
+  }
+
+  /**
+   * The game master asks for something to be made up (a place the story has gone to, someone who has
+   * joined): the world author decides whether the story genuinely needs it, and makes it or says why not.
+   * The world may be closed, and only so many things may be made up in a turn.
+   * @throws {Error} when the world is closed, the limit of the turn is reached, a round is open, or the request is empty.
+   */
+  async expand(owner: TurnOwner, input: { need: string; what: string }, signal: AbortSignal): Promise<CreateReport> {
+    const state = this.stateFor(owner)
+    if (state.phase === 'resolving' || state.phase === 'retrying') throw new Error('resolve the round first: the world is extended between rounds, not in the middle of one')
+    const need = AUTHORING_NEEDS.find(candidate => candidate === input.need)
+    if (need === undefined) throw new Error(`"${input.need}" is not a reason to make something up; the reasons are: ${AUTHORING_NEEDS.join(', ')}`)
+    const what = input.what.trim()
+    if (what === '') throw new Error('say what is needed, from what the story has established: who or where, and why now')
+    const store = this.storeOf(owner)
+    const { authoring } = store.settings()
+    if (!authoring.enabled) throw new Error('this world is closed: nothing can be made up in it')
+    const made = store.story.consolidation.createdIn(owner.turn).length
+    if (made >= authoring.perTurn) throw new Error(`${made} new thing${made === 1 ? ' was' : 's were'} already made up this turn, which is the most this chat allows: work with what exists`)
+    return await this.boundaries().author.create({ chat: owner.chat, turn: owner.turn, need, what, store }, signal)
+  }
+
+  /** Whether made-up characters and places are waiting to be fitted into the world. */
+  waitingToFit(owner: TurnOwner): number {
+    return this.stores(owner.chat)?.story.consolidation.pending().length ?? 0
+  }
+
+  /**
+   * Fit what was made up into the rest of the world in the background, when enough of it is waiting or some
+   * has waited long: the turn does not wait for it, and a failed run leaves everything queued for the next.
+   */
+  private consolidateIfDue(owner: TurnOwner, state: TurnState): void {
+    const store = this.stores(owner.chat)
+    if (store === undefined || this.consolidating.has(owner.chat)) return
+    const { authoring } = store.settings()
+    const pending = store.story.consolidation.pending()
+    if (!authoring.enabled || pending.length === 0) return
+    if (pending.length < authoring.consolidateAfter && !pending.some(item => owner.turn - item.createdTurn >= STALE_AFTER_TURNS)) return
+    this.consolidating.add(owner.chat)
+    void this.boundaries().author.consolidate({ chat: owner.chat, turn: owner.turn, store }, state.cancel.signal)
+      .then(() => { this.written(owner.chat) })
+      .catch((error: unknown) => {
+        if (!state.cancel.signal.aborted) this.problem(`made-up characters and places were not fitted into the world: ${error instanceof Error ? error.message : String(error)}`)
+      })
+      .finally(() => { this.consolidating.delete(owner.chat) })
   }
 
   /** What still has to happen before the turn may end, or nothing when it may. */
@@ -312,9 +362,11 @@ export class TurnEngine {
         : state.recalled.get(key) ?? []
       if (number === 1 && memories.length > 0) state.recalled.set(key, memories)
       const place = member.place === undefined ? undefined : store?.place(member.place.location.id)
+      const relationships = store === undefined ? [] : this.knownRelationships(member, place === undefined ? cast : place.here, store)
       const request: CharacterRequest = {
         member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false,
         ...(place === undefined ? {} : { place }),
+        ...(relationships.length === 0 ? {} : { relationships }),
         ...(memories.length === 0 ? {} : { memories }),
         ...(state.history.length === 0 ? {} : { earlier: [...state.history] }),
         ...(reaction === undefined ? {} : { reaction }),
@@ -334,6 +386,14 @@ export class TurnEngine {
       reports: answers.filter((answer): answer is CharacterReport => 'intent' in answer),
       failures: answers.filter((answer): answer is CharacterFailure => 'reason' in answer),
     }
+  }
+
+  /** How a character sees those it is with, for those it has a profile of. */
+  private knownRelationships(member: CastMember, company: readonly CastMember[], store: TurnStore): KnownRelationship[] {
+    return store.story.relationships.from(member.character.id).flatMap((relation) => {
+      const other = company.find(candidate => candidate.character.id === relation.toId)
+      return other === undefined || other.key === member.key ? [] : [{ name: other.character.name, label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }]
+    })
   }
 
   private reactions(state: TurnState): Reaction[] {
@@ -484,6 +544,7 @@ export class TurnEngine {
     await this.settle(owner, state)
     this.storeOf(owner).completeTurn()
     state.phase = 'done'
+    this.consolidateIfDue(owner, state)
     return output
   }
 }

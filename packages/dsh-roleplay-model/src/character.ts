@@ -1,3 +1,4 @@
+import type { RelationshipDefinition } from './relationship.ts'
 import type { CharacterStart } from './state.ts'
 
 export const CHARACTER_ROLES = ['playable', 'npc'] as const
@@ -43,4 +44,6 @@ export interface CharacterDefinition {
   appearance: string
   speech: CharacterSpeech
   start: CharacterStart
+  /** How this character stands towards others of the world, by their ids. */
+  relationships?: RelationshipDefinition[]
 }

@@ -212,3 +212,22 @@ describe('parseCharacterFile', () => {
     })
   })
 })
+
+describe('relationships in a character file', () => {
+  it('are read as profiles of other characters, with what is left out at its default', () => {
+    const result = parseCharacterFile(JSON.stringify({ name: 'Eleanor', relationships: [{ to: 'arthur', label: 'suspicious of', summary: 'He asks too many questions.', trust: -0.3, tension: 0.5 }, { to: 'clara', label: 'friend' }] }), 'eleanor')
+    expect(result.ok && result.value.relationships).toEqual([
+      { to: 'arthur', label: 'suspicious of', summary: 'He asks too many questions.', familiarity: 0, trust: -0.3, affinity: 0, tension: 0.5 },
+      { to: 'clara', label: 'friend', summary: '', familiarity: 0, trust: 0, affinity: 0, tension: 0 },
+    ])
+    const none = parseCharacterFile(JSON.stringify({ name: 'Eleanor' }), 'eleanor')
+    expect(none.ok && none.value.relationships).toBeUndefined()
+  })
+
+  it('are reported with their path: a missing target or label, a value out of range, one character twice, too many', () => {
+    const result = parseCharacterFile(JSON.stringify({ name: 'E', relationships: [{ label: 'x' }, { to: 'a' }, { to: 'b', label: 'x', trust: 2 }, { to: 'c', label: 'x' }, { to: 'c', label: 'y' }] }), 'e')
+    expect(result.ok ? [] : result.issues.map(issue => issue.path)).toEqual(['relationships[0].to', 'relationships[1].label', 'relationships[2].trust', 'relationships[4].to'])
+    const many = parseCharacterFile(JSON.stringify({ name: 'E', relationships: Array.from({ length: 61 }, (_, index) => ({ to: `c${index}`, label: 'x' })) }), 'e')
+    expect(many.ok ? [] : many.issues.map(issue => issue.path)).toEqual(['relationships'])
+  })
+})

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from 'dsh-roleplay-state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
-import { populateCharacters, populateLocations, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
+import { populateCharacters, populateLocations, relationshipProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
 import type { LocationDefinition } from 'dsh-roleplay-model'
 
 let dir: string
@@ -147,5 +147,25 @@ describe('where characters start', () => {
       'lost: start.location "moon" is not a place of this world',
       'wrong: start.feature "piano" is not a feature of The Bar (it has: counter)',
     ])
+  })
+})
+
+describe('relationships between the characters of a world', () => {
+  it('are stored as one profile per direction, from the file of the character whose view it is', () => {
+    const arthur = definition({ id: 'arthur', name: 'Arthur', aliases: [], relationships: [{ to: 'eleanor-graves', label: 'suspect', summary: 'She hides something.', familiarity: 0.3, trust: -0.2, affinity: 0, tension: 0.4 }] })
+    populateCharacters(session, [arthur, definition({ relationships: [{ to: 'arthur', label: 'nuisance', summary: '', familiarity: 0, trust: 0, affinity: -0.3, tension: 0.2 }] })], 'arthur')
+    const [a, e] = [session.characters.getBySourceId('arthur')!, session.characters.getBySourceId('eleanor-graves')!]
+    expect(session.relationships.get(a.id, e.id)).toMatchObject({ label: 'suspect', summary: 'She hides something.', trust: -0.2, tension: 0.4, updatedTurn: 0 })
+    expect(session.relationships.get(e.id, a.id)).toMatchObject({ label: 'nuisance', affinity: -0.3 })
+    expect(session.characters.list().map(character => 'relationships' in character)).toEqual([false, false])
+  })
+
+  it('are reported before anything is made when they name someone the world does not have, or the character itself', () => {
+    const lost = definition({ id: 'lost', name: 'Lost', aliases: [], relationships: [{ to: 'ghost', label: 'x', summary: '', familiarity: 0, trust: 0, affinity: 0, tension: 0 }, { to: 'lost', label: 'x', summary: '', familiarity: 0, trust: 0, affinity: 0, tension: 0 }] })
+    expect(relationshipProblems([lost, definition()])).toEqual([
+      'lost: relationships: "ghost" is not a character of this world',
+      'lost: relationships: a character has no relationship with itself',
+    ])
+    expect(relationshipProblems([definition()])).toEqual([])
   })
 })

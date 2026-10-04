@@ -10,6 +10,9 @@ export const FORM_FIELDS = [
   { path: ['memory', 'lookup'], kind: 'flag', label: 'lookup', help: 'lookupHelp' },
   { path: ['memory', 'verify'], kind: 'flag', label: 'verify', help: 'verifyHelp' },
   { path: ['memory', 'backlogRounds'], kind: 'integer', label: 'backlogRounds', help: 'backlogRoundsHelp' },
+  { path: ['authoring', 'enabled'], kind: 'flag', label: 'authoringEnabled', help: 'authoringEnabledHelp' },
+  { path: ['authoring', 'perTurn'], kind: 'integer', label: 'authoringPerTurn', help: 'authoringPerTurnHelp' },
+  { path: ['authoring', 'consolidateAfter'], kind: 'integer', label: 'consolidateAfter', help: 'consolidateAfterHelp' },
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'retainRatio'], kind: 'percent', label: 'retainRatio', help: 'retainRatioHelp' },
 ] as const

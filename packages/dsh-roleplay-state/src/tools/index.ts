@@ -3,11 +3,12 @@ import { IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_KINDS, PERCEPTION_MODES, ACCURAC
 import { NotFoundError } from '../errors.ts'
 import type { MemoryPolicy } from '../memory/recall.ts'
 import { characterKey, locationKey, parseRecordsEdit, recordsEditSchema } from '../records/edit.ts'
+import { lintWorld } from '../records/lint.ts'
 import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements'>
+  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove'>
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
   turn: number
   policy: MemoryPolicy
@@ -52,7 +53,13 @@ const ints = { ...integers, required: true } as const
  * recorded; writing tools change it and are registered only when the plugin is configured
  * for them. Both resolve the session from the agent that calls them.
  */
-export function createTools(resolve: AgentResolver, options: { write: boolean; /** Limits the characters a call may name to these keys, for an agent that works on one story. */ characters?: readonly string[] }): ToolDefinition[] {
+export function createTools(resolve: AgentResolver, options: {
+  write: boolean
+  /** Limits the characters a call may name to these keys, for an agent that works on one story. */
+  characters?: readonly string[]
+  /** Tools of the agent that makes up characters and places and fits them into the world: it makes them with `edit_world` instead of `edit_records`, and reads what is inconsistent. Never for a global registration. */
+  authoring?: boolean
+}): ToolDefinition[] {
   const reads = [
     defineTool({
       name: 'list_characters',
@@ -80,6 +87,7 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
             character: str, name: str, aliases: strs, summary: str, personality: str,
             public_state: str, inner_state: str, activity: str, emotion: { type: 'json', required: true },
             location: { type: 'json', required: true }, position: str,
+            relationships: { type: 'json', required: true },
           },
         },
         render: pretty,
@@ -90,9 +98,24 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
         const view = session.records().characters.find(entry => entry.character === args.character)
         const found = session.characters.list().find(character => characterKey(character) === args.character)
         if (view === undefined || found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, emotion: view.emotion, location: view.location, position: view.position }
+        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, emotion: view.emotion, location: view.location, position: view.position, relationships: session.records().relationships.filter(relation => relation.from === args.character) }
       },
     }),
+    defineTool({
+      name: 'list_relationships',
+      description: 'How characters stand towards each other: for each, the label (what the other is to it), a sentence, and how well it knows, trusts, likes and is strained with the other. Give a character to see how it sees others and how others see it.',
+      parameters: { character: { type: 'string', description: 'The key of a character. Leave out for every relationship (the most recently changed first, at most 80).' } },
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent)
+        const all = session.records().relationships
+        if (args.character === undefined) return JSON.parse(JSON.stringify(all)) as never
+        if (!session.characters.list().some(character => characterKey(character) === args.character)) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
+        return JSON.parse(JSON.stringify({ sees: all.filter(relation => relation.from === args.character), seenBy: all.filter(relation => relation.to === args.character) })) as never
+      },
+    }),
+
     defineTool({
       name: 'list_locations',
       description: 'List the places of the story with the key each is named by and the place it is in. Narrow to what is inside one place with `within`; at most 100 are listed.',
@@ -235,6 +258,33 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
       },
     }),
   ]
+  const authoringReads: ToolDefinition[] = options.authoring !== true ? [] : [
+    defineTool({
+      name: 'world_lint',
+      description: 'What is inconsistent or unfinished in the world\'s places and characters: places no one can reach or leave, characters in no place, names used twice, characters made up and not yet connected to anyone, ways with no way back. An error leaves the world inconsistent and has to be fixed; a warning should be fitted in; an info is only worth knowing.',
+      parameters: {},
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { severity: str, code: str, subject: { type: 'json', required: true }, message: str } } }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(_args, exec) {
+        return JSON.parse(JSON.stringify(lintWorld(link(resolve, exec.agent).session))) as never
+      },
+    }),
+    defineTool({
+      name: 'list_consolidation',
+      description: 'What was made up in play and has not been fitted into the world yet: characters and places, with the turn they were made in and why.',
+      parameters: {},
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(_args, exec) {
+        const { session } = link(resolve, exec.agent)
+        return JSON.parse(JSON.stringify(session.consolidation.pending().map((item) => {
+          const subject = item.kind === 'character' ? session.characters.get(item.subjectId) : session.locations.get(item.subjectId)
+          return { id: item.id, kind: item.kind, key: subject === undefined ? String(item.subjectId) : item.kind === 'character' ? characterKey(subject as never) : locationKey(subject as never), name: subject?.name ?? '', made_in_turn: item.createdTurn, why: item.note }
+        }))) as never
+      },
+    }),
+  ]
+  reads.push(...authoringReads)
   if (!options.write) return reads
 
   const done = { type: 'object', additionalProperties: false, properties: { writes: int, event_ids: ints, belief_ids: ints } } as const
@@ -255,22 +305,39 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
     },
   } as const
 
-  const editSchema = recordsEditSchema({ ...(options.characters === undefined ? {} : { characters: options.characters }), changes: true })
+  const editSchema = recordsEditSchema({ ...(options.characters === undefined ? {} : { characters: options.characters }), changes: true, ...(options.authoring === true ? { authoring: true } : {}) })
   const writes: ToolDefinition[] = [
     {
-      name: 'edit_records',
-      description: 'Change the story\'s records in one call, together or not at all: character states, new events (with where they happened and who took them in), corrections and retractions of draft events, revisions of what characters took in, places the story makes up, changes to the ways between places, beliefs, and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
+      name: options.authoring === true ? 'edit_world' : 'edit_records',
+      description: options.authoring === true
+        ? 'Make up characters and places and fit them into the world, in one call, together or not at all: new characters (with their state and where they are), new places with their features and ways, new ways between places, relationship profiles between characters (one per direction), changes to places and ways, and corrections. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.'
+        : 'Change the story\'s records in one call, together or not at all: character states, new events (with where they happened and who took them in), corrections and retractions of draft events, revisions of what characters took in, changes to places and the ways between them, how characters stand towards each other, beliefs, and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
       parameters: editSchema as unknown as Record<string, unknown>,
       output: {
-        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } } }, required: ['writes', 'event_ids', 'belief_ids'], additionalProperties: false },
-        render: (_args, value) => summary('Records changed')(_args, value as { writes: number }),
+        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } }, character_keys: { type: 'array', items: { type: 'string' } }, place_keys: { type: 'array', items: { type: 'string' } } }, required: ['writes', 'event_ids', 'belief_ids', 'character_keys', 'place_keys'], additionalProperties: false },
+        render: (_args, value) => summary(options.authoring === true ? 'World changed' : 'Records changed')(_args, value as { writes: number }),
       },
       async execute(args, exec) {
         const { session } = link(resolve, exec.agent)
         const result = session.edit(parseRecordsEdit(args))
-        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds }
+        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [] }
       },
     },
+    ...(options.authoring !== true ? [] : [defineTool({
+      name: 'resolve_consolidation',
+      description: 'Say that something made up in play has been fitted into the world, and how: what you connected it to, or why nothing more is needed. Only after you have done it.',
+      parameters: {
+        id: { type: 'integer', required: true, description: 'The id list_consolidation gives.' },
+        resolution: { type: 'string', required: true, description: 'What was done, in a sentence.' },
+      },
+      output: { schema: done, render: summary('Fitted in') },
+      async execute(args, exec) {
+        const { session, turn } = link(resolve, exec.agent)
+        if (args.resolution.trim() === '') throw new NotFoundError('say what was done to fit it in')
+        session.consolidation.resolve(args.id, turn, args.resolution)
+        return { writes: 1, event_ids: [], belief_ids: [] }
+      },
+    })]),
     defineTool({
       name: 'update_character_state',
       description: 'Change the current state of a character. Give only what changed: public_state is what anyone present can see (a present-tense description, not a log), inner_state is private, activity is what it is doing now.',

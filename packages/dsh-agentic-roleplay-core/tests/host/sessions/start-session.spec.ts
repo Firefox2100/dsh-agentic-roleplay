@@ -258,3 +258,16 @@ describe('starting in a world with places', () => {
     await expect(startSession(deps, playAsArthur)).rejects.toThrow(/starting places/)
   })
 })
+
+describe('starting in a world whose characters have relationships', () => {
+  it('stores them, and refuses a relationship with someone the world does not have', async () => {
+    const characters = join(root, 'worlds', 'blackwater folder', 'characters')
+    await write(join(characters, 'clara', 'character.json'), { name: 'Clara Whitlock', relationships: [{ to: 'arthur', label: 'regular', summary: 'Drinks alone.', affinity: 0.4 }] })
+    const started = await startSession(deps, playAsArthur)
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    const [arthur, clara] = [session.characters.getBySourceId('arthur')!, session.characters.getBySourceId('clara')!]
+    expect(session.relationships.get(clara.id, arthur.id)).toMatchObject({ label: 'regular', affinity: 0.4 })
+    await write(join(characters, 'clara', 'character.json'), { name: 'Clara Whitlock', relationships: [{ to: 'nobody', label: 'x' }] })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/relationships of .* have 1 problem/)
+  })
+})

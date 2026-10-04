@@ -10,6 +10,7 @@ import {
   type EmotionStart,
   type EmotionVector,
   type Intent,
+  type RelationshipDefinition,
 } from 'dsh-roleplay-model'
 import { readIdentifier } from '../identifiers.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
@@ -64,6 +65,26 @@ function readIntent(reader: Reader): Intent | undefined {
     ...(deadlineTime === undefined || Number.isNaN(deadlineTime) ? {} : { deadline: new Date(deadlineTime).toISOString() }),
   }
   return name === undefined ? undefined : { ...intent, name }
+}
+
+/** At most this many relationship profiles in one character file. */
+export const MAX_RELATIONSHIPS = 60
+
+function readRelationships(reader: Reader): RelationshipDefinition[] {
+  const seen = new Set<string>()
+  const relationships = reader.objects('relationships').flatMap((relation): RelationshipDefinition[] => {
+    const to = relation.string('to', { required: true })
+    const label = relation.string('label', { required: true })
+    const familiarity = relation.number('familiarity', { min: 0, max: 1 }) ?? 0
+    const trust = relation.number('trust', { min: -1, max: 1 }) ?? 0
+    const affinity = relation.number('affinity', { min: -1, max: 1 }) ?? 0
+    const tension = relation.number('tension', { min: 0, max: 1 }) ?? 0
+    if (to !== undefined && seen.has(to)) relation.fail('to', `"${to}" is listed twice: one profile per character`)
+    if (to !== undefined) seen.add(to)
+    return to === undefined || label === undefined ? [] : [{ to, label, summary: relation.text('summary'), familiarity, trust, affinity, tension }]
+  })
+  if (relationships.length > MAX_RELATIONSHIPS) reader.fail('relationships', `a character has at most ${MAX_RELATIONSHIPS} relationship profiles`)
+  return relationships
 }
 
 function readStart(reader: Reader | undefined): CharacterStart {
@@ -121,6 +142,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
     appearance: reader.text('appearance'),
     speech: { style: speech?.text('style') ?? '', examples: speech?.strings('examples') ?? [] },
     start: readStart(reader.object('start')),
+    ...(reader.raw('relationships') === undefined ? {} : { relationships: readRelationships(reader) }),
   }
   return issues.length > 0 ? { ok: false, issues } : { ok: true, value: character }
 }

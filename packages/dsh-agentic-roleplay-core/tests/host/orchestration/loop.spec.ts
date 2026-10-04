@@ -97,6 +97,12 @@ interface Script {
   skipRecord?: boolean
   /** Bob goes down to the cellar as a result of the round; or tries the locked vault first and is refused. */
   moves?: 'cellar' | 'locked-first'
+  /**
+   * The game master asks for someone to be made up before it delivers; and how the world author answers: makes a
+   * character, makes one that is not usable at first (no place) and fixes it when refused, declines, says it made
+   * something it did not, or makes two at once.
+   */
+  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' }
 }
 
 const aliceOnly = [{ character: 'alice', result: 'succeeded', summary: 'Alice greets him' }]
@@ -192,10 +198,49 @@ function keeperAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
   return submit
 }
 
+const MIRA = { key: 'mira', name: 'Mira Voss', summary: 'A ferry pilot with news from the river.', personality: 'Dry and tired.', speech: { style: 'Short sentences.' }, state: { public_state: 'Out of breath.', activity: 'delivering news' } }
+
+/** The world author's loop: look, make (or decline), check, submit; and, when fitting things in, connect, resolve, submit. */
+function authorAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
+  const consolidating = systemOf(request).includes('fitting into the world what was made up')
+  const turn = Number(/It is turn (\d+)/.exec(briefOf(request))?.[1] ?? 1)
+  const edits = timesCalled(request, 'edit_world')
+  const lints = timesCalled(request, 'world_lint')
+  const resolves = timesCalled(request, 'resolve_consolidation')
+  const last = lastTool(request)
+  if (consolidating) {
+    const item = Number(/- item (\d+)/.exec(briefOf(request))?.[1] ?? 0)
+    if (edits === 0) return call('f-edit', 'edit_world', { turn, relationships: [{ from: 'mira', to: 'arthur', label: 'passenger', summary: 'Brought him over the river.', familiarity: 0.4 }, { from: 'arthur', to: 'mira', label: 'ferry pilot' }] })
+    if (resolves === 0) return call('f-resolve', 'resolve_consolidation', { id: item, resolution: 'gave her relationships with Arthur, both ways' })
+    return call('f-submit', 'submit_result', { complete: true, notes: 'fitted in' })
+  }
+  const mode = script.expand?.author ?? 'creates'
+  const submitCreated = call('a-submit', 'submit_result', { outcome: 'created', summary: 'Made Mira Voss and connected her.' })
+  const place = { location: 'street', position: 'by the bar door' }
+  if (mode === 'declines') return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'The innkeeper already serves; no new person is needed.' })
+  if (mode === 'pointless') {
+    if (edits === 0 && !last?.isError) return submitCreated
+    return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'On reflection nothing is needed.' })
+  }
+  if (mode === 'greedy') {
+    if (edits === 0) return call('a-greedy', 'edit_world', { turn, characters: [{ ...MIRA, place }, { key: 'tom', name: 'Tom Voss', summary: 'Her brother.', place }, { key: 'ann', name: 'Ann Voss', summary: 'Her sister.', place }] })
+    return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'Too many at once; nothing made.' })
+  }
+  const withPlace = mode === 'creates'
+  if (edits === 0) return call('a-edit', 'edit_world', { turn, characters: [{ ...MIRA, ...(withPlace ? { place } : {}) }], relationships: [{ from: 'mira', to: 'arthur', label: 'passenger' }] })
+  if (mode === 'incomplete' && edits === 1) {
+    if (last?.isError === true) return call('a-fix', 'edit_world', { turn, moves: [{ character: 'mira', to: 'street', position: 'by the bar door', ignore_exits: true }] })
+    return submitCreated
+  }
+  if (lints === 0) return call('a-lint', 'world_lint', {})
+  return submitCreated
+}
+
 /** The game master, following the protocol, and characters answering from their own sheets. */
 function answerFor(script: Script = {}) {
   return (request: GenerateOptions): StreamChunk[] => {
     if (systemOf(request).includes('record keeper of an interactive story')) return keeperAnswer(request, script)
+    if (systemOf(request).includes('world author of an interactive story')) return authorAnswer(request, script)
     const who = /You are (Alice|Bob|Carol|Dan)\./.exec(systemOf(request))?.[1]
     if (who !== undefined) {
       const retry = asText(request).includes('trying again')
@@ -227,6 +272,7 @@ function answerFor(script: Script = {}) {
     if (resolved === 1 && thisTurn(request).includes('tried once more')) {
       return call('m3', 'resolve_round', { outcomes: [{ character: 'dan', result: 'succeeded', summary: 'Dan takes the lantern too' }] })
     }
+    if (script.expand !== undefined && timesCalled(request, 'expand_world') === 0) return call('m-exp', 'expand_world', { need: 'arrival', what: 'A ferry pilot named Mira Voss has just come up the lane to the bar with news.' })
     if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'The key changed hands.' })
     const delivery = script.delivery ?? 'good'
     if (thisTurn(request).includes('has been delivered to the player')) return text('')
@@ -250,16 +296,16 @@ async function addSession(name: string, withPlaces = false): Promise<{ session: 
     session.characterStates.create(id, { publicState: `${characterName} waits`, innerState: '', activity: 'idle' })
   }
   if (withPlaces) {
-    session.edit({
-      turn: 1,
-      places: [
-        { key: 'bar', name: 'The Bar', description: 'Smoky.', features: [{ key: 'counter', name: 'Counter' }], exits: [{ to: 'street', description: 'the door' }, { to: 'cellar', description: 'a stair down' }] },
-        { key: 'street', name: 'Main Street' },
-        { key: 'cellar', name: 'Cellar', description: 'Cold.' },
-        { key: 'vault', name: 'Vault', exits: [{ to: 'cellar', state: 'locked', note: 'needs a key' }] },
-      ],
-    })
-    for (const [key, where] of [['arthur', 'bar'], ['alice', 'bar'], ['bob', 'bar'], ['carol', 'cellar'], ['dan', 'street']] as const) session.edit({ turn: 1, moves: [{ character: key, to: where, ignoreExits: true }] })
+    const place = (key: string, name: string, description = '', features: { key: string; name: string; description: string }[] = []) => session.locations.add({ sourceId: key, name, description, features })
+    const [bar, street, cellar, vault] = [place('bar', 'The Bar', 'Smoky.', [{ key: 'counter', name: 'Counter', description: '' }]), place('street', 'Main Street'), place('cellar', 'Cellar', 'Cold.'), place('vault', 'Vault')]
+    const way = (from: number, to: number, description: string, state: 'open' | 'locked' = 'open', note = '') => {
+      session.locations.addExit({ fromId: from, toId: to, description, state, note })
+      session.locations.addExit({ fromId: to, toId: from, description, state, note })
+    }
+    way(bar.id, street.id, 'the door')
+    way(bar.id, cellar.id, 'a stair down')
+    way(vault.id, cellar.id, '', 'locked', 'needs a key')
+    for (const [key, where] of [['arthur', bar], ['alice', bar], ['bob', bar], ['carol', cellar], ['dan', street]] as const) session.placements.place('character', session.characters.getBySourceId(key)!.id, { locationId: where.id })
   }
   return { session, id: session.metadata.get().id }
 }
@@ -317,6 +363,105 @@ afterEach(async () => {
 })
 
 describe('a turn with the real agent loop', () => {
+  describe('the world author', () => {
+    async function playAuthored(author: NonNullable<Script['expand']>['author'], settings?: object) {
+      const { session, id } = await addSession('Vault', true)
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', expand: { author } }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I wait for the ferry.'))
+      await agent.whenIdle()
+      return { session, adapter, agent }
+    }
+    const authors = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('world author of an interactive story'))
+    const masterSaw = (adapter: ScriptedAdapter) => JSON.stringify(masterRequests(adapter).at(-1)!.messages)
+
+    it('is asked through expand_world, which only the game master has, and makes the character the story needs, placed, connected and queued', async () => {
+      const { session, adapter } = await playAuthored('creates')
+      expect(masterRequests(adapter).every(request => toolNames(request).includes('expand_world'))).toBe(true)
+      expect(characterRequests(adapter).some(request => toolNames(request).includes('expand_world'))).toBe(false)
+      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_character', 'get_location', 'list_characters', 'list_locations', 'list_relationships', 'search_events', 'submit_result', 'world_lint'])
+      const mira = session.characters.getBySourceId('mira')!
+      expect(mira).toMatchObject({ name: 'Mira Voss', role: 'npc', control: 'agent', tier: 'supporting' })
+      expect(session.placements.get('character', mira.id)).toMatchObject({ locationId: session.locations.getBySourceId('street')!.id, position: 'by the bar door' })
+      expect(session.relationships.get(mira.id, session.characters.getBySourceId('arthur')!.id)?.label).toBe('passenger')
+      expect(session.consolidation.pending()).toEqual([expect.objectContaining({ kind: 'character', subjectId: mira.id, createdTurn: 1 })])
+      expect(masterSaw(adapter)).toContain('Made up and fitted into the world:\\n- character mira (Mira Voss)')
+      expect(masterSaw(adapter)).toContain('now in the cast')
+    })
+
+    it('is told the bar, the request, what exists and what happened, before it decides', async () => {
+      const { adapter } = await playAuthored('creates')
+      const brief = briefOf(authors(adapter)[0]!)
+      expect(brief).toContain('Reason given: arrival.')
+      expect(brief).toContain('A ferry pilot named Mira Voss has just come up the lane')
+      expect(brief).toContain('At most 2 new things may be made in a turn, and 0 already were this turn.')
+      expect(brief).toContain('## Characters that exist\n- arthur: Arthur in The Bar [the player]')
+      expect(brief).toContain('## Places that exist\n- bar: The Bar')
+      expect(systemOf(authors(adapter)[0]!)).toContain('Something is made up only when ALL of this holds')
+    })
+
+    it('does not finish until what it made is usable: a character in no place is an error it must fix', async () => {
+      const { session, adapter } = await playAuthored('incomplete')
+      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toContain('what you made is not usable yet')
+      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toContain('character-unplaced')
+      expect(session.placements.get('character', session.characters.getBySourceId('mira')!.id)?.locationId).toBe(session.locations.getBySourceId('street')!.id)
+      expect(masterSaw(adapter)).toContain('character mira (Mira Voss)')
+    })
+
+    it('can decline, and the game master is told to work with what exists', async () => {
+      const { session, adapter } = await playAuthored('declines')
+      expect(session.characters.getBySourceId('mira')).toBeUndefined()
+      expect(session.consolidation.pending()).toEqual([])
+      expect(masterSaw(adapter)).toContain('Nothing was made up: The innkeeper already serves; no new person is needed. Work with what exists.')
+    })
+
+    it('may not say it made something it did not', async () => {
+      const { adapter, session } = await playAuthored('pointless')
+      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toContain('you have made nothing')
+      expect(session.characters.getBySourceId('mira')).toBeUndefined()
+      expect(masterSaw(adapter)).toContain('Nothing was made up: On reflection nothing is needed.')
+    })
+
+    it('may not make more in a turn than the chat allows, and an edit that would is refused whole', async () => {
+      const { session, adapter } = await playAuthored('greedy', { authoring: { perTurn: 2 } })
+      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toMatch(/makes 3 new things.*pass the 2 this chat allows per turn/)
+      expect(session.characters.getBySourceId('mira')).toBeUndefined()
+      expect(session.characters.getBySourceId('tom')).toBeUndefined()
+    })
+
+    it('is not asked in a closed world: the game master is told so and no author runs', async () => {
+      const { session, adapter } = await playAuthored('creates', { authoring: { enabled: false } })
+      expect(authors(adapter)).toEqual([])
+      expect(session.characters.getBySourceId('mira')).toBeUndefined()
+      expect(masterSaw(adapter)).toContain('this world is closed')
+    })
+
+    it('fits what was made up into the world in the background, with relationships both ways, once enough waits', async () => {
+      const { session, agent, adapter } = await playAuthored('creates', { authoring: { consolidateAfter: 1 } })
+      const mira = session.characters.getBySourceId('mira')!
+      const arthur = session.characters.getBySourceId('arthur')!
+      await vi.waitFor(() => { expect(session.consolidation.pending()).toEqual([]) })
+      expect(session.relationships.get(mira.id, arthur.id)).toMatchObject({ label: 'passenger', familiarity: 0.4 })
+      expect(session.relationships.get(arthur.id, mira.id)?.label).toBe('ferry pilot')
+      expect(session.consolidation.get(1)?.resolution).toBe('gave her relationships with Arthur, both ways')
+      const fitting = authors(adapter).find(request => systemOf(request).includes('fitting into the world what was made up'))!
+      expect(briefOf(fitting)).toContain('- item 1, character mira (Mira Voss), made in turn 1')
+      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_character', 'get_location', 'list_characters', 'list_consolidation', 'list_locations', 'list_relationships', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
+      expect(session.metadata.get().turns).toBe(1)
+      expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/end')).toHaveLength(1)
+    })
+
+    it('does not fit anything in while fewer than the chat asks for wait, and the new character already acts in the next round', async () => {
+      const { session, agent, adapter } = await playAuthored('creates', { authoring: { consolidateAfter: 5 } })
+      await new Promise(resolve => setTimeout(resolve, 50))
+      expect(session.consolidation.pending()).toHaveLength(1)
+      expect(authors(adapter).filter(request => systemOf(request).includes('fitting into the world'))).toEqual([])
+      expect(session.characters.getBySourceId('mira')?.control).toBe('agent')
+      expect(agent.session.id).toContain('session-')
+    })
+  })
+
   describe('in a world with places', () => {
     async function playPlaced(script: Script) {
       const { session, id } = await addSession('Vault', true)
@@ -563,7 +708,7 @@ describe('a turn with the real agent loop', () => {
     it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
       const { session, adapter, agent } = await play('careful')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
-      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_location', 'list_locations', 'list_threads', 'read_records', 'search_events', 'submit_result'])
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_location', 'list_locations', 'list_relationships', 'list_threads', 'read_records', 'search_events', 'submit_result'])
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
       expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
       expect(publicStateOf(session, 'bob')).toBe('holding a brass key')

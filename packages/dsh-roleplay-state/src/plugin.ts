@@ -135,6 +135,8 @@ export class RoleplayState extends Service {
       pendingCommits: store.pendingCommits,
       locations: store.locations,
       placements: store.placements,
+      relationships: store.relationships,
+      consolidation: store.consolidation,
       planMove: (characterId, move) => store.planMove(characterId, move),
       move: (characterId, move) => store.move(characterId, move),
       recallIndex: store.recallIndex,

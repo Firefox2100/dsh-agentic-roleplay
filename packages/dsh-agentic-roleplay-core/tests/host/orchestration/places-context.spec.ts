@@ -1,7 +1,7 @@
 import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CharacterRequest, PlaceView } from '../../../src/host/orchestration/boundaries.ts'
-import { castSummary, describePlace, sharedContext } from '../../../src/host/orchestration/defaults.ts'
+import { castSummary, describeAttitude, describePlace, sharedContext } from '../../../src/host/orchestration/defaults.ts'
 import { alice, arthur, bob, location, placed, withRanking } from './fixtures.ts'
 
 const bar = location(1, 'The Bar', { description: 'Smoky. Loud at night.', features: [{ key: 'counter', name: 'Counter', description: 'Long and sticky. Stained.' }, { key: 'piano', name: 'Piano', description: '' }] })
@@ -86,5 +86,24 @@ describe('the scene the game master is told, with places', () => {
   it('is the plain list of characters when nobody has a place', () => {
     const text = scene([arthur, alice])
     expect(text).toBe('Scene before turn 2:\n- Arthur (the player\'s character): Arthur summary\n- Alice (acts through "alice"): Alice summary')
+  })
+})
+
+describe('how a character sees those it is with', () => {
+  const mine = { name: 'Bob', label: 'rival', summary: 'They fell out over the inn.', familiarity: 0.8, trust: -0.6, affinity: 0, tension: 0.7 }
+  const request = (relationships?: CharacterRequest['relationships']): CharacterRequest => ({
+    member: alice, cast: [arthur, alice, bob], situation: 'Arthur orders a drink.', attempt: 1, turn: 2, lookup: false, ...(relationships === undefined ? {} : { relationships }),
+  })
+
+  it('puts the label, the sentence and what the numbers come to in words, for those present', () => {
+    const { prompt } = sharedContext.brief(request([mine]))
+    expect(prompt).toContain('How you stand with those here (your own view of them):\n- Bob (rival): They fell out over the inn. [knows them well, distrusts them, things are strained between them]')
+  })
+
+  it('says nothing when there is no profile, and leaves out what is unremarkable', () => {
+    expect(sharedContext.brief(request()).prompt).not.toContain('How you stand')
+    expect(sharedContext.brief(request([{ ...mine, summary: '', familiarity: 0.4, trust: 0.1, tension: 0.1 }])).prompt).toMatch(/- Bob \(rival\)$/)
+    expect(describeAttitude({ familiarity: 0.1, trust: 0.5, affinity: 0.6, tension: 0 })).toBe('barely knows them, trusts them, is fond of them')
+    expect(describeAttitude({ familiarity: 0.5, trust: 0, affinity: -0.5, tension: 0.5 })).toBe('dislikes them, things are strained between them')
   })
 })

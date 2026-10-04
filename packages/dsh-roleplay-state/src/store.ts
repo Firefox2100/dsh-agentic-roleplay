@@ -7,7 +7,7 @@ import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  LocationRepository, PendingCommitRepository, PlacementRepository, RecallIndexRepository, SummaryRepository, ThreadRepository, VectorSupport,
+  ConsolidationRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SummaryRepository, ThreadRepository, VectorSupport,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
@@ -16,6 +16,7 @@ import { SqliteEventRepository } from './sqlite/event-repository.ts'
 import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
 import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
 import { SqliteRecallIndex } from './sqlite/recall-index.ts'
+import { SqliteConsolidationRepository, SqliteRelationshipRepository } from './sqlite/relationship-repository.ts'
 import { SqliteLocationRepository, SqlitePlacementRepository } from './sqlite/location-repository.ts'
 import { vectorExtension } from './sqlite/vector-extension.ts'
 import { SqliteCharacterRepository } from './sqlite/character-repository.ts'
@@ -47,6 +48,8 @@ export interface SessionStore {
   readonly pendingCommits: PendingCommitRepository
   readonly locations: LocationRepository
   readonly placements: PlacementRepository
+  readonly relationships: RelationshipRepository
+  readonly consolidation: ConsolidationRepository
   /** What the session can be searched by: its texts by words, and by meaning once vectors are stored. */
   readonly recallIndex: RecallIndexRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
@@ -108,6 +111,8 @@ class SqliteSessionStore implements SessionStore {
   readonly pendingCommits: PendingCommitRepository
   readonly locations: LocationRepository
   readonly placements: PlacementRepository
+  readonly relationships: RelationshipRepository
+  readonly consolidation: ConsolidationRepository
   readonly recallIndex: SqliteRecallIndex
   private readonly eventRepository: SqliteEventRepository
 
@@ -119,6 +124,8 @@ class SqliteSessionStore implements SessionStore {
     this.intents = new SqliteIntentRepository(db, clock)
     this.locations = new SqliteLocationRepository(db, clock, id => { this.eventRepository.reindexPlace(id) })
     this.placements = new SqlitePlacementRepository(db, this.locations)
+    this.relationships = new SqliteRelationshipRepository(db, clock)
+    this.consolidation = new SqliteConsolidationRepository(db)
     this.eventRepository = new SqliteEventRepository(db, clock, this.recallIndex, id => this.locations.get(id)?.name)
     this.events = this.eventRepository
     this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)

@@ -70,6 +70,19 @@ export interface CharacterRequest {
   lookup: boolean
   /** The place the character is in, when it is in one: the scene it is told is this place and who is here. */
   place?: PlaceView
+  /** How the character stands towards those it is with, where there is a profile of them. */
+  relationships?: readonly KnownRelationship[]
+}
+
+/** A character's profile of someone present, as it is told to it. */
+export interface KnownRelationship {
+  name: string
+  label: string
+  summary: string
+  familiarity: number
+  trust: number
+  affinity: number
+  tension: number
 }
 
 /** What one character is told: who it is, and what it is asked. */
@@ -204,6 +217,48 @@ export interface SceneContextProvider {
   scene(input: { cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story'] }): string
 }
 
+/** Why the game master may ask for something to be made up: the story genuinely needs it. */
+export const AUTHORING_NEEDS = ['scene_change', 'arrival', 'introduction'] as const
+export type AuthoringNeed = (typeof AUTHORING_NEEDS)[number]
+
+export interface CreateJob {
+  chat: string
+  turn: number
+  need: AuthoringNeed
+  /** What the game master says is needed, from what the story has established. */
+  what: string
+  store: TurnStore
+}
+
+export interface CreateReport {
+  /** What was made, by key. */
+  created: { kind: 'character' | 'place'; key: string; name: string }[]
+  /** Why nothing was made, when nothing was: the request did not meet the bar, or something that exists can serve. */
+  declined?: string
+}
+
+export interface ConsolidateJob {
+  chat: string
+  turn: number
+  store: TurnStore
+}
+
+export interface ConsolidateReport {
+  /** How many things were fitted in. */
+  resolved: number
+  notes: string
+}
+
+/**
+ * Extends the world when the story genuinely needs it, and later fits what was made up into the rest of
+ * it: places connected to their neighbours, characters given relationships. It throws when it cannot
+ * leave the world consistent; what was made stays queued until it can be fitted in.
+ */
+export interface Author {
+  create(job: CreateJob, signal: AbortSignal): Promise<CreateReport>
+  consolidate(job: ConsolidateJob, signal: AbortSignal): Promise<ConsolidateReport>
+}
+
 export interface Boundaries {
   planner: ActivationPlanner
   characterContext: CharacterContextProvider
@@ -213,6 +268,7 @@ export interface Boundaries {
   narrator: Narrator
   narrationChecker: NarrationChecker
   committer: Committer
+  author: Author
   recaller: Recaller
   sceneContext: SceneContextProvider
 }
@@ -220,7 +276,7 @@ export interface Boundaries {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements'>
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings

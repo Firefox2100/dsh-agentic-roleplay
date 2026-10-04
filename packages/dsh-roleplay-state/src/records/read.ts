@@ -35,7 +35,11 @@ export interface RecordsView {
   }[]
   beliefs: { id: number; character: string; kind: string; text: string; about: string[]; importance: number; turn: number }[]
   open_threads: { id: number; text: string; opened_turn: number }[]
+  /** How characters stand towards each other, most recently changed first (at most 80). */
+  relationships: { from: string; to: string; label: string; summary: string; familiarity: number; trust: number; affinity: number; tension: number; updated_turn: number }[]
 }
+
+const MAX_RELATIONSHIPS_SHOWN = 80
 
 /** Read the records back from the database, as the edit wrote them. */
 export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: RecordsScope = {}): RecordsView {
@@ -75,5 +79,9 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
       .filter(belief => inScope(belief.turn))
       .map(belief => ({ id: belief.id, character: characterKey(character), kind: belief.kind, text: belief.text, about: belief.about.map(keyOf), importance: belief.importance, turn: belief.turn }))),
     open_threads: target.threads.list('open').map(thread => ({ id: thread.id, text: thread.text, opened_turn: thread.openedTurn })),
+    relationships: [...target.relationships.list()].sort((a, b) => b.updatedTurn - a.updatedTurn || b.id - a.id).slice(0, MAX_RELATIONSHIPS_SHOWN).map(relation => ({
+      from: keyOf(relation.fromId), to: keyOf(relation.toId), label: relation.label, summary: relation.summary,
+      familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension, updated_turn: relation.updatedTurn,
+    })),
   }
 }

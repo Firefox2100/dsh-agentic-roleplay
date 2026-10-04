@@ -26,6 +26,14 @@ export interface ChatSettings {
     /** The size of the long-term summary, in tokens, before its oldest part is condensed further. */
     longTermTokens: number
   }
+  authoring: {
+    /** Whether the game master may have new characters and places made up when the story genuinely needs them. Off for a closed world. */
+    enabled: boolean
+    /** The most new characters and places that may be made up in one turn. */
+    perTurn: number
+    /** How many made-up characters and places may wait to be fitted into the world (connected to the rest, given relationships) before that is done at the end of the turn. */
+    consolidateAfter: number
+  }
   embedding: {
     /**
      * What is set per request to the embedding provider, by the name the provider gives each option
@@ -63,6 +71,7 @@ export const SETTINGS_SPEC = {
     shortTermTokens: integer(200, 20_000, 1500),
     longTermTokens: integer(200, 40_000, 2500),
   },
+  authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), consolidateAfter: integer(1, 20, 3) },
   embedding: { options: record() },
 } as const satisfies Spec
 

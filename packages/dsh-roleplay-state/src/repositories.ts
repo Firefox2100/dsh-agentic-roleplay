@@ -1,5 +1,10 @@
 import type {
+  ConsolidationItem,
+  ConsolidationItemId,
+  ConsolidationKind,
   EmbeddingIndexInfo,
+  Relationship,
+  RelationshipPatch,
   Exit, ExitId, ExitPatch, Location, LocationId, LocationPatch, NewExit, NewLocation, NewPlacement, PlaceableKind, Placement,
   PerceptionId,
   PerceptionPatch,
@@ -261,4 +266,33 @@ export interface PlacementRepository {
   /** Everything in a place, in a stable order. */
   at(locationId: LocationId, kind?: PlaceableKind): Placement[]
   list(kind?: PlaceableKind): Placement[]
+}
+
+/** How each character stands towards each other character: one profile per direction. */
+export interface RelationshipRepository {
+  /**
+   * Create the profile, or change what is given of an existing one.
+   * @throws {NotFoundError} when a character does not exist.
+   * @throws {InvalidValueError} for a new profile without a label, towards itself, or with a value out of range.
+   */
+  upsert(fromId: CharacterId, toId: CharacterId, patch: RelationshipPatch, turn: number): Relationship
+  get(fromId: CharacterId, toId: CharacterId): Relationship | undefined
+  /** How a character sees others. */
+  from(characterId: CharacterId): Relationship[]
+  /** How others see a character. */
+  to(characterId: CharacterId): Relationship[]
+  list(): Relationship[]
+  remove(fromId: CharacterId, toId: CharacterId): boolean
+}
+
+/** What was made up in play and still has to be fitted into the rest of the world. */
+export interface ConsolidationRepository {
+  enqueue(item: { kind: ConsolidationKind; subjectId: number; note: string; turn: number }): ConsolidationItem
+  get(id: ConsolidationItemId): ConsolidationItem | undefined
+  /** Not yet resolved, oldest first. */
+  pending(): ConsolidationItem[]
+  /** Everything made up in a turn, resolved or not. */
+  createdIn(turn: number): ConsolidationItem[]
+  /** Mark it fitted in, with what was done. Resolving a resolved item changes nothing. @throws {NotFoundError} */
+  resolve(id: ConsolidationItemId, turn: number, resolution: string): ConsolidationItem
 }

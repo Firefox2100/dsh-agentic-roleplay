@@ -1,6 +1,7 @@
 import type { Character } from 'dsh-roleplay-model'
 import type {
-  ActivationPlanner, Boundaries, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  KnownRelationship,
+  ActivationPlanner, Author, Boundaries, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
 import { locationKey, mentioned, overlap, tokens, type Recalled } from 'dsh-roleplay-state'
@@ -49,6 +50,16 @@ export function describePlace(view: PlaceView, { withKeys }: { withKeys: boolean
   return lines
 }
 
+/** In words, how a character stands with another, from the numbers of its profile; nothing for what is unremarkable. */
+export function describeAttitude(relation: Pick<KnownRelationship, 'familiarity' | 'trust' | 'affinity' | 'tension'>): string {
+  return [
+    relation.familiarity >= 0.7 ? 'knows them well' : relation.familiarity <= 0.15 ? 'barely knows them' : '',
+    relation.trust >= 0.4 ? 'trusts them' : relation.trust <= -0.4 ? 'distrusts them' : '',
+    relation.affinity >= 0.4 ? 'is fond of them' : relation.affinity <= -0.4 ? 'dislikes them' : '',
+    relation.tension >= 0.5 ? 'things are strained between them' : '',
+  ].filter(part => part !== '').join(', ')
+}
+
 function whereIs(member: CastMember): string {
   const place = member.place
   if (place === undefined) return ''
@@ -85,10 +96,13 @@ function remembered(memories: readonly Recalled[], now: number): string {
 /** Every character is told the same thing about the scene, plus who it is and what it remembers. */
 export const sharedContext: CharacterContextProvider = {
   brief(request: CharacterRequest) {
-    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place } = request
+    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place, relationships } = request
     // In a place, a character perceives who is there with it; in a story without places, everyone is present.
     const company = place === undefined ? cast : place.here
     const sections = [`Situation:\n${situation}`, ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
+    if (relationships !== undefined && relationships.length > 0) {
+      sections.push(`How you stand with those here (your own view of them):\n${relationships.map((relation) => { const attitude = describeAttitude(relation); return `- ${relation.name} (${relation.label})${relation.summary === '' ? '' : `: ${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
+    }
     if (memories !== undefined && memories.length > 0) {
       sections.splice(1, 0, `What you remember that bears on this (only what you took in yourself; do not claim to remember more, and be unsure of what is fuzzy):\n${remembered(memories, turn)}`)
     }
@@ -289,6 +303,12 @@ export const writesNothing: Committer = {
   commit: () => Promise.resolve({ writes: 0, notes: '' }),
 }
 
+/** Makes up nothing, and has nothing to fit in: without a world author the world stays as it was written. */
+export const declinesToAuthor: Author = {
+  create: () => Promise.resolve({ created: [], declined: 'no world author is installed, so the world cannot grow' }),
+  consolidate: () => Promise.resolve({ resolved: 0, notes: '' }),
+}
+
 export function defaultBoundaries(): Boundaries {
   return {
     planner: everyoneActs,
@@ -299,6 +319,7 @@ export function defaultBoundaries(): Boundaries {
     narrator: gameMasterNarrates,
     narrationChecker: exactUtterances,
     committer: writesNothing,
+    author: declinesToAuthor,
     recaller: recordsRecall,
     sceneContext: castSummary,
   }

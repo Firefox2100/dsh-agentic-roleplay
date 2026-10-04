@@ -2,6 +2,7 @@ import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
   | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
+  | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'limitTokens' | 'limitTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
 
@@ -21,6 +22,12 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     verifyHelp: 'The record keeper reads back what it wrote about each round, compares it with the round and fixes mistakes before it finishes. It runs in the background of the narration, so it rarely delays you; turn it off for speed or to save model calls.',
     backlogRounds: 'Most rounds waiting to be remembered',
     backlogRoundsHelp: 'The game master decides when what happened is worth recording as memories, so quiet rounds are not recorded one by one. When this many rounds are waiting, they are recorded anyway at the end of the turn.',
+    authoringEnabled: 'The world can grow',
+    authoringEnabledHelp: 'The game master may have a new character or place made up, but only when the story genuinely needs one: the story goes somewhere no known place covers, or someone new truly joins. Turn off for a closed world.',
+    authoringPerTurn: 'Most new things per turn',
+    authoringPerTurnHelp: 'The most characters and places that may be made up in one turn.',
+    consolidateAfter: 'Fit new things in after',
+    consolidateAfterHelp: 'Made-up characters and places are connected to the rest of the world (ways to other places, relationships between characters) in the background once this many are waiting, or when one has waited several turns.',
     limitTokens: 'Conversation limit (tokens)',
     limitTokensHelp: 'The whole conversation is sent to the model until it reaches this size. Then the oldest turns are folded into a long-term and a short-term summary built from the story\'s recorded events.',
     retainRatio: 'Kept after folding (%)',
@@ -45,6 +52,12 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     verifyHelp: '记录员在结束前会回读自己写入的记录，对照回合内容并纠正错误。它在叙述的同时于后台运行，通常不会拖慢你；追求速度或想节省模型调用时可以关闭。',
     backlogRounds: '等待记录的回合上限',
     backlogRoundsHelp: '什么时候值得把发生的事记成记忆，由主持人决定，所以平淡的回合不会逐个记录。积压到这么多回合时，会在本轮结束时强制记录。',
+    authoringEnabled: '世界可以扩展',
+    authoringEnabledHelp: '只有当故事确实需要时，主持人才可以新建角色或地点：故事走到了已知地点都覆盖不到的地方，或确实有新的人加入。封闭的世界请关闭。',
+    authoringPerTurn: '每轮最多新建数量',
+    authoringPerTurnHelp: '一轮中最多可以新建的角色和地点数量。',
+    consolidateAfter: '累计多少后整合',
+    consolidateAfterHelp: '新建的角色和地点会在后台与世界其余部分衔接（地点之间的通路、角色之间的关系）：累计到此数量，或有一项已等待数轮时进行。',
     limitTokens: '对话长度上限（token）',
     limitTokensHelp: '在达到此长度之前，整段对话都会发送给模型。达到后，最早的几轮会折叠进长期和短期摘要，摘要由故事已记录的事件生成。',
     retainRatio: '折叠后保留比例（%）',

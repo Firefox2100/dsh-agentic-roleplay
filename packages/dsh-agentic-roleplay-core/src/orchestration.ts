@@ -6,6 +6,7 @@ import type {} from 'dsh-roleplay-state'
 import { join } from 'node:path'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { recordKeeper } from './host/orchestration/committer.ts'
+import { worldAuthor } from './host/authoring/author-agent.ts'
 import { installHooks } from './host/orchestration/hooks.ts'
 import { PROTOCOL, PROTOCOL_SECTION } from './host/orchestration/prompt.ts'
 import { roleplaySessionOf } from './shared/chat.ts'
@@ -51,6 +52,7 @@ export function apply(ctx: Context): void {
     scope.effect(() => ctx.roleplayState.rankMemories(rerankMemories({ reranker: () => (scope as Context & { rerankers: Reranker }).rerankers, problem })), 'roleplay: rerank memories')
   })
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: world author')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
     const id = roleplaySessionOf(agentSessionId)
     const agent = ctx.agents.get(SessionId(agentSessionId))

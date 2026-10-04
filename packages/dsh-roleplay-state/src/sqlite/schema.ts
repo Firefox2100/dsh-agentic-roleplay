@@ -122,6 +122,34 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT;
       CREATE INDEX placements_location ON placements (location_id, kind);
 
+      CREATE TABLE relationships (
+        id INTEGER PRIMARY KEY,
+        from_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        to_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        label TEXT NOT NULL,
+        summary TEXT NOT NULL DEFAULT '',
+        familiarity REAL NOT NULL DEFAULT 0 CHECK (familiarity BETWEEN 0 AND 1),
+        trust REAL NOT NULL DEFAULT 0 CHECK (trust BETWEEN -1 AND 1),
+        affinity REAL NOT NULL DEFAULT 0 CHECK (affinity BETWEEN -1 AND 1),
+        tension REAL NOT NULL DEFAULT 0 CHECK (tension BETWEEN 0 AND 1),
+        updated_turn INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE (from_id, to_id),
+        CHECK (from_id <> to_id)
+      ) STRICT;
+      CREATE INDEX relationships_to ON relationships (to_id);
+
+      CREATE TABLE consolidation_items (
+        id INTEGER PRIMARY KEY,
+        kind TEXT NOT NULL CHECK (kind IN ('character', 'location')),
+        subject_id INTEGER NOT NULL,
+        note TEXT NOT NULL DEFAULT '',
+        created_turn INTEGER NOT NULL,
+        resolved_turn INTEGER,
+        resolution TEXT
+      ) STRICT;
+      CREATE INDEX consolidation_pending ON consolidation_items (resolved_turn, id);
+
       CREATE TABLE events (
         id INTEGER PRIMARY KEY,
         turn INTEGER NOT NULL,

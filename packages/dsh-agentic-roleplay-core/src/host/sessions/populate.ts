@@ -2,6 +2,15 @@ import type { CharacterDefinition, LocationDefinition } from 'dsh-roleplay-model
 import type { Session } from 'dsh-roleplay-state'
 import { parentsFirst } from '../locations/load.ts'
 
+/** What is wrong with how the characters stand towards each other, found before anything is created. */
+export function relationshipProblems(characters: readonly CharacterDefinition[]): string[] {
+  const ids = new Set(characters.map(character => character.id))
+  return characters.flatMap(character => (character.relationships ?? []).flatMap((relation) => {
+    if (relation.to === character.id) return [`${character.id}: relationships: a character has no relationship with itself`]
+    return ids.has(relation.to) ? [] : [`${character.id}: relationships: "${relation.to}" is not a character of this world`]
+  }))
+}
+
 /** What is wrong with where the characters start, found before anything is created. */
 export function startingPlaceProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[]): string[] {
   const byId = new Map(locations.map(location => [location.id, location]))
@@ -41,7 +50,7 @@ export function populateLocations(session: Session, locations: readonly Location
  * is `playerId`; the agent controls everyone else.
  */
 export function populateCharacters(session: Session, characters: readonly CharacterDefinition[], playerId: string): void {
-  for (const { id, start, ...identity } of characters) {
+  for (const { id, start, relationships: _relationships, ...identity } of characters) {
     const character = session.characters.add({ ...identity, sourceId: id, control: id === playerId ? 'player' : 'agent' })
     const { intents, place, ...state } = start
     session.characterStates.create(character.id, state)
@@ -49,6 +58,12 @@ export function populateCharacters(session: Session, characters: readonly Charac
     if (place !== undefined) {
       const location = session.locations.getBySourceId(place.location)!
       session.placements.place('character', character.id, { locationId: location.id, ...(place.position === undefined ? {} : { position: place.position }), ...(place.feature === undefined ? {} : { featureKey: place.feature }) })
+    }
+  }
+  for (const { id, relationships } of characters) {
+    const from = session.characters.getBySourceId(id)!
+    for (const relation of relationships ?? []) {
+      session.relationships.upsert(from.id, session.characters.getBySourceId(relation.to)!.id, { label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }, 0)
     }
   }
 }

@@ -3,10 +3,11 @@ import {
   ACCURACIES, IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_KINDS, PERCEPTION_MODES,
   type Accuracy, type Character, type CharacterId, type CharacterStatePatch, type MemoryKind, type NewPerception, type PerceptionMode,
 } from 'dsh-roleplay-model'
-import { EXIT_STATES, MAX_LOCATION_FEATURES, type ExitState, type Location, type LocationFeature } from 'dsh-roleplay-model'
+import { CHARACTER_KINDS, CHARACTER_TIERS, EXIT_STATES, MAX_LOCATION_FEATURES, type CharacterKind, type CharacterTier, type ExitState, type Location, type LocationFeature, type RelationshipPatch } from 'dsh-roleplay-model'
 import { InvalidEditError, InvalidMoveError } from '../errors.ts'
 import { moveCharacter } from './movement.ts'
-import type { CharacterRepository, CharacterStateRepository, EventRepository, LocationRepository, MemoryRepository, PlacementRepository, ThreadRepository } from '../repositories.ts'
+import type { CharacterRepository, CharacterStateRepository, ConsolidationRepository, EventRepository, LocationRepository, MemoryRepository, PlacementRepository, RelationshipRepository, ThreadRepository } from '../repositories.ts'
+import { lookupKey } from '../sqlite/support.ts'
 
 /** The name by which models and other plugins refer to a place: its id in the world, or its number when it was made up in play. */
 export const locationKey = (location: Pick<Location, 'id' | 'sourceId'>): string => location.sourceId ?? String(location.id)
@@ -23,6 +24,8 @@ export interface RecordsTarget {
   threads: ThreadRepository
   locations: LocationRepository
   placements: PlacementRepository
+  relationships: RelationshipRepository
+  consolidation: ConsolidationRepository
   transaction<T>(fn: () => T): T
 }
 
@@ -99,6 +102,59 @@ export interface NewPlace {
   parent?: string
   features?: { key: string; name: string; description?: string }[]
   exits?: NewExit[]
+  /** Why it was made, for whoever fits it into the world later. */
+  note?: string
+}
+
+/** A character the story makes up: someone who arrives, is introduced, or turns out to be needed. Always played by an agent. */
+export interface NewCharacterSpec {
+  key: string
+  name: string
+  aliases?: string[]
+  age?: string
+  gender?: string
+  pronouns?: string
+  kind?: CharacterKind
+  tier?: CharacterTier
+  summary: string
+  personality?: string
+  background?: string
+  appearance?: string
+  speech?: { style: string; examples?: string[] }
+  state?: { publicState?: string; innerState?: string; activity?: string }
+  place?: { location: string; position?: string; feature?: string }
+  /** Why it was made, for whoever fits it into the world later. */
+  note?: string
+}
+
+/** A character's profile of another, made or changed; what is not given stays as it was. */
+export interface RelationshipSet {
+  from: string
+  to: string
+  label?: string
+  summary?: string
+  familiarity?: number
+  trust?: number
+  affinity?: number
+  tension?: number
+}
+
+export interface RelationshipRetraction {
+  from: string
+  to: string
+}
+
+/** A new way between two places that already exist (or are made in the same edit). */
+export interface NewExitBetween {
+  from: string
+  to: string
+  description?: string
+  /** Also make the way back, with `backDescription`; on by default. */
+  oneWay?: boolean
+  backDescription?: string
+  travelSeconds?: number
+  state?: ExitState
+  note?: string
 }
 
 export interface PlaceEdit {
@@ -156,7 +212,11 @@ export interface RecordsEdit {
   eventRetractions?: number[]
   perceptionEdits?: PerceptionEdit[]
   perceptionsAdded?: PerceptionAddition[]
+  characters?: NewCharacterSpec[]
   places?: NewPlace[]
+  exits?: NewExitBetween[]
+  relationships?: RelationshipSet[]
+  relationshipRetractions?: RelationshipRetraction[]
   placeEdits?: PlaceEdit[]
   exitChanges?: ExitChange[]
   moves?: CharacterMove[]
@@ -170,6 +230,9 @@ export interface RecordsEdit {
 export interface EditResult {
   /** The ids of the events and beliefs the edit added, in order. */
   eventIds: number[]
+  /** The keys of the characters and places the edit made up. */
+  characterKeys?: string[]
+  placeKeys?: string[]
   beliefIds: number[]
   /** How many rows were added, changed or removed. */
   writes: number
@@ -182,7 +245,7 @@ const list = <T>(value: readonly T[] | undefined): readonly T[] => value ?? []
  * Apply an edit. Every problem is found before anything is written, so a bad edit changes nothing.
  * @throws {InvalidEditError} naming each problem.
  */
-export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): EditResult {
+function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   const characters = target.characters.list()
   const byKey = new Map(characters.map(character => [characterKey(character), character]))
   const problems: string[] = []
@@ -252,6 +315,35 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
     const where = `moves[${index}]`
     idOf(move.character, where)
     placeKnown(move.to, `${where}.to`)
+  })
+  list(edit.exits).forEach((wanted, index) => {
+    const where = `exits[${index}]`
+    placeKnown(wanted.from, `${where}.from`)
+    placeKnown(wanted.to, `${where}.to`)
+    if (wanted.from === wanted.to) problems.push(`${where}: an exit must lead to another place`)
+    if (wanted.state !== undefined && !EXIT_STATES.includes(wanted.state)) problems.push(`${where}: unknown state "${String(wanted.state)}"`)
+    const from = existingPlaces.get(wanted.from)
+    const to = existingPlaces.get(wanted.to)
+    if (from !== undefined && to !== undefined && target.locations.getExit(from.id, to.id) !== undefined && wanted.oneWay === true) problems.push(`${where}: there already is an exit from "${wanted.from}" to "${wanted.to}" (change it with exit_changes)`)
+  })
+  const RELATION_RANGES = { familiarity: [0, 1], trust: [-1, 1], affinity: [-1, 1], tension: [0, 1] } as const
+  list(edit.relationships).forEach((relation, index) => {
+    const where = `relationships[${index}]`
+    const from = idOf(relation.from, `${where}.from`)
+    const to = idOf(relation.to, `${where}.to`)
+    if (relation.from === relation.to) problems.push(`${where}: a character has no relationship with itself`)
+    for (const [axis, [min, max]] of Object.entries(RELATION_RANGES) as [keyof typeof RELATION_RANGES, readonly [number, number]][]) {
+      const value = relation[axis]
+      if (value !== undefined && (!Number.isFinite(value) || value < min || value > max)) problems.push(`${where}: ${axis} must be a number from ${min} to ${max}`)
+    }
+    if (relation.label !== undefined && !present(relation.label)) problems.push(`${where}: the label cannot be empty`)
+    if (from !== undefined && to !== undefined && target.relationships.get(from, to) === undefined && !present(relation.label)) problems.push(`${where}: a new relationship needs a label ("${relation.from}" towards "${relation.to}")`)
+  })
+  list(edit.relationshipRetractions).forEach((retraction, index) => {
+    const where = `relationship_retractions[${index}]`
+    const from = idOf(retraction.from, `${where}.from`)
+    const to = idOf(retraction.to, `${where}.to`)
+    if (from !== undefined && to !== undefined && target.relationships.get(from, to) === undefined) problems.push(`${where}: "${retraction.from}" has no relationship with "${retraction.to}"`)
   })
   const placeIn = (key: string | undefined, where: string): void => { if (key !== undefined) placeKnown(key, where) }
   list(edit.events).forEach((event, index) => { placeIn(event.location, `events[${index}].location`) })
@@ -344,8 +436,11 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
       target.locations.addExit({ fromId: from.id, toId: to.id, description: description ?? '', ...(rest.travelSeconds === undefined ? {} : { travelSeconds: rest.travelSeconds }), ...(rest.state === undefined ? {} : { state: rest.state }), ...(rest.note === undefined ? {} : { note: rest.note }) })
       result.writes += 1
     }
+    result.placeKeys = []
     for (const place of list(edit.places)) {
-      target.locations.add({ sourceId: place.key, name: place.name, description: place.description ?? '', ...(place.parent === undefined ? {} : { parentId: placeOf(place.parent).id }), features: features(place.features) })
+      const added = target.locations.add({ sourceId: place.key, name: place.name, description: place.description ?? '', ...(place.parent === undefined ? {} : { parentId: placeOf(place.parent).id }), features: features(place.features) })
+      target.consolidation.enqueue({ kind: 'location', subjectId: added.id, note: place.note ?? 'made up in play', turn: edit.turn })
+      result.placeKeys.push(place.key)
       result.writes += 1
     }
     for (const place of list(edit.places)) {
@@ -355,6 +450,26 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
         exit(from, to, wanted.description, wanted)
         if (wanted.oneWay !== true) exit(to, from, wanted.backDescription ?? wanted.description, wanted)
       }
+    }
+    for (const wanted of list(edit.exits)) {
+      const from = placeOf(wanted.from)
+      const to = placeOf(wanted.to)
+      exit(from, to, wanted.description, wanted)
+      if (wanted.oneWay !== true) exit(to, from, wanted.backDescription ?? wanted.description, wanted)
+    }
+    for (const relation of list(edit.relationships)) {
+      const { from, to, ...fields } = relation
+      const patch: RelationshipPatch = {
+        ...(fields.label === undefined ? {} : { label: fields.label }), ...(fields.summary === undefined ? {} : { summary: fields.summary }),
+        ...(fields.familiarity === undefined ? {} : { familiarity: fields.familiarity }), ...(fields.trust === undefined ? {} : { trust: fields.trust }),
+        ...(fields.affinity === undefined ? {} : { affinity: fields.affinity }), ...(fields.tension === undefined ? {} : { tension: fields.tension }),
+      }
+      target.relationships.upsert(byKey.get(from)!.id, byKey.get(to)!.id, patch, edit.turn)
+      result.writes += 1
+    }
+    for (const retraction of list(edit.relationshipRetractions)) {
+      target.relationships.remove(byKey.get(retraction.from)!.id, byKey.get(retraction.to)!.id)
+      result.writes += 1
     }
     for (const change of list(edit.placeEdits)) {
       target.locations.update(placeOf(change.place).id, {
@@ -455,6 +570,74 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
   })
 }
 
+/**
+ * Make up the characters of an edit: validated first, then written with their state and place, and each
+ * one is queued to be fitted into the rest of the world. Nothing is written when anything is wrong.
+ */
+function createCharacters(target: RecordsTarget, edit: RecordsEdit): { keys: string[]; writes: number } {
+  const problems: string[] = []
+  const taken = new Set(target.characters.list().flatMap(character => [lookupKey(character.name), ...character.aliases.map(lookupKey)]))
+  const keys = new Set(target.characters.list().map(characterKey))
+  const placeFor = (key: string): Location | undefined => target.locations.getBySourceId(key) ?? (Number.isInteger(Number(key)) ? target.locations.get(Number(key)) : undefined)
+  const wanted = list(edit.characters)
+  wanted.forEach((spec, index) => {
+    const where = `characters[${index}]`
+    if (!present(spec.key) || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,59}$/.test(spec.key)) problems.push(`${where}: give the character a key of letters, digits, "-" or "_"`)
+    else if (keys.has(spec.key)) problems.push(`${where}: the key "${spec.key}" is already used by a character`)
+    keys.add(spec.key)
+    if (!present(spec.name)) problems.push(`${where}: give the character a name`)
+    if (!present(spec.summary)) problems.push(`${where}: give the character a summary of a sentence or two`)
+    for (const name of [spec.name, ...list(spec.aliases)]) {
+      const found = lookupKey(name ?? '')
+      if (found === '') continue
+      if (taken.has(found)) problems.push(`${where}: "${name}" is already the name of a character: reuse that one instead of making another`)
+      taken.add(found)
+    }
+    if (spec.kind !== undefined && !CHARACTER_KINDS.includes(spec.kind)) problems.push(`${where}: unknown kind "${String(spec.kind)}"`)
+    if (spec.tier !== undefined && !CHARACTER_TIERS.includes(spec.tier)) problems.push(`${where}: unknown tier "${String(spec.tier)}"`)
+    if (spec.place !== undefined) {
+      const place = placeFor(spec.place.location)
+      if (place === undefined) problems.push(`${where}.place: there is no place "${spec.place.location}" (list_locations shows the keys)`)
+      else if (spec.place.feature !== undefined && !place.features.some(feature => feature.key === spec.place!.feature)) problems.push(`${where}.place: ${place.name} has no feature "${spec.place.feature}"`)
+    }
+  })
+  if (problems.length > 0) throw new InvalidEditError(problems)
+  for (const spec of wanted) {
+    const character = target.characters.add({
+      sourceId: spec.key, name: spec.name.trim(), aliases: list(spec.aliases).map(alias => alias.trim()).filter(alias => alias !== '' && lookupKey(alias) !== lookupKey(spec.name)),
+      ...(spec.age === undefined ? {} : { age: spec.age }), ...(spec.gender === undefined ? {} : { gender: spec.gender }), ...(spec.pronouns === undefined ? {} : { pronouns: spec.pronouns }),
+      kind: spec.kind ?? 'person', tier: spec.tier ?? 'supporting', role: 'npc', control: 'agent',
+      summary: spec.summary.trim(), personality: (spec.personality ?? '').trim(), background: (spec.background ?? '').trim(), appearance: (spec.appearance ?? '').trim(),
+      speech: { style: (spec.speech?.style ?? '').trim(), examples: list(spec.speech?.examples) as string[] },
+    })
+    target.characterStates.create(character.id, { publicState: (spec.state?.publicState ?? '').trim(), innerState: (spec.state?.innerState ?? '').trim(), activity: (spec.state?.activity ?? '').trim() })
+    if (spec.place !== undefined) {
+      target.placements.place('character', character.id, { locationId: placeFor(spec.place.location)!.id, ...(spec.place.position === undefined ? {} : { position: spec.place.position }), ...(spec.place.feature === undefined ? {} : { featureKey: spec.place.feature }) })
+    }
+    target.consolidation.enqueue({ kind: 'character', subjectId: character.id, note: spec.note ?? 'made up in play', turn: edit.turn })
+  }
+  return { keys: wanted.map(spec => spec.key), writes: wanted.length }
+}
+
+/**
+ * Apply an edit. Every problem is found before anything is written, so a bad edit changes nothing.
+ * Characters made up by the edit are created after its places and before everything else, so that the rest
+ * of the edit (relationships, events, moves) can name them; the whole is still one transaction.
+ * @throws {InvalidEditError} naming each problem.
+ */
+export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): EditResult {
+  if (list(edit.characters).length === 0) return applyChanges(target, edit)
+  return target.transaction(() => {
+    const placesFirst = applyChanges(target, { turn: edit.turn, places: list(edit.places) as NewPlace[] })
+    const made = createCharacters(target, edit)
+    const rest = applyChanges(target, { ...edit, places: [], characters: [] })
+    return {
+      eventIds: rest.eventIds, beliefIds: rest.beliefIds, writes: placesFirst.writes + made.writes + rest.writes,
+      characterKeys: made.keys, placeKeys: placesFirst.placeKeys ?? [],
+    }
+  })
+}
+
 type Wire = Record<string, unknown>
 const isObject = (value: unknown): value is Wire => typeof value === 'object' && value !== null && !Array.isArray(value)
 
@@ -532,13 +715,30 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       event: num(entry, 'event') ?? 0, character: text(entry, 'character') ?? '', mode: (text(entry, 'mode') ?? '') as PerceptionMode,
       content: text(entry, 'content'), gist: text(entry, 'gist'), accuracy: text(entry, 'accuracy') as Accuracy | undefined,
     })),
+    characters: array('characters').map((entry): NewCharacterSpec => defined<NewCharacterSpec>({
+      key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', aliases: strings(entry, 'aliases'), age: text(entry, 'age'), gender: text(entry, 'gender'), pronouns: text(entry, 'pronouns'),
+      kind: text(entry, 'kind') as CharacterKind | undefined, tier: text(entry, 'tier') as CharacterTier | undefined, summary: text(entry, 'summary') ?? '',
+      personality: text(entry, 'personality'), background: text(entry, 'background'), appearance: text(entry, 'appearance'), note: text(entry, 'note'),
+      speech: isObject(entry['speech']) ? defined<NonNullable<NewCharacterSpec['speech']>>({ style: text(entry['speech'], 'style') ?? '', examples: strings(entry['speech'], 'examples') }) : undefined,
+      state: isObject(entry['state']) ? defined<NonNullable<NewCharacterSpec['state']>>({ publicState: text(entry['state'], 'public_state'), innerState: text(entry['state'], 'inner_state'), activity: text(entry['state'], 'activity') }) : undefined,
+      place: isObject(entry['place']) ? defined<NonNullable<NewCharacterSpec['place']>>({ location: text(entry['place'], 'location') ?? '', position: text(entry['place'], 'position'), feature: text(entry['place'], 'feature') }) : undefined,
+    })),
     places: array('places').map((entry): NewPlace => defined<NewPlace>({
-      key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', description: text(entry, 'description'), parent: text(entry, 'parent'), features: featuresOf(entry),
+      key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', description: text(entry, 'description'), parent: text(entry, 'parent'), features: featuresOf(entry), note: text(entry, 'note'),
       exits: Array.isArray(entry['exits']) ? entry['exits'].filter(isObject).map((item): NewExit => defined<NewExit>({
         to: text(item, 'to') ?? '', description: text(item, 'description'), oneWay: bool(item, 'one_way'), backDescription: text(item, 'back_description'),
         travelSeconds: num(item, 'travel_time_seconds'), state: text(item, 'state') as ExitState | undefined, note: text(item, 'note'),
       })) : undefined,
     })),
+    exits: array('exits').map((entry): NewExitBetween => defined<NewExitBetween>({
+      from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '', description: text(entry, 'description'), oneWay: bool(entry, 'one_way'), backDescription: text(entry, 'back_description'),
+      travelSeconds: num(entry, 'travel_time_seconds'), state: text(entry, 'state') as ExitState | undefined, note: text(entry, 'note'),
+    })),
+    relationships: array('relationships').map((entry): RelationshipSet => defined<RelationshipSet>({
+      from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '', label: text(entry, 'label'), summary: text(entry, 'summary'),
+      familiarity: num(entry, 'familiarity'), trust: num(entry, 'trust'), affinity: num(entry, 'affinity'), tension: num(entry, 'tension'),
+    })),
+    relationshipRetractions: array('relationship_retractions').map((entry): RelationshipRetraction => ({ from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '' })),
     placeEdits: array('place_edits').map((entry): PlaceEdit => defined<PlaceEdit>({ place: text(entry, 'place') ?? '', name: text(entry, 'name'), description: text(entry, 'description'), features: featuresOf(entry) })),
     exitChanges: array('exit_changes').map((entry): ExitChange => defined<ExitChange>({
       from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '', state: text(entry, 'state') as ExitState | undefined, description: text(entry, 'description'), note: text(entry, 'note'),
@@ -565,7 +765,7 @@ const IMPORTANCE: JsonSchemaNode = { type: 'integer', enum: [1, 2, 3, 4, 5], des
  * The JSON schema of the wire format, for a model's structured output or a tool's parameters.
  * With `characters`, a character can only be named by one of those keys.
  */
-export function recordsEditSchema(options: { characters?: readonly string[]; changes?: boolean } = {}): ObjectJsonSchema {
+export function recordsEditSchema(options: { characters?: readonly string[]; changes?: boolean; /** Offer the making of characters, places and ways: only for the agent whose work that is. */ authoring?: boolean } = {}): ObjectJsonSchema {
   const character: JsonSchemaNode = options.characters === undefined || options.characters.length === 0
     ? { type: 'string', description: 'The key of a character.' }
     : { type: 'string', enum: [...options.characters], description: 'The key of a character.' }
@@ -651,38 +851,29 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
         additionalProperties: false,
       },
     },
-    places: {
+    relationships: {
       type: 'array',
-      description: 'Places the story makes up or opens: a hidden passage, a room that was behind a door. Only for places that are not already known.',
+      description: 'How a character stands towards another: a small profile, one per direction. Give only what changed; a new one needs a label. Record a change when something happened that really changes it, not for every pleasantry.',
       items: {
         type: 'object',
         properties: {
-          key: { type: 'string', description: 'A short lowercase key that does not exist yet.' },
-          name: { type: 'string' },
-          description: { type: 'string' },
-          parent: placeKey,
-          features: featureList,
-          exits: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                to: placeKey,
-                description: { type: 'string', description: 'What the way looks like from this place.' },
-                one_way: { type: 'boolean', description: 'Leave out for a way that works both ways.' },
-                back_description: { type: 'string' },
-                travel_time_seconds: { type: 'integer' },
-                state: { type: 'string', enum: [...EXIT_STATES] },
-                note: { type: 'string' },
-              },
-              required: ['to'],
-              additionalProperties: false,
-            },
-          },
+          from: character,
+          to: character,
+          label: { type: 'string', description: 'What the other is to this character, in a word or two: sister, rival, landlord.' },
+          summary: { type: 'string', description: 'The relationship in a sentence or two: how it came about, what it is like now.' },
+          familiarity: { type: 'number', description: 'How well it knows the other: 0 a stranger, 1 intimately.' },
+          trust: { type: 'number', description: 'From -1 (distrusts) to 1 (trusts completely).' },
+          affinity: { type: 'number', description: 'From -1 (dislikes) to 1 (is fond of).' },
+          tension: { type: 'number', description: 'How strained it is now: 0 none, 1 about to break.' },
         },
-        required: ['key', 'name'],
+        required: ['from', 'to'],
         additionalProperties: false,
       },
+    },
+    relationship_retractions: {
+      type: 'array',
+      description: 'Profiles that no longer describe anything: the two never actually met, or it was made by mistake.',
+      items: { type: 'object', properties: { from: character, to: character }, required: ['from', 'to'], additionalProperties: false },
     },
     place_edits: {
       type: 'array',
@@ -711,6 +902,81 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
     },
     threads_opened: { type: 'array', items: { type: 'string' }, description: 'Promises made, mysteries raised, goals set that are not settled yet: one sentence each.' },
     threads_resolved: { type: 'array', items: { type: 'integer' }, description: 'The ids of open threads that are now settled.' },
+  }
+  if (options.authoring === true) {
+    Object.assign(properties, {
+      places: {
+        type: 'array',
+        description: 'Places the story makes up or opens: a hidden passage, a room that was behind a door. Only for places that are not already known.',
+        items: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', description: 'A short lowercase key that does not exist yet.' },
+            name: { type: 'string' },
+            description: { type: 'string' },
+            parent: placeKey,
+            features: featureList,
+            exits: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  to: placeKey,
+                  description: { type: 'string', description: 'What the way looks like from this place.' },
+                  one_way: { type: 'boolean', description: 'Leave out for a way that works both ways.' },
+                  back_description: { type: 'string' },
+                  travel_time_seconds: { type: 'integer' },
+                  state: { type: 'string', enum: [...EXIT_STATES] },
+                  note: { type: 'string' },
+                },
+                required: ['to'],
+                additionalProperties: false,
+              },
+            },
+            note: { type: 'string', description: 'Why it was made, for whoever fits it into the world later.' },
+          },
+          required: ['key', 'name'],
+          additionalProperties: false,
+        },
+      },
+      exits: {
+        type: 'array',
+        description: 'New ways between places that exist (or are made in this edit). Both directions unless one_way.',
+        items: {
+          type: 'object',
+          properties: { from: placeKey, to: placeKey, description: { type: 'string' }, one_way: { type: 'boolean' }, back_description: { type: 'string' }, travel_time_seconds: { type: 'integer' }, state: { type: 'string', enum: [...EXIT_STATES] }, note: { type: 'string' } },
+          required: ['from', 'to'],
+          additionalProperties: false,
+        },
+      },
+      characters: {
+        type: 'array',
+        description: 'People the story makes up, only when it genuinely needs them. Played by an agent from what is given here.',
+        items: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', description: 'A short lowercase key that does not exist yet.' },
+            name: { type: 'string' },
+            aliases: { type: 'array', items: { type: 'string' } },
+            age: { type: 'string' },
+            gender: { type: 'string' },
+            pronouns: { type: 'string' },
+            kind: { type: 'string', enum: [...CHARACTER_KINDS], description: 'person, or group for a crowd or organisation treated as one.' },
+            tier: { type: 'string', enum: [...CHARACTER_TIERS], description: 'supporting by default; background for someone who only reacts.' },
+            summary: { type: 'string', description: 'One or two sentences: who they are.' },
+            personality: { type: 'string' },
+            background: { type: 'string' },
+            appearance: { type: 'string' },
+            speech: { type: 'object', properties: { style: { type: 'string' }, examples: { type: 'array', items: { type: 'string' } } }, required: ['style'], additionalProperties: false },
+            state: { type: 'object', properties: { public_state: { type: 'string' }, inner_state: { type: 'string' }, activity: { type: 'string' } }, additionalProperties: false },
+            place: { type: 'object', properties: { location: placeKey, position: { type: 'string' }, feature: { type: 'string' } }, required: ['location'], additionalProperties: false },
+            note: { type: 'string', description: 'Why they were made, for whoever fits them into the world later.' },
+          },
+          required: ['key', 'name', 'summary'],
+          additionalProperties: false,
+        },
+      },
+    })
   }
   if (options.changes === true) {
     Object.assign(properties, {

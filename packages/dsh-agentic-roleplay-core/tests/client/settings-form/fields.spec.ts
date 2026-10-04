@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, parseSettings } from '../../../src/shared/settings.ts
 
 describe('the settings form', () => {
   it('starts from the settings, with a share shown as a percentage', () => {
-    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'context.limitTokens': '24000', 'context.retainRatio': '50' })
+    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'authoring.enabled': true, 'authoring.perTurn': '2', 'authoring.consolidateAfter': '3', 'context.limitTokens': '24000', 'context.retainRatio': '50' })
   })
 
   it('gives back settings that parse, with what the form does not show left as it was', () => {

@@ -11,7 +11,7 @@ import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { parseSettings } from '../../shared/settings.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCharacters, populateLocations, startingPlaceProblems } from './populate.ts'
+import { populateCharacters, populateLocations, relationshipProblems, startingPlaceProblems } from './populate.ts'
 
 const MAX_NAME_LENGTH = 200
 
@@ -42,6 +42,9 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   if (locationProblems.length > 0) throw new InvalidWorldError(`the places of "${world.summary.name}" have ${locationProblems.length} problem(s)`, locationProblems)
   const placing = startingPlaceProblems(characters, locations)
   if (placing.length > 0) throw new InvalidWorldError(`the starting places of "${world.summary.name}" have ${placing.length} problem(s)`, placing.map(message => ({ path: world.directory, message })))
+
+  const related = relationshipProblems(characters)
+  if (related.length > 0) throw new InvalidWorldError(`the relationships of "${world.summary.name}" have ${related.length} problem(s)`, related.map(message => ({ path: world.directory, message })))
 
   const opening = openingOf(world, characters)
   const player = characters.find(character => character.id === request.playerCharacterId)

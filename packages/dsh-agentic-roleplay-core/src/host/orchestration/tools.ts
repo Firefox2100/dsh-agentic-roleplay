@@ -1,8 +1,9 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { Boundaries, TurnStore } from './boundaries.ts'
+import type { Boundaries, CreateReport, TurnStore } from './boundaries.ts'
 import { characterRunner } from './character-runner.ts'
 import { encodeOutput } from '../../shared/narration.ts'
+import { AUTHORING_NEEDS } from './boundaries.ts'
 import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } from './turn-engine.ts'
 
@@ -10,6 +11,7 @@ export const ACTIVATE_TOOL = 'activate_characters'
 export const RESOLVE_TOOL = 'resolve_round'
 export const NARRATE_TOOL = 'narrate'
 export const RECORD_TOOL = 'record_memory'
+export const EXPAND_TOOL = 'expand_world'
 
 export interface ToolDeps {
   engine: TurnEngine
@@ -64,6 +66,18 @@ function renderResolution(report: ResolveReport): string {
   lines.push(OUTPUT_RULES)
   lines.push('Narrate only what the player\'s character can perceive.')
   return lines.join('\n')
+}
+
+function renderExpansion(report: CreateReport): string {
+  if (report.created.length === 0) return `Nothing was made up: ${(report.declined ?? 'the world author found nothing the story needs').replace(/[.\s]+$/, '')}. Work with what exists.`
+  const lines = report.created.map(entry => `- ${entry.kind === 'character' ? 'character' : 'place'} ${entry.key} (${entry.name})`)
+  const characters = report.created.filter(entry => entry.kind === 'character')
+  return [
+    'Made up and fitted into the world:',
+    ...lines,
+    ...(characters.length === 0 ? [] : [`${characters.length === 1 ? 'They are' : 'They are all'} now in the cast: ask them to act with ${ACTIVATE_TOOL}, by their keys, like anyone else.`]),
+    ...(report.declined === undefined ? [] : [`Not made: ${report.declined}`]),
+  ].join('\n')
 }
 
 /** The tools the game master plays a turn with. */
@@ -208,5 +222,20 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [activate, resolve, remember, narrate]
+  const expand = defineTool({
+    name: EXPAND_TOOL,
+    description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, or anything an existing character or place can serve; use those. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
+    parameters: {
+      need: { type: 'string', required: true, enum: AUTHORING_NEEDS, description: 'Why: scene_change, arrival or introduction.' },
+      what: { type: 'string', required: true, description: 'What is needed, from what the story has established: who or where (a name when it was given), their role, what happened to make it needed now, and where it is in relation to what exists.' },
+    },
+    output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderExpansion(value as unknown as CreateReport) }] },
+    isConcurrencySafe: () => false,
+    async execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      return record(await deps.engine.expand(owner, { need: args.need, what: args.what }, exec.signal))
+    },
+  })
+
+  return [activate, resolve, remember, expand, narrate]
 }

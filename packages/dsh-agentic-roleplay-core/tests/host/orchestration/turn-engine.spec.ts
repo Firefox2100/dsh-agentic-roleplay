@@ -3,6 +3,7 @@ import type { Boundaries } from '../../../src/host/orchestration/boundaries.ts'
 import { defaultBoundaries, everyoneActs } from '../../../src/host/orchestration/defaults.ts'
 import type { Outcome } from '../../../src/host/orchestration/protocol.ts'
 import { TurnEngine, type RawSegment, type RunCharacter, type TurnOwner } from '../../../src/host/orchestration/turn-engine.ts'
+import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import { alice, arthur, bob, carol, dan, fakeStore, location, placed, scriptedRunner, type FakeStore } from './fixtures.ts'
 
 const signal = new AbortController().signal
@@ -698,5 +699,129 @@ describe('places', () => {
     expect(resolution.done?.moves).toEqual([])
     expect(store.queue[0]?.place).toBeUndefined()
     expect(store.queue[0]?.entries[0]?.at).toBeUndefined()
+  })
+})
+
+describe('making up what the story needs', () => {
+  const only = { alice: { intent: 'a', commitment: 'low' as const } }
+  let created: { need: string; what: string; turn: number }[]
+  let consolidated: number
+  let release: (() => void) | undefined
+
+  const settingsWith = (authoring: Partial<typeof DEFAULT_SETTINGS.authoring>) => () => ({ ...DEFAULT_SETTINGS, authoring: { ...DEFAULT_SETTINGS.authoring, ...authoring } })
+
+  beforeEach(() => {
+    created = []
+    consolidated = 0
+    release = undefined
+    boundaries.author = {
+      create: (job) => { created.push({ need: job.need, what: job.what, turn: job.turn }); return Promise.resolve({ created: [{ kind: 'place', key: 'attic', name: 'Attic' }] }) },
+      consolidate: () => { consolidated += 1; return new Promise((done) => { release = () => { done({ resolved: 1, notes: '' }) } }) },
+    }
+  })
+
+  const wait = async (): Promise<void> => { await new Promise(resolve => setTimeout(resolve, 5)) }
+  const round = async () => {
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+  }
+
+  it('hands the request to the world author with the reason and what is needed, and gives back what it made', async () => {
+    const report = await engine.expand(owner, { need: 'scene_change', what: '  The story goes up to the attic.  ' }, signal)
+    expect(created).toEqual([{ need: 'scene_change', what: 'The story goes up to the attic.', turn: 1 }])
+    expect(report.created).toEqual([{ kind: 'place', key: 'attic', name: 'Attic' }])
+  })
+
+  it('refuses a reason that is not one, an empty request, and a request in the middle of a round', async () => {
+    await expect(engine.expand(owner, { need: 'colour', what: 'a parrot' }, signal)).rejects.toThrow(/not a reason.*scene_change, arrival, introduction/)
+    await expect(engine.expand(owner, { need: 'arrival', what: '  ' }, signal)).rejects.toThrow(/say what is needed/)
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await expect(engine.expand(owner, { need: 'arrival', what: 'Mira' }, signal)).rejects.toThrow(/resolve the round first/)
+    expect(created).toEqual([])
+  })
+
+  it('refuses when the world is closed, and when the turn already made as many things as the chat allows', async () => {
+    store.settings = settingsWith({ enabled: false })
+    await expect(engine.expand(owner, { need: 'arrival', what: 'Mira' }, signal)).rejects.toThrow(/this world is closed/)
+    store.settings = settingsWith({ perTurn: 2 })
+    store.story.consolidation.enqueue({ kind: 'location', subjectId: 1, note: 'x', turn: 1 })
+    await engine.expand(owner, { need: 'arrival', what: 'Mira' }, signal)
+    store.story.consolidation.enqueue({ kind: 'character', subjectId: 1, note: 'x', turn: 1 })
+    await expect(engine.expand(owner, { need: 'arrival', what: 'Tom' }, signal)).rejects.toThrow(/2 new things were already made up this turn, which is the most this chat allows/)
+    await expect(engine.expand({ chat: 'session-1', turn: 2 }, { need: 'arrival', what: 'Tom' }, signal)).resolves.toBeDefined()
+  })
+
+  it('fits what was made up into the world in the background once enough waits, and the turn does not wait for it', async () => {
+    store.settings = settingsWith({ consolidateAfter: 2 })
+    store.story.consolidation.enqueue({ kind: 'location', subjectId: 1, note: 'x', turn: 1 })
+    await round()
+    await engine.narrate(owner, narration())
+    await wait()
+    expect(consolidated).toBe(0)
+    store.story.consolidation.enqueue({ kind: 'character', subjectId: 1, note: 'x', turn: 1 })
+    const next = { chat: 'session-1', turn: 2 }
+    const runner = scriptedRunner(only)
+    await engine.activate(next, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(next, [outcome('alice', 'succeeded')], runner.run, signal)
+    await engine.narrate(next, narration())
+    expect(store.completed).toBe(2)
+    expect(consolidated).toBe(1)
+    expect(engine.waitingToFit(next)).toBe(2)
+    release?.()
+  })
+
+  it('runs one at a time per chat, and again for what is left once it is done', async () => {
+    store.settings = settingsWith({ consolidateAfter: 1 })
+    store.story.consolidation.enqueue({ kind: 'location', subjectId: 1, note: 'x', turn: 1 })
+    await round()
+    await engine.narrate(owner, narration())
+    const next = { chat: 'session-1', turn: 2 }
+    const runner = scriptedRunner(only)
+    await engine.activate(next, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(next, [outcome('alice', 'succeeded')], runner.run, signal)
+    await engine.narrate(next, narration())
+    expect(consolidated).toBe(1)
+    release?.()
+    await wait()
+    const third = { chat: 'session-1', turn: 3 }
+    await engine.activate(third, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(third, [outcome('alice', 'succeeded')], runner.run, signal)
+    await engine.narrate(third, narration())
+    expect(consolidated).toBe(2)
+    release?.()
+  })
+
+  it('also does it for something that has waited several turns, however few are waiting', async () => {
+    store.settings = settingsWith({ consolidateAfter: 10 })
+    store.story.consolidation.enqueue({ kind: 'character', subjectId: 1, note: 'x', turn: 1 })
+    const late = { chat: 'session-1', turn: 5 }
+    const runner = scriptedRunner(only)
+    await engine.activate(late, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(late, [outcome('alice', 'succeeded')], runner.run, signal)
+    await engine.narrate(late, narration())
+    expect(consolidated).toBe(1)
+    release?.()
+  })
+
+  it('does nothing when the world is closed or nothing waits, and tells the log when it fails, leaving the items queued', async () => {
+    const problems: string[] = []
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), (message) => { problems.push(message) })
+    store.settings = settingsWith({ enabled: false, consolidateAfter: 1 })
+    store.story.consolidation.enqueue({ kind: 'character', subjectId: 1, note: 'x', turn: 1 })
+    await round()
+    await engine.narrate(owner, narration())
+    expect(consolidated).toBe(0)
+    store.settings = settingsWith({ consolidateAfter: 1 })
+    boundaries.author = { ...boundaries.author, consolidate: () => Promise.reject(new Error('the model is down')) }
+    const next = { chat: 'session-1', turn: 2 }
+    const runner = scriptedRunner(only)
+    await engine.activate(next, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(next, [outcome('alice', 'succeeded')], runner.run, signal)
+    await engine.narrate(next, narration())
+    await wait()
+    expect(problems).toEqual(['made-up characters and places were not fitted into the world: the model is down'])
+    expect(store.story.consolidation.pending()).toHaveLength(1)
   })
 })
