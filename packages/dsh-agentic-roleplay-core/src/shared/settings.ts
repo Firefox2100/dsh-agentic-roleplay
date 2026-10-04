@@ -1,3 +1,5 @@
+import { CLOCK_MODES, type ClockMode } from 'dsh-roleplay-model'
+
 /** What can be set for one chat. Stored as a file next to the chat's database: it is configuration, not story state. */
 export interface ChatSettings {
   /** The most rounds of characters acting that the game master may run for one player message. */
@@ -34,6 +36,20 @@ export interface ChatSettings {
     /** How many made-up characters and places may wait to be fitted into the world (connected to the rest, given relationships) before that is done at the end of the turn. */
     consolidateAfter: number
   }
+  clock: {
+    /** `simulated`: the story's time moves only with the story, by as much as the game master says, and it can be skipped ahead. `real`: the story's time is the wall clock. */
+    mode: ClockMode
+    /** The time zone the story's time is read in (an IANA name such as `Europe/London`); empty is UTC. */
+    timeZone: string
+    /** In simulated time, how long a round takes when the game master does not say. */
+    roundSeconds: number
+    /** The longest the game master may skip ahead in one go. */
+    maxSkipDays: number
+  }
+  offstage: {
+    /** The most characters, away from the player's character, that may be asked what they do about something that fell due (a commitment whose time came, a deadline that passed) after a turn. 0 turns it off. */
+    perTurn: number
+  }
   embedding: {
     /**
      * What is set per request to the embedding provider, by the name the provider gives each option
@@ -50,17 +66,23 @@ export type EmbeddingOptions = Record<string, EmbeddingValue>
 /** At most this many options, so that a settings file cannot grow without bound. */
 export const MAX_EMBEDDING_OPTIONS = 20
 
+/** One of a fixed set of words. */
+interface ChoiceSpec { kind: 'choice'; options: readonly string[]; fallback: string }
+/** Free text of at most `max` characters. */
+interface TextSpec { kind: 'text'; max: number; fallback: string }
 /** A flat set of named values whose names are not known here. */
 interface RecordSpec { kind: 'record'; fallback: EmbeddingOptions }
 interface NumberSpec { kind: 'integer' | 'number'; min: number; max: number; fallback: number }
 interface FlagSpec { kind: 'flag'; fallback: boolean }
-type FieldSpec = NumberSpec | FlagSpec | RecordSpec
+type FieldSpec = NumberSpec | FlagSpec | RecordSpec | ChoiceSpec | TextSpec
 type Spec = { [key: string]: FieldSpec | Spec }
 
 const integer = (min: number, max: number, fallback: number): NumberSpec => ({ kind: 'integer', min, max, fallback })
 const ratio = (min: number, max: number, fallback: number): NumberSpec => ({ kind: 'number', min, max, fallback })
 const flag = (fallback: boolean): FlagSpec => ({ kind: 'flag', fallback })
 const record = (): RecordSpec => ({ kind: 'record', fallback: {} })
+const choice = (options: readonly string[], fallback: string): ChoiceSpec => ({ kind: 'choice', options, fallback })
+const text = (max: number, fallback: string): TextSpec => ({ kind: 'text', max, fallback })
 
 export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
@@ -72,6 +94,8 @@ export const SETTINGS_SPEC = {
     longTermTokens: integer(200, 40_000, 2500),
   },
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), consolidateAfter: integer(1, 20, 3) },
+  clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
+  offstage: { perTurn: integer(0, 5, 2) },
   embedding: { options: record() },
 } as const satisfies Spec
 
@@ -84,6 +108,17 @@ function defaultsOf(spec: Spec): Record<string, unknown> {
 export const DEFAULT_SETTINGS = defaultsOf(SETTINGS_SPEC) as unknown as ChatSettings
 
 export type SettingsParse = { ok: true; value: ChatSettings } | { ok: false; problems: string[] }
+
+/** Whether a name is a time zone the runtime knows. */
+export function isTimeZone(zone: string): boolean {
+  if (zone.trim() === '' || zone !== zone.trim()) return false
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: zone })
+    return true
+  } catch {
+    return false
+  }
+}
 
 const OPTION_NAME = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
 
@@ -124,6 +159,12 @@ function parseLevel(spec: Spec, input: unknown, path: string, problems: string[]
     } else if (entry.kind === 'flag') {
       if (typeof given === 'boolean') result[key] = given
       else problems.push(`"${name}" must be true or false`)
+    } else if (entry.kind === 'choice') {
+      if (typeof given === 'string' && entry.options.includes(given)) result[key] = given
+      else problems.push(`"${name}" must be one of: ${entry.options.join(', ')}`)
+    } else if (entry.kind === 'text') {
+      if (typeof given === 'string' && given.length <= entry.max) result[key] = given
+      else problems.push(`"${name}" must be text of at most ${entry.max} characters`)
     } else if (typeof given === 'number' && Number.isFinite(given) && (entry.kind === 'number' || Number.isInteger(given)) && given >= entry.min && given <= entry.max) {
       result[key] = given
     } else {
@@ -137,6 +178,8 @@ function parseLevel(spec: Spec, input: unknown, path: string, problems: string[]
 export function parseSettings(value: unknown): SettingsParse {
   const problems: string[] = []
   const parsed = parseLevel(SETTINGS_SPEC, value, '', problems)
+  const zone = (parsed['clock'] as { timeZone?: unknown } | undefined)?.timeZone
+  if (typeof zone === 'string' && zone !== '' && !isTimeZone(zone)) problems.push(`"clock.timeZone" is not a time zone this system knows: write it like Europe/London or UTC`)
   return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed as unknown as ChatSettings }
 }
 
@@ -148,4 +191,6 @@ export interface SettingsPayload {
   pendingRecords: number
   /** How many made-up characters, places and things are waiting to be fitted into the world. */
   pendingConsolidation: number
+  /** The mode the story's clock is in now; time that is simulated cannot be made to follow the real clock again. */
+  clockMode?: ClockMode
 }

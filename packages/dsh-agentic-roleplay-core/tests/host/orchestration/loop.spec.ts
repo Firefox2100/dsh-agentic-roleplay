@@ -105,8 +105,13 @@ interface Script {
   expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object'; need?: string }
   /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
   things?: 'take' | 'conflict' | 'unlock'
+  /** How the game master deals with time: says a round took ten minutes; or skips to seven in the morning before it delivers. */
+  time?: 'stated' | 'skip'
+  /** The player's character walks out to the street, and nobody else needs to react: the game master resolves a round with only its outcome. */
+  player?: 'walks'
 }
 
+const EVENING = Date.UTC(1912, 9, 4, 21, 40)
 const aliceOnly = [{ character: 'alice', result: 'succeeded', summary: 'Alice greets him' }]
 const bobOnly = [{ character: 'bob', result: 'succeeded', summary: 'Bob objects' }]
 const alicesWords = { type: 'utterance', character: 'alice', text: 'That is not something I expected.' }
@@ -261,6 +266,12 @@ function answerFor(script: Script = {}) {
     // A refused call still counts as a call, so one refusal is taken off.
     const resolved = timesCalled(request, 'resolve_round') - (script.moves === 'locked-first' && thisTurn(request).includes('cannot go to') ? 1 : 0) - (script.things === 'conflict' && thisTurn(request).includes('cannot take') ? 1 : 0)
     const delivered = timesCalled(request, 'narrate')
+    if (script.player === 'walks' && !thisTurn(request).includes('input is refused')) {
+      if (resolved === 0) return call('m-walk', 'resolve_round', { outcomes: [{ character: 'arthur', result: 'succeeded', summary: 'Arthur walks out to the street', moves_to: { location: 'street', position: 'by the lamp' } }] })
+      if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'Arthur left the bar.' })
+      if (delivered === 0) return call('n-walk', 'narrate', { segments: [{ type: 'narration', text: 'You step out onto Main Street.' }] })
+      return text('')
+    }
     const objected = thisTurn(request).includes('You may not end the turn yet')
     if (script.early === true && !objected) return text('The scene is over, I think.')
     if (thisTurn(request).includes('input is refused')) return text('I cannot do that.')
@@ -283,11 +294,12 @@ function answerFor(script: Script = {}) {
       if (script.moves === 'cellar') return call('m2', 'resolve_round', { outcomes: withMove('cellar') })
       if (script.moves === 'locked-first') return call('m2', 'resolve_round', { outcomes: withMove('vault') })
       if (script.things !== undefined) return call('m2', 'resolve_round', { outcomes: handling() })
-      return call('m2', 'resolve_round', { outcomes: round1 })
+      return call('m2', 'resolve_round', { ...(script.time === 'stated' ? { elapsed_seconds: 600 } : {}), outcomes: round1 })
     }
     if (resolved === 1 && thisTurn(request).includes('tried once more')) {
       return call('m3', 'resolve_round', { outcomes: [{ character: 'dan', result: 'succeeded', summary: 'Dan takes the lantern too' }] })
     }
+    if (script.time === 'skip' && timesCalled(request, 'advance_time') === 0) return call('m-time', 'advance_time', { until_time: '07:00', reason: 'they sleep' })
     if (script.expand !== undefined && timesCalled(request, 'expand_world') === 0) return call('m-exp', 'expand_world', { need: script.expand.need ?? 'arrival', what: script.expand.author === 'object' ? 'A folded note was just handed to Arthur by a stranger at the door.' : 'A ferry pilot named Mira Voss has just come up the lane to the bar with news.' })
     if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'The key changed hands.' })
     const delivery = script.delivery ?? 'good'
@@ -314,11 +326,11 @@ async function addSession(name: string, withPlaces = false): Promise<{ session: 
   if (withPlaces) {
     const place = (key: string, name: string, description = '', features: { key: string; name: string; description: string }[] = []) => session.locations.add({ sourceId: key, name, description, features })
     const [bar, street, cellar, vault] = [place('bar', 'The Bar', 'Smoky.', [{ key: 'counter', name: 'Counter', description: '' }]), place('street', 'Main Street'), place('cellar', 'Cellar', 'Cold.'), place('vault', 'Vault')]
-    const way = (from: number, to: number, description: string, state: 'open' | 'locked' = 'open', note = '') => {
-      session.locations.addExit({ fromId: from, toId: to, description, state, note })
-      session.locations.addExit({ fromId: to, toId: from, description, state, note })
+    const way = (from: number, to: number, description: string, state: 'open' | 'locked' = 'open', note = '', travelSeconds?: number) => {
+      session.locations.addExit({ fromId: from, toId: to, description, state, note, ...(travelSeconds === undefined ? {} : { travelSeconds }) })
+      session.locations.addExit({ fromId: to, toId: from, description, state, note, ...(travelSeconds === undefined ? {} : { travelSeconds }) })
     }
-    way(bar.id, street.id, 'the door')
+    way(bar.id, street.id, 'the door', 'open', '', 120)
     way(bar.id, cellar.id, 'a stair down')
     way(vault.id, cellar.id, '', 'locked', 'needs a key')
     for (const [key, where] of [['arthur', bar], ['alice', bar], ['bob', bar], ['carol', cellar], ['dan', street]] as const) session.placements.place('character', session.characters.getBySourceId(key)!.id, { locationId: where.id })
@@ -329,6 +341,7 @@ async function addSession(name: string, withPlaces = false): Promise<{ session: 
     session.items.setOpeners({ kind: 'item', id: chest.id }, [key.id])
     session.items.add(thing('letter', 'Sealed letter', { hidden: true }), { kind: 'location', locationId: bar.id })
   }
+  session.clock.start('simulated', EVENING)
   return { session, id: session.metadata.get().id }
 }
 
@@ -402,7 +415,7 @@ describe('a turn with the real agent loop', () => {
       const { session, adapter } = await playAuthored('creates')
       expect(masterRequests(adapter).every(request => toolNames(request).includes('expand_world'))).toBe(true)
       expect(characterRequests(adapter).some(request => toolNames(request).includes('expand_world'))).toBe(false)
-      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'search_events', 'submit_result', 'world_lint'])
       const mira = session.characters.getBySourceId('mira')!
       expect(mira).toMatchObject({ name: 'Mira Voss', role: 'npc', control: 'agent', tier: 'supporting' })
       expect(session.placements.get('character', mira.id)).toMatchObject({ locationId: session.locations.getBySourceId('street')!.id, position: 'by the bar door' })
@@ -469,7 +482,7 @@ describe('a turn with the real agent loop', () => {
       expect(session.consolidation.get(1)?.resolution).toBe('gave her relationships with Arthur, both ways')
       const fitting = authors(adapter).find(request => systemOf(request).includes('fitting into the world what was made up'))!
       expect(briefOf(fitting)).toContain('- item 1, character mira (Mira Voss), made in turn 1')
-      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_consolidation', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_consolidation', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
       expect(session.metadata.get().turns).toBe(1)
       expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/end')).toHaveLength(1)
     })
@@ -481,6 +494,133 @@ describe('a turn with the real agent loop', () => {
       expect(authors(adapter).filter(request => systemOf(request).includes('fitting into the world'))).toEqual([])
       expect(session.characters.getBySourceId('mira')?.control).toBe('agent')
       expect(agent.session.id).toContain('session-')
+    })
+  })
+
+  describe('time', () => {
+    async function playTime(time?: Script['time'], settings?: object) {
+      const { session, id } = await addSession('Vault', true)
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...(time === undefined ? {} : { time }) }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      return { session, adapter, agent, id }
+    }
+    const characterBrief = (adapter: ScriptedAdapter, who: string) => briefOf(characterRequests(adapter).find(request => systemOf(request).includes(`You are ${who}.`))!)
+    const keepers = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('record keeper of an interactive story'))
+
+    it('tells the game master the time and how it moves, and each character what time it is, as the story reads it', async () => {
+      const { adapter } = await playTime()
+      const scene = thisTurn(masterRequests(adapter)[0]!)
+      expect(scene).toContain('Time: Friday 4 October 1912, 21:40 (evening). The story\'s time moves only as you say')
+      expect(characterBrief(adapter, 'Alice')).toContain('Now: Friday 4 October 1912, 21:40 (evening).')
+    })
+
+    it('passes the default time when the game master says nothing, tells it so, and keeps when the round began', async () => {
+      const { session, adapter } = await playTime()
+      expect(session.clock.get()).toEqual({ mode: 'simulated', now: EVENING + 30_000 })
+      expect(session.clock.at(1, 1)).toBe(EVENING)
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('It is now Friday 4 October 1912, 21:40 (evening); 30 seconds passed.')
+    })
+
+    it('passes the time the game master says a round took, and the keeper is told when it was and how long it took', async () => {
+      const { session, adapter } = await playTime('stated')
+      expect(session.clock.get()?.now).toBe(EVENING + 10 * 60_000)
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('It is now Friday 4 October 1912, 21:50 (evening); 10 minutes passed.')
+      expect(briefOf(keepers(adapter)[0]!)).toContain('When: Friday 4 October 1912, 21:40 (evening); the round took 10 minutes')
+    })
+
+    it('puts the days of the characters into what each is told: their own day and goals to the characters, who went where and what is due to the game master, and the open goals and commitments to the keeper', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const alice = session.characters.getBySourceId('alice')!.id
+      const carol = session.characters.getBySourceId('carol')!.id
+      session.routines.replace(alice, [{ days: [], start: 21 * 60, end: 23 * 60, activity: 'tends the bar', locationId: session.locations.getBySourceId('bar')!.id, interruptible: true }])
+      session.routines.replace(carol, [{ days: [], start: 20 * 60, end: 23 * 60, activity: 'walks the street', locationId: session.locations.getBySourceId('street')!.id, interruptible: true }])
+      session.intents.add(alice, { type: 'obligation', name: 'Find the ledger', description: 'Promised Bob.', status: 'active', horizon: 'day', priority: 0.8, urgency: 0.7, plan: ['Search the shop'], openThreads: [], constraints: [] })
+      session.engagements.add({ title: 'Close the bar', at: EVENING + 20 * 60_000, participants: [alice], turn: 1 })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const scene = thisTurn(masterRequests(adapter)[0]!)
+      expect(scene).toContain('By their routines since you last looked: Carol went to Main Street (walks the street).')
+      expect(scene).toMatch(/Commitments due soon or overdue: \\"Close the bar\\" \(Alice\) is due 22:00/)
+      expect(session.placements.get('character', carol)?.locationId).toBe(session.locations.getBySourceId('street')!.id)
+      const brief = characterBrief(adapter, 'Alice')
+      expect(brief).toContain('Your day, now: tends the bar at The Bar, until 23:00.')
+      expect(brief).toContain('You are due to: Close the bar, at 22:00.')
+      expect(brief).toContain('What you are after:\n- Find the ledger (obligation): Promised Bob. Next: Search the shop.')
+      const keeper = briefOf(keepers(adapter)[0]!)
+      expect(keeper).toContain('## Goals of the characters (ids for intent_edits)')
+      expect(keeper).toMatch(/- id \d+, alice: Find the ledger \(obligation, active\) plan: Search the shop/)
+      expect(keeper).toMatch(/## Pending engagements[^]*- id \d+: Close the bar, 1912-10-04T22:00:00, with alice/)
+    })
+
+    it('asks the characters away from the player what they do about a commitment that fell due, after the turn, and moves those who mean to keep it', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const carol = session.characters.getBySourceId('carol')!.id
+      const dan = session.characters.getBySourceId('dan')!.id
+      const meeting = session.engagements.add({ title: 'meet in the cellar', at: EVENING - 10 * 60_000, locationId: session.locations.getBySourceId('cellar')!.id, participants: [carol, dan], turn: 0 })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      await vi.waitFor(() => { expect(characterRequests(adapter).filter(request => briefOf(request).includes('You were to meet in the cellar at Cellar')).length).toBe(2) }, { timeout: 5000 })
+      const asked = characterRequests(adapter).filter(request => briefOf(request).includes('You were to meet in the cellar at Cellar'))
+      expect(asked.map(request => /You are (Carol|Dan)\./.exec(systemOf(request))?.[1]).sort()).toEqual(['Carol', 'Dan'])
+      expect(briefOf(asked[0]!)).toContain('It was with: Carol, Dan.')
+      await vi.waitFor(() => { expect(session.metadata.getValue('offscene.handled')).toEqual([`e${meeting.id}`]) }, { timeout: 5000 })
+      expect(session.placements.get('character', dan)?.locationId).toBe(session.locations.getBySourceId('cellar')!.id)
+      expect(session.characterStates.get(dan)?.activity).toBe('Dan takes the key')
+    })
+
+    it('moves the player\'s character by its own outcome, with no one else asked to act, and the journey takes its time', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', player: 'walks' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I step out to the street.'))
+      await agent.whenIdle()
+      expect(characterRequests(adapter)).toEqual([])
+      const arthur = session.characters.getBySourceId('arthur')!
+      expect(session.placements.get('character', arthur.id)).toMatchObject({ locationId: session.locations.getBySourceId('street')!.id, position: 'by the lamp' })
+      expect(session.clock.get()?.now).toBe(EVENING + 120_000)
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('Arthur is now at Main Street.')
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('It is now Friday 4 October 1912, 21:42 (evening); 2 minutes passed.')
+      expect(briefOf(keepers(adapter)[0]!)).toContain('- arthur (Arthur, the player\'s character): succeeded: Arthur walks out to the street')
+      expect(session.metadata.get().turns).toBe(1)
+    })
+
+    it('skips to a time of day when the game master asks, and the next turn starts from there', async () => {
+      const { session, adapter, agent } = await playTime('skip')
+      expect(session.clock.get()?.now).toBe(Date.UTC(1912, 9, 5, 7))
+      expect(session.clock.log({ kind: 'skip' })).toEqual([expect.objectContaining({ turn: 1, round: 1, reason: 'they sleep', to: Date.UTC(1912, 9, 5, 7) })])
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('It is now Saturday 5 October 1912, 07:00 (morning). Nothing else changed')
+      agent.followup(say('I look around.'))
+      await agent.whenIdle()
+      expect(thisTurn(masterRequests(adapter).findLast(request => thisTurn(request).includes('I look around'))!)).toContain('Time: Saturday 5 October 1912, 07:00 (morning)')
+    })
+
+    it('reads the time in the zone of the settings', async () => {
+      const { adapter } = await playTime(undefined, { clock: { timeZone: 'Asia/Shanghai' } })
+      expect(thisTurn(masterRequests(adapter)[0]!)).toContain('Time: Saturday 5 October 1912, 05:40 (morning)')
+    })
+
+    it('follows the wall clock when the settings say so: it cannot be skipped, and the game master hears how long the player was away', async () => {
+      const { session, id } = await addSession('Vault', true)
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { clock: { mode: 'real', timeZone: 'UTC' } })
+      session.clock.resync('real', Date.now() - 3 * 3_600_000, 0, 'the player left three hours ago')
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', time: 'skip' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(session.clock.get()?.mode).toBe('real')
+      expect(session.clock.get()!.now).toBeGreaterThan(Date.UTC(2026, 0, 1))
+      expect(session.clock.log({ kind: 'skip' })).toEqual([])
+      expect(JSON.stringify(masterRequests(adapter).flatMap(request => request.messages.filter(message => message.role === 'tool' && message.isError === true)))).toContain('follows the wall clock, so it cannot be skipped')
+      const scene = thisTurn(masterRequests(adapter)[0]!)
+      expect(scene).toContain('follows the real clock')
+      expect(scene).toContain('The player was away for 3 hours of real time')
     })
   })
 
@@ -787,7 +927,7 @@ describe('a turn with the real agent loop', () => {
     it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
       const { session, adapter, agent } = await play('careful')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
-      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_item', 'get_location', 'list_items', 'list_locations', 'list_relationships', 'list_threads', 'read_records', 'search_events', 'submit_result'])
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_agenda', 'get_item', 'get_location', 'list_items', 'list_locations', 'list_relationships', 'list_threads', 'read_records', 'search_events', 'submit_result'])
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
       expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
       expect(publicStateOf(session, 'bob')).toBe('holding a brass key')

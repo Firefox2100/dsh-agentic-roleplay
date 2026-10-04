@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, isSessionId } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import { readSettings } from '../../../src/host/sessions/settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { startSession, type StartSessionDeps } from '../../../src/host/sessions/start-session.ts'
@@ -66,9 +67,9 @@ describe('starting with settings', () => {
     expect(readSettings(join(root, 'sessions', started.id)).embedding.options).toEqual({ dimensions: 256 })
   })
 
-  it('has the defaults when none are given, and leaves no file', async () => {
+  it('has the defaults when none are given, with the time zone chosen', async () => {
     const started = await startSession(deps, playAsArthur)
-    expect(await readdir(join(root, 'sessions', started.id))).toEqual(['session.sqlite'])
+    expect(readSettings(join(root, 'sessions', started.id))).toEqual({ ...DEFAULT_SETTINGS, clock: { ...DEFAULT_SETTINGS.clock, timeZone: 'UTC' } })
   })
 
   it('refuses settings that are not acceptable, naming them, before anything is created', async () => {
@@ -84,7 +85,7 @@ describe('startSession', () => {
     expect(isSessionId(started.id)).toBe(true)
     expect(started).toEqual({ id: started.id, chatSessionId: `session-${started.id}`, name: 'The Blackwater Observatory', worldId: 'blackwater', worldName: 'The Blackwater Observatory', characterCount: 3 })
     expect(await readdir(join(root, 'sessions'))).toEqual([started.id])
-    expect(await readdir(join(root, 'sessions', started.id))).toEqual(['session.sqlite'])
+    expect((await readdir(join(root, 'sessions', started.id))).sort()).toEqual(['session.sqlite', 'settings.json'])
 
     const session = state.openSession(join(root, 'sessions'), started.id)
     expect(session.metadata.get()).toMatchObject({
@@ -288,5 +289,40 @@ describe('starting in a world with things', () => {
     expect(session.slots.get('quiver')).toBeDefined()
     await write(join(world(), 'items', 'bad', 'item.json'), { name: 'Bad', location: 'moon' })
     await expect(startSession(deps, playAsArthur)).rejects.toThrow(/items of .* have 1 problem/)
+  })
+})
+
+describe('starting the clock', () => {
+  const wall = Date.UTC(2026, 6, 1, 9, 17, 42)
+  const world = () => join(root, 'worlds', 'blackwater folder', 'world.json')
+  const clockOf = async (started: { id: string }) => state.openSession(join(root, 'sessions'), started.id).clock.get()
+
+  beforeEach(() => { deps = { ...deps, now: () => wall } })
+
+  it('starts simulated time at the starting time of the world, read in its zone', async () => {
+    await write(world(), { id: 'blackwater', name: 'B', time_zone: 'Asia/Shanghai', starting_time: '1912-09-21T19:30' })
+    const started = await startSession(deps, playAsArthur)
+    expect(await clockOf(started)).toEqual({ mode: 'simulated', now: Date.UTC(1912, 8, 21, 11, 30) })
+    expect(readSettings(join(root, 'sessions', started.id)).clock.timeZone).toBe('Asia/Shanghai')
+  })
+
+  it('starts at the minute it is when the world says nothing, and in UTC', async () => {
+    const started = await startSession(deps, playAsArthur)
+    expect(await clockOf(started)).toEqual({ mode: 'simulated', now: Date.UTC(2026, 6, 1, 9, 17) })
+    expect(readSettings(join(root, 'sessions', started.id)).clock.timeZone).toBe('UTC')
+  })
+
+  it('follows the wall clock from now, in the zone of this computer unless one is chosen, whatever the world says', async () => {
+    await write(world(), { id: 'blackwater', name: 'B', time_zone: 'Asia/Shanghai', starting_time: '1912-09-21T19:30' })
+    const started = await startSession(deps, { ...playAsArthur, settings: { clock: { mode: 'real' } } })
+    expect(await clockOf(started)).toEqual({ mode: 'real', now: wall })
+    expect(readSettings(join(root, 'sessions', started.id)).clock.timeZone).toBe(Intl.DateTimeFormat().resolvedOptions().timeZone)
+    const chosen = await startSession(deps, { ...playAsArthur, settings: { clock: { mode: 'real', timeZone: 'Europe/London' } } })
+    expect(readSettings(join(root, 'sessions', chosen.id)).clock.timeZone).toBe('Europe/London')
+  })
+
+  it('refuses a time zone that is not one, before anything is created', async () => {
+    await expect(startSession(deps, { ...playAsArthur, settings: { clock: { timeZone: 'Mars/Olympus' } } })).rejects.toThrow(/clock.timeZone/)
+    expect(await readdir(root)).not.toContain('sessions')
   })
 })

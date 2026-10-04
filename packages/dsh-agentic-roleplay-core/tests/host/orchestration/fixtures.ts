@@ -4,6 +4,9 @@ import type { CastMember, RoundRecord, TurnStore } from '../../../src/host/orche
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import type { CharacterAction } from '../../../src/host/orchestration/protocol.ts'
 import type { RunCharacter } from '../../../src/host/orchestration/turn-engine.ts'
+import { agendaFor, passRound, skipAhead, startTurn } from '../../../src/host/clock/passage.ts'
+import { dueOffScene, markHandled } from '../../../src/host/clock/offscene.ts'
+import { readTime, zoneOf } from '../../../src/host/clock/story-clock.ts'
 
 export function member(key: string, name: string, control: Character['control'] = 'agent', state?: Partial<CharacterState>): CastMember {
   const character: Character = {
@@ -39,16 +42,30 @@ export interface FakeStore extends TurnStore {
   maxRounds: number
   /** The rounds whose records are not written yet. */
   queue: RoundRecord[]
+  /** The session behind the store, to set up and read what the store does not offer. */
+  session: SessionStore
+  /** The wall clock the story's time follows when it is asked to, in UTC milliseconds. */
+  wall: number
 }
 
 export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
   const commits: FakeStore['commits'] = []
+  const session = createSessionStore(':memory:', { id: 'fake', name: 'Fake', world: { id: 'w', name: 'W' } })
   const store: FakeStore = {
+    wall: Date.UTC(2026, 0, 1, 9),
+    session,
     commits,
     completed: 0,
     maxRounds,
     cast: () => cast,
     settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds }),
+    time: turn => readTime(session, store.settings().clock, turn, store.wall),
+    beginTurn: turn => startTurn(session, store.settings().clock, turn, store.wall),
+    endRound: (turn, round, stated, minimum) => passRound(session, store.settings().clock, turn, round, store.wall, stated, minimum),
+    skipTime: (turn, round, request) => skipAhead(session, store.settings().clock, turn, round, store.wall, request),
+    dueOffScene: turn => dueOffScene(session, zoneOf(store.settings().clock), readTime(session, store.settings().clock, turn, store.wall).now),
+    markHandled: (keys) => { markHandled(session, keys) },
+    agenda: (turn, characterId) => agendaFor(session, store.settings().clock, turn, () => store.wall, characterId),
     commit: (updates) => {
       commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch }, ...(update.move === undefined ? {} : { move: update.move }), ...(update.items === undefined ? {} : { items: update.items }) })))
       return updates.map(() => [])
@@ -60,7 +77,7 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     queueCommit: (record) => { store.queue = [...store.queue.filter(entry => entry.turn !== record.turn || entry.round !== record.round), record] },
     pendingCommits: () => [...store.queue],
     completeCommits: (rounds) => { store.queue = store.queue.filter(entry => !rounds.some(round => round.turn === entry.turn && round.round === entry.round)) },
-    story: withRanking(createSessionStore(':memory:', { id: 'fake', name: 'Fake', world: { id: 'w', name: 'W' } })),
+    story: withRanking(session),
     checkMove: () => ({ ok: false, problems: ['this story has no places'] }),
     place: () => undefined,
     queryVector: () => Promise.resolve(undefined),

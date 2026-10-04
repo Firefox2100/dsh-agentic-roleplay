@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import type { Boundaries } from '../../../src/host/orchestration/boundaries.ts'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Boundaries, RoundRecord } from '../../../src/host/orchestration/boundaries.ts'
 import { defaultBoundaries, everyoneActs } from '../../../src/host/orchestration/defaults.ts'
 import type { Outcome } from '../../../src/host/orchestration/protocol.ts'
 import { TurnEngine, type RawSegment, type RunCharacter, type TurnOwner } from '../../../src/host/orchestration/turn-engine.ts'
@@ -166,8 +166,8 @@ describe('resolving', () => {
     const runner = scriptedRunner(calm)
     await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)).rejects.toThrow(/call activate_characters first/)
     await engine.activate(owner, { situation }, runner.run, signal)
-    await expect(engine.resolve(owner, [outcome('alice', 'succeeded'), outcome('alice', 'failed'), outcome('arthur', 'failed')], runner.run, signal))
-      .rejects.toThrow(/missing an outcome for bob.*arthur is not waiting.*more than one outcome for alice.*expected exactly: alice, bob, carol, dan/)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded'), outcome('alice', 'failed'), outcome('ghost', 'failed')], runner.run, signal))
+      .rejects.toThrow(/missing an outcome for bob.*ghost is not waiting.*more than one outcome for alice.*expected exactly: alice, bob, carol, dan/)
     await expect(engine.resolve(owner, keys.map(key => outcome(key, 'succeeded', ' ')), runner.run, signal)).rejects.toThrow(/say what happens/)
     expect(store.commits).toEqual([])
     expect(engine.missing(owner)).toMatch(/resolve_round with one outcome for each of: alice, bob, carol, dan/)
@@ -876,5 +876,252 @@ describe('what the game master decides characters do with things', () => {
     const { runner } = await act([outcome('alice', 'succeeded'), outcome('bob', 'succeeded')])
     expect(runner.requests.find(request => request.member.key === 'alice')?.carrying?.map(entry => entry.name)).toEqual(['Wool coat'])
     expect(runner.requests.find(request => request.member.key === 'bob')?.carrying).toBeUndefined()
+  })
+})
+
+describe('time in the turn', () => {
+  const only = { alice: { intent: 'a', commitment: 'low' as const } }
+  const evening = Date.UTC(1912, 9, 4, 21, 40)
+
+  async function resolveRound(elapsed?: number, mode: 'simulated' | 'real' = 'simulated') {
+    store.session.clock.start(mode, mode === 'real' ? store.wall : evening)
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    return engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal, elapsed)
+  }
+
+  it('takes the default time for a round when the game master says nothing', async () => {
+    const plain = await resolveRound()
+    expect(plain.done?.time).toEqual({ from: evening, to: evening + 30_000, zone: 'UTC' })
+  })
+
+  it('takes the time the game master says, and keeps it with the round for the keeper', async () => {
+    const resolved = await resolveRound(600)
+    expect(resolved.done?.time).toEqual({ from: evening, to: evening + 600_000, zone: 'UTC' })
+    expect(store.queue[0]?.time).toEqual({ from: evening, to: evening + 600_000, zone: 'UTC' })
+  })
+
+  it('does not take a time that is not a whole number of seconds up to a day, and tells how to pass more', async () => {
+    store.session.clock.start('simulated', evening)
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    for (const bad of [-1, 1.5, 86_401]) await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal, bad)).rejects.toThrow(/whole number of seconds from 0 to 86400.*advance_time/)
+    expect(store.queue).toEqual([])
+    expect(store.session.clock.get()?.now).toBe(evening)
+  })
+
+  it('refuses a time for a round when time follows the wall clock, and takes as long as the round did', async () => {
+    store.session.clock.start('real', store.wall)
+    store.settings = () => ({ ...DEFAULT_SETTINGS, clock: { ...DEFAULT_SETTINGS.clock, mode: 'real' } })
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal, 60)).rejects.toThrow(/follows the wall clock: leave elapsed_seconds out/)
+    store.wall += 90_000
+    const done = await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+    expect(done.done?.time).toMatchObject({ to: store.wall })
+  })
+
+  it('does not pass the time of a retry twice: the round takes the time once', async () => {
+    store.session.clock.start('simulated', evening)
+    const runner = scriptedRunner({ alice: [{ intent: 'a', commitment: 'high' }, { intent: 'a again', commitment: 'high' }] })
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    const first = await engine.resolve(owner, [outcome('alice', 'failed')], runner.run, signal, 120)
+    expect(first.next?.attempt).toBe(2)
+    expect(store.session.clock.get()?.now).toBe(evening)
+    const second = await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+    expect(second.done?.time).toEqual({ from: evening, to: evening + 120_000, zone: 'UTC' })
+  })
+
+  it('tells each character what time it is', async () => {
+    store.session.clock.start('simulated', evening)
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    expect(runner.requests[0]?.time).toEqual({ mode: 'simulated', now: evening, zone: 'UTC' })
+  })
+
+  describe('skipping ahead', () => {
+    it('works before the first round and between rounds, and puts the skip at the round it follows', async () => {
+      store.session.clock.start('simulated', evening)
+      expect(engine.advanceTime(owner, { byMinutes: 30, reason: 'they wait' })).toMatchObject({ from: evening, to: evening + 30 * 60_000 })
+      const runner = scriptedRunner(only)
+      await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+      await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+      expect(engine.advanceTime(owner, { untilTime: '07:00', reason: 'they sleep' }).to).toBe(Date.UTC(1912, 9, 5, 7))
+      expect(store.session.clock.log({ kind: 'skip' }).map(step => [step.round, step.reason])).toEqual([[0, 'they wait'], [1, 'they sleep']])
+    })
+
+    it('is not possible in the middle of a round, after the turn, or when time follows the wall clock', async () => {
+      store.session.clock.start('simulated', evening)
+      const runner = scriptedRunner(only)
+      await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+      expect(() => engine.advanceTime(owner, { byMinutes: 5, reason: 'x' })).toThrow(/resolve the round first/)
+      await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+      await engine.narrate(owner, narration())
+      expect(() => engine.advanceTime(owner, { byMinutes: 5, reason: 'x' })).toThrow(/already recorded/)
+      store.session.clock.resync('real', store.wall, 2)
+      store.settings = () => ({ ...DEFAULT_SETTINGS, clock: { ...DEFAULT_SETTINGS.clock, mode: 'real' } })
+      expect(() => engine.advanceTime({ chat: owner.chat, turn: 2 }, { byMinutes: 5, reason: 'x' })).toThrow(/follows the wall clock/)
+    })
+
+    it('says why a request cannot be done', () => {
+      store.session.clock.start('simulated', evening)
+      expect(() => engine.advanceTime(owner, { untilTime: 'soon', reason: 'x' })).toThrow(/not a time of day/)
+      expect(() => engine.advanceTime(owner, { byMinutes: 100_000, reason: 'x' })).toThrow(/more than the 30 days/)
+    })
+  })
+})
+
+describe('the player\'s character in a round', () => {
+  const street = location(2, 'Street')
+  const bar = location(1, 'The Bar')
+  const evening = Date.UTC(1912, 9, 4, 21, 40)
+  const goes = (travelSeconds?: number) => {
+    store.checkMove = (character, request) => (character === 'arthur'
+      ? { ok: true, move: { to: street.id }, plan: { from: bar.id, to: street.id, via: [street.id], ...(travelSeconds === undefined ? {} : { travelSeconds }) }, to: { key: request.location, name: street.name } }
+      : { ok: false, problems: ['no'] })
+    store.session.clock.start('simulated', evening)
+  }
+  const walk = (extra: Partial<Outcome> = {}): Outcome => ({ ...outcome('arthur', 'succeeded', 'Arthur walks out to the street'), moveTo: { location: 'street' }, ...extra })
+  const state = [placed(arthur, bar), alice, bob, carol, dan]
+
+  beforeEach(() => { store = fakeStore(state); engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined)) })
+
+  it('is resolved with the outcomes of the characters that acted, without having been asked to act: it moves, and the round is recorded with it', async () => {
+    goes()
+    const runner = scriptedRunner({ alice: { intent: 'a', commitment: 'low' } })
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    const done = await engine.resolve(owner, [outcome('alice', 'succeeded'), walk()], runner.run, signal)
+    expect(done.done?.moves).toEqual([{ character: 'arthur', name: 'Arthur', to: 'Street', via: 0 }])
+    expect(store.commits[0]?.map(update => update.character)).toEqual([alice.character.id, arthur.character.id])
+    expect(store.commits[0]?.[1]?.move).toEqual({ to: street.id })
+    expect(store.queue[0]?.entries.map(entry => [entry.character, entry.player === true])).toEqual([['alice', false], ['arthur', true]])
+    expect(store.queue[0]?.entries[1]).toMatchObject({ intent: 'Arthur walks out to the street', result: 'succeeded', moved: { key: 'street', name: 'Street' } })
+  })
+
+  it('is not required of the game master, and is taken once, at the first resolve of a round', async () => {
+    goes()
+    const runner = scriptedRunner({ alice: [{ intent: 'a', commitment: 'high' }, { intent: 'again', commitment: 'high' }] })
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded'), walk(), walk()], runner.run, signal)).rejects.toThrow(/more than one outcome for arthur/)
+    const first = await engine.resolve(owner, [outcome('alice', 'failed'), walk()], runner.run, signal)
+    expect(first.next?.attempt).toBe(2)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded'), walk()], runner.run, signal)).rejects.toThrow(/arthur is not waiting for an outcome/)
+    const done = await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+    expect(done.done?.moves.map(move => move.character)).toEqual(['arthur'])
+  })
+
+  it('is a round of its own when nobody else needs to react, with the time that journey takes', async () => {
+    goes(300)
+    const done = await engine.resolve(owner, [walk()], scriptedRunner({}).run, signal)
+    expect(done.done).toMatchObject({ round: 1, updated: ['arthur'], time: { from: evening, to: evening + 300_000 }, spoken: [] })
+    expect(store.queue[0]).toMatchObject({ round: 1, situation: 'Arthur: Arthur walks out to the street' })
+    expect(engine.missing(owner)).toMatch(/call narrate/)
+    await engine.narrate(owner, narration('Arthur steps out.'))
+    expect(store.completed).toBe(1)
+  })
+
+  it('takes at least as long as the journey, whatever the game master says, and as long as it says when that is longer', async () => {
+    goes(300)
+    expect((await engine.resolve(owner, [walk()], scriptedRunner({}).run, signal, 60)).done?.time.to).toBe(evening + 300_000)
+    expect((await engine.resolve(owner, [walk()], scriptedRunner({}).run, signal, 900)).done?.time.to).toBe(evening + 300_000 + 900_000)
+  })
+
+  it('takes the default time when the journey is not timed, and is refused when it cannot be made', async () => {
+    goes()
+    expect((await engine.resolve(owner, [walk()], scriptedRunner({}).run, signal)).done?.time.to).toBe(evening + 30_000)
+    store.checkMove = () => ({ ok: false, problems: ['the way is locked'] })
+    await expect(engine.resolve(owner, [walk()], scriptedRunner({}).run, signal)).rejects.toThrow(/arthur: cannot go to street: the way is locked/)
+    await expect(engine.resolve(owner, [walk({ result: 'failed' })], scriptedRunner({}).run, signal)).rejects.toThrow(/its intent failed, so it does not go anywhere/)
+  })
+
+  it('counts as a round of the turn, which the chat limits', async () => {
+    goes()
+    store.maxRounds = 1
+    await engine.resolve(owner, [walk()], scriptedRunner({}).run, signal)
+    await expect(engine.resolve(owner, [walk()], scriptedRunner({}).run, signal)).rejects.toThrow(/most this chat allows/)
+  })
+
+  it('does not stand in for the characters: another character alone is not a round of its own', async () => {
+    goes()
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], scriptedRunner({}).run, signal)).rejects.toThrow(/call activate_characters first/)
+  })
+})
+
+describe('characters away from the player', () => {
+  const street = location(2, 'Street')
+  const item = (extra: Partial<{ key: string; characters: string[]; place: string }> = {}) => ({ key: 'e1', kind: 'engagement' as const, at: 1000, characters: ['bob', 'carol'], place: 'street', text: 'You were to meet at the Street. Decide.', ...extra })
+  let handled: string[]
+  let written: RoundRecord[]
+
+  beforeEach(() => {
+    handled = []
+    written = []
+    boundaries.committer = { commit: (job) => { written.push(...job.rounds); return Promise.resolve({ writes: 0, notes: '' }) } }
+    store.markHandled = (keys) => { handled.push(...keys) }
+    store.checkMove = (_character, request) => ({ ok: true, move: { to: street.id }, plan: { from: 1, to: street.id, via: [street.id] }, to: { key: request.location, name: street.name } })
+  })
+
+  async function deliver(answers: Parameters<typeof scriptedRunner>[0], run = true) {
+    const runner = scriptedRunner({ alice: { intent: 'a', commitment: 'low' }, ...answers })
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+    await engine.narrate(owner, narration(), run ? runner.run : undefined)
+    return runner
+  }
+  const offstage = () => written.find(record => record.offstage === true)
+
+  it('are asked after the turn what they do about what fell due, told it as the situation, and what they decide is applied and recorded for the keeper', async () => {
+    store.dueOffScene = () => [item()]
+    const runner = await deliver({ bob: { intent: 'Bob goes to the street to wait', commitment: 'high' }, carol: { intent: 'Carol stays in', commitment: 'low' } })
+    await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
+    expect(runner.requests.filter(request => request.situation === 'You were to meet at the Street. Decide.').map(request => request.member.key).sort()).toEqual(['bob', 'carol'])
+    const last = store.commits.at(-1)!
+    expect(last.map(update => [update.character, update.patch, update.move])).toEqual([
+      [bob.character.id, { activity: 'Bob goes to the street to wait' }, { to: street.id }],
+      [carol.character.id, { activity: 'Carol stays in' }, undefined],
+    ])
+    expect(offstage()).toMatchObject({ turn: 1, round: 101, situation: 'You were to meet at the Street. Decide.', offstage: true })
+    expect(offstage()?.entries.map(entry => [entry.character, entry.intent, entry.commitment, entry.spoken, entry.moved?.key])).toEqual([['bob', 'Bob goes to the street to wait', 'high', false, 'street'], ['carol', 'Carol stays in', 'low', false, undefined]])
+  })
+
+  it('are not asked when the chat turns it off, when the turn gave no way to ask, or when nothing is due', async () => {
+    store.dueOffScene = () => [item()]
+    store.settings = () => ({ ...DEFAULT_SETTINGS, offstage: { perTurn: 0 } })
+    const off = await deliver({ bob: { intent: 'x', commitment: 'high' } })
+    expect(off.requests.map(request => request.member.key)).toEqual(['alice'])
+    engine.forget(owner.chat)
+    store.settings = () => ({ ...DEFAULT_SETTINGS })
+    const unasked = await deliver({ bob: { intent: 'x', commitment: 'high' } }, false)
+    expect(unasked.requests.map(request => request.member.key)).toEqual(['alice'])
+    engine.forget(owner.chat)
+    store.dueOffScene = () => []
+    const none = await deliver({ bob: { intent: 'x', commitment: 'high' } })
+    expect(none.requests.map(request => request.member.key)).toEqual(['alice'])
+    expect(handled).toEqual([])
+  })
+
+  it('are no more than the chat allows, oldest first, and what did not fit is left for the next turn', async () => {
+    store.dueOffScene = () => [item({ key: 'e1', characters: ['bob', 'carol'] }), item({ key: 'e2', characters: ['dan'] })]
+    store.settings = () => ({ ...DEFAULT_SETTINGS, offstage: { perTurn: 2 } })
+    await deliver({ bob: { intent: 'b', commitment: 'low' }, carol: { intent: 'c', commitment: 'low' }, dan: { intent: 'd', commitment: 'low' } })
+    await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
+    expect(written.filter(record => record.offstage === true)).toHaveLength(1)
+  })
+
+  it('stay as they were when nobody could answer: it is asked again another time', async () => {
+    store.dueOffScene = () => [item({ characters: ['bob'] })]
+    await deliver({ bob: new Error('the model is down') })
+    await new Promise(resolve => setTimeout(resolve, 30))
+    expect(handled).toEqual([])
+    expect(offstage()).toBeUndefined()
+  })
+
+  it('do not go anywhere when they will not try hard, or when there is no place, or when it cannot be reached', async () => {
+    store.dueOffScene = () => [item({ characters: ['bob', 'carol', 'dan'] })]
+    store.settings = () => ({ ...DEFAULT_SETTINGS, offstage: { perTurn: 3 } })
+    store.checkMove = (who) => (who === 'dan' ? { ok: false, problems: ['no way'] } : { ok: true, move: { to: street.id }, plan: { from: 1, to: street.id, via: [street.id] }, to: { key: 'street', name: 'Street' } })
+    await deliver({ bob: { intent: 'b', commitment: 'low' }, carol: { intent: 'c', commitment: 'medium' }, dan: { intent: 'd', commitment: 'high' } })
+    await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
+    expect(store.commits.at(-1)?.map(update => [update.character, update.move !== undefined])).toEqual([[bob.character.id, false], [carol.character.id, true], [dan.character.id, false]])
   })
 })

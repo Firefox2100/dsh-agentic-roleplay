@@ -1,10 +1,13 @@
 import type { CharacterId } from 'dsh-roleplay-model'
 import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
 import { itemKey } from './items.ts'
+import { localIso } from './time.ts'
 
 /** Which part of the story's records to read; all of it when left out. */
 export interface RecordsScope {
   rounds?: readonly { turn: number; round: number }[]
+  /** The time zone times are shown in; UTC when not given. */
+  timeZone?: string
 }
 
 /** The records as models read them (snake_case, characters by key), the counterpart of the edit's wire format. */
@@ -20,6 +23,8 @@ export interface RecordsView {
     /** The key of the place it is in, and where in it; null while it is nowhere. */
     location: string | null
     position: string
+    /** What it is after that is still live (active or paused), with the ids an edit refers to. */
+    goals: { id: number; type: string; name: string; status: string; horizon: string; priority: number; urgency: number; deadline: string | null; plan: string[] }[]
   }[]
   events: {
     id: number
@@ -39,11 +44,14 @@ export interface RecordsView {
   /** How characters stand towards each other, most recently changed first (at most 80). */
   /** Things, notable first (at most 100), each with where it is. */
   items: { key: string; name: string; quantity: number; quality: string; state: string | null; hidden: boolean; notable: boolean; owner: string | null; holder: string }[]
+  /** What characters have committed to that is still pending, in the order they are due (at most 40); times in the story's time zone. */
+  engagements: { id: number; title: string; at: string; until: string | null; location: string | null; participants: string[]; note: string }[]
   relationships: { from: string; to: string; label: string; summary: string; familiarity: number; trust: number; affinity: number; tension: number; updated_turn: number }[]
 }
 
 const MAX_RELATIONSHIPS_SHOWN = 80
 const MAX_ITEMS_SHOWN = 100
+const MAX_ENGAGEMENTS_SHOWN = 40
 
 /** Where an item is, in words. */
 export function describeHolder(target: Pick<RecordsTarget, 'items' | 'locations' | 'characters'>, id: number, keyOfCharacter: (id: number) => string = String): string {
@@ -69,6 +77,7 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
     const placement = target.placements.get('character', id)
     return placement === undefined ? { location: null, position: '' } : { location: placeKey(placement.locationId), position: placement.position }
   }
+  const zone = scope.timeZone ?? 'UTC'
   const inScope = (turn: number, round?: number): boolean =>
     scope.rounds === undefined || scope.rounds.some(entry => entry.turn === turn && (round === undefined || entry.round === round))
   return {
@@ -83,6 +92,7 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
         activity: state?.activity ?? '',
         emotion: state?.emotion === undefined ? null : { ...state.emotion.immediate },
         ...where(character.id),
+        goals: target.intents.list(character.id).filter(goal => goal.status === 'active' || goal.status === 'paused').map(goal => ({ id: goal.id, type: goal.type, name: goal.name, status: goal.status, horizon: goal.horizon, priority: goal.priority, urgency: goal.urgency, deadline: goal.deadline ?? null, plan: goal.plan })),
       }
     }),
     events: target.events.list().filter(event => inScope(event.turn, event.round)).map(event => ({
@@ -97,6 +107,10 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
     items: [...target.items.list()].sort((a, b) => Number(b.notable) - Number(a.notable) || a.id - b.id).slice(0, MAX_ITEMS_SHOWN).map(item => ({
       key: itemKey(item), name: item.name, quantity: item.quantity, quality: item.quality, state: item.container?.state ?? null, hidden: item.hidden, notable: item.notable,
       owner: item.ownerId === undefined ? null : keyOf(item.ownerId), holder: describeHolder(target, item.id, keyOf),
+    })),
+    engagements: target.engagements.list({ status: 'pending' }).slice(0, MAX_ENGAGEMENTS_SHOWN).map(engagement => ({
+      id: engagement.id, title: engagement.title, at: localIso(engagement.at, zone), until: engagement.until === undefined ? null : localIso(engagement.until, zone),
+      location: engagement.locationId === undefined ? null : placeKey(engagement.locationId), participants: engagement.participants.map(keyOf), note: engagement.note,
     })),
     relationships: [...target.relationships.list()].sort((a, b) => b.updatedTurn - a.updatedTurn || b.id - a.id).slice(0, MAX_RELATIONSHIPS_SHOWN).map(relation => ({
       from: keyOf(relation.fromId), to: keyOf(relation.toId), label: relation.label, summary: relation.summary,

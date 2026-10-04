@@ -6,7 +6,7 @@ import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
-  CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
+  ClockRepository, EngagementRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   ConsolidationRepository, ItemRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
@@ -16,6 +16,8 @@ import { SqliteEventRepository } from './sqlite/event-repository.ts'
 import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
 import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
 import { SqliteRecallIndex } from './sqlite/recall-index.ts'
+import { SqliteEngagementRepository, SqliteRoutineRepository } from './sqlite/agenda-repositories.ts'
+import { SqliteClockRepository } from './sqlite/clock-repository.ts'
 import { SqliteItemRepository, SqliteSlotRepository } from './sqlite/item-repository.ts'
 import { SqliteConsolidationRepository, SqliteRelationshipRepository } from './sqlite/relationship-repository.ts'
 import { SqliteLocationRepository, SqlitePlacementRepository } from './sqlite/location-repository.ts'
@@ -53,6 +55,12 @@ export interface SessionStore {
   readonly consolidation: ConsolidationRepository
   readonly slots: SlotRepository
   readonly items: ItemRepository
+  /** The story's own time. */
+  readonly clock: ClockRepository
+  /** The recurring day of each character. */
+  readonly routines: RoutineRepository
+  /** What characters have committed to, by date. */
+  readonly engagements: EngagementRepository
   /** What the session can be searched by: its texts by words, and by meaning once vectors are stored. */
   readonly recallIndex: RecallIndexRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
@@ -118,6 +126,9 @@ class SqliteSessionStore implements SessionStore {
   readonly consolidation: ConsolidationRepository
   readonly slots: SlotRepository
   readonly items: ItemRepository
+  readonly clock: ClockRepository
+  readonly routines: RoutineRepository
+  readonly engagements: EngagementRepository
   readonly recallIndex: SqliteRecallIndex
   private readonly eventRepository: SqliteEventRepository
 
@@ -133,6 +144,9 @@ class SqliteSessionStore implements SessionStore {
     this.consolidation = new SqliteConsolidationRepository(db)
     this.slots = new SqliteSlotRepository(db)
     this.items = new SqliteItemRepository(db, clock)
+    this.clock = new SqliteClockRepository(db)
+    this.routines = new SqliteRoutineRepository(db)
+    this.engagements = new SqliteEngagementRepository(db)
     this.eventRepository = new SqliteEventRepository(db, clock, this.recallIndex, id => this.locations.get(id)?.name, id => this.items.get(id)?.name)
     this.events = this.eventRepository
     this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)

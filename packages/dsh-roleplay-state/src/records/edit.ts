@@ -5,6 +5,7 @@ import {
 import { InvalidEditError, InvalidMoveError } from '../errors.ts'
 import { lookupKey } from '../sqlite/support.ts'
 import { characterKey, locationKey, type EditResult, type NewExit, type NewPlace, type PerceivedBy, type RecordsEdit, type RecordsTarget } from './edit-types.ts'
+import { prepareAgenda, writeAgenda } from './agenda-edit.ts'
 import { ITEM_ACTIONS, changeItem } from './items.ts'
 import { moveCharacter } from './movement.ts'
 
@@ -213,6 +214,8 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   for (const [index, text] of list(edit.threadsOpened).entries()) if (!present(text)) problems.push(`threads_opened[${index}]: say what is unsettled`)
   for (const id of list(edit.threadsResolved)) if (target.threads.get(id) === undefined) problems.push(`threads_resolved: there is no thread ${id}`)
 
+  const agenda = prepareAgenda(target, edit, { idOf, placeKnown, places: existingPlaces, problems })
+
   if (problems.length > 0) throw new InvalidEditError(problems)
 
   return target.transaction(() => {
@@ -379,6 +382,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     for (const id of list(edit.beliefRetractions)) { target.memories.remove(id); result.writes += 1 }
     for (const text of list(edit.threadsOpened)) { target.threads.open(text.trim(), edit.turn); result.writes += 1 }
     for (const id of list(edit.threadsResolved)) { target.threads.resolve(id, edit.turn); result.writes += 1 }
+    result.writes += writeAgenda(target, agenda, edit.turn, key => placeOf(key).id)
     return result
   })
 }

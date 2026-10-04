@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, parseSettings } from '../../../src/shared/settings.ts
 
 describe('the settings form', () => {
   it('starts from the settings, with a share shown as a percentage', () => {
-    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'authoring.enabled': true, 'authoring.perTurn': '2', 'authoring.consolidateAfter': '3', 'context.limitTokens': '24000', 'context.retainRatio': '50' })
+    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'authoring.enabled': true, 'authoring.perTurn': '2', 'authoring.consolidateAfter': '3', 'clock.mode': 'simulated', 'clock.timeZone': '', 'clock.roundSeconds': '30', 'clock.maxSkipDays': '30', 'offstage.perTurn': '2', 'context.limitTokens': '24000', 'context.retainRatio': '50' })
   })
 
   it('gives back settings that parse, with what the form does not show left as it was', () => {
@@ -21,6 +21,16 @@ describe('the settings form', () => {
     const drafts = toDrafts(DEFAULT_SETTINGS)
     expect([...problemsOf(drafts)]).toEqual([])
     expect([...problemsOf({ ...drafts, maxRounds: '0', 'memory.recall': '2.5', 'context.limitTokens': '', 'context.retainRatio': '95' })].sort()).toEqual(['context.limitTokens', 'context.retainRatio', 'maxRounds', 'memory.recall'])
+  })
+
+  it('takes a choice and a time zone as typed, and finds a zone that does not exist', () => {
+    const base = DEFAULT_SETTINGS
+    const drafts = { ...toDrafts(base), 'clock.mode': 'real', 'clock.timeZone': ' Europe/London ' }
+    expect(fromDrafts(base, drafts).clock).toMatchObject({ mode: 'real', timeZone: 'Europe/London' })
+    expect(parseSettings(fromDrafts(base, drafts)).ok).toBe(true)
+    expect([...problemsOf(drafts)]).toEqual([])
+    expect([...problemsOf({ ...drafts, 'clock.timeZone': 'Mars/Olympus' })]).toEqual(['clock.timeZone'])
+    expect([...problemsOf({ ...drafts, 'clock.timeZone': '', 'clock.roundSeconds': '4000' })]).toEqual(['clock.roundSeconds'])
   })
 
   it('takes its bounds from the settings themselves', () => {

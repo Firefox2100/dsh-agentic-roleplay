@@ -1,14 +1,17 @@
 import { existsSync } from 'node:fs'
+import type { ClockMode } from 'dsh-roleplay-model'
 import { isSessionId, sessionDatabase, sessionFolder } from 'dsh-roleplay-state'
-import { SETTINGS_SPEC, type SettingsPayload } from '../../shared/settings.ts'
+import { SETTINGS_SPEC, parseSettings, type SettingsPayload } from '../../shared/settings.ts'
 import { SessionNotFoundError } from './errors.ts'
-import { readSettings, writeSettings } from './settings.ts'
+import { InvalidSettingsError, readSettings, writeSettings } from './settings.ts'
 
 export interface ChatSettingsDeps {
   sessionsDir: () => string
   /** How many recorded rounds of the session are not yet written into its records. */
   pendingRecords: (id: string) => number
   pendingConsolidation: (id: string) => number
+  /** The mode the session's clock is in, once it has one. */
+  clockMode: (id: string) => ClockMode | undefined
 }
 
 function folderOf(deps: ChatSettingsDeps, id: string): string {
@@ -23,7 +26,7 @@ function folderOf(deps: ChatSettingsDeps, id: string): string {
  * @throws {InvalidSettingsError} when its settings file is not valid.
  */
 export function readChatSettings(deps: ChatSettingsDeps, id: string): SettingsPayload {
-  return { settings: readSettings(folderOf(deps, id)), bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id) }
+  return payloadOf(deps, id, readSettings(folderOf(deps, id)))
 }
 
 /**
@@ -32,5 +35,15 @@ export function readChatSettings(deps: ChatSettingsDeps, id: string): SettingsPa
  * @throws {InvalidSettingsError} when the value is not acceptable; nothing is stored then.
  */
 export function writeChatSettings(deps: ChatSettingsDeps, id: string, value: unknown): SettingsPayload {
-  return { settings: writeSettings(folderOf(deps, id), value), bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id) }
+  const folder = folderOf(deps, id)
+  const parsed = parseSettings(value)
+  if (parsed.ok && parsed.value.clock.mode === 'real' && deps.clockMode(id) === 'simulated') {
+    throw new InvalidSettingsError(['"clock.mode" cannot be real: the story\'s time is simulated and has its own dates, so it cannot follow the real clock'])
+  }
+  return payloadOf(deps, id, writeSettings(folder, value))
+}
+
+function payloadOf(deps: ChatSettingsDeps, id: string, settings: SettingsPayload['settings']): SettingsPayload {
+  const clockMode = deps.clockMode(id)
+  return { settings, bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id), ...(clockMode === undefined ? {} : { clockMode }) }
 }

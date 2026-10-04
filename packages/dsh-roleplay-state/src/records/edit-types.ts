@@ -1,9 +1,9 @@
 import type {
-  Accuracy, Character, CharacterKind, CharacterStatePatch, CharacterTier, ContainerState, ExitState, Location, MemoryKind, PerceptionMode, Slot,
+  Accuracy, Character, CharacterKind, CharacterStatePatch, CharacterTier, ContainerState, EngagementStatus, ExitState, IntentHorizon, IntentStatus, IntentType, Location, MemoryKind, PerceptionMode, Slot,
 } from 'dsh-roleplay-model'
 import type {
-  CharacterRepository, CharacterStateRepository, ConsolidationRepository, EventRepository, ItemRepository, LocationRepository, MemoryRepository,
-  PlacementRepository, RelationshipRepository, SlotRepository, ThreadRepository,
+  CharacterRepository, CharacterStateRepository, ConsolidationRepository, EngagementRepository, EventRepository, IntentRepository, ItemRepository, LocationRepository, MemoryRepository,
+  PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository,
 } from '../repositories.ts'
 import type { ItemChangeSpec } from './items.ts'
 
@@ -27,6 +27,9 @@ export interface RecordsTarget {
   consolidation: ConsolidationRepository
   items: ItemRepository
   slots: SlotRepository
+  intents: IntentRepository
+  routines: RoutineRepository
+  engagements: EngagementRepository
   transaction<T>(fn: () => T): T
 }
 
@@ -249,9 +252,85 @@ export interface BeliefEdit {
  * A change to the story's records, applied together or not at all: the unit in which the
  * record keeper, the model-facing tools and other plugins write what happened.
  */
+/** A new goal of a character, which the story gave it: a promise made, a task taken on. */
+export interface NewIntentSpec {
+  character: string
+  type: IntentType
+  name: string
+  description?: string
+  horizon: IntentHorizon
+  priority: number
+  urgency: number
+  plan?: string[]
+  constraints?: string[]
+  /** A date and time, in the time zone of the story unless it carries an offset. */
+  deadline?: string
+}
+
+export interface IntentEditSpec {
+  id: number
+  status?: IntentStatus
+  description?: string
+  horizon?: IntentHorizon
+  priority?: number
+  urgency?: number
+  plan?: string[]
+  openThreads?: string[]
+  deadline?: string
+}
+
+/** Something characters have committed to, at a time. */
+export interface NewEngagementSpec {
+  title: string
+  /** When it is due: a date and time, in the time zone of the story unless it carries an offset. */
+  at: string
+  until?: string
+  /** The key of the place. */
+  location?: string
+  participants: string[]
+  note?: string
+}
+
+export interface EngagementEditSpec {
+  id: number
+  status?: EngagementStatus
+  title?: string
+  at?: string
+  until?: string
+  location?: string
+  participants?: string[]
+  note?: string
+}
+
+export interface RoutineWindowSpec {
+  /** `mon` to `sun`; every day when left out. */
+  days?: string[]
+  /** `HH:MM`. */
+  from: string
+  to: string
+  activity: string
+  location?: string
+  feature?: string
+  position?: string
+  interruptible?: boolean
+}
+
+/** Sets the recurring day of a character, replacing what it had. */
+export interface RoutineSet {
+  character: string
+  windows: RoutineWindowSpec[]
+}
+
 export interface RecordsEdit {
   /** The turn new beliefs and threads belong to. */
   turn: number
+  /** The time zone the dates of the edit are written in; UTC when not given. */
+  timeZone?: string
+  intentsAdded?: NewIntentSpec[]
+  intentEdits?: IntentEditSpec[]
+  engagements?: NewEngagementSpec[]
+  engagementEdits?: EngagementEditSpec[]
+  routines?: RoutineSet[]
   states?: StatePatch[]
   events?: NewEvent[]
   eventEdits?: EventEdit[]

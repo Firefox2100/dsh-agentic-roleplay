@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { sessionFolder, type RoleplayState } from 'dsh-roleplay-state'
+import { sessionFolder, systemTimeZone, type RoleplayState } from 'dsh-roleplay-state'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
 import type { WorldProblem } from '../../shared/worlds.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
@@ -9,10 +9,10 @@ import { loadLocations } from '../locations/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
-import { parseSettings } from '../../shared/settings.ts'
+import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCharacters, populateItems, populateLocations, relationshipProblems, startingPlaceProblems } from './populate.ts'
+import { populateCharacters, populateClock, populateItems, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
 
 const MAX_NAME_LENGTH = 200
 
@@ -22,6 +22,8 @@ export interface StartSessionDeps {
   agent: Pick<AgentSessions, 'ensure' | 'retire'>
   /** Read for each session, because the roleplay root can move. */
   sessionsDir: () => string
+  /** The wall clock, in UTC milliseconds. */
+  now?: () => number
 }
 
 /**
@@ -44,6 +46,9 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const placing = startingPlaceProblems(characters, locations)
   if (placing.length > 0) throw new InvalidWorldError(`the starting places of "${world.summary.name}" have ${placing.length} problem(s)`, placing.map(message => ({ path: world.directory, message })))
 
+  const days = routineProblems(characters, locations)
+  if (days.length > 0) throw new InvalidWorldError(`the days of the characters of "${world.summary.name}" have ${days.length} problem(s)`, days.map(message => ({ path: world.directory, message })))
+
   const { items, slots, problems: itemProblems } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
   if (itemProblems.length > 0) throw new InvalidWorldError(`the items of "${world.summary.name}" have ${itemProblems.length} problem(s)`, itemProblems)
 
@@ -57,10 +62,15 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const name = request.name?.trim() || world.summary.name
   if (name.length > MAX_NAME_LENGTH) throw new InvalidStartError(`the name must be at most ${MAX_NAME_LENGTH} characters`)
 
+  let settings: ChatSettings = DEFAULT_SETTINGS
   if (request.settings !== undefined) {
-    const settings = parseSettings(request.settings)
-    if (!settings.ok) throw new InvalidStartError(`the settings are not acceptable: ${settings.problems.join('; ')}`)
+    const parsed = parseSettings(request.settings)
+    if (!parsed.ok) throw new InvalidStartError(`the settings are not acceptable: ${parsed.problems.join('; ')}`)
+    settings = parsed.value
   }
+  // The zone a story is read in is chosen once, here: the zone of the computer when time follows the wall clock, otherwise the world's.
+  const timeZone = settings.clock.timeZone !== '' ? settings.clock.timeZone : settings.clock.mode === 'real' ? systemTimeZone() : world.clock?.timeZone ?? 'UTC'
+  settings = { ...settings, clock: { ...settings.clock, timeZone } }
 
   const sessionsDir = deps.sessionsDir()
   const session = deps.state.createSession(sessionsDir, {
@@ -73,9 +83,11 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     session.transaction(() => {
       populateLocations(session, locations)
       populateCharacters(session, characters, player.id)
+      populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
+      populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())
     })
-    if (request.settings !== undefined) writeSettings(sessionFolder(sessionsDir, id), request.settings)
+    writeSettings(sessionFolder(sessionsDir, id), settings)
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {
     deps.state.deleteSession(sessionsDir, id)

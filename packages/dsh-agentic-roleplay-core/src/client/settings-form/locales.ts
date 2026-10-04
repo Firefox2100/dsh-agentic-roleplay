@@ -3,6 +3,7 @@ import type { Dictionaries } from '../i18n.ts'
 export type SettingsFormKey =
   | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
+  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
 
@@ -28,6 +29,20 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     authoringPerTurnHelp: 'The most characters and places that may be made up in one turn.',
     consolidateAfter: 'Fit new things in after',
     consolidateAfterHelp: 'Made-up characters and places are connected to the rest of the world (ways to other places, relationships between characters) in the background once this many are waiting, or when one has waited several turns.',
+    clockMode: 'Time',
+    clockModeHelp: 'Simulated: the story\'s time moves only with the story, by as much as the game master says each round takes, and the game master can skip ahead ("I sleep till morning"). Real: the story\'s time is the real clock, it cannot be skipped, and what happens while you are away is for the game master to account for. A story can change from real to simulated (the time stops following the clock where it is) but not back.',
+    clockSimulated: 'Simulated',
+    clockReal: 'Real clock',
+    offstagePerTurn: 'Characters acting off stage per turn',
+    offstagePerTurnHelp: 'When something falls due for characters who are away from you (a meeting whose time has come, a deadline that passed), up to this many of them are asked, in the background after your turn, what they do about it. What they decide is recorded and can be seen in the story later. 0 turns it off.',
+    clockLocked: 'The story\'s time is simulated and has its own dates, so it cannot follow the real clock any more.',
+    clockTimeZone: 'Time zone',
+    clockTimeZoneHelp: 'The zone the story\'s time is read in, for instance Europe/London or Asia/Shanghai. Empty is UTC. Changing it changes how times read, not when things happened.',
+    clockRoundSeconds: 'Seconds a round takes',
+    clockRoundSecondsHelp: 'In simulated time, how long a round of the characters acting takes when the game master does not say otherwise.',
+    clockMaxSkipDays: 'Longest skip (days)',
+    clockMaxSkipDaysHelp: 'The most the game master may skip ahead in the story\'s time in one go.',
+    invalidZone: 'Enter a time zone name such as Europe/London or UTC.',
     limitTokens: 'Conversation limit (tokens)',
     limitTokensHelp: 'The whole conversation is sent to the model until it reaches this size. Then the oldest turns are folded into a long-term and a short-term summary built from the story\'s recorded events.',
     retainRatio: 'Kept after folding (%)',
@@ -58,6 +73,20 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     authoringPerTurnHelp: '一轮中最多可以新建的角色和地点数量。',
     consolidateAfter: '累计多少后整合',
     consolidateAfterHelp: '新建的角色和地点会在后台与世界其余部分衔接（地点之间的通路、角色之间的关系）：累计到此数量，或有一项已等待数轮时进行。',
+    clockMode: '时间',
+    clockModeHelp: '模拟：故事的时间只随故事推进，每一轮耗时由主持人决定，主持人还可以跳过时间（“我睡到明天早上”）。真实：故事的时间就是现实时钟，不能跳过；你离开期间发生的事由主持人自行交代。可以由真实改为模拟（时间就在此刻脱离时钟），但不能改回来。',
+    clockSimulated: '模拟',
+    clockReal: '现实时钟',
+    offstagePerTurn: '每轮台下行动的角色数',
+    offstagePerTurnHelp: '当有事对不在你身边的角色到期时（约定的时间到了、期限过了），每轮结束后会在后台最多询问这么多角色打算怎么办。他们的决定会被记录，之后可在故事中看到。0 表示关闭。',
+    clockLocked: '故事时间已经是模拟的，有自己的日期，不能再改为跟随现实时钟。',
+    clockTimeZone: '时区',
+    clockTimeZoneHelp: '故事时间所使用的时区，例如 Europe/London 或 Asia/Shanghai。留空为 UTC。更改时区只改变时间的显示方式，不改变事件发生的时刻。',
+    clockRoundSeconds: '每轮耗时（秒）',
+    clockRoundSecondsHelp: '在模拟时间下，主持人没有另行说明时，一轮角色行动所耗的时间。',
+    clockMaxSkipDays: '单次最长跳过（天）',
+    clockMaxSkipDaysHelp: '主持人一次最多可以把故事时间向前跳过多少天。',
+    invalidZone: '请输入时区名称，例如 Europe/London 或 UTC。',
     limitTokens: '对话长度上限（token）',
     limitTokensHelp: '在达到此长度之前，整段对话都会发送给模型。达到后，最早的几轮会折叠进长期和短期摘要，摘要由故事已记录的事件生成。',
     retainRatio: '折叠后保留比例（%）',

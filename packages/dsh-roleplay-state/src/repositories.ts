@@ -1,4 +1,6 @@
 import type {
+  Engagement, EngagementFilter, EngagementId, EngagementPatch, NewEngagement, RoutineWindow, StoredRoutineWindow,
+  ClockMode, ClockState, TimeChange, TimeChangeFilter, TimeChangeKind,
   Holder, Holding, Item, ItemId, ItemPatch, NewItem, Slot,
   ConsolidationItem,
   ConsolidationItemId,
@@ -339,4 +341,48 @@ export interface ItemRepository {
   /** The items that open an item that is a container, or an exit. */
   openers(target: { kind: 'item' | 'exit'; id: number }): ItemId[]
   setOpeners(target: { kind: 'item' | 'exit'; id: number }, items: readonly ItemId[]): void
+}
+
+/** The story's own time: what instant it is in the story, and how it got there. */
+export interface ClockRepository {
+  /** The clock, or nothing before it was started. */
+  get(): ClockState | undefined
+  /** Start the clock. @throws {ConflictError} when it is started. */
+  start(mode: ClockMode, now: number): ClockState
+  /**
+   * Move the story's time forward, and keep why.
+   * @throws {NotFoundError} when the clock is not started.
+   * @throws {InvalidValueError} when the instant is not after the current one.
+   */
+  advance(step: { to: number; turn: number; round: number; kind: Exclude<TimeChangeKind, 'start' | 'resync'>; reason?: string }): TimeChange
+  /** Set the clock to an instant in either direction and to a mode, as when it is changed from following the wall clock to being the story's own. @throws {NotFoundError} */
+  resync(mode: ClockMode, now: number, turn: number, reason?: string): TimeChange
+  log(filter?: TimeChangeFilter): TimeChange[]
+  /** The instant a round began, when it is known: where an event of that round is placed in time. */
+  at(turn: number, round: number): number | undefined
+}
+
+/** The recurring days of the characters: windows of the day with what they are doing and where. */
+export interface RoutineRepository {
+  /** The windows of a character, in the order they were given: the first that fits the moment is the one that applies. */
+  list(characterId: CharacterId): StoredRoutineWindow[]
+  /** Every window of every character. */
+  all(): StoredRoutineWindow[]
+  /**
+   * Replace a character's windows.
+   * @throws {InvalidValueError} for a window that is empty, has a minute that is not one, a day that is not one, or a place or character that does not exist.
+   */
+  replace(characterId: CharacterId, windows: readonly RoutineWindow[]): StoredRoutineWindow[]
+}
+
+/** Dated commitments: what characters are due to do, and whether they did. */
+export interface EngagementRepository {
+  /** @throws {InvalidValueError} for an empty title, an end before the start, no participants, or a place or character that does not exist. */
+  add(engagement: NewEngagement): Engagement
+  get(id: EngagementId): Engagement | undefined
+  /** In order of when they are due. */
+  list(filter?: EngagementFilter): Engagement[]
+  /** @throws {NotFoundError} */
+  update(id: EngagementId, patch: EngagementPatch): Engagement
+  remove(id: EngagementId): boolean
 }

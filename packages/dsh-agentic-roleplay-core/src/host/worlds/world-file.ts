@@ -1,3 +1,4 @@
+import { isTimeZone, parseInstant } from 'dsh-roleplay-state'
 import type { WorldAuthor } from '../../shared/worlds.ts'
 import { readIdentifier } from '../identifiers.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
@@ -20,6 +21,15 @@ export interface WorldFile {
   coverMediaId?: string
   /** What the story opens with: shown as the first message of a new session, before the player says anything. */
   opening?: OpeningSegment[]
+  /** When the story begins and the zone its time is read in; a session's story clock starts from them. */
+  clock?: WorldClock
+}
+
+export interface WorldClock {
+  /** The instant the story begins, in UTC milliseconds. */
+  startingTime?: number
+  /** An IANA time zone name. */
+  timeZone?: string
 }
 
 /** One part of an opening: narration, or a line spoken by one of the world's characters (by the character's id). */
@@ -51,6 +61,26 @@ function readOpening(reader: Reader): OpeningSegment[] | undefined {
   return parts.length === 0 ? undefined : parts
 }
 
+/** `time_zone` (an IANA name) and `starting_time` (an ISO 8601 date and time, in `time_zone` unless it carries an offset). */
+function readClock(reader: Reader): WorldClock | undefined {
+  const timeZone = reader.string('time_zone')
+  if (timeZone !== undefined && !isTimeZone(timeZone)) {
+    reader.fail('time_zone', `"${timeZone}" is not a time zone: write it like Europe/London or UTC`)
+    return undefined
+  }
+  const text = reader.string('starting_time')
+  let startingTime: number | undefined
+  if (text !== undefined) {
+    try {
+      startingTime = parseInstant(text, timeZone ?? 'UTC')
+    } catch (error) {
+      reader.fail('starting_time', error instanceof Error ? error.message : String(error))
+      return undefined
+    }
+  }
+  return timeZone === undefined && startingTime === undefined ? undefined : { ...(startingTime === undefined ? {} : { startingTime }), ...(timeZone === undefined ? {} : { timeZone }) }
+}
+
 function readAuthor(reader: Reader | undefined): WorldAuthor | undefined {
   if (reader === undefined) return undefined
   const name = reader.string('name', { required: true })
@@ -70,6 +100,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const author = readAuthor(reader.object('author'))
   const coverMediaId = reader.string('cover_media_id')
   const opening = readOpening(reader)
+  const clock = readClock(reader)
   if (name === undefined || issues.length > 0) return { ok: false, issues }
 
   return {
@@ -82,6 +113,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(author === undefined ? {} : { author }),
       ...(coverMediaId === undefined ? {} : { coverMediaId }),
       ...(opening === undefined ? {} : { opening }),
+      ...(clock === undefined ? {} : { clock }),
     },
   }
 }

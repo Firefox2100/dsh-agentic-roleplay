@@ -4,8 +4,10 @@ import type {
   ActivationPlanner, Author, Boundaries, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
-import { locationKey, mentioned, overlap, tokens, type Recalled } from 'dsh-roleplay-state'
+import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from 'dsh-roleplay-state'
 import type { NarrationSegment, Utterance } from './protocol.ts'
+import type { AgendaView, SceneAgenda } from '../clock/agenda.ts'
+import { describeTime, describeWhen, type StoryTime } from '../clock/story-clock.ts'
 
 function describe(character: Character): string {
   const lines = [`You are ${character.name}.`]
@@ -67,6 +69,47 @@ export function describePlace(view: PlaceView, { withKeys }: { withKeys: boolean
   return lines
 }
 
+/** How long the player has to have been away for it to be worth telling the game master. */
+const NOTICEABLE_ABSENCE = 5 * MINUTE
+
+/** What the game master is told about time at the start of a turn, and how it passes. */
+function timeNotice(time: { now: StoryTime; away?: number }): string {
+  const now = `Time: ${describeTime(time.now)}.`
+  if (time.now.mode === 'simulated') return `${now} The story's time moves only as you say: each round takes what you give it (elapsed_seconds in resolve_round, or the default), and advance_time skips ahead.`
+  const away = time.away !== undefined && time.away >= NOTICEABLE_ABSENCE
+    ? ` The player was away for ${describeDuration(time.away)} of real time and the story went on meanwhile: characters have been about their own business, so do not assume anyone is where or as the player left them unless the records say so.`
+    : ''
+  return `${now} The story's time follows the real clock: it cannot be skipped, and each round takes as long as it really took.${away}`
+}
+
+/** What a character is told of its day, its commitments and what it is after. */
+export function describeAgenda(agenda: AgendaView, now: number): string[] {
+  const { zone } = agenda
+  const at = (place: string | undefined): string => (place === undefined ? '' : ` at ${place}`)
+  const lines: string[] = []
+  if (agenda.now !== undefined) lines.push(`Your day, now: ${agenda.now.activity}${at(agenda.now.place)}, until ${describeWhen(agenda.now.until, now, zone)}${agenda.now.interruptible ? '' : ' (not something you would drop lightly)'}.`)
+  if (agenda.next !== undefined) lines.push(`Your day, next: ${agenda.next.activity}${at(agenda.next.place)}, from ${describeWhen(agenda.next.at, now, zone)}.`)
+  for (const engagement of agenda.engagements) {
+    lines.push(`${engagement.overdue ? 'You were to' : 'You are due to'}: ${engagement.title}${at(engagement.place)}${engagement.with.length === 0 ? '' : `, with ${engagement.with.join(', ')}`}, at ${describeWhen(engagement.at, now, zone)}${engagement.overdue ? ', which has passed and is still open' : ''}.`)
+  }
+  if (agenda.goals.length > 0) {
+    lines.push('What you are after:')
+    for (const goal of agenda.goals) lines.push(`- ${goal.name} (${goal.type})${goal.deadline === undefined ? '' : `, by ${describeWhen(goal.deadline, now, zone)}${goal.overdue ? ', which has passed' : ''}`}${goal.description === '' ? '' : `: ${sentence(goal.description)}`}${goal.plan.length === 0 ? '' : ` Next: ${goal.plan.join('; ')}.`}`)
+  }
+  return lines
+}
+
+/** What the game master is told of the characters' days at the start of a turn; nothing when there is nothing to tell. */
+export function describeSceneAgenda(agenda: SceneAgenda, now: number): string {
+  const lines: string[] = []
+  if (agenda.moved.length > 0) lines.push(`By their routines since you last looked: ${agenda.moved.map(move => `${move.name} went to ${move.to} (${move.activity})`).join('; ')}.`)
+  if (agenda.here.length > 0) lines.push(`With the player's character, and their days: ${agenda.here.map(entry => `${entry.name}: ${entry.note}`).join('; ')}. The characters decide for themselves whether to keep to their day; the moment may keep them.`)
+  if (agenda.engagements.length > 0) {
+    lines.push(`Commitments due soon or overdue: ${agenda.engagements.map(engagement => `"${engagement.title}" (${engagement.with.join(', ')}${engagement.place === undefined ? '' : `, at ${engagement.place}`}) ${engagement.overdue ? 'was due' : 'is due'} ${describeWhen(engagement.at, now, agenda.zone)}${engagement.overdue ? ' and is still open' : ''}`).join('; ')}.`)
+  }
+  return lines.join('\n')
+}
+
 /** In words, how a character stands with another, from the numbers of its profile; nothing for what is unremarkable. */
 export function describeAttitude(relation: Pick<KnownRelationship, 'familiarity' | 'trust' | 'affinity' | 'tension'>): string {
   return [
@@ -113,10 +156,12 @@ function remembered(memories: readonly Recalled[], now: number): string {
 /** Every character is told the same thing about the scene, plus who it is and what it remembers. */
 export const sharedContext: CharacterContextProvider = {
   brief(request: CharacterRequest) {
-    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place, relationships, carrying } = request
+    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place, relationships, carrying, time, agenda } = request
     // In a place, a character perceives who is there with it; in a story without places, everyone is present.
     const company = place === undefined ? cast : place.here
-    const sections = [`Situation:\n${situation}`, ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
+    const sections = [`Situation:\n${situation}`, ...(time === undefined ? [] : [`Now: ${describeTime(time)}.`]), ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
+    const day = agenda === undefined || time === undefined ? [] : describeAgenda(agenda, time.now)
+    if (day.length > 0) sections.push(`Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):\n${day.join('\n')}`)
     if (carrying !== undefined && carrying.length > 0) sections.push(`What you have on you:\n${describeItems(carrying, { withKeys: false })}`)
     if (relationships !== undefined && relationships.length > 0) {
       sections.push(`How you stand with those here (your own view of them):\n${relationships.map((relation) => { const attitude = describeAttitude(relation); return `- ${relation.name} (${relation.label})${relation.summary === '' ? '' : `: ${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
@@ -210,16 +255,17 @@ function placedScene(cast: readonly CastMember[], player: CastMember | undefined
 }
 
 export const castSummary: SceneContextProvider = {
-  scene({ cast, turn, input, queryVector, story, items }) {
+  scene({ time, cast, turn, input, queryVector, story, items }) {
     const describeMember = (member: CastMember): string => {
       const { key, character, state } = member
-      const role = character.control === 'player' ? 'the player\'s character' : `acts through "${key}"`
+      const role = character.control === 'player' ? `the player's character, "${key}"` : `acts through "${key}"`
       const seen = [state?.publicState, state?.activity].filter(text => text !== undefined && text.trim() !== '')
       const where = whereIs(member)
       return `- ${character.name} (${role})${where === '' ? '' : ` [${where}]`}${character.summary === '' ? '' : `: ${character.summary}`}${seen.length > 0 ? ` Currently: ${seen.join('; ')}` : ''}`
     }
     const player = cast.find(member => member.character.control === 'player')
-    const parts = [`Scene before turn ${turn}:\n${cast.some(member => member.place !== undefined) ? placedScene(cast, player, story, describeMember, items) : cast.map(describeMember).join('\n')}`]
+    const days = time?.agenda === undefined ? '' : describeSceneAgenda(time.agenda, time.now.now)
+    const parts = [...(time === undefined ? [] : [timeNotice(time)]), ...(days === '' ? [] : [days]), `Scene before turn ${turn}:\n${cast.some(member => member.place !== undefined) ? placedScene(cast, player, story, describeMember, items) : cast.map(describeMember).join('\n')}`]
     if (items !== undefined) {
       const carried = cast.flatMap(member => { const mine = items.carried(member.character.id); return mine.length === 0 ? [] : [`- ${member.character.name} (${member.key}): ${describeItems(mine, { withKeys: true })}`] })
       if (carried.length > 0) parts.push(`What characters have on them:\n${carried.join('\n')}`)

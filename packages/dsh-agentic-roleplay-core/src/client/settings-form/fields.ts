@@ -1,5 +1,5 @@
 import type { RequestOption } from 'dsh-ai-core'
-import { SETTINGS_SPEC, type ChatSettings, type EmbeddingOptions, type EmbeddingValue } from '../../shared/settings.ts'
+import { SETTINGS_SPEC, isTimeZone, type ChatSettings, type EmbeddingOptions, type EmbeddingValue } from '../../shared/settings.ts'
 
 /** The settings the form offers, in the order shown. The rest are in the settings file. */
 export const FORM_FIELDS = [
@@ -13,6 +13,11 @@ export const FORM_FIELDS = [
   { path: ['authoring', 'enabled'], kind: 'flag', label: 'authoringEnabled', help: 'authoringEnabledHelp' },
   { path: ['authoring', 'perTurn'], kind: 'integer', label: 'authoringPerTurn', help: 'authoringPerTurnHelp' },
   { path: ['authoring', 'consolidateAfter'], kind: 'integer', label: 'consolidateAfter', help: 'consolidateAfterHelp' },
+  { path: ['clock', 'mode'], kind: 'choice', label: 'clockMode', help: 'clockModeHelp', choices: [{ value: 'simulated', label: 'clockSimulated' }, { value: 'real', label: 'clockReal' }] },
+  { path: ['clock', 'timeZone'], kind: 'text', label: 'clockTimeZone', help: 'clockTimeZoneHelp' },
+  { path: ['clock', 'roundSeconds'], kind: 'integer', label: 'clockRoundSeconds', help: 'clockRoundSecondsHelp' },
+  { path: ['clock', 'maxSkipDays'], kind: 'integer', label: 'clockMaxSkipDays', help: 'clockMaxSkipDaysHelp' },
+  { path: ['offstage', 'perTurn'], kind: 'integer', label: 'offstagePerTurn', help: 'offstagePerTurnHelp' },
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'retainRatio'], kind: 'percent', label: 'retainRatio', help: 'retainRatioHelp' },
 ] as const
@@ -60,7 +65,12 @@ export function problemsOf(drafts: Drafts, options: readonly RequestOption[] = [
     if (!Number.isFinite(value) || (option.type === 'integer' && !Number.isInteger(value)) || (option.min !== undefined && value < option.min) || (option.max !== undefined && value > option.max)) bad.add(optionKey(option))
   }
   for (const field of FORM_FIELDS) {
-    if (field.kind === 'flag') continue
+    if (field.kind === 'flag' || field.kind === 'choice') continue
+    if (field.kind === 'text') {
+      const draft = drafts[keyOf(field)]
+      if (typeof draft === 'string' && draft.trim() !== '' && !isTimeZone(draft.trim())) bad.add(keyOf(field))
+      continue
+    }
     const draft = drafts[keyOf(field)]
     const value = typeof draft === 'string' && draft.trim() !== '' ? Number(draft) : Number.NaN
     const { min, max } = boundsOf(field)
@@ -88,7 +98,7 @@ export function fromDrafts(base: ChatSettings, drafts: Drafts, options: readonly
   ;(next['embedding'] as Node)['options'] = chosen
   for (const field of FORM_FIELDS) {
     const draft = drafts[keyOf(field)]
-    const value = field.kind === 'flag' ? draft === true : field.kind === 'percent' ? Number(draft) / 100 : Number(draft)
+    const value = field.kind === 'flag' ? draft === true : field.kind === 'choice' ? String(draft) : field.kind === 'text' ? String(draft ?? '').trim() : field.kind === 'percent' ? Number(draft) / 100 : Number(draft)
     const parent = field.path.slice(0, -1).reduce<Node>((node, key) => node[key] as Node, next)
     parent[field.path.at(-1)!] = value
   }

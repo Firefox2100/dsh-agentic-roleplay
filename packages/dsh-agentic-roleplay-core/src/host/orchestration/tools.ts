@@ -1,10 +1,11 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { describeTime, type SkipRequest } from '../clock/story-clock.ts'
 import type { Boundaries, CreateReport, TurnStore } from './boundaries.ts'
 import { characterRunner } from './character-runner.ts'
 import { encodeOutput } from '../../shared/narration.ts'
 import { AUTHORING_NEEDS } from './boundaries.ts'
-import { ITEM_ACTIONS, type ItemAction } from 'dsh-roleplay-state'
+import { ITEM_ACTIONS, describeDuration, type ItemAction } from 'dsh-roleplay-state'
 import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } from './turn-engine.ts'
 
@@ -13,6 +14,7 @@ export const RESOLVE_TOOL = 'resolve_round'
 export const NARRATE_TOOL = 'narrate'
 export const RECORD_TOOL = 'record_memory'
 export const EXPAND_TOOL = 'expand_world'
+export const TIME_TOOL = 'advance_time'
 
 export interface ToolDeps {
   engine: TurnEngine
@@ -44,6 +46,9 @@ function renderAttempt(attempt: AttemptReport): string {
   return [heading, ...lines, ...failures(attempt.failures), ...next].join('\n')
 }
 
+/** Who went where because their day says so. */
+const routineLine = (move: { name: string; to: string; activity: string }): string => `By their routine, ${move.name} is now at ${move.to} (${move.activity}).`
+
 const OUTPUT_RULES = 'Deliver the output with the narrate tool as ordered segments: utterances and narration. Narration may come before, between and after utterances and is yours to write. Utterances are the characters\' words: include every one exactly as given, once, in the order they were spoken, and never change, add or remove one.'
 
 const listed = (utterances: readonly Utterance[]): string =>
@@ -54,7 +59,8 @@ function renderResolution(report: ResolveReport): string {
   const done = report.done
   if (done === undefined) return ''
   const left = done.limit - done.round
-  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, ...done.moves.map(move => `${move.name} is now at ${move.to}${move.via > 0 ? ` (by way of ${move.via} other place${move.via === 1 ? '' : 's'})` : ''}.`), ...done.things.map(thing => `${thing.name}: ${thing.summary}.`), ...failures(done.retryFailures)]
+  const passed = done.time.to - done.time.from
+  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, `It is now ${describeTime({ now: done.time.to, zone: done.time.zone })}${passed > 0 ? `; ${describeDuration(passed)} passed` : ''}.`, ...done.moved.map(routineLine), ...done.moves.map(move => `${move.name} is now at ${move.to}${move.via > 0 ? ` (by way of ${move.via} other place${move.via === 1 ? '' : 's'})` : ''}.`), ...done.things.map(thing => `${thing.name}: ${thing.summary}.`), ...failures(done.retryFailures)]
   lines.push(done.spoken.length === 0
     ? 'Nobody has said anything yet this turn.'
     : `Everything said so far this turn, in order; the output must carry all of it exactly:\n${listed(done.spoken)}`)
@@ -120,8 +126,12 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
 
   const resolve = defineTool({
     name: RESOLVE_TOOL,
-    description: 'Decide what actually happens to each character that acted in the current round, from their intents and the scene only. Intents can conflict; settle them consistently. A character whose intent fails and who was highly committed gets one more chance, and you resolve that attempt too. When nobody retries, the round is recorded and you decide whether another round is needed or the turn goes back to the player.',
+    description: 'Decide what actually happens to each character that acted in the current round, from their intents and the scene only. Intents can conflict; settle them consistently. A character whose intent fails and who was highly committed gets one more chance, and you resolve that attempt too. The player\'s character is not asked to act, but you may include an outcome for it (its key is in the scene) when what the player did moves it somewhere or has it handle things; when nobody else needs to react (the player just walks somewhere, picks something up), call this with only that outcome, without activate_characters. When nobody retries, the round is recorded and you decide whether another round is needed or the turn goes back to the player.',
     parameters: {
+      elapsed_seconds: {
+        type: 'integer',
+        description: 'How long this round took in the story, in seconds:: a few seconds for a remark, a minute or two for a conversation, longer for work or a journey. Left out, the chat\'s default applies. Not when the story\'s time follows the wall clock.',
+      },
       outcomes: {
         type: 'array',
         required: true,
@@ -129,7 +139,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
           type: 'object',
           additionalProperties: false,
           properties: {
-            character: { type: 'string', required: true, description: 'The character\'s key.' },
+            character: { type: 'string', required: true, description: 'The character\'s key; for the player\'s character, only when it moves or handles things.' },
             result: { type: 'string', required: true, enum: RESULTS, description: 'Whether the character\'s intent went through.' },
             summary: { type: 'string', required: true, description: 'What concretely happens to the character, in a sentence. It becomes what the character is doing.' },
             spoken: { type: 'boolean', description: 'Whether the character gets to say its utterance. It does unless something prevents it, such as being silenced or knocked out first.' },
@@ -156,7 +166,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
             moves_to: {
               type: 'object',
               additionalProperties: false,
-              description: 'Where the character ends up if it goes somewhere as a result: leave out when it stays. It must be possible (a way over open exits); you are told why if it is not. Not for a character whose intent failed.',
+              description: 'Where the character ends up if it goes somewhere as a result: leave out when it stays. It must be possible (a way over open exits); you are told why if it is not. Not for a character whose intent failed. A journey takes at least as long as the ways on it say, whatever elapsed_seconds you give.',
               properties: {
                 location: { type: 'string', required: true, description: 'The key of the place, as the scene lists it.' },
                 position: { type: 'string', description: 'Where in the place, in words: "by the window".' },
@@ -182,7 +192,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         ...(outcome.item_changes === undefined || outcome.item_changes.length === 0 ? {} : { itemChanges: outcome.item_changes.map(change => ({ item: change.item, action: change.action as ItemAction, ...(change.to === undefined ? {} : { to: change.to }), ...(change.quantity === undefined ? {} : { quantity: change.quantity }), ...(change.position === undefined ? {} : { position: change.position }), ...(change.feature === undefined ? {} : { feature: change.feature }), ...(change.with === undefined ? {} : { with: change.with }), ...(change.exit === undefined ? {} : { exit: change.exit }), ...(change.forced === true ? { forced: true } : {}) })) }),
         ...(outcome.moves_to === undefined ? {} : { moveTo: { location: outcome.moves_to.location, ...(outcome.moves_to.position === undefined ? {} : { position: outcome.moves_to.position }), ...(outcome.moves_to.feature === undefined ? {} : { feature: outcome.moves_to.feature }), ...(outcome.moves_to.ignore_exits === true ? { ignoreExits: true } : {}) } }),
       }))
-      return record(await deps.engine.resolve(owner, outcomes, run, exec.signal))
+      return record(await deps.engine.resolve(owner, outcomes, run, exec.signal, args.elapsed_seconds))
     },
   })
 
@@ -216,13 +226,13 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
     isConcurrencySafe: () => false,
     async execute(args, exec) {
-      const { owner } = ownerOf(exec.agent)
+      const { agent, owner } = ownerOf(exec.agent)
       const segments: RawSegment[] = (args.segments ?? []).map(segment => ({
         type: segment.type as RawSegment['type'],
         text: segment.text,
         ...(segment.character === undefined ? {} : { character: segment.character }),
       }))
-      const output = await deps.engine.narrate(owner, segments)
+      const output = await deps.engine.narrate(owner, segments, characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) }))
       // The output is the end of the turn: nothing the model adds after it would be checked.
       exec.concludeTurn()
       return record(output)
@@ -258,5 +268,28 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [activate, resolve, remember, expand, narrate]
+  const skip = defineTool({
+    name: TIME_TOOL,
+    description: 'Skip ahead in the story\'s time, between rounds: the player\'s character sleeps till morning, waits, or travels for days. Say either how long (by_minutes) or until when (until_time, and days_later for a later day). Time does not otherwise pass faster than the rounds take; use this only for a stretch that is summarised rather than played. Nothing else changes: if the skip changes what characters are doing or where they are, run a round for them afterwards. Not available when the story\'s time follows the wall clock.',
+    parameters: {
+      by_minutes: { type: 'integer', description: 'How many minutes to skip.' },
+      until_time: { type: 'string', description: 'The time of day to skip to, 24-hour HH:MM: the next time the clock reads it, or the day given by days_later.' },
+      days_later: { type: 'integer', description: 'With until_time: that many days after today (0 is later today, 1 is tomorrow).' },
+      reason: { type: 'string', required: true, description: 'What happens in the time that passes, in a sentence ("they sleep", "the ferry crosses").' },
+    },
+    output: { schema: { type: 'json' }, render: (_args, value) => { const done = value as unknown as { from: number; to: number; zone: string; moved: { name: string; to: string; activity: string }[] }; return [{ type: 'text', text: `${describeDuration(done.to - done.from)} pass. It is now ${describeTime({ now: done.to, zone: done.zone })}.${done.moved.length === 0 ? '' : ` ${done.moved.map(routineLine).join(' ')}`} Nothing else changed: characters with you are still doing what they were, where they were; run a round for them if the time that passed changes that.` }] } },
+    isConcurrencySafe: () => false,
+    execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      const given = [args.by_minutes !== undefined, args.until_time !== undefined].filter(Boolean).length
+      if (given !== 1) throw new Error('give exactly one of by_minutes and until_time')
+      if (args.days_later !== undefined && args.until_time === undefined) throw new Error('days_later goes with until_time')
+      const request: SkipRequest = args.by_minutes !== undefined
+        ? { byMinutes: args.by_minutes, reason: args.reason }
+        : { untilTime: args.until_time ?? '', ...(args.days_later === undefined ? {} : { daysLater: args.days_later }), reason: args.reason }
+      return Promise.resolve(record(deps.engine.advanceTime(owner, request)))
+    },
+  })
+
+  return [activate, resolve, skip, remember, expand, narrate]
 }

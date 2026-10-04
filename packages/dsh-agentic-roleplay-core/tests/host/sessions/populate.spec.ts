@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from 'dsh-roleplay-state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
-import { populateCharacters, populateItems, populateLocations, relationshipProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
+import { populateCharacters, populateItems, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
 import type { ItemDefinition, LocationDefinition } from 'dsh-roleplay-model'
 
 let dir: string
@@ -195,5 +195,31 @@ describe('the things of a world', () => {
     expect(session.items.openers({ kind: 'exit', id: session.locations.getExit(street.id, bar.id)!.id })).toEqual([key!.id])
     expect(session.slots.get('quiver')).toBeDefined()
     expect(session.consolidation.pending()).toEqual([])
+  })
+})
+
+describe('the days of the characters of a world', () => {
+  const place = (id: string, features: string[] = []): LocationDefinition => ({ id, name: id, description: '', features: features.map(key => ({ key, name: key, description: '' })), exits: [] })
+  const window = { days: ['mon', 'fri'], from: '09:00', to: '17:00', activity: 'minds the shop', interruptible: false } as const
+
+  it('are refused when they name a place or a feature the world does not have, before anything is created', () => {
+    const shop = place('shop', ['counter'])
+    const days = (routine: NonNullable<CharacterDefinition['routine']>) => routineProblems([definition({ routine })], [shop])
+    expect(days([{ ...window, days: [...window.days], location: 'shop', feature: 'counter' }, { ...window, days: [] }])).toEqual([])
+    expect(days([{ ...window, days: [], location: 'moon' }])).toEqual(['eleanor-graves: routine[0].location "moon" is not a place of this world'])
+    expect(days([{ ...window, days: [], location: 'shop', feature: 'piano' }])).toEqual(['eleanor-graves: routine[0].feature "piano" is not a feature of shop'])
+    expect(routineProblems([definition()], [shop])).toEqual([])
+  })
+
+  it('are given to each character, with days as numbers, minutes of the day and the place in the session', () => {
+    populateLocations(session, [place('shop', ['counter'])])
+    populateCharacters(session, [definition({ routine: [{ ...window, days: [...window.days], location: 'shop', feature: 'counter', position: 'behind it' }, { days: [], from: '22:00', to: '06:30', activity: 'sleeps', interruptible: true }] }), definition({ id: 'clara', name: 'Clara', aliases: [] })], 'clara')
+    populateRoutines(session, [definition({ routine: [{ ...window, days: [...window.days], location: 'shop', feature: 'counter', position: 'behind it' }, { days: [], from: '22:00', to: '06:30', activity: 'sleeps', interruptible: true }] })])
+    const windows = session.routines.list(session.characters.getBySourceId('eleanor-graves')!.id)
+    expect(windows.map(entry => [entry.days, entry.start, entry.end, entry.activity, entry.interruptible, entry.featureKey, entry.position])).toEqual([
+      [[1, 5], 540, 1020, 'minds the shop', false, 'counter', 'behind it'], [[], 1320, 390, 'sleeps', true, undefined, undefined],
+    ])
+    expect(windows[0]?.locationId).toBe(session.locations.getBySourceId('shop')!.id)
+    expect(session.routines.list(session.characters.getBySourceId('clara')!.id)).toEqual([])
   })
 })

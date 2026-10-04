@@ -1,6 +1,9 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
 import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session } from 'dsh-roleplay-state'
 import type { ChatSettings } from '../../shared/settings.ts'
+import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'
+import type { OffSceneItem } from '../clock/offscene.ts'
+import type { SkipRequest, StoryTime } from '../clock/story-clock.ts'
 import type { CharacterAction, CharacterReport, MoveRequest, NarrationSegment, Outcome, Utterance } from './protocol.ts'
 
 /** A character as the turn sees it. `key` is how the game master and the tools name it. */
@@ -91,6 +94,10 @@ export interface CharacterRequest {
   relationships?: readonly KnownRelationship[]
   /** What the character has on it or in its hands. */
   carrying?: readonly ItemView[]
+  /** What time it is in the story. */
+  time?: StoryTime
+  /** What its day has it doing, what it committed to, and what it is after. */
+  agenda?: AgendaView
 }
 
 /** A character's profile of someone present, as it is told to it. */
@@ -183,6 +190,8 @@ export interface CommitEntry {
   spoken: boolean
   /** What it did with things, and what came of each. */
   items?: { name: string; action: string; summary: string }[]
+  /** The player's character: it was not asked to act, so `intent` is what the game master decided it did. */
+  player?: true
   /** Where the character was when it acted. */
   at?: PlaceRef
   /** Where the game master sent it as a result. */
@@ -197,6 +206,10 @@ export interface RoundRecord {
   situation: string
   /** Where the moment happened: the place of the player's character when the round began. */
   place?: PlaceRef
+  /** A round of characters away from the player's character, asked after the turn what they do about something that fell due: only they perceive it. */
+  offstage?: true
+  /** When the round began and ended in the story (UTC milliseconds), and the zone they are read in. */
+  time?: { from: number; to: number; zone: string }
   entries: CommitEntry[]
 }
 
@@ -235,7 +248,7 @@ export interface Recaller {
 
 /** The state of the scene the game master is told at the start of a turn. */
 export interface SceneContextProvider {
-  scene(input: { cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems }): string
+  scene(input: { /** What time it is, and how long the story went on without the player when time follows the wall clock; and what the days of the characters say. */ time?: { now: StoryTime; away?: number; agenda?: SceneAgenda }; cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems }): string
 }
 
 export interface SceneItems {
@@ -303,10 +316,24 @@ export interface Boundaries {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots'>
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
+  /** What time it is in the story. */
+  time(turn: number): StoryTime
+  /** The start of a turn: what time it is, and how long passed outside the story when time follows the wall clock. */
+  beginTurn(turn: number): { time: StoryTime; away?: number; agenda: SceneAgenda }
+  /** A round passes; the time it took is the game master's to say (`stated`, in seconds) or the default, and at least the `minimum` the player's journey took. */
+  endRound(turn: number, round: number, stated?: number, minimum?: number): { from: number; to: number; zone: string; moved: RoutineMove[] }
+  /** Skips ahead in the story's time. @throws {ClockError} */
+  skipTime(turn: number, round: number, request: SkipRequest): { from: number; to: number; zone: string; reason: string; moved: RoutineMove[] }
+  /** What has fallen due for characters who are away from the player's character and has not been dealt with. */
+  dueOffScene(turn: number): OffSceneItem[]
+  /** Remember these as dealt with. */
+  markHandled(keys: readonly string[]): void
+  /** A character's agenda now: its day, its commitments and its goals. */
+  agenda(turn: number, characterId: Character['id']): AgendaView
   /** Writes the updates of one round, moves included, together or not at all. */
   commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch; move?: Move; items?: readonly ItemChangeSpec[] }[]): ItemEffect[][]
   /** Whether these item changes, done in order across the characters, can all be done; the reasons when not. Nothing is changed. */

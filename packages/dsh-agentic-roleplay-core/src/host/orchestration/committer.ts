@@ -1,6 +1,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { InvalidEditError, characterKey, createTools, parseRecordsEdit } from 'dsh-roleplay-state'
+import { InvalidEditError, characterKey, createTools, dayPart, describeDuration, describeInstant, localTime, parseRecordsEdit } from 'dsh-roleplay-state'
+import { zoneOf } from '../clock/story-clock.ts'
 import { runChild } from '../agents/child.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
@@ -25,6 +26,9 @@ What to write:
 - Events are final once your run is complete, and events recorded before this run cannot be changed or removed. What a character took in can: when the rounds show a character learning of an earlier event, or remembering it differently, add it with perceptions_added (event id, character) or revise it with perception_edits (the perception id from read_records). Never write the same event twice.
 - places: where each character is was decided by the game master and is already written, and so are its moves; do not move anyone and do not write a move as an event unless it matters to the story. Every event takes the key of the place it happened in (location): the place of the round's moment unless the entry shows it happened somewhere else. perceived_by: only characters who were in that place at the time (the brief shows who was where) or who could plausibly hear or see it from nearby; a character elsewhere perceives nothing unless it is told later. You never make up places or characters (a separate world author does that when the story genuinely needs it); change a way (exit_changes) only when the rounds clearly show a door unlocked, locked or a way blocked or cleared. Relationships between characters are small profiles (relationships: a label for what the other is to it, a sentence, how well it knows, trusts, likes and is strained with the other): record or revise one only when what happened really changes how a character stands towards another (a bond formed, trust broken, a secret shared), not for every pleasantry, and only the fields that changed.
 - things: what characters did with things (took, dropped, gave, put, wore, opened, locked, found) was decided by the game master and is already written, as is where every thing now is; do not move things. Name the things an event is about (items, by key: the key that was taken, the chest that was opened); an event about a thing is how the story remembers what happened to it. Change a thing yourself (item_edits) only for what no character did: it broke, a lock gave way, the story says whose it is.
+- off stage: a round marked off stage is what characters away from the player's character decided to do when something fell due for them (a meeting whose time came, a deadline that passed). Write what each of them did, from their own entries, with the characters in it as the only ones who perceive it (those who actually met perceive each other); where a commitment is concerned, say in engagement_edits whether it was kept (they met), missed (someone did not come) or cancelled, from what the entries show, and move a goal on (intent_edits) when what they did settles it. Nobody went anywhere that is not shown in the entry.
+- time: each round says when it happened. The story's clock is kept separately, so do not write times into events unless the story itself states one ("the train leaves at nine"); order and timing come from the turn and round.
+- goals and commitments: a character's goals (what it is after: a promise made, a task taken on, a scheme) and its engagements (something dated it committed to) are listed below with their ids. Add one (intents_added, engagements) only when the rounds clearly establish it and it is not listed already: an engagement needs a time that the rounds state or that follows from the story's clock ("tomorrow at nine" is a date and time: work it out from the time of the round), the place when one was named, and everyone who committed to it. Move them on (intent_edits, engagement_edits) when the rounds show it: a goal done, failed, given up or more pressing, a step taken; an engagement kept, missed (nobody came, or it was forgotten), cancelled or put off. Whether a character kept to a commitment is what the rounds show it did; never judge it by the clock alone. A character's routine is not yours to write.
 - states: what the game master decided about each character's activity and public_state is already written. Write a state only for inner_state or emotion, or to fix a public_state that the rounds clearly contradict, and only the fields that changed. public_state is a short present-tense description of what can be seen now (position, posture, expression, what it holds), never a log of events and never a thought. inner_state is what it now thinks or feels, and only if the rounds show it. activity is what it is doing now. emotion only when the rounds show a clear change.
 - beliefs: only when a character clearly learns, suspects or concludes something beyond the single event; written from that character's point of view; kind is belief, relationship or knowledge.
 - threads_opened: only a promise, mystery or goal that the rounds clearly leave unsettled and that is not already open. threads_resolved: ids of open threads that the rounds settle.`
@@ -34,11 +38,12 @@ const label = (round: { turn: number; round: number }): string => `turn ${round.
 function describeRound(round: RoundRecord): string[] {
   return [
     `## ${label(round)}`,
-    `The moment (includes what the player's character did or said): ${round.situation}`,
+    round.offstage === true ? `Off stage (away from the player's character; only the characters named here perceive it, and only those who were together perceive each other): ${round.situation}` : `The moment (includes what the player's character did or said): ${round.situation}`,
     ...(round.place === undefined ? [] : [`Place of the moment: ${round.place.name} (${round.place.key})`]),
+    ...(round.time === undefined ? [] : [`When: ${describeInstant(round.time.from, round.time.zone)} (${dayPart(localTime(round.time.from, round.time.zone).minuteOfDay)})${round.time.to > round.time.from ? `; the round took ${describeDuration(round.time.to - round.time.from)}` : ''}`]),
     'What each character did, and what became of it:',
     ...round.entries.map(entry => [
-      `- ${entry.character} (${entry.name}): intended "${entry.intent}" [commitment: ${entry.commitment}]; ${entry.result}: ${entry.summary}`,
+      entry.player === true ? `- ${entry.character} (${entry.name}, the player's character): ${entry.result}: ${entry.summary}` : `- ${entry.character} (${entry.name}): intended "${entry.intent}" [commitment: ${entry.commitment}]; ${entry.result}: ${entry.summary}`,
       entry.utterance === undefined ? '' : `  said${entry.spoken ? '' : ' (but was prevented from saying)'}: "${entry.utterance}"`,
       entry.publicState === undefined ? '' : `  the game master says anyone present can now see: ${entry.publicState}`,
       entry.items === undefined ? '' : `  with things: ${entry.items.map(thing => `${thing.name} (${thing.action}: ${thing.summary})`).join('; ')}`,
@@ -52,7 +57,7 @@ function describeRound(round: RoundRecord): string[] {
 export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify: boolean }): string {
   const rounds = job.rounds.map(({ turn, round }) => ({ turn, round }))
   const first = job.rounds[0]!
-  const records = job.store.story.records()
+  const records = job.store.story.records({ timeZone: zoneOf(job.store.settings().clock) })
   const own = job.store.story.records({ rounds }).events
   const before = records.events.filter(event => event.turn < first.turn || (event.turn === first.turn && event.round < first.round)).slice(-6)
   return [
@@ -76,6 +81,12 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     '## Already recorded for these rounds (an earlier attempt wrote them: continue from them, do not repeat them)',
     ...(own.length === 0 ? ['- nothing'] : own.map(event => `- id ${event.id}, ${label(event)}: ${event.text}`)),
     '',
+    '## Goals of the characters (ids for intent_edits)',
+    ...(records.characters.flatMap(entry => entry.goals.map(goal => `- id ${goal.id}, ${entry.character}: ${goal.name} (${goal.type}, ${goal.status}${goal.deadline === null ? '' : `, deadline ${goal.deadline}`})${goal.plan.length === 0 ? '' : ` plan: ${goal.plan.join('; ')}`}`)).concat(records.characters.every(entry => entry.goals.length === 0) ? ['- none'] : [])),
+    '',
+    '## Pending engagements (ids for engagement_edits; times in the story\'s time zone)',
+    ...(records.engagements.length === 0 ? ['- none'] : records.engagements.map(engagement => `- id ${engagement.id}: ${engagement.title}, ${engagement.at}${engagement.location === null ? '' : `, at ${engagement.location}`}, with ${engagement.participants.join(', ')}`)),
+    '',
     '## Open story threads',
     ...(records.open_threads.length === 0 ? ['- none'] : records.open_threads.map(thread => `- id ${thread.id}: ${thread.text}`)),
   ].join('\n')
@@ -95,8 +106,8 @@ const RESULT: ObjectJsonSchema = {
 function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number }, progress: { edits: number; unchecked: boolean }): ToolDefinition[] {
   const turn = Math.max(...job.rounds.map(round => round.turn))
   const keys = job.store.story.characters.list().map(characterKey)
-  const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads', 'list_locations', 'get_location', 'list_relationships', 'list_items', 'get_item'])
-  return createTools(() => ({ session: job.store.story, turn, policy: memory, queryVector: job.store.queryVector }), { write: true, characters: keys })
+  const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads', 'list_locations', 'get_location', 'list_relationships', 'list_items', 'get_item', 'get_agenda'])
+  return createTools(() => ({ session: job.store.story, turn, policy: memory, queryVector: job.store.queryVector, timeZone: zoneOf(job.store.settings().clock) }), { write: true, characters: keys })
     .filter(tool => wanted.has(tool.name))
     .map((tool): ToolDefinition => {
       if (tool.name === 'edit_records') {

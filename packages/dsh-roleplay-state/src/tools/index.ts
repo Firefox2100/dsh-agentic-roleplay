@@ -5,12 +5,16 @@ import type { MemoryPolicy } from '../memory/recall.ts'
 import { characterKey, locationKey, parseRecordsEdit, recordsEditSchema } from '../records/edit.ts'
 import { lintWorld } from '../records/lint.ts'
 import { describeHolder } from '../records/read.ts'
+import { agendaAt } from '../records/agenda.ts'
+import { describeInstant, localIso, minuteText } from '../records/time.ts'
 import { itemKey } from '../records/items.ts'
 import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots'>
+  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock'>
+  /** The time zone the story's times are written and read in; UTC when not given. */
+  timeZone?: string
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
   turn: number
   policy: MemoryPolicy
@@ -321,9 +325,37 @@ export function createTools(resolve: AgentResolver, options: {
       output: { schema: { type: 'json' }, render: pretty },
       isConcurrencySafe: () => true,
       async execute(args, exec) {
-        const { session } = link(resolve, exec.agent)
-        const view = session.records(args.rounds === undefined ? {} : { rounds: args.rounds })
+        const { session, timeZone } = link(resolve, exec.agent)
+        const view = session.records({ ...(args.rounds === undefined ? {} : { rounds: args.rounds }), ...(timeZone === undefined ? {} : { timeZone }) })
         return JSON.parse(JSON.stringify(view)) as never
+      },
+    }),
+    defineTool({
+      name: 'get_agenda',
+      description: 'What a character is expected to be doing and to have done: its routine now and next, what it has committed to that is due soon or overdue, what it is after, and its whole day. Times are in the story\'s time zone.',
+      parameters: { character: { type: 'string', required: true, description: 'The key of the character.' } },
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session, timeZone } = link(resolve, exec.agent)
+        const zone = timeZone ?? 'UTC'
+        const found = session.characters.list().find(character => characterKey(character) === args.character)
+        const state = session.clock.get()
+        if (found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
+        if (state === undefined) throw new NotFoundError('the story has no clock yet')
+        const places = new Map(session.locations.list().map(place => [place.id, locationKey(place)]))
+        const names = new Map(session.characters.list().map(character => [character.id, characterKey(character)]))
+        const agenda = agendaAt(session, found.id, state.now, zone, { horizon: 48 * 3_600_000, engagements: 10, goals: 5 })
+        const place = (id: number | undefined) => (id === undefined ? null : places.get(id) ?? null)
+        const occurrence = (entry: typeof agenda.now) => (entry === undefined ? null : { activity: entry.window.activity, location: place(entry.window.locationId), from: localIso(entry.startsAt, zone), until: localIso(entry.endsAt, zone), interruptible: entry.window.interruptible })
+        return JSON.parse(JSON.stringify({
+          now: describeInstant(state.now, zone),
+          routine_now: occurrence(agenda.now),
+          routine_next: occurrence(agenda.next),
+          engagements: agenda.engagements.map(entry => ({ id: entry.engagement.id, title: entry.engagement.title, at: localIso(entry.engagement.at, zone), location: place(entry.engagement.locationId), with: entry.engagement.participants.map(id => names.get(id) ?? String(id)), overdue: entry.overdue })),
+          goals: agenda.goals.map(entry => ({ id: entry.intent.id, name: entry.intent.name, type: entry.intent.type, priority: entry.intent.priority, urgency: entry.intent.urgency, deadline: entry.deadlineAt === undefined ? null : localIso(entry.deadlineAt, zone), overdue: entry.overdue, plan: entry.intent.plan })),
+          day: session.routines.list(found.id).map(window => ({ days: window.days.length === 0 ? 'every day' : window.days.join(','), from: minuteText(window.start), to: minuteText(window.end), activity: window.activity, location: place(window.locationId), interruptible: window.interruptible })),
+        })) as never
       },
     }),
     defineTool({
@@ -397,8 +429,8 @@ export function createTools(resolve: AgentResolver, options: {
         render: (_args, value) => summary(options.authoring === true ? 'World changed' : 'Records changed')(_args, value as { writes: number }),
       },
       async execute(args, exec) {
-        const { session } = link(resolve, exec.agent)
-        const result = session.edit(parseRecordsEdit(args))
+        const { session, timeZone } = link(resolve, exec.agent)
+        const result = session.edit({ ...parseRecordsEdit(args), ...(timeZone === undefined ? {} : { timeZone }) })
         return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [], item_keys: result.itemKeys ?? [] }
       },
     },

@@ -1,7 +1,7 @@
 import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CharacterRequest, PlaceView } from '../../../src/host/orchestration/boundaries.ts'
-import { castSummary, describeAttitude, describeItem, describeItems, describePlace, sharedContext } from '../../../src/host/orchestration/defaults.ts'
+import { castSummary, describeAgenda, describeAttitude, describeItem, describeItems, describePlace, describeSceneAgenda, sharedContext } from '../../../src/host/orchestration/defaults.ts'
 import { alice, arthur, bob, location, placed, withRanking } from './fixtures.ts'
 
 const bar = location(1, 'The Bar', { description: 'Smoky. Loud at night.', features: [{ key: 'counter', name: 'Counter', description: 'Long and sticky. Stained.' }, { key: 'piano', name: 'Piano', description: '' }] })
@@ -73,7 +73,7 @@ describe('the scene the game master is told, with places', () => {
   it('is where the player is with what is there, who is with them, and who is elsewhere and where', () => {
     const text = scene()
     expect(text).toContain("The player's character is in The Bar (the-bar): Smoky.")
-    expect(text).toContain('Characters here:\n- Arthur (the player\'s character) [at the bar]')
+    expect(text).toContain('Characters here:\n- Arthur (the player\'s character, "arthur") [at the bar]')
     expect(text).toContain('- Alice (acts through "alice")')
     expect(text).toContain('Characters elsewhere (they perceive nothing here unless the moment reaches them):\n- Bob (acts through "bob")')
     expect(text).toContain('in Cellar (cellar)')
@@ -85,7 +85,7 @@ describe('the scene the game master is told, with places', () => {
 
   it('is the plain list of characters when nobody has a place', () => {
     const text = scene([arthur, alice])
-    expect(text).toBe('Scene before turn 2:\n- Arthur (the player\'s character): Arthur summary\n- Alice (acts through "alice"): Alice summary')
+    expect(text).toBe('Scene before turn 2:\n- Arthur (the player\'s character, "arthur"): Arthur summary\n- Alice (acts through "alice"): Alice summary')
   })
 })
 
@@ -140,5 +140,85 @@ describe('things in a prompt', () => {
     expect(text).toContain('Lying about: lantern: Brass lantern (dented) [by the till, at Counter]; chest: Oak chest [hidden, open] holding Silver key, 3 Coin')
     expect(text).toContain('What characters have on them:\n- Alice (alice): coat: Wool coat [worn on the torso]')
     story.close()
+  })
+})
+
+describe('time in a prompt', () => {
+  const evening = Date.UTC(1912, 9, 4, 21, 40)
+  const story = () => withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } }))
+
+  it('tells the game master the time and, in simulated time, that it moves only as the game master says', () => {
+    const text = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' } }, cast: [arthur, alice], turn: 2, input: 'I look around.', story: story() })
+    expect(text.split('\n\n')[0]).toBe('Time: Friday 4 October 1912, 21:40 (evening). The story\'s time moves only as you say: each round takes what you give it (elapsed_seconds in resolve_round, or the default), and advance_time skips ahead.')
+  })
+
+  it('tells it that the real clock cannot be skipped, and how long the player was away when that is long enough to matter', () => {
+    const real = { mode: 'real' as const, now: evening, zone: 'Asia/Shanghai' }
+    const away = castSummary.scene({ time: { now: real, away: 3 * 3_600_000 + 12 * 60_000 }, cast: [arthur], turn: 2, input: 'Hi.', story: story() })
+    expect(away).toContain('Time: Saturday 5 October 1912, 05:40 (morning). The story\'s time follows the real clock: it cannot be skipped')
+    expect(away).toContain('The player was away for 3 hours 12 minutes of real time and the story went on meanwhile')
+    const brief = castSummary.scene({ time: { now: real, away: 4 * 60_000 }, cast: [arthur], turn: 2, input: 'Hi.', story: story() })
+    expect(brief).not.toContain('away')
+  })
+
+  it('says nothing about time when there is no clock', () => {
+    expect(castSummary.scene({ cast: [arthur], turn: 1, input: 'Hi.', story: story() })).not.toContain('Time:')
+  })
+
+  it('tells a character what time it is, after the situation', () => {
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, time: { mode: 'simulated', now: Date.UTC(1912, 9, 4, 3, 5), zone: 'UTC' } }
+    expect(sharedContext.brief(request).prompt.split('\n\n').slice(0, 2)).toEqual(['Situation:\nArthur orders.', 'Now: Friday 4 October 1912, 03:05 (night).'])
+    const { time: _time, ...without } = request
+    expect(sharedContext.brief(without).prompt).not.toContain('Now:')
+  })
+})
+
+describe('days in a prompt', () => {
+  const evening = Date.UTC(1912, 9, 4, 21, 40)
+  const agenda = {
+    zone: 'UTC',
+    now: { activity: 'drinks at the bar', place: 'The Bar', until: Date.UTC(1912, 9, 4, 22), interruptible: true },
+    next: { activity: 'sleeps', place: 'Home', at: Date.UTC(1912, 9, 4, 22) },
+    engagements: [{ title: 'Return the key', at: Date.UTC(1912, 9, 4, 20), with: [], overdue: true }, { title: 'Meet Marcus', at: Date.UTC(1912, 9, 5, 8), place: 'The Shop', with: ['Marcus'], overdue: false }],
+    goals: [{ name: 'Find the ledger', type: 'obligation', description: 'Promised Bob. Urgent.', plan: ['Search the shop', 'Ask Marcus'], deadline: Date.UTC(1912, 9, 5, 9), overdue: false }],
+  }
+
+  it('is told to a character as its own day: what it is doing and next, what it is due to do, and what it is after, as plans', () => {
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, time: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda }
+    const prompt = sharedContext.brief(request).prompt
+    expect(prompt).toContain('Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):')
+    expect(prompt).toContain('Your day, now: drinks at the bar at The Bar, until 22:00.\nYour day, next: sleeps at Home, from 22:00.')
+    expect(prompt).toContain('You were to: Return the key, at 20:00, which has passed and is still open.')
+    expect(prompt).toContain('You are due to: Meet Marcus at The Shop, with Marcus, at Saturday 5 October 1912, 08:00.')
+    expect(prompt).toContain('What you are after:\n- Find the ledger (obligation), by Saturday 5 October 1912, 09:00: Promised Bob. Next: Search the shop; Ask Marcus.')
+    const { agenda: _agenda, ...without } = request
+    expect(sharedContext.brief(without).prompt).not.toContain('Your day')
+    expect(sharedContext.brief({ ...request, agenda: { zone: 'UTC', engagements: [], goals: [] } }).prompt).not.toContain('Your day')
+  })
+
+  it('says a window that is not to be dropped lightly', () => {
+    expect(describeAgenda({ ...agenda, now: { ...agenda.now, interruptible: false } }, evening)[0]).toBe('Your day, now: drinks at the bar at The Bar, until 22:00 (not something you would drop lightly).')
+  })
+
+  it('is told to the game master as who moved, whose day expects them elsewhere, and what is due', () => {
+    const text = describeSceneAgenda({
+      zone: 'UTC',
+      moved: [{ character: 'marcus', name: 'Marcus', to: 'Home', activity: 'rests' }],
+      here: [{ name: 'Clara', note: 'its day says "sleeps" at Home now, yet it is here' }],
+      engagements: [{ title: 'Meet Marcus', at: Date.UTC(1912, 9, 4, 21), place: 'The Shop', with: ['Clara', 'Marcus'], overdue: true }, { title: 'Soon', at: Date.UTC(1912, 9, 4, 22), with: ['Marcus'], overdue: false }],
+    }, evening)
+    expect(text).toBe([
+      'By their routines since you last looked: Marcus went to Home (rests).',
+      'With the player\'s character, and their days: Clara: its day says "sleeps" at Home now, yet it is here. The characters decide for themselves whether to keep to their day; the moment may keep them.',
+      'Commitments due soon or overdue: "Meet Marcus" (Clara, Marcus, at The Shop) was due 21:00 and is still open; "Soon" (Marcus) is due 22:00.',
+    ].join('\n'))
+    expect(describeSceneAgenda({ zone: 'UTC', moved: [], here: [], engagements: [] }, evening)).toBe('')
+  })
+
+  it('goes after the time in the scene, and is absent when there is nothing to tell', () => {
+    const scene = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda: { zone: 'UTC', moved: [{ character: 'marcus', name: 'Marcus', to: 'Home', activity: 'rests' }], here: [], engagements: [] } }, cast: [arthur], turn: 2, input: 'Hi.', story: withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } })) })
+    expect(scene.split('\n\n').slice(0, 2).map(part => part.slice(0, 22))).toEqual(['Time: Friday 4 October', 'By their routines sinc'])
+    const quiet = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda: { zone: 'UTC', moved: [], here: [], engagements: [] } }, cast: [arthur], turn: 2, input: 'Hi.', story: withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } })) })
+    expect(quiet).not.toContain('routines')
   })
 })

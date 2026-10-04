@@ -133,7 +133,7 @@ describe('the writing tools', () => {
   })
 
   it('are not there unless the plugin is configured for them', () => {
-    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
+    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'get_agenda', 'list_threads'])
     expect(Object.keys(tools(true))).toContain('record_event')
   })
 })
@@ -202,7 +202,7 @@ describe('the plugin', () => {
   }
 
   it('registers the reading tools, and the writing ones when asked, with the tool registry present', async () => {
-    expect(await names({})).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
+    expect(await names({})).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'get_agenda', 'list_threads'])
     expect(await names({ writeTools: true })).toContain('open_thread')
   })
 

@@ -231,3 +231,30 @@ describe('relationships in a character file', () => {
     expect(many.ok ? [] : many.issues.map(issue => issue.path)).toEqual(['relationships'])
   })
 })
+
+describe('a routine in a character file', () => {
+  const parse = (routine: unknown) => parseCharacterFile(JSON.stringify({ name: 'Clara', routine }), 'clara')
+
+  it('is the windows of the day: days, from and to, what, where, and whether it can be dropped', () => {
+    const result = parse([
+      { days: ['Mon', 'tue'], from: '09:00', to: '17:00', activity: 'minds the shop', location: 'shop', feature: 'counter', position: 'behind it', interruptible: false },
+      { from: '22:00', to: '6:30', activity: 'sleeps' },
+    ])
+    expect(result.ok && result.value.routine).toEqual([
+      { days: ['mon', 'tue'], from: '09:00', to: '17:00', activity: 'minds the shop', location: 'shop', feature: 'counter', position: 'behind it', interruptible: false },
+      { days: [], from: '22:00', to: '6:30', activity: 'sleeps', interruptible: true },
+    ])
+    const none = parseCharacterFile(JSON.stringify({ name: 'Clara' }), 'clara')
+    expect(none.ok && none.value.routine).toBeUndefined()
+  })
+
+  it('is reported with its path: a time that is not one, an empty window, a day that is not one, no activity, a feature without a place, a flag that is not a flag', () => {
+    const result = parse([
+      { from: '25:00', to: '17:00', activity: 'x' }, { from: '09:00', to: '09:00', activity: 'x' }, { days: ['funday'], from: '09:00', to: '10:00', activity: 'x' },
+      { from: '09:00', to: '10:00' }, { from: '09:00', to: '10:00', activity: 'x', feature: 'f' }, { from: '09:00', to: '10:00', activity: 'x', interruptible: 'no' },
+    ])
+    expect(result.ok ? [] : result.issues.map(issue => issue.path)).toEqual(['routine[0].from', 'routine[1].to', 'routine[2].days', 'routine[3].activity', 'routine[4].feature', 'routine[5].interruptible'])
+    const many = parse(Array.from({ length: 25 }, () => ({ from: '09:00', to: '10:00', activity: 'x' })))
+    expect(many.ok ? [] : many.issues.map(issue => issue.path)).toEqual(['routine'])
+  })
+})

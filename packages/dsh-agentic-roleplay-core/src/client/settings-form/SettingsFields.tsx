@@ -1,17 +1,19 @@
-import { Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Input, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { localized, type RequestOption } from 'dsh-ai-core'
 import css from './SettingsFields.module.css'
 import { FORM_FIELDS, boundsOf, keyOf, optionKey, problemsOf, type Drafts } from './fields.ts'
 import type { SettingsFormKey } from './locales.ts'
 
 /** The settings of a chat as editable fields: one control with its explanation under each. */
-export function SettingsFields({ t, drafts, onChange, options = [], disabled = false }: {
+export function SettingsFields({ t, drafts, onChange, options = [], disabled = false, locked = {} }: {
   t: (key: SettingsFormKey, values?: Record<string, string | number>) => string
   drafts: Drafts
   onChange: (key: string, value: string | boolean) => void
   /** What the embedding provider lets a request set, to show after the settings. */
   options?: readonly RequestOption[]
   disabled?: boolean
+  /** Choices that cannot be chosen now, by field and value, with why. */
+  locked?: Readonly<Record<string, Readonly<Record<string, string>>>>
 }) {
   const bad = problemsOf(drafts, options)
   const locale = t('localeId')
@@ -19,14 +21,36 @@ export function SettingsFields({ t, drafts, onChange, options = [], disabled = f
     <>
       {FORM_FIELDS.map((field) => {
         const key = keyOf(field)
-        const { min, max } = boundsOf(field)
+        const { min, max } = field.kind === 'choice' || field.kind === 'text' ? { min: 0, max: 0 } : boundsOf(field)
         return (
           <div key={key} className={css.row}>
             <label className={css.field}>
               <span className={css.label}>{t(field.label)}</span>
               {field.kind === 'flag'
                 ? <Switch checked={drafts[key] === true} label={t(field.label)} disabled={disabled} onChange={(next) => { onChange(key, next) }} />
-                : (
+                : field.kind === 'choice'
+                  ? (
+                      <SegmentedControl
+                        id={`rp-${key}`}
+                        label={t(field.label)}
+                        value={String(drafts[key] ?? field.choices[0].value)}
+                        options={field.choices.map((choice) => { const why = locked[key]?.[choice.value]; return { value: choice.value, label: t(choice.label), ...(why === undefined ? {} : { disabled: true, title: why }) } })}
+                        disabled={disabled}
+                        onChange={(next) => { onChange(key, next) }}
+                      />
+                    )
+                  : field.kind === 'text'
+                    ? (
+                        <Input
+                          type="text"
+                          value={String(drafts[key] ?? '')}
+                          placeholder="UTC"
+                          disabled={disabled}
+                          aria-invalid={bad.has(key)}
+                          onChange={(event) => { onChange(key, event.target.value) }}
+                        />
+                      )
+                    : (
                     <Input
                       type="number"
                       min={min}
@@ -40,7 +64,7 @@ export function SettingsFields({ t, drafts, onChange, options = [], disabled = f
                   )}
             </label>
             <p className={css.help}>{t(field.help)}</p>
-            {bad.has(key) && <p className={css.error}>{t('invalid', { min, max })}</p>}
+            {bad.has(key) && <p className={css.error}>{field.kind === 'text' ? t('invalidZone') : t('invalid', { min, max })}</p>}
           </div>
         )
       })}

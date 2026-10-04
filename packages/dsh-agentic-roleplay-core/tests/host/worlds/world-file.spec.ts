@@ -62,6 +62,24 @@ describe('parseWorldFile', () => {
       tags: ['mystery', 'gothic'],
       author: { name: 'Dev Fixture', url: 'https://example.test' },
       coverMediaId: 'media-1',
+      clock: { startingTime: Date.UTC(1912, 8, 21, 19, 30) },
+    })
+  })
+
+  describe('the clock', () => {
+    const clockOf = (extra: Record<string, unknown>) => parse(JSON.stringify({ name: 'W', ...extra })).clock
+
+    it('reads when the story begins and the zone its time is read in; a time with no offset is the wall clock of that zone', () => {
+      expect(clockOf({ time_zone: 'Asia/Shanghai', starting_time: '1912-09-21T19:30' })).toEqual({ timeZone: 'Asia/Shanghai', startingTime: Date.UTC(1912, 8, 21, 11, 30) })
+      expect(clockOf({ time_zone: 'Asia/Shanghai', starting_time: '1912-09-21T19:30Z' })).toEqual({ timeZone: 'Asia/Shanghai', startingTime: Date.UTC(1912, 8, 21, 19, 30) })
+      expect(clockOf({ starting_time: '1912-09-21T19:30' })).toEqual({ startingTime: Date.UTC(1912, 8, 21, 19, 30) })
+      expect(clockOf({ time_zone: 'UTC' })).toEqual({ timeZone: 'UTC' })
+      expect(clockOf({})).toBeUndefined()
+    })
+
+    it('reports a zone or a date that is not one, with the field', () => {
+      expect(issues(JSON.stringify({ name: 'W', time_zone: 'Mars/Olympus' }))).toEqual([expect.stringMatching(/^time_zone: /)])
+      expect(issues(JSON.stringify({ name: 'W', starting_time: 'tomorrow' }))).toEqual([expect.stringMatching(/^starting_time: /)])
     })
   })
 

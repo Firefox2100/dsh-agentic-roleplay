@@ -65,7 +65,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .join('\n')
     const verdict = boundaries().inputValidator.validate({ text, turn: payload.turn, cast })
     const queryVector = await store.queryVector(text)
-    const lines = [boundaries().sceneContext.scene({ cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, ...(queryVector === undefined ? {} : { queryVector }) })]
+    const { time, away, agenda } = store.beginTurn(payload.turn)
+    const lines = [boundaries().sceneContext.scene({ time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, ...(queryVector === undefined ? {} : { queryVector }) })]
     if (!verdict.ok) {
       engine.skip(owner)
       lines.push(`The player's input is refused: ${verdict.reason}. Do not ask any character to act; tell the player briefly why.`)

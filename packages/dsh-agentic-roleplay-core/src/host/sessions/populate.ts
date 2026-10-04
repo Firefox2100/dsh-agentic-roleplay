@@ -1,5 +1,6 @@
-import type { CharacterDefinition, Holder, ItemDefinition, LocationDefinition, Slot } from 'dsh-roleplay-model'
-import type { Session } from 'dsh-roleplay-state'
+import { WEEKDAY_NAMES, type CharacterDefinition, type Holder, type ItemDefinition, type LocationDefinition, type Slot } from 'dsh-roleplay-model'
+import { MINUTE, parseTimeOfDay, type Session } from 'dsh-roleplay-state'
+import type { ChatSettings } from '../../shared/settings.ts'
 import { containersFirst } from '../items/load.ts'
 import { parentsFirst } from '../locations/load.ts'
 
@@ -27,6 +28,31 @@ export function startingPlaceProblems(characters: readonly CharacterDefinition[]
   })
 }
 
+/** What is wrong with the days characters are given, found before anything is created: places that are not in the world. */
+export function routineProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[]): string[] {
+  const byId = new Map(locations.map(location => [location.id, location]))
+  return characters.flatMap(character => (character.routine ?? []).flatMap((window, index) => {
+    if (window.location === undefined) return []
+    const location = byId.get(window.location)
+    if (location === undefined) return [`${character.id}: routine[${index}].location "${window.location}" is not a place of this world`]
+    if (window.feature !== undefined && !location.features.some(feature => feature.key === window.feature)) return [`${character.id}: routine[${index}].feature "${window.feature}" is not a feature of ${location.name}`]
+    return []
+  }))
+}
+
+/** Gives each character its recurring day, with the places by their ids in the world. */
+export function populateRoutines(session: Session, characters: readonly CharacterDefinition[]): void {
+  for (const { id, routine } of characters) {
+    if (routine === undefined || routine.length === 0) continue
+    session.routines.replace(session.characters.getBySourceId(id)!.id, routine.map(window => ({
+      days: window.days.map(day => WEEKDAY_NAMES.indexOf(day as (typeof WEEKDAY_NAMES)[number])),
+      start: parseTimeOfDay(window.from)!, end: parseTimeOfDay(window.to)!, activity: window.activity, interruptible: window.interruptible,
+      ...(window.location === undefined ? {} : { locationId: session.locations.getBySourceId(window.location)!.id }),
+      ...(window.feature === undefined ? {} : { featureKey: window.feature }), ...(window.position === undefined ? {} : { position: window.position }),
+    })))
+  }
+}
+
 /** Put a world's places into a new session: each inside the one it belongs to, with the ways between them (both ways unless the file says one way). */
 export function populateLocations(session: Session, locations: readonly LocationDefinition[]): void {
   const ordered = parentsFirst(locations)
@@ -51,7 +77,7 @@ export function populateLocations(session: Session, locations: readonly Location
  * is `playerId`; the agent controls everyone else.
  */
 export function populateCharacters(session: Session, characters: readonly CharacterDefinition[], playerId: string): void {
-  for (const { id, start, relationships: _relationships, ...identity } of characters) {
+  for (const { id, start, relationships: _relationships, routine: _routine, ...identity } of characters) {
     const character = session.characters.add({ ...identity, sourceId: id, control: id === playerId ? 'player' : 'agent' })
     const { intents, place, ...state } = start
     session.characterStates.create(character.id, state)
@@ -107,4 +133,10 @@ export function populateItems(session: Session, items: readonly ItemDefinition[]
       }
     }
   }
+}
+
+/** Starts the story's clock: at the wall clock when it follows it, and otherwise at the world's starting time (or now, when the world has none). */
+export function populateClock(session: Pick<Session, 'clock'>, settings: ChatSettings['clock'], world: { startingTime?: number } | undefined, wall: number): void {
+  const start = settings.mode === 'real' ? wall : world?.startingTime ?? Math.floor(wall / MINUTE) * MINUTE
+  session.clock.start(settings.mode, start)
 }

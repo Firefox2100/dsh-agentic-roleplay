@@ -1,11 +1,11 @@
 import type { JsonSchemaNode, ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import {
-  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_KINDS, PERCEPTION_MODES,
-  type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type ExitState, type MemoryKind, type PerceptionMode, type Slot,
+  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, ENGAGEMENT_STATUSES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, MEMORY_KINDS, PERCEPTION_MODES, WEEKDAY_NAMES,
+  type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type MemoryKind, type PerceptionMode, type Slot,
 } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import type {
-  BeliefEdit, CharacterMove, EventEdit, ExitChange, ItemChange, ItemEditSpec, NewBelief, NewCharacterSpec, NewEvent, NewExit, NewExitBetween, NewItemSpec, NewPlace,
+  BeliefEdit, CharacterMove, EngagementEditSpec, EventEdit, ExitChange, IntentEditSpec, ItemChange, NewEngagementSpec, NewIntentSpec, RoutineSet, RoutineWindowSpec, ItemEditSpec, NewBelief, NewCharacterSpec, NewEvent, NewExit, NewExitBetween, NewItemSpec, NewPlace,
   PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
 } from './edit-types.ts'
 import { ITEM_ACTIONS, type ItemAction } from './items.ts'
@@ -142,6 +142,29 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     beliefRetractions: numbers('belief_retractions'),
     threadsOpened: Array.isArray(value['threads_opened']) ? (value['threads_opened'] as unknown[]).filter((entry): entry is string => typeof entry === 'string') : [],
     threadsResolved: numbers('threads_resolved'),
+    intentsAdded: array('intents_added').map((entry): NewIntentSpec => defined<NewIntentSpec>({
+      character: text(entry, 'character') ?? '', type: (text(entry, 'type') ?? '') as IntentType, name: text(entry, 'name') ?? '', description: text(entry, 'description'),
+      horizon: (text(entry, 'horizon') ?? '') as IntentHorizon, priority: num(entry, 'priority') ?? Number.NaN, urgency: num(entry, 'urgency') ?? Number.NaN,
+      plan: strings(entry, 'plan'), constraints: strings(entry, 'constraints'), deadline: text(entry, 'deadline'),
+    })),
+    intentEdits: array('intent_edits').map((entry): IntentEditSpec => defined<IntentEditSpec>({
+      id: num(entry, 'id') ?? 0, status: text(entry, 'status') as IntentStatus | undefined, description: text(entry, 'description'), horizon: text(entry, 'horizon') as IntentHorizon | undefined,
+      priority: num(entry, 'priority'), urgency: num(entry, 'urgency'), plan: strings(entry, 'plan'), openThreads: strings(entry, 'open_threads'), deadline: text(entry, 'deadline'),
+    })),
+    engagements: array('engagements').map((entry): NewEngagementSpec => defined<NewEngagementSpec>({
+      title: text(entry, 'title') ?? '', at: text(entry, 'at') ?? '', until: text(entry, 'until'), location: text(entry, 'location'), participants: strings(entry, 'participants') ?? [], note: text(entry, 'note'),
+    })),
+    engagementEdits: array('engagement_edits').map((entry): EngagementEditSpec => defined<EngagementEditSpec>({
+      id: num(entry, 'id') ?? 0, status: text(entry, 'status') as EngagementStatus | undefined, title: text(entry, 'title'), at: text(entry, 'at'), until: text(entry, 'until'),
+      location: text(entry, 'location'), participants: strings(entry, 'participants'), note: text(entry, 'note'),
+    })),
+    routines: array('routines').map((entry): RoutineSet => ({
+      character: text(entry, 'character') ?? '',
+      windows: Array.isArray(entry['windows']) ? entry['windows'].filter(isObject).map((window): RoutineWindowSpec => defined<RoutineWindowSpec>({
+        days: strings(window, 'days'), from: text(window, 'from') ?? '', to: text(window, 'to') ?? '', activity: text(window, 'activity') ?? '',
+        location: text(window, 'location'), feature: text(window, 'feature'), position: text(window, 'position'), interruptible: bool(window, 'interruptible'),
+      })) : [],
+    })),
   }
   if (problems.length > 0) throw new InvalidEditError(problems)
   return edit
@@ -331,11 +354,118 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
         additionalProperties: false,
       },
     },
+    intents_added: {
+      type: 'array',
+      description: 'A goal the story gave a character: a promise it made, a task it took on, a scheme it set in motion. Only what the rounds clearly establish; never one that is already listed for it.',
+      items: {
+        type: 'object',
+        properties: {
+          character,
+          type: { type: 'string', enum: [...INTENT_TYPES] },
+          name: { type: 'string', description: 'A few words.' },
+          description: { type: 'string' },
+          horizon: { type: 'string', enum: [...INTENT_HORIZONS] },
+          priority: { type: 'number', description: 'How much it matters to the character, 0 to 1.' },
+          urgency: { type: 'number', description: 'How soon it has to be dealt with, 0 to 1.' },
+          plan: { type: 'array', items: { type: 'string' }, description: 'The next steps, a sentence each.' },
+          constraints: { type: 'array', items: { type: 'string' } },
+          deadline: { type: 'string', description: 'When it has to be done by: a date and time, 1912-09-22T18:00, in the time zone of the story.' },
+        },
+        required: ['character', 'type', 'name', 'horizon', 'priority', 'urgency'],
+        additionalProperties: false,
+      },
+    },
+    intent_edits: {
+      type: 'array',
+      description: 'A goal of a character that moved on (the ids are in read_records): done, failed, given up, more or less pressing, a step taken. Give only what changes; plan replaces the steps.',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          status: { type: 'string', enum: [...INTENT_STATUSES] },
+          description: { type: 'string' },
+          horizon: { type: 'string', enum: [...INTENT_HORIZONS] },
+          priority: { type: 'number' },
+          urgency: { type: 'number' },
+          plan: { type: 'array', items: { type: 'string' } },
+          open_threads: { type: 'array', items: { type: 'string' } },
+          deadline: { type: 'string' },
+        },
+        required: ['id'],
+        additionalProperties: false,
+      },
+    },
+    engagements: {
+      type: 'array',
+      description: 'Something characters committed to at a time: a meeting arranged, an errand promised, an event they are to attend. Only when the rounds clearly establish a time (or a time of day that can be worked out from the story\'s clock).',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'A few words: "Meet Clara at the bar".' },
+          at: { type: 'string', description: 'When it is due: a date and time, 1912-09-22T21:00, in the time zone of the story.' },
+          until: { type: 'string', description: 'When it is over, when that matters.' },
+          location: placeKey,
+          participants: { ...keys, description: 'Who has committed to it: each character that is to be there.' },
+          note: { type: 'string' },
+        },
+        required: ['title', 'at', 'participants'],
+        additionalProperties: false,
+      },
+    },
+    engagement_edits: {
+      type: 'array',
+      description: 'An engagement that moved on (the ids are in read_records): it was kept, missed, cancelled, or put off. Give only what changes.',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer' },
+          status: { type: 'string', enum: [...ENGAGEMENT_STATUSES] },
+          title: { type: 'string' },
+          at: { type: 'string' },
+          until: { type: 'string' },
+          location: placeKey,
+          participants: keys,
+          note: { type: 'string' },
+        },
+        required: ['id'],
+        additionalProperties: false,
+      },
+    },
     threads_opened: { type: 'array', items: { type: 'string' }, description: 'Promises made, mysteries raised, goals set that are not settled yet: one sentence each.' },
     threads_resolved: { type: 'array', items: { type: 'integer' }, description: 'The ids of open threads that are now settled.' },
   }
   if (options.authoring === true) {
     Object.assign(properties, {
+      routines: {
+        type: 'array',
+        description: 'The recurring day of a character who matters off stage and has none: windows of the day with what it is doing and where, in the order they apply (the first that fits applies). Replaces what it had.',
+        items: {
+          type: 'object',
+          properties: {
+            character,
+            windows: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  days: { type: 'array', items: { type: 'string', enum: [...WEEKDAY_NAMES] }, description: 'Leave out for every day.' },
+                  from: { type: 'string', description: 'HH:MM, 24-hour.' },
+                  to: { type: 'string', description: 'HH:MM; a time before from ends the next day (22:00 to 06:00).' },
+                  activity: { type: 'string', description: 'What it is doing: "minds the shop", "sleeps".' },
+                  location: placeKey,
+                  feature: { type: 'string' },
+                  position: { type: 'string' },
+                  interruptible: { type: 'boolean', description: 'Whether it would drop this for something that comes up; true by default.' },
+                },
+                required: ['from', 'to', 'activity'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['character', 'windows'],
+          additionalProperties: false,
+        },
+      },
       slots: {
         type: 'array',
         description: 'Places on the body something can be worn, when the world needs one it does not have (a tail, a quiver on the back). The usual ones exist.',

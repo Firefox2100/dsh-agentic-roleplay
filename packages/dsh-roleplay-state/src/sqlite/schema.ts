@@ -150,6 +150,57 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT;
       CREATE INDEX consolidation_pending ON consolidation_items (resolved_turn, id);
 
+      CREATE TABLE clock (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        mode TEXT NOT NULL CHECK (mode IN ('simulated', 'real')),
+        now_ms INTEGER NOT NULL
+      ) STRICT;
+
+      CREATE TABLE time_log (
+        id INTEGER PRIMARY KEY,
+        turn INTEGER NOT NULL,
+        round INTEGER NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('start', 'elapsed', 'real', 'skip', 'resync')),
+        from_ms INTEGER NOT NULL,
+        to_ms INTEGER NOT NULL,
+        reason TEXT NOT NULL DEFAULT ''
+      ) STRICT;
+      CREATE INDEX time_log_turn ON time_log (turn, round, id);
+
+      CREATE TABLE routine_windows (
+        id INTEGER PRIMARY KEY,
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        ordinal INTEGER NOT NULL,
+        days TEXT NOT NULL DEFAULT '[]',
+        start_minute INTEGER NOT NULL CHECK (start_minute BETWEEN 0 AND 1439),
+        end_minute INTEGER NOT NULL CHECK (end_minute BETWEEN 0 AND 1439 AND end_minute <> start_minute),
+        activity TEXT NOT NULL,
+        location_id INTEGER REFERENCES locations (id) ON DELETE SET NULL,
+        feature_key TEXT,
+        position TEXT NOT NULL DEFAULT '',
+        interruptible INTEGER NOT NULL DEFAULT 1 CHECK (interruptible IN (0, 1))
+      ) STRICT;
+      CREATE INDEX routine_windows_character ON routine_windows (character_id, ordinal);
+
+      CREATE TABLE engagements (
+        id INTEGER PRIMARY KEY,
+        title TEXT NOT NULL,
+        at_ms INTEGER NOT NULL,
+        until_ms INTEGER,
+        location_id INTEGER REFERENCES locations (id) ON DELETE SET NULL,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'kept', 'missed', 'cancelled')),
+        note TEXT NOT NULL DEFAULT '',
+        created_turn INTEGER NOT NULL,
+        updated_turn INTEGER NOT NULL
+      ) STRICT;
+      CREATE INDEX engagements_due ON engagements (status, at_ms);
+      CREATE TABLE engagement_participants (
+        engagement_id INTEGER NOT NULL REFERENCES engagements (id) ON DELETE CASCADE,
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        PRIMARY KEY (engagement_id, character_id)
+      ) STRICT;
+      CREATE INDEX engagement_participants_character ON engagement_participants (character_id);
+
       CREATE TABLE slots (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,

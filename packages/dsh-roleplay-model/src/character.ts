@@ -1,3 +1,4 @@
+import type { RoutineDefinition } from './agenda.ts'
 import type { RelationshipDefinition } from './relationship.ts'
 import type { CharacterStart } from './state.ts'
 
@@ -46,4 +47,6 @@ export interface CharacterDefinition {
   start: CharacterStart
   /** How this character stands towards others of the world, by their ids. */
   relationships?: RelationshipDefinition[]
+  /** The recurring day of the character: what it is doing and where, by the clock. */
+  routine?: RoutineDefinition[]
 }

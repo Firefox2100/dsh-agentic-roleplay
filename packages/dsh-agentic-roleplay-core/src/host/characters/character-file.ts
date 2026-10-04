@@ -5,13 +5,16 @@ import {
   INTENT_HORIZONS,
   INTENT_STATUSES,
   INTENT_TYPES,
+  WEEKDAY_NAMES,
   type CharacterDefinition,
   type CharacterStart,
   type EmotionStart,
   type EmotionVector,
   type Intent,
   type RelationshipDefinition,
+  type RoutineDefinition,
 } from 'dsh-roleplay-model'
+import { MAX_ROUTINE_WINDOWS } from 'dsh-roleplay-state'
 import { readIdentifier } from '../identifiers.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
 
@@ -65,6 +68,30 @@ function readIntent(reader: Reader): Intent | undefined {
     ...(deadlineTime === undefined || Number.isNaN(deadlineTime) ? {} : { deadline: new Date(deadlineTime).toISOString() }),
   }
   return name === undefined ? undefined : { ...intent, name }
+}
+
+const TIME_OF_DAY = /^([01]?\d|2[0-3]):[0-5]\d$/
+
+function readRoutine(reader: Reader): RoutineDefinition[] {
+  const windows = reader.objects('routine').flatMap((window): RoutineDefinition[] => {
+    const from = window.string('from', { required: true })
+    const to = window.string('to', { required: true })
+    for (const [key, value] of [['from', from], ['to', to]] as const) if (value !== undefined && !TIME_OF_DAY.test(value)) window.fail(key, `"${value}" is not a time of day: write it as 07:30 (24-hour)`)
+    if (from !== undefined && from === to) window.fail('to', 'a window that ends when it starts is empty')
+    const activity = window.string('activity', { required: true })
+    const days = window.strings('days').map(day => day.toLowerCase())
+    for (const day of days) if (!WEEKDAY_NAMES.includes(day as (typeof WEEKDAY_NAMES)[number])) window.fail('days', `"${day}" is not a day (${WEEKDAY_NAMES.join(', ')})`)
+    const location = window.string('location')
+    const feature = window.string('feature')
+    const position = window.string('position')
+    if (location === undefined && feature !== undefined) window.fail('feature', 'needs a location')
+    const flag = window.raw('interruptible')
+    if (flag !== undefined && typeof flag !== 'boolean') window.fail('interruptible', 'must be true or false')
+    if (from === undefined || to === undefined || activity === undefined) return []
+    return [{ days, from, to, activity, ...(location === undefined ? {} : { location }), ...(feature === undefined ? {} : { feature }), ...(position === undefined ? {} : { position }), interruptible: flag !== false }]
+  })
+  if (windows.length > MAX_ROUTINE_WINDOWS) reader.fail('routine', `a character has at most ${MAX_ROUTINE_WINDOWS} windows in its day`)
+  return windows
 }
 
 /** At most this many relationship profiles in one character file. */
@@ -143,6 +170,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
     speech: { style: speech?.text('style') ?? '', examples: speech?.strings('examples') ?? [] },
     start: readStart(reader.object('start')),
     ...(reader.raw('relationships') === undefined ? {} : { relationships: readRelationships(reader) }),
+    ...(reader.raw('routine') === undefined ? {} : { routine: readRoutine(reader) }),
   }
   return issues.length > 0 ? { ok: false, issues } : { ok: true, value: character }
 }

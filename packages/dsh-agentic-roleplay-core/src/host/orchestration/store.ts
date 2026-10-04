@@ -2,7 +2,11 @@ import { changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessio
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { MoveRequest } from './protocol.ts'
 import type { ItemChangeSpec } from 'dsh-roleplay-state'
+import type { ChatSettings } from '../../shared/settings.ts'
 import { liveSettings } from '../sessions/settings.ts'
+import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
+import { dueOffScene, markHandled } from '../clock/offscene.ts'
+import { readTime, zoneOf } from '../clock/story-clock.ts'
 import type { CastMember, CastPlace, ItemView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
 
 export { roleplaySessionOf }
@@ -119,13 +123,21 @@ function checkMove(session: Session, characterKey: string, request: MoveRequest)
     : { ok: false, problems: planned.problems }
 }
 
-function storeOf(session: Session, folder: string, problem: (message: string) => void, queryVector: TurnStore['queryVector']): TurnStore {
+function storeOf(session: Session, folder: string, problem: (message: string) => void, queryVector: TurnStore['queryVector'], wall: () => number): TurnStore {
+  const settings = (): ChatSettings => liveSettings(folder, problem)
   return {
     story: session,
     cast: () => castOf(session),
     checkMove: (character, request) => checkMove(session, character, request),
     place: locationId => placeViewOf(session, locationId),
-    settings: () => liveSettings(folder, problem),
+    settings,
+    time: turn => readTime(session, settings().clock, turn, wall()),
+    beginTurn: turn => startTurn(session, settings().clock, turn, wall()),
+    endRound: (turn, round, stated, minimum) => passRound(session, settings().clock, turn, round, wall(), stated, minimum),
+    skipTime: (turn, round, request) => skipAhead(session, settings().clock, turn, round, wall(), request),
+    dueOffScene: turn => dueOffScene(session, zoneOf(settings().clock), readTime(session, settings().clock, turn, wall()).now),
+    markHandled: keys => { markHandled(session, keys) },
+    agenda: (turn, characterId) => agendaFor(session, settings().clock, turn, wall, characterId),
     commit: (updates) => session.transaction(() => updates.map(({ character, patch, move, items }) => {
       session.characterStates.update(character, patch)
       // What a character does with things happens where it is, so before it goes anywhere.
@@ -156,12 +168,14 @@ export function storesOf(
   problem: (message: string) => void = () => undefined,
   /** The vector of a text for a chat's search, from the embedding index; none without one. */
   queryVector: (chat: string, text: string, signal?: AbortSignal) => Promise<readonly number[] | undefined> = () => Promise.resolve(undefined),
+  /** The wall clock, in UTC milliseconds. */
+  wall: () => number = Date.now,
 ): (chat: string) => TurnStore | undefined {
   return (chat) => {
     const id = roleplaySessionOf(chat)
     if (id === undefined) return undefined
     try {
-      return storeOf(state.openSession(sessionsDir(), id), sessionFolder(sessionsDir(), id), problem, (text, signal) => queryVector(chat, text, signal))
+      return storeOf(state.openSession(sessionsDir(), id), sessionFolder(sessionsDir(), id), problem, (text, signal) => queryVector(chat, text, signal), wall)
     } catch {
       return undefined
     }

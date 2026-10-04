@@ -63,3 +63,30 @@ describe('the options of the embedding provider', () => {
     expect(parseSettings({ embedding: { colour: 1 } })).toEqual({ ok: false, problems: ['"embedding.colour" is not a setting'] })
   })
 })
+
+describe('the clock settings', () => {
+  it('are simulated time in UTC by default, a round taking half a minute', () => {
+    expect(DEFAULT_SETTINGS.clock).toEqual({ mode: 'simulated', timeZone: '', roundSeconds: 30, maxSkipDays: 30 })
+  })
+
+  it('take a mode, a time zone and bounds, and refuse the rest', () => {
+    const ok = parseSettings({ clock: { mode: 'real', timeZone: 'Asia/Shanghai', roundSeconds: 0, maxSkipDays: 365 } })
+    expect(ok).toEqual({ ok: true, value: expect.objectContaining({ clock: { mode: 'real', timeZone: 'Asia/Shanghai', roundSeconds: 0, maxSkipDays: 365 } }) })
+    const bad = parseSettings({ clock: { mode: 'fast', timeZone: 'Mars/Olympus', roundSeconds: 4000, maxSkipDays: 0 } })
+    expect(bad).toEqual({ ok: false, problems: [
+      '"clock.mode" must be one of: simulated, real',
+      '"clock.roundSeconds" must be a whole number from 0 to 3600',
+      '"clock.maxSkipDays" must be a whole number from 1 to 3650',
+      expect.stringContaining('"clock.timeZone" is not a time zone'),
+    ] })
+    expect(parseSettings({ clock: { timeZone: 5 } })).toEqual({ ok: false, problems: ['"clock.timeZone" must be text of at most 64 characters'] })
+  })
+})
+
+describe('the off stage setting', () => {
+  it('is two characters per turn by default, from none to five', () => {
+    expect(DEFAULT_SETTINGS.offstage).toEqual({ perTurn: 2 })
+    expect(parseSettings({ offstage: { perTurn: 0 } }).ok).toBe(true)
+    expect(parseSettings({ offstage: { perTurn: 6 } })).toEqual({ ok: false, problems: ['"offstage.perTurn" must be a whole number from 0 to 5'] })
+  })
+})

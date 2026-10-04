@@ -80,7 +80,9 @@ describe('the settings in force', () => {
 
 describe('the settings of a session', () => {
   const sessionsDir = () => join(root, 'sessions')
-  const deps = { sessionsDir, pendingRecords: () => 2, pendingConsolidation: () => 3 }
+  let clockMode: 'simulated' | 'real' | undefined
+  const deps = { sessionsDir, pendingRecords: () => 2, pendingConsolidation: () => 3, clockMode: () => clockMode }
+  beforeEach(() => { clockMode = undefined })
   const state = new RoleplayState(new Context(), { journalMode: 'delete' })
 
   it('are read and written through the session, with the bounds the form needs', () => {
@@ -88,6 +90,18 @@ describe('the settings of a session', () => {
     expect(readChatSettings(deps, id)).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 2, pendingConsolidation: 3 })
     expect(writeChatSettings(deps, id, { maxRounds: 4 }).settings.maxRounds).toBe(4)
     expect(readChatSettings(deps, id).settings.maxRounds).toBe(4)
+  })
+
+  it('tell the mode of the clock, which simulated time cannot leave for the real clock, though the real clock can be left', () => {
+    const { id } = state.createSession(sessionsDir(), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
+    clockMode = 'simulated'
+    expect(readChatSettings(deps, id).clockMode).toBe('simulated')
+    expect(() => writeChatSettings(deps, id, { clock: { mode: 'real' } })).toThrow(/cannot be real: the story's time is simulated/)
+    expect(readChatSettings(deps, id).settings.clock.mode).toBe('simulated')
+    expect(writeChatSettings(deps, id, { clock: { mode: 'simulated', timeZone: 'Europe/London' } }).settings.clock).toMatchObject({ mode: 'simulated', timeZone: 'Europe/London' })
+    clockMode = 'real'
+    expect(writeChatSettings(deps, id, { clock: { mode: 'real' } }).settings.clock.mode).toBe('real')
+    expect(writeChatSettings(deps, id, { clock: { mode: 'simulated' } }).settings.clock.mode).toBe('simulated')
   })
 
   it('belong to a session that exists', () => {
