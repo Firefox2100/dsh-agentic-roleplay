@@ -95,6 +95,8 @@ interface Script {
   twoRounds?: boolean
   /** The game master does not ask for the round to be recorded: nothing worth remembering happened. */
   skipRecord?: boolean
+  /** Bob goes down to the cellar as a result of the round; or tries the locked vault first and is refused. */
+  moves?: 'cellar' | 'locked-first'
 }
 
 const aliceOnly = [{ character: 'alice', result: 'succeeded', summary: 'Alice greets him' }]
@@ -122,7 +124,7 @@ const briefOf = (request: GenerateOptions): string => {
   return prompt === undefined ? '' : prompt.content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('')
 }
 
-interface BriefRound { turn: number; round: number; entries: { character: string; summary: string; seen?: string }[] }
+interface BriefRound { turn: number; round: number; place?: string; entries: { character: string; summary: string; seen?: string }[] }
 
 /** The rounds the record keeper is asked to write, read from its brief. */
 function keeperRounds(request: GenerateOptions): BriefRound[] {
@@ -132,6 +134,8 @@ function keeperRounds(request: GenerateOptions): BriefRound[] {
     if (heading !== null) rounds.push({ turn: Number(heading[1]), round: Number(heading[2]), entries: [] })
     const entry = /^- (\w+) \([^)]*\): intended ".*" \[commitment: \w+\]; \w+: (.*)$/.exec(line)
     if (entry !== null && rounds.length > 0) rounds.at(-1)!.entries.push({ character: entry[1]!, summary: entry[2]! })
+    const where = /^Place of the moment: .*\((\w+)\)$/.exec(line)
+    if (where !== null && rounds.length > 0) rounds.at(-1)!.place = where[1]!
     const seen = /^ {2}the game master says anyone present can now see: (.*)$/.exec(line)
     if (seen !== null && rounds.length > 0) rounds.at(-1)!.entries.at(-1)!.seen = seen[1]!
   }
@@ -152,6 +156,7 @@ function keeperEdit(rounds: BriefRound[], flaws: { wrong?: boolean; duplicate?: 
     })),
     events: rounds.flatMap(round => [round, ...(flaws.duplicate === true ? [round] : [])]).map(round => ({
       turn: flaws.badRound === true ? 99 : round.turn, round: round.round, text: 'The characters acted at the vault.', importance: 3, tags: ['vault'],
+      ...(round.place === undefined ? {} : { location: round.place }),
       involves: round.entries.slice(0, 2).map(entry => entry.character),
       perceived_by: [...new Set(round.entries.map(entry => entry.character))].map(character => ({ character, mode: 'witnessed' })),
     })),
@@ -202,7 +207,8 @@ function answerFor(script: Script = {}) {
     if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
     if (!toolNames(request).includes('activate_characters')) return text('a title')
     const activated = timesCalled(request, 'activate_characters')
-    const resolved = timesCalled(request, 'resolve_round')
+    // A refused call still counts as a call, so one refusal is taken off.
+    const resolved = timesCalled(request, 'resolve_round') - (script.moves === 'locked-first' && thisTurn(request).includes('cannot go to') ? 1 : 0)
     const delivered = timesCalled(request, 'narrate')
     const objected = thisTurn(request).includes('You may not end the turn yet')
     if (script.early === true && !objected) return text('The scene is over, I think.')
@@ -210,7 +216,14 @@ function answerFor(script: Script = {}) {
     if (script.lookup === true && timesCalled(request, 'search_events') === 0) return call('m0', 'search_events', { text: 'key' })
     if (script.twoRounds === true) return twoRounds(request, activated, resolved, script.skipRecord !== true)
     if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.' })
-    if (resolved === 0) return call('m2', 'resolve_round', { outcomes: round1 })
+    const withMove = (key: string) => round1.map(outcome => (outcome.character === 'bob' ? { ...outcome, moves_to: { location: key, position: 'by the barrels' } } : outcome))
+    const refusedMove = lastTool(request)?.isError === true && lastToolText(request).includes('cannot go to')
+    if (script.moves === 'locked-first' && refusedMove) return call('m2b', 'resolve_round', { outcomes: withMove('cellar') })
+    if (resolved === 0) {
+      if (script.moves === 'cellar') return call('m2', 'resolve_round', { outcomes: withMove('cellar') })
+      if (script.moves === 'locked-first') return call('m2', 'resolve_round', { outcomes: withMove('vault') })
+      return call('m2', 'resolve_round', { outcomes: round1 })
+    }
     if (resolved === 1 && thisTurn(request).includes('tried once more')) {
       return call('m3', 'resolve_round', { outcomes: [{ character: 'dan', result: 'succeeded', summary: 'Dan takes the lantern too' }] })
     }
@@ -229,12 +242,24 @@ function answerFor(script: Script = {}) {
   }
 }
 
-async function addSession(name: string): Promise<{ session: Session; id: string }> {
+async function addSession(name: string, withPlaces = false): Promise<{ session: Session; id: string }> {
   const session = state.createSession(join(root, 'sessions'), { name, world: { id: 'w', name: 'The Vault' } })
   const base = { aliases: [], kind: 'person' as const, tier: 'principal' as const, summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] } }
   for (const [sourceId, characterName, control] of [['arthur', 'Arthur', 'player'], ['alice', 'Alice', 'agent'], ['bob', 'Bob', 'agent'], ['carol', 'Carol', 'agent'], ['dan', 'Dan', 'agent']] as const) {
     const { id } = session.characters.add({ ...base, sourceId, name: characterName, role: control === 'player' ? 'playable' : 'npc', control })
     session.characterStates.create(id, { publicState: `${characterName} waits`, innerState: '', activity: 'idle' })
+  }
+  if (withPlaces) {
+    session.edit({
+      turn: 1,
+      places: [
+        { key: 'bar', name: 'The Bar', description: 'Smoky.', features: [{ key: 'counter', name: 'Counter' }], exits: [{ to: 'street', description: 'the door' }, { to: 'cellar', description: 'a stair down' }] },
+        { key: 'street', name: 'Main Street' },
+        { key: 'cellar', name: 'Cellar', description: 'Cold.' },
+        { key: 'vault', name: 'Vault', exits: [{ to: 'cellar', state: 'locked', note: 'needs a key' }] },
+      ],
+    })
+    for (const [key, where] of [['arthur', 'bar'], ['alice', 'bar'], ['bob', 'bar'], ['carol', 'cellar'], ['dan', 'street']] as const) session.edit({ turn: 1, moves: [{ character: key, to: where, ignoreExits: true }] })
   }
   return { session, id: session.metadata.get().id }
 }
@@ -292,6 +317,55 @@ afterEach(async () => {
 })
 
 describe('a turn with the real agent loop', () => {
+  describe('in a world with places', () => {
+    async function playPlaced(script: Script) {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...script }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      return { session, adapter, agent }
+    }
+    const placeOf = (session: Session, key: string) => session.placements.get('character', session.characters.getBySourceId(key)!.id)
+    const keepers = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('record keeper of an interactive story'))
+    const briefFor = (adapter: ScriptedAdapter, who: string) => briefOf(characterRequests(adapter).find(request => systemOf(request).includes(`You are ${who}.`))!)
+
+    it('tells the game master where everyone is, and each character only where it is and who is there', async () => {
+      const { adapter } = await playPlaced({})
+      const scene = thisTurn(masterRequests(adapter)[0]!)
+      expect(scene).toContain("The player's character is in The Bar (bar): Smoky.")
+      expect(scene).toContain('Characters elsewhere')
+      expect(scene).toContain('in Cellar (cellar)')
+      const alicesBrief = briefFor(adapter, 'Alice')
+      expect(alicesBrief).toContain('Where you are:\nThe Bar: Smoky.')
+      expect(alicesBrief).toMatch(/Present:\n- Arthur[^\n]*\n- Alice \(you\)[^\n]*\n- Bob/)
+      expect(alicesBrief).not.toContain('Carol')
+      const carolsBrief = briefFor(adapter, 'Carol')
+      expect(carolsBrief).toContain('Where you are:\nCellar: Cold.')
+      expect(carolsBrief).toMatch(/Present:\n- Carol \(you\)[^\n]*$/)
+    })
+
+    it('moves a character the game master sends somewhere, with the round, and commits it for the keeper', async () => {
+      const { session, adapter } = await playPlaced({ moves: 'cellar' })
+      expect(placeOf(session, 'bob')).toMatchObject({ locationId: session.locations.getBySourceId('cellar')!.id, position: 'by the barrels' })
+      expect(placeOf(session, 'alice')?.locationId).toBe(session.locations.getBySourceId('bar')!.id)
+      const brief = briefOf(keepers(adapter)[0]!)
+      expect(brief).toContain('Place of the moment: The Bar (bar)')
+      expect(brief).toMatch(/was in The Bar \(bar\) and went to Cellar \(cellar\), by the barrels/)
+      expect(brief).toMatch(/- bob \(Bob, an agent\): .*in: cellar \(by the barrels\)/)
+      const [event] = session.events.list()
+      expect(event?.locationId).toBe(session.locations.getBySourceId('bar')!.id)
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('Bob is now at Cellar')
+    })
+
+    it('sends the game master back when the way is locked, and applies the corrected round', async () => {
+      const { session, adapter } = await playPlaced({ moves: 'locked-first' })
+      const refused = masterRequests(adapter).flatMap(request => request.messages.filter(message => message.role === 'tool' && message.isError === true))
+      expect(JSON.stringify(refused)).toMatch(/bob: cannot go to vault: the way from The Bar to Vault is locked at Cellar -> Vault: needs a key/)
+      expect(placeOf(session, 'bob')?.locationId).toBe(session.locations.getBySourceId('cellar')!.id)
+    })
+  })
+
   it('plays the round: everyone acts, the game master resolves, one committed loser retries, the turn is recorded', async () => {
     const { session, id } = await addSession('Vault')
     const adapter = new ScriptedAdapter(answerFor())
@@ -489,7 +563,7 @@ describe('a turn with the real agent loop', () => {
     it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
       const { session, adapter, agent } = await play('careful')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
-      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'list_threads', 'read_records', 'search_events', 'submit_result'])
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_location', 'list_locations', 'list_threads', 'read_records', 'search_events', 'submit_result'])
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
       expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
       expect(publicStateOf(session, 'bob')).toBe('holding a brass key')
@@ -631,6 +705,29 @@ describe('a turn with the real agent loop', () => {
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
       expect(session.pendingCommits.list()).toEqual([])
       expect(session.events.list()).toHaveLength(1)
+    })
+
+    it('has the pool of memories a character is reminded of judged by the reranking service, when there is one', async () => {
+      const asked: { query: string; documents: readonly string[] }[] = []
+      ctx.provide('rerankers')
+      ctx.set('rerankers', {
+        rerank: (query: string, documents: readonly string[]) => {
+          asked.push({ query, documents })
+          return Promise.resolve({ results: documents.map((_document, index) => ({ index, score: 1 - index / 10 })) })
+        },
+      })
+      const { session, id } = await addSession('Vault')
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(asked).toEqual([])
+      expect(session.events.list()).toHaveLength(1)
+      agent.followup(say('I look at the vault door again.'))
+      await agent.whenIdle()
+      expect(asked.length).toBeGreaterThan(0)
+      expect(asked.every(call => call.query.includes('Arthur opens the vault door'))).toBe(true)
+      expect(asked.some(call => call.documents.includes('The characters acted at the vault.'))).toBe(true)
     })
 
     it('has the vectors of what was written made afterwards by the embedding service, when there is one', async () => {

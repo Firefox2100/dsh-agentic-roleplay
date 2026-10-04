@@ -14,4 +14,6 @@ export interface CharacterStart {
   activity: string
   emotion?: EmotionStart
   intents: Intent[]
+  /** The place it stands in, by its id in the world's files, and where in it. */
+  place?: { location: string; position?: string; feature?: string }
 }

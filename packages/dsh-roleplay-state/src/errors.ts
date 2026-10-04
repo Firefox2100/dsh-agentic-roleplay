@@ -26,3 +26,10 @@ export class InvalidEditError extends StateError {
     super(`the edit is not acceptable: ${problems.join('; ')}`)
   }
 }
+
+/** A character cannot go where it was sent; it names every reason, and nothing changed. */
+export class InvalidMoveError extends StateError {
+  constructor(readonly problems: readonly string[]) {
+    super(`the move is not possible: ${problems.join('; ')}`)
+  }
+}

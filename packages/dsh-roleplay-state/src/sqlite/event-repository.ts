@@ -1,4 +1,4 @@
-import type { CharacterId, EventId, NewPerception, NewStoryEvent, PerceivedEvent, Perception, PerceptionId, PerceptionPatch, StoryEvent, StoryEventFilter, StoryEventPatch } from 'dsh-roleplay-model'
+import type { CharacterId, EventId, LocationId, NewPerception, NewStoryEvent, PerceivedEvent, Perception, PerceptionId, PerceptionPatch, StoryEvent, StoryEventFilter, StoryEventPatch } from 'dsh-roleplay-model'
 import type { Clock } from '../clock.ts'
 import type { SqlDatabase, SqlValue } from '../driver/types.ts'
 import { ConflictError, NotFoundError } from '../errors.ts'
@@ -13,6 +13,7 @@ interface EventRow {
   importance: number
   tags: string
   sealed: number
+  location_id: number | null
   created_at: string
 }
 
@@ -49,13 +50,19 @@ export interface IndexWrites {
 }
 
 export class SqliteEventRepository implements EventRepository {
-  constructor(private readonly db: SqlDatabase, private readonly clock: Clock, private readonly index: IndexWrites) {}
+  constructor(
+    private readonly db: SqlDatabase,
+    private readonly clock: Clock,
+    private readonly index: IndexWrites,
+    /** The name of a place, so that what happened there can be found by it. */
+    private readonly placeName: (id: LocationId) => string | undefined = () => undefined,
+  ) {}
 
   add(event: NewStoryEvent, perceptions: readonly NewPerception[]): { event: StoryEvent; perceptions: Perception[] } {
     return guard(() => this.db.transaction(() => {
       const { lastInsertRowid } = this.db.run(
-        'INSERT INTO events (turn, round, text, importance, tags, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-        [event.turn, event.round, event.text, event.importance, toJson(event.tags), this.clock().toISOString()],
+        'INSERT INTO events (turn, round, text, importance, tags, location_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        [event.turn, event.round, event.text, event.importance, toJson(event.tags), event.locationId ?? null, this.clock().toISOString()],
       )
       const id = Number(lastInsertRowid)
       this.setInvolves(id, event.involves)
@@ -80,6 +87,7 @@ export class SqliteEventRepository implements EventRepository {
     if (filter.fromTurn !== undefined) add('turn >= ?', filter.fromTurn)
     if (filter.toTurn !== undefined) add('turn <= ?', filter.toTurn)
     if (filter.minImportance !== undefined) add('importance >= ?', filter.minImportance)
+    if (filter.locationId !== undefined) add('location_id = ?', filter.locationId)
     if (filter.involving !== undefined) add('id IN (SELECT event_id FROM event_involves WHERE character_id = ?)', filter.involving)
     const clause = where.length === 0 ? '' : `WHERE ${where.join(' AND ')}`
     return this.db.all<EventRow>(`SELECT * FROM events ${clause} ORDER BY turn, round, id`, params).map(row => this.toEvent(row))
@@ -88,8 +96,8 @@ export class SqliteEventRepository implements EventRepository {
   update(id: EventId, patch: StoryEventPatch): StoryEvent {
     return guard(() => this.db.transaction(() => {
       const current = this.draft(id)
-      this.db.run('UPDATE events SET text = ?, importance = ?, tags = ? WHERE id = ?', [
-        patch.text ?? current.text, patch.importance ?? current.importance, toJson(patch.tags ?? current.tags), id,
+      this.db.run('UPDATE events SET text = ?, importance = ?, tags = ?, location_id = ? WHERE id = ?', [
+        patch.text ?? current.text, patch.importance ?? current.importance, toJson(patch.tags ?? current.tags), patch.locationId ?? current.locationId ?? null, id,
       ])
       if (patch.involves !== undefined) this.setInvolves(id, patch.involves)
       const kept = this.require(id)
@@ -180,21 +188,32 @@ export class SqliteEventRepository implements EventRepository {
     })
   }
 
+  /** Index again what happened in a place, after the place was renamed. */
+  reindexPlace(id: LocationId): void {
+    for (const event of this.list({ locationId: id })) this.indexEvent(event, this.perceptionsOf(event.id))
+  }
+
+  /** What an event is found by besides its text: its tags and where it happened. */
+  private extraOf(event: StoryEvent): string {
+    const place = event.locationId === undefined ? undefined : this.placeName(event.locationId)
+    return [...event.tags, ...(place === undefined ? [] : [place])].join(' ')
+  }
+
   /** Keep the index of an event and of what each character took in of it up to date. */
   private indexEvent(event: StoryEvent, perceptions: readonly Perception[]): void {
-    this.index.put({ kind: 'event', refId: event.id, characterId: 0, text: event.text, extra: event.tags.join(' ') })
+    this.index.put({ kind: 'event', refId: event.id, characterId: 0, text: event.text, extra: this.extraOf(event) })
     for (const perception of perceptions) this.indexPerception(event, perception)
   }
 
   private indexPerception(event: StoryEvent, perception: Perception): void {
-    this.index.put({ kind: 'perception', refId: perception.id, characterId: perception.characterId, text: perception.content, extra: event.tags.join(' ') })
+    this.index.put({ kind: 'perception', refId: perception.id, characterId: perception.characterId, text: perception.content, extra: this.extraOf(event) })
   }
 
   private toEvent(row: EventRow): StoryEvent {
     const involves = this.db.all<{ character_id: number }>('SELECT character_id FROM event_involves WHERE event_id = ? ORDER BY character_id', [row.id]).map(entry => entry.character_id)
     return {
       id: row.id, turn: row.turn, round: row.round, text: row.text, importance: row.importance,
-      tags: parseStringList(row.tags, 'events.tags'), involves, sealed: row.sealed === 1, createdAt: row.created_at,
+      tags: parseStringList(row.tags, 'events.tags'), involves, ...(row.location_id === null ? {} : { locationId: row.location_id }), sealed: row.sealed === 1, createdAt: row.created_at,
     }
   }
 

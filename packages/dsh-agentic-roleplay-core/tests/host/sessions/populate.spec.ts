@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from 'dsh-roleplay-state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
-import { populateCharacters } from '../../../src/host/sessions/populate.ts'
+import { populateCharacters, populateLocations, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
+import type { LocationDefinition } from 'dsh-roleplay-model'
 
 let dir: string
 let state: RoleplayState
@@ -89,5 +90,62 @@ describe('populateCharacters', () => {
   it('does nothing for an empty cast', () => {
     populateCharacters(session, [], 'x')
     expect(session.characters.list()).toEqual([])
+  })
+})
+
+const open = { oneWay: false, state: 'open' as const, note: '' }
+const places: LocationDefinition[] = [
+  { id: 'cellar', name: 'Cellar', description: '', parent: 'bar', features: [], exits: [{ to: 'bar', description: 'a hatch', ...open, state: 'locked', note: 'brass key', backDescription: 'a ladder' }] },
+  { id: 'bar', name: 'The Bar', description: 'Smoky.', parent: 'town', features: [{ key: 'counter', name: 'Counter', description: '' }], exits: [{ to: 'street', description: 'the door', ...open, travelSeconds: 20 }] },
+  { id: 'town', name: 'Town', description: '', features: [], exits: [] },
+  { id: 'street', name: 'Street', description: '', parent: 'town', features: [], exits: [{ to: 'bar', description: 'the door', ...open, travelSeconds: 20 }, { to: 'roof', description: 'a ladder up', oneWay: true, state: 'open', note: '' }] },
+  { id: 'roof', name: 'Roof', description: '', parent: 'street', features: [], exits: [] },
+]
+
+describe('populateLocations', () => {
+  it('puts each place inside the one it belongs to, whatever the order the files came in', () => {
+    populateLocations(session, places)
+    const byName = Object.fromEntries(session.locations.list().map(location => [location.name, location]))
+    expect(byName['Cellar']?.parentId).toBe(byName['The Bar']?.id)
+    expect(byName['The Bar']?.parentId).toBe(byName['Town']?.id)
+    expect(byName['Town']?.parentId).toBeUndefined()
+    expect(session.locations.getBySourceId('bar')).toMatchObject({ description: 'Smoky.', features: [{ key: 'counter', name: 'Counter', description: '' }] })
+  })
+
+  it('makes each way both ways unless it is one way, without doubling a way both places wrote, and keeps state and time', () => {
+    populateLocations(session, places)
+    const exit = (from: string, to: string) => session.locations.getExit(session.locations.getBySourceId(from)!.id, session.locations.getBySourceId(to)!.id)
+    expect(exit('bar', 'street')).toMatchObject({ description: 'the door', travelSeconds: 20, state: 'open' })
+    expect(exit('street', 'bar')).toMatchObject({ description: 'the door', travelSeconds: 20 })
+    expect(exit('cellar', 'bar')).toMatchObject({ description: 'a hatch', state: 'locked', note: 'brass key' })
+    expect(exit('bar', 'cellar')).toMatchObject({ description: 'a ladder', state: 'locked' })
+    expect(exit('street', 'roof')).toMatchObject({ description: 'a ladder up' })
+    expect(exit('roof', 'street')).toBeUndefined()
+    expect(session.locations.allExits()).toHaveLength(5)
+  })
+})
+
+describe('where characters start', () => {
+  it('puts a character in its place with the position and feature, and leaves one without a place nowhere', () => {
+    populateLocations(session, places)
+    const placed = definition({ id: 'arthur', name: 'Arthur', aliases: [] })
+    placed.start.place = { location: 'bar', position: 'at the end', feature: 'counter' }
+    populateCharacters(session, [placed, definition({ id: 'nobody-yet', name: 'Drifter', aliases: [] })], 'arthur')
+    const [arthur, drifter] = session.characters.list()
+    expect(session.placements.get('character', arthur!.id)).toMatchObject({ locationId: session.locations.getBySourceId('bar')!.id, position: 'at the end', featureKey: 'counter' })
+    expect(session.placements.get('character', drifter!.id)).toBeUndefined()
+  })
+
+  it('reports a place that is not in the world and a feature the place does not have, before anything is made', () => {
+    const lost = definition({ id: 'lost', name: 'Lost', aliases: [] })
+    lost.start.place = { location: 'moon' }
+    const wrong = definition({ id: 'wrong', name: 'Wrong', aliases: [] })
+    wrong.start.place = { location: 'bar', feature: 'piano' }
+    const fine = definition({ id: 'fine', name: 'Fine', aliases: [] })
+    fine.start.place = { location: 'bar', feature: 'counter' }
+    expect(startingPlaceProblems([lost, wrong, fine], places)).toEqual([
+      'lost: start.location "moon" is not a place of this world',
+      'wrong: start.feature "piano" is not a feature of The Bar (it has: counter)',
+    ])
   })
 })

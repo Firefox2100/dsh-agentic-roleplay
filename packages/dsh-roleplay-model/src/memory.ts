@@ -1,5 +1,6 @@
 import type { CharacterId } from './session.ts'
 import type { JsonValue } from './json.ts'
+import type { LocationId } from './location.ts'
 
 /** How a character came to take in an event. */
 export const PERCEPTION_MODES = ['witnessed', 'heard', 'told', 'inferred'] as const
@@ -39,6 +40,8 @@ export interface StoryEvent {
   tags: string[]
   /** The characters the event is about: who acted, and who it was done to. */
   involves: CharacterId[]
+  /** Where it happened, when that is known. */
+  locationId?: LocationId
   /**
    * Events are ground truth and cannot change once sealed, which happens when the records of the rounds they
    * belong to are complete. Until then they are a draft that its writer may still correct.
@@ -54,9 +57,12 @@ export interface StoryEventPatch {
   importance?: number
   tags?: string[]
   involves?: CharacterId[]
+  locationId?: LocationId
 }
 
 export interface StoryEventFilter {
+  /** Only events that happened in this place. */
+  locationId?: LocationId
   turn?: number
   round?: number
   fromTurn?: number

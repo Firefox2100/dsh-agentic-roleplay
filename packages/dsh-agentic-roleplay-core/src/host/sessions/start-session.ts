@@ -4,13 +4,14 @@ import type { StartedSession, StartSessionRequest } from '../../shared/sessions.
 import type { WorldProblem } from '../../shared/worlds.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
 import { loadCharacters } from '../characters/load.ts'
+import { loadLocations } from '../locations/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { parseSettings } from '../../shared/settings.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCharacters } from './populate.ts'
+import { populateCharacters, populateLocations, startingPlaceProblems } from './populate.ts'
 
 const MAX_NAME_LENGTH = 200
 
@@ -37,6 +38,11 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const { characters, problems } = await loadCharacters(world.directory)
   if (problems.length > 0) throw new InvalidWorldError(`the characters of "${world.summary.name}" have ${problems.length} problem(s)`, problems)
 
+  const { locations, problems: locationProblems } = await loadLocations(world.directory)
+  if (locationProblems.length > 0) throw new InvalidWorldError(`the places of "${world.summary.name}" have ${locationProblems.length} problem(s)`, locationProblems)
+  const placing = startingPlaceProblems(characters, locations)
+  if (placing.length > 0) throw new InvalidWorldError(`the starting places of "${world.summary.name}" have ${placing.length} problem(s)`, placing.map(message => ({ path: world.directory, message })))
+
   const opening = openingOf(world, characters)
   const player = characters.find(character => character.id === request.playerCharacterId)
   if (player === undefined) throw new InvalidStartError(`"${world.summary.name}" has no character "${request.playerCharacterId}"`)
@@ -57,7 +63,10 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const { id } = session.metadata.get()
   let chatSessionId: string
   try {
-    session.transaction(() => { populateCharacters(session, characters, player.id) })
+    session.transaction(() => {
+      populateLocations(session, locations)
+      populateCharacters(session, characters, player.id)
+    })
     if (request.settings !== undefined) writeSettings(sessionFolder(sessionsDir, id), request.settings)
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {

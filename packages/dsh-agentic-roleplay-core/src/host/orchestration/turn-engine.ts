@@ -1,4 +1,4 @@
-import type { Recalled } from 'dsh-roleplay-state'
+import { locationKey as placeKey, type Recalled } from 'dsh-roleplay-state'
 import type { Boundaries, CastMember, CharacterRequest, Reaction, TurnStore } from './boundaries.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 
@@ -35,6 +35,8 @@ export interface ResolveReport {
     spoken: Utterance[]
     /** How many recorded rounds, this one included, are waiting for their memory to be written. */
     waiting: number
+    /** Who went where in this round. */
+    moves: { character: string; name: string; to: string; via: number }[]
   }
 }
 
@@ -153,7 +155,7 @@ export class TurnEngine {
     if (state.phase !== 'resolving' && state.phase !== 'retrying') throw new Error(this.explain(state, 'resolve_round'))
     const attempt = state.phase === 'resolving' ? state.first : state.second
     if (attempt === undefined) throw new Error('internal: no round to resolve')
-    this.check(attempt, outcomes)
+    this.check(attempt, outcomes, this.storeOf(owner))
     attempt.outcomes = [...outcomes]
 
     if (state.phase === 'resolving') {
@@ -272,7 +274,7 @@ export class TurnEngine {
       : `; it must carry these utterances exactly, in this order: ${state.utterances.map(utterance => `${utterance.name}: "${utterance.text}"`).join(' | ')}`
   }
 
-  private check(attempt: Attempt, outcomes: readonly Outcome[]): void {
+  private check(attempt: Attempt, outcomes: readonly Outcome[], store: TurnStore): void {
     const expected = attempt.reports.map(report => report.character)
     const given = outcomes.map(outcome => outcome.character)
     const problems = [
@@ -281,8 +283,17 @@ export class TurnEngine {
       ...[...new Set(given.filter((key, index) => given.indexOf(key) !== index))].map(key => `more than one outcome for ${key}`),
       ...outcomes.filter(outcome => !RESULTS.includes(outcome.result)).map(outcome => `${outcome.character}: unknown result "${outcome.result}"`),
       ...outcomes.filter(outcome => outcome.summary.trim() === '').map(outcome => `${outcome.character}: say what happens`),
+      ...outcomes.flatMap(outcome => this.moveProblems(outcome, store)),
     ]
     if (problems.length > 0) throw new Error(`the outcomes are not acceptable: ${problems.join('; ')} (expected exactly: ${expected.join(', ')})`)
+  }
+
+  /** Why a character cannot go where the outcome sends it, if it cannot: the game master hears it before the round is recorded. */
+  private moveProblems(outcome: Outcome, store: TurnStore): string[] {
+    if (outcome.moveTo === undefined) return []
+    if (outcome.result === 'failed') return [`${outcome.character}: its intent failed, so it does not go anywhere: leave moves_to out`]
+    const checked = store.checkMove(outcome.character, outcome.moveTo)
+    return checked.ok ? [] : checked.problems.map(problem => `${outcome.character}: cannot go to ${outcome.moveTo?.location}: ${problem}`)
   }
 
   /** Every character acts at the same time; one that fails or answers badly is reported, not fatal. */
@@ -300,8 +311,10 @@ export class TurnEngine {
         ? await this.boundaries().recaller.recall({ member, situation: state.situation, turn: owner.turn, policy: store.settings().memory, ...(queryVector === undefined ? {} : { queryVector }) }, store.story, signal)
         : state.recalled.get(key) ?? []
       if (number === 1 && memories.length > 0) state.recalled.set(key, memories)
+      const place = member.place === undefined ? undefined : store?.place(member.place.location.id)
       const request: CharacterRequest = {
         member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false,
+        ...(place === undefined ? {} : { place }),
         ...(memories.length === 0 ? {} : { memories }),
         ...(state.history.length === 0 ? {} : { earlier: [...state.history] }),
         ...(reaction === undefined ? {} : { reaction }),
@@ -348,6 +361,9 @@ export class TurnEngine {
     const decided = this.decisions(state)
     const limit = store.settings().maxRounds
     const round = state.rounds + 1
+    const checked = new Map([...decided.values()].flatMap(({ outcome }) => (outcome.moveTo === undefined ? [] : [[outcome.character, store.checkMove(outcome.character, outcome.moveTo)] as const])))
+    const refused = [...checked].flatMap(([character, check]) => (check.ok ? [] : [`${character}: ${check.problems.join('; ')}`]))
+    if (refused.length > 0) throw new Error(`a move is no longer possible: ${refused.join('; ')}`)
     const spoken = [...decided.values()].flatMap(({ outcome, report }): Utterance[] =>
       report.utterance === undefined || outcome.spoken === false ? [] : [{ character: report.character, name: report.name, text: report.utterance, round }])
     state.rounds = round
@@ -363,22 +379,36 @@ export class TurnEngine {
     }
     state.limit = limit
     state.phase = 'between'
-    store.queueCommit({
-      turn: owner.turn, round, situation: state.situation,
-      entries: [...decided.values()].map(({ outcome, report }) => ({
-        character: report.character, name: report.name, intent: report.intent, commitment: report.commitment,
-        ...(report.utterance === undefined ? {} : { utterance: report.utterance }),
-        result: outcome.result, summary: outcome.summary,
-        ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }),
-        spoken: outcome.spoken !== false,
-      })),
-    })
-    // What the game master decided about each character is applied at once; the memory of what happened is written when it is asked for.
+    const playerPlace = state.cast.find(member => member.character.control === 'player')?.place?.location
+    // What the game master decided about each character is applied at once, moves included; the memory of what happened is written when it is asked for.
     store.commit([...decided.values()].flatMap(({ outcome, report }) => {
       const member = state.cast.find(candidate => candidate.key === report.character)
-      return member === undefined ? [] : [{ character: member.character.id, patch: { activity: outcome.summary, ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }) } }]
+      if (member === undefined) return []
+      const check = checked.get(outcome.character)
+      return [{
+        character: member.character.id,
+        patch: { activity: outcome.summary, ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }) },
+        ...(check?.ok === true ? { move: check.move } : {}),
+      }]
     }))
-    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances], waiting: store.pendingCommits().length }
+    store.queueCommit({
+      turn: owner.turn, round, situation: state.situation,
+      ...(playerPlace === undefined ? {} : { place: { key: placeKey(playerPlace), name: playerPlace.name } }),
+      entries: [...decided.values()].map(({ outcome, report }) => {
+        const at = state.cast.find(candidate => candidate.key === report.character)?.place?.location
+        const check = checked.get(outcome.character)
+        return {
+          character: report.character, name: report.name, intent: report.intent, commitment: report.commitment,
+          ...(report.utterance === undefined ? {} : { utterance: report.utterance }),
+          result: outcome.result, summary: outcome.summary,
+          ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }),
+          spoken: outcome.spoken !== false,
+          ...(at === undefined ? {} : { at: { key: placeKey(at), name: at.name } }),
+          ...(check?.ok === true && check.plan.from !== check.move.to ? { moved: { ...check.to, ...(check.position === undefined ? {} : { position: check.position }) } } : {}),
+        }
+      }),
+    })
+    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances], waiting: store.pendingCommits().length, moves: [...checked].flatMap(([character, check]) => (check.ok && check.plan.from !== check.move.to ? [{ character, name: decided.get(character)?.report.name ?? character, to: check.to.name, via: Math.max(0, check.plan.via.length - 1) }] : [])) }
   }
 
   /**

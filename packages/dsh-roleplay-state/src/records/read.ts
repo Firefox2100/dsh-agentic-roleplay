@@ -1,5 +1,5 @@
 import type { CharacterId } from 'dsh-roleplay-model'
-import { characterKey, type RecordsTarget } from './edit.ts'
+import { characterKey, locationKey, type RecordsTarget } from './edit.ts'
 
 /** Which part of the story's records to read; all of it when left out. */
 export interface RecordsScope {
@@ -16,6 +16,9 @@ export interface RecordsView {
     inner_state: string
     activity: string
     emotion: { valence: number; arousal: number; dominance: number } | null
+    /** The key of the place it is in, and where in it; null while it is nowhere. */
+    location: string | null
+    position: string
   }[]
   events: {
     id: number
@@ -25,6 +28,8 @@ export interface RecordsView {
     importance: number
     tags: string[]
     involves: string[]
+    /** The key of the place it happened in. */
+    location: string | null
     sealed: boolean
     perceived_by: { id: number; character: string; mode: string; accuracy: string; content: string; gist: string }[]
   }[]
@@ -39,6 +44,12 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
     const found = characters.find(character => character.id === id)
     return found === undefined ? String(id) : characterKey(found)
   }
+  const places = new Map(target.locations.list().map(place => [place.id, locationKey(place)]))
+  const placeKey = (id: number): string => places.get(id) ?? String(id)
+  const where = (id: CharacterId): { location: string | null; position: string } => {
+    const placement = target.placements.get('character', id)
+    return placement === undefined ? { location: null, position: '' } : { location: placeKey(placement.locationId), position: placement.position }
+  }
   const inScope = (turn: number, round?: number): boolean =>
     scope.rounds === undefined || scope.rounds.some(entry => entry.turn === turn && (round === undefined || entry.round === round))
   return {
@@ -52,11 +63,12 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
         inner_state: state?.innerState ?? '',
         activity: state?.activity ?? '',
         emotion: state?.emotion === undefined ? null : { ...state.emotion.immediate },
+        ...where(character.id),
       }
     }),
     events: target.events.list().filter(event => inScope(event.turn, event.round)).map(event => ({
       id: event.id, turn: event.turn, round: event.round, text: event.text, importance: event.importance, tags: event.tags,
-      involves: event.involves.map(keyOf), sealed: event.sealed,
+      involves: event.involves.map(keyOf), location: event.locationId === undefined ? null : placeKey(event.locationId), sealed: event.sealed,
       perceived_by: target.events.perceptionsOf(event.id).map(entry => ({ id: entry.id, character: keyOf(entry.characterId), mode: entry.mode, accuracy: entry.accuracy, content: entry.content, gist: entry.gist })),
     })),
     beliefs: characters.flatMap(character => target.memories.list(character.id)

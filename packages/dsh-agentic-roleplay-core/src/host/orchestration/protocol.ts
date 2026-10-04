@@ -41,6 +41,18 @@ export interface Outcome {
   publicState?: string
   /** Whether the character gets to say its utterance; it does unless the game master says it could not. */
   spoken?: boolean
+  /** Where the character goes as a result: the key of a place, and where in it. */
+  moveTo?: MoveRequest
+}
+
+/** A request to send a character somewhere, with places named by key. */
+export interface MoveRequest {
+  location: string
+  position?: string
+  /** The key of a feature of the place it ends up at. */
+  feature?: string
+  /** Skip the exits: the story itself carries the character. */
+  ignoreExits?: boolean
 }
 
 /** An utterance that has to appear in the narration, exactly as the character gave it. */

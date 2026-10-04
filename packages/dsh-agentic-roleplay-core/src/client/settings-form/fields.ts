@@ -6,6 +6,7 @@ export const FORM_FIELDS = [
   { path: ['maxRounds'], kind: 'integer', label: 'maxRounds', help: 'maxRoundsHelp' },
   { path: ['memory', 'flaky'], kind: 'flag', label: 'flaky', help: 'flakyHelp' },
   { path: ['memory', 'recall'], kind: 'integer', label: 'recall', help: 'recallHelp' },
+  { path: ['memory', 'overRetrieve'], kind: 'integer', label: 'overRetrieve', help: 'overRetrieveHelp' },
   { path: ['memory', 'lookup'], kind: 'flag', label: 'lookup', help: 'lookupHelp' },
   { path: ['memory', 'verify'], kind: 'flag', label: 'verify', help: 'verifyHelp' },
   { path: ['memory', 'backlogRounds'], kind: 'integer', label: 'backlogRounds', help: 'backlogRoundsHelp' },

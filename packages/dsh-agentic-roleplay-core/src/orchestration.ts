@@ -15,6 +15,7 @@ import { sessionFolder } from 'dsh-roleplay-state'
 import { currentTurn } from './host/orchestration/current-turn.ts'
 import { createTools } from './host/orchestration/tools.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
+import { rerankMemories, type Reranker } from './host/memory/rerank-memories.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
@@ -45,6 +46,10 @@ export function apply(ctx: Context): void {
   const stores = storesOf(ctx.roleplayState, sessionsDir, problem, (chat, text, signal) => index.queryVector(chat, text, signal))
   const engine = new TurnEngine(boundaries, stores, problem, chat => { index.schedule(chat) })
 
+  // The ranker exists while a reranking service does, so that it never stands in the way of another plugin's ranker.
+  ctx.inject(['rerankers'], (scope) => {
+    scope.effect(() => ctx.roleplayState.rankMemories(rerankMemories({ reranker: () => (scope as Context & { rerankers: Reranker }).rerankers, problem })), 'roleplay: rerank memories')
+  })
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
     const id = roleplaySessionOf(agentSessionId)

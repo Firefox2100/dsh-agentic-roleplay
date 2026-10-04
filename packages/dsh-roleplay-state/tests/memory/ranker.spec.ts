@@ -27,7 +27,7 @@ describe('recalling by meaning', () => {
   it('lets a semantic match bring back what no cue would: the gold is not a word of the treasure event', () => {
     expect(recall(store, { ...query('where is the gold buried?'), ...all }).map(entry => entry.text)).toEqual(['The band played a march.'])
     const semantic = new Map([['p:1', 0.9], ['p:2', 0.05]])
-    expect(recall(store, { ...query('where is the gold buried?'), ...all }, { semantic }).map(entry => entry.text)).toEqual(['The treasure is under the old oak.'])
+    expect(recall(store, { ...query('where is the gold buried?'), ...all }, { rerank: semantic }).map(entry => entry.text)).toEqual(['The treasure is under the old oak.'])
   })
 })
 
@@ -78,10 +78,25 @@ describe('a ranker from another plugin', () => {
     first()
   })
 
-  it('does not stop recall when it fails: the cues carry on and the log says why', async () => {
+  it('does not stop recall when it fails: retrieval carries on and the log says why', async () => {
     unrank = ctx.roleplayState.rankMemories(() => Promise.reject(new Error('embedding service is down')))
     expect((await ask()).map(entry => entry.text)).toEqual(['The band played a march.'])
     expect(warnings).toEqual([expect.stringContaining('embedding service is down')])
+  })
+
+  it('carries on by retrieval alone when it has nothing to judge, and without a warning', async () => {
+    unrank = ctx.roleplayState.rankMemories(() => Promise.resolve(undefined))
+    expect((await ask()).map(entry => entry.text)).toEqual(['The band played a march.'])
+    expect(warnings).toEqual([])
+  })
+
+  it('is asked about the pool the recall over-retrieved, not about everything', async () => {
+    for (let index = 0; index < 20; index++) session.edit({ turn: 1, events: [{ turn: 1, round: 1, text: `Filler ${index}.`, importance: 1, tags: [], involves: [], perceivedBy: [{ character: 'alice', mode: 'witnessed' }] }] })
+    const sizes: number[] = []
+    unrank = ctx.roleplayState.rankMemories(({ candidates }) => { sizes.push(candidates.length); return Promise.resolve(undefined) })
+    await session.recallRanked({ characterId: 1, situation: 'x', turn: 2, policy: { ...DEFAULT_MEMORY_POLICY, recall: 2, overRetrieve: 3 } })
+    await session.recallRanked({ characterId: 1, situation: 'x', turn: 2, policy: { ...DEFAULT_MEMORY_POLICY, recall: 2, overRetrieve: 1 } })
+    expect(sizes).toEqual([6, 2])
   })
 
   it('passes the situation and the signal on, and lets a cancellation through', async () => {

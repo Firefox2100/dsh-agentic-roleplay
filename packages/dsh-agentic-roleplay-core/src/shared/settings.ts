@@ -13,6 +13,8 @@ export interface ChatSettings {
     verify: boolean
     /** How many recorded rounds may wait for the memory keeper before it is run regardless of the game master. The game master normally decides when what happened is worth recording. */
     backlogRounds: number
+    /** How many times the number of memories a character is reminded of are retrieved before a reranker (when there is one) and the memory's own weight choose the best. */
+    overRetrieve: number
   }
   context: {
     /** The size of the conversation, in tokens, at which the oldest part is folded into the summaries. */
@@ -54,7 +56,7 @@ const record = (): RecordSpec => ({ kind: 'record', fallback: {} })
 
 export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
-  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), verify: flag(true), backlogRounds: integer(1, 100, 6) },
+  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4) },
   context: {
     limitTokens: integer(4000, 1_000_000, 24_000),
     retainRatio: ratio(0.1, 0.9, 0.5),

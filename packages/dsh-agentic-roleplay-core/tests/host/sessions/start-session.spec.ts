@@ -212,3 +212,49 @@ describe('startSession', () => {
     await expect(startSession(deps, playAsArthur)).rejects.toBeInstanceOf(InvalidStartError)
   })
 })
+
+describe('starting in a world with places', () => {
+  const world = () => join(root, 'worlds', 'blackwater folder')
+  const places = async () => {
+    await write(join(world(), 'locations', 'bar', 'location.json'), { id: 'bar', name: 'Iron Stag Bar', description: 'Busy.', parent: 'town', features: [{ id: 'counter', name: 'Counter' }], exits: [{ to: 'street', description: 'the door' }] })
+    await write(join(world(), 'locations', 'town', 'location.json'), { id: 'town', name: 'Blackwater Ridge' })
+    await write(join(world(), 'locations', 'street', 'location.json'), { id: 'street', name: 'Main Street', parent: 'town' })
+  }
+
+  it('creates the places with the ways between them and stands each character where it starts', async () => {
+    await places()
+    await write(join(world(), 'characters', 'arthur', 'character.json'), { name: 'Arthur Moore', role: 'playable', start: { location: 'bar', position: 'at the bar', feature: 'counter' } })
+    const started = await startSession(deps, playAsArthur)
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    expect(session.locations.list().map(location => location.sourceId)).toEqual(['town', 'bar', 'street'])
+    expect(session.locations.allExits()).toHaveLength(2)
+    const arthur = session.characters.getBySourceId('arthur')!
+    expect(session.placements.get('character', arthur.id)).toMatchObject({ locationId: session.locations.getBySourceId('bar')!.id, position: 'at the bar', featureKey: 'counter' })
+    expect(session.placements.get('character', session.characters.getBySourceId('clara')!.id)).toBeUndefined()
+  })
+
+  it('refuses a world whose places have problems, naming them, before anything is created', async () => {
+    await write(join(world(), 'locations', 'lost', 'location.json'), { name: 'Lost', parent: 'nowhere' })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(InvalidWorldError)
+    expect(ensured).toEqual([])
+    expect(await readdir(root)).not.toContain('sessions')
+  })
+
+  it('refuses a character that starts in a place the world does not have, or at a feature the place lacks', async () => {
+    await places()
+    await write(join(world(), 'characters', 'arthur', 'character.json'), { name: 'Arthur Moore', role: 'playable', start: { location: 'moon' } })
+    await write(join(world(), 'characters', 'clara', 'character.json'), { name: 'Clara', start: { location: 'bar', feature: 'piano' } })
+    const error = await startSession(deps, playAsArthur).catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(InvalidWorldError)
+    expect((error as InvalidWorldError).problems.map(problem => problem.message)).toEqual([
+      'arthur: start.location "moon" is not a place of this world',
+      'clara: start.feature "piano" is not a feature of Iron Stag Bar (it has: counter)',
+    ])
+    expect(ensured).toEqual([])
+  })
+
+  it('refuses a character that starts in a place when the world has none', async () => {
+    await write(join(world(), 'characters', 'arthur', 'character.json'), { name: 'Arthur Moore', role: 'playable', start: { location: 'bar' } })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/starting places/)
+  })
+})

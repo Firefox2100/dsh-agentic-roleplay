@@ -68,12 +68,17 @@ function readIntent(reader: Reader): Intent | undefined {
 
 function readStart(reader: Reader | undefined): CharacterStart {
   const emotion = readEmotion(reader?.object('emotion'))
+  const location = reader?.string('location')
+  const position = reader?.string('position')
+  const feature = reader?.string('feature')
+  if (location === undefined && (position !== undefined || feature !== undefined)) reader?.fail(position === undefined ? 'feature' : 'position', 'needs a location')
   return {
     publicState: reader?.text('public_state') ?? '',
     innerState: reader?.text('inner_state') ?? '',
     activity: reader?.text('activity') ?? '',
     ...(emotion === undefined ? {} : { emotion }),
     intents: reader?.objects('intents').flatMap(intent => readIntent(intent) ?? []) ?? [],
+    ...(location === undefined ? {} : { place: { location, ...(position === undefined ? {} : { position }), ...(feature === undefined ? {} : { feature }) } }),
   }
 }
 

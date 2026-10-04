@@ -1,5 +1,6 @@
 import type {
   EmbeddingIndexInfo,
+  Exit, ExitId, ExitPatch, Location, LocationId, LocationPatch, NewExit, NewLocation, NewPlacement, PlaceableKind, Placement,
   PerceptionId,
   PerceptionPatch,
   PendingEmbedding,
@@ -223,4 +224,41 @@ export interface RecallIndexRepository {
   store(model: string, vectors: readonly { id: number; vector: readonly number[] }[]): number
   /** Forget every vector (the texts stay), to start again with another model. */
   reset(): void
+}
+
+export interface LocationRepository {
+  /**
+   * @throws {NotFoundError} when the parent does not exist.
+   * @throws {ConflictError} when the id in the world's files or a feature key is used twice.
+   * @throws {InvalidValueError} when the name or the features are not acceptable.
+   */
+  add(location: NewLocation): Location
+  get(id: LocationId): Location | undefined
+  getBySourceId(sourceId: string): Location | undefined
+  list(): Location[]
+  childrenOf(id: LocationId): Location[]
+  /** @throws {NotFoundError} @throws {ConflictError} when a feature that someone is at would go. */
+  update(id: LocationId, patch: LocationPatch): Location
+  /** @throws {NotFoundError} when a place does not exist. @throws {ConflictError} when there already is an exit between them in that direction. */
+  addExit(exit: NewExit): Exit
+  getExit(fromId: LocationId, toId: LocationId): Exit | undefined
+  exitsFrom(id: LocationId): Exit[]
+  allExits(): Exit[]
+  /** @throws {NotFoundError} */
+  updateExit(id: ExitId, patch: ExitPatch): Exit
+  removeExit(id: ExitId): boolean
+}
+
+/** Where things stand. Characters now; the same table places items and containers later. */
+export interface PlacementRepository {
+  /**
+   * Put something in a place, replacing where it was.
+   * @throws {NotFoundError} when the place or the thing does not exist.
+   * @throws {InvalidValueError} when the place has no such feature.
+   */
+  place(kind: PlaceableKind, entityId: number, placement: NewPlacement): Placement
+  get(kind: PlaceableKind, entityId: number): Placement | undefined
+  /** Everything in a place, in a stable order. */
+  at(locationId: LocationId, kind?: PlaceableKind): Placement[]
+  list(kind?: PlaceableKind): Placement[]
 }

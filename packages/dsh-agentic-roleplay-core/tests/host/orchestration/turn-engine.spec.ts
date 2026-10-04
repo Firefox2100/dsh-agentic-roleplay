@@ -3,7 +3,7 @@ import type { Boundaries } from '../../../src/host/orchestration/boundaries.ts'
 import { defaultBoundaries, everyoneActs } from '../../../src/host/orchestration/defaults.ts'
 import type { Outcome } from '../../../src/host/orchestration/protocol.ts'
 import { TurnEngine, type RawSegment, type RunCharacter, type TurnOwner } from '../../../src/host/orchestration/turn-engine.ts'
-import { alice, arthur, bob, carol, dan, fakeStore, scriptedRunner, type FakeStore } from './fixtures.ts'
+import { alice, arthur, bob, carol, dan, fakeStore, location, placed, scriptedRunner, type FakeStore } from './fixtures.ts'
 
 const signal = new AbortController().signal
 const owner: TurnOwner = { chat: 'session-1', turn: 1 }
@@ -632,5 +632,71 @@ describe('turns and objections', () => {
     expect(engine.object({ chat: 'session-1', turn: 2 })).toBe(true)
     engine.forget('session-1')
     expect(engine.object(owner)).toBe(true)
+  })
+})
+
+describe('places', () => {
+  const bar = location(1, 'The Bar')
+  const cellar = location(2, 'Cellar')
+  const only = { alice: { intent: 'a', utterance: 'Hello.', commitment: 'low' as const } }
+  let seen: { character: string; request: unknown }[]
+
+  beforeEach(() => {
+    seen = []
+    store = fakeStore([placed(arthur, bar, 'at the bar'), placed(alice, bar), placed(bob, cellar), carol, dan])
+    store.checkMove = (character, request) => {
+      seen.push({ character, request })
+      if (request.location === 'cellar') return { ok: true, move: { to: cellar.id, ...(request.position === undefined ? {} : { position: request.position }) }, plan: { from: bar.id, to: cellar.id, via: [cellar.id] }, to: { key: 'cellar', name: 'Cellar' }, ...(request.position === undefined ? {} : { position: request.position }) }
+      if (request.location === 'bar') return { ok: true, move: { to: bar.id }, plan: { from: bar.id, to: bar.id, via: [] }, to: { key: 'bar', name: 'The Bar' } }
+      return { ok: false, problems: ['the way from The Bar to Vault is locked at The Bar -> Vault: needs a key'] }
+    }
+    store.place = id => (id === bar.id ? { key: 'bar', location: bar, exits: [], here: [placed(arthur, bar, 'at the bar'), placed(alice, bar)] } : undefined)
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined))
+  })
+
+  const act = async (outcomes: Outcome[], runner = scriptedRunner(only)) => {
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    return { runner, resolution: await engine.resolve(owner, outcomes, runner.run, signal) }
+  }
+
+  it('tells each character the place it is in and who is there with it', async () => {
+    const { runner } = await act([outcome('alice', 'succeeded')])
+    expect(runner.requests[0]?.place?.key).toBe('bar')
+    expect(runner.requests[0]?.place?.here.map(member => member.key)).toEqual(['arthur', 'alice'])
+  })
+
+  it('refuses an outcome that sends a character where it cannot go, with the reason, and records nothing', async () => {
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await expect(engine.resolve(owner, [{ ...outcome('alice', 'succeeded'), moveTo: { location: 'vault' } }], runner.run, signal))
+      .rejects.toThrow(/alice: cannot go to vault: the way from The Bar to Vault is locked at The Bar -> Vault: needs a key/)
+    expect(store.queue).toEqual([])
+    expect(store.commits).toEqual([])
+    await expect(engine.resolve(owner, [{ ...outcome('alice', 'failed'), moveTo: { location: 'cellar' } }], runner.run, signal)).rejects.toThrow(/its intent failed, so it does not go anywhere/)
+  })
+
+  it('applies a move with the round, tells the game master and keeps where each was and who moved for the keeper', async () => {
+    const { resolution } = await act([{ ...outcome('alice', 'succeeded', 'Alice goes down to the cellar'), moveTo: { location: 'cellar', position: 'by the barrels' } }])
+    expect(store.commits[0]).toEqual([{ character: alice.character.id, patch: { activity: 'Alice goes down to the cellar' }, move: { to: cellar.id, position: 'by the barrels' } }])
+    expect(resolution.done?.moves).toEqual([{ character: 'alice', name: 'Alice', to: 'Cellar', via: 0 }])
+    expect(store.queue[0]).toMatchObject({ place: { key: 'the-bar', name: 'The Bar' } })
+    expect(store.queue[0]?.entries[0]).toMatchObject({ character: 'alice', at: { key: 'the-bar', name: 'The Bar' }, moved: { key: 'cellar', name: 'Cellar', position: 'by the barrels' } })
+  })
+
+  it('does not count staying where it is as a move', async () => {
+    const { resolution } = await act([{ ...outcome('alice', 'succeeded'), moveTo: { location: 'bar', position: 'by the window' } }])
+    expect(resolution.done?.moves).toEqual([])
+    expect(store.queue[0]?.entries[0]?.moved).toBeUndefined()
+    expect(store.commits[0]?.[0]?.move).toEqual({ to: bar.id })
+  })
+
+  it('does not ask for a move when none is given, and keeps stories without places as they were', async () => {
+    store = fakeStore([arthur, alice])
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined))
+    const { resolution } = await act([outcome('alice', 'succeeded')])
+    expect(seen).toEqual([])
+    expect(resolution.done?.moves).toEqual([])
+    expect(store.queue[0]?.place).toBeUndefined()
+    expect(store.queue[0]?.entries[0]?.at).toBeUndefined()
   })
 })

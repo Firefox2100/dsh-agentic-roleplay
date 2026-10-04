@@ -1,14 +1,41 @@
-import type { Character, CharacterState, CharacterStatePatch } from 'dsh-roleplay-model'
+import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
 import type { MemoryPolicy, Recalled, Session } from 'dsh-roleplay-state'
 import type { ChatSettings } from '../../shared/settings.ts'
-import type { CharacterAction, CharacterReport, NarrationSegment, Outcome, Utterance } from './protocol.ts'
+import type { CharacterAction, CharacterReport, MoveRequest, NarrationSegment, Outcome, Utterance } from './protocol.ts'
 
 /** A character as the turn sees it. `key` is how the game master and the tools name it. */
 export interface CastMember {
   key: string
   character: Character
   state?: CharacterState
+  /** Where it stands; absent while it is nowhere (a world without places, or a character not placed yet). */
+  place?: CastPlace
 }
+
+export interface CastPlace {
+  location: Location
+  /** Where in the place, in words. */
+  position: string
+  feature?: LocationFeature
+}
+
+/** A place as it is told to someone in it: what it is like, the ways out, and who is there. */
+export interface PlaceView {
+  /** The key the game master and the tools name it by. */
+  key: string
+  location: Location
+  exits: { key: string; name: string; exit: Exit }[]
+  here: CastMember[]
+}
+
+/** A short reference to a place in what is kept of a round. */
+export interface PlaceRef {
+  key: string
+  name: string
+}
+
+/** Whether a character may go where the game master sent it, and what that comes to. */
+export type MoveCheck = { ok: true; move: Move; plan: MovePlan; to: PlaceRef; position?: string } | { ok: false; problems: string[] }
 
 /** What one earlier decision of the round means to a character that reacts to it. */
 export interface Reaction {
@@ -41,6 +68,8 @@ export interface CharacterRequest {
   memories?: readonly Recalled[]
   /** Whether the character can ask itself about more of what it remembers, while it decides. */
   lookup: boolean
+  /** The place the character is in, when it is in one: the scene it is told is this place and who is here. */
+  place?: PlaceView
 }
 
 /** What one character is told: who it is, and what it is asked. */
@@ -120,6 +149,10 @@ export interface CommitEntry {
   publicState?: string
   /** Whether the character got to say its utterance. */
   spoken: boolean
+  /** Where the character was when it acted. */
+  at?: PlaceRef
+  /** Where the game master sent it as a result. */
+  moved?: PlaceRef & { position?: string }
 }
 
 /** One recorded round, as it is kept until its records are written. */
@@ -128,6 +161,8 @@ export interface RoundRecord {
   round: number
   /** What the round was about, including what the player's character did. */
   situation: string
+  /** Where the moment happened: the place of the player's character when the round began. */
+  place?: PlaceRef
   entries: CommitEntry[]
 }
 
@@ -185,12 +220,16 @@ export interface Boundaries {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records'>
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
-  /** Writes the updates of one round, together or not at all. */
-  commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch }[]): void
+  /** Writes the updates of one round, moves included, together or not at all. */
+  commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch; move?: Move }[]): void
+  /** Whether a character may go where a request says (places by key), resolved to what the move would be. */
+  checkMove(character: string, request: MoveRequest): MoveCheck
+  /** A place as it is told to someone in it, or nothing for an id that is not one. */
+  place(locationId: Location['id']): PlaceView | undefined
   /** Counts the turn as played, once its output is delivered. */
   completeTurn(): void
   /** Keeps a recorded round until its records are written, so that a failure loses nothing. */

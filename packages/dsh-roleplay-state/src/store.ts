@@ -1,20 +1,22 @@
 import { existsSync } from 'node:fs'
-import type { NewSession, StoryEvent } from 'dsh-roleplay-model'
+import type { CharacterId, Move, MovePlan, NewSession, StoryEvent } from 'dsh-roleplay-model'
+import { moveCharacter, planMove } from './records/movement.ts'
 import { systemClock, type Clock } from './clock.ts'
 import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  PendingCommitRepository, RecallIndexRepository, SummaryRepository, ThreadRepository, VectorSupport,
+  LocationRepository, PendingCommitRepository, PlacementRepository, RecallIndexRepository, SummaryRepository, ThreadRepository, VectorSupport,
 } from './repositories.ts'
-import { denseScore, recall, recallCandidates, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
+import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
 import { readRecords, type RecordsScope, type RecordsView } from './records/read.ts'
 import { SqliteEventRepository } from './sqlite/event-repository.ts'
 import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
 import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
 import { SqliteRecallIndex } from './sqlite/recall-index.ts'
+import { SqliteLocationRepository, SqlitePlacementRepository } from './sqlite/location-repository.ts'
 import { vectorExtension } from './sqlite/vector-extension.ts'
 import { SqliteCharacterRepository } from './sqlite/character-repository.ts'
 import { SqliteIntentRepository } from './sqlite/intent-repository.ts'
@@ -43,6 +45,8 @@ export interface SessionStore {
   readonly threads: ThreadRepository
   readonly summaries: SummaryRepository
   readonly pendingCommits: PendingCommitRepository
+  readonly locations: LocationRepository
+  readonly placements: PlacementRepository
   /** What the session can be searched by: its texts by words, and by meaning once vectors are stored. */
   readonly recallIndex: RecallIndexRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
@@ -52,6 +56,10 @@ export interface SessionStore {
    * the situation calls to mind and, with flaky memory, by how much of it is left.
    */
   recall(query: Omit<RecallQuery, 'characters'>, evidence?: RecallEvidence): Recalled[]
+  /** The first stage of {@link SessionStore.recall}: retrieve by the cues, the words and the meaning of the moment, fuse, and over-retrieve. */
+  recallPool(query: Omit<RecallQuery, 'characters'>, evidence?: Omit<RecallEvidence, 'rerank'>): RecallPool
+  /** The last stage: choose the best of a pool, by a reranker's judgement when there is one, and count what is recalled. */
+  finishRecall(pool: RecallPool, turn: number, rerank?: ReadonlyMap<string, number>): Recalled[]
   /**
    * What a character is reminded of, using the session's index as well as the cues: texts that match the
    * moment by words, and, when the vector of the moment is given (from the model that made the stored
@@ -65,13 +73,17 @@ export interface SessionStore {
    * Look up what happened (not what any character took in) by words and, with a vector, by meaning, best first.
    * The two searches are merged by reciprocal rank, so what ranks well in either comes first.
    */
-  searchEvents(search: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number }): StoryEvent[]
+  searchEvents(search: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number; locationId?: number }): StoryEvent[]
   /** What a character could be reminded of, to be ranked by meaning before {@link recall}. */
   recallCandidates(query: Omit<RecallQuery, 'characters' | 'policy'>): RecallCandidate[]
   /**
    * Change the story's records (state, events and who took them in, beliefs, threads), together or not at all.
    * @throws {InvalidEditError} naming every problem; nothing was written then.
    */
+  /** Whether a character can go there, and the way it would take. */
+  planMove(characterId: CharacterId, move: Move): ReturnType<typeof planMove>
+  /** Move a character: its place changes, at the position or feature given. @throws {InvalidMoveError} naming every reason. */
+  move(characterId: CharacterId, move: Move): MovePlan
   /** Apply an edit atomically; with `seal`, the events it adds are final at once (otherwise they stay drafts until sealed). */
   edit(edit: RecordsEdit, options?: { seal?: boolean }): EditResult
   /** Read the records back in the form models read them. */
@@ -94,7 +106,10 @@ class SqliteSessionStore implements SessionStore {
   readonly threads: ThreadRepository
   readonly summaries: SummaryRepository
   readonly pendingCommits: PendingCommitRepository
+  readonly locations: LocationRepository
+  readonly placements: PlacementRepository
   readonly recallIndex: SqliteRecallIndex
+  private readonly eventRepository: SqliteEventRepository
 
   constructor(private readonly db: SqlDatabase, clock: Clock, vectors: VectorSupport) {
     this.metadata = new SqliteMetadataRepository(db, clock)
@@ -102,7 +117,10 @@ class SqliteSessionStore implements SessionStore {
     this.characters = new SqliteCharacterRepository(db, clock)
     this.characterStates = new SqliteCharacterStateRepository(db, clock)
     this.intents = new SqliteIntentRepository(db, clock)
-    this.events = new SqliteEventRepository(db, clock, this.recallIndex)
+    this.locations = new SqliteLocationRepository(db, clock, id => { this.eventRepository.reindexPlace(id) })
+    this.placements = new SqlitePlacementRepository(db, this.locations)
+    this.eventRepository = new SqliteEventRepository(db, clock, this.recallIndex, id => this.locations.get(id)?.name)
+    this.events = this.eventRepository
     this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)
     this.threads = new SqliteThreadRepository(db, clock)
     this.summaries = new SqliteSummaryRepository(db, clock)
@@ -118,9 +136,17 @@ class SqliteSessionStore implements SessionStore {
   }
 
   recall(query: Omit<RecallQuery, 'characters'>, evidence?: RecallEvidence): Recalled[] {
-    const found = recall(this, { ...query, characters: this.characters.list() }, evidence)
-    this.events.touchPerceptions(found.flatMap(entry => (entry.source.kind === 'perception' ? [entry.source.id] : [])), query.turn)
-    this.memories.touch(found.flatMap(entry => (entry.source.kind === 'memory' ? [entry.source.id] : [])), query.turn)
+    return this.finishRecall(this.recallPool(query, evidence), query.turn, evidence?.rerank)
+  }
+
+  recallPool(query: Omit<RecallQuery, 'characters'>, evidence?: Omit<RecallEvidence, 'rerank'>): RecallPool {
+    return recallPool(this, { ...query, characters: this.characters.list() }, evidence)
+  }
+
+  finishRecall(pool: RecallPool, turn: number, rerank?: ReadonlyMap<string, number>): Recalled[] {
+    const found = finishRecall(pool, rerank)
+    this.events.touchPerceptions(found.flatMap(entry => (entry.source.kind === 'perception' ? [entry.source.id] : [])), turn)
+    this.memories.touch(found.flatMap(entry => (entry.source.kind === 'memory' ? [entry.source.id] : [])), turn)
     return found
   }
 
@@ -136,7 +162,7 @@ class SqliteSessionStore implements SessionStore {
     return this.recall(query, this.storedEvidence(query, options.queryVector))
   }
 
-  searchEvents({ text, vector, limit = 10, fromTurn, toTurn, minImportance }: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number }): StoryEvent[] {
+  searchEvents({ text, vector, limit = 10, fromTurn, toTurn, minImportance, locationId }: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number; locationId?: number }): StoryEvent[] {
     const lexical = this.recallIndex.lexical({ text, kinds: ['event'], limit: STORED_CANDIDATES })
     const dense = vector === undefined ? [] : this.recallIndex.vector({ vector, characterId: 0, limit: STORED_CANDIDATES })
     const scores = new Map<number, number>()
@@ -144,9 +170,17 @@ class SqliteSessionStore implements SessionStore {
     return [...scores].sort((a, b) => b[1] - a[1]).flatMap(([id]) => {
       const event = this.events.get(id)
       if (event === undefined) return []
-      if ((fromTurn !== undefined && event.turn < fromTurn) || (toTurn !== undefined && event.turn > toTurn) || (minImportance !== undefined && event.importance < minImportance)) return []
+      if ((fromTurn !== undefined && event.turn < fromTurn) || (toTurn !== undefined && event.turn > toTurn) || (minImportance !== undefined && event.importance < minImportance) || (locationId !== undefined && event.locationId !== locationId)) return []
       return [event]
     }).slice(0, limit)
+  }
+
+  planMove(characterId: CharacterId, move: Move): ReturnType<typeof planMove> {
+    return planMove(this, characterId, move)
+  }
+
+  move(characterId: CharacterId, move: Move): MovePlan {
+    return this.transaction(() => moveCharacter(this, characterId, move))
   }
 
   edit(edit: RecordsEdit, options: { seal?: boolean } = {}): EditResult {

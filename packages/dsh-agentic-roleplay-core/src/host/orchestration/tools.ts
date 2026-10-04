@@ -51,7 +51,7 @@ function renderResolution(report: ResolveReport): string {
   const done = report.done
   if (done === undefined) return ''
   const left = done.limit - done.round
-  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, ...failures(done.retryFailures)]
+  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, ...done.moves.map(move => `${move.name} is now at ${move.to}${move.via > 0 ? ` (by way of ${move.via} other place${move.via === 1 ? '' : 's'})` : ''}.`), ...failures(done.retryFailures)]
   lines.push(done.spoken.length === 0
     ? 'Nobody has said anything yet this turn.'
     : `Everything said so far this turn, in order; the output must carry all of it exactly:\n${listed(done.spoken)}`)
@@ -91,7 +91,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       characters: {
         type: 'array',
         items: { type: 'string' },
-        description: 'Keys of the characters to ask. Leave out to ask every character the player does not control. In a later round ask only those the moment calls for.',
+        description: 'Keys of the characters to ask. Leave out to ask every character the player does not control, wherever they are. Ask only those the moment reaches: those in the same place, and those elsewhere who can see, hear or are summoned. In a later round ask only those the moment calls for.',
       },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderAttempt(value as unknown as AttemptReport) }] },
@@ -119,6 +119,17 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
             summary: { type: 'string', required: true, description: 'What concretely happens to the character, in a sentence. It becomes what the character is doing.' },
             spoken: { type: 'boolean', description: 'Whether the character gets to say its utterance. It does unless something prevents it, such as being silenced or knocked out first.' },
             public_state: { type: 'string', description: 'What anyone present can now see or infer about the character, when that changed.' },
+            moves_to: {
+              type: 'object',
+              additionalProperties: false,
+              description: 'Where the character ends up if it goes somewhere as a result: leave out when it stays. It must be possible (a way over open exits); you are told why if it is not. Not for a character whose intent failed.',
+              properties: {
+                location: { type: 'string', required: true, description: 'The key of the place, as the scene lists it.' },
+                position: { type: 'string', description: 'Where in the place, in words: "by the window".' },
+                feature: { type: 'string', description: 'The key of a feature of that place it is at.' },
+                ignore_exits: { type: 'boolean', description: 'Only when the story itself carries it (carried off, teleported, falls): the exits do not matter.' },
+              },
+            },
           },
         },
       },
@@ -134,6 +145,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         summary: outcome.summary,
         ...(outcome.public_state === undefined ? {} : { publicState: outcome.public_state }),
         ...(outcome.spoken === undefined ? {} : { spoken: outcome.spoken }),
+        ...(outcome.moves_to === undefined ? {} : { moveTo: { location: outcome.moves_to.location, ...(outcome.moves_to.position === undefined ? {} : { position: outcome.moves_to.position }), ...(outcome.moves_to.feature === undefined ? {} : { feature: outcome.moves_to.feature }), ...(outcome.moves_to.ignore_exits === true ? { ignoreExits: true } : {}) } }),
       }))
       return record(await deps.engine.resolve(owner, outcomes, run, exec.signal))
     },

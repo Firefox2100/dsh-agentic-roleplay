@@ -8,6 +8,12 @@ import { vectorOf, type AgentLink } from './index.ts'
  * agents running side by side for different characters each get their own, and none can
  * reach another's memory.
  */
+/** Where the character is, as a recall cue: what happened where it stands comes back more readily. */
+const placeOf = (session: AgentLink['session'], characterId: CharacterId): { locationId?: number } => {
+  const placement = session.placements.get('character', characterId)
+  return placement === undefined ? {} : { locationId: placement.locationId }
+}
+
 export function createCharacterTools(link: () => AgentLink, characterId: CharacterId): ToolDefinition[] {
   return [
     defineTool({
@@ -22,7 +28,7 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
       async execute(args, exec) {
         const agent = link()
         const { session, turn, policy } = agent
-        return (await session.recallRanked({ characterId, situation: args.about, turn, policy }, exec.signal, await vectorOf(agent, args.about, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
+        return (await session.recallRanked({ characterId, situation: args.about, turn, policy, ...placeOf(session, characterId) }, exec.signal, await vectorOf(agent, args.about, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
       },
     }),
   ]

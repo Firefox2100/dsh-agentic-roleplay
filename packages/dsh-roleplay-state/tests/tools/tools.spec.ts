@@ -45,6 +45,32 @@ describe('the reading tools', () => {
     await expect(run('get_character', { character: 'nobody' })).rejects.toThrow(/there is no character "nobody"; list_characters shows the keys/)
   })
 
+  it('list the places, read one with its features, exits and who is there, and say where a character is', async () => {
+    store.edit({
+      turn: 1,
+      places: [
+        { key: 'town', name: 'Town' },
+        { key: 'bar', name: 'The Bar', parent: 'town', features: [{ key: 'counter', name: 'Counter' }], exits: [{ to: 'town', description: 'the door', state: 'locked', note: 'closing time' }] },
+        { key: 'cellar', name: 'Cellar', parent: 'bar' },
+      ],
+      moves: [{ character: 'alice', to: 'bar', position: 'at the counter', feature: 'counter' }],
+    })
+    expect(((await run('list_locations', {})).value as { key: string; in: string | null; exits: number }[]).map(entry => [entry.key, entry.in, entry.exits])).toEqual([['town', null, 1], ['bar', 'town', 1], ['cellar', 'bar', 0]])
+    expect(((await run('list_locations', { within: 'town' })).value as { key: string }[]).map(entry => entry.key)).toEqual(['bar', 'cellar'])
+    await expect(run('list_locations', { within: 'moon' })).rejects.toThrow(/there is no place "moon"/)
+    expect((await run('get_location', { location: 'bar' })).value).toEqual({
+      location: 'bar', name: 'The Bar', description: '', in: 'town', features: [{ key: 'counter', name: 'Counter', description: '' }],
+      exits: [{ to: 'town', name: 'Town', state: 'locked', description: 'the door', note: 'closing time', travel_time_seconds: null }],
+      here: [{ character: 'alice', position: 'at the counter', feature: 'counter' }],
+    })
+    await expect(run('get_location', { location: 'moon' })).rejects.toThrow(/there is no place "moon"/)
+    expect((await run('get_character', { character: 'alice' })).value).toMatchObject({ location: 'bar', position: 'at the counter' })
+    store.edit({ turn: 2, events: [{ turn: 2, round: 1, text: 'A glass broke.', importance: 2, location: 'bar' }, { turn: 2, round: 1, text: 'A bell rang.', importance: 2, location: 'town' }] })
+    expect(((await run('search_events', { location: 'bar' })).value as { text: string }[]).map(event => event.text)).toEqual(['A glass broke.'])
+    expect(((await run('search_events', { location: 'bar', text: 'glass' })).value as { text: string }[]).map(event => event.text)).toEqual(['A glass broke.'])
+    await expect(run('search_events', { location: 'moon' })).rejects.toThrow(/there is no place "moon"/)
+  })
+
   it('search what happened, by character, words, turns and importance, most recent first and capped', async () => {
     store.edit({ turn: 1, events: [
       { turn: 1, round: 1, text: 'Alice found a brass key.', importance: 3, tags: ['key'], involves: ['alice'] },
@@ -92,13 +118,21 @@ describe('the writing tools', () => {
     expect(store.threads.list('open')).toEqual([])
   })
 
+  it('move a character through open exits, and refuse with the reason when the way is shut', async () => {
+    store.edit({ turn: 1, places: [{ key: 'bar', name: 'Bar' }, { key: 'yard', name: 'Yard', exits: [{ to: 'bar' }] }, { key: 'vault', name: 'Vault', exits: [{ to: 'bar', state: 'locked', note: 'needs a key' }] }], moves: [{ character: 'alice', to: 'bar' }] })
+    expect((await run('move_character', { character: 'alice', to: 'yard', position: 'by the well' })).value).toMatchObject({ writes: 1 })
+    expect(store.placements.get('character', store.characters.getBySourceId('alice')!.id)).toMatchObject({ locationId: store.locations.getBySourceId('yard')!.id, position: 'by the well' })
+    await expect(run('move_character', { character: 'alice', to: 'vault' })).rejects.toThrow(/there is no way|is locked/)
+    expect((await run('move_character', { character: 'alice', to: 'vault', ignore_exits: true })).value).toMatchObject({ writes: 1 })
+  })
+
   it('refuse what the records do not accept, naming the problem', async () => {
     await expect(run('record_event', { text: 'x', importance: 9 })).rejects.toThrow(/importance must be a whole number from 1 to 5/)
     await expect(run('update_character_state', { character: 'nobody', activity: 'x' })).rejects.toThrow(/there is no character "nobody"/)
   })
 
   it('are not there unless the plugin is configured for them', () => {
-    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
+    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
     expect(Object.keys(tools(true))).toContain('record_event')
   })
 })
@@ -167,7 +201,7 @@ describe('the plugin', () => {
   }
 
   it('registers the reading tools, and the writing ones when asked, with the tool registry present', async () => {
-    expect(await names({})).toEqual(['list_characters', 'get_character', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
+    expect(await names({})).toEqual(['list_characters', 'get_character', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
     expect(await names({ writeTools: true })).toContain('open_thread')
   })
 

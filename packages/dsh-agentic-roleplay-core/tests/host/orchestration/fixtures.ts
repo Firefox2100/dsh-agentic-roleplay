@@ -1,4 +1,4 @@
-import type { Character, CharacterState } from 'dsh-roleplay-model'
+import type { Character, CharacterState, Location } from 'dsh-roleplay-model'
 import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
 import type { CastMember, RoundRecord, TurnStore } from '../../../src/host/orchestration/boundaries.ts'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
@@ -30,7 +30,7 @@ export function withRanking(store: SessionStore): TurnStore['story'] {
 }
 
 export interface FakeStore extends TurnStore {
-  commits: { character: number; patch: Record<string, unknown> }[][]
+  commits: { character: number; patch: Record<string, unknown>; move?: unknown }[][]
   /** How many turns were counted as played. */
   completed: number
   /** What the chat's settings allow; change it to change the settings the engine reads. */
@@ -47,12 +47,14 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     maxRounds,
     cast: () => cast,
     settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds }),
-    commit: (updates) => { commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch } }))) },
+    commit: (updates) => { commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch }, ...(update.move === undefined ? {} : { move: update.move }) }))) },
     completeTurn: () => { store.completed += 1 },
     queueCommit: (record) => { store.queue = [...store.queue.filter(entry => entry.turn !== record.turn || entry.round !== record.round), record] },
     pendingCommits: () => [...store.queue],
     completeCommits: (rounds) => { store.queue = store.queue.filter(entry => !rounds.some(round => round.turn === entry.turn && round.round === entry.round)) },
     story: withRanking(createSessionStore(':memory:', { id: 'fake', name: 'Fake', world: { id: 'w', name: 'W' } })),
+    checkMove: () => ({ ok: false, problems: ['this story has no places'] }),
+    place: () => undefined,
     queryVector: () => Promise.resolve(undefined),
     queue: [],
   }
@@ -74,4 +76,13 @@ export function scriptedRunner(answers: Record<string, CharacterAction | Charact
     return Promise.resolve(answer)
   }
   return { run, requests }
+}
+
+export function location(id: number, name: string, extra: Partial<Location> = {}): Location {
+  return { id, sourceId: name.toLowerCase().replaceAll(' ', '-'), name, description: `${name} description.`, features: [], createdAt: '2026-01-01T00:00:00.000Z', ...extra }
+}
+
+/** A cast member standing in a place. */
+export function placed(base: CastMember, where: Location, position = ''): CastMember {
+  return { ...base, place: { location: where, position } }
 }

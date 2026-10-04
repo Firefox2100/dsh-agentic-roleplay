@@ -1,9 +1,9 @@
 import type { Character } from 'dsh-roleplay-model'
 import type {
-  ActivationPlanner, Boundaries, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
-  InputValidator, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
+  ActivationPlanner, Boundaries, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
-import { mentioned, overlap, tokens, type Recalled } from 'dsh-roleplay-state'
+import { locationKey, mentioned, overlap, tokens, type Recalled } from 'dsh-roleplay-state'
 import type { NarrationSegment, Utterance } from './protocol.ts'
 
 function describe(character: Character): string {
@@ -25,10 +25,42 @@ function describe(character: Character): string {
   return lines.join('\n')
 }
 
+/** At most this many features and ways out of a place are told at once. */
+const SHOWN_FEATURES = 12
+const SHOWN_EXITS = 12
+
+const sentence = (text: string): string => {
+  const match = /^[^.!?。！？]*[.!?。！？]?/u.exec(text.trim())
+  return (match?.[0] ?? text).trim()
+}
+
+/** What someone in a place is told about it: what it is like, what can be pointed at, and the ways out. */
+export function describePlace(view: PlaceView, { withKeys }: { withKeys: boolean }): string[] {
+  const { location, exits } = view
+  const lines = [`${location.name}${withKeys ? ` (${view.key})` : ''}${location.description === '' ? '' : `: ${location.description}`}`]
+  if (location.features.length > 0) {
+    const shown = location.features.slice(0, SHOWN_FEATURES).map(feature => `${withKeys ? `${feature.key}: ` : ''}${feature.name}${feature.description === '' ? '' : ` - ${sentence(feature.description)}`}`)
+    lines.push(`Things here: ${shown.join('; ')}${location.features.length > SHOWN_FEATURES ? `; and ${location.features.length - SHOWN_FEATURES} more` : ''}`)
+  }
+  if (exits.length > 0) {
+    const shown = exits.slice(0, SHOWN_EXITS).map(({ key, name, exit }) => `${withKeys ? `${key}: ` : ''}${name}${exit.description === '' ? '' : ` (${sentence(exit.description)})`}${exit.state === 'open' ? '' : ` [${exit.state}${exit.note === '' ? '' : `: ${exit.note}`}]`}`)
+    lines.push(`Ways out: ${shown.join('; ')}${exits.length > SHOWN_EXITS ? `; and ${exits.length - SHOWN_EXITS} more` : ''}`)
+  }
+  return lines
+}
+
+function whereIs(member: CastMember): string {
+  const place = member.place
+  if (place === undefined) return ''
+  return [place.position, place.feature === undefined ? '' : `at ${place.feature.name}`].filter(part => part !== '').join(', ')
+}
+
 function present(cast: readonly CastMember[], self: string): string {
-  return cast.map(({ key, character, state }) => {
+  return cast.map((member) => {
+    const { key, character, state } = member
     const seen = [state?.publicState, state?.activity].filter(text => text !== undefined && text.trim() !== '')
-    return `- ${character.name}${key === self ? ' (you)' : ''}${seen.length > 0 ? `: ${seen.join('; ')}` : ''}`
+    const where = whereIs(member)
+    return `- ${character.name}${key === self ? ' (you)' : ''}${where === '' ? '' : ` (${where})`}${seen.length > 0 ? `: ${seen.join('; ')}` : ''}`
   }).join('\n')
 }
 
@@ -53,8 +85,10 @@ function remembered(memories: readonly Recalled[], now: number): string {
 /** Every character is told the same thing about the scene, plus who it is and what it remembers. */
 export const sharedContext: CharacterContextProvider = {
   brief(request: CharacterRequest) {
-    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn } = request
-    const sections = [`Situation:\n${situation}`, `Present:\n${present(cast, member.key)}`]
+    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place } = request
+    // In a place, a character perceives who is there with it; in a story without places, everyone is present.
+    const company = place === undefined ? cast : place.here
+    const sections = [`Situation:\n${situation}`, ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
     if (memories !== undefined && memories.length > 0) {
       sections.splice(1, 0, `What you remember that bears on this (only what you took in yourself; do not claim to remember more, and be unsure of what is fuzzy):\n${remembered(memories, turn)}`)
     }
@@ -123,14 +157,36 @@ const REMINDED_EVENTS = 5
  * player's move brings to mind (by the session's search of words and meaning, and by who is named):
  * those already folded out of the conversation into the summaries, whose detail the summaries may have lost.
  */
+/** Where the player is and what is there, who is with them, and who is elsewhere. */
+function placedScene(cast: readonly CastMember[], player: CastMember | undefined, story: TurnStore['story'], describeMember: (member: CastMember) => string): string {
+  const here = player?.place?.location
+  const sections: string[] = []
+  if (here !== undefined) {
+    const view: PlaceView = {
+      key: locationKey(here), location: here, here: cast.filter(member => member.place?.location.id === here.id),
+      exits: story.locations.exitsFrom(here.id).flatMap((exit) => { const to = story.locations.get(exit.toId); return to === undefined ? [] : [{ key: locationKey(to), name: to.name, exit }] }),
+    }
+    sections.push(`The player's character is in ${describePlace(view, { withKeys: true }).join('\n')}`)
+    sections.push(`Characters here:\n${view.here.map(describeMember).join('\n')}`)
+  }
+  const elsewhere = cast.filter(member => member.place !== undefined && member.place.location.id !== here?.id)
+  if (elsewhere.length > 0) sections.push(`Characters elsewhere (they perceive nothing here unless the moment reaches them):\n${elsewhere.map(member => `${describeMember(member)} - in ${member.place!.location.name} (${locationKey(member.place!.location)})`).join('\n')}`)
+  const nowhere = cast.filter(member => member.place === undefined)
+  if (nowhere.length > 0) sections.push(`Characters with no place yet:\n${nowhere.map(describeMember).join('\n')}`)
+  return sections.join('\n\n')
+}
+
 export const castSummary: SceneContextProvider = {
   scene({ cast, turn, input, queryVector, story }) {
-    const lines = cast.map(({ key, character, state }) => {
+    const describeMember = (member: CastMember): string => {
+      const { key, character, state } = member
       const role = character.control === 'player' ? 'the player\'s character' : `acts through "${key}"`
       const seen = [state?.publicState, state?.activity].filter(text => text !== undefined && text.trim() !== '')
-      return `- ${character.name} (${role})${character.summary === '' ? '' : `: ${character.summary}`}${seen.length > 0 ? ` Currently: ${seen.join('; ')}` : ''}`
-    })
-    const parts = [`Scene before turn ${turn}:\n${lines.join('\n')}`]
+      const where = whereIs(member)
+      return `- ${character.name} (${role})${where === '' ? '' : ` [${where}]`}${character.summary === '' ? '' : `: ${character.summary}`}${seen.length > 0 ? ` Currently: ${seen.join('; ')}` : ''}`
+    }
+    const player = cast.find(member => member.character.control === 'player')
+    const parts = [`Scene before turn ${turn}:\n${cast.some(member => member.place !== undefined) ? placedScene(cast, player, story, describeMember) : cast.map(describeMember).join('\n')}`]
     const threads = story.threads.list('open')
     if (threads.length > 0) parts.push(`Still open in the story:\n${threads.map(thread => `- ${thread.text}`).join('\n')}`)
     const folded = story.summaries.list().reduce((latest, summary) => Math.max(latest, summary.toTurn), 0)
@@ -222,7 +278,7 @@ export const exactUtterances: NarrationChecker = {
 /** What a character is reminded of is what the story's records bring back for it: by the cues of the moment, by its words, and by its meaning when vectors exist. */
 export const recordsRecall: Recaller = {
   recall: ({ member, situation, turn, policy, queryVector }, story, signal) =>
-    story.recallRanked({ characterId: member.character.id, situation, turn, policy }, signal, queryVector === undefined ? {} : { queryVector }),
+    story.recallRanked({ characterId: member.character.id, situation, turn, policy, ...(member.place === undefined ? {} : { locationId: member.place.location.id }) }, signal, queryVector === undefined ? {} : { queryVector }),
 }
 
 /**

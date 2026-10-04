@@ -6,6 +6,7 @@ import { createSession, deleteSession, listSessions, openSession, sessionDatabas
 import type { SessionStore, StoreOptions } from './store.ts'
 import type { RecallQuery, Recalled } from './memory/recall.ts'
 import type { SemanticRanker } from './memory/ranker.ts'
+import { poolCandidates } from './memory/recall.ts'
 import { createTools, type AgentResolver } from './tools/index.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -32,7 +33,7 @@ export const Config: z<Config> = z.object({
 /** A session's repositories. Connections belong to the service, so there is nothing to close. */
 export type Session = Omit<SessionStore, 'close'> & {
   /**
-   * {@link SessionStore.recall}, ranked by meaning when a ranker is registered with
+   * {@link SessionStore.recall}, with the over-retrieved pool reranked when a ranker is registered with
    * `roleplayState.rankMemories`. The one call for anything that reminds a character of something.
    */
   recallRanked(query: Omit<RecallQuery, 'characters'>, signal?: AbortSignal, options?: { queryVector?: readonly number[] }): Promise<Recalled[]>
@@ -132,6 +133,10 @@ export class RoleplayState extends Service {
       threads: store.threads,
       summaries: store.summaries,
       pendingCommits: store.pendingCommits,
+      locations: store.locations,
+      placements: store.placements,
+      planMove: (characterId, move) => store.planMove(characterId, move),
+      move: (characterId, move) => store.move(characterId, move),
       recallIndex: store.recallIndex,
       transaction: fn => store.transaction(fn),
       recall: (query, evidence) => store.recall(query, evidence),
@@ -139,17 +144,19 @@ export class RoleplayState extends Service {
       searchEvents: search => store.searchEvents(search),
       recallCandidates: query => store.recallCandidates(query),
       storedEvidence: (query, queryVector) => store.storedEvidence(query, queryVector),
+      recallPool: (query, evidence) => store.recallPool(query, evidence),
+      finishRecall: (pool, turn, rerank) => store.finishRecall(pool, turn, rerank),
       recallRanked: async (query, signal, options = {}) => {
-        const stored = store.storedEvidence(query, options.queryVector)
+        const pool = store.recallPool(query, store.storedEvidence(query, options.queryVector))
         const ranker = this.rankers.at(-1)
-        if (ranker === undefined) return store.recall(query, stored)
+        if (ranker === undefined) return store.finishRecall(pool, query.turn)
         try {
-          const candidates = store.recallCandidates(query)
-          return store.recall(query, { ...stored, semantic: await ranker({ situation: query.situation, candidates, ...(signal === undefined ? {} : { signal }) }) })
+          const judged = await ranker({ situation: query.situation, candidates: poolCandidates(pool), ...(signal === undefined ? {} : { signal }) })
+          return store.finishRecall(pool, query.turn, judged)
         } catch (error) {
           if (signal?.aborted === true) throw error
-          this.ctx.logger.warn(`roleplay-state: ranking memories by meaning failed, using the cues alone: ${error instanceof Error ? error.message : String(error)}`)
-          return store.recall(query, stored)
+          this.ctx.logger.warn(`roleplay-state: reranking memories failed, using retrieval alone: ${error instanceof Error ? error.message : String(error)}`)
+          return store.finishRecall(pool, query.turn)
         }
       },
       edit: (edit, options) => store.edit(edit, options),

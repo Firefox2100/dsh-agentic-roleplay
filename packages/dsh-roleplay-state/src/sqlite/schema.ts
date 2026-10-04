@@ -89,6 +89,39 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT;
       CREATE INDEX intents_character ON intents (character_id, status);
 
+      CREATE TABLE locations (
+        id INTEGER PRIMARY KEY,
+        source_id TEXT UNIQUE,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        parent_id INTEGER REFERENCES locations (id) ON DELETE RESTRICT,
+        features TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX locations_parent ON locations (parent_id);
+
+      CREATE TABLE exits (
+        id INTEGER PRIMARY KEY,
+        from_id INTEGER NOT NULL REFERENCES locations (id) ON DELETE CASCADE,
+        to_id INTEGER NOT NULL REFERENCES locations (id) ON DELETE CASCADE,
+        description TEXT NOT NULL DEFAULT '',
+        travel_seconds INTEGER CHECK (travel_seconds IS NULL OR travel_seconds >= 0),
+        state TEXT NOT NULL DEFAULT 'open' CHECK (state IN ('open', 'locked', 'blocked')),
+        note TEXT NOT NULL DEFAULT '',
+        UNIQUE (from_id, to_id),
+        CHECK (from_id <> to_id)
+      ) STRICT;
+
+      CREATE TABLE placements (
+        kind TEXT NOT NULL CHECK (kind IN ('character')),
+        entity_id INTEGER NOT NULL,
+        location_id INTEGER NOT NULL REFERENCES locations (id) ON DELETE RESTRICT,
+        position TEXT NOT NULL DEFAULT '',
+        feature_key TEXT,
+        PRIMARY KEY (kind, entity_id)
+      ) STRICT;
+      CREATE INDEX placements_location ON placements (location_id, kind);
+
       CREATE TABLE events (
         id INTEGER PRIMARY KEY,
         turn INTEGER NOT NULL,
@@ -97,9 +130,11 @@ export const MIGRATIONS: readonly Migration[] = [
         importance INTEGER NOT NULL CHECK (importance BETWEEN 1 AND 5),
         tags TEXT NOT NULL DEFAULT '[]',
         sealed INTEGER NOT NULL DEFAULT 0 CHECK (sealed IN (0, 1)),
+        location_id INTEGER REFERENCES locations (id) ON DELETE SET NULL,
         created_at TEXT NOT NULL
       ) STRICT;
       CREATE INDEX events_turn ON events (turn, round, id);
+      CREATE INDEX events_location ON events (location_id);
 
       CREATE TABLE event_involves (
         event_id INTEGER NOT NULL REFERENCES events (id) ON DELETE CASCADE,

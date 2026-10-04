@@ -2,12 +2,12 @@ import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_KINDS, PERCEPTION_MODES, ACCURACIES } from 'dsh-roleplay-model'
 import { NotFoundError } from '../errors.ts'
 import type { MemoryPolicy } from '../memory/recall.ts'
-import { characterKey, parseRecordsEdit, recordsEditSchema } from '../records/edit.ts'
+import { characterKey, locationKey, parseRecordsEdit, recordsEditSchema } from '../records/edit.ts'
 import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit'>
+  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements'>
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
   turn: number
   policy: MemoryPolicy
@@ -29,6 +29,7 @@ export async function vectorOf(agent: AgentLink, text: string, signal?: AbortSig
 export type AgentResolver = (agentSessionId: string) => AgentLink | undefined
 
 const MAX_EVENTS = 20
+const MAX_LISTED_PLACES = 100
 
 const link = (resolve: AgentResolver, agent: { session: { id: string } } | undefined): AgentLink => {
   const found = agent === undefined ? undefined : resolve(agent.session.id)
@@ -78,6 +79,7 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
           properties: {
             character: str, name: str, aliases: strs, summary: str, personality: str,
             public_state: str, inner_state: str, activity: str, emotion: { type: 'json', required: true },
+            location: { type: 'json', required: true }, position: str,
           },
         },
         render: pretty,
@@ -88,15 +90,59 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
         const view = session.records().characters.find(entry => entry.character === args.character)
         const found = session.characters.list().find(character => characterKey(character) === args.character)
         if (view === undefined || found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, emotion: view.emotion }
+        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, emotion: view.emotion, location: view.location, position: view.position }
       },
     }),
+    defineTool({
+      name: 'list_locations',
+      description: 'List the places of the story with the key each is named by and the place it is in. Narrow to what is inside one place with `within`; at most 100 are listed.',
+      parameters: { within: { type: 'string', description: 'The key of a place: list only the places inside it, at any depth.' } },
+      output: {
+        schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: str, name: str, in: { type: 'json', required: true }, exits: int } } },
+        render: pretty,
+      },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent)
+        const all = session.locations.list()
+        const keys = new Map(all.map(place => [place.id, locationKey(place)]))
+        const within = args.within === undefined ? undefined : all.find(place => locationKey(place) === args.within)
+        if (args.within !== undefined && within === undefined) throw new NotFoundError(`there is no place "${args.within}"; list_locations shows the keys`)
+        const inside = (place: (typeof all)[number]): boolean => {
+          for (let up = place.parentId; up !== undefined; up = all.find(candidate => candidate.id === up)?.parentId) if (up === within?.id) return true
+          return false
+        }
+        return all.filter(place => within === undefined || inside(place)).slice(0, MAX_LISTED_PLACES).map(place => ({ key: locationKey(place), name: place.name, in: place.parentId === undefined ? null : keys.get(place.parentId) ?? null, exits: session.locations.exitsFrom(place.id).length }))
+      },
+    }),
+    defineTool({
+      name: 'get_location',
+      description: 'Read one place: what it is like, the things in it that can be pointed at, the ways out (and whether each is open, locked or blocked), and who is there.',
+      parameters: { location: { type: 'string', required: true, description: 'The key of the place, as list_locations gives it.' } },
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent)
+        const place = session.locations.list().find(candidate => locationKey(candidate) === args.location)
+        if (place === undefined) throw new NotFoundError(`there is no place "${args.location}"; list_locations shows the keys`)
+        const key = (id: number): string => { const found = session.locations.get(id); return found === undefined ? String(id) : locationKey(found) }
+        const people = session.characters.list()
+        return JSON.parse(JSON.stringify({
+          location: locationKey(place), name: place.name, description: place.description, in: place.parentId === undefined ? null : key(place.parentId),
+          features: place.features,
+          exits: session.locations.exitsFrom(place.id).map(exit => ({ to: key(exit.toId), name: session.locations.get(exit.toId)?.name, state: exit.state, description: exit.description, note: exit.note, travel_time_seconds: exit.travelSeconds ?? null })),
+          here: session.placements.at(place.id, 'character').map(placement => { const who = people.find(character => character.id === placement.entityId); return { character: who === undefined ? String(placement.entityId) : characterKey(who), position: placement.position, feature: placement.featureKey ?? null } }),
+        })) as never
+      },
+    }),
+
     defineTool({
       name: 'search_events',
       description: 'Look up what objectively happened in the story, in the order it happened. Narrow by character, turns, importance or what it is about.',
       parameters: {
         character: { type: 'string', description: 'Only events this character is involved in.' },
         text: { type: 'string', description: 'Only events about this, found by its words or its meaning; with it, the best matches come first.' },
+        location: { type: 'string', description: 'Only events that happened in this place (its key).' },
         from_turn: { type: 'integer' },
         to_turn: { type: 'integer' },
         min_importance: { type: 'integer', description: `From ${IMPORTANCE_MIN} to ${IMPORTANCE_MAX}.` },
@@ -116,8 +162,11 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
         const characters = session.characters.list()
         const involving = args.character === undefined ? undefined : characters.find(character => characterKey(character) === args.character)
         if (args.character !== undefined && involving === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
+        const place = args.location === undefined ? undefined : session.locations.list().find(candidate => locationKey(candidate) === args.location)
+        if (args.location !== undefined && place === undefined) throw new NotFoundError(`there is no place "${args.location}"; list_locations shows the keys`)
         const needle = args.text?.trim().toLowerCase()
         const filter = {
+          ...(place === undefined ? {} : { locationId: place.id }),
           ...(involving === undefined ? {} : { involving: involving.id }),
           ...(args.from_turn === undefined ? {} : { fromTurn: args.from_turn }),
           ...(args.to_turn === undefined ? {} : { toTurn: args.to_turn }),
@@ -138,6 +187,7 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
           ...(filter.fromTurn === undefined ? {} : { fromTurn: filter.fromTurn }),
           ...(filter.toTurn === undefined ? {} : { toTurn: filter.toTurn }),
           ...(filter.minImportance === undefined ? {} : { minImportance: filter.minImportance }),
+          ...(filter.locationId === undefined ? {} : { locationId: filter.locationId }),
         })
         const allowed = new Set(listed.map(event => event.id))
         const first = ranked.filter(event => allowed.has(event.id))
@@ -159,7 +209,7 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
         const { session, turn, policy } = agent
         const found = session.characters.list().find(character => characterKey(character) === args.character)
         if (found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-        return (await session.recallRanked({ characterId: found.id, situation: args.situation, turn, policy }, exec.signal, await vectorOf(agent, args.situation, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
+        return (await session.recallRanked({ characterId: found.id, situation: args.situation, turn, policy, ...(session.placements.get('character', found.id) === undefined ? {} : { locationId: session.placements.get('character', found.id)!.locationId }) }, exec.signal, await vectorOf(agent, args.situation, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
       },
     }),
     defineTool({
@@ -209,7 +259,7 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
   const writes: ToolDefinition[] = [
     {
       name: 'edit_records',
-      description: 'Change the story\'s records in one call, together or not at all: character states, new events with who took them in, corrections and retractions of events, beliefs, and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
+      description: 'Change the story\'s records in one call, together or not at all: character states, new events (with where they happened and who took them in), corrections and retractions of draft events, revisions of what characters took in, places the story makes up, changes to the ways between places, beliefs, and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
       parameters: editSchema as unknown as Record<string, unknown>,
       output: {
         schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } } }, required: ['writes', 'event_ids', 'belief_ids'], additionalProperties: false },
@@ -239,6 +289,22 @@ export function createTools(resolve: AgentResolver, options: { write: boolean; /
           turn,
           states: [{ character, ...(public_state === undefined ? {} : { publicState: public_state }), ...(inner_state === undefined ? {} : { innerState: inner_state }), ...(activity === undefined ? {} : { activity }), ...(emotion === undefined ? {} : { emotion }) }],
         }))
+      },
+    }),
+    defineTool({
+      name: 'move_character',
+      description: 'Move a character to another place. It must be possible: there has to be a way over open exits from where it is, unless ignore_exits says the story itself carries it (carried off, teleported, falls). The reasons come back if it is not.',
+      parameters: {
+        character: { type: 'string', required: true },
+        to: { type: 'string', required: true, description: 'The key of the place, as list_locations gives it.' },
+        position: { type: 'string', description: 'Where in the place, in words: "at the bar", "by the door".' },
+        feature: { type: 'string', description: 'The key of a feature of the place it is at.' },
+        ignore_exits: { type: 'boolean' },
+      },
+      output: { schema: done, render: summary('Moved') },
+      async execute(args, exec) {
+        const { session, turn } = link(resolve, exec.agent)
+        return written(session.edit({ turn, moves: [{ character: args.character, to: args.to, ...(args.position === undefined ? {} : { position: args.position }), ...(args.feature === undefined ? {} : { feature: args.feature }), ...(args.ignore_exits === true ? { ignoreExits: true } : {}) }] }))
       },
     }),
     defineTool({

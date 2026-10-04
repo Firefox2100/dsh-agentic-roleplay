@@ -1,7 +1,7 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
-  | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp'
+  | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'limitTokens' | 'limitTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
 
@@ -13,6 +13,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     flakyHelp: 'Characters remember like people do: details fade with time and unimportance, old trivia is forgotten, and a character can take something in wrongly. Turn off for exact recall, for example when the chat is an assistant.',
     recall: 'Things a character is reminded of',
     recallHelp: 'The most memories brought back to a character each time it acts, chosen by what the moment calls to mind.',
+    overRetrieve: 'Memories considered per memory recalled',
+    overRetrieveHelp: 'To choose what a character is reminded of, this many times as many candidates are retrieved (by the moment\'s cues, by words and by meaning) and the best are kept; a reranking service, when one is configured, judges the wider net. 1 chooses straight from the first search.',
     lookup: 'Characters can look up memories',
     lookupHelp: 'While it decides, a character can ask itself about something it remembers beyond what the moment already brought to mind. Each character only reaches its own memories. It makes a character\'s turn a little longer.',
     verify: 'Check the records',
@@ -35,6 +37,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     flakyHelp: '角色像真人一样记忆：细节会随时间和不重要而淡忘，陈年琐事会被遗忘，角色也可能记错或看错。需要精确回忆时（例如把对话当作助手使用）可以关闭。',
     recall: '角色每次回想的条数',
     recallHelp: '角色每次行动时最多被唤起的记忆条数，按当前情境联想到的内容挑选。',
+    overRetrieve: '每条回忆的候选倍数',
+    overRetrieveHelp: '为了选出角色被唤起的记忆，会先检索出此倍数的候选（按情境线索、字词和语义），再保留最好的；若已配置重排序服务，则由它评判这张更大的网。1 表示直接从第一次检索中选取。',
     lookup: '角色可主动回忆',
     lookupHelp: '角色在决定行动时，可以主动向自己追问更多记忆，超出当前情境已唤起的部分。每个角色只能查到自己的记忆。会让角色的回合稍长一些。',
     verify: '核对记录',

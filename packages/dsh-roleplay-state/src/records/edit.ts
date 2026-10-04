@@ -3,8 +3,13 @@ import {
   ACCURACIES, IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_KINDS, PERCEPTION_MODES,
   type Accuracy, type Character, type CharacterId, type CharacterStatePatch, type MemoryKind, type NewPerception, type PerceptionMode,
 } from 'dsh-roleplay-model'
-import { InvalidEditError } from '../errors.ts'
-import type { CharacterRepository, CharacterStateRepository, EventRepository, MemoryRepository, ThreadRepository } from '../repositories.ts'
+import { EXIT_STATES, MAX_LOCATION_FEATURES, type ExitState, type Location, type LocationFeature } from 'dsh-roleplay-model'
+import { InvalidEditError, InvalidMoveError } from '../errors.ts'
+import { moveCharacter } from './movement.ts'
+import type { CharacterRepository, CharacterStateRepository, EventRepository, LocationRepository, MemoryRepository, PlacementRepository, ThreadRepository } from '../repositories.ts'
+
+/** The name by which models and other plugins refer to a place: its id in the world, or its number when it was made up in play. */
+export const locationKey = (location: Pick<Location, 'id' | 'sourceId'>): string => location.sourceId ?? String(location.id)
 
 /** The name by which models and other plugins refer to a character: its id in the world, or its number when it has none. */
 export const characterKey = (character: Pick<Character, 'id' | 'sourceId'>): string => character.sourceId ?? String(character.id)
@@ -16,6 +21,8 @@ export interface RecordsTarget {
   events: EventRepository
   memories: MemoryRepository
   threads: ThreadRepository
+  locations: LocationRepository
+  placements: PlacementRepository
   transaction<T>(fn: () => T): T
 }
 
@@ -35,6 +42,8 @@ export interface StatePatch extends Pick<CharacterStatePatch, 'publicState' | 'i
 }
 
 export interface NewEvent {
+  /** The key of the place it happened in. */
+  location?: string
   turn: number
   round: number
   text: string
@@ -46,6 +55,7 @@ export interface NewEvent {
 
 export interface EventEdit {
   id: number
+  location?: string
   text?: string
   importance?: number
   tags?: string[]
@@ -66,6 +76,56 @@ export interface PerceptionEdit {
 /** One more character took in an event, possibly long after: it was told, or worked it out. Works on sealed events too. */
 export interface PerceptionAddition extends PerceivedBy {
   event: number
+}
+
+export interface NewExit {
+  /** The key of the place it leads to. */
+  to: string
+  description?: string
+  /** Also make the way back, with `backDescription`; on by default. */
+  oneWay?: boolean
+  backDescription?: string
+  travelSeconds?: number
+  state?: ExitState
+  note?: string
+}
+
+/** A place made up in play (or arriving with a plugin): a hidden passage, a room the story opens. */
+export interface NewPlace {
+  key: string
+  name: string
+  description?: string
+  /** The key of the place it is in. */
+  parent?: string
+  features?: { key: string; name: string; description?: string }[]
+  exits?: NewExit[]
+}
+
+export interface PlaceEdit {
+  place: string
+  name?: string
+  description?: string
+  /** Replaces the list of features. */
+  features?: { key: string; name: string; description?: string }[]
+}
+
+/** A door is unlocked, a passage collapses: the way between two places changes, both ways unless told otherwise. */
+export interface ExitChange {
+  from: string
+  to: string
+  state?: ExitState
+  description?: string
+  note?: string
+  travelSeconds?: number
+  oneWay?: boolean
+}
+
+export interface CharacterMove {
+  character: string
+  to: string
+  position?: string
+  feature?: string
+  ignoreExits?: boolean
 }
 
 export interface NewBelief {
@@ -96,6 +156,10 @@ export interface RecordsEdit {
   eventRetractions?: number[]
   perceptionEdits?: PerceptionEdit[]
   perceptionsAdded?: PerceptionAddition[]
+  places?: NewPlace[]
+  placeEdits?: PlaceEdit[]
+  exitChanges?: ExitChange[]
+  moves?: CharacterMove[]
   beliefs?: NewBelief[]
   beliefEdits?: BeliefEdit[]
   beliefRetractions?: number[]
@@ -148,6 +212,50 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
     })
   }
   const tags = (given: readonly string[] | undefined): string[] => [...new Set(list(given).map(tag => tag.trim().toLowerCase()).filter(tag => tag !== ''))]
+
+  const existingPlaces = new Map(target.locations.list().map(place => [locationKey(place), place]))
+  const newPlaceKeys = new Set<string>()
+  const placeKnown = (key: string, where: string): void => {
+    if (!existingPlaces.has(key) && !newPlaceKeys.has(key)) problems.push(`${where}: there is no place "${key}" (list_locations shows the keys)`)
+  }
+  const placeKeys = new Set(list(edit.places).map(place => place.key))
+  list(edit.places).forEach((place, index) => {
+    const where = `places[${index}]`
+    if (!present(place.key)) problems.push(`${where}: give the place a key`)
+    else if (existingPlaces.has(place.key) || newPlaceKeys.has(place.key)) problems.push(`${where}: the key "${place.key}" is already used by a place`)
+    if (!present(place.name)) problems.push(`${where}: give the place a name`)
+    if (place.parent !== undefined) placeKnown(place.parent, `${where}.parent`)
+    if (list(place.features).length > MAX_LOCATION_FEATURES) problems.push(`${where}: a place has at most ${MAX_LOCATION_FEATURES} features`)
+    newPlaceKeys.add(place.key)
+    for (const [at, exit] of list(place.exits).entries()) {
+      if (!existingPlaces.has(exit.to) && !placeKeys.has(exit.to)) problems.push(`${where}.exits[${at}]: there is no place "${exit.to}"`)
+      if (exit.to === place.key) problems.push(`${where}.exits[${at}]: an exit must lead to another place`)
+      if (exit.state !== undefined && !EXIT_STATES.includes(exit.state)) problems.push(`${where}.exits[${at}]: unknown state "${String(exit.state)}"`)
+    }
+  })
+  list(edit.placeEdits).forEach((change, index) => {
+    const where = `place_edits[${index}]`
+    placeKnown(change.place, where)
+    if (change.name !== undefined && !present(change.name)) problems.push(`${where}: a place needs a name`)
+    if (list(change.features).length > MAX_LOCATION_FEATURES) problems.push(`${where}: a place has at most ${MAX_LOCATION_FEATURES} features`)
+  })
+  list(edit.exitChanges).forEach((change, index) => {
+    const where = `exit_changes[${index}]`
+    placeKnown(change.from, `${where}.from`)
+    placeKnown(change.to, `${where}.to`)
+    if (change.state !== undefined && !EXIT_STATES.includes(change.state)) problems.push(`${where}: unknown state "${String(change.state)}"`)
+    const from = existingPlaces.get(change.from)
+    const to = existingPlaces.get(change.to)
+    if (from !== undefined && to !== undefined && target.locations.getExit(from.id, to.id) === undefined) problems.push(`${where}: there is no exit from "${change.from}" to "${change.to}"`)
+  })
+  list(edit.moves).forEach((move, index) => {
+    const where = `moves[${index}]`
+    idOf(move.character, where)
+    placeKnown(move.to, `${where}.to`)
+  })
+  const placeIn = (key: string | undefined, where: string): void => { if (key !== undefined) placeKnown(key, where) }
+  list(edit.events).forEach((event, index) => { placeIn(event.location, `events[${index}].location`) })
+  list(edit.eventEdits).forEach((change, index) => { placeIn(change.location, `event_edits[${index}].location`) })
 
   if (!Number.isInteger(edit.turn) || edit.turn < 1) problems.push('turn must be a whole number from 1')
 
@@ -225,6 +333,66 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
 
   return target.transaction(() => {
     const result: EditResult = { eventIds: [], beliefIds: [], writes: 0 }
+    const placeOf = (key: string): Location => {
+      const found = target.locations.getBySourceId(key) ?? (Number.isInteger(Number(key)) ? target.locations.get(Number(key)) : undefined)
+      if (found === undefined) throw new InvalidEditError([`there is no place "${key}"`])
+      return found
+    }
+    const features = (given: readonly { key: string; name: string; description?: string }[] | undefined): LocationFeature[] => list(given).map(feature => ({ key: feature.key, name: feature.name, description: feature.description ?? '' }))
+    const exit = (from: Location, to: Location, description: string | undefined, rest: Pick<NewExit, 'travelSeconds' | 'state' | 'note'>): void => {
+      if (target.locations.getExit(from.id, to.id) !== undefined) return
+      target.locations.addExit({ fromId: from.id, toId: to.id, description: description ?? '', ...(rest.travelSeconds === undefined ? {} : { travelSeconds: rest.travelSeconds }), ...(rest.state === undefined ? {} : { state: rest.state }), ...(rest.note === undefined ? {} : { note: rest.note }) })
+      result.writes += 1
+    }
+    for (const place of list(edit.places)) {
+      target.locations.add({ sourceId: place.key, name: place.name, description: place.description ?? '', ...(place.parent === undefined ? {} : { parentId: placeOf(place.parent).id }), features: features(place.features) })
+      result.writes += 1
+    }
+    for (const place of list(edit.places)) {
+      const from = placeOf(place.key)
+      for (const wanted of list(place.exits)) {
+        const to = placeOf(wanted.to)
+        exit(from, to, wanted.description, wanted)
+        if (wanted.oneWay !== true) exit(to, from, wanted.backDescription ?? wanted.description, wanted)
+      }
+    }
+    for (const change of list(edit.placeEdits)) {
+      target.locations.update(placeOf(change.place).id, {
+        ...(change.name === undefined ? {} : { name: change.name }),
+        ...(change.description === undefined ? {} : { description: change.description }),
+        ...(change.features === undefined ? {} : { features: features(change.features) }),
+      })
+      result.writes += 1
+    }
+    for (const change of list(edit.exitChanges)) {
+      const from = placeOf(change.from)
+      const to = placeOf(change.to)
+      const sides = change.oneWay === true ? [[from, to]] as const : [[from, to], [to, from]] as const
+      let found = false
+      for (const [a, b] of sides) {
+        const current = target.locations.getExit(a.id, b.id)
+        if (current === undefined) continue
+        found = true
+        target.locations.updateExit(current.id, {
+          ...(change.state === undefined ? {} : { state: change.state }),
+          ...(change.description === undefined || a !== from ? {} : { description: change.description }),
+          ...(change.note === undefined ? {} : { note: change.note }),
+          ...(change.travelSeconds === undefined ? {} : { travelSeconds: change.travelSeconds }),
+        })
+        result.writes += 1
+      }
+      if (!found) throw new InvalidEditError([`there is no exit from "${change.from}" to "${change.to}"`])
+    }
+    for (const [index, move] of list(edit.moves).entries()) {
+      const character = byKey.get(move.character)!
+      try {
+        moveCharacter(target, character.id, { to: placeOf(move.to).id, ...(move.position === undefined ? {} : { position: move.position }), ...(move.feature === undefined ? {} : { featureKey: move.feature }), ...(move.ignoreExits === true ? { ignoreExits: true } : {}) })
+      } catch (error) {
+        if (error instanceof InvalidMoveError) throw new InvalidEditError(error.problems.map(problem => `moves[${index}]: ${problem}`))
+        throw error
+      }
+      result.writes += 1
+    }
     for (const { id, patch } of states) {
       const current = target.characterStates.get(id)
       const { character: _character, emotion, ...fields } = patch
@@ -242,7 +410,7 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
       result.writes += 1
     }
     for (const { event, involves, perceived } of events) {
-      const { event: stored } = target.events.add({ turn: event.turn, round: event.round, text: event.text.trim(), importance: event.importance, tags: tags(event.tags), involves }, perceived)
+      const { event: stored } = target.events.add({ turn: event.turn, round: event.round, text: event.text.trim(), importance: event.importance, tags: tags(event.tags), involves, ...(event.location === undefined ? {} : { locationId: placeOf(event.location).id }) }, perceived)
       result.eventIds.push(stored.id)
       result.writes += 1
     }
@@ -252,6 +420,7 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
         ...(change.importance === undefined ? {} : { importance: change.importance }),
         ...(change.tags === undefined ? {} : { tags: tags(change.tags) }),
         ...(involves === undefined ? {} : { involves }),
+        ...(change.location === undefined ? {} : { locationId: placeOf(change.location).id }),
       })
       if (perceived !== undefined) target.events.setPerceptions(change.id, perceived)
       result.writes += 1
@@ -332,6 +501,13 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       ...(text(item, 'accuracy') === undefined ? {} : { accuracy: text(item, 'accuracy') as Accuracy }),
     }))
   }
+  const bool = (entry: Wire, key: string): boolean | undefined => (typeof entry[key] === 'boolean' ? entry[key] : undefined)
+  const featuresOf = (entry: Wire): { key: string; name: string; description?: string }[] | undefined => {
+    const found = entry['features']
+    if (found === undefined || found === null) return undefined
+    if (!Array.isArray(found)) { problems.push('features must be a list'); return undefined }
+    return found.filter(isObject).map(item => ({ key: text(item, 'key') ?? '', name: text(item, 'name') ?? '', ...(text(item, 'description') === undefined ? {} : { description: text(item, 'description')! }) }))
+  }
   const defined = <T>(entry: object): T => Object.fromEntries(Object.entries(entry).filter(([, field]) => field !== undefined)) as T
 
   const turn = num(value, 'turn')
@@ -343,10 +519,10 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     })),
     events: array('events').map((entry): NewEvent => defined<NewEvent>({
       turn: num(entry, 'turn') ?? 0, round: num(entry, 'round') ?? 0, text: text(entry, 'text') ?? '', importance: num(entry, 'importance') ?? 0,
-      tags: strings(entry, 'tags'), involves: strings(entry, 'involves'), perceivedBy: perceived(entry),
+      tags: strings(entry, 'tags'), involves: strings(entry, 'involves'), perceivedBy: perceived(entry), location: text(entry, 'location'),
     })),
     eventEdits: array('event_edits').map((entry): EventEdit => defined<EventEdit>({
-      id: num(entry, 'id') ?? 0, text: text(entry, 'text'), importance: num(entry, 'importance'), tags: strings(entry, 'tags'), involves: strings(entry, 'involves'), perceivedBy: perceived(entry),
+      id: num(entry, 'id') ?? 0, text: text(entry, 'text'), importance: num(entry, 'importance'), tags: strings(entry, 'tags'), involves: strings(entry, 'involves'), perceivedBy: perceived(entry), location: text(entry, 'location'),
     })),
     eventRetractions: numbers('event_retractions'),
     perceptionEdits: array('perception_edits').map((entry): PerceptionEdit => defined<PerceptionEdit>({
@@ -355,6 +531,21 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     perceptionsAdded: array('perceptions_added').map((entry): PerceptionAddition => defined<PerceptionAddition>({
       event: num(entry, 'event') ?? 0, character: text(entry, 'character') ?? '', mode: (text(entry, 'mode') ?? '') as PerceptionMode,
       content: text(entry, 'content'), gist: text(entry, 'gist'), accuracy: text(entry, 'accuracy') as Accuracy | undefined,
+    })),
+    places: array('places').map((entry): NewPlace => defined<NewPlace>({
+      key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', description: text(entry, 'description'), parent: text(entry, 'parent'), features: featuresOf(entry),
+      exits: Array.isArray(entry['exits']) ? entry['exits'].filter(isObject).map((item): NewExit => defined<NewExit>({
+        to: text(item, 'to') ?? '', description: text(item, 'description'), oneWay: bool(item, 'one_way'), backDescription: text(item, 'back_description'),
+        travelSeconds: num(item, 'travel_time_seconds'), state: text(item, 'state') as ExitState | undefined, note: text(item, 'note'),
+      })) : undefined,
+    })),
+    placeEdits: array('place_edits').map((entry): PlaceEdit => defined<PlaceEdit>({ place: text(entry, 'place') ?? '', name: text(entry, 'name'), description: text(entry, 'description'), features: featuresOf(entry) })),
+    exitChanges: array('exit_changes').map((entry): ExitChange => defined<ExitChange>({
+      from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '', state: text(entry, 'state') as ExitState | undefined, description: text(entry, 'description'), note: text(entry, 'note'),
+      travelSeconds: num(entry, 'travel_time_seconds'), oneWay: bool(entry, 'one_way'),
+    })),
+    moves: array('moves').map((entry): CharacterMove => defined<CharacterMove>({
+      character: text(entry, 'character') ?? '', to: text(entry, 'to') ?? '', position: text(entry, 'position'), feature: text(entry, 'feature'), ignoreExits: bool(entry, 'ignore_exits'),
     })),
     beliefs: array('beliefs').map((entry): NewBelief => defined<NewBelief>({
       character: text(entry, 'character') ?? '', kind: (text(entry, 'kind') ?? '') as MemoryKind, text: text(entry, 'text') ?? '', about: strings(entry, 'about'), importance: num(entry, 'importance') ?? 0,
@@ -395,6 +586,12 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
       additionalProperties: false,
     },
   }
+  const placeKey: JsonSchemaNode = { type: 'string', description: 'The key of a place, as list_locations gives it, or one of the places made in this same edit.' }
+  const featureList: JsonSchemaNode = {
+    type: 'array',
+    description: 'Named things in the place that a story can point at: a desk, a window, a notice board.',
+    items: { type: 'object', properties: { key: { type: 'string' }, name: { type: 'string' }, description: { type: 'string' } }, required: ['key', 'name'], additionalProperties: false },
+  }
   const properties: ObjectJsonSchema['properties'] = {
     turn: { type: 'integer', description: 'The turn these records belong to.' },
     states: {
@@ -432,6 +629,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
           tags: { type: 'array', items: { type: 'string' }, description: 'Lowercase words a later search could use: objects, places, topics.' },
           involves: { ...keys, description: 'The characters the event is about: who acted and who it was done to.' },
           perceived_by: perceivedBy,
+          location: { ...placeKey, description: 'Where it happened: the key of the place.' },
         },
         required: ['turn', 'round', 'text', 'importance', 'tags', 'involves', 'perceived_by'],
         additionalProperties: false,
@@ -453,6 +651,64 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
         additionalProperties: false,
       },
     },
+    places: {
+      type: 'array',
+      description: 'Places the story makes up or opens: a hidden passage, a room that was behind a door. Only for places that are not already known.',
+      items: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'A short lowercase key that does not exist yet.' },
+          name: { type: 'string' },
+          description: { type: 'string' },
+          parent: placeKey,
+          features: featureList,
+          exits: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                to: placeKey,
+                description: { type: 'string', description: 'What the way looks like from this place.' },
+                one_way: { type: 'boolean', description: 'Leave out for a way that works both ways.' },
+                back_description: { type: 'string' },
+                travel_time_seconds: { type: 'integer' },
+                state: { type: 'string', enum: [...EXIT_STATES] },
+                note: { type: 'string' },
+              },
+              required: ['to'],
+              additionalProperties: false,
+            },
+          },
+        },
+        required: ['key', 'name'],
+        additionalProperties: false,
+      },
+    },
+    place_edits: {
+      type: 'array',
+      description: 'Changes to a known place: it burned down, a feature appeared. Give only what changes; features replaces the list.',
+      items: { type: 'object', properties: { place: placeKey, name: { type: 'string' }, description: { type: 'string' }, features: featureList }, required: ['place'], additionalProperties: false },
+    },
+    exit_changes: {
+      type: 'array',
+      description: 'The way between two places changed: a door unlocked, a passage collapsed. Applies to both directions unless one_way.',
+      items: {
+        type: 'object',
+        properties: { from: placeKey, to: placeKey, state: { type: 'string', enum: [...EXIT_STATES] }, description: { type: 'string' }, note: { type: 'string' }, travel_time_seconds: { type: 'integer' }, one_way: { type: 'boolean' } },
+        required: ['from', 'to'],
+        additionalProperties: false,
+      },
+    },
+    moves: {
+      type: 'array',
+      description: 'Where characters go. Not for what the game master already decided; those moves are written already.',
+      items: {
+        type: 'object',
+        properties: { character, to: placeKey, position: { type: 'string' }, feature: { type: 'string' }, ignore_exits: { type: 'boolean' } },
+        required: ['character', 'to'],
+        additionalProperties: false,
+      },
+    },
     threads_opened: { type: 'array', items: { type: 'string' }, description: 'Promises made, mysteries raised, goals set that are not settled yet: one sentence each.' },
     threads_resolved: { type: 'array', items: { type: 'integer' }, description: 'The ids of open threads that are now settled.' },
   }
@@ -463,7 +719,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
         description: 'Corrections to draft events of this run (a sealed event cannot change). Give only what changes; perceived_by replaces the whole list.',
         items: {
           type: 'object',
-          properties: { id: { type: 'integer' }, text: { type: 'string' }, importance: IMPORTANCE, tags: { type: 'array', items: { type: 'string' } }, involves: keys, perceived_by: perceivedBy },
+          properties: { id: { type: 'integer' }, text: { type: 'string' }, importance: IMPORTANCE, tags: { type: 'array', items: { type: 'string' } }, involves: keys, perceived_by: perceivedBy, location: placeKey },
           required: ['id'],
           additionalProperties: false,
         },
