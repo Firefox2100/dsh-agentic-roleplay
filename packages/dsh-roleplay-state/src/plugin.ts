@@ -137,6 +137,8 @@ export class RoleplayState extends Service {
       placements: store.placements,
       relationships: store.relationships,
       consolidation: store.consolidation,
+      slots: store.slots,
+      items: store.items,
       planMove: (characterId, move) => store.planMove(characterId, move),
       move: (characterId, move) => store.move(characterId, move),
       recallIndex: store.recallIndex,

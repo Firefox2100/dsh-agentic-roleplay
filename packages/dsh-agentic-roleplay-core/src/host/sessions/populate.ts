@@ -1,5 +1,6 @@
-import type { CharacterDefinition, LocationDefinition } from 'dsh-roleplay-model'
+import type { CharacterDefinition, Holder, ItemDefinition, LocationDefinition, Slot } from 'dsh-roleplay-model'
 import type { Session } from 'dsh-roleplay-state'
+import { containersFirst } from '../items/load.ts'
 import { parentsFirst } from '../locations/load.ts'
 
 /** What is wrong with how the characters stand towards each other, found before anything is created. */
@@ -64,6 +65,46 @@ export function populateCharacters(session: Session, characters: readonly Charac
     const from = session.characters.getBySourceId(id)!
     for (const relation of relationships ?? []) {
       session.relationships.upsert(from.id, session.characters.getBySourceId(relation.to)!.id, { label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }, 0)
+    }
+  }
+}
+
+/**
+ * Put a world's slots and things into a new session, each where it starts, with what opens each lock. Containers come
+ * before what is in them; what opens an exit is set for both directions of it.
+ */
+export function populateItems(session: Session, items: readonly ItemDefinition[], slots: readonly Slot[], locations: readonly LocationDefinition[]): void {
+  for (const slot of slots) session.slots.upsert(slot)
+  const made = new Map<string, number>()
+  for (const definition of containersFirst(items)) {
+    const { start } = definition
+    const holder: Holder = start.kind === 'location'
+      ? { kind: 'location', locationId: session.locations.getBySourceId(start.location)!.id, ...(start.position === undefined ? {} : { position: start.position }), ...(start.feature === undefined ? {} : { featureKey: start.feature }) }
+      : start.kind === 'held' ? { kind: 'character', characterId: session.characters.getBySourceId(start.character)!.id, mode: 'held' }
+        : start.kind === 'worn' ? { kind: 'character', characterId: session.characters.getBySourceId(start.character)!.id, mode: 'worn', slot: definition.wearable!, ...(start.position === undefined ? {} : { position: start.position }) }
+          : { kind: 'item', itemId: made.get(start.item)!, ...(start.position === undefined ? {} : { position: start.position }) }
+    const item = session.items.add({
+      sourceId: definition.id, name: definition.name, description: definition.description, quantity: definition.quantity, unique: definition.unique, quality: definition.quality,
+      notable: definition.notable, hidden: definition.hidden, ...(definition.wearable === undefined ? {} : { wearableSlot: definition.wearable }),
+      ...(definition.container === undefined ? {} : { container: { state: definition.container.state } }),
+      ...(definition.owner === undefined ? {} : { ownerId: session.characters.getBySourceId(definition.owner)!.id }),
+    }, holder)
+    made.set(definition.id, item.id)
+  }
+  for (const definition of items) {
+    if (definition.container !== undefined && definition.container.openedBy.length > 0) {
+      session.items.setOpeners({ kind: 'item', id: made.get(definition.id)! }, definition.container.openedBy.map(key => made.get(key)!))
+    }
+  }
+  for (const place of locations) {
+    const from = session.locations.getBySourceId(place.id)!
+    for (const exit of place.exits) {
+      if ((exit.openedBy ?? []).length === 0) continue
+      const to = session.locations.getBySourceId(exit.to)!
+      for (const [a, b] of [[from.id, to.id], [to.id, from.id]] as const) {
+        const way = session.locations.getExit(a, b)
+        if (way !== undefined) session.items.setOpeners({ kind: 'exit', id: way.id }, exit.openedBy!.map(key => made.get(key)!))
+      }
     }
   }
 }

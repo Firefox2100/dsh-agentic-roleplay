@@ -69,6 +69,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     <form className={css.view} data-testid="roleplay-chat-settings" onSubmit={(event) => { event.preventDefault(); save() }}>
       <h2 className={css.title}>{t('title')}</h2>
       <p className={css.description}>{t('description')}</p>
+      {payload.pendingConsolidation > 0 && <p className={css.notice} role="status">{t('pendingConsolidation', { count: payload.pendingConsolidation })}</p>}
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
       <SettingsFields t={t} drafts={drafts} onChange={change} options={options} disabled={saving} />
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}

@@ -271,3 +271,22 @@ describe('starting in a world whose characters have relationships', () => {
     await expect(startSession(deps, playAsArthur)).rejects.toThrow(/relationships of .* have 1 problem/)
   })
 })
+
+describe('starting in a world with things', () => {
+  const world = () => join(root, 'worlds', 'blackwater folder')
+
+  it('creates the things and the slots where they start, and refuses a world whose things have problems before anything is made', async () => {
+    await write(join(world(), 'locations', 'bar', 'location.json'), { id: 'bar', name: 'Bar' })
+    await write(join(world(), 'characters', 'arthur', 'character.json'), { name: 'Arthur Moore', role: 'playable', start: { location: 'bar' } })
+    await write(join(world(), 'items', 'slots.json'), [{ id: 'quiver', name: 'quiver', capacity: 1 }])
+    await write(join(world(), 'items', 'lantern', 'item.json'), { name: 'Lantern', location: 'bar', notable: true })
+    await write(join(world(), 'items', 'quiver', 'item.json'), { name: 'Quiver', wearable: 'quiver', worn_by: 'arthur' })
+    const started = await startSession(deps, playAsArthur)
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    expect(session.items.list().map(entry => entry.name)).toEqual(['Lantern', 'Quiver'])
+    expect(session.items.holding(session.items.getBySourceId('quiver')!.id)?.holder).toMatchObject({ mode: 'worn', slot: 'quiver' })
+    expect(session.slots.get('quiver')).toBeDefined()
+    await write(join(world(), 'items', 'bad', 'item.json'), { name: 'Bad', location: 'moon' })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/items of .* have 1 problem/)
+  })
+})

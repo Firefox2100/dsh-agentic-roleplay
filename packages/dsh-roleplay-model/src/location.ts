@@ -102,6 +102,8 @@ export interface ExitDefinition {
   travelSeconds?: number
   state: ExitState
   note: string
+  /** The ids of the items that open it when it is locked. */
+  openedBy?: string[]
 }
 
 /** A place as the world's files write it, before it is put in a session. */

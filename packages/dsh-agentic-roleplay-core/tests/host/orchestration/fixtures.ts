@@ -30,7 +30,9 @@ export function withRanking(store: SessionStore): TurnStore['story'] {
 }
 
 export interface FakeStore extends TurnStore {
-  commits: { character: number; patch: Record<string, unknown>; move?: unknown }[][]
+  commits: { character: number; patch: Record<string, unknown>; move?: unknown; items?: unknown }[][]
+  /** What the item check says is wrong, when something is. */
+  itemsRefused?: string[]
   /** How many turns were counted as played. */
   completed: number
   /** What the chat's settings allow; change it to change the settings the engine reads. */
@@ -47,7 +49,13 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     maxRounds,
     cast: () => cast,
     settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds }),
-    commit: (updates) => { commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch }, ...(update.move === undefined ? {} : { move: update.move }) }))) },
+    commit: (updates) => {
+      commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch }, ...(update.move === undefined ? {} : { move: update.move }), ...(update.items === undefined ? {} : { items: update.items }) })))
+      return updates.map(() => [])
+    },
+    checkItemChanges: entries => (store.itemsRefused === undefined ? { ok: true, effects: entries.map(() => []) } : { ok: false, problems: store.itemsRefused }),
+    carried: () => [],
+    itemsAt: () => [],
     completeTurn: () => { store.completed += 1 },
     queueCommit: (record) => { store.queue = [...store.queue.filter(entry => entry.turn !== record.turn || entry.round !== record.round), record] },
     pendingCommits: () => [...store.queue],

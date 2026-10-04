@@ -1,7 +1,7 @@
 import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CharacterRequest, PlaceView } from '../../../src/host/orchestration/boundaries.ts'
-import { castSummary, describeAttitude, describePlace, sharedContext } from '../../../src/host/orchestration/defaults.ts'
+import { castSummary, describeAttitude, describeItem, describeItems, describePlace, sharedContext } from '../../../src/host/orchestration/defaults.ts'
 import { alice, arthur, bob, location, placed, withRanking } from './fixtures.ts'
 
 const bar = location(1, 'The Bar', { description: 'Smoky. Loud at night.', features: [{ key: 'counter', name: 'Counter', description: 'Long and sticky. Stained.' }, { key: 'piano', name: 'Piano', description: '' }] })
@@ -105,5 +105,40 @@ describe('how a character sees those it is with', () => {
     expect(sharedContext.brief(request([{ ...mine, summary: '', familiarity: 0.4, trust: 0.1, tension: 0.1 }])).prompt).toMatch(/- Bob \(rival\)$/)
     expect(describeAttitude({ familiarity: 0.1, trust: 0.5, affinity: 0.6, tension: 0 })).toBe('barely knows them, trusts them, is fond of them')
     expect(describeAttitude({ familiarity: 0.5, trust: 0, affinity: -0.5, tension: 0.5 })).toBe('dislikes them, things are strained between them')
+  })
+})
+
+describe('things in a prompt', () => {
+  const lantern = { key: 'lantern', name: 'Brass lantern', quantity: 1, quality: 'dented', notable: true, hidden: false, where: 'by the till, at Counter' }
+  const chest = { key: 'chest', name: 'Oak chest', quantity: 1, quality: '', notable: false, hidden: false, state: 'open', contents: ['Silver key', '3 Coin'] }
+
+  it('says how many, in what state, where, and what is in an open container, and gives keys only when asked', () => {
+    expect(describeItem(lantern, { withKeys: false })).toBe('Brass lantern (dented) [by the till, at Counter]')
+    expect(describeItem({ ...chest, quantity: 3, hidden: true }, { withKeys: true })).toBe('chest: 3 Oak chest [hidden, open] holding Silver key, 3 Coin')
+  })
+
+  it('never lists more than a dozen, and says how many it left out', () => {
+    const { where: _where, ...plain } = lantern
+    const many = Array.from({ length: 15 }, (_, index) => ({ ...plain, key: `l${index}`, name: `Lamp ${index}`, quality: '' }))
+    expect(describeItems(many, { withKeys: false })).toMatch(/Lamp 11; and 3 more$/)
+  })
+
+  it('are in the description of a place as what lies about, and a character is told what it has on it', () => {
+    expect(describePlace(view({ items: [lantern, chest] }), { withKeys: false }).at(-1)).toBe('Lying about: Brass lantern (dented) [by the till, at Counter]; Oak chest [open] holding Silver key, 3 Coin')
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, carrying: [{ ...lantern, where: 'carried' }, { key: 'coat', name: 'Wool coat', quantity: 1, quality: '', notable: false, hidden: false, where: 'worn on the torso' }] }
+    expect(sharedContext.brief(request).prompt).toContain('What you have on you:\nBrass lantern (dented) [carried]; Wool coat [worn on the torso]')
+    expect(sharedContext.brief({ ...request, carrying: [] }).prompt).not.toContain('What you have on you')
+  })
+
+  it('are told to the game master with the hidden ones too, and what each character has on them', () => {
+    const story = createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } })
+    story.locations.add({ sourceId: 'the-bar', name: 'The Bar', description: 'Smoky.', features: [] })
+    const text = castSummary.scene({
+      cast: [placed(arthur, bar), placed(alice, bar)], turn: 2, input: 'I look around.', story: withRanking(story),
+      items: { at: () => [lantern, { ...chest, hidden: true }], carried: id => (id === alice.character.id ? [{ ...lantern, key: 'coat', name: 'Wool coat', quality: '', where: 'worn on the torso' }] : []) },
+    })
+    expect(text).toContain('Lying about: lantern: Brass lantern (dented) [by the till, at Counter]; chest: Oak chest [hidden, open] holding Silver key, 3 Coin')
+    expect(text).toContain('What characters have on them:\n- Alice (alice): coat: Wool coat [worn on the torso]')
+    story.close()
   })
 })

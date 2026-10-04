@@ -141,7 +141,7 @@ export const MIGRATIONS: readonly Migration[] = [
 
       CREATE TABLE consolidation_items (
         id INTEGER PRIMARY KEY,
-        kind TEXT NOT NULL CHECK (kind IN ('character', 'location')),
+        kind TEXT NOT NULL CHECK (kind IN ('character', 'location', 'item')),
         subject_id INTEGER NOT NULL,
         note TEXT NOT NULL DEFAULT '',
         created_turn INTEGER NOT NULL,
@@ -149,6 +149,46 @@ export const MIGRATIONS: readonly Migration[] = [
         resolution TEXT
       ) STRICT;
       CREATE INDEX consolidation_pending ON consolidation_items (resolved_turn, id);
+
+      CREATE TABLE slots (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        capacity INTEGER NOT NULL CHECK (capacity >= 1)
+      ) STRICT;
+
+      CREATE TABLE items (
+        id INTEGER PRIMARY KEY,
+        source_id TEXT UNIQUE,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity >= 1),
+        unique_item INTEGER NOT NULL DEFAULT 0 CHECK (unique_item IN (0, 1)),
+        quality TEXT NOT NULL DEFAULT '',
+        notable INTEGER NOT NULL DEFAULT 0 CHECK (notable IN (0, 1)),
+        hidden INTEGER NOT NULL DEFAULT 0 CHECK (hidden IN (0, 1)),
+        wearable_slot TEXT REFERENCES slots (id),
+        container_state TEXT CHECK (container_state IS NULL OR container_state IN ('open', 'closed', 'locked')),
+        owner_id INTEGER REFERENCES characters (id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE item_holdings (
+        item_id INTEGER PRIMARY KEY REFERENCES items (id) ON DELETE CASCADE,
+        holder_kind TEXT NOT NULL CHECK (holder_kind IN ('location', 'character', 'item')),
+        holder_id INTEGER NOT NULL,
+        mode TEXT NOT NULL CHECK (mode IN ('at', 'held', 'worn', 'inside')),
+        slot TEXT REFERENCES slots (id),
+        position TEXT NOT NULL DEFAULT '',
+        feature_key TEXT
+      ) STRICT;
+      CREATE INDEX item_holdings_holder ON item_holdings (holder_kind, holder_id);
+
+      CREATE TABLE openers (
+        target_kind TEXT NOT NULL CHECK (target_kind IN ('item', 'exit')),
+        target_id INTEGER NOT NULL,
+        key_item_id INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+        PRIMARY KEY (target_kind, target_id, key_item_id)
+      ) STRICT;
 
       CREATE TABLE events (
         id INTEGER PRIMARY KEY,
@@ -170,6 +210,12 @@ export const MIGRATIONS: readonly Migration[] = [
         PRIMARY KEY (event_id, character_id)
       ) STRICT;
       CREATE INDEX event_involves_character ON event_involves (character_id);
+
+      CREATE TABLE event_items (
+        event_id INTEGER NOT NULL REFERENCES events (id) ON DELETE CASCADE,
+        item_id INTEGER NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+        PRIMARY KEY (event_id, item_id)
+      ) STRICT;
 
       CREATE TABLE perceptions (
         id INTEGER PRIMARY KEY,

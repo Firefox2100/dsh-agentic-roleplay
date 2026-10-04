@@ -1,6 +1,6 @@
 import type { Character } from 'dsh-roleplay-model'
 import type {
-  KnownRelationship,
+  ItemView, KnownRelationship, SceneItems,
   ActivationPlanner, Author, Boundaries, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
@@ -35,6 +35,22 @@ const sentence = (text: string): string => {
   return (match?.[0] ?? text).trim()
 }
 
+/** At most this many things are listed at once: the rest are said to be there and left for a closer look. */
+const SHOWN_ITEMS = 12
+
+/** One thing in a sentence: how many, what state it is in, where it is. */
+export function describeItem(item: ItemView, { withKeys }: { withKeys: boolean }): string {
+  const name = `${item.quantity > 1 ? `${item.quantity} ` : ''}${item.name}${item.quality === '' ? '' : ` (${item.quality})`}`
+  const extra = [item.hidden ? 'hidden' : '', item.state === undefined ? '' : item.state, item.where ?? ''].filter(part => part !== '').join(', ')
+  const inside = item.contents === undefined ? '' : ` holding ${item.contents.join(', ')}`
+  return `${withKeys ? `${item.key}: ` : ''}${name}${extra === '' ? '' : ` [${extra}]`}${inside}`
+}
+
+/** A list of things, capped. */
+export function describeItems(items: readonly ItemView[], options: { withKeys: boolean }): string {
+  return `${items.slice(0, SHOWN_ITEMS).map(item => describeItem(item, options)).join('; ')}${items.length > SHOWN_ITEMS ? `; and ${items.length - SHOWN_ITEMS} more` : ''}`
+}
+
 /** What someone in a place is told about it: what it is like, what can be pointed at, and the ways out. */
 export function describePlace(view: PlaceView, { withKeys }: { withKeys: boolean }): string[] {
   const { location, exits } = view
@@ -47,6 +63,7 @@ export function describePlace(view: PlaceView, { withKeys }: { withKeys: boolean
     const shown = exits.slice(0, SHOWN_EXITS).map(({ key, name, exit }) => `${withKeys ? `${key}: ` : ''}${name}${exit.description === '' ? '' : ` (${sentence(exit.description)})`}${exit.state === 'open' ? '' : ` [${exit.state}${exit.note === '' ? '' : `: ${exit.note}`}]`}`)
     lines.push(`Ways out: ${shown.join('; ')}${exits.length > SHOWN_EXITS ? `; and ${exits.length - SHOWN_EXITS} more` : ''}`)
   }
+  if (view.items !== undefined && view.items.length > 0) lines.push(`Lying about: ${describeItems(view.items, { withKeys })}`)
   return lines
 }
 
@@ -96,10 +113,11 @@ function remembered(memories: readonly Recalled[], now: number): string {
 /** Every character is told the same thing about the scene, plus who it is and what it remembers. */
 export const sharedContext: CharacterContextProvider = {
   brief(request: CharacterRequest) {
-    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place, relationships } = request
+    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place, relationships, carrying } = request
     // In a place, a character perceives who is there with it; in a story without places, everyone is present.
     const company = place === undefined ? cast : place.here
     const sections = [`Situation:\n${situation}`, ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
+    if (carrying !== undefined && carrying.length > 0) sections.push(`What you have on you:\n${describeItems(carrying, { withKeys: false })}`)
     if (relationships !== undefined && relationships.length > 0) {
       sections.push(`How you stand with those here (your own view of them):\n${relationships.map((relation) => { const attitude = describeAttitude(relation); return `- ${relation.name} (${relation.label})${relation.summary === '' ? '' : `: ${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
     }
@@ -172,12 +190,13 @@ const REMINDED_EVENTS = 5
  * those already folded out of the conversation into the summaries, whose detail the summaries may have lost.
  */
 /** Where the player is and what is there, who is with them, and who is elsewhere. */
-function placedScene(cast: readonly CastMember[], player: CastMember | undefined, story: TurnStore['story'], describeMember: (member: CastMember) => string): string {
+function placedScene(cast: readonly CastMember[], player: CastMember | undefined, story: TurnStore['story'], describeMember: (member: CastMember) => string, things?: SceneItems): string {
   const here = player?.place?.location
   const sections: string[] = []
   if (here !== undefined) {
     const view: PlaceView = {
       key: locationKey(here), location: here, here: cast.filter(member => member.place?.location.id === here.id),
+      ...(things === undefined ? {} : { items: things.at(here.id) }),
       exits: story.locations.exitsFrom(here.id).flatMap((exit) => { const to = story.locations.get(exit.toId); return to === undefined ? [] : [{ key: locationKey(to), name: to.name, exit }] }),
     }
     sections.push(`The player's character is in ${describePlace(view, { withKeys: true }).join('\n')}`)
@@ -191,7 +210,7 @@ function placedScene(cast: readonly CastMember[], player: CastMember | undefined
 }
 
 export const castSummary: SceneContextProvider = {
-  scene({ cast, turn, input, queryVector, story }) {
+  scene({ cast, turn, input, queryVector, story, items }) {
     const describeMember = (member: CastMember): string => {
       const { key, character, state } = member
       const role = character.control === 'player' ? 'the player\'s character' : `acts through "${key}"`
@@ -200,7 +219,11 @@ export const castSummary: SceneContextProvider = {
       return `- ${character.name} (${role})${where === '' ? '' : ` [${where}]`}${character.summary === '' ? '' : `: ${character.summary}`}${seen.length > 0 ? ` Currently: ${seen.join('; ')}` : ''}`
     }
     const player = cast.find(member => member.character.control === 'player')
-    const parts = [`Scene before turn ${turn}:\n${cast.some(member => member.place !== undefined) ? placedScene(cast, player, story, describeMember) : cast.map(describeMember).join('\n')}`]
+    const parts = [`Scene before turn ${turn}:\n${cast.some(member => member.place !== undefined) ? placedScene(cast, player, story, describeMember, items) : cast.map(describeMember).join('\n')}`]
+    if (items !== undefined) {
+      const carried = cast.flatMap(member => { const mine = items.carried(member.character.id); return mine.length === 0 ? [] : [`- ${member.character.name} (${member.key}): ${describeItems(mine, { withKeys: true })}`] })
+      if (carried.length > 0) parts.push(`What characters have on them:\n${carried.join('\n')}`)
+    }
     const threads = story.threads.list('open')
     if (threads.length > 0) parts.push(`Still open in the story:\n${threads.map(thread => `- ${thread.text}`).join('\n')}`)
     const folded = story.summaries.list().reduce((latest, summary) => Math.max(latest, summary.toTurn), 0)

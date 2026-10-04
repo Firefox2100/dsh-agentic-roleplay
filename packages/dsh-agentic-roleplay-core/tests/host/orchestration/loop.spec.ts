@@ -102,7 +102,9 @@ interface Script {
    * character, makes one that is not usable at first (no place) and fixes it when refused, declines, says it made
    * something it did not, or makes two at once.
    */
-  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' }
+  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object'; need?: string }
+  /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
+  things?: 'take' | 'conflict' | 'unlock'
 }
 
 const aliceOnly = [{ character: 'alice', result: 'succeeded', summary: 'Alice greets him' }]
@@ -222,6 +224,10 @@ function authorAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
     if (edits === 0 && !last?.isError) return submitCreated
     return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'On reflection nothing is needed.' })
   }
+  if (mode === 'object') {
+    if (edits === 0) return call('a-object', 'edit_world', { turn, items: [{ key: 'note', name: 'Folded note', description: 'Handed over at the door.', notable: true, held_by: 'arthur' }] })
+    return submitCreated
+  }
   if (mode === 'greedy') {
     if (edits === 0) return call('a-greedy', 'edit_world', { turn, characters: [{ ...MIRA, place }, { key: 'tom', name: 'Tom Voss', summary: 'Her brother.', place }, { key: 'ann', name: 'Ann Voss', summary: 'Her sister.', place }] })
     return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'Too many at once; nothing made.' })
@@ -253,7 +259,7 @@ function answerFor(script: Script = {}) {
     if (!toolNames(request).includes('activate_characters')) return text('a title')
     const activated = timesCalled(request, 'activate_characters')
     // A refused call still counts as a call, so one refusal is taken off.
-    const resolved = timesCalled(request, 'resolve_round') - (script.moves === 'locked-first' && thisTurn(request).includes('cannot go to') ? 1 : 0)
+    const resolved = timesCalled(request, 'resolve_round') - (script.moves === 'locked-first' && thisTurn(request).includes('cannot go to') ? 1 : 0) - (script.things === 'conflict' && thisTurn(request).includes('cannot take') ? 1 : 0)
     const delivered = timesCalled(request, 'narrate')
     const objected = thisTurn(request).includes('You may not end the turn yet')
     if (script.early === true && !objected) return text('The scene is over, I think.')
@@ -262,17 +268,27 @@ function answerFor(script: Script = {}) {
     if (script.twoRounds === true) return twoRounds(request, activated, resolved, script.skipRecord !== true)
     if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.' })
     const withMove = (key: string) => round1.map(outcome => (outcome.character === 'bob' ? { ...outcome, moves_to: { location: key, position: 'by the barrels' } } : outcome))
+    const handling = (): object[] => round1.map((outcome) => {
+      if (script.things === 'take' && outcome.character === 'alice') return { ...outcome, item_changes: [{ item: 'lantern', action: 'take' }] }
+      if (script.things === 'conflict' && (outcome.character === 'alice' || outcome.character === 'bob') && !refusedThing) return { ...outcome, item_changes: [{ item: 'lantern', action: 'take' }] }
+      if (script.things === 'conflict' && outcome.character === 'alice') return { ...outcome, item_changes: [{ item: 'lantern', action: 'take' }] }
+      if (script.things === 'unlock' && outcome.character === 'bob') return { ...outcome, item_changes: [{ item: 'chest', action: 'unlock', with: 'brass-key' }, { item: 'chest', action: 'open' }] }
+      return outcome
+    })
     const refusedMove = lastTool(request)?.isError === true && lastToolText(request).includes('cannot go to')
+    const refusedThing = lastTool(request)?.isError === true && lastToolText(request).includes('cannot take')
     if (script.moves === 'locked-first' && refusedMove) return call('m2b', 'resolve_round', { outcomes: withMove('cellar') })
+    if (script.things === 'conflict' && refusedThing) return call('m2c', 'resolve_round', { outcomes: handling() })
     if (resolved === 0) {
       if (script.moves === 'cellar') return call('m2', 'resolve_round', { outcomes: withMove('cellar') })
       if (script.moves === 'locked-first') return call('m2', 'resolve_round', { outcomes: withMove('vault') })
+      if (script.things !== undefined) return call('m2', 'resolve_round', { outcomes: handling() })
       return call('m2', 'resolve_round', { outcomes: round1 })
     }
     if (resolved === 1 && thisTurn(request).includes('tried once more')) {
       return call('m3', 'resolve_round', { outcomes: [{ character: 'dan', result: 'succeeded', summary: 'Dan takes the lantern too' }] })
     }
-    if (script.expand !== undefined && timesCalled(request, 'expand_world') === 0) return call('m-exp', 'expand_world', { need: 'arrival', what: 'A ferry pilot named Mira Voss has just come up the lane to the bar with news.' })
+    if (script.expand !== undefined && timesCalled(request, 'expand_world') === 0) return call('m-exp', 'expand_world', { need: script.expand.need ?? 'arrival', what: script.expand.author === 'object' ? 'A folded note was just handed to Arthur by a stranger at the door.' : 'A ferry pilot named Mira Voss has just come up the lane to the bar with news.' })
     if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'The key changed hands.' })
     const delivery = script.delivery ?? 'good'
     if (thisTurn(request).includes('has been delivered to the player')) return text('')
@@ -306,6 +322,12 @@ async function addSession(name: string, withPlaces = false): Promise<{ session: 
     way(bar.id, cellar.id, 'a stair down')
     way(vault.id, cellar.id, '', 'locked', 'needs a key')
     for (const [key, where] of [['arthur', bar], ['alice', bar], ['bob', bar], ['carol', cellar], ['dan', street]] as const) session.placements.place('character', session.characters.getBySourceId(key)!.id, { locationId: where.id })
+    const thing = (key: string, name: string, extra: Partial<Parameters<typeof session.items.add>[0]> = {}) => ({ sourceId: key, name, description: '', quantity: 1, unique: false, quality: '', notable: false, hidden: false, ...extra })
+    session.items.add(thing('lantern', 'Brass lantern', { notable: true, quality: 'dented' }), { kind: 'location', locationId: bar.id, featureKey: 'counter', position: 'by the till' })
+    const key = session.items.add(thing('brass-key', 'Brass key', { unique: true }), { kind: 'character', characterId: session.characters.getBySourceId('bob')!.id, mode: 'held' })
+    const chest = session.items.add(thing('chest', 'Oak chest', { container: { state: 'locked' } }), { kind: 'location', locationId: bar.id })
+    session.items.setOpeners({ kind: 'item', id: chest.id }, [key.id])
+    session.items.add(thing('letter', 'Sealed letter', { hidden: true }), { kind: 'location', locationId: bar.id })
   }
   return { session, id: session.metadata.get().id }
 }
@@ -380,7 +402,7 @@ describe('a turn with the real agent loop', () => {
       const { session, adapter } = await playAuthored('creates')
       expect(masterRequests(adapter).every(request => toolNames(request).includes('expand_world'))).toBe(true)
       expect(characterRequests(adapter).some(request => toolNames(request).includes('expand_world'))).toBe(false)
-      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_character', 'get_location', 'list_characters', 'list_locations', 'list_relationships', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'search_events', 'submit_result', 'world_lint'])
       const mira = session.characters.getBySourceId('mira')!
       expect(mira).toMatchObject({ name: 'Mira Voss', role: 'npc', control: 'agent', tier: 'supporting' })
       expect(session.placements.get('character', mira.id)).toMatchObject({ locationId: session.locations.getBySourceId('street')!.id, position: 'by the bar door' })
@@ -447,7 +469,7 @@ describe('a turn with the real agent loop', () => {
       expect(session.consolidation.get(1)?.resolution).toBe('gave her relationships with Arthur, both ways')
       const fitting = authors(adapter).find(request => systemOf(request).includes('fitting into the world what was made up'))!
       expect(briefOf(fitting)).toContain('- item 1, character mira (Mira Voss), made in turn 1')
-      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_character', 'get_location', 'list_characters', 'list_consolidation', 'list_locations', 'list_relationships', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_consolidation', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
       expect(session.metadata.get().turns).toBe(1)
       expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/end')).toHaveLength(1)
     })
@@ -459,6 +481,63 @@ describe('a turn with the real agent loop', () => {
       expect(authors(adapter).filter(request => systemOf(request).includes('fitting into the world'))).toEqual([])
       expect(session.characters.getBySourceId('mira')?.control).toBe('agent')
       expect(agent.session.id).toContain('session-')
+    })
+  })
+
+  describe('things', () => {
+    async function playThings(things: NonNullable<Script['things']>) {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', things }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      return { session, adapter, agent }
+    }
+    const holderOf = (session: Session, key: string) => session.items.holding(session.items.getBySourceId(key)!.id)?.holder
+    const characterBrief = (adapter: ScriptedAdapter, who: string) => briefOf(characterRequests(adapter).find(request => systemOf(request).includes(`You are ${who}.`))!)
+    const keepers = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('record keeper of an interactive story'))
+
+    it('tells the game master what lies where and who has what, hidden things included, and each character only what it can see and has', async () => {
+      const { adapter } = await playThings('take')
+      const scene = thisTurn(masterRequests(adapter)[0]!)
+      expect(scene).toContain('Lying about: lantern: Brass lantern (dented) [by the till, at Counter]; chest: Oak chest [locked]; letter: Sealed letter [hidden]')
+      expect(scene).toContain('What characters have on them:\\n- Bob (bob): brass-key: Brass key [carried]')
+      const alices = characterBrief(adapter, 'Alice')
+      expect(alices).toContain('Lying about: Brass lantern (dented) [by the till, at Counter]; Oak chest [locked]')
+      expect(alices).not.toContain('Sealed letter')
+      expect(characterBrief(adapter, 'Bob')).toContain('What you have on you:\nBrass key [carried]')
+      expect(alices).not.toContain('What you have on you')
+    })
+
+    it('does what the game master decides a character does with a thing, with the round, and tells it and the keeper what came of it', async () => {
+      const { session, adapter } = await playThings('take')
+      expect(holderOf(session, 'lantern')).toEqual({ kind: 'character', characterId: session.characters.getBySourceId('alice')!.id, mode: 'held' })
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('Brass lantern: now carried by Alice')
+      expect(briefOf(keepers(adapter)[0]!)).toContain('with things: Brass lantern (take: now carried by Alice)')
+      expect(systemOf(keepers(adapter)[0]!)).toContain('do not move things')
+    })
+
+    it('sends the game master back when two characters take the same thing, and applies the corrected round', async () => {
+      const { session, adapter } = await playThings('conflict')
+      expect(JSON.stringify(masterRequests(adapter).flatMap(request => request.messages.filter(message => message.role === 'tool' && message.isError === true)))).toMatch(/bob: cannot take lantern: Brass lantern is held by Alice, who has to give it/)
+      expect(holderOf(session, 'lantern')).toMatchObject({ kind: 'character', characterId: session.characters.getBySourceId('alice')!.id })
+    })
+
+    it('unlocks a chest with the key in hand and opens it, in order', async () => {
+      const { session } = await playThings('unlock')
+      expect(session.items.getBySourceId('chest')?.container?.state).toBe('open')
+    })
+
+    it('has the game master ask for a thing the story needs, which the world author makes where the story put it', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', expand: { author: 'object', need: 'object' } }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('A stranger hands me a note.'))
+      await agent.whenIdle()
+      expect(holderOf(session, 'note')).toMatchObject({ kind: 'character', characterId: session.characters.getBySourceId('arthur')!.id, mode: 'held' })
+      expect(session.items.getBySourceId('note')).toMatchObject({ notable: true, name: 'Folded note' })
+      expect(session.consolidation.pending()).toEqual([expect.objectContaining({ kind: 'item' })])
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('item note (Folded note)')
     })
   })
 
@@ -708,7 +787,7 @@ describe('a turn with the real agent loop', () => {
     it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
       const { session, adapter, agent } = await play('careful')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
-      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_location', 'list_locations', 'list_relationships', 'list_threads', 'read_records', 'search_events', 'submit_result'])
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_item', 'get_location', 'list_items', 'list_locations', 'list_relationships', 'list_threads', 'read_records', 'search_events', 'submit_result'])
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
       expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
       expect(publicStateOf(session, 'bob')).toBe('holding a brass key')

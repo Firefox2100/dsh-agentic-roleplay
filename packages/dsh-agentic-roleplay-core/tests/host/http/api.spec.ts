@@ -71,12 +71,12 @@ beforeEach(async () => {
       },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
-        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0 }
+        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 }
       },
       writeSettings: (_id, value) => {
         if (settingsError !== undefined) throw settingsError
         writtenSettings = value
-        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0 }
+        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 }
       },
       delete: (id) => {
         if (deleteError !== undefined) return Promise.reject(deleteError)
@@ -339,7 +339,7 @@ describe('roleplay API', () => {
     it('are read, with the bounds', async () => {
       const response = await fetch(url())
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0 })
+      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 })
     })
 
     it('are replaced by the body', async () => {

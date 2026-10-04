@@ -41,6 +41,7 @@ function readExits(reader: Reader): ExitDefinition[] {
       ...(travelSeconds === undefined || !Number.isInteger(travelSeconds) ? {} : { travelSeconds }),
       state: exit.oneOf('state', EXIT_STATES, 'open'),
       note: exit.text('note'),
+      openedBy: exit.strings('opened_by'),
     }]
   })
   if (exits.length > MAX_EXITS) reader.fail('exits', `a place has at most ${MAX_EXITS} exits`)

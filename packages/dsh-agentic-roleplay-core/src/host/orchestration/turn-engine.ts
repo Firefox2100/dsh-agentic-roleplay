@@ -1,4 +1,4 @@
-import { locationKey as placeKey, type Recalled } from 'dsh-roleplay-state'
+import { locationKey as placeKey, type ItemEffect, type Recalled } from 'dsh-roleplay-state'
 import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TurnStore } from './boundaries.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 
@@ -37,6 +37,8 @@ export interface ResolveReport {
     waiting: number
     /** Who went where in this round. */
     moves: { character: string; name: string; to: string; via: number }[]
+    /** What was done with things in this round, and what came of it. */
+    things: { character: string; name: string; action: string; summary: string }[]
   }
 }
 
@@ -334,6 +336,7 @@ export class TurnEngine {
       ...outcomes.filter(outcome => !RESULTS.includes(outcome.result)).map(outcome => `${outcome.character}: unknown result "${outcome.result}"`),
       ...outcomes.filter(outcome => outcome.summary.trim() === '').map(outcome => `${outcome.character}: say what happens`),
       ...outcomes.flatMap(outcome => this.moveProblems(outcome, store)),
+      ...this.itemProblems(outcomes, store),
     ]
     if (problems.length > 0) throw new Error(`the outcomes are not acceptable: ${problems.join('; ')} (expected exactly: ${expected.join(', ')})`)
   }
@@ -344,6 +347,15 @@ export class TurnEngine {
     if (outcome.result === 'failed') return [`${outcome.character}: its intent failed, so it does not go anywhere: leave moves_to out`]
     const checked = store.checkMove(outcome.character, outcome.moveTo)
     return checked.ok ? [] : checked.problems.map(problem => `${outcome.character}: cannot go to ${outcome.moveTo?.location}: ${problem}`)
+  }
+
+  /** Why what the outcomes do with things cannot be done, if it cannot: tried in order, each seeing what the one before did. */
+  private itemProblems(outcomes: readonly Outcome[], store: TurnStore): string[] {
+    const entries = outcomes.flatMap(outcome => (outcome.itemChanges === undefined || outcome.itemChanges.length === 0 || outcome.result === 'failed' ? [] : [{ character: outcome.character, changes: outcome.itemChanges }]))
+    const failed = outcomes.filter(outcome => outcome.result === 'failed' && (outcome.itemChanges?.length ?? 0) > 0).map(outcome => `${outcome.character}: its intent failed, so it does nothing with things: leave item_changes out`)
+    if (entries.length === 0) return failed
+    const checked = store.checkItemChanges(entries)
+    return checked.ok ? failed : [...failed, ...checked.problems]
   }
 
   /** Every character acts at the same time; one that fails or answers badly is reported, not fatal. */
@@ -363,10 +375,12 @@ export class TurnEngine {
       if (number === 1 && memories.length > 0) state.recalled.set(key, memories)
       const place = member.place === undefined ? undefined : store?.place(member.place.location.id)
       const relationships = store === undefined ? [] : this.knownRelationships(member, place === undefined ? cast : place.here, store)
+      const carrying = store === undefined ? [] : store.carried(member.character.id)
       const request: CharacterRequest = {
         member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false,
         ...(place === undefined ? {} : { place }),
         ...(relationships.length === 0 ? {} : { relationships }),
+        ...(carrying.length === 0 ? {} : { carrying }),
         ...(memories.length === 0 ? {} : { memories }),
         ...(state.history.length === 0 ? {} : { earlier: [...state.history] }),
         ...(reaction === undefined ? {} : { reaction }),
@@ -441,16 +455,23 @@ export class TurnEngine {
     state.phase = 'between'
     const playerPlace = state.cast.find(member => member.character.control === 'player')?.place?.location
     // What the game master decided about each character is applied at once, moves included; the memory of what happened is written when it is asked for.
-    store.commit([...decided.values()].flatMap(({ outcome, report }) => {
+    const updates = [...decided.values()].flatMap(({ outcome, report }) => {
       const member = state.cast.find(candidate => candidate.key === report.character)
       if (member === undefined) return []
       const check = checked.get(outcome.character)
       return [{
-        character: member.character.id,
-        patch: { activity: outcome.summary, ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }) },
-        ...(check?.ok === true ? { move: check.move } : {}),
+        key: report.character,
+        update: {
+          character: member.character.id,
+          patch: { activity: outcome.summary, ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }) },
+          ...(check?.ok === true ? { move: check.move } : {}),
+          ...(outcome.itemChanges === undefined || outcome.itemChanges.length === 0 ? {} : { items: outcome.itemChanges }),
+        },
       }]
-    }))
+    })
+    const effects = new Map<string, ItemEffect[]>()
+    const done = store.commit(updates.map(entry => entry.update))
+    updates.forEach(({ key }, index) => { effects.set(key, done[index] ?? []) })
     store.queueCommit({
       turn: owner.turn, round, situation: state.situation,
       ...(playerPlace === undefined ? {} : { place: { key: placeKey(playerPlace), name: playerPlace.name } }),
@@ -463,12 +484,13 @@ export class TurnEngine {
           result: outcome.result, summary: outcome.summary,
           ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }),
           spoken: outcome.spoken !== false,
+          ...((effects.get(report.character) ?? []).length === 0 ? {} : { items: (effects.get(report.character) ?? []).map(effect => ({ name: effect.item.name, action: effect.action, summary: effect.summary })) }),
           ...(at === undefined ? {} : { at: { key: placeKey(at), name: at.name } }),
           ...(check?.ok === true && check.plan.from !== check.move.to ? { moved: { ...check.to, ...(check.position === undefined ? {} : { position: check.position }) } } : {}),
         }
       }),
     })
-    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances], waiting: store.pendingCommits().length, moves: [...checked].flatMap(([character, check]) => (check.ok && check.plan.from !== check.move.to ? [{ character, name: decided.get(character)?.report.name ?? character, to: check.to.name, via: Math.max(0, check.plan.via.length - 1) }] : [])) }
+    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances], waiting: store.pendingCommits().length, things: [...effects].flatMap(([character, list]) => list.map(effect => ({ character, name: effect.item.name, action: effect.action, summary: effect.summary }))), moves: [...checked].flatMap(([character, check]) => (check.ok && check.plan.from !== check.move.to ? [{ character, name: decided.get(character)?.report.name ?? character, to: check.to.name, via: Math.max(0, check.plan.via.length - 1) }] : [])) }
   }
 
   /**

@@ -50,7 +50,7 @@ export interface RelationshipDefinition {
 }
 
 /** What was made up in play and still has to be fitted into the rest of the world. */
-export const CONSOLIDATION_KINDS = ['character', 'location'] as const
+export const CONSOLIDATION_KINDS = ['character', 'location', 'item'] as const
 export type ConsolidationKind = (typeof CONSOLIDATION_KINDS)[number]
 
 export type ConsolidationItemId = number

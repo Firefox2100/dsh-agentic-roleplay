@@ -4,11 +4,13 @@ import { NotFoundError } from '../errors.ts'
 import type { MemoryPolicy } from '../memory/recall.ts'
 import { characterKey, locationKey, parseRecordsEdit, recordsEditSchema } from '../records/edit.ts'
 import { lintWorld } from '../records/lint.ts'
+import { describeHolder } from '../records/read.ts'
+import { itemKey } from '../records/items.ts'
 import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove'>
+  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots'>
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
   turn: number
   policy: MemoryPolicy
@@ -31,6 +33,7 @@ export type AgentResolver = (agentSessionId: string) => AgentLink | undefined
 
 const MAX_EVENTS = 20
 const MAX_LISTED_PLACES = 100
+const MAX_LISTED_ITEMS = 60
 
 const link = (resolve: AgentResolver, agent: { session: { id: string } } | undefined): AgentLink => {
   const found = agent === undefined ? undefined : resolve(agent.session.id)
@@ -88,6 +91,7 @@ export function createTools(resolve: AgentResolver, options: {
             public_state: str, inner_state: str, activity: str, emotion: { type: 'json', required: true },
             location: { type: 'json', required: true }, position: str,
             relationships: { type: 'json', required: true },
+            carrying: { type: 'json', required: true },
           },
         },
         render: pretty,
@@ -98,7 +102,7 @@ export function createTools(resolve: AgentResolver, options: {
         const view = session.records().characters.find(entry => entry.character === args.character)
         const found = session.characters.list().find(character => characterKey(character) === args.character)
         if (view === undefined || found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, emotion: view.emotion, location: view.location, position: view.position, relationships: session.records().relationships.filter(relation => relation.from === args.character) }
+        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, emotion: view.emotion, location: view.location, position: view.position, relationships: session.records().relationships.filter(relation => relation.from === args.character), carrying: session.items.contents({ kind: 'character', id: found.id }).map(({ item, holding }) => ({ key: itemKey(item), name: item.name, quantity: item.quantity, how: holding.holder.kind === 'character' && holding.holder.mode === 'worn' ? `worn on the ${holding.holder.slot}` : 'carried', ...(item.container === undefined ? {} : { state: item.container.state }) })) }
       },
     }),
     defineTool({
@@ -116,6 +120,75 @@ export function createTools(resolve: AgentResolver, options: {
       },
     }),
 
+    defineTool({
+      name: 'list_items',
+      description: 'List things, with the key each is named by and where it is. Narrow to what a character has, what is in a place, or what is inside a container; or search by words. At most 60 are listed, notable ones first.',
+      parameters: {
+        character: { type: 'string', description: 'The key of a character: what it carries and wears.' },
+        location: { type: 'string', description: 'The key of a place: what is lying there (not what is inside containers).' },
+        container: { type: 'string', description: 'The key of an item: what is inside it, whether it is open or not.' },
+        text: { type: 'string', description: 'Only items whose name or description has this.' },
+      },
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent)
+        const characters = session.characters.list()
+        const keyOf = (id: number): string => { const found = characters.find(character => character.id === id); return found === undefined ? String(id) : characterKey(found) }
+        const target = { items: session.items, locations: session.locations, characters: session.characters }
+        let pool = session.items.list()
+        if (args.character !== undefined) {
+          const who = characters.find(character => characterKey(character) === args.character)
+          if (who === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
+          pool = session.items.contents({ kind: 'character', id: who.id }).map(entry => entry.item)
+        } else if (args.location !== undefined) {
+          const where = session.locations.list().find(candidate => locationKey(candidate) === args.location)
+          if (where === undefined) throw new NotFoundError(`there is no place "${args.location}"; list_locations shows the keys`)
+          pool = session.items.contents({ kind: 'location', id: where.id }).map(entry => entry.item)
+        } else if (args.container !== undefined) {
+          const box = session.items.list().find(candidate => itemKey(candidate) === args.container)
+          if (box === undefined) throw new NotFoundError(`there is no item "${args.container}"; list_items shows the keys`)
+          pool = session.items.contents({ kind: 'item', id: box.id }).map(entry => entry.item)
+        }
+        const needle = args.text?.trim().toLowerCase()
+        if (needle !== undefined && needle !== '') pool = pool.filter(item => item.name.toLowerCase().includes(needle) || item.description.toLowerCase().includes(needle))
+        return JSON.parse(JSON.stringify([...pool].sort((a, b) => Number(b.notable) - Number(a.notable) || a.id - b.id).slice(0, MAX_LISTED_ITEMS).map(item => ({
+          key: itemKey(item), name: item.name, quantity: item.quantity, quality: item.quality, state: item.container?.state ?? null, hidden: item.hidden, notable: item.notable, holder: describeHolder(target, item.id, keyOf),
+        })))) as never
+      },
+    }),
+    defineTool({
+      name: 'get_item',
+      description: 'Read one item: what it is, its condition, whose it is, where it is, what is inside it when it is a container, and what opens it. A hidden or closed thing is shown too: this is what the story knows.',
+      parameters: { item: { type: 'string', required: true, description: 'The key of the item, as list_items gives it.' } },
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent)
+        const found = session.items.list().find(candidate => itemKey(candidate) === args.item)
+        if (found === undefined) throw new NotFoundError(`there is no item "${args.item}"; list_items shows the keys`)
+        const characters = session.characters.list()
+        const keyOf = (id: number): string => { const who = characters.find(character => character.id === id); return who === undefined ? String(id) : characterKey(who) }
+        const keys = (ids: readonly number[]): string[] => ids.map(id => { const other = session.items.get(id); return other === undefined ? String(id) : itemKey(other) })
+        return JSON.parse(JSON.stringify({
+          item: itemKey(found), name: found.name, description: found.description, quantity: found.quantity, unique: found.unique, quality: found.quality, notable: found.notable, hidden: found.hidden,
+          wearable: found.wearableSlot ?? null, state: found.container?.state ?? null, owner: found.ownerId === undefined ? null : keyOf(found.ownerId),
+          where: describeHolder({ items: session.items, locations: session.locations, characters: session.characters }, found.id, keyOf),
+          inside: found.container === undefined ? null : session.items.contents({ kind: 'item', id: found.id }).map(entry => ({ key: itemKey(entry.item), name: entry.item.name, quantity: entry.item.quantity })),
+          opened_by: keys(session.items.openers({ kind: 'item', id: found.id })),
+        })) as never
+      },
+    }),
+    defineTool({
+      name: 'list_slots',
+      description: 'The places on the body something can be worn in this world, and how many things fit in each.',
+      parameters: {},
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { id: str, name: str, capacity: int } } }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(_args, exec) {
+        return link(resolve, exec.agent).session.slots.list()
+      },
+    }),
     defineTool({
       name: 'list_locations',
       description: 'List the places of the story with the key each is named by and the place it is in. Narrow to what is inside one place with `within`; at most 100 are listed.',
@@ -154,6 +227,7 @@ export function createTools(resolve: AgentResolver, options: {
           location: locationKey(place), name: place.name, description: place.description, in: place.parentId === undefined ? null : key(place.parentId),
           features: place.features,
           exits: session.locations.exitsFrom(place.id).map(exit => ({ to: key(exit.toId), name: session.locations.get(exit.toId)?.name, state: exit.state, description: exit.description, note: exit.note, travel_time_seconds: exit.travelSeconds ?? null })),
+          items: session.items.contents({ kind: 'location', id: place.id }).map(({ item, holding }) => ({ key: itemKey(item), name: item.name, quantity: item.quantity, ...(item.hidden ? { hidden: true } : {}), ...(item.container === undefined ? {} : { state: item.container.state }), ...(holding.holder.kind === 'location' && holding.holder.position !== undefined ? { position: holding.holder.position } : {}) })),
           here: session.placements.at(place.id, 'character').map(placement => { const who = people.find(character => character.id === placement.entityId); return { character: who === undefined ? String(placement.entityId) : characterKey(who), position: placement.position, feature: placement.featureKey ?? null } }),
         })) as never
       },
@@ -166,6 +240,7 @@ export function createTools(resolve: AgentResolver, options: {
         character: { type: 'string', description: 'Only events this character is involved in.' },
         text: { type: 'string', description: 'Only events about this, found by its words or its meaning; with it, the best matches come first.' },
         location: { type: 'string', description: 'Only events that happened in this place (its key).' },
+        item: { type: 'string', description: 'Only events about this item (its key).' },
         from_turn: { type: 'integer' },
         to_turn: { type: 'integer' },
         min_importance: { type: 'integer', description: `From ${IMPORTANCE_MIN} to ${IMPORTANCE_MAX}.` },
@@ -187,9 +262,12 @@ export function createTools(resolve: AgentResolver, options: {
         if (args.character !== undefined && involving === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
         const place = args.location === undefined ? undefined : session.locations.list().find(candidate => locationKey(candidate) === args.location)
         if (args.location !== undefined && place === undefined) throw new NotFoundError(`there is no place "${args.location}"; list_locations shows the keys`)
+        const thing = args.item === undefined ? undefined : session.items.list().find(candidate => itemKey(candidate) === args.item)
+        if (args.item !== undefined && thing === undefined) throw new NotFoundError(`there is no item "${args.item}"; list_items shows the keys`)
         const needle = args.text?.trim().toLowerCase()
         const filter = {
           ...(place === undefined ? {} : { locationId: place.id }),
+          ...(thing === undefined ? {} : { aboutItem: thing.id }),
           ...(involving === undefined ? {} : { involving: involving.id }),
           ...(args.from_turn === undefined ? {} : { fromTurn: args.from_turn }),
           ...(args.to_turn === undefined ? {} : { toTurn: args.to_turn }),
@@ -211,6 +289,7 @@ export function createTools(resolve: AgentResolver, options: {
           ...(filter.toTurn === undefined ? {} : { toTurn: filter.toTurn }),
           ...(filter.minImportance === undefined ? {} : { minImportance: filter.minImportance }),
           ...(filter.locationId === undefined ? {} : { locationId: filter.locationId }),
+          ...(filter.aboutItem === undefined ? {} : { itemId: filter.aboutItem }),
         })
         const allowed = new Set(listed.map(event => event.id))
         const first = ranked.filter(event => allowed.has(event.id))
@@ -314,13 +393,13 @@ export function createTools(resolve: AgentResolver, options: {
         : 'Change the story\'s records in one call, together or not at all: character states, new events (with where they happened and who took them in), corrections and retractions of draft events, revisions of what characters took in, changes to places and the ways between them, how characters stand towards each other, beliefs, and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
       parameters: editSchema as unknown as Record<string, unknown>,
       output: {
-        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } }, character_keys: { type: 'array', items: { type: 'string' } }, place_keys: { type: 'array', items: { type: 'string' } } }, required: ['writes', 'event_ids', 'belief_ids', 'character_keys', 'place_keys'], additionalProperties: false },
+        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } }, character_keys: { type: 'array', items: { type: 'string' } }, place_keys: { type: 'array', items: { type: 'string' } }, item_keys: { type: 'array', items: { type: 'string' } } }, required: ['writes', 'event_ids', 'belief_ids', 'character_keys', 'place_keys', 'item_keys'], additionalProperties: false },
         render: (_args, value) => summary(options.authoring === true ? 'World changed' : 'Records changed')(_args, value as { writes: number }),
       },
       async execute(args, exec) {
         const { session } = link(resolve, exec.agent)
         const result = session.edit(parseRecordsEdit(args))
-        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [] }
+        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [], item_keys: result.itemKeys ?? [] }
       },
     },
     ...(options.authoring !== true ? [] : [defineTool({

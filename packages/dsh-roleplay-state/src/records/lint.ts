@@ -1,6 +1,7 @@
 import type { Exit, Location } from 'dsh-roleplay-model'
 import { lookupKey } from '../sqlite/support.ts'
-import { characterKey, locationKey, type RecordsTarget } from './edit.ts'
+import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
+import { itemKey } from './items.ts'
 
 export type LintSeverity = 'error' | 'warning' | 'info'
 
@@ -8,11 +9,11 @@ export interface LintFinding {
   /** An error leaves the world inconsistent (nobody can get to a place, two characters share a name); a warning is something that should be fitted in; an info is only worth knowing. */
   severity: LintSeverity
   code: string
-  subject: { kind: 'character' | 'location' | 'exit' | 'relationship'; key: string }
+  subject: { kind: 'character' | 'location' | 'exit' | 'relationship' | 'item'; key: string }
   message: string
 }
 
-export type LintTarget = Pick<RecordsTarget, 'characters' | 'locations' | 'placements' | 'relationships' | 'consolidation'>
+export type LintTarget = Pick<RecordsTarget, 'characters' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'items'>
 
 /**
  * What is inconsistent or unfinished in the world's graph of places and characters. Things made up in
@@ -92,6 +93,29 @@ export function lintWorld(target: LintTarget): LintFinding[] {
     const to = characters.find(character => character.id === relation.toId)
     if (from === undefined || to === undefined) continue
     findings.push({ severity: 'info', code: 'relationship-one-sided', subject: { kind: 'relationship', key: `${characterKey(from)}->${characterKey(to)}` }, message: `${from.name} has a profile of ${to.name} (${relation.label}) but ${to.name} has none of ${from.name}` })
+  }
+  // Items.
+  const newItems = new Set(pending.filter(item => item.kind === 'item').map(item => item.subjectId))
+  const things = target.items.list()
+  const sameHolder = new Map<string, typeof things>()
+  for (const item of things) {
+    const holding = target.items.holding(item.id)
+    const where = holding === undefined ? 'nowhere' : `${holding.holder.kind}:${'locationId' in holding.holder ? holding.holder.locationId : 'characterId' in holding.holder ? holding.holder.characterId : holding.holder.itemId}`
+    const group = `${where}:${lookupKey(item.name)}`
+    sameHolder.set(group, [...(sameHolder.get(group) ?? []), item])
+    if (item.container?.state === 'locked' && target.items.openers({ kind: 'item', id: item.id }).length === 0) {
+      findings.push({ severity: newItems.has(item.id) ? 'warning' : 'info', code: 'lock-without-key', subject: { kind: 'item', key: itemKey(item) }, message: `${item.name} is locked and no item is known to open it` })
+    }
+  }
+  for (const group of sameHolder.values()) {
+    const twins = group.filter(item => !item.unique)
+    if (twins.length > 1) findings.push({ severity: 'warning', code: 'item-duplicate', subject: { kind: 'item', key: itemKey(twins[1]!) }, message: `${twins.length} separate items called ${twins[0]!.name} are in the same place: ${twins.map(itemKey).join(', ')}; they could be one with a quantity` })
+  }
+  for (const exit of exits) {
+    if (exit.state !== 'locked' || target.items.openers({ kind: 'exit', id: exit.id }).length > 0 || exit.note !== '') continue
+    const from = placeById.get(exit.fromId)
+    const to = placeById.get(exit.toId)
+    if (from !== undefined && to !== undefined) findings.push({ severity: 'info', code: 'lock-without-key', subject: { kind: 'exit', key: `${keyOfPlace(from)}->${keyOfPlace(to)}` }, message: `the way from ${from.name} to ${to.name} is locked and nothing says what opens it` })
   }
   const order = { error: 0, warning: 1, info: 2 } as const
   return findings.sort((a, b) => order[a.severity] - order[b.severity])

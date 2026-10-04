@@ -1,5 +1,5 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
-import type { MemoryPolicy, Recalled, Session } from 'dsh-roleplay-state'
+import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session } from 'dsh-roleplay-state'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { CharacterAction, CharacterReport, MoveRequest, NarrationSegment, Outcome, Utterance } from './protocol.ts'
 
@@ -26,6 +26,23 @@ export interface PlaceView {
   location: Location
   exits: { key: string; name: string; exit: Exit }[]
   here: CastMember[]
+  /** What lies in the place, notable things first (hidden ones are not for the characters). */
+  items?: ItemView[]
+}
+
+/** A thing as someone in a place or with a character is told of it. */
+export interface ItemView {
+  key: string
+  name: string
+  quantity: number
+  quality: string
+  notable: boolean
+  hidden: boolean
+  /** Of a container: how it is, and what is in it when it is open. */
+  state?: string
+  contents?: string[]
+  /** Where in the place it is, or how it is carried. */
+  where?: string
 }
 
 /** A short reference to a place in what is kept of a round. */
@@ -72,6 +89,8 @@ export interface CharacterRequest {
   place?: PlaceView
   /** How the character stands towards those it is with, where there is a profile of them. */
   relationships?: readonly KnownRelationship[]
+  /** What the character has on it or in its hands. */
+  carrying?: readonly ItemView[]
 }
 
 /** A character's profile of someone present, as it is told to it. */
@@ -162,6 +181,8 @@ export interface CommitEntry {
   publicState?: string
   /** Whether the character got to say its utterance. */
   spoken: boolean
+  /** What it did with things, and what came of each. */
+  items?: { name: string; action: string; summary: string }[]
   /** Where the character was when it acted. */
   at?: PlaceRef
   /** Where the game master sent it as a result. */
@@ -214,11 +235,17 @@ export interface Recaller {
 
 /** The state of the scene the game master is told at the start of a turn. */
 export interface SceneContextProvider {
-  scene(input: { cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story'] }): string
+  scene(input: { cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems }): string
+}
+
+export interface SceneItems {
+  /** What lies in a place (hidden things too: the story knows them). */
+  at: (locationId: Location['id']) => ItemView[]
+  carried: (characterId: Character['id']) => ItemView[]
 }
 
 /** Why the game master may ask for something to be made up: the story genuinely needs it. */
-export const AUTHORING_NEEDS = ['scene_change', 'arrival', 'introduction'] as const
+export const AUTHORING_NEEDS = ['scene_change', 'arrival', 'introduction', 'object'] as const
 export type AuthoringNeed = (typeof AUTHORING_NEEDS)[number]
 
 export interface CreateJob {
@@ -232,7 +259,7 @@ export interface CreateJob {
 
 export interface CreateReport {
   /** What was made, by key. */
-  created: { kind: 'character' | 'place'; key: string; name: string }[]
+  created: { kind: 'character' | 'place' | 'item'; key: string; name: string }[]
   /** Why nothing was made, when nothing was: the request did not meet the bar, or something that exists can serve. */
   declined?: string
 }
@@ -276,12 +303,18 @@ export interface Boundaries {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove'>
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
   /** Writes the updates of one round, moves included, together or not at all. */
-  commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch; move?: Move }[]): void
+  commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch; move?: Move; items?: readonly ItemChangeSpec[] }[]): ItemEffect[][]
+  /** Whether these item changes, done in order across the characters, can all be done; the reasons when not. Nothing is changed. */
+  checkItemChanges(entries: readonly { character: string; changes: readonly ItemChangeSpec[] }[]): { ok: true; effects: ItemEffect[][] } | { ok: false; problems: string[] }
+  /** What lies in a place, hidden things too when asked. */
+  itemsAt(locationId: Location['id'], withHidden?: boolean): ItemView[]
+  /** What a character has on it or in its hands. */
+  carried(characterId: Character['id']): ItemView[]
   /** Whether a character may go where a request says (places by key), resolved to what the move would be. */
   checkMove(character: string, request: MoveRequest): MoveCheck
   /** A place as it is told to someone in it, or nothing for an id that is not one. */

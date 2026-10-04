@@ -1,4 +1,5 @@
 import type {
+  Holder, Holding, Item, ItemId, ItemPatch, NewItem, Slot,
   ConsolidationItem,
   ConsolidationItemId,
   ConsolidationKind,
@@ -295,4 +296,47 @@ export interface ConsolidationRepository {
   createdIn(turn: number): ConsolidationItem[]
   /** Mark it fitted in, with what was done. Resolving a resolved item changes nothing. @throws {NotFoundError} */
   resolve(id: ConsolidationItemId, turn: number, resolution: string): ConsolidationItem
+}
+
+/** The places on the body something can be worn, and how many things fit in each. */
+export interface SlotRepository {
+  /** Add the slots a world starts with, leaving any that exist. */
+  ensureDefaults(): void
+  list(): Slot[]
+  get(id: string): Slot | undefined
+  /** Make or change a slot. @throws {ConflictError} when it would hold fewer than are worn in it. */
+  upsert(slot: Slot): Slot
+}
+
+/** Things that can be moved, held, worn, opened or used, and where each is. */
+export interface ItemRepository {
+  /**
+   * Make an item and put it where it starts, together.
+   * @throws {InvalidValueError} for a bad name, quantity, state, or a holder that cannot hold it.
+   * @throws {ConflictError} when its id in the world's files is used, or the slot is full.
+   */
+  add(item: NewItem, holder: Holder): Item
+  get(id: ItemId): Item | undefined
+  getBySourceId(sourceId: string): Item | undefined
+  list(): Item[]
+  /** @throws {NotFoundError} */
+  update(id: ItemId, patch: ItemPatch): Item
+  /** Whether an item was removed (used up, destroyed). @throws {ConflictError} when it still holds things. */
+  remove(id: ItemId): boolean
+  holding(id: ItemId): Holding | undefined
+  /**
+   * Put an item somewhere else, replacing where it was.
+   * @throws {InvalidValueError} when the holder cannot hold it: a place without that feature, something worn that cannot be worn there, a thing that is not a container, an item inside itself.
+   * @throws {ConflictError} when the slot is full.
+   */
+  place(id: ItemId, holder: Holder): Holding
+  /** What a place, a character or an item holds directly. */
+  contents(holder: { kind: 'location' | 'character' | 'item'; id: number }): { item: Item; holding: Holding }[]
+  /** The containers an item is inside, innermost first. */
+  ancestors(id: ItemId): ItemId[]
+  /** The place an item is in, following what holds it, and the character that has it when one does. */
+  where(id: ItemId): { locationId?: number; characterId?: number }
+  /** The items that open an item that is a container, or an exit. */
+  openers(target: { kind: 'item' | 'exit'; id: number }): ItemId[]
+  setOpeners(target: { kind: 'item' | 'exit'; id: number }, items: readonly ItemId[]): void
 }

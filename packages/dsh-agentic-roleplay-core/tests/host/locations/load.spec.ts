@@ -30,8 +30,8 @@ describe('a location file', () => {
         id: 'bar', name: 'The Bar', description: 'Smoky.', parent: 'town',
         features: [{ key: 'counter', name: 'Counter', description: 'Long.' }],
         exits: [
-          { to: 'street', description: 'the door', oneWay: false, travelSeconds: 20, state: 'open', note: '' },
-          { to: 'cellar', description: '', oneWay: true, backDescription: 'a hatch', state: 'locked', note: 'brass key' },
+          { to: 'street', description: 'the door', oneWay: false, travelSeconds: 20, state: 'open', note: '', openedBy: [] },
+          { to: 'cellar', description: '', oneWay: true, backDescription: 'a hatch', state: 'locked', note: 'brass key', openedBy: [] },
         ],
       },
     })

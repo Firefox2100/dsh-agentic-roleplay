@@ -1,5 +1,6 @@
 import type { CharacterId } from './session.ts'
 import type { JsonValue } from './json.ts'
+import type { ItemId } from './item.ts'
 import type { LocationId } from './location.ts'
 
 /** How a character came to take in an event. */
@@ -40,6 +41,8 @@ export interface StoryEvent {
   tags: string[]
   /** The characters the event is about: who acted, and who it was done to. */
   involves: CharacterId[]
+  /** The things it is about: what was taken, opened, found. */
+  items: ItemId[]
   /** Where it happened, when that is known. */
   locationId?: LocationId
   /**
@@ -50,7 +53,7 @@ export interface StoryEvent {
   createdAt: string
 }
 
-export type NewStoryEvent = Omit<StoryEvent, 'id' | 'createdAt' | 'sealed'>
+export type NewStoryEvent = Omit<StoryEvent, 'id' | 'createdAt' | 'sealed' | 'items'> & { items?: ItemId[] }
 
 export interface StoryEventPatch {
   text?: string
@@ -58,6 +61,7 @@ export interface StoryEventPatch {
   tags?: string[]
   involves?: CharacterId[]
   locationId?: LocationId
+  items?: ItemId[]
 }
 
 export interface StoryEventFilter {
@@ -68,6 +72,8 @@ export interface StoryEventFilter {
   fromTurn?: number
   toTurn?: number
   involving?: CharacterId
+  /** Only events about this item. */
+  aboutItem?: ItemId
   minImportance?: number
 }
 

@@ -7,7 +7,7 @@ import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  ConsolidationRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SummaryRepository, ThreadRepository, VectorSupport,
+  ConsolidationRepository, ItemRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
@@ -16,6 +16,7 @@ import { SqliteEventRepository } from './sqlite/event-repository.ts'
 import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
 import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
 import { SqliteRecallIndex } from './sqlite/recall-index.ts'
+import { SqliteItemRepository, SqliteSlotRepository } from './sqlite/item-repository.ts'
 import { SqliteConsolidationRepository, SqliteRelationshipRepository } from './sqlite/relationship-repository.ts'
 import { SqliteLocationRepository, SqlitePlacementRepository } from './sqlite/location-repository.ts'
 import { vectorExtension } from './sqlite/vector-extension.ts'
@@ -50,6 +51,8 @@ export interface SessionStore {
   readonly placements: PlacementRepository
   readonly relationships: RelationshipRepository
   readonly consolidation: ConsolidationRepository
+  readonly slots: SlotRepository
+  readonly items: ItemRepository
   /** What the session can be searched by: its texts by words, and by meaning once vectors are stored. */
   readonly recallIndex: RecallIndexRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
@@ -76,7 +79,7 @@ export interface SessionStore {
    * Look up what happened (not what any character took in) by words and, with a vector, by meaning, best first.
    * The two searches are merged by reciprocal rank, so what ranks well in either comes first.
    */
-  searchEvents(search: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number; locationId?: number }): StoryEvent[]
+  searchEvents(search: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number; locationId?: number; itemId?: number }): StoryEvent[]
   /** What a character could be reminded of, to be ranked by meaning before {@link recall}. */
   recallCandidates(query: Omit<RecallQuery, 'characters' | 'policy'>): RecallCandidate[]
   /**
@@ -113,6 +116,8 @@ class SqliteSessionStore implements SessionStore {
   readonly placements: PlacementRepository
   readonly relationships: RelationshipRepository
   readonly consolidation: ConsolidationRepository
+  readonly slots: SlotRepository
+  readonly items: ItemRepository
   readonly recallIndex: SqliteRecallIndex
   private readonly eventRepository: SqliteEventRepository
 
@@ -126,7 +131,9 @@ class SqliteSessionStore implements SessionStore {
     this.placements = new SqlitePlacementRepository(db, this.locations)
     this.relationships = new SqliteRelationshipRepository(db, clock)
     this.consolidation = new SqliteConsolidationRepository(db)
-    this.eventRepository = new SqliteEventRepository(db, clock, this.recallIndex, id => this.locations.get(id)?.name)
+    this.slots = new SqliteSlotRepository(db)
+    this.items = new SqliteItemRepository(db, clock)
+    this.eventRepository = new SqliteEventRepository(db, clock, this.recallIndex, id => this.locations.get(id)?.name, id => this.items.get(id)?.name)
     this.events = this.eventRepository
     this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)
     this.threads = new SqliteThreadRepository(db, clock)
@@ -169,7 +176,7 @@ class SqliteSessionStore implements SessionStore {
     return this.recall(query, this.storedEvidence(query, options.queryVector))
   }
 
-  searchEvents({ text, vector, limit = 10, fromTurn, toTurn, minImportance, locationId }: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number; locationId?: number }): StoryEvent[] {
+  searchEvents({ text, vector, limit = 10, fromTurn, toTurn, minImportance, locationId, itemId }: { text: string; vector?: readonly number[]; limit?: number; fromTurn?: number; toTurn?: number; minImportance?: number; locationId?: number; itemId?: number }): StoryEvent[] {
     const lexical = this.recallIndex.lexical({ text, kinds: ['event'], limit: STORED_CANDIDATES })
     const dense = vector === undefined ? [] : this.recallIndex.vector({ vector, characterId: 0, limit: STORED_CANDIDATES })
     const scores = new Map<number, number>()
@@ -177,7 +184,7 @@ class SqliteSessionStore implements SessionStore {
     return [...scores].sort((a, b) => b[1] - a[1]).flatMap(([id]) => {
       const event = this.events.get(id)
       if (event === undefined) return []
-      if ((fromTurn !== undefined && event.turn < fromTurn) || (toTurn !== undefined && event.turn > toTurn) || (minImportance !== undefined && event.importance < minImportance) || (locationId !== undefined && event.locationId !== locationId)) return []
+      if ((fromTurn !== undefined && event.turn < fromTurn) || (toTurn !== undefined && event.turn > toTurn) || (minImportance !== undefined && event.importance < minImportance) || (locationId !== undefined && event.locationId !== locationId) || (itemId !== undefined && !event.items.includes(itemId))) return []
       return [event]
     }).slice(0, limit)
   }
@@ -232,6 +239,7 @@ export function createSessionStore(location: string, session: NewSession, option
     migrate(db)
     const store = new SqliteSessionStore(db, options.clock ?? systemClock, vectors)
     store.metadata.create(session)
+    store.slots.ensureDefaults()
     return store
   } catch (error) {
     db.close()

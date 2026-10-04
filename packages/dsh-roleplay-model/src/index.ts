@@ -1,6 +1,7 @@
 export * from './character.ts'
 export * from './emotion.ts'
 export * from './intent.ts'
+export * from './item.ts'
 export * from './json.ts'
 export * from './location.ts'
 export * from './session.ts'

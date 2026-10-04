@@ -4,6 +4,7 @@ import type { Boundaries, CreateReport, TurnStore } from './boundaries.ts'
 import { characterRunner } from './character-runner.ts'
 import { encodeOutput } from '../../shared/narration.ts'
 import { AUTHORING_NEEDS } from './boundaries.ts'
+import { ITEM_ACTIONS, type ItemAction } from 'dsh-roleplay-state'
 import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } from './turn-engine.ts'
 
@@ -53,7 +54,7 @@ function renderResolution(report: ResolveReport): string {
   const done = report.done
   if (done === undefined) return ''
   const left = done.limit - done.round
-  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, ...done.moves.map(move => `${move.name} is now at ${move.to}${move.via > 0 ? ` (by way of ${move.via} other place${move.via === 1 ? '' : 's'})` : ''}.`), ...failures(done.retryFailures)]
+  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, ...done.moves.map(move => `${move.name} is now at ${move.to}${move.via > 0 ? ` (by way of ${move.via} other place${move.via === 1 ? '' : 's'})` : ''}.`), ...done.things.map(thing => `${thing.name}: ${thing.summary}.`), ...failures(done.retryFailures)]
   lines.push(done.spoken.length === 0
     ? 'Nobody has said anything yet this turn.'
     : `Everything said so far this turn, in order; the output must carry all of it exactly:\n${listed(done.spoken)}`)
@@ -70,7 +71,7 @@ function renderResolution(report: ResolveReport): string {
 
 function renderExpansion(report: CreateReport): string {
   if (report.created.length === 0) return `Nothing was made up: ${(report.declined ?? 'the world author found nothing the story needs').replace(/[.\s]+$/, '')}. Work with what exists.`
-  const lines = report.created.map(entry => `- ${entry.kind === 'character' ? 'character' : 'place'} ${entry.key} (${entry.name})`)
+  const lines = report.created.map(entry => `- ${entry.kind} ${entry.key} (${entry.name})`)
   const characters = report.created.filter(entry => entry.kind === 'character')
   return [
     'Made up and fitted into the world:',
@@ -133,6 +134,25 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
             summary: { type: 'string', required: true, description: 'What concretely happens to the character, in a sentence. It becomes what the character is doing.' },
             spoken: { type: 'boolean', description: 'Whether the character gets to say its utterance. It does unless something prevents it, such as being silenced or knocked out first.' },
             public_state: { type: 'string', description: 'What anyone present can now see or infer about the character, when that changed.' },
+            item_changes: {
+              type: 'array',
+              description: 'What the character does with things as a result, in order, when it does: leave out when it handles nothing. Each is checked, and you are told why when it cannot be done. Not for a character whose intent failed.',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  item: { type: 'string', required: true, description: 'The key of the item, as the scene lists it. Leave a way\'s lock to exit.' },
+                  action: { type: 'string', required: true, enum: ITEM_ACTIONS, description: 'take (pick up what is here or take it out of a container it carries), drop (leave it here), give (to someone present), put (into an open container), wear, remove (what is worn), open, close, lock, unlock, reveal (find what was hidden).' },
+                  to: { type: 'string', description: 'For give: who gets it. For put: the container.' },
+                  quantity: { type: 'integer', description: 'How many, of a pile; all when left out.' },
+                  position: { type: 'string', description: 'Where, in words, for drop and put.' },
+                  feature: { type: 'string', description: 'For drop: the feature of the place it is left at.' },
+                  with: { type: 'string', description: 'For lock and unlock: the key item used. It has to be in hand and fit the lock.' },
+                  exit: { type: 'string', description: 'For lock and unlock of a way instead of an item: the key of the place it leads to.' },
+                  forced: { type: 'boolean', description: 'Only when the story breaks the lock (picked, smashed): no key is needed.' },
+                },
+              },
+            },
             moves_to: {
               type: 'object',
               additionalProperties: false,
@@ -159,6 +179,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         summary: outcome.summary,
         ...(outcome.public_state === undefined ? {} : { publicState: outcome.public_state }),
         ...(outcome.spoken === undefined ? {} : { spoken: outcome.spoken }),
+        ...(outcome.item_changes === undefined || outcome.item_changes.length === 0 ? {} : { itemChanges: outcome.item_changes.map(change => ({ item: change.item, action: change.action as ItemAction, ...(change.to === undefined ? {} : { to: change.to }), ...(change.quantity === undefined ? {} : { quantity: change.quantity }), ...(change.position === undefined ? {} : { position: change.position }), ...(change.feature === undefined ? {} : { feature: change.feature }), ...(change.with === undefined ? {} : { with: change.with }), ...(change.exit === undefined ? {} : { exit: change.exit }), ...(change.forced === true ? { forced: true } : {}) })) }),
         ...(outcome.moves_to === undefined ? {} : { moveTo: { location: outcome.moves_to.location, ...(outcome.moves_to.position === undefined ? {} : { position: outcome.moves_to.position }), ...(outcome.moves_to.feature === undefined ? {} : { feature: outcome.moves_to.feature }), ...(outcome.moves_to.ignore_exits === true ? { ignoreExits: true } : {}) } }),
       }))
       return record(await deps.engine.resolve(owner, outcomes, run, exec.signal))
@@ -224,7 +245,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
 
   const expand = defineTool({
     name: EXPAND_TOOL,
-    description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, or anything an existing character or place can serve; use those. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
+    description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are), object (a thing that matters has actually been handed over, found or drawn and does not exist yet; or a place on the body that the world has no slot for). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, loot, props for decoration, or anything an existing character, place or thing can serve; use those. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
     parameters: {
       need: { type: 'string', required: true, enum: AUTHORING_NEEDS, description: 'Why: scene_change, arrival or introduction.' },
       what: { type: 'string', required: true, description: 'What is needed, from what the story has established: who or where (a name when it was given), their role, what happened to make it needed now, and where it is in relation to what exists.' },

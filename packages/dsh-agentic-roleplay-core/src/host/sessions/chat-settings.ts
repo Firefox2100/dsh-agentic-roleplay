@@ -8,6 +8,7 @@ export interface ChatSettingsDeps {
   sessionsDir: () => string
   /** How many recorded rounds of the session are not yet written into its records. */
   pendingRecords: (id: string) => number
+  pendingConsolidation: (id: string) => number
 }
 
 function folderOf(deps: ChatSettingsDeps, id: string): string {
@@ -22,7 +23,7 @@ function folderOf(deps: ChatSettingsDeps, id: string): string {
  * @throws {InvalidSettingsError} when its settings file is not valid.
  */
 export function readChatSettings(deps: ChatSettingsDeps, id: string): SettingsPayload {
-  return { settings: readSettings(folderOf(deps, id)), bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id) }
+  return { settings: readSettings(folderOf(deps, id)), bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id) }
 }
 
 /**
@@ -31,5 +32,5 @@ export function readChatSettings(deps: ChatSettingsDeps, id: string): SettingsPa
  * @throws {InvalidSettingsError} when the value is not acceptable; nothing is stored then.
  */
 export function writeChatSettings(deps: ChatSettingsDeps, id: string, value: unknown): SettingsPayload {
-  return { settings: writeSettings(folderOf(deps, id), value), bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id) }
+  return { settings: writeSettings(folderOf(deps, id), value), bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id) }
 }

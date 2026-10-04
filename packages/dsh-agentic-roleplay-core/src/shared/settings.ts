@@ -146,4 +146,6 @@ export interface SettingsPayload {
   bounds: typeof SETTINGS_SPEC
   /** How many recorded rounds are not yet written into the story's records; they are caught up with the next turn. */
   pendingRecords: number
+  /** How many made-up characters, places and things are waiting to be fitted into the world. */
+  pendingConsolidation: number
 }

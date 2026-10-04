@@ -5,8 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from 'dsh-roleplay-state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
-import { populateCharacters, populateLocations, relationshipProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
-import type { LocationDefinition } from 'dsh-roleplay-model'
+import { populateCharacters, populateItems, populateLocations, relationshipProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
+import type { ItemDefinition, LocationDefinition } from 'dsh-roleplay-model'
 
 let dir: string
 let state: RoleplayState
@@ -167,5 +167,33 @@ describe('relationships between the characters of a world', () => {
       'lost: relationships: a character has no relationship with itself',
     ])
     expect(relationshipProblems([definition()])).toEqual([])
+  })
+})
+
+describe('the things of a world', () => {
+  const thing = (id: string, start: ItemDefinition['start'], extra: Partial<ItemDefinition> = {}): ItemDefinition => ({ id, name: id.toUpperCase(), description: '', quantity: 1, unique: false, quality: '', notable: false, hidden: false, start, ...extra })
+
+  it('puts each thing where it starts, containers before what is in them, with what opens each lock, on items and on ways', () => {
+    populateLocations(session, places)
+    populateCharacters(session, [definition({ id: 'arthur', name: 'Arthur', aliases: [] }), definition()], 'arthur')
+    populateItems(session, [
+      thing('coins', { kind: 'inside', item: 'purse' }, { quantity: 40 }),
+      thing('purse', { kind: 'held', character: 'arthur' }, { container: { state: 'closed', openedBy: [] } }),
+      thing('chest', { kind: 'location', location: 'bar', feature: 'counter', position: 'by the till' }, { container: { state: 'locked', openedBy: ['key'] }, owner: 'eleanor-graves', hidden: true }),
+      thing('key', { kind: 'worn', character: 'eleanor-graves', position: 'on a chain' }, { wearable: 'neck', unique: true, notable: true }),
+    ], [{ id: 'neck', name: 'neck', capacity: 1 }, { id: 'quiver', name: 'quiver', capacity: 1 }], [{ ...places[1]!, exits: [{ to: 'street', description: 'the door', oneWay: false, state: 'locked', note: '', openedBy: ['key'] }] }, places[3]!])
+    const [coins, purse, chest, key] = ['coins', 'purse', 'chest', 'key'].map(id => session.items.getBySourceId(id)!)
+    expect(session.items.holding(coins!.id)?.holder).toEqual({ kind: 'item', itemId: purse!.id })
+    expect(coins).toMatchObject({ quantity: 40 })
+    expect(session.items.holding(chest!.id)?.holder).toMatchObject({ kind: 'location', featureKey: 'counter', position: 'by the till' })
+    expect(chest).toMatchObject({ hidden: true, container: { state: 'locked' }, ownerId: session.characters.getBySourceId('eleanor-graves')!.id })
+    expect(session.items.holding(key!.id)?.holder).toMatchObject({ kind: 'character', mode: 'worn', slot: 'neck', position: 'on a chain' })
+    expect(session.items.openers({ kind: 'item', id: chest!.id })).toEqual([key!.id])
+    const bar = session.locations.getBySourceId('bar')!
+    const street = session.locations.getBySourceId('street')!
+    expect(session.items.openers({ kind: 'exit', id: session.locations.getExit(bar.id, street.id)!.id })).toEqual([key!.id])
+    expect(session.items.openers({ kind: 'exit', id: session.locations.getExit(street.id, bar.id)!.id })).toEqual([key!.id])
+    expect(session.slots.get('quiver')).toBeDefined()
+    expect(session.consolidation.pending()).toEqual([])
   })
 })

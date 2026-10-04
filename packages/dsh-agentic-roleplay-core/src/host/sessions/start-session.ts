@@ -4,6 +4,7 @@ import type { StartedSession, StartSessionRequest } from '../../shared/sessions.
 import type { WorldProblem } from '../../shared/worlds.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
 import { loadCharacters } from '../characters/load.ts'
+import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -11,7 +12,7 @@ import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { parseSettings } from '../../shared/settings.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCharacters, populateLocations, relationshipProblems, startingPlaceProblems } from './populate.ts'
+import { populateCharacters, populateItems, populateLocations, relationshipProblems, startingPlaceProblems } from './populate.ts'
 
 const MAX_NAME_LENGTH = 200
 
@@ -43,6 +44,9 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const placing = startingPlaceProblems(characters, locations)
   if (placing.length > 0) throw new InvalidWorldError(`the starting places of "${world.summary.name}" have ${placing.length} problem(s)`, placing.map(message => ({ path: world.directory, message })))
 
+  const { items, slots, problems: itemProblems } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
+  if (itemProblems.length > 0) throw new InvalidWorldError(`the items of "${world.summary.name}" have ${itemProblems.length} problem(s)`, itemProblems)
+
   const related = relationshipProblems(characters)
   if (related.length > 0) throw new InvalidWorldError(`the relationships of "${world.summary.name}" have ${related.length} problem(s)`, related.map(message => ({ path: world.directory, message })))
 
@@ -69,6 +73,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     session.transaction(() => {
       populateLocations(session, locations)
       populateCharacters(session, characters, player.id)
+      populateItems(session, items, slots, locations)
     })
     if (request.settings !== undefined) writeSettings(sessionFolder(sessionsDir, id), request.settings)
     chatSessionId = await deps.agent.ensure(id, name, opening)

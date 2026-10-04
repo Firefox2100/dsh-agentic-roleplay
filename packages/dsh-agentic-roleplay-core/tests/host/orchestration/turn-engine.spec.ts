@@ -825,3 +825,56 @@ describe('making up what the story needs', () => {
     expect(store.story.consolidation.pending()).toHaveLength(1)
   })
 })
+
+describe('what the game master decides characters do with things', () => {
+  const only = { alice: { intent: 'a', commitment: 'low' as const }, bob: { intent: 'b', commitment: 'low' as const } }
+  const take = { item: 'lantern', action: 'take' as const }
+
+  const act = async (outcomes: Outcome[]) => {
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice', 'bob'] }, runner.run, signal)
+    return { runner, resolve: () => engine.resolve(owner, outcomes, runner.run, signal) }
+  }
+
+  it('checks them together, in order, and tells the game master every reason before the round is recorded', async () => {
+    const seen: unknown[] = []
+    store.checkItemChanges = (entries) => { seen.push(entries); return { ok: false, problems: ['bob: cannot take lantern: Brass lantern is held by Alice, who has to give it'] } }
+    const { resolve } = await act([{ ...outcome('alice', 'succeeded'), itemChanges: [take] }, { ...outcome('bob', 'succeeded'), itemChanges: [take] }])
+    await expect(resolve()).rejects.toThrow(/bob: cannot take lantern: Brass lantern is held by Alice, who has to give it/)
+    expect(seen).toEqual([[{ character: 'alice', changes: [take] }, { character: 'bob', changes: [take] }]])
+    expect(store.queue).toEqual([])
+    expect(store.commits).toEqual([])
+  })
+
+  it('does not ask when nobody handles anything, and refuses things done by a character whose intent failed', async () => {
+    let asked = 0
+    store.checkItemChanges = (entries) => { asked += 1; return { ok: true, effects: entries.map(() => []) } }
+    const first = await act([outcome('alice', 'succeeded'), outcome('bob', 'succeeded')])
+    await first.resolve()
+    expect(asked).toBe(0)
+    engine.forget('session-1')
+    const second = await act([{ ...outcome('alice', 'failed'), itemChanges: [take] }, outcome('bob', 'succeeded')])
+    await expect(second.resolve()).rejects.toThrow(/alice: its intent failed, so it does nothing with things/)
+  })
+
+  it('applies them with the round, in the order of the outcomes, and keeps what came of each for the keeper and tells the game master', async () => {
+    const applied: unknown[] = []
+    store.commit = (updates) => {
+      applied.push(updates.map(update => update.items))
+      return updates.map(update => (update.items === undefined ? [] : [{ item: { key: 'lantern', name: 'Brass lantern' }, action: 'take' as const, summary: 'now carried by Alice' }]))
+    }
+    const { resolve } = await act([{ ...outcome('alice', 'succeeded'), itemChanges: [take] }, outcome('bob', 'succeeded')])
+    const resolution = await resolve()
+    expect(applied).toEqual([[[take], undefined]])
+    expect(resolution.done?.things).toEqual([{ character: 'alice', name: 'Brass lantern', action: 'take', summary: 'now carried by Alice' }])
+    expect(store.queue[0]?.entries.find(entry => entry.character === 'alice')?.items).toEqual([{ name: 'Brass lantern', action: 'take', summary: 'now carried by Alice' }])
+    expect(store.queue[0]?.entries.find(entry => entry.character === 'bob')?.items).toBeUndefined()
+  })
+
+  it('tells each character what it has on it', async () => {
+    store.carried = id => (id === alice.character.id ? [{ key: 'coat', name: 'Wool coat', quantity: 1, quality: '', notable: false, hidden: false, where: 'worn on the torso' }] : [])
+    const { runner } = await act([outcome('alice', 'succeeded'), outcome('bob', 'succeeded')])
+    expect(runner.requests.find(request => request.member.key === 'alice')?.carrying?.map(entry => entry.name)).toEqual(['Wool coat'])
+    expect(runner.requests.find(request => request.member.key === 'bob')?.carrying).toBeUndefined()
+  })
+})

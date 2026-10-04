@@ -61,6 +61,7 @@ describe('the reading tools', () => {
     expect((await run('get_location', { location: 'bar' })).value).toEqual({
       location: 'bar', name: 'The Bar', description: '', in: 'town', features: [{ key: 'counter', name: 'Counter', description: '' }],
       exits: [{ to: 'town', name: 'Town', state: 'locked', description: 'the door', note: 'closing time', travel_time_seconds: null }],
+      items: [],
       here: [{ character: 'alice', position: 'at the counter', feature: 'counter' }],
     })
     await expect(run('get_location', { location: 'moon' })).rejects.toThrow(/there is no place "moon"/)
@@ -132,7 +133,7 @@ describe('the writing tools', () => {
   })
 
   it('are not there unless the plugin is configured for them', () => {
-    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
+    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
     expect(Object.keys(tools(true))).toContain('record_event')
   })
 })
@@ -147,7 +148,7 @@ describe('reading and editing the records in one call', () => {
 
   it('changes everything or nothing, and returns the reasons for a refusal so that the agent can correct and call again', async () => {
     const ok = await run('edit_records', { turn: 4, states: [{ character: 'alice', activity: 'x' }], events: [{ turn: 4, round: 1, text: 'e', importance: 2, tags: [], involves: ['alice'], perceived_by: [{ character: 'alice', mode: 'witnessed' }] }] })
-    expect(ok.value).toEqual({ writes: 2, event_ids: [1], belief_ids: [], character_keys: [], place_keys: [] })
+    expect(ok.value).toEqual({ writes: 2, event_ids: [1], belief_ids: [], character_keys: [], place_keys: [], item_keys: [] })
     await expect(run('edit_records', { turn: 4, states: [{ character: 'alice', activity: 'y' }], events: [{ turn: 4, round: 1, text: 'f', importance: 9, tags: [], involves: [], perceived_by: [] }] })).rejects.toThrow(InvalidEditError)
     expect(store.characterStates.get(store.characters.getBySourceId('alice')!.id)?.activity).toBe('x')
   })
@@ -201,7 +202,7 @@ describe('the plugin', () => {
   }
 
   it('registers the reading tools, and the writing ones when asked, with the tool registry present', async () => {
-    expect(await names({})).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
+    expect(await names({})).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_threads'])
     expect(await names({ writeTools: true })).toContain('open_thread')
   })
 

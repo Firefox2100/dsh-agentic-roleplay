@@ -56,6 +56,8 @@ export class SqliteEventRepository implements EventRepository {
     private readonly index: IndexWrites,
     /** The name of a place, so that what happened there can be found by it. */
     private readonly placeName: (id: LocationId) => string | undefined = () => undefined,
+    /** The name of an item, so that what happened to it can be found by it. */
+    private readonly itemName: (id: number) => string | undefined = () => undefined,
   ) {}
 
   add(event: NewStoryEvent, perceptions: readonly NewPerception[]): { event: StoryEvent; perceptions: Perception[] } {
@@ -66,6 +68,7 @@ export class SqliteEventRepository implements EventRepository {
       )
       const id = Number(lastInsertRowid)
       this.setInvolves(id, event.involves)
+      this.setItems(id, event.items ?? [])
       const stored = this.replacePerceptions(id, perceptions)
       const kept = this.require(id)
       this.indexEvent(kept, stored)
@@ -88,6 +91,7 @@ export class SqliteEventRepository implements EventRepository {
     if (filter.toTurn !== undefined) add('turn <= ?', filter.toTurn)
     if (filter.minImportance !== undefined) add('importance >= ?', filter.minImportance)
     if (filter.locationId !== undefined) add('location_id = ?', filter.locationId)
+    if (filter.aboutItem !== undefined) add('id IN (SELECT event_id FROM event_items WHERE item_id = ?)', filter.aboutItem)
     if (filter.involving !== undefined) add('id IN (SELECT event_id FROM event_involves WHERE character_id = ?)', filter.involving)
     const clause = where.length === 0 ? '' : `WHERE ${where.join(' AND ')}`
     return this.db.all<EventRow>(`SELECT * FROM events ${clause} ORDER BY turn, round, id`, params).map(row => this.toEvent(row))
@@ -100,6 +104,7 @@ export class SqliteEventRepository implements EventRepository {
         patch.text ?? current.text, patch.importance ?? current.importance, toJson(patch.tags ?? current.tags), patch.locationId ?? current.locationId ?? null, id,
       ])
       if (patch.involves !== undefined) this.setInvolves(id, patch.involves)
+      if (patch.items !== undefined) this.setItems(id, patch.items)
       const kept = this.require(id)
       this.indexEvent(kept, this.perceptionsOf(id))
       return kept
@@ -196,7 +201,8 @@ export class SqliteEventRepository implements EventRepository {
   /** What an event is found by besides its text: its tags and where it happened. */
   private extraOf(event: StoryEvent): string {
     const place = event.locationId === undefined ? undefined : this.placeName(event.locationId)
-    return [...event.tags, ...(place === undefined ? [] : [place])].join(' ')
+    const things = event.items.flatMap(id => this.itemName(id) ?? [])
+    return [...event.tags, ...(place === undefined ? [] : [place]), ...things].join(' ')
   }
 
   /** Keep the index of an event and of what each character took in of it up to date. */
@@ -211,7 +217,9 @@ export class SqliteEventRepository implements EventRepository {
 
   private toEvent(row: EventRow): StoryEvent {
     const involves = this.db.all<{ character_id: number }>('SELECT character_id FROM event_involves WHERE event_id = ? ORDER BY character_id', [row.id]).map(entry => entry.character_id)
+    const items = this.db.all<{ item_id: number }>('SELECT item_id FROM event_items WHERE event_id = ? ORDER BY item_id', [row.id]).map(entry => entry.item_id)
     return {
+      items,
       id: row.id, turn: row.turn, round: row.round, text: row.text, importance: row.importance,
       tags: parseStringList(row.tags, 'events.tags'), involves, ...(row.location_id === null ? {} : { locationId: row.location_id }), sealed: row.sealed === 1, createdAt: row.created_at,
     }
@@ -233,6 +241,11 @@ export class SqliteEventRepository implements EventRepository {
     const found = this.getPerception(id)
     if (found === undefined) throw new NotFoundError(`perception ${id} does not exist`)
     return found
+  }
+
+  private setItems(id: EventId, items: readonly number[]): void {
+    this.db.run('DELETE FROM event_items WHERE event_id = ?', [id])
+    for (const itemId of new Set(items)) this.db.run('INSERT INTO event_items (event_id, item_id) VALUES (?, ?)', [id, itemId])
   }
 
   private setInvolves(id: EventId, characters: readonly CharacterId[]): void {
