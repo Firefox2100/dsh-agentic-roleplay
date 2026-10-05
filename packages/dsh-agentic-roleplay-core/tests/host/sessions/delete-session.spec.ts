@@ -12,19 +12,19 @@ let root: string
 let state: RoleplayState
 
 const sessionsDir = () => join(root, 'sessions')
-let retired: string[]
-let retireError: Error | undefined
+let purged: string[]
+let purgeError: Error | undefined
 const deps = () => ({
   state,
-  agent: { retire: (id: string) => { retired.push(id); return retireError === undefined ? Promise.resolve() : Promise.reject(retireError) } },
+  purgeChat: (chat: string) => { purged.push(chat); return purgeError === undefined ? Promise.resolve() : Promise.reject(purgeError) },
   sessionsDir,
 })
 const world = { id: 'blackwater', name: 'The Blackwater Observatory' }
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'delete-session-'))
-  retired = []
-  retireError = undefined
+  purged = []
+  purgeError = undefined
   state = new RoleplayState(new Context(), { journalMode: 'delete' })
 })
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
@@ -45,15 +45,15 @@ describe('deleteSession', () => {
     expect(state.listSessions(sessionsDir()).sessions.map(session => session.id)).toEqual([kept])
   })
 
-  it('hides and stops the chat first', async () => {
+  it('removes the chat from DSH\'s store first, with what it started', async () => {
     const { id } = state.createSession(sessionsDir(), { name: 'Night one', world }).metadata.get()
     await deleteSession(deps(), id)
-    expect(retired).toEqual([id])
+    expect(purged).toEqual([`session-${id}`])
   })
 
-  it('keeps the session when its chat cannot be retired', async () => {
+  it('keeps the session when its chat cannot be removed completely, so that deleting can be tried again', async () => {
     const { id } = state.createSession(sessionsDir(), { name: 'Night one', world }).metadata.get()
-    retireError = new Error('chat is busy')
+    purgeError = new Error('chat is busy')
     await expect(deleteSession(deps(), id)).rejects.toThrow('chat is busy')
     expect(existsSync(join(sessionsDir(), id))).toBe(true)
   })
@@ -62,6 +62,6 @@ describe('deleteSession', () => {
     await expect(deleteSession(deps(), '3f1c1d6e-6f6b-4f55-9d0f-0d6a1c2b3a4d')).rejects.toThrow(SessionNotFoundError)
     await expect(deleteSession(deps(), '../worlds')).rejects.toThrow(SessionNotFoundError)
     await expect(deleteSession(deps(), '')).rejects.toThrow(SessionNotFoundError)
-    expect(retired).toEqual([])
+    expect(purged).toEqual([])
   })
 })

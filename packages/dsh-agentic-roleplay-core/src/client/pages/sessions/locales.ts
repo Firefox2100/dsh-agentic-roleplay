@@ -8,7 +8,7 @@ export type SessionsLocaleKey =
   | 'problems'
   | 'columnName' | 'columnWorld' | 'columnCreated' | 'columnLastPlayed' | 'columnTurns'
   | 'columnActions' | 'neverPlayed' | 'dateLocale'
-  | 'open' | 'openFailed'
+  | 'open' | 'openFailed' | 'archive' | 'restore' | 'archived' | 'moveFailed'
   | 'delete' | 'deleteTitle' | 'deleteQuestion' | 'deleteWarning' | 'deleteConfirm' | 'deleting' | 'deleteFailed' | 'cancel' | 'close'
 
 export const dictionaries: Dictionaries<SessionsLocaleKey> = {
@@ -31,6 +31,10 @@ export const dictionaries: Dictionaries<SessionsLocaleKey> = {
     columnLastPlayed: 'Last played',
     columnTurns: 'Turns',
     columnActions: 'Actions',
+    archive: 'Put the session away',
+    restore: 'Bring the session back',
+    archived: 'Away',
+    moveFailed: 'Could not put the session away or bring it back: {message}',
     open: 'Open the chat',
     openFailed: 'Could not open the chat: {message}',
     delete: 'Delete session',
@@ -64,6 +68,10 @@ export const dictionaries: Dictionaries<SessionsLocaleKey> = {
     columnLastPlayed: '上次游玩',
     columnTurns: '回合数',
     columnActions: '操作',
+    archive: '归档存档',
+    restore: '恢复存档',
+    archived: '已归档',
+    moveFailed: '无法归档或恢复该存档：{message}',
     open: '打开对话',
     openFailed: '无法打开对话：{message}',
     delete: '删除存档',

@@ -16,3 +16,6 @@ export class SessionNotFoundError extends Error {}
 
 /** DSH's session services are not available, so no chat can be created or retired. */
 export class AgentUnavailableError extends Error {}
+
+/** The session is put away and cannot be played until it is brought back. */
+export class SessionArchivedError extends Error {}

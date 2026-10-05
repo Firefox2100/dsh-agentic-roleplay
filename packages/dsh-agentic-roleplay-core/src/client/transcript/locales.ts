@@ -1,8 +1,8 @@
 import type { Dictionaries } from '../i18n.ts'
 
-export type TranscriptLocaleKey = 'repaired' | 'suggestions' | 'suggestionHint'
+export type TranscriptLocaleKey = 'repaired' | 'suggestions' | 'suggestionHint' | 'regenerate' | 'regenerateHint' | 'rewind' | 'before' | 'swapPrevious' | 'swapNext' | 'redo' | 'redoHint' | 'branch' | 'after' | 'branchHint' | 'branchFailed'
 
 export const dictionaries: Dictionaries<TranscriptLocaleKey> = {
-  en: { repaired: 'Corrected so that every spoken line is exactly what the character said.', suggestions: 'You could', suggestionHint: 'Put it in the input box' },
-  zh: { repaired: '已修正，确保每句台词与角色原话一致。', suggestions: '你可以', suggestionHint: '填入输入框' },
+  en: { regenerate: '⟳ Regenerate', regenerateHint: 'Take the story back to before the last turn and send the same words again', rewind: '↶ Rewind to…', before: 'Before', swapPrevious: 'The turn played before this one from the same place', swapNext: 'The next turn played from the same place', redo: '↷ Forward', branch: '⑂ Branch from…', after: 'After', branchHint: 'Start a new session from the story as it stands after a turn; this one stays as it is', branchFailed: 'Could not branch the story: {message}', redoHint: 'Go forward again to the turn that was taken back', repaired: 'Corrected so that every spoken line is exactly what the character said.', suggestions: 'You could', suggestionHint: 'Put it in the input box' },
+  zh: { regenerate: '⟳ 重新生成', regenerateHint: '回到上一回合之前，并再次发送同样的话', rewind: '↶ 回退到…', before: '在此之前：', swapPrevious: '从同一处出发的上一个回合', swapNext: '从同一处出发的下一个回合', redo: '↷ 前进', branch: '⑂ 分支自…', after: '在此之后：', branchHint: '从某一回合之后的故事另起一个新会话，当前会话保持不变', branchFailed: '无法创建分支：{message}', redoHint: '重新前进到被回退的回合', repaired: '已修正，确保每句台词与角色原话一致。', suggestions: '你可以', suggestionHint: '填入输入框' },
 }

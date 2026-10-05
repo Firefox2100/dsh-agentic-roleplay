@@ -1,0 +1,61 @@
+.dock {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  box-sizing: border-box;
+  width: min(800px, 100%);
+  margin: 0 auto 8px;
+  padding: 0 16px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.button {
+  padding: 2px 8px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled),
+.button:focus-visible {
+  border-color: var(--dsw-alias-state-business-primary);
+  color: var(--dsw-alias-state-business-primary);
+  outline: none;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.count {
+  min-width: 32px;
+  text-align: center;
+}
+
+.select {
+  max-width: 220px;
+  padding: 2px 4px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font: inherit;
+}
+
+.error {
+  color: var(--dsw-alias-state-error-primary, #d1242f);
+}

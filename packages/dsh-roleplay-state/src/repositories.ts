@@ -65,6 +65,8 @@ export interface MetadataRepository {
   get(): SessionMetadata
   /** @throws {RangeError} when the name is blank. */
   setName(name: string): void
+  /** Make the database the identity of a session: its id and name, and the time it was created (now unless given). Used for a copy and for a state put back; everything else stays as it was. */
+  rebrand(id: string, name: string, createdAt?: string): void
   setWorld(world: WorldReference): void
   /** Count one more played turn and set the time of the last play to now. */
   recordTurn(): SessionMetadata

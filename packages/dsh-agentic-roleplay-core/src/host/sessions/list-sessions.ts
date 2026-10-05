@@ -1,7 +1,9 @@
 import { join } from 'node:path'
 import type { RoleplayState } from 'dsh-roleplay-state'
 import type { SessionSummary, SessionsPayload } from '../../shared/sessions.ts'
+import { sessionFolder } from 'dsh-roleplay-state'
 import { chatSessionId } from '../agent/agent-sessions.ts'
+import { readStatus } from './status.ts'
 
 export interface ListSessionsDeps {
   state: Pick<RoleplayState, 'listSessions'>
@@ -12,6 +14,14 @@ export interface ListSessionsDeps {
 export function listSessions(deps: ListSessionsDeps): SessionsPayload {
   const directory = deps.sessionsDir()
   const { sessions, problems } = deps.state.listSessions(directory)
+  const archived = (id: string): { archivedAt?: string } => {
+    try {
+      return readStatus(sessionFolder(directory, id))
+    } catch (error) {
+      problems.push({ id, message: error instanceof Error ? error.message : String(error) })
+      return {}
+    }
+  }
   const summaries = sessions.map((session): SessionSummary => ({
     id: session.id,
     chatSessionId: chatSessionId(session.id),
@@ -21,6 +31,7 @@ export function listSessions(deps: ListSessionsDeps): SessionsPayload {
     createdAt: session.createdAt,
     ...(session.lastPlayedAt === undefined ? {} : { lastPlayedAt: session.lastPlayedAt }),
     turns: session.turns,
+    ...archived(session.id),
   }))
   const recency = (session: SessionSummary): string => session.lastPlayedAt ?? session.createdAt
   summaries.sort((a, b) => recency(b).localeCompare(recency(a)))

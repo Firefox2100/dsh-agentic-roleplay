@@ -137,6 +137,8 @@ export class TurnEngine {
   /** How many runs of the keeper are waiting or running for each chat. */
   private readonly runs = new Map<string, number>()
   private readonly objections = new Map<string, number>()
+  /** What runs in the background of each chat and writes to its story, other than the records: fitting in what was made up, and the characters away. */
+  private readonly working = new Map<string, Set<Promise<unknown>>>()
   /** Chats whose made-up characters and places are being fitted into the world now: one run at a time. */
   private readonly consolidating = new Set<string>()
   /** Chats whose characters away from the player are being asked about what fell due: one run at a time. */
@@ -364,12 +366,12 @@ export class TurnEngine {
     if (!authoring.enabled || pending.length === 0) return
     if (pending.length < authoring.consolidateAfter && !pending.some(item => owner.turn - item.createdTurn >= STALE_AFTER_TURNS)) return
     this.consolidating.add(owner.chat)
-    void this.boundaries().author.consolidate({ chat: owner.chat, turn: owner.turn, store }, state.cancel.signal)
+    this.track(owner.chat, this.boundaries().author.consolidate({ chat: owner.chat, turn: owner.turn, store }, state.cancel.signal)
       .then(() => { this.written(owner.chat) })
       .catch((error: unknown) => {
         if (!state.cancel.signal.aborted) this.problem(`made-up characters and places were not fitted into the world: ${error instanceof Error ? error.message : String(error)}`)
       })
-      .finally(() => { this.consolidating.delete(owner.chat) })
+      .finally(() => { this.consolidating.delete(owner.chat) }))
   }
 
   /**
@@ -386,11 +388,11 @@ export class TurnEngine {
     const due = store.dueOffScene(owner.turn)
     if (due.length === 0) return
     this.offstage.add(owner.chat)
-    void this.runOffScene(owner, state, store, due, limit, run)
+    this.track(owner.chat, this.runOffScene(owner, state, store, due, limit, run)
       .catch((error: unknown) => {
         if (!state.cancel.signal.aborted) this.problem(`characters away from the player were not asked about what fell due: ${error instanceof Error ? error.message : String(error)}`)
       })
-      .finally(() => { this.offstage.delete(owner.chat) })
+      .finally(() => { this.offstage.delete(owner.chat) }))
   }
 
   private async runOffScene(owner: TurnOwner, state: TurnState, store: TurnStore, due: readonly OffSceneItem[], limit: number, run: RunCharacter): Promise<void> {
@@ -479,11 +481,33 @@ export class TurnEngine {
     return count <= MAX_OBJECTIONS
   }
 
+  private track(chat: string, job: Promise<unknown>): void {
+    const set = this.working.get(chat) ?? new Set<Promise<unknown>>()
+    this.working.set(chat, set)
+    set.add(job)
+    void job.finally(() => { set.delete(job) })
+  }
+
+  /** Stops what the turn of a chat has in flight: nothing it started is cancelled halfway through a write, but nothing new is asked of a model. */
+  stop(chat: string): void {
+    this.states.get(chat)?.cancel.abort()
+  }
+
+  /** Resolves when nothing of the chat writes to its story any more: the records, what was made up being fitted in, the characters away. */
+  async quiesce(chat: string): Promise<void> {
+    for (;;) {
+      const jobs = [...(this.working.get(chat) ?? []), ...(this.chains.has(chat) ? [this.chains.get(chat)!] : [])]
+      if (jobs.length === 0 || (this.runs.get(chat) ?? 0) === 0 && (this.working.get(chat)?.size ?? 0) === 0) return
+      await Promise.allSettled(jobs)
+    }
+  }
+
   forget(chat: string): void {
     this.states.get(chat)?.cancel.abort()
     this.states.delete(chat)
     this.chains.delete(chat)
     this.runs.delete(chat)
+    this.working.delete(chat)
     for (const key of this.objections.keys()) if (key.startsWith(`${chat}#`)) this.objections.delete(key)
   }
 

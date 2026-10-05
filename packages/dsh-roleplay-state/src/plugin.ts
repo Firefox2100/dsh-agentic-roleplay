@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { Service, type Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-tools'
 import z from '@deepseek-ai/schemastery'
-import { createSession, deleteSession, listSessions, openSession, sessionDatabase, type SessionInit, type SessionListing } from './sessions.ts'
+import { createSession, deleteSession, forkSession, type ForkOptions, type ForkSource, listSessions, openSession, removeSnapshot, restoreSnapshot, sessionDatabase, snapshotNames, takeSnapshot, type SessionInit, type SessionListing } from './sessions.ts'
 import type { SessionStore, StoreOptions } from './store.ts'
 import type { RecallQuery, Recalled } from './memory/recall.ts'
 import type { SemanticRanker } from './memory/ranker.ts'
@@ -31,7 +31,7 @@ export const Config: z<Config> = z.object({
 })
 
 /** A session's repositories. Connections belong to the service, so there is nothing to close. */
-export type Session = Omit<SessionStore, 'close'> & {
+export type Session = Omit<SessionStore, 'close' | 'snapshotTo'> & {
   /**
    * {@link SessionStore.recall}, with the over-retrieved pool reranked when a ranker is registered with
    * `roleplayState.rankMemories`. The one call for anything that reminds a character of something.
@@ -114,6 +114,47 @@ export class RoleplayState extends Service {
     const key = resolve(sessionDatabase(sessionsDir, id))
     this.sessions.get(key)?.store.close()
     this.sessions.delete(key)
+  }
+
+  /** Keep a consistent copy of a session's database under a name (a lowercase name of letters, digits and hyphens), replacing one of that name. */
+  snapshot(sessionsDir: string, id: string, name: string): void {
+    const key = resolve(sessionDatabase(sessionsDir, id))
+    const open = this.sessions.get(key)?.store
+    if (open !== undefined) { takeSnapshot(sessionsDir, id, name, open); return }
+    const store = openSession(sessionsDir, id, this.options)
+    try { takeSnapshot(sessionsDir, id, name, store) } finally { store.close() }
+  }
+
+  /** The names of the snapshots a session has. */
+  snapshots(sessionsDir: string, id: string): string[] {
+    return snapshotNames(sessionsDir, id)
+  }
+
+  /** Delete a snapshot, if there is one. */
+  removeSnapshot(sessionsDir: string, id: string, name: string): void {
+    removeSnapshot(sessionsDir, id, name)
+  }
+
+  /**
+   * Put the database of a session back as it was in a snapshot. The connection is released first, so anything that
+   * holds the session from before has to ask for it again: nothing may be using it.
+   * @throws {NotFoundError} when there is no such snapshot.
+   */
+  restore(sessionsDir: string, id: string, name: string): void {
+    this.closeSession(sessionsDir, id)
+    restoreSnapshot(sessionsDir, id, name, this.options)
+  }
+
+  /**
+   * Make a new session from a snapshot of another, or from its database as it is (nothing may be writing to it): the new one has
+   * a folder of its own with the database, the settings and the snapshots named in `keep`, and its own id and name.
+   * @throws {ConflictError} when the new id exists. @throws {NotFoundError} when a snapshot does not exist.
+   */
+  fork(sessionsDir: string, fromId: string, toId: string, from: { snapshot: string } | { live: true }, options: ForkOptions): void {
+    if ('snapshot' in from) { forkSession(sessionsDir, fromId, toId, from, options, this.options); return }
+    const open = this.sessions.get(resolve(sessionDatabase(sessionsDir, fromId)))?.store
+    const store = open ?? openSession(sessionsDir, fromId, this.options)
+    try { forkSession(sessionsDir, fromId, toId, { live: store } satisfies ForkSource, options, this.options) } finally { if (open === undefined) store.close() }
   }
 
   /** Close a session and remove its folder, including everything else kept in it. */

@@ -67,7 +67,7 @@
 
 /* Fixed width: the other columns share what is left. */
 .actionsColumn {
-  width: 88px;
+  width: 132px;
 }
 
 .nameColumn {
@@ -135,4 +135,17 @@
   font-size: 13px;
   text-align: center;
   color: var(--dsw-alias-label-secondary);
+}
+
+.archived td {
+  opacity: 0.6;
+}
+
+.badge {
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  font-size: 11px;
+  color: var(--dsw-alias-label-tertiary);
 }

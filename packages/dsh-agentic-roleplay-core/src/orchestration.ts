@@ -6,6 +6,7 @@ import type {} from 'dsh-roleplay-state'
 import { join } from 'node:path'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { recordKeeper } from './host/orchestration/committer.ts'
+import { Timelines } from './host/timeline/service.ts'
 import { suggestionWriter } from './host/orchestration/suggester.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
 import { installHooks } from './host/orchestration/hooks.ts'
@@ -72,7 +73,19 @@ export function apply(ctx: Context): void {
     text: PROTOCOL,
     interpolate: false,
   })
-  for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn })) ctx.tools.register(tool)
+  for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { timelines.delivered(chat, output) } })) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.settle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
-  installHooks(ctx, { engine, boundaries, stores })
+  const timelines = new Timelines({
+    state: ctx.roleplayState,
+    sessionsDir,
+    engine,
+    agentOf: chat => Promise.resolve(ctx.agents.get(SessionId(chat))),
+    keepSnapshots: id => liveSettings(sessionFolder(sessionsDir(), id), problem).rewind.keepSnapshots,
+  })
+  ctx.effect(() => {
+    ctx.roleplayOrchestration.halt = async (chat) => { engine.stop(chat); await engine.quiesce(chat); engine.forget(chat) }
+    return () => { ctx.roleplayOrchestration.halt = () => Promise.resolve() }
+  }, 'roleplay: halt')
+  ctx.effect(() => { ctx.roleplayOrchestration.timelines = timelines; return () => { ctx.roleplayOrchestration.timelines = undefined } }, 'roleplay: timelines')
+  installHooks(ctx, { engine, boundaries, stores, timelines })
 }

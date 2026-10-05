@@ -9,7 +9,8 @@ import { createApiHandler } from '../../../src/host/http/api.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
 import { DEFAULT_SETTINGS, SETTINGS_SPEC } from '../../../src/shared/settings.ts'
 import { InvalidSettingsError } from '../../../src/host/sessions/settings.ts'
-import { AgentUnavailableError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
+import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
+import { TimelineError } from '../../../src/host/timeline/service.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
@@ -27,6 +28,10 @@ let opened: string | undefined
 let openError: Error | undefined
 let settingsError: Error | undefined
 let notesError: Error | undefined
+let timelineError: Error | undefined
+let archiveError: Error | undefined
+let archived: string[] = []
+let moved: [string, string] | undefined
 let writtenSettings: unknown
 const started = { id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', characterCount: 2 }
 const listed = { directory: '/root/sessions', sessions: [{ id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', createdAt: '2026-01-01T00:00:00.000Z', turns: 0 }], problems: [] }
@@ -44,6 +49,10 @@ beforeEach(async () => {
   openError = undefined
   settingsError = undefined
   notesError = undefined
+  timelineError = undefined
+  moved = undefined
+  archiveError = undefined
+  archived = []
   writtenSettings = undefined
   const folder = join(base, 'worlds', 'harbor')
   await mkdir(join(folder, 'media', 'files'), { recursive: true })
@@ -80,9 +89,33 @@ beforeEach(async () => {
         writtenSettings = value
         return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 }
       },
+      timeline: (id) => {
+        if (timelineError !== undefined) throw timelineError
+        return { head: 'n2', path: [{ id: 'n1', turn: 1, player: `from ${id}`, restorable: true, alternatives: ['n1'] }], forward: [], canStart: true, withdrawn: [] }
+      },
+      moveTimeline: (id, to) => {
+        if (timelineError !== undefined) return Promise.reject(timelineError)
+        moved = [id, to]
+        return Promise.resolve(to === 'start' ? { draft: 'the first message' } : {})
+      },
       notes: (id) => {
         if (notesError !== undefined) throw notesError
         return [{ kind: 'suggestions', turn: 2, lines: [`from ${id}`] }]
+      },
+      rename: (id, name) => {
+        if (archiveError !== undefined) return Promise.reject(archiveError)
+        archived.push(`rename ${id} ${name}`)
+        return Promise.resolve()
+      },
+      archive: (id) => {
+        if (archiveError !== undefined) return Promise.reject(archiveError)
+        archived.push(`archive ${id}`)
+        return Promise.resolve()
+      },
+      restore: (id) => {
+        if (archiveError !== undefined) return Promise.reject(archiveError)
+        archived.push(`restore ${id}`)
+        return Promise.resolve()
       },
       delete: (id) => {
         if (deleteError !== undefined) return Promise.reject(deleteError)
@@ -335,6 +368,72 @@ describe('roleplay API', () => {
       allowed = true
       expect((await fetch(`${origin}/sessions/open?id=x`)).status).toBe(405)
       expect(opened).toBeUndefined()
+    })
+  })
+
+  describe('putting a session away', () => {
+    it('is done and undone by POST, and answers 404 for an unknown session and 503 without the session services; an archived session cannot be opened', async () => {
+      expect((await fetch(`${origin}/sessions/archive?id=abc`, { method: 'POST' })).status).toBe(204)
+      expect((await fetch(`${origin}/sessions/restore?id=abc`, { method: 'POST' })).status).toBe(204)
+      expect(archived).toEqual(['archive abc', 'restore abc'])
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/archive?id=x`, { method: 'POST' })).status).toBe(404)
+      expect((await fetch(`${origin}/sessions/restore?id=x`, { method: 'POST' })).status).toBe(404)
+      archiveError = new AgentUnavailableError('no session services')
+      expect((await fetch(`${origin}/sessions/archive?id=x`, { method: 'POST' })).status).toBe(503)
+      archiveError = undefined
+      openError = new SessionArchivedError('the session is put away')
+      const opened = await fetch(`${origin}/sessions/open?id=abc`, { method: 'POST' })
+      expect(opened.status).toBe(409)
+      expect(await opened.json()).toEqual({ message: 'the session is put away' })
+      expect((await fetch(`${origin}/sessions/archive?id=abc`)).status).toBe(405)
+    })
+  })
+
+  describe('naming a session', () => {
+    const rename = (body: unknown, id = 'abc') => fetch(`${origin}/sessions/rename?id=${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('is a POST with the name; a missing name is 400, a name that is not acceptable 422, an unknown session 404', async () => {
+      expect((await rename({ name: 'Night 2' })).status).toBe(204)
+      expect(archived).toEqual(['rename abc Night 2'])
+      expect((await rename({})).status).toBe(400)
+      archiveError = new InvalidStartError('the session needs a name')
+      expect((await rename({ name: ' ' })).status).toBe(422)
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await rename({ name: 'x' }, 'x')).status).toBe(404)
+      archiveError = undefined
+      expect((await fetch(`${origin}/sessions/rename?id=abc`)).status).toBe(405)
+    })
+  })
+
+  describe('the turns of a session', () => {
+    const url = (path = '') => `${origin}/sessions/timeline${path}?id=abc`
+
+    it('are told as they stand, and the story is taken to one of them or to the start, with what the player said offered back', async () => {
+      const view = await fetch(url())
+      expect(view.status).toBe(200)
+      expect(await view.json()).toMatchObject({ head: 'n2', path: [{ id: 'n1', player: 'from abc' }] })
+      const forward = await fetch(`${url('/move')}&to=n1`, { method: 'POST' })
+      expect(forward.status).toBe(200)
+      expect(await forward.json()).toEqual({})
+      expect(moved).toEqual(['abc', 'n1'])
+      expect(await (await fetch(`${url('/move')}&to=start`, { method: 'POST' })).json()).toEqual({ draft: 'the first message' })
+    })
+
+    it('answer 404 for an unknown session, 503 without the orchestration and 409 when the story cannot be taken there; need authentication and the right method', async () => {
+      timelineError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(url())).status).toBe(404)
+      expect((await fetch(`${url('/move')}&to=n1`, { method: 'POST' })).status).toBe(404)
+      timelineError = new AgentUnavailableError('no orchestration')
+      expect((await fetch(url())).status).toBe(503)
+      timelineError = new TimelineError('the state of the story at that turn was not kept')
+      const refused = await fetch(`${url('/move')}&to=n1`, { method: 'POST' })
+      expect(refused.status).toBe(409)
+      expect(await refused.json()).toEqual({ message: 'the state of the story at that turn was not kept' })
+      timelineError = undefined
+      expect((await fetch(`${url('/move')}&to=n1`)).status).toBe(405)
+      allowed = false
+      expect((await fetch(url())).status).toBe(401)
     })
   })
 

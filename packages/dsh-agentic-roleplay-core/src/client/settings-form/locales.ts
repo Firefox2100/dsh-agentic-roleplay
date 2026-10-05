@@ -3,7 +3,7 @@ import type { Dictionaries } from '../i18n.ts'
 export type SettingsFormKey =
   | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
-  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
+  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
 
@@ -41,6 +41,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     triggersMaxFiresHelp: 'The most triggers that fire in one look, after a round or at the start of a turn. The rest wait for the next look.',
     triggersBeatTurns: 'Turns a beat stays pending',
     triggersBeatTurnsHelp: 'A beat is something the world makes happen that the game master is told to weave into the story. If it does not within this many turns, it is let go.',
+    rewindKeep: 'Turns that can be gone back to',
+    rewindKeepHelp: 'How many of the latest turns keep a copy of the story\'s state, so that you can rewind to them, regenerate, or swap a turn for another. Older turns cannot be returned to. 0 turns rewinding off. Each copy takes the size of the session\'s database.',
     previewEnabled: 'Preview of the scene',
     previewEnabledHelp: 'Before the characters are asked, the game master shows a short opening of the scene, so there is something to read while the rest of the turn is worked out. The delivered output replaces it in the view.',
     suggestionsCount: 'Suggested actions',
@@ -99,6 +101,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     triggersMaxFiresHelp: '每次检查（一轮之后或一回合开始时）最多触发的触发器数量，其余等待下一次检查。',
     triggersBeatTurns: '情节提示保留的回合数',
     triggersBeatTurnsHelp: '情节提示是世界促成、要求主持人写进故事的事。若在这么多回合内都没有写入，就会被放弃。',
+    rewindKeep: '可回退的回合数',
+    rewindKeepHelp: '最近的这么多个回合会保存一份故事状态的副本，因此可以回退到它们、重新生成，或把某一回合换成另一个。更早的回合无法回到。0 表示关闭回退。每份副本的大小等于会话数据库的大小。',
     previewEnabled: '场景预览',
     previewEnabledHelp: '在询问角色之前，主持人先给出一小段场景开场，让你在这一轮的其余部分处理期间有东西可读。最终输出送达后，视图中会替换掉它。',
     suggestionsCount: '行动建议数量',

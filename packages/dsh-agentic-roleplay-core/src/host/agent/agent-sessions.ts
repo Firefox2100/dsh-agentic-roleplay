@@ -21,6 +21,7 @@ export interface SessionControllerLike {
 export interface WorkspaceRegistryLike {
   create(path: string, title?: string): Promise<{ id: string; path: string; sessionIds: readonly string[] }>
   archiveSession(sessionId: string, options?: { stopActivity?: boolean }): Promise<void>
+  unarchiveSession(sessionId: string): Promise<void>
 }
 
 export interface AgentServices {
@@ -72,6 +73,28 @@ export class AgentSessions {
     const { sessionId: chat } = await controller.create({ workspaceId: project.id, sessionId: wanted, agentPreset: AGENT_PRESET })
     if (!existed) await controller.rename({ sessionId: chat, title })
     return chat
+  }
+
+  /** Give the chat of a session a new title. A chat that was never created has none to change. */
+  async rename(sessionId: string, title: string): Promise<void> {
+    const { controller, registry } = this.services()
+    const project = await registry.create(this.projectPath(), PROJECT_TITLE)
+    const chat = chatSessionId(sessionId)
+    if (project.sessionIds.includes(chat)) await controller.rename({ sessionId: chat, title })
+  }
+
+  /** Put the chat away: hidden and stopped, and kept; a chat that was never created is nothing to put away. */
+  async archive(sessionId: string): Promise<void> {
+    await this.retire(sessionId)
+  }
+
+  /** Show a chat that was put away again. A chat that does not exist (it is made when the session is opened) is nothing to bring back. */
+  async restore(sessionId: string): Promise<void> {
+    try {
+      await this.services().registry.unarchiveSession(chatSessionId(sessionId))
+    } catch (error) {
+      if (!(error instanceof Error && error.name === 'WorkspaceUnknownSessionError')) throw error
+    }
   }
 
   /** Hide the chat and stop its work; a chat that was never created is nothing to retire. */

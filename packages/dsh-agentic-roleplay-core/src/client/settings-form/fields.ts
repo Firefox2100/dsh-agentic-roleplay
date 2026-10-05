@@ -21,6 +21,7 @@ export const FORM_FIELDS = [
   { path: ['triggers', 'enabled'], kind: 'flag', label: 'triggersEnabled', help: 'triggersEnabledHelp' },
   { path: ['triggers', 'maxFires'], kind: 'integer', label: 'triggersMaxFires', help: 'triggersMaxFiresHelp' },
   { path: ['triggers', 'beatTurns'], kind: 'integer', label: 'triggersBeatTurns', help: 'triggersBeatTurnsHelp' },
+  { path: ['rewind', 'keepSnapshots'], kind: 'integer', label: 'rewindKeep', help: 'rewindKeepHelp' },
   { path: ['preview', 'enabled'], kind: 'flag', label: 'previewEnabled', help: 'previewEnabledHelp' },
   { path: ['suggestions', 'count'], kind: 'integer', label: 'suggestionsCount', help: 'suggestionsCountHelp' },
   { path: ['offstage', 'perTurn'], kind: 'integer', label: 'offstagePerTurn', help: 'offstagePerTurnHelp' },

@@ -2,11 +2,13 @@ import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 import type { Note } from '../../shared/notes.ts'
+import type { TimelineView } from '../../shared/timeline.ts'
+import { TimelineError } from '../timeline/service.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import type { OpenedSession, SessionsPayload, StartedSession, StartSessionRequest, WorldCharactersPayload } from '../../shared/sessions.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { InvalidSettingsError } from '../sessions/settings.ts'
-import { AgentUnavailableError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
+import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { readJsonBody } from './body.ts'
 import { HttpError, sendError, sendJson } from './respond.ts'
@@ -24,9 +26,14 @@ export interface ApiDeps {
     start(request: StartSessionRequest): Promise<StartedSession>
     open(id: string): Promise<OpenedSession>
     delete(id: string): Promise<void>
+    archive(id: string): Promise<void>
+    restore(id: string): Promise<void>
+    rename(id: string, name: string): Promise<void>
     readSettings(id: string): SettingsPayload
     writeSettings(id: string, value: unknown): SettingsPayload
     notes(id: string): Note[]
+    timeline(id: string): TimelineView
+    moveTimeline(id: string, to: string): Promise<{ draft?: string }>
   }
   connection: ApiConnection
 }
@@ -76,7 +83,31 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
           sendJson(res, 200, await sessions.open(url.searchParams.get('id') ?? ''))
         } catch (error) {
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof SessionArchivedError) return sendError(res, 409, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/timeline': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.timeline(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/timeline/move': {
+      POST: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, await sessions.moveTimeline(url.searchParams.get('id') ?? '', url.searchParams.get('to') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          if (error instanceof TimelineError) return sendError(res, 409, error.message)
           throw error
         }
       },
@@ -110,6 +141,49 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
           if (error instanceof InvalidSettingsError) return sendJson(res, 422, { message: error.message, problems: error.problems })
           throw error
         }
+      },
+    },
+    '/sessions/archive': {
+      POST: async (_req, res, url) => {
+        try {
+          await sessions.archive(url.searchParams.get('id') ?? '')
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+        res.statusCode = 204
+        res.end()
+      },
+    },
+    '/sessions/restore': {
+      POST: async (_req, res, url) => {
+        try {
+          await sessions.restore(url.searchParams.get('id') ?? '')
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+        res.statusCode = 204
+        res.end()
+      },
+    },
+    '/sessions/rename': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req)
+        const name = typeof body === 'object' && body !== null ? (body as { name?: unknown }).name : undefined
+        if (typeof name !== 'string') return sendError(res, 400, 'the request needs a "name"')
+        try {
+          await sessions.rename(url.searchParams.get('id') ?? '', name)
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidStartError) return sendError(res, 422, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+        res.statusCode = 204
+        res.end()
       },
     },
     '/sessions/item': {

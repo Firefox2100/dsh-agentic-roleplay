@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconPlayOutlineRegular, IconRefreshOutlineRegular, IconTrashOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconArchiveOffOutlineRegular, IconArchiveOutlineRegular, IconPlayOutlineRegular, IconRefreshOutlineRegular, IconTrashOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { pageCount, pageStart, pagingFor } from '../../paging/paging.ts'
 import type {} from '../../panel/slot-contract.ts'
@@ -16,7 +16,7 @@ export type SessionsPageProps =
   & InjectFace<SessionsFace>
 
 /** The sessions as a table, one page at a time, the most recently played first. */
-export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, askRemoval, cancelRemoval, confirmRemoval }: SessionsPageProps) {
+export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, archive, restore, askRemoval, cancelRemoval, confirmRemoval }: SessionsPageProps) {
   const state = useRoleplaySessions(snapshot => snapshot)
   const viewport = useRef<HTMLDivElement>(null)
   const { pageSize, scrolls } = pagingFor(useRowFit(viewport))
@@ -56,6 +56,7 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, askR
       {state.error !== undefined && !failedWithoutData && (
         <p className={css.notice} role="alert">{t('loadFailed', { message: state.error })}</p>
       )}
+      {state.moveError !== undefined && <p className={css.notice} role="alert">{t('moveFailed', { message: state.moveError })}</p>}
       {state.openError !== undefined && <p className={css.notice} role="alert">{t('openFailed', { message: state.openError })}</p>}
       <ProblemList summary={t('problems', { count: state.payload?.problems.length ?? 0 })} problems={state.payload?.problems ?? []} />
 
@@ -88,8 +89,8 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, askR
                   </thead>
                   <tbody>
                     {visible.map(session => (
-                      <tr key={session.id} data-testid="session-row">
-                        <td className={css.name} title={session.name}>{session.name}</td>
+                      <tr key={session.id} data-testid="session-row" className={session.archivedAt === undefined ? undefined : css.archived}>
+                        <td className={css.name} title={session.name}>{session.name}{session.archivedAt !== undefined && <span className={css.badge}>{t('archived')}</span>}</td>
                         <td className={css.secondary} title={session.worldName}>{session.worldName}</td>
                         <td className={css.secondary}>{dateTime.format(new Date(session.createdAt))}</td>
                         <td className={css.secondary}>
@@ -103,8 +104,17 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, askR
                             icon={<IconPlayOutlineRegular />}
                             aria-label={t('open')}
                             title={t('open')}
-                            disabled={state.opening !== undefined}
+                            disabled={state.opening !== undefined || session.archivedAt !== undefined}
                             onClick={() => { open(session.id) }}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            icon={session.archivedAt === undefined ? <IconArchiveOutlineRegular /> : <IconArchiveOffOutlineRegular />}
+                            aria-label={session.archivedAt === undefined ? t('archive') : t('restore')}
+                            title={session.archivedAt === undefined ? t('archive') : t('restore')}
+                            disabled={state.moving !== undefined}
+                            onClick={() => { if (session.archivedAt === undefined) archive(session.id); else restore(session.id) }}
                           />
                           <Button
                             variant="ghost"

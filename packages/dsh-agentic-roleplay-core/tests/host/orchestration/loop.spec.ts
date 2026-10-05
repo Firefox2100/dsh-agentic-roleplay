@@ -1,10 +1,13 @@
 import { Context } from '@deepseek-ai/cordis'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { createUserMessage, ToolCallId, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
+import { SessionId, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
+import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
 import { STRUCTURED_OUTPUT_TOOL } from '@deepseek-ai/dsh-subagent-in-process-driver'
 import * as spawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
+import { randomUUID } from 'node:crypto'
+import { readdirSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -13,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoleplayOrchestration } from '../../../src/host/orchestration/service.ts'
 import { writeSettings } from '../../../src/host/sessions/settings.ts'
 import { decodeOutput } from '../../../src/shared/narration.ts'
+import { readTimeline, writeTimeline } from '../../../src/host/timeline/file.ts'
 import * as orchestrationPlugin from '../../../src/orchestration.ts'
 import compactionPlugin from '../../../src/compaction.ts'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
@@ -678,6 +682,214 @@ describe('a turn with the real agent loop', () => {
       expect(characterRequests(adapter).filter(request => systemOf(request).includes('You are Bob.')).every(request => !briefOf(request).includes('final exam'))).toBe(true)
       expect(JSON.stringify(adapter.requests.map(request => request.messages))).not.toContain('Trigger')
       expect(JSON.stringify(adapter.requests.map(request => [systemOf(request), request.messages]))).not.toContain('1912-10-20')
+    })
+
+    describe('withdrawing a turn from the middle of the conversation', () => {
+      const marker = () => createUserMessage({ content: [{ type: 'text', text: '(empty message)' }], source: { kind: 'roleplay' } })
+      async function playThree() {
+        const { id } = await addSession('Vault', true)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        for (const message of ['move one', 'move two', 'move three']) { agent.followup(say(message)); await agent.whenIdle() }
+        return { adapter, agent }
+      }
+      const rangeOfSecond = (session: { snapshotEvents(): readonly { seq: number; type: string; data: unknown }[]; surface: { nodes: readonly number[] } }) => {
+        const humans = session.snapshotEvents().filter(event => event.type === 'user/message' && (event.data as { source: { kind: string } }).source.kind === 'user')
+        const surface = [...session.surface.nodes]
+        return surface.slice(surface.indexOf(humans[1]!.seq), surface.indexOf(humans[2]!.seq))
+      }
+      const sentText = (request: { messages: readonly unknown[] }) => JSON.stringify(request.messages)
+
+      it('is accepted when a newer message follows it: the marker takes the range\'s place on the surface and the next request no longer carries the withdrawn turn', async () => {
+        const { adapter, agent } = await playThree()
+        const range = rangeOfSecond(agent.session as never)
+        agent.session.append('user/message', marker(), { surfaceOp: { op: 'replace', startSeq: range[0] as never, endSeq: range.at(-1) as never }, sourceEventSeqs: range as never })
+        const surface = [...agent.session.surface.nodes] as number[]
+        expect(range.some(seq => surface.includes(seq))).toBe(false)
+        expect(surface.length).toBeLessThan(43)
+        agent.followup(say('move four'))
+        await agent.whenIdle()
+        const first = masterRequests(adapter).find(request => sentText(request).includes('move four'))!
+        expect(sentText(first)).toContain('move one')
+        expect(sentText(first)).toContain('move three')
+        expect(sentText(first)).not.toContain('move two')
+      })
+
+      it('may also be made inside the first step of the next turn, and applies to that very request', async () => {
+        const { adapter, agent } = await playThree()
+        const off = ctx.on('agent/pre-step', async (payload, next) => {
+          const decision = await next()
+          if (payload.step !== 1 || payload.agent.session.header.origin === 'subagent' || !String(payload.agent.session.id).startsWith('session-')) return decision
+          const range = rangeOfSecond(payload.agent.session as never)
+          payload.agent.session.append('user/message', marker(), { surfaceOp: { op: 'replace', startSeq: range[0] as never, endSeq: range.at(-1) as never }, sourceEventSeqs: range as never })
+          return decision
+        })
+        agent.followup(say('move four'))
+        await agent.whenIdle()
+        off()
+        const first = masterRequests(adapter).find(request => sentText(request).includes('move four'))!
+        expect(sentText(first)).not.toContain('move two')
+        expect(sentText(first)).toContain('move three')
+        expect(outputsOf(agent)).toHaveLength(4)
+      })
+    })
+
+    describe('taking the story back to a turn', () => {
+      const folderOf = (id: string) => sessionFolder(join(root, 'sessions'), id)
+      const turnsIn = (id: string) => state.openSession(join(root, 'sessions'), id).metadata.get().turns
+      const sent = (request: { messages: readonly unknown[] }) => JSON.stringify(request.messages)
+      async function play(messages: readonly string[]) {
+        const { id, session } = await addSession('Vault', true)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        for (const message of messages) { agent.followup(say(message)); await agent.whenIdle() }
+        await orchestration.timelines!.read(id)
+        await vi.waitFor(() => { expect(readTimeline(folderOf(id)).nodes.at(-1)?.snapshot).toBeDefined() }, { timeout: 5000 })
+        return { id, session, adapter, agent, chatId: `session-${id}`, timeline: () => readTimeline(folderOf(id)) }
+      }
+      const lastRequestWith = (adapter: ScriptedAdapter, text: string) => masterRequests(adapter).filter(request => sent(request).includes(text)).at(0)!
+
+      it('keeps each turn as it is played: whose it follows, where it is in the log, what was said and delivered, and the state after it', async () => {
+        const { id, timeline } = await play(['move one', 'move two', 'move three'])
+        const { nodes, head } = timeline()
+        expect(nodes.map(node => [node.id, node.parent, node.player])).toEqual([['n1', null, 'move one'], ['n2', 'n1', 'move two'], ['n3', 'n2', 'move three']])
+        expect(head).toBe('n3')
+        expect(nodes.every(node => node.userSeq > 0 && node.endSeq !== undefined && node.endSeq > node.userSeq && node.output !== undefined)).toBe(true)
+        expect(nodes[1]!.userSeq).toBeGreaterThan(nodes[0]!.endSeq!)
+        expect(nodes.map(node => node.snapshot)).toEqual(['after-n1', 'after-n2', 'after-n3'])
+        expect(state.snapshots(join(root, 'sessions'), id)).toEqual(['after-n1', 'after-n2', 'after-n3', 'start'])
+        expect(orchestration.timelines!.view(id).path.map(turn => [turn.id, turn.restorable])).toEqual([['n1', true], ['n2', true], ['n3', true]])
+      })
+
+      it('puts the story back as it was after the turn, replaces the later turns on the conversation, gives back what the player said, and the next turn follows from there', async () => {
+        const { id, adapter, agent, chatId, timeline } = await play(['move one', 'move two', 'move three'])
+        expect(turnsIn(id)).toBe(3)
+        const moved = await orchestration.timelines!.move(chatId, 'n1')
+        expect(moved).toEqual({ draft: 'move two' })
+        expect(turnsIn(id)).toBe(1)
+        expect(timeline().head).toBe('n1')
+        agent.followup(say('move four'))
+        await agent.whenIdle()
+        const first = lastRequestWith(adapter, 'move four')
+        expect(sent(first)).toContain('move one')
+        expect(sent(first)).not.toContain('move two')
+        expect(sent(first)).not.toContain('move three')
+        expect(timeline().nodes.map(node => [node.id, node.parent])).toEqual([['n1', null], ['n2', 'n1'], ['n3', 'n2'], ['n4', 'n1']])
+        expect(turnsIn(id)).toBe(2)
+        expect(orchestration.timelines!.view(id).path.map(turn => [turn.id, turn.alternatives])).toEqual([['n1', ['n1']], ['n4', ['n2', 'n4']]])
+      })
+
+      it('takes the story forward again: the state comes back, and the turns that are no longer on the conversation are told once, in order, as notices', async () => {
+        const { id, adapter, agent, chatId, timeline } = await play(['move one', 'move two', 'move three'])
+        await orchestration.timelines!.move(chatId, 'n1')
+        expect(orchestration.timelines!.view(id).forward.map(turn => turn.id)).toEqual(['n2'])
+        expect(await orchestration.timelines!.move(chatId, 'n3')).toEqual({})
+        expect(turnsIn(id)).toBe(3)
+        expect(timeline().nodes.filter(node => node.noticeSeq !== undefined).map(node => node.id)).toEqual(['n2', 'n3'])
+        agent.followup(say('move five'))
+        await agent.whenIdle()
+        const request = sent(lastRequestWith(adapter, 'move five'))
+        expect(request.indexOf('The player said: move two')).toBeGreaterThan(-1)
+        expect(request.indexOf('The player said: move two')).toBeLessThan(request.indexOf('The player said: move three'))
+        expect(request.indexOf('The player said: move three')).toBeLessThan(request.indexOf('move five'))
+        expect(request.match(/The story, as it went earlier/g)).toHaveLength(2)
+      })
+
+      it('swaps one answer for another to the same message: regenerate, then swap back', async () => {
+        const { id, adapter, agent, chatId, timeline } = await play(['move one', 'move two'])
+        const first = timeline().nodes[1]!
+        await orchestration.timelines!.move(chatId, 'n1')
+        agent.followup(say('move two again'))
+        await agent.whenIdle()
+        await vi.waitFor(() => { expect(timeline().nodes.at(-1)?.snapshot).toBeDefined() }, { timeout: 5000 })
+        expect(orchestration.timelines!.view(id).path.at(-1)!.alternatives).toEqual(['n2', 'n3'])
+        await orchestration.timelines!.move(chatId, 'n2')
+        expect(timeline().head).toBe('n2')
+        expect(timeline().nodes[1]!.userSeq).toBe(first.userSeq)
+        agent.followup(say('move three'))
+        await agent.whenIdle()
+        const request = sent(lastRequestWith(adapter, 'move three'))
+        expect(request).toContain('The player said: move two')
+        expect(request).not.toContain('move two again')
+        expect(request).not.toContain('The player said: move two again')
+      })
+
+      it('goes back to the start, and refuses a turn that is not there, or whose state was not kept', async () => {
+        const { id, adapter, agent, chatId, timeline } = await play(['move one', 'move two'])
+        await expect(orchestration.timelines!.move(chatId, 'n9')).rejects.toThrow(/there is no turn "n9"/)
+        const nodes = timeline()
+        delete nodes.nodes[0]!.snapshot
+        writeTimeline(folderOf(id), nodes)
+        await expect(orchestration.timelines!.move(chatId, 'n1')).rejects.toThrow(/was not kept/)
+        expect(await orchestration.timelines!.move(chatId, null)).toEqual({ draft: 'move one' })
+        expect(turnsIn(id)).toBe(0)
+        agent.followup(say('move zero'))
+        await agent.whenIdle()
+        expect(sent(lastRequestWith(adapter, 'move zero'))).not.toContain('move one')
+        expect(timeline().nodes.map(node => node.parent)).toEqual([null, 'n1', null])
+      })
+
+      describe('a branch made by DSH\'s own fork', () => {
+        const branchOf = async (chatId: string, agent: { session: { snapshotEvents(): readonly never[] } }, cut: number) => {
+          const child = `session-${randomUUID()}`
+          const events = agent.session.snapshotEvents()
+          await ctx.agents.create({
+            sessionId: SessionId(child),
+            seed: buildForkSeed(events, SessionSeq(cut)),
+            inheritedEventCount: SessionLogOffset(cut + 1),
+            meta: { parentSession: SessionId(chatId), isSeeded: true },
+            agentOptions: { provider: 'mock', model: 'mock' },
+            async setup(agentCtx) { await agentCtx.plugin(orchestrationPlugin) },
+          })
+          return child
+        }
+
+        it('gets a session of its own from the state where it was cut, with the turns it inherits, and the story goes on in it without touching the first', async () => {
+          const { id, agent, chatId, timeline } = await play(['move one', 'move two', 'move three'])
+          const cut = timeline().nodes[1]!.endSeq!
+          const child = await branchOf(chatId, agent as never, cut)
+          const branchId = child.slice('session-'.length)
+          expect(turnsIn(branchId)).toBe(2)
+          expect(turnsIn(id)).toBe(3)
+          expect(state.openSession(join(root, 'sessions'), branchId).metadata.get()).toMatchObject({ id: branchId, name: 'Vault 2' })
+          const branch = readTimeline(folderOf(branchId))
+          expect(branch.nodes.map(node => node.id)).toEqual(['n1', 'n2'])
+          expect(branch.head).toBe('n2')
+          expect(state.snapshots(join(root, 'sessions'), branchId)).toEqual(['after-n1', 'after-n2', 'start'])
+          expect(timeline().nodes).toHaveLength(3)
+        })
+
+        it('does not make a session twice: a chat that is loaded again keeps the one it has', async () => {
+          const { agent, chatId, timeline } = await play(['move one', 'move two'])
+          const child = await branchOf(chatId, agent as never, timeline().nodes[0]!.endSeq!)
+          const branchId = child.slice('session-'.length)
+          state.openSession(join(root, 'sessions'), branchId).metadata.setName('Renamed')
+          await expect(orchestration.timelines!.adopt(child, chatId, timeline().nodes[0]!.endSeq!, agent as never)).resolves.toBe(false)
+          expect(state.openSession(join(root, 'sessions'), branchId).metadata.get().name).toBe('Renamed')
+        })
+
+        it('is not made, and says why, when the state at the cut was not kept', async () => {
+          const { id, agent, chatId, timeline } = await play(['move one', 'move two'])
+          const nodes = timeline()
+          delete nodes.nodes[0]!.snapshot
+          writeTimeline(folderOf(id), nodes)
+          state.removeSnapshot(join(root, 'sessions'), id, 'after-n1')
+          await expect(branchOf(chatId, agent as never, nodes.nodes[0]!.endSeq!)).rejects.toThrow(/was not kept/)
+          expect(readdirSync(join(root, 'sessions')).filter(name => name !== id)).toEqual([])
+        })
+      })
+
+      it('keeps no state when the chat asks for none: nothing can be gone back to', async () => {
+        const { id, session } = await addSession('Vault', true)
+        writeSettings(folderOf(id), { rewind: { keepSnapshots: 0 } })
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('move one'))
+        await agent.whenIdle()
+        expect(state.snapshots(join(root, 'sessions'), id)).toEqual([])
+        await expect(orchestration.timelines!.move(`session-${id}`, 'n1')).rejects.toThrow(/was not kept/)
+        expect(session.metadata.get().turns).toBe(1)
+      })
     })
 
     it('has the next turn clear the notes of the last one', async () => {

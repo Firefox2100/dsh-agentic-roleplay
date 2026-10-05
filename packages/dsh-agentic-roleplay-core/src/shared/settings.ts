@@ -66,6 +66,10 @@ export interface ChatSettings {
     /** How many turns a cue a character did not get to act on stays pending. */
     cueTurns: number
   }
+  rewind: {
+    /** How many of the turns most recently played keep a snapshot of the story's state, so that the story can be taken back to them; 0 keeps none and turns rewinding off. */
+    keepSnapshots: number
+  }
   preview: {
     /** Whether the game master first shows the player a short opening of the scene, before the characters are asked, so that something is on screen while the rest of the turn is worked out. */
     enabled: boolean
@@ -123,6 +127,7 @@ export const SETTINGS_SPEC = {
   offstage: { perTurn: integer(0, 5, 2) },
   reasoning: { children: text(40, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2) },
+  rewind: { keepSnapshots: integer(0, 500, 30) },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
   embedding: { options: record() },

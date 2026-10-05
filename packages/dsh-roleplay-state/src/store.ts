@@ -112,6 +112,8 @@ export interface SessionStore {
   runTriggers(options: TriggerRunOptions): TriggerRun
   /** Let go of the beats and cues nobody took up in this many turns. */
   lapseNotes(turn: number, kept: { beats: number; cues: number }): TriggerNote[]
+  /** Write a consistent copy of the whole database to `path`, which must not exist. */
+  snapshotTo(path: string): void
   close(): void
 }
 
@@ -243,6 +245,11 @@ class SqliteSessionStore implements SessionStore {
 
   lapseNotes(turn: number, kept: { beats: number; cues: number }): TriggerNote[] {
     return this.transaction(() => lapseNotes(this, turn, kept))
+  }
+
+  /** Write a consistent copy of the whole database to `path`, which must not exist (`VACUUM INTO`). */
+  snapshotTo(path: string): void {
+    this.db.run('VACUUM INTO ?', [path])
   }
 
   close(): void {

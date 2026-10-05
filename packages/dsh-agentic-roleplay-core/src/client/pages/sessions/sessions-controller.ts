@@ -14,6 +14,10 @@ export interface SessionsState {
   opening?: string
   /** Why the last attempt to open a chat failed; cleared by the next attempt. */
   openError?: string
+  /** The session being put away or brought back. */
+  moving?: string
+  /** Why the last attempt to put a session away or bring it back failed. */
+  moveError?: string
 }
 
 /** A session the user is being asked to delete. */
@@ -34,6 +38,8 @@ export interface SessionsFace {
   load: () => void
   refresh: () => void
   open: (id: string) => void
+  archive: (id: string) => void
+  restore: (id: string) => void
   askRemoval: (id: string, name: string) => void
   cancelRemoval: () => void
   confirmRemoval: () => void
@@ -49,6 +55,8 @@ export class SessionsController {
     load: () => { void this.read(false) },
     refresh: () => { void this.read(true) },
     open: (id) => { void this.open(id) },
+    archive: (id) => { void this.move(id, 'archive') },
+    restore: (id) => { void this.move(id, 'restore') },
     askRemoval: (id, name) => { this.store.update((draft) => { draft.removal = { id, name, deleting: false } }) },
     cancelRemoval: () => { this.cancelRemoval() },
     confirmRemoval: () => { void this.confirmRemoval() },
@@ -89,6 +97,25 @@ export class SessionsController {
     }
   }
 
+  /** Puts a session away, or brings it back; the list is read again, so that it shows what the host holds. */
+  private async move(id: string, action: 'archive' | 'restore'): Promise<void> {
+    if (this.store.getSnapshot().moving !== undefined) return
+    this.store.update((draft) => { draft.moving = id; delete draft.moveError })
+    try {
+      const response = await fetch(`${API_PREFIX}/sessions/${action}?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', signal: this.abort.signal })
+      if (!response.ok) {
+        const body = await response.json().catch(() => undefined) as { message?: unknown } | undefined
+        throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
+      }
+      await this.read(true)
+    } catch (error) {
+      if (this.abort.signal.aborted) return
+      this.store.update((draft) => { draft.moveError = error instanceof Error ? error.message : String(error) })
+    } finally {
+      if (!this.abort.signal.aborted) this.store.update((draft) => { delete draft.moving })
+    }
+  }
+
   private cancelRemoval(): void {
     if (this.store.getSnapshot().removal?.deleting === true) return
     this.store.update((draft) => { delete draft.removal })
@@ -112,12 +139,8 @@ export class SessionsController {
         const body = await response.json().catch(() => undefined) as { message?: unknown } | undefined
         throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
       }
-      this.store.update((draft) => {
-        delete draft.removal
-        if (draft.payload !== undefined) {
-          draft.payload = { ...draft.payload, sessions: draft.payload.sessions.filter(session => session.id !== removal.id) }
-        }
-      })
+      this.store.update((draft) => { delete draft.removal })
+      await this.read(true)
     } catch (error) {
       if (this.abort.signal.aborted) return
       this.store.update((draft) => {

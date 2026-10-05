@@ -22,6 +22,7 @@ function fakes(known: string[] = []) {
     registry: {
       create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'project-1', path: `${path}/canonical`, sessionIds: known }) },
       archiveSession: (id, options) => { calls.push(['archive', id, options]); return Promise.resolve() },
+      unarchiveSession: (id) => { calls.push(['unarchive', id]); return Promise.resolve() },
     },
     controller: {
       create: (request) => { calls.push(['session', request]); return Promise.resolve({ sessionId: request.sessionId }) },

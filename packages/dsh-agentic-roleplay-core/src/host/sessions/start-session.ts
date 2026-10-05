@@ -16,7 +16,7 @@ import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
 import { populateCharacters, populateClock, populateItems, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
 
-const MAX_NAME_LENGTH = 200
+export const MAX_NAME_LENGTH = 200
 
 export interface StartSessionDeps {
   worlds: Pick<WorldCatalog, 'find'>

@@ -48,6 +48,8 @@ export interface SessionSummary {
   /** Absent for a session that has not been played yet. */
   lastPlayedAt?: string
   turns: number
+  /** When the session was put away; absent for one in use. */
+  archivedAt?: string
 }
 
 export interface OpenedSession {

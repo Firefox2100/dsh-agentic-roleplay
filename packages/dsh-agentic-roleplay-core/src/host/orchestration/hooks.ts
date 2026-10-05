@@ -4,6 +4,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import type { TurnEngine, TurnOwner } from './turn-engine.ts'
 import { roleplaySessionOf } from './store.ts'
+import type { Timelines } from '../timeline/service.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -15,6 +16,7 @@ export interface HookDeps {
   engine: TurnEngine
   boundaries: () => Boundaries
   stores: (chat: string) => TurnStore | undefined
+  timelines: Timelines
 }
 
 const notice = (text: string) => createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'roleplay' } })
@@ -31,7 +33,21 @@ function ownerOf(agent: Agent, turn: number): TurnOwner | undefined {
  * first checks that it is looking at the game master of a roleplay chat.
  */
 export function installHooks(ctx: Context, deps: HookDeps): void {
-  const { engine, boundaries, stores } = deps
+  const { engine, boundaries, stores, timelines } = deps
+
+  // The turn that ended is where the next one will have to be cut from.
+  ctx.on('session/event', (session, event) => {
+    if (event.type !== 'turn/end' || session.header.origin === 'subagent' || roleplaySessionOf(session.id) === undefined) return
+    timelines.ended(session.id, session, event.seq as number)
+  })
+
+  // A chat DSH makes as a branch of a roleplay chat (its fork, from any button) gets a session of its own, made from the state where it was cut.
+  ctx.on('agent/created', async ({ agent }) => {
+    const { header } = agent.session
+    if (header.origin === 'subagent' || !header.isSeeded || header.parentSession === undefined) return
+    if (roleplaySessionOf(agent.session.id) === undefined || roleplaySessionOf(header.parentSession) === undefined) return
+    await timelines.adopt(agent.session.id, header.parentSession, agent.session.inheritedEventCount - 1, agent)
+  })
 
   // A turn cannot end before the round is resolved and recorded; the model decides
   // nothing about that, the data does.
@@ -57,12 +73,13 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     if (owner === undefined || store === undefined) return decision
     // What the last turn left to be written is written before anything is recalled; the player was shown the output long ago.
     await engine.settle(owner.chat)
-
-    const cast = store.cast()
     const text = payload.messages
       .filter(message => message.source.kind === 'user')
       .flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])))
       .join('\n')
+    await timelines.begin(owner.chat, payload.turn, text)
+
+    const cast = store.cast()
     const verdict = boundaries().inputValidator.validate({ text, turn: payload.turn, cast })
     const queryVector = await store.queryVector(text)
     store.clearNotes()

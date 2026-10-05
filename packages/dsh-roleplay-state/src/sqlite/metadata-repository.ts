@@ -70,6 +70,16 @@ export class SqliteMetadataRepository implements MetadataRepository {
     this.write(SESSION_NAME, name.trim())
   }
 
+  rebrand(id: string, name: string, createdAt?: string): void {
+    if (id.trim() === '') throw new RangeError('a session needs an id')
+    if (name.trim() === '') throw new RangeError('a session needs a name')
+    this.db.transaction(() => {
+      this.write(SESSION_ID, id)
+      this.write(SESSION_NAME, name.trim())
+      this.write(SESSION_CREATED_AT, createdAt ?? this.clock().toISOString())
+    })
+  }
+
   recordTurn(): SessionMetadata {
     return this.db.transaction(() => {
       this.write(SESSION_TURNS, String(this.turns() + 1))
