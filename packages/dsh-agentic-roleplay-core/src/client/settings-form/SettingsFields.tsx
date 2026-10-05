@@ -44,7 +44,7 @@ export function SettingsFields({ t, drafts, onChange, options = [], disabled = f
                         <Input
                           type="text"
                           value={String(drafts[key] ?? '')}
-                          placeholder="UTC"
+                          placeholder={field.placeholder}
                           disabled={disabled}
                           aria-invalid={bad.has(key)}
                           onChange={(event) => { onChange(key, event.target.value) }}

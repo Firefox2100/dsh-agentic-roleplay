@@ -1,6 +1,7 @@
 import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
+import type { Note } from '../../shared/notes.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import type { OpenedSession, SessionsPayload, StartedSession, StartSessionRequest, WorldCharactersPayload } from '../../shared/sessions.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
@@ -25,6 +26,7 @@ export interface ApiDeps {
     delete(id: string): Promise<void>
     readSettings(id: string): SettingsPayload
     writeSettings(id: string, value: unknown): SettingsPayload
+    notes(id: string): Note[]
   }
   connection: ApiConnection
 }
@@ -75,6 +77,16 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
         } catch (error) {
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/notes': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.notes(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           throw error
         }
       },

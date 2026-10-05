@@ -29,9 +29,13 @@ What to write:
 - off stage: a round marked off stage is what characters away from the player's character decided to do when something fell due for them (a meeting whose time came, a deadline that passed). Write what each of them did, from their own entries, with the characters in it as the only ones who perceive it (those who actually met perceive each other); where a commitment is concerned, say in engagement_edits whether it was kept (they met), missed (someone did not come) or cancelled, from what the entries show, and move a goal on (intent_edits) when what they did settles it. Nobody went anywhere that is not shown in the entry.
 - time: each round says when it happened. The story's clock is kept separately, so do not write times into events unless the story itself states one ("the train leaves at nine"); order and timing come from the turn and round.
 - goals and commitments: a character's goals (what it is after: a promise made, a task taken on, a scheme) and its engagements (something dated it committed to) are listed below with their ids. Add one (intents_added, engagements) only when the rounds clearly establish it and it is not listed already: an engagement needs a time that the rounds state or that follows from the story's clock ("tomorrow at nine" is a date and time: work it out from the time of the round), the place when one was named, and everyone who committed to it. Move them on (intent_edits, engagement_edits) when the rounds show it: a goal done, failed, given up or more pressing, a step taken; an engagement kept, missed (nobody came, or it was forgotten), cancelled or put off. Whether a character kept to a commitment is what the rounds show it did; never judge it by the clock alone. A character's routine is not yours to write.
+- tracked variables: what the story tracks (feelings, injuries, debts, flags: list_variables shows each and what it is about) changes with variable_changes: a feeling when the rounds show a clear change (private to the character: its feelings are written from what it did and what happened to it, never from what others thought), a number moved with by, a flag or a word with to. What the game master already changed is written; write what it did not, and only what the rounds establish. A temperament (baseline) changes only for a lasting change. You never declare a new variable: a world author does, when the story genuinely needs one.
 - states: what the game master decided about each character's activity and public_state is already written. Write a state only for inner_state or emotion, or to fix a public_state that the rounds clearly contradict, and only the fields that changed. public_state is a short present-tense description of what can be seen now (position, posture, expression, what it holds), never a log of events and never a thought. inner_state is what it now thinks or feels, and only if the rounds show it. activity is what it is doing now. emotion only when the rounds show a clear change.
 - beliefs: only when a character clearly learns, suspects or concludes something beyond the single event; written from that character's point of view; kind is belief, relationship or knowledge.
 - threads_opened: only a promise, mystery or goal that the rounds clearly leave unsettled and that is not already open. threads_resolved: ids of open threads that the rounds settle.`
+
+/** What the keeper reads back by default: the parts of the records its edits write. */
+const VERIFY_SECTIONS = ['characters', 'events', 'beliefs', 'open_threads', 'relationships', 'variables', 'engagements'] as const
 
 const label = (round: { turn: number; round: number }): string => `turn ${round.turn}, round ${round.round}`
 
@@ -46,6 +50,7 @@ function describeRound(round: RoundRecord): string[] {
       entry.player === true ? `- ${entry.character} (${entry.name}, the player's character): ${entry.result}: ${entry.summary}` : `- ${entry.character} (${entry.name}): intended "${entry.intent}" [commitment: ${entry.commitment}]; ${entry.result}: ${entry.summary}`,
       entry.utterance === undefined ? '' : `  said${entry.spoken ? '' : ' (but was prevented from saying)'}: "${entry.utterance}"`,
       entry.publicState === undefined ? '' : `  the game master says anyone present can now see: ${entry.publicState}`,
+      entry.variables === undefined ? '' : `  the game master changed what is tracked: ${entry.variables.map(change => `${change.subject}'s ${change.name} ${change.from} -> ${change.to}`).join('; ')}`,
       entry.items === undefined ? '' : `  with things: ${entry.items.map(thing => `${thing.name} (${thing.action}: ${thing.summary})`).join('; ')}`,
       entry.at === undefined ? '' : `  was in ${entry.at.name} (${entry.at.key})${entry.moved === undefined ? '' : ` and went to ${entry.moved.name} (${entry.moved.key})${entry.moved.position === undefined ? '' : `, ${entry.moved.position}`}`}`,
     ].filter(line => line !== '').join('\n')),
@@ -87,6 +92,9 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     '## Pending engagements (ids for engagement_edits; times in the story\'s time zone)',
     ...(records.engagements.length === 0 ? ['- none'] : records.engagements.map(engagement => `- id ${engagement.id}: ${engagement.title}, ${engagement.at}${engagement.location === null ? '' : `, at ${engagement.location}`}, with ${engagement.participants.join(', ')}`)),
     '',
+    '## What is tracked now (values that are not the default; list_variables shows everything tracked)',
+    ...(records.variables.length === 0 ? ['- nothing'] : records.variables.slice(0, 30).map(entry => `- ${entry.about} (${entry.subject}): ${entry.variable} ${entry.described}${entry.baseline === null ? '' : ` (usually ${entry.baseline})`}`)),
+    '',
     '## Open story threads',
     ...(records.open_threads.length === 0 ? ['- none'] : records.open_threads.map(thread => `- id ${thread.id}: ${thread.text}`)),
   ].join('\n')
@@ -106,7 +114,7 @@ const RESULT: ObjectJsonSchema = {
 function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number }, progress: { edits: number; unchecked: boolean }): ToolDefinition[] {
   const turn = Math.max(...job.rounds.map(round => round.turn))
   const keys = job.store.story.characters.list().map(characterKey)
-  const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads', 'list_locations', 'get_location', 'list_relationships', 'list_items', 'get_item', 'get_agenda'])
+  const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads', 'list_locations', 'get_location', 'list_relationships', 'list_items', 'get_item', 'get_agenda', 'list_variables'])
   return createTools(() => ({ session: job.store.story, turn, policy: memory, queryVector: job.store.queryVector, timeZone: zoneOf(job.store.settings().clock) }), { write: true, characters: keys })
     .filter(tool => wanted.has(tool.name))
     .map((tool): ToolDefinition => {
@@ -127,7 +135,9 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
         }
       }
       if (tool.name === 'read_records') {
-        return { ...tool, execute: async (args, exec) => { const result = await tool.execute(args, exec); progress.unchecked = false; return result } }
+        // To check its work the keeper needs what it writes, not the whole world: the rest is left out unless it asks for it.
+        const since = Math.min(...job.rounds.map(round => round.turn))
+        return { ...tool, execute: async (args, exec) => { const result = await tool.execute({ sections: [...VERIFY_SECTIONS], relationships_since: since, ...(args as Record<string, unknown>) } as never, exec); progress.unchecked = false; return result } }
       }
       return tool
     })
@@ -151,7 +161,7 @@ export function recordKeeper(deps: { agentOf: (chat: string) => Agent | undefine
       const progress = { edits: 0, unchecked: false }
       let warned = false
       const result = await runChild<{ complete: boolean; notes: string }>({
-        parent, signal,
+        parent, signal, reasoningEffort: job.store.settings().reasoning.children,
         persona: KEEPER_PERSONA,
         prompt: describePrompt(job, memory),
         tools: keeperTools(job, memory, progress),

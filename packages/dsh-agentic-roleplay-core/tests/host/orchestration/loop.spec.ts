@@ -109,9 +109,15 @@ interface Script {
   time?: 'stated' | 'skip'
   /** The player's character walks out to the street, and nobody else needs to react: the game master resolves a round with only its outcome. */
   player?: 'walks'
+  /** The suggester writes its lines as plain text instead of submitting them, until it is reminded. */
+  suggester?: 'forgets'
+  /** The game master has Bob's feelings change as a result of the round: he is upset. */
+  variables?: 'upset'
 }
 
 const EVENING = Date.UTC(1912, 9, 4, 21, 40)
+const SUGGESTED = ['Ask Alice about the key', 'Take the lantern', 'Leave the room']
+const PREVIEW = 'Air goes still for a second, and the lamplight catches Alice\'s eyes. How will she answer?'
 const aliceOnly = [{ character: 'alice', result: 'succeeded', summary: 'Alice greets him' }]
 const bobOnly = [{ character: 'bob', result: 'succeeded', summary: 'Bob objects' }]
 const alicesWords = { type: 'utterance', character: 'alice', text: 'That is not something I expected.' }
@@ -249,7 +255,12 @@ function authorAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
 
 /** The game master, following the protocol, and characters answering from their own sheets. */
 function answerFor(script: Script = {}) {
+  return answerWithoutSuggestions(script)
+}
+
+function answerWithoutSuggestions(script: Script) {
   return (request: GenerateOptions): StreamChunk[] => {
+    if (systemOf(request).includes('You suggest what the player could do next')) return script.suggester === 'forgets' && !asText(request).includes('You have not finished') ? text('1. Ask Alice about the key') : call('sg-submit', 'submit_result', { options: SUGGESTED })
     if (systemOf(request).includes('record keeper of an interactive story')) return keeperAnswer(request, script)
     if (systemOf(request).includes('world author of an interactive story')) return authorAnswer(request, script)
     const who = /You are (Alice|Bob|Carol|Dan)\./.exec(systemOf(request))?.[1]
@@ -262,6 +273,7 @@ function answerFor(script: Script = {}) {
     }
     if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
     if (!toolNames(request).includes('activate_characters')) return text('a title')
+    if (timesCalled(request, 'preview_scene') === 0 && !thisTurn(request).includes('input is refused')) return call('m-prev', 'preview_scene', { text: PREVIEW })
     const activated = timesCalled(request, 'activate_characters')
     // A refused call still counts as a call, so one refusal is taken off.
     const resolved = timesCalled(request, 'resolve_round') - (script.moves === 'locked-first' && thisTurn(request).includes('cannot go to') ? 1 : 0) - (script.things === 'conflict' && thisTurn(request).includes('cannot take') ? 1 : 0)
@@ -294,7 +306,7 @@ function answerFor(script: Script = {}) {
       if (script.moves === 'cellar') return call('m2', 'resolve_round', { outcomes: withMove('cellar') })
       if (script.moves === 'locked-first') return call('m2', 'resolve_round', { outcomes: withMove('vault') })
       if (script.things !== undefined) return call('m2', 'resolve_round', { outcomes: handling() })
-      return call('m2', 'resolve_round', { ...(script.time === 'stated' ? { elapsed_seconds: 600 } : {}), outcomes: round1 })
+      return call('m2', 'resolve_round', { ...(script.time === 'stated' ? { elapsed_seconds: 600 } : {}), outcomes: script.variables === 'upset' ? round1.map(entry => (entry.character === 'bob' ? { ...entry, variable_changes: [{ variable: 'valence', subject: 'bob', to: -0.6 }] } : entry)) : round1 })
     }
     if (resolved === 1 && thisTurn(request).includes('tried once more')) {
       return call('m3', 'resolve_round', { outcomes: [{ character: 'dan', result: 'succeeded', summary: 'Dan takes the lantern too' }] })
@@ -310,7 +322,7 @@ function answerFor(script: Script = {}) {
     if (delivered === 0 || refused) {
       const changed = delivery === 'stubborn' || (delivery === 'changed-once' && delivered === 0)
       const output = script.padding === undefined ? goodOutput : [alice, { type: 'narration', text: `Alice stands and walks to the door while Bob stares at you. ${'z'.repeat(script.padding)}` }, ...goodOutput.slice(2)]
-      return call(`n${delivered}`, 'narrate', { segments: changed ? [{ ...alice, text: 'This is unexpected.' }, ...output.slice(1)] : output })
+      return call(`n${delivered}`, 'narrate', { segments: changed ? [{ ...alice, text: 'This is unexpected.' }, ...output.slice(1)] : output, ...(thisTurn(request).includes('[1] The inn bell tolls ten.') ? { addressed: [1] } : {}) })
     }
     return text('')
   }
@@ -359,7 +371,15 @@ async function chat(chatId: string, adapter: ScriptedAdapter) {
       if (withCompaction) await agentCtx.plugin(compactionPlugin)
     },
   })
-  return handle.agent
+  const agent = handle.agent
+  // The records are written behind the story: what looks at them waits for that.
+  return new Proxy(agent, {
+    get(target, property) {
+      if (property === 'whenIdle') return async () => { await target.whenIdle(); await orchestration.settle(chatId) }
+      const value: unknown = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    },
+  })
 }
 
 const say = (value: string) => createUserMessage({ content: [{ type: 'text', text: value }], source: { kind: 'user' } })
@@ -415,7 +435,7 @@ describe('a turn with the real agent loop', () => {
       const { session, adapter } = await playAuthored('creates')
       expect(masterRequests(adapter).every(request => toolNames(request).includes('expand_world'))).toBe(true)
       expect(characterRequests(adapter).some(request => toolNames(request).includes('expand_world'))).toBe(false)
-      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'list_variables', 'search_events', 'submit_result', 'world_lint'])
       const mira = session.characters.getBySourceId('mira')!
       expect(mira).toMatchObject({ name: 'Mira Voss', role: 'npc', control: 'agent', tier: 'supporting' })
       expect(session.placements.get('character', mira.id)).toMatchObject({ locationId: session.locations.getBySourceId('street')!.id, position: 'by the bar door' })
@@ -482,7 +502,7 @@ describe('a turn with the real agent loop', () => {
       expect(session.consolidation.get(1)?.resolution).toBe('gave her relationships with Arthur, both ways')
       const fitting = authors(adapter).find(request => systemOf(request).includes('fitting into the world what was made up'))!
       expect(briefOf(fitting)).toContain('- item 1, character mira (Mira Voss), made in turn 1')
-      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_consolidation', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_consolidation', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'list_variables', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
       expect(session.metadata.get().turns).toBe(1)
       expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/end')).toHaveLength(1)
     })
@@ -573,6 +593,129 @@ describe('a turn with the real agent loop', () => {
       await vi.waitFor(() => { expect(session.metadata.getValue('offscene.handled')).toEqual([`e${meeting.id}`]) }, { timeout: 5000 })
       expect(session.placements.get('character', dan)?.locationId).toBe(session.locations.getBySourceId('cellar')!.id)
       expect(session.characterStates.get(dan)?.activity).toBe('Dan takes the key')
+    })
+
+    it('has the game master change what is tracked in an outcome: it is applied, said back, kept for the keeper, and told to those who can tell, and in the next scene', async () => {
+      const { session, id } = await addSession('Vault', true)
+      session.variables.define({ key: 'health', name: 'Health', kind: 'number', subject: 'character', min: 0, max: 10, default: 10, visibility: 'public', bands: [{ upTo: 3, label: 'hurt' }, { upTo: 10, label: 'well' }] })
+      session.variables.set('health', 'character', session.characters.getBySourceId('alice')!.id, { value: 2 }, 0)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', variables: 'upset' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const bob = session.characters.getBySourceId('bob')!.id
+      expect(session.variables.get('valence', 'character', bob)).toMatchObject({ value: -0.6, updatedTurn: 1 })
+      expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('Bob\'s Valence is now miserable (-0.6) (it was even (0)).')
+      expect(thisTurn(masterRequests(adapter)[0]!)).toMatch(/Alice \(alice\): Health: hurt \(2\)/)
+      expect(characterBrief(adapter, 'Bob')).not.toContain('Valence')
+      expect(characterBrief(adapter, 'Alice')).toContain('How you are (what you can tell of yourself):\nHealth: hurt (2)')
+      expect(characterBrief(adapter, 'Bob')).toContain('What you can tell of the others here:\n- Alice: Health: hurt (2)')
+      expect(briefOf(keepers(adapter)[0]!)).toContain('the game master changed what is tracked: Bob\'s Valence even (0) -> miserable (-0.6)')
+      agent.followup(say('I look around.'))
+      await agent.whenIdle()
+      expect(thisTurn(masterRequests(adapter).findLast(request => thisTurn(request).includes('I look around'))!)).toMatch(/Bob \(bob\): Valence: miserable \(-0.6\)/)
+    })
+
+    it('offers the player what to do next afterwards, in the background, from what they read: the output is not held back and the game master is not asked', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const delivered = outputsOf(agent)
+      expect(delivered).toHaveLength(1)
+      expect(delivered[0]).not.toHaveProperty('suggestions')
+      expect(masterRequests(adapter).every(request => !toolNames(request).includes('suggest_actions'))).toBe(true)
+      await vi.waitFor(() => { expect(session.metadata.getValue('notes')).toEqual([{ kind: 'suggestions', turn: 1, lines: SUGGESTED }]) }, { timeout: 5000 })
+      const asked = adapter.requests.filter(request => systemOf(request).includes('You suggest what the player could do next'))
+      expect(asked).toHaveLength(1)
+      expect(toolNames(asked[0]!).sort()).toEqual(['submit_result'])
+      const prompt = JSON.stringify(asked[0]!.messages)
+      expect(prompt).toContain('Write exactly 3 suggestions.')
+      expect(prompt).toContain('That is not something I expected.')
+      expect(prompt).not.toContain('Alice takes the lantern')
+    })
+
+    it('reminds a helper that stopped without submitting, and takes what it submits then', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', suggester: 'forgets' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      await vi.waitFor(() => { expect(session.metadata.getValue('notes')).toEqual([{ kind: 'suggestions', turn: 1, lines: SUGGESTED }]) }, { timeout: 5000 })
+      expect(adapter.requests.filter(request => systemOf(request).includes('You suggest what the player could do next'))).toHaveLength(2)
+    })
+
+    it('has the world act by itself: what came true at the start of the turn is told to the game master with its beat, the character is made to notice its cue, and the beat is done once woven in', async () => {
+      const { session, id } = await addSession('Vault', true)
+      session.triggers.add({ key: 'dusk', name: 'Dusk bell', condition: { type: 'time', from: '1912-10-04T21:00' }, effects: [{ type: 'beat', text: 'The inn bell tolls ten.' }, { type: 'cue', audience: { characters: ['alice'] }, text: 'You smell smoke.' }], repeat: false, priority: 0 }, 'world', 0)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const scene = thisTurn(masterRequests(adapter)[0]!)
+      expect(scene).toContain('The world acted since the last turn, by itself:')
+      expect(scene).toContain('Alice noticed: You smell smoke.')
+      expect(scene).toContain('- [1] The inn bell tolls ten.')
+      expect(briefOf(characterRequests(adapter).find(request => systemOf(request).includes('You are Alice.'))!)).toContain('Just now you notice:\n- You smell smoke.')
+      expect(characterRequests(adapter).filter(request => systemOf(request).includes('You are Bob.')).every(request => !briefOf(request).includes('smell smoke'))).toBe(true)
+      expect(outputsOf(agent)).toHaveLength(1)
+      expect(session.triggers.notes({ status: 'pending' })).toEqual([])
+      expect(session.triggers.getByKey('dusk')).toMatchObject({ status: 'fired', fireCount: 1 })
+    })
+
+    it('tells what is known beforehand to the game master and to those who know of it, and never a secret', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const effects = [{ type: 'beat' as const, text: 'x' }]
+      session.triggers.add({ key: 'exam', name: 'Exam', condition: { type: 'time', from: '1912-10-08T09:00' }, effects, repeat: false, priority: 0, announce: { audience: { characters: ['alice'] }, text: 'The final exam is at nine.' } }, 'world', 0)
+      session.triggers.add({ key: 'war', name: 'War', condition: { type: 'time', from: '1912-10-20T00:00' }, effects, repeat: false, priority: 0 }, 'world', 0)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(thisTurn(masterRequests(adapter)[0]!)).toContain('The final exam is at nine. (Tuesday 8 October 1912, 09:00, in 3 days 11 hours) [known to Alice]')
+      expect(briefOf(characterRequests(adapter).find(request => systemOf(request).includes('You are Alice.'))!)).toContain('What you know is coming:\n- The final exam is at nine. (Tuesday 8 October 1912, 09:00, in 3 days 11 hours)')
+      expect(characterRequests(adapter).filter(request => systemOf(request).includes('You are Bob.')).every(request => !briefOf(request).includes('final exam'))).toBe(true)
+      expect(JSON.stringify(adapter.requests.map(request => request.messages))).not.toContain('Trigger')
+      expect(JSON.stringify(adapter.requests.map(request => [systemOf(request), request.messages]))).not.toContain('1912-10-20')
+    })
+
+    it('has the next turn clear the notes of the last one', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      await vi.waitFor(() => { expect((session.metadata.getValue('notes') as unknown[]).length).toBe(1) }, { timeout: 5000 })
+      agent.followup(say('I look around.'))
+      await vi.waitFor(() => { expect(masterRequests(adapter).some(request => thisTurn(request).includes('I look around'))).toBe(true) }, { timeout: 5000 })
+      await agent.whenIdle()
+      await vi.waitFor(() => { expect(session.metadata.getValue('notes')).toEqual([{ kind: 'suggestions', turn: 2, lines: SUGGESTED }]) }, { timeout: 5000 })
+    })
+
+    it('has the chat ask for none, and nobody is asked to make any', async () => {
+      const { session, id } = await addSession('Vault', true)
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { suggestions: { count: 0 } })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(adapter.requests.some(request => systemOf(request).includes('You suggest what the player could do next'))).toBe(false)
+      expect(session.metadata.getValue('notes')).toBeUndefined()
+    })
+
+    it('has the game master show a preview first, which the characters never see, and the output is still delivered whole', async () => {
+      const { id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const results = masterRequests(adapter).flatMap(request => request.messages.filter(message => message.role === 'tool'))
+      expect(JSON.stringify(results)).toContain('<roleplay-preview>')
+      expect(JSON.stringify(results)).toContain('lamplight catches Alice')
+      expect(JSON.stringify(characterRequests(adapter).map(request => request.messages))).not.toContain('lamplight')
+      expect(outputsOf(agent)).toHaveLength(1)
+      expect(timesCalled(masterRequests(adapter).at(-1)!, 'preview_scene')).toBe(1)
     })
 
     it('moves the player\'s character by its own outcome, with no one else asked to act, and the journey takes its time', async () => {
@@ -927,7 +1070,7 @@ describe('a turn with the real agent loop', () => {
     it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
       const { session, adapter, agent } = await play('careful')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
-      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_agenda', 'get_item', 'get_location', 'list_items', 'list_locations', 'list_relationships', 'list_threads', 'read_records', 'search_events', 'submit_result'])
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_agenda', 'get_item', 'get_location', 'list_items', 'list_locations', 'list_relationships', 'list_threads', 'list_variables', 'read_records', 'search_events', 'submit_result'])
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
       expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
       expect(publicStateOf(session, 'bob')).toBe('holding a brass key')
@@ -993,7 +1136,7 @@ describe('a turn with the real agent loop', () => {
       expect(session.pendingCommits.list().map(entry => [entry.turn, entry.round])).toEqual([[1, 1]])
     })
 
-    it('that failed is caught up with the next turn, which writes both, silently', async () => {
+    it('that failed is written again when the next turn starts, before anything is recalled, silently', async () => {
       const { session, id } = await addSession('Vault')
       const script: Script = { keeper: 'stuck' }
       const adapter = new ScriptedAdapter(answerFor(script))
@@ -1005,10 +1148,9 @@ describe('a turn with the real agent loop', () => {
       agent.followup(say('I look around.'))
       await agent.whenIdle()
       expect(session.pendingCommits.list()).toEqual([])
-      const brief = briefOf(keeperRequests(adapter).at(-1)!)
-      expect(brief).toContain('2 rounds are due for records')
-      expect(brief).toContain('## turn 1, round 1')
-      expect(brief).toContain('## turn 2, round 1')
+      const briefs = keeperRequests(adapter).map(request => briefOf(request))
+      expect(briefs.some(brief => brief.includes('turn 1, round 1 is due for records'))).toBe(true)
+      expect(briefs.at(-1)).toContain('turn 2, round 1 is due for records')
       expect(session.events.list().map(event => event.turn)).toEqual([1, 2])
       expect(session.metadata.get().turns).toBe(2)
     })
@@ -1252,6 +1394,16 @@ describe('a turn with the real agent loop', () => {
       expect(asText(last)).toContain('The chronicler wrote this account of the earlier turns.')
       expect(asText(last)).not.toContain('Move number 1 of the player.')
       expect(asText(last)).toContain('Move number 6 of the player.')
+    })
+
+    it('follows the model\'s context window when the chat gives no limit, and folds past its share of it', async () => {
+      const { session } = await playLong(8, { context: { limitTokens: 0, limitRatio: 0.1, retainRatio: 0.3 } })
+      expect(session.summaries.list().length).toBeGreaterThan(0)
+    })
+
+    it('does not fold under that share: with the default share of a roomy window nothing is folded', async () => {
+      const { session } = await playLong(3, {})
+      expect(session.summaries.list()).toEqual([])
     })
 
     it('sends the whole conversation while it is under the limit, and does not fold', async () => {

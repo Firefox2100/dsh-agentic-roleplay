@@ -115,4 +115,6 @@ export interface LocationDefinition {
   parent?: string
   features: LocationFeature[]
   exits: ExitDefinition[]
+  /** What it starts with of what the world tracks, by variable key. */
+  variables?: Record<string, import('./variable.ts').VariableValue>
 }

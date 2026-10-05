@@ -5,6 +5,8 @@ import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import type { CharacterAction } from '../../../src/host/orchestration/protocol.ts'
 import type { RunCharacter } from '../../../src/host/orchestration/turn-engine.ts'
 import { agendaFor, passRound, skipAhead, startTurn } from '../../../src/host/clock/passage.ts'
+import { fireTriggers, noteStore } from '../../../src/host/triggers/notes.ts'
+import { clearNotes, putNote, readNotes } from '../../../src/host/sessions/notes.ts'
 import { dueOffScene, markHandled } from '../../../src/host/clock/offscene.ts'
 import { readTime, zoneOf } from '../../../src/host/clock/story-clock.ts'
 
@@ -44,6 +46,8 @@ export interface FakeStore extends TurnStore {
   queue: RoundRecord[]
   /** The session behind the store, to set up and read what the store does not offer. */
   session: SessionStore
+  /** What the store reported as a problem, for example a trigger that could not fire. */
+  problems: string[]
   /** The wall clock the story's time follows when it is asked to, in UTC milliseconds. */
   wall: number
 }
@@ -53,18 +57,28 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
   const session = createSessionStore(':memory:', { id: 'fake', name: 'Fake', world: { id: 'w', name: 'W' } })
   const store: FakeStore = {
     wall: Date.UTC(2026, 0, 1, 9),
+    problems: [],
     session,
     commits,
     completed: 0,
     maxRounds,
     cast: () => cast,
-    settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds }),
+    settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds, suggestions: { count: 0 }, preview: { enabled: false } }),
     time: turn => readTime(session, store.settings().clock, turn, store.wall),
     beginTurn: turn => startTurn(session, store.settings().clock, turn, store.wall),
     endRound: (turn, round, stated, minimum) => passRound(session, store.settings().clock, turn, round, store.wall, stated, minimum),
     skipTime: (turn, round, request) => skipAhead(session, store.settings().clock, turn, round, store.wall, request),
+    checkVariableChanges: () => [],
+    changeVariables: () => [],
+    trackedFor: () => ({ self: '', others: [] }),
+    tracked: () => [],
     dueOffScene: turn => dueOffScene(session, zoneOf(store.settings().clock), readTime(session, store.settings().clock, turn, store.wall).now),
     markHandled: (keys) => { markHandled(session, keys) },
+    runTriggers: (turn, round) => fireTriggers(session, { settings: store.settings(), turn, round, now: readTime(session, store.settings().clock, turn, store.wall).now, zone: zoneOf(store.settings().clock), problem: (message) => { store.problems.push(message) } }),
+    ...noteStore(session, () => store.settings(), turn => { const { now, zone } = readTime(session, store.settings().clock, turn, store.wall); return { now, zone } }),
+    putNote: (note) => { putNote(session, note) },
+    notes: () => readNotes(session),
+    clearNotes: () => { clearNotes(session) },
     agenda: (turn, characterId) => agendaFor(session, store.settings().clock, turn, () => store.wall, characterId),
     commit: (updates) => {
       commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch }, ...(update.move === undefined ? {} : { move: update.move }), ...(update.items === undefined ? {} : { items: update.items }) })))

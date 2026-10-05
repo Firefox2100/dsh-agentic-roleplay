@@ -1,4 +1,5 @@
 import { EXIT_STATES, MAX_LOCATION_FEATURES, type ExitDefinition, type LocationDefinition, type LocationFeature } from 'dsh-roleplay-model'
+import { readVariableValues } from '../variables/values.ts'
 import { readIdentifier } from '../identifiers.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
 
@@ -59,6 +60,7 @@ export function parseLocationFile(text: string, fallbackId: string): ParseResult
   const id = readIdentifier(reader, fallbackId) ?? fallbackId
   const name = reader.string('name', { required: true })
   const parent = reader.string('parent')
+  const variables = readVariableValues(reader)
   const location: LocationDefinition = {
     id,
     name: name ?? '',
@@ -66,6 +68,7 @@ export function parseLocationFile(text: string, fallbackId: string): ParseResult
     ...(parent === undefined ? {} : { parent }),
     features: readFeatures(reader),
     exits: readExits(reader),
+    ...(variables === undefined ? {} : { variables }),
   }
   return issues.length > 0 ? { ok: false, issues } : { ok: true, value: location }
 }

@@ -1,7 +1,7 @@
 import type { ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import { describe, expect, it } from 'vitest'
-import { chatNarration, textOf } from '../../../src/client/transcript/definitions.ts'
-import { encodeOutput, type TurnOutput } from '../../../src/shared/narration.ts'
+import { chatNarration, chatPreview, textOf } from '../../../src/client/transcript/definitions.ts'
+import { encodeOutput, encodePreview, type TurnOutput } from '../../../src/shared/narration.ts'
 
 const narration: TurnOutput = {
   repaired: false,
@@ -43,6 +43,26 @@ describe('the Chat node of a turn output', () => {
 
   it('refuses to start from another event', () => {
     expect(() => start(chatNarration, context('k', 'x', undefined), { event: event('user/message', {}), role: 'start' })).toThrow(/result of the tool/)
+  })
+})
+
+describe('the Chat node of a preview', () => {
+  const shown = (text: string, toolCallId = 'p1', seq = 5) => event('tool/result', {
+    message: { toolCallId, content: [{ type: 'text', text: `${encodePreview(text)}\nShown to the player.` }] },
+  }, seq)
+
+  it('matches only the result of the tool that shows one, and never the delivered output', () => {
+    expect(match(chatPreview, shown('Air goes still.', 'call-1'))).toEqual({ id: 'call-1', role: 'start' })
+    expect(match(chatPreview, delivered(narration))).toBeNull()
+    expect(match(chatNarration, shown('Air goes still.'))).toBeNull()
+  })
+
+  it('carries the text at the session level, so that the Chat leaves it in the transcript', () => {
+    const state = start(chatPreview, context('k', 'roleplay-preview', undefined), { event: shown('Air goes still.'), role: 'start' } as never)
+    expect(state).toEqual({ seq: 5, data: { text: 'Air goes still.' } })
+    expect(view(chatPreview, context('k', 'roleplay-preview', state))).toEqual({
+      key: 'k', kind: 'roleplay-preview', id: 'k', target: 'chat', anchorSeq: 5, location: { kind: 'session' }, visibility: 'visible', data: { text: 'Air goes still.' },
+    })
   })
 })
 

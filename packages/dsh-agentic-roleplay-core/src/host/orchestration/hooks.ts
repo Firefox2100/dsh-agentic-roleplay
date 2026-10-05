@@ -38,8 +38,6 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   ctx.on('agent/turn-stopping', async ({ agent, turn }) => {
     const owner = ownerOf(agent, turn)
     if (owner === undefined) return
-    // The turn does not end while the records of its rounds are still being written.
-    await engine.flush(owner)
     const missing = engine.missing(owner)
     if (missing === undefined) return
     if (!engine.object(owner)) {
@@ -57,6 +55,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const owner = ownerOf(payload.agent, payload.turn)
     const store = owner === undefined ? undefined : stores(owner.chat)
     if (owner === undefined || store === undefined) return decision
+    // What the last turn left to be written is written before anything is recalled; the player was shown the output long ago.
+    await engine.settle(owner.chat)
 
     const cast = store.cast()
     const text = payload.messages
@@ -65,8 +65,13 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .join('\n')
     const verdict = boundaries().inputValidator.validate({ text, turn: payload.turn, cast })
     const queryVector = await store.queryVector(text)
+    store.clearNotes()
+    store.lapseNotes(payload.turn)
     const { time, away, agenda } = store.beginTurn(payload.turn)
-    const lines = [boundaries().sceneContext.scene({ time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, ...(queryVector === undefined ? {} : { queryVector }) })]
+    const fired = engine.fireAtStart(owner)
+    const world = { happened: fired.flatMap(entry => [...entry.events.map(text => `${entry.name}: ${text}`), ...entry.cues.map(cue => `${cue.names.join(' and ')} noticed: ${cue.text}`)]), beats: store.pendingBeats(), upcoming: store.upcoming(payload.turn) }
+    const tracked = store.tracked()
+    const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, ...(queryVector === undefined ? {} : { queryVector }) })]
     if (!verdict.ok) {
       engine.skip(owner)
       lines.push(`The player's input is refused: ${verdict.reason}. Do not ask any character to act; tell the player briefly why.`)

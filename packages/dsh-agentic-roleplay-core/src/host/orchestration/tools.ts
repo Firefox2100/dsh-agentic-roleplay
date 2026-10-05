@@ -1,9 +1,9 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { describeTime, type SkipRequest } from '../clock/story-clock.ts'
-import type { Boundaries, CreateReport, TurnStore } from './boundaries.ts'
+import type { Boundaries, CreateReport, TriggerReport, TurnStore } from './boundaries.ts'
 import { characterRunner } from './character-runner.ts'
-import { encodeOutput } from '../../shared/narration.ts'
+import { encodeOutput, encodePreview } from '../../shared/narration.ts'
 import { AUTHORING_NEEDS } from './boundaries.ts'
 import { ITEM_ACTIONS, describeDuration, type ItemAction } from 'dsh-roleplay-state'
 import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
@@ -15,6 +15,7 @@ export const NARRATE_TOOL = 'narrate'
 export const RECORD_TOOL = 'record_memory'
 export const EXPAND_TOOL = 'expand_world'
 export const TIME_TOOL = 'advance_time'
+export const PREVIEW_TOOL = 'preview_scene'
 
 export interface ToolDeps {
   engine: TurnEngine
@@ -54,13 +55,22 @@ const OUTPUT_RULES = 'Deliver the output with the narrate tool as ordered segmen
 const listed = (utterances: readonly Utterance[]): string =>
   utterances.map(utterance => `- ${utterance.character} (${utterance.name}), round ${utterance.round}: "${utterance.text}"`).join('\n')
 
+/** What the world did by itself, as the game master is told: what happened, what characters notice, and what it is to weave in. */
+export function renderWorld(world: TriggerReport['fired']): string[] {
+  return world.flatMap(entry => [
+    ...entry.events.map(text => `The world acted (${entry.name}): ${text}`),
+    ...entry.cues.map(cue => `${cue.names.join(' and ')} will notice: ${cue.text}`),
+    ...entry.beats.map(beat => `Weave this into the story, then say you did with addressed: [${beat.id}] in narrate (${beat.text})`),
+  ])
+}
+
 function renderResolution(report: ResolveReport): string {
   if (report.next !== undefined) return renderAttempt(report.next)
   const done = report.done
   if (done === undefined) return ''
   const left = done.limit - done.round
   const passed = done.time.to - done.time.from
-  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, `It is now ${describeTime({ now: done.time.to, zone: done.time.zone })}${passed > 0 ? `; ${describeDuration(passed)} passed` : ''}.`, ...done.moved.map(routineLine), ...done.moves.map(move => `${move.name} is now at ${move.to}${move.via > 0 ? ` (by way of ${move.via} other place${move.via === 1 ? '' : 's'})` : ''}.`), ...done.things.map(thing => `${thing.name}: ${thing.summary}.`), ...failures(done.retryFailures)]
+  const lines = [`Round ${done.round} is recorded (${done.updated.join(', ')}).`, `It is now ${describeTime({ now: done.time.to, zone: done.time.zone })}${passed > 0 ? `; ${describeDuration(passed)} passed` : ''}.`, ...done.moved.map(routineLine), ...done.moves.map(move => `${move.name} is now at ${move.to}${move.via > 0 ? ` (by way of ${move.via} other place${move.via === 1 ? '' : 's'})` : ''}.`), ...done.things.map(thing => `${thing.name}: ${thing.summary}.`), ...done.variables.map(line => `${line}.`), ...renderWorld(done.world), ...failures(done.retryFailures)]
   lines.push(done.spoken.length === 0
     ? 'Nobody has said anything yet this turn.'
     : `Everything said so far this turn, in order; the output must carry all of it exactly:\n${listed(done.spoken)}`)
@@ -163,6 +173,21 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
                 },
               },
             },
+            variable_changes: {
+              type: 'array',
+              description: 'What this changes of what the story keeps track of (the scene lists it; list_variables shows what exists): a feeling, an injury, a flag, a debt. Only what the outcome establishes; to is the new value (a number, true or false, or one of the words of a choice), by is an amount a number goes up or down (it stops at its bounds).',
+              items: {
+                type: 'object',
+                additionalProperties: false,
+                properties: {
+                  variable: { type: 'string', required: true, description: 'The key of the variable.' },
+                  subject: { type: 'string', required: true, description: 'The key of the character, item or place it is about; world for the whole story.' },
+                  to: { oneOf: [{ type: 'number' }, { type: 'boolean' }, { type: 'string' }], description: 'The new value.' },
+                  by: { type: 'number', description: 'How much a number goes up (positive) or down (negative).' },
+                  baseline: { oneOf: [{ type: 'number' }, { type: 'boolean' }, { type: 'string' }], description: 'For a variable with a temperament (feelings): the new baseline, when what happened changes it lastingly.' },
+                },
+              },
+            },
             moves_to: {
               type: 'object',
               additionalProperties: false,
@@ -190,6 +215,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         ...(outcome.public_state === undefined ? {} : { publicState: outcome.public_state }),
         ...(outcome.spoken === undefined ? {} : { spoken: outcome.spoken }),
         ...(outcome.item_changes === undefined || outcome.item_changes.length === 0 ? {} : { itemChanges: outcome.item_changes.map(change => ({ item: change.item, action: change.action as ItemAction, ...(change.to === undefined ? {} : { to: change.to }), ...(change.quantity === undefined ? {} : { quantity: change.quantity }), ...(change.position === undefined ? {} : { position: change.position }), ...(change.feature === undefined ? {} : { feature: change.feature }), ...(change.with === undefined ? {} : { with: change.with }), ...(change.exit === undefined ? {} : { exit: change.exit }), ...(change.forced === true ? { forced: true } : {}) })) }),
+        ...(outcome.variable_changes === undefined || outcome.variable_changes.length === 0 ? {} : { variableChanges: outcome.variable_changes.map(change => ({ variable: change.variable, subject: change.subject, ...(change.to === undefined ? {} : { to: change.to }), ...(change.by === undefined ? {} : { by: change.by }), ...(change.baseline === undefined ? {} : { baseline: change.baseline }) })) }),
         ...(outcome.moves_to === undefined ? {} : { moveTo: { location: outcome.moves_to.location, ...(outcome.moves_to.position === undefined ? {} : { position: outcome.moves_to.position }), ...(outcome.moves_to.feature === undefined ? {} : { feature: outcome.moves_to.feature }), ...(outcome.moves_to.ignore_exits === true ? { ignoreExits: true } : {}) } }),
       }))
       return record(await deps.engine.resolve(owner, outcomes, run, exec.signal, args.elapsed_seconds))
@@ -213,6 +239,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
           },
         },
       },
+      addressed: { type: 'array', items: { type: 'integer' }, description: 'The ids of the beats you were told to weave in that this output does. Beats you do not address are told again, then let go.' },
     },
     output: {
       schema: { type: 'json' },
@@ -232,7 +259,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         text: segment.text,
         ...(segment.character === undefined ? {} : { character: segment.character }),
       }))
-      const output = await deps.engine.narrate(owner, segments, characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) }))
+      const output = await deps.engine.narrate(owner, segments, characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) }), args.addressed ?? [])
       // The output is the end of the turn: nothing the model adds after it would be checked.
       exec.concludeTurn()
       return record(output)
@@ -255,9 +282,9 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
 
   const expand = defineTool({
     name: EXPAND_TOOL,
-    description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are), object (a thing that matters has actually been handed over, found or drawn and does not exist yet; or a place on the body that the world has no slot for). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, loot, props for decoration, or anything an existing character, place or thing can serve; use those. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
+    description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are), object (a thing that matters has actually been handed over, found or drawn and does not exist yet; or a place on the body that the world has no slot for), trigger (the story set up a moment that is bound to come, such as a deadline given, a promised arrival or a trap laid, that can be stated as a condition: a time, someone in a place, a thing held, a variable, an event), variable (a quantity, state or choice the story established matters from here on and nothing tracked fits: a debt, a health, a reputation). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, loot, props for decoration, or anything an existing character, place or thing can serve; use those. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
     parameters: {
-      need: { type: 'string', required: true, enum: AUTHORING_NEEDS, description: 'Why: scene_change, arrival or introduction.' },
+      need: { type: 'string', required: true, enum: AUTHORING_NEEDS, description: 'Why: scene_change, arrival, introduction, object, variable or trigger.' },
       what: { type: 'string', required: true, description: 'What is needed, from what the story has established: who or where (a name when it was given), their role, what happened to make it needed now, and where it is in relation to what exists.' },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderExpansion(value as unknown as CreateReport) }] },
@@ -277,7 +304,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       days_later: { type: 'integer', description: 'With until_time: that many days after today (0 is later today, 1 is tomorrow).' },
       reason: { type: 'string', required: true, description: 'What happens in the time that passes, in a sentence ("they sleep", "the ferry crosses").' },
     },
-    output: { schema: { type: 'json' }, render: (_args, value) => { const done = value as unknown as { from: number; to: number; zone: string; moved: { name: string; to: string; activity: string }[] }; return [{ type: 'text', text: `${describeDuration(done.to - done.from)} pass. It is now ${describeTime({ now: done.to, zone: done.zone })}.${done.moved.length === 0 ? '' : ` ${done.moved.map(routineLine).join(' ')}`} Nothing else changed: characters with you are still doing what they were, where they were; run a round for them if the time that passed changes that.` }] } },
+    output: { schema: { type: 'json' }, render: (_args, value) => { const done = value as unknown as { from: number; to: number; zone: string; moved: { name: string; to: string; activity: string }[]; world: TriggerReport['fired'] }; return [{ type: 'text', text: `${describeDuration(done.to - done.from)} pass. It is now ${describeTime({ now: done.to, zone: done.zone })}.${done.moved.length === 0 ? '' : ` ${done.moved.map(routineLine).join(' ')}`} Nothing else changed: characters with you are still doing what they were, where they were; run a round for them if the time that passed changes that.${done.world.length === 0 ? '' : `\n${renderWorld(done.world).join('\n')}`}` }] } },
     isConcurrencySafe: () => false,
     execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
@@ -291,5 +318,17 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [activate, resolve, skip, remember, expand, narrate]
+  const preview = defineTool({
+    name: PREVIEW_TOOL,
+    description: 'Show the player how the scene opens, as your very first action of a turn, before you ask any character: two or three sentences that set the mood and what the player\'s character perceives, ending on the open question of the moment. It is on screen at once, while the characters are still being asked, and is replaced in the player\'s view by the output you deliver with narrate, which may use it, change it or start over. Describe only what the scene and the player\'s own action establish: never what any other character does, says, decides or thinks, and nothing the player\'s character cannot perceive. Once per message.',
+    parameters: { text: { type: 'string', required: true, description: 'The opening, plain prose in the narration voice.' } },
+    output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: `${encodePreview((value as unknown as { text: string }).text)}\nShown to the player. Now call activate_characters.` }] },
+    isConcurrencySafe: () => false,
+    execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      return Promise.resolve(record({ text: deps.engine.preview(owner, args.text) }))
+    },
+  })
+
+  return [preview, activate, resolve, skip, remember, expand, narrate]
 }

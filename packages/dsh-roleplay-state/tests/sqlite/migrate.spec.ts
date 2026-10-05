@@ -93,13 +93,12 @@ describe('schema', () => {
     )
     db.run("INSERT INTO character_aliases (character_id, position, alias, alias_key) VALUES (1, 0, 'x', 'x')")
     db.run("INSERT INTO character_state (character_id, updated_at) VALUES (1, 'now')")
-    db.run('INSERT INTO character_emotion VALUES (1, 0, 0, 0, 0, 0, 0)')
     db.run(
       `INSERT INTO intents (character_id, type, name, status, horizon, priority, urgency, created_at, updated_at)
        VALUES (1, 'need', 'n', 'active', 'short', 0.5, 0.5, 'now', 'now')`,
     )
     db.run('DELETE FROM characters WHERE id = 1')
-    for (const table of ['character_aliases', 'character_state', 'character_emotion', 'intents']) {
+    for (const table of ['character_aliases', 'character_state', 'intents']) {
       expect(db.get<{ count: number }>(`SELECT count(*) AS count FROM ${table}`)?.count, table).toBe(0)
     }
     db.close()

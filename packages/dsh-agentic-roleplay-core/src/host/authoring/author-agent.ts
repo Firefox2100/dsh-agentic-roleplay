@@ -15,13 +15,16 @@ Something is made up only when ALL of this holds:
 - A PLACE: the story has actually gone somewhere that no known place covers, or what it established turns out to be a place of its own (a room behind a door, a street, a district), AND no existing place fits, not even as a part of one. A place that is only mentioned, that is decoration, or that the story is not going to, is not needed.
 - A CHARACTER: someone new has actually joined the scene (arrived, was introduced, was brought or found), or the story needs a specific person who has not appeared and who matters to what is happening now, AND no existing character is that person (check names, aliases and roles). Anonymous passers-by, crowds and background (the person who serves a drink, guards at a gate, townspeople) are not characters unless the story gives them words or actions that matter; prefer the characters that exist.
 - AN OBJECT: a thing that matters has actually been handed over, found, drawn or acquired and does not exist yet, AND no existing thing is it. Everyday props, loot, scenery (a desk, a window: those are features of a place), and things only mentioned are not needed. A new slot (a place on the body to wear things) is made only when something the story established cannot be worn in any existing one (a tail, a quiver on the back); the usual slots exist.
-- NEVER because it would be interesting, to add colour, to fill a quiet scene, to give the player more to do, or to avoid reusing what exists.
+- A VARIABLE (something the story keeps track of): what the story established matters from here on and can be said as a quantity, a state or a choice (a debt, someone's health, a reputation, whether a door is known, how much a crowd trusts the mayor), AND nothing already tracked fits (list_variables), AND it will be read or changed again, not once. Feelings, and the variables the world declares, already exist: use those. Declare it with edit_world (variables): a short lowercase key, what it is about (each character, item or place has its own; or the whole world), a kind (number with bounds, flag, or choice of words), a default, who can tell its value (public: anyone present; private: only its character; hidden: only the game master), and words for ranges of a number (bands) when that helps the characters read it. Limit it to the subjects it concerns (only). At most one variable per request.\n- NEVER because it would be interesting, to add colour, to fill a quiet scene, to give the player more to do, or to avoid reusing what exists.
+- A TRIGGER (something the world does by itself): the story has set up a moment that is bound to come (a deadline given, a promised arrival, a trap laid, a storm coming, a watch that changes) AND it can be stated as a condition the records will show (a time, someone in a place, a thing held or lying somewhere, a variable's value, an event with a tag, another trigger fired), AND it is not already covered by a character's commitment or goal (those are the characters' to keep), AND it is not an effect the game master can simply narrate now. What happens is a change of the records (an event those present see, a way unlocked, a variable changed), something the game master is told to weave in (a beat), or something characters notice (a cue). If it is no secret (an exam, a ball, a deadline everyone knows of), give it an announcement: who knows of it and what they know, from when (known at once by default); a secret has none. Make at most what the story set up: no plot of your own.
 If the request does not meet this, decline: say which test it fails and which existing character or place can serve instead. Declining is a good outcome, not a failure.
 
 How you work:
 1. Look first. List the characters and places, search what happened, and decide whether something that exists can serve.
 2. Decide: make it, or decline.
 3. Make it with edit_world, in one call. A thing starts in exactly one of: lying in a place (at), carried by a character (held_by), worn by one (worn_by), or inside a container (inside); a lock gets the item that opens it (opened_by); say whose it is only when the story did. Use only what the story established (names, roles, facts given); invent the least needed to play a character or describe a place, in keeping with what exists, and never contradict it. A character gets a short summary, a personality that fits, how it speaks, a state, and the place it is in. A place gets a description, features only for things the story established, and a way to the place the story came from (exits, both directions unless the way is one way). A character gets a relationship profile with those it meets right now, from its side and, where they would know each other, from theirs. A character who will live its own life off stage (a person with a trade or a household) may also get a day (routines): windows of the day with what it is doing and where, from what its role implies; otherwise leave it out.
+3b. A variable: declare it in the same call as what first changes it (variables, then variable_changes), with a default that is what is true for everything it applies to until something happens.
+3c. A trigger: name only keys that exist (list_characters, list_locations, list_items, list_variables show them), choose the condition so that it turns true once (it fires when it turns true, not while it stays so), and make its effect small and concrete.
 4. Check with world_lint: what you made must show no errors.
 5. Finish with submit_result.`
 
@@ -36,13 +39,13 @@ Then say what you did for each with resolve_consolidation, and check with world_
 
 /** The tools of the world author, and what each does to the work. */
 interface Work {
-  created: { kind: 'character' | 'place' | 'item'; key: string }[]
+  created: { kind: 'character' | 'place' | 'item' | 'variable' | 'trigger'; key: string }[]
 }
 
 function authorTools(job: { chat: string; store: TurnStore; turn: number }, work: Work, mode: 'create' | 'consolidate', limits: { perTurn: number }): ToolDefinition[] {
   const link = { session: job.store.story, turn: job.turn, policy: job.store.settings().memory, queryVector: job.store.queryVector, timeZone: zoneOf(job.store.settings().clock) }
   const keys = job.store.story.characters.list().map(characterKey)
-  const wanted = new Set(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'get_agenda', 'search_events', 'world_lint', 'edit_world', ...(mode === 'consolidate' ? ['list_consolidation', 'resolve_consolidation'] : [])])
+  const wanted = new Set(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_variables', 'list_locations', 'get_location', 'get_agenda', 'search_events', 'world_lint', 'edit_world', ...(mode === 'consolidate' ? ['list_consolidation', 'resolve_consolidation'] : [])])
   return createTools(() => link, { write: true, authoring: true, characters: keys })
     .filter(tool => wanted.has(tool.name))
     .map((tool): ToolDefinition => {
@@ -51,16 +54,18 @@ function authorTools(job: { chat: string; store: TurnStore; turn: number }, work
         ...tool,
         execute: async (args, exec) => {
           const edit = parseRecordsEdit(args)
-          const makes = (edit.characters?.length ?? 0) + (edit.places?.length ?? 0) + (edit.items?.length ?? 0)
+          const makes = (edit.characters?.length ?? 0) + (edit.places?.length ?? 0) + (edit.items?.length ?? 0) + (edit.variables?.length ?? 0) + (edit.triggers?.length ?? 0)
           if (mode === 'consolidate' && makes > 0) throw new Error('fitting things in does not make up anything new: connect what exists')
           const already = job.store.story.consolidation.createdIn(job.turn).length
           if (makes > 0 && already + makes > limits.perTurn) {
             throw new Error(`this edit makes ${makes} new thing${makes === 1 ? '' : 's'} and ${already} ${already === 1 ? 'was' : 'were'} already made this turn, which would pass the ${limits.perTurn} this chat allows per turn: make fewer, or none`)
           }
-          const result = await tool.execute(args, exec) as { character_keys?: string[]; place_keys?: string[]; item_keys?: string[] }
+          const result = await tool.execute(args, exec) as { character_keys?: string[]; place_keys?: string[]; item_keys?: string[]; variable_keys?: string[]; trigger_keys?: string[] }
           for (const key of result.character_keys ?? []) work.created.push({ kind: 'character', key })
           for (const key of result.place_keys ?? []) work.created.push({ kind: 'place', key })
           for (const key of result.item_keys ?? []) work.created.push({ kind: 'item', key })
+          for (const key of result.variable_keys ?? []) work.created.push({ kind: 'variable', key })
+          for (const key of result.trigger_keys ?? []) work.created.push({ kind: 'trigger', key })
           return result as never
         },
       }
@@ -208,6 +213,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ outcome: 'created' | 'declined'; summary: string }>({
+        reasoningEffort: job.store.settings().reasoning.children,
         parent, signal,
         persona: AUTHOR_PERSONA,
         prompt: createPrompt(job, authoring.perTurn),
@@ -223,7 +229,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
         maxCalls: 30,
       })
       const label = names(job.store)
-      const created = work.created.map(entry => ({ kind: entry.kind, key: entry.key, name: (entry.kind === 'character' ? label.characters : entry.kind === 'item' ? label.items : label.places).get(entry.key) ?? entry.key }))
+      const created = work.created.map(entry => ({ kind: entry.kind, key: entry.key, name: (entry.kind === 'variable' ? job.store.story.variables.def(entry.key)?.name : entry.kind === 'trigger' ? job.store.story.triggers.getByKey(entry.key)?.name : (entry.kind === 'character' ? label.characters : entry.kind === 'item' ? label.items : label.places).get(entry.key)) ?? entry.key }))
       return created.length > 0 ? { created, ...(result.outcome === 'declined' ? { declined: result.summary } : {}) } : { created: [], declined: result.summary }
     },
 
@@ -234,6 +240,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ complete: boolean; notes: string }>({
+        reasoningEffort: job.store.settings().reasoning.children,
         parent, signal,
         persona: CONSOLIDATE_PERSONA,
         prompt: consolidationPrompt(job),

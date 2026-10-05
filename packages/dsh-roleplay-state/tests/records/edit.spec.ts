@@ -22,26 +22,19 @@ const idOf = (key: string) => store.characters.getBySourceId(key)!.id
 describe('applying an edit', () => {
   it('writes state, events with who took them in, beliefs and threads together', () => {
     const result = store.edit(edit({
-      states: [{ character: 'alice', publicState: ' Standing at the bar. ', activity: 'pouring', emotion: { valence: 0.2, arousal: 0.1, dominance: 0 } }],
+      states: [{ character: 'alice', publicState: ' Standing at the bar. ', activity: 'pouring'}],
       events: [{ turn: 1, round: 1, text: ' Bob took the key. ', importance: 4, tags: ['Key', ' key ', 'desk'], involves: ['bob'], perceivedBy: [{ character: 'alice', mode: 'witnessed' }, { character: 'bob', mode: 'witnessed', content: 'I took the key.', accuracy: 'partial' }] }],
       beliefs: [{ character: 'alice', kind: 'relationship', text: 'Bob is a thief.', about: ['bob'], importance: 3 }],
       threadsOpened: ['Where did the key go?'],
     }))
     expect(result).toMatchObject({ eventIds: [1], beliefIds: [1], writes: 4 })
     expect(store.characterStates.get(idOf('alice'))).toMatchObject({ publicState: 'Standing at the bar.', activity: 'pouring', innerState: '' })
-    expect(store.characterStates.get(idOf('alice'))?.emotion?.baseline).toEqual({ valence: 0.2, arousal: 0.1, dominance: 0 })
     expect(store.events.get(1)).toMatchObject({ text: 'Bob took the key.', tags: ['key', 'desk'], involves: [idOf('bob')] })
     const perceptions = store.events.perceptionsOf(1)
     expect(perceptions.map(entry => [entry.characterId, entry.content, entry.accuracy])).toEqual([[idOf('alice'), 'Bob took the key.', 'accurate'], [idOf('bob'), 'I took the key.', 'partial']])
     expect(perceptions[0]?.gist).toBe('Bob took the key.')
     expect(store.memories.list(idOf('alice'))[0]).toMatchObject({ turn: 1, about: [idOf('bob')] })
     expect(store.threads.list('open')[0]).toMatchObject({ text: 'Where did the key go?', openedTurn: 1 })
-  })
-
-  it('keeps the temperament when only the current emotion changes', () => {
-    store.edit(edit({ states: [{ character: 'bob', emotion: { valence: 0.5, arousal: 0, dominance: 0 } }] }))
-    store.edit(edit({ states: [{ character: 'bob', emotion: { valence: -0.5, arousal: 0.3, dominance: 0.1 } }] }))
-    expect(store.characterStates.get(idOf('bob'))?.emotion).toEqual({ baseline: { valence: 0.5, arousal: 0, dominance: 0 }, immediate: { valence: -0.5, arousal: 0.3, dominance: 0.1 } })
   })
 
   it('corrects and removes what was recorded', () => {
@@ -62,14 +55,14 @@ describe('applying an edit', () => {
     const before = store.records()
     expect(problemsOf(edit({
       turn: 0,
-      states: [{ character: 'carol', activity: 'x' }, { character: 'alice' }, { character: 'bob', emotion: { valence: 2, arousal: 0, dominance: 0 } }],
+      states: [{ character: 'carol', activity: 'x' }, { character: 'alice' }, { character: 'bob' }],
       events: [{ turn: 1, round: 1, text: ' ', importance: 9, involves: ['dan'], perceivedBy: [{ character: 'alice', mode: 'witnessed' }, { character: 'alice', mode: 'heard' }, { character: 'bob', mode: 'dreamt' as never }] }],
       eventEdits: [{ id: 99 }], eventRetractions: [98], beliefs: [{ character: 'alice', kind: 'rumour' as never, text: '', importance: 0 }], beliefEdits: [{ id: 97 }], beliefRetractions: [96], threadsResolved: [95], threadsOpened: [' '],
     }))).toEqual([
       'turn must be a whole number from 1',
       'states[0]: there is no character "carol" (the characters are: alice, bob)',
       'states[1]: nothing to change',
-      'states[2]: each emotion axis must be a number from -1 to 1',
+      'states[2]: nothing to change',
       'events[0]: say what happened',
       'events[0]: importance must be a whole number from 1 to 5',
       'events[0].involves: there is no character "dan" (the characters are: alice, bob)',
@@ -100,7 +93,7 @@ describe('the wire format', () => {
   it('reads what models write, in snake_case', () => {
     const parsed = parseRecordsEdit({
       turn: 2,
-      states: [{ character: 'alice', public_state: 'p', inner_state: 'i', activity: 'a', emotion: { valence: 0, arousal: 0, dominance: 0 } }],
+      states: [{ character: 'alice', public_state: 'p', inner_state: 'i', activity: 'a' }],
       events: [{ turn: 2, round: 1, text: 't', importance: 3, tags: ['k'], involves: ['bob'], perceived_by: [{ character: 'alice', mode: 'heard', content: 'c', gist: 'g', accuracy: 'partial' }] }],
       event_edits: [{ id: 1, text: 'x' }], event_retractions: [2], beliefs: [{ character: 'bob', kind: 'belief', text: 'b', about: ['alice'], importance: 2 }],
       belief_edits: [{ id: 1, importance: 4 }], belief_retractions: [3], threads_opened: ['o'], threads_resolved: [4],
@@ -121,15 +114,17 @@ describe('the wire format', () => {
       placeEdits: [],
       exitChanges: [],
       moves: [],
+      variableChanges: [],
+      variables: [],
       intentsAdded: [],
       intentEdits: [],
       engagements: [],
       engagementEdits: [],
       routines: [],
-      states: [{ character: 'alice', publicState: 'p', innerState: 'i', activity: 'a', emotion: { valence: 0, arousal: 0, dominance: 0 } }],
+      states: [{ character: 'alice', publicState: 'p', innerState: 'i', activity: 'a' }],
       events: [{ turn: 2, round: 1, text: 't', importance: 3, tags: ['k'], involves: ['bob'], perceivedBy: [{ character: 'alice', mode: 'heard', content: 'c', gist: 'g', accuracy: 'partial' }] }],
       eventEdits: [{ id: 1, text: 'x' }], eventRetractions: [2], beliefs: [{ character: 'bob', kind: 'belief', text: 'b', about: ['alice'], importance: 2 }],
-      beliefEdits: [{ id: 1, importance: 4 }], beliefRetractions: [3], threadsOpened: ['o'], threadsResolved: [4],
+      beliefEdits: [{ id: 1, importance: 4 }], beliefRetractions: [3], threadsOpened: ['o'], threadsResolved: [4], triggers: [],
     })
   })
 

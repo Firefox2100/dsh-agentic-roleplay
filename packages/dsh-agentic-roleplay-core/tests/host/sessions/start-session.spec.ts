@@ -326,3 +326,31 @@ describe('starting the clock', () => {
     expect(await readdir(root)).not.toContain('sessions')
   })
 })
+
+describe('the triggers of a world', () => {
+  const triggers = join('worlds', 'blackwater folder', 'triggers.json')
+  const storm = { key: 'storm', name: 'The storm', when: { type: 'time', from: '1912-10-05T21:00' }, effects: [{ type: 'beat', text: 'Thunder rolls over the ridge.' }, { type: 'cue', audience: { characters: ['clara'] }, text: 'The shutters rattle.' }] }
+
+  it('are made in the session, dormant, as the world wrote them', async () => {
+    await write(join(root, triggers), [storm])
+    const started = await startSession(deps, playAsArthur)
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    expect(session.triggers.list()).toMatchObject([{ key: 'storm', name: 'The storm', origin: 'world', status: 'dormant', fireCount: 0, createdTurn: 0 }])
+  })
+
+  it('refuse the start, naming what they name that the world does not have, before anything is created', async () => {
+    await write(join(root, triggers), [{ ...storm, when: { type: 'place', character: 'clara', location: 'moon' } }, { ...storm, key: 'late', when: { type: 'fired', trigger: 'ghost' }, effects: [{ type: 'cue', audience: { characters: ['zed'] }, text: 'x' }] }])
+    const error = await startSession(deps, playAsArthur).catch((caught: unknown) => caught)
+    expect(error).toBeInstanceOf(InvalidWorldError)
+    expect((error as InvalidWorldError).problems.map(problem => problem.message)).toEqual(expect.arrayContaining([
+      'storm: when: there is no place "moon"', 'late: when: there is no trigger "ghost"', 'late: effects[0]: there is no character "zed"',
+    ]))
+    expect(ensured).toEqual([])
+    expect(await readdir(join(root, 'sessions'))).toEqual([])
+  })
+
+  it('refuse the start when the file has problems, reported with the file', async () => {
+    await write(join(root, triggers), '[{"key":"x"}]')
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/triggers of "The Blackwater Observatory" have \d+ problem/)
+  })
+})

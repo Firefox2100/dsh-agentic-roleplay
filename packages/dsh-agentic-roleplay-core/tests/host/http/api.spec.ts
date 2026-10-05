@@ -26,6 +26,7 @@ let deleteError: Error | undefined
 let opened: string | undefined
 let openError: Error | undefined
 let settingsError: Error | undefined
+let notesError: Error | undefined
 let writtenSettings: unknown
 const started = { id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', characterCount: 2 }
 const listed = { directory: '/root/sessions', sessions: [{ id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', createdAt: '2026-01-01T00:00:00.000Z', turns: 0 }], problems: [] }
@@ -42,6 +43,7 @@ beforeEach(async () => {
   opened = undefined
   openError = undefined
   settingsError = undefined
+  notesError = undefined
   writtenSettings = undefined
   const folder = join(base, 'worlds', 'harbor')
   await mkdir(join(folder, 'media', 'files'), { recursive: true })
@@ -77,6 +79,10 @@ beforeEach(async () => {
         if (settingsError !== undefined) throw settingsError
         writtenSettings = value
         return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 }
+      },
+      notes: (id) => {
+        if (notesError !== undefined) throw notesError
+        return [{ kind: 'suggestions', turn: 2, lines: [`from ${id}`] }]
       },
       delete: (id) => {
         if (deleteError !== undefined) return Promise.reject(deleteError)
@@ -329,6 +335,26 @@ describe('roleplay API', () => {
       allowed = true
       expect((await fetch(`${origin}/sessions/open?id=x`)).status).toBe(405)
       expect(opened).toBeUndefined()
+    })
+  })
+
+  describe('the notes of a session', () => {
+    const url = () => `${origin}/sessions/notes?id=abc`
+
+    it('are the lines the host made for the player after the last turn', async () => {
+      const response = await fetch(url())
+      expect(response.status).toBe(200)
+      expect(await response.json()).toEqual([{ kind: 'suggestions', turn: 2, lines: ['from abc'] }])
+    })
+
+    it('answer 404 for an unknown session, 401 without authentication and allow only GET', async () => {
+      notesError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(url())).status).toBe(404)
+      notesError = undefined
+      allowed = false
+      expect((await fetch(url())).status).toBe(401)
+      allowed = true
+      expect((await fetch(url(), { method: 'POST' })).status).toBe(405)
     })
   })
 

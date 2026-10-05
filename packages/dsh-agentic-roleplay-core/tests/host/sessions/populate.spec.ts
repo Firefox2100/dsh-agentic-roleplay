@@ -62,11 +62,11 @@ describe('populateCharacters', () => {
     expect(eleanor).not.toHaveProperty('start')
     expect(session.characterStates.get(eleanor?.id ?? 0)).toMatchObject({
       publicState: 'Greeting guests.', innerState: 'Wondering.', activity: 'managing appearances', version: 1,
-      emotion: { baseline: { valence: -0.1, arousal: 0.3, dominance: 0.5 } },
     })
+    expect(['valence', 'arousal', 'dominance'].map(axis => session.variables.get(axis, 'character', eleanor!.id))).toMatchObject([{ value: -0.1, baseline: -0.1 }, { value: 0.3, baseline: 0.3 }, { value: 0.5, baseline: 0.5 }])
     expect(session.intents.list(eleanor?.id ?? 0).map(intent => intent.name)).toEqual(['Contain the scandal'])
     expect(clara).toMatchObject({ sourceId: 'clara', name: 'Clara' })
-    expect(session.characterStates.get(clara?.id ?? 0)).not.toHaveProperty('emotion')
+    expect(session.variables.list('character', clara!.id)).toEqual([])
     expect(session.intents.list(clara?.id ?? 0)).toEqual([])
   })
 

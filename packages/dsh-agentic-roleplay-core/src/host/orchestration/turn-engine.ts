@@ -1,8 +1,9 @@
-import { locationKey as placeKey, type ItemEffect, type Recalled } from 'dsh-roleplay-state'
+import { describeValue, locationKey as placeKey, type ItemEffect, type Recalled } from 'dsh-roleplay-state'
+import { suggestionProblems, tidySuggestions } from './suggestions.ts'
 import type { RoutineMove } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
 import { ClockError, type SkipRequest } from '../clock/story-clock.ts'
-import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TurnStore } from './boundaries.ts'
+import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TriggerReport, type TurnStore } from './boundaries.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 
 /** Asks one character to act; what the game master calls a character is the character's key. */
@@ -40,12 +41,16 @@ export interface ResolveReport {
     waiting: number
     /** Who went where in this round. */
     moves: { character: string; name: string; to: string; via: number }[]
+    /** What was changed of what is tracked, in words. */
+    variables: string[]
     /** What was done with things in this round, and what came of it. */
     things: { character: string; name: string; action: string; summary: string }[]
     /** When the round began and ended in the story, and the zone it is read in. */
     time: { from: number; to: number; zone: string }
     /** Who went somewhere else because their day says so, now that the time moved on. */
     moved: RoutineMove[]
+    /** What the world did by itself as a result: triggers whose conditions came true. */
+    world: TriggerReport['fired']
   }
 }
 
@@ -86,12 +91,14 @@ interface TurnState {
   refused: number
   /** The most rounds the chat's settings allowed when last asked. */
   limit?: number
-  /** Writing the records of the rounds: one run at a time, while the game master goes on. */
-  writing: Promise<void>
   /** What the game master said is worth keeping, when it asked for the records to be written. */
   focus: string[]
   /** How long the round in progress took, in seconds, when the game master said. */
   elapsed?: number
+  /** Whether the game master already showed the player a preview of the scene in this turn. */
+  previewed: boolean
+  /** Whether the chat asked for a preview when the turn began: the characters are not asked before it is shown. */
+  previewWanted: boolean
   /** Whether the game master asked for the records to be written in this turn. */
   requested: boolean
   /** How many rounds off stage were recorded in this turn. */
@@ -99,9 +106,15 @@ interface TurnState {
   cancel: AbortController
   /** What each character was reminded of in the first attempt of the round, so a retry is reminded of the same. */
   recalled: Map<string, readonly Recalled[]>
+  /** What the world made each character notice in the first attempt of the round, so a retry is told the same. */
+  cues: Map<string, readonly string[]>
+  /** The beats the game master said it wove into the output it is delivering. */
+  addressed: number[]
 }
 
 const MAX_OBJECTIONS = 3
+/** The most characters a preview of the scene may have: it is an opening, not the output. */
+export const MAX_PREVIEW = 700
 /** Rounds off stage are numbered from here, so that they never collide with the rounds the game master runs. */
 export const OFFSTAGE_ROUND = 100
 /** The most a single round may be said to take: a day. A longer time passing is skipped with `advanceTime`. */
@@ -119,6 +132,10 @@ const MAX_REFUSALS = 2
  */
 export class TurnEngine {
   private readonly states = new Map<string, TurnState>()
+  /** The records being written for each chat: one run at a time, behind the story. */
+  private readonly chains = new Map<string, Promise<void>>()
+  /** How many runs of the keeper are waiting or running for each chat. */
+  private readonly runs = new Map<string, number>()
   private readonly objections = new Map<string, number>()
   /** Chats whose made-up characters and places are being fitted into the world now: one run at a time. */
   private readonly consolidating = new Set<string>()
@@ -146,6 +163,7 @@ export class TurnEngine {
   async activate(owner: TurnOwner, input: { situation: string; characters?: readonly string[] }, run: RunCharacter, signal: AbortSignal): Promise<AttemptReport> {
     const state = this.stateFor(owner)
     if (state.phase !== 'idle' && state.phase !== 'between') throw new Error(this.explain(state, 'activate_characters'))
+    if (this.previewDue(state)) throw new Error(this.explain(state, 'activate_characters'))
     const store = this.storeOf(owner)
     const limit = store.settings().maxRounds
     if (state.rounds >= limit) {
@@ -159,6 +177,7 @@ export class TurnEngine {
     state.situation = situation
     state.cast = cast
     state.recalled.clear()
+    state.cues.clear()
     delete state.first
     delete state.second
     const attempt = await this.runAttempt(owner, 1, keys, cast, state, run, signal)
@@ -177,6 +196,7 @@ export class TurnEngine {
     const state = this.stateFor(owner)
     const store = this.storeOf(owner)
     if (state.phase === 'idle' || state.phase === 'between') {
+      if (this.previewDue(state)) throw new Error(this.explain(state, 'resolve_round'))
       const player = store.cast().find(member => member.character.control === 'player')
       if (player !== undefined && outcomes.length === 1 && outcomes[0]?.character === player.key) return { done: this.resolvePlayer(owner, state, outcomes[0], elapsedSeconds) }
     }
@@ -226,6 +246,38 @@ export class TurnEngine {
     return this.finishRound(owner, state)
   }
 
+  /**
+   * The game master shows the player how the scene opens, before anyone is asked: something to read while the rest of the turn is worked out.
+   * It is replaced in the view by the output of the turn, which may use it, change it or start over.
+   * @throws {Error} when the chat shows no preview, one was already shown, characters were already asked, or the text is empty or too long.
+   */
+  preview(owner: TurnOwner, text: string): string {
+    const state = this.stateFor(owner)
+    if (!this.storeOf(owner).settings().preview.enabled) throw new Error('this chat shows no preview: go on with activate_characters')
+    if (state.previewed) throw new Error('a preview was already shown for this message: go on with activate_characters')
+    if (state.phase !== 'idle') throw new Error('the preview comes first, before the characters are asked')
+    const shown = text.replace(/\r/g, '').trim()
+    if (shown === '') throw new Error('write the preview: a few sentences that set the scene')
+    if (shown.length > MAX_PREVIEW) throw new Error(`keep the preview to ${MAX_PREVIEW} characters: it is an opening, the output comes later`)
+    state.previewed = true
+    return shown
+  }
+
+  /** At the start of a turn, after the clock caught up: the triggers whose conditions came true while the player was away or since the last round. */
+  fireAtStart(owner: TurnOwner): TriggerReport['fired'] {
+    return this.fire(owner, 0)
+  }
+
+  /** The world acts: the triggers whose conditions just came true fire. A failure to look at them is reported and the story goes on. */
+  private fire(owner: TurnOwner, round: number): TriggerReport['fired'] {
+    try {
+      return this.storeOf(owner).runTriggers(owner.turn, round).fired
+    } catch (error) {
+      this.problem(`the triggers could not be looked at: ${error instanceof Error ? error.message : String(error)}`)
+      return []
+    }
+  }
+
   /** How long a round took, as the game master said it. @throws {Error} when the time is real or the number is not one. */
   private elapsedChecked(owner: TurnOwner, seconds: number): number {
     if (this.storeOf(owner).time(owner.turn).mode === 'real') throw new Error('the story\'s time follows the wall clock: leave elapsed_seconds out')
@@ -237,12 +289,13 @@ export class TurnEngine {
    * Skip ahead in the story's time, between rounds: the player sleeps till morning, a journey takes days.
    * @throws {Error} when a round is open, the turn is over, the time follows the wall clock, or the request is not acceptable.
    */
-  advanceTime(owner: TurnOwner, request: SkipRequest): { from: number; to: number; zone: string; reason: string; moved: RoutineMove[] } {
+  advanceTime(owner: TurnOwner, request: SkipRequest): { from: number; to: number; zone: string; reason: string; moved: RoutineMove[]; world: TriggerReport['fired'] } {
     const state = this.stateFor(owner)
     if (state.phase === 'resolving' || state.phase === 'retrying') throw new Error('resolve the round first: time is skipped between rounds, not in the middle of one')
     if (state.phase === 'done' || state.phase === 'skipped') throw new Error(this.explain(state, undefined))
     try {
-      return this.storeOf(owner).skipTime(owner.turn, state.rounds, request)
+      const skipped = this.storeOf(owner).skipTime(owner.turn, state.rounds, request)
+      return { ...skipped, world: this.fire(owner, state.rounds) }
     } catch (error) {
       throw error instanceof ClockError ? new Error(error.message) : error
     }
@@ -255,9 +308,13 @@ export class TurnEngine {
    * segments, the narrator boundary is asked to write it.
    * @throws {Error} naming every problem, while the game master may still correct it.
    */
-  async narrate(owner: TurnOwner, segments: readonly RawSegment[], run?: RunCharacter): Promise<TurnOutput> {
+  async narrate(owner: TurnOwner, segments: readonly RawSegment[], run?: RunCharacter, addressed: readonly number[] = []): Promise<TurnOutput> {
     const state = this.stateFor(owner)
     if (state.phase !== 'between') throw new Error(this.explain(state, 'narrate'))
+    const pending = new Set(this.storeOf(owner).pendingBeats().map(beat => beat.id))
+    const unknown = addressed.filter(id => !pending.has(id))
+    if (unknown.length > 0) throw new Error(`addressed: ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not ${unknown.length === 1 ? 'a beat' : 'beats'} still to weave in (the scene lists them)`)
+    state.addressed = [...new Set(addressed)]
     if (segments.length === 0) {
       const written = await this.boundaries().narrator.narrate({ situations: state.situations, outcomes: state.outcomes, reports: state.reports, utterances: state.utterances })
       if (written === undefined) throw new Error('deliver the output: give its segments')
@@ -387,9 +444,26 @@ export class TurnEngine {
     return this.explain(state, undefined)
   }
 
-  /** Wait until the records of the rounds recorded so far are written or have failed. */
+  /** Wait until the records being written are written or have failed. */
   async flush(owner: TurnOwner): Promise<void> {
-    await this.stateFor(owner).writing
+    await this.chains.get(owner.chat)
+  }
+
+  /**
+   * Wait until the records of the rounds recorded so far are written or have failed, and run once more for what is still
+   * waiting when the game master asked for it or too many rounds are waiting. Called before the next turn's characters
+   * recall anything, not before the player is shown the output: the writing goes on behind the story.
+   */
+  async settle(chat: string): Promise<void> {
+    await this.chains.get(chat)
+    const state = this.states.get(chat)
+    const store = this.stores(chat)
+    if (state === undefined || store === undefined) return
+    const waiting = store.pendingCommits().length
+    if (waiting > 0 && (state.requested || waiting >= store.settings().memory.backlogRounds)) {
+      this.write({ chat, turn: state.turn }, state)
+      await this.chains.get(chat)
+    }
   }
 
   /** What has been said in the turn so far. */
@@ -408,13 +482,15 @@ export class TurnEngine {
   forget(chat: string): void {
     this.states.get(chat)?.cancel.abort()
     this.states.delete(chat)
+    this.chains.delete(chat)
+    this.runs.delete(chat)
     for (const key of this.objections.keys()) if (key.startsWith(`${chat}#`)) this.objections.delete(key)
   }
 
   private stateFor({ chat, turn }: TurnOwner): TurnState {
     const known = this.states.get(chat)
     if (known?.turn === turn) return known
-    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0, writing: Promise.resolve(), focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map() }
+    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0, previewed: false, previewWanted: this.stores(chat)?.settings().preview.enabled ?? false, focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map(), cues: new Map(), addressed: [] }
     this.states.set(chat, fresh)
     return fresh
   }
@@ -425,10 +501,17 @@ export class TurnEngine {
     return store
   }
 
+  /** Whether the chat wants a preview of the scene and the game master has not shown it yet. */
+  private previewDue(state: TurnState): boolean {
+    return state.phase === 'idle' && state.previewWanted && !state.previewed
+  }
+
   private explain(state: TurnState, attempted: 'activate_characters' | 'resolve_round' | 'narrate' | undefined): string {
     const waiting = (attempt: Attempt | undefined): string => (attempt?.reports ?? []).map(report => report.character).join(', ')
     switch (state.phase) {
-      case 'idle': return attempted === 'activate_characters' || attempted === undefined
+      case 'idle': return this.previewDue(state)
+        ? 'call preview_scene first: two or three sentences that show the player how the scene opens, before the characters are asked'
+        : attempted === 'activate_characters' || attempted === undefined
         ? 'call activate_characters to let the characters act'
         : `nothing to ${attempted === 'narrate' ? 'deliver' : 'resolve'} yet: call activate_characters first`
       case 'resolving': return attempted === 'activate_characters'
@@ -473,6 +556,7 @@ export class TurnEngine {
       ...outcomes.filter(outcome => outcome.summary.trim() === '').map(outcome => `${outcome.character}: say what happens`),
       ...outcomes.flatMap(outcome => this.moveProblems(outcome, store)),
       ...this.itemProblems(outcomes, store),
+      ...outcomes.flatMap(outcome => store.checkVariableChanges(outcome.variableChanges ?? []).map(problem => `${outcome.character}: ${problem}`)),
     ]
     if (problems.length > 0) throw new Error(`the outcomes are not acceptable: ${problems.join('; ')} (expected exactly: ${expected.join(', ')})`)
   }
@@ -514,10 +598,16 @@ export class TurnEngine {
       const relationships = store === undefined ? [] : this.knownRelationships(member, place === undefined ? cast : place.here, store)
       const carrying = store === undefined ? [] : store.carried(member.character.id)
       const agenda = store?.agenda(owner.turn, member.character.id)
+      const cues = this.cuesOf(state, key, member, store, number)
+      const upcoming = store?.upcomingFor(member.character.id, owner.turn) ?? []
+      const tracked = store?.trackedFor(member.character.id, (place === undefined ? cast : place.here).map(entry => entry.character.id))
       const request: CharacterRequest = {
         member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false,
         ...(time === undefined ? {} : { time }),
         ...(agenda === undefined ? {} : { agenda }),
+        ...(cues.length === 0 ? {} : { cues }),
+        ...(upcoming.length === 0 ? {} : { upcoming }),
+        ...(tracked === undefined || (tracked.self === '' && tracked.others.length === 0) ? {} : { tracked }),
         ...(place === undefined ? {} : { place }),
         ...(relationships.length === 0 ? {} : { relationships }),
         ...(carrying.length === 0 ? {} : { carrying }),
@@ -540,6 +630,17 @@ export class TurnEngine {
       reports: answers.filter((answer): answer is CharacterReport => 'intent' in answer),
       failures: answers.filter((answer): answer is CharacterFailure => 'reason' in answer),
     }
+  }
+
+  /** What the world made a character notice: taken up in the first attempt of a round, and told the same again on the retry. */
+  private cuesOf(state: TurnState, key: string, member: CastMember, store: TurnStore | undefined, attempt: 1 | 2): readonly string[] {
+    if (attempt === 2 || store === undefined) return state.cues.get(key) ?? []
+    const pending = store.cuesFor(member.character.id)
+    if (pending.length === 0) return []
+    store.doneCues(pending.map(cue => cue.id))
+    const texts = pending.map(cue => cue.text)
+    state.cues.set(key, texts)
+    return texts
   }
 
   /** How a character sees those it is with, for those it has a profile of. */
@@ -618,9 +719,11 @@ export class TurnEngine {
     const effects = new Map<string, ItemEffect[]>()
     const done = store.commit(updates.map(entry => entry.update))
     updates.forEach(({ key }, index) => { effects.set(key, done[index] ?? []) })
+    const tracked = new Map(updates.map(({ key }) => [key, store.changeVariables(owner.turn, decided.get(key)?.outcome.variableChanges ?? []).map(effect => ({ subject: effect.subjectName, name: effect.variable.name, from: describeValue(effect.variable, effect.from), to: describeValue(effect.variable, effect.to) }))]))
     const journey = [...checked].flatMap(([character, check]) => (check.ok && state.cast.find(candidate => candidate.key === character)?.character.control === 'player' ? [check.plan.travelSeconds ?? 0] : []))[0]
     const time = store.endRound(owner.turn, round, state.elapsed, journey)
     delete state.elapsed
+    const world = this.fire(owner, round)
     store.queueCommit({
       turn: owner.turn, round, situation: state.situation,
       ...(playerPlace === undefined ? {} : { place: { key: placeKey(playerPlace), name: playerPlace.name } }),
@@ -634,6 +737,7 @@ export class TurnEngine {
           result: outcome.result, summary: outcome.summary,
           ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }),
           spoken: outcome.spoken !== false,
+          ...((tracked.get(report.character) ?? []).length === 0 ? {} : { variables: tracked.get(report.character)! }),
           ...(state.cast.find(candidate => candidate.key === report.character)?.character.control === 'player' ? { player: true as const } : {}),
           ...((effects.get(report.character) ?? []).length === 0 ? {} : { items: (effects.get(report.character) ?? []).map(effect => ({ name: effect.item.name, action: effect.action, summary: effect.summary })) }),
           ...(at === undefined ? {} : { at: { key: placeKey(at), name: at.name } }),
@@ -641,7 +745,7 @@ export class TurnEngine {
         }
       }),
     })
-    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances], waiting: store.pendingCommits().length, time: { from: time.from, to: time.to, zone: time.zone }, moved: time.moved, things: [...effects].flatMap(([character, list]) => list.map(effect => ({ character, name: effect.item.name, action: effect.action, summary: effect.summary }))), moves: [...checked].flatMap(([character, check]) => (check.ok && check.plan.from !== check.move.to ? [{ character, name: decided.get(character)?.report.name ?? character, to: check.to.name, via: Math.max(0, check.plan.via.length - 1) }] : [])) }
+    return { round, limit, updated: [...decided.keys()], retryFailures: state.second?.failures ?? [], utterances: spoken, spoken: [...state.utterances], waiting: store.pendingCommits().length, variables: [...tracked.values()].flat().map(change => `${change.subject}'s ${change.name} is now ${change.to} (it was ${change.from})`), time: { from: time.from, to: time.to, zone: time.zone }, moved: time.moved, world, things: [...effects].flatMap(([character, list]) => list.map(effect => ({ character, name: effect.item.name, action: effect.action, summary: effect.summary }))), moves: [...checked].flatMap(([character, check]) => (check.ok && check.plan.from !== check.move.to ? [{ character, name: decided.get(character)?.report.name ?? character, to: check.to.name, via: Math.max(0, check.plan.via.length - 1) }] : [])) }
   }
 
   /**
@@ -669,7 +773,8 @@ export class TurnEngine {
    * follow one another, and a failed run leaves its rounds queued for the next one.
    */
   private write(owner: TurnOwner, state: TurnState): void {
-    state.writing = state.writing.then(async () => {
+    this.runs.set(owner.chat, (this.runs.get(owner.chat) ?? 0) + 1)
+    this.chains.set(owner.chat, (this.chains.get(owner.chat) ?? Promise.resolve()).then(async () => {
       const store = this.stores(owner.chat)
       const rounds = store?.pendingCommits() ?? []
       if (store === undefined || rounds.length === 0) return
@@ -681,21 +786,32 @@ export class TurnEngine {
       } catch (error) {
         if (!state.cancel.signal.aborted) this.problem(`the records of ${rounds.map(round => `${round.turn}.${round.round}`).join(', ')} were not written: ${error instanceof Error ? error.message : String(error)}`)
       }
-    })
+    }).finally(() => { this.runs.set(owner.chat, (this.runs.get(owner.chat) ?? 1) - 1) }))
   }
 
-  /**
-   * Before the turn ends: wait for a run in flight, and run again when the records are due, because
-   * the game master asked and a run failed, or because too many rounds are waiting for it to ask.
-   */
-  private async settle(owner: TurnOwner, state: TurnState): Promise<void> {
-    await state.writing
+  /** After the output is delivered: the player is offered what to do next, made in the background from what they just read. */
+  private suggestAfter(owner: TurnOwner, state: TurnState, output: TurnOutput): void {
+    const store = this.stores(owner.chat)
+    const count = store?.settings().suggestions.count ?? 0
+    if (store === undefined || count === 0) return
+    void this.boundaries().suggester.suggest({ chat: owner.chat, turn: owner.turn, store, count, output }, state.cancel.signal)
+      .then((made) => {
+        if (made.length === 0 || this.states.get(owner.chat) !== state) return
+        const lines = tidySuggestions(made)
+        const problems = suggestionProblems(lines, count)
+        if (problems.length > 0) throw new Error(problems.join('; '))
+        store.putNote({ kind: 'suggestions', turn: owner.turn, lines })
+      })
+      .catch((error: unknown) => {
+        if (!state.cancel.signal.aborted) this.problem(`suggestions for turn ${owner.turn} were not made: ${error instanceof Error ? error.message : String(error)}`)
+      })
+  }
+
+  /** After the output is delivered: start writing what is due, without waiting for it. */
+  private startDueWrite(owner: TurnOwner, state: TurnState): void {
     const store = this.stores(owner.chat)
     const waiting = store?.pendingCommits().length ?? 0
-    if (store !== undefined && waiting > 0 && (state.requested || waiting >= store.settings().memory.backlogRounds)) {
-      this.write(owner, state)
-      await state.writing
-    }
+    if ((this.runs.get(owner.chat) ?? 0) === 0 && store !== undefined && waiting > 0 && (state.requested || waiting >= store.settings().memory.backlogRounds)) this.write(owner, state)
   }
 
   private async deliver(owner: TurnOwner, state: TurnState, segments: readonly NarrationSegment[], silent: boolean, run?: RunCharacter): Promise<TurnOutput> {
@@ -714,9 +830,11 @@ export class TurnEngine {
       }
       output = { segments: narrationChecker.repair(segments.filter(segment => segment.type !== 'utterance' || segment.character !== ''), state.utterances), repaired: true }
     }
-    await this.settle(owner, state)
     this.storeOf(owner).completeTurn()
+    this.storeOf(owner).resolveBeats(state.addressed)
     state.phase = 'done'
+    this.suggestAfter(owner, state, output)
+    this.startDueWrite(owner, state)
     this.consolidateIfDue(owner, state)
     if (run !== undefined) this.offSceneIfDue(owner, state, run)
     return output

@@ -1,5 +1,4 @@
 import type { CharacterDefinition } from './character.ts'
-import type { EmotionStart } from './emotion.ts'
 import type { JsonValue } from './json.ts'
 import type { CharacterStart } from './state.ts'
 import type { Intent } from './intent.ts'
@@ -63,21 +62,20 @@ export interface CharacterFilter {
 }
 
 /** A character's current state; it starts as the world's `start` block and changes during play. */
-export interface CharacterState extends Omit<CharacterStart, 'intents'> {
+export interface CharacterState extends Omit<CharacterStart, 'intents' | 'emotion'> {
   characterId: CharacterId
   /** Increases with every change, for detecting conflicting updates. */
   version: number
   updatedAt: string
 }
 
-export type NewCharacterState = Omit<CharacterStart, 'intents'>
+export type NewCharacterState = Omit<CharacterStart, 'intents' | 'emotion'>
 
-/** Fields left out stay as they are; `null` removes the emotion. */
+/** Fields left out stay as they are. */
 export interface CharacterStatePatch {
   publicState?: string
   innerState?: string
   activity?: string
-  emotion?: EmotionStart | null
 }
 
 export interface CharacterIntent extends Intent {

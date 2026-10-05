@@ -8,6 +8,7 @@ import { RoleplayOrchestration } from './host/orchestration/service.ts'
 import { registerApi } from './host/http/index.ts'
 import { deleteSession } from './host/sessions/delete-session.ts'
 import { readChatSettings, writeChatSettings } from './host/sessions/chat-settings.ts'
+import { notesOfSession } from './host/sessions/notes.ts'
 import { openSession } from './host/sessions/open-session.ts'
 import { listSessions } from './host/sessions/list-sessions.ts'
 import { startSession } from './host/sessions/start-session.ts'
@@ -39,6 +40,6 @@ export function apply(ctx: Context, config: Config): void {
   registerApi(ctx, {
     worlds,
     worldCharacters: worldId => worldCharacters(worlds, worldId),
-    sessions: { list: () => listSessions(deps), start: request => startSession(deps, request), open: id => openSession(deps, id), delete: id => deleteSession(deps, id), readSettings: id => readChatSettings(settingsDeps, id), writeSettings: (id, value) => writeChatSettings(settingsDeps, id, value) },
+    sessions: { list: () => listSessions(deps), start: request => startSession(deps, request), open: id => openSession(deps, id), delete: id => deleteSession(deps, id), readSettings: id => readChatSettings(settingsDeps, id), writeSettings: (id, value) => writeChatSettings(settingsDeps, id, value), notes: id => notesOfSession({ sessionsDir: deps.sessionsDir, open: sessionId => ctx.roleplayState.openSession(deps.sessionsDir(), sessionId) }, id) },
   })
 }

@@ -1,5 +1,7 @@
-import { WEEKDAY_NAMES, type CharacterDefinition, type Holder, type ItemDefinition, type LocationDefinition, type Slot } from 'dsh-roleplay-model'
-import { MINUTE, parseTimeOfDay, type Session } from 'dsh-roleplay-state'
+import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type Holder, type ItemDefinition, type LocationDefinition, type Slot } from 'dsh-roleplay-model'
+import { MINUTE, parseTimeOfDay, triggerReferenceProblems, type Session } from 'dsh-roleplay-state'
+import { InvalidWorldError } from './errors.ts'
+import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import { containersFirst } from '../items/load.ts'
 import { parentsFirst } from '../locations/load.ts'
@@ -26,6 +28,18 @@ export function startingPlaceProblems(characters: readonly CharacterDefinition[]
     }
     return []
   })
+}
+
+/** Declare what the world tracks and give everything the values it starts with. */
+export function populateVariables(session: Session, defs: readonly VariableDefinitionInput[], world: { characters: readonly CharacterDefinition[]; items: readonly ItemDefinition[]; locations: readonly LocationDefinition[]; values: Record<string, VariableValue> | undefined }): void {
+  for (const def of defs) session.variables.define(def)
+  const give = (kind: VariableSubject, id: number, values: Record<string, VariableValue> | undefined): void => {
+    for (const [key, value] of Object.entries(values ?? {})) session.variables.set(key, kind, id, { value }, 0)
+  }
+  for (const entry of world.characters) give('character', session.characters.getBySourceId(entry.id)!.id, entry.variables)
+  for (const entry of world.items) give('item', session.items.getBySourceId(entry.id)!.id, entry.variables)
+  for (const entry of world.locations) give('location', session.locations.getBySourceId(entry.id)!.id, entry.variables)
+  give('world', 0, world.values)
 }
 
 /** What is wrong with the days characters are given, found before anything is created: places that are not in the world. */
@@ -79,8 +93,11 @@ export function populateLocations(session: Session, locations: readonly Location
 export function populateCharacters(session: Session, characters: readonly CharacterDefinition[], playerId: string): void {
   for (const { id, start, relationships: _relationships, routine: _routine, ...identity } of characters) {
     const character = session.characters.add({ ...identity, sourceId: id, control: id === playerId ? 'player' : 'agent' })
-    const { intents, place, ...state } = start
+    const { intents, place, emotion, ...state } = start
     session.characterStates.create(character.id, state)
+    if (emotion !== undefined) {
+      for (const axis of ['valence', 'arousal', 'dominance'] as const) session.variables.set(axis, 'character', character.id, { value: emotion.immediate[axis], baseline: emotion.baseline[axis] }, 0)
+    }
     for (const intent of intents) session.intents.add(character.id, intent)
     if (place !== undefined) {
       const location = session.locations.getBySourceId(place.location)!
@@ -139,4 +156,15 @@ export function populateItems(session: Session, items: readonly ItemDefinition[]
 export function populateClock(session: Pick<Session, 'clock'>, settings: ChatSettings['clock'], world: { startingTime?: number } | undefined, wall: number): void {
   const start = settings.mode === 'real' ? wall : world?.startingTime ?? Math.floor(wall / MINUTE) * MINUTE
   session.clock.start(settings.mode, start)
+}
+
+/**
+ * Make the world's triggers, once everything they can name exists.
+ * @throws {Error} naming each trigger that names something the world does not have.
+ */
+export function populateTriggers(session: Session, definitions: readonly TriggerDefinition[]): void {
+  const keys = definitions.map(definition => definition.key)
+  const problems = definitions.flatMap(definition => triggerReferenceProblems(session, definition, keys))
+  if (problems.length > 0) throw new InvalidWorldError(`the triggers have ${problems.length} problem(s)`, problems.map(message => ({ path: TRIGGERS_FILE_NAME, message })))
+  for (const definition of definitions) session.triggers.add(definition, 'world', 0)
 }

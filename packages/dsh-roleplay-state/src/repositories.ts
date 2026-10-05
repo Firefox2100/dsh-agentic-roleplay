@@ -1,4 +1,6 @@
 import type {
+  NewTriggerNote, Trigger, TriggerDefinition, TriggerId, TriggerNote, TriggerNoteKind, TriggerStatus,
+  StoredVariable, VariableDefinition, VariableDefinitionInput, VariableSubject, VariableValue,
   Engagement, EngagementFilter, EngagementId, EngagementPatch, NewEngagement, RoutineWindow, StoredRoutineWindow,
   ClockMode, ClockState, TimeChange, TimeChangeFilter, TimeChangeKind,
   Holder, Holding, Item, ItemId, ItemPatch, NewItem, Slot,
@@ -385,4 +387,53 @@ export interface EngagementRepository {
   /** @throws {NotFoundError} */
   update(id: EngagementId, patch: EngagementPatch): Engagement
   remove(id: EngagementId): boolean
+}
+
+/** What the story keeps track of: the kinds of variable there are, and the value each subject has. */
+export interface VariableRepository {
+  /** Add the variables every story has (the feelings of characters), leaving any that exist. */
+  ensureDefaults(): void
+  /** In the order they were declared. */
+  defs(): VariableDefinition[]
+  def(key: string): VariableDefinition | undefined
+  /**
+   * Declare a variable, or change one (what is not given takes its default; a built-in one keeps what it is).
+   * @throws {InvalidValueError} for a key, kind, bounds, options, default or words that are not acceptable, or when the story has too many.
+   */
+  define(input: VariableDefinitionInput): VariableDefinition
+  /** Remove a variable and every value of it. @throws {ConflictError} for a built-in one. */
+  remove(key: string): boolean
+  /** What one subject has stored for a variable, if anything. */
+  get(variable: string, subject: VariableSubject, subjectId: number): StoredVariable | undefined
+  /** What it is for the subject: its own value, or the default. */
+  value(variable: string, subject: VariableSubject, subjectId: number): VariableValue
+  /**
+   * Set a subject's value (and, for a variable with a baseline, its baseline). The first value of a variable with a baseline sets the baseline too, unless one is given.
+   * @throws {NotFoundError} for a variable that is not declared.
+   * @throws {InvalidValueError} for a subject it does not apply to, or a value it cannot have.
+   */
+  set(variable: string, subject: VariableSubject, subjectId: number, change: { value?: VariableValue; baseline?: VariableValue }, turn: number): StoredVariable
+  /** Everything stored for one subject. */
+  list(subject: VariableSubject, subjectId: number): StoredVariable[]
+  /** Everything stored for anything, most recently changed first. */
+  all(): StoredVariable[]
+  /** Whether a variable applies to a subject. */
+  applies(def: VariableDefinition, subject: VariableSubject, subjectId: number): boolean
+}
+
+/** What a world, or a story, makes happen when its conditions come true, and what that leaves to be told. */
+export interface TriggerRepository {
+  /** @throws {ConflictError} for a key that exists. @throws {InvalidValueError} for a definition that is not acceptable, or when the story has too many. */
+  add(definition: TriggerDefinition, origin: Trigger['origin'], turn: number): Trigger
+  get(id: TriggerId): Trigger | undefined
+  getByKey(key: string): Trigger | undefined
+  /** By priority, highest first, then in the order made. */
+  list(filter?: { status?: TriggerStatus }): Trigger[]
+  /** @throws {NotFoundError} */
+  update(id: TriggerId, patch: { status?: TriggerStatus; fireCount?: number; lastFiredMs?: number; lastResult?: boolean; problem?: string }): Trigger
+  addNote(note: NewTriggerNote): TriggerNote
+  /** Oldest first. */
+  notes(filter?: { status?: TriggerNote['status']; kind?: TriggerNoteKind }): TriggerNote[]
+  /** @throws {NotFoundError} */
+  resolveNote(id: number, status: 'done' | 'lapsed'): void
 }

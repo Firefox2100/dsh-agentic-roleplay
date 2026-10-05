@@ -6,6 +6,8 @@ import { TurnEngine, type RawSegment, type RunCharacter, type TurnOwner } from '
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import { alice, arthur, bob, carol, dan, fakeStore, location, placed, scriptedRunner, type FakeStore } from './fixtures.ts'
 
+/** The default settings, with no suggestions asked of the game master. */
+const QUIET = { ...DEFAULT_SETTINGS, preview: { enabled: false }, suggestions: { count: 0 } }
 const signal = new AbortController().signal
 const owner: TurnOwner = { chat: 'session-1', turn: 1 }
 const situation = 'Arthur opens the vault door.'
@@ -433,7 +435,7 @@ describe('writing the records', () => {
     expect(store.commits[0]?.[0]?.patch).toEqual({ activity: 'Alice greets him', publicState: 'smiling' })
   })
 
-  it('writes the waiting rounds in the background when asked, and the turn waits for that run', async () => {
+  it('writes the waiting rounds in the background when asked, and the player is not kept waiting for that run', async () => {
     const started: number[] = []
     let release!: () => void
     boundaries.committer = { commit: job => new Promise((done) => { started.push(job.rounds.length); release = () => { done({ writes: 1, notes: '' }) } }) }
@@ -442,12 +444,12 @@ describe('writing the records', () => {
     await Promise.resolve()
     expect(started).toEqual([1])
     expect(store.completed).toBe(0)
-    const delivering = engine.narrate(owner, hello)
-    await new Promise(resolve => setTimeout(resolve, 5))
-    expect(store.completed).toBe(0)
-    release()
-    await delivering
+    const output = await engine.narrate(owner, hello)
+    expect(output.segments).toHaveLength(1)
     expect(store.completed).toBe(1)
+    expect(store.queue).toHaveLength(1)
+    release()
+    await engine.settle(owner.chat)
     expect(store.queue).toEqual([])
     expect(written).toEqual(['session-1'])
   })
@@ -512,6 +514,7 @@ describe('writing the records', () => {
     await engine.resolve(owner, aliceSucceeds, runner.run, signal)
     engine.record(owner)
     await engine.narrate(owner, [...hello, ...hello])
+    await engine.flush(owner)
     expect(order).toEqual(['start 1', 'end 1', 'start 2', 'end 2'])
     expect(store.queue).toEqual([])
   })
@@ -541,12 +544,15 @@ describe('writing the records', () => {
     expect(store.queue).toEqual([])
   })
 
-  it('tries once more at delivery when the records were asked for, and goes on without them when that fails too', async () => {
+  it('tries once more when the next turn starts if the records were asked for, and goes on without them when that fails too', async () => {
     let calls = 0
     boundaries.committer = { commit: () => { calls += 1; return Promise.reject(new Error('down')) } }
     await play()
     engine.record(owner)
     const output = await engine.narrate(owner, hello)
+    await engine.flush(owner)
+    expect(calls).toBe(1)
+    await engine.settle(owner.chat)
     expect(calls).toBe(2)
     expect(output).toEqual({ segments: [expect.objectContaining({ type: 'utterance' })], repaired: false })
     expect(store.completed).toBe(1)
@@ -559,6 +565,8 @@ describe('writing the records', () => {
     await play()
     engine.record(owner)
     await engine.narrate(owner, hello)
+    await engine.settle(owner.chat)
+    expect(calls).toBe(2)
     expect(store.queue).toEqual([])
   })
 
@@ -708,7 +716,7 @@ describe('making up what the story needs', () => {
   let consolidated: number
   let release: (() => void) | undefined
 
-  const settingsWith = (authoring: Partial<typeof DEFAULT_SETTINGS.authoring>) => () => ({ ...DEFAULT_SETTINGS, authoring: { ...DEFAULT_SETTINGS.authoring, ...authoring } })
+  const settingsWith = (authoring: Partial<typeof DEFAULT_SETTINGS.authoring>) => () => ({ ...QUIET, authoring: { ...QUIET.authoring, ...authoring } })
 
   beforeEach(() => {
     created = []
@@ -912,7 +920,7 @@ describe('time in the turn', () => {
 
   it('refuses a time for a round when time follows the wall clock, and takes as long as the round did', async () => {
     store.session.clock.start('real', store.wall)
-    store.settings = () => ({ ...DEFAULT_SETTINGS, clock: { ...DEFAULT_SETTINGS.clock, mode: 'real' } })
+    store.settings = () => ({ ...QUIET, clock: { ...QUIET.clock, mode: 'real' } })
     const runner = scriptedRunner(only)
     await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
     await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal, 60)).rejects.toThrow(/follows the wall clock: leave elapsed_seconds out/)
@@ -959,7 +967,7 @@ describe('time in the turn', () => {
       await engine.narrate(owner, narration())
       expect(() => engine.advanceTime(owner, { byMinutes: 5, reason: 'x' })).toThrow(/already recorded/)
       store.session.clock.resync('real', store.wall, 2)
-      store.settings = () => ({ ...DEFAULT_SETTINGS, clock: { ...DEFAULT_SETTINGS.clock, mode: 'real' } })
+      store.settings = () => ({ ...QUIET, clock: { ...QUIET.clock, mode: 'real' } })
       expect(() => engine.advanceTime({ chat: owner.chat, turn: 2 }, { byMinutes: 5, reason: 'x' })).toThrow(/follows the wall clock/)
     })
 
@@ -1086,11 +1094,11 @@ describe('characters away from the player', () => {
 
   it('are not asked when the chat turns it off, when the turn gave no way to ask, or when nothing is due', async () => {
     store.dueOffScene = () => [item()]
-    store.settings = () => ({ ...DEFAULT_SETTINGS, offstage: { perTurn: 0 } })
+    store.settings = () => ({ ...QUIET, offstage: { perTurn: 0 } })
     const off = await deliver({ bob: { intent: 'x', commitment: 'high' } })
     expect(off.requests.map(request => request.member.key)).toEqual(['alice'])
     engine.forget(owner.chat)
-    store.settings = () => ({ ...DEFAULT_SETTINGS })
+    store.settings = () => ({ ...QUIET })
     const unasked = await deliver({ bob: { intent: 'x', commitment: 'high' } }, false)
     expect(unasked.requests.map(request => request.member.key)).toEqual(['alice'])
     engine.forget(owner.chat)
@@ -1102,7 +1110,7 @@ describe('characters away from the player', () => {
 
   it('are no more than the chat allows, oldest first, and what did not fit is left for the next turn', async () => {
     store.dueOffScene = () => [item({ key: 'e1', characters: ['bob', 'carol'] }), item({ key: 'e2', characters: ['dan'] })]
-    store.settings = () => ({ ...DEFAULT_SETTINGS, offstage: { perTurn: 2 } })
+    store.settings = () => ({ ...QUIET, offstage: { perTurn: 2 } })
     await deliver({ bob: { intent: 'b', commitment: 'low' }, carol: { intent: 'c', commitment: 'low' }, dan: { intent: 'd', commitment: 'low' } })
     await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
     expect(written.filter(record => record.offstage === true)).toHaveLength(1)
@@ -1118,10 +1126,324 @@ describe('characters away from the player', () => {
 
   it('do not go anywhere when they will not try hard, or when there is no place, or when it cannot be reached', async () => {
     store.dueOffScene = () => [item({ characters: ['bob', 'carol', 'dan'] })]
-    store.settings = () => ({ ...DEFAULT_SETTINGS, offstage: { perTurn: 3 } })
+    store.settings = () => ({ ...QUIET, offstage: { perTurn: 3 } })
     store.checkMove = (who) => (who === 'dan' ? { ok: false, problems: ['no way'] } : { ok: true, move: { to: street.id }, plan: { from: 1, to: street.id, via: [street.id] }, to: { key: 'street', name: 'Street' } })
     await deliver({ bob: { intent: 'b', commitment: 'low' }, carol: { intent: 'c', commitment: 'medium' }, dan: { intent: 'd', commitment: 'high' } })
     await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
     expect(store.commits.at(-1)?.map(update => [update.character, update.move !== undefined])).toEqual([[bob.character.id, false], [carol.character.id, true], [dan.character.id, false]])
+  })
+})
+
+describe('what the game master changes of what is tracked', () => {
+  const only = { alice: { intent: 'a', commitment: 'low' as const } }
+  const hurt = { variable: 'health', subject: 'alice', by: -3 }
+  const effect = { subjectName: 'Alice', variable: { key: 'health', name: 'Health', bands: [{ upTo: 3, label: 'hurt' }, { upTo: 10, label: 'well' }] }, from: 10, to: 7 }
+
+  async function resolveWith(outcomes: Outcome[]) {
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    return await engine.resolve(owner, outcomes, runner.run, signal)
+  }
+
+  it('is checked with the outcomes, and every reason is told to the game master before the round is recorded', async () => {
+    store.checkVariableChanges = changes => changes.map(change => `${change.variable}: there is no such thing`)
+    await expect(resolveWith([{ ...outcome('alice', 'succeeded'), variableChanges: [hurt] }])).rejects.toThrow(/alice: health: there is no such thing/)
+    expect(store.queue).toEqual([])
+    expect(store.commits).toEqual([])
+  })
+
+  it('is applied with the round, even when the intent failed, and said in words to the game master and kept for the keeper', async () => {
+    const applied: unknown[] = []
+    store.changeVariables = (turn, changes) => { applied.push([turn, changes]); return changes.map(() => effect as never) }
+    const resolved = await resolveWith([{ ...outcome('alice', 'failed'), variableChanges: [hurt] }])
+    expect(applied).toEqual([[1, [hurt]]])
+    expect(resolved.done?.variables).toEqual(['Alice\'s Health is now well (7) (it was well (10))'])
+    expect(store.queue[0]?.entries[0]?.variables).toEqual([{ subject: 'Alice', name: 'Health', from: 'well (10)', to: 'well (7)' }])
+  })
+
+  it('is not asked of the store when nobody changes anything', async () => {
+    let asked = 0
+    store.checkVariableChanges = (changes) => { asked += changes.length; return [] }
+    await resolveWith([outcome('alice', 'succeeded')])
+    expect(asked).toBe(0)
+  })
+
+  it('tells each character what it can tell of itself and of those here', async () => {
+    store.trackedFor = (id) => (id === alice.character.id ? { self: 'Health: hurt (2)', others: [] } : { self: '', others: [] })
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    expect(runner.requests[0]?.tracked).toEqual({ self: 'Health: hurt (2)', others: [] })
+  })
+})
+
+describe('what the player could do next', () => {
+  const only = { alice: { intent: 'a', commitment: 'low' as const } }
+  const three = ['Ask Alice about the key', 'Take the lantern', 'Slip out through the cellar']
+  const problems: string[] = []
+
+  beforeEach(() => {
+    problems.length = 0
+    engine = new TurnEngine(() => boundaries, () => store, message => problems.push(message))
+    store.settings = () => ({ ...DEFAULT_SETTINGS, preview: { enabled: false }, suggestions: { count: 3 } })
+  })
+
+  async function deliver() {
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+    return await engine.narrate(owner, narration())
+  }
+  const settled = () => new Promise(resolve => setTimeout(resolve, 5))
+
+  it('do not hold the output back: narrate is accepted at once and the lines are made afterwards, from what the player read', async () => {
+    let release!: (lines: string[]) => void
+    const jobs: Parameters<Boundaries['suggester']['suggest']>[0][] = []
+    boundaries.suggester = { suggest: (job) => { jobs.push(job); return new Promise((done) => { release = done }) } }
+    const output = await deliver()
+    expect(store.completed).toBe(1)
+    expect(output).toEqual({ segments: [{ type: 'narration', text: 'Time passes.' }], repaired: false })
+    expect(jobs).toHaveLength(1)
+    expect(jobs[0]).toMatchObject({ chat: 'session-1', turn: 1, count: 3, output })
+    expect(store.notes()).toEqual([])
+    release(three)
+    await settled()
+    expect(store.notes()).toEqual([{ kind: 'suggestions', turn: 1, lines: three }])
+  })
+
+  it('are tidied: spaces collapse and lines are trimmed', async () => {
+    boundaries.suggester = { suggest: () => Promise.resolve([`  ${three[0]}  `, three[1]!.replace(' ', '   '), `${three[2]}\n`]) }
+    await deliver()
+    await settled()
+    expect(store.notes()[0]?.lines).toEqual(['Ask Alice about the key', 'Take the lantern', three[2]])
+  })
+
+  it('are not made when the chat offers none, and nobody is asked', async () => {
+    store.settings = () => ({ ...DEFAULT_SETTINGS, preview: { enabled: false }, suggestions: { count: 0 } })
+    const suggest = vi.fn(() => Promise.resolve(three))
+    boundaries.suggester = { suggest }
+    await deliver()
+    await settled()
+    expect(suggest).not.toHaveBeenCalled()
+    expect(store.notes()).toEqual([])
+  })
+
+  it('are reported, quietly, when they are not acceptable or the suggester fails, and the player simply has none', async () => {
+    boundaries.suggester = { suggest: () => Promise.resolve(['Same', 'same', 'Other']) }
+    await deliver()
+    await settled()
+    expect(problems).toEqual([expect.stringMatching(/suggestions for turn 1 were not made: .*must differ/)])
+    expect(store.notes()).toEqual([])
+    engine.forget(owner.chat)
+    problems.length = 0
+    boundaries.suggester = { suggest: () => Promise.reject(new Error('the model is down')) }
+    await deliver()
+    await settled()
+    expect(problems).toEqual(['suggestions for turn 1 were not made: the model is down'])
+  })
+
+  it('made too late for their turn are dropped: the next turn has started', async () => {
+    let release!: (lines: string[]) => void
+    boundaries.suggester = { suggest: () => new Promise((done) => { release = done }) }
+    await deliver()
+    engine.skip({ chat: 'session-1', turn: 2 })
+    release(three)
+    await settled()
+    expect(store.notes()).toEqual([])
+  })
+
+  it('give nothing when the suggester has nothing to offer', async () => {
+    await deliver()
+    await settled()
+    expect(store.notes()).toEqual([])
+    expect(problems).toEqual([])
+  })
+})
+
+describe('the preview of the scene', () => {
+  const only = { alice: { intent: 'a', commitment: 'low' as const } }
+
+  beforeEach(() => { store.settings = () => ({ ...DEFAULT_SETTINGS, suggestions: { count: 0 }, preview: { enabled: true } }) })
+
+  it('is accepted first in a turn, trimmed, once, and says what comes next in the turn', () => {
+    expect(engine.preview(owner, '  Air goes still.\r\n\nHow will she answer?  ')).toBe('Air goes still.\n\nHow will she answer?')
+    expect(() => engine.preview(owner, 'Again')).toThrow(/already shown/)
+    expect(engine.missing(owner)).toMatch(/^call activate_characters/)
+  })
+
+  it('is a new one in the next turn', () => {
+    engine.preview(owner, 'One')
+    expect(engine.preview({ chat: 'session-1', turn: 2 }, 'Two')).toBe('Two')
+  })
+
+  it('is refused when it is empty or longer than an opening, with the reason', () => {
+    expect(() => engine.preview(owner, '  \n ')).toThrow(/write the preview/)
+    expect(() => engine.preview(owner, 'x'.repeat(701))).toThrow(/keep the preview to 700 characters/)
+    expect(engine.preview(owner, 'x'.repeat(700))).toHaveLength(700)
+  })
+
+  it('is refused once the characters were asked, because it comes first', async () => {
+    store.settings = () => ({ ...DEFAULT_SETTINGS, suggestions: { count: 0 }, preview: { enabled: false } })
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    store.settings = () => ({ ...DEFAULT_SETTINGS, suggestions: { count: 0 }, preview: { enabled: true } })
+    expect(() => engine.preview(owner, 'Late')).toThrow(/comes first/)
+  })
+
+  it('is refused when the chat turned it off', () => {
+    store.settings = () => ({ ...DEFAULT_SETTINGS, preview: { enabled: false } })
+    expect(() => engine.preview(owner, 'Air goes still.')).toThrow(/shows no preview/)
+  })
+
+  it('comes before the characters are asked: they are refused until it is shown, and what is missing says so', async () => {
+    const runner = scriptedRunner(only)
+    await expect(engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)).rejects.toThrow(/call preview_scene first/)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)).rejects.toThrow(/call preview_scene first/)
+    expect(engine.missing(owner)).toMatch(/^call preview_scene first/)
+    expect(runner.requests).toEqual([])
+    engine.preview(owner, 'Air goes still.')
+    expect(engine.missing(owner)).toMatch(/^call activate_characters/)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    expect(runner.requests).toHaveLength(1)
+  })
+
+  it('is not asked for when the chat turned it off, or when the turn needs no round', async () => {
+    store.settings = () => ({ ...DEFAULT_SETTINGS, suggestions: { count: 0 }, preview: { enabled: false } })
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    engine.forget(owner.chat)
+    store.settings = () => ({ ...DEFAULT_SETTINGS, suggestions: { count: 0 }, preview: { enabled: true } })
+    engine.skip({ chat: 'session-1', turn: 2 })
+    expect(String(engine.missing({ chat: 'session-1', turn: 2 }))).not.toMatch(/preview_scene/)
+  })
+
+  it('does not change what the output must carry or when the turn may end', async () => {
+    engine.preview(owner, 'Air goes still.')
+    const runner = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+    expect(engine.missing(owner)).toMatch(/^call narrate/)
+    expect((await engine.narrate(owner, narration())).repaired).toBe(false)
+  })
+})
+
+describe('the world acting by itself', () => {
+  const only = { alice: { intent: 'a', commitment: 'low' as const } }
+  const evening = Date.UTC(1912, 9, 4, 21, 40)
+  const problems: string[] = []
+  const beat = (text = 'Thunder rolls over the ridge.') => ({ type: 'beat' as const, text })
+  const make = (key: string, extra: Partial<Parameters<FakeStore['session']['triggers']['add']>[0]> = {}): void => {
+    store.session.triggers.add({ key, name: `Trigger ${key}`, condition: { type: 'time', from: '1912-10-04T21:00' }, effects: [beat()], repeat: false, priority: 0, ...extra }, 'world', 0)
+  }
+
+  beforeEach(() => {
+    problems.length = 0
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), message => problems.push(message))
+    store.settings = () => ({ ...QUIET, clock: { ...QUIET.clock, timeZone: 'UTC' } })
+    store.session.clock.start('simulated', evening)
+    const cuesFor = store.cuesFor
+    store.cuesFor = id => cuesFor(id === alice.character.id ? store.session.characters.getBySourceId('alice')!.id : id)
+    const upcomingFor = store.upcomingFor
+    store.upcomingFor = (id, turn) => upcomingFor(id === alice.character.id ? store.session.characters.getBySourceId('alice')!.id : id, turn)
+    store.session.characters.add({ sourceId: 'alice', name: 'Alice', aliases: [], kind: 'person', tier: 'principal', role: 'npc', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] } })
+  })
+
+  async function round(runner = scriptedRunner(only)) {
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    return { runner, report: await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal) }
+  }
+
+  it('is told to the game master with the round it came after, with the beats it is to weave in', async () => {
+    make('storm', { effects: [beat(), { type: 'cue', audience: { characters: ['alice'] }, text: 'The shutters rattle.' }] })
+    const { report } = await round()
+    expect(report.done?.world).toEqual([{ name: 'Trigger storm', events: [], cues: [{ names: ['Alice'], text: 'The shutters rattle.' }], beats: [{ id: 1, text: 'Thunder rolls over the ridge.' }] }])
+  })
+
+  it('does not fire again: it fires when the condition turns true, and the round after is quiet', async () => {
+    make('storm')
+    expect((await round()).report.done?.world).toHaveLength(1)
+    const runner = scriptedRunner({ alice: [only.alice, { ...only.alice }] })
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    expect((await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)).done?.world).toEqual([])
+  })
+
+  it('tells a character what it is made to notice the next time it acts, once, and the same on the retry', async () => {
+    make('scream', { condition: { type: 'time', from: '1912-10-04T21:00' }, effects: [{ type: 'cue', audience: { characters: ['alice'] }, text: 'You hear a scream upstairs.' }] })
+    const first = await round()
+    expect(first.runner.requests[0]?.cues).toBeUndefined()
+    const runner = scriptedRunner({ alice: [{ intent: 'a', commitment: 'high' }, { intent: 'again', commitment: 'high' }, { intent: 'c', commitment: 'low' }] })
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    expect(runner.requests[0]?.cues).toEqual(['You hear a scream upstairs.'])
+    const retry = await engine.resolve(owner, [outcome('alice', 'failed')], runner.run, signal)
+    expect(retry.next?.attempt).toBe(2)
+    expect(runner.requests[1]?.cues).toEqual(['You hear a scream upstairs.'])
+    await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    expect(runner.requests[2]?.cues).toBeUndefined()
+    expect(store.session.triggers.notes({ status: 'pending' })).toEqual([])
+  })
+
+  it('takes the beats the game master says it wove in, refuses ones that are not to be woven in, and lets the others stay', async () => {
+    make('one')
+    make('two', { effects: [beat('A bell tolls.')] })
+    await round()
+    expect(store.pendingBeats().map(entry => entry.id)).toEqual([1, 2])
+    await expect(engine.narrate(owner, narration(), undefined, [1, 9])).rejects.toThrow(/addressed: 9 is not a beat still to weave in/)
+    expect(store.completed).toBe(0)
+    await engine.narrate(owner, narration(), undefined, [2])
+    expect(store.pendingBeats().map(entry => entry.id)).toEqual([1])
+    expect(store.completed).toBe(1)
+  })
+
+  it('is told to the game master after a skip in time, with what the time that passed brought', async () => {
+    make('dawn', { condition: { type: 'time', from: '1912-10-05T07:00' }, effects: [beat('The sun is up.')] })
+    expect(engine.advanceTime(owner, { untilTime: '06:00', reason: 'they sleep' }).world).toEqual([])
+    const skipped = engine.advanceTime(owner, { untilTime: '07:30', reason: 'they sleep on' })
+    expect(skipped.world).toEqual([{ name: 'Trigger dawn', events: [], cues: [], beats: [{ id: 1, text: 'The sun is up.' }] }])
+  })
+
+  it('is looked at before a turn begins, for what came true while the player was away', () => {
+    make('late', { condition: { type: 'time', from: '1912-10-04T20:00' } })
+    expect(engine.fireAtStart(owner).map(entry => entry.name)).toEqual(['Trigger late'])
+    expect(engine.fireAtStart(owner)).toEqual([])
+  })
+
+  it('that cannot be applied is given up and reported, and the round goes on', async () => {
+    make('broken', { effects: [{ type: 'edit', edit: { moves: [{ character: 'alice', to: 'nowhere' }] } }] })
+    const { report } = await round()
+    expect(report.done?.world).toEqual([])
+    expect(store.problems).toEqual([expect.stringMatching(/the trigger "broken" could not fire and is given up: .*nowhere/)])
+    expect(store.session.triggers.getByKey('broken')?.status).toBe('failed')
+  })
+
+  it('does nothing when the chat turned it off', async () => {
+    store.settings = () => ({ ...QUIET, clock: { ...QUIET.clock, timeZone: 'UTC' }, triggers: { ...QUIET.triggers, enabled: false } })
+    make('storm')
+    expect((await round()).report.done?.world).toEqual([])
+    expect(store.session.triggers.getByKey('storm')?.fireCount).toBe(0)
+  })
+
+  describe('what is known beforehand', () => {
+    const exam = { type: 'time' as const, from: '1912-10-08T09:00' }
+
+    it('is told to a character who is among those who know, with when it is to happen, and not to the others; a secret is told to nobody', async () => {
+      make('exam', { condition: exam, announce: { audience: { characters: ['alice'] }, text: 'The final exam is at nine.' } })
+      make('plot', { condition: { type: 'time', from: '1912-10-20T00:00' } })
+      const runner = scriptedRunner(only)
+      await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+      expect(runner.requests[0]?.upcoming).toEqual([{ text: 'The final exam is at nine.', when: 'Tuesday 8 October 1912, 09:00, in 3 days 11 hours' }])
+      expect(store.upcoming(1)).toEqual([{ text: 'The final exam is at nine.', who: 'Alice', when: 'Tuesday 8 October 1912, 09:00, in 3 days 11 hours' }])
+      store.session.characters.add({ sourceId: 'bob', name: 'Bob', aliases: [], kind: 'person', tier: 'principal', role: 'npc', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] } })
+      expect(store.upcomingFor(store.session.characters.getBySourceId('bob')!.id, 1)).toEqual([])
+    })
+
+    it('is gone once it fired', () => {
+      make('exam', { condition: { type: 'time', from: '1912-10-04T22:00' }, announce: { audience: 'everyone', text: 'The ball begins at ten.' } })
+      expect(store.upcoming(1)).toHaveLength(1)
+      store.runTriggers(2, 0)
+      expect(store.upcoming(1)).toHaveLength(1)
+      store.session.clock.advance({ to: Date.UTC(1912, 9, 4, 22, 30), turn: 2, round: 0, kind: 'skip', reason: 'later' })
+      store.runTriggers(3, 0)
+      expect(store.upcoming(3)).toEqual([])
+    })
   })
 })

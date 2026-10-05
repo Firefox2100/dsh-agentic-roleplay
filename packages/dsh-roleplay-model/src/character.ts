@@ -1,4 +1,5 @@
 import type { RoutineDefinition } from './agenda.ts'
+import type { VariableValue } from './variable.ts'
 import type { RelationshipDefinition } from './relationship.ts'
 import type { CharacterStart } from './state.ts'
 
@@ -49,4 +50,6 @@ export interface CharacterDefinition {
   relationships?: RelationshipDefinition[]
   /** The recurring day of the character: what it is doing and where, by the clock. */
   routine?: RoutineDefinition[]
+  /** What it starts with of what the world tracks (a value for each of the variables named), by variable key. */
+  variables?: Record<string, VariableValue>
 }

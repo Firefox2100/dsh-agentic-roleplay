@@ -1,7 +1,7 @@
 import type { Character } from 'dsh-roleplay-model'
 import type {
   ItemView, KnownRelationship, SceneItems,
-  ActivationPlanner, Author, Boundaries, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  ActivationPlanner, Author, Boundaries, Suggester, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
 import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from 'dsh-roleplay-state'
@@ -160,6 +160,10 @@ export const sharedContext: CharacterContextProvider = {
     // In a place, a character perceives who is there with it; in a story without places, everyone is present.
     const company = place === undefined ? cast : place.here
     const sections = [`Situation:\n${situation}`, ...(time === undefined ? [] : [`Now: ${describeTime(time)}.`]), ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
+    if (request.upcoming !== undefined && request.upcoming.length > 0) sections.push(`What you know is coming:\n${request.upcoming.map(entry => `- ${entry.text}${entry.when === undefined ? '' : ` (${entry.when})`}`).join('\n')}`)
+    if (request.cues !== undefined && request.cues.length > 0) sections.push(`Just now you notice:\n${request.cues.map(cue => `- ${cue}`).join('\n')}`)
+    if (request.tracked !== undefined && request.tracked.self !== '') sections.push(`How you are (what you can tell of yourself):\n${request.tracked.self}`)
+    if (request.tracked !== undefined && request.tracked.others.length > 0) sections.push(`What you can tell of the others here:\n${request.tracked.others.map(other => `- ${other.name}: ${other.text}`).join('\n')}`)
     const day = agenda === undefined || time === undefined ? [] : describeAgenda(agenda, time.now)
     if (day.length > 0) sections.push(`Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):\n${day.join('\n')}`)
     if (carrying !== undefined && carrying.length > 0) sections.push(`What you have on you:\n${describeItems(carrying, { withKeys: false })}`)
@@ -255,7 +259,7 @@ function placedScene(cast: readonly CastMember[], player: CastMember | undefined
 }
 
 export const castSummary: SceneContextProvider = {
-  scene({ time, cast, turn, input, queryVector, story, items }) {
+  scene({ tracked, time, world, cast, turn, input, queryVector, story, items }) {
     const describeMember = (member: CastMember): string => {
       const { key, character, state } = member
       const role = character.control === 'player' ? `the player's character, "${key}"` : `acts through "${key}"`
@@ -270,6 +274,10 @@ export const castSummary: SceneContextProvider = {
       const carried = cast.flatMap(member => { const mine = items.carried(member.character.id); return mine.length === 0 ? [] : [`- ${member.character.name} (${member.key}): ${describeItems(mine, { withKeys: true })}`] })
       if (carried.length > 0) parts.push(`What characters have on them:\n${carried.join('\n')}`)
     }
+    if (world !== undefined && world.happened.length > 0) parts.push(`The world acted since the last turn, by itself:\n${world.happened.map(line => `- ${line}`).join('\n')}`)
+    if (world?.upcoming !== undefined && world.upcoming.length > 0) parts.push(`Known beforehand, still to come (who knows of it; it will happen by itself when its time comes):\n${world.upcoming.map(entry => `- ${entry.text}${entry.when === undefined ? '' : ` (${entry.when})`} [known to ${entry.who}]`).join('\n')}`)
+    if (world !== undefined && world.beats.length > 0) parts.push(`Weave these into the story when it fits, then say you did with addressed in narrate (each stays for a few turns and is then let go):\n${world.beats.map(beat => `- [${beat.id}] ${beat.text}`).join('\n')}`)
+    if (tracked !== undefined && tracked.length > 0) parts.push(`What the story keeps track of (change it with variable_changes in an outcome when what happened calls for it):\n${tracked.map(line => `- ${line}`).join('\n')}`)
     const threads = story.threads.list('open')
     if (threads.length > 0) parts.push(`Still open in the story:\n${threads.map(thread => `- ${thread.text}`).join('\n')}`)
     const folded = story.summaries.list().reduce((latest, summary) => Math.max(latest, summary.toTurn), 0)
@@ -378,6 +386,9 @@ export const declinesToAuthor: Author = {
   consolidate: () => Promise.resolve({ resolved: 0, notes: '' }),
 }
 
+/** Offers nothing: without a suggester the player writes their own move. */
+export const offersNothing: Suggester = { suggest: () => Promise.resolve([]) }
+
 export function defaultBoundaries(): Boundaries {
   return {
     planner: everyoneActs,
@@ -389,6 +400,7 @@ export function defaultBoundaries(): Boundaries {
     narrationChecker: exactUtterances,
     committer: writesNothing,
     author: declinesToAuthor,
+    suggester: offersNothing,
     recaller: recordsRecall,
     sceneContext: castSummary,
   }

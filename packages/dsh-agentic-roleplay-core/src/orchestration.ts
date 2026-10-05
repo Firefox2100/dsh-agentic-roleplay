@@ -6,6 +6,7 @@ import type {} from 'dsh-roleplay-state'
 import { join } from 'node:path'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { recordKeeper } from './host/orchestration/committer.ts'
+import { suggestionWriter } from './host/orchestration/suggester.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
 import { installHooks } from './host/orchestration/hooks.ts'
 import { PROTOCOL, PROTOCOL_SECTION } from './host/orchestration/prompt.ts'
@@ -53,6 +54,7 @@ export function apply(ctx: Context): void {
   })
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: world author')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ suggester: suggestionWriter({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: suggestions')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
     const id = roleplaySessionOf(agentSessionId)
     const agent = ctx.agents.get(SessionId(agentSessionId))
@@ -71,5 +73,6 @@ export function apply(ctx: Context): void {
     interpolate: false,
   })
   for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn })) ctx.tools.register(tool)
+  ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.settle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
   installHooks(ctx, { engine, boundaries, stores })
 }

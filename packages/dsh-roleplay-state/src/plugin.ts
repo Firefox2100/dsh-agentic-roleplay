@@ -140,8 +140,10 @@ export class RoleplayState extends Service {
       slots: store.slots,
       items: store.items,
       clock: store.clock,
+      variables: store.variables,
       routines: store.routines,
       engagements: store.engagements,
+      triggers: store.triggers,
       planMove: (characterId, move) => store.planMove(characterId, move),
       move: (characterId, move) => store.move(characterId, move),
       recallIndex: store.recallIndex,
@@ -167,6 +169,8 @@ export class RoleplayState extends Service {
         }
       },
       edit: (edit, options) => store.edit(edit, options),
+      runTriggers: options => store.runTriggers(options),
+      lapseNotes: (turn, kept) => store.lapseNotes(turn, kept),
       records: scope => store.records(scope),
     }
     this.sessions.set(key, { store, session })

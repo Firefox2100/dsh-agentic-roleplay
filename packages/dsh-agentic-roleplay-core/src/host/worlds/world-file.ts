@@ -1,4 +1,6 @@
 import { isTimeZone, parseInstant } from 'dsh-roleplay-state'
+import type { VariableValue } from 'dsh-roleplay-model'
+import { readVariableValues } from '../variables/values.ts'
 import type { WorldAuthor } from '../../shared/worlds.ts'
 import { readIdentifier } from '../identifiers.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
@@ -23,6 +25,8 @@ export interface WorldFile {
   opening?: OpeningSegment[]
   /** When the story begins and the zone its time is read in; a session's story clock starts from them. */
   clock?: WorldClock
+  /** What the world starts with of what it tracks, for the variables of the whole story. */
+  variables?: Record<string, VariableValue>
 }
 
 export interface WorldClock {
@@ -101,6 +105,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const coverMediaId = reader.string('cover_media_id')
   const opening = readOpening(reader)
   const clock = readClock(reader)
+  const variables = readVariableValues(reader)
   if (name === undefined || issues.length > 0) return { ok: false, issues }
 
   return {
@@ -114,6 +119,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(coverMediaId === undefined ? {} : { coverMediaId }),
       ...(opening === undefined ? {} : { opening }),
       ...(clock === undefined ? {} : { clock }),
+      ...(variables === undefined ? {} : { variables }),
     },
   }
 }

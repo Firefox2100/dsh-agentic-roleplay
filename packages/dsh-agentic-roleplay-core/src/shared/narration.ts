@@ -16,6 +16,26 @@ export interface TurnOutput {
  */
 const OPEN = '<roleplay-output>'
 const CLOSE = '</roleplay-output>'
+const PREVIEW_OPEN = '<roleplay-preview>'
+const PREVIEW_CLOSE = '</roleplay-preview>'
+
+/** What the game master shows the player while the characters are still being asked: a scene-setting opening that the delivered output replaces in the view. */
+export function encodePreview(text: string): string {
+  return `${PREVIEW_OPEN}${JSON.stringify({ text })}${PREVIEW_CLOSE}`
+}
+
+/** The preview encoded in a tool result's text, or nothing when the text carries none. */
+export function decodePreview(text: string): string | undefined {
+  const start = text.indexOf(PREVIEW_OPEN)
+  const end = text.indexOf(PREVIEW_CLOSE, start + PREVIEW_OPEN.length)
+  if (start < 0 || end < 0) return undefined
+  try {
+    const value = JSON.parse(text.slice(start + PREVIEW_OPEN.length, end)) as Record<string, unknown>
+    return typeof value['text'] === 'string' ? value['text'] : undefined
+  } catch {
+    return undefined
+  }
+}
 
 export function encodeOutput(output: TurnOutput): string {
   return `${OPEN}${JSON.stringify(output)}${CLOSE}`

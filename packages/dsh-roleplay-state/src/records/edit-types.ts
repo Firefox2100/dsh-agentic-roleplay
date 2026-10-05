@@ -1,11 +1,13 @@
 import type {
+  VariableDefinitionInput, TriggerDefinition,
   Accuracy, Character, CharacterKind, CharacterStatePatch, CharacterTier, ContainerState, EngagementStatus, ExitState, IntentHorizon, IntentStatus, IntentType, Location, MemoryKind, PerceptionMode, Slot,
 } from 'dsh-roleplay-model'
 import type {
   CharacterRepository, CharacterStateRepository, ConsolidationRepository, EngagementRepository, EventRepository, IntentRepository, ItemRepository, LocationRepository, MemoryRepository,
-  PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository,
+  PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository, TriggerRepository, VariableRepository,
 } from '../repositories.ts'
 import type { ItemChangeSpec } from './items.ts'
+import type { VariableChangeSpec } from './variables.ts'
 
 /** The name by which models and other plugins refer to a place: its id in the world, or its number when it was made up in play. */
 
@@ -28,8 +30,10 @@ export interface RecordsTarget {
   items: ItemRepository
   slots: SlotRepository
   intents: IntentRepository
+  variables: VariableRepository
   routines: RoutineRepository
   engagements: EngagementRepository
+  triggers: TriggerRepository
   transaction<T>(fn: () => T): T
 }
 
@@ -44,8 +48,6 @@ export interface PerceivedBy {
 
 export interface StatePatch extends Pick<CharacterStatePatch, 'publicState' | 'innerState' | 'activity'> {
   character: string
-  /** How the character feels right now; its temperament does not change. */
-  emotion?: { valence: number; arousal: number; dominance: number }
 }
 
 export interface NewEvent {
@@ -326,11 +328,17 @@ export interface RecordsEdit {
   turn: number
   /** The time zone the dates of the edit are written in; UTC when not given. */
   timeZone?: string
+  /** Changes to what the story tracks: a feeling, a debt, a flag. */
+  variableChanges?: VariableChangeSpec[]
+  /** Variables the story declares, only by the agent whose work that is. */
+  variables?: VariableDefinitionInput[]
   intentsAdded?: NewIntentSpec[]
   intentEdits?: IntentEditSpec[]
   engagements?: NewEngagementSpec[]
   engagementEdits?: EngagementEditSpec[]
   routines?: RoutineSet[]
+  /** Things the world does when their conditions come true, only by the agent whose work that is. */
+  triggers?: TriggerDefinition[]
   states?: StatePatch[]
   events?: NewEvent[]
   eventEdits?: EventEdit[]
@@ -362,7 +370,10 @@ export interface EditResult {
   /** The keys of the characters and places the edit made up. */
   characterKeys?: string[]
   placeKeys?: string[]
+  triggerKeys?: string[]
   itemKeys?: string[]
+  /** The keys of the variables the edit declared. */
+  variableKeys?: string[]
   beliefIds: number[]
   /** How many rows were added, changed or removed. */
   writes: number

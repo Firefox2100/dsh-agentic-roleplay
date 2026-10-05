@@ -222,3 +222,22 @@ describe('days in a prompt', () => {
     expect(quiet).not.toContain('routines')
   })
 })
+
+describe('what the story keeps track of, in a prompt', () => {
+  it('is told to a character as how it is and what it can tell of those with it', () => {
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, tracked: { self: 'Health: hurt (2); Valence: unhappy (-0.5), usually even (0)', others: [{ name: 'Arthur', text: 'Health: well (10)' }] } }
+    const prompt = sharedContext.brief(request).prompt
+    expect(prompt).toContain('How you are (what you can tell of yourself):\nHealth: hurt (2); Valence: unhappy (-0.5), usually even (0)')
+    expect(prompt).toContain('What you can tell of the others here:\n- Arthur: Health: well (10)')
+    const quiet = sharedContext.brief({ ...request, tracked: { self: '', others: [] } }).prompt
+    expect(quiet).not.toContain('How you are')
+    expect(quiet).not.toContain('What you can tell of the others')
+  })
+
+  it('is told to the game master as lines, with how to change it', () => {
+    const story = withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } }))
+    const text = castSummary.scene({ tracked: ['the world: Alarm: yes', 'Alice (alice): Health: hurt (2)'], cast: [arthur], turn: 2, input: 'Hi.', story })
+    expect(text).toContain('What the story keeps track of (change it with variable_changes in an outcome when what happened calls for it):\n- the world: Alarm: yes\n- Alice (alice): Health: hurt (2)')
+    expect(castSummary.scene({ tracked: [], cast: [arthur], turn: 2, input: 'Hi.', story })).not.toContain('keeps track')
+  })
+})

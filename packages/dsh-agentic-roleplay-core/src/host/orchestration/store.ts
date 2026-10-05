@@ -1,11 +1,14 @@
-import { changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from 'dsh-roleplay-state'
+import { changeVariable, planVariableChange, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from 'dsh-roleplay-state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { MoveRequest } from './protocol.ts'
 import type { ItemChangeSpec } from 'dsh-roleplay-state'
 import type { ChatSettings } from '../../shared/settings.ts'
 import { liveSettings } from '../sessions/settings.ts'
+import { fireTriggers, noteStore } from '../triggers/notes.ts'
+import { clearNotes, putNote, readNotes } from '../sessions/notes.ts'
 import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
 import { dueOffScene, markHandled } from '../clock/offscene.ts'
+import { describeShown } from '../variables/describe.ts'
 import { readTime, zoneOf } from '../clock/story-clock.ts'
 import type { CastMember, CastPlace, ItemView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
 
@@ -111,6 +114,45 @@ function dryRunItems(session: Session, entries: readonly { character: string; ch
   return problems.length === 0 ? { ok: true, effects } : { ok: false, problems }
 }
 
+/** What a character can tell of itself and of those with it, in words. */
+function trackedFor(session: Session, characterId: number, presentIds: readonly number[]): { self: string; others: { name: string; text: string }[] } {
+  const character = session.characters.get(characterId)
+  const self = character === undefined ? '' : describeShown(shownVariables(session, 'character', characterId, keyOfCharacter(character), 'self'))
+  const others = presentIds.filter(id => id !== characterId).flatMap((id) => {
+    const other = session.characters.get(id)
+    const text = other === undefined ? '' : describeShown(shownVariables(session, 'character', id, keyOfCharacter(other), 'others'))
+    return other === undefined || text === '' ? [] : [{ name: other.name, text }]
+  })
+  return { self, others }
+}
+
+/** At most this many lines of what the story tracks are told to the game master at once. */
+const MAX_TRACKED_LINES = 14
+
+/** What the story tracks, for the game master: everything, the scene first. */
+function trackedLines(session: Session): string[] {
+  const player = session.characters.list().find(character => character.control === 'player')
+  const here = player === undefined ? undefined : session.placements.get('character', player.id)?.locationId
+  const near = (characterId: number): number => (here !== undefined && session.placements.get('character', characterId)?.locationId === here ? 0 : 1)
+  const lines: string[] = []
+  const world = describeShown(shownVariables(session, 'world', 0, 'world', 'story'))
+  if (world !== '') lines.push(`the world: ${world}`)
+  if (here !== undefined) {
+    const place = session.locations.get(here)
+    const text = place === undefined ? '' : describeShown(shownVariables(session, 'location', here, locationKey(place), 'story'))
+    if (place !== undefined && text !== '') lines.push(`${place.name} (${locationKey(place)}): ${text}`)
+    for (const entry of session.items.contents({ kind: 'location', id: here })) {
+      const text = describeShown(shownVariables(session, 'item', entry.item.id, itemKey(entry.item), 'story'))
+      if (text !== '') lines.push(`${entry.item.name} (${itemKey(entry.item)}): ${text}`)
+    }
+  }
+  for (const character of [...session.characters.list()].sort((a, b) => near(a.id) - near(b.id))) {
+    const text = describeShown(shownVariables(session, 'character', character.id, keyOfCharacter(character), 'story'))
+    if (text !== '') lines.push(`${character.name} (${keyOfCharacter(character)}): ${text}`)
+  }
+  return lines.slice(0, MAX_TRACKED_LINES)
+}
+
 function checkMove(session: Session, characterKey: string, request: MoveRequest): MoveCheck {
   const character = session.characters.list().find(candidate => keyOfCharacter(candidate) === characterKey)
   if (character === undefined) return { ok: false, problems: [`there is no character "${characterKey}"`] }
@@ -135,8 +177,21 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     beginTurn: turn => startTurn(session, settings().clock, turn, wall()),
     endRound: (turn, round, stated, minimum) => passRound(session, settings().clock, turn, round, wall(), stated, minimum),
     skipTime: (turn, round, request) => skipAhead(session, settings().clock, turn, round, wall(), request),
+    checkVariableChanges: changes => changes.flatMap((spec) => { const planned = planVariableChange(session, spec); return planned.ok ? [] : planned.problems }),
+    changeVariables: (turn, changes) => session.transaction(() => changes.map(spec => changeVariable(session, spec, turn))),
+    trackedFor: (characterId, presentIds) => trackedFor(session, characterId, presentIds),
+    tracked: () => trackedLines(session),
     dueOffScene: turn => dueOffScene(session, zoneOf(settings().clock), readTime(session, settings().clock, turn, wall()).now),
     markHandled: keys => { markHandled(session, keys) },
+    runTriggers: (turn, round) => {
+      const settings = liveSettings(folder, problem)
+      const { now, zone } = readTime(session, settings.clock, turn, wall())
+      return fireTriggers(session, { settings, turn, round, now, zone, problem })
+    },
+    ...noteStore(session, () => liveSettings(folder, problem), turn => { const { now, zone } = readTime(session, liveSettings(folder, problem).clock, turn, wall()); return { now, zone } }),
+    putNote: (note) => { putNote(session, note) },
+    notes: () => readNotes(session),
+    clearNotes: () => { clearNotes(session) },
     agenda: (turn, characterId) => agendaFor(session, settings().clock, turn, wall, characterId),
     commit: (updates) => session.transaction(() => updates.map(({ character, patch, move, items }) => {
       session.characterStates.update(character, patch)

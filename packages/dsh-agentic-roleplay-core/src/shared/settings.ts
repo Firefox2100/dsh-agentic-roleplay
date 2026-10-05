@@ -19,8 +19,10 @@ export interface ChatSettings {
     overRetrieve: number
   }
   context: {
-    /** The size of the conversation, in tokens, at which the oldest part is folded into the summaries. */
+    /** The size of the conversation, in tokens, at which the oldest part is folded into the summaries; 0 takes a share of the model's context window (`limitRatio`). */
     limitTokens: number
+    /** With no limit given, the share of the selected model's context window at which the conversation is folded. */
+    limitRatio: number
     /** The share of the limit that stays verbatim when the conversation is folded. */
     retainRatio: number
     /** The size of the short-term summary, in tokens, before its oldest part moves into the long-term one. */
@@ -49,6 +51,28 @@ export interface ChatSettings {
   offstage: {
     /** The most characters, away from the player's character, that may be asked what they do about something that fell due (a commitment whose time came, a deadline that passed) after a turn. 0 turns it off. */
     perTurn: number
+  }
+  reasoning: {
+    /** How hard the characters, the record keeper and the world author think, as a level the model offers (for example `off` or `low`); empty is the game master's own level. Thinking is most of what a turn costs on a slow model. */
+    children: string
+  }
+  triggers: {
+    /** Whether the world acts by itself when what its triggers wait for comes true. */
+    enabled: boolean
+    /** The most triggers that fire in one look (after a round, or at the start of a turn); the rest wait for the next. */
+    maxFires: number
+    /** How many turns a beat the game master does not weave in stays pending. */
+    beatTurns: number
+    /** How many turns a cue a character did not get to act on stays pending. */
+    cueTurns: number
+  }
+  preview: {
+    /** Whether the game master first shows the player a short opening of the scene, before the characters are asked, so that something is on screen while the rest of the turn is worked out. */
+    enabled: boolean
+  }
+  suggestions: {
+    /** How many things the player could do next are offered after each turn, to pick from and fill the input; 0 offers none. */
+    count: number
   }
   embedding: {
     /**
@@ -88,7 +112,8 @@ export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
   memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4) },
   context: {
-    limitTokens: integer(4000, 1_000_000, 24_000),
+    limitTokens: integer(0, 1_000_000, 0),
+    limitRatio: ratio(0.1, 0.9, 0.6),
     retainRatio: ratio(0.1, 0.9, 0.5),
     shortTermTokens: integer(200, 20_000, 1500),
     longTermTokens: integer(200, 40_000, 2500),
@@ -96,6 +121,10 @@ export const SETTINGS_SPEC = {
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
   offstage: { perTurn: integer(0, 5, 2) },
+  reasoning: { children: text(40, '') },
+  triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2) },
+  preview: { enabled: flag(true) },
+  suggestions: { count: integer(0, 5, 3) },
   embedding: { options: record() },
 } as const satisfies Spec
 

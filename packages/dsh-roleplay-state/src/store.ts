@@ -1,12 +1,13 @@
 import { existsSync } from 'node:fs'
-import type { CharacterId, Move, MovePlan, NewSession, StoryEvent } from 'dsh-roleplay-model'
+import type { CharacterId, Move, MovePlan, NewSession, StoryEvent, TriggerNote } from 'dsh-roleplay-model'
+import { lapseNotes, runTriggers, type TriggerRun, type TriggerRunOptions } from './records/triggers.ts'
 import { moveCharacter, planMove } from './records/movement.ts'
 import { systemClock, type Clock } from './clock.ts'
 import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
-  ClockRepository, EngagementRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
+  ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   ConsolidationRepository, ItemRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
@@ -17,7 +18,9 @@ import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
 import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
 import { SqliteRecallIndex } from './sqlite/recall-index.ts'
 import { SqliteEngagementRepository, SqliteRoutineRepository } from './sqlite/agenda-repositories.ts'
+import { SqliteTriggerRepository } from './sqlite/trigger-repository.ts'
 import { SqliteClockRepository } from './sqlite/clock-repository.ts'
+import { SqliteVariableRepository } from './sqlite/variable-repository.ts'
 import { SqliteItemRepository, SqliteSlotRepository } from './sqlite/item-repository.ts'
 import { SqliteConsolidationRepository, SqliteRelationshipRepository } from './sqlite/relationship-repository.ts'
 import { SqliteLocationRepository, SqlitePlacementRepository } from './sqlite/location-repository.ts'
@@ -57,10 +60,13 @@ export interface SessionStore {
   readonly items: ItemRepository
   /** The story's own time. */
   readonly clock: ClockRepository
+  /** What the story keeps track of: feelings, and whatever the world or the story declares. */
+  readonly variables: VariableRepository
   /** The recurring day of each character. */
   readonly routines: RoutineRepository
   /** What characters have committed to, by date. */
   readonly engagements: EngagementRepository
+  readonly triggers: TriggerRepository
   /** What the session can be searched by: its texts by words, and by meaning once vectors are stored. */
   readonly recallIndex: RecallIndexRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
@@ -102,6 +108,10 @@ export interface SessionStore {
   edit(edit: RecordsEdit, options?: { seal?: boolean }): EditResult
   /** Read the records back in the form models read them. */
   records(scope?: RecordsScope): RecordsView
+  /** Fire the triggers whose conditions just came true, each together with its effects or not at all. */
+  runTriggers(options: TriggerRunOptions): TriggerRun
+  /** Let go of the beats and cues nobody took up in this many turns. */
+  lapseNotes(turn: number, kept: { beats: number; cues: number }): TriggerNote[]
   close(): void
 }
 
@@ -127,8 +137,10 @@ class SqliteSessionStore implements SessionStore {
   readonly slots: SlotRepository
   readonly items: ItemRepository
   readonly clock: ClockRepository
+  readonly variables: VariableRepository
   readonly routines: RoutineRepository
   readonly engagements: EngagementRepository
+  readonly triggers: TriggerRepository
   readonly recallIndex: SqliteRecallIndex
   private readonly eventRepository: SqliteEventRepository
 
@@ -145,8 +157,10 @@ class SqliteSessionStore implements SessionStore {
     this.slots = new SqliteSlotRepository(db)
     this.items = new SqliteItemRepository(db, clock)
     this.clock = new SqliteClockRepository(db)
+    this.variables = new SqliteVariableRepository(db)
     this.routines = new SqliteRoutineRepository(db)
     this.engagements = new SqliteEngagementRepository(db)
+    this.triggers = new SqliteTriggerRepository(db)
     this.eventRepository = new SqliteEventRepository(db, clock, this.recallIndex, id => this.locations.get(id)?.name, id => this.items.get(id)?.name)
     this.events = this.eventRepository
     this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)
@@ -223,6 +237,14 @@ class SqliteSessionStore implements SessionStore {
     return readRecords(this, scope)
   }
 
+  runTriggers(options: TriggerRunOptions): TriggerRun {
+    return runTriggers(this, options)
+  }
+
+  lapseNotes(turn: number, kept: { beats: number; cues: number }): TriggerNote[] {
+    return this.transaction(() => lapseNotes(this, turn, kept))
+  }
+
   close(): void {
     this.db.close()
   }
@@ -254,6 +276,7 @@ export function createSessionStore(location: string, session: NewSession, option
     const store = new SqliteSessionStore(db, options.clock ?? systemClock, vectors)
     store.metadata.create(session)
     store.slots.ensureDefaults()
+    store.variables.ensureDefaults()
     return store
   } catch (error) {
     db.close()

@@ -22,6 +22,9 @@ interface Fold {
   id: string
 }
 
+/** Folding more often than this size is pointless, whatever the window. */
+const MIN_LIMIT = 4000
+
 const textOf = (content: readonly ContentBlock[]): string => content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('\n')
 
 /**
@@ -71,9 +74,10 @@ export class RoleplayCompaction extends BasicCompactionEngine {
     const folder = sessionFolder(this.sessionsDir(), id)
     const { context } = liveSettings(folder, message => { this.ctx.logger.warn(`roleplay: ${message}`) })
     const measurement = this.ctx.tokenMeter.measure(agent.session)
-    if (trigger === 'pressure' && measurement.totalTokens < context.limitTokens) return null
+    const limit = await this.limitOf(agent, context, signal)
+    if (trigger === 'pressure' && measurement.totalTokens < limit) return null
     const events = agent.session.snapshotEvents()
-    const range = selectFoldRange({ events, nodes: measurement.nodes, retainTokens: Math.round(context.limitTokens * context.retainRatio) })
+    const range = selectFoldRange({ events, nodes: measurement.nodes, retainTokens: Math.round(limit * context.retainRatio) })
     if (range === null) return null
     this.folds.set(agent.session.id, { uptoTurn: range.uptoTurn, folder, id })
     try {
@@ -81,6 +85,19 @@ export class RoleplayCompaction extends BasicCompactionEngine {
     } finally {
       this.folds.delete(agent.session.id)
     }
+  }
+
+  /**
+   * The size at which the conversation is folded: the chat's own limit, or, when it gives none, a share of the selected model's context window.
+   * @throws {Error} when the chat gives no limit and the model's window is not known.
+   */
+  private async limitOf(agent: Agent, context: { limitTokens: number; limitRatio: number }, signal: AbortSignal): Promise<number> {
+    if (context.limitTokens > 0) return context.limitTokens
+    const config = agent.session.requestHeader()?.config
+    if (config?.provider === undefined || config.model === undefined) throw new Error('the conversation limit follows the model, but this chat has none selected: set the limit in the chat settings')
+    const window = (await this.ctx.llm.resolveModelInfo(config.provider, config.model, signal)).context?.contextWindow
+    if (window === undefined) throw new Error(`the conversation limit follows the model, but the context window of ${config.provider}/${config.model} is not known: set the limit in the chat settings or the model's contextWindow in the provider`)
+    return Math.max(MIN_LIMIT, Math.round(window * context.limitRatio))
   }
 
   protected override async summarize(input: { readonly messages: readonly Message[] }, agent: Agent, signal?: AbortSignal): Promise<{ summary: ContentBlock[]; provider: string; model: string }> {

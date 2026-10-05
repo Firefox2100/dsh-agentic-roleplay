@@ -8,12 +8,28 @@ import { characterKey, locationKey, type EditResult, type NewExit, type NewPlace
 import { prepareAgenda, writeAgenda } from './agenda-edit.ts'
 import { ITEM_ACTIONS, changeItem } from './items.ts'
 import { moveCharacter } from './movement.ts'
+import { triggerReferenceProblems } from './trigger-rules.ts'
+import { changeVariable, planVariableChange } from './variables.ts'
 
 export * from './edit-types.ts'
 export { parseRecordsEdit, recordsEditSchema } from './wire.ts'
 
 const present = (value: string | undefined): boolean => value !== undefined && value.trim() !== ''
 const list = <T>(value: readonly T[] | undefined): readonly T[] => value ?? []
+
+/** Makes the triggers of an edit, after everything else in it, so that they can name what it made. @throws {InvalidEditError} naming each problem. */
+function createTriggers(target: RecordsTarget, edit: RecordsEdit): string[] {
+  const made = list(edit.triggers)
+  const keys = made.map(definition => definition.key)
+  const problems = [
+    ...made.flatMap(definition => triggerReferenceProblems(target, definition, keys)),
+    ...keys.flatMap((key, index) => (keys.indexOf(key) === index ? [] : [`${key}: made twice in this edit`])),
+    ...keys.flatMap(key => (target.triggers.getByKey(key) === undefined ? [] : [`${key}: there is already a trigger with this key`])),
+  ]
+  if (problems.length > 0) throw new InvalidEditError(problems)
+  for (const definition of made) target.triggers.add(definition, 'story', edit.turn)
+  return keys
+}
 
 /**
  * Apply an edit. Every problem is found before anything is written, so a bad edit changes nothing.
@@ -147,9 +163,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   const states = list(edit.states).flatMap((patch, index) => {
     const where = `states[${index}]`
     const id = idOf(patch.character, where)
-    const { emotion } = patch
-    if (emotion !== undefined && [emotion.valence, emotion.arousal, emotion.dominance].some(axis => !Number.isFinite(axis) || axis < -1 || axis > 1)) problems.push(`${where}: each emotion axis must be a number from -1 to 1`)
-    if (!present(patch.publicState) && !present(patch.innerState) && !present(patch.activity) && emotion === undefined) problems.push(`${where}: nothing to change`)
+    if (!present(patch.publicState) && !present(patch.innerState) && !present(patch.activity)) problems.push(`${where}: nothing to change`)
     return id === undefined ? [] : [{ id, patch }]
   })
 
@@ -214,6 +228,12 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   for (const [index, text] of list(edit.threadsOpened).entries()) if (!present(text)) problems.push(`threads_opened[${index}]: say what is unsettled`)
   for (const id of list(edit.threadsResolved)) if (target.threads.get(id) === undefined) problems.push(`threads_resolved: there is no thread ${id}`)
 
+  list(edit.variableChanges).forEach((change, index) => {
+    const where = `variable_changes[${index}]`
+    if (list(edit.variables).some(def => def.key === change.variable)) return
+    const planned = planVariableChange(target, change)
+    if (!planned.ok) problems.push(...planned.problems.map(problem => `${where}: ${problem}`))
+  })
   const agenda = prepareAgenda(target, edit, { idOf, placeKnown, places: existingPlaces, problems })
 
   if (problems.length > 0) throw new InvalidEditError(problems)
@@ -326,15 +346,14 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     }
     for (const { id, patch } of states) {
       const current = target.characterStates.get(id)
-      const { character: _character, emotion, ...fields } = patch
+      const { character: _character, ...fields } = patch
       const written: CharacterStatePatch = {
         ...(present(fields.publicState) ? { publicState: fields.publicState!.trim() } : {}),
         ...(present(fields.innerState) ? { innerState: fields.innerState!.trim() } : {}),
         ...(present(fields.activity) ? { activity: fields.activity!.trim() } : {}),
-        ...(emotion === undefined ? {} : { emotion: { baseline: current?.emotion?.baseline ?? emotion, immediate: emotion } }),
       }
       if (current === undefined) {
-        target.characterStates.create(id, { publicState: written.publicState ?? '', innerState: written.innerState ?? '', activity: written.activity ?? '', ...(emotion === undefined ? {} : { emotion: { baseline: emotion, immediate: emotion } }) })
+        target.characterStates.create(id, { publicState: written.publicState ?? '', innerState: written.innerState ?? '', activity: written.activity ?? '' })
       } else {
         target.characterStates.update(id, written)
       }
@@ -382,6 +401,25 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     for (const id of list(edit.beliefRetractions)) { target.memories.remove(id); result.writes += 1 }
     for (const text of list(edit.threadsOpened)) { target.threads.open(text.trim(), edit.turn); result.writes += 1 }
     for (const id of list(edit.threadsResolved)) { target.threads.resolve(id, edit.turn); result.writes += 1 }
+    result.variableKeys = []
+    for (const [index, spec] of list(edit.variables).entries()) {
+      try {
+        target.variables.define(spec)
+        result.variableKeys.push(spec.key)
+      } catch (error) {
+        throw error instanceof Error ? new InvalidEditError([`variables[${index}]: ${error.message}`]) : error
+      }
+      result.writes += 1
+    }
+    for (const [index, change] of list(edit.variableChanges).entries()) {
+      try {
+        changeVariable(target, change, edit.turn)
+      } catch (error) {
+        if (error instanceof InvalidEditError) throw new InvalidEditError(error.problems.map(problem => `variable_changes[${index}]: ${problem}`))
+        throw error
+      }
+      result.writes += 1
+    }
     result.writes += writeAgenda(target, agenda, edit.turn, key => placeOf(key).id)
     return result
   })
@@ -522,6 +560,12 @@ function createItems(target: RecordsTarget, edit: RecordsEdit): { keys: string[]
  * @throws {InvalidEditError} naming each problem.
  */
 export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): EditResult {
+  if (list(edit.triggers).length > 0) {
+    return target.transaction(() => {
+      const done = applyRecordsEdit(target, { ...edit, triggers: [] })
+      return { ...done, triggerKeys: createTriggers(target, edit) }
+    })
+  }
   if (list(edit.characters).length === 0 && list(edit.items).length === 0 && list(edit.slots).length === 0) return applyChanges(target, edit)
   return target.transaction(() => {
     const placesFirst = applyChanges(target, { turn: edit.turn, places: list(edit.places) as NewPlace[] })

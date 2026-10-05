@@ -1,5 +1,5 @@
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import type { ItemChangeSpec } from 'dsh-roleplay-state'
+import type { ItemChangeSpec, VariableChangeSpec } from 'dsh-roleplay-state'
 import type { NarrationSegment, TurnOutput } from '../../shared/narration.ts'
 
 export const COMMITMENTS = ['low', 'medium', 'high'] as const
@@ -46,6 +46,8 @@ export interface Outcome {
   moveTo?: MoveRequest
   /** What the character does with things as a result, in order: take, drop, give, put, wear, remove, open, close, lock, unlock, reveal. */
   itemChanges?: ItemChangeSpec[]
+  /** What it changes of what the story tracks: a feeling, a health, a flag. */
+  variableChanges?: VariableChangeSpec[]
 }
 
 /** A request to send a character somewhere, with places named by key. */

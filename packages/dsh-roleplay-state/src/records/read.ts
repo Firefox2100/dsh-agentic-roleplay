@@ -2,12 +2,17 @@ import type { CharacterId } from 'dsh-roleplay-model'
 import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
 import { itemKey } from './items.ts'
 import { localIso } from './time.ts'
+import { describeValue } from './variables.ts'
 
 /** Which part of the story's records to read; all of it when left out. */
 export interface RecordsScope {
   rounds?: readonly { turn: number; round: number }[]
   /** The time zone times are shown in; UTC when not given. */
   timeZone?: string
+  /** Only these parts of the records; the others come back empty. Everything when left out. */
+  only?: readonly (keyof RecordsView)[]
+  /** Of the relationships, only those that changed in this turn or later. */
+  relationshipsSince?: number
 }
 
 /** The records as models read them (snake_case, characters by key), the counterpart of the edit's wire format. */
@@ -19,7 +24,6 @@ export interface RecordsView {
     public_state: string
     inner_state: string
     activity: string
-    emotion: { valence: number; arousal: number; dominance: number } | null
     /** The key of the place it is in, and where in it; null while it is nowhere. */
     location: string | null
     position: string
@@ -44,6 +48,10 @@ export interface RecordsView {
   /** How characters stand towards each other, most recently changed first (at most 80). */
   /** Things, notable first (at most 100), each with where it is. */
   items: { key: string; name: string; quantity: number; quality: string; state: string | null; hidden: boolean; notable: boolean; owner: string | null; holder: string }[]
+  /** What is tracked: how each kind of variable is declared. */
+  variable_defs: { key: string; name: string; description: string; kind: string; subject: string; only: string[]; min: number | null; max: number | null; options: string[]; default: string | number | boolean; visibility: string; baseline: boolean }[]
+  /** What each subject holds that is not the default (at most 200, most recently changed first). */
+  variables: { variable: string; subject: string; about: string; value: string | number | boolean; described: string; baseline: string | number | boolean | null; visibility: string }[]
   /** What characters have committed to that is still pending, in the order they are due (at most 40); times in the story's time zone. */
   engagements: { id: number; title: string; at: string; until: string | null; location: string | null; participants: string[]; note: string }[]
   relationships: { from: string; to: string; label: string; summary: string; familiarity: number; trust: number; affinity: number; tension: number; updated_turn: number }[]
@@ -52,6 +60,7 @@ export interface RecordsView {
 const MAX_RELATIONSHIPS_SHOWN = 80
 const MAX_ITEMS_SHOWN = 100
 const MAX_ENGAGEMENTS_SHOWN = 40
+const MAX_VARIABLES_SHOWN = 200
 
 /** Where an item is, in words. */
 export function describeHolder(target: Pick<RecordsTarget, 'items' | 'locations' | 'characters'>, id: number, keyOfCharacter: (id: number) => string = String): string {
@@ -80,7 +89,7 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
   const zone = scope.timeZone ?? 'UTC'
   const inScope = (turn: number, round?: number): boolean =>
     scope.rounds === undefined || scope.rounds.some(entry => entry.turn === turn && (round === undefined || entry.round === round))
-  return {
+  const view: RecordsView = {
     characters: characters.map((character) => {
       const state = target.characterStates.get(character.id)
       return {
@@ -90,7 +99,6 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
         public_state: state?.publicState ?? '',
         inner_state: state?.innerState ?? '',
         activity: state?.activity ?? '',
-        emotion: state?.emotion === undefined ? null : { ...state.emotion.immediate },
         ...where(character.id),
         goals: target.intents.list(character.id).filter(goal => goal.status === 'active' || goal.status === 'paused').map(goal => ({ id: goal.id, type: goal.type, name: goal.name, status: goal.status, horizon: goal.horizon, priority: goal.priority, urgency: goal.urgency, deadline: goal.deadline ?? null, plan: goal.plan })),
       }
@@ -108,13 +116,24 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
       key: itemKey(item), name: item.name, quantity: item.quantity, quality: item.quality, state: item.container?.state ?? null, hidden: item.hidden, notable: item.notable,
       owner: item.ownerId === undefined ? null : keyOf(item.ownerId), holder: describeHolder(target, item.id, keyOf),
     })),
+    variable_defs: target.variables.defs().map(def => ({
+      key: def.key, name: def.name, description: def.description, kind: def.kind, subject: def.subject, only: def.only, min: def.min ?? null, max: def.max ?? null, options: def.options, default: def.default, visibility: def.visibility, baseline: def.baseline,
+    })),
+    variables: target.variables.all().flatMap((entry) => {
+      const def = target.variables.def(entry.variable)
+      if (def === undefined || entry.value === def.default) return []
+      const key = entry.subject === 'world' ? 'world' : entry.subject === 'character' ? keyOf(entry.subjectId) : entry.subject === 'item' ? (target.items.get(entry.subjectId) === undefined ? String(entry.subjectId) : itemKey(target.items.get(entry.subjectId)!)) : placeKey(entry.subjectId)
+      const about = entry.subject === 'world' ? 'the world' : entry.subject === 'character' ? characters.find(character => character.id === entry.subjectId)?.name ?? key : entry.subject === 'item' ? target.items.get(entry.subjectId)?.name ?? key : target.locations.get(entry.subjectId)?.name ?? key
+      return [{ variable: def.key, subject: key, about, value: entry.value, described: describeValue(def, entry.value), baseline: entry.baseline ?? null, visibility: def.visibility }]
+    }).slice(0, MAX_VARIABLES_SHOWN),
     engagements: target.engagements.list({ status: 'pending' }).slice(0, MAX_ENGAGEMENTS_SHOWN).map(engagement => ({
       id: engagement.id, title: engagement.title, at: localIso(engagement.at, zone), until: engagement.until === undefined ? null : localIso(engagement.until, zone),
       location: engagement.locationId === undefined ? null : placeKey(engagement.locationId), participants: engagement.participants.map(keyOf), note: engagement.note,
     })),
-    relationships: [...target.relationships.list()].sort((a, b) => b.updatedTurn - a.updatedTurn || b.id - a.id).slice(0, MAX_RELATIONSHIPS_SHOWN).map(relation => ({
+    relationships: [...target.relationships.list()].filter(relation => scope.relationshipsSince === undefined || relation.updatedTurn >= scope.relationshipsSince).sort((a, b) => b.updatedTurn - a.updatedTurn || b.id - a.id).slice(0, MAX_RELATIONSHIPS_SHOWN).map(relation => ({
       from: keyOf(relation.fromId), to: keyOf(relation.toId), label: relation.label, summary: relation.summary,
       familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension, updated_turn: relation.updatedTurn,
     })),
   }
+  return scope.only === undefined ? view : Object.fromEntries(Object.entries(view).map(([key, part]) => [key, scope.only!.includes(key as keyof RecordsView) ? part : []])) as unknown as RecordsView
 }

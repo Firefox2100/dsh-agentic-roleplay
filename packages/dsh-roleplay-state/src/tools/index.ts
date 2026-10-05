@@ -6,13 +6,14 @@ import { characterKey, locationKey, parseRecordsEdit, recordsEditSchema } from '
 import { lintWorld } from '../records/lint.ts'
 import { describeHolder } from '../records/read.ts'
 import { agendaAt } from '../records/agenda.ts'
+import { describeValue, shownVariables } from '../records/variables.ts'
 import { describeInstant, localIso, minuteText } from '../records/time.ts'
 import { itemKey } from '../records/items.ts'
 import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock'>
+  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock'>
   /** The time zone the story's times are written and read in; UTC when not given. */
   timeZone?: string
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
@@ -34,6 +35,9 @@ export async function vectorOf(agent: AgentLink, text: string, signal?: AbortSig
 
 /** Finds the session behind an agent, by the id of the agent's own session; `undefined` when it works in none. */
 export type AgentResolver = (agentSessionId: string) => AgentLink | undefined
+
+/** The parts of the records `read_records` can be limited to. */
+const READ_SECTIONS = ['characters', 'events', 'beliefs', 'open_threads', 'items', 'relationships', 'variable_defs', 'variables', 'engagements']
 
 const MAX_EVENTS = 20
 const MAX_LISTED_PLACES = 100
@@ -84,7 +88,7 @@ export function createTools(resolve: AgentResolver, options: {
     }),
     defineTool({
       name: 'get_character',
-      description: 'Read one character: who it is and its current state (what can be seen of it, what it thinks and feels, what it is doing, its emotion).',
+      description: 'Read one character: who it is and its current state (what can be seen of it, what it thinks and feels, what it is doing, and what is tracked of it: its feelings and whatever else the story keeps track of).',
       parameters: { character: { type: 'string', required: true, description: 'The key of the character, as list_characters gives it.' } },
       output: {
         schema: {
@@ -92,7 +96,7 @@ export function createTools(resolve: AgentResolver, options: {
           additionalProperties: false,
           properties: {
             character: str, name: str, aliases: strs, summary: str, personality: str,
-            public_state: str, inner_state: str, activity: str, emotion: { type: 'json', required: true },
+            public_state: str, inner_state: str, activity: str, variables: { type: 'json', required: true },
             location: { type: 'json', required: true }, position: str,
             relationships: { type: 'json', required: true },
             carrying: { type: 'json', required: true },
@@ -106,7 +110,7 @@ export function createTools(resolve: AgentResolver, options: {
         const view = session.records().characters.find(entry => entry.character === args.character)
         const found = session.characters.list().find(character => characterKey(character) === args.character)
         if (view === undefined || found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, emotion: view.emotion, location: view.location, position: view.position, relationships: session.records().relationships.filter(relation => relation.from === args.character), carrying: session.items.contents({ kind: 'character', id: found.id }).map(({ item, holding }) => ({ key: itemKey(item), name: item.name, quantity: item.quantity, how: holding.holder.kind === 'character' && holding.holder.mode === 'worn' ? `worn on the ${holding.holder.slot}` : 'carried', ...(item.container === undefined ? {} : { state: item.container.state }) })) }
+        return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, variables: shownVariables(session, 'character', found.id, characterKey(found), 'story').map(entry => ({ variable: entry.variable.key, name: entry.variable.name, value: describeValue(entry.variable, entry.value), ...(entry.baseline === undefined ? {} : { baseline: describeValue(entry.variable, entry.baseline) }) })), location: view.location, position: view.position, relationships: session.records().relationships.filter(relation => relation.from === args.character), carrying: session.items.contents({ kind: 'character', id: found.id }).map(({ item, holding }) => ({ key: itemKey(item), name: item.name, quantity: item.quantity, how: holding.holder.kind === 'character' && holding.holder.mode === 'worn' ? `worn on the ${holding.holder.slot}` : 'carried', ...(item.container === undefined ? {} : { state: item.container.state }) })) }
       },
     }),
     defineTool({
@@ -321,13 +325,27 @@ export function createTools(resolve: AgentResolver, options: {
     defineTool({
       name: 'read_records',
       description: 'Read the records as stored: the state of every character, the events of the given rounds (or all) with who took each in and how, the beliefs formed in those turns, and the open threads.',
-      parameters: { rounds: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { turn: { type: 'integer', required: true }, round: { type: 'integer', required: true } } }, description: 'Only the events and beliefs of these rounds. Leave out for everything.' } },
+      parameters: {
+        rounds: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { turn: { type: 'integer', required: true }, round: { type: 'integer', required: true } } }, description: 'Only the events and beliefs of these rounds. Leave out for everything.' },
+        sections: { type: 'array', items: { type: 'string', enum: READ_SECTIONS }, description: 'Only these parts of the records (the others come back empty); leave out for all. Asking for what you need keeps the answer short.' },
+        relationships_since: { type: 'integer', description: 'Of the relationships, only those that changed in this turn or later.' },
+      },
       output: { schema: { type: 'json' }, render: pretty },
       isConcurrencySafe: () => true,
       async execute(args, exec) {
         const { session, timeZone } = link(resolve, exec.agent)
-        const view = session.records({ ...(args.rounds === undefined ? {} : { rounds: args.rounds }), ...(timeZone === undefined ? {} : { timeZone }) })
+        const view = session.records({ ...(args.rounds === undefined ? {} : { rounds: args.rounds }), ...(timeZone === undefined ? {} : { timeZone }), ...(args.sections === undefined ? {} : { only: args.sections as (keyof ReturnType<typeof session.records>)[] }), ...(args.relationships_since === undefined ? {} : { relationshipsSince: args.relationships_since }) })
         return JSON.parse(JSON.stringify(view)) as never
+      },
+    }),
+    defineTool({
+      name: 'list_variables',
+      description: 'What the story keeps track of: each variable with the key it is changed by, what it is about (every character, item or place, or the whole world), what it measures, its bounds or words, its default, and who can tell its value.',
+      parameters: {},
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: str, name: str, description: str, kind: str, subject: str, only: strs, min: { type: 'json', required: true }, max: { type: 'json', required: true }, options: strs, default: { type: 'json', required: true }, visibility: str, baseline: { type: 'boolean', required: true } } } }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(_args, exec) {
+        return link(resolve, exec.agent).session.records().variable_defs
       },
     }),
     defineTool({
@@ -425,13 +443,13 @@ export function createTools(resolve: AgentResolver, options: {
         : 'Change the story\'s records in one call, together or not at all: character states, new events (with where they happened and who took them in), corrections and retractions of draft events, revisions of what characters took in, changes to places and the ways between them, how characters stand towards each other, beliefs, and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
       parameters: editSchema as unknown as Record<string, unknown>,
       output: {
-        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } }, character_keys: { type: 'array', items: { type: 'string' } }, place_keys: { type: 'array', items: { type: 'string' } }, item_keys: { type: 'array', items: { type: 'string' } } }, required: ['writes', 'event_ids', 'belief_ids', 'character_keys', 'place_keys', 'item_keys'], additionalProperties: false },
+        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } }, character_keys: { type: 'array', items: { type: 'string' } }, place_keys: { type: 'array', items: { type: 'string' } }, item_keys: { type: 'array', items: { type: 'string' } }, variable_keys: { type: 'array', items: { type: 'string' } }, trigger_keys: { type: 'array', items: { type: 'string' } } }, required: ['writes', 'event_ids', 'belief_ids', 'character_keys', 'place_keys', 'item_keys', 'variable_keys', 'trigger_keys'], additionalProperties: false },
         render: (_args, value) => summary(options.authoring === true ? 'World changed' : 'Records changed')(_args, value as { writes: number }),
       },
       async execute(args, exec) {
         const { session, timeZone } = link(resolve, exec.agent)
         const result = session.edit({ ...parseRecordsEdit(args), ...(timeZone === undefined ? {} : { timeZone }) })
-        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [], item_keys: result.itemKeys ?? [] }
+        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [], item_keys: result.itemKeys ?? [], variable_keys: result.variableKeys ?? [], trigger_keys: result.triggerKeys ?? [] }
       },
     },
     ...(options.authoring !== true ? [] : [defineTool({
@@ -457,15 +475,14 @@ export function createTools(resolve: AgentResolver, options: {
         public_state: { type: 'string' },
         inner_state: { type: 'string' },
         activity: { type: 'string' },
-        emotion: { type: 'object', additionalProperties: false, properties: { valence: { type: 'number', required: true }, arousal: { type: 'number', required: true }, dominance: { type: 'number', required: true } } },
       },
       output: { schema: done, render: summary('State updated') },
       async execute(args, exec) {
         const { session, turn } = link(resolve, exec.agent)
-        const { character, public_state, inner_state, activity, emotion } = args
+        const { character, public_state, inner_state, activity } = args
         return written(session.edit({
           turn,
-          states: [{ character, ...(public_state === undefined ? {} : { publicState: public_state }), ...(inner_state === undefined ? {} : { innerState: inner_state }), ...(activity === undefined ? {} : { activity }), ...(emotion === undefined ? {} : { emotion }) }],
+          states: [{ character, ...(public_state === undefined ? {} : { publicState: public_state }), ...(inner_state === undefined ? {} : { innerState: inner_state }), ...(activity === undefined ? {} : { activity }) }],
         }))
       },
     }),

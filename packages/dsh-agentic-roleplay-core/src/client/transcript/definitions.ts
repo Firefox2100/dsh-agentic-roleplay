@@ -1,5 +1,5 @@
 import type { ConversationNodeContext, ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
-import { decodeOutput, type NarrationSegment } from '../../shared/narration.ts'
+import { decodeOutput, decodePreview, type NarrationSegment } from '../../shared/narration.ts'
 
 export const NARRATION_NODE = 'roleplay-narration'
 
@@ -7,6 +7,13 @@ export const NARRATION_NODE = 'roleplay-narration'
 export interface NarrationNodeData {
   segments: readonly NarrationSegment[]
   repaired: boolean
+}
+
+export const PREVIEW_NODE = 'roleplay-preview'
+
+/** What a preview node carries: how the game master opened the scene before the output was ready. */
+export interface PreviewNodeData {
+  text: string
 }
 
 interface NarrationState {
@@ -55,5 +62,40 @@ export const chatNarration: ConversationNodeDefinition<NarrationState> = {
     const state = narrationState(context)
     if (state === undefined) return null
     return { key: context.key, kind: NARRATION_NODE, id: context.id, target: 'chat', anchorSeq: state.seq, location: SESSION, visibility: 'visible', data: state.data }
+  },
+}
+
+interface PreviewState {
+  seq: number
+  data: PreviewNodeData
+}
+
+/** The preview of a turn, when this event is the result of the tool that showed it. */
+function previewOf(event: { type: string; data: unknown }): { id: string; text: string } | undefined {
+  if (event.type !== 'tool/result') return undefined
+  const { message } = event.data as { message: { toolCallId: string; content: readonly { type: string; text?: string }[] } }
+  const text = decodePreview(textOf(message.content))
+  return text === undefined ? undefined : { id: String(message.toolCallId), text }
+}
+
+/** The opening the game master showed while the turn was worked out; the view drops it once the output is there. */
+export const chatPreview: ConversationNodeDefinition<PreviewState> = {
+  kind: PREVIEW_NODE,
+  target: 'chat',
+  match: (event) => {
+    const found = previewOf(event)
+    return found === undefined ? null : { id: found.id, role: 'start' }
+  },
+  start: (_context, match) => {
+    const found = previewOf(match.event)
+    if (found === undefined) throw new Error('roleplay-preview starts with the result of the tool that shows it')
+    return { seq: match.event.seq, data: { text: found.text } }
+  },
+  update: context => context.state as PreviewState,
+  publication: () => 'immediate',
+  buildViewNode: (context) => {
+    const state = context.state
+    if (state === undefined) return null
+    return { key: context.key, kind: PREVIEW_NODE, id: context.id, target: 'chat', anchorSeq: state.seq, location: SESSION, visibility: 'visible', data: state.data }
   },
 }

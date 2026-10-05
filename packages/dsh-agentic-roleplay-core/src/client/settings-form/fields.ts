@@ -14,11 +14,18 @@ export const FORM_FIELDS = [
   { path: ['authoring', 'perTurn'], kind: 'integer', label: 'authoringPerTurn', help: 'authoringPerTurnHelp' },
   { path: ['authoring', 'consolidateAfter'], kind: 'integer', label: 'consolidateAfter', help: 'consolidateAfterHelp' },
   { path: ['clock', 'mode'], kind: 'choice', label: 'clockMode', help: 'clockModeHelp', choices: [{ value: 'simulated', label: 'clockSimulated' }, { value: 'real', label: 'clockReal' }] },
-  { path: ['clock', 'timeZone'], kind: 'text', label: 'clockTimeZone', help: 'clockTimeZoneHelp' },
+  { path: ['clock', 'timeZone'], kind: 'text', label: 'clockTimeZone', help: 'clockTimeZoneHelp', zone: true, placeholder: 'UTC' },
   { path: ['clock', 'roundSeconds'], kind: 'integer', label: 'clockRoundSeconds', help: 'clockRoundSecondsHelp' },
   { path: ['clock', 'maxSkipDays'], kind: 'integer', label: 'clockMaxSkipDays', help: 'clockMaxSkipDaysHelp' },
+  { path: ['reasoning', 'children'], kind: 'text', label: 'reasoningChildren', help: 'reasoningChildrenHelp', zone: false, placeholder: 'off' },
+  { path: ['triggers', 'enabled'], kind: 'flag', label: 'triggersEnabled', help: 'triggersEnabledHelp' },
+  { path: ['triggers', 'maxFires'], kind: 'integer', label: 'triggersMaxFires', help: 'triggersMaxFiresHelp' },
+  { path: ['triggers', 'beatTurns'], kind: 'integer', label: 'triggersBeatTurns', help: 'triggersBeatTurnsHelp' },
+  { path: ['preview', 'enabled'], kind: 'flag', label: 'previewEnabled', help: 'previewEnabledHelp' },
+  { path: ['suggestions', 'count'], kind: 'integer', label: 'suggestionsCount', help: 'suggestionsCountHelp' },
   { path: ['offstage', 'perTurn'], kind: 'integer', label: 'offstagePerTurn', help: 'offstagePerTurnHelp' },
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
+  { path: ['context', 'limitRatio'], kind: 'percent', label: 'limitRatio', help: 'limitRatioHelp' },
   { path: ['context', 'retainRatio'], kind: 'percent', label: 'retainRatio', help: 'retainRatioHelp' },
 ] as const
 
@@ -68,7 +75,7 @@ export function problemsOf(drafts: Drafts, options: readonly RequestOption[] = [
     if (field.kind === 'flag' || field.kind === 'choice') continue
     if (field.kind === 'text') {
       const draft = drafts[keyOf(field)]
-      if (typeof draft === 'string' && draft.trim() !== '' && !isTimeZone(draft.trim())) bad.add(keyOf(field))
+      if (field.zone && typeof draft === 'string' && draft.trim() !== '' && !isTimeZone(draft.trim())) bad.add(keyOf(field))
       continue
     }
     const draft = drafts[keyOf(field)]

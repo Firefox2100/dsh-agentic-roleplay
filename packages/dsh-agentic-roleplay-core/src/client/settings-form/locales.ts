@@ -3,8 +3,8 @@ import type { Dictionaries } from '../i18n.ts'
 export type SettingsFormKey =
   | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
-  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
-  | 'limitTokens' | 'limitTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
+  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
+  | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
@@ -33,6 +33,18 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockModeHelp: 'Simulated: the story\'s time moves only with the story, by as much as the game master says each round takes, and the game master can skip ahead ("I sleep till morning"). Real: the story\'s time is the real clock, it cannot be skipped, and what happens while you are away is for the game master to account for. A story can change from real to simulated (the time stops following the clock where it is) but not back.',
     clockSimulated: 'Simulated',
     clockReal: 'Real clock',
+    reasoningChildren: 'Thinking of the characters and keeper',
+    reasoningChildrenHelp: 'How hard the characters, the record keeper and the world author think, as a level the model offers, for example off or low. Empty uses your own level. Thinking is most of what a turn costs on a slow model, and these helpers do well without it.',
+    triggersEnabled: 'Events of the world',
+    triggersEnabledHelp: 'The world acts by itself when what its triggers wait for comes true: a deadline passes, someone arrives, a door gives way. Turn off to play without them.',
+    triggersMaxFires: 'Most events at once',
+    triggersMaxFiresHelp: 'The most triggers that fire in one look, after a round or at the start of a turn. The rest wait for the next look.',
+    triggersBeatTurns: 'Turns a beat stays pending',
+    triggersBeatTurnsHelp: 'A beat is something the world makes happen that the game master is told to weave into the story. If it does not within this many turns, it is let go.',
+    previewEnabled: 'Preview of the scene',
+    previewEnabledHelp: 'Before the characters are asked, the game master shows a short opening of the scene, so there is something to read while the rest of the turn is worked out. The delivered output replaces it in the view.',
+    suggestionsCount: 'Suggested actions',
+    suggestionsCountHelp: 'After each turn, a helper writes this many things your character could do next from what you just read, in the background. Click one to put it in the input box (you can edit it before sending). 0 offers none and makes no model call.',
     offstagePerTurn: 'Characters acting off stage per turn',
     offstagePerTurnHelp: 'When something falls due for characters who are away from you (a meeting whose time has come, a deadline that passed), up to this many of them are asked, in the background after your turn, what they do about it. What they decide is recorded and can be seen in the story later. 0 turns it off.',
     clockLocked: 'The story\'s time is simulated and has its own dates, so it cannot follow the real clock any more.',
@@ -44,7 +56,9 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockMaxSkipDaysHelp: 'The most the game master may skip ahead in the story\'s time in one go.',
     invalidZone: 'Enter a time zone name such as Europe/London or UTC.',
     limitTokens: 'Conversation limit (tokens)',
-    limitTokensHelp: 'The whole conversation is sent to the model until it reaches this size. Then the oldest turns are folded into a long-term and a short-term summary built from the story\'s recorded events.',
+    limitRatio: 'Limit as a share of the model\'s window (%)',
+    limitRatioHelp: 'Used when the conversation limit is 0: the conversation is folded when it reaches this share of the selected model\'s context window.',
+    limitTokensHelp: '0 follows the model: the share of its context window below. Otherwise the whole conversation is sent to the model until it reaches this size. Then the oldest turns are folded into a long-term and a short-term summary built from the story\'s recorded events.',
     retainRatio: 'Kept after folding (%)',
     retainRatioHelp: 'The share of the limit that stays word for word when the oldest turns are folded.',
     invalid: 'Enter a number from {min} to {max}.',
@@ -77,6 +91,18 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockModeHelp: '模拟：故事的时间只随故事推进，每一轮耗时由主持人决定，主持人还可以跳过时间（“我睡到明天早上”）。真实：故事的时间就是现实时钟，不能跳过；你离开期间发生的事由主持人自行交代。可以由真实改为模拟（时间就在此刻脱离时钟），但不能改回来。',
     clockSimulated: '模拟',
     clockReal: '现实时钟',
+    reasoningChildren: '角色与记录员的思考强度',
+    reasoningChildrenHelp: '角色、记录员和世界作者的思考强度，须是模型提供的级别，例如 off 或 low。留空则与你自己选择的一致。在较慢的模型上，思考占了每轮耗时的大部分，而这些助手即使不思考也做得不错。',
+    triggersEnabled: '世界事件',
+    triggersEnabledHelp: '当触发器等待的条件成立时（期限已过、有人到来、门被撞开），世界会自行行动。关闭后将不再触发。',
+    triggersMaxFires: '同时触发的事件上限',
+    triggersMaxFiresHelp: '每次检查（一轮之后或一回合开始时）最多触发的触发器数量，其余等待下一次检查。',
+    triggersBeatTurns: '情节提示保留的回合数',
+    triggersBeatTurnsHelp: '情节提示是世界促成、要求主持人写进故事的事。若在这么多回合内都没有写入，就会被放弃。',
+    previewEnabled: '场景预览',
+    previewEnabledHelp: '在询问角色之前，主持人先给出一小段场景开场，让你在这一轮的其余部分处理期间有东西可读。最终输出送达后，视图中会替换掉它。',
+    suggestionsCount: '行动建议数量',
+    suggestionsCountHelp: '每轮结束后，一个助手会根据你刚读到的内容，在后台写出这么多条你的角色接下来可以做的事。点击其中一条即可填入输入框（发送前可以修改）。0 表示不提供，也不会调用模型。',
     offstagePerTurn: '每轮台下行动的角色数',
     offstagePerTurnHelp: '当有事对不在你身边的角色到期时（约定的时间到了、期限过了），每轮结束后会在后台最多询问这么多角色打算怎么办。他们的决定会被记录，之后可在故事中看到。0 表示关闭。',
     clockLocked: '故事时间已经是模拟的，有自己的日期，不能再改为跟随现实时钟。',
@@ -87,8 +113,10 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockMaxSkipDays: '单次最长跳过（天）',
     clockMaxSkipDaysHelp: '主持人一次最多可以把故事时间向前跳过多少天。',
     invalidZone: '请输入时区名称，例如 Europe/London 或 UTC。',
+    limitRatio: '上限占模型窗口的比例（%）',
+    limitRatioHelp: '对话长度上限为 0 时使用：对话达到所选模型上下文窗口的这一比例时折叠。',
     limitTokens: '对话长度上限（token）',
-    limitTokensHelp: '在达到此长度之前，整段对话都会发送给模型。达到后，最早的几轮会折叠进长期和短期摘要，摘要由故事已记录的事件生成。',
+    limitTokensHelp: '0 表示跟随模型：取其上下文窗口的下方比例。否则，在达到此长度之前，整段对话都会发送给模型。达到后，最早的几轮会折叠进长期和短期摘要，摘要由故事已记录的事件生成。',
     retainRatio: '折叠后保留比例（%）',
     retainRatioHelp: '折叠最早几轮时，占上限比例的这部分对话会原文保留。',
     invalid: '请输入 {min} 到 {max} 之间的数字。',

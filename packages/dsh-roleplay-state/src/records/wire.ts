@@ -1,7 +1,9 @@
 import type { JsonSchemaNode, ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import {
   ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, ENGAGEMENT_STATUSES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, MEMORY_KINDS, PERCEPTION_MODES, WEEKDAY_NAMES,
-  type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type MemoryKind, type PerceptionMode, type Slot,
+  VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES,
+  type VariableDefinitionInput, type VariableKind, type VariableSubject, type VariableValue, type VariableVisibility,
+  type TriggerDefinition, type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type MemoryKind, type PerceptionMode, type Slot,
 } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import type {
@@ -9,6 +11,17 @@ import type {
   PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
 } from './edit-types.ts'
 import { ITEM_ACTIONS, type ItemAction } from './items.ts'
+import type { VariableChangeSpec } from './variables.ts'
+import { parseTriggerDefinition } from './trigger-rules.ts'
+
+/** An edit effect is an edit, but its events may be seen by `"everyone"`, which an ordinary edit cannot say. */
+const checkEdit = (edit: Wire): void => {
+  const events = Array.isArray(edit['events']) ? edit['events'].map(event => (isObject(event) && event['perceived_by'] === 'everyone' ? { ...event, perceived_by: [] } : event)) : edit['events']
+  parseRecordsEdit({ ...edit, ...(events === undefined ? {} : { events }) })
+}
+
+/** Read a trigger as a world's files write it. @returns the definition, or every problem with where it is. */
+export const readTriggerDefinition = (value: unknown, path: string): ReturnType<typeof parseTriggerDefinition> => parseTriggerDefinition(value, path, checkEdit)
 
 type Wire = Record<string, unknown>
 const isObject = (value: unknown): value is Wire => typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -56,6 +69,7 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       ...(text(item, 'accuracy') === undefined ? {} : { accuracy: text(item, 'accuracy') as Accuracy }),
     }))
   }
+  const scalar = (entry: Wire, key: string): VariableValue | undefined => { const found = entry[key]; return typeof found === 'number' || typeof found === 'string' || typeof found === 'boolean' ? found : undefined }
   const bool = (entry: Wire, key: string): boolean | undefined => (typeof entry[key] === 'boolean' ? entry[key] : undefined)
   const featuresOf = (entry: Wire): { key: string; name: string; description?: string }[] | undefined => {
     const found = entry['features']
@@ -70,7 +84,6 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     turn: turn ?? 0,
     states: array('states').map((entry): StatePatch => defined<StatePatch>({
       character: text(entry, 'character') ?? '', publicState: text(entry, 'public_state'), innerState: text(entry, 'inner_state'), activity: text(entry, 'activity'),
-      emotion: isObject(entry['emotion']) ? { valence: num(entry['emotion'], 'valence') ?? Number.NaN, arousal: num(entry['emotion'], 'arousal') ?? Number.NaN, dominance: num(entry['emotion'], 'dominance') ?? Number.NaN } : undefined,
     })),
     events: array('events').map((entry): NewEvent => defined<NewEvent>({
       turn: num(entry, 'turn') ?? 0, round: num(entry, 'round') ?? 0, text: text(entry, 'text') ?? '', importance: num(entry, 'importance') ?? 0,
@@ -142,6 +155,15 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     beliefRetractions: numbers('belief_retractions'),
     threadsOpened: Array.isArray(value['threads_opened']) ? (value['threads_opened'] as unknown[]).filter((entry): entry is string => typeof entry === 'string') : [],
     threadsResolved: numbers('threads_resolved'),
+    variableChanges: array('variable_changes').map((entry): VariableChangeSpec => defined<VariableChangeSpec>({
+      variable: text(entry, 'variable') ?? '', subject: text(entry, 'subject') ?? '', to: scalar(entry, 'to'), by: num(entry, 'by'), baseline: scalar(entry, 'baseline'),
+    })),
+    variables: array('variables').map((entry): VariableDefinitionInput => defined<VariableDefinitionInput>({
+      key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', description: text(entry, 'description'), kind: (text(entry, 'kind') ?? '') as VariableKind, subject: (text(entry, 'subject') ?? '') as VariableSubject,
+      only: strings(entry, 'only'), min: num(entry, 'min'), max: num(entry, 'max'), integer: bool(entry, 'integer'), options: strings(entry, 'options'), default: scalar(entry, 'default'),
+      baseline: bool(entry, 'baseline'), visibility: text(entry, 'visibility') as VariableVisibility | undefined, always: bool(entry, 'always'),
+      bands: Array.isArray(entry['bands']) ? entry['bands'].filter(isObject).map(band => ({ upTo: num(band, 'up_to') ?? Number.NaN, label: text(band, 'label') ?? '' })) : undefined,
+    })),
     intentsAdded: array('intents_added').map((entry): NewIntentSpec => defined<NewIntentSpec>({
       character: text(entry, 'character') ?? '', type: (text(entry, 'type') ?? '') as IntentType, name: text(entry, 'name') ?? '', description: text(entry, 'description'),
       horizon: (text(entry, 'horizon') ?? '') as IntentHorizon, priority: num(entry, 'priority') ?? Number.NaN, urgency: num(entry, 'urgency') ?? Number.NaN,
@@ -158,6 +180,11 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       id: num(entry, 'id') ?? 0, status: text(entry, 'status') as EngagementStatus | undefined, title: text(entry, 'title'), at: text(entry, 'at'), until: text(entry, 'until'),
       location: text(entry, 'location'), participants: strings(entry, 'participants'), note: text(entry, 'note'),
     })),
+    triggers: array('triggers').flatMap((entry, index): TriggerDefinition[] => {
+      const parsed = parseTriggerDefinition(entry, `triggers[${index}]`, checkEdit)
+      if ('problems' in parsed) { problems.push(...parsed.problems); return [] }
+      return [parsed.definition]
+    }),
     routines: array('routines').map((entry): RoutineSet => ({
       character: text(entry, 'character') ?? '',
       windows: Array.isArray(entry['windows']) ? entry['windows'].filter(isObject).map((window): RoutineWindowSpec => defined<RoutineWindowSpec>({
@@ -169,6 +196,8 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
   if (problems.length > 0) throw new InvalidEditError(problems)
   return edit
 }
+
+const scalarValue: JsonSchemaNode = { oneOf: [{ type: 'number' }, { type: 'boolean' }, { type: 'string' }], description: 'A number, true or false, or one of the words of a choice.' }
 
 const IMPORTANCE: JsonSchemaNode = { type: 'integer', enum: [1, 2, 3, 4, 5], description: `From ${IMPORTANCE_MIN} (a passing detail) to ${IMPORTANCE_MAX} (turns the story).` }
 
@@ -215,13 +244,6 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
           public_state: { type: 'string', description: 'What anyone present can now see of the character: a short present-tense description, never a log of events.' },
           inner_state: { type: 'string', description: 'What the character now thinks and feels; private.' },
           activity: { type: 'string', description: 'What the character is concretely doing now.' },
-          emotion: {
-            type: 'object',
-            description: 'How the character feels right now, each axis from -1 to 1.',
-            properties: { valence: { type: 'number' }, arousal: { type: 'number' }, dominance: { type: 'number' } },
-            required: ['valence', 'arousal', 'dominance'],
-            additionalProperties: false,
-          },
         },
         required: ['character'],
         additionalProperties: false,
@@ -354,6 +376,22 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
         additionalProperties: false,
       },
     },
+    variable_changes: {
+      type: 'array',
+      description: 'What the story tracks changed: a feeling, a debt, a reputation, a flag (list_variables shows what is tracked and what each is about). Give exactly one of to (the new value), by (an amount a number goes up or down; it stops at its bounds) or baseline (the new temperament of a variable that has one). Only what the rounds clearly establish.',
+      items: {
+        type: 'object',
+        properties: {
+          variable: { type: 'string', description: 'The key of the variable.' },
+          subject: { type: 'string', description: 'The key of the character, item or place it is about; world for a variable of the whole story.' },
+          to: scalarValue,
+          by: { type: 'number' },
+          baseline: scalarValue,
+        },
+        required: ['variable', 'subject'],
+        additionalProperties: false,
+      },
+    },
     intents_added: {
       type: 'array',
       description: 'A goal the story gave a character: a promise it made, a task it took on, a scheme it set in motion. Only what the rounds clearly establish; never one that is already listed for it.',
@@ -436,6 +474,69 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
   }
   if (options.authoring === true) {
     Object.assign(properties, {
+      variables: {
+        type: 'array',
+        description: 'A thing the story now tracks, declared only when what it established matters from here on and nothing tracked fits (a debt, a character\'s health, a reputation, whether a door is known). Declared once; then changed with variable_changes (in the same call too).',
+        items: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', description: 'Lowercase letters, digits and underscores, starting with a letter.' },
+            name: { type: 'string' },
+            description: { type: 'string', description: 'What it measures or means, for those who read and change it.' },
+            kind: { type: 'string', enum: [...VARIABLE_KINDS] },
+            subject: { type: 'string', enum: [...VARIABLE_SUBJECTS], description: 'What each value is about: every character, item or place has its own; world has one for the whole story.' },
+            only: { type: 'array', items: { type: 'string' }, description: 'Keys of the subjects it applies to; leave out for all of its kind.' },
+            min: { type: 'number' },
+            max: { type: 'number' },
+            integer: { type: 'boolean' },
+            options: { type: 'array', items: { type: 'string' }, description: 'For a choice: from 2 to 12 words.' },
+            default: scalarValue,
+            baseline: { type: 'boolean', description: 'Whether each value has a temperament beside the current value (feelings do).' },
+            visibility: { type: 'string', enum: [...VARIABLE_VISIBILITIES], description: 'public: anyone present can tell; private: only the character it belongs to (and the game master); hidden: only the game master.' },
+            bands: { type: 'array', items: { type: 'object', properties: { up_to: { type: 'number' }, label: { type: 'string' } }, required: ['up_to', 'label'], additionalProperties: false }, description: 'Words for ranges of a number, lowest first: values up to up_to are called label.' },
+            always: { type: 'boolean', description: 'Tell it always, not only once it differs from its default.' },
+          },
+          required: ['key', 'name', 'kind', 'subject'],
+          additionalProperties: false,
+        },
+      },
+      triggers: {
+        type: 'array',
+        description: 'Things the world does by itself when something comes true, made only when the story has set up a moment that is bound to come (a deadline, a promised arrival, a trap, a storm) and nothing existing covers it. At most two at a time. Each fires once, when its condition turns true.',
+        items: {
+          type: 'object',
+          properties: {
+            key: { type: 'string', description: 'Lowercase letters, digits, hyphens and underscores.' },
+            name: { type: 'string', description: 'A short label for the author; never shown to any character.' },
+            when: {
+              type: 'object',
+              description: 'The condition, decided in code from what the story has recorded. One of: {type:"time", from:"1912-10-05T21:00", to?, window?:{from:"22:00",to:"06:00"}, days?:["fri"]} (story-local times); {type:"place", character, location, feature?}; {type:"variable", variable, subject? (the key of the character, item or place; none for a world variable), op: eq|ne|lt|le|gt|ge, value}; {type:"item", item, held_by? | at?}; {type:"event", tag}; {type:"fired", trigger}; and {type:"all"|"any", conditions:[...]} or {type:"not", condition}, nested at most 4 deep.',
+              properties: { type: { type: 'string', enum: ['time', 'place', 'variable', 'item', 'event', 'fired', 'all', 'any', 'not'] } },
+              required: ['type'],
+              additionalProperties: true,
+            },
+            effects: {
+              type: 'array',
+              description: 'What happens, one to six: {type:"edit", edit:{...}} a change of the records in the same format as edit_records (events with a location are seen by those there, variable_changes, exit_changes, item_changes, moves, intents_added, engagements); {type:"beat", text} something the game master is told to weave into the story; {type:"cue", characters:[keys] (or audience: "everyone" | {place:key}), text} something those characters notice; in the events of an edit, perceived_by may be "everyone".',
+              items: { type: 'object', properties: { type: { type: 'string', enum: ['edit', 'beat', 'cue'] } }, required: ['type'], additionalProperties: true },
+            },
+            repeat: { type: 'boolean', description: 'Fire again after the condition went false and true again. Default no.' },
+            cooldown_seconds: { type: 'integer', description: 'With repeat: the least story time between two firings.' },
+            chance: { type: 'number', description: 'From 0 to 1: the chance that it fires when the condition turns true.' },
+            priority: { type: 'integer', description: 'The higher goes first when several are due at once.' },
+            expires: { type: 'string', description: 'After this story-local time it never fires.' },
+            announce: {
+              type: 'object',
+              description: 'Only for something that is no secret, scheduled and known beforehand (an exam, a ball, a deadline): who knows of it and what they know. Without it nobody knows until it fires. audience is "everyone", {characters:[keys]} or {place:key} (whoever is there); text is the public side only, never what the effects do; from is when it becomes known (story-local time; known at once when left out); at is when it happens, when the condition does not say so by a plain time.',
+              properties: { audience: { type: 'object', description: '"everyone", or {characters:[keys]}, or {place:key}.', additionalProperties: true }, text: { type: 'string' }, from: { type: 'string' }, at: { type: 'string' } },
+              required: ['audience', 'text'],
+              additionalProperties: false,
+            },
+          },
+          required: ['key', 'name', 'when', 'effects'],
+          additionalProperties: false,
+        },
+      },
       routines: {
         type: 'array',
         description: 'The recurring day of a character who matters off stage and has none: windows of the day with what it is doing and where, in the order they apply (the first that fits applies). Replaces what it had.',

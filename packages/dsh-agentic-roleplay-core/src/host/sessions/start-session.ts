@@ -6,13 +6,15 @@ import type { NarrationSegment } from '../../shared/narration.ts'
 import { loadCharacters } from '../characters/load.ts'
 import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
+import { loadTriggers } from '../triggers/load.ts'
+import { loadVariables, variableProblems } from '../variables/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCharacters, populateClock, populateItems, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
+import { populateCharacters, populateClock, populateItems, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
 
 const MAX_NAME_LENGTH = 200
 
@@ -52,6 +54,14 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const { items, slots, problems: itemProblems } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
   if (itemProblems.length > 0) throw new InvalidWorldError(`the items of "${world.summary.name}" have ${itemProblems.length} problem(s)`, itemProblems)
 
+  const declared = await loadVariables(world.directory)
+  if (declared.problems.length > 0) throw new InvalidWorldError(`the variables of "${world.summary.name}" have ${declared.problems.length} problem(s)`, declared.problems)
+  const tracking = variableProblems({ defs: declared.defs, characters, items, locations, values: world.variables })
+  if (tracking.length > 0) throw new InvalidWorldError(`what "${world.summary.name}" tracks has ${tracking.length} problem(s)`, tracking.map(message => ({ path: world.directory, message })))
+
+  const scripted = await loadTriggers(world.directory)
+  if (scripted.problems.length > 0) throw new InvalidWorldError(`the triggers of "${world.summary.name}" have ${scripted.problems.length} problem(s)`, scripted.problems)
+
   const related = relationshipProblems(characters)
   if (related.length > 0) throw new InvalidWorldError(`the relationships of "${world.summary.name}" have ${related.length} problem(s)`, related.map(message => ({ path: world.directory, message })))
 
@@ -85,6 +95,8 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateCharacters(session, characters, player.id)
       populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
+      populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
+      populateTriggers(session, scripted.triggers)
       populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())
     })
     writeSettings(sessionFolder(sessionsDir, id), settings)

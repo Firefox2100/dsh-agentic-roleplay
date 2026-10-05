@@ -94,6 +94,8 @@ export interface ItemDefinition {
   wearable?: string
   container?: { state: ContainerState; openedBy: string[] }
   owner?: string
+  /** What it starts with of what the world tracks, by variable key. */
+  variables?: Record<string, import('./variable.ts').VariableValue>
   /** Where it starts: one of these. */
   start:
     | { kind: 'location'; location: string; position?: string; feature?: string }

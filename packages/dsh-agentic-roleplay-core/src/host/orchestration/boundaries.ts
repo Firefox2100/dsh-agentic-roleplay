@@ -1,10 +1,11 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
-import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session } from 'dsh-roleplay-state'
+import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from 'dsh-roleplay-state'
+import type { Note } from '../../shared/notes.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
 import type { SkipRequest, StoryTime } from '../clock/story-clock.ts'
-import type { CharacterAction, CharacterReport, MoveRequest, NarrationSegment, Outcome, Utterance } from './protocol.ts'
+import type { CharacterAction, CharacterReport, MoveRequest, NarrationSegment, Outcome, TurnOutput, Utterance } from './protocol.ts'
 
 /** A character as the turn sees it. `key` is how the game master and the tools name it. */
 export interface CastMember {
@@ -98,6 +99,12 @@ export interface CharacterRequest {
   time?: StoryTime
   /** What its day has it doing, what it committed to, and what it is after. */
   agenda?: AgendaView
+  /** What the world made it notice just now. */
+  cues?: readonly string[]
+  /** What it knows is coming, soonest first. */
+  upcoming?: readonly { text: string; when?: string }[]
+  /** What is tracked of the character that it can tell (its feelings and whatever else is its own or public), and what it can tell of those here. */
+  tracked?: { self: string; others: { name: string; text: string }[] }
 }
 
 /** A character's profile of someone present, as it is told to it. */
@@ -160,6 +167,23 @@ export interface NarrationInput {
   utterances: readonly Utterance[]
 }
 
+/** What the player has just read, and who they are in it: all a suggestion may be based on. */
+export interface SuggestionJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  /** How many suggestions the chat asks for. */
+  count: number
+  /** The output of the turn as the player read it. */
+  output: TurnOutput
+}
+
+/** Offers the player what their character could do next, after the output of a turn is delivered. */
+export interface Suggester {
+  /** @returns exactly `job.count` short first-person lines, or none when the chat has nobody to make them. */
+  suggest(job: SuggestionJob, signal: AbortSignal): Promise<string[]>
+}
+
 /** Writes the output of a turn itself, or leaves it to the game master by returning nothing. */
 export interface Narrator {
   narrate(input: NarrationInput): Promise<readonly NarrationSegment[] | undefined>
@@ -188,6 +212,8 @@ export interface CommitEntry {
   publicState?: string
   /** Whether the character got to say its utterance. */
   spoken: boolean
+  /** What the game master changed of what is tracked because of it, and what came of each. */
+  variables?: { subject: string; name: string; from: string; to: string }[]
   /** What it did with things, and what came of each. */
   items?: { name: string; action: string; summary: string }[]
   /** The player's character: it was not asked to act, so `intent` is what the game master decided it did. */
@@ -248,7 +274,7 @@ export interface Recaller {
 
 /** The state of the scene the game master is told at the start of a turn. */
 export interface SceneContextProvider {
-  scene(input: { /** What time it is, and how long the story went on without the player when time follows the wall clock; and what the days of the characters say. */ time?: { now: StoryTime; away?: number; agenda?: SceneAgenda }; cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems }): string
+  scene(input: { /** What the story keeps track of, as lines. */ tracked?: readonly string[]; /** What time it is, and how long the story went on without the player when time follows the wall clock; and what the days of the characters say. */ time?: { now: StoryTime; away?: number; agenda?: SceneAgenda }; /** What the world did since the last turn, and what the game master has still to weave in; and what is known beforehand of what is coming. */ world?: { happened: string[]; beats: { id: number; text: string }[]; upcoming?: { text: string; who: string; when?: string }[] }; cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems }): string
 }
 
 export interface SceneItems {
@@ -258,7 +284,7 @@ export interface SceneItems {
 }
 
 /** Why the game master may ask for something to be made up: the story genuinely needs it. */
-export const AUTHORING_NEEDS = ['scene_change', 'arrival', 'introduction', 'object'] as const
+export const AUTHORING_NEEDS = ['scene_change', 'arrival', 'introduction', 'object', 'variable', 'trigger'] as const
 export type AuthoringNeed = (typeof AUTHORING_NEEDS)[number]
 
 export interface CreateJob {
@@ -272,7 +298,7 @@ export interface CreateJob {
 
 export interface CreateReport {
   /** What was made, by key. */
-  created: { kind: 'character' | 'place' | 'item'; key: string; name: string }[]
+  created: { kind: 'character' | 'place' | 'item' | 'variable' | 'trigger'; key: string; name: string }[]
   /** Why nothing was made, when nothing was: the request did not meet the bar, or something that exists can serve. */
   declined?: string
 }
@@ -309,14 +335,28 @@ export interface Boundaries {
   narrationChecker: NarrationChecker
   committer: Committer
   author: Author
+  suggester: Suggester
   recaller: Recaller
   sceneContext: SceneContextProvider
+}
+
+/** What triggers did the last time some fired, as the game master is told. */
+export interface TriggerReport {
+  fired: {
+    name: string
+    /** The events the world made happen, as text. */
+    events: string[]
+    /** What characters were made to notice, they will be told it the next time they act. */
+    cues: { names: string[]; text: string }[]
+    /** What the game master is to weave in; it says it did with the id in `narrate`. */
+    beats: { id: number; text: string }[]
+  }[]
 }
 
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock'>
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
@@ -328,14 +368,43 @@ export interface TurnStore {
   endRound(turn: number, round: number, stated?: number, minimum?: number): { from: number; to: number; zone: string; moved: RoutineMove[] }
   /** Skips ahead in the story's time. @throws {ClockError} */
   skipTime(turn: number, round: number, request: SkipRequest): { from: number; to: number; zone: string; reason: string; moved: RoutineMove[] }
+  /** What is tracked that a character can tell: of itself, and of those with it. */
+  trackedFor(characterId: Character['id'], presentIds: readonly number[]): { self: string; others: { name: string; text: string }[] }
+  /** What the story tracks, as the game master is told it: the scene first (who is with the player, the place, what lies there, the world), then the rest. */
+  tracked(): string[]
   /** What has fallen due for characters who are away from the player's character and has not been dealt with. */
   dueOffScene(turn: number): OffSceneItem[]
   /** Remember these as dealt with. */
   markHandled(keys: readonly string[]): void
+  /** Fire the triggers whose conditions just came true, at this round; each is applied together with its effects or not at all. */
+  runTriggers(turn: number, round: number): TriggerReport
+  /** What is known beforehand of what is coming (announced triggers), for the game master: who knows of each, and when it is to happen. */
+  upcoming(turn: number): { text: string; who: string; when?: string }[]
+  /** The same, for what one character knows of: it is among those who know. */
+  upcomingFor(characterId: Character['id'], turn: number): { text: string; when?: string }[]
+  /** What the game master was told to weave in and has not yet. */
+  pendingBeats(): { id: number; text: string }[]
+  /** The game master wove these in. @throws {Error} for an id that is not a pending beat. */
+  resolveBeats(ids: readonly number[]): void
+  /** What a character is to notice the next time it acts. */
+  cuesFor(characterId: Character['id']): { id: number; text: string }[]
+  doneCues(ids: readonly number[]): void
+  /** Lets go of what nobody took up in the turns the settings allow. */
+  lapseNotes(turn: number): void
+  /** Shows the player a note beside the story until the next turn starts. */
+  putNote(note: Note): void
+  /** The notes of the session as they stand. */
+  notes(): Note[]
+  /** Removes the notes: they belong to the turn that made them. */
+  clearNotes(): void
   /** A character's agenda now: its day, its commitments and its goals. */
   agenda(turn: number, characterId: Character['id']): AgendaView
   /** Writes the updates of one round, moves included, together or not at all. */
   commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch; move?: Move; items?: readonly ItemChangeSpec[] }[]): ItemEffect[][]
+  /** Why these changes to what is tracked cannot be made, if they cannot; nothing is changed. */
+  checkVariableChanges(changes: readonly VariableChangeSpec[]): string[]
+  /** Changes what is tracked, together or not at all, and says what each came to. */
+  changeVariables(turn: number, changes: readonly VariableChangeSpec[]): VariableEffect[]
   /** Whether these item changes, done in order across the characters, can all be done; the reasons when not. Nothing is changed. */
   checkItemChanges(entries: readonly { character: string; changes: readonly ItemChangeSpec[] }[]): { ok: true; effects: ItemEffect[][] } | { ok: false; problems: string[] }
   /** What lies in a place, hidden things too when asked. */

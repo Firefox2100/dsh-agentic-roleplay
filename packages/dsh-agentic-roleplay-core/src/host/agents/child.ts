@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import {
   appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides, childSessionMeta,
@@ -16,6 +16,9 @@ const SUBMIT_RULE = `When you are done, call ${SUBMIT_TOOL} with your result. It
 
 /** Calls a child may make before it is given up; a child that keeps going is not converging. */
 const DEFAULT_MAX_CALLS = 40
+
+/** A child that stops without a result is told to submit this many times before it is given up. */
+const MAX_REMINDERS = 2
 
 /** A one-shot agent of the game master, with tools of its own. */
 export interface ChildTask {
@@ -37,6 +40,8 @@ export interface ChildTask {
   /** Refuses the result with a reason when the child may not finish yet; the child then carries on. */
   beforeSubmit?: (result: unknown) => string | undefined
   maxCalls?: number
+  /** How hard the child thinks, as a level the model offers (for example `off` or `low`); the game master's own level when absent. */
+  reasoningEffort?: string
 }
 
 /**
@@ -54,6 +59,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
   const { parent, signal } = task
   let submitted: { value: unknown } | undefined
   let calls = 0
+  let reminders = 0
   const budget = task.maxCalls ?? DEFAULT_MAX_CALLS
   const counted = (tool: ToolDefinition): ToolDefinition => ({
     ...tool,
@@ -85,13 +91,18 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     sessionId: SessionId(randomUUID()),
     parentAgent: parent,
     meta: childSessionMeta(parent, depth, false),
-    agentOptions: resolveChildAgentOptions(parent, undefined, depth),
+    agentOptions: resolveChildAgentOptions(parent, task.reasoningEffort === undefined || task.reasoningEffort === '' ? undefined : { reasoningEffort: ReasoningEffortId(task.reasoningEffort) }, depth),
     signal,
     setup: (childCtx, child) => {
       appendDelegatedPolicyOverrides(child.session, inherited)
       applyChildComposition(childCtx, parent, { persona: `${task.persona}\n\n${SUBMIT_RULE}`, toolFilter: { allow: [] } })
       for (const tool of task.tools ?? []) childCtx.tools.register(counted(tool))
       childCtx.tools.register(submit)
+      childCtx.on('agent/turn-stopping', () => {
+        if (submitted !== undefined || reminders >= MAX_REMINDERS) return
+        reminders += 1
+        child.steer(createUserMessage({ content: [{ type: 'text', text: `You have not finished: call ${SUBMIT_TOOL} with your result, as the tool lists it.` }], source: { kind: 'roleplay' } }))
+      })
       childCtx.tools.guard(exec => (submitted === undefined ? undefined : `the result is already submitted, so \`${exec.name}\` is not run`))
     },
   })

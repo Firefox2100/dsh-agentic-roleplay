@@ -60,15 +60,36 @@ export const MIGRATIONS: readonly Migration[] = [
         updated_at TEXT NOT NULL
       ) STRICT;
 
-      CREATE TABLE character_emotion (
-        character_id INTEGER PRIMARY KEY REFERENCES character_state (character_id) ON DELETE CASCADE,
-        baseline_valence REAL NOT NULL CHECK (baseline_valence BETWEEN -1 AND 1),
-        baseline_arousal REAL NOT NULL CHECK (baseline_arousal BETWEEN -1 AND 1),
-        baseline_dominance REAL NOT NULL CHECK (baseline_dominance BETWEEN -1 AND 1),
-        immediate_valence REAL NOT NULL CHECK (immediate_valence BETWEEN -1 AND 1),
-        immediate_arousal REAL NOT NULL CHECK (immediate_arousal BETWEEN -1 AND 1),
-        immediate_dominance REAL NOT NULL CHECK (immediate_dominance BETWEEN -1 AND 1)
+      CREATE TABLE variable_defs (
+        key TEXT PRIMARY KEY,
+        ordinal INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        kind TEXT NOT NULL CHECK (kind IN ('number', 'flag', 'choice')),
+        subject TEXT NOT NULL CHECK (subject IN ('character', 'item', 'location', 'world')),
+        only_keys TEXT NOT NULL DEFAULT '[]',
+        min_value REAL,
+        max_value REAL,
+        is_integer INTEGER NOT NULL DEFAULT 0 CHECK (is_integer IN (0, 1)),
+        options TEXT NOT NULL DEFAULT '[]',
+        default_value TEXT NOT NULL,
+        has_baseline INTEGER NOT NULL DEFAULT 0 CHECK (has_baseline IN (0, 1)),
+        visibility TEXT NOT NULL CHECK (visibility IN ('public', 'private', 'hidden')),
+        bands TEXT NOT NULL DEFAULT '[]',
+        always_shown INTEGER NOT NULL DEFAULT 0 CHECK (always_shown IN (0, 1)),
+        builtin INTEGER NOT NULL DEFAULT 0 CHECK (builtin IN (0, 1))
       ) STRICT;
+
+      CREATE TABLE variable_values (
+        variable TEXT NOT NULL REFERENCES variable_defs (key) ON DELETE CASCADE,
+        subject TEXT NOT NULL CHECK (subject IN ('character', 'item', 'location', 'world')),
+        subject_id INTEGER NOT NULL,
+        value TEXT NOT NULL,
+        baseline TEXT,
+        updated_turn INTEGER NOT NULL,
+        PRIMARY KEY (variable, subject, subject_id)
+      ) STRICT;
+      CREATE INDEX variable_values_subject ON variable_values (subject, subject_id);
 
       CREATE TABLE intents (
         id INTEGER PRIMARY KEY,
@@ -338,6 +359,39 @@ export const MIGRATIONS: readonly Migration[] = [
         created_at TEXT NOT NULL,
         PRIMARY KEY (turn, round)
       ) STRICT;
+
+      CREATE TABLE triggers (
+        id INTEGER PRIMARY KEY,
+        key TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        condition TEXT NOT NULL,
+        effects TEXT NOT NULL,
+        repeat INTEGER NOT NULL DEFAULT 0 CHECK (repeat IN (0, 1)),
+        cooldown_seconds INTEGER,
+        chance REAL CHECK (chance IS NULL OR (chance >= 0 AND chance <= 1)),
+        priority INTEGER NOT NULL DEFAULT 0,
+        expires TEXT,
+        announce TEXT,
+        status TEXT NOT NULL DEFAULT 'dormant' CHECK (status IN ('dormant', 'fired', 'failed', 'expired')),
+        fire_count INTEGER NOT NULL DEFAULT 0,
+        last_fired_ms INTEGER,
+        last_result INTEGER NOT NULL DEFAULT 0 CHECK (last_result IN (0, 1)),
+        problem TEXT,
+        origin TEXT NOT NULL CHECK (origin IN ('world', 'story')),
+        created_turn INTEGER NOT NULL
+      ) STRICT;
+      CREATE INDEX triggers_open ON triggers (status, priority DESC, id);
+
+      CREATE TABLE trigger_notes (
+        id INTEGER PRIMARY KEY,
+        trigger_id INTEGER NOT NULL REFERENCES triggers (id) ON DELETE CASCADE,
+        kind TEXT NOT NULL CHECK (kind IN ('beat', 'cue')),
+        text TEXT NOT NULL,
+        character_ids TEXT NOT NULL DEFAULT '[]',
+        turn INTEGER NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'done', 'lapsed'))
+      ) STRICT;
+      CREATE INDEX trigger_notes_pending ON trigger_notes (status, kind, id);
     `,
   },
 ]

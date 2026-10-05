@@ -15,6 +15,9 @@ declare module '@deepseek-ai/cordis' {
 export class RoleplayOrchestration extends Service {
   private current: Boundaries = defaultBoundaries()
 
+  /** Resolves once the records of a chat's recorded rounds are written (or have failed): the writing goes on behind the story, so what needs them waits here. */
+  settle: (chat: string) => Promise<void> = () => Promise.resolve()
+
   constructor(ctx: Context) {
     super(ctx, 'roleplayOrchestration')
   }
