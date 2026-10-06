@@ -1,4 +1,5 @@
 import { CLOCK_MODES, type ClockMode } from 'dsh-roleplay-model'
+import { MAX_OWN_RULES } from './rules.ts'
 
 /** What can be set for one chat. Stored as a file next to the chat's database: it is configuration, not story state. */
 export interface ChatSettings {
@@ -70,6 +71,10 @@ export interface ChatSettings {
     /** How many of the turns most recently played keep a snapshot of the story's state, so that the story can be taken back to them; 0 keeps none and turns rewinding off. */
     keepSnapshots: number
   }
+  rules: {
+    /** What is not allowed in this story besides what the world itself rules out, in your own words, one rule per line ("No one can fly"). The game master holds the player's actions and out-of-character commands to the world's rules and these. */
+    own: string
+  }
   preview: {
     /** Whether the game master first shows the player a short opening of the scene, before the characters are asked, so that something is on screen while the rest of the turn is worked out. */
     enabled: boolean
@@ -128,6 +133,7 @@ export const SETTINGS_SPEC = {
   reasoning: { children: text(40, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2) },
   rewind: { keepSnapshots: integer(0, 500, 30) },
+  rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
   embedding: { options: record() },

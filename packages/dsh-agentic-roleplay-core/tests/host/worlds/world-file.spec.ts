@@ -66,6 +66,24 @@ describe('parseWorldFile', () => {
     })
   })
 
+  describe('the rules', () => {
+    const rulesOf = (extra: Record<string, unknown>) => parse(JSON.stringify({ name: 'W', ...extra })).rules
+
+    it('are a list of short rules in the author\'s own words, or one rule as text; blanks are left out and none is fine', () => {
+      expect(rulesOf({ rules: ['There is no magic.', '  ', ' Guns do not exist '] })).toEqual(['There is no magic.', 'Guns do not exist'])
+      expect(rulesOf({ rules: 'There is no magic.' })).toEqual(['There is no magic.'])
+      expect(rulesOf({})).toBeUndefined()
+      expect(rulesOf({ rules: [] })).toBeUndefined()
+    })
+
+    it('are refused when too many, too long or not text, with where', () => {
+      const issues = (extra: Record<string, unknown>) => { const result = parseWorldFile(JSON.stringify({ name: 'W', ...extra })); return result.ok ? [] : result.issues.map(issue => issue.message) }
+      expect(issues({ rules: Array.from({ length: 31 }, (_, index) => `rule ${index}`) })).toEqual(['has more than 30 rules'])
+      expect(issues({ rules: ['x'.repeat(301)] })).toEqual(['rule 1 is longer than 300 characters: keep rules short'])
+      expect(issues({ rules: 5 }).length).toBeGreaterThan(0)
+    })
+  })
+
   describe('the clock', () => {
     const clockOf = (extra: Record<string, unknown>) => parse(JSON.stringify({ name: 'W', ...extra })).clock
 

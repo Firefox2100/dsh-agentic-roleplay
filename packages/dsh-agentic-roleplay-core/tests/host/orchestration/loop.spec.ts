@@ -106,11 +106,15 @@ interface Script {
    * character, makes one that is not usable at first (no place) and fixes it when refused, declines, says it made
    * something it did not, or makes two at once.
    */
-  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object'; need?: string }
+  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops'; need?: string }
   /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
   things?: 'take' | 'conflict' | 'unlock'
   /** How the game master deals with time: says a round took ten minutes; or skips to seven in the morning before it delivers. */
   time?: 'stated' | 'skip'
+  /** How the game master judges the player's action: allows it (the default), refuses it, or does not judge at all. */
+  judge?: 'refuses' | 'skipped'
+  /** The turn is an out-of-character command: the game master rules it legal and sends Bob down to the cellar by decree, spawns nothing, or rules it illegal. */
+  ooc?: 'moves-bob' | 'illegal' | 'acts-before-ruling'
   /** The player's character walks out to the street, and nobody else needs to react: the game master resolves a round with only its outcome. */
   player?: 'walks'
   /** The suggester writes its lines as plain text instead of submitting them, until it is reminded. */
@@ -234,6 +238,7 @@ function authorAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
   const mode = script.expand?.author ?? 'creates'
   const submitCreated = call('a-submit', 'submit_result', { outcome: 'created', summary: 'Made Mira Voss and connected her.' })
   const place = { location: 'street', position: 'by the bar door' }
+  if (mode === 'loops') return call(`a-loop-${lints}`, 'world_lint', {})
   if (mode === 'declines') return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'The innkeeper already serves; no new person is needed.' })
   if (mode === 'pointless') {
     if (edits === 0 && !last?.isError) return submitCreated
@@ -277,6 +282,20 @@ function answerWithoutSuggestions(script: Script) {
     }
     if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
     if (!toolNames(request).includes('activate_characters')) return text('a title')
+    if (script.ooc !== undefined && thisTurn(request).includes('OUT-OF-CHARACTER COMMAND')) {
+      const ruled = timesCalled(request, 'ooc_ruling')
+      if (script.ooc === 'acts-before-ruling' && ruled === 0 && timesCalled(request, 'resolve_round') === 0) return call('o-early', 'resolve_round', { outcomes: [{ character: 'bob', result: 'succeeded', summary: 'Bob leaves', moves_to: { location: 'cellar', ignore_exits: true } }] })
+      if (ruled === 0) return call('o-rule', 'ooc_ruling', script.ooc === 'illegal' ? { rule_check: 'There is no magic: broken.', legal: false, reason: 'The world has no magic, so Bob cannot vanish in smoke.' } : { rule_check: 'no rules listed', legal: true, reason: 'Bob goes down to the cellar.' })
+      if (script.ooc === 'illegal') return timesCalled(request, 'narrate') === 0 ? call('o-nar', 'narrate', { segments: [] }) : text('')
+      if (timesCalled(request, 'resolve_round') - (script.ooc === 'acts-before-ruling' ? 1 : 0) === 0) return call('o-res', 'resolve_round', { outcomes: [{ character: 'bob', result: 'succeeded', summary: 'Bob goes down to the cellar, urgently', moves_to: { location: 'cellar', ignore_exits: true } }] })
+      if (timesCalled(request, 'record_memory') === 0) return call('o-rec', 'record_memory', { focus: 'Bob was sent down to the cellar.' })
+      return timesCalled(request, 'narrate') === 0 ? call('o-nar', 'narrate', { segments: [{ type: 'narration', text: 'Bob stands abruptly and hurries down the stair.' }] }) : text('')
+    }
+    if (timesCalled(request, 'judge_action') === 0 && !thisTurn(request).includes('input is refused') && script.judge !== 'skipped') return call('j-judge', 'judge_action', script.judge === 'refuses' ? { rule_check: 'There is no magic: broken.', allowed: false, reason: 'The world has no magic, so no fireball can come of a wave of the hand.' } : { rule_check: 'no rules listed', allowed: true, reason: 'The character acts within what the world allows.' })
+    if (script.judge === 'refuses' && timesCalled(request, 'judge_action') > 0) {
+      if (timesCalled(request, 'resolve_round') === 0) return call('j-res', 'resolve_round', { outcomes: [{ character: 'arthur', result: 'failed', summary: 'Arthur waves a hand at the lamp; nothing comes of it' }] })
+      return timesCalled(request, 'narrate') === 0 ? call('j-nar', 'narrate', { segments: [{ type: 'narration', text: 'You wave a hand at the lamp. Nothing happens.' }] }) : text('')
+    }
     if (timesCalled(request, 'preview_scene') === 0 && !thisTurn(request).includes('input is refused')) return call('m-prev', 'preview_scene', { text: PREVIEW })
     const activated = timesCalled(request, 'activate_characters')
     // A refused call still counts as a call, so one refusal is taken off.
@@ -466,6 +485,13 @@ describe('a turn with the real agent loop', () => {
       expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toContain('character-unplaced')
       expect(session.placements.get('character', session.characters.getBySourceId('mira')!.id)?.locationId).toBe(session.locations.getBySourceId('street')!.id)
       expect(masterSaw(adapter)).toContain('character mira (Mira Voss)')
+    })
+
+    it('is stopped when it keeps calling tools past its budget and never submits, and the game master is told it could not be made', async () => {
+      const { adapter, session } = await playAuthored('loops')
+      expect(authors(adapter).length).toBeLessThan(60)
+      expect(session.characters.getBySourceId('mira')).toBeUndefined()
+      expect(masterSaw(adapter)).toContain('went on past its 30 calls without submitting a result and was stopped')
     })
 
     it('can decline, and the game master is told to work with what exists', async () => {
@@ -928,6 +954,90 @@ describe('a turn with the real agent loop', () => {
       expect(JSON.stringify(characterRequests(adapter).map(request => request.messages))).not.toContain('lamplight')
       expect(outputsOf(agent)).toHaveLength(1)
       expect(timesCalled(masterRequests(adapter).at(-1)!, 'preview_scene')).toBe(1)
+    })
+
+    it('plays what the game master judges cannot work as a failed attempt: no preview, nobody is asked, and the story is as it was', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', judge: 'refuses' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I cast a fireball at the lamp.'))
+      await agent.whenIdle()
+      expect(characterRequests(adapter)).toEqual([])
+      expect(masterRequests(adapter).some(request => timesCalled(request, 'preview_scene') > 0)).toBe(false)
+      expect(outputsOf(agent)[0]).toMatchObject({ segments: [{ type: 'narration', text: 'You wave a hand at the lamp. Nothing happens.' }] })
+      expect(session.metadata.get().turns).toBe(1)
+    })
+
+    it('has the game master judge first in an ordinary turn, and steers it back when it does not', async () => {
+      const { id } = await addSession('Vault', true)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', judge: 'skipped' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I look around.'))
+      await agent.whenIdle()
+      expect(JSON.stringify(masterRequests(adapter).map(request => request.messages))).toContain('call judge_action first')
+    })
+
+    describe('out-of-character commands', () => {
+      const playOoc = async (ooc: NonNullable<Script['ooc']>, command = '/ooc Bob now goes down to the cellar, something urgent came up') => {
+        const { session, id } = await addSession('Vault', true)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ooc }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say(command))
+        await agent.whenIdle()
+        return { session, id, adapter, agent }
+      }
+      const bobAt = (session: Session) => session.placements.get('character', session.characters.getBySourceId('bob')!.id)?.locationId === session.locations.getBySourceId('cellar')!.id
+
+      it('is a turn of its own: no preview, nobody is asked to act, the game master rules first, then decrees what the command says, and the player reads a note and what they perceive', async () => {
+        const { session, adapter, agent } = await playOoc('moves-bob')
+        expect(characterRequests(adapter)).toEqual([])
+        expect(adapter.requests.some(request => thisTurn(request).includes('OUT-OF-CHARACTER COMMAND') && timesCalled(request, 'preview_scene') > 0)).toBe(false)
+        expect(bobAt(session)).toBe(true)
+        const [output] = outputsOf(agent)
+        expect(output).toMatchObject({ segments: [{ type: 'narration', text: 'Bob stands abruptly and hurries down the stair.' }], ooc: { legal: true, note: 'Bob goes down to the cellar.' } })
+        expect(session.metadata.get().turns).toBe(1)
+      })
+
+      it('records what was decreed as what happened to the character, marked as not chosen', async () => {
+        const { adapter } = await playOoc('moves-bob')
+        const brief = briefOf(keepers(adapter)[0]!)
+        expect(brief).toContain('- bob (Bob): decreed, not chosen: succeeded: Bob goes down to the cellar, urgently')
+        expect(brief).toContain("By the player's out-of-character command")
+      })
+
+      it('changes nothing when the game master rules it illegal, and the player is told why', async () => {
+        const { session, agent } = await playOoc('illegal', '/ooc Bob vanishes in a puff of smoke')
+        expect(bobAt(session)).toBe(false)
+        expect(outputsOf(agent)[0]).toMatchObject({ segments: [], ooc: { legal: false, note: 'The world has no magic, so Bob cannot vanish in smoke.' } })
+        expect(session.metadata.get().turns).toBe(1)
+      })
+
+      it('lets nothing change before the ruling, and says so', async () => {
+        const { session, adapter } = await playOoc('acts-before-ruling')
+        const early = adapter.requests.flatMap(request => request.messages).filter(message => message.role === 'tool').map(message => JSON.stringify(message)).find(text => text.includes('rule on it first with ooc_ruling'))
+        expect(early).toBeDefined()
+        expect(bobAt(session)).toBe(true)
+      })
+
+      it('tells the game master the rules of the world and of the player every turn, and an ordinary action is not an out-of-character command', async () => {
+        const { session, id } = await addSession('Vault', true)
+        session.metadata.setValue('rules', ['There is no magic.'])
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { rules: { own: 'No one can fly.\n\nNo guns.' } })
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door. /ooc is a word here'))
+        await agent.whenIdle()
+        const notice = thisTurn(masterRequests(adapter)[0]!)
+        expect(notice).toContain(JSON.stringify("What is not allowed in this story (the rules of the world, and the player's own). They are absolute: an action of the player's character that breaks one does not work, whatever the player says it does:\n- There is no magic.\n- No one can fly.\n- No guns.").slice(1, -1))
+        expect(notice).not.toContain('OUT-OF-CHARACTER COMMAND')
+        expect(characterRequests(adapter).length).toBeGreaterThan(0)
+      })
+
+      it('is not an empty command: the game master is told to ask what the player wants, and nobody acts', async () => {
+        const { adapter } = await playOoc('moves-bob', '/ooc')
+        expect(characterRequests(adapter)).toEqual([])
+        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('The player sent an empty out-of-character command')
+      })
     })
 
     it('moves the player\'s character by its own outcome, with no one else asked to act, and the journey takes its time', async () => {

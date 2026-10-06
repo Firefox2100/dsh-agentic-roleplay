@@ -23,6 +23,8 @@ export interface CharacterAction {
 export interface CharacterReport extends CharacterAction {
   character: string
   name: string
+  /** The player's out-of-character command decreed it: the character did not choose it. */
+  forced?: true
 }
 
 /** A character that could not act, and why. */

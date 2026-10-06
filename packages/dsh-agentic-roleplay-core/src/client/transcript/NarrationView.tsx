@@ -13,6 +13,11 @@ function hueOf(name: string): number {
 export function NarrationView({ data, t }: { data: NarrationNodeData; t: TranslateNS<'roleplay.transcript'> }) {
   return (
     <div className={css.output} data-testid="roleplay-narration">
+      {data.ooc !== undefined && (
+        <p className={data.ooc.legal ? css.oocNote : css.oocRefused} data-testid="roleplay-ooc">
+          <span className={css.oocLabel}>{t(data.ooc.legal ? 'oocDone' : 'oocRefused')}</span> {data.ooc.note}
+        </p>
+      )}
       {data.segments.map((segment, index) => segment.type === 'narration'
         ? <p key={index} className={css.narration}>{segment.text}</p>
         : (

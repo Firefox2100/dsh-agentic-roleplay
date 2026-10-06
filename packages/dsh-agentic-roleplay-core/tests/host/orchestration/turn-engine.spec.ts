@@ -1447,3 +1447,94 @@ describe('the world acting by itself', () => {
     })
   })
 })
+
+describe('judging what the player tries', () => {
+  beforeEach(() => { store.settings = () => ({ ...DEFAULT_SETTINGS, suggestions: { count: 0 }, preview: { enabled: true } }) })
+
+  it('is asked first in an ordinary turn: nothing else is accepted before it, and an engine that was not asked does not need it', async () => {
+    const { run } = scriptedRunner(calm)
+    engine.expectJudgement(owner)
+    await expect(engine.activate(owner, { situation }, run, signal)).rejects.toThrow(/call judge_action first/)
+    expect(() => engine.preview(owner, 'Air goes still.')).toThrow(/judge the action first/)
+    await expect(engine.resolve(owner, [outcome('arthur', 'failed')], run, signal)).rejects.toThrow(/call judge_action first/)
+    expect(engine.missing(owner)).toMatch(/call judge_action first/)
+    engine.judge(owner, true, 'Arthur opens the door, which is possible.')
+    engine.preview(owner, 'Air goes still.')
+    await expect(engine.activate(owner, { situation }, run, signal)).resolves.toMatchObject({ attempt: 1 })
+  })
+
+  it('refuses a reason that is empty and a second judgement, and does not judge an out-of-character command', () => {
+    engine.expectJudgement(owner)
+    expect(() => engine.judge(owner, true, '  ')).toThrow(/give the reason/)
+    engine.judge(owner, false, 'No magic.')
+    expect(() => engine.judge(owner, true, 'Again')).toThrow(/already judged/)
+    const other: TurnOwner = { chat: 'session-1', turn: 2 }
+    engine.beginOoc(other, 'spawn a key')
+    expect(() => engine.judge(other, true, 'x')).toThrow(/out-of-character/)
+  })
+
+  it('has what cannot work played as a failed attempt of the player\'s character alone: nobody is asked, no preview is needed, and it cannot succeed', async () => {
+    const { run, requests } = scriptedRunner(calm)
+    engine.expectJudgement(owner)
+    engine.judge(owner, false, 'There is no magic.')
+    await expect(engine.activate(owner, { situation }, run, signal)).rejects.toThrow(/the action cannot work \(There is no magic\.\)/)
+    await expect(engine.resolve(owner, [outcome('arthur', 'succeeded')], run, signal)).rejects.toThrow(/must be failed/)
+    const resolved = await engine.resolve(owner, [outcome('arthur', 'failed', 'Arthur waves a hand; nothing comes of it')], run, signal)
+    expect(resolved.done?.updated).toEqual(['arthur'])
+    expect(requests).toEqual([])
+    await expect(engine.narrate(owner, narration('Nothing happens.'))).resolves.toMatchObject({ repaired: false })
+  })
+})
+
+describe('an out-of-character command', () => {
+  const player = { ...outcome('arthur', 'succeeded') }
+
+  it('is ruled on first; nothing changes before the ruling, nobody is asked and no preview is shown', async () => {
+    const { run } = scriptedRunner(calm)
+    engine.beginOoc(owner, 'Alice goes home')
+    await expect(engine.activate(owner, { situation }, run, signal)).rejects.toThrow(/asks nobody to act/)
+    expect(() => engine.preview(owner, 'x')).toThrow(/shows no preview/)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], run, signal)).rejects.toThrow(/rule on it first with ooc_ruling/)
+    expect(() => engine.advanceTime(owner, { byMinutes: 5, reason: 'x' })).toThrow(/rule on it first/)
+    await expect(engine.expand(owner, { need: 'object', what: 'a key' }, signal)).rejects.toThrow(/rule on it first/)
+    await expect(engine.narrate(owner, [])).rejects.toThrow(/rule on it first/)
+    expect(engine.missing(owner)).toMatch(/rule on it first/)
+  })
+
+  it('refused: nothing may change and the output has no segments, only the note', async () => {
+    const { run } = scriptedRunner(calm)
+    engine.beginOoc(owner, 'Alice vanishes in smoke')
+    expect(engine.rule(owner, false, ' There is no magic. ')).toEqual({ legal: false, note: 'There is no magic.' })
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], run, signal)).rejects.toThrow(/was refused/)
+    await expect(engine.narrate(owner, narration('Smoke!'))).rejects.toThrow(/refused/)
+    await expect(engine.narrate(owner, [])).resolves.toEqual({ segments: [], repaired: false, ooc: { legal: false, note: 'There is no magic.' } })
+    expect(store.commits).toEqual([])
+    expect(store.completed).toBe(1)
+  })
+
+  it('legal: decrees outcomes for any characters, asked or not, forced and recorded, then narration only', async () => {
+    const { run, requests } = scriptedRunner(calm)
+    engine.beginOoc(owner, 'Alice goes home and Arthur sighs')
+    engine.rule(owner, true, 'Alice goes home.')
+    expect(() => engine.rule(owner, true, 'Again')).toThrow(/already ruled/)
+    await expect(engine.resolve(owner, [], run, signal)).rejects.toThrow(/at least one outcome/)
+    await expect(engine.resolve(owner, [outcome('nobody', 'succeeded')], run, signal)).rejects.toThrow(/nobody is not a character/)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded'), outcome('alice', 'succeeded')], run, signal)).rejects.toThrow(/more than one outcome for alice/)
+    const done = await engine.resolve(owner, [outcome('alice', 'succeeded', 'Alice goes home'), player], run, signal)
+    expect(done.done?.updated.sort()).toEqual(['alice', 'arthur'])
+    expect(requests).toEqual([])
+    const [record] = store.queue
+    expect(record!.situation).toContain('out-of-character command (Alice goes home and Arthur sighs)')
+    expect(record!.entries.find(entry => entry.character === 'alice')).toMatchObject({ forced: true, intent: 'Alice goes home', commitment: 'high' })
+    expect(record!.entries.find(entry => entry.character === 'arthur')?.forced).toBeUndefined()
+    await expect(engine.narrate(owner, [{ type: 'utterance', character: 'alice', text: 'Bye' }])).rejects.toThrow(/nobody was asked to speak/)
+    await expect(engine.narrate(owner, narration('Alice leaves.'))).resolves.toMatchObject({ segments: [{ type: 'narration', text: 'Alice leaves.' }], ooc: { legal: true, note: 'Alice goes home.' } })
+  })
+
+  it('refuses a ruling with no reason, and a ruling on a turn that is not a command', () => {
+    expect(() => engine.rule(owner, true, 'x')).toThrow(/not an out-of-character command/)
+    engine.beginOoc(owner, 'x')
+    expect(() => engine.rule(owner, true, '  ')).toThrow(/give the reason/)
+    expect(() => engine.rule(owner, true, 'y'.repeat(401))).toThrow(/longer than 400/)
+  })
+})

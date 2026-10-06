@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS, parseSettings } from '../../../src/shared/settings.ts
 
 describe('the settings form', () => {
   it('starts from the settings, with a share shown as a percentage', () => {
-    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'authoring.enabled': true, 'authoring.perTurn': '2', 'authoring.consolidateAfter': '3', 'clock.mode': 'simulated', 'clock.timeZone': '', 'clock.roundSeconds': '30', 'clock.maxSkipDays': '30', 'reasoning.children': '', 'triggers.enabled': true, 'triggers.maxFires': '3', 'triggers.beatTurns': '3', 'rewind.keepSnapshots': '30', 'preview.enabled': true, 'suggestions.count': '3', 'offstage.perTurn': '2', 'context.limitTokens': '0', 'context.limitRatio': '60', 'context.retainRatio': '50' })
+    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'authoring.enabled': true, 'authoring.perTurn': '2', 'authoring.consolidateAfter': '3', 'clock.mode': 'simulated', 'clock.timeZone': '', 'clock.roundSeconds': '30', 'clock.maxSkipDays': '30', 'rules.own': '', 'reasoning.children': '', 'triggers.enabled': true, 'triggers.maxFires': '3', 'triggers.beatTurns': '3', 'rewind.keepSnapshots': '30', 'preview.enabled': true, 'suggestions.count': '3', 'offstage.perTurn': '2', 'context.limitTokens': '0', 'context.limitRatio': '60', 'context.retainRatio': '50' })
   })
 
   it('gives back settings that parse, with what the form does not show left as it was', () => {

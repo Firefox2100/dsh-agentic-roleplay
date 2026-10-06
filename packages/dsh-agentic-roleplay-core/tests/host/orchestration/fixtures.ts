@@ -48,6 +48,8 @@ export interface FakeStore extends TurnStore {
   session: SessionStore
   /** What the store reported as a problem, for example a trigger that could not fire. */
   problems: string[]
+  /** What is not allowed in the story. */
+  ruled: string[]
   /** The wall clock the story's time follows when it is asked to, in UTC milliseconds. */
   wall: number
 }
@@ -57,12 +59,14 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
   const session = createSessionStore(':memory:', { id: 'fake', name: 'Fake', world: { id: 'w', name: 'W' } })
   const store: FakeStore = {
     wall: Date.UTC(2026, 0, 1, 9),
+    ruled: [],
     problems: [],
     session,
     commits,
     completed: 0,
     maxRounds,
     cast: () => cast,
+    rules: () => store.ruled,
     settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds, suggestions: { count: 0 }, preview: { enabled: false } }),
     time: turn => readTime(session, store.settings().clock, turn, store.wall),
     beginTurn: turn => startTurn(session, store.settings().clock, turn, store.wall),

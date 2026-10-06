@@ -19,6 +19,8 @@ const DEFAULT_MAX_CALLS = 40
 
 /** A child that stops without a result is told to submit this many times before it is given up. */
 const MAX_REMINDERS = 2
+/** A child that goes on calling tools this many times past its budget, in spite of being told to submit, is stopped: it would otherwise loop for as long as the model keeps at it. */
+const OVERRUN = 5
 
 /** A one-shot agent of the game master, with tools of its own. */
 export interface ChildTask {
@@ -60,11 +62,17 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
   let submitted: { value: unknown } | undefined
   let calls = 0
   let reminders = 0
+  let stopped: (() => void) | undefined
+  let overran = false
   const budget = task.maxCalls ?? DEFAULT_MAX_CALLS
   const counted = (tool: ToolDefinition): ToolDefinition => ({
     ...tool,
     execute: (args, exec) => {
       calls += 1
+      if (calls > budget + OVERRUN) {
+        overran = true
+        stopped?.()
+      }
       if (calls > budget) throw new Error(`you have made ${budget} calls: submit your result now and say what is still missing`)
       return tool.execute(args, exec)
     },
@@ -106,6 +114,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
       childCtx.tools.guard(exec => (submitted === undefined ? undefined : `the result is already submitted, so \`${exec.name}\` is not run`))
     },
   })
+  stopped = () => { handle.agent.cancel({ kind: 'parent' }) }
   const onAbort = (): void => { handle.agent.cancel({ kind: 'parent' }) }
   signal.addEventListener('abort', onAbort, { once: true })
   try {
@@ -116,6 +125,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     await handle.dispose()
   }
   if (signal.aborted) throw new Error('cancelled')
+  if (overran && submitted === undefined) throw new Error(`the agent went on past its ${budget} calls without submitting a result and was stopped`)
   if (submitted === undefined) throw new Error(`the agent stopped without submitting a result (${calls} call(s))`)
   return submitted.value as T
 }

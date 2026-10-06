@@ -1,4 +1,5 @@
 import { describeValue, locationKey as placeKey, type ItemEffect, type Recalled } from 'dsh-roleplay-state'
+import { MAX_OOC_NOTE, type OocRuling } from '../../shared/ooc.ts'
 import { suggestionProblems, tidySuggestions } from './suggestions.ts'
 import type { RoutineMove } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
@@ -110,6 +111,12 @@ interface TurnState {
   cues: Map<string, readonly string[]>
   /** The beats the game master said it wove into the output it is delivering. */
   addressed: number[]
+  /** Set when the turn is an out-of-character command of the player: what it asks, and how the game master ruled on it. */
+  ooc?: { request: string; ruling?: OocRuling }
+  /** The game master's judgment of the player's action, which it gives before anything else in an ordinary turn. */
+  judgement?: { allowed: boolean; reason: string }
+  /** Whether the game master has to judge the player's action before anything else: the loop asks for it at the start of an ordinary turn. */
+  judgeWanted?: true
 }
 
 const MAX_OBJECTIONS = 3
@@ -153,6 +160,66 @@ export class TurnEngine {
     private readonly written: (chat: string) => void = () => undefined,
   ) {}
 
+  /**
+   * The turn is an out-of-character command of the player: nobody is asked to act and no preview is shown. The game master rules on
+   * whether it is allowed (`rule`) and, if so, makes it happen with outcomes for any characters, with the world's tools, and says what the player perceives.
+   */
+  beginOoc(owner: TurnOwner, request: string): void {
+    const state = this.stateFor(owner)
+    state.ooc = { request }
+    state.previewWanted = false
+  }
+
+  /**
+   * The game master's ruling on an out-of-character command: it is legal unless it breaks the rules of the world or the player's own. The reason is
+   * what the player is told. Either way the turn goes on to its output; only a legal ruling lets the command change anything.
+   * @throws {Error} when the turn is not an out-of-character command, it was already ruled on, or the reason is empty or too long.
+   */
+  rule(owner: TurnOwner, legal: boolean, reason: string): OocRuling {
+    const state = this.stateFor(owner)
+    if (state.ooc === undefined) throw new Error('this turn is not an out-of-character command: there is nothing to rule on')
+    if (state.ooc.ruling !== undefined) throw new Error('this command was already ruled on')
+    const note = reason.trim()
+    if (note === '') throw new Error('give the reason, in plain words to the player')
+    if (note.length > MAX_OOC_NOTE) throw new Error(`the reason is longer than ${MAX_OOC_NOTE} characters: say it shortly`)
+    state.ooc.ruling = { legal, note }
+    state.phase = 'between'
+    return state.ooc.ruling
+  }
+
+  /**
+   * The game master judges what the player's character tries, before anything else in an ordinary turn: it works unless it is not viable or it breaks a rule of the
+   * world or of the player. What does not work is played as a failed attempt for the player's character: nobody is asked to act on it.
+   * @throws {Error} when the turn is not an ordinary one, was already judged, or the reason is empty.
+   */
+  judge(owner: TurnOwner, allowed: boolean, reason: string): { allowed: boolean; reason: string } {
+    const state = this.stateFor(owner)
+    if (state.ooc !== undefined) throw new Error('this turn is an out-of-character command: rule on it with ooc_ruling')
+    if (state.phase !== 'idle') throw new Error('the action is judged first, before anything else')
+    if (state.judgement !== undefined) throw new Error('the action was already judged')
+    const why = reason.trim()
+    if (why === '') throw new Error('give the reason: what the character tries, and the rule or the fact that decides it')
+    state.judgement = { allowed, reason: why }
+    return state.judgement
+  }
+
+  /** The turn is an ordinary one: the game master judges the player's action before anything else. */
+  expectJudgement(owner: TurnOwner): void {
+    this.stateFor(owner).judgeWanted = true
+  }
+
+  /** Whether the game master still has to judge the player's action. */
+  private judgeDue(state: TurnState): boolean {
+    return state.judgeWanted === true && state.phase === 'idle' && state.ooc === undefined && state.judgement === undefined
+  }
+
+  /** Why an out-of-character command may not change anything yet, when it may not. */
+  private oocBlock(state: TurnState): string | undefined {
+    if (state.ooc === undefined) return undefined
+    if (state.ooc.ruling === undefined) return 'this turn is an out-of-character command: rule on it first with ooc_ruling'
+    return state.ooc.ruling.legal ? undefined : 'the command was refused: nothing changes; call narrate with no segments to tell the player'
+  }
+
   /** Mark a turn as one that needs no round, for example because the player's input was refused. */
   skip(owner: TurnOwner): void {
     this.stateFor(owner).phase = 'skipped'
@@ -164,7 +231,10 @@ export class TurnEngine {
    */
   async activate(owner: TurnOwner, input: { situation: string; characters?: readonly string[] }, run: RunCharacter, signal: AbortSignal): Promise<AttemptReport> {
     const state = this.stateFor(owner)
+    if (state.ooc !== undefined) throw new Error('an out-of-character command asks nobody to act: decree what happens with resolve_round, or narrate')
     if (state.phase !== 'idle' && state.phase !== 'between') throw new Error(this.explain(state, 'activate_characters'))
+    if (this.judgeDue(state)) throw new Error(this.explain(state, 'activate_characters'))
+    if (state.judgement?.allowed === false && state.rounds === 0) throw new Error(`the action cannot work (${state.judgement.reason}): nobody is asked to act on it. Play the failed attempt with resolve_round: one outcome for the player's character, result failed`)
     if (this.previewDue(state)) throw new Error(this.explain(state, 'activate_characters'))
     const store = this.storeOf(owner)
     const limit = store.settings().maxRounds
@@ -197,8 +267,9 @@ export class TurnEngine {
   async resolve(owner: TurnOwner, outcomes: readonly Outcome[], run: RunCharacter, signal: AbortSignal, elapsedSeconds?: number): Promise<ResolveReport> {
     const state = this.stateFor(owner)
     const store = this.storeOf(owner)
+    if (state.ooc !== undefined) return { done: this.decree(owner, state, outcomes, elapsedSeconds) }
     if (state.phase === 'idle' || state.phase === 'between') {
-      if (this.previewDue(state)) throw new Error(this.explain(state, 'resolve_round'))
+      if (this.judgeDue(state) || this.previewDue(state)) throw new Error(this.explain(state, 'resolve_round'))
       const player = store.cast().find(member => member.character.control === 'player')
       if (player !== undefined && outcomes.length === 1 && outcomes[0]?.character === player.key) return { done: this.resolvePlayer(owner, state, outcomes[0], elapsedSeconds) }
     }
@@ -224,6 +295,33 @@ export class TurnEngine {
     return { done: this.finishRound(owner, state) }
   }
 
+  /**
+   * What an out-of-character command decrees, as one round of its own: outcomes for any characters, asked or not, each checked like any other
+   * (moves over open ways unless the game master says the story carries them, things that exist and can be reached, what is tracked), applied and recorded.
+   * What a character is decreed to do is recorded as forced: it is what happened to it, not what it chose.
+   * @throws {Error} when the command was not ruled legal, the limit of rounds is reached, or an outcome is not acceptable.
+   */
+  private decree(owner: TurnOwner, state: TurnState, outcomes: readonly Outcome[], elapsedSeconds: number | undefined): NonNullable<ResolveReport['done']> {
+    const blocked = this.oocBlock(state)
+    if (blocked !== undefined) throw new Error(blocked)
+    const store = this.storeOf(owner)
+    const limit = store.settings().maxRounds
+    if (state.rounds >= limit) throw new Error(`${state.rounds} round${state.rounds === 1 ? '' : 's'} were already decreed for this command, which is the most this chat allows: deliver the output with narrate`)
+    state.cast = store.cast()
+    if (outcomes.length === 0) throw new Error('decree at least one outcome')
+    this.check({ reports: [], failures: [] }, outcomes, store, undefined, state.cast)
+    if (elapsedSeconds !== undefined) state.elapsed = this.elapsedChecked(owner, elapsedSeconds)
+    state.situation = `By the player's out-of-character command (${state.ooc?.request ?? ''}), the game master decreed:`
+    state.recalled.clear()
+    delete state.second
+    const reports = outcomes.flatMap((outcome): CharacterReport[] => {
+      const member = state.cast.find(candidate => candidate.key === outcome.character)
+      return member === undefined ? [] : [{ character: member.key, name: member.character.name, intent: outcome.summary, commitment: 'high', ...(member.character.control === 'player' ? {} : { forced: true as const }) }]
+    })
+    state.first = { reports, failures: [], outcomes: [...outcomes] }
+    return this.finishRound(owner, state)
+  }
+
   /** The key of the player's character. */
   private playerKey(state: TurnState): string | undefined {
     return state.cast.find(member => member.character.control === 'player')?.key
@@ -234,6 +332,7 @@ export class TurnEngine {
    * puts down something, and what the game master decides about it is recorded like any other round.
    */
   private resolvePlayer(owner: TurnOwner, state: TurnState, outcome: Outcome, elapsedSeconds: number | undefined): NonNullable<ResolveReport['done']> {
+    if (state.judgement?.allowed === false && outcome.result !== 'failed') throw new Error(`the action cannot work (${state.judgement.reason}): the outcome for the player's character must be failed`)
     const store = this.storeOf(owner)
     const limit = store.settings().maxRounds
     if (state.rounds >= limit) throw new Error(`${state.rounds} round${state.rounds === 1 ? '' : 's'} were already played for this message, which is the most this chat allows: deliver the output with narrate`)
@@ -255,6 +354,8 @@ export class TurnEngine {
    */
   preview(owner: TurnOwner, text: string): string {
     const state = this.stateFor(owner)
+    if (state.ooc !== undefined) throw new Error('an out-of-character command shows no preview: rule on it with ooc_ruling')
+    if (this.judgeDue(state)) throw new Error('judge the action first with judge_action')
     if (!this.storeOf(owner).settings().preview.enabled) throw new Error('this chat shows no preview: go on with activate_characters')
     if (state.previewed) throw new Error('a preview was already shown for this message: go on with activate_characters')
     if (state.phase !== 'idle') throw new Error('the preview comes first, before the characters are asked')
@@ -295,6 +396,8 @@ export class TurnEngine {
     const state = this.stateFor(owner)
     if (state.phase === 'resolving' || state.phase === 'retrying') throw new Error('resolve the round first: time is skipped between rounds, not in the middle of one')
     if (state.phase === 'done' || state.phase === 'skipped') throw new Error(this.explain(state, undefined))
+    const blocked = this.oocBlock(state)
+    if (blocked !== undefined) throw new Error(blocked)
     try {
       const skipped = this.storeOf(owner).skipTime(owner.turn, state.rounds, request)
       return { ...skipped, world: this.fire(owner, state.rounds) }
@@ -317,6 +420,11 @@ export class TurnEngine {
     const unknown = addressed.filter(id => !pending.has(id))
     if (unknown.length > 0) throw new Error(`addressed: ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not ${unknown.length === 1 ? 'a beat' : 'beats'} still to weave in (the scene lists them)`)
     state.addressed = [...new Set(addressed)]
+    if (state.ooc !== undefined) {
+      if (state.ooc.ruling?.legal !== true && segments.length > 0) throw new Error('the command was refused: deliver no segments, the player is told why')
+      if (segments.some(segment => segment.type === 'utterance')) throw new Error('nobody was asked to speak in an out-of-character command: narrate only what the player perceives')
+      return await this.deliver(owner, state, segments.map((segment): NarrationSegment => ({ type: 'narration', text: segment.text })), true, run)
+    }
     if (segments.length === 0) {
       const written = await this.boundaries().narrator.narrate({ situations: state.situations, outcomes: state.outcomes, reports: state.reports, utterances: state.utterances })
       if (written === undefined) throw new Error('deliver the output: give its segments')
@@ -337,6 +445,8 @@ export class TurnEngine {
   async expand(owner: TurnOwner, input: { need: string; what: string }, signal: AbortSignal): Promise<CreateReport> {
     const state = this.stateFor(owner)
     if (state.phase === 'resolving' || state.phase === 'retrying') throw new Error('resolve the round first: the world is extended between rounds, not in the middle of one')
+    const blocked = this.oocBlock(state)
+    if (blocked !== undefined) throw new Error(blocked)
     const need = AUTHORING_NEEDS.find(candidate => candidate === input.need)
     if (need === undefined) throw new Error(`"${input.need}" is not a reason to make something up; the reasons are: ${AUTHORING_NEEDS.join(', ')}`)
     const what = input.what.trim()
@@ -527,13 +637,22 @@ export class TurnEngine {
 
   /** Whether the chat wants a preview of the scene and the game master has not shown it yet. */
   private previewDue(state: TurnState): boolean {
-    return state.phase === 'idle' && state.previewWanted && !state.previewed
+    return state.phase === 'idle' && state.previewWanted && !state.previewed && state.judgement?.allowed !== false
   }
 
   private explain(state: TurnState, attempted: 'activate_characters' | 'resolve_round' | 'narrate' | undefined): string {
+    if (state.ooc !== undefined && (state.phase === 'idle' || state.phase === 'between')) {
+      return state.ooc.ruling === undefined
+        ? 'this turn is an out-of-character command: rule on it first with ooc_ruling'
+        : state.ooc.ruling.legal
+          ? 'make the command happen with resolve_round, expand_world or advance_time, then call narrate with what the player perceives (narration only)'
+          : 'the command was refused: call narrate with no segments'
+    }
     const waiting = (attempt: Attempt | undefined): string => (attempt?.reports ?? []).map(report => report.character).join(', ')
     switch (state.phase) {
-      case 'idle': return this.previewDue(state)
+      case 'idle': return this.judgeDue(state)
+        ? 'call judge_action first: does what the player\'s character tries work? It does not when it is not viable or it breaks a rule of the world or of the player'
+        : this.previewDue(state)
         ? 'call preview_scene first: two or three sentences that show the player how the scene opens, before the characters are asked'
         : attempted === 'activate_characters' || attempted === undefined
         ? 'call activate_characters to let the characters act'
@@ -568,10 +687,12 @@ export class TurnEngine {
   }
 
   /** `player` is the key of the player's character when an outcome for it is acceptable: it is not asked to act, but what it did can move it or have it handle things. */
-  private check(attempt: Attempt, outcomes: readonly Outcome[], store: TurnStore, player?: string): void {
-    const expected = attempt.reports.map(report => report.character)
+  private check(attempt: Attempt, outcomes: readonly Outcome[], store: TurnStore, player?: string, decreed?: readonly CastMember[]): void {
+    const expected = decreed === undefined ? attempt.reports.map(report => report.character) : [...new Set(outcomes.map(outcome => outcome.character))]
+    const unknown = decreed === undefined ? [] : [...new Set(outcomes.map(outcome => outcome.character))].filter(key => !decreed.some(member => member.key === key)).map(key => `${key} is not a character of the story`)
     const given = outcomes.filter(outcome => outcome.character !== player).map(outcome => outcome.character)
     const problems = [
+      ...unknown,
       ...(outcomes.filter(outcome => outcome.character === player).length > 1 ? [`more than one outcome for ${player}`] : []),
       ...expected.filter(key => !given.includes(key)).map(key => `missing an outcome for ${key}`),
       ...[...new Set(given.filter(key => !expected.includes(key)))].map(key => `${key} is not waiting for an outcome`),
@@ -763,6 +884,7 @@ export class TurnEngine {
           spoken: outcome.spoken !== false,
           ...((tracked.get(report.character) ?? []).length === 0 ? {} : { variables: tracked.get(report.character)! }),
           ...(state.cast.find(candidate => candidate.key === report.character)?.character.control === 'player' ? { player: true as const } : {}),
+          ...(report.forced === true ? { forced: true as const } : {}),
           ...((effects.get(report.character) ?? []).length === 0 ? {} : { items: (effects.get(report.character) ?? []).map(effect => ({ name: effect.item.name, action: effect.action, summary: effect.summary })) }),
           ...(at === undefined ? {} : { at: { key: placeKey(at), name: at.name } }),
           ...(check?.ok === true && check.plan.from !== check.move.to ? { moved: { ...check.to, ...(check.position === undefined ? {} : { position: check.position }) } } : {}),
@@ -854,6 +976,7 @@ export class TurnEngine {
       }
       output = { segments: narrationChecker.repair(segments.filter(segment => segment.type !== 'utterance' || segment.character !== ''), state.utterances), repaired: true }
     }
+    if (state.ooc?.ruling !== undefined) output = { ...output, ooc: state.ooc.ruling }
     this.storeOf(owner).completeTurn()
     this.storeOf(owner).resolveBeats(state.addressed)
     state.phase = 'done'

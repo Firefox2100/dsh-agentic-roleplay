@@ -69,3 +69,21 @@
 .preview {
   opacity: 0.8;
 }
+
+.oocNote,
+.oocRefused {
+  margin: 0;
+  padding: 6px 10px;
+  border-left: 2px solid var(--dsw-alias-border-l2);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.oocRefused {
+  border-left-color: var(--dsw-alias-state-error-primary);
+}
+
+.oocLabel {
+  font-weight: 500;
+}

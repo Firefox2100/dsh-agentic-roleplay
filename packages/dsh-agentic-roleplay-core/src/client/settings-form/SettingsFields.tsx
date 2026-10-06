@@ -40,7 +40,17 @@ export function SettingsFields({ t, drafts, onChange, options = [], disabled = f
                       />
                     )
                   : field.kind === 'text'
-                    ? (
+                    ? 'rows' in field
+                      ? (
+                          <textarea
+                            className={css.area}
+                            rows={field.rows}
+                            value={String(drafts[key] ?? '')}
+                            disabled={disabled}
+                            onChange={(event) => { onChange(key, event.target.value) }}
+                          />
+                        )
+                      : (
                         <Input
                           type="text"
                           value={String(drafts[key] ?? '')}

@@ -1,5 +1,6 @@
 import { changeVariable, planVariableChange, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from 'dsh-roleplay-state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
+import { WORLD_RULES_KEY, rulesOf } from '../../shared/rules.ts'
 import type { MoveRequest } from './protocol.ts'
 import type { ItemChangeSpec } from 'dsh-roleplay-state'
 import type { ChatSettings } from '../../shared/settings.ts'
@@ -13,6 +14,12 @@ import { readTime, zoneOf } from '../clock/story-clock.ts'
 import type { CastMember, CastPlace, ItemView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
 
 export { roleplaySessionOf }
+
+/** The rules the session copied from its world when it started. */
+function worldRules(session: Session): string[] {
+  const value = session.metadata.getValue(WORLD_RULES_KEY)
+  return Array.isArray(value) ? value.filter((rule): rule is string => typeof rule === 'string') : []
+}
 
 const keyOfCharacter = (character: { id: number; sourceId?: string }): string => character.sourceId ?? String(character.id)
 
@@ -173,6 +180,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     checkMove: (character, request) => checkMove(session, character, request),
     place: locationId => placeViewOf(session, locationId),
     settings,
+    rules: () => rulesOf(worldRules(session), settings().rules.own),
     time: turn => readTime(session, settings().clock, turn, wall()),
     beginTurn: turn => startTurn(session, settings().clock, turn, wall()),
     endRound: (turn, round, stated, minimum) => passRound(session, settings().clock, turn, round, wall(), stated, minimum),

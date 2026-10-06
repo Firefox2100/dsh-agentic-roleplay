@@ -93,5 +93,6 @@ export function viewOf(timeline: Timeline): TimelineView {
 /** Where a notice stands for a turn that is not told by its own events: the player's words and what was delivered, as plain text. */
 export function noticeText(node: Pick<TimelineNode, 'player' | 'output'>): string {
   const told = node.output === undefined ? '(nothing was delivered)' : node.output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: "${segment.text}"` : segment.text)).join('\n')
-  return `The story, as it went earlier (restored):\nThe player said: ${node.player}\nIt was told to the player:\n${told}`
+  const ruling = node.output?.ooc === undefined ? '' : `\nThe command was ruled ${node.output.ooc.legal ? 'legal' : 'illegal and refused'}: ${node.output.ooc.note}`
+  return `The story, as it went earlier (restored):\nThe player said: ${node.player}${ruling}\nIt was told to the player:\n${told}`
 }

@@ -292,6 +292,21 @@ describe('starting in a world with things', () => {
   })
 })
 
+describe('the rules of the world', () => {
+  const world = () => join(root, 'worlds', 'blackwater folder', 'world.json')
+
+  it('are copied into the session at the start, so that it holds them without the world\'s files', async () => {
+    await write(world(), { id: 'blackwater', name: 'B', rules: ['There is no magic.', 'Guns do not exist.'] })
+    const started = await startSession(deps, playAsArthur)
+    expect(state.openSession(join(root, 'sessions'), started.id).metadata.getValue('rules')).toEqual(['There is no magic.', 'Guns do not exist.'])
+  })
+
+  it('leave a session with none when the world states none', async () => {
+    const started = await startSession(deps, playAsArthur)
+    expect(state.openSession(join(root, 'sessions'), started.id).metadata.getValue('rules')).toBeUndefined()
+  })
+})
+
 describe('starting the clock', () => {
   const wall = Date.UTC(2026, 6, 1, 9, 17, 42)
   const world = () => join(root, 'worlds', 'blackwater folder', 'world.json')

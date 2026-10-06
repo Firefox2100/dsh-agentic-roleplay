@@ -44,3 +44,17 @@
   font-weight: 500;
   color: var(--dsw-alias-label-primary);
 }
+
+.area {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 560px;
+  padding: 6px 8px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}

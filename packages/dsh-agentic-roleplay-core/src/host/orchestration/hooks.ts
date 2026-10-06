@@ -4,6 +4,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import type { TurnEngine, TurnOwner } from './turn-engine.ts'
 import { roleplaySessionOf } from './store.ts'
+import { parseOoc } from '../../shared/ooc.ts'
 import type { Timelines } from '../timeline/service.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
@@ -80,8 +81,11 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     await timelines.begin(owner.chat, payload.turn, text)
 
     const cast = store.cast()
-    const verdict = boundaries().inputValidator.validate({ text, turn: payload.turn, cast })
-    const queryVector = await store.queryVector(text)
+    const ooc = parseOoc(text)
+    const verdict = ooc === undefined ? boundaries().inputValidator.validate({ text, turn: payload.turn, cast }) : { ok: true as const }
+    if (ooc !== undefined && ooc.request !== '') engine.beginOoc(owner, ooc.request)
+    else if (ooc === undefined) engine.expectJudgement(owner)
+    const queryVector = await store.queryVector(ooc?.request ?? text)
     store.clearNotes()
     store.lapseNotes(payload.turn)
     const { time, away, agenda } = store.beginTurn(payload.turn)
@@ -89,6 +93,13 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const world = { happened: fired.flatMap(entry => [...entry.events.map(text => `${entry.name}: ${text}`), ...entry.cues.map(cue => `${cue.names.join(' and ')} noticed: ${cue.text}`)]), beats: store.pendingBeats(), upcoming: store.upcoming(payload.turn) }
     const tracked = store.tracked()
     const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, ...(queryVector === undefined ? {} : { queryVector }) })]
+    const rules = store.rules()
+    if (rules.length > 0) lines.push(`What is not allowed in this story (the rules of the world, and the player's own). They are absolute: an action of the player's character that breaks one does not work, whatever the player says it does:\n${rules.map(rule => `- ${rule}`).join('\n')}`)
+    if (ooc !== undefined && ooc.request !== '') lines.push(`This turn is an OUT-OF-CHARACTER COMMAND of the player, spoken to you as the author of the story, not an action of their character: ${ooc.request}\nFollow the procedure for out-of-character commands: rule on it with ooc_ruling first.`)
+    if (ooc !== undefined && ooc.request === '') {
+      engine.skip(owner)
+      lines.push('The player sent an empty out-of-character command (/ooc). Do not ask any character to act; ask the player briefly what they want changed.')
+    }
     if (!verdict.ok) {
       engine.skip(owner)
       lines.push(`The player's input is refused: ${verdict.reason}. Do not ask any character to act; tell the player briefly why.`)

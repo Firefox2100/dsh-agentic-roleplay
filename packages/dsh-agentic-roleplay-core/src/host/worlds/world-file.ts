@@ -27,6 +27,24 @@ export interface WorldFile {
   clock?: WorldClock
   /** What the world starts with of what it tracks, for the variables of the whole story. */
   variables?: Record<string, VariableValue>
+  /** What is not allowed in this world, as short rules in the author's own words ("There is no magic"). */
+  rules?: string[]
+}
+
+/** The most rules a world may state, and the longest one: they are told to the game master every turn. */
+export const MAX_RULES = 30
+export const MAX_RULE_LENGTH = 300
+
+/** `rules` is one rule as text, or a list of them; blank ones are left out. */
+function readRules(reader: Reader): string[] | undefined {
+  const value = reader.raw('rules')
+  if (value === undefined || value === null) return undefined
+  const rules = typeof value === 'string' ? [value] : reader.strings('rules')
+  const kept = rules.map(rule => rule.trim()).filter(rule => rule !== '')
+  if (kept.length > MAX_RULES) reader.fail('rules', `has more than ${MAX_RULES} rules`)
+  const long = kept.findIndex(rule => rule.length > MAX_RULE_LENGTH)
+  if (long >= 0) reader.fail('rules', `rule ${long + 1} is longer than ${MAX_RULE_LENGTH} characters: keep rules short`)
+  return kept.length === 0 ? undefined : kept
 }
 
 export interface WorldClock {
@@ -106,6 +124,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const opening = readOpening(reader)
   const clock = readClock(reader)
   const variables = readVariableValues(reader)
+  const rules = readRules(reader)
   if (name === undefined || issues.length > 0) return { ok: false, issues }
 
   return {
@@ -120,6 +139,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(opening === undefined ? {} : { opening }),
       ...(clock === undefined ? {} : { clock }),
       ...(variables === undefined ? {} : { variables }),
+      ...(rules === undefined ? {} : { rules }),
     },
   }
 }

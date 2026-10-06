@@ -218,6 +218,8 @@ export interface CommitEntry {
   items?: { name: string; action: string; summary: string }[]
   /** The player's character: it was not asked to act, so `intent` is what the game master decided it did. */
   player?: true
+  /** Decreed by the player's out-of-character command: the character did not choose it, `intent` is what the game master decreed it did. */
+  forced?: true
   /** Where the character was when it acted. */
   at?: PlaceRef
   /** Where the game master sent it as a result. */
@@ -360,6 +362,8 @@ export interface TurnStore {
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
+  /** What is not allowed in the story: the world's rules and the player's own. */
+  rules(): string[]
   /** What time it is in the story. */
   time(turn: number): StoryTime
   /** The start of a turn: what time it is, and how long passed outside the story when time follows the wall clock. */

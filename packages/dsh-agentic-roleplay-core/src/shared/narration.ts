@@ -1,3 +1,5 @@
+import type { OocRuling } from './ooc.ts'
+
 export type NarrationSegment =
   | { type: 'utterance'; character: string; name: string; text: string }
   | { type: 'narration'; text: string }
@@ -7,6 +9,8 @@ export interface TurnOutput {
   segments: NarrationSegment[]
   /** Whether the output had to be corrected so that every utterance is as the character gave it. */
   repaired: boolean
+  /** For an out-of-character command: whether it was allowed, and what the player is told of it. */
+  ooc?: OocRuling
 }
 
 /*
@@ -58,7 +62,9 @@ export function decodeOutput(text: string): TurnOutput | undefined {
     const value = JSON.parse(text.slice(start + OPEN.length, end)) as Record<string, unknown>
     const segments = value['segments']
     if (!Array.isArray(segments) || !segments.every(isSegment) || typeof value['repaired'] !== 'boolean') return undefined
-    return { segments, repaired: value['repaired'] }
+    const ooc = value['ooc']
+    const ruled = typeof ooc === 'object' && ooc !== null && typeof (ooc as Record<string, unknown>)['legal'] === 'boolean' && typeof (ooc as Record<string, unknown>)['note'] === 'string' ? ooc as OocRuling : undefined
+    return { segments, repaired: value['repaired'], ...(ruled === undefined ? {} : { ooc: ruled }) }
   } catch {
     return undefined
   }

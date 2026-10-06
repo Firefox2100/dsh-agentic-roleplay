@@ -12,6 +12,7 @@ import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
+import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
 import { populateCharacters, populateClock, populateItems, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
@@ -98,6 +99,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
       populateTriggers(session, scripted.triggers)
       populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())
+      if (world.rules !== undefined) session.metadata.setValue(WORLD_RULES_KEY, world.rules)
     })
     writeSettings(sessionFolder(sessionsDir, id), settings)
     chatSessionId = await deps.agent.ensure(id, name, opening)

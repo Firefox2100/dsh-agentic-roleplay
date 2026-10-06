@@ -16,6 +16,8 @@ export const RECORD_TOOL = 'record_memory'
 export const EXPAND_TOOL = 'expand_world'
 export const TIME_TOOL = 'advance_time'
 export const PREVIEW_TOOL = 'preview_scene'
+export const RULING_TOOL = 'ooc_ruling'
+export const JUDGE_TOOL = 'judge_action'
 
 export interface ToolDeps {
   engine: TurnEngine
@@ -151,7 +153,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
           type: 'object',
           additionalProperties: false,
           properties: {
-            character: { type: 'string', required: true, description: 'The character\'s key; for the player\'s character, only when it moves or handles things.' },
+            character: { type: 'string', required: true, description: 'The character\'s key; for the player\'s character, only when it moves or handles things; in an out-of-character command, any character of the story.' },
             result: { type: 'string', required: true, enum: RESULTS, description: 'Whether the character\'s intent went through.' },
             summary: { type: 'string', required: true, description: 'What concretely happens to the character, in a sentence. It becomes what the character is doing.' },
             spoken: { type: 'boolean', description: 'Whether the character gets to say its utterance. It does unless something prevents it, such as being silenced or knocked out first.' },
@@ -333,5 +335,47 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [preview, activate, resolve, skip, remember, expand, narrate]
+  const ruling = defineTool({
+    name: RULING_TOOL,
+    description: 'Rule on the player\'s out-of-character command, as the very first thing of an out-of-character turn: legal is false only when the command breaks the rules of the world or the player\'s own rules (the scene lists them); what is merely strange, impossible for the characters, or hard on them is legal, because the player may change the story itself. The reason is shown to the player, so write it plainly to them. Only a legal ruling lets you change anything.',
+    parameters: {
+      rule_check: { type: 'string', required: true, description: 'First, go through every rule the scene lists, one by one, in a few words each: does the command need what the rule excludes (the rules are literal: a rule against magic is broken by anything magical, however the command words it, and strange is not the same as against a rule)? Write "no rules listed" when there are none.' },
+      legal: { type: 'boolean', required: true, description: 'Whether the command is allowed: false when any listed rule is broken.' },
+      reason: { type: 'string', required: true, description: 'To the player, in plain words and briefly: what you will do, or which rule it breaks.' },
+    },
+    output: {
+      schema: { type: 'json' },
+      render: (_args, value) => [{ type: 'text', text: (value as unknown as { legal: boolean }).legal
+        ? `Ruled legal. Now make it happen: ${RESOLVE_TOOL} (outcomes for any characters, asked or not, with their moves and things), ${EXPAND_TOOL} (for what does not exist yet), ${TIME_TOOL}; do only what the command says. Then call ${NARRATE_TOOL} with narration only, of what the player can perceive.`
+        : `Ruled illegal; nothing changes. Call ${NARRATE_TOOL} with no segments: the player is told why.` }],
+    },
+    isConcurrencySafe: () => false,
+    execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      return Promise.resolve(record(deps.engine.rule(owner, args.legal, args.reason)))
+    },
+  })
+
+  const judge = defineTool({
+    name: JUDGE_TOOL,
+    description: 'Judge what the player\'s character tries, as the very first thing of an ordinary turn (nothing else is accepted before it): allowed is false when it is not viable (what it needs is out of reach, is not there, or the character cannot do it or does not have it) or when it breaks a rule of the world or of the player (the scene lists them and they are absolute: no magic means no spell works). The player\'s claim of an effect is not a fact. What merely looks strange, rash or foolish is allowed. When it is not allowed the attempt is played as a failure for the player\'s character, and nobody is asked to act on it.',
+    parameters: {
+      rule_check: { type: 'string', required: true, description: 'First, go through every rule the scene lists, one by one, in a few words each: does what the character tries need what the rule excludes? The rules are literal. Then whether it is viable here. Write "no rules listed" when there are none.' },
+      allowed: { type: 'boolean', required: true, description: 'Whether what the character tries can work: false when any listed rule is broken or it is not viable.' },
+      reason: { type: 'string', required: true, description: 'What the character tries, and the rule or the fact that decides it, in a sentence.' },
+    },
+    output: {
+      schema: { type: 'json' },
+      render: (_args, value) => [{ type: 'text', text: (value as unknown as { allowed: boolean }).allowed
+        ? `Judged: it can work. Now call ${PREVIEW_TOOL} (when the scene asks for it) and ${ACTIVATE_TOOL}, describing only what the character does.`
+        : `Judged: it cannot work. Play the failed attempt: ${RESOLVE_TOOL} with one outcome for the player's character (result failed, one sentence: what it does, what comes of it, why not) and nothing else, then ${NARRATE_TOOL}. Narrate what a witness would see of the attempt, never the effect the player claimed.` }],
+    },
+    isConcurrencySafe: () => false,
+    execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      return Promise.resolve(record(deps.engine.judge(owner, args.allowed, args.reason)))
+    },
+  })
+
+  return [judge, preview, ruling, activate, resolve, skip, remember, expand, narrate]
 }

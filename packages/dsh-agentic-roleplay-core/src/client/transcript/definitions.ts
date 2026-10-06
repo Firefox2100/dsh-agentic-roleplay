@@ -1,4 +1,5 @@
 import type { ConversationNodeContext, ConversationNodeDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
+import type { OocRuling } from '../../shared/ooc.ts'
 import { decodeOutput, decodePreview, type NarrationSegment } from '../../shared/narration.ts'
 
 export const NARRATION_NODE = 'roleplay-narration'
@@ -7,6 +8,8 @@ export const NARRATION_NODE = 'roleplay-narration'
 export interface NarrationNodeData {
   segments: readonly NarrationSegment[]
   repaired: boolean
+  /** For an out-of-character command: whether it was allowed and what the player is told of it. */
+  ooc?: OocRuling
 }
 
 export const PREVIEW_NODE = 'roleplay-preview'

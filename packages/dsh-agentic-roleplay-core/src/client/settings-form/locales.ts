@@ -5,7 +5,7 @@ export type SettingsFormKey =
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
-  | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
+  | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -33,6 +33,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockModeHelp: 'Simulated: the story\'s time moves only with the story, by as much as the game master says each round takes, and the game master can skip ahead ("I sleep till morning"). Real: the story\'s time is the real clock, it cannot be skipped, and what happens while you are away is for the game master to account for. A story can change from real to simulated (the time stops following the clock where it is) but not back.',
     clockSimulated: 'Simulated',
     clockReal: 'Real clock',
+    rulesOwn: 'Your own rules',
+    rulesOwnHelp: 'What is not allowed in this story besides what the world itself rules out, one rule per line, in your own words (for example "No one can fly"). The game master holds your actions, and your out-of-character commands, to the world\'s rules and these.',
     reasoningChildren: 'Thinking of the characters and keeper',
     reasoningChildrenHelp: 'How hard the characters, the record keeper and the world author think, as a level the model offers, for example off or low. Empty uses your own level. Thinking is most of what a turn costs on a slow model, and these helpers do well without it.',
     triggersEnabled: 'Events of the world',
@@ -93,6 +95,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockModeHelp: '模拟：故事的时间只随故事推进，每一轮耗时由主持人决定，主持人还可以跳过时间（“我睡到明天早上”）。真实：故事的时间就是现实时钟，不能跳过；你离开期间发生的事由主持人自行交代。可以由真实改为模拟（时间就在此刻脱离时钟），但不能改回来。',
     clockSimulated: '模拟',
     clockReal: '现实时钟',
+    rulesOwn: '你自己的规则',
+    rulesOwnHelp: '除世界本身已排除的内容外，这个故事里还不允许什么，每行一条，用你自己的话写（例如“没有人会飞”）。游戏主持会用世界的规则和这些规则来衡量你的行动和你的场外指令。',
     reasoningChildren: '角色与记录员的思考强度',
     reasoningChildrenHelp: '角色、记录员和世界作者的思考强度，须是模型提供的级别，例如 off 或 low。留空则与你自己选择的一致。在较慢的模型上，思考占了每轮耗时的大部分，而这些助手即使不思考也做得不错。',
     triggersEnabled: '世界事件',
