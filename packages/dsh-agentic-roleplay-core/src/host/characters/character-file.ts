@@ -53,7 +53,7 @@ function readEmotion(reader: Reader | undefined): EmotionStart | undefined {
   return { baseline, immediate: immediateReader === undefined ? { ...baseline } : readVector(immediateReader) }
 }
 
-function readIntent(reader: Reader): Intent | undefined {
+export function readIntent(reader: Reader): Intent | undefined {
   const name = reader.string('name', { required: true })
   const deadline = reader.string('deadline')
   const deadlineTime = deadline === undefined ? undefined : ISO_DATE.test(deadline) ? Date.parse(deadline) : Number.NaN

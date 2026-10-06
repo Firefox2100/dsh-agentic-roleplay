@@ -1,4 +1,4 @@
-import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type Holder, type ItemDefinition, type LocationDefinition, type Slot } from 'dsh-roleplay-model'
+import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type FactionDefinition, type Holder, type ItemDefinition, type LocationDefinition, type Slot } from 'dsh-roleplay-model'
 import { MINUTE, parseTimeOfDay, triggerReferenceProblems, type Session } from 'dsh-roleplay-state'
 import { InvalidWorldError } from './errors.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
@@ -13,6 +13,19 @@ export function relationshipProblems(characters: readonly CharacterDefinition[])
     if (relation.to === character.id) return [`${character.id}: relationships: a character has no relationship with itself`]
     return ids.has(relation.to) ? [] : [`${character.id}: relationships: "${relation.to}" is not a character of this world`]
   }))
+}
+
+export function factionProblems(factions: readonly FactionDefinition[], characters: readonly CharacterDefinition[]): string[] {
+  const factionIds = new Set(factions.map(faction => faction.id))
+  const characterIds = new Set(characters.map(character => character.id))
+  return factions.flatMap(faction => [
+    ...faction.members.flatMap(member => characterIds.has(member.character) ? [] : [`${faction.id}: members: "${member.character}" is not a character of this world`]),
+    ...faction.relationships.flatMap(relation => {
+      if (relation.to.kind === 'faction' && relation.to.id === faction.id) return [`${faction.id}: relationships: a faction has no relationship with itself`]
+      const ids = relation.to.kind === 'character' ? characterIds : factionIds
+      return ids.has(relation.to.id) ? [] : [`${faction.id}: relationships: "${relation.to.id}" is not a ${relation.to.kind} of this world`]
+    }),
+  ])
 }
 
 /** What is wrong with the places, things and directed ways characters are authored to know. */
@@ -126,6 +139,26 @@ export function populateCharacters(session: Session, characters: readonly Charac
     const from = session.characters.getBySourceId(id)!
     for (const relation of relationships ?? []) {
       session.relationships.upsert(from.id, session.characters.getBySourceId(relation.to)!.id, { label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }, 0)
+    }
+  }
+}
+
+export function populateFactions(session: Session, factions: readonly FactionDefinition[]): void {
+  for (const definition of factions) {
+    const faction = session.factions.add({ sourceId: definition.id, name: definition.name, aliases: definition.aliases, summary: definition.summary, description: definition.description, values: definition.values, structure: definition.structure })
+    session.factionStates.create(faction.id, definition.start)
+    for (const goal of definition.start.goals) session.factionIntents.add(faction.id, goal)
+  }
+  for (const definition of factions) {
+    const faction = session.factions.getBySourceId(definition.id)!
+    for (const member of definition.members) {
+      const character = session.characters.getBySourceId(member.character)!
+      session.factionMemberships.upsert(faction.id, character.id, member, 0)
+      if (session.factionRelationships.get('character', character.id, 'faction', faction.id) === undefined) session.factionRelationships.upsert('character', character.id, 'faction', faction.id, { label: member.role || 'member', familiarity: 1 }, 0)
+    }
+    for (const relation of definition.relationships) {
+      const target = relation.to.kind === 'character' ? session.characters.getBySourceId(relation.to.id)! : session.factions.getBySourceId(relation.to.id)!
+      session.factionRelationships.upsert('faction', faction.id, relation.to.kind, target.id, relation, 0)
     }
   }
 }

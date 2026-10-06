@@ -11,7 +11,7 @@ import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
 import { dueOffScene, markHandled } from '../clock/offscene.ts'
 import { describeShown } from '../variables/describe.ts'
 import { readTime, zoneOf } from '../clock/story-clock.ts'
-import type { CastMember, CastPlace, ItemView, KnowledgeView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
+import type { CastMember, CastPlace, FactionAffiliationView, ItemView, KnowledgeView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
 
 export { roleplaySessionOf }
 
@@ -102,7 +102,18 @@ function knowledgeOf(session: Session, characterId: number, turn: number, visibl
     return from === undefined || to === undefined ? [] : [`${from.name} -> ${to.name}`]
   })
   const characters = session.relationships.from(characterId).flatMap(relation => { const character = session.characters.get(relation.toId); return character === undefined ? [] : [`${character.name} (${keyOfCharacter(character)})`] })
-  return { characters, locations, items, routes }
+  const factions = session.factionRelationships.from('character', characterId).filter(relation => relation.toKind === 'faction').flatMap(relation => { const faction = session.factions.get(relation.toId); return faction === undefined ? [] : [`${faction.name} (${faction.sourceId ?? faction.id})`] })
+  return { characters, factions, locations, items, routes }
+}
+
+function affiliationsOf(session: Session, characterId: number): FactionAffiliationView[] {
+  return session.factionMemberships.ofCharacter(characterId).flatMap((membership) => {
+    const faction = session.factions.get(membership.factionId)
+    if (faction === undefined) return []
+    const relation = session.factionRelationships.get('character', characterId, 'faction', faction.id)
+    const relationship = relation === undefined ? undefined : { name: faction.name, label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }
+    return [{ name: faction.name, role: membership.role, rank: membership.rank, status: membership.status, commitment: membership.commitment, publicState: session.factionStates.get(faction.id)?.publicState ?? '', goals: session.factionIntents.list(faction.id, { status: 'active' }).map(intent => intent.name), ...(relationship === undefined ? {} : { relationship }) }]
+  })
 }
 
 function placeViewOf(session: Session, locationId: number): PlaceView | undefined {
@@ -238,6 +249,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     checkItemChanges: entries => dryRunItems(session, entries),
     carried: characterId => carriedBy(session, characterId),
     knowledge: (characterId, turn, visibleCharacters) => knowledgeOf(session, characterId, turn, visibleCharacters),
+    affiliations: characterId => affiliationsOf(session, characterId),
     itemsAt: (locationId, withHidden = false) => itemsIn(session, locationId, withHidden),
     completeTurn: () => { session.metadata.recordTurn() },
     queueCommit: record => { session.pendingCommits.enqueue(record.turn, record.round, JSON.parse(JSON.stringify(record)) as never) },

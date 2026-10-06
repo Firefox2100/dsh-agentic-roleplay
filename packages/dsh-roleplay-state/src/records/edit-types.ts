@@ -5,6 +5,7 @@ import type {
 import type {
   CharacterRepository, CharacterStateRepository, ConsolidationRepository, EngagementRepository, EventRepository, IntentRepository, ItemRepository, LocationRepository, MemoryRepository,
   KnowledgeRepository, PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository, TriggerRepository, VariableRepository,
+  FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
 } from '../repositories.ts'
 import type { ItemChangeSpec } from './items.ts'
 import type { VariableChangeSpec } from './variables.ts'
@@ -26,6 +27,11 @@ export interface RecordsTarget {
   locations: LocationRepository
   placements: PlacementRepository
   relationships: RelationshipRepository
+  factions: FactionRepository
+  factionStates: FactionStateRepository
+  factionMemberships: FactionMembershipRepository
+  factionRelationships: FactionRelationshipRepository
+  factionIntents: FactionIntentRepository
   knowledge: KnowledgeRepository
   consolidation: ConsolidationRepository
   items: ItemRepository
@@ -164,6 +170,11 @@ export interface KnowledgeSet {
   to?: string
   observed?: boolean
 }
+
+export interface FactionStateSet { faction: string; publicState?: string; innerState?: string }
+export interface FactionMembershipSet { faction: string; character: string; role?: string; rank?: string; status?: 'active' | 'inactive' | 'former'; public?: boolean; commitment?: number; leftTurn?: number }
+export interface FactionRelationshipSet extends Omit<RelationshipSet, 'from' | 'to'> { fromKind: 'character' | 'faction'; from: string; toKind: 'character' | 'faction'; to: string }
+export interface NewFactionIntentSpec extends Omit<NewIntentSpec, 'character'> { faction: string }
 
 export type KnowledgeRetraction = Omit<KnowledgeSet, 'observed'>
 
@@ -371,6 +382,10 @@ export interface RecordsEdit {
   relationshipRetractions?: RelationshipRetraction[]
   knowledge?: KnowledgeSet[]
   knowledgeRetractions?: KnowledgeRetraction[]
+  factionStates?: FactionStateSet[]
+  factionMemberships?: FactionMembershipSet[]
+  factionRelationships?: FactionRelationshipSet[]
+  factionIntentsAdded?: NewFactionIntentSpec[]
   placeEdits?: PlaceEdit[]
   exitChanges?: ExitChange[]
   moves?: CharacterMove[]

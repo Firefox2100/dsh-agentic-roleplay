@@ -13,7 +13,7 @@ import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock'>
+  session: Pick<Session, 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock'>
   /** The time zone the story's times are written and read in; UTC when not given. */
   timeZone?: string
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
@@ -37,7 +37,7 @@ export async function vectorOf(agent: AgentLink, text: string, signal?: AbortSig
 export type AgentResolver = (agentSessionId: string) => AgentLink | undefined
 
 /** The parts of the records `read_records` can be limited to. */
-const READ_SECTIONS = ['characters', 'events', 'beliefs', 'open_threads', 'items', 'relationships', 'knowledge', 'variable_defs', 'variables', 'engagements']
+const READ_SECTIONS = ['characters', 'factions', 'faction_relationships', 'events', 'beliefs', 'open_threads', 'items', 'relationships', 'knowledge', 'variable_defs', 'variables', 'engagements']
 
 const MAX_EVENTS = 20
 const MAX_LISTED_PLACES = 100
@@ -111,6 +111,31 @@ export function createTools(resolve: AgentResolver, options: {
         const found = session.characters.list().find(character => characterKey(character) === args.character)
         if (view === undefined || found === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
         return { character: view.character, name: view.name, aliases: found.aliases, summary: found.summary, personality: found.personality, public_state: view.public_state, inner_state: view.inner_state, activity: view.activity, variables: shownVariables(session, 'character', found.id, characterKey(found), 'story').map(entry => ({ variable: entry.variable.key, name: entry.variable.name, value: describeValue(entry.variable, entry.value), ...(entry.baseline === undefined ? {} : { baseline: describeValue(entry.variable, entry.baseline) }) })), location: view.location, position: view.position, relationships: session.records().relationships.filter(relation => relation.from === args.character), carrying: session.items.contents({ kind: 'character', id: found.id }).map(({ item, holding }) => ({ key: itemKey(item), name: item.name, quantity: item.quantity, how: holding.holder.kind === 'character' && holding.holder.mode === 'worn' ? `worn on the ${holding.holder.slot}` : 'carried', ...(item.container === undefined ? {} : { state: item.container.state }) })) }
+      },
+    }),
+    defineTool({
+      name: 'list_factions',
+      description: 'List the persistent organisations of the story. These hold institutional state and strategy; group characters are the actors that appear in scenes.',
+      parameters: {},
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(_args, exec) {
+        const { session } = link(resolve, exec.agent)
+        return session.factions.list().map(faction => ({ key: faction.sourceId ?? String(faction.id), name: faction.name, summary: faction.summary, members: session.factionMemberships.ofFaction(faction.id, 'active').length, active_goals: session.factionIntents.list(faction.id, { status: 'active' }).length }))
+      },
+    }),
+    defineTool({
+      name: 'get_faction',
+      description: 'Read one faction: its identity, institutional state, active strategy, memberships, and every directional relationship involving it.',
+      parameters: { faction: { type: 'string', required: true, description: 'The key of the faction, as list_factions gives it.' } },
+      output: { schema: { type: 'json' }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent)
+        const faction = session.factions.list().find(entry => (entry.sourceId ?? String(entry.id)) === args.faction)
+        if (faction === undefined) throw new NotFoundError(`there is no faction "${args.faction}"; list_factions shows the keys`)
+        const records = session.records()
+        return { ...records.factions.find(entry => entry.faction === args.faction), relationships: { sees: records.faction_relationships.filter(entry => entry.from_kind === 'faction' && entry.from === args.faction), seen_by: records.faction_relationships.filter(entry => entry.to_kind === 'faction' && entry.to === args.faction) } }
       },
     }),
     defineTool({

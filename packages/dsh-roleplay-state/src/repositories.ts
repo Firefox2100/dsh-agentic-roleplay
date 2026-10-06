@@ -58,6 +58,8 @@ import type {
   VisualSubjectKind,
   EntityKnowledge,
   KnowledgeKind,
+  Faction, FactionId, NewFaction, FactionState, NewFactionState, FactionStatePatch,
+  FactionMembership, MembershipPatch, MembershipStatus, FactionRelationship, SocialSubjectKind, FactionIntent,
 } from 'dsh-roleplay-model'
 
 /**
@@ -111,6 +113,45 @@ export interface CharacterStateRepository {
    * @throws {ConflictError} when the state is at another version than expected.
    */
   update(characterId: CharacterId, patch: CharacterStatePatch, options?: { expectedVersion?: number }): CharacterState
+}
+
+export interface FactionRepository {
+  add(faction: NewFaction): Faction
+  get(id: FactionId): Faction | undefined
+  getBySourceId(sourceId: string): Faction | undefined
+  list(): Faction[]
+  findByName(name: string): Faction[]
+}
+
+export interface FactionStateRepository {
+  create(factionId: FactionId, state: NewFactionState): FactionState
+  get(factionId: FactionId): FactionState | undefined
+  update(factionId: FactionId, patch: FactionStatePatch, options?: { expectedVersion?: number }): FactionState
+}
+
+export interface FactionMembershipRepository {
+  upsert(factionId: FactionId, characterId: CharacterId, patch: MembershipPatch & { status?: MembershipStatus }, turn: number): FactionMembership
+  get(factionId: FactionId, characterId: CharacterId): FactionMembership | undefined
+  ofFaction(factionId: FactionId, status?: MembershipStatus): FactionMembership[]
+  ofCharacter(characterId: CharacterId, status?: MembershipStatus): FactionMembership[]
+  remove(factionId: FactionId, characterId: CharacterId): boolean
+}
+
+export interface FactionRelationshipRepository {
+  upsert(fromKind: SocialSubjectKind, fromId: number, toKind: SocialSubjectKind, toId: number, patch: RelationshipPatch, turn: number): FactionRelationship
+  get(fromKind: SocialSubjectKind, fromId: number, toKind: SocialSubjectKind, toId: number): FactionRelationship | undefined
+  from(kind: SocialSubjectKind, id: number): FactionRelationship[]
+  to(kind: SocialSubjectKind, id: number): FactionRelationship[]
+  list(): FactionRelationship[]
+  remove(fromKind: SocialSubjectKind, fromId: number, toKind: SocialSubjectKind, toId: number): boolean
+}
+
+export interface FactionIntentRepository {
+  add(factionId: FactionId, intent: Intent): FactionIntent
+  get(id: IntentId): FactionIntent | undefined
+  list(factionId: FactionId, filter?: IntentFilter): FactionIntent[]
+  update(id: IntentId, patch: IntentPatch): FactionIntent
+  remove(id: IntentId): boolean
 }
 
 export interface IntentRepository {

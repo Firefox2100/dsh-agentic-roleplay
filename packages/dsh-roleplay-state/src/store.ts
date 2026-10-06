@@ -9,6 +9,7 @@ import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
+  FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
@@ -33,6 +34,7 @@ import { APPLICATION_ID, LATEST_VERSION } from './sqlite/schema.ts'
 import { SqliteCharacterStateRepository } from './sqlite/state-repository.ts'
 import { SqliteVisualIdentityRepository } from './sqlite/visual-identity-repository.ts'
 import { SqliteKnowledgeRepository } from './sqlite/knowledge-repository.ts'
+import { SqliteFactionIntentRepository, SqliteFactionMembershipRepository, SqliteFactionRelationshipRepository, SqliteFactionRepository, SqliteFactionStateRepository } from './sqlite/faction-repositories.ts'
 
 export interface StoreOptions extends OpenOptions {
   /** Defaults to the driver on Node's built-in SQLite. */
@@ -48,6 +50,11 @@ export interface SessionStore {
   readonly metadata: MetadataRepository
   readonly characters: CharacterRepository
   readonly characterStates: CharacterStateRepository
+  readonly factions: FactionRepository
+  readonly factionStates: FactionStateRepository
+  readonly factionMemberships: FactionMembershipRepository
+  readonly factionRelationships: FactionRelationshipRepository
+  readonly factionIntents: FactionIntentRepository
   readonly intents: IntentRepository
   readonly events: EventRepository
   readonly memories: MemoryRepository
@@ -132,6 +139,11 @@ class SqliteSessionStore implements SessionStore {
   readonly metadata: SqliteMetadataRepository
   readonly characters: CharacterRepository
   readonly characterStates: CharacterStateRepository
+  readonly factions: FactionRepository
+  readonly factionStates: FactionStateRepository
+  readonly factionMemberships: FactionMembershipRepository
+  readonly factionRelationships: FactionRelationshipRepository
+  readonly factionIntents: FactionIntentRepository
   readonly intents: IntentRepository
   readonly events: EventRepository
   readonly memories: MemoryRepository
@@ -159,6 +171,11 @@ class SqliteSessionStore implements SessionStore {
     this.recallIndex = new SqliteRecallIndex(db, this.metadata, vectors)
     this.characters = new SqliteCharacterRepository(db, clock)
     this.characterStates = new SqliteCharacterStateRepository(db, clock)
+    this.factions = new SqliteFactionRepository(db, clock)
+    this.factionStates = new SqliteFactionStateRepository(db, clock)
+    this.factionMemberships = new SqliteFactionMembershipRepository(db)
+    this.factionRelationships = new SqliteFactionRelationshipRepository(db, clock)
+    this.factionIntents = new SqliteFactionIntentRepository(db, clock)
     this.intents = new SqliteIntentRepository(db, clock)
     this.locations = new SqliteLocationRepository(db, clock, id => { this.eventRepository.reindexPlace(id) })
     this.placements = new SqlitePlacementRepository(db, this.locations)

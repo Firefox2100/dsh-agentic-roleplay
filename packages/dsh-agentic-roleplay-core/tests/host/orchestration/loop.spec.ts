@@ -470,7 +470,7 @@ describe('a turn with the real agent loop', () => {
       const { session, adapter } = await playAuthored('creates')
       expect(masterRequests(adapter).every(request => toolNames(request).includes('expand_world'))).toBe(true)
       expect(characterRequests(adapter).some(request => toolNames(request).includes('expand_world'))).toBe(false)
-      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'list_variables', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(authors(adapter)[0]!).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_faction', 'get_item', 'get_location', 'list_characters', 'list_factions', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'list_variables', 'search_events', 'submit_result', 'world_lint'])
       const mira = session.characters.getBySourceId('mira')!
       expect(mira).toMatchObject({ name: 'Mira Voss', role: 'npc', control: 'agent', tier: 'supporting' })
       expect(session.placements.get('character', mira.id)).toMatchObject({ locationId: session.locations.getBySourceId('street')!.id, position: 'by the bar door' })
@@ -553,7 +553,7 @@ describe('a turn with the real agent loop', () => {
       expect(session.consolidation.get(1)?.resolution).toBe('gave her relationships with Arthur, both ways')
       const fitting = authors(adapter).find(request => systemOf(request).includes('fitting into the world what was made up'))!
       expect(briefOf(fitting)).toContain('- item 1, character mira (Mira Voss), made in turn 1')
-      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_item', 'get_location', 'list_characters', 'list_consolidation', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'list_variables', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
+      expect(toolNames(fitting).sort()).toEqual(['edit_world', 'get_agenda', 'get_character', 'get_faction', 'get_item', 'get_location', 'list_characters', 'list_consolidation', 'list_factions', 'list_items', 'list_locations', 'list_relationships', 'list_slots', 'list_variables', 'resolve_consolidation', 'search_events', 'submit_result', 'world_lint'])
       expect(session.metadata.get().turns).toBe(1)
       expect(agent.session.snapshotEvents().filter(event => event.type === 'turn/end')).toHaveLength(1)
     })
@@ -1413,7 +1413,7 @@ describe('a turn with the real agent loop', () => {
     it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
       const { session, adapter, agent } = await play('careful')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
-      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_agenda', 'get_item', 'get_location', 'list_items', 'list_locations', 'list_relationships', 'list_threads', 'list_variables', 'read_records', 'search_events', 'submit_result'])
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_agenda', 'get_faction', 'get_item', 'get_location', 'list_factions', 'list_items', 'list_locations', 'list_relationships', 'list_threads', 'list_variables', 'read_records', 'search_events', 'submit_result'])
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
       expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
       expect(publicStateOf(session, 'bob')).toBe('holding a brass key')

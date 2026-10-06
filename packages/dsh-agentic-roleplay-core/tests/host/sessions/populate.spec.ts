@@ -4,8 +4,8 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from 'dsh-roleplay-state'
-import type { CharacterDefinition } from 'dsh-roleplay-model'
-import { knowledgeProblems, populateCharacters, populateItems, populateKnowledge, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
+import type { CharacterDefinition, FactionDefinition } from 'dsh-roleplay-model'
+import { factionProblems, knowledgeProblems, populateCharacters, populateFactions, populateItems, populateKnowledge, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
 import type { ItemDefinition, LocationDefinition } from 'dsh-roleplay-model'
 
 let dir: string
@@ -98,6 +98,25 @@ describe('populateCharacters', () => {
     const character = session.characters.getBySourceId('eleanor-graves')!
     expect(session.visualIdentities.get('character', character.id)).toMatchObject({ ...visualIdentity, version: 1 })
     expect(character).not.toHaveProperty('visualIdentity')
+  })
+})
+
+describe('populateFactions', () => {
+  const watch: FactionDefinition = { id: 'watch', name: 'Harbour Watch', aliases: ['The Watch'], summary: 'Guards the harbour.', description: '', values: ['order'], structure: 'Led by a harbourmaster.', start: { publicState: 'Patrolling.', innerState: 'Understaffed.', goals: [{ type: 'agenda', name: 'Secure the harbour', description: '', status: 'active', horizon: 'day', priority: 0.8, urgency: 0.6, plan: [], openThreads: [], constraints: [] }] }, members: [{ character: 'eleanor-graves', role: 'sponsor', rank: '', status: 'active', public: false, commitment: 0.4 }], relationships: [] }
+
+  it('copies factions, goals and memberships after the cast', () => {
+    populateCharacters(session, [definition()], 'nobody')
+    populateFactions(session, [watch])
+    const faction = session.factions.getBySourceId('watch')!
+    const character = session.characters.getBySourceId('eleanor-graves')!
+    expect(session.factionStates.get(faction.id)).toMatchObject({ publicState: 'Patrolling.', innerState: 'Understaffed.' })
+    expect(session.factionMemberships.get(faction.id, character.id)).toMatchObject({ role: 'sponsor', public: false, commitment: 0.4 })
+    expect(session.factionRelationships.get('character', character.id, 'faction', faction.id)).toMatchObject({ label: 'sponsor' })
+    expect(session.factionIntents.list(faction.id).map(goal => goal.name)).toEqual(['Secure the harbour'])
+  })
+
+  it('reports references outside the world', () => {
+    expect(factionProblems([{ ...watch, members: [{ ...watch.members[0]!, character: 'nobody' }], relationships: [{ to: { kind: 'faction', id: 'missing' }, label: 'rival' }] }], [definition()])).toEqual(expect.arrayContaining([expect.stringContaining('nobody'), expect.stringContaining('missing')]))
   })
 })
 

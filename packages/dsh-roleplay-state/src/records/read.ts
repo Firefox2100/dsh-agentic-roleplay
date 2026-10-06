@@ -17,6 +17,8 @@ export interface RecordsScope {
 
 /** The records as models read them (snake_case, characters by key), the counterpart of the edit's wire format. */
 export interface RecordsView {
+  factions: { faction: string; name: string; public_state: string; inner_state: string; values: string[]; structure: string; goals: { id: number; name: string; status: string; horizon: string; priority: number; urgency: number; plan: string[] }[]; members: { character: string; role: string; rank: string; status: string; public: boolean; commitment: number }[] }[]
+  faction_relationships: { from_kind: string; from: string; to_kind: string; to: string; label: string; summary: string; familiarity: number; trust: number; affinity: number; tension: number; updated_turn: number }[]
   characters: {
     character: string
     name: string
@@ -78,10 +80,13 @@ export function describeHolder(target: Pick<RecordsTarget, 'items' | 'locations'
 /** Read the records back from the database, as the edit wrote them. */
 export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: RecordsScope = {}): RecordsView {
   const characters = target.characters.list()
+  const factions = target.factions.list()
   const keyOf = (id: CharacterId): string => {
     const found = characters.find(character => character.id === id)
     return found === undefined ? String(id) : characterKey(found)
   }
+  const factionKey = (id: number): string => { const faction = factions.find(entry => entry.id === id); return faction?.sourceId ?? String(id) }
+  const socialKey = (kind: 'character' | 'faction', id: number): string => kind === 'character' ? keyOf(id) : factionKey(id)
   const places = new Map(target.locations.list().map(place => [place.id, locationKey(place)]))
   const placeKey = (id: number): string => places.get(id) ?? String(id)
   const where = (id: CharacterId): { location: string | null; position: string } => {
@@ -92,6 +97,11 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
   const inScope = (turn: number, round?: number): boolean =>
     scope.rounds === undefined || scope.rounds.some(entry => entry.turn === turn && (round === undefined || entry.round === round))
   const view: RecordsView = {
+    factions: factions.map((faction) => {
+      const state = target.factionStates.get(faction.id)
+      return { faction: factionKey(faction.id), name: faction.name, public_state: state?.publicState ?? '', inner_state: state?.innerState ?? '', values: faction.values, structure: faction.structure, goals: target.factionIntents.list(faction.id).filter(goal => goal.status === 'active' || goal.status === 'paused').map(goal => ({ id: goal.id, name: goal.name, status: goal.status, horizon: goal.horizon, priority: goal.priority, urgency: goal.urgency, plan: goal.plan })), members: target.factionMemberships.ofFaction(faction.id).map(member => ({ character: keyOf(member.characterId), role: member.role, rank: member.rank, status: member.status, public: member.public, commitment: member.commitment })) }
+    }),
+    faction_relationships: target.factionRelationships.list().filter(relation => scope.relationshipsSince === undefined || relation.updatedTurn >= scope.relationshipsSince).map(relation => ({ from_kind: relation.fromKind, from: socialKey(relation.fromKind, relation.fromId), to_kind: relation.toKind, to: socialKey(relation.toKind, relation.toId), label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension, updated_turn: relation.updatedTurn })),
     characters: characters.map((character) => {
       const state = target.characterStates.get(character.id)
       return {

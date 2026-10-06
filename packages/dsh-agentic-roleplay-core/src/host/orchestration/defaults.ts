@@ -161,7 +161,7 @@ function remembered(memories: readonly Recalled[], now?: number): string {
 /** Every character is told the same thing about the scene, plus who it is and what it remembers. */
 export const sharedContext: CharacterContextProvider = {
   brief(request: CharacterRequest) {
-    const { member, cast, situation, attempt, earlier, reaction, previous, memories, place, relationships, knowledge, carrying, time, agenda } = request
+    const { member, cast, situation, attempt, earlier, reaction, previous, memories, place, relationships, knowledge, affiliations, carrying, time, agenda } = request
     // In a place, a character perceives who is there with it; in a story without places, everyone is present.
     const company = place === undefined ? cast : place.here
     const sections = [`Situation:\n${situation}`, ...(time === undefined ? [] : [`Now: ${describeTime(time)}.`]), ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
@@ -175,10 +175,20 @@ export const sharedContext: CharacterContextProvider = {
     if (relationships !== undefined && relationships.length > 0) {
       sections.push(`How you stand with those here (your own view of them):\n${relationships.map((relation) => { const attitude = describeAttitude(relation); return `- ${relation.name} (${relation.label})${relation.summary === '' ? '' : `: ${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
     }
+    if (affiliations !== undefined && affiliations.length > 0) {
+      sections.push(`Your affiliations (their goals are pressures and commitments, not commands):\n${affiliations.map((entry) => {
+        const position = [entry.role, entry.rank].filter(Boolean).join(', ') || 'member'
+        const goals = entry.goals.length === 0 ? '' : ` Goals: ${entry.goals.join('; ')}.`
+        const state = entry.publicState === '' ? '' : ` ${entry.publicState}`
+        const attitude = entry.relationship === undefined ? '' : describeAttitude(entry.relationship)
+        return `- ${entry.name}: ${position}; ${entry.status}; commitment ${entry.commitment.toFixed(2)}.${state}${goals}${attitude === '' ? '' : ` Your view: ${attitude}.`}`
+      }).join('\n')}`)
+    }
     if (knowledge !== undefined) {
       const shown = (entries: readonly string[]): string => entries.slice(0, 30).join('; ') + (entries.length > 30 ? `; and ${entries.length - 30} more you can recall if needed` : '')
       const lines = [
         knowledge.characters.length === 0 ? undefined : `People: ${shown(knowledge.characters)}`,
+        knowledge.factions.length === 0 ? undefined : `Factions: ${shown(knowledge.factions)}`,
         knowledge.locations.length === 0 ? undefined : `Places: ${shown(knowledge.locations)}`,
         knowledge.routes.length === 0 ? undefined : `Routes: ${shown(knowledge.routes)}`,
         knowledge.items.length === 0 ? undefined : `Things: ${shown(knowledge.items)}`,

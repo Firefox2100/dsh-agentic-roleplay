@@ -34,10 +34,11 @@ What to write:
 - states: what the game master decided about each character's activity and public_state is already written. Write a state only for inner_state or emotion, or to fix a public_state that the rounds clearly contradict, and only the fields that changed. public_state is a short present-tense description of what can be seen now (position, posture, expression, what it holds), never a log of events and never a thought. inner_state is what it now thinks or feels, and only if the rounds show it. activity is what it is doing now. emotion only when the rounds show a clear change.
 - beliefs: only when a character clearly learns, suspects or concludes something beyond the single event; written from that character's point of view; kind is belief, relationship or knowledge.
 - entity knowledge: the graph is closed-world. A relationship profile means its from-character knows the to-character. For a place, item or directed exit newly learned by being told, reading, or inference, add knowledge (character, kind; subject for a place/item, from+to for an exit). Ordinary sight and movement are recorded automatically. Knowledge means only that the entity exists, never where it is now or its current state. Do not retract it merely because information became stale.
+- factions: faction_states changes an organisation's durable public or private institutional condition; faction_memberships records joining, leaving, role, rank, visibility and commitment; faction_relationships records a character's or faction's directional view of a faction or character and is also the awareness edge; faction_intents_added records a durable strategic goal adopted by an organisation. A faction goal pressures members but never means every member knows it or must act on it.
 - threads_opened: only a promise, mystery or goal that the rounds clearly leave unsettled and that is not already open. threads_resolved: ids of open threads that the rounds settle.`
 
 /** What the keeper reads back by default: the parts of the records its edits write. */
-const VERIFY_SECTIONS = ['characters', 'events', 'beliefs', 'open_threads', 'relationships', 'knowledge', 'variables', 'engagements'] as const
+const VERIFY_SECTIONS = ['characters', 'factions', 'faction_relationships', 'events', 'beliefs', 'open_threads', 'relationships', 'knowledge', 'variables', 'engagements'] as const
 
 const label = (round: { turn: number; round: number }): string => `turn ${round.turn}, round ${round.round}`
 
@@ -116,7 +117,7 @@ const RESULT: ObjectJsonSchema = {
 function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number }, progress: { edits: number; unchecked: boolean }): ToolDefinition[] {
   const turn = Math.max(...job.rounds.map(round => round.turn))
   const keys = job.store.story.characters.list().map(characterKey)
-  const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads', 'list_locations', 'get_location', 'list_relationships', 'list_items', 'get_item', 'get_agenda', 'list_variables'])
+  const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads', 'list_locations', 'get_location', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'get_agenda', 'list_variables'])
   return createTools(() => ({ session: job.store.story, turn, policy: memory, queryVector: job.store.queryVector, timeZone: zoneOf(job.store.settings().clock) }), { write: true, characters: keys })
     .filter(tool => wanted.has(tool.name))
     .map((tool): ToolDefinition => {

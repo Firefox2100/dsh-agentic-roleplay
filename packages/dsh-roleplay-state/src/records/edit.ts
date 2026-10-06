@@ -1,5 +1,5 @@
 import {
-  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, KNOWLEDGE_KINDS, MAX_LOCATION_FEATURES, MEMORY_KINDS, PERCEPTION_MODES, SLOT_ID,
+  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_TYPES, KNOWLEDGE_KINDS, MAX_LOCATION_FEATURES, MEMBERSHIP_STATUSES, MEMORY_KINDS, PERCEPTION_MODES, SLOT_ID,
   type CharacterId, type CharacterStatePatch, type Holder, type Location, type LocationFeature, type NewPerception, type RelationshipPatch,
 } from 'dsh-roleplay-model'
 import { InvalidEditError, InvalidMoveError } from '../errors.ts'
@@ -46,6 +46,9 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     return found?.id
   }
   const ids = (keys: readonly string[] | undefined, where: string): CharacterId[] => list(keys).flatMap(key => idOf(key, where) ?? [])
+  const factionByKey = new Map(target.factions.list().map(faction => [faction.sourceId ?? String(faction.id), faction]))
+  const factionIdOf = (key: string, where: string): number | undefined => { const found = factionByKey.get(key); if (found === undefined) problems.push(`${where}: there is no faction "${key}"`); return found?.id }
+  const socialIdOf = (kind: 'character' | 'faction', key: string, where: string): number | undefined => kind === 'character' ? idOf(key, where) : factionIdOf(key, where)
   const importance = (value: number | undefined, where: string): void => {
     if (value !== undefined && (!Number.isInteger(value) || value < IMPORTANCE_MIN || value > IMPORTANCE_MAX)) problems.push(`${where}: importance must be a whole number from ${IMPORTANCE_MIN} to ${IMPORTANCE_MAX}`)
   }
@@ -160,6 +163,39 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     const subject = knowledgeSubject(entry, `knowledge_retractions[${index}]`)
     if (character !== undefined && subject !== undefined && !target.knowledge.knows(character, subject.kind, subject.id)) problems.push(`knowledge_retractions[${index}]: the character does not know that entity`)
     return { character, subject }
+  })
+  const factionStates = list(edit.factionStates).map((entry, index) => {
+    const where = `faction_states[${index}]`
+    if (entry.publicState === undefined && entry.innerState === undefined) problems.push(`${where}: nothing to change`)
+    return { entry, faction: factionIdOf(entry.faction, where) }
+  })
+  const factionMemberships = list(edit.factionMemberships).map((entry, index) => {
+    const where = `faction_memberships[${index}]`
+    const faction = factionIdOf(entry.faction, `${where}.faction`)
+    const character = idOf(entry.character, `${where}.character`)
+    if (entry.status !== undefined && !MEMBERSHIP_STATUSES.includes(entry.status)) problems.push(`${where}: unknown status "${String(entry.status)}"`)
+    if (entry.commitment !== undefined && (!Number.isFinite(entry.commitment) || entry.commitment < 0 || entry.commitment > 1)) problems.push(`${where}: commitment must be a number from 0 to 1`)
+    return { entry, faction, character }
+  })
+  const factionRelationships = list(edit.factionRelationships).map((entry, index) => {
+    const where = `faction_relationships[${index}]`
+    if (!['character', 'faction'].includes(entry.fromKind)) problems.push(`${where}.from_kind: must be character or faction`)
+    if (!['character', 'faction'].includes(entry.toKind)) problems.push(`${where}.to_kind: must be character or faction`)
+    const from = socialIdOf(entry.fromKind, entry.from, `${where}.from`)
+    const to = socialIdOf(entry.toKind, entry.to, `${where}.to`)
+    if (entry.fromKind === entry.toKind && entry.from === entry.to) problems.push(`${where}: an entity has no relationship with itself`)
+    if (from !== undefined && to !== undefined && target.factionRelationships.get(entry.fromKind, from, entry.toKind, to) === undefined && !present(entry.label)) problems.push(`${where}: a new relationship needs a label`)
+    for (const [axis, [min, max]] of Object.entries(RELATION_RANGES) as [keyof typeof RELATION_RANGES, readonly [number, number]][]) { const value = entry[axis]; if (value !== undefined && (!Number.isFinite(value) || value < min || value > max)) problems.push(`${where}: ${axis} must be a number from ${min} to ${max}`) }
+    return { entry, from, to }
+  })
+  const factionIntents = list(edit.factionIntentsAdded).map((entry, index) => {
+    const where = `faction_intents_added[${index}]`
+    const faction = factionIdOf(entry.faction, `${where}.faction`)
+    if (!INTENT_TYPES.includes(entry.type)) problems.push(`${where}: unknown type "${String(entry.type)}"`)
+    if (!INTENT_HORIZONS.includes(entry.horizon)) problems.push(`${where}: unknown horizon "${String(entry.horizon)}"`)
+    if (!present(entry.name)) problems.push(`${where}: give the goal a name`)
+    for (const [key, value] of [['priority', entry.priority], ['urgency', entry.urgency]] as const) if (!Number.isFinite(value) || value < 0 || value > 1) problems.push(`${where}.${key}: must be a number from 0 to 1`)
+    return { entry, faction }
   })
   list(edit.itemChanges).forEach((change, index) => {
     const where = `item_changes[${index}]`
@@ -322,6 +358,25 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     }
     for (const { character, subject } of knowledgeRetractions) {
       target.knowledge.forget(character!, subject!.kind, subject!.id)
+      result.writes += 1
+    }
+    for (const { entry, faction } of factionStates) {
+      target.factionStates.update(faction!, { ...(entry.publicState === undefined ? {} : { publicState: entry.publicState }), ...(entry.innerState === undefined ? {} : { innerState: entry.innerState }) })
+      result.writes += 1
+    }
+    for (const { entry, faction, character } of factionMemberships) {
+      const { faction: _faction, character: _character, ...patch } = entry
+      target.factionMemberships.upsert(faction!, character!, patch, edit.turn)
+      if (target.factionRelationships.get('character', character!, 'faction', faction!) === undefined) target.factionRelationships.upsert('character', character!, 'faction', faction!, { label: entry.role || 'member', familiarity: 1 }, edit.turn)
+      result.writes += 1
+    }
+    for (const { entry, from, to } of factionRelationships) {
+      const { fromKind, from: _from, toKind, to: _to, ...patch } = entry
+      target.factionRelationships.upsert(fromKind, from!, toKind, to!, patch, edit.turn)
+      result.writes += 1
+    }
+    for (const { entry, faction } of factionIntents) {
+      target.factionIntents.add(faction!, { type: entry.type, name: entry.name.trim(), description: entry.description?.trim() ?? '', status: 'active', horizon: entry.horizon, priority: entry.priority, urgency: entry.urgency, plan: entry.plan ?? [], openThreads: [], constraints: entry.constraints ?? [], ...(entry.deadline === undefined ? {} : { deadline: entry.deadline }) })
       result.writes += 1
     }
     for (const change of list(edit.placeEdits)) {

@@ -4,6 +4,7 @@ import type { StartedSession, StartSessionRequest } from '../../shared/sessions.
 import type { WorldProblem } from '../../shared/worlds.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
 import { loadCharacters } from '../characters/load.ts'
+import { loadFactions } from '../factions/load.ts'
 import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
 import { loadTriggers } from '../triggers/load.ts'
@@ -15,7 +16,7 @@ import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { knowledgeProblems, populateCharacters, populateClock, populateItems, populateKnowledge, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
+import { factionProblems, knowledgeProblems, populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
 
 export const MAX_NAME_LENGTH = 200
 
@@ -43,6 +44,11 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
 
   const { characters, problems } = await loadCharacters(world.directory)
   if (problems.length > 0) throw new InvalidWorldError(`the characters of "${world.summary.name}" have ${problems.length} problem(s)`, problems)
+
+  const { factions, problems: factionFileProblems } = await loadFactions(world.directory)
+  if (factionFileProblems.length > 0) throw new InvalidWorldError(`the factions of "${world.summary.name}" have ${factionFileProblems.length} problem(s)`, factionFileProblems)
+  const factionReferences = factionProblems(factions, characters)
+  if (factionReferences.length > 0) throw new InvalidWorldError(`the factions of "${world.summary.name}" have ${factionReferences.length} problem(s)`, factionReferences.map(message => ({ path: world.directory, message })))
 
   const { locations, problems: locationProblems } = await loadLocations(world.directory)
   if (locationProblems.length > 0) throw new InvalidWorldError(`the places of "${world.summary.name}" have ${locationProblems.length} problem(s)`, locationProblems)
@@ -96,6 +102,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     session.transaction(() => {
       populateLocations(session, locations)
       populateCharacters(session, characters, player.id)
+      populateFactions(session, factions)
       populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
       populateKnowledge(session, characters)

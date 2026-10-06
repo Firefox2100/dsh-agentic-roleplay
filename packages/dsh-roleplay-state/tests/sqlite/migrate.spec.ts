@@ -52,6 +52,18 @@ describe('migrate', () => {
     db.close()
   })
 
+  it('adds factions to an existing version 3 session', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 3)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 3')
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'factions'")?.name).toBe('factions')
+    expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'faction_memberships'")?.name).toBe('faction_memberships')
+    db.close()
+  })
+
   it('refuses a database that holds something else', () => {
     const db = nodeSqliteDriver.open(':memory:')
     db.exec('CREATE TABLE other (x TEXT)')

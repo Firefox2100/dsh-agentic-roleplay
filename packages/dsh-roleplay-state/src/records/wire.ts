@@ -8,7 +8,7 @@ import {
 import { InvalidEditError } from '../errors.ts'
 import type {
   BeliefEdit, CharacterMove, EngagementEditSpec, EventEdit, ExitChange, IntentEditSpec, ItemChange, NewEngagementSpec, NewIntentSpec, RoutineSet, RoutineWindowSpec, ItemEditSpec, NewBelief, NewCharacterSpec, NewEvent, NewExit, NewExitBetween, NewItemSpec, NewPlace,
-  KnowledgeRetraction, KnowledgeSet, PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
+  FactionMembershipSet, FactionRelationshipSet, FactionStateSet, KnowledgeRetraction, KnowledgeSet, NewFactionIntentSpec, PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
 } from './edit-types.ts'
 import { ITEM_ACTIONS, type ItemAction } from './items.ts'
 import type { VariableChangeSpec } from './variables.ts'
@@ -144,6 +144,10 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     relationshipRetractions: array('relationship_retractions').map((entry): RelationshipRetraction => ({ from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '' })),
     knowledge: array('knowledge').map((entry): KnowledgeSet => defined<KnowledgeSet>({ character: text(entry, 'character') ?? '', kind: (text(entry, 'kind') ?? '') as KnowledgeKind, subject: text(entry, 'subject'), from: text(entry, 'from'), to: text(entry, 'to'), observed: bool(entry, 'observed') })),
     knowledgeRetractions: array('knowledge_retractions').map((entry): KnowledgeRetraction => defined<KnowledgeRetraction>({ character: text(entry, 'character') ?? '', kind: (text(entry, 'kind') ?? '') as KnowledgeKind, subject: text(entry, 'subject'), from: text(entry, 'from'), to: text(entry, 'to') })),
+    factionStates: array('faction_states').map((entry): FactionStateSet => defined<FactionStateSet>({ faction: text(entry, 'faction') ?? '', publicState: text(entry, 'public_state'), innerState: text(entry, 'inner_state') })),
+    factionMemberships: array('faction_memberships').map((entry): FactionMembershipSet => defined<FactionMembershipSet>({ faction: text(entry, 'faction') ?? '', character: text(entry, 'character') ?? '', role: text(entry, 'role'), rank: text(entry, 'rank'), status: text(entry, 'status') as FactionMembershipSet['status'], public: bool(entry, 'public'), commitment: num(entry, 'commitment'), leftTurn: num(entry, 'left_turn') })),
+    factionRelationships: array('faction_relationships').map((entry): FactionRelationshipSet => defined<FactionRelationshipSet>({ fromKind: (text(entry, 'from_kind') ?? '') as FactionRelationshipSet['fromKind'], from: text(entry, 'from') ?? '', toKind: (text(entry, 'to_kind') ?? '') as FactionRelationshipSet['toKind'], to: text(entry, 'to') ?? '', label: text(entry, 'label'), summary: text(entry, 'summary'), familiarity: num(entry, 'familiarity'), trust: num(entry, 'trust'), affinity: num(entry, 'affinity'), tension: num(entry, 'tension') })),
+    factionIntentsAdded: array('faction_intents_added').map((entry): NewFactionIntentSpec => defined<NewFactionIntentSpec>({ faction: text(entry, 'faction') ?? '', type: (text(entry, 'type') ?? '') as IntentType, name: text(entry, 'name') ?? '', description: text(entry, 'description'), horizon: (text(entry, 'horizon') ?? '') as IntentHorizon, priority: num(entry, 'priority') ?? Number.NaN, urgency: num(entry, 'urgency') ?? Number.NaN, plan: strings(entry, 'plan'), constraints: strings(entry, 'constraints'), deadline: text(entry, 'deadline') })),
     placeEdits: array('place_edits').map((entry): PlaceEdit => defined<PlaceEdit>({ place: text(entry, 'place') ?? '', name: text(entry, 'name'), description: text(entry, 'description'), features: featuresOf(entry) })),
     exitChanges: array('exit_changes').map((entry): ExitChange => defined<ExitChange>({
       from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '', state: text(entry, 'state') as ExitState | undefined, description: text(entry, 'description'), note: text(entry, 'note'),
@@ -326,6 +330,22 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
       type: 'array',
       description: 'Entity awareness recorded by mistake. Ordinary stale information belongs in beliefs and does not remove awareness.',
       items: { type: 'object', properties: { character, kind: { type: 'string', enum: [...KNOWLEDGE_KINDS] }, subject: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' } }, required: ['character', 'kind'], additionalProperties: false },
+    },
+    faction_states: {
+      type: 'array', description: 'Changes in an organisation itself. Give only fields that changed.',
+      items: { type: 'object', properties: { faction: { type: 'string' }, public_state: { type: 'string' }, inner_state: { type: 'string' } }, required: ['faction'], additionalProperties: false },
+    },
+    faction_memberships: {
+      type: 'array', description: 'Membership learned or changed. A character may belong to several factions; public says whether outsiders can ordinarily know it.',
+      items: { type: 'object', properties: { faction: { type: 'string' }, character, role: { type: 'string' }, rank: { type: 'string' }, status: { type: 'string', enum: ['active', 'inactive', 'former'] }, public: { type: 'boolean' }, commitment: { type: 'number' }, left_turn: { type: 'integer' } }, required: ['faction', 'character'], additionalProperties: false },
+    },
+    faction_relationships: {
+      type: 'array', description: 'A directional profile involving a faction. This is also the awareness edge: without it, the from-side does not know the target exists.',
+      items: { type: 'object', properties: { from_kind: { type: 'string', enum: ['character', 'faction'] }, from: { type: 'string' }, to_kind: { type: 'string', enum: ['character', 'faction'] }, to: { type: 'string' }, label: { type: 'string' }, summary: { type: 'string' }, familiarity: { type: 'number' }, trust: { type: 'number' }, affinity: { type: 'number' }, tension: { type: 'number' } }, required: ['from_kind', 'from', 'to_kind', 'to'], additionalProperties: false },
+    },
+    faction_intents_added: {
+      type: 'array', description: 'A durable strategic goal newly adopted by a faction. This pressures its members but does not directly act for them.',
+      items: { type: 'object', properties: { faction: { type: 'string' }, type: { type: 'string', enum: [...INTENT_TYPES] }, name: { type: 'string' }, description: { type: 'string' }, horizon: { type: 'string', enum: [...INTENT_HORIZONS] }, priority: { type: 'number' }, urgency: { type: 'number' }, plan: { type: 'array', items: { type: 'string' } }, constraints: { type: 'array', items: { type: 'string' } }, deadline: { type: 'string' } }, required: ['faction', 'type', 'name', 'horizon', 'priority', 'urgency'], additionalProperties: false },
     },
     item_changes: {
       type: 'array',

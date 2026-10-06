@@ -52,9 +52,21 @@ export interface ItemView {
 /** The durable entities a character can identify beyond what is visible in the present scene. */
 export interface KnowledgeView {
   characters: string[]
+  factions: string[]
   locations: string[]
   items: string[]
   routes: string[]
+}
+
+export interface FactionAffiliationView {
+  name: string
+  role: string
+  rank: string
+  status: string
+  commitment: number
+  publicState: string
+  goals: string[]
+  relationship?: KnownRelationship
 }
 
 /** A short reference to a place in what is kept of a round. */
@@ -103,6 +115,8 @@ export interface CharacterRequest {
   relationships?: readonly KnownRelationship[]
   /** Entities this character knows exist; absent entities are unknown. */
   knowledge?: KnowledgeView
+  /** Organisations this character belongs to, including memberships hidden from others. */
+  affiliations?: readonly FactionAffiliationView[]
   /** What the character has on it or in its hands. */
   carrying?: readonly ItemView[]
   /** What time it is in the story. */
@@ -368,7 +382,7 @@ export interface TriggerReport {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
+  readonly story: Pick<Session, 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
@@ -427,6 +441,7 @@ export interface TurnStore {
   carried(characterId: Character['id']): ItemView[]
   /** Observe the present scene and return the entities this character knows. */
   knowledge(characterId: Character['id'], turn: number, visibleCharacters?: readonly Character['id'][]): KnowledgeView
+  affiliations(characterId: Character['id']): FactionAffiliationView[]
   /** Whether a character may go where a request says (places by key), resolved to what the move would be. */
   checkMove(character: string, request: MoveRequest): MoveCheck
   /** A place as it is told to someone in it, or nothing for an id that is not one. */

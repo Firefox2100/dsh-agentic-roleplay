@@ -69,12 +69,20 @@ describe('what a character is told', () => {
   })
 
   it('gives a character its known entity graph without implying current state', () => {
-    const prompt = sharedContext.brief(request({ knowledge: { characters: ['Bob (bob)'], locations: ['Station (station)'], items: ['Brass key (key)'], routes: ['The Bar -> Station'] } })).prompt
+    const prompt = sharedContext.brief(request({ knowledge: { characters: ['Bob (bob)'], factions: ['Harbour Watch (watch)'], locations: ['Station (station)'], items: ['Brass key (key)'], routes: ['The Bar -> Station'] } })).prompt
     expect(prompt).toContain('What you know exists (this does not tell you where it is now or what state it is in):')
     expect(prompt).toContain('People: Bob (bob)')
+    expect(prompt).toContain('Factions: Harbour Watch (watch)')
     expect(prompt).toContain('Places: Station (station)')
     expect(prompt).toContain('Routes: The Bar -> Station')
     expect(prompt).toContain('Things: Brass key (key)')
+  })
+
+  it('presents faction goals as pressures rather than commands', () => {
+    const prompt = sharedContext.brief(request({ affiliations: [{ name: 'Harbour Watch', role: 'officer', rank: 'constable', status: 'active', commitment: 0.8, publicState: 'The Watch is on alert.', goals: ['Secure the harbour'] }] })).prompt
+    expect(prompt).toContain('Your affiliations (their goals are pressures and commitments, not commands):')
+    expect(prompt).toContain('Harbour Watch: officer, constable; active; commitment 0.80')
+    expect(prompt).toContain('Goals: Secure the harbour')
   })
 })
 

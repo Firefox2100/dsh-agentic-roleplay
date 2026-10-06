@@ -438,6 +438,93 @@ export const MIGRATIONS: readonly Migration[] = [
         GROUP BY perceptions.character_id, event_involves.character_id;
     `,
   },
+  {
+    version: 4,
+    sql: `
+      CREATE TABLE factions (
+        id INTEGER PRIMARY KEY,
+        source_id TEXT UNIQUE,
+        name TEXT NOT NULL,
+        name_key TEXT NOT NULL,
+        summary TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        values_json TEXT NOT NULL DEFAULT '[]',
+        structure TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX factions_name_key ON factions (name_key);
+
+      CREATE TABLE faction_aliases (
+        faction_id INTEGER NOT NULL REFERENCES factions (id) ON DELETE CASCADE,
+        position INTEGER NOT NULL,
+        alias TEXT NOT NULL,
+        alias_key TEXT NOT NULL,
+        PRIMARY KEY (faction_id, position),
+        UNIQUE (faction_id, alias_key)
+      ) STRICT;
+      CREATE INDEX faction_aliases_key ON faction_aliases (alias_key);
+
+      CREATE TABLE faction_state (
+        faction_id INTEGER PRIMARY KEY REFERENCES factions (id) ON DELETE CASCADE,
+        public_state TEXT NOT NULL DEFAULT '',
+        inner_state TEXT NOT NULL DEFAULT '',
+        version INTEGER NOT NULL DEFAULT 1,
+        updated_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE faction_memberships (
+        faction_id INTEGER NOT NULL REFERENCES factions (id) ON DELETE CASCADE,
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        role TEXT NOT NULL DEFAULT '',
+        rank TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL CHECK (status IN ('active', 'inactive', 'former')),
+        is_public INTEGER NOT NULL DEFAULT 1 CHECK (is_public IN (0, 1)),
+        commitment REAL NOT NULL DEFAULT 0 CHECK (commitment BETWEEN 0 AND 1),
+        joined_turn INTEGER NOT NULL,
+        left_turn INTEGER,
+        PRIMARY KEY (faction_id, character_id)
+      ) STRICT;
+      CREATE INDEX faction_memberships_character ON faction_memberships (character_id, status);
+
+      CREATE TABLE faction_relationships (
+        id INTEGER PRIMARY KEY,
+        from_kind TEXT NOT NULL CHECK (from_kind IN ('character', 'faction')),
+        from_id INTEGER NOT NULL,
+        to_kind TEXT NOT NULL CHECK (to_kind IN ('character', 'faction')),
+        to_id INTEGER NOT NULL,
+        label TEXT NOT NULL,
+        summary TEXT NOT NULL DEFAULT '',
+        familiarity REAL NOT NULL DEFAULT 0 CHECK (familiarity BETWEEN 0 AND 1),
+        trust REAL NOT NULL DEFAULT 0 CHECK (trust BETWEEN -1 AND 1),
+        affinity REAL NOT NULL DEFAULT 0 CHECK (affinity BETWEEN -1 AND 1),
+        tension REAL NOT NULL DEFAULT 0 CHECK (tension BETWEEN 0 AND 1),
+        updated_turn INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE (from_kind, from_id, to_kind, to_id),
+        CHECK (from_kind <> to_kind OR from_id <> to_id)
+      ) STRICT;
+      CREATE INDEX faction_relationships_to ON faction_relationships (to_kind, to_id);
+
+      CREATE TABLE faction_intents (
+        id INTEGER PRIMARY KEY,
+        faction_id INTEGER NOT NULL REFERENCES factions (id) ON DELETE CASCADE,
+        type TEXT NOT NULL CHECK (type IN ('need', 'obligation', 'quest', 'agenda', 'aspiration', 'relationship', 'habit', 'reaction')),
+        name TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL CHECK (status IN ('active', 'paused', 'completed', 'failed', 'abandoned')),
+        horizon TEXT NOT NULL CHECK (horizon IN ('immediate', 'short', 'day', 'long', 'open_ended')),
+        priority REAL NOT NULL CHECK (priority BETWEEN 0 AND 1),
+        urgency REAL NOT NULL CHECK (urgency BETWEEN 0 AND 1),
+        plan TEXT NOT NULL DEFAULT '[]',
+        open_threads TEXT NOT NULL DEFAULT '[]',
+        constraints TEXT NOT NULL DEFAULT '[]',
+        deadline TEXT,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX faction_intents_faction ON faction_intents (faction_id, status);
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

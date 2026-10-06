@@ -34,6 +34,16 @@ const run = async (name: string, args: object, write = true, id?: string) => {
 }
 
 describe('the reading tools', () => {
+  it('lists factions and reads their state, members, goals and relationships', async () => {
+    const alice = store.characters.getBySourceId('alice')!
+    const faction = store.factions.add({ sourceId: 'watch', name: 'Harbour Watch', aliases: [], summary: 'Guards the harbour.', description: '', values: ['order'], structure: '' })
+    store.factionStates.create(faction.id, { publicState: 'On patrol.' })
+    store.factionMemberships.upsert(faction.id, alice.id, { role: 'officer' }, 1)
+    store.factionIntents.add(faction.id, { type: 'agenda', name: 'Secure the harbour', description: '', status: 'active', horizon: 'day', priority: 0.8, urgency: 0.6, plan: [], openThreads: [], constraints: [] })
+    expect((await run('list_factions', {})).value).toEqual([{ key: 'watch', name: 'Harbour Watch', summary: 'Guards the harbour.', members: 1, active_goals: 1 }])
+    expect((await run('get_faction', { faction: 'watch' })).value).toMatchObject({ faction: 'watch', public_state: 'On patrol.', members: [{ character: 'alice', role: 'officer' }], goals: [{ name: 'Secure the harbour' }] })
+  })
+
   it('list the characters by key, and read one with its state', async () => {
     expect((await run('list_characters', {})).value).toEqual([
       { key: 'arthur', name: 'Arthur', role: 'npc', controlled_by: 'the player', summary: 'Arthur summary' },
@@ -133,7 +143,7 @@ describe('the writing tools', () => {
   })
 
   it('are not there unless the plugin is configured for them', () => {
-    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads'])
+    expect(Object.keys(tools(false))).toEqual(['list_characters', 'get_character', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads'])
     expect(Object.keys(tools(true))).toContain('record_event')
   })
 })
@@ -224,7 +234,7 @@ describe('the plugin', () => {
   }
 
   it('registers the reading tools, and the writing ones when asked, with the tool registry present', async () => {
-    expect(await names({})).toEqual(['list_characters', 'get_character', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads'])
+    expect(await names({})).toEqual(['list_characters', 'get_character', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads'])
     expect(await names({ writeTools: true })).toContain('open_thread')
   })
 

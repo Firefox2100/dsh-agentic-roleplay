@@ -743,6 +743,7 @@ export class TurnEngine {
       const relationships = store === undefined ? [] : this.knownRelationships(member, place === undefined ? cast : place.here, store)
       const carrying = store === undefined ? [] : store.carried(member.character.id)
       const knowledge = store?.knowledge(member.character.id, owner.turn, (place === undefined ? cast : place.here).map(entry => entry.character.id))
+      const affiliations = store?.affiliations(member.character.id) ?? []
       const agenda = store?.agenda(owner.turn, member.character.id)
       const cues = this.cuesOf(state, key, member, store, number)
       const upcoming = store?.upcomingFor(member.character.id, owner.turn) ?? []
@@ -758,6 +759,7 @@ export class TurnEngine {
         ...(relationships.length === 0 ? {} : { relationships }),
         ...(carrying.length === 0 ? {} : { carrying }),
         ...(knowledge === undefined ? {} : { knowledge }),
+        ...(affiliations.length === 0 ? {} : { affiliations }),
         ...(memories.length === 0 ? {} : { memories }),
         ...(state.history.length === 0 ? {} : { earlier: [...state.history] }),
         ...(reaction === undefined ? {} : { reaction }),

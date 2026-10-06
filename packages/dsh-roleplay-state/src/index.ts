@@ -15,6 +15,7 @@ export {
 export type {
   CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   PendingCommitRepository, ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PlacementRepository, RelationshipRepository, SlotRepository, RecallIndexRepository, RecallSearch, SummaryRepository, ThreadRepository, VectorSearch, VectorSupport, VisualIdentityRepository,
+  FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
 } from './repositories.ts'
 export { apply, Config, name, RoleplayState, type Session } from './plugin.ts'
 export type { SemanticRanker } from './memory/ranker.ts'
