@@ -13,7 +13,7 @@ import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock'>
+  session: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock'>
   /** The time zone the story's times are written and read in; UTC when not given. */
   timeZone?: string
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
@@ -37,7 +37,7 @@ export async function vectorOf(agent: AgentLink, text: string, signal?: AbortSig
 export type AgentResolver = (agentSessionId: string) => AgentLink | undefined
 
 /** The parts of the records `read_records` can be limited to. */
-const READ_SECTIONS = ['characters', 'events', 'beliefs', 'open_threads', 'items', 'relationships', 'variable_defs', 'variables', 'engagements']
+const READ_SECTIONS = ['characters', 'events', 'beliefs', 'open_threads', 'items', 'relationships', 'knowledge', 'variable_defs', 'variables', 'engagements']
 
 const MAX_EVENTS = 20
 const MAX_LISTED_PLACES = 100

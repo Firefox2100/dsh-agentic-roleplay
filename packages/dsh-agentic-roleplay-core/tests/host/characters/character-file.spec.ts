@@ -239,6 +239,20 @@ describe('relationships in a character file', () => {
   })
 })
 
+describe('entity knowledge in a character file', () => {
+  it('reads known places, things and directed ways', () => {
+    expect(parse({ name: 'Eleanor', knowledge: { locations: ['town', 'observatory'], items: ['brass-key'], exits: [{ from: 'town', to: 'station' }] } }).knowledge).toEqual({
+      locations: ['town', 'observatory'], items: ['brass-key'], exits: [{ from: 'town', to: 'station' }],
+    })
+  })
+
+  it('reports malformed ways', () => {
+    expect(issues({ name: 'Eleanor', knowledge: { exits: [{ from: 'town' }, { to: 'station' }] } })).toEqual([
+      'knowledge.exits[0].to: is required', 'knowledge.exits[1].from: is required',
+    ])
+  })
+})
+
 describe('a routine in a character file', () => {
   const parse = (routine: unknown) => parseCharacterFile(JSON.stringify({ name: 'Clara', routine }), 'clara')
 

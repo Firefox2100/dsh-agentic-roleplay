@@ -183,6 +183,28 @@ describe('the tools of one character', () => {
     await tool.execute({ about: 'key' } as never, exec() as never)
     expect(store.events.perceivedBy(store.characters.getBySourceId('alice')!.id)[0]?.perception.recalls).toBe(1)
   })
+
+  it('recalls only the people and entities that character knows', async () => {
+    const alice = store.characters.getBySourceId('alice')!.id
+    const arthur = store.characters.getBySourceId('arthur')!
+    store.edit({ turn: 1, places: [{ key: 'street', name: 'High Street' }, { key: 'bar', name: 'The Bar', exits: [{ to: 'street', oneWay: true }] }] })
+    const street = store.locations.getBySourceId('street')!
+    const bar = store.locations.getBySourceId('bar')!
+    store.relationships.upsert(alice, arthur.id, { label: 'acquaintance' }, 1)
+    store.knowledge.learn(alice, 'location', street.id, 1)
+    store.knowledge.learn(alice, 'exit', store.locations.getExit(bar.id, street.id)!.id, 1)
+
+    const tool = createCharacterTools(() => link!, alice).find(candidate => candidate.name === 'recall_my_known_entities')!
+    expect(await tool.execute({} as never, exec() as never)).toEqual([
+      { kind: 'character', key: 'arthur', name: 'Arthur' },
+      { kind: 'location', key: 'street', name: 'High Street' },
+      { kind: 'route', key: 'bar -> street', name: 'The Bar to High Street' },
+    ])
+    expect(await tool.execute({ about: 'street' } as never, exec() as never)).toEqual([
+      { kind: 'location', key: 'street', name: 'High Street' },
+      { kind: 'route', key: 'bar -> street', name: 'The Bar to High Street' },
+    ])
+  })
 })
 
 describe('the plugin', () => {

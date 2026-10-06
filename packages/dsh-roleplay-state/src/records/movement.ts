@@ -1,10 +1,14 @@
 import type { Exit, LocationId, Move, MovePlan } from 'dsh-roleplay-model'
 import { InvalidMoveError } from '../errors.ts'
-import type { LocationRepository, PlacementRepository } from '../repositories.ts'
+import type { KnowledgeRepository, LocationRepository, PlacementRepository } from '../repositories.ts'
 
 export interface MoveContext {
   locations: Pick<LocationRepository, 'get' | 'allExits'>
   placements: Pick<PlacementRepository, 'get' | 'place'>
+}
+
+export interface KnownMoveContext extends MoveContext {
+  knowledge: Pick<KnowledgeRepository, 'knows'>
 }
 
 const name = (context: MoveContext, id: LocationId): string => context.locations.get(id)?.name ?? String(id)
@@ -54,6 +58,16 @@ export function planMove(context: MoveContext, characterId: number, move: Move):
   if (problems.length > 0 || way === undefined) return { ok: false, problems }
   const times = way.map(exit => exit.travelSeconds)
   return { ok: true, plan: { from, to: move.to, via: way.map(exit => exit.toId), ...(times.every(time => time !== undefined) ? { travelSeconds: times.reduce<number>((sum, time) => sum + time!, 0) } : {}) } }
+}
+
+/** Plan only through places and directed ways this character knows; forced movement remains the authoritative planner's job. */
+export function planKnownMove(context: KnownMoveContext, characterId: number, move: Move): ReturnType<typeof planMove> {
+  if (move.ignoreExits !== true && !context.knowledge.knows(characterId, 'location', move.to)) return { ok: false, problems: [`the character does not know place ${move.to}`] }
+  if (move.ignoreExits === true) return planMove(context, characterId, move)
+  return planMove({
+    placements: context.placements,
+    locations: { get: id => context.locations.get(id), allExits: () => context.locations.allExits().filter(exit => context.knowledge.knows(characterId, 'exit', exit.id)) },
+  }, characterId, move)
 }
 
 /**

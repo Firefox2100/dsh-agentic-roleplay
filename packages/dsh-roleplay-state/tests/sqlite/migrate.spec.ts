@@ -35,8 +35,20 @@ describe('migrate', () => {
     db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
     db.exec('PRAGMA user_version = 1')
     migrate(db)
-    expect(inspect(db).version).toBe(2)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
     expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'visual_identities'")?.name).toBe('visual_identities')
+    db.close()
+  })
+
+  it('adds entity knowledge to an existing version 2 session', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    db.exec(MIGRATIONS[0]!.sql)
+    db.exec(MIGRATIONS[1]!.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 2')
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'entity_knowledge'")?.name).toBe('entity_knowledge')
     db.close()
   })
 

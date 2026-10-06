@@ -55,9 +55,11 @@ export interface RecordsView {
   /** What characters have committed to that is still pending, in the order they are due (at most 40); times in the story's time zone. */
   engagements: { id: number; title: string; at: string; until: string | null; location: string | null; participants: string[]; note: string }[]
   relationships: { from: string; to: string; label: string; summary: string; familiarity: number; trust: number; affinity: number; tension: number; updated_turn: number }[]
+  knowledge: { character: string; kind: string; subject: string; learned_turn: number; last_observed_turn: number | null }[]
 }
 
 const MAX_RELATIONSHIPS_SHOWN = 80
+const MAX_KNOWLEDGE_SHOWN = 200
 const MAX_ITEMS_SHOWN = 100
 const MAX_ENGAGEMENTS_SHOWN = 40
 const MAX_VARIABLES_SHOWN = 200
@@ -134,6 +136,20 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
       from: keyOf(relation.fromId), to: keyOf(relation.toId), label: relation.label, summary: relation.summary,
       familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension, updated_turn: relation.updatedTurn,
     })),
+    knowledge: characters.flatMap(character => target.knowledge.list(character.id).flatMap(entry => {
+      let subject: string | undefined
+      if (entry.subjectKind === 'location') {
+        const place = target.locations.get(entry.subjectId)
+        subject = place === undefined ? undefined : locationKey(place)
+      } else if (entry.subjectKind === 'item') {
+        const item = target.items.get(entry.subjectId)
+        subject = item === undefined ? undefined : itemKey(item)
+      } else {
+        const exit = target.locations.allExits().find(candidate => candidate.id === entry.subjectId)
+        subject = exit === undefined ? undefined : `${placeKey(exit.fromId)} -> ${placeKey(exit.toId)}`
+      }
+      return subject === undefined ? [] : [{ character: characterKey(character), kind: entry.subjectKind, subject, learned_turn: entry.learnedTurn, last_observed_turn: entry.lastObservedTurn ?? null }]
+    })).slice(0, MAX_KNOWLEDGE_SHOWN),
   }
   return scope.only === undefined ? view : Object.fromEntries(Object.entries(view).map(([key, part]) => [key, scope.only!.includes(key as keyof RecordsView) ? part : []])) as unknown as RecordsView
 }

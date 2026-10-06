@@ -14,7 +14,7 @@ export {
 } from './errors.ts'
 export type {
   CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  PendingCommitRepository, ConsolidationRepository, ItemRepository, LocationRepository, PlacementRepository, RelationshipRepository, SlotRepository, RecallIndexRepository, RecallSearch, SummaryRepository, ThreadRepository, VectorSearch, VectorSupport, VisualIdentityRepository,
+  PendingCommitRepository, ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PlacementRepository, RelationshipRepository, SlotRepository, RecallIndexRepository, RecallSearch, SummaryRepository, ThreadRepository, VectorSearch, VectorSupport, VisualIdentityRepository,
 } from './repositories.ts'
 export { apply, Config, name, RoleplayState, type Session } from './plugin.ts'
 export type { SemanticRanker } from './memory/ranker.ts'
@@ -24,7 +24,7 @@ export {
   applyRecordsEdit, characterKey, locationKey, parseRecordsEdit, recordsEditSchema,
   type BeliefEdit, type CharacterMove, type EditResult, type EventEdit, type ExitChange, type NewBelief, type NewEvent, type NewExit as NewExitEdit, type NewExitBetween, type NewPlace, type ItemChange, type ItemEditSpec, type NewCharacterSpec, type NewItemSpec, type PlaceEdit, type RelationshipRetraction, type RelationshipSet, type PerceivedBy, type PerceptionAddition, type PerceptionEdit, type RecordsEdit, type RecordsTarget, type StatePatch,
 } from './records/edit.ts'
-export { moveCharacter, planMove, type MoveContext } from './records/movement.ts'
+export { moveCharacter, planKnownMove, planMove, type KnownMoveContext, type MoveContext } from './records/movement.ts'
 export { ITEM_ACTIONS, applyItemPlan, changeItem, itemKey, planItemChange, type ItemAction, type ItemChangeSpec, type ItemContext, type ItemEffect, type ItemPlan } from './records/items.ts'
 export { describeHolder } from './records/read.ts'
 export { MAX_SHOWN, changeVariable, describeValue, planVariableChange, shownVariables, subjectOf, type ShownVariable, type VariableAudience, type VariableChangeSpec, type VariableContext, type VariableEffect, type VariablePlan } from './records/variables.ts'

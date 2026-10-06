@@ -12,6 +12,7 @@ import {
   type EmotionVector,
   type Intent,
   type RelationshipDefinition,
+  type KnowledgeDefinition,
   type RoutineDefinition,
 } from 'dsh-roleplay-model'
 import { MAX_ROUTINE_WINDOWS } from 'dsh-roleplay-state'
@@ -99,6 +100,16 @@ function readRoutine(reader: Reader): RoutineDefinition[] {
 /** At most this many relationship profiles in one character file. */
 export const MAX_RELATIONSHIPS = 60
 
+function readKnowledge(reader: Reader | undefined): KnowledgeDefinition | undefined {
+  if (reader === undefined) return undefined
+  const exits = reader.objects('exits').flatMap((exit) => {
+    const from = exit.string('from', { required: true })
+    const to = exit.string('to', { required: true })
+    return from === undefined || to === undefined ? [] : [{ from, to }]
+  })
+  return { locations: reader.strings('locations'), items: reader.strings('items'), exits }
+}
+
 function readRelationships(reader: Reader): RelationshipDefinition[] {
   const seen = new Set<string>()
   const relationships = reader.objects('relationships').flatMap((relation): RelationshipDefinition[] => {
@@ -157,6 +168,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
   const speech = reader.object('speech')
   const variables = readVariableValues(reader)
   const visualIdentity = readVisualIdentity(reader)
+  const knowledge = readKnowledge(reader.object('knowledge'))
   const character: CharacterDefinition = {
     id,
     name: name ?? '',
@@ -175,6 +187,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
     speech: { style: speech?.text('style') ?? '', examples: speech?.strings('examples') ?? [] },
     start: readStart(reader.object('start')),
     ...(reader.raw('relationships') === undefined ? {} : { relationships: readRelationships(reader) }),
+    ...(knowledge === undefined ? {} : { knowledge }),
     ...(reader.raw('routine') === undefined ? {} : { routine: readRoutine(reader) }),
     ...(variables === undefined ? {} : { variables }),
   }

@@ -90,6 +90,7 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     },
     checkItemChanges: entries => (store.itemsRefused === undefined ? { ok: true, effects: entries.map(() => []) } : { ok: false, problems: store.itemsRefused }),
     carried: () => [],
+    knowledge: () => ({ characters: [], locations: [], items: [], routes: [] }),
     itemsAt: () => [],
     completeTurn: () => { store.completed += 1 },
     queueCommit: (record) => { store.queue = [...store.queue.filter(entry => entry.turn !== record.turn || entry.round !== record.round), record] },

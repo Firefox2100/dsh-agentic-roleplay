@@ -1,5 +1,7 @@
 import type { Character, CharacterId, CharacterMemory, PerceivedEvent } from 'dsh-roleplay-model'
-import type { EventRepository, MemoryRepository } from '../repositories.ts'
+import type { ClockRepository, EventRepository, MemoryRepository } from '../repositories.ts'
+
+const DAY = 86_400_000
 
 /** How a character remembers. */
 export interface MemoryPolicy {
@@ -26,6 +28,8 @@ export interface Recalled {
   text: string
   /** The turn it comes from. */
   turn: number
+  /** When it happened in story time, when the story clock records it. */
+  at?: number
   source: { kind: 'perception' | 'memory'; id: number }
 }
 
@@ -45,10 +49,11 @@ export interface RecallQuery {
 export interface RecallSource {
   events: Pick<EventRepository, 'perceivedBy'>
   memories: Pick<MemoryRepository, 'list'>
+  clock: Pick<ClockRepository, 'get' | 'log'>
 }
 
-/** Turns for the memory of an unimportant event to halve; each step of importance doubles it. */
-const HALF_LIFE_TURNS = 6
+/** Story days for the memory of an unimportant event to halve; each step of importance doubles it. */
+const HALF_LIFE_DAYS = 6
 /** Beliefs and what a character knows last longer than the memory of single events. */
 const BELIEF_DURABILITY = 4
 /** Each time something is recalled it lasts longer, up to this many times as long. */
@@ -72,10 +77,10 @@ export function jitter(seed: number): number {
 }
 
 /** What is left of a memory, from 1 down to 0, given its age, how much it matters and how often it was recalled. */
-export function retention(input: { age: number; importance: number; recalls: number; seed: number; durability?: number; cue?: boolean }): number {
+export function retention(input: { ageDays: number; importance: number; recalls: number; seed: number; durability?: number; cue?: boolean }): number {
   const rehearsal = 1 + Math.min(MAX_REHEARSAL, input.recalls * REHEARSAL_STEP)
-  const halfLife = HALF_LIFE_TURNS * 2 ** (input.importance - 1) * rehearsal * (input.durability ?? 1)
-  const faded = 0.5 ** (Math.max(0, input.age) / halfLife) * (0.85 + 0.3 * jitter(input.seed))
+  const halfLife = HALF_LIFE_DAYS * 2 ** (input.importance - 1) * rehearsal * (input.durability ?? 1)
+  const faded = 0.5 ** (Math.max(0, input.ageDays) / halfLife) * (0.85 + 0.3 * jitter(input.seed))
   return Math.min(1, faded + (input.cue === true ? CUE_BOOST : 0))
 }
 
@@ -124,7 +129,7 @@ interface Candidate {
   recalled: Omit<Recalled, 'clarity' | 'text'> & { clear: string; faded: string; vague: string }
   relevance: number
   importance: number
-  age: number
+  ageDays: number
   recalls: number
   seed: number
   durability: number
@@ -143,11 +148,11 @@ export function overlap(cues: ReadonlySet<string>, text: string, tags: readonly 
   return Math.min(score, 6)
 }
 
-function describeEvent({ perception, event }: PerceivedEvent, names: ReadonlyMap<number, string>): Candidate['recalled'] {
+function describeEvent({ perception, event }: PerceivedEvent, names: ReadonlyMap<number, string>, at?: number): Candidate['recalled'] {
   const who = event.involves.map(id => names.get(id)).filter((name): name is string => name !== undefined)
   const about = who.length > 0 ? who.join(', ') : event.tags.join(', ')
   return {
-    turn: event.turn,
+    turn: event.turn, ...(at === undefined ? {} : { at }),
     source: { kind: 'perception', id: perception.id },
     clear: perception.content,
     faded: perception.gist,
@@ -155,8 +160,8 @@ function describeEvent({ perception, event }: PerceivedEvent, names: ReadonlyMap
   }
 }
 
-function describeBelief(memory: CharacterMemory): Candidate['recalled'] {
-  return { turn: memory.turn, source: { kind: 'memory', id: memory.id }, clear: memory.text, faded: first(memory.text), vague: first(memory.text) }
+function describeBelief(memory: CharacterMemory, at?: number): Candidate['recalled'] {
+  return { turn: memory.turn, ...(at === undefined ? {} : { at }), source: { kind: 'memory', id: memory.id }, clear: memory.text, faded: first(memory.text), vague: first(memory.text) }
 }
 
 /** One thing a character could be reminded of, with the text to match it against the moment. */
@@ -207,33 +212,48 @@ export interface RecallEvidence {
 /** Being where something happened calls it to mind, about as much as sharing two words with it. */
 const PLACE_CUE = 2
 
-function gather(source: RecallSource, { characterId, characters, situation, turn, locationId }: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId'>): Candidate[] {
+function gather(source: RecallSource, { characterId, characters, situation, locationId }: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId'>): Candidate[] {
   const names = new Map(characters.map(character => [character.id, character.name]))
   const peers = mentioned(situation, characters)
   peers.delete(characterId)
   const cues = tokens(situation)
+  const now = source.clock.get()?.now
+  const changes = source.clock.log()
+  const start = changes.find(change => change.kind === 'start')?.from
+  const turns = new Map<number, number>()
+  const rounds = new Map<string, number>()
+  for (const change of changes) {
+    if (!turns.has(change.turn)) turns.set(change.turn, change.from)
+    if ((change.kind === 'elapsed' || change.kind === 'real') && !rounds.has(`${change.turn}:${change.round}`)) rounds.set(`${change.turn}:${change.round}`, change.from)
+  }
+  const atTurn = (eventTurn: number): number | undefined => turns.get(eventTurn) ?? start
+  const ageDays = (at: number | undefined): number => now === undefined || at === undefined ? 0 : Math.max(0, now - at) / DAY
   return [
-    ...source.events.perceivedBy(characterId).map((seen): Candidate => ({
+    ...source.events.perceivedBy(characterId).map((seen): Candidate => {
+      const at = rounds.get(`${seen.event.turn}:${seen.event.round}`) ?? atTurn(seen.event.turn)
+      return ({
       key: `p:${seen.perception.id}`,
-      recalled: describeEvent(seen, names),
+      recalled: describeEvent(seen, names, at),
       relevance: 3 * seen.event.involves.filter(id => peers.has(id)).length + overlap(cues, `${seen.perception.content} ${seen.event.text}`, seen.event.tags)
         + (locationId !== undefined && seen.event.locationId === locationId ? PLACE_CUE : 0),
       importance: seen.event.importance,
-      age: turn - seen.event.turn,
+      ageDays: ageDays(at),
       recalls: seen.perception.recalls,
       seed: seen.perception.id,
       durability: 1,
-    })),
-    ...source.memories.list(characterId).map((belief): Candidate => ({
+    })}),
+    ...source.memories.list(characterId).map((belief): Candidate => {
+      const at = atTurn(belief.turn)
+      return ({
       key: `m:${belief.id}`,
-      recalled: describeBelief(belief),
+      recalled: describeBelief(belief, at),
       relevance: 3 * belief.about.filter(id => peers.has(id)).length + overlap(cues, belief.text, []),
       importance: belief.importance,
-      age: turn - belief.turn,
+      ageDays: ageDays(at),
       recalls: belief.recalls,
       seed: 1_000_000 + belief.id,
       durability: BELIEF_DURABILITY,
-    })),
+    })}),
   ]
 }
 
@@ -269,10 +289,10 @@ export interface RecallPool {
 function judged(candidate: Candidate, relevance: number, policy: MemoryPolicy): { clarity: Clarity; score: number; text: string } | undefined {
   let clarity: Clarity | undefined = 'clear'
   if (policy.flaky) {
-    clarity = clarityAt(retention({ age: candidate.age, importance: candidate.importance, recalls: candidate.recalls, seed: candidate.seed, durability: candidate.durability, cue: relevance >= CUE_RELEVANCE }), candidate.importance)
+    clarity = clarityAt(retention({ ageDays: candidate.ageDays, importance: candidate.importance, recalls: candidate.recalls, seed: candidate.seed, durability: candidate.durability, cue: relevance >= CUE_RELEVANCE }), candidate.importance)
   }
   if (clarity === undefined) return undefined
-  const score = RELEVANCE_SCALE * relevance + 0.6 * candidate.importance + 2 / (1 + Math.max(0, candidate.age) / 4) + (clarity === 'vague' ? -1 : 0)
+  const score = RELEVANCE_SCALE * relevance + 0.6 * candidate.importance + 2 / (1 + Math.max(0, candidate.ageDays)) + (clarity === 'vague' ? -1 : 0)
   return { clarity, score, text: candidate.recalled[clarity === 'clear' ? 'clear' : clarity === 'faded' ? 'faded' : 'vague'] }
 }
 
@@ -325,7 +345,7 @@ export function finishRecall(pool: RecallPool, rerank?: ReadonlyMap<string, numb
     .sort((a, b) => b.score - a.score || b.candidate.recalled.turn - a.candidate.recalled.turn)
     .slice(0, policy.recall)
     .sort((a, b) => a.candidate.recalled.turn - b.candidate.recalled.turn)
-    .map(({ candidate, clarity, text }) => ({ clarity, text, turn: candidate.recalled.turn, source: candidate.recalled.source }))
+    .map(({ candidate, clarity, text }) => ({ clarity, text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source }))
 }
 
 /** Remind a character of what the moment calls to mind, in one call: {@link recallPool}, then {@link finishRecall} with the `rerank` evidence if there is any. */

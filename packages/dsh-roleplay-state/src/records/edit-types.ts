@@ -1,10 +1,10 @@
 import type {
   VariableDefinitionInput, TriggerDefinition,
-  Accuracy, Character, CharacterKind, CharacterStatePatch, CharacterTier, ContainerState, EngagementStatus, ExitState, IntentHorizon, IntentStatus, IntentType, Location, MemoryKind, PerceptionMode, Slot,
+  Accuracy, Character, CharacterKind, CharacterStatePatch, CharacterTier, ContainerState, EngagementStatus, ExitState, IntentHorizon, IntentStatus, IntentType, KnowledgeKind, Location, MemoryKind, PerceptionMode, Slot,
 } from 'dsh-roleplay-model'
 import type {
   CharacterRepository, CharacterStateRepository, ConsolidationRepository, EngagementRepository, EventRepository, IntentRepository, ItemRepository, LocationRepository, MemoryRepository,
-  PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository, TriggerRepository, VariableRepository,
+  KnowledgeRepository, PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository, TriggerRepository, VariableRepository,
 } from '../repositories.ts'
 import type { ItemChangeSpec } from './items.ts'
 import type { VariableChangeSpec } from './variables.ts'
@@ -26,6 +26,7 @@ export interface RecordsTarget {
   locations: LocationRepository
   placements: PlacementRepository
   relationships: RelationshipRepository
+  knowledge: KnowledgeRepository
   consolidation: ConsolidationRepository
   items: ItemRepository
   slots: SlotRepository
@@ -151,6 +152,20 @@ export interface RelationshipRetraction {
   from: string
   to: string
 }
+
+/** A place, item or directed exit a character learns exists. */
+export interface KnowledgeSet {
+  character: string
+  kind: KnowledgeKind
+  /** The location or item key. */
+  subject?: string
+  /** For an exit, its directed endpoints. */
+  from?: string
+  to?: string
+  observed?: boolean
+}
+
+export type KnowledgeRetraction = Omit<KnowledgeSet, 'observed'>
 
 /** A new way between two places that already exist (or are made in the same edit). */
 export interface NewExitBetween {
@@ -354,6 +369,8 @@ export interface RecordsEdit {
   exits?: NewExitBetween[]
   relationships?: RelationshipSet[]
   relationshipRetractions?: RelationshipRetraction[]
+  knowledge?: KnowledgeSet[]
+  knowledgeRetractions?: KnowledgeRetraction[]
   placeEdits?: PlaceEdit[]
   exitChanges?: ExitChange[]
   moves?: CharacterMove[]

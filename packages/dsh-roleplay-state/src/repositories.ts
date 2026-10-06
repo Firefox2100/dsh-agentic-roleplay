@@ -56,6 +56,8 @@ import type {
   VisualIdentityInput,
   VisualIdentityPatch,
   VisualSubjectKind,
+  EntityKnowledge,
+  KnowledgeKind,
 } from 'dsh-roleplay-model'
 
 /**
@@ -294,6 +296,16 @@ export interface RelationshipRepository {
   to(characterId: CharacterId): Relationship[]
   list(): Relationship[]
   remove(fromId: CharacterId, toId: CharacterId): boolean
+}
+
+/** Places, things and ways a character knows exist. Character awareness is represented by relationships. */
+export interface KnowledgeRepository {
+  /** Learn or observe an entity. Repeated learning preserves the first turn. @throws {NotFoundError} when either side does not exist. */
+  learn(characterId: CharacterId, subjectKind: KnowledgeKind, subjectId: number, turn: number, observed?: boolean): EntityKnowledge
+  knows(characterId: CharacterId, subjectKind: KnowledgeKind, subjectId: number): boolean
+  get(characterId: CharacterId, subjectKind: KnowledgeKind, subjectId: number): EntityKnowledge | undefined
+  list(characterId: CharacterId, subjectKind?: KnowledgeKind): EntityKnowledge[]
+  forget(characterId: CharacterId, subjectKind: KnowledgeKind, subjectId: number): boolean
 }
 
 /** What was made up in play and still has to be fitted into the rest of the world. */

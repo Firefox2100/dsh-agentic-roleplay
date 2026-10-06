@@ -111,6 +111,8 @@ describe('the wire format', () => {
       exits: [],
       relationships: [],
       relationshipRetractions: [],
+      knowledge: [],
+      knowledgeRetractions: [],
       placeEdits: [],
       exitChanges: [],
       moves: [],

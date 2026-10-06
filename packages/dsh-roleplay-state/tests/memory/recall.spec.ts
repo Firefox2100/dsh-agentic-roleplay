@@ -7,22 +7,22 @@ describe('retention', () => {
   const base = { importance: 3, recalls: 0, seed: 1 }
 
   it('falls with age and is full when it just happened', () => {
-    expect(retention({ ...base, age: 0 })).toBeGreaterThan(0.85)
-    const values = [0, 5, 20, 60, 200].map(age => retention({ ...base, age }))
+    expect(retention({ ...base, ageDays: 0 })).toBeGreaterThan(0.85)
+    const values = [0, 5, 20, 60, 200].map(ageDays => retention({ ...base, ageDays }))
     expect(values).toEqual([...values].sort((a, b) => b - a))
     expect(values.at(-1)).toBeLessThan(0.05)
   })
 
   it('lasts longer the more it mattered, and each recall helps', () => {
-    expect(retention({ ...base, importance: 5, age: 40 })).toBeGreaterThan(retention({ ...base, importance: 1, age: 40 }))
-    expect(retention({ ...base, recalls: 4, age: 40 })).toBeGreaterThan(retention({ ...base, recalls: 0, age: 40 }))
-    expect(retention({ ...base, durability: 4, age: 40 })).toBeGreaterThan(retention({ ...base, age: 40 }))
+    expect(retention({ ...base, importance: 5, ageDays: 40 })).toBeGreaterThan(retention({ ...base, importance: 1, ageDays: 40 }))
+    expect(retention({ ...base, recalls: 4, ageDays: 40 })).toBeGreaterThan(retention({ ...base, recalls: 0, ageDays: 40 }))
+    expect(retention({ ...base, durability: 4, ageDays: 40 })).toBeGreaterThan(retention({ ...base, ageDays: 40 }))
   })
 
   it('is brought back a little by a cue, never above 1, and is the same every time for the same memory', () => {
-    expect(retention({ ...base, age: 30, cue: true })).toBeGreaterThan(retention({ ...base, age: 30 }))
-    expect(retention({ ...base, age: 0, cue: true })).toBe(1)
-    expect(retention({ ...base, age: 30 })).toBe(retention({ ...base, age: 30 }))
+    expect(retention({ ...base, ageDays: 30, cue: true })).toBeGreaterThan(retention({ ...base, ageDays: 30 }))
+    expect(retention({ ...base, ageDays: 0, cue: true })).toBe(1)
+    expect(retention({ ...base, ageDays: 30 })).toBe(retention({ ...base, ageDays: 30 }))
     expect(jitter(7)).toBe(jitter(7))
     expect(new Set([1, 2, 3, 4, 5].map(jitter)).size).toBe(5)
   })
@@ -58,12 +58,14 @@ function member(id: number, name: string, aliases: string[] = []): Character {
 }
 
 describe('recall', () => {
+  const start = Date.UTC(1912, 9, 4, 12)
   let store: SessionStore
   let alice: Character
   let bob: Character
 
   beforeEach(() => {
     store = memoryStore()
+    store.clock.start('simulated', start)
     alice = store.characters.add(newCharacter({ sourceId: 'alice', name: 'Alice', aliases: [] }))
     bob = store.characters.add(newCharacter({ sourceId: 'bob', name: 'Bob', aliases: [] }))
   })
@@ -75,7 +77,8 @@ describe('recall', () => {
     }])
   /** Recall without counting it as recalled, so that asking twice gives the same answer. */
   const ask = (situation: string, turn: number, overrides: Partial<MemoryPolicy> = {}) =>
-    recall(store, { characterId: alice.id, characters: store.characters.list(), situation, turn, policy: { ...DEFAULT_MEMORY_POLICY, ...overrides } })
+    (store.clock.resync('simulated', start + Math.max(0, turn - 1) * 86_400_000, turn),
+      recall(store, { characterId: alice.id, characters: store.characters.list(), situation, turn, policy: { ...DEFAULT_MEMORY_POLICY, ...overrides } }))
 
   it('remembers nothing it did not take in', () => {
     store.events.add({ turn: 1, round: 1, text: 'Bob hid the key.', importance: 5, tags: [], involves: [bob.id] }, [])
@@ -116,7 +119,14 @@ describe('recall', () => {
   it('does not fade anything when memory is not flaky', () => {
     saw(1, 'A cart passed the window.', 1, [], { gist: 'a cart' })
     const recalled = ask('nothing', 500, { flaky: false })
-    expect(recalled).toEqual([{ clarity: 'clear', text: 'A cart passed the window.', turn: 1, source: { kind: 'perception', id: expect.any(Number) } }])
+    expect(recalled).toEqual([{ clarity: 'clear', text: 'A cart passed the window.', turn: 1, at: start, source: { kind: 'perception', id: expect.any(Number) } }])
+  })
+
+  it('does not fade with turn count when no story time passes', () => {
+    saw(1, 'A cart passed the window.', 1, [], { gist: 'a cart' })
+    store.clock.resync('simulated', start, 100)
+    const recalled = recall(store, { characterId: alice.id, characters: store.characters.list(), situation: 'nothing', turn: 100, policy: DEFAULT_MEMORY_POLICY })
+    expect(recalled[0]?.clarity).toBe('clear')
   })
 
   it('counts what it brings back as recalled, which makes it last longer', () => {

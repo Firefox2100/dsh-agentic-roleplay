@@ -1,14 +1,14 @@
 import { existsSync } from 'node:fs'
 import type { CharacterId, Move, MovePlan, NewSession, StoryEvent, TriggerNote } from 'dsh-roleplay-model'
 import { lapseNotes, runTriggers, type TriggerRun, type TriggerRunOptions } from './records/triggers.ts'
-import { moveCharacter, planMove } from './records/movement.ts'
+import { moveCharacter, planKnownMove, planMove } from './records/movement.ts'
 import { systemClock, type Clock } from './clock.ts'
 import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  ConsolidationRepository, ItemRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
+  ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
@@ -32,6 +32,7 @@ import { inspect, migrate } from './sqlite/migrate.ts'
 import { APPLICATION_ID, LATEST_VERSION } from './sqlite/schema.ts'
 import { SqliteCharacterStateRepository } from './sqlite/state-repository.ts'
 import { SqliteVisualIdentityRepository } from './sqlite/visual-identity-repository.ts'
+import { SqliteKnowledgeRepository } from './sqlite/knowledge-repository.ts'
 
 export interface StoreOptions extends OpenOptions {
   /** Defaults to the driver on Node's built-in SQLite. */
@@ -56,6 +57,7 @@ export interface SessionStore {
   readonly locations: LocationRepository
   readonly placements: PlacementRepository
   readonly relationships: RelationshipRepository
+  readonly knowledge: KnowledgeRepository
   readonly consolidation: ConsolidationRepository
   readonly slots: SlotRepository
   readonly items: ItemRepository
@@ -104,6 +106,8 @@ export interface SessionStore {
    */
   /** Whether a character can go there, and the way it would take. */
   planMove(characterId: CharacterId, move: Move): ReturnType<typeof planMove>
+  /** Plan over only the places and directed exits this character knows. */
+  planKnownMove(characterId: CharacterId, move: Move): ReturnType<typeof planMove>
   /** Move a character: its place changes, at the position or feature given. @throws {InvalidMoveError} naming every reason. */
   move(characterId: CharacterId, move: Move): MovePlan
   /** Apply an edit atomically; with `seal`, the events it adds are final at once (otherwise they stay drafts until sealed). */
@@ -137,6 +141,7 @@ class SqliteSessionStore implements SessionStore {
   readonly locations: LocationRepository
   readonly placements: PlacementRepository
   readonly relationships: RelationshipRepository
+  readonly knowledge: KnowledgeRepository
   readonly consolidation: ConsolidationRepository
   readonly slots: SlotRepository
   readonly items: ItemRepository
@@ -158,6 +163,7 @@ class SqliteSessionStore implements SessionStore {
     this.locations = new SqliteLocationRepository(db, clock, id => { this.eventRepository.reindexPlace(id) })
     this.placements = new SqlitePlacementRepository(db, this.locations)
     this.relationships = new SqliteRelationshipRepository(db, clock)
+    this.knowledge = new SqliteKnowledgeRepository(db)
     this.consolidation = new SqliteConsolidationRepository(db)
     this.slots = new SqliteSlotRepository(db)
     this.items = new SqliteItemRepository(db, clock)
@@ -227,6 +233,10 @@ class SqliteSessionStore implements SessionStore {
 
   planMove(characterId: CharacterId, move: Move): ReturnType<typeof planMove> {
     return planMove(this, characterId, move)
+  }
+
+  planKnownMove(characterId: CharacterId, move: Move): ReturnType<typeof planMove> {
+    return planKnownMove(this, characterId, move)
   }
 
   move(characterId: CharacterId, move: Move): MovePlan {

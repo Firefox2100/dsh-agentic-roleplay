@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from 'dsh-roleplay-state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
-import { populateCharacters, populateItems, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
+import { knowledgeProblems, populateCharacters, populateItems, populateKnowledge, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
 import type { ItemDefinition, LocationDefinition } from 'dsh-roleplay-model'
 
 let dir: string
@@ -175,6 +175,32 @@ describe('relationships between the characters of a world', () => {
       'lost: relationships: a character has no relationship with itself',
     ])
     expect(relationshipProblems([definition()])).toEqual([])
+  })
+})
+
+describe('what characters know when a world starts', () => {
+  const key: ItemDefinition = { id: 'key', name: 'Key', description: '', quantity: 1, unique: true, quality: '', notable: true, hidden: false, start: { kind: 'location', location: 'bar' } }
+
+  it('combines authored knowledge with visible surroundings and uses relationships for people', () => {
+    const arthur = definition({ id: 'arthur', name: 'Arthur', aliases: [], start: { publicState: '', innerState: '', activity: '', intents: [], place: { location: 'bar' } }, knowledge: { locations: ['street'], items: [], exits: [] } })
+    const clara = definition({ id: 'clara', name: 'Clara', aliases: [], start: { publicState: '', innerState: '', activity: '', intents: [], place: { location: 'bar' } } })
+    populateLocations(session, places)
+    populateCharacters(session, [arthur, clara], 'arthur')
+    populateItems(session, [key], [], places)
+    populateKnowledge(session, [arthur, clara])
+    const a = session.characters.getBySourceId('arthur')!
+    expect(session.knowledge.list(a.id, 'location').map(entry => session.locations.get(entry.subjectId)?.sourceId).sort()).toEqual(['bar', 'cellar', 'street'])
+    expect(session.knowledge.list(a.id, 'item').map(entry => session.items.get(entry.subjectId)?.sourceId)).toEqual(['key'])
+    expect(session.relationships.get(a.id, session.characters.getBySourceId('clara')!.id)).toMatchObject({ label: 'acquaintance', familiarity: 0 })
+  })
+
+  it('reports unknown authored entities and ways', () => {
+    const character = definition({ knowledge: { locations: ['moon'], items: ['ghost-key'], exits: [{ from: 'bar', to: 'quarry' }] } })
+    expect(knowledgeProblems([character], places, [key])).toEqual([
+      'eleanor-graves: knowledge.locations: "moon" is not a place of this world',
+      'eleanor-graves: knowledge.items: "ghost-key" is not an item of this world',
+      'eleanor-graves: knowledge.exits: there is no exit from "bar" to "quarry"',
+    ])
   })
 })
 

@@ -15,7 +15,7 @@ import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCharacters, populateClock, populateItems, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
+import { knowledgeProblems, populateCharacters, populateClock, populateItems, populateKnowledge, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
 
 export const MAX_NAME_LENGTH = 200
 
@@ -54,6 +54,8 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
 
   const { items, slots, problems: itemProblems } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
   if (itemProblems.length > 0) throw new InvalidWorldError(`the items of "${world.summary.name}" have ${itemProblems.length} problem(s)`, itemProblems)
+  const knowing = knowledgeProblems(characters, locations, items)
+  if (knowing.length > 0) throw new InvalidWorldError(`the starting knowledge of "${world.summary.name}" has ${knowing.length} problem(s)`, knowing.map(message => ({ path: world.directory, message })))
 
   const declared = await loadVariables(world.directory)
   if (declared.problems.length > 0) throw new InvalidWorldError(`the variables of "${world.summary.name}" have ${declared.problems.length} problem(s)`, declared.problems)
@@ -96,6 +98,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateCharacters(session, characters, player.id)
       populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
+      populateKnowledge(session, characters)
       populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
       populateTriggers(session, scripted.triggers)
       populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())

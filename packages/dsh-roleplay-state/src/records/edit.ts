@@ -1,5 +1,5 @@
 import {
-  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, MAX_LOCATION_FEATURES, MEMORY_KINDS, PERCEPTION_MODES, SLOT_ID,
+  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, KNOWLEDGE_KINDS, MAX_LOCATION_FEATURES, MEMORY_KINDS, PERCEPTION_MODES, SLOT_ID,
   type CharacterId, type CharacterStatePatch, type Holder, type Location, type LocationFeature, type NewPerception, type RelationshipPatch,
 } from 'dsh-roleplay-model'
 import { InvalidEditError, InvalidMoveError } from '../errors.ts'
@@ -136,6 +136,31 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     if (from !== undefined && to !== undefined && target.relationships.get(from, to) === undefined) problems.push(`${where}: "${retraction.from}" has no relationship with "${retraction.to}"`)
   })
   const itemFor = (key: string) => target.items.getBySourceId(key) ?? (Number.isInteger(Number(key)) ? target.items.get(Number(key)) : undefined)
+  const knowledgeSubject = (entry: { kind: string; subject?: string; from?: string; to?: string }, where: string): { kind: 'location' | 'item' | 'exit'; id: number } | undefined => {
+    if (!KNOWLEDGE_KINDS.includes(entry.kind as never)) { problems.push(`${where}: unknown kind "${entry.kind}"`); return undefined }
+    if (entry.kind === 'location') {
+      const place = entry.subject === undefined ? undefined : existingPlaces.get(entry.subject)
+      if (place === undefined) problems.push(`${where}.subject: there is no place "${entry.subject ?? ''}"`)
+      return place === undefined ? undefined : { kind: 'location', id: place.id }
+    }
+    if (entry.kind === 'item') {
+      const item = entry.subject === undefined ? undefined : itemFor(entry.subject)
+      if (item === undefined) problems.push(`${where}.subject: there is no item "${entry.subject ?? ''}"`)
+      return item === undefined ? undefined : { kind: 'item', id: item.id }
+    }
+    const from = entry.from === undefined ? undefined : existingPlaces.get(entry.from)
+    const to = entry.to === undefined ? undefined : existingPlaces.get(entry.to)
+    const exit = from === undefined || to === undefined ? undefined : target.locations.getExit(from.id, to.id)
+    if (exit === undefined) problems.push(`${where}: there is no exit from "${entry.from ?? ''}" to "${entry.to ?? ''}"`)
+    return exit === undefined ? undefined : { kind: 'exit', id: exit.id }
+  }
+  const knowledge = list(edit.knowledge).map((entry, index) => ({ entry, character: idOf(entry.character, `knowledge[${index}].character`), subject: knowledgeSubject(entry, `knowledge[${index}]`) }))
+  const knowledgeRetractions = list(edit.knowledgeRetractions).map((entry, index) => {
+    const character = idOf(entry.character, `knowledge_retractions[${index}].character`)
+    const subject = knowledgeSubject(entry, `knowledge_retractions[${index}]`)
+    if (character !== undefined && subject !== undefined && !target.knowledge.knows(character, subject.kind, subject.id)) problems.push(`knowledge_retractions[${index}]: the character does not know that entity`)
+    return { character, subject }
+  })
   list(edit.itemChanges).forEach((change, index) => {
     const where = `item_changes[${index}]`
     idOf(change.character, where)
@@ -240,6 +265,11 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
 
   return target.transaction(() => {
     const result: EditResult = { eventIds: [], beliefIds: [], writes: 0 }
+    const learnEventEntities = (event: { turn: number; locationId?: number; items: readonly number[]; involves: readonly number[] }, characterId: number): void => {
+      if (event.locationId !== undefined) target.knowledge.learn(characterId, 'location', event.locationId, event.turn)
+      for (const itemId of event.items) target.knowledge.learn(characterId, 'item', itemId, event.turn)
+      for (const otherId of event.involves) if (otherId !== characterId && target.relationships.get(characterId, otherId) === undefined) target.relationships.upsert(characterId, otherId, { label: 'acquaintance' }, event.turn)
+    }
     const placeOf = (key: string): Location => {
       const found = target.locations.getBySourceId(key) ?? (Number.isInteger(Number(key)) ? target.locations.get(Number(key)) : undefined)
       if (found === undefined) throw new InvalidEditError([`there is no place "${key}"`])
@@ -284,6 +314,14 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     }
     for (const retraction of list(edit.relationshipRetractions)) {
       target.relationships.remove(byKey.get(retraction.from)!.id, byKey.get(retraction.to)!.id)
+      result.writes += 1
+    }
+    for (const { entry, character, subject } of knowledge) {
+      target.knowledge.learn(character!, subject!.kind, subject!.id, edit.turn, entry.observed === true)
+      result.writes += 1
+    }
+    for (const { character, subject } of knowledgeRetractions) {
+      target.knowledge.forget(character!, subject!.kind, subject!.id)
       result.writes += 1
     }
     for (const change of list(edit.placeEdits)) {
@@ -361,6 +399,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     }
     for (const { event, involves, perceived } of events) {
       const { event: stored } = target.events.add({ turn: event.turn, round: event.round, text: event.text.trim(), importance: event.importance, tags: tags(event.tags), involves, ...(event.items === undefined ? {} : { items: event.items.map(key => itemFor(key)!.id) }), ...(event.location === undefined ? {} : { locationId: placeOf(event.location).id }) }, perceived)
+      for (const perception of perceived) learnEventEntities(stored, perception.characterId)
       result.eventIds.push(stored.id)
       result.writes += 1
     }
@@ -385,7 +424,11 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
       })
       result.writes += 1
     }
-    for (const { eventId, perception } of perceptionsAdded) { target.events.addPerception(eventId, perception); result.writes += 1 }
+    for (const { eventId, perception } of perceptionsAdded) {
+      target.events.addPerception(eventId, perception)
+      learnEventEntities(target.events.get(eventId)!, perception.characterId)
+      result.writes += 1
+    }
     for (const { belief, character, about } of beliefs) {
       result.beliefIds.push(target.memories.add({ characterId: character, kind: belief.kind, text: belief.text.trim(), about, importance: belief.importance, turn: edit.turn }).id)
       result.writes += 1

@@ -139,24 +139,29 @@ function said(entry: { name: string; utterance?: string; intent: string; result:
   return `- ${entry.name}${entry.utterance === undefined ? '' : ` said "${entry.utterance}" and`} intended: ${entry.intent} (${entry.result}) ${entry.summary}`
 }
 
-function age(turn: number, now: number): string {
-  const ago = now - turn
-  return ago <= 2 ? 'just now' : ago <= 15 ? 'a while ago' : 'long ago'
+function age(at: number | undefined, now: number | undefined): string {
+  if (at === undefined || now === undefined) return 'some time ago'
+  const seconds = Math.max(0, Math.floor((now - at) / 1000))
+  if (seconds < 60) return 'just now'
+  const units = [{ seconds: 86_400, name: 'day' }, { seconds: 3_600, name: 'hour' }, { seconds: 60, name: 'minute' }]
+  const unit = units.find(candidate => seconds >= candidate.seconds)!
+  const amount = Math.floor(seconds / unit.seconds)
+  return `${amount} ${unit.name}${amount === 1 ? '' : 's'} ago`
 }
 
 /** What a character remembers, in the way it remembers it: what is faded or vague is told as such. */
-function remembered(memories: readonly Recalled[], now: number): string {
+function remembered(memories: readonly Recalled[], now?: number): string {
   return memories.map((memory) => {
-    if (memory.clarity === 'clear') return `- (${age(memory.turn, now)}) ${memory.text}`
-    if (memory.clarity === 'faded') return `- (${age(memory.turn, now)}, the details are fuzzy) ${memory.text}`
-    return `- (${age(memory.turn, now)}, you barely remember) ${memory.text}`
+    if (memory.clarity === 'clear') return `- (${age(memory.at, now)}) ${memory.text}`
+    if (memory.clarity === 'faded') return `- (${age(memory.at, now)}, the details are fuzzy) ${memory.text}`
+    return `- (${age(memory.at, now)}, you barely remember) ${memory.text}`
   }).join('\n')
 }
 
 /** Every character is told the same thing about the scene, plus who it is and what it remembers. */
 export const sharedContext: CharacterContextProvider = {
   brief(request: CharacterRequest) {
-    const { member, cast, situation, attempt, earlier, reaction, previous, memories, turn, place, relationships, carrying, time, agenda } = request
+    const { member, cast, situation, attempt, earlier, reaction, previous, memories, place, relationships, knowledge, carrying, time, agenda } = request
     // In a place, a character perceives who is there with it; in a story without places, everyone is present.
     const company = place === undefined ? cast : place.here
     const sections = [`Situation:\n${situation}`, ...(time === undefined ? [] : [`Now: ${describeTime(time)}.`]), ...(place === undefined ? [] : [`Where you are:\n${describePlace(place, { withKeys: false }).join('\n')}`]), `Present:\n${present(company, member.key)}`]
@@ -170,8 +175,18 @@ export const sharedContext: CharacterContextProvider = {
     if (relationships !== undefined && relationships.length > 0) {
       sections.push(`How you stand with those here (your own view of them):\n${relationships.map((relation) => { const attitude = describeAttitude(relation); return `- ${relation.name} (${relation.label})${relation.summary === '' ? '' : `: ${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
     }
+    if (knowledge !== undefined) {
+      const shown = (entries: readonly string[]): string => entries.slice(0, 30).join('; ') + (entries.length > 30 ? `; and ${entries.length - 30} more you can recall if needed` : '')
+      const lines = [
+        knowledge.characters.length === 0 ? undefined : `People: ${shown(knowledge.characters)}`,
+        knowledge.locations.length === 0 ? undefined : `Places: ${shown(knowledge.locations)}`,
+        knowledge.routes.length === 0 ? undefined : `Routes: ${shown(knowledge.routes)}`,
+        knowledge.items.length === 0 ? undefined : `Things: ${shown(knowledge.items)}`,
+      ].filter((line): line is string => line !== undefined)
+      if (lines.length > 0) sections.push(`What you know exists (this does not tell you where it is now or what state it is in):\n${lines.join('\n')}`)
+    }
     if (memories !== undefined && memories.length > 0) {
-      sections.splice(1, 0, `What you remember that bears on this (only what you took in yourself; do not claim to remember more, and be unsure of what is fuzzy):\n${remembered(memories, turn)}`)
+      sections.splice(1, 0, `What you remember that bears on this (only what you took in yourself; do not claim to remember more, and be unsure of what is fuzzy):\n${remembered(memories, time?.now)}`)
     }
     if (earlier !== undefined && earlier.length > 0) {
       sections.push(`Earlier in this scene, before this moment:\n${earlier.map(said).join('\n')}`)

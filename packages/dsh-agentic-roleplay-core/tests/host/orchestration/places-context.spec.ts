@@ -58,6 +58,24 @@ describe('what a character is told', () => {
     expect(prompt).not.toContain('Where you are')
     expect(prompt).toContain('- Bob')
   })
+
+  it('dates memories by elapsed story time', () => {
+    const now = Date.UTC(1912, 9, 7, 12)
+    const prompt = sharedContext.brief(request({
+      time: { mode: 'simulated', now, zone: 'UTC' },
+      memories: [{ clarity: 'clear', text: 'The key was hidden.', turn: 1, at: now - 3 * 86_400_000, source: { kind: 'perception', id: 1 } }],
+    })).prompt
+    expect(prompt).toContain('- (3 days ago) The key was hidden.')
+  })
+
+  it('gives a character its known entity graph without implying current state', () => {
+    const prompt = sharedContext.brief(request({ knowledge: { characters: ['Bob (bob)'], locations: ['Station (station)'], items: ['Brass key (key)'], routes: ['The Bar -> Station'] } })).prompt
+    expect(prompt).toContain('What you know exists (this does not tell you where it is now or what state it is in):')
+    expect(prompt).toContain('People: Bob (bob)')
+    expect(prompt).toContain('Places: Station (station)')
+    expect(prompt).toContain('Routes: The Bar -> Station')
+    expect(prompt).toContain('Things: Brass key (key)')
+  })
 })
 
 describe('the scene the game master is told, with places', () => {

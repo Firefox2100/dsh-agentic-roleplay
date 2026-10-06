@@ -11,7 +11,7 @@ import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
 import { dueOffScene, markHandled } from '../clock/offscene.ts'
 import { describeShown } from '../variables/describe.ts'
 import { readTime, zoneOf } from '../clock/story-clock.ts'
-import type { CastMember, CastPlace, ItemView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
+import type { CastMember, CastPlace, ItemView, KnowledgeView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
 
 export { roleplaySessionOf }
 
@@ -76,6 +76,33 @@ function carriedBy(session: Session, characterId: number): ItemView[] {
       const view = viewOf(session, entry.item.id, holder.kind === 'character' && holder.mode === 'worn' ? `worn on the ${holder.slot}` : 'carried')
       return view === undefined ? [] : [view]
     })
+}
+
+function knowledgeOf(session: Session, characterId: number, turn: number, visibleCharacters?: readonly number[]): KnowledgeView {
+  const placement = session.placements.get('character', characterId)
+  if (placement !== undefined) {
+    session.knowledge.learn(characterId, 'location', placement.locationId, turn, true)
+    for (const exit of session.locations.exitsFrom(placement.locationId)) {
+      session.knowledge.learn(characterId, 'exit', exit.id, turn, true)
+      session.knowledge.learn(characterId, 'location', exit.toId, turn)
+    }
+    for (const { item } of session.items.contents({ kind: 'location', id: placement.locationId })) if (!item.hidden) session.knowledge.learn(characterId, 'item', item.id, turn, true)
+  }
+  for (const otherId of visibleCharacters ?? (placement === undefined ? [] : session.placements.at(placement.locationId, 'character').map(other => other.entityId))) {
+    if (otherId !== characterId && session.relationships.get(characterId, otherId) === undefined) session.relationships.upsert(characterId, otherId, { label: 'acquaintance' }, turn)
+  }
+  for (const { item } of session.items.contents({ kind: 'character', id: characterId })) session.knowledge.learn(characterId, 'item', item.id, turn, true)
+  const locations = session.knowledge.list(characterId, 'location').flatMap(entry => { const place = session.locations.get(entry.subjectId); return place === undefined ? [] : [`${place.name} (${locationKey(place)})`] })
+  const items = session.knowledge.list(characterId, 'item').flatMap(entry => { const item = session.items.get(entry.subjectId); return item === undefined ? [] : [`${item.name} (${itemKey(item)})`] })
+  const allExits = session.locations.allExits()
+  const routes = session.knowledge.list(characterId, 'exit').flatMap(entry => {
+    const exit = allExits.find(candidate => candidate.id === entry.subjectId)
+    const from = exit === undefined ? undefined : session.locations.get(exit.fromId)
+    const to = exit === undefined ? undefined : session.locations.get(exit.toId)
+    return from === undefined || to === undefined ? [] : [`${from.name} -> ${to.name}`]
+  })
+  const characters = session.relationships.from(characterId).flatMap(relation => { const character = session.characters.get(relation.toId); return character === undefined ? [] : [`${character.name} (${keyOfCharacter(character)})`] })
+  return { characters, locations, items, routes }
 }
 
 function placeViewOf(session: Session, locationId: number): PlaceView | undefined {
@@ -166,7 +193,7 @@ function checkMove(session: Session, characterKey: string, request: MoveRequest)
   const to = session.locations.list().find(candidate => locationKey(candidate) === request.location)
   if (to === undefined) return { ok: false, problems: [`there is no place "${request.location}" (list_locations shows the keys)`] }
   const move = { to: to.id, ...(request.position === undefined ? {} : { position: request.position }), ...(request.feature === undefined ? {} : { featureKey: request.feature }), ...(request.ignoreExits === true ? { ignoreExits: true } : {}) }
-  const planned = session.planMove(character.id, move)
+  const planned = session.planKnownMove(character.id, move)
   return planned.ok
     ? { ok: true, move, plan: planned.plan, to: { key: locationKey(to), name: to.name }, ...(request.position === undefined ? {} : { position: request.position }) }
     : { ok: false, problems: planned.problems }
@@ -210,6 +237,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     })),
     checkItemChanges: entries => dryRunItems(session, entries),
     carried: characterId => carriedBy(session, characterId),
+    knowledge: (characterId, turn, visibleCharacters) => knowledgeOf(session, characterId, turn, visibleCharacters),
     itemsAt: (locationId, withHidden = false) => itemsIn(session, locationId, withHidden),
     completeTurn: () => { session.metadata.recordTurn() },
     queueCommit: record => { session.pendingCommits.enqueue(record.turn, record.round, JSON.parse(JSON.stringify(record)) as never) },

@@ -93,6 +93,18 @@ describe('moving', () => {
     expect(store.planMove(idOf('bob'), { to: place('lane').id })).toMatchObject({ ok: true, plan: { via: [place('street').id, place('lane').id] } })
   })
 
+  it('plans a character\'s intended route only over places and directed exits it knows', () => {
+    const alice = idOf('alice')
+    const bar = place('bar')
+    const street = place('street')
+    expect(store.planKnownMove(alice, { to: bar.id })).toEqual({ ok: false, problems: [`the character does not know place ${bar.id}`] })
+    store.knowledge.learn(alice, 'location', bar.id, 2)
+    expect(store.planKnownMove(alice, { to: bar.id })).toEqual({ ok: false, problems: ['there is no way from Main Street to The Bar'] })
+    store.knowledge.learn(alice, 'exit', store.locations.getExit(street.id, bar.id)!.id, 2)
+    expect(store.planKnownMove(alice, { to: bar.id })).toMatchObject({ ok: true, plan: { via: [bar.id] } })
+    expect(store.planKnownMove(alice, { to: place('quarry').id, ignoreExits: true })).toMatchObject({ ok: true })
+  })
+
   it('refuses a way that is locked, saying where and why, and one that does not exist', () => {
     store.move(idOf('alice'), { to: place('bar').id })
     const locked = store.planMove(idOf('alice'), { to: place('cellar').id })

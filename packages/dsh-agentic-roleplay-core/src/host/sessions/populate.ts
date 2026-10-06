@@ -15,6 +15,22 @@ export function relationshipProblems(characters: readonly CharacterDefinition[])
   }))
 }
 
+/** What is wrong with the places, things and directed ways characters are authored to know. */
+export function knowledgeProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[], items: readonly ItemDefinition[]): string[] {
+  const places = new Map(locations.map(location => [location.id, location]))
+  const things = new Set(items.map(item => item.id))
+  return characters.flatMap(character => {
+    const prefix = `${character.id}: knowledge`
+    const knowledge = character.knowledge
+    if (knowledge === undefined) return []
+    return [
+      ...knowledge.locations.flatMap(key => places.has(key) ? [] : [`${prefix}.locations: "${key}" is not a place of this world`]),
+      ...knowledge.items.flatMap(key => things.has(key) ? [] : [`${prefix}.items: "${key}" is not an item of this world`]),
+      ...knowledge.exits.flatMap(({ from, to }) => places.get(from)?.exits.some(exit => exit.to === to) === true ? [] : [`${prefix}.exits: there is no exit from "${from}" to "${to}"`]),
+    ]
+  })
+}
+
 /** What is wrong with where the characters start, found before anything is created. */
 export function startingPlaceProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[]): string[] {
   const byId = new Map(locations.map(location => [location.id, location]))
@@ -92,7 +108,7 @@ export function populateLocations(session: Session, locations: readonly Location
  * is `playerId`; the agent controls everyone else.
  */
 export function populateCharacters(session: Session, characters: readonly CharacterDefinition[], playerId: string): void {
-  for (const { id, start, relationships: _relationships, routine: _routine, visualIdentity, ...identity } of characters) {
+  for (const { id, start, relationships: _relationships, knowledge: _knowledge, routine: _routine, visualIdentity, ...identity } of characters) {
     const character = session.characters.add({ ...identity, sourceId: id, control: id === playerId ? 'player' : 'agent' })
     if (visualIdentity !== undefined) session.visualIdentities.set('character', character.id, visualIdentity)
     const { intents, place, emotion, ...state } = start
@@ -110,6 +126,33 @@ export function populateCharacters(session: Session, characters: readonly Charac
     const from = session.characters.getBySourceId(id)!
     for (const relation of relationships ?? []) {
       session.relationships.upsert(from.id, session.characters.getBySourceId(relation.to)!.id, { label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }, 0)
+    }
+  }
+}
+
+/** Give each character its authored knowledge, plus what is visible where it starts. */
+export function populateKnowledge(session: Session, characters: readonly CharacterDefinition[]): void {
+  for (const definition of characters) {
+    const character = session.characters.getBySourceId(definition.id)!
+    for (const key of definition.knowledge?.locations ?? []) session.knowledge.learn(character.id, 'location', session.locations.getBySourceId(key)!.id, 0)
+    for (const key of definition.knowledge?.items ?? []) session.knowledge.learn(character.id, 'item', session.items.getBySourceId(key)!.id, 0)
+    for (const wanted of definition.knowledge?.exits ?? []) {
+      const exit = session.locations.getExit(session.locations.getBySourceId(wanted.from)!.id, session.locations.getBySourceId(wanted.to)!.id)!
+      session.knowledge.learn(character.id, 'exit', exit.id, 0)
+      session.knowledge.learn(character.id, 'location', exit.fromId, 0)
+      session.knowledge.learn(character.id, 'location', exit.toId, 0)
+    }
+    const placement = session.placements.get('character', character.id)
+    if (placement === undefined) continue
+    session.knowledge.learn(character.id, 'location', placement.locationId, 0, true)
+    for (const exit of session.locations.exitsFrom(placement.locationId)) {
+      session.knowledge.learn(character.id, 'exit', exit.id, 0, true)
+      session.knowledge.learn(character.id, 'location', exit.toId, 0)
+    }
+    for (const { item } of session.items.contents({ kind: 'location', id: placement.locationId })) if (!item.hidden) session.knowledge.learn(character.id, 'item', item.id, 0, true)
+    for (const { item } of session.items.contents({ kind: 'character', id: character.id })) session.knowledge.learn(character.id, 'item', item.id, 0, true)
+    for (const other of session.placements.at(placement.locationId, 'character')) {
+      if (other.entityId !== character.id && session.relationships.get(character.id, other.entityId) === undefined) session.relationships.upsert(character.id, other.entityId, { label: 'acquaintance' }, 0)
     }
   }
 }

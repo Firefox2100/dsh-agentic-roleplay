@@ -411,6 +411,33 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX visual_identities_subject ON visual_identities (subject_kind, subject_id);
     `,
   },
+  {
+    version: 3,
+    sql: `
+      CREATE TABLE entity_knowledge (
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        subject_kind TEXT NOT NULL CHECK (subject_kind IN ('location', 'item', 'exit')),
+        subject_id INTEGER NOT NULL,
+        learned_turn INTEGER NOT NULL,
+        last_observed_turn INTEGER,
+        PRIMARY KEY (character_id, subject_kind, subject_id)
+      ) STRICT;
+      CREATE INDEX entity_knowledge_subject ON entity_knowledge (subject_kind, subject_id);
+
+      INSERT OR IGNORE INTO entity_knowledge (character_id, subject_kind, subject_id, learned_turn)
+        SELECT perceptions.character_id, 'location', events.location_id, events.turn
+        FROM perceptions JOIN events ON events.id = perceptions.event_id
+        WHERE events.location_id IS NOT NULL;
+      INSERT OR IGNORE INTO entity_knowledge (character_id, subject_kind, subject_id, learned_turn)
+        SELECT perceptions.character_id, 'item', event_items.item_id, events.turn
+        FROM perceptions JOIN events ON events.id = perceptions.event_id JOIN event_items ON event_items.event_id = events.id;
+      INSERT OR IGNORE INTO relationships (from_id, to_id, label, summary, familiarity, trust, affinity, tension, updated_turn, created_at)
+        SELECT perceptions.character_id, event_involves.character_id, 'acquaintance', '', 0, 0, 0, 0, min(events.turn), min(perceptions.created_at)
+        FROM perceptions JOIN events ON events.id = perceptions.event_id JOIN event_involves ON event_involves.event_id = events.id
+        WHERE perceptions.character_id <> event_involves.character_id
+        GROUP BY perceptions.character_id, event_involves.character_id;
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

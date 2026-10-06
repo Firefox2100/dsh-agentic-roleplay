@@ -1,14 +1,14 @@
 import type { JsonSchemaNode, ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import {
-  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, ENGAGEMENT_STATUSES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, MEMORY_KINDS, PERCEPTION_MODES, WEEKDAY_NAMES,
+  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, ENGAGEMENT_STATUSES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, KNOWLEDGE_KINDS, MEMORY_KINDS, PERCEPTION_MODES, WEEKDAY_NAMES,
   VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES,
   type VariableDefinitionInput, type VariableKind, type VariableSubject, type VariableValue, type VariableVisibility,
-  type TriggerDefinition, type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type MemoryKind, type PerceptionMode, type Slot,
+  type TriggerDefinition, type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type KnowledgeKind, type MemoryKind, type PerceptionMode, type Slot,
 } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import type {
   BeliefEdit, CharacterMove, EngagementEditSpec, EventEdit, ExitChange, IntentEditSpec, ItemChange, NewEngagementSpec, NewIntentSpec, RoutineSet, RoutineWindowSpec, ItemEditSpec, NewBelief, NewCharacterSpec, NewEvent, NewExit, NewExitBetween, NewItemSpec, NewPlace,
-  PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
+  KnowledgeRetraction, KnowledgeSet, PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
 } from './edit-types.ts'
 import { ITEM_ACTIONS, type ItemAction } from './items.ts'
 import type { VariableChangeSpec } from './variables.ts'
@@ -142,6 +142,8 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       familiarity: num(entry, 'familiarity'), trust: num(entry, 'trust'), affinity: num(entry, 'affinity'), tension: num(entry, 'tension'),
     })),
     relationshipRetractions: array('relationship_retractions').map((entry): RelationshipRetraction => ({ from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '' })),
+    knowledge: array('knowledge').map((entry): KnowledgeSet => defined<KnowledgeSet>({ character: text(entry, 'character') ?? '', kind: (text(entry, 'kind') ?? '') as KnowledgeKind, subject: text(entry, 'subject'), from: text(entry, 'from'), to: text(entry, 'to'), observed: bool(entry, 'observed') })),
+    knowledgeRetractions: array('knowledge_retractions').map((entry): KnowledgeRetraction => defined<KnowledgeRetraction>({ character: text(entry, 'character') ?? '', kind: (text(entry, 'kind') ?? '') as KnowledgeKind, subject: text(entry, 'subject'), from: text(entry, 'from'), to: text(entry, 'to') })),
     placeEdits: array('place_edits').map((entry): PlaceEdit => defined<PlaceEdit>({ place: text(entry, 'place') ?? '', name: text(entry, 'name'), description: text(entry, 'description'), features: featuresOf(entry) })),
     exitChanges: array('exit_changes').map((entry): ExitChange => defined<ExitChange>({
       from: text(entry, 'from') ?? '', to: text(entry, 'to') ?? '', state: text(entry, 'state') as ExitState | undefined, description: text(entry, 'description'), note: text(entry, 'note'),
@@ -310,6 +312,20 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
       type: 'array',
       description: 'Profiles that no longer describe anything: the two never actually met, or it was made by mistake.',
       items: { type: 'object', properties: { from: character, to: character }, required: ['from', 'to'], additionalProperties: false },
+    },
+    knowledge: {
+      type: 'array',
+      description: 'Entities a character learns exist. For a location or item give subject; for a directed exit give from and to. This grants identity only, never current state or whereabouts.',
+      items: {
+        type: 'object',
+        properties: { character, kind: { type: 'string', enum: [...KNOWLEDGE_KINDS] }, subject: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' }, observed: { type: 'boolean' } },
+        required: ['character', 'kind'], additionalProperties: false,
+      },
+    },
+    knowledge_retractions: {
+      type: 'array',
+      description: 'Entity awareness recorded by mistake. Ordinary stale information belongs in beliefs and does not remove awareness.',
+      items: { type: 'object', properties: { character, kind: { type: 'string', enum: [...KNOWLEDGE_KINDS] }, subject: { type: 'string' }, from: { type: 'string' }, to: { type: 'string' } }, required: ['character', 'kind'], additionalProperties: false },
     },
     item_changes: {
       type: 'array',
@@ -731,4 +747,3 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
   }
   return { type: 'object', properties, required: ['turn'], additionalProperties: false }
 }
-

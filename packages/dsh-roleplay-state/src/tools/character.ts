@@ -1,6 +1,8 @@
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { CharacterId } from 'dsh-roleplay-model'
 import { vectorOf, type AgentLink } from './index.ts'
+import { characterKey, locationKey } from '../records/edit-types.ts'
+import { itemKey } from '../records/items.ts'
 
 /**
  * The tools of one character's own agent. They are built for that character and registered
@@ -29,6 +31,24 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
         const agent = link()
         const { session, turn, policy } = agent
         return (await session.recallRanked({ characterId, situation: args.about, turn, policy, ...placeOf(session, characterId) }, exec.signal, await vectorOf(agent, args.about, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
+      },
+    }),
+    defineTool({
+      name: 'recall_my_known_entities',
+      description: 'Recall the people, places, things and routes you know exist. This says only that you know them, not where they are now or their current state.',
+      parameters: { about: { type: 'string', description: 'Optional name or word to narrow the result.' } },
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { kind: { type: 'string', required: true }, key: { type: 'string', required: true }, name: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You know of nothing matching that.' : value.map(entry => `- ${entry.kind}: ${entry.name} (${entry.key})`).join('\n') }] },
+      isConcurrencySafe: () => true,
+      async execute(args) {
+        const { session } = link()
+        const found = [
+          ...session.relationships.from(characterId).flatMap(relation => { const character = session.characters.get(relation.toId); return character === undefined ? [] : [{ kind: 'character', key: characterKey(character), name: character.name }] }),
+          ...session.knowledge.list(characterId, 'location').flatMap(entry => { const place = session.locations.get(entry.subjectId); return place === undefined ? [] : [{ kind: 'location', key: locationKey(place), name: place.name }] }),
+          ...session.knowledge.list(characterId, 'item').flatMap(entry => { const item = session.items.get(entry.subjectId); return item === undefined ? [] : [{ kind: 'item', key: itemKey(item), name: item.name }] }),
+          ...session.knowledge.list(characterId, 'exit').flatMap(entry => { const exit = session.locations.allExits().find(candidate => candidate.id === entry.subjectId); const from = exit === undefined ? undefined : session.locations.get(exit.fromId); const to = exit === undefined ? undefined : session.locations.get(exit.toId); return from === undefined || to === undefined ? [] : [{ kind: 'route', key: `${locationKey(from)} -> ${locationKey(to)}`, name: `${from.name} to ${to.name}` }] }),
+        ]
+        const needle = args.about?.trim().toLowerCase()
+        return needle === undefined || needle === '' ? found : found.filter(entry => `${entry.key} ${entry.name}`.toLowerCase().includes(needle))
       },
     }),
   ]

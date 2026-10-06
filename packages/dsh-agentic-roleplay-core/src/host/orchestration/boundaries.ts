@@ -49,6 +49,14 @@ export interface ItemView {
   where?: string
 }
 
+/** The durable entities a character can identify beyond what is visible in the present scene. */
+export interface KnowledgeView {
+  characters: string[]
+  locations: string[]
+  items: string[]
+  routes: string[]
+}
+
 /** A short reference to a place in what is kept of a round. */
 export interface PlaceRef {
   key: string
@@ -93,6 +101,8 @@ export interface CharacterRequest {
   place?: PlaceView
   /** How the character stands towards those it is with, where there is a profile of them. */
   relationships?: readonly KnownRelationship[]
+  /** Entities this character knows exist; absent entities are unknown. */
+  knowledge?: KnowledgeView
   /** What the character has on it or in its hands. */
   carrying?: readonly ItemView[]
   /** What time it is in the story. */
@@ -358,7 +368,7 @@ export interface TriggerReport {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
+  readonly story: Pick<Session, 'characters' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
@@ -415,6 +425,8 @@ export interface TurnStore {
   itemsAt(locationId: Location['id'], withHidden?: boolean): ItemView[]
   /** What a character has on it or in its hands. */
   carried(characterId: Character['id']): ItemView[]
+  /** Observe the present scene and return the entities this character knows. */
+  knowledge(characterId: Character['id'], turn: number, visibleCharacters?: readonly Character['id'][]): KnowledgeView
   /** Whether a character may go where a request says (places by key), resolved to what the move would be. */
   checkMove(character: string, request: MoveRequest): MoveCheck
   /** A place as it is told to someone in it, or nothing for an id that is not one. */

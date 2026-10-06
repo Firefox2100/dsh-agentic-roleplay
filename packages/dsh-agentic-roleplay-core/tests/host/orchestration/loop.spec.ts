@@ -376,6 +376,17 @@ async function addSession(name: string, withPlaces = false): Promise<{ session: 
     const chest = session.items.add(thing('chest', 'Oak chest', { container: { state: 'locked' } }), { kind: 'location', locationId: bar.id })
     session.items.setOpeners({ kind: 'item', id: chest.id }, [key.id])
     session.items.add(thing('letter', 'Sealed letter', { hidden: true }), { kind: 'location', locationId: bar.id })
+    for (const character of session.characters.list()) {
+      const at = session.placements.get('character', character.id)!.locationId
+      session.knowledge.learn(character.id, 'location', at, 0, true)
+      for (const exit of session.locations.exitsFrom(at)) {
+        session.knowledge.learn(character.id, 'exit', exit.id, 0, true)
+        session.knowledge.learn(character.id, 'location', exit.toId, 0)
+      }
+    }
+    const bob = session.characters.getBySourceId('bob')!
+    session.knowledge.learn(bob.id, 'location', vault.id, 0)
+    session.knowledge.learn(bob.id, 'exit', session.locations.getExit(cellar.id, vault.id)!.id, 0)
   }
   session.clock.start('simulated', EVENING)
   return { session, id: session.metadata.get().id }
@@ -1181,7 +1192,7 @@ describe('a turn with the real agent loop', () => {
       expect(alicesBrief).not.toContain('Carol')
       const carolsBrief = briefFor(adapter, 'Carol')
       expect(carolsBrief).toContain('Where you are:\nCellar: Cold.')
-      expect(carolsBrief).toMatch(/Present:\n- Carol \(you\)[^\n]*$/)
+      expect(carolsBrief).toMatch(/Present:\n- Carol \(you\)[^\n]*(?:\n|$)/)
     })
 
     it('moves a character the game master sends somewhere, with the round, and commits it for the keeper', async () => {
@@ -1261,7 +1272,7 @@ describe('a turn with the real agent loop', () => {
     expect(asText(master[0]!)).toContain('Alice (acts through')
 
     for (const request of characterRequests(adapter)) {
-      expect(toolNames(request)).toEqual(['recall_my_memories', 'submit_result'])
+      expect(toolNames(request)).toEqual(['recall_my_known_entities', 'recall_my_memories', 'submit_result'])
       expect(systemOf(request)).not.toContain('game master')
       expect(asText(request)).not.toContain('Scene before turn')
       expect(asText(request)).toContain('Arthur opens the vault door')

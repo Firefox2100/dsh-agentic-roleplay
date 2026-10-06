@@ -3,6 +3,7 @@ import type { VariableValue } from './variable.ts'
 import type { RelationshipDefinition } from './relationship.ts'
 import type { CharacterStart } from './state.ts'
 import type { VisualIdentityInput } from './visual.ts'
+import type { KnowledgeDefinition } from './knowledge.ts'
 
 export const CHARACTER_ROLES = ['playable', 'npc'] as const
 export const CHARACTER_TIERS = ['principal', 'supporting', 'background'] as const
@@ -51,6 +52,8 @@ export interface CharacterDefinition {
   start: CharacterStart
   /** How this character stands towards others of the world, by their ids. */
   relationships?: RelationshipDefinition[]
+  /** Places, things and ways this character knows exist when the story starts. */
+  knowledge?: KnowledgeDefinition
   /** The recurring day of the character: what it is doing and where, by the clock. */
   routine?: RoutineDefinition[]
   /** What it starts with of what the world tracks (a value for each of the variables named), by variable key. */
