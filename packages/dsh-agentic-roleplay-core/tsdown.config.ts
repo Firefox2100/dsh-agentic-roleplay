@@ -69,7 +69,7 @@ function cssModules(): TsdownPlugin {
 
 const host: UserConfig = {
   name: `${ID}/host`,
-  entry: { index: 'src/index.ts', orchestration: 'src/orchestration.ts', compaction: 'src/compaction.ts' },
+  entry: { index: 'src/index.ts', orchestration: 'src/orchestration.ts', compaction: 'src/compaction.ts', images: 'src/images.ts' },
   outDir: 'lib',
   format: 'esm',
   platform: 'node',

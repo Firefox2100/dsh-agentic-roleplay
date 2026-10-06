@@ -6,6 +6,7 @@ export type SettingsFormKey =
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
+  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -35,8 +36,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockReal: 'Real clock',
     rulesOwn: 'Your own rules',
     rulesOwnHelp: 'What is not allowed in this story besides what the world itself rules out, one rule per line, in your own words (for example "No one can fly"). The game master holds your actions, and your out-of-character commands, to the world\'s rules and these.',
-    reasoningChildren: 'Thinking of the characters and keeper',
-    reasoningChildrenHelp: 'How hard the characters, the record keeper and the world author think, as a level the model offers, for example off or low. Empty uses your own level. Thinking is most of what a turn costs on a slow model, and these helpers do well without it.',
+    reasoningChildren: 'Thinking of child agents',
+    reasoningChildrenHelp: 'How hard the characters, record keeper, world author, image author and suggestion writer think, as a level the model offers, for example off or low. Empty uses your own level. Thinking is most of what a turn costs on a slow model, and these helpers do well without it.',
     triggersEnabled: 'Events of the world',
     triggersEnabledHelp: 'The world acts by itself when what its triggers wait for comes true: a deadline passes, someone arrives, a door gives way. Turn off to play without them.',
     triggersMaxFires: 'Most events at once',
@@ -49,6 +50,16 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     previewEnabledHelp: 'Before the characters are asked, the game master shows a short opening of the scene, so there is something to read while the rest of the turn is worked out. The delivered output replaces it in the view.',
     suggestionsCount: 'Suggested actions',
     suggestionsCountHelp: 'After each turn, a helper writes this many things your character could do next from what you just read, in the background. Click one to put it in the input box (you can edit it before sending). 0 offers none and makes no model call.',
+    imagesMode: 'Scene illustrations',
+    imagesModeHelp: 'Manual offers an image button beneath each delivered turn. Every turn also starts an image author in the background after the text appears. Off makes no image calls.',
+    imagesOff: 'Off',
+    imagesManual: 'Manual',
+    imagesEveryTurn: 'Every turn',
+    imageReferences: 'Canonical references',
+    imageReferencesHelp: 'Reference images improve consistency when the provider supports image editing. Require makes a missing reference before illustrating; Prefer uses those already present; Text only sends descriptions.',
+    imageReferencesText: 'Text only',
+    imageReferencesPrefer: 'Prefer',
+    imageReferencesRequire: 'Require',
     offstagePerTurn: 'Characters acting off stage per turn',
     offstagePerTurnHelp: 'When something falls due for characters who are away from you (a meeting whose time has come, a deadline that passed), up to this many of them are asked, in the background after your turn, what they do about it. What they decide is recorded and can be seen in the story later. 0 turns it off.',
     clockLocked: 'The story\'s time is simulated and has its own dates, so it cannot follow the real clock any more.',
@@ -97,8 +108,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockReal: '现实时钟',
     rulesOwn: '你自己的规则',
     rulesOwnHelp: '除世界本身已排除的内容外，这个故事里还不允许什么，每行一条，用你自己的话写（例如“没有人会飞”）。游戏主持会用世界的规则和这些规则来衡量你的行动和你的场外指令。',
-    reasoningChildren: '角色与记录员的思考强度',
-    reasoningChildrenHelp: '角色、记录员和世界作者的思考强度，须是模型提供的级别，例如 off 或 low。留空则与你自己选择的一致。在较慢的模型上，思考占了每轮耗时的大部分，而这些助手即使不思考也做得不错。',
+    reasoningChildren: '子智能体的思考强度',
+    reasoningChildrenHelp: '角色、记录员、世界作者、图像作者和建议作者的思考强度，须是模型提供的级别，例如 off 或 low。留空则与你自己选择的一致。在较慢的模型上，思考占了每轮耗时的大部分，而这些助手即使不思考也做得不错。',
     triggersEnabled: '世界事件',
     triggersEnabledHelp: '当触发器等待的条件成立时（期限已过、有人到来、门被撞开），世界会自行行动。关闭后将不再触发。',
     triggersMaxFires: '同时触发的事件上限',
@@ -111,6 +122,16 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     previewEnabledHelp: '在询问角色之前，主持人先给出一小段场景开场，让你在这一轮的其余部分处理期间有东西可读。最终输出送达后，视图中会替换掉它。',
     suggestionsCount: '行动建议数量',
     suggestionsCountHelp: '每轮结束后，一个助手会根据你刚读到的内容，在后台写出这么多条你的角色接下来可以做的事。点击其中一条即可填入输入框（发送前可以修改）。0 表示不提供，也不会调用模型。',
+    imagesMode: '场景插图',
+    imagesModeHelp: '手动模式会在每轮叙述下方提供生成按钮；每轮模式还会在文字显示后于后台启动图像作者；关闭后不会调用图像服务。',
+    imagesOff: '关闭',
+    imagesManual: '手动',
+    imagesEveryTurn: '每轮',
+    imageReferences: '规范参考图',
+    imageReferencesHelp: '提供方支持图像编辑时，参考图可提高一致性。必须会先补齐缺少的参考图；优先只使用已有参考图；纯文本只发送描述。',
+    imageReferencesText: '纯文本',
+    imageReferencesPrefer: '优先',
+    imageReferencesRequire: '必须',
     offstagePerTurn: '每轮台下行动的角色数',
     offstagePerTurnHelp: '当有事对不在你身边的角色到期时（约定的时间到了、期限过了），每轮结束后会在后台最多询问这么多角色打算怎么办。他们的决定会被记录，之后可在故事中看到。0 表示关闭。',
     clockLocked: '故事时间已经是模拟的，有自己的日期，不能再改为跟随现实时钟。',

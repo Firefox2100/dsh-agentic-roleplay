@@ -26,7 +26,7 @@ export interface ToolDeps {
   /** The turn the agent is in. */
   turnOf: (agent: Agent) => number
   /** The output of a turn was delivered. */
-  delivered?: (chat: string, output: TurnOutput) => void
+  delivered?: (chat: string, output: TurnOutput) => string | undefined
 }
 
 /** The JSON value the tool records; the model reads the rendered text. */
@@ -264,10 +264,11 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         ...(segment.character === undefined ? {} : { character: segment.character }),
       }))
       const output = await deps.engine.narrate(owner, segments, characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) }), args.addressed ?? [])
-      deps.delivered?.(owner.chat, output)
+      const timelineNode = deps.delivered?.(owner.chat, output)
+      const delivered = timelineNode === undefined ? output : { ...output, timelineNode }
       // The output is the end of the turn: nothing the model adds after it would be checked.
       exec.concludeTurn()
-      return record(output)
+      return record(delivered)
     },
   })
 

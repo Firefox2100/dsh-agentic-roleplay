@@ -2,6 +2,7 @@ import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 import type { Note } from '../../shared/notes.ts'
+import type { SceneImageStatus } from '../../shared/images.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
 import { TimelineError } from '../timeline/service.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
@@ -34,6 +35,9 @@ export interface ApiDeps {
     notes(id: string): Note[]
     timeline(id: string): TimelineView
     moveTimeline(id: string, to: string): Promise<{ draft?: string }>
+    imageStatus(id: string, node: string): Promise<SceneImageStatus>
+    generateImage(id: string, node: string): Promise<SceneImageStatus>
+    imageFile(id: string, node: string, serial: number): Promise<{ file: string; size: number }>
   }
   connection: ApiConnection
 }
@@ -120,6 +124,30 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           throw error
         }
+      },
+    },
+    '/sessions/images': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, await sessions.imageStatus(url.searchParams.get('id') ?? '', url.searchParams.get('node') ?? '')) }
+        catch (error) { return sendError(res, 409, error instanceof Error ? error.message : String(error)) }
+      },
+      POST: async (_req, res, url) => {
+        try { sendJson(res, 202, await sessions.generateImage(url.searchParams.get('id') ?? '', url.searchParams.get('node') ?? '')) }
+        catch (error) { return sendError(res, 409, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/sessions/images/file': {
+      GET: async (_req, res, url) => {
+        const serial = Number(url.searchParams.get('serial'))
+        let image: { file: string; size: number }
+        try { image = await sessions.imageFile(url.searchParams.get('id') ?? '', url.searchParams.get('node') ?? '', serial) }
+        catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+        res.statusCode = 200
+        res.setHeader('content-type', 'image/png')
+        res.setHeader('content-length', image.size)
+        res.setHeader('x-content-type-options', 'nosniff')
+        res.setHeader('cache-control', 'private, max-age=31536000, immutable')
+        await pipeline(createReadStream(image.file), res)
       },
     },
     '/sessions/settings': {

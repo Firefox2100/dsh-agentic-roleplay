@@ -3,6 +3,7 @@ import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from 'dsh-roleplay-state'
+import type { ImageGenerationService } from 'dsh-ai-core'
 import { join } from 'node:path'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { recordKeeper } from './host/orchestration/committer.ts'
@@ -20,6 +21,7 @@ import { createTools } from './host/orchestration/tools.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
 import { rerankMemories, type Reranker } from './host/memory/rerank-memories.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
+import { ImageJobs } from './host/images/jobs.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
 
@@ -73,19 +75,32 @@ export function apply(ctx: Context): void {
     text: PROTOCOL,
     interpolate: false,
   })
-  for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { timelines.delivered(chat, output) } })) ctx.tools.register(tool)
+  for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.settle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
+  let imageJobs: ImageJobs | undefined
   const timelines = new Timelines({
     state: ctx.roleplayState,
     sessionsDir,
     engine,
     agentOf: chat => Promise.resolve(ctx.agents.get(SessionId(chat))),
     keepSnapshots: id => liveSettings(sessionFolder(sessionsDir(), id), problem).rewind.keepSnapshots,
+    cancel: chat => imageJobs?.cancel(chat),
   })
+  const images = new ImageJobs({
+    state: ctx.roleplayState,
+    sessionsDir,
+    timelines,
+    service: () => (ctx as Context & { get(name: 'imageGeneration'): ImageGenerationService | undefined }).get('imageGeneration'),
+    agentOf: chat => ctx.agents.get(SessionId(chat)),
+    settings: id => liveSettings(sessionFolder(sessionsDir(), id), problem),
+    problem,
+  })
+  imageJobs = images
   ctx.effect(() => {
-    ctx.roleplayOrchestration.halt = async (chat) => { engine.stop(chat); await engine.quiesce(chat); engine.forget(chat) }
+    ctx.roleplayOrchestration.halt = async (chat) => { images.cancel(chat); engine.stop(chat); await engine.quiesce(chat); engine.forget(chat) }
     return () => { ctx.roleplayOrchestration.halt = () => Promise.resolve() }
   }, 'roleplay: halt')
   ctx.effect(() => { ctx.roleplayOrchestration.timelines = timelines; return () => { ctx.roleplayOrchestration.timelines = undefined } }, 'roleplay: timelines')
+  ctx.effect(() => { ctx.roleplayOrchestration.images = images; return () => { ctx.roleplayOrchestration.images = undefined } }, 'roleplay: images')
   installHooks(ctx, { engine, boundaries, stores, timelines })
 }

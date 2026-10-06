@@ -8,6 +8,7 @@
     ".": "./lib/index.js",
     "./orchestration": "./lib/orchestration.js",
     "./compaction": "./lib/compaction.js",
+    "./images": "./lib/images.js",
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },

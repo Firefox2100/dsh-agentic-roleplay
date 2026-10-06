@@ -8,7 +8,7 @@ import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  ConsolidationRepository, ItemRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport,
+  ConsolidationRepository, ItemRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
@@ -31,6 +31,7 @@ import { SqliteMetadataRepository } from './sqlite/metadata-repository.ts'
 import { inspect, migrate } from './sqlite/migrate.ts'
 import { APPLICATION_ID, LATEST_VERSION } from './sqlite/schema.ts'
 import { SqliteCharacterStateRepository } from './sqlite/state-repository.ts'
+import { SqliteVisualIdentityRepository } from './sqlite/visual-identity-repository.ts'
 
 export interface StoreOptions extends OpenOptions {
   /** Defaults to the driver on Node's built-in SQLite. */
@@ -58,6 +59,7 @@ export interface SessionStore {
   readonly consolidation: ConsolidationRepository
   readonly slots: SlotRepository
   readonly items: ItemRepository
+  readonly visualIdentities: VisualIdentityRepository
   /** The story's own time. */
   readonly clock: ClockRepository
   /** What the story keeps track of: feelings, and whatever the world or the story declares. */
@@ -138,6 +140,7 @@ class SqliteSessionStore implements SessionStore {
   readonly consolidation: ConsolidationRepository
   readonly slots: SlotRepository
   readonly items: ItemRepository
+  readonly visualIdentities: VisualIdentityRepository
   readonly clock: ClockRepository
   readonly variables: VariableRepository
   readonly routines: RoutineRepository
@@ -158,6 +161,9 @@ class SqliteSessionStore implements SessionStore {
     this.consolidation = new SqliteConsolidationRepository(db)
     this.slots = new SqliteSlotRepository(db)
     this.items = new SqliteItemRepository(db, clock)
+    this.visualIdentities = new SqliteVisualIdentityRepository(db, clock, (kind, id) => (
+      kind === 'character' ? this.characters.get(id) !== undefined : kind === 'location' ? this.locations.get(id) !== undefined : this.items.get(id) !== undefined
+    ))
     this.clock = new SqliteClockRepository(db)
     this.variables = new SqliteVariableRepository(db)
     this.routines = new SqliteRoutineRepository(db)

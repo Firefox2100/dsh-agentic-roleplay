@@ -180,6 +180,7 @@ export class RoleplayState extends Service {
       consolidation: store.consolidation,
       slots: store.slots,
       items: store.items,
+      visualIdentities: store.visualIdentities,
       clock: store.clock,
       variables: store.variables,
       routines: store.routines,

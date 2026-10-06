@@ -1,0 +1,5 @@
+export { IMAGE_AUTHOR_PERSONA, runImageAuthor, type ImageAuthorJob, type ImageAuthorResult } from './host/images/author-agent.ts'
+export { imageTools, type ImageToolDeps } from './host/images/tools.ts'
+export { generateReferenceImage, generateTransientImage, referencePrompt, transientPrompt, type ReferenceImageRequest, type TransientImageRequest, type TransientSubject } from './host/images/generator.ts'
+export { entityImageDirectory, inheritImages, nextSceneSerial, readImageMetadata, referenceImagePath, sceneImagePath, type EntityImageAddress, type VisualImageMetadata, type VisualImageSubject } from './host/images/storage.ts'
+export { readPngMetadata, withPngMetadata } from './host/images/png-metadata.ts'

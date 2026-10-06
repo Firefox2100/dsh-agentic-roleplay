@@ -5,6 +5,7 @@ import { encodeOutput, encodePreview, type TurnOutput } from '../../../src/share
 
 const narration: TurnOutput = {
   repaired: false,
+  timelineNode: 'n4',
   segments: [
     { type: 'narration', text: 'The programme hits the bar.' },
     { type: 'utterance', character: 'clara', name: 'Clara', text: 'Did you now?' },
@@ -33,10 +34,10 @@ describe('the Chat node of a turn output', () => {
 
   it('carries the segments, and sits at the session level so the Chat does not fold it into the process', () => {
     const state = start(chatNarration, context('k', 'roleplay-narration', undefined), { event: delivered(narration), role: 'start' } as never)
-    expect(state).toEqual({ seq: 7, data: { segments: narration.segments, repaired: false } })
+    expect(state).toEqual({ seq: 7, data: { segments: narration.segments, repaired: false, timelineNode: 'n4' } })
     expect(view(chatNarration, context('k', 'roleplay-narration', state))).toEqual({
       key: 'k', kind: 'roleplay-narration', id: 'k', target: 'chat', anchorSeq: 7, location: { kind: 'session' }, visibility: 'visible',
-      data: { segments: narration.segments, repaired: false },
+      data: { segments: narration.segments, repaired: false, timelineNode: 'n4' },
     })
     expect(view(chatNarration, context('k', 'roleplay-narration', undefined))).toBeNull()
   })

@@ -8,6 +8,7 @@ import { START_SNAPSHOT, childrenOf, noticeText, pathTo, snapshotOf, viewOf, typ
 import { readTimeline, writeTimeline } from './file.ts'
 import { branchName, branchTimeline } from './branch.ts'
 import { planMove, type MovePlan } from './plan.ts'
+import { inheritImages } from '../images/storage.ts'
 
 /** The text of the marker that stands for the turns it replaces: never empty, as a model service may refuse an empty message. */
 const MARKER_TEXT = '(empty message)'
@@ -22,6 +23,8 @@ export interface TimelineDeps {
   sessionsDir: () => string
   /** What is in flight for a chat is stopped, and waited for, before the story is taken back. */
   engine: { stop(chat: string): void; quiesce(chat: string): Promise<void>; forget(chat: string): void }
+  /** Cancels work whose result belongs to the current timeline head, such as a scene image. */
+  cancel?: (chat: string) => void
   /** The agent of a chat, loaded when it is not. */
   agentOf: (chat: string) => Promise<Agent | undefined>
   /** How many turns keep a snapshot; 0 keeps none. */
@@ -66,6 +69,7 @@ export class Timelines {
   /** The player has said something and a turn begins: the turn is added to the timeline after the head, once what the earlier one wrote has settled and its state is kept. */
   begin(chat: string, turn: number, player: string): Promise<TimelineNode> {
     return this.serial(chat, async () => {
+      this.deps.cancel?.(chat)
       const id = this.idOf(chat)
       await this.deps.engine.quiesce(chat)
       const timeline = this.read(id)
@@ -81,11 +85,11 @@ export class Timelines {
   }
 
   /** What the turn delivered; and, once nothing writes to the story any more, its state is kept. */
-  delivered(chat: string, output: TurnOutput): void {
+  delivered(chat: string, output: TurnOutput): string | undefined {
     const id = this.idOf(chat)
     const timeline = this.read(id)
     const node = timeline.nodes.find(candidate => candidate.id === timeline.head)
-    if (node === undefined) return
+    if (node === undefined) return undefined
     node.output = output
     writeTimeline(this.folder(id), timeline)
     void this.serial(chat, async () => {
@@ -93,6 +97,7 @@ export class Timelines {
       const current = this.read(id)
       if (current.head === node.id) this.keep(id, current, node.id)
     }).catch(() => undefined)
+    return node.id
   }
 
   /**
@@ -155,6 +160,7 @@ export class Timelines {
         agent.cancel({ kind: 'user' }, { keepInbox: true })
         await agent.whenIdle()
       }
+      this.deps.cancel?.(chat)
       this.deps.engine.stop(chat)
       await this.deps.engine.quiesce(chat)
       this.deps.engine.forget(chat)
@@ -202,6 +208,7 @@ export class Timelines {
       const name = branchName(this.deps.state.openSession(directory, from).metadata.get().name)
       this.deps.state.fork(directory, from, id, branch.from, { name, keep: branch.keep })
       try {
+        await inheritImages(this.folder(from), this.folder(id), branch.timeline.nodes.map(node => node.id))
         const plan = planMove(branch.timeline, branch.timeline.head, [...agent.session.surface.nodes] as number[])
         this.reconcile(agent, plan)
         writeTimeline(this.folder(id), branch.timeline)

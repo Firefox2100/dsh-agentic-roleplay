@@ -14,7 +14,7 @@ export {
 } from './errors.ts'
 export type {
   CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
-  PendingCommitRepository, ConsolidationRepository, ItemRepository, LocationRepository, PlacementRepository, RelationshipRepository, SlotRepository, RecallIndexRepository, RecallSearch, SummaryRepository, ThreadRepository, VectorSearch, VectorSupport,
+  PendingCommitRepository, ConsolidationRepository, ItemRepository, LocationRepository, PlacementRepository, RelationshipRepository, SlotRepository, RecallIndexRepository, RecallSearch, SummaryRepository, ThreadRepository, VectorSearch, VectorSupport, VisualIdentityRepository,
 } from './repositories.ts'
 export { apply, Config, name, RoleplayState, type Session } from './plugin.ts'
 export type { SemanticRanker } from './memory/ranker.ts'

@@ -10,6 +10,7 @@ export interface NarrationNodeData {
   repaired: boolean
   /** For an out-of-character command: whether it was allowed and what the player is told of it. */
   ooc?: OocRuling
+  timelineNode?: string
 }
 
 export const PREVIEW_NODE = 'roleplay-preview'

@@ -394,6 +394,23 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX trigger_notes_pending ON trigger_notes (status, kind, id);
     `,
   },
+  {
+    version: 2,
+    sql: `
+      CREATE TABLE visual_identities (
+        subject_kind TEXT NOT NULL CHECK (subject_kind IN ('character', 'location', 'item')),
+        subject_id INTEGER NOT NULL,
+        global_id TEXT UNIQUE,
+        description TEXT NOT NULL,
+        tags TEXT NOT NULL DEFAULT '[]',
+        negative_tags TEXT NOT NULL DEFAULT '[]',
+        version INTEGER NOT NULL DEFAULT 1 CHECK (version >= 1),
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (subject_kind, subject_id)
+      ) STRICT;
+      CREATE INDEX visual_identities_subject ON visual_identities (subject_kind, subject_id);
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

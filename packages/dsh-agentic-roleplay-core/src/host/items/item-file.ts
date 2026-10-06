@@ -2,6 +2,7 @@ import { CONTAINER_STATES, SLOT_ID, type ItemDefinition, type Slot } from 'dsh-r
 import { readIdentifier } from '../identifiers.ts'
 import { readVariableValues } from '../variables/values.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
+import { readVisualIdentity } from '../visual/identity-file.ts'
 
 export const ITEM_FILE_NAME = 'item.json'
 export const SLOTS_FILE_NAME = 'slots.json'
@@ -49,8 +50,9 @@ export function parseItemFile(text: string, fallbackId: string): ParseResult<Ite
         : { kind: 'inside', item: inside ?? '', ...(position === undefined ? {} : { position }) }
 
   const variables = readVariableValues(reader)
+  const visualIdentity = readVisualIdentity(reader)
   const definition: ItemDefinition = {
-    id, name: name ?? '', description: reader.text('description'), quantity, unique, quality: reader.text('quality'), notable: flag('notable'), hidden: flag('hidden'),
+    id, name: name ?? '', description: reader.text('description'), ...(visualIdentity === undefined ? {} : { visualIdentity }), quantity, unique, quality: reader.text('quality'), notable: flag('notable'), hidden: flag('hidden'),
     ...(wearable === undefined ? {} : { wearable }), ...(container === undefined ? {} : { container }), ...(owner === undefined ? {} : { owner }), ...(variables === undefined ? {} : { variables }), start,
   }
   return issues.length > 0 ? { ok: false, issues } : { ok: true, value: definition }

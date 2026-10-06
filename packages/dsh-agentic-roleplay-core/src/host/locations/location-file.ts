@@ -2,6 +2,7 @@ import { EXIT_STATES, MAX_LOCATION_FEATURES, type ExitDefinition, type LocationD
 import { readVariableValues } from '../variables/values.ts'
 import { readIdentifier } from '../identifiers.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
+import { readVisualIdentity } from '../visual/identity-file.ts'
 
 export const LOCATION_FILE_NAME = 'location.json'
 
@@ -61,10 +62,12 @@ export function parseLocationFile(text: string, fallbackId: string): ParseResult
   const name = reader.string('name', { required: true })
   const parent = reader.string('parent')
   const variables = readVariableValues(reader)
+  const visualIdentity = readVisualIdentity(reader)
   const location: LocationDefinition = {
     id,
     name: name ?? '',
     description: reader.text('description'),
+    ...(visualIdentity === undefined ? {} : { visualIdentity }),
     ...(parent === undefined ? {} : { parent }),
     features: readFeatures(reader),
     exits: readExits(reader),

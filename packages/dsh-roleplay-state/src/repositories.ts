@@ -52,6 +52,10 @@ import type {
   NewCharacterState,
   SessionMetadata,
   WorldReference,
+  VisualIdentity,
+  VisualIdentityInput,
+  VisualIdentityPatch,
+  VisualSubjectKind,
 } from 'dsh-roleplay-model'
 
 /**
@@ -345,6 +349,18 @@ export interface ItemRepository {
   /** The items that open an item that is a container, or an exit. */
   openers(target: { kind: 'item' | 'exit'; id: number }): ItemId[]
   setOpeners(target: { kind: 'item' | 'exit'; id: number }, items: readonly ItemId[]): void
+}
+
+/** Stable visual facts of entities; generated image files and their metadata remain on the filesystem. */
+export interface VisualIdentityRepository {
+  /** Create or replace an identity. Replacing it advances its version. @throws {NotFoundError} when the subject does not exist. */
+  set(subjectKind: VisualSubjectKind, subjectId: number, identity: VisualIdentityInput): VisualIdentity
+  get(subjectKind: VisualSubjectKind, subjectId: number): VisualIdentity | undefined
+  /** Everything with an identity, in stable subject order. */
+  list(subjectKind?: VisualSubjectKind): VisualIdentity[]
+  /** Change only the supplied canonical fields and advance the version. @throws {NotFoundError} */
+  update(subjectKind: VisualSubjectKind, subjectId: number, patch: VisualIdentityPatch): VisualIdentity
+  remove(subjectKind: VisualSubjectKind, subjectId: number): boolean
 }
 
 /** The story's own time: what instant it is in the story, and how it got there. */

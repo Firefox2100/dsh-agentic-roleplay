@@ -17,6 +17,7 @@ import {
 import { MAX_ROUTINE_WINDOWS } from 'dsh-roleplay-state'
 import { readIdentifier } from '../identifiers.ts'
 import { readVariableValues } from '../variables/values.ts'
+import { readVisualIdentity } from '../visual/identity-file.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
 
 export const CHARACTER_FILE_NAME = 'character.json'
@@ -155,6 +156,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
   const pronouns = reader.string('pronouns')
   const speech = reader.object('speech')
   const variables = readVariableValues(reader)
+  const visualIdentity = readVisualIdentity(reader)
   const character: CharacterDefinition = {
     id,
     name: name ?? '',
@@ -169,6 +171,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
     personality: reader.text('personality'),
     background: reader.text('background'),
     appearance: reader.text('appearance'),
+    ...(visualIdentity === undefined ? {} : { visualIdentity }),
     speech: { style: speech?.text('style') ?? '', examples: speech?.strings('examples') ?? [] },
     start: readStart(reader.object('start')),
     ...(reader.raw('relationships') === undefined ? {} : { relationships: readRelationships(reader) }),

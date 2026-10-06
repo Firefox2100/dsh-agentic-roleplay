@@ -2,6 +2,7 @@ import type { RoutineDefinition } from './agenda.ts'
 import type { VariableValue } from './variable.ts'
 import type { RelationshipDefinition } from './relationship.ts'
 import type { CharacterStart } from './state.ts'
+import type { VisualIdentityInput } from './visual.ts'
 
 export const CHARACTER_ROLES = ['playable', 'npc'] as const
 export const CHARACTER_TIERS = ['principal', 'supporting', 'background'] as const
@@ -44,6 +45,8 @@ export interface CharacterDefinition {
   personality: string
   background: string
   appearance: string
+  /** Stable visual facts; current expression, clothing, activity and surroundings do not belong here. */
+  visualIdentity?: VisualIdentityInput
   speech: CharacterSpeech
   start: CharacterStart
   /** How this character stands towards others of the world, by their ids. */

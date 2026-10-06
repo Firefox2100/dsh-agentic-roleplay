@@ -25,6 +25,8 @@ export const FORM_FIELDS = [
   { path: ['rewind', 'keepSnapshots'], kind: 'integer', label: 'rewindKeep', help: 'rewindKeepHelp' },
   { path: ['preview', 'enabled'], kind: 'flag', label: 'previewEnabled', help: 'previewEnabledHelp' },
   { path: ['suggestions', 'count'], kind: 'integer', label: 'suggestionsCount', help: 'suggestionsCountHelp' },
+  { path: ['images', 'mode'], kind: 'choice', label: 'imagesMode', help: 'imagesModeHelp', choices: [{ value: 'off', label: 'imagesOff' }, { value: 'manual', label: 'imagesManual' }, { value: 'every-turn', label: 'imagesEveryTurn' }] },
+  { path: ['images', 'references'], kind: 'choice', label: 'imageReferences', help: 'imageReferencesHelp', choices: [{ value: 'text-only', label: 'imageReferencesText' }, { value: 'prefer-reference', label: 'imageReferencesPrefer' }, { value: 'require-reference', label: 'imageReferencesRequire' }] },
   { path: ['offstage', 'perTurn'], kind: 'integer', label: 'offstagePerTurn', help: 'offstagePerTurnHelp' },
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'limitRatio'], kind: 'percent', label: 'limitRatio', help: 'limitRatioHelp' },

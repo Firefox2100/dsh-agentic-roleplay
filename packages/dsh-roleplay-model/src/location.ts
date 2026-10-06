@@ -1,4 +1,5 @@
 import type { CharacterId } from './session.ts'
+import type { VisualIdentityInput } from './visual.ts'
 
 export type LocationId = number
 export type ExitId = number
@@ -111,6 +112,7 @@ export interface LocationDefinition {
   id: string
   name: string
   description: string
+  visualIdentity?: VisualIdentityInput
   /** The id of the place it is in. */
   parent?: string
   features: LocationFeature[]

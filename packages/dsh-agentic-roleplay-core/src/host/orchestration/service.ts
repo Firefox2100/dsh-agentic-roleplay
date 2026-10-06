@@ -2,6 +2,7 @@ import { Service, type Context } from '@deepseek-ai/cordis'
 import type { Boundaries } from './boundaries.ts'
 import { defaultBoundaries } from './defaults.ts'
 import type { Timelines } from '../timeline/service.ts'
+import type { ImageJobs } from '../images/jobs.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -24,6 +25,9 @@ export class RoleplayOrchestration extends Service {
 
   /** What the story's turns are and taking the story back to one; there while the orchestration is. */
   timelines: Timelines | undefined
+
+  /** Background scene illustration jobs; there while the orchestration is mounted. */
+  images: ImageJobs | undefined
 
   constructor(ctx: Context) {
     super(ctx, 'roleplayOrchestration')

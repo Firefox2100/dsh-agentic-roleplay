@@ -123,6 +123,7 @@ export function registerTranscript(ctx: Context): void {
     scope.slots.inject('conversation.chat.node', () => scope.slots.register({
       name: 'conversation.chat.node',
       key: NARRATION_NODE,
+      inject: (sessionId: string) => ({ sessionId }),
     }, narrationNode(t)))
   })
 }

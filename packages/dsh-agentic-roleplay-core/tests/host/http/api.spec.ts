@@ -102,6 +102,9 @@ beforeEach(async () => {
         if (notesError !== undefined) throw notesError
         return [{ kind: 'suggestions', turn: 2, lines: [`from ${id}`] }]
       },
+      imageStatus: id => Promise.resolve({ node: 'n2', mode: 'manual', state: 'absent', images: [], message: id }),
+      generateImage: () => Promise.resolve({ node: 'n2', mode: 'manual', state: 'generating', images: [] }),
+      imageFile: () => Promise.resolve({ file: join(base, 'worlds', 'harbor', 'media', 'files', 'm.png'), size: 9 }),
       rename: (id, name) => {
         if (archiveError !== undefined) return Promise.reject(archiveError)
         archived.push(`rename ${id} ${name}`)
@@ -454,6 +457,31 @@ describe('roleplay API', () => {
       expect((await fetch(url())).status).toBe(401)
       allowed = true
       expect((await fetch(url(), { method: 'POST' })).status).toBe(405)
+    })
+  })
+
+  describe('scene images', () => {
+    const url = () => `${origin}/sessions/images?id=abc&node=n2`
+
+    it('reports status, starts generation and serves the immutable PNG', async () => {
+      const status = await fetch(url())
+      expect(status.status).toBe(200)
+      expect(await status.json()).toEqual({ node: 'n2', mode: 'manual', state: 'absent', images: [], message: 'abc' })
+      const started = await fetch(url(), { method: 'POST' })
+      expect(started.status).toBe(202)
+      expect(await started.json()).toMatchObject({ node: 'n2', state: 'generating' })
+      const image = await fetch(`${origin}/sessions/images/file?id=abc&node=n2&serial=1`)
+      expect(image.status).toBe(200)
+      expect(image.headers.get('content-type')).toBe('image/png')
+      expect(image.headers.get('cache-control')).toContain('immutable')
+      expect(await image.text()).toBe('png-bytes')
+    })
+
+    it('requires authentication and the declared methods', async () => {
+      allowed = false
+      expect((await fetch(url())).status).toBe(401)
+      allowed = true
+      expect((await fetch(url(), { method: 'DELETE' })).status).toBe(405)
     })
   })
 

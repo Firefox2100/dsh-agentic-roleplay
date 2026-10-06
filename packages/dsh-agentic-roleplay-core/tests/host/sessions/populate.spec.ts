@@ -91,6 +91,14 @@ describe('populateCharacters', () => {
     populateCharacters(session, [], 'x')
     expect(session.characters.list()).toEqual([])
   })
+
+  it('copies authored visual identities into their own session table', () => {
+    const visualIdentity = { globalId: 'person-eleanor', description: 'Sharp features.', tags: ['grey eyes'], negativeTags: [] }
+    populateCharacters(session, [definition({ visualIdentity })], 'nobody')
+    const character = session.characters.getBySourceId('eleanor-graves')!
+    expect(session.visualIdentities.get('character', character.id)).toMatchObject({ ...visualIdentity, version: 1 })
+    expect(character).not.toHaveProperty('visualIdentity')
+  })
 })
 
 const open = { oneWay: false, state: 'open' as const, note: '' }

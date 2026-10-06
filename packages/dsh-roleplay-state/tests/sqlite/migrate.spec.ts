@@ -29,6 +29,17 @@ describe('migrate', () => {
     expect(MIGRATIONS.map(migration => migration.version)).toEqual(MIGRATIONS.map((_, index) => index + 1))
   })
 
+  it('adds visual identities to an existing version 1 session', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    db.exec(MIGRATIONS[0]!.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 1')
+    migrate(db)
+    expect(inspect(db).version).toBe(2)
+    expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'visual_identities'")?.name).toBe('visual_identities')
+    db.close()
+  })
+
   it('refuses a database that holds something else', () => {
     const db = nodeSqliteDriver.open(':memory:')
     db.exec('CREATE TABLE other (x TEXT)')

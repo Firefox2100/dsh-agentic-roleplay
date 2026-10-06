@@ -116,6 +116,13 @@ describe('parseCharacterFile', () => {
     expect(parse({ id: ' mira ', name: 'Mira' }, 'folder').id).toBe('mira')
   })
 
+  it('reads an optional provider-neutral visual identity', () => {
+    expect(parse({ name: 'Mira', visual_identity: { global_id: 'person-mira', description: 'Long black hair and grey eyes.', tags: ['black hair', ' grey eyes '], negative_tags: ['blue eyes'] } }).visualIdentity).toEqual({
+      globalId: 'person-mira', description: 'Long black hair and grey eyes.', tags: ['black hair', 'grey eyes'], negativeTags: ['blue eyes'],
+    })
+    expect(issues({ name: 'Mira', visual_identity: { tags: [] } })).toEqual(['visual_identity.description: is required'])
+  })
+
   it('starts the immediate emotion at the baseline when it is not given', () => {
     const emotion = parse({ name: 'A', start: { emotion: { baseline: { arousal: 0.5 } } } }).start.emotion
     expect(emotion).toEqual({

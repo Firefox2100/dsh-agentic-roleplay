@@ -7,6 +7,7 @@ import {
   type NewSession,
 } from '../../src/index.ts'
 import { newCharacter, newIntent, steppingClock } from '../helpers.ts'
+import { APPLICATION_ID, MIGRATIONS } from '../../src/sqlite/schema.ts'
 
 let dir: string
 let file: string
@@ -65,9 +66,9 @@ describe('session store', () => {
   })
 
   it('opens an older schema and brings it up to date', () => {
-    createSessionStore(file, session).close()
     const db = nodeSqliteDriver.open(file)
-    db.exec('PRAGMA user_version = 0')
+    db.exec(MIGRATIONS[0]!.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
     db.exec('PRAGMA user_version = 1')
     db.close()
     openSessionStore(file).close()

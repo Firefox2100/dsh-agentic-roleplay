@@ -1,5 +1,6 @@
 import type { CharacterId } from './session.ts'
 import type { LocationId } from './location.ts'
+import type { VisualIdentityInput } from './visual.ts'
 
 export type ItemId = number
 
@@ -86,6 +87,7 @@ export interface ItemDefinition {
   id: string
   name: string
   description: string
+  visualIdentity?: VisualIdentityInput
   quantity: number
   unique: boolean
   quality: string

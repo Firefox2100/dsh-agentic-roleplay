@@ -54,7 +54,7 @@ export interface ChatSettings {
     perTurn: number
   }
   reasoning: {
-    /** How hard the characters, the record keeper and the world author think, as a level the model offers (for example `off` or `low`); empty is the game master's own level. Thinking is most of what a turn costs on a slow model. */
+    /** How hard the child agents think, as a level the model offers (for example `off` or `low`); empty is the game master's own level. */
     children: string
   }
   triggers: {
@@ -82,6 +82,12 @@ export interface ChatSettings {
   suggestions: {
     /** How many things the player could do next are offered after each turn, to pick from and fill the input; 0 offers none. */
     count: number
+  }
+  images: {
+    /** Whether scene illustrations are disabled, requested by the player, or generated after every delivered turn. */
+    mode: 'off' | 'manual' | 'every-turn'
+    /** Whether transient generation ignores, uses when available, or requires canonical reference images. */
+    references: 'text-only' | 'prefer-reference' | 'require-reference'
   }
   embedding: {
     /**
@@ -136,6 +142,7 @@ export const SETTINGS_SPEC = {
   rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
+  images: { mode: choice(['off', 'manual', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference') },
   embedding: { options: record() },
 } as const satisfies Spec
 

@@ -70,9 +70,10 @@ export function populateRoutines(session: Session, characters: readonly Characte
 /** Put a world's places into a new session: each inside the one it belongs to, with the ways between them (both ways unless the file says one way). */
 export function populateLocations(session: Session, locations: readonly LocationDefinition[]): void {
   const ordered = parentsFirst(locations)
-  for (const { id, name, description, parent, features } of ordered) {
+  for (const { id, name, description, parent, features, visualIdentity } of ordered) {
     const parentId = parent === undefined ? undefined : session.locations.getBySourceId(parent)?.id
-    session.locations.add({ sourceId: id, name, description, features, ...(parentId === undefined ? {} : { parentId }) })
+    const stored = session.locations.add({ sourceId: id, name, description, features, ...(parentId === undefined ? {} : { parentId }) })
+    if (visualIdentity !== undefined) session.visualIdentities.set('location', stored.id, visualIdentity)
   }
   for (const location of ordered) {
     const from = session.locations.getBySourceId(location.id)!
@@ -91,8 +92,9 @@ export function populateLocations(session: Session, locations: readonly Location
  * is `playerId`; the agent controls everyone else.
  */
 export function populateCharacters(session: Session, characters: readonly CharacterDefinition[], playerId: string): void {
-  for (const { id, start, relationships: _relationships, routine: _routine, ...identity } of characters) {
+  for (const { id, start, relationships: _relationships, routine: _routine, visualIdentity, ...identity } of characters) {
     const character = session.characters.add({ ...identity, sourceId: id, control: id === playerId ? 'player' : 'agent' })
+    if (visualIdentity !== undefined) session.visualIdentities.set('character', character.id, visualIdentity)
     const { intents, place, emotion, ...state } = start
     session.characterStates.create(character.id, state)
     if (emotion !== undefined) {
@@ -132,6 +134,7 @@ export function populateItems(session: Session, items: readonly ItemDefinition[]
       ...(definition.container === undefined ? {} : { container: { state: definition.container.state } }),
       ...(definition.owner === undefined ? {} : { ownerId: session.characters.getBySourceId(definition.owner)!.id }),
     }, holder)
+    if (definition.visualIdentity !== undefined) session.visualIdentities.set('item', item.id, definition.visualIdentity)
     made.set(definition.id, item.id)
   }
   for (const definition of items) {

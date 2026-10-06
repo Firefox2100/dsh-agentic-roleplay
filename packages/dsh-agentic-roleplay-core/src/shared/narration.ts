@@ -11,6 +11,8 @@ export interface TurnOutput {
   repaired: boolean
   /** For an out-of-character command: whether it was allowed, and what the player is told of it. */
   ooc?: OocRuling
+  /** Stable identity of this generation in the roleplay timeline. Opening messages predate the timeline and omit it. */
+  timelineNode?: string
 }
 
 /*
@@ -64,7 +66,8 @@ export function decodeOutput(text: string): TurnOutput | undefined {
     if (!Array.isArray(segments) || !segments.every(isSegment) || typeof value['repaired'] !== 'boolean') return undefined
     const ooc = value['ooc']
     const ruled = typeof ooc === 'object' && ooc !== null && typeof (ooc as Record<string, unknown>)['legal'] === 'boolean' && typeof (ooc as Record<string, unknown>)['note'] === 'string' ? ooc as OocRuling : undefined
-    return { segments, repaired: value['repaired'], ...(ruled === undefined ? {} : { ooc: ruled }) }
+    const timelineNode = typeof value['timelineNode'] === 'string' ? value['timelineNode'] : undefined
+    return { segments, repaired: value['repaired'], ...(ruled === undefined ? {} : { ooc: ruled }), ...(timelineNode === undefined ? {} : { timelineNode }) }
   } catch {
     return undefined
   }

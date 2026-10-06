@@ -87,3 +87,29 @@
 .oocLabel {
   font-weight: 500;
 }
+
+.images {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 8px 0 12px;
+}
+
+.sceneImage {
+  display: block;
+  width: min(100%, 720px);
+  height: auto;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+}
+
+.imageStatus,
+.imageError {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.imageError {
+  color: var(--dsw-alias-state-error-primary);
+}
