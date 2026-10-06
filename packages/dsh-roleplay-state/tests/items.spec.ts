@@ -351,4 +351,19 @@ describe('reading things back', () => {
     expect(items.find(entry => entry.key === 'chest')).toMatchObject({ state: 'locked' })
     expect(items.find(entry => entry.key === 'letter')).toMatchObject({ hidden: true })
   })
+
+  it('takes a blank for a field left out: a model that sends an empty string means it has nothing to say, not a slot or a place of that name', () => {
+    const parsed = parseRecordsEdit({ turn: 1, items: [{ key: 'key', name: 'Key', wearable: '', owner: ' ', worn_position: '', held_by: '', inside: '', at: { location: 'bar', feature: '', position: '  ' } }] })
+    const spec = parsed.items?.[0]
+    expect(spec).toMatchObject({ key: 'key', at: { location: 'bar' } })
+    for (const field of ['wearable', 'owner', 'wornPosition', 'heldBy', 'inside']) expect(spec).not.toHaveProperty(field)
+    expect(spec?.at).toEqual({ location: 'bar' })
+    expect(parseRecordsEdit({ turn: 1, items: [{ key: 'key', name: 'Key', at: { location: '' } }] }).items?.[0]).not.toHaveProperty('at')
+  })
+
+  it('says, when it asks where a thing starts, what each way to say it looks like and whether there is none or too many', () => {
+    const problems = (items: unknown[]): string => problemsOf(parseRecordsEdit({ turn: 2, items })).join('\n')
+    expect(problems([{ key: 'k', name: 'K' }])).toMatch(/at \(lying in a place: \{"location": place key\}\), held_by \(a character's key\).*it has none yet/)
+    expect(problems([{ key: 'k', name: 'K', held_by: 'bob', at: { location: 'bar' } }])).toMatch(/it has more than one/)
+  })
 })

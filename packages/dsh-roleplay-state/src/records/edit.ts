@@ -507,7 +507,7 @@ function createItems(target: RecordsTarget, edit: RecordsEdit): { keys: string[]
     for (const key of list(spec.container?.openedBy)) if (!known(key)) problems.push(`${where}.container.opened_by: there is no item "${key}"`)
     if (spec.owner !== undefined && characterFor(spec.owner) === undefined) problems.push(`${where}.owner: there is no character "${spec.owner}"`)
     const holders = [spec.at, spec.heldBy, spec.wornBy, spec.inside].filter(holder => holder !== undefined).length
-    if (holders !== 1) problems.push(`${where}: say where it starts with exactly one of at, held_by, worn_by or inside`)
+    if (holders !== 1) problems.push(`${where}: say where it starts with exactly one of at (lying in a place: {"location": place key}), held_by (a character's key), worn_by (a character's key) or inside (a container item's key)${holders === 0 ? '; it has none yet' : '; it has more than one'}`)
     if (spec.at !== undefined) {
       const place = placeFor(spec.at.location)
       if (place === undefined) problems.push(`${where}.at: there is no place "${spec.at.location}"`)

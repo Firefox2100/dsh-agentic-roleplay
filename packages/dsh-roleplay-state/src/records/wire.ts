@@ -57,6 +57,8 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     return found as string[]
   }
   const text = (entry: Wire, key: string): string | undefined => (typeof entry[key] === 'string' ? entry[key] : undefined)
+  /** A key, slot or position the model may leave blank instead of leaving out: blank is nothing given, not a name that does not exist. */
+  const named = (entry: Wire, key: string): string | undefined => { const value = text(entry, key)?.trim(); return value === undefined || value === '' ? undefined : value }
   const num = (entry: Wire, key: string): number | undefined => (typeof entry[key] === 'number' ? entry[key] : undefined)
   const perceived = (entry: Wire): PerceivedBy[] | undefined => {
     const found = entry['perceived_by']
@@ -110,10 +112,10 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     })),
     items: array('items').map((entry): NewItemSpec => defined<NewItemSpec>({
       key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', description: text(entry, 'description'), quantity: num(entry, 'quantity'), unique: bool(entry, 'unique'),
-      quality: text(entry, 'quality'), notable: bool(entry, 'notable'), hidden: bool(entry, 'hidden'), wearable: text(entry, 'wearable'), owner: text(entry, 'owner'), note: text(entry, 'note'),
+      quality: text(entry, 'quality'), notable: bool(entry, 'notable'), hidden: bool(entry, 'hidden'), wearable: named(entry, 'wearable'), owner: named(entry, 'owner'), note: text(entry, 'note'),
       container: isObject(entry['container']) ? defined<NonNullable<NewItemSpec['container']>>({ state: text(entry['container'], 'state') as ContainerState | undefined, openedBy: strings(entry['container'], 'opened_by') }) : undefined,
-      at: isObject(entry['at']) ? defined<NonNullable<NewItemSpec['at']>>({ location: text(entry['at'], 'location') ?? '', position: text(entry['at'], 'position'), feature: text(entry['at'], 'feature') }) : undefined,
-      heldBy: text(entry, 'held_by'), wornBy: text(entry, 'worn_by'), wornPosition: text(entry, 'worn_position'), inside: text(entry, 'inside'), insidePosition: text(entry, 'inside_position'),
+      at: isObject(entry['at']) && named(entry['at'], 'location') !== undefined ? defined<NonNullable<NewItemSpec['at']>>({ location: named(entry['at'], 'location') ?? '', position: named(entry['at'], 'position'), feature: named(entry['at'], 'feature') }) : undefined,
+      heldBy: named(entry, 'held_by'), wornBy: named(entry, 'worn_by'), wornPosition: named(entry, 'worn_position'), inside: named(entry, 'inside'), insidePosition: named(entry, 'inside_position'),
     })),
     slots: array('slots').map((entry): Slot => ({ id: text(entry, 'id') ?? '', name: text(entry, 'name') ?? '', capacity: num(entry, 'capacity') ?? 0 })),
     itemChanges: array('item_changes').map((entry): ItemChange => defined<ItemChange>({
@@ -574,7 +576,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
       },
       items: {
         type: 'array',
-        description: 'Things the story makes up, only when it genuinely needs them: an object handed over, found or drawn. Each starts in exactly one of at, held_by, worn_by or inside.',
+        description: 'Things the story makes up, only when it genuinely needs them: an object handed over, found or drawn. Each starts in exactly one of at (lying in a place), held_by (carried by a character), worn_by (worn by a character) or inside (in a container item). Leave out every field you have nothing to say about; never send an empty string.',
         items: {
           type: 'object',
           properties: {
@@ -589,7 +591,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
             wearable: { type: 'string', description: 'The slot it is worn in.' },
             container: { type: 'object', properties: { state: { type: 'string', enum: [...CONTAINER_STATES] }, opened_by: { type: 'array', items: { type: 'string' } } }, additionalProperties: false },
             owner: character,
-            at: { type: 'object', properties: { location: placeKey, position: { type: 'string' }, feature: { type: 'string' } }, required: ['location'], additionalProperties: false },
+            at: { type: 'object', description: 'It lies in this place: {"location": the place\'s key, "feature": a feature of the place such as its counter, "position": in words}.', properties: { location: placeKey, position: { type: 'string' }, feature: { type: 'string' } }, required: ['location'], additionalProperties: false },
             held_by: character,
             worn_by: character,
             worn_position: { type: 'string' },

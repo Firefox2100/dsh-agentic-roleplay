@@ -21,6 +21,9 @@ const DEFAULT_MAX_CALLS = 40
 const MAX_REMINDERS = 2
 /** A child that goes on calling tools this many times past its budget, in spite of being told to submit, is stopped: it would otherwise loop for as long as the model keeps at it. */
 const OVERRUN = 5
+/** The same call, with the same arguments, that failed before is refused after this many repeats, and the child is stopped at twice that: the model is not reading the reasons it was given. */
+const REPEATS_TOLD = 1
+const REPEATS_STOPPED = 4
 
 /** A one-shot agent of the game master, with tools of its own. */
 export interface ChildTask {
@@ -64,17 +67,34 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
   let reminders = 0
   let stopped: (() => void) | undefined
   let overran = false
+  let previous: { name: string; args: string; failed: boolean; repeats: number } | undefined
   const budget = task.maxCalls ?? DEFAULT_MAX_CALLS
   const counted = (tool: ToolDefinition): ToolDefinition => ({
     ...tool,
-    execute: (args, exec) => {
+    execute: async (args, exec) => {
       calls += 1
       if (calls > budget + OVERRUN) {
         overran = true
         stopped?.()
       }
       if (calls > budget) throw new Error(`you have made ${budget} calls: submit your result now and say what is still missing`)
-      return tool.execute(args, exec)
+      const signature = JSON.stringify(args)
+      const repeats = previous?.name === tool.name && previous.args === signature && previous.failed ? previous.repeats + 1 : 0
+      if (repeats >= REPEATS_STOPPED) {
+        overran = true
+        stopped?.()
+      }
+      if (repeats >= REPEATS_TOLD) {
+        previous = { name: tool.name, args: signature, failed: true, repeats }
+        throw new Error('this is exactly the call that just failed, with the same arguments, so it fails for the same reasons: read the reasons the last result gave and change the arguments to fix every one of them')
+      }
+      previous = { name: tool.name, args: signature, failed: false, repeats }
+      try {
+        return await tool.execute(args, exec)
+      } catch (error) {
+        if (previous !== undefined) previous.failed = true
+        throw error
+      }
     },
   })
   const submit: ToolDefinition = {
@@ -125,7 +145,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     await handle.dispose()
   }
   if (signal.aborted) throw new Error('cancelled')
-  if (overran && submitted === undefined) throw new Error(`the agent went on past its ${budget} calls without submitting a result and was stopped`)
+  if (overran && submitted === undefined) throw new Error(`the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
   if (submitted === undefined) throw new Error(`the agent stopped without submitting a result (${calls} call(s))`)
   return submitted.value as T
 }

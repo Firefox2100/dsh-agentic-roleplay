@@ -106,7 +106,7 @@ interface Script {
    * character, makes one that is not usable at first (no place) and fixes it when refused, declines, says it made
    * something it did not, or makes two at once.
    */
-  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops'; need?: string }
+  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops' | 'repeats'; need?: string }
   /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
   things?: 'take' | 'conflict' | 'unlock'
   /** How the game master deals with time: says a round took ten minutes; or skips to seven in the morning before it delivers. */
@@ -238,6 +238,7 @@ function authorAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
   const mode = script.expand?.author ?? 'creates'
   const submitCreated = call('a-submit', 'submit_result', { outcome: 'created', summary: 'Made Mira Voss and connected her.' })
   const place = { location: 'street', position: 'by the bar door' }
+  if (mode === 'repeats') return call(`a-rep-${edits}`, 'edit_world', { turn, items: [{ key: 'note', name: 'Folded note', wearable: '' }] })
   if (mode === 'loops') return call(`a-loop-${lints}`, 'world_lint', {})
   if (mode === 'declines') return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'The innkeeper already serves; no new person is needed.' })
   if (mode === 'pointless') {
@@ -491,7 +492,16 @@ describe('a turn with the real agent loop', () => {
       const { adapter, session } = await playAuthored('loops')
       expect(authors(adapter).length).toBeLessThan(60)
       expect(session.characters.getBySourceId('mira')).toBeUndefined()
-      expect(masterSaw(adapter)).toContain('went on past its 30 calls without submitting a result and was stopped')
+      expect(masterSaw(adapter)).toContain('went on past its 30 calls, or kept repeating a call that failed, without submitting a result and was stopped')
+    })
+
+    it('is stopped early when it sends the call that just failed again and again, being told so first, and the game master is told it could not be made', async () => {
+      const { adapter, session } = await playAuthored('repeats')
+      const author = authors(adapter)
+      expect(author.length).toBeLessThan(12)
+      expect(JSON.stringify(author.at(-1)!.messages)).toContain('this is exactly the call that just failed')
+      expect(session.items.getBySourceId('note')).toBeUndefined()
+      expect(masterSaw(adapter)).toContain('kept repeating a call that failed')
     })
 
     it('can decline, and the game master is told to work with what exists', async () => {
