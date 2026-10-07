@@ -1,5 +1,5 @@
 import { Context } from '@deepseek-ai/cordis'
-import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, isSessionId } from 'dsh-roleplay-state'
@@ -104,9 +104,21 @@ describe('startSession', () => {
     expect(session.intents.list(arthur?.id ?? 0).map(intent => intent.name)).toEqual(['Investigate'])
   })
 
+  it('copies authored visual identity and its canonical portrait into the independent session', async () => {
+    const characterFile = join(root, 'worlds', 'blackwater folder', 'characters', 'arthur', 'character.json')
+    await write(characterFile, { name: 'Arthur Moore', role: 'playable', visual_identity: { description: 'A weathered face.', tags: ['grey coat'], negative_tags: ['hat'], global_id: 'person-arthur' } })
+    const portrait = join(root, 'worlds', 'blackwater folder', 'images', 'global', 'person-arthur', 'reference.png')
+    await write(portrait, 'portrait')
+    const started = await startSession(deps, playAsArthur)
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    const arthur = session.characters.getBySourceId('arthur')!
+    expect(session.visualIdentities.get('character', arthur.id)).toMatchObject({ description: 'A weathered face.', tags: ['grey coat'], negativeTags: ['hat'], globalId: 'person-arthur', version: 1 })
+    expect(await readFile(join(root, 'sessions', started.id, 'images', 'global', 'person-arthur', 'reference.png'), 'utf8')).toBe('portrait')
+  })
+
   it('creates the chat of the new session, named after it', async () => {
     const started = await startSession(deps, { ...playAsArthur, name: 'Night one' })
-    expect(ensured).toEqual([[started.id, 'Night one', undefined]])
+    expect(ensured).toEqual([[started.id, 'Night one', [{ type: 'narration', text: 'The story begins.' }]]])
     expect((await startSession(deps, playAsArthur)).name).toBe('The Blackwater Observatory')
     expect(ensured.at(-1)?.[1]).toBe('The Blackwater Observatory')
   })

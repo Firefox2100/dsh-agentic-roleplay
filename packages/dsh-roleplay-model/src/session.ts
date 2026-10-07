@@ -54,6 +54,23 @@ export interface Character extends Omit<CharacterDefinition, 'id' | 'start'> {
 
 export type NewCharacter = Omit<Character, 'id' | 'createdAt'>
 
+/** What of a character can be edited: who it is, not who controls it. A field left out stays; `null` takes an optional one away. */
+export interface CharacterPatch {
+  name?: string
+  aliases?: string[]
+  age?: string | null
+  gender?: string | null
+  pronouns?: string | null
+  kind?: Character['kind']
+  tier?: Character['tier']
+  role?: Character['role']
+  summary?: string
+  personality?: string
+  background?: string
+  appearance?: string
+  speech?: Character['speech']
+}
+
 export interface CharacterFilter {
   role?: Character['role']
   tier?: Character['tier']

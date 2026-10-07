@@ -1,0 +1,39 @@
+.panel { position: relative; display: flex; flex: 1 1 0; flex-direction: column; min-height: 0; }
+.toolbar { display: flex; gap: 4px; align-items: center; padding: 8px 16px; border-bottom: 1px solid var(--dsw-alias-border-l2); }
+.filter { padding: 5px 9px; border: 0; border-radius: var(--dsw-radius-sm); background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; }
+.filterOn { color: var(--dsw-alias-state-business-primary); background: var(--dsw-alias-bg-layer-2); }
+.space { flex: 1; }
+.perspective { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.perspective select { max-width: 150px; padding: 4px 6px; border: 1px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: transparent; color: inherit; }
+.workspace { display: grid; grid-template-columns: minmax(220px, 34%) minmax(320px, 1fr); flex: 1 1 0; min-height: 0; }
+.list { overflow-y: auto; border-right: 1px solid var(--dsw-alias-border-l3); }
+.edge { display: flex; width: 100%; flex-direction: column; gap: 2px; padding: 10px 16px; border: 0; border-bottom: 1px solid var(--dsw-alias-border-l4); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.edgeOn { background: var(--dsw-alias-bg-layer-2); }
+.edgeTitle { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.edgeKind { font-size: 11px; color: var(--dsw-alias-label-tertiary); }
+.empty { padding: 20px; color: var(--dsw-alias-label-tertiary); }
+.inspector { min-width: 0; overflow-y: auto; padding: 24px 24px 120px; }
+.head h2 { margin: 0 0 8px; font-size: 17px; }
+.entities { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--dsw-alias-label-secondary); }
+.notice { margin: 24px 0; color: var(--dsw-alias-label-secondary); }
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
+.form label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.form select, .form textarea { box-sizing: border-box; width: 100%; padding: 7px 9px; border: 1px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: transparent; color: inherit; font: inherit; }
+.wide { grid-column: 1 / -1; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(90px, 1fr)); grid-column: 1 / -1; gap: 10px; }
+.check { flex-direction: row !important; align-items: center; align-self: end; min-height: 32px; }
+.actions { display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 28px; padding-top: 12px; border-top: 1px solid var(--dsw-alias-border-l4); }
+.status { margin-right: auto; color: var(--dsw-alias-label-secondary); }
+.error { margin-right: auto; color: var(--dsw-alias-state-error-primary); }
+.graph { position: relative; flex: 1 1 0; min-height: 360px; overflow: hidden; background: radial-gradient(circle, var(--dsw-alias-bg-layer-2), transparent 70%); }
+.graph svg { width: 100%; height: 100%; min-height: 520px; }
+.graphEdge { cursor: pointer; stroke: var(--dsw-alias-border-l1); stroke-width: 2; }
+.graphEdge:hover, .graphEdgeOn { stroke: var(--dsw-alias-state-business-primary); stroke-width: 4; }
+.node circle { fill: var(--dsw-alias-bg-layer-1); stroke: var(--dsw-alias-border-l1); stroke-width: 2; }
+.node_character circle { fill: color-mix(in srgb, var(--dsw-alias-state-business-primary) 18%, var(--dsw-alias-bg-layer-1)); }
+.node_location circle { fill: color-mix(in srgb, #4a9 20%, var(--dsw-alias-bg-layer-1)); }
+.node_item circle { fill: color-mix(in srgb, #c90 20%, var(--dsw-alias-bg-layer-1)); }
+.node_faction circle { fill: color-mix(in srgb, #96c 20%, var(--dsw-alias-bg-layer-1)); }
+.node text { fill: var(--dsw-alias-label-primary); font-size: 11px; pointer-events: none; }
+.graphInspector { position: absolute; right: 20px; bottom: 20px; box-sizing: border-box; width: min(480px, calc(100% - 40px)); max-height: 62%; overflow-y: auto; padding: 18px; border: 1px solid var(--dsw-alias-border-l2); border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-1); box-shadow: 0 8px 30px rgb(0 0 0 / 18%); }
+@media (max-width: 760px) { .workspace { grid-template-columns: 1fr; } .list { max-height: 220px; border-right: 0; border-bottom: 1px solid var(--dsw-alias-border-l3); } .metrics { grid-template-columns: repeat(2, 1fr); } }

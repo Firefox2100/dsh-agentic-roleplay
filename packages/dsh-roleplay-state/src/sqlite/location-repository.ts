@@ -177,9 +177,9 @@ export class SqliteLocationRepository implements LocationRepository {
     return guard(() => {
       const current = this.requireExit(id)
       if (patch.state !== undefined && !EXIT_STATES.includes(patch.state)) throw new InvalidValueError(`unknown exit state "${String(patch.state)}"`)
-      if (patch.travelSeconds !== undefined && (!Number.isInteger(patch.travelSeconds) || patch.travelSeconds < 0)) throw new InvalidValueError('travel time must be a whole number of seconds')
+      if (patch.travelSeconds !== undefined && patch.travelSeconds !== null && (!Number.isInteger(patch.travelSeconds) || patch.travelSeconds < 0)) throw new InvalidValueError('travel time must be a whole number of seconds')
       this.db.run('UPDATE exits SET description = ?, travel_seconds = ?, state = ?, note = ? WHERE id = ?', [
-        (patch.description ?? current.description).trim(), patch.travelSeconds ?? current.travelSeconds ?? null, patch.state ?? current.state, (patch.note ?? current.note).trim(), id,
+        (patch.description ?? current.description).trim(), patch.travelSeconds === undefined ? current.travelSeconds ?? null : patch.travelSeconds, patch.state ?? current.state, (patch.note ?? current.note).trim(), id,
       ])
       return this.requireExit(id)
     })

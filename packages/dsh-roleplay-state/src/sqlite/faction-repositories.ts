@@ -1,5 +1,5 @@
 import type {
-  Faction, FactionId, FactionIntent, FactionMembership, FactionRelationship, FactionState, FactionStatePatch,
+  Faction, FactionId, FactionIntent, FactionMembership, FactionPatch, FactionRelationship, FactionState, FactionStatePatch,
   Intent, IntentFilter, IntentPatch, MembershipPatch, MembershipStatus, NewFaction, NewFactionState, RelationshipPatch, SocialSubjectKind,
 } from 'dsh-roleplay-model'
 import type { Clock } from '../clock.ts'
@@ -36,6 +36,26 @@ export class SqliteFactionRepository implements FactionRepository {
   getBySourceId(sourceId: string): Faction | undefined { return this.read('WHERE source_id = ?', [sourceId])[0] }
   list(): Faction[] { return this.read('', []) }
   findByName(name: string): Faction[] { return this.read('WHERE name_key = ?1 OR id IN (SELECT faction_id FROM faction_aliases WHERE alias_key = ?1)', [lookupKey(name)]) }
+  update(id: FactionId, patch: FactionPatch): Faction {
+    const current = this.get(id)
+    if (current === undefined) throw new NotFoundError(`faction ${id} does not exist`)
+    return guard(() => this.db.transaction(() => {
+      const name = patch.name?.trim() ?? current.name
+      if (name === '') throw new InvalidValueError('a faction needs a name')
+      this.db.run('UPDATE factions SET name = ?, name_key = ?, summary = ?, description = ?, values_json = ?, structure = ? WHERE id = ?', [name, lookupKey(name), patch.summary ?? current.summary, patch.description ?? current.description, toJson(patch.values ?? current.values), patch.structure ?? current.structure, id])
+      if (patch.aliases !== undefined) {
+        this.db.run('DELETE FROM faction_aliases WHERE faction_id = ?', [id])
+        const stored = new Set<string>()
+        for (const alias of patch.aliases.map(value => value.trim()).filter(Boolean)) {
+          const key = lookupKey(alias)
+          if (stored.has(key) || key === lookupKey(name)) continue
+          this.db.run('INSERT INTO faction_aliases (faction_id, position, alias, alias_key) VALUES (?, ?, ?, ?)', [id, stored.size, alias, key])
+          stored.add(key)
+        }
+      }
+      return this.get(id)!
+    }))
+  }
 
   private read(where: string, params: readonly SqlValue[]): Faction[] {
     const rows = this.db.all<FactionRow>(`SELECT * FROM factions ${where} ORDER BY id`, params)

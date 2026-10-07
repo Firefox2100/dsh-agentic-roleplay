@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react'
-import { Button, IconRefreshOutlineRegular, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Button, IconChevronLeftOutlineRegular, IconRefreshOutlineRegular, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { pageCount, pageStart, pagingFor } from '../../paging/paging.ts'
 import type {} from '../../panel/slot-contract.ts'
 import { Pager } from '../../widgets/pager/Pager.tsx'
 import { ProblemList } from '../../widgets/problem-list/ProblemList.tsx'
 import { WorldCard } from '../../widgets/world-card/WorldCard.tsx'
+import { WorldEditor } from '../../world-editor/WorldEditor.tsx'
+import { worldSource } from './world-source.ts'
 import { StartSessionDialog } from './StartSessionDialog.tsx'
 import { useGridFit } from './use-grid-fit.ts'
 import type { WorldsFace } from './worlds-controller.ts'
@@ -22,6 +24,8 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const viewport = useRef<HTMLDivElement>(null)
   const { pageSize, scrolls } = pagingFor(useGridFit(viewport))
   const [requestedStart, setRequestedStart] = useState(0)
+  const [editing, setEditing] = useState<{ id: string; name: string } | undefined>()
+  const source = useMemo(() => (editing === undefined ? undefined : worldSource(editing.id)), [editing])
 
   useEffect(() => { load() }, [load])
 
@@ -34,6 +38,20 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
 
   const count = t(worlds.length === 1 ? 'countOne' : 'countOther', { count: worlds.length })
   const failedWithoutData = state.status === 'failed' && state.payload === undefined
+
+  if (editing !== undefined && source !== undefined) {
+    return (
+      <div className={css.page} data-testid="roleplay-world-editor">
+        <div className={css.editHeader}>
+          <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
+          <span className={css.editTitle}>{editing.name}</span>
+        </div>
+        <div className={css.editBody}>
+          <WorldEditor t={t} source={source} notEditable={t('worldMissing')} />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={css.page} data-testid="roleplay-worlds-page">
@@ -71,6 +89,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
                         world={world}
                         playLabel={t('play')}
                         onPlay={() => { openStartDialog(world.id, world.name) }}
+                        onOpen={() => { setEditing({ id: world.id, name: world.name }) }}
                       />
                     </li>
                   ))}

@@ -17,6 +17,7 @@ import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
 import { factionProblems, knowledgeProblems, populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
+import { inheritImages } from '../images/storage.ts'
 
 export const MAX_NAME_LENGTH = 200
 
@@ -111,6 +112,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())
       if (world.rules !== undefined) session.metadata.setValue(WORLD_RULES_KEY, world.rules)
     })
+    await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])
     writeSettings(sessionFolder(sessionsDir, id), settings)
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {
@@ -122,9 +124,12 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   return { id, chatSessionId, name, worldId: world.summary.id, worldName: world.summary.name, characterCount: characters.length }
 }
 
+/** What a story opens with when its world gives no opening: a chat with nothing in it is DSH's start screen, which has none of the story's tabs. */
+const DEFAULT_OPENING = 'The story begins.'
+
 /** The opening of the world with each speaker's name, or the reason it cannot be used. */
 function openingOf(world: { directory: string; summary: { name: string }; opening?: readonly OpeningSegment[] }, characters: readonly { id: string; name: string }[]): NarrationSegment[] | undefined {
-  if (world.opening === undefined) return undefined
+  if (world.opening === undefined) return [{ type: 'narration', text: DEFAULT_OPENING }]
   const problems: WorldProblem[] = []
   const segments = world.opening.map((segment): NarrationSegment => {
     if (segment.type === 'narration') return segment

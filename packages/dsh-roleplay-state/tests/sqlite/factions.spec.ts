@@ -13,8 +13,9 @@ describe('factions', () => {
     store.factionStates.create(watch.id, { publicState: 'Patrolling.', innerState: 'Short of people.' })
     store.factionMemberships.upsert(watch.id, alice.id, { role: 'officer', rank: 'constable', public: false, commitment: 0.8 }, 2)
     store.factionIntents.add(watch.id, { type: 'agenda', name: 'Secure the harbour', description: '', status: 'active', horizon: 'day', priority: 0.8, urgency: 0.6, plan: ['Increase patrols.'], openThreads: [], constraints: [] })
+    expect(store.factions.update(watch.id, { name: 'Night Watch', aliases: ['Watchmen'], values: ['order', 'duty'] })).toMatchObject({ name: 'Night Watch', aliases: ['Watchmen'], values: ['order', 'duty'] })
 
-    expect(store.factions.findByName('the watch')).toEqual([watch])
+    expect(store.factions.findByName('watchmen')).toHaveLength(1)
     expect(store.factionStates.get(watch.id)).toMatchObject({ publicState: 'Patrolling.', innerState: 'Short of people.' })
     expect(store.factionMemberships.ofCharacter(alice.id)).toEqual([{ factionId: watch.id, characterId: alice.id, role: 'officer', rank: 'constable', status: 'active', public: false, commitment: 0.8, joinedTurn: 2 }])
     expect(store.factionIntents.list(watch.id)[0]).toMatchObject({ factionId: watch.id, name: 'Secure the harbour' })

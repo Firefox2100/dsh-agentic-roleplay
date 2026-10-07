@@ -1,4 +1,5 @@
 import type {
+  CharacterPatch,
   NewTriggerNote, Trigger, TriggerDefinition, TriggerId, TriggerNote, TriggerNoteKind, TriggerStatus,
   StoredVariable, VariableDefinition, VariableDefinitionInput, VariableSubject, VariableValue,
   Engagement, EngagementFilter, EngagementId, EngagementPatch, NewEngagement, RoutineWindow, StoredRoutineWindow,
@@ -58,7 +59,7 @@ import type {
   VisualSubjectKind,
   EntityKnowledge,
   KnowledgeKind,
-  Faction, FactionId, NewFaction, FactionState, NewFactionState, FactionStatePatch,
+  Faction, FactionId, FactionPatch, NewFaction, FactionState, NewFactionState, FactionStatePatch,
   FactionMembership, MembershipPatch, MembershipStatus, FactionRelationship, SocialSubjectKind, FactionIntent,
 } from 'dsh-roleplay-model'
 
@@ -98,6 +99,11 @@ export interface CharacterRepository {
   findByName(name: string): Character[]
   /** @throws {NotFoundError} */
   setControl(id: CharacterId, control: CharacterControl): Character
+  /**
+   * Change who a character is. A playable character cannot be a group or a background character.
+   * @throws {NotFoundError} when the character does not exist. @throws {InvalidValueError} when the name is blank or the result is not allowed.
+   */
+  update(id: CharacterId, patch: CharacterPatch): Character
 }
 
 export interface CharacterStateRepository {
@@ -121,6 +127,7 @@ export interface FactionRepository {
   getBySourceId(sourceId: string): Faction | undefined
   list(): Faction[]
   findByName(name: string): Faction[]
+  update(id: FactionId, patch: FactionPatch): Faction
 }
 
 export interface FactionStateRepository {

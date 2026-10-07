@@ -1,8 +1,9 @@
 import { withDictionaries, type Dictionaries } from '../../i18n.ts'
 import { dictionaries as form, type SettingsFormKey } from '../../settings-form/locales.ts'
+import { dictionaries as editor, type WorldLocaleKey } from '../../world-editor/locales.ts'
 
 export type WorldsLocaleKey =
-  | SettingsFormKey | 'advanced' | 'advancedHelp'
+  | SettingsFormKey | WorldLocaleKey | 'advanced' | 'advancedHelp' | 'worldMissing'
   | 'nav' | 'loading' | 'loadFailed' | 'empty'
   | 'countOne' | 'countOther'
   | 'refresh' | 'refreshing'
@@ -12,7 +13,7 @@ export type WorldsLocaleKey =
   | 'startTitle' | 'sessionName' | 'playAs' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
 
-const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey>> = {
+const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKey>> = {
   en: {
     nav: 'Worlds',
     loading: 'Loading worlds…',
@@ -27,6 +28,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey>> = {
     pageOf: 'Page {page} of {pages}',
     problems: '{count} problem(s) found while reading worlds',
     play: 'Start a new session',
+    worldMissing: 'This world is no longer there.',
     chatNotOpened: 'Started the session "{name}", but could not open its chat: {message}',
     advanced: 'Advanced settings',
     advancedHelp: 'These are used from the first message. You can change them later in the chat\'s settings tab.',
@@ -56,6 +58,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey>> = {
     pageOf: '第 {page} 页，共 {pages} 页',
     problems: '读取世界卡时发现 {count} 个问题',
     play: '开始新存档',
+    worldMissing: '这个世界已经不存在了。',
     chatNotOpened: '已开始存档“{name}”，但无法打开对话：{message}',
     advanced: '高级设置',
     advancedHelp: '从第一条消息起就按这些设置运行，之后可在对话的“对话设置”页中修改。',
@@ -73,4 +76,4 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey>> = {
   },
 }
 
-export const dictionaries = withDictionaries(own, form)
+export const dictionaries = withDictionaries(withDictionaries(own, form), editor)

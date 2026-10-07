@@ -52,7 +52,7 @@ export interface Exit {
 }
 
 export type NewExit = Omit<Exit, 'id' | 'state' | 'note'> & { state?: ExitState; note?: string }
-export type ExitPatch = Partial<Pick<Exit, 'description' | 'travelSeconds' | 'state' | 'note'>>
+export type ExitPatch = Partial<Omit<Pick<Exit, 'description' | 'travelSeconds' | 'state' | 'note'>, 'travelSeconds'> & { travelSeconds: number | null }>
 
 /** The kinds of thing that can stand in a place. Characters now; items and containers are placed the same way. */
 export const PLACEABLE_KINDS = ['character'] as const

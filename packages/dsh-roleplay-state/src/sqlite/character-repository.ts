@@ -1,7 +1,7 @@
-import type { Character, CharacterControl, CharacterFilter, CharacterId, NewCharacter } from 'dsh-roleplay-model'
+import type { Character, CharacterControl, CharacterFilter, CharacterId, CharacterPatch, NewCharacter } from 'dsh-roleplay-model'
 import type { Clock } from '../clock.ts'
 import type { SqlDatabase, SqlValue } from '../driver/types.ts'
-import { NotFoundError } from '../errors.ts'
+import { InvalidValueError, NotFoundError } from '../errors.ts'
 import type { CharacterRepository } from '../repositories.ts'
 import { guard, lookupKey, parseStringList, toJson } from './support.ts'
 
@@ -116,6 +116,49 @@ export class SqliteCharacterRepository implements CharacterRepository {
     return guard(() => this.db.transaction(() => {
       if (this.db.run('UPDATE characters SET control = ? WHERE id = ?', [control, id]).changes === 0) {
         throw new NotFoundError(`character ${id} does not exist`)
+      }
+      return this.require(id)
+    }))
+  }
+
+  update(id: CharacterId, patch: CharacterPatch): Character {
+    return guard(() => this.db.transaction(() => {
+      const current = this.require(id)
+      const next: Character = {
+        ...current,
+        ...(patch.name === undefined ? {} : { name: patch.name.trim() }),
+        ...(patch.aliases === undefined ? {} : { aliases: patch.aliases }),
+        ...(patch.kind === undefined ? {} : { kind: patch.kind }),
+        ...(patch.tier === undefined ? {} : { tier: patch.tier }),
+        ...(patch.role === undefined ? {} : { role: patch.role }),
+        ...(patch.summary === undefined ? {} : { summary: patch.summary }),
+        ...(patch.personality === undefined ? {} : { personality: patch.personality }),
+        ...(patch.background === undefined ? {} : { background: patch.background }),
+        ...(patch.appearance === undefined ? {} : { appearance: patch.appearance }),
+        ...(patch.speech === undefined ? {} : { speech: patch.speech }),
+      }
+      for (const field of ['age', 'gender', 'pronouns'] as const) {
+        const value = patch[field]
+        if (value === undefined) continue
+        const text = value?.trim()
+        if (text === undefined || text === '') delete next[field]
+        else next[field] = text
+      }
+      if (next.name === '') throw new InvalidValueError('a character needs a name')
+      if (next.role === 'playable' && (next.kind === 'group' || next.tier === 'background')) throw new InvalidValueError('a playable character cannot be a group or a background character')
+      this.db.run(
+        `UPDATE characters SET name = ?, name_key = ?, age = ?, gender = ?, pronouns = ?, kind = ?, tier = ?, role = ?, summary = ?, personality = ?, background = ?, appearance = ?, speech_style = ?, speech_examples = ? WHERE id = ?`,
+        [next.name, lookupKey(next.name), next.age ?? null, next.gender ?? null, next.pronouns ?? null, next.kind, next.tier, next.role, next.summary, next.personality, next.background, next.appearance, next.speech.style, toJson(next.speech.examples), id],
+      )
+      if (patch.aliases !== undefined) {
+        this.db.run('DELETE FROM character_aliases WHERE character_id = ?', [id])
+        const stored = new Set<string>()
+        for (const alias of patch.aliases.map(entry => entry.trim()).filter(entry => entry !== '')) {
+          const key = lookupKey(alias)
+          if (stored.has(key)) continue
+          this.db.run('INSERT INTO character_aliases (character_id, position, alias, alias_key) VALUES (?, ?, ?, ?)', [id, stored.size, alias, key])
+          stored.add(key)
+        }
       }
       return this.require(id)
     }))

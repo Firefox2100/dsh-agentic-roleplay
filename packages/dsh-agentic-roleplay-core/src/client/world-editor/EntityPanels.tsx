@@ -1,0 +1,62 @@
+import { useState } from 'react'
+import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { VisualIdentityInput } from 'dsh-roleplay-model'
+import type { PlaceEdit, ThingEdit, WorldPlace, WorldState, WorldThing } from '../../shared/world-state.ts'
+import type { Translate } from './WorldEditor.tsx'
+import { RefusedEditError, type WorldSource } from './source.ts'
+import css from './CharactersPanel.module.css'
+
+type Status = { state: 'idle' | 'saving' | 'saved' | 'failed'; message?: string }
+const split = (value: string): string[] => value.split(',').map(part => part.trim()).filter(Boolean)
+const visual = (description: string, tags: string, negativeTags: string, globalId: string): VisualIdentityInput | null => description.trim() === '' ? null : { description: description.trim(), tags: split(tags), negativeTags: split(negativeTags), ...(globalId.trim() === '' ? {} : { globalId: globalId.trim() }) }
+
+function Tabs<T extends { key: string; name: string }>({ entries, chosen, choose, actions }: { entries: T[]; chosen?: string; choose: (key: string) => void; actions: React.ReactNode }) {
+  return <div className={css.tabs} role="tablist">{entries.map(entry => <button key={entry.key} type="button" role="tab" aria-selected={entry.key === chosen} className={`${css.tab} ${entry.key === chosen ? css.tabOn : ''}`} onClick={() => { choose(entry.key) }}>{entry.name}</button>)}<span className={css.tabsSpace} />{actions}</div>
+}
+
+function SaveBar({ t, dirty, status, save, reset }: { t: Translate; dirty: boolean; status: Status; save: () => void; reset: () => void }) {
+  if (!dirty && status.state === 'idle') return null
+  return <div className={css.bar} role="status"><span className={status.state === 'failed' ? css.error : css.barText}>{status.state === 'failed' ? t('saveFailed', { message: status.message ?? '' }) : dirty ? t('unsaved') : t('saved')}</span>{dirty && <Button variant="ghost" size="sm" disabled={status.state === 'saving'} onClick={reset}>{t('reset')}</Button>}{dirty && <Button variant="primary" size="sm" disabled={status.state === 'saving'} onClick={save}>{status.state === 'saving' ? t('saving') : t('save')}</Button>}</div>
+}
+
+type VisualDraft = { description: string; tags: string; negativeTags: string; globalId: string }
+
+function VisualFields({ t, value, change }: { t: Translate; value: VisualDraft; change: (value: VisualDraft) => void }) {
+  return <section className={css.section}><h3 className={css.sectionTitle}>{t('visualIdentity')}</h3><label className={css.field}><span className={css.label}>{t('visualDescription')}</span><textarea className={css.area} rows={3} value={value.description} onChange={event => { change({ ...value, description: event.target.value }) }} /></label><div className={css.grid}><label className={css.field}><span className={css.label}>{t('visualTags')}</span><Input value={value.tags} onChange={event => { change({ ...value, tags: event.target.value }) }} /></label><label className={css.field}><span className={css.label}>{t('visualNegativeTags')}</span><Input value={value.negativeTags} onChange={event => { change({ ...value, negativeTags: event.target.value }) }} /></label><label className={css.field}><span className={css.label}>{t('visualGlobalId')}</span><Input value={value.globalId} onChange={event => { change({ ...value, globalId: event.target.value }) }} /></label></div></section>
+}
+
+const visualDraft = (identity?: VisualIdentityInput) => ({ description: identity?.description ?? '', tags: identity?.tags.join(', ') ?? '', negativeTags: identity?.negativeTags.join(', ') ?? '', globalId: identity?.globalId ?? '' })
+
+export function PlacesPanel({ t, world, source, onChanged, actions }: { t: Translate; world: WorldState; source: WorldSource; onChanged: (world: WorldState) => void; actions: React.ReactNode }) {
+  const [chosen, setChosen] = useState<string>()
+  const [drafts, setDrafts] = useState<Record<string, { name: string; description: string; features: WorldPlace['features']; visual: ReturnType<typeof visualDraft> }>>({})
+  const [status, setStatus] = useState<Status>({ state: 'idle' })
+  const place = world.places.find(entry => entry.key === chosen) ?? world.places[0]
+  if (place === undefined) return <p className={css.empty}>{t('noPlaces')}</p>
+  const original = { name: place.name, description: place.description, features: place.features, visual: visualDraft(place.visualIdentity) }
+  const draft = drafts[place.key] ?? original
+  const dirty = JSON.stringify(draft) !== JSON.stringify(original)
+  const update = (next: typeof draft): void => { setDrafts({ ...drafts, [place.key]: next }); setStatus({ state: 'idle' }) }
+  const save = (): void => {
+    const edit: PlaceEdit = { name: draft.name.trim(), description: draft.description, features: draft.features, visualIdentity: visual(draft.visual.description, draft.visual.tags, draft.visual.negativeTags, draft.visual.globalId) }
+    setStatus({ state: 'saving' }); source.savePlace(place.key, edit, new AbortController().signal).then(next => { setDrafts(({ [place.key]: _, ...rest }) => rest); setStatus({ state: 'saved' }); onChanged(next) }, failure => { setStatus({ state: 'failed', message: failure instanceof RefusedEditError || failure instanceof Error ? failure.message : String(failure) }) })
+  }
+  return <div className={css.panel}><Tabs entries={world.places} chosen={place.key} choose={key => { setChosen(key); setStatus({ state: 'idle' }) }} actions={actions} /><SaveBar t={t} dirty={dirty} status={status} save={save} reset={() => { setDrafts(({ [place.key]: _, ...rest }) => rest); setStatus({ state: 'idle' }) }} /><div className={css.body}><article className={css.sheet}><Input value={draft.name} aria-label={t('name')} onChange={event => { update({ ...draft, name: event.target.value }) }} />{place.parent !== undefined && <div><span className={css.label}>{t('insidePlace')}</span> <Tag>{place.parent.name}</Tag></div>}<section className={css.section}><h3 className={css.sectionTitle}>{t('description')}</h3><textarea className={css.area} rows={5} value={draft.description} onChange={event => { update({ ...draft, description: event.target.value }) }} /></section><section className={css.section}><h3 className={css.sectionTitle}>{t('features')}</h3>{draft.features.map((feature, index) => <div className={css.grid} key={`${index}-${feature.key}`}><label className={css.field}><span className={css.label}>{t('featureId')}</span><Input value={feature.key} onChange={event => { update({ ...draft, features: draft.features.map((item, at) => at === index ? { ...item, key: event.target.value } : item) }) }} /></label><label className={css.field}><span className={css.label}>{t('name')}</span><Input value={feature.name} onChange={event => { update({ ...draft, features: draft.features.map((item, at) => at === index ? { ...item, name: event.target.value } : item) }) }} /></label><label className={`${css.field} ${css.wide}`}><span className={css.label}>{t('description')}</span><Input value={feature.description} onChange={event => { update({ ...draft, features: draft.features.map((item, at) => at === index ? { ...item, description: event.target.value } : item) }) }} /></label><Button variant="ghost" size="sm" onClick={() => { update({ ...draft, features: draft.features.filter((_, at) => at !== index) }) }}>{t('removeFeature')}</Button></div>)}<Button variant="ghost" size="sm" onClick={() => { update({ ...draft, features: [...draft.features, { key: '', name: '', description: '' }] }) }}>{t('addFeature')}</Button></section><VisualFields t={t} value={draft.visual} change={value => { update({ ...draft, visual: value }) }} /></article></div></div>
+}
+
+export function ThingsPanel({ t, world, source, onChanged, actions }: { t: Translate; world: WorldState; source: WorldSource; onChanged: (world: WorldState) => void; actions: React.ReactNode }) {
+  const [chosen, setChosen] = useState<string>()
+  const [drafts, setDrafts] = useState<Record<string, { name: string; description: string; quantity: string; quality: string; notable: boolean; hidden: boolean; containerState?: WorldThing['containerState']; visual: ReturnType<typeof visualDraft> }>>({})
+  const [status, setStatus] = useState<Status>({ state: 'idle' })
+  const thing = world.things.find(entry => entry.key === chosen) ?? world.things[0]
+  if (thing === undefined) return <p className={css.empty}>{t('noThings')}</p>
+  const original = { name: thing.name, description: thing.description, quantity: String(thing.quantity), quality: thing.quality, notable: thing.notable, hidden: thing.hidden, ...(thing.containerState === undefined ? {} : { containerState: thing.containerState }), visual: visualDraft(thing.visualIdentity) }
+  const draft = drafts[thing.key] ?? original
+  const dirty = JSON.stringify(draft) !== JSON.stringify(original)
+  const update = (next: typeof draft): void => { setDrafts({ ...drafts, [thing.key]: next }); setStatus({ state: 'idle' }) }
+  const save = (): void => {
+    const edit: ThingEdit = { name: draft.name.trim(), description: draft.description, quantity: Number(draft.quantity), quality: draft.quality, notable: draft.notable, hidden: draft.hidden, ...(draft.containerState === undefined ? {} : { containerState: draft.containerState }), visualIdentity: visual(draft.visual.description, draft.visual.tags, draft.visual.negativeTags, draft.visual.globalId) }
+    setStatus({ state: 'saving' }); source.saveThing(thing.key, edit, new AbortController().signal).then(next => { setDrafts(({ [thing.key]: _, ...rest }) => rest); setStatus({ state: 'saved' }); onChanged(next) }, failure => { setStatus({ state: 'failed', message: failure instanceof Error ? failure.message : String(failure) }) })
+  }
+  return <div className={css.panel}><Tabs entries={world.things} chosen={thing.key} choose={key => { setChosen(key); setStatus({ state: 'idle' }) }} actions={actions} /><SaveBar t={t} dirty={dirty} status={status} save={save} reset={() => { setDrafts(({ [thing.key]: _, ...rest }) => rest); setStatus({ state: 'idle' }) }} /><div className={css.body}><article className={css.sheet}><Input value={draft.name} aria-label={t('name')} onChange={event => { update({ ...draft, name: event.target.value }) }} /><div className={css.row}><Tag>{t('heldAt', { holder: thing.holder })}</Tag>{thing.unique && <Tag>{t('unique')}</Tag>}{thing.wearable !== undefined && <Tag>{t('wearableAt', { slot: thing.wearable })}</Tag>}{thing.owner !== undefined && <Tag>{t('ownedBy', { owner: thing.owner.name })}</Tag>}</div><section className={css.section}><h3 className={css.sectionTitle}>{t('description')}</h3><textarea className={css.area} rows={5} value={draft.description} onChange={event => { update({ ...draft, description: event.target.value }) }} /></section><div className={css.grid}><label className={css.field}><span className={css.label}>{t('quantity')}</span><Input value={draft.quantity} inputMode="numeric" onChange={event => { update({ ...draft, quantity: event.target.value }) }} /></label><label className={css.field}><span className={css.label}>{t('quality')}</span><Input value={draft.quality} onChange={event => { update({ ...draft, quality: event.target.value }) }} /></label>{draft.containerState !== undefined && <label className={css.field}><span className={css.label}>{t('containerState')}</span><select className={css.select} value={draft.containerState} onChange={event => { update({ ...draft, containerState: event.target.value as WorldThing['containerState'] }) }}><option value="open">{t('open')}</option><option value="closed">{t('closed')}</option><option value="locked">{t('locked')}</option></select></label>}<label className={css.field}><span><input type="checkbox" checked={draft.notable} onChange={event => { update({ ...draft, notable: event.target.checked }) }} /> {t('notable')}</span></label><label className={css.field}><span><input type="checkbox" checked={draft.hidden} onChange={event => { update({ ...draft, hidden: event.target.checked }) }} /> {t('hidden')}</span></label></div><VisualFields t={t} value={draft.visual} change={value => { update({ ...draft, visual: value }) }} /></article></div></div>
+}

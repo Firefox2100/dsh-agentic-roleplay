@@ -11,11 +11,13 @@ function hueOf(name: string): number {
 }
 
 /** A world as a card. It fills the grid cell it is placed in. */
-export function WorldCard({ world, playLabel, onPlay }: {
+export function WorldCard({ world, playLabel, onPlay, onOpen }: {
   world: WorldSummary
   /** Accessible name of the play button; the button is shown only with `onPlay`. */
   playLabel?: string
   onPlay?: (world: WorldSummary) => void
+  /** Opens the world; clicking anywhere on the card does, the play button excepted. */
+  onOpen?: (world: WorldSummary) => void
 }) {
   const coverSrc = world.coverVersion === undefined ? undefined : worldCoverPath(world.id, world.coverVersion)
   const [failedSrc, setFailedSrc] = useState<string | undefined>()
@@ -23,7 +25,16 @@ export function WorldCard({ world, playLabel, onPlay }: {
 
   return (
     <Tooltip label={world.description} side="bottom" delayMs={400} maxWidth={320} portal disabled={world.description === ''}>
-      <div className={css.card} tabIndex={0} data-testid="world-card">
+      <div
+        className={`${css.card} ${onOpen === undefined ? '' : css.open}`}
+        tabIndex={0}
+        data-testid="world-card"
+        {...(onOpen === undefined ? {} : {
+          role: 'button',
+          onClick: () => { onOpen(world) },
+          onKeyDown: (event: React.KeyboardEvent) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpen(world) } },
+        })}
+      >
         <div className={css.cover}>
           {showCover
             ? <img className={css.image} src={coverSrc} alt="" draggable={false} onError={() => { setFailedSrc(coverSrc) }} />
@@ -38,7 +49,7 @@ export function WorldCard({ world, playLabel, onPlay }: {
               className={css.play}
               aria-label={playLabel}
               data-testid="world-play"
-              onClick={() => { onPlay(world) }}
+              onClick={(event) => { event.stopPropagation(); onPlay(world) }}
             >
               <IconPlayOutlineRegular size={14} />
             </button>

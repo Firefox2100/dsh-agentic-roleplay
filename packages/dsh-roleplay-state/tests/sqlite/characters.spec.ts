@@ -115,3 +115,31 @@ describe('CharacterRepository', () => {
     expect(store.characters.findByName('x')).toEqual([])
   })
 })
+
+describe('changing who a character is', () => {
+  it('changes the fields given and leaves the rest, replaces the aliases, and finds the character by the new names', () => {
+    const { id } = store.characters.add(newCharacter())
+    const changed = store.characters.update(id, { name: '  Ellie Graves ', aliases: ['The Mayor', ' ', 'the mayor', 'E.'], summary: 'Mayor.', speech: { style: 'Warm', examples: [] } })
+    expect(changed).toMatchObject({ name: 'Ellie Graves', aliases: ['The Mayor', 'E.'], summary: 'Mayor.', speech: { style: 'Warm', examples: [] }, personality: 'Calculating and practical.', age: '42', control: 'agent' })
+    expect(store.characters.findByName('ELLIE GRAVES').map(character => character.id)).toEqual([id])
+    expect(store.characters.findByName('Eleanor Graves')).toEqual([])
+    expect(store.characters.findByName('e.').map(character => character.id)).toEqual([id])
+  })
+
+  it('takes an optional field away with null or blank, and sets one that was not there', () => {
+    const { id } = store.characters.add(newCharacter({ age: '42' }))
+    const bare = store.characters.update(id, { age: null, gender: ' ', pronouns: 'they/them' })
+    expect(bare).not.toHaveProperty('age')
+    expect(bare).not.toHaveProperty('gender')
+    expect(bare.pronouns).toBe('they/them')
+  })
+
+  it('refuses a blank name, a playable group or background character, a character that is not there, and changes nothing', () => {
+    const { id } = store.characters.add(newCharacter({ role: 'playable', tier: 'principal', kind: 'person' }))
+    expect(() => store.characters.update(id, { name: '  ' })).toThrow(InvalidValueError)
+    expect(() => store.characters.update(id, { kind: 'group' })).toThrow(/playable/)
+    expect(() => store.characters.update(id, { tier: 'background' })).toThrow(/playable/)
+    expect(() => store.characters.update(999, { name: 'x' })).toThrow(NotFoundError)
+    expect(store.characters.get(id)).toMatchObject({ name: 'Eleanor Graves', kind: 'person', tier: 'principal' })
+  })
+})

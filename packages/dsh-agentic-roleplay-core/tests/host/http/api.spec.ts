@@ -9,6 +9,7 @@ import { createApiHandler } from '../../../src/host/http/api.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
 import { DEFAULT_SETTINGS, SETTINGS_SPEC } from '../../../src/shared/settings.ts'
 import { InvalidSettingsError } from '../../../src/host/sessions/settings.ts'
+import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
@@ -30,6 +31,8 @@ let settingsError: Error | undefined
 let notesError: Error | undefined
 let timelineError: Error | undefined
 let archiveError: Error | undefined
+let editorError: Error | undefined
+let edited: string[] = []
 let archived: string[] = []
 let moved: [string, string] | undefined
 let writtenSettings: unknown
@@ -52,6 +55,8 @@ beforeEach(async () => {
   timelineError = undefined
   moved = undefined
   archiveError = undefined
+  editorError = undefined
+  edited = []
   archived = []
   writtenSettings = undefined
   const folder = join(base, 'worlds', 'harbor')
@@ -68,8 +73,36 @@ beforeEach(async () => {
       if (charactersError !== undefined) throw charactersError
       return cast
     },
+    worldEditor: {
+      read: (worldId) => {
+        if (editorError !== undefined) return Promise.reject(editorError)
+        return Promise.resolve({ characters: [], places: [{ key: worldId, name: 'Bar', description: '', features: [] }], things: [], factions: [], relations: [] })
+      },
+      editCharacter: (worldId, key, edit) => {
+        if (editorError !== undefined) return Promise.reject(editorError)
+        edited.push(`${worldId} ${key} ${JSON.stringify(edit)}`)
+        return Promise.resolve({ characters: [], places: [], things: [], factions: [], relations: [] })
+      },
+      editPlace: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editThing: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editFaction: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editRelation: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
+    },
     sessions: {
       list: () => listed,
+      editCharacter: (id, key, edit) => {
+        if (archiveError !== undefined) throw archiveError
+        edited.push(`${id} ${key} ${JSON.stringify(edit)}`)
+        return { characters: [], places: [], things: [], factions: [], relations: [] }
+      },
+      editPlace: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editThing: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editFaction: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editRelation: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
       start: async (request) => {
         startedWith = request
         if (startError !== undefined) throw startError
@@ -105,6 +138,10 @@ beforeEach(async () => {
       imageStatus: id => Promise.resolve({ node: 'n2', mode: 'manual', state: 'absent', images: [], message: id }),
       generateImage: () => Promise.resolve({ node: 'n2', mode: 'manual', state: 'generating', images: [] }),
       imageFile: () => Promise.resolve({ file: join(base, 'worlds', 'harbor', 'media', 'files', 'm.png'), size: 9 }),
+      world: (id) => {
+        if (archiveError !== undefined) throw archiveError
+        return { characters: [{ key: id, name: 'Clara', aliases: [], role: 'npc', tier: 'principal', kind: 'person', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, state: { publicState: '', innerState: '', activity: '' }, goals: [] }], places: [], things: [], factions: [], relations: [] }
+      },
       rename: (id, name) => {
         if (archiveError !== undefined) return Promise.reject(archiveError)
         archived.push(`rename ${id} ${name}`)
@@ -390,6 +427,47 @@ describe('roleplay API', () => {
       expect(opened.status).toBe(409)
       expect(await opened.json()).toEqual({ message: 'the session is put away' })
       expect((await fetch(`${origin}/sessions/archive?id=abc`)).status).toBe(405)
+    })
+  })
+
+  describe('the world of a session', () => {
+    it('is read as the characters it has now, and a session there is not is 404', async () => {
+      const found = await fetch(`${origin}/sessions/world?id=abc`)
+      expect(found.status).toBe(200)
+      expect(((await found.json()) as { characters: { key: string }[] }).characters.map(character => character.key)).toEqual(['abc'])
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/world?id=x`)).status).toBe(404)
+      archiveError = undefined
+      expect((await fetch(`${origin}/sessions/world?id=abc`, { method: 'POST' })).status).toBe(405)
+    })
+  })
+
+  describe('editing a character', () => {
+    const put = (path: string, body: unknown) => fetch(`${origin}${path}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('in a session: reads the edit, answers the world as it stands, 422 with the problems when it is not acceptable, 404 for an unknown session', async () => {
+      const done = await put('/sessions/world/character?id=abc&key=clara', { name: 'Clara W', place: { location: 'bar', position: 'by the till' }, goals: [{ ref: '1', priority: 0.5 }] })
+      expect(done.status).toBe(200)
+      expect(edited).toEqual(['abc clara {"name":"Clara W","place":{"location":"bar","position":"by the till"},"goals":[{"ref":"1","priority":0.5}]}'])
+      const refused = await put('/sessions/world/character?id=abc&key=clara', { name: '  ', role: 'wizard', unknown: 1 })
+      expect(refused.status).toBe(422)
+      expect(((await refused.json()) as { problems: string[] }).problems).toEqual(expect.arrayContaining(['name cannot be blank', 'role must be one of: playable, npc', 'unknown is not something that can be edited']))
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await put('/sessions/world/character?id=x&key=clara', { name: 'x' })).status).toBe(404)
+      archiveError = undefined
+      expect((await fetch(`${origin}/sessions/world/character?id=abc&key=clara`)).status).toBe(405)
+    })
+
+    it('in a world: is read and edited by the id of the world, 404 for a world there is not, 422 when the files would not be valid', async () => {
+      expect(await (await fetch(`${origin}/worlds/state?id=harbor`)).json()).toEqual({ characters: [], places: [{ key: 'harbor', name: 'Bar', description: '', features: [] }], things: [], factions: [], relations: [] })
+      expect((await put('/worlds/state/character?id=harbor&key=clara', { summary: 'Innkeeper' })).status).toBe(200)
+      expect(edited).toEqual(['harbor clara {"summary":"Innkeeper"}'])
+      editorError = new InvalidEditProblems(['there is no place "moon"'])
+      const refused = await put('/worlds/state/character?id=harbor&key=clara', { summary: 'x' })
+      expect(refused.status).toBe(422)
+      expect(((await refused.json()) as { problems: string[] }).problems).toEqual(['there is no place "moon"'])
+      editorError = new WorldNotFoundError('no world')
+      expect((await fetch(`${origin}/worlds/state?id=nowhere`)).status).toBe(404)
     })
   })
 

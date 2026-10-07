@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 import type { Note } from '../../shared/notes.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
+import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type PlaceEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
 import { TimelineError } from '../timeline/service.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
@@ -22,6 +23,17 @@ export interface ApiConnection {
 export interface ApiDeps {
   worlds: WorldCatalog
   worldCharacters(worldId: string): Promise<WorldCharactersPayload>
+  /** The characters and places of a world's files, as the editor shows them. */
+  worldEditor: {
+    read(worldId: string): Promise<WorldState>
+    editCharacter(worldId: string, key: string, edit: CharacterEdit): Promise<WorldState>
+    editPlace(worldId: string, key: string, edit: PlaceEdit): Promise<WorldState>
+    editThing(worldId: string, key: string, edit: ThingEdit): Promise<WorldState>
+    editFaction(worldId: string, key: string, edit: FactionEdit): Promise<WorldState>
+    editRelation(worldId: string, edit: RelationChange): Promise<WorldState>
+    generatePortrait(worldId: string, key: string): Promise<WorldState>
+    portraitFile(worldId: string, key: string): Promise<{ file: string; size: number }>
+  }
   sessions: {
     list(): SessionsPayload
     start(request: StartSessionRequest): Promise<StartedSession>
@@ -30,6 +42,14 @@ export interface ApiDeps {
     archive(id: string): Promise<void>
     restore(id: string): Promise<void>
     rename(id: string, name: string): Promise<void>
+    world(id: string): WorldState
+    editCharacter(id: string, key: string, edit: CharacterEdit): WorldState
+    editPlace(id: string, key: string, edit: PlaceEdit): WorldState
+    editThing(id: string, key: string, edit: ThingEdit): WorldState
+    editFaction(id: string, key: string, edit: FactionEdit): WorldState
+    editRelation(id: string, edit: RelationChange): WorldState
+    generatePortrait(id: string, key: string): Promise<WorldState>
+    portraitFile(id: string, key: string): Promise<{ file: string; size: number }>
     readSettings(id: string): SettingsPayload
     writeSettings(id: string, value: unknown): SettingsPayload
     notes(id: string): Note[]
@@ -44,14 +64,75 @@ export interface ApiDeps {
 
 type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void>
 
+async function sendImage(res: ServerResponse, image: { file: string; size: number }): Promise<void> {
+  res.statusCode = 200
+  res.setHeader('content-type', 'image/png')
+  res.setHeader('content-length', image.size)
+  res.setHeader('x-content-type-options', 'nosniff')
+  res.setHeader('cache-control', 'private, max-age=31536000, immutable')
+  await pipeline(createReadStream(image.file), res)
+}
+
 /** Build the request handler mounted at `/${API_PREFIX}`. */
-export function createApiHandler({ worlds, worldCharacters, sessions, connection }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, worldCharacters, worldEditor, sessions, connection }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
     },
     '/worlds/refresh': {
       POST: async (_req, res) => { sendJson(res, 200, await worlds.list({ refresh: true })) },
+    },
+    '/worlds/state': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, await worldEditor.read(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/worlds/state/character': {
+      PUT: async (req, res, url) => {
+        try {
+          sendJson(res, 200, await worldEditor.editCharacter(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseCharacterEdit(await readJsonBody(req))))
+        } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/worlds/state/place': {
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldEditor.editPlace(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parsePlaceEdit(await readJsonBody(req)))) }
+        catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error }
+      },
+    },
+    '/worlds/state/thing': {
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldEditor.editThing(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseThingEdit(await readJsonBody(req)))) }
+        catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error }
+      },
+    },
+    '/worlds/state/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/state/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/state/character/portrait': {
+      POST: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, await worldEditor.generatePortrait(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? ''))
+        } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          return sendError(res, 409, error instanceof Error ? error.message : String(error))
+        }
+      },
+    },
+    '/worlds/state/character/portrait/file': {
+      GET: async (_req, res, url) => {
+        try { await sendImage(res, await worldEditor.portraitFile(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) }
+        catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+      },
     },
     '/worlds/characters': {
       GET: async (_req, res, url) => {
@@ -142,12 +223,7 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
         let image: { file: string; size: number }
         try { image = await sessions.imageFile(url.searchParams.get('id') ?? '', url.searchParams.get('node') ?? '', serial) }
         catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
-        res.statusCode = 200
-        res.setHeader('content-type', 'image/png')
-        res.setHeader('content-length', image.size)
-        res.setHeader('x-content-type-options', 'nosniff')
-        res.setHeader('cache-control', 'private, max-age=31536000, immutable')
-        await pipeline(createReadStream(image.file), res)
+        await sendImage(res, image)
       },
     },
     '/sessions/settings': {
@@ -195,6 +271,58 @@ export function createApiHandler({ worlds, worldCharacters, sessions, connection
         }
         res.statusCode = 204
         res.end()
+      },
+    },
+    '/sessions/world': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.world(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/world/character': {
+      PUT: async (req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.editCharacter(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseCharacterEdit(await readJsonBody(req))))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/sessions/world/place': {
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, sessions.editPlace(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parsePlaceEdit(await readJsonBody(req)))) }
+        catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error }
+      },
+    },
+    '/sessions/world/thing': {
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, sessions.editThing(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseThingEdit(await readJsonBody(req)))) }
+        catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error }
+      },
+    },
+    '/sessions/world/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/sessions/world/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/sessions/world/character/portrait': {
+      POST: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, await sessions.generatePortrait(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          return sendError(res, 409, error instanceof Error ? error.message : String(error))
+        }
+      },
+    },
+    '/sessions/world/character/portrait/file': {
+      GET: async (_req, res, url) => {
+        try { await sendImage(res, await sessions.portraitFile(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) }
+        catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
       },
     },
     '/sessions/rename': {

@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
+import type { ImageGenerationService } from 'dsh-ai-core'
 // Type-only: declares `ctx.roleplayState`.
 import type {} from 'dsh-roleplay-state'
 import { AgentSessions, agentServicesOf } from './host/agent/agent-sessions.ts'
@@ -8,6 +9,8 @@ import { RoleplayOrchestration } from './host/orchestration/service.ts'
 import { registerApi } from './host/http/index.ts'
 import { deleteSession } from './host/sessions/delete-session.ts'
 import { purgeOf } from './host/agent/purge-services.ts'
+import { editWorldCharacter as editSessionCharacter, editWorldFaction as editSessionFaction, editWorldPlace as editSessionPlace, editWorldRelation as editSessionRelation, editWorldThing as editSessionThing, generateSessionCharacterPortrait, readWorldState, sessionCharacterPortraitFile } from './host/sessions/world-state.ts'
+import { editWorldCharacter as editWorldFileCharacter, editWorldFaction as editWorldFileFaction, editWorldPlace as editWorldFilePlace, editWorldRelation as editWorldFileRelation, editWorldThing as editWorldFileThing, generateWorldCharacterPortrait, readWorldEditor, worldCharacterPortraitFile } from './host/worlds/world-editor.ts'
 import { renameSession } from './host/sessions/rename-session.ts'
 import { archiveSession, restoreSession } from './host/sessions/archive-session.ts'
 import { readChatSettings, writeChatSettings } from './host/sessions/chat-settings.ts'
@@ -25,6 +28,7 @@ import { SessionNotFoundError } from './host/sessions/errors.ts'
 import { AgentUnavailableError } from './host/sessions/errors.ts'
 import type { Timelines } from './host/timeline/service.ts'
 import { WorldCatalog } from './host/worlds/catalog.ts'
+import { WorldNotFoundError } from './host/sessions/errors.ts'
 import { sceneImagePath } from './host/images/storage.ts'
 
 export { Config } from './host/config.ts'
@@ -52,7 +56,17 @@ export function apply(ctx: Context, config: Config): void {
   registerApi(ctx, {
     worlds,
     worldCharacters: worldId => worldCharacters(worlds, worldId),
-    sessions: { list: () => listSessions(deps), start: request => startSession(deps, request), open: id => openSession(deps, id), delete: id => deleteSession({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir, purgeChat }, id), archive: id => archiveSession({ agent, sessionsDir: deps.sessionsDir }, id), restore: id => restoreSession({ agent, sessionsDir: deps.sessionsDir }, id), rename: (id, name) => renameSession({ state: ctx.roleplayState, agent, sessionsDir: deps.sessionsDir }, id, name), readSettings: id => readChatSettings(settingsDeps, id), writeSettings: (id, value) => writeChatSettings(settingsDeps, id, value), timeline: id => timelinesOf(ctx, deps.sessionsDir, id).view(id), moveTimeline: (id, to) => timelinesOf(ctx, deps.sessionsDir, id).move(chatSessionId(id), to === 'start' ? null : to), notes: id => notesOfSession({ sessionsDir: deps.sessionsDir, open: sessionId => ctx.roleplayState.openSession(deps.sessionsDir(), sessionId) }, id), imageStatus: (id, node) => imagesOf(ctx, deps.sessionsDir, id).status(id, node), generateImage: (id, node) => imagesOf(ctx, deps.sessionsDir, id).generate(id, node), imageFile: async (id, node, serial) => { const images = imagesOf(ctx, deps.sessionsDir, id); await images.status(id, node); const file = sceneImagePath(sessionFolder(deps.sessionsDir(), id), node, serial); return { file, size: (await stat(file)).size } } },
+    worldEditor: {
+      read: async worldId => await readWorldEditor(await editableWorld(worlds, worldId)),
+      editCharacter: async (worldId, key, edit) => await editWorldFileCharacter(await editableWorld(worlds, worldId), key, edit),
+      editPlace: async (worldId, key, edit) => await editWorldFilePlace(await editableWorld(worlds, worldId), key, edit),
+      editThing: async (worldId, key, edit) => await editWorldFileThing(await editableWorld(worlds, worldId), key, edit),
+      editFaction: async (worldId, key, edit) => await editWorldFileFaction(await editableWorld(worlds, worldId), key, edit),
+      editRelation: async (worldId, edit) => await editWorldFileRelation(await editableWorld(worlds, worldId), edit),
+      generatePortrait: async (worldId, key) => await generateWorldCharacterPortrait(await editableWorld(worlds, worldId), key, imageGenerationOf(ctx)),
+      portraitFile: async (worldId, key) => await worldCharacterPortraitFile(await editableWorld(worlds, worldId), key),
+    },
+    sessions: { list: () => listSessions(deps), start: request => startSession(deps, request), open: id => openSession(deps, id), delete: id => deleteSession({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir, purgeChat }, id), archive: id => archiveSession({ agent, sessionsDir: deps.sessionsDir }, id), restore: id => restoreSession({ agent, sessionsDir: deps.sessionsDir }, id), editCharacter: (id, key, edit) => editSessionCharacter({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editPlace: (id, key, edit) => editSessionPlace({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editThing: (id, key, edit) => editSessionThing({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editFaction: (id, key, edit) => editSessionFaction({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editRelation: (id, edit) => editSessionRelation({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, edit), generatePortrait: (id, key) => generateSessionCharacterPortrait({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, imageGenerationOf(ctx)), portraitFile: (id, key) => sessionCharacterPortraitFile({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key), world: id => readWorldState({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id), rename: (id, name) => renameSession({ state: ctx.roleplayState, agent, sessionsDir: deps.sessionsDir }, id, name), readSettings: id => readChatSettings(settingsDeps, id), writeSettings: (id, value) => writeChatSettings(settingsDeps, id, value), timeline: id => timelinesOf(ctx, deps.sessionsDir, id).view(id), moveTimeline: (id, to) => timelinesOf(ctx, deps.sessionsDir, id).move(chatSessionId(id), to === 'start' ? null : to), notes: id => notesOfSession({ sessionsDir: deps.sessionsDir, open: sessionId => ctx.roleplayState.openSession(deps.sessionsDir(), sessionId) }, id), imageStatus: (id, node) => imagesOf(ctx, deps.sessionsDir, id).status(id, node), generateImage: (id, node) => imagesOf(ctx, deps.sessionsDir, id).generate(id, node), imageFile: async (id, node, serial) => { const images = imagesOf(ctx, deps.sessionsDir, id); await images.status(id, node); const file = sceneImagePath(sessionFolder(deps.sessionsDir(), id), node, serial); return { file, size: (await stat(file)).size } } },
   })
 }
 
@@ -61,6 +75,19 @@ function imagesOf(ctx: Context, sessionsDir: () => string, id: string) {
   const images = ctx.roleplayOrchestration.images
   if (images === undefined) throw new AgentUnavailableError('image authoring is not running')
   return images
+}
+
+/** The world with that id, or why there is none. */
+async function editableWorld(worlds: WorldCatalog, worldId: string): Promise<{ id: string; directory: string }> {
+  const world = await worlds.find(worldId)
+  if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
+  return { id: world.summary.id, directory: world.directory }
+}
+
+function imageGenerationOf(ctx: Context): ImageGenerationService {
+  const service = (ctx as Context & { get(name: 'imageGeneration'): ImageGenerationService | undefined }).get('imageGeneration')
+  if (service === undefined) throw new AgentUnavailableError('no image generation provider is selected')
+  return service
 }
 
 /** The timelines of the sessions, which the orchestration keeps; a profile without it has none. */

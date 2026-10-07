@@ -16,6 +16,7 @@ export interface Faction {
 }
 
 export type NewFaction = Omit<Faction, 'id' | 'createdAt'>
+export type FactionPatch = Partial<Pick<Faction, 'name' | 'aliases' | 'summary' | 'description' | 'values' | 'structure'>>
 
 export interface FactionState {
   factionId: FactionId
