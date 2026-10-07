@@ -55,7 +55,11 @@ export function apply(ctx: Context, config: Config): void {
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions') }
   registerApi(ctx, {
-    speech: { voices: async () => await voicesOf(textToSpeechOf(ctx)), speak: async parts => await speakParts(textToSpeechOf(ctx), parts) },
+    speech: {
+      voices: async () => await voicesOf(textToSpeechOf(ctx)),
+      speak: async parts => await speakParts(textToSpeechOf(ctx), parts),
+      streaming: () => streamingSpeechToTextOf(ctx) !== undefined,
+    },
     worlds,
     worldCharacters: worldId => worldCharacters(worlds, worldId),
     worldEditor: {
@@ -97,6 +101,10 @@ function textToSpeechOf(ctx: Context) {
   const service = (ctx as Context & { get(name: 'textToSpeech'): import('dsh-ai-core').TtsService | undefined }).get('textToSpeech')
   if (service === undefined) throw new AgentUnavailableError('no text-to-speech provider is selected')
   return service
+}
+
+function streamingSpeechToTextOf(ctx: Context): import('dsh-ai-core').StreamingSttService | undefined {
+  return (ctx as Context & { get(name: 'streamingSpeechToText'): import('dsh-ai-core').StreamingSttService | undefined }).get('streamingSpeechToText')
 }
 
 /** The timelines of the sessions, which the orchestration keeps; a profile without it has none. */

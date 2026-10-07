@@ -68,7 +68,7 @@ beforeEach(async () => {
 
   const worlds = new WorldCatalog(new Context(), { path: base } as RoleplayRoot)
   const handler = createApiHandler({
-    speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }) },
+    speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
     worlds,
     worldCharacters: async () => {
       if (charactersError !== undefined) throw charactersError
@@ -180,6 +180,7 @@ afterEach(async () => {
 
 describe('roleplay API', () => {
   it('lists voices and returns synthesized audio', async () => {
+    expect(await (await fetch(`${origin}/speech/capabilities`)).json()).toEqual({ streaming: true })
     const voices = await fetch(`${origin}/speech/voices`)
     expect(await voices.json()).toEqual([{ id: 'clara', name: 'Clara' }])
     const audio = await fetch(`${origin}/speech/synthesize`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ parts: [{ text: 'Hello.', voice: 'clara' }] }) })

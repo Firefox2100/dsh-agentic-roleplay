@@ -64,7 +64,7 @@ export interface ApiDeps {
     imageFile(id: string, node: string, serial: number): Promise<{ file: string; size: number }>
   }
   connection: ApiConnection
-  speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio> }
+  speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio>; streaming(): boolean }
 }
 
 type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void>
@@ -81,6 +81,7 @@ async function sendImage(res: ServerResponse, image: { file: string; size: numbe
 /** Build the request handler mounted at `/${API_PREFIX}`. */
 export function createApiHandler({ worlds, worldCharacters, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
+    '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
     '/speech/synthesize': { POST: async (req, res) => { const body = await readJsonBody(req) as { parts?: unknown }; if (!Array.isArray(body.parts)) return sendError(res, 400, 'parts must be a list'); const parts = body.parts.filter((part): part is SpeechPart => typeof part === 'object' && part !== null && typeof (part as SpeechPart).text === 'string'); if (parts.length !== body.parts.length) return sendError(res, 400, 'each speech part needs text'); const audio = await speech.speak(parts); res.statusCode = 200; res.setHeader('content-type', audio.mediaType); res.setHeader('content-length', audio.bytes.length); res.end(audio.bytes) } },
     '/worlds': {
