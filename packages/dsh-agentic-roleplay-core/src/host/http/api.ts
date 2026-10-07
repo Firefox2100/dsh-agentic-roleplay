@@ -5,6 +5,8 @@ import type { Note } from '../../shared/notes.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type PlaceEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
+import type { SpeechAudio, SpeechPart } from '../speech/service.ts'
+import type { TtsVoice } from 'dsh-ai-core'
 import { TimelineError } from '../timeline/service.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import type { OpenedSession, SessionsPayload, StartedSession, StartSessionRequest, WorldCharactersPayload } from '../../shared/sessions.ts'
@@ -31,6 +33,7 @@ export interface ApiDeps {
     editThing(worldId: string, key: string, edit: ThingEdit): Promise<WorldState>
     editFaction(worldId: string, key: string, edit: FactionEdit): Promise<WorldState>
     editRelation(worldId: string, edit: RelationChange): Promise<WorldState>
+    editNarrationVoice(worldId: string, voice: string): Promise<WorldState>
     generatePortrait(worldId: string, key: string): Promise<WorldState>
     portraitFile(worldId: string, key: string): Promise<{ file: string; size: number }>
   }
@@ -48,6 +51,7 @@ export interface ApiDeps {
     editThing(id: string, key: string, edit: ThingEdit): WorldState
     editFaction(id: string, key: string, edit: FactionEdit): WorldState
     editRelation(id: string, edit: RelationChange): WorldState
+    editNarrationVoice(id: string, voice: string): WorldState
     generatePortrait(id: string, key: string): Promise<WorldState>
     portraitFile(id: string, key: string): Promise<{ file: string; size: number }>
     readSettings(id: string): SettingsPayload
@@ -60,6 +64,7 @@ export interface ApiDeps {
     imageFile(id: string, node: string, serial: number): Promise<{ file: string; size: number }>
   }
   connection: ApiConnection
+  speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio> }
 }
 
 type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void>
@@ -74,8 +79,10 @@ async function sendImage(res: ServerResponse, image: { file: string; size: numbe
 }
 
 /** Build the request handler mounted at `/${API_PREFIX}`. */
-export function createApiHandler({ worlds, worldCharacters, worldEditor, sessions, connection }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, worldCharacters, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
+    '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
+    '/speech/synthesize': { POST: async (req, res) => { const body = await readJsonBody(req) as { parts?: unknown }; if (!Array.isArray(body.parts)) return sendError(res, 400, 'parts must be a list'); const parts = body.parts.filter((part): part is SpeechPart => typeof part === 'object' && part !== null && typeof (part as SpeechPart).text === 'string'); if (parts.length !== body.parts.length) return sendError(res, 400, 'each speech part needs text'); const audio = await speech.speak(parts); res.statusCode = 200; res.setHeader('content-type', audio.mediaType); res.setHeader('content-length', audio.bytes.length); res.end(audio.bytes) } },
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
     },
@@ -117,6 +124,7 @@ export function createApiHandler({ worlds, worldCharacters, worldEditor, session
     },
     '/worlds/state/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/state/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, await worldEditor.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/worlds/state/character/portrait': {
       POST: async (_req, res, url) => {
         try {
@@ -308,6 +316,7 @@ export function createApiHandler({ worlds, worldCharacters, worldEditor, session
     },
     '/sessions/world/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/sessions/world/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, sessions.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/sessions/world/character/portrait': {
       POST: async (_req, res, url) => {
         try {
@@ -372,6 +381,7 @@ export function createApiHandler({ worlds, worldCharacters, worldEditor, session
       },
     },
   }
+
 
   return async (req, res) => {
     const rejection = connection.requestRejection(req)

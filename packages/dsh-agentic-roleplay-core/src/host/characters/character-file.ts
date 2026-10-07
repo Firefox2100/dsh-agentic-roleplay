@@ -165,6 +165,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
   const age = readAge(reader)
   const gender = reader.string('gender')
   const pronouns = reader.string('pronouns')
+  const voice = reader.string('voice')
   const speech = reader.object('speech')
   const variables = readVariableValues(reader)
   const visualIdentity = readVisualIdentity(reader)
@@ -176,6 +177,7 @@ export function parseCharacterFile(text: string, fallbackId: string): ParseResul
     ...(age === undefined ? {} : { age }),
     ...(gender === undefined ? {} : { gender }),
     ...(pronouns === undefined ? {} : { pronouns }),
+    ...(voice === undefined ? {} : { voice }),
     kind,
     tier,
     role,

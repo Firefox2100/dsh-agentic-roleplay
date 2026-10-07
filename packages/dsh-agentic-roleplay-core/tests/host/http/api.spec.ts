@@ -68,6 +68,7 @@ beforeEach(async () => {
 
   const worlds = new WorldCatalog(new Context(), { path: base } as RoleplayRoot)
   const handler = createApiHandler({
+    speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }) },
     worlds,
     worldCharacters: async () => {
       if (charactersError !== undefined) throw charactersError
@@ -87,6 +88,7 @@ beforeEach(async () => {
       editThing: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       editFaction: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       editRelation: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editNarrationVoice: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
     },
@@ -101,6 +103,7 @@ beforeEach(async () => {
       editThing: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       editFaction: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       editRelation: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editNarrationVoice: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
       start: async (request) => {
@@ -176,6 +179,14 @@ afterEach(async () => {
 })
 
 describe('roleplay API', () => {
+  it('lists voices and returns synthesized audio', async () => {
+    const voices = await fetch(`${origin}/speech/voices`)
+    expect(await voices.json()).toEqual([{ id: 'clara', name: 'Clara' }])
+    const audio = await fetch(`${origin}/speech/synthesize`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ parts: [{ text: 'Hello.', voice: 'clara' }] }) })
+    expect(audio.headers.get('content-type')).toBe('audio/mpeg')
+    expect(new Uint8Array(await audio.arrayBuffer())).toEqual(new Uint8Array([1, 2]))
+  })
+
   it('lists worlds', async () => {
     const response = await fetch(`${origin}/worlds`)
     expect(response.status).toBe(200)

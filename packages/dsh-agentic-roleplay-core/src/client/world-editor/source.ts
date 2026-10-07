@@ -9,6 +9,8 @@ export interface WorldSource {
   saveThing(key: string, edit: ThingEdit, signal: AbortSignal): Promise<WorldState>
   saveFaction(key: string, edit: FactionEdit, signal: AbortSignal): Promise<WorldState>
   saveRelation(edit: RelationChange, signal: AbortSignal): Promise<WorldState>
+  saveNarrationVoice(voice: string, signal: AbortSignal): Promise<WorldState>
+  listVoices(signal: AbortSignal): Promise<{ id: string; name?: string }[]>
   /** Generate or replace the character's canonical portrait and answer the refreshed world. */
   generatePortrait(key: string, signal: AbortSignal): Promise<WorldState>
 }
@@ -30,10 +32,23 @@ export async function answer(response: Response): Promise<WorldState> {
   return await response.json() as WorldState
 }
 
-export async function put(url: string, edit: CharacterEdit | PlaceEdit | ThingEdit | FactionEdit | RelationChange, signal: AbortSignal): Promise<WorldState> {
+export async function put(url: string, edit: CharacterEdit | PlaceEdit | ThingEdit | FactionEdit | RelationChange | { voice: string }, signal: AbortSignal): Promise<WorldState> {
   return await answer(await fetch(url, { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(edit), signal }))
 }
 
 export async function post(url: string, signal: AbortSignal): Promise<WorldState> {
   return await answer(await fetch(url, { method: 'POST', credentials: 'same-origin', signal }))
+}
+
+/** Voice discovery is optional: an unavailable or unsupported endpoint leaves manual entry usable. */
+export async function listVoices(url: string, signal: AbortSignal): Promise<{ id: string; name?: string }[]> {
+  const response = await fetch(url, { credentials: 'same-origin', signal })
+  if (!response.ok) return []
+  const value = await response.json() as unknown
+  if (!Array.isArray(value)) return []
+  return value.flatMap((entry): { id: string; name?: string }[] => {
+    if (typeof entry !== 'object' || entry === null || typeof (entry as { id?: unknown }).id !== 'string') return []
+    const voice = entry as { id: string; name?: unknown }
+    return [{ id: voice.id, ...(typeof voice.name === 'string' ? { name: voice.name } : {}) }]
+  })
 }

@@ -47,6 +47,7 @@ function stateOf(world: EditableWorld, definition: CharacterDefinition, names: R
     background: definition.background,
     appearance: definition.appearance,
     speech: definition.speech,
+    ...(definition.voice === undefined ? {} : { voice: definition.voice }),
     ...(definition.visualIdentity === undefined ? {} : { visualIdentity: definition.visualIdentity }),
     ...(existsSync(portrait) ? { portrait: `/${API_PREFIX}/worlds/state/character/portrait/file?id=${encodeURIComponent(world.id)}&key=${encodeURIComponent(definition.id)}&v=${statSync(portrait).mtimeMs}` } : {}),
     state: { publicState: start.publicState, innerState: start.innerState, activity: start.activity },
@@ -81,13 +82,23 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
       relations.push({ key: relationKey('social', 'faction', faction.id, relation.to.kind, relation.to.id), kind: 'social', from: entity('faction', faction.id, faction.name), to: entity(relation.to.kind, relation.to.id, targetName), label: relation.label, summary: relation.summary ?? '', familiarity: relation.familiarity ?? 0, trust: relation.trust ?? 0, affinity: relation.affinity ?? 0, tension: relation.tension ?? 0 })
     }
   }
+  const worldDocument = JSON.parse(await readFile(join(world.directory, 'world.json'), 'utf8')) as Json
+  const narrationVoice = typeof worldDocument['narration_voice'] === 'string' ? worldDocument['narration_voice'] : undefined
   return {
+    ...(narrationVoice === undefined ? {} : { narrationVoice }),
     characters: characters.map(character => stateOf(world, character, names)),
     places: locations.map(location => ({ key: location.id, name: location.name, description: location.description, ...(location.parent === undefined ? {} : { parent: { key: location.parent, name: names.get(location.parent) ?? location.parent } }), features: location.features, ...(location.visualIdentity === undefined ? {} : { visualIdentity: location.visualIdentity }) })),
     things: items.map(item => ({ key: item.id, name: item.name, description: item.description, quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearable === undefined ? {} : { wearable: item.wearable }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.owner === undefined ? {} : { owner: { key: item.owner, name: characterNames.get(item.owner) ?? item.owner } }), holder: holder(item), ...(item.visualIdentity === undefined ? {} : { visualIdentity: item.visualIdentity }) })),
     factions: factions.map(faction => ({ key: faction.id, name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: faction.start.publicState, innerState: faction.start.innerState }, goals: faction.start.goals.map((goal, index) => ({ ref: String(index), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: faction.members.map(member => ({ ...member, name: characterNames.get(member.character) ?? member.character })), relationships: faction.relationships.map(relationship => ({ target: `${relationship.to.kind}:${relationship.to.id}`, label: relationship.label, summary: relationship.summary ?? '' })) })),
     relations,
   }
+}
+
+export async function editWorldNarrationVoice(world: EditableWorld, voice: string): Promise<WorldState> {
+  const file = join(world.directory, 'world.json'); const text = await readFile(file, 'utf8'); const document = JSON.parse(text) as Json
+  if (voice.trim() === '') delete document['narration_voice']; else document['narration_voice'] = voice.trim()
+  await replaceFile(file, JSON.stringify(document, null, /^([ \t]+)"/m.exec(text)?.[1] ?? '  ') + (text.endsWith('\n') ? '\n' : ''))
+  return await readWorldEditor(world)
 }
 
 const relationKey = (...parts: string[]): string => parts.map(part => encodeURIComponent(part)).join(':')
@@ -135,6 +146,7 @@ function apply(document: Json, edit: CharacterEdit, problems: string[]): void {
     if (edit.speech.style !== undefined) speech['style'] = edit.speech.style
     if (edit.speech.examples !== undefined) speech['examples'] = edit.speech.examples.map(example => example.trim()).filter(example => example !== '')
   }
+  setOptional(document, 'voice', edit.voice)
   const start = object(document, 'start')
   if (edit.state !== undefined) {
     if (edit.state.publicState !== undefined) start['public_state'] = edit.state.publicState

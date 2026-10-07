@@ -20,6 +20,7 @@ export interface CharacterDraft {
   visualNegativeTags: string
   visualGlobalId: string
   speechStyle: string
+  voice: string
   /** One example per line. */
   speechExamples: string
   publicState: string
@@ -53,6 +54,7 @@ export function toDraft(character: WorldCharacter): CharacterDraft {
     visualNegativeTags: character.visualIdentity?.negativeTags.join(', ') ?? '',
     visualGlobalId: character.visualIdentity?.globalId ?? '',
     speechStyle: character.speech.style,
+    voice: character.voice ?? '',
     speechExamples: character.speech.examples.join('\n'),
     publicState: character.state.publicState,
     innerState: character.state.innerState,
@@ -91,6 +93,7 @@ export function editOf(character: WorldCharacter, draft: CharacterDraft): Charac
   if (draft.speechStyle !== base.speechStyle) speech.style = draft.speechStyle
   if (JSON.stringify(lines(draft.speechExamples)) !== JSON.stringify(lines(base.speechExamples))) speech.examples = lines(draft.speechExamples)
   if (Object.keys(speech).length > 0) edit.speech = speech
+  if (draft.voice.trim() !== base.voice) edit.voice = draft.voice.trim()
   const state: NonNullable<CharacterEdit['state']> = {}
   for (const key of ['publicState', 'innerState', 'activity'] as const) if (draft[key] !== base[key]) state[key] = draft[key]
   if (Object.keys(state).length > 0) edit.state = state

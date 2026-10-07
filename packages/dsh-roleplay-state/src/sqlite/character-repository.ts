@@ -22,6 +22,7 @@ interface CharacterRow {
   appearance: string
   speech_style: string
   speech_examples: string
+  voice: string | null
   created_at: string
 }
 
@@ -48,6 +49,7 @@ function toCharacter(row: CharacterRow, aliases: string[]): Character {
     background: row.background,
     appearance: row.appearance,
     speech: { style: row.speech_style, examples: parseStringList(row.speech_examples, 'characters.speech_examples') },
+    ...(row.voice === null ? {} : { voice: row.voice }),
     createdAt: row.created_at,
   }
 }
@@ -60,14 +62,14 @@ export class SqliteCharacterRepository implements CharacterRepository {
       const { lastInsertRowid: id } = this.db.run(
         `INSERT INTO characters (
            source_id, name, name_key, age, gender, pronouns, kind, tier, role, control,
-           summary, personality, background, appearance, speech_style, speech_examples, created_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           summary, personality, background, appearance, speech_style, speech_examples, voice, created_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           character.sourceId ?? null, character.name, lookupKey(character.name),
           character.age ?? null, character.gender ?? null, character.pronouns ?? null,
           character.kind, character.tier, character.role, character.control,
           character.summary, character.personality, character.background, character.appearance,
-          character.speech.style, toJson(character.speech.examples), this.clock().toISOString(),
+          character.speech.style, toJson(character.speech.examples), character.voice ?? null, this.clock().toISOString(),
         ],
       )
       const stored = new Set<string>()
@@ -137,6 +139,7 @@ export class SqliteCharacterRepository implements CharacterRepository {
         ...(patch.appearance === undefined ? {} : { appearance: patch.appearance }),
         ...(patch.speech === undefined ? {} : { speech: patch.speech }),
       }
+      if (patch.voice !== undefined) { if (patch.voice === null || patch.voice.trim() === '') delete next.voice; else next.voice = patch.voice.trim() }
       for (const field of ['age', 'gender', 'pronouns'] as const) {
         const value = patch[field]
         if (value === undefined) continue
@@ -147,8 +150,8 @@ export class SqliteCharacterRepository implements CharacterRepository {
       if (next.name === '') throw new InvalidValueError('a character needs a name')
       if (next.role === 'playable' && (next.kind === 'group' || next.tier === 'background')) throw new InvalidValueError('a playable character cannot be a group or a background character')
       this.db.run(
-        `UPDATE characters SET name = ?, name_key = ?, age = ?, gender = ?, pronouns = ?, kind = ?, tier = ?, role = ?, summary = ?, personality = ?, background = ?, appearance = ?, speech_style = ?, speech_examples = ? WHERE id = ?`,
-        [next.name, lookupKey(next.name), next.age ?? null, next.gender ?? null, next.pronouns ?? null, next.kind, next.tier, next.role, next.summary, next.personality, next.background, next.appearance, next.speech.style, toJson(next.speech.examples), id],
+        `UPDATE characters SET name = ?, name_key = ?, age = ?, gender = ?, pronouns = ?, kind = ?, tier = ?, role = ?, summary = ?, personality = ?, background = ?, appearance = ?, speech_style = ?, speech_examples = ?, voice = ? WHERE id = ?`,
+        [next.name, lookupKey(next.name), next.age ?? null, next.gender ?? null, next.pronouns ?? null, next.kind, next.tier, next.role, next.summary, next.personality, next.background, next.appearance, next.speech.style, toJson(next.speech.examples), next.voice ?? null, id],
       )
       if (patch.aliases !== undefined) {
         this.db.run('DELETE FROM character_aliases WHERE character_id = ?', [id])

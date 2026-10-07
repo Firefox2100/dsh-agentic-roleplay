@@ -45,6 +45,7 @@ export interface WorldRecord {
   variables?: WorldFileVariables
   /** What is not allowed in the world. */
   rules?: string[]
+  narrationVoice?: string
 }
 
 export interface ScanResult {
@@ -122,6 +123,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.clock === undefined ? {} : { clock: world.clock }),
     ...(world.variables === undefined ? {} : { variables: world.variables }),
     ...(world.rules === undefined ? {} : { rules: world.rules }),
+    ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
   }
   // The cover is optional; a world that names one it cannot supply is still listed, with the reason reported.
   if (world.coverMediaId !== undefined) {

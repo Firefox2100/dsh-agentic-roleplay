@@ -29,6 +29,8 @@ export interface WorldFile {
   variables?: Record<string, VariableValue>
   /** What is not allowed in this world, as short rules in the author's own words ("There is no magic"). */
   rules?: string[]
+  /** Provider voice id used for narration when a session starts. */
+  narrationVoice?: string
 }
 
 /** The most rules a world may state, and the longest one: they are told to the game master every turn. */
@@ -125,6 +127,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const clock = readClock(reader)
   const variables = readVariableValues(reader)
   const rules = readRules(reader)
+  const narrationVoice = reader.string('narration_voice')?.trim() || undefined
   if (name === undefined || issues.length > 0) return { ok: false, issues }
 
   return {
@@ -140,6 +143,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(clock === undefined ? {} : { clock }),
       ...(variables === undefined ? {} : { variables }),
       ...(rules === undefined ? {} : { rules }),
+      ...(narrationVoice === undefined ? {} : { narrationVoice }),
     },
   }
 }

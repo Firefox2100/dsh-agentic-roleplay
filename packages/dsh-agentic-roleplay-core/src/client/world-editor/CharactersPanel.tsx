@@ -60,7 +60,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /** One character as an editable page, like a CV: the portrait and the short facts above, what is written about it below. */
-function Sheet({ t, character, places, draft, onChange, generating, portraitDisabled, onGenerate }: { t: Translate; character: WorldCharacter; places: WorldState['places']; draft: CharacterDraft; onChange: (draft: CharacterDraft) => void; generating: boolean; portraitDisabled: boolean; onGenerate: () => void }) {
+function Sheet({ t, character, places, voices, draft, onChange, generating, portraitDisabled, onGenerate }: { t: Translate; character: WorldCharacter; places: WorldState['places']; voices: { id: string; name?: string }[]; draft: CharacterDraft; onChange: (draft: CharacterDraft) => void; generating: boolean; portraitDisabled: boolean; onGenerate: () => void }) {
   const set = <K extends keyof CharacterDraft>(key: K, value: CharacterDraft[K]): void => { onChange({ ...draft, [key]: value }) }
   const problems = draftProblems(draft)
   const known = places.some(place => place.key === draft.place)
@@ -108,7 +108,7 @@ function Sheet({ t, character, places, draft, onChange, generating, portraitDisa
           <Field label={t('visualGlobalId')}><Input value={draft.visualGlobalId} onChange={(event) => { set('visualGlobalId', event.target.value) }} /></Field>
         </div>
       </Section>
-      <Section title={t('speech')}>
+      <Section title={t('speech')}><Field label={t('voice')} help={t('voiceHelp')}><Input list="roleplay-tts-voices" value={draft.voice} onChange={(event) => { set('voice', event.target.value) }} /><datalist id="roleplay-tts-voices">{voices.map(voice => <option key={voice.id} value={voice.id}>{voice.name ?? voice.id}</option>)}</datalist></Field>
         <Field label={t('speechStyle')}><Area value={draft.speechStyle} rows={2} onChange={(value) => { set('speechStyle', value) }} /></Field>
         <Field label={t('speechExamples')} help={t('speechExamplesHelp')}><Area value={draft.speechExamples} rows={3} onChange={(value) => { set('speechExamples', value) }} /></Field>
       </Section>
@@ -151,10 +151,14 @@ export function CharactersPanel({ t, world, source, onChanged, actions }: {
   const [drafts, setDrafts] = useState<Record<string, CharacterDraft>>({})
   const [saving, setSaving] = useState<Saving>({ status: 'idle' })
   const [portrait, setPortrait] = useState<{ key?: string; error?: string }>({})
+  const [voices, setVoices] = useState<{ id: string; name?: string }[]>([])
+  const [narrationVoice, setNarrationVoice] = useState(world.narrationVoice ?? '')
   const body = useRef<HTMLDivElement>(null)
   const current = world.characters.find(character => character.key === chosen) ?? world.characters[0]
 
   useEffect(() => { body.current?.scrollTo({ top: 0 }) }, [current?.key])
+  useEffect(() => { const abort = new AbortController(); source.listVoices(abort.signal).then(setVoices, () => setVoices([])); return () => abort.abort() }, [source])
+  useEffect(() => { setNarrationVoice(world.narrationVoice ?? '') }, [world.narrationVoice])
 
   if (current === undefined) return <p className={css.empty}>{t('noCharacters')}</p>
   const draftOf = (character: WorldCharacter): CharacterDraft => drafts[character.key] ?? toDraft(character)
@@ -204,6 +208,8 @@ export function CharactersPanel({ t, world, source, onChanged, actions }: {
           </button>
         ))}
         <span className={css.tabsSpace} />
+        <label className={css.voiceInline}>{t('narrationVoice')}<Input list="roleplay-tts-voices" value={narrationVoice} onChange={event => setNarrationVoice(event.target.value)} /></label>
+        {narrationVoice !== (world.narrationVoice ?? '') && <Button variant="primary" size="sm" onClick={() => { source.saveNarrationVoice(narrationVoice, new AbortController().signal).then(onChanged) }}>{t('save')}</Button>}
         {actions}
       </div>
       {(dirty || saving.status !== 'idle') && (
@@ -219,7 +225,7 @@ export function CharactersPanel({ t, world, source, onChanged, actions }: {
         {portrait.error !== undefined && <p className={css.portraitError} role="alert">{t('portraitFailed', { message: portrait.error })}</p>}
         {draft.visualDescription.trim() === '' && <p className={css.portraitHint}>{t('portraitIdentityRequired')}</p>}
         {dirty && draft.visualDescription.trim() !== '' && <p className={css.portraitHint}>{t('portraitSaveFirst')}</p>}
-        <Sheet t={t} character={current} places={world.places} draft={draft} generating={portrait.key === current.key} portraitDisabled={dirty} onGenerate={generatePortrait} onChange={(next) => { setDrafts({ ...drafts, [current.key]: next }); setPortrait({}); if (saving.status !== 'saving') setSaving({ status: 'idle' }) }} />
+        <Sheet t={t} character={current} places={world.places} voices={voices} draft={draft} generating={portrait.key === current.key} portraitDisabled={dirty} onGenerate={generatePortrait} onChange={(next) => { setDrafts({ ...drafts, [current.key]: next }); setPortrait({}); if (saving.status !== 'saving') setSaving({ status: 'idle' }) }} />
       </div>
     </div>
   )

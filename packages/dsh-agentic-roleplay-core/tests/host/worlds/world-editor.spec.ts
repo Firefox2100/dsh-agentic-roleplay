@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ImageGenerationService, type ImageGenerationResult } from 'dsh-ai-core'
-import { editWorldCharacter, editWorldFaction, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, readWorldEditor } from '../../../src/host/worlds/world-editor.ts'
+import { editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, readWorldEditor } from '../../../src/host/worlds/world-editor.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
@@ -23,6 +23,7 @@ const read = async (folder: string) => JSON.parse(await readFile(fileOf(folder),
 
 beforeEach(async () => {
   world = { id: 'test-world', directory: await mkdtemp(join(tmpdir(), 'world-editor-')) }
+  await write(join(world.directory, 'world.json'), { id: world.id, name: 'Test World' })
   await write(join(world.directory, 'locations', 'bar', 'location.json'), { name: 'The Bar', exits: [{ to: 'cellar', description: 'stairs', travel_time_seconds: 20 }] })
   await write(join(world.directory, 'locations', 'cellar', 'location.json'), { name: 'The Cellar' })
   await write(join(world.directory, 'items', 'ledger', 'item.json'), { name: 'Ledger', location: 'bar' })
@@ -41,6 +42,12 @@ describe('a world in the editor', () => {
     expect(state.places).toEqual([{ key: 'bar', name: 'The Bar', description: '', features: [] }, { key: 'cellar', name: 'The Cellar', description: '', features: [] }])
     expect(state.characters.map(character => [character.key, character.control])).toEqual([['arthur', 'player'], ['clara', 'agent']])
     expect(state.characters[1]).toMatchObject({ age: '41', place: { key: 'bar', name: 'The Bar' }, state: { publicState: 'Wiping glasses' }, goals: [{ ref: '0', name: 'Find the ledger', priority: 0.8 }] })
+  })
+
+  it('stores the narrator voice in the world file', async () => {
+    const state = await editWorldNarrationVoice(world, ' narrator-1 ')
+    expect(state.narrationVoice).toBe('narrator-1')
+    expect(JSON.parse(await readFile(join(world.directory, 'world.json'), 'utf8')).narration_voice).toBe('narrator-1')
   })
 
   it('changes the file as a whole and keeps what the editor does not know, the order and the indentation; an optional field left blank leaves the file', async () => {

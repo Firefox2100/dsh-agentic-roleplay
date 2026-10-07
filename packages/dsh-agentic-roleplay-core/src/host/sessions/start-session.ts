@@ -111,6 +111,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateTriggers(session, scripted.triggers)
       populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())
       if (world.rules !== undefined) session.metadata.setValue(WORLD_RULES_KEY, world.rules)
+      if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)
     })
     await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])
     writeSettings(sessionFolder(sessionsDir, id), settings)

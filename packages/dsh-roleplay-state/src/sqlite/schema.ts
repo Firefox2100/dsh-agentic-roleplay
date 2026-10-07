@@ -525,6 +525,10 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX faction_intents_faction ON faction_intents (faction_id, status);
     `,
   },
+  {
+    version: 5,
+    sql: `ALTER TABLE characters ADD COLUMN voice TEXT;`,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

@@ -29,6 +29,7 @@ export interface WorldCharacter {
   background: string
   appearance: string
   speech: { style: string; examples: string[] }
+  voice?: string
   /** The canonical picture of the character, when it has one. */
   portrait?: string
   visualIdentity?: VisualIdentityInput
@@ -65,6 +66,7 @@ export interface WorldThing {
 }
 
 export interface WorldState {
+  narrationVoice?: string
   characters: WorldCharacter[]
   places: WorldPlace[]
   things: WorldThing[]
@@ -161,6 +163,7 @@ export interface CharacterEdit {
   /** Stable visual facts used by the canonical portrait and scene images. */
   visualIdentity?: VisualIdentityInput | null
   speech?: { style?: string; examples?: string[] }
+  voice?: string
   state?: { publicState?: string; innerState?: string; activity?: string }
   /** Where to stand, by the key of a place, and where in it. */
   place?: { location: string; position?: string }
@@ -205,12 +208,13 @@ export function parseCharacterEdit(value: unknown): CharacterEdit {
   const allowed = (source: Record<string, unknown>, keys: readonly string[], path: string): void => {
     for (const key of Object.keys(source)) if (!keys.includes(key)) problems.push(`${path}${key} is not something that can be edited`)
   }
-  allowed(input, ['name', 'aliases', 'age', 'gender', 'pronouns', 'role', 'tier', 'kind', 'summary', 'personality', 'background', 'appearance', 'visualIdentity', 'speech', 'state', 'place', 'goals'], '')
+  allowed(input, ['name', 'aliases', 'age', 'gender', 'pronouns', 'role', 'tier', 'kind', 'summary', 'personality', 'background', 'appearance', 'voice', 'visualIdentity', 'speech', 'state', 'place', 'goals'], '')
   const name = text(input, 'name', '', NAME_LIMIT)
   if (name !== undefined) { if (name.trim() === '') problems.push('name cannot be blank'); else edit.name = name.trim() }
   const aliases = list(input, 'aliases', '')
   if (aliases !== undefined) edit.aliases = aliases
   for (const key of ['age', 'gender', 'pronouns'] as const) { const found = text(input, key, '', NAME_LIMIT); if (found !== undefined) edit[key] = found }
+  const voice = text(input, 'voice', '', NAME_LIMIT); if (voice !== undefined) edit.voice = voice
   for (const key of ['summary', 'personality', 'background', 'appearance'] as const) { const found = text(input, key, '', TEXT_LIMIT); if (found !== undefined) edit[key] = found }
   const role = choice('role', CHARACTER_ROLES); if (role !== undefined) edit.role = role
   const tier = choice('tier', CHARACTER_TIERS); if (tier !== undefined) edit.tier = tier

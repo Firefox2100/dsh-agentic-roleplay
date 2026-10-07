@@ -113,3 +113,7 @@
 .imageError {
   color: var(--dsw-alias-state-error-primary);
 }
+.playAll, .playLine { border: 0; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; }
+.playAll { float: right; margin: 0 0 8px 12px; font-size: 12px; }
+.playLine { margin-left: 8px; padding: 0 3px; font-size: 10px; }
+.playAll:disabled, .playLine:disabled { cursor: wait; opacity: .5; }

@@ -22,6 +22,7 @@ function sessionOf(deps: WorldStateDeps, id: string): Session {
 const keyOf = (character: { sourceId?: string; id: number }): string => character.sourceId ?? String(character.id)
 
 function worldOf(session: Session, sessionsDir: string): WorldState {
+  const narrationVoice = session.metadata.getValue('roleplay.tts.narrationVoice')
   const characters = session.characters.list().map((character): WorldCharacter => {
     const state = session.characterStates.get(character.id)
     const placement = session.placements.get('character', character.id)
@@ -44,6 +45,7 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
       background: character.background,
       appearance: character.appearance,
       speech: character.speech,
+      ...(character.voice === undefined ? {} : { voice: character.voice }),
       ...(visualIdentity === undefined ? {} : { visualIdentity: { description: visualIdentity.description, tags: visualIdentity.tags, negativeTags: visualIdentity.negativeTags, ...(visualIdentity.globalId === undefined ? {} : { globalId: visualIdentity.globalId }) } }),
       ...(existsSync(portrait) ? { portrait: `/${API_PREFIX}/sessions/world/character/portrait/file?id=${encodeURIComponent(session.metadata.get().id)}&key=${encodeURIComponent(keyOf(character))}&v=${statSync(portrait).mtimeMs}` } : {}),
       state: { publicState: state?.publicState ?? '', innerState: state?.innerState ?? '', activity: state?.activity ?? '' },
@@ -81,7 +83,13 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
   for (const faction of session.factions.list()) for (const member of session.factionMemberships.ofFaction(faction.id)) relations.push({ key: relationKey('membership', String(faction.id), String(member.characterId)), kind: 'membership', from: characterEntity(member.characterId), to: factionEntity(faction.id), role: member.role, rank: member.rank, status: member.status, public: member.public, commitment: member.commitment })
   for (const relation of session.factionRelationships.list()) relations.push({ key: relationKey('social', relation.fromKind, String(relation.fromId), relation.toKind, String(relation.toId)), kind: 'social', from: relation.fromKind === 'faction' ? factionEntity(relation.fromId) : characterEntity(relation.fromId), to: relation.toKind === 'faction' ? factionEntity(relation.toId) : characterEntity(relation.toId), label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension })
   for (const exit of session.locations.allExits()) relations.push({ key: relationKey('exit', String(exit.id)), kind: 'exit', from: locationEntity(exit.fromId), to: locationEntity(exit.toId), description: exit.description, ...(exit.travelSeconds === undefined ? {} : { travelSeconds: exit.travelSeconds }), state: exit.state, note: exit.note })
-  return { characters, places, things, factions, relations }
+  return { ...(typeof narrationVoice === 'string' ? { narrationVoice } : {}), characters, places, things, factions, relations }
+}
+
+export function editSessionNarrationVoice(deps: WorldStateDeps, id: string, voice: string): WorldState {
+  const session = sessionOf(deps, id)
+  if (voice.trim() === '') session.metadata.deleteValue('roleplay.tts.narrationVoice'); else session.metadata.setValue('roleplay.tts.narrationVoice', voice.trim())
+  return worldOf(session, deps.sessionsDir())
 }
 
 const relationKey = (...parts: string[]): string => parts.map(part => encodeURIComponent(part)).join(':')

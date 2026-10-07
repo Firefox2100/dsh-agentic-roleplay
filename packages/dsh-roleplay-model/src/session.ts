@@ -69,6 +69,7 @@ export interface CharacterPatch {
   background?: string
   appearance?: string
   speech?: Character['speech']
+  voice?: string | null
 }
 
 export interface CharacterFilter {

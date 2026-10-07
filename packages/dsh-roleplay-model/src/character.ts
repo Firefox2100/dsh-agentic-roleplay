@@ -49,6 +49,8 @@ export interface CharacterDefinition {
   /** Stable visual facts; current expression, clothing, activity and surroundings do not belong here. */
   visualIdentity?: VisualIdentityInput
   speech: CharacterSpeech
+  /** Provider voice id used for spoken utterances. */
+  voice?: string
   start: CharacterStart
   /** How this character stands towards others of the world, by their ids. */
   relationships?: RelationshipDefinition[]
