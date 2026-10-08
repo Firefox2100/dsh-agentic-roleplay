@@ -70,6 +70,11 @@ beforeEach(async () => {
   const handler = createApiHandler({
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
     worlds,
+    createWorld: async ({ folder, name }) => ({ id: folder, name, description: '', tags: [] }),
+    authorWorld: async worldId => {
+      if (worldId === 'missing') throw new WorldNotFoundError('missing world')
+      return { chatSessionId: `world-author-${worldId}` }
+    },
     worldCharacters: async () => {
       if (charactersError !== undefined) throw charactersError
       return cast
@@ -77,20 +82,21 @@ beforeEach(async () => {
     worldEditor: {
       read: (worldId) => {
         if (editorError !== undefined) return Promise.reject(editorError)
-        return Promise.resolve({ characters: [], places: [{ key: worldId, name: 'Bar', description: '', features: [] }], things: [], factions: [], relations: [] })
+        return Promise.resolve({ characters: [], places: [{ key: worldId, name: 'Bar', description: '', features: [] }], things: [], factions: [], relations: [], plots: [] })
       },
       editCharacter: (worldId, key, edit) => {
         if (editorError !== undefined) return Promise.reject(editorError)
         edited.push(`${worldId} ${key} ${JSON.stringify(edit)}`)
-        return Promise.resolve({ characters: [], places: [], things: [], factions: [], relations: [] })
+        return Promise.resolve({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] })
       },
-      editPlace: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editThing: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editFaction: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editLore: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editRelation: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editNarrationVoice: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editPlace: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editThing: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editFaction: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editLore: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editPlots: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editRelation: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editNarrationVoice: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
     },
     sessions: {
@@ -98,15 +104,16 @@ beforeEach(async () => {
       editCharacter: (id, key, edit) => {
         if (archiveError !== undefined) throw archiveError
         edited.push(`${id} ${key} ${JSON.stringify(edit)}`)
-        return { characters: [], places: [], things: [], factions: [], relations: [] }
+        return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] }
       },
-      editPlace: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editThing: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editFaction: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editLore: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editRelation: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      editNarrationVoice: () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
-      generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [] }),
+      editPlace: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editThing: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editFaction: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editLore: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editPlots: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editRelation: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editNarrationVoice: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
       start: async (request) => {
         startedWith = request
@@ -145,7 +152,7 @@ beforeEach(async () => {
       imageFile: () => Promise.resolve({ file: join(base, 'worlds', 'harbor', 'media', 'files', 'm.png'), size: 9 }),
       world: (id) => {
         if (archiveError !== undefined) throw archiveError
-        return { characters: [{ key: id, name: 'Clara', aliases: [], role: 'npc', tier: 'principal', kind: 'person', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, state: { publicState: '', innerState: '', activity: '' }, goals: [] }], places: [], things: [], factions: [], relations: [] }
+        return { characters: [{ key: id, name: 'Clara', aliases: [], role: 'npc', tier: 'principal', kind: 'person', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, state: { publicState: '', innerState: '', activity: '' }, goals: [] }], places: [], things: [], factions: [], relations: [], plots: [] }
       },
       rename: (id, name) => {
         if (archiveError !== undefined) return Promise.reject(archiveError)
@@ -197,6 +204,15 @@ describe('roleplay API', () => {
     expect(body.directory).toBe(join(base, 'worlds'))
     expect(body.worlds).toMatchObject([{ id: 'harbor', name: 'Harbor', tags: ['noir'] }])
     expect(body.worlds[0]?.coverVersion).toBeTruthy()
+  })
+
+  it('opens a dedicated authoring chat for a world', async () => {
+    const opened = await fetch(`${origin}/worlds/authoring?id=harbor`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Authoring Harbor' }) })
+    expect(opened.status).toBe(200)
+    expect(await opened.json()).toEqual({ chatSessionId: 'world-author-harbor' })
+
+    const missing = await fetch(`${origin}/worlds/authoring?id=missing`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Missing' }) })
+    expect(missing.status).toBe(404)
   })
 
   it('re-enumerates on POST refresh', async () => {
@@ -473,7 +489,7 @@ describe('roleplay API', () => {
     })
 
     it('in a world: is read and edited by the id of the world, 404 for a world there is not, 422 when the files would not be valid', async () => {
-      expect(await (await fetch(`${origin}/worlds/state?id=harbor`)).json()).toEqual({ characters: [], places: [{ key: 'harbor', name: 'Bar', description: '', features: [] }], things: [], factions: [], relations: [] })
+      expect(await (await fetch(`${origin}/worlds/state?id=harbor`)).json()).toEqual({ characters: [], places: [{ key: 'harbor', name: 'Bar', description: '', features: [] }], things: [], factions: [], relations: [], plots: [] })
       expect((await put('/worlds/state/character?id=harbor&key=clara', { summary: 'Innkeeper' })).status).toBe(200)
       expect(edited).toEqual(['harbor clara {"summary":"Innkeeper"}'])
       editorError = new InvalidEditProblems(['there is no place "moon"'])

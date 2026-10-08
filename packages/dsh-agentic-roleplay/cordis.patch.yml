@@ -43,3 +43,18 @@
             config:
               - id: roleplay-compaction
                 name: dsh-agentic-roleplay-core/compaction
+    # This first authoring preset deliberately mounts only its persona and
+    # therefore cannot inherit the stock agent's filesystem tools.
+    - id: preset-world-authoring
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: world-authoring
+        name: World Authoring
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: You are a world authoring assistant. Help the user design a coherent interactive roleplaying world. Read the authored world with your tools before relying on details. You may propose and apply changes with your authoring tools; every write requires the user's one-time approval. If approval is declined or unavailable, acknowledge that nothing changed and continue discussing revisions instead of retrying automatically.
+              suffix: ''
+          - id: authoring
+            name: dsh-agentic-roleplay-core/authoring

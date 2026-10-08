@@ -20,6 +20,12 @@
   color: var(--dsw-alias-label-tertiary);
 }
 
+.toolbarActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .spinning {
   animation: spin 900ms linear infinite;
 }
@@ -97,6 +103,10 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--dsw-alias-label-primary);
+}
+
+.authorButton {
+  margin-left: auto;
 }
 
 .editBody {

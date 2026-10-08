@@ -1,7 +1,7 @@
-import { API_PREFIX } from '../../../shared/worlds.ts'
-import { answer, listVoices, post, put, type WorldSource } from '../../world-editor/source.ts'
+import { API_PREFIX } from '../../shared/worlds.ts'
+import { answer, listVoices, post, put, type WorldSource } from './source.ts'
 
-/** The files of a world, as the editor in the Worlds page reads and edits them. */
+/** An authored world's files, shared by the catalogue editor and its authoring chat. */
 export function worldSource(worldId: string): WorldSource {
   const id = encodeURIComponent(worldId)
   return {
@@ -11,6 +11,7 @@ export function worldSource(worldId: string): WorldSource {
     saveThing: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/thing?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     saveFaction: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/faction?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     saveLore: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/lore?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
+    savePlots: async (edit, signal) => await put(`${API_PREFIX}/worlds/state/plots?id=${id}`, edit, signal),
     saveRelation: async (edit, signal) => await put(`${API_PREFIX}/worlds/state/relation?id=${id}`, edit, signal),
     saveNarrationVoice: async (voice, signal) => await put(`${API_PREFIX}/worlds/state/narration-voice?id=${id}`, { voice }, signal),
     listVoices: async signal => await listVoices(`${API_PREFIX}/speech/voices`, signal),

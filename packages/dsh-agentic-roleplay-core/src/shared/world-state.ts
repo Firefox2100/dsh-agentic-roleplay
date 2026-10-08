@@ -1,4 +1,4 @@
-import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, LORE_KINDS, MEMBERSHIP_STATUSES, type LoreKind, type LoreSubjectKind, type VisualIdentityInput } from 'dsh-roleplay-model'
+import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, LORE_KINDS, MEMBERSHIP_STATUSES, type LoreKind, type LoreSubjectKind, type PlotDefinition, type PlotProgress, type VisualIdentityInput } from 'dsh-roleplay-model'
 
 /** One thing a character wants, as the World editor shows it. */
 export interface WorldGoal {
@@ -72,8 +72,11 @@ export interface WorldState {
   things: WorldThing[]
   factions: WorldFaction[]
   lore?: WorldLore[]
+  plots: { definition: PlotDefinition; progress?: Omit<PlotProgress, 'plot'> }[]
   relations: WorldRelation[]
 }
+
+export interface PlotsEdit { plots: PlotDefinition[] }
 
 export interface WorldLore {
   key: string

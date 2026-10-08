@@ -31,6 +31,7 @@ export interface WorldsState {
   error?: string
   dialog?: StartDialog
   started?: StartedNotice
+  authoring?: { worldId: string; error?: string }
 }
 
 export interface StartOptions {
@@ -51,6 +52,7 @@ export interface WorldsFace {
   closeStartDialog: () => void
   startSession: (options: StartOptions) => void
   dismissStarted: () => void
+  openAuthoring: (worldId: string, title: string) => void
 }
 
 async function request<T>(path: string, init: RequestInit, signal: AbortSignal): Promise<T> {
@@ -83,6 +85,7 @@ export class WorldsController {
     closeStartDialog: () => { this.closeStartDialog() },
     startSession: (options) => { void this.startSession(options) },
     dismissStarted: () => { this.store.update((draft) => { delete draft.started }) },
+    openAuthoring: (worldId, title) => { void this.openAuthoring(worldId, title) },
   }
 
   constructor(openChat: OpenChat) {
@@ -104,6 +107,20 @@ export class WorldsController {
     if (refreshing || status === 'loading') return
     this.store.update((draft) => { draft.refreshing = true })
     await this.run('/worlds/refresh', { method: 'POST' })
+  }
+
+  async openAuthoring(worldId: string, title: string): Promise<void> {
+    const current = this.store.getSnapshot().authoring
+    if (current?.worldId === worldId && current.error === undefined) return
+    this.store.update((draft) => { draft.authoring = { worldId } })
+    try {
+      const opened = await request<{ chatSessionId: string }>(`/worlds/authoring?id=${encodeURIComponent(worldId)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title }) }, this.abort.signal)
+      this.store.update((draft) => { delete draft.authoring })
+      this.openChat(opened.chatSessionId)
+    } catch (error) {
+      if (this.abort.signal.aborted) return
+      this.store.update((draft) => { draft.authoring = { worldId, error: messageOf(error) } })
+    }
   }
 
   /** Open the dialog for a world and load the characters it offers. */

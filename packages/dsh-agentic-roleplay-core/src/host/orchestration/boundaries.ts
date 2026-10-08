@@ -384,7 +384,7 @@ export interface TriggerReport {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
+  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings

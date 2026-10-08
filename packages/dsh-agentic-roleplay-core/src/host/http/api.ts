@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 import type { Note } from '../../shared/notes.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
-import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parseLoreEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type LoreEdit, type PlaceEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
+import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parseLoreEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type LoreEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
 import type { SpeechAudio, SpeechPart } from '../speech/service.ts'
 import type { TtsVoice } from 'dsh-ai-core'
@@ -14,6 +14,7 @@ import { API_PREFIX } from '../../shared/worlds.ts'
 import { InvalidSettingsError } from '../sessions/settings.ts'
 import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
+import { WorldFolderExistsError } from '../worlds/create-world.ts'
 import { readJsonBody } from './body.ts'
 import { HttpError, sendError, sendJson } from './respond.ts'
 
@@ -24,6 +25,8 @@ export interface ApiConnection {
 
 export interface ApiDeps {
   worlds: WorldCatalog
+  createWorld(input: { folder: string; name: string }): Promise<import('../../shared/worlds.ts').WorldSummary>
+  authorWorld(worldId: string, title: string): Promise<{ chatSessionId: string }>
   worldCharacters(worldId: string): Promise<WorldCharactersPayload>
   /** The characters and places of a world's files, as the editor shows them. */
   worldEditor: {
@@ -33,6 +36,7 @@ export interface ApiDeps {
     editThing(worldId: string, key: string, edit: ThingEdit): Promise<WorldState>
     editFaction(worldId: string, key: string, edit: FactionEdit): Promise<WorldState>
     editLore(worldId: string, key: string, edit: LoreEdit): Promise<WorldState>
+    editPlots(worldId: string, edit: PlotsEdit): Promise<WorldState>
     editRelation(worldId: string, edit: RelationChange): Promise<WorldState>
     editNarrationVoice(worldId: string, voice: string): Promise<WorldState>
     generatePortrait(worldId: string, key: string): Promise<WorldState>
@@ -52,6 +56,7 @@ export interface ApiDeps {
     editThing(id: string, key: string, edit: ThingEdit): WorldState
     editFaction(id: string, key: string, edit: FactionEdit): WorldState
     editLore(id: string, key: string, edit: LoreEdit): WorldState
+    editPlots(id: string, edit: PlotsEdit): WorldState
     editRelation(id: string, edit: RelationChange): WorldState
     editNarrationVoice(id: string, voice: string): WorldState
     generatePortrait(id: string, key: string): Promise<WorldState>
@@ -81,16 +86,29 @@ async function sendImage(res: ServerResponse, image: { file: string; size: numbe
 }
 
 /** Build the request handler mounted at `/${API_PREFIX}`. */
-export function createApiHandler({ worlds, worldCharacters, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
     '/speech/synthesize': { POST: async (req, res) => { const body = await readJsonBody(req) as { parts?: unknown }; if (!Array.isArray(body.parts)) return sendError(res, 400, 'parts must be a list'); const parts = body.parts.filter((part): part is SpeechPart => typeof part === 'object' && part !== null && typeof (part as SpeechPart).text === 'string'); if (parts.length !== body.parts.length) return sendError(res, 400, 'each speech part needs text'); const audio = await speech.speak(parts); res.statusCode = 200; res.setHeader('content-type', audio.mediaType); res.setHeader('content-length', audio.bytes.length); res.end(audio.bytes) } },
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
+      POST: async (req, res) => { try { const body = await readJsonBody(req) as { folder?: unknown; name?: unknown }; if (typeof body.folder !== 'string' || typeof body.name !== 'string') return sendError(res, 400, 'folder and name must be text'); sendJson(res, 201, await createWorld({ folder: body.folder, name: body.name })) } catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message); throw error } },
     },
     '/worlds/refresh': {
       POST: async (_req, res) => { sendJson(res, 200, await worlds.list({ refresh: true })) },
+    },
+    '/worlds/authoring': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { title?: unknown }
+        if (typeof body.title !== 'string' || body.title.trim() === '' || body.title.length > 300) return sendError(res, 400, 'the request needs a valid chat title')
+        try { sendJson(res, 200, await authorWorld(url.searchParams.get('id') ?? '', body.title.trim())) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
     },
     '/worlds/state': {
       GET: async (_req, res, url) => {
@@ -127,6 +145,7 @@ export function createApiHandler({ worlds, worldCharacters, worldEditor, session
     },
     '/worlds/state/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/lore': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/state/plots': { PUT: async (req, res, url) => { try { const body = await readJsonBody(req) as { plots?: unknown }; if (!Array.isArray(body.plots)) return sendError(res, 400, 'plots must be a list'); sendJson(res, 200, await worldEditor.editPlots(url.searchParams.get('id') ?? '', { plots: body.plots as PlotsEdit['plots'] })) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, await worldEditor.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/worlds/state/character/portrait': {
@@ -320,6 +339,7 @@ export function createApiHandler({ worlds, worldCharacters, worldEditor, session
     },
     '/sessions/world/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/lore': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/sessions/world/plots': { PUT: async (req, res, url) => { try { const body = await readJsonBody(req) as { plots?: unknown }; if (!Array.isArray(body.plots)) return sendError(res, 400, 'plots must be a list'); sendJson(res, 200, sessions.editPlots(url.searchParams.get('id') ?? '', { plots: body.plots as PlotsEdit['plots'] })) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, sessions.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/sessions/world/character/portrait': {

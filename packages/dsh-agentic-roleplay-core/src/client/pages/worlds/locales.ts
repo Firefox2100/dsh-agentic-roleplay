@@ -12,13 +12,15 @@ export type WorldsLocaleKey =
   | 'play' | 'chatNotOpened'
   | 'startTitle' | 'sessionName' | 'playAs' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
+  | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed'
+  | 'authorWorld' | 'openingAuthor' | 'authorWorldFailed' | 'authoringChatTitle'
 
 const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKey>> = {
   en: {
     nav: 'Worlds',
     loading: 'Loading worlds…',
     loadFailed: 'Could not load worlds: {message}',
-    empty: 'No worlds yet. Put a folder with a world.json inside {directory}.',
+    empty: 'No worlds yet. Create one here, or put a folder with a world.json inside {directory}.',
     countOne: '{count} world',
     countOther: '{count} worlds',
     refresh: 'Refresh',
@@ -43,12 +45,14 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     cancel: 'Cancel',
     close: 'Close',
     startFailed: 'Could not start the session: {message}',
+    createWorld: 'Create world', creatingWorld: 'Creating…', createWorldTitle: 'Create a world', createWorldHelp: 'This creates a minimal world and opens it in the editor. Add characters, places and everything else there.', worldFolder: 'Folder name', worldFolderHelp: 'A new folder directly inside the roleplay worlds directory.', worldName: 'World name', createWorldFailed: 'Could not create the world: {message}',
+    authorWorld: 'Author with AI', openingAuthor: 'Opening…', authorWorldFailed: 'Could not open the authoring chat: {message}', authoringChatTitle: 'Authoring {name}',
   },
   zh: {
     nav: '世界卡',
     loading: '正在加载世界卡…',
     loadFailed: '无法加载世界卡：{message}',
-    empty: '还没有世界卡。请在 {directory} 中新建文件夹并放入 world.json。',
+    empty: '还没有世界卡。可在此创建，也可在 {directory} 中新建文件夹并放入 world.json。',
     countOne: '{count} 张世界卡',
     countOther: '{count} 张世界卡',
     refresh: '刷新',
@@ -73,6 +77,8 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     cancel: '取消',
     close: '关闭',
     startFailed: '无法开始存档：{message}',
+    createWorld: '创建世界', creatingWorld: '正在创建…', createWorldTitle: '创建世界', createWorldHelp: '系统会创建一个最小世界并直接在编辑器中打开；角色、地点等内容可随后添加。', worldFolder: '文件夹名称', worldFolderHelp: '将在角色扮演 worlds 目录下直接创建这个文件夹。', worldName: '世界名称', createWorldFailed: '无法创建世界：{message}',
+    authorWorld: '使用 AI 编辑', openingAuthor: '正在打开…', authorWorldFailed: '无法打开世界编辑对话：{message}', authoringChatTitle: '编辑{name}',
   },
 }
 

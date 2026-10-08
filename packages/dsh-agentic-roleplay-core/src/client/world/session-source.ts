@@ -11,6 +11,7 @@ export function sessionSource(session: string): WorldSource {
     saveThing: async (key, edit, signal) => await put(`${API_PREFIX}/sessions/world/thing?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     saveFaction: async (key, edit, signal) => await put(`${API_PREFIX}/sessions/world/faction?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     saveLore: async (key, edit, signal) => await put(`${API_PREFIX}/sessions/world/lore?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
+    savePlots: async (edit, signal) => await put(`${API_PREFIX}/sessions/world/plots?id=${id}`, edit, signal),
     saveRelation: async (edit, signal) => await put(`${API_PREFIX}/sessions/world/relation?id=${id}`, edit, signal),
     saveNarrationVoice: async (voice, signal) => await put(`${API_PREFIX}/sessions/world/narration-voice?id=${id}`, { voice }, signal),
     listVoices: async signal => await listVoices(`${API_PREFIX}/speech/voices`, signal),

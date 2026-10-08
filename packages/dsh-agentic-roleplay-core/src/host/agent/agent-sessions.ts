@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
+import { SessionId } from '@deepseek-ai/dsh-session'
 import { chatSessionId } from '../../shared/chat.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
 import { AgentUnavailableError } from '../sessions/errors.ts'
@@ -29,6 +30,32 @@ export interface AgentServices {
   registry: WorkspaceRegistryLike
   /** Needed only to start a chat with an opening message. */
   persistence?: SessionPersistenceLike
+}
+
+export interface AgentChatRequest {
+  projectPath: string
+  projectTitle: string
+  sessionId: string
+  agentPreset: string
+  title: string
+  renameExisting?: boolean
+}
+
+async function isStored(persistence: SessionPersistenceLike | undefined, sessionId: string): Promise<boolean> {
+  return persistence?.stat !== undefined && await persistence.stat(SessionId(sessionId)) !== undefined
+}
+
+/** Create or adopt one named preset chat and only name it on first creation. */
+export async function ensureAgentChat(
+  services: AgentServices,
+  request: AgentChatRequest,
+  knownProject?: { id: string; path: string; sessionIds: readonly string[] },
+): Promise<string> {
+  const project = knownProject ?? await services.registry.create(request.projectPath, request.projectTitle)
+  const existed = project.sessionIds.includes(request.sessionId)
+  const { sessionId } = await services.controller.create({ workspaceId: project.id, sessionId: request.sessionId, agentPreset: request.agentPreset })
+  if (!existed || request.renameExisting === true) await services.controller.rename({ sessionId, title: request.title })
+  return sessionId
 }
 
 /** Looks the services up on first use: profiles without the web app do not have them. */
@@ -62,17 +89,17 @@ export class AgentSessions {
    * @throws {AgentUnavailableError} when there is an opening and no way to store it.
    */
   async ensure(sessionId: string, title: string, opening?: readonly NarrationSegment[]): Promise<string> {
-    const { controller, registry, persistence } = this.services()
+    const services = this.services()
+    const { registry, persistence } = services
     const project = await registry.create(this.projectPath(), PROJECT_TITLE)
     const wanted = chatSessionId(sessionId)
     const existed = project.sessionIds.includes(wanted)
-    if (opening !== undefined && !existed) {
+    const stored = opening !== undefined && !existed && await isStored(persistence, wanted)
+    if (opening !== undefined && !existed && !stored) {
       if (persistence === undefined) throw new AgentUnavailableError('this DSH profile cannot store a chat with an opening message')
       await storeOpening(persistence, { id: wanted, cwd: project.path, agentPreset: AGENT_PRESET }, opening)
     }
-    const { sessionId: chat } = await controller.create({ workspaceId: project.id, sessionId: wanted, agentPreset: AGENT_PRESET })
-    if (!existed) await controller.rename({ sessionId: chat, title })
-    return chat
+    return await ensureAgentChat(services, { projectPath: project.path, projectTitle: PROJECT_TITLE, sessionId: wanted, agentPreset: AGENT_PRESET, title }, project)
   }
 
   /** Give the chat of a session a new title. A chat that was never created has none to change. */
@@ -107,4 +134,4 @@ export class AgentSessions {
   }
 }
 
-export { chatSessionId }
+export { chatSessionId, isStored }

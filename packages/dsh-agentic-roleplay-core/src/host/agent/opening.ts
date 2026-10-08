@@ -1,14 +1,17 @@
 import { createMessage, createToolResultMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
+import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { encodeOutput, type NarrationSegment } from '../../shared/narration.ts'
 
 /** What the opening is reported to come from, where a chat shows the source of a message. */
 export const OPENING_SOURCE = { provider: 'roleplay', model: 'opening' } as const
+export const AUTHORING_OPENING_SOURCE = { provider: 'world-authoring', model: 'opening' } as const
 
 const NARRATE_TOOL = 'narrate'
 
 /** The slice of DSH's session persistence used to store a chat before its agent exists. */
 export interface SessionPersistenceLike {
+  stat?(id: SessionId): Promise<unknown | undefined>
   create(header: SessionHeader): Promise<{
     append(events: readonly SessionEvent[]): Promise<unknown>
     flush(): Promise<unknown>
@@ -60,6 +63,29 @@ export function openingEvents(segments: readonly NarrationSegment[]): readonly S
   return session.snapshotEvents()
 }
 
+/** A visible first turn makes a newly created authoring chat a full conversation immediately. */
+export function authoringOpeningEvents(worldName: string): readonly SessionEvent[] {
+  const session = Session.create(SessionId('authoring-opening'))
+  setApprovalPolicy(session, 'ask')
+  const turn = 1
+  const step = 1
+  session.append('turn/start', { turn })
+  session.append('step/start', { turn, step })
+  session.append('assistant/message', {
+    stream: [],
+    turn,
+    step,
+    message: createMessage({
+      role: 'assistant',
+      content: [{ type: 'text', text: `Welcome to the authoring room for “${worldName}”. I can inspect and edit the world overview, characters, locations, items, factions, lore, plots, relationships, knowledge, memberships and map exits. I will show you each proposed file change for approval before writing it; if you decline, nothing is changed and we can revise the proposal together. Tell me what you want to create, revise, or explore.` }],
+      source: { kind: 'model', ...AUTHORING_OPENING_SOURCE },
+    }),
+  }, { surfaceOp: 'append' })
+  session.append('step/end', { turn, step })
+  session.append('turn/end', { turn, reason: { kind: 'completed' } })
+  return session.snapshotEvents()
+}
+
 /**
  * Store a chat that already holds its opening, before any agent exists for it.
  * The agent loop reads its turn counter from the log when it is built, so the
@@ -70,10 +96,26 @@ export async function storeOpening(
   chat: { id: string; cwd: string; agentPreset: string },
   segments: readonly NarrationSegment[],
 ): Promise<void> {
+  await storeInitialEvents(persistence, chat, openingEvents(segments))
+}
+
+export async function storeAuthoringOpening(
+  persistence: SessionPersistenceLike,
+  chat: { id: string; cwd: string; agentPreset: string },
+  worldName: string,
+): Promise<void> {
+  await storeInitialEvents(persistence, chat, authoringOpeningEvents(worldName))
+}
+
+async function storeInitialEvents(
+  persistence: SessionPersistenceLike,
+  chat: { id: string; cwd: string; agentPreset: string },
+  events: readonly SessionEvent[],
+): Promise<void> {
   const header: SessionHeader = { version: 4, id: SessionId(chat.id), createdAt: Date.now(), cwd: chat.cwd, isSeeded: false, agentPreset: chat.agentPreset }
   const handle = await persistence.create(header)
   try {
-    await handle.append(openingEvents(segments))
+    await handle.append(events)
     await handle.flush()
   } finally {
     await handle.close()

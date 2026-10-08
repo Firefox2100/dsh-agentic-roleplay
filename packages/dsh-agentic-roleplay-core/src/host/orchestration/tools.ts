@@ -8,6 +8,8 @@ import { AUTHORING_NEEDS } from './boundaries.ts'
 import { ITEM_ACTIONS, describeDuration, type ItemAction } from 'dsh-roleplay-state'
 import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } from './turn-engine.ts'
+import { plotAuthorNeeded, updatePlotProgress } from '../pacing/director.ts'
+import { authorPlot } from '../pacing/author.ts'
 
 export const ACTIVATE_TOOL = 'activate_characters'
 export const RESOLVE_TOOL = 'resolve_round'
@@ -18,6 +20,8 @@ export const TIME_TOOL = 'advance_time'
 export const PREVIEW_TOOL = 'preview_scene'
 export const RULING_TOOL = 'ooc_ruling'
 export const JUDGE_TOOL = 'judge_action'
+export const PLOT_TOOL = 'record_plot_progress'
+export const AUTHOR_PLOT_TOOL = 'author_plot'
 
 export interface ToolDeps {
   engine: TurnEngine
@@ -286,6 +290,36 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
+  const plot = defineTool({
+    name: PLOT_TOOL,
+    description: 'Record only what play has already established about an optional plot. introduced means the named opportunity actually became perceptible in the resolved round, not merely that the pacing note suggested it. rejected means the player clearly declined that specific hook. resolved or abandoned applies to the plot as a whole. This records pacing state; it creates no event and makes nothing happen.',
+    parameters: {
+      plot: { type: 'string', required: true, description: 'The plot id from the pacing opportunity.' },
+      development: { type: 'string', description: 'The development id; required for introduced or rejected.' },
+      action: { type: 'string', required: true, enum: ['introduced', 'rejected', 'resolved', 'abandoned'] },
+    },
+    output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: `Plot pacing recorded: ${(value as unknown as { plot: { name: string }; status: string }).plot.name} is ${(value as unknown as { status: string }).status}.` }] },
+    isConcurrencySafe: () => false,
+    execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      return Promise.resolve(record(updatePlotProgress(storeOf(owner.chat), args.plot, args.development, args.action)))
+    },
+  })
+
+  const makePlot = defineTool({
+    name: AUTHOR_PLOT_TOOL,
+    description: 'Ask a plot author for one optional, branching dramatic scaffold grounded in the current session. Use only when the scene explicitly says the quiet story has no plot scaffold and a reusable tension would help. It creates possibilities, not events, actions or obligations; do not introduce any part until a later pacing opportunity fits.',
+    parameters: {},
+    output: { schema: { type: 'json' }, render: (_args, value) => { const made = value as unknown as { id: string; name: string; premise: string }; return [{ type: 'text', text: `Authored optional plot ${made.name} [${made.id}]: ${made.premise}. Nothing in it has happened. Continue this turn normally; a later pacing opportunity may offer a hook.` }] } },
+    isConcurrencySafe: () => false,
+    async execute(_args, exec) {
+      const { agent, owner } = ownerOf(exec.agent)
+      const store = storeOf(owner.chat)
+      if (!plotAuthorNeeded(store, owner.turn)) throw new Error('the story does not currently need a plot author; continue with its existing plots, threads and character goals')
+      return record(await authorPlot(agent, store, owner.turn, exec.signal))
+    },
+  })
+
   const expand = defineTool({
     name: EXPAND_TOOL,
     description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are), object (a thing that matters has actually been handed over, found or drawn and does not exist yet; or a place on the body that the world has no slot for), trigger (the story set up a moment that is bound to come, such as a deadline given, a promised arrival or a trap laid, that can be stated as a condition: a time, someone in a place, a thing held, a variable, an event), variable (a quantity, state or choice the story established matters from here on and nothing tracked fits: a debt, a health, a reputation). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, loot, props for decoration, or anything an existing character, place or thing can serve; use those. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
@@ -378,5 +412,5 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [judge, preview, ruling, activate, resolve, skip, remember, expand, narrate]
+  return [judge, preview, ruling, activate, resolve, skip, remember, expand, makePlot, plot, narrate]
 }

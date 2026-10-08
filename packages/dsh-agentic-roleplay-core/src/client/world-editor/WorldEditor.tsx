@@ -6,6 +6,7 @@ import { PlacesPanel, ThingsPanel } from './EntityPanels.tsx'
 import { FactionsPanel } from './FactionsPanel.tsx'
 import { RelationsPanel } from './RelationsPanel.tsx'
 import { LorePanel } from './LorePanel.tsx'
+import { PlotsPanel } from './PlotsPanel.tsx'
 import type { WorldLocaleKey } from './locales.ts'
 import { NotEditableError, type WorldSource } from './source.ts'
 import css from './WorldEditor.module.css'
@@ -24,6 +25,7 @@ const SECTIONS = [
   { id: 'things', label: 'things', built: true },
   { id: 'factions', label: 'factions', built: true },
   { id: 'lore', label: 'lore', built: true },
+  { id: 'plots', label: 'plots', built: true },
   { id: 'relations', label: 'relationships', built: true },
 ] as const
 
@@ -86,6 +88,7 @@ export function WorldEditor({ t, source, notEditable }: { t: Translate; source: 
         {section === 'things' && <ThingsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'factions' && <FactionsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'lore' && <LorePanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'plots' && <PlotsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'relations' && <RelationsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
       </div>
     </div>

@@ -4,7 +4,7 @@ import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
 import type { ImageGenerationService } from 'dsh-ai-core'
-import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
+import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
 import { CHARACTER_FILE_NAME, parseCharacterFile } from '../characters/character-file.ts'
 import { subfolders } from '../folders.ts'
@@ -21,6 +21,7 @@ import { formatIssue } from '../validation.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { generateReferenceImage } from '../images/generator.ts'
+import { loadPlots, parsePlotsFile, plotReferenceProblems, PLOTS_FILE_NAME } from '../plots/load.ts'
 
 /** What of a world the editor needs: the folder it is in. */
 export interface EditableWorld {
@@ -60,7 +61,7 @@ function stateOf(world: EditableWorld, definition: CharacterDefinition, names: R
 
 /** The characters of a world as they start, and the places they can start in. */
 export async function readWorldEditor(world: EditableWorld): Promise<WorldState> {
-  const [{ characters }, { locations }, { factions }, { lore }] = await Promise.all([loadCharacters(world.directory), loadLocations(world.directory), loadFactions(world.directory), loadLore(world.directory)])
+  const [{ characters }, { locations }, { factions }, { lore }, { plots }] = await Promise.all([loadCharacters(world.directory), loadLocations(world.directory), loadFactions(world.directory), loadLore(world.directory), loadPlots(world.directory)])
   const { items } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
   const names = new Map(locations.map(location => [location.id, location.name]))
   const characterNames = new Map(characters.map(character => [character.id, character.name]))
@@ -93,8 +94,20 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
     things: items.map(item => ({ key: item.id, name: item.name, description: item.description, quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearable === undefined ? {} : { wearable: item.wearable }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.owner === undefined ? {} : { owner: { key: item.owner, name: characterNames.get(item.owner) ?? item.owner } }), holder: holder(item), ...(item.visualIdentity === undefined ? {} : { visualIdentity: item.visualIdentity }) })),
     factions: factions.map(faction => ({ key: faction.id, name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: faction.start.publicState, innerState: faction.start.innerState }, goals: faction.start.goals.map((goal, index) => ({ ref: String(index), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: faction.members.map(member => ({ ...member, name: characterNames.get(member.character) ?? member.character })), relationships: faction.relationships.map(relationship => ({ target: `${relationship.to.kind}:${relationship.to.id}`, label: relationship.label, summary: relationship.summary ?? '' })) })),
     lore: lore.map(entry => ({ key: entry.id, title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: subject.id, name: subject.kind === 'character' ? characterNames.get(subject.id) ?? subject.id : subject.kind === 'faction' ? factionNames.get(subject.id) ?? subject.id : subject.kind === 'location' ? names.get(subject.id) ?? subject.id : subject.kind === 'item' ? itemNames.get(subject.id) ?? subject.id : lore.find(candidate => candidate.id === subject.id)?.title ?? subject.id })), related: entry.related.map(key => ({ key, title: lore.find(candidate => candidate.id === key)?.title ?? key })), sources: entry.sources })),
+    plots: plots.map(definition => ({ definition })),
     relations,
   }
+}
+
+export async function editWorldPlots(world: EditableWorld, edit: PlotsEdit): Promise<WorldState> {
+  const parsed = parsePlotsFile(JSON.stringify(edit.plots))
+  if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
+  const state = await readWorldEditor(world)
+  const references = plotReferenceProblems(parsed.value, [...state.characters.map(entry => entry.key), ...state.factions.map(entry => entry.key), ...state.places.map(entry => entry.key), ...state.things.map(entry => entry.key), ...(state.lore ?? []).map(entry => entry.key)])
+  if (references.length > 0) throw new InvalidEditProblems(references)
+  const document = parsed.value.map(plot => ({ ...plot, pacing: { quiet_turns: plot.pacing.quietTurns, cooldown_turns: plot.pacing.cooldownTurns, cooldown_days: plot.pacing.cooldownDays } }))
+  await replaceFile(join(world.directory, PLOTS_FILE_NAME), JSON.stringify(document, null, 2) + '\n')
+  return await readWorldEditor(world)
 }
 
 export async function editWorldLore(world: EditableWorld, key: string, edit: LoreEdit): Promise<WorldState> {
@@ -190,7 +203,7 @@ function apply(document: Json, edit: CharacterEdit, problems: string[]): void {
 async function replaceFile(file: string, text: string): Promise<void> {
   const temporary = join(dirname(file), `.${basename(file)}.${process.pid}.${randomUUID()}.tmp`)
   try {
-    const { mode } = await stat(file)
+    const mode = await stat(file).then(value => value.mode, (error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return 0o644; throw error })
     await writeFile(temporary, text, { mode })
     await chmod(temporary, mode)
     await rename(temporary, file)

@@ -7,7 +7,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
 import * as SessionInvariant from '@deepseek-ai/dsh-session/invariant'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { openingEvents, storeOpening, type SessionPersistenceLike } from '../../../src/host/agent/opening.ts'
+import { authoringOpeningEvents, openingEvents, storeOpening, type SessionPersistenceLike } from '../../../src/host/agent/opening.ts'
 import { decodeOutput, type NarrationSegment } from '../../../src/shared/narration.ts'
 import { mountAgentServices } from '../../support/mount.ts'
 import { ScriptedAdapter } from '../../support/scripted-adapter.ts'
@@ -39,6 +39,16 @@ describe('the events of an opening', () => {
     const result = events.find(event => event.type === 'tool/result')!
     const text = textOf((result.data as unknown as { message: { content: { type: string; text?: string }[] } }).message.content)
     expect(decodeOutput(text)).toEqual({ segments: OPENING, repaired: false })
+  })
+})
+
+describe('the opening of an authoring chat', () => {
+  it('is a finished assistant turn without pretending that a tool was used', () => {
+    const events = authoringOpeningEvents('Harbor')
+    expect(events.map(event => event.type)).toEqual(['approval/policy', 'turn/start', 'step/start', 'assistant/message', 'step/end', 'turn/end'])
+    expect(events[0]).toMatchObject({ data: { policy: 'ask' } })
+    expect(JSON.stringify(events[3])).toContain('authoring room for “Harbor”')
+    expect(events.some(event => event.type === 'tool/call')).toBe(false)
   })
 })
 

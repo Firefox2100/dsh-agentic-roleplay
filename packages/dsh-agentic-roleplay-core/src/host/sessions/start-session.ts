@@ -9,6 +9,8 @@ import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
 import { loadLore } from '../lore/load.ts'
 import { loadTriggers } from '../triggers/load.ts'
+import { loadPlots, plotReferenceProblems } from '../plots/load.ts'
+import { populatePlots } from '../pacing/director.ts'
 import { loadVariables, variableProblems } from '../variables/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -76,6 +78,10 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
 
   const scripted = await loadTriggers(world.directory)
   if (scripted.problems.length > 0) throw new InvalidWorldError(`the triggers of "${world.summary.name}" have ${scripted.problems.length} problem(s)`, scripted.problems)
+  const authoredPlots = await loadPlots(world.directory)
+  if (authoredPlots.problems.length > 0) throw new InvalidWorldError(`the plots of "${world.summary.name}" have ${authoredPlots.problems.length} problem(s)`, authoredPlots.problems)
+  const plotReferences = plotReferenceProblems(authoredPlots.plots, [...characters.map(entry => entry.id), ...factions.map(entry => entry.id), ...locations.map(entry => entry.id), ...items.map(entry => entry.id), ...authoredLore.lore.map(entry => entry.id)])
+  if (plotReferences.length > 0) throw new InvalidWorldError(`the plots of "${world.summary.name}" have ${plotReferences.length} invalid participant(s)`, plotReferences.map(message => ({ path: world.directory, message })))
 
   const related = relationshipProblems(characters)
   if (related.length > 0) throw new InvalidWorldError(`the relationships of "${world.summary.name}" have ${related.length} problem(s)`, related.map(message => ({ path: world.directory, message })))
@@ -115,6 +121,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateKnowledge(session, characters)
       populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
       populateTriggers(session, scripted.triggers)
+      populatePlots(session.metadata, authoredPlots.plots)
       populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())
       if (world.rules !== undefined) session.metadata.setValue(WORLD_RULES_KEY, world.rules)
       if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)

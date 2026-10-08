@@ -7,9 +7,10 @@ import { Pager } from '../../widgets/pager/Pager.tsx'
 import { ProblemList } from '../../widgets/problem-list/ProblemList.tsx'
 import { WorldCard } from '../../widgets/world-card/WorldCard.tsx'
 import { WorldEditor } from '../../world-editor/WorldEditor.tsx'
-import { worldSource } from './world-source.ts'
+import { worldSource } from '../../world-editor/authored-world-source.ts'
 import { StartSessionDialog } from './StartSessionDialog.tsx'
 import { useGridFit } from './use-grid-fit.ts'
+import { CreateWorldDialog } from './CreateWorldDialog.tsx'
 import type { WorldsFace } from './worlds-controller.ts'
 import css from './WorldsPage.module.css'
 
@@ -19,12 +20,13 @@ export type WorldsPageProps =
   & InjectFace<WorldsFace>
 
 /** The worlds, one page of cards at a time. */
-export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, closeStartDialog, startSession, dismissStarted }: WorldsPageProps) {
+export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, closeStartDialog, startSession, dismissStarted, openAuthoring }: WorldsPageProps) {
   const state = useWorlds(snapshot => snapshot)
   const viewport = useRef<HTMLDivElement>(null)
   const { pageSize, scrolls } = pagingFor(useGridFit(viewport))
   const [requestedStart, setRequestedStart] = useState(0)
   const [editing, setEditing] = useState<{ id: string; name: string } | undefined>()
+  const [creating, setCreating] = useState(false)
   const source = useMemo(() => (editing === undefined ? undefined : worldSource(editing.id)), [editing])
 
   useEffect(() => { load() }, [load])
@@ -45,7 +47,11 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         <div className={css.editHeader}>
           <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
           <span className={css.editTitle}>{editing.name}</span>
+          <Button className={css.authorButton} variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name })) }}>
+            {state.authoring?.worldId === editing.id && state.authoring.error === undefined ? t('openingAuthor') : t('authorWorld')}
+          </Button>
         </div>
+        {state.authoring?.worldId === editing.id && state.authoring.error !== undefined && <p className={css.notice} role="alert">{t('authorWorldFailed', { message: state.authoring.error })}</p>}
         <div className={css.editBody}>
           <WorldEditor t={t} source={source} notEditable={t('worldMissing')} />
         </div>
@@ -57,7 +63,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
     <div className={css.page} data-testid="roleplay-worlds-page">
       <div className={css.toolbar}>
         <span className={css.count}>{state.payload === undefined ? '' : count}</span>
-        <Button
+        <div className={css.toolbarActions}><Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('createWorld')}</Button><Button
           variant="outline"
           size="sm"
           icon={<IconRefreshOutlineRegular className={state.refreshing ? css.spinning : undefined} />}
@@ -66,7 +72,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
           onClick={refresh}
         >
           {state.refreshing ? t('refreshing') : t('refresh')}
-        </Button>
+        </Button></div>
       </div>
 
       {state.error !== undefined && !failedWithoutData && (
@@ -113,6 +119,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
       {state.dialog !== undefined && (
         <StartSessionDialog key={state.dialog.worldId} t={t} dialog={state.dialog} onStart={startSession} onClose={closeStartDialog} />
       )}
+      {creating && <CreateWorldDialog t={t} onClose={() => { setCreating(false) }} onCreated={(world) => { setCreating(false); setEditing({ id: world.id, name: world.name }); refresh() }} />}
       {state.started !== undefined && (
         <Toast key={state.started.sequence} text={t('chatNotOpened', { name: state.started.sessionName, message: state.started.reason })} onDone={dismissStarted} />
       )}

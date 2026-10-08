@@ -5,11 +5,14 @@ import {
   type AgentServices,
 } from '../../../src/host/agent/agent-sessions.ts'
 import { AgentUnavailableError } from '../../../src/host/sessions/errors.ts'
+import { AUTHORING_AGENT_PRESET, AUTHORING_PROJECT_TITLE, AuthoringSessions } from '../../../src/host/agent/authoring-sessions.ts'
+import { authoredWorldOf, authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 
-function fakes(known: string[] = []) {
+function fakes(known: string[] = [], stored: string[] = []) {
   const calls: unknown[][] = []
   const services: AgentServices = {
     persistence: {
+      stat: (id) => { calls.push(['stat', id]); return Promise.resolve(stored.includes(id) ? {} : undefined) },
       create: (header) => {
         calls.push(['store', header.id, header.cwd, header.agentPreset])
         return Promise.resolve({
@@ -38,6 +41,60 @@ describe('chatSessionId', () => {
   })
 })
 
+describe('authoring chat identity', () => {
+  it('round-trips arbitrary world ids without colliding with roleplay sessions', () => {
+    const chat = authoringChatSessionId('港口 / night')
+    expect(chat).toBe('world-author-%E6%B8%AF%E5%8F%A3%20%2F%20night')
+    expect(authoredWorldOf(chat)).toBe('港口 / night')
+    expect(authoredWorldOf('session-abc')).toBeUndefined()
+    expect(authoredWorldOf('world-author-%zz')).toBeUndefined()
+  })
+})
+
+describe('AuthoringSessions', () => {
+  it('creates one specially named preset chat in the shared authoring workspace', async () => {
+    const { calls, services } = fakes()
+    const authoring = new AuthoringSessions(() => services, () => '/data/roleplay')
+
+    expect(await authoring.ensure('harbor', 'Harbor')).toBe('world-author-harbor')
+    expect(calls).toEqual([
+      ['project', '/data/roleplay/worlds', AUTHORING_PROJECT_TITLE],
+      ['stat', 'world-author-harbor'],
+      ['store', 'world-author-harbor', '/data/roleplay/worlds/canonical', AUTHORING_AGENT_PRESET],
+      ['store-events', 'approval/policy,turn/start,step/start,assistant/message,step/end,turn/end'],
+      ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
+      ['rename', { sessionId: 'world-author-harbor', title: 'Authoring Harbor' }],
+    ])
+  })
+
+  it('reopens an existing authoring chat and applies the requested localized name', async () => {
+    const { calls, services } = fakes(['world-author-harbor'])
+    await new AuthoringSessions(() => services, () => '/data').ensure('harbor', 'New name')
+    expect(calls).toEqual([
+      ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
+      ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
+      ['rename', { sessionId: 'world-author-harbor', title: 'Authoring New name' }],
+    ])
+  })
+
+  it('adopts a stored authoring chat that is not yet attached to the workspace', async () => {
+    const { calls, services } = fakes([], ['world-author-harbor'])
+    await new AuthoringSessions(() => services, () => '/data').ensure('harbor', 'Harbor')
+    expect(calls).toEqual([
+      ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
+      ['stat', 'world-author-harbor'],
+      ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
+      ['rename', { sessionId: 'world-author-harbor', title: 'Authoring Harbor' }],
+    ])
+  })
+
+  it('refuses to make a new empty authoring chat when persistence is unavailable', async () => {
+    const { services } = fakes()
+    delete services.persistence
+    await expect(new AuthoringSessions(() => services, () => '/data').ensure('harbor', 'Harbor')).rejects.toThrow(AgentUnavailableError)
+  })
+})
+
 describe('AgentSessions', () => {
   it('creates the chat in the one Roleplay project at the roleplay root', async () => {
     const { calls, services } = fakes()
@@ -53,9 +110,9 @@ describe('AgentSessions', () => {
   it('stores the opening of a new chat before the chat is created, so the chat starts from it', async () => {
     const { calls, services } = fakes()
     await new AgentSessions(() => services, () => '/data/roleplay').ensure('abc', 'Night one', [{ type: 'narration', text: 'The lanterns sway.' }])
-    expect(calls.map(call => call[0])).toEqual(['project', 'store', 'store-events', 'session', 'rename'])
-    expect(calls[1]).toEqual(['store', 'session-abc', '/data/roleplay/canonical', AGENT_PRESET])
-    expect(calls[2]).toEqual(['store-events', 'turn/start,step/start,assistant/message,tool/call,tool/result,step/end,turn/end'])
+    expect(calls.map(call => call[0])).toEqual(['project', 'stat', 'store', 'store-events', 'session', 'rename'])
+    expect(calls[2]).toEqual(['store', 'session-abc', '/data/roleplay/canonical', AGENT_PRESET])
+    expect(calls[3]).toEqual(['store-events', 'turn/start,step/start,assistant/message,tool/call,tool/result,step/end,turn/end'])
   })
 
   it('leaves a chat that exists as it is, opening or not', async () => {

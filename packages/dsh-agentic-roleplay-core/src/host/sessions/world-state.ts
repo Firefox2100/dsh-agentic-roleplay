@@ -2,11 +2,13 @@ import { existsSync, statSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import type { ImageGenerationService } from 'dsh-ai-core'
 import { isSessionId, sessionDatabase, sessionFolder, type RoleplayState, type Session } from 'dsh-roleplay-state'
-import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
+import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
 import { SessionNotFoundError } from './errors.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { generateReferenceImage } from '../images/generator.ts'
+import { PLOTS_METADATA_KEY, plotProgressOf, populatePlots } from '../pacing/director.ts'
+import { parsePlotsFile, plotReferenceProblems } from '../plots/load.ts'
 
 export interface WorldStateDeps {
   state: Pick<RoleplayState, 'openSession'>
@@ -85,7 +87,8 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
   for (const faction of session.factions.list()) for (const member of session.factionMemberships.ofFaction(faction.id)) relations.push({ key: relationKey('membership', String(faction.id), String(member.characterId)), kind: 'membership', from: characterEntity(member.characterId), to: factionEntity(faction.id), role: member.role, rank: member.rank, status: member.status, public: member.public, commitment: member.commitment })
   for (const relation of session.factionRelationships.list()) relations.push({ key: relationKey('social', relation.fromKind, String(relation.fromId), relation.toKind, String(relation.toId)), kind: 'social', from: relation.fromKind === 'faction' ? factionEntity(relation.fromId) : characterEntity(relation.fromId), to: relation.toKind === 'faction' ? factionEntity(relation.toId) : characterEntity(relation.toId), label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension })
   for (const exit of session.locations.allExits()) relations.push({ key: relationKey('exit', String(exit.id)), kind: 'exit', from: locationEntity(exit.fromId), to: locationEntity(exit.toId), description: exit.description, ...(exit.travelSeconds === undefined ? {} : { travelSeconds: exit.travelSeconds }), state: exit.state, note: exit.note })
-  return { ...(typeof narrationVoice === 'string' ? { narrationVoice } : {}), characters, places, things, factions, lore, relations }
+  const plots = plotProgressOf(session.metadata).map(({ plot, ...progress }) => ({ definition: plot, progress }))
+  return { ...(typeof narrationVoice === 'string' ? { narrationVoice } : {}), characters, places, things, factions, lore, plots, relations }
 }
 
 function subjectName(session: Session, kind: 'character' | 'faction' | 'location' | 'item' | 'lore', id: number): string {
@@ -96,6 +99,23 @@ export function editWorldLore(deps: WorldStateDeps, id: string, key: string, edi
   const session = sessionOf(deps, id); const entry = session.lore.list().find(candidate => (candidate.sourceId ?? String(candidate.id)) === key)
   if (entry === undefined) throw new InvalidEditProblems([`there is no lore "${key}"`])
   session.lore.update(entry.id, edit)
+  return worldOf(session, deps.sessionsDir())
+}
+
+export function editWorldPlots(deps: WorldStateDeps, id: string, edit: PlotsEdit): WorldState {
+  const parsed = parsePlotsFile(JSON.stringify(edit.plots))
+  if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(issue => `${issue.path}: ${issue.message}`))
+  const session = sessionOf(deps, id)
+  const references = plotReferenceProblems(parsed.value, [...session.characters.list().map(entry => entry.sourceId ?? String(entry.id)), ...session.factions.list().map(entry => entry.sourceId ?? String(entry.id)), ...session.locations.list().map(entry => entry.sourceId ?? String(entry.id)), ...session.items.list().map(entry => entry.sourceId ?? String(entry.id)), ...session.lore.list().map(entry => entry.sourceId ?? String(entry.id))])
+  if (references.length > 0) throw new InvalidEditProblems(references)
+  const existing = new Map(plotProgressOf(session.metadata).map(progress => [progress.plot.id, progress]))
+  populatePlots(session.metadata, parsed.value)
+  const merged = plotProgressOf(session.metadata)
+  for (const progress of merged) {
+    const prior = existing.get(progress.plot.id)
+    if (prior !== undefined) Object.assign(progress, { status: prior.status, introduced: prior.introduced, rejected: prior.rejected, lastNudgeTurn: prior.lastNudgeTurn, ...(prior.lastNudgeAt === undefined ? {} : { lastNudgeAt: prior.lastNudgeAt }) })
+  }
+  session.metadata.setValue(PLOTS_METADATA_KEY, merged as never)
   return worldOf(session, deps.sessionsDir())
 }
 
