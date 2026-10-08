@@ -93,6 +93,14 @@ describe('recall', () => {
     expect(recalled[0]).toMatchObject({ clarity: 'clear', text: 'Bob took a key, I think from the desk.', turn: 1 })
   })
 
+  it('uses a directional relationship to strengthen a named person as a recall cue', () => {
+    const carol = store.characters.add(newCharacter({ sourceId: 'carol', name: 'Carol', aliases: [] }))
+    saw(1, 'Bob made a quiet promise.', 3, [bob.id])
+    saw(1, 'Carol made a quiet promise.', 3, [carol.id])
+    store.relationships.upsert(alice.id, bob.id, { label: 'rival', trust: -1, tension: 1 }, 1)
+    expect(ask('Bob and Carol are both waiting', 2, { recall: 1 })[0]?.text).toContain('Bob')
+  })
+
   it('returns at most the number asked for, in the order they happened', () => {
     for (let turn = 1; turn <= 6; turn++) saw(turn, `Something about Bob ${turn}`, 3, [bob.id])
     const recalled = ask('Bob', 7, { recall: 3 })

@@ -111,7 +111,7 @@ export interface CharacterRequest {
   lookup: boolean
   /** The place the character is in, when it is in one: the scene it is told is this place and who is here. */
   place?: PlaceView
-  /** How the character stands towards those it is with, where there is a profile of them. */
+  /** How the character stands towards people who bear on the moment, where there is a profile of them. */
   relationships?: readonly KnownRelationship[]
   /** Entities this character knows exist; absent entities are unknown. */
   knowledge?: KnowledgeView
@@ -136,6 +136,8 @@ export interface KnownRelationship {
   name: string
   label: string
   summary: string
+  /** Whether the other character is physically present. */
+  present: boolean
   familiarity: number
   trust: number
   affinity: number

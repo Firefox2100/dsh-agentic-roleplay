@@ -135,6 +135,25 @@ function present(cast: readonly CastMember[], self: string): string {
   }).join('\n')
 }
 
+/** A bounded, advisory order for who is most likely to need a turn; reachability still governs activation. */
+export function describeActivationCandidates(cast: readonly CastMember[], input: string, story: TurnStore['story']): string {
+  const player = cast.find(member => member.character.control === 'player')
+  if (player === undefined) return ''
+  const named = mentioned(input, cast.map(member => member.character))
+  const cues = tokens(input)
+  const candidates = cast.filter(member => member.character.control === 'agent').map((member) => {
+    const relation = story.relationships.get(member.character.id, player.character.id)
+    const here = member.place === undefined || player.place === undefined || member.place.location.id === player.place.location.id
+    const goal = story.intents.list(member.character.id, { status: 'active' }).map(intent => ({ intent, match: overlap(cues, `${intent.name} ${intent.description}`, []) })).sort((a, b) => b.match - a.match)[0]
+    const factionGoal = story.factionMemberships.ofCharacter(member.character.id, 'active').flatMap(membership => story.factionIntents.list(membership.factionId, { status: 'active' }).map(intent => ({ intent, match: overlap(cues, `${intent.name} ${intent.description}`, []) * membership.commitment }))).sort((a, b) => b.match - a.match)[0]
+    const reasons = [named.has(member.character.id) ? 'named in the move' : '', here ? 'in the scene' : '', (goal?.match ?? 0) >= 2 ? `own goal: ${goal!.intent.name}` : '', (factionGoal?.match ?? 0) >= 2 ? `faction pressure: ${factionGoal!.intent.name}` : '', relation !== undefined && relation.tension >= 0.5 ? 'high tension toward the player' : '', relation !== undefined && relation.trust <= -0.4 ? 'distrusts the player' : '', relation !== undefined && Math.abs(relation.affinity) >= 0.4 ? relation.affinity > 0 ? 'cares about the player' : 'dislikes the player' : ''].filter(reason => reason !== '')
+    const score = (named.has(member.character.id) ? 4 : 0) + (here ? 2 : 0) + Math.min(2, (goal?.match ?? 0) / 2) + Math.min(2, (factionGoal?.match ?? 0) / 2) + (relation?.tension ?? 0) + Math.max(0, -(relation?.trust ?? 0)) * 0.5 + Math.abs(relation?.affinity ?? 0) * 0.5
+    return { member, reasons, score }
+  }).filter(entry => entry.score > 0).sort((a, b) => b.score - a.score || a.member.key.localeCompare(b.member.key)).slice(0, 5)
+  if (candidates.length === 0) return ''
+  return `Likely characters to activate, in priority order (advice only; activate only whoever the moment actually reaches):\n${candidates.map(({ member, reasons }) => `- ${member.character.name} (${member.key}): ${reasons.join(', ') || 'socially implicated'}`).join('\n')}`
+}
+
 function said(entry: { name: string; utterance?: string; intent: string; result: string; summary: string }): string {
   return `- ${entry.name}${entry.utterance === undefined ? '' : ` said "${entry.utterance}" and`} intended: ${entry.intent} (${entry.result}) ${entry.summary}`
 }
@@ -173,7 +192,7 @@ export const sharedContext: CharacterContextProvider = {
     if (day.length > 0) sections.push(`Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):\n${day.join('\n')}`)
     if (carrying !== undefined && carrying.length > 0) sections.push(`What you have on you:\n${describeItems(carrying, { withKeys: false })}`)
     if (relationships !== undefined && relationships.length > 0) {
-      sections.push(`How you stand with those here (your own view of them):\n${relationships.map((relation) => { const attitude = describeAttitude(relation); return `- ${relation.name} (${relation.label})${relation.summary === '' ? '' : `: ${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
+      sections.push(`How you stand with people who bear on this moment (your own view, not objective fact):\n${relationships.map((relation) => { const attitude = describeAttitude(relation); return `- ${relation.name}${relation.present ? ' (here)' : ' (not here)'} — ${relation.label}${relation.summary === '' ? '' : `: ${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
     }
     if (affiliations !== undefined && affiliations.length > 0) {
       sections.push(`Your affiliations (their goals are pressures and commitments, not commands):\n${affiliations.map((entry) => {
@@ -210,7 +229,7 @@ export const sharedContext: CharacterContextProvider = {
     return {
       persona: [
         describe(member.character),
-        `Rules that always hold: you act only as ${member.character.name}. You know only what is in the situation you are given, who is present and what you remember; never use anything else, and do not claim to remember more. You never describe, decide or speak for another character, and you never narrate the world. Stay in character.`,
+        `Rules that always hold: you act only as ${member.character.name}. You know only what is in the situation you are given, who is present and what you remember; never use anything else, and do not claim to remember more. You never describe, decide or speak for another character, and you never narrate the world. Stay in character. Your relationships are your own fallible attitudes: let them shape how you interpret ambiguity, what you risk and how you speak, but never treat them as orders or as proof of another person's motives. Low familiarity especially means uncertainty, even when trust or affection is strong.`,
         ...(request.lookup ? ['If you need to remember something that the situation does not give you, ask yourself with recall_my_memories. Do not use it otherwise.'] : []),
         `Each time you are asked, decide what ${member.character.name} does now and answer with exactly three things: intent (one action, in one or two sentences, no speech), utterance (the words said aloud, word for word, in your own voice; leave it out if you stay silent) and commitment (low gives up at once, medium tries again if it is easy, high persists).`,
       ].join('\n\n'),
@@ -295,6 +314,8 @@ export const castSummary: SceneContextProvider = {
     const player = cast.find(member => member.character.control === 'player')
     const days = time?.agenda === undefined ? '' : describeSceneAgenda(time.agenda, time.now.now)
     const parts = [...(time === undefined ? [] : [timeNotice(time)]), ...(days === '' ? [] : [days]), `Scene before turn ${turn}:\n${cast.some(member => member.place !== undefined) ? placedScene(cast, player, story, describeMember, items) : cast.map(describeMember).join('\n')}`]
+    const activation = describeActivationCandidates(cast, input, story)
+    if (activation !== '') parts.push(activation)
     if (items !== undefined) {
       const carried = cast.flatMap(member => { const mine = items.carried(member.character.id); return mine.length === 0 ? [] : [`- ${member.character.name} (${member.key}): ${describeItems(mine, { withKeys: true })}`] })
       if (carried.length > 0) parts.push(`What characters have on them:\n${carried.join('\n')}`)

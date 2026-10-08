@@ -1,4 +1,4 @@
-import { describeValue, locationKey as placeKey, type ItemEffect, type Recalled } from 'dsh-roleplay-state'
+import { describeValue, locationKey as placeKey, mentioned, type ItemEffect, type Recalled } from 'dsh-roleplay-state'
 import { MAX_OOC_NOTE, type OocRuling } from '../../shared/ooc.ts'
 import { suggestionProblems, tidySuggestions } from './suggestions.ts'
 import type { RoutineMove } from '../clock/agenda.ts'
@@ -740,7 +740,7 @@ export class TurnEngine {
         : state.recalled.get(key) ?? []
       if (number === 1 && memories.length > 0) state.recalled.set(key, memories)
       const place = member.place === undefined ? undefined : store?.place(member.place.location.id)
-      const relationships = store === undefined ? [] : this.knownRelationships(member, place === undefined ? cast : place.here, store)
+      const relationships = store === undefined ? [] : this.knownRelationships(member, place === undefined ? cast : place.here, state.situation, cast, store)
       const carrying = store === undefined ? [] : store.carried(member.character.id)
       const knowledge = store?.knowledge(member.character.id, owner.turn, (place === undefined ? cast : place.here).map(entry => entry.character.id))
       const affiliations = store?.affiliations(member.character.id) ?? []
@@ -792,11 +792,14 @@ export class TurnEngine {
     return texts
   }
 
-  /** How a character sees those it is with, for those it has a profile of. */
-  private knownRelationships(member: CastMember, company: readonly CastMember[], store: TurnStore): KnownRelationship[] {
+  /** How a character sees people present or explicitly in the moment, for those it has a profile of. */
+  private knownRelationships(member: CastMember, company: readonly CastMember[], situation: string, cast: readonly CastMember[], store: TurnStore): KnownRelationship[] {
+    const present = new Set(company.map(candidate => candidate.character.id))
+    const relevant = mentioned(situation, cast.map(candidate => candidate.character))
     return store.story.relationships.from(member.character.id).flatMap((relation) => {
-      const other = company.find(candidate => candidate.character.id === relation.toId)
-      return other === undefined || other.key === member.key ? [] : [{ name: other.character.name, label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }]
+      if (!present.has(relation.toId) && !relevant.has(relation.toId)) return []
+      const other = cast.find(candidate => candidate.character.id === relation.toId)
+      return other === undefined || other.key === member.key ? [] : [{ name: other.character.name, label: relation.label, summary: relation.summary, present: present.has(relation.toId), familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }]
     })
   }
 

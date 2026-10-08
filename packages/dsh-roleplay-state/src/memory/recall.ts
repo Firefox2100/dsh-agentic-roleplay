@@ -1,5 +1,5 @@
 import type { Character, CharacterId, CharacterMemory, PerceivedEvent } from 'dsh-roleplay-model'
-import type { ClockRepository, EventRepository, MemoryRepository } from '../repositories.ts'
+import type { ClockRepository, EventRepository, MemoryRepository, RelationshipRepository } from '../repositories.ts'
 
 const DAY = 86_400_000
 
@@ -50,6 +50,8 @@ export interface RecallSource {
   events: Pick<EventRepository, 'perceivedBy'>
   memories: Pick<MemoryRepository, 'list'>
   clock: Pick<ClockRepository, 'get' | 'log'>
+  /** Optional for lightweight callers; a session supplies it so socially charged people are stronger cues. */
+  relationships?: Pick<RelationshipRepository, 'from'>
 }
 
 /** Story days for the memory of an unimportant event to halve; each step of importance doubles it. */
@@ -182,8 +184,8 @@ export interface RecallCandidate {
  * so what is missing never counts against anything.
  */
 const FUSION_WEIGHTS = { cues: 1, lexical: 1, dense: 1.5 } as const
-/** Cues of the moment add up (a name counts 3, shared words up to 6, a place 2); this much is as good as a cue gets. */
-const FULL_CUE = 6
+/** Cues of the moment add up (a name counts 3 plus up to 2 for social salience, shared words up to 6, a place 2). */
+const FULL_CUE = 8
 /** What the fused retrieval score counts for next to how much a memory matters and how recent it is (up to about 2.6 and 2). */
 const RELEVANCE_SCALE = 10
 /** What a reranker's judgement counts for next to the fused retrieval score, when there is one. */
@@ -216,6 +218,8 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
   const names = new Map(characters.map(character => [character.id, character.name]))
   const peers = mentioned(situation, characters)
   peers.delete(characterId)
+  const social = new Map((source.relationships?.from(characterId) ?? []).map(relation => [relation.toId, Math.min(2, relation.tension + Math.abs(relation.affinity) * 0.5 + Math.max(0, -relation.trust) * 0.5)]))
+  const peopleCue = (ids: readonly number[]): number => ids.filter(id => peers.has(id)).reduce((score, id) => score + 3 + (social.get(id) ?? 0), 0)
   const cues = tokens(situation)
   const now = source.clock.get()?.now
   const changes = source.clock.log()
@@ -234,7 +238,7 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
       return ({
       key: `p:${seen.perception.id}`,
       recalled: describeEvent(seen, names, at),
-      relevance: 3 * seen.event.involves.filter(id => peers.has(id)).length + overlap(cues, `${seen.perception.content} ${seen.event.text}`, seen.event.tags)
+      relevance: peopleCue(seen.event.involves) + overlap(cues, `${seen.perception.content} ${seen.event.text}`, seen.event.tags)
         + (locationId !== undefined && seen.event.locationId === locationId ? PLACE_CUE : 0),
       importance: seen.event.importance,
       ageDays: ageDays(at),
@@ -247,7 +251,7 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
       return ({
       key: `m:${belief.id}`,
       recalled: describeBelief(belief, at),
-      relevance: 3 * belief.about.filter(id => peers.has(id)).length + overlap(cues, belief.text, []),
+      relevance: peopleCue(belief.about) + overlap(cues, belief.text, []),
       importance: belief.importance,
       ageDays: ageDays(at),
       recalls: belief.recalls,

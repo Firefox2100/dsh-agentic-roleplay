@@ -111,7 +111,7 @@ function affiliationsOf(session: Session, characterId: number): FactionAffiliati
     const faction = session.factions.get(membership.factionId)
     if (faction === undefined) return []
     const relation = session.factionRelationships.get('character', characterId, 'faction', faction.id)
-    const relationship = relation === undefined ? undefined : { name: faction.name, label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }
+    const relationship = relation === undefined ? undefined : { name: faction.name, label: relation.label, summary: relation.summary, present: false, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }
     return [{ name: faction.name, role: membership.role, rank: membership.rank, status: membership.status, commitment: membership.commitment, publicState: session.factionStates.get(faction.id)?.publicState ?? '', goals: session.factionIntents.list(faction.id, { status: 'active' }).map(intent => intent.name), ...(relationship === undefined ? {} : { relationship }) }]
   })
 }
