@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 import type { Note } from '../../shared/notes.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
-import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type PlaceEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
+import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parseLoreEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type LoreEdit, type PlaceEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
 import type { SpeechAudio, SpeechPart } from '../speech/service.ts'
 import type { TtsVoice } from 'dsh-ai-core'
@@ -32,6 +32,7 @@ export interface ApiDeps {
     editPlace(worldId: string, key: string, edit: PlaceEdit): Promise<WorldState>
     editThing(worldId: string, key: string, edit: ThingEdit): Promise<WorldState>
     editFaction(worldId: string, key: string, edit: FactionEdit): Promise<WorldState>
+    editLore(worldId: string, key: string, edit: LoreEdit): Promise<WorldState>
     editRelation(worldId: string, edit: RelationChange): Promise<WorldState>
     editNarrationVoice(worldId: string, voice: string): Promise<WorldState>
     generatePortrait(worldId: string, key: string): Promise<WorldState>
@@ -50,6 +51,7 @@ export interface ApiDeps {
     editPlace(id: string, key: string, edit: PlaceEdit): WorldState
     editThing(id: string, key: string, edit: ThingEdit): WorldState
     editFaction(id: string, key: string, edit: FactionEdit): WorldState
+    editLore(id: string, key: string, edit: LoreEdit): WorldState
     editRelation(id: string, edit: RelationChange): WorldState
     editNarrationVoice(id: string, voice: string): WorldState
     generatePortrait(id: string, key: string): Promise<WorldState>
@@ -124,6 +126,7 @@ export function createApiHandler({ worlds, worldCharacters, worldEditor, session
       },
     },
     '/worlds/state/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/state/lore': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, await worldEditor.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/worlds/state/character/portrait': {
@@ -316,6 +319,7 @@ export function createApiHandler({ worlds, worldCharacters, worldEditor, session
       },
     },
     '/sessions/world/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/sessions/world/lore': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, sessions.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/sessions/world/character/portrait': {

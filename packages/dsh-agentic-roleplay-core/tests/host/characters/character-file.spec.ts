@@ -242,7 +242,7 @@ describe('relationships in a character file', () => {
 describe('entity knowledge in a character file', () => {
   it('reads known places, things and directed ways', () => {
     expect(parse({ name: 'Eleanor', knowledge: { locations: ['town', 'observatory'], items: ['brass-key'], exits: [{ from: 'town', to: 'station' }] } }).knowledge).toEqual({
-      locations: ['town', 'observatory'], items: ['brass-key'], exits: [{ from: 'town', to: 'station' }],
+      locations: ['town', 'observatory'], items: ['brass-key'], exits: [{ from: 'town', to: 'station' }], lore: [],
     })
   })
 

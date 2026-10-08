@@ -10,6 +10,7 @@ import type {
   ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
   FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
+  LoreRepository,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
@@ -35,6 +36,7 @@ import { SqliteCharacterStateRepository } from './sqlite/state-repository.ts'
 import { SqliteVisualIdentityRepository } from './sqlite/visual-identity-repository.ts'
 import { SqliteKnowledgeRepository } from './sqlite/knowledge-repository.ts'
 import { SqliteFactionIntentRepository, SqliteFactionMembershipRepository, SqliteFactionRelationshipRepository, SqliteFactionRepository, SqliteFactionStateRepository } from './sqlite/faction-repositories.ts'
+import { SqliteLoreRepository } from './sqlite/lore-repository.ts'
 
 export interface StoreOptions extends OpenOptions {
   /** Defaults to the driver on Node's built-in SQLite. */
@@ -55,6 +57,7 @@ export interface SessionStore {
   readonly factionMemberships: FactionMembershipRepository
   readonly factionRelationships: FactionRelationshipRepository
   readonly factionIntents: FactionIntentRepository
+  readonly lore: LoreRepository
   readonly intents: IntentRepository
   readonly events: EventRepository
   readonly memories: MemoryRepository
@@ -144,6 +147,7 @@ class SqliteSessionStore implements SessionStore {
   readonly factionMemberships: FactionMembershipRepository
   readonly factionRelationships: FactionRelationshipRepository
   readonly factionIntents: FactionIntentRepository
+  readonly lore: LoreRepository
   readonly intents: IntentRepository
   readonly events: EventRepository
   readonly memories: MemoryRepository
@@ -176,6 +180,7 @@ class SqliteSessionStore implements SessionStore {
     this.factionMemberships = new SqliteFactionMembershipRepository(db)
     this.factionRelationships = new SqliteFactionRelationshipRepository(db, clock)
     this.factionIntents = new SqliteFactionIntentRepository(db, clock)
+    this.lore = new SqliteLoreRepository(db, () => clock().toISOString())
     this.intents = new SqliteIntentRepository(db, clock)
     this.locations = new SqliteLocationRepository(db, clock, id => { this.eventRepository.reindexPlace(id) })
     this.placements = new SqlitePlacementRepository(db, this.locations)

@@ -1,4 +1,4 @@
-import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, MEMBERSHIP_STATUSES, type VisualIdentityInput } from 'dsh-roleplay-model'
+import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, LORE_KINDS, MEMBERSHIP_STATUSES, type LoreKind, type LoreSubjectKind, type VisualIdentityInput } from 'dsh-roleplay-model'
 
 /** One thing a character wants, as the World editor shows it. */
 export interface WorldGoal {
@@ -71,8 +71,24 @@ export interface WorldState {
   places: WorldPlace[]
   things: WorldThing[]
   factions: WorldFaction[]
+  lore?: WorldLore[]
   relations: WorldRelation[]
 }
+
+export interface WorldLore {
+  key: string
+  title: string
+  kind: LoreKind
+  summary: string
+  body: string
+  startsAt?: number
+  endsAt?: number
+  subjects: { kind: LoreSubjectKind; key: string; name: string }[]
+  related: { key: string; title: string }[]
+  sources: string[]
+}
+
+export interface LoreEdit { title?: string; kind?: LoreKind; summary?: string; body?: string; startsAt?: number | null; endsAt?: number | null; sources?: string[] }
 
 export interface RelationEntity {
   kind: 'character' | 'location' | 'item' | 'faction' | 'exit'
@@ -364,6 +380,21 @@ export function parseFactionEdit(value: unknown): FactionEdit {
   if ('goals' in input) {
     try { edit.goals = parseCharacterEdit({ goals: input['goals'] }).goals } catch (error) { if (error instanceof InvalidEditProblems) problems.push(...error.problems); else throw error }
   }
+  if (problems.length > 0) throw new InvalidEditProblems(problems)
+  return edit
+}
+
+export function parseLoreEdit(value: unknown): LoreEdit {
+  const problems: string[] = []
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new InvalidEditProblems(['the edit must be an object'])
+  const input = value as Record<string, unknown>; const edit: LoreEdit = {}
+  for (const key of Object.keys(input)) if (!['title', 'kind', 'summary', 'body', 'startsAt', 'endsAt', 'sources'].includes(key)) problems.push(`${key} is not something that can be edited`)
+  for (const key of ['title', 'summary', 'body'] as const) if (key in input) { const found = input[key]; if (typeof found !== 'string' || found.length > TEXT_LIMIT) problems.push(`${key} must be text`); else if (key === 'title' && found.trim() === '') problems.push('title cannot be blank'); else edit[key] = key === 'title' ? found.trim() : found }
+  if ('kind' in input) { if (typeof input['kind'] !== 'string' || !LORE_KINDS.includes(input['kind'] as LoreKind)) problems.push(`kind must be one of: ${LORE_KINDS.join(', ')}`); else edit.kind = input['kind'] as LoreKind }
+  for (const key of ['startsAt', 'endsAt'] as const) if (key in input) { const found = input[key]; if (found !== null && (typeof found !== 'number' || !Number.isFinite(found))) problems.push(`${key} must be a timestamp or null`); else edit[key] = found as number | null }
+  if ('sources' in input) { const found = input['sources']; if (!Array.isArray(found) || !found.every(entry => typeof entry === 'string' && entry.length <= TEXT_LIMIT)) problems.push('sources must be a list of texts'); else edit.sources = found as string[] }
+  const starts = edit.startsAt === null ? undefined : edit.startsAt; const ends = edit.endsAt === null ? undefined : edit.endsAt
+  if (starts !== undefined && ends !== undefined && ends < starts) problems.push('endsAt must not be before startsAt')
   if (problems.length > 0) throw new InvalidEditProblems(problems)
   return edit
 }

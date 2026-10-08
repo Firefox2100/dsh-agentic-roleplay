@@ -1,4 +1,4 @@
-import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type FactionDefinition, type Holder, type ItemDefinition, type LocationDefinition, type Slot } from 'dsh-roleplay-model'
+import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type FactionDefinition, type Holder, type ItemDefinition, type LocationDefinition, type LoreDefinition, type LoreSubject, type Slot } from 'dsh-roleplay-model'
 import { MINUTE, parseTimeOfDay, triggerReferenceProblems, type Session } from 'dsh-roleplay-state'
 import { InvalidWorldError } from './errors.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
@@ -29,9 +29,10 @@ export function factionProblems(factions: readonly FactionDefinition[], characte
 }
 
 /** What is wrong with the places, things and directed ways characters are authored to know. */
-export function knowledgeProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[], items: readonly ItemDefinition[]): string[] {
+export function knowledgeProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[], items: readonly ItemDefinition[], lore: readonly LoreDefinition[] = []): string[] {
   const places = new Map(locations.map(location => [location.id, location]))
   const things = new Set(items.map(item => item.id))
+  const loreIds = new Set(lore.map(entry => entry.id))
   return characters.flatMap(character => {
     const prefix = `${character.id}: knowledge`
     const knowledge = character.knowledge
@@ -40,8 +41,23 @@ export function knowledgeProblems(characters: readonly CharacterDefinition[], lo
       ...knowledge.locations.flatMap(key => places.has(key) ? [] : [`${prefix}.locations: "${key}" is not a place of this world`]),
       ...knowledge.items.flatMap(key => things.has(key) ? [] : [`${prefix}.items: "${key}" is not an item of this world`]),
       ...knowledge.exits.flatMap(({ from, to }) => places.get(from)?.exits.some(exit => exit.to === to) === true ? [] : [`${prefix}.exits: there is no exit from "${from}" to "${to}"`]),
+      ...(knowledge.lore ?? []).flatMap(key => loreIds.has(key) ? [] : [`${prefix}.lore: "${key}" is not lore of this world`]),
     ]
   })
+}
+
+export function loreProblems(lore: readonly LoreDefinition[], world: { characters: readonly CharacterDefinition[]; factions: readonly FactionDefinition[]; locations: readonly LocationDefinition[]; items: readonly ItemDefinition[] }): string[] {
+  const ids = { character: new Set(world.characters.map(x => x.id)), faction: new Set(world.factions.map(x => x.id)), location: new Set(world.locations.map(x => x.id)), item: new Set(world.items.map(x => x.id)), lore: new Set(lore.map(x => x.id)) }
+  return lore.flatMap(entry => [
+    ...entry.subjects.flatMap(subject => ids[subject.kind].has(subject.id) ? [] : [`${entry.id}: subjects: "${subject.id}" is not a ${subject.kind} of this world`]),
+    ...entry.related.flatMap(id => id === entry.id ? [`${entry.id}: related: lore cannot relate to itself`] : ids.lore.has(id) ? [] : [`${entry.id}: related: "${id}" is not lore of this world`]),
+  ])
+}
+
+export function populateLore(session: Session, definitions: readonly LoreDefinition[]): void {
+  for (const entry of definitions) session.lore.add({ sourceId: entry.id, title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: [], related: [], sources: entry.sources })
+  const subject = (wanted: LoreDefinition['subjects'][number]): LoreSubject => ({ kind: wanted.kind, id: wanted.kind === 'character' ? session.characters.getBySourceId(wanted.id)!.id : wanted.kind === 'faction' ? session.factions.getBySourceId(wanted.id)!.id : wanted.kind === 'location' ? session.locations.getBySourceId(wanted.id)!.id : wanted.kind === 'item' ? session.items.getBySourceId(wanted.id)!.id : session.lore.getBySourceId(wanted.id)!.id })
+  for (const entry of definitions) session.lore.update(session.lore.getBySourceId(entry.id)!.id, { subjects: entry.subjects.map(subject), related: entry.related.map(id => session.lore.getBySourceId(id)!.id) })
 }
 
 /** What is wrong with where the characters start, found before anything is created. */
@@ -175,6 +191,7 @@ export function populateKnowledge(session: Session, characters: readonly Charact
       session.knowledge.learn(character.id, 'location', exit.fromId, 0)
       session.knowledge.learn(character.id, 'location', exit.toId, 0)
     }
+    for (const key of definition.knowledge?.lore ?? []) session.knowledge.learn(character.id, 'lore', session.lore.getBySourceId(key)!.id, 0)
     const placement = session.placements.get('character', character.id)
     if (placement === undefined) continue
     session.knowledge.learn(character.id, 'location', placement.locationId, 0, true)

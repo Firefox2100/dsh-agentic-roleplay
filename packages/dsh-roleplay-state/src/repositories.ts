@@ -61,6 +61,7 @@ import type {
   KnowledgeKind,
   Faction, FactionId, FactionPatch, NewFaction, FactionState, NewFactionState, FactionStatePatch,
   FactionMembership, MembershipPatch, MembershipStatus, FactionRelationship, SocialSubjectKind, FactionIntent,
+  Lore, LoreId, LorePatch, NewLore,
 } from 'dsh-roleplay-model'
 
 /**
@@ -354,6 +355,15 @@ export interface KnowledgeRepository {
   get(characterId: CharacterId, subjectKind: KnowledgeKind, subjectId: number): EntityKnowledge | undefined
   list(characterId: CharacterId, subjectKind?: KnowledgeKind): EntityKnowledge[]
   forget(characterId: CharacterId, subjectKind: KnowledgeKind, subjectId: number): boolean
+}
+
+export interface LoreRepository {
+  add(entry: NewLore): Lore
+  get(id: LoreId): Lore | undefined
+  getBySourceId(sourceId: string): Lore | undefined
+  list(): Lore[]
+  update(id: LoreId, patch: LorePatch): Lore
+  remove(id: LoreId): boolean
 }
 
 /** What was made up in play and still has to be fitted into the rest of the world. */

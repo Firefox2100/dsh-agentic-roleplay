@@ -1,4 +1,4 @@
-import type { CharacterEdit, FactionEdit, PlaceEdit, RelationChange, ThingEdit, WorldState } from '../../shared/world-state.ts'
+import type { CharacterEdit, FactionEdit, LoreEdit, PlaceEdit, RelationChange, ThingEdit, WorldState } from '../../shared/world-state.ts'
 
 /** Where the editor reads a world from and writes its changes to: a session's story, or a world's files. */
 export interface WorldSource {
@@ -8,6 +8,7 @@ export interface WorldSource {
   savePlace(key: string, edit: PlaceEdit, signal: AbortSignal): Promise<WorldState>
   saveThing(key: string, edit: ThingEdit, signal: AbortSignal): Promise<WorldState>
   saveFaction(key: string, edit: FactionEdit, signal: AbortSignal): Promise<WorldState>
+  saveLore(key: string, edit: LoreEdit, signal: AbortSignal): Promise<WorldState>
   saveRelation(edit: RelationChange, signal: AbortSignal): Promise<WorldState>
   saveNarrationVoice(voice: string, signal: AbortSignal): Promise<WorldState>
   listVoices(signal: AbortSignal): Promise<{ id: string; name?: string }[]>
@@ -32,7 +33,7 @@ export async function answer(response: Response): Promise<WorldState> {
   return await response.json() as WorldState
 }
 
-export async function put(url: string, edit: CharacterEdit | PlaceEdit | ThingEdit | FactionEdit | RelationChange | { voice: string }, signal: AbortSignal): Promise<WorldState> {
+export async function put(url: string, edit: CharacterEdit | PlaceEdit | ThingEdit | FactionEdit | LoreEdit | RelationChange | { voice: string }, signal: AbortSignal): Promise<WorldState> {
   return await answer(await fetch(url, { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(edit), signal }))
 }
 

@@ -529,6 +529,49 @@ export const MIGRATIONS: readonly Migration[] = [
     version: 5,
     sql: `ALTER TABLE characters ADD COLUMN voice TEXT;`,
   },
+  {
+    version: 6,
+    sql: `
+      CREATE TABLE lore (
+        id INTEGER PRIMARY KEY,
+        source_id TEXT UNIQUE,
+        title TEXT NOT NULL,
+        kind TEXT NOT NULL CHECK (kind IN ('history', 'culture', 'religion', 'politics', 'geography', 'science', 'custom', 'legend', 'other')),
+        summary TEXT NOT NULL DEFAULT '',
+        body TEXT NOT NULL DEFAULT '',
+        starts_at INTEGER,
+        ends_at INTEGER,
+        sources_json TEXT NOT NULL DEFAULT '[]',
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE lore_subjects (
+        lore_id INTEGER NOT NULL REFERENCES lore (id) ON DELETE CASCADE,
+        subject_kind TEXT NOT NULL CHECK (subject_kind IN ('character', 'faction', 'location', 'item', 'lore')),
+        subject_id INTEGER NOT NULL,
+        PRIMARY KEY (lore_id, subject_kind, subject_id)
+      ) STRICT;
+      CREATE INDEX lore_subjects_subject ON lore_subjects (subject_kind, subject_id);
+      CREATE TABLE lore_relations (
+        lore_id INTEGER NOT NULL REFERENCES lore (id) ON DELETE CASCADE,
+        related_lore_id INTEGER NOT NULL REFERENCES lore (id) ON DELETE CASCADE,
+        PRIMARY KEY (lore_id, related_lore_id),
+        CHECK (lore_id <> related_lore_id)
+      ) STRICT;
+
+      ALTER TABLE entity_knowledge RENAME TO old_entity_knowledge;
+      CREATE TABLE entity_knowledge (
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        subject_kind TEXT NOT NULL CHECK (subject_kind IN ('location', 'item', 'exit', 'lore')),
+        subject_id INTEGER NOT NULL,
+        learned_turn INTEGER NOT NULL,
+        last_observed_turn INTEGER,
+        PRIMARY KEY (character_id, subject_kind, subject_id)
+      ) STRICT;
+      INSERT INTO entity_knowledge SELECT * FROM old_entity_knowledge;
+      DROP TABLE old_entity_knowledge;
+      CREATE INDEX entity_knowledge_subject ON entity_knowledge (subject_kind, subject_id);
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

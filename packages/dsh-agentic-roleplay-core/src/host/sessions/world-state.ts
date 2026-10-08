@@ -2,7 +2,7 @@ import { existsSync, statSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import type { ImageGenerationService } from 'dsh-ai-core'
 import { isSessionId, sessionDatabase, sessionFolder, type RoleplayState, type Session } from 'dsh-roleplay-state'
-import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type NewRelationEdit, type PlaceEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
+import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
 import { SessionNotFoundError } from './errors.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
@@ -70,6 +70,7 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
     const state = session.factionStates.get(faction.id)
     return { key: faction.sourceId ?? String(faction.id), name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: state?.publicState ?? '', innerState: state?.innerState ?? '' }, goals: session.factionIntents.list(faction.id).map(goal => ({ ref: String(goal.id), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: session.factionMemberships.ofFaction(faction.id).map(member => { const character = session.characters.get(member.characterId); return { character: character?.sourceId ?? String(member.characterId), name: character?.name ?? String(member.characterId), role: member.role, rank: member.rank, status: member.status, public: member.public, commitment: member.commitment } }), relationships: session.factionRelationships.from('faction', faction.id).map(relationship => ({ target: `${relationship.toKind}:${relationship.toKind === 'faction' ? session.factions.get(relationship.toId)?.name ?? relationship.toId : session.characters.get(relationship.toId)?.name ?? relationship.toId}`, label: relationship.label, summary: relationship.summary })) }
   })
+  const lore = session.lore.list().map(entry => ({ key: entry.sourceId ?? String(entry.id), title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: String(subject.id), name: subjectName(session, subject.kind, subject.id) })), related: entry.related.flatMap(id => { const found = session.lore.get(id); return found === undefined ? [] : [{ key: found.sourceId ?? String(found.id), title: found.title }] }), sources: entry.sources }))
   const entity = (kind: RelationEntity['kind'], key: string, name: string): RelationEntity => ({ kind, key, name })
   const characterEntity = (id: number) => { const value = session.characters.get(id); return entity('character', value === undefined ? String(id) : keyOf(value), value?.name ?? String(id)) }
   const factionEntity = (id: number) => { const value = session.factions.get(id); return entity('faction', value?.sourceId ?? String(id), value?.name ?? String(id)) }
@@ -77,13 +78,25 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
   const relations: WorldRelation[] = []
   for (const relation of session.relationships.list()) relations.push({ key: relationKey('character', String(relation.fromId), String(relation.toId)), kind: 'character', from: characterEntity(relation.fromId), to: characterEntity(relation.toId), label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension })
   for (const character of session.characters.list()) for (const knowledge of session.knowledge.list(character.id)) {
+    if (knowledge.subjectKind === 'lore') continue
     const target = knowledge.subjectKind === 'location' ? locationEntity(knowledge.subjectId) : knowledge.subjectKind === 'item' ? (() => { const value = session.items.get(knowledge.subjectId); return entity('item', value?.sourceId ?? String(knowledge.subjectId), value?.name ?? String(knowledge.subjectId)) })() : (() => { const value = session.locations.allExits().find(exit => exit.id === knowledge.subjectId); return entity('exit', String(knowledge.subjectId), value === undefined ? String(knowledge.subjectId) : `${locationName(value.fromId)} → ${locationName(value.toId)}`) })()
     relations.push({ key: relationKey('knowledge', String(character.id), knowledge.subjectKind, String(knowledge.subjectId)), kind: 'knowledge', from: characterEntity(character.id), to: target, observed: knowledge.lastObservedTurn !== undefined })
   }
   for (const faction of session.factions.list()) for (const member of session.factionMemberships.ofFaction(faction.id)) relations.push({ key: relationKey('membership', String(faction.id), String(member.characterId)), kind: 'membership', from: characterEntity(member.characterId), to: factionEntity(faction.id), role: member.role, rank: member.rank, status: member.status, public: member.public, commitment: member.commitment })
   for (const relation of session.factionRelationships.list()) relations.push({ key: relationKey('social', relation.fromKind, String(relation.fromId), relation.toKind, String(relation.toId)), kind: 'social', from: relation.fromKind === 'faction' ? factionEntity(relation.fromId) : characterEntity(relation.fromId), to: relation.toKind === 'faction' ? factionEntity(relation.toId) : characterEntity(relation.toId), label: relation.label, summary: relation.summary, familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension })
   for (const exit of session.locations.allExits()) relations.push({ key: relationKey('exit', String(exit.id)), kind: 'exit', from: locationEntity(exit.fromId), to: locationEntity(exit.toId), description: exit.description, ...(exit.travelSeconds === undefined ? {} : { travelSeconds: exit.travelSeconds }), state: exit.state, note: exit.note })
-  return { ...(typeof narrationVoice === 'string' ? { narrationVoice } : {}), characters, places, things, factions, relations }
+  return { ...(typeof narrationVoice === 'string' ? { narrationVoice } : {}), characters, places, things, factions, lore, relations }
+}
+
+function subjectName(session: Session, kind: 'character' | 'faction' | 'location' | 'item' | 'lore', id: number): string {
+  return kind === 'character' ? session.characters.get(id)?.name ?? String(id) : kind === 'faction' ? session.factions.get(id)?.name ?? String(id) : kind === 'location' ? session.locations.get(id)?.name ?? String(id) : kind === 'item' ? session.items.get(id)?.name ?? String(id) : session.lore.get(id)?.title ?? String(id)
+}
+
+export function editWorldLore(deps: WorldStateDeps, id: string, key: string, edit: LoreEdit): WorldState {
+  const session = sessionOf(deps, id); const entry = session.lore.list().find(candidate => (candidate.sourceId ?? String(candidate.id)) === key)
+  if (entry === undefined) throw new InvalidEditProblems([`there is no lore "${key}"`])
+  session.lore.update(entry.id, edit)
+  return worldOf(session, deps.sessionsDir())
 }
 
 export function editSessionNarrationVoice(deps: WorldStateDeps, id: string, voice: string): WorldState {

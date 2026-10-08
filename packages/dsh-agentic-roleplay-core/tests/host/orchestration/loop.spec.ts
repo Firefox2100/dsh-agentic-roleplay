@@ -1272,7 +1272,7 @@ describe('a turn with the real agent loop', () => {
     expect(asText(master[0]!)).toContain('Alice (acts through')
 
     for (const request of characterRequests(adapter)) {
-      expect(toolNames(request)).toEqual(['recall_my_known_entities', 'recall_my_memories', 'submit_result'])
+      expect(toolNames(request)).toEqual(['recall_my_known_entities', 'recall_my_lore', 'recall_my_memories', 'submit_result'])
       expect(systemOf(request)).not.toContain('game master')
       expect(asText(request)).not.toContain('Scene before turn')
       expect(asText(request)).toContain('Arthur opens the vault door')

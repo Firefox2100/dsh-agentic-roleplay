@@ -13,7 +13,7 @@ import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock'>
+  session: Pick<Session, 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock'>
   /** The time zone the story's times are written and read in; UTC when not given. */
   timeZone?: string
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
@@ -72,6 +72,17 @@ export function createTools(resolve: AgentResolver, options: {
   authoring?: boolean
 }): ToolDefinition[] {
   const reads = [
+    defineTool({
+      name: 'search_lore',
+      description: 'Search the canonical background lore of the story. Use this when history, culture, geography, institutions, customs or legends matter to the scene. This is game-master knowledge; character agents receive only lore they explicitly know.',
+      parameters: { about: { type: 'string', required: true }, limit: { type: 'integer', description: 'Maximum entries, from 1 to 20.' } },
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: str, title: str, kind: str, summary: str, body: str, sources: strs } } }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent); const needle = args.about.trim().toLowerCase(); const limit = Math.max(1, Math.min(20, args.limit ?? 8))
+        return session.lore.list().filter(entry => `${entry.title} ${entry.summary} ${entry.body} ${entry.sources.join(' ')}`.toLowerCase().includes(needle)).slice(0, limit).map(entry => ({ key: entry.sourceId ?? String(entry.id), title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, sources: entry.sources }))
+      },
+    }),
     defineTool({
       name: 'list_characters',
       description: 'List the characters of the story with the key each is named by, who controls it and a short summary.',

@@ -107,7 +107,7 @@ function readKnowledge(reader: Reader | undefined): KnowledgeDefinition | undefi
     const to = exit.string('to', { required: true })
     return from === undefined || to === undefined ? [] : [{ from, to }]
   })
-  return { locations: reader.strings('locations'), items: reader.strings('items'), exits }
+  return { locations: reader.strings('locations'), items: reader.strings('items'), exits, lore: reader.strings('lore') }
 }
 
 function readRelationships(reader: Reader): RelationshipDefinition[] {

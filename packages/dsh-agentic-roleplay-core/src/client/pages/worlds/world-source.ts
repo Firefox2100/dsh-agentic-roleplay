@@ -10,6 +10,7 @@ export function worldSource(worldId: string): WorldSource {
     savePlace: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/place?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     saveThing: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/thing?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     saveFaction: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/faction?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
+    saveLore: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/lore?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     saveRelation: async (edit, signal) => await put(`${API_PREFIX}/worlds/state/relation?id=${id}`, edit, signal),
     saveNarrationVoice: async (voice, signal) => await put(`${API_PREFIX}/worlds/state/narration-voice?id=${id}`, { voice }, signal),
     listVoices: async signal => await listVoices(`${API_PREFIX}/speech/voices`, signal),

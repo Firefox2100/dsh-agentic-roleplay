@@ -173,6 +173,7 @@ export class RoleplayState extends Service {
       factionMemberships: store.factionMemberships,
       factionRelationships: store.factionRelationships,
       factionIntents: store.factionIntents,
+      lore: store.lore,
       intents: store.intents,
       events: store.events,
       memories: store.memories,

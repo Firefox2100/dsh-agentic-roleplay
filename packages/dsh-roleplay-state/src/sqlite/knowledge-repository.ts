@@ -41,7 +41,7 @@ export class SqliteKnowledgeRepository implements KnowledgeRepository {
 
   private requireSubject(characterId: CharacterId, kind: KnowledgeKind, id: number): void {
     if (this.db.get('SELECT id FROM characters WHERE id = ?', [characterId]) === undefined) throw new NotFoundError(`character ${characterId} does not exist`)
-    const table = kind === 'location' ? 'locations' : kind === 'item' ? 'items' : 'exits'
+    const table = kind === 'location' ? 'locations' : kind === 'item' ? 'items' : kind === 'exit' ? 'exits' : 'lore'
     if (this.db.get(`SELECT id FROM ${table} WHERE id = ?`, [id]) === undefined) throw new NotFoundError(`${kind} ${id} does not exist`)
   }
 }

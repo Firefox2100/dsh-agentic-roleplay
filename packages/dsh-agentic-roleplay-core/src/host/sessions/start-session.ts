@@ -7,6 +7,7 @@ import { loadCharacters } from '../characters/load.ts'
 import { loadFactions } from '../factions/load.ts'
 import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
+import { loadLore } from '../lore/load.ts'
 import { loadTriggers } from '../triggers/load.ts'
 import { loadVariables, variableProblems } from '../variables/load.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
@@ -16,7 +17,7 @@ import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { factionProblems, knowledgeProblems, populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
+import { factionProblems, knowledgeProblems, loreProblems, populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables, relationshipProblems, routineProblems, startingPlaceProblems } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
 
 export const MAX_NAME_LENGTH = 200
@@ -61,7 +62,11 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
 
   const { items, slots, problems: itemProblems } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
   if (itemProblems.length > 0) throw new InvalidWorldError(`the items of "${world.summary.name}" have ${itemProblems.length} problem(s)`, itemProblems)
-  const knowing = knowledgeProblems(characters, locations, items)
+  const authoredLore = await loadLore(world.directory)
+  if (authoredLore.problems.length > 0) throw new InvalidWorldError(`the lore of "${world.summary.name}" has ${authoredLore.problems.length} problem(s)`, authoredLore.problems)
+  const loreReferences = loreProblems(authoredLore.lore, { characters, factions, locations, items })
+  if (loreReferences.length > 0) throw new InvalidWorldError(`the lore of "${world.summary.name}" has ${loreReferences.length} invalid reference(s)`, loreReferences.map(message => ({ path: world.directory, message })))
+  const knowing = knowledgeProblems(characters, locations, items, authoredLore.lore)
   if (knowing.length > 0) throw new InvalidWorldError(`the starting knowledge of "${world.summary.name}" has ${knowing.length} problem(s)`, knowing.map(message => ({ path: world.directory, message })))
 
   const declared = await loadVariables(world.directory)
@@ -106,6 +111,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateFactions(session, factions)
       populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
+      populateLore(session, authoredLore.lore)
       populateKnowledge(session, characters)
       populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
       populateTriggers(session, scripted.triggers)

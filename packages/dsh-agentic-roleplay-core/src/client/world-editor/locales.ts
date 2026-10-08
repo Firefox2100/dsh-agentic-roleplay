@@ -2,7 +2,7 @@ import type { Dictionaries } from '../i18n.ts'
 
 export type WorldLocaleKey =
   | 'tab' | 'editorLoading' | 'editorLoadFailed' | 'notRoleplay' | 'editorRefresh' | 'sections' | 'soon'
-  | 'characters' | 'places' | 'things' | 'factions' | 'noCharacters' | 'portraitMissing' | 'portraitGenerate' | 'portraitGenerating' | 'portraitRetry' | 'portraitFailed' | 'portraitSaveFirst' | 'portraitIdentityRequired'
+  | 'characters' | 'places' | 'things' | 'factions' | 'lore' | 'noLore' | 'loreTitle' | 'loreBody' | 'subjects' | 'relatedLore' | 'sources' | 'noCharacters' | 'portraitMissing' | 'portraitGenerate' | 'portraitGenerating' | 'portraitRetry' | 'portraitFailed' | 'portraitSaveFirst' | 'portraitIdentityRequired'
   | 'playable' | 'npc' | 'principal' | 'supporting' | 'background' | 'person' | 'group' | 'player' | 'agent'
   | 'name' | 'age' | 'gender' | 'pronouns' | 'aliases' | 'aliasesHelp' | 'role' | 'tier' | 'kind' | 'control' | 'where' | 'noPlace' | 'position' | 'doing'
   | 'summary' | 'personality' | 'backgroundText' | 'appearance' | 'speech' | 'speechStyle' | 'speechExamples' | 'speechExamplesHelp'
@@ -21,6 +21,7 @@ export const dictionaries: Dictionaries<WorldLocaleKey> = {
   en: {
     tab: 'World', editorLoading: 'Loading the world…', editorLoadFailed: 'Could not load the world: {message}', notRoleplay: 'This chat is not a roleplay session, so it has no world.',
     editorRefresh: 'Refresh', sections: 'Parts of the world', soon: 'Not built yet',
+    lore: 'Lore', noLore: 'This story has no authored lore.', loreTitle: 'Title', loreBody: 'Canonical account', subjects: 'Subjects', relatedLore: 'Related lore', sources: 'Sources',
     characters: 'Characters', places: 'Places', things: 'Things', factions: 'Factions', noCharacters: 'This story has no characters.', portraitMissing: 'No portrait', portraitGenerate: 'Generate portrait', portraitGenerating: 'Generating…', portraitRetry: 'Regenerate portrait', portraitFailed: 'Could not generate portrait: {message}', portraitSaveFirst: 'Save the visual identity before generating.', portraitIdentityRequired: 'Add and save a visual identity before generating a portrait.',
     playable: 'Playable', npc: 'Character', principal: 'Principal', supporting: 'Supporting', background: 'Background', person: 'Person', group: 'Group', player: 'You play', agent: 'Played by an agent',
     name: 'Name', age: 'Age', gender: 'Gender', pronouns: 'Pronouns', aliases: 'Also called', aliasesHelp: 'Separate names with commas.', role: 'Role', tier: 'Part in the story', kind: 'Kind', control: 'Played by',
@@ -41,6 +42,7 @@ export const dictionaries: Dictionaries<WorldLocaleKey> = {
   zh: {
     tab: '世界', editorLoading: '正在载入世界…', editorLoadFailed: '无法载入世界：{message}', notRoleplay: '这个对话不是角色扮演会话，没有世界。',
     editorRefresh: '刷新', sections: '世界的各部分', soon: '尚未实现',
+    lore: '世界设定', noLore: '这个故事还没有已编写的世界设定。', loreTitle: '标题', loreBody: '规范记载', subjects: '相关实体', relatedLore: '相关设定', sources: '来源',
     characters: '角色', places: '地点', things: '物品', factions: '阵营', noCharacters: '这个故事没有角色。', portraitMissing: '暂无肖像', portraitGenerate: '生成肖像', portraitGenerating: '正在生成…', portraitRetry: '重新生成肖像', portraitFailed: '无法生成肖像：{message}', portraitSaveFirst: '请先保存视觉身份。', portraitIdentityRequired: '请先添加并保存视觉身份，再生成肖像。',
     playable: '可扮演', npc: '角色', principal: '主要', supporting: '次要', background: '背景', person: '个人', group: '群体', player: '由你扮演', agent: '由智能体扮演',
     name: '名称', age: '年龄', gender: '性别', pronouns: '代词', aliases: '又称', aliasesHelp: '用逗号分隔多个名字。', role: '身份', tier: '戏份', kind: '类型', control: '扮演者',

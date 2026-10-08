@@ -4,7 +4,7 @@ import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
 import type { ImageGenerationService } from 'dsh-ai-core'
-import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type NewRelationEdit, type PlaceEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
+import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
 import { CHARACTER_FILE_NAME, parseCharacterFile } from '../characters/character-file.ts'
 import { subfolders } from '../folders.ts'
@@ -15,6 +15,8 @@ import { ITEMS_DIR, loadItems } from '../items/load.ts'
 import { ITEM_FILE_NAME, parseItemFile } from '../items/item-file.ts'
 import { FACTIONS_DIR, loadFactions } from '../factions/load.ts'
 import { FACTION_FILE_NAME, parseFactionFile } from '../factions/faction-file.ts'
+import { LORE_DIR, loadLore } from '../lore/load.ts'
+import { LORE_FILE_NAME, parseLoreFile } from '../lore/lore-file.ts'
 import { formatIssue } from '../validation.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
@@ -58,7 +60,7 @@ function stateOf(world: EditableWorld, definition: CharacterDefinition, names: R
 
 /** The characters of a world as they start, and the places they can start in. */
 export async function readWorldEditor(world: EditableWorld): Promise<WorldState> {
-  const [{ characters }, { locations }, { factions }] = await Promise.all([loadCharacters(world.directory), loadLocations(world.directory), loadFactions(world.directory)])
+  const [{ characters }, { locations }, { factions }, { lore }] = await Promise.all([loadCharacters(world.directory), loadLocations(world.directory), loadFactions(world.directory), loadLore(world.directory)])
   const { items } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
   const names = new Map(locations.map(location => [location.id, location.name]))
   const characterNames = new Map(characters.map(character => [character.id, character.name]))
@@ -90,8 +92,21 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
     places: locations.map(location => ({ key: location.id, name: location.name, description: location.description, ...(location.parent === undefined ? {} : { parent: { key: location.parent, name: names.get(location.parent) ?? location.parent } }), features: location.features, ...(location.visualIdentity === undefined ? {} : { visualIdentity: location.visualIdentity }) })),
     things: items.map(item => ({ key: item.id, name: item.name, description: item.description, quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearable === undefined ? {} : { wearable: item.wearable }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.owner === undefined ? {} : { owner: { key: item.owner, name: characterNames.get(item.owner) ?? item.owner } }), holder: holder(item), ...(item.visualIdentity === undefined ? {} : { visualIdentity: item.visualIdentity }) })),
     factions: factions.map(faction => ({ key: faction.id, name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: faction.start.publicState, innerState: faction.start.innerState }, goals: faction.start.goals.map((goal, index) => ({ ref: String(index), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: faction.members.map(member => ({ ...member, name: characterNames.get(member.character) ?? member.character })), relationships: faction.relationships.map(relationship => ({ target: `${relationship.to.kind}:${relationship.to.id}`, label: relationship.label, summary: relationship.summary ?? '' })) })),
+    lore: lore.map(entry => ({ key: entry.id, title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: subject.id, name: subject.kind === 'character' ? characterNames.get(subject.id) ?? subject.id : subject.kind === 'faction' ? factionNames.get(subject.id) ?? subject.id : subject.kind === 'location' ? names.get(subject.id) ?? subject.id : subject.kind === 'item' ? itemNames.get(subject.id) ?? subject.id : lore.find(candidate => candidate.id === subject.id)?.title ?? subject.id })), related: entry.related.map(key => ({ key, title: lore.find(candidate => candidate.id === key)?.title ?? key })), sources: entry.sources })),
     relations,
   }
+}
+
+export async function editWorldLore(world: EditableWorld, key: string, edit: LoreEdit): Promise<WorldState> {
+  return await editEntityFile(world, LORE_DIR, LORE_FILE_NAME, key, parseLoreFile, (document) => {
+    if (edit.title !== undefined) document['title'] = edit.title
+    if (edit.kind !== undefined) document['kind'] = edit.kind
+    if (edit.summary !== undefined) setOptional(document, 'summary', edit.summary)
+    if (edit.body !== undefined) setOptional(document, 'body', edit.body)
+    if (edit.sources !== undefined) document['sources'] = edit.sources
+    if (edit.startsAt !== undefined) { if (edit.startsAt === null) delete document['starts_at']; else document['starts_at'] = new Date(edit.startsAt).toISOString() }
+    if (edit.endsAt !== undefined) { if (edit.endsAt === null) delete document['ends_at']; else document['ends_at'] = new Date(edit.endsAt).toISOString() }
+  })
 }
 
 export async function editWorldNarrationVoice(world: EditableWorld, voice: string): Promise<WorldState> {

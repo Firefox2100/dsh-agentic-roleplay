@@ -52,5 +52,20 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
         return needle === undefined || needle === '' ? found : found.filter(entry => `${entry.key} ${entry.name}`.toLowerCase().includes(needle))
       },
     }),
+    defineTool({
+      name: 'recall_my_lore',
+      description: 'Recall established lore that you know: history, customs, legends, places and other background knowledge. Unknown lore is never returned.',
+      parameters: { about: { type: 'string', required: true, description: 'A name, subject or phrase to look for in what you know.' } },
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: { type: 'string', required: true }, title: { type: 'string', required: true }, kind: { type: 'string', required: true }, text: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You do not know any lore matching that.' : value.map(entry => `- ${entry.title} [${entry.kind}] (${entry.key}): ${entry.text}`).join('\n') }] },
+      isConcurrencySafe: () => true,
+      async execute(args) {
+        const needle = args.about.trim().toLowerCase()
+        return link().session.knowledge.list(characterId, 'lore').flatMap(known => {
+          const lore = link().session.lore.get(known.subjectId)
+          if (lore === undefined || !`${lore.title} ${lore.summary} ${lore.body}`.toLowerCase().includes(needle)) return []
+          return [{ key: lore.sourceId ?? String(lore.id), title: lore.title, kind: lore.kind, text: lore.body || lore.summary }]
+        })
+      },
+    }),
   ]
 }
