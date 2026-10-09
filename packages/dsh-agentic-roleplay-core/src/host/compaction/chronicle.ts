@@ -19,8 +19,6 @@ export function estimateTokens(text: string): number {
 
 const WORDS_PER_TOKEN = 0.7
 
-export const CHRONICLER_PERSONA = `You are the chronicler of an interactive story. You write the account of what has happened, for the game master who runs the story and who will read nothing else of the past. Everything you write must be supported by the material you are given: the events are the objective record and are authoritative; never add, guess or embellish. Keep names, what was promised or discovered, who knows what when it matters, what is still unsettled, and how relationships stand. Write plain past-tense prose in the language of the story, without headings, lists or references to turns or ids.`
-
 const eventLine = (event: StoryEvent, names: ReadonlyMap<number, string>): string => {
   const who = event.involves.map(id => names.get(id)).filter(name => name !== undefined).join(', ')
   return `- [turn ${event.turn}] (importance ${event.importance}) ${event.text}${who === '' ? '' : ` — involves ${who}`}`
@@ -48,9 +46,11 @@ export async function foldSummaries(input: {
   /** What happened, as the conversation told it; used where the events do not cover the turns. */
   transcript: string
   chronicler: Chronicler
+  /** The instruction texts, in the language of the chat. */
+  text: (id: 'digest' | 'chapter' | 'condense', variables: Record<string, string | number>) => string
   signal: AbortSignal
 }): Promise<void> {
-  const { story, settings, chronicler, signal } = input
+  const { story, settings, chronicler, signal, text: instruction } = input
   const names = new Map(story.characters.list().map(character => [character.id, character.name]))
   const known = story.summaries.list()
   const coveredTo = known.reduce((latest, summary) => Math.max(latest, summary.toTurn), 0)
@@ -61,7 +61,7 @@ export async function foldSummaries(input: {
     const complete = [...Array(input.uptoTurn - coveredTo).keys()].every(offset => turns.has(coveredTo + 1 + offset))
     const words = Math.round(Math.min(600, settings.shortTermTokens / 2) * WORDS_PER_TOKEN)
     const text = await chronicler.write({
-      task: `Write a digest of turns ${coveredTo + 1} to ${input.uptoTurn} of the story in about ${words} words.`,
+      task: instruction('digest', { from: coveredTo + 1, to: input.uptoTurn, words }),
       material: material([
         ['Events (authoritative)', events.map(event => eventLine(event, names)).join('\n')],
         ['What the player did', input.playerInputs],
@@ -86,7 +86,7 @@ export async function foldSummaries(input: {
     const toTurn = absorbed.at(-1)!.toTurn
     const words = Math.round(Math.max(60, Math.min(400, settings.longTermTokens / 4)) * WORDS_PER_TOKEN)
     const text = await chronicler.write({
-      task: `Condense turns ${fromTurn} to ${toTurn} of the story into a chapter of about ${words} words, keeping what will still matter later and dropping detail.`,
+      task: instruction('chapter', { from: fromTurn, to: toTurn, words }),
       material: material([
         ['Digests to condense', absorbed.map(summary => summary.text).join('\n\n')],
         ['Important events of these turns (authoritative)', story.events.list({ fromTurn, toTurn, minImportance: 3 }).map(event => eventLine(event, names)).join('\n')],
@@ -103,7 +103,7 @@ export async function foldSummaries(input: {
     const [older, newer] = chapters as [Summary, Summary, ...Summary[]]
     const words = Math.round(Math.max(60, settings.longTermTokens / 3) * WORDS_PER_TOKEN)
     const text = await chronicler.write({
-      task: `Condense these two consecutive chapters (turns ${older.fromTurn} to ${newer.toTurn}) into one of about ${words} words, keeping what will still matter later.`,
+      task: instruction('condense', { from: older.fromTurn, to: newer.toTurn, words }),
       material: material([
         ['Chapters', `${older.text}\n\n${newer.text}`],
         ['Important events of these turns (authoritative; correct the chapters where they disagree)', story.events.list({ fromTurn: older.fromTurn, toTurn: newer.toTurn, minImportance: 4 }).map(event => eventLine(event, names)).join('\n')],

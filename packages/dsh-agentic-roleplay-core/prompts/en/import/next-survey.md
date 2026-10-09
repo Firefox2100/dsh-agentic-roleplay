@@ -1,0 +1,1 @@
+Check the list of who and what the world is made of. When it looks right, call ${build}. When something is clearly wrong (a character listed that is not one, a missing one) the survey can be run again.

@@ -12,9 +12,24 @@ export interface Config {
   rootPath: Volatile<string>
   /** The folder DSH keeps its sessions in, which deleting a session removes its chat from. */
   sessionStorePath: string
+  /** The most a character card upload may be, in bytes. Big cards with lorebooks and scripts reach tens of megabytes. */
+  importMaxUploadBytes: number
+  /** How many calls of an import run at once. A local model serves few at a time: raise it only with a server that can. */
+  importConcurrency: number
+  /** How hard the agents of an import think, as a level the model offers (for example `off`); empty is the model's own level. */
+  importReasoning: string
+  /** The most tokens one model request of an import may produce. */
+  importMaxTokens: number
+  /** How freely the agents of an import write; low, because they copy and sort what the card says. */
+  importTemperature: number
 }
 
 export const Config = z.object({
   rootPath: z.string().default(DEFAULT_ROOT_PATH).volatile(),
   sessionStorePath: z.string().default(DEFAULT_STORE_PATH),
+  importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024),
+  importConcurrency: z.number().min(1).max(16).default(4),
+  importReasoning: z.string().default(''),
+  importMaxTokens: z.number().min(1000).max(200000).default(16000),
+  importTemperature: z.number().min(0).max(2).default(0.2),
 })

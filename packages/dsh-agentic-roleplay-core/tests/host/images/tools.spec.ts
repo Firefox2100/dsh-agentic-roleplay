@@ -4,7 +4,8 @@ import { join } from 'node:path'
 import { ImageGenerationService, type ImageGenerationOptions, type ImageGenerationResult } from 'dsh-ai-core'
 import { createSessionStore, type NewCharacter } from 'dsh-roleplay-state'
 import { afterEach, describe, expect, it } from 'vitest'
-import { IMAGE_AUTHOR_PERSONA } from '../../../src/host/images/author-agent.ts'
+import { readFileSync } from 'node:fs'
+import { shippedPromptsDirectory } from '../../../src/host/prompts/library.ts'
 import { imageTools } from '../../../src/host/images/tools.ts'
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
@@ -44,7 +45,7 @@ describe('image author tools', () => {
   it('give the child only the dedicated visual workflow', async () => {
     const { tools } = await fixture()
     expect(tools.map(tool => tool.name)).toEqual(['list_visual_subjects', 'set_visual_identity', 'generate_reference_image', 'generate_transient_image'])
-    expect(IMAGE_AUTHOR_PERSONA).toContain('Canonical identity and transient state are separate')
+    expect(readFileSync(join(shippedPromptsDirectory(), 'en/roleplay/image-author.md'), 'utf8')).toContain('Canonical identity and transient state are separate')
   })
 
   it('establishes identity and generates reference and transient images', async () => {

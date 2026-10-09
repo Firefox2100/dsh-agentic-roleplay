@@ -24,3 +24,18 @@ export async function readJsonBody(req: IncomingMessage): Promise<Record<string,
   if (typeof body !== 'object' || body === null || Array.isArray(body)) throw new HttpError(400, 'request body must be a JSON object')
   return body as Record<string, unknown>
 }
+
+/** Reads a request body of any kind up to `limit` bytes; a larger one is refused as soon as it is known to be, without being read. */
+export async function readBinaryBody(req: IncomingMessage, limit: number): Promise<Buffer> {
+  const declared = Number(req.headers['content-length'])
+  if (Number.isFinite(declared) && declared > limit) throw new HttpError(413, `the upload is larger than ${Math.round(limit / 1024 / 1024)} MB`)
+  const chunks: Buffer[] = []
+  let size = 0
+  for await (const chunk of req) {
+    size += (chunk as Buffer).length
+    if (size > limit) throw new HttpError(413, `the upload is larger than ${Math.round(limit / 1024 / 1024)} MB`)
+    chunks.push(chunk as Buffer)
+  }
+  if (size === 0) throw new HttpError(400, 'the upload is empty')
+  return Buffer.concat(chunks)
+}

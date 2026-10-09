@@ -10,6 +10,7 @@ import type { ChatSettings } from '../../shared/settings.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { chatSessionId, roleplaySessionOf } from '../../shared/chat.ts'
 import type { Timelines } from '../timeline/service.ts'
+import { childSampling } from '../agents/child.ts'
 import { runImageAuthor } from './author-agent.ts'
 import type { ImageAuthorJob, ImageAuthorResult } from './author-agent.ts'
 
@@ -82,7 +83,7 @@ export class ImageJobs {
     const promise = (this.deps.author ?? runImageAuthor)({
       parent, signal: controller.signal, service, story: this.deps.state.openSession(this.deps.sessionsDir(), id),
       root: sessionFolder(this.deps.sessionsDir(), id), turn, timelineNode: node, request, purpose: 'transient',
-      referenceMode: settings.images.references, ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }),
+      language: settings.prompts.language, sampling: childSampling(settings, 'records'), referenceMode: settings.images.references, ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }),
     }).then(() => undefined).catch((error: unknown) => {
       if (controller.signal.aborted) return
       const message = error instanceof Error ? error.message : String(error)

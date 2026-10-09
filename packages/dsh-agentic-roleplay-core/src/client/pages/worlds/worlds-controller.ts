@@ -53,6 +53,8 @@ export interface WorldsFace {
   startSession: (options: StartOptions) => void
   dismissStarted: () => void
   openAuthoring: (worldId: string, title: string) => void
+  /** Shows a DSH chat in place of the panel. */
+  openChat: (chatSessionId: string) => void
 }
 
 async function request<T>(path: string, init: RequestInit, signal: AbortSignal): Promise<T> {
@@ -86,9 +88,10 @@ export class WorldsController {
     startSession: (options) => { void this.startSession(options) },
     dismissStarted: () => { this.store.update((draft) => { delete draft.started }) },
     openAuthoring: (worldId, title) => { void this.openAuthoring(worldId, title) },
+    openChat: (chatSessionId) => { this.openChat(chatSessionId) },
   }
 
-  constructor(openChat: OpenChat) {
+  constructor(openChat: OpenChat, private readonly language: () => string) {
     this.openChat = openChat
   }
 
@@ -114,7 +117,7 @@ export class WorldsController {
     if (current?.worldId === worldId && current.error === undefined) return
     this.store.update((draft) => { draft.authoring = { worldId } })
     try {
-      const opened = await request<{ chatSessionId: string }>(`/worlds/authoring?id=${encodeURIComponent(worldId)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title }) }, this.abort.signal)
+      const opened = await request<{ chatSessionId: string }>(`/worlds/authoring?id=${encodeURIComponent(worldId)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, language: this.language() }) }, this.abort.signal)
       this.store.update((draft) => { delete draft.authoring })
       this.openChat(opened.chatSessionId)
     } catch (error) {

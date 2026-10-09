@@ -1,4 +1,4 @@
-import { createMessage, createToolResultMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
+import { createMessage, createSystemMessage, createToolResultMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
 import { encodeOutput, type NarrationSegment } from '../../shared/narration.ts'
@@ -20,6 +20,15 @@ export interface SessionPersistenceLike {
 }
 
 /**
+ * The first node of a conversation's surface is the system prompt, even an empty one: the log format refuses a system prompt that
+ * arrives after other nodes, which is what a chat that starts with an opening would otherwise get at its first real turn. The agent
+ * replaces this empty head with the real prompt then.
+ */
+function reservePromptHead(session: Session, turn: number, step: number): void {
+  session.append('system/message', { turn, step, message: createSystemMessage('') }, { surfaceOp: 'append' })
+}
+
+/**
  * The log of a chat that opens with a story: a finished first turn in which the
  * output was delivered the way every later turn delivers it (a `narrate` call and
  * its result), so it renders the same and the model reads a history that looks like
@@ -38,6 +47,7 @@ export function openingEvents(segments: readonly NarrationSegment[]): readonly S
 
   session.append('turn/start', { turn })
   session.append('step/start', { turn, step })
+  reservePromptHead(session, turn, step)
   session.append('assistant/message', {
     stream: [],
     turn,
@@ -64,20 +74,21 @@ export function openingEvents(segments: readonly NarrationSegment[]): readonly S
 }
 
 /** A visible first turn makes a newly created authoring chat a full conversation immediately. */
-export function authoringOpeningEvents(worldName: string): readonly SessionEvent[] {
+export function authoringOpeningEvents(welcome: string): readonly SessionEvent[] {
   const session = Session.create(SessionId('authoring-opening'))
   setApprovalPolicy(session, 'ask')
   const turn = 1
   const step = 1
   session.append('turn/start', { turn })
   session.append('step/start', { turn, step })
+  reservePromptHead(session, turn, step)
   session.append('assistant/message', {
     stream: [],
     turn,
     step,
     message: createMessage({
       role: 'assistant',
-      content: [{ type: 'text', text: `Welcome to the authoring room for “${worldName}”. I can inspect and edit the world overview, characters, locations, items, factions, lore, plots, relationships, knowledge, memberships and map exits. I will show you each proposed file change for approval before writing it; if you decline, nothing is changed and we can revise the proposal together. Tell me what you want to create, revise, or explore.` }],
+      content: [{ type: 'text', text: welcome }],
       source: { kind: 'model', ...AUTHORING_OPENING_SOURCE },
     }),
   }, { surfaceOp: 'append' })
@@ -102,9 +113,9 @@ export async function storeOpening(
 export async function storeAuthoringOpening(
   persistence: SessionPersistenceLike,
   chat: { id: string; cwd: string; agentPreset: string },
-  worldName: string,
+  welcome: string,
 ): Promise<void> {
-  await storeInitialEvents(persistence, chat, authoringOpeningEvents(worldName))
+  await storeInitialEvents(persistence, chat, authoringOpeningEvents(welcome))
 }
 
 async function storeInitialEvents(

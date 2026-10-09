@@ -1,7 +1,7 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export type WorldLocaleKey =
-  | 'tab' | 'editorLoading' | 'editorLoadFailed' | 'notRoleplay' | 'editorRefresh' | 'sections' | 'soon'
+  | 'tab' | 'noPlayableWarning' | 'editorLoading' | 'editorLoadFailed' | 'notRoleplay' | 'editorRefresh' | 'sections' | 'soon'
   | 'characters' | 'places' | 'things' | 'factions' | 'lore' | 'noLore' | 'loreTitle' | 'loreBody' | 'subjects' | 'relatedLore' | 'sources' | 'plots' | 'plotsHelp' | 'plotsJson' | 'addPlot' | 'plotProgress' | 'introduced' | 'rejected' | 'noCharacters' | 'portraitMissing' | 'portraitGenerate' | 'portraitGenerating' | 'portraitRetry' | 'portraitFailed' | 'portraitSaveFirst' | 'portraitIdentityRequired'
   | 'playable' | 'npc' | 'principal' | 'supporting' | 'background' | 'person' | 'group' | 'player' | 'agent'
   | 'name' | 'age' | 'gender' | 'pronouns' | 'aliases' | 'aliasesHelp' | 'role' | 'tier' | 'kind' | 'control' | 'where' | 'noPlace' | 'position' | 'doing'
@@ -19,7 +19,7 @@ export type WorldLocaleKey =
 
 export const dictionaries: Dictionaries<WorldLocaleKey> = {
   en: {
-    tab: 'World', editorLoading: 'Loading the world…', editorLoadFailed: 'Could not load the world: {message}', notRoleplay: 'This chat is not a roleplay session, so it has no world.',
+    tab: 'World', noPlayableWarning: 'This world has no playable character, so a session cannot be started. Add one, or ask the authoring assistant to.', editorLoading: 'Loading the world…', editorLoadFailed: 'Could not load the world: {message}', notRoleplay: 'This chat is not a roleplay session, so it has no world.',
     editorRefresh: 'Refresh', sections: 'Parts of the world', soon: 'Not built yet',
     lore: 'Lore', noLore: 'This story has no authored lore.', loreTitle: 'Title', loreBody: 'Canonical account', subjects: 'Subjects', relatedLore: 'Related lore', sources: 'Sources', plots: 'Plots', plotsHelp: 'Optional possibilities, not a required storyline. Edit the validated plots.json structure below; removing an entry removes the scaffold, not events that already happened.', plotsJson: 'Plot definitions as JSON', addPlot: 'Add plot', plotProgress: 'Session progress', introduced: 'Introduced', rejected: 'Rejected',
     characters: 'Characters', places: 'Places', things: 'Things', factions: 'Factions', noCharacters: 'This story has no characters.', portraitMissing: 'No portrait', portraitGenerate: 'Generate portrait', portraitGenerating: 'Generating…', portraitRetry: 'Regenerate portrait', portraitFailed: 'Could not generate portrait: {message}', portraitSaveFirst: 'Save the visual identity before generating.', portraitIdentityRequired: 'Add and save a visual identity before generating a portrait.',
@@ -40,7 +40,7 @@ export const dictionaries: Dictionaries<WorldLocaleKey> = {
     perspective: 'View as', objectiveWorld: 'Objective world', listView: 'List', graphView: 'Graph', addRelation: 'Add relation', from: 'From', to: 'To', relationCancel: 'Cancel', relationCreate: 'Create',
   },
   zh: {
-    tab: '世界', editorLoading: '正在载入世界…', editorLoadFailed: '无法载入世界：{message}', notRoleplay: '这个对话不是角色扮演会话，没有世界。',
+    tab: '世界', noPlayableWarning: '这个世界没有可扮演的角色，因此无法开始会话。请添加一个，或让创作助手添加。', editorLoading: '正在载入世界…', editorLoadFailed: '无法载入世界：{message}', notRoleplay: '这个对话不是角色扮演会话，没有世界。',
     editorRefresh: '刷新', sections: '世界的各部分', soon: '尚未实现',
     lore: '世界设定', noLore: '这个故事还没有已编写的世界设定。', loreTitle: '标题', loreBody: '规范记载', subjects: '相关实体', relatedLore: '相关设定', sources: '来源', plots: '情节', plotsHelp: '这些是可选的发展可能，并非必须遵循的剧情线。可在下方编辑经验证的 plots.json 结构；删除条目只会删除情节框架，不会删除已经发生的事件。', plotsJson: 'JSON 格式的情节定义', addPlot: '添加情节', plotProgress: '会话进度', introduced: '已引入', rejected: '已拒绝',
     characters: '角色', places: '地点', things: '物品', factions: '阵营', noCharacters: '这个故事没有角色。', portraitMissing: '暂无肖像', portraitGenerate: '生成肖像', portraitGenerating: '正在生成…', portraitRetry: '重新生成肖像', portraitFailed: '无法生成肖像：{message}', portraitSaveFirst: '请先保存视觉身份。', portraitIdentityRequired: '请先添加并保存视觉身份，再生成肖像。',

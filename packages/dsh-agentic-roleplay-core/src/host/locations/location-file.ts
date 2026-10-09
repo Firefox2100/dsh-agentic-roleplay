@@ -9,7 +9,7 @@ export const LOCATION_FILE_NAME = 'location.json'
 /** At most this many ways out of one place, so that a place never overwhelms a prompt. */
 export const MAX_EXITS = 30
 
-const FEATURE_KEY = /^[A-Za-z0-9][A-Za-z0-9_-]{0,59}$/
+const FEATURE_KEY = /^[\p{L}\p{N}][\p{L}\p{N}\p{M}_-]{0,59}$/u
 
 function readFeatures(reader: Reader): LocationFeature[] {
   const features = reader.objects('features').flatMap((feature): LocationFeature[] => {

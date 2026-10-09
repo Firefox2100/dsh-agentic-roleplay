@@ -53,6 +53,18 @@ export interface ChatSettings {
     /** The most characters, away from the player's character, that may be asked what they do about something that fell due (a commitment whose time came, a deadline that passed) after a turn. 0 turns it off. */
     perTurn: number
   }
+  sampling: {
+    /** How freely the characters, and the helpers that write for the player (suggestions), write: the temperature of their requests. */
+    characters: number
+    /** How exactly the helpers that keep the story's records (the record keeper, the world author, the plot author, the image author) write. */
+    records: number
+    /** Whether those helpers must answer with a tool call, which keeps them from writing prose instead of their result. */
+    tools: 'auto' | 'required'
+  }
+  prompts: {
+    /** The language of the instructions the models are given: a folder of `prompts` in the roleplay root (`en`, `zh`). A language without prompts of its own uses the English ones. */
+    language: string
+  }
   reasoning: {
     /** How hard the child agents think, as a level the model offers (for example `off` or `low`); empty is the game master's own level. */
     children: string
@@ -136,6 +148,8 @@ export const SETTINGS_SPEC = {
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
   offstage: { perTurn: integer(0, 5, 2) },
+  sampling: { characters: ratio(0, 2, 0.8), records: ratio(0, 2, 0.2), tools: choice(['auto', 'required'], 'required') },
+  prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2) },
   rewind: { keepSnapshots: integer(0, 500, 30) },

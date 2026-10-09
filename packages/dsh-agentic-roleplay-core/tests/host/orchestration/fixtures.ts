@@ -1,3 +1,4 @@
+import { shippedText } from '../../../src/host/prompts/library.ts'
 import type { Character, CharacterState, Location } from 'dsh-roleplay-model'
 import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
 import type { CastMember, RoundRecord, TurnStore } from '../../../src/host/orchestration/boundaries.ts'
@@ -67,6 +68,7 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     maxRounds,
     cast: () => cast,
     rules: () => store.ruled,
+    text: (id, variables) => shippedText(id, 'en', variables),
     settings: () => ({ ...DEFAULT_SETTINGS, maxRounds: store.maxRounds, suggestions: { count: 0 }, preview: { enabled: false } }),
     time: turn => readTime(session, store.settings().clock, turn, store.wall),
     beginTurn: turn => startTurn(session, store.settings().clock, turn, store.wall),

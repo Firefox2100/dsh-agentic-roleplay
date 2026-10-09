@@ -18,6 +18,7 @@ export const FORM_FIELDS = [
   { path: ['clock', 'roundSeconds'], kind: 'integer', label: 'clockRoundSeconds', help: 'clockRoundSecondsHelp' },
   { path: ['clock', 'maxSkipDays'], kind: 'integer', label: 'clockMaxSkipDays', help: 'clockMaxSkipDaysHelp' },
   { path: ['rules', 'own'], kind: 'text', label: 'rulesOwn', help: 'rulesOwnHelp', zone: false, placeholder: '', rows: 4 },
+  { path: ['prompts', 'language'], kind: 'text', label: 'promptsLanguage', help: 'promptsLanguageHelp', zone: false, placeholder: 'en' },
   { path: ['reasoning', 'children'], kind: 'text', label: 'reasoningChildren', help: 'reasoningChildrenHelp', zone: false, placeholder: 'off' },
   { path: ['triggers', 'enabled'], kind: 'flag', label: 'triggersEnabled', help: 'triggersEnabledHelp' },
   { path: ['triggers', 'maxFires'], kind: 'integer', label: 'triggersMaxFires', help: 'triggersMaxFiresHelp' },

@@ -44,6 +44,11 @@ describe('image storage and unwired generators', () => {
     expect(sceneImagePath('/session', 'n12', 2)).toBe('/session/images/scenes/turn-n12-02.png')
   })
 
+  it('takes ids in any script and refuses what would leave the directory', () => {
+    expect(entityImageDirectory('/world', { kind: 'character', localId: '陌白-福尔摩斯' })).toBe('/world/images/characters/陌白-福尔摩斯')
+    for (const bad of ['..', 'a/b', '../x', '.hidden', 'a\\b', '']) expect(() => entityImageDirectory('/world', { kind: 'character', localId: bad })).toThrow(/not safe/)
+  })
+
   it('writes a reference and transient scene as self-describing PNG files', async () => {
     const directory = root()
     const service = new Images()

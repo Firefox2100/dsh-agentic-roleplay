@@ -6,6 +6,8 @@ import {
 } from '../../../src/host/agent/agent-sessions.ts'
 import { AgentUnavailableError } from '../../../src/host/sessions/errors.ts'
 import { AUTHORING_AGENT_PRESET, AUTHORING_PROJECT_TITLE, AuthoringSessions } from '../../../src/host/agent/authoring-sessions.ts'
+import type { PromptLibrary } from '../../../src/host/prompts/library.ts'
+import type { AuthoringLanguages } from '../../../src/host/worlds/authoring-language.ts'
 import { authoredWorldOf, authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 
 function fakes(known: string[] = [], stored: string[] = []) {
@@ -30,6 +32,7 @@ function fakes(known: string[] = [], stored: string[] = []) {
     controller: {
       create: (request) => { calls.push(['session', request]); return Promise.resolve({ sessionId: request.sessionId }) },
       rename: (request) => { calls.push(['rename', request]); return Promise.resolve({}) },
+      prompt: (request) => { calls.push(['prompt', request]); return Promise.resolve({ accepted: true }) },
     },
   }
   return { calls, services }
@@ -51,17 +54,19 @@ describe('authoring chat identity', () => {
   })
 })
 
+const authoringSessions = (services: AgentServices, root: string): AuthoringSessions => new AuthoringSessions(() => services, () => root, { text: () => 'Welcome' } as unknown as PromptLibrary, { get: () => 'en', set: () => undefined } as unknown as AuthoringLanguages)
+
 describe('AuthoringSessions', () => {
   it('creates one specially named preset chat in the shared authoring workspace', async () => {
     const { calls, services } = fakes()
-    const authoring = new AuthoringSessions(() => services, () => '/data/roleplay')
+    const authoring = authoringSessions(services, '/data/roleplay')
 
     expect(await authoring.ensure('harbor', 'Harbor')).toBe('world-author-harbor')
     expect(calls).toEqual([
       ['project', '/data/roleplay/worlds', AUTHORING_PROJECT_TITLE],
       ['stat', 'world-author-harbor'],
       ['store', 'world-author-harbor', '/data/roleplay/worlds/canonical', AUTHORING_AGENT_PRESET],
-      ['store-events', 'approval/policy,turn/start,step/start,assistant/message,step/end,turn/end'],
+      ['store-events', 'approval/policy,turn/start,step/start,system/message,assistant/message,step/end,turn/end'],
       ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
       ['rename', { sessionId: 'world-author-harbor', title: 'Authoring Harbor' }],
     ])
@@ -69,7 +74,7 @@ describe('AuthoringSessions', () => {
 
   it('reopens an existing authoring chat and applies the requested localized name', async () => {
     const { calls, services } = fakes(['world-author-harbor'])
-    await new AuthoringSessions(() => services, () => '/data').ensure('harbor', 'New name')
+    await authoringSessions(services, '/data').ensure('harbor', 'New name')
     expect(calls).toEqual([
       ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
       ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
@@ -79,7 +84,7 @@ describe('AuthoringSessions', () => {
 
   it('adopts a stored authoring chat that is not yet attached to the workspace', async () => {
     const { calls, services } = fakes([], ['world-author-harbor'])
-    await new AuthoringSessions(() => services, () => '/data').ensure('harbor', 'Harbor')
+    await authoringSessions(services, '/data').ensure('harbor', 'Harbor')
     expect(calls).toEqual([
       ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
       ['stat', 'world-author-harbor'],
@@ -91,7 +96,7 @@ describe('AuthoringSessions', () => {
   it('refuses to make a new empty authoring chat when persistence is unavailable', async () => {
     const { services } = fakes()
     delete services.persistence
-    await expect(new AuthoringSessions(() => services, () => '/data').ensure('harbor', 'Harbor')).rejects.toThrow(AgentUnavailableError)
+    await expect(authoringSessions(services, '/data').ensure('harbor', 'Harbor')).rejects.toThrow(AgentUnavailableError)
   })
 })
 
@@ -112,7 +117,7 @@ describe('AgentSessions', () => {
     await new AgentSessions(() => services, () => '/data/roleplay').ensure('abc', 'Night one', [{ type: 'narration', text: 'The lanterns sway.' }])
     expect(calls.map(call => call[0])).toEqual(['project', 'stat', 'store', 'store-events', 'session', 'rename'])
     expect(calls[2]).toEqual(['store', 'session-abc', '/data/roleplay/canonical', AGENT_PRESET])
-    expect(calls[3]).toEqual(['store-events', 'turn/start,step/start,assistant/message,tool/call,tool/result,step/end,turn/end'])
+    expect(calls[3]).toEqual(['store-events', 'turn/start,step/start,system/message,assistant/message,tool/call,tool/result,step/end,turn/end'])
   })
 
   it('leaves a chat that exists as it is, opening or not', async () => {

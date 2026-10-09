@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 import type { Note } from '../../shared/notes.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
+import { languageOf } from '../prompts/library.ts'
 import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parseLoreEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type LoreEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
 import type { SpeechAudio, SpeechPart } from '../speech/service.ts'
@@ -15,7 +16,10 @@ import { InvalidSettingsError } from '../sessions/settings.ts'
 import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WorldFolderExistsError } from '../worlds/create-world.ts'
-import { readJsonBody } from './body.ts'
+import { readBinaryBody, readJsonBody } from './body.ts'
+import { ImportCardError } from '../import/card.ts'
+import { ImportNotFoundError, parseChoices } from '../import/store.ts'
+import type { ImportChoices, ImportPreview } from '../../shared/import-card.ts'
 import { HttpError, sendError, sendJson } from './respond.ts'
 
 /** The slice of DSH's connection service this API relies on for browser authentication. */
@@ -26,9 +30,19 @@ export interface ApiConnection {
 export interface ApiDeps {
   worlds: WorldCatalog
   createWorld(input: { folder: string; name: string }): Promise<import('../../shared/worlds.ts').WorldSummary>
-  authorWorld(worldId: string, title: string): Promise<{ chatSessionId: string }>
+  authorWorld(worldId: string, title: string, language?: string): Promise<{ chatSessionId: string }>
   worldCharacters(worldId: string): Promise<WorldCharactersPayload>
   /** The characters and places of a world's files, as the editor shows them. */
+  /** Character cards uploaded to become worlds. */
+  importer: {
+    maxUploadBytes: number
+    upload(file: Buffer, name: string): Promise<ImportPreview>
+    read(id: string): Promise<ImportPreview>
+    choose(id: string, choices: ImportChoices): Promise<ImportPreview>
+    discard(id: string): Promise<void>
+    start(id: string, choices: ImportChoices, language?: string): Promise<{ worldId: string; chatSessionId: string; started: boolean; failure?: string }>
+    picture(id: string): Promise<{ file: string; size: number }>
+  }
   worldEditor: {
     read(worldId: string): Promise<WorldState>
     editCharacter(worldId: string, key: string, edit: CharacterEdit): Promise<WorldState>
@@ -85,8 +99,24 @@ async function sendImage(res: ServerResponse, image: { file: string; size: numbe
   await pipeline(createReadStream(image.file), res)
 }
 
+/** The status an import failure is shown with: what is wrong with the card or the choices is the person's to fix. */
+function importFailure(res: ServerResponse, error: unknown): void {
+  if (error instanceof ImportCardError) return sendError(res, 422, error.message)
+  if (error instanceof ImportNotFoundError) return sendError(res, 404, error.message)
+  if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+  if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+  throw error
+}
+
 /** Build the request handler mounted at `/${API_PREFIX}`. */
-export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+/** The language a client says it is using, or nothing when it says none. */
+function languageField(value: unknown): string | undefined {
+  if (value === undefined) return undefined
+  if (typeof value !== 'string') throw new InvalidEditProblems(['language must be text'])
+  try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
+}
+
+export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, importer, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -95,14 +125,37 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
       POST: async (req, res) => { try { const body = await readJsonBody(req) as { folder?: unknown; name?: unknown }; if (typeof body.folder !== 'string' || typeof body.name !== 'string') return sendError(res, 400, 'folder and name must be text'); sendJson(res, 201, await createWorld({ folder: body.folder, name: body.name })) } catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message); throw error } },
     },
+    '/worlds/import/card': {
+      POST: async (req, res, url) => {
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'card'))
+        try { sendJson(res, 200, await importer.upload(await readBinaryBody(req, importer.maxUploadBytes), name)) }
+        catch (error) { return importFailure(res, error) }
+      },
+    },
+    '/worlds/import': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await importer.read(url.searchParams.get('id') ?? '')) } catch (error) { return importFailure(res, error) } },
+      DELETE: async (_req, res, url) => { try { await importer.discard(url.searchParams.get('id') ?? ''); res.statusCode = 204; res.end() } catch (error) { return importFailure(res, error) } },
+    },
+    '/worlds/import/choices': {
+      PUT: async (req, res, url) => { try { sendJson(res, 200, await importer.choose(url.searchParams.get('id') ?? '', parseChoices(await readJsonBody(req)))) } catch (error) { return importFailure(res, error) } },
+    },
+    '/worlds/import/start': {
+      POST: async (req, res, url) => { try { const body = await readJsonBody(req); sendJson(res, 200, await importer.start(url.searchParams.get('id') ?? '', parseChoices(body), languageField((body as { language?: unknown }).language))) } catch (error) { return importFailure(res, error) } },
+    },
+    '/worlds/import/picture': {
+      GET: async (_req, res, url) => {
+        try { await sendImage(res, await importer.picture(url.searchParams.get('id') ?? '')) }
+        catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+      },
+    },
     '/worlds/refresh': {
       POST: async (_req, res) => { sendJson(res, 200, await worlds.list({ refresh: true })) },
     },
     '/worlds/authoring': {
       POST: async (req, res, url) => {
-        const body = await readJsonBody(req) as { title?: unknown }
+        const body = await readJsonBody(req) as { title?: unknown; language?: unknown }
         if (typeof body.title !== 'string' || body.title.trim() === '' || body.title.length > 300) return sendError(res, 400, 'the request needs a valid chat title')
-        try { sendJson(res, 200, await authorWorld(url.searchParams.get('id') ?? '', body.title.trim())) }
+        try { sendJson(res, 200, await authorWorld(url.searchParams.get('id') ?? '', body.title.trim(), languageField(body.language))) }
         catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)

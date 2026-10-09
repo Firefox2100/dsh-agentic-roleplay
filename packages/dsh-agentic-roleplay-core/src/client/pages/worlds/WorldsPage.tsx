@@ -11,6 +11,9 @@ import { worldSource } from '../../world-editor/authored-world-source.ts'
 import { StartSessionDialog } from './StartSessionDialog.tsx'
 import { useGridFit } from './use-grid-fit.ts'
 import { CreateWorldDialog } from './CreateWorldDialog.tsx'
+import { ImportCardPage } from './ImportCardPage.tsx'
+import { uploadCard } from './import-api.ts'
+import type { ImportPreview } from '../../../shared/import-card.ts'
 import type { WorldsFace } from './worlds-controller.ts'
 import css from './WorldsPage.module.css'
 
@@ -20,13 +23,17 @@ export type WorldsPageProps =
   & InjectFace<WorldsFace>
 
 /** The worlds, one page of cards at a time. */
-export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, closeStartDialog, startSession, dismissStarted, openAuthoring }: WorldsPageProps) {
+export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, closeStartDialog, startSession, dismissStarted, openAuthoring, openChat }: WorldsPageProps) {
   const state = useWorlds(snapshot => snapshot)
   const viewport = useRef<HTMLDivElement>(null)
   const { pageSize, scrolls } = pagingFor(useGridFit(viewport))
   const [requestedStart, setRequestedStart] = useState(0)
   const [editing, setEditing] = useState<{ id: string; name: string } | undefined>()
   const [creating, setCreating] = useState(false)
+  const [importing, setImporting] = useState<ImportPreview | undefined>()
+  const [uploading, setUploading] = useState(false)
+  const [importNotice, setImportNotice] = useState<string>()
+  const picker = useRef<HTMLInputElement>(null)
   const source = useMemo(() => (editing === undefined ? undefined : worldSource(editing.id)), [editing])
 
   useEffect(() => { load() }, [load])
@@ -40,6 +47,29 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
 
   const count = t(worlds.length === 1 ? 'countOne' : 'countOther', { count: worlds.length })
   const failedWithoutData = state.status === 'failed' && state.payload === undefined
+
+  const chooseCard = (file: File | undefined): void => {
+    if (file === undefined) return
+    setUploading(true)
+    setImportNotice(undefined)
+    uploadCard(file).then(
+      (preview) => { setUploading(false); setImporting(preview) },
+      (failure: unknown) => { setUploading(false); setImportNotice(t('importUploadFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
+    )
+  }
+
+  if (importing !== undefined) {
+    return (
+      <div className={css.page} data-testid="roleplay-world-import">
+        <ImportCardPage
+          t={t}
+          preview={importing}
+          onCancelled={() => { setImporting(undefined) }}
+          onStarted={(chat, started) => { setImporting(undefined); refresh(); if (!started) setImportNotice(t('importNotStarted')); openChat(chat) }}
+        />
+      </div>
+    )
+  }
 
   if (editing !== undefined && source !== undefined) {
     return (
@@ -63,7 +93,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
     <div className={css.page} data-testid="roleplay-worlds-page">
       <div className={css.toolbar}>
         <span className={css.count}>{state.payload === undefined ? '' : count}</span>
-        <div className={css.toolbarActions}><Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('createWorld')}</Button><Button
+        <div className={css.toolbarActions}><Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('createWorld')}</Button><Button variant="outline" size="sm" disabled={uploading} onClick={() => { picker.current?.click() }}>{uploading ? t('importUploading') : t('importCard')}</Button><input ref={picker} type="file" accept=".png,.json,image/png,application/json" hidden onChange={(event) => { chooseCard(event.target.files?.[0]); event.target.value = '' }} /><Button
           variant="outline"
           size="sm"
           icon={<IconRefreshOutlineRegular className={state.refreshing ? css.spinning : undefined} />}
@@ -75,6 +105,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         </Button></div>
       </div>
 
+      {importNotice !== undefined && <p className={css.notice} role="alert">{importNotice}</p>}
       {state.error !== undefined && !failedWithoutData && (
         <p className={css.notice} role="alert">{t('loadFailed', { message: state.error })}</p>
       )}

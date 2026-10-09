@@ -11,11 +11,13 @@ import { Timelines } from './host/timeline/service.ts'
 import { suggestionWriter } from './host/orchestration/suggester.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
 import { installHooks } from './host/orchestration/hooks.ts'
-import { PROTOCOL, PROTOCOL_SECTION } from './host/orchestration/prompt.ts'
+import type { Agent } from '@deepseek-ai/dsh-agent'
+import { PERSONA_SECTION, PROTOCOL_SECTION } from './host/orchestration/prompt.ts'
 import { roleplaySessionOf } from './shared/chat.ts'
 import { liveSettings } from './host/sessions/settings.ts'
 import { storesOf } from './host/orchestration/store.ts'
 import { sessionFolder } from 'dsh-roleplay-state'
+import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 import { currentTurn } from './host/orchestration/current-turn.ts'
 import { createTools } from './host/orchestration/tools.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
@@ -31,7 +33,7 @@ export const name = 'dsh-agentic-roleplay-core/orchestration'
  * Mounted by the `roleplay` agent preset, so it applies to roleplay chats only.
  * One instance serves every chat of the preset: state is kept per chat.
  */
-export const inject = ['roleplayOrchestration', 'roleplayState', 'roleplayRoot', 'tools', 'subagents', 'systemPrompt', 'agents']
+export const inject = ['roleplayOrchestration', 'roleplayState', 'roleplayRoot', 'roleplayPrompts', 'tools', 'subagents', 'systemPrompt', 'agents']
 
 export function apply(ctx: Context): void {
   const boundaries = () => ctx.roleplayOrchestration.boundaries
@@ -48,7 +50,7 @@ export function apply(ctx: Context): void {
     },
     problem,
   })
-  const stores = storesOf(ctx.roleplayState, sessionsDir, problem, (chat, text, signal) => index.queryVector(chat, text, signal))
+  const stores = storesOf(ctx.roleplayState, sessionsDir, problem, (chat, text, signal) => index.queryVector(chat, text, signal), undefined, (language, id, variables) => ctx.roleplayPrompts.text(id, language, variables))
   const engine = new TurnEngine(boundaries, stores, problem, chat => { index.schedule(chat) })
 
   // The ranker exists while a reranking service does, so that it never stands in the way of another plugin's ranker.
@@ -69,12 +71,17 @@ export function apply(ctx: Context): void {
       queryVector: (text, signal) => index.queryVector(agentSessionId, text, signal),
     }
   }), 'roleplay: state tools')
-  ctx.systemPrompt.section({
-    name: PROTOCOL_SECTION,
-    order: ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'),
-    text: PROTOCOL,
-    interpolate: false,
-  })
+  const languageOf = (context: object): string => {
+    const chat = (context as { agent?: Agent }).agent?.session.id
+    const id = chat === undefined ? undefined : roleplaySessionOf(chat)
+    return id === undefined ? FALLBACK_LANGUAGE : liveSettings(sessionFolder(sessionsDir(), id), problem).prompts.language
+  }
+  for (const [name, order, id] of [
+    [PERSONA_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'roleplay/persona'],
+    [PROTOCOL_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'roleplay/game-master'],
+  ] as const) {
+    ctx.systemPrompt.section({ name, order, text: context => ctx.roleplayPrompts.text(id, languageOf(context)), interpolate: false })
+  }
   for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.settle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
   let imageJobs: ImageJobs | undefined

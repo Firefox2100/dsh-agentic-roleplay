@@ -4,6 +4,13 @@ import type { ImageGenerationService } from 'dsh-ai-core'
 // Type-only: declares `ctx.roleplayState`.
 import type {} from 'dsh-roleplay-state'
 import { AgentSessions, agentServicesOf } from './host/agent/agent-sessions.ts'
+import { isPng, pictureOf, readCard } from './host/import/card.ts'
+import { childSamplingOf } from './host/agents/child.ts'
+import { PromptLibrary } from './host/prompts/library.ts'
+import { AuthoringLanguages } from './host/worlds/authoring-language.ts'
+import { RoleplayImport } from './host/import/service.ts'
+import { startImport } from './host/import/start-import.ts'
+import { ImportStore } from './host/import/store.ts'
 import { AuthoringSessions } from './host/agent/authoring-sessions.ts'
 import { Config } from './host/config.ts'
 import { RoleplayOrchestration } from './host/orchestration/service.ts'
@@ -43,12 +50,27 @@ export const name = 'dsh-agentic-roleplay-core'
 /** Sessions are kept by the state plugin, which the bundle installs with this one. */
 export const inject = ['roleplayState']
 
+/** The slice of the AI providers plugin's registry that sets the controls of model requests. */
+interface RequestPolicies {
+  policy(policy: (request: { options: { sessionId?: unknown } }) => { temperature?: number; toolChoice?: 'auto' | 'required' } | undefined): () => void
+}
+
 export function apply(ctx: Context, config: Config): void {
+  // The controls of the helper agents' requests are applied by the model service that serves them, when there is one.
+  ctx.inject(['aiProviders' as never], (scope) => {
+    const providers = Reflect.get(scope, 'aiProviders') as RequestPolicies
+    scope.effect(() => providers.policy(({ options }) => (options.sessionId === undefined ? undefined : childSamplingOf(String(options.sessionId)))), 'roleplay: request controls')
+  })
   const root = new RoleplayRoot(ctx, config.rootPath)
   new RoleplayOrchestration(ctx)
   const worlds = new WorldCatalog(ctx, root)
+  const prompts = new PromptLibrary(ctx, root)
+  prompts.bootstrap()
+  const languages = new AuthoringLanguages(ctx, () => join(root.path, 'worlds'))
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
-  const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path)
+  const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
+  const imports = new ImportStore(() => root.path)
+  new RoleplayImport(ctx, { maxUploadBytes: config.importMaxUploadBytes, concurrency: config.importConcurrency, reasoning: config.importReasoning, maxTokens: config.importMaxTokens, temperature: config.importTemperature })
   const settingsDeps = {
     sessionsDir: () => join(root.path, 'sessions'),
     pendingRecords: (id: string) => ctx.roleplayState.openSession(join(root.path, 'sessions'), id).pendingCommits.list().length,
@@ -65,10 +87,19 @@ export function apply(ctx: Context, config: Config): void {
     },
     worlds,
     createWorld: input => createWorld(worlds, input),
-    authorWorld: async (worldId, title) => {
+    authorWorld: async (worldId, title, language) => {
       const world = await worlds.find(worldId)
       if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
-      return { chatSessionId: await authoring.ensure(world.summary.id, world.summary.name, title) }
+      return { chatSessionId: await authoring.ensure(world.summary.id, world.summary.name, title, language) }
+    },
+    importer: {
+      maxUploadBytes: config.importMaxUploadBytes,
+      upload: async (file, name) => { const card = readCard(file, name); return await imports.create(card, isPng(file) ? pictureOf(file) : undefined) },
+      read: id => imports.read(id),
+      choose: (id, choices) => imports.choose(id, choices),
+      discard: id => imports.discard(id),
+      start: (id, choices, language) => startImport({ store: imports, worlds, authoring, chatTitle: name => `Authoring ${name}` }, id, choices, language),
+      picture: id => imports.picture(id),
     },
     worldCharacters: worldId => worldCharacters(worlds, worldId),
     worldEditor: {

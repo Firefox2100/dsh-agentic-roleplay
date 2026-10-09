@@ -229,9 +229,9 @@ export const sharedContext: CharacterContextProvider = {
     return {
       persona: [
         describe(member.character),
-        `Rules that always hold: you act only as ${member.character.name}. You know only what is in the situation you are given, who is present and what you remember; never use anything else, and do not claim to remember more. You never describe, decide or speak for another character, and you never narrate the world. Stay in character. Your relationships are your own fallible attitudes: let them shape how you interpret ambiguity, what you risk and how you speak, but never treat them as orders or as proof of another person's motives. Low familiarity especially means uncertainty, even when trust or affection is strong.`,
-        ...(request.lookup ? ['If you need to remember something that the situation does not give you, ask yourself with recall_my_memories. Do not use it otherwise.'] : []),
-        `Each time you are asked, decide what ${member.character.name} does now and answer with exactly three things: intent (one action, in one or two sentences, no speech), utterance (the words said aloud, word for word, in your own voice; leave it out if you stay silent) and commitment (low gives up at once, medium tries again if it is easy, high persists).`,
+        request.text('roleplay/character-rules', { name: member.character.name }),
+        ...(request.lookup ? [request.text('roleplay/character-lookup')] : []),
+        request.text('roleplay/character-decide', { name: member.character.name }),
       ].join('\n\n'),
       prompt: sections.join('\n\n'),
     }

@@ -28,7 +28,8 @@ export interface VisualImageMetadata {
 }
 
 const PLURAL: Record<VisualSubjectKind, string> = { character: 'characters', location: 'locations', item: 'items' }
-const SAFE_SEGMENT = /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/
+/** Letters and digits of any script: an id written in the world's own language is as good a directory name as an ASCII one. */
+const SAFE_SEGMENT = /^[\p{L}\p{N}][\p{L}\p{N}\p{M}._-]{0,199}$/u
 
 function segment(value: string | number, name: string): string {
   const text = String(value)

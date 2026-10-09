@@ -1,3 +1,4 @@
+import { shippedText } from '../../../src/host/prompts/library.ts'
 import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { CharacterRequest, PlaceView } from '../../../src/host/orchestration/boundaries.ts'
@@ -15,6 +16,8 @@ const view = (extra: Partial<PlaceView> = {}): PlaceView => ({
   ],
   ...extra,
 })
+
+const shippedRequestText: CharacterRequest['text'] = (id, variables) => shippedText(id, 'en', variables)
 
 describe('describing a place', () => {
   it('says what it is like, what can be pointed at and the ways out with their state, and gives keys only when asked', () => {
@@ -41,7 +44,7 @@ describe('describing a place', () => {
 
 describe('what a character is told', () => {
   const request = (extra: Partial<CharacterRequest> = {}): CharacterRequest => ({
-    member: placed(alice, bar), cast: [placed(arthur, bar, 'at the bar'), placed(alice, bar), placed(bob, cellar)], situation: 'Arthur orders a drink.', attempt: 1, turn: 2, lookup: false, place: view(), ...extra,
+    member: placed(alice, bar), cast: [placed(arthur, bar, 'at the bar'), placed(alice, bar), placed(bob, cellar)], situation: 'Arthur orders a drink.', attempt: 1, turn: 2, lookup: false, text: shippedRequestText, place: view(), ...extra,
   })
 
   it('is the place it is in and only those who are there, with where each stands', () => {
@@ -119,7 +122,7 @@ describe('the scene the game master is told, with places', () => {
 describe('how a character sees those it is with', () => {
   const mine = { name: 'Bob', label: 'rival', summary: 'They fell out over the inn.', present: true, familiarity: 0.8, trust: -0.6, affinity: 0, tension: 0.7 }
   const request = (relationships?: CharacterRequest['relationships']): CharacterRequest => ({
-    member: alice, cast: [arthur, alice, bob], situation: 'Arthur orders a drink.', attempt: 1, turn: 2, lookup: false, ...(relationships === undefined ? {} : { relationships }),
+    member: alice, cast: [arthur, alice, bob], situation: 'Arthur orders a drink.', attempt: 1, turn: 2, lookup: false, text: shippedRequestText, ...(relationships === undefined ? {} : { relationships }),
   })
 
   it('puts the label, the sentence and what the numbers come to in words, for those present', () => {
@@ -152,7 +155,7 @@ describe('things in a prompt', () => {
 
   it('are in the description of a place as what lies about, and a character is told what it has on it', () => {
     expect(describePlace(view({ items: [lantern, chest] }), { withKeys: false }).at(-1)).toBe('Lying about: Brass lantern (dented) [by the till, at Counter]; Oak chest [open] holding Silver key, 3 Coin')
-    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, carrying: [{ ...lantern, where: 'carried' }, { key: 'coat', name: 'Wool coat', quantity: 1, quality: '', notable: false, hidden: false, where: 'worn on the torso' }] }
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, text: shippedRequestText, carrying: [{ ...lantern, where: 'carried' }, { key: 'coat', name: 'Wool coat', quantity: 1, quality: '', notable: false, hidden: false, where: 'worn on the torso' }] }
     expect(sharedContext.brief(request).prompt).toContain('What you have on you:\nBrass lantern (dented) [carried]; Wool coat [worn on the torso]')
     expect(sharedContext.brief({ ...request, carrying: [] }).prompt).not.toContain('What you have on you')
   })
@@ -193,7 +196,7 @@ describe('time in a prompt', () => {
   })
 
   it('tells a character what time it is, after the situation', () => {
-    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, time: { mode: 'simulated', now: Date.UTC(1912, 9, 4, 3, 5), zone: 'UTC' } }
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, text: shippedRequestText, time: { mode: 'simulated', now: Date.UTC(1912, 9, 4, 3, 5), zone: 'UTC' } }
     expect(sharedContext.brief(request).prompt.split('\n\n').slice(0, 2)).toEqual(['Situation:\nArthur orders.', 'Now: Friday 4 October 1912, 03:05 (night).'])
     const { time: _time, ...without } = request
     expect(sharedContext.brief(without).prompt).not.toContain('Now:')
@@ -211,7 +214,7 @@ describe('days in a prompt', () => {
   }
 
   it('is told to a character as its own day: what it is doing and next, what it is due to do, and what it is after, as plans', () => {
-    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, time: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda }
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, text: shippedRequestText, time: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda }
     const prompt = sharedContext.brief(request).prompt
     expect(prompt).toContain('Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):')
     expect(prompt).toContain('Your day, now: drinks at the bar at The Bar, until 22:00.\nYour day, next: sleeps at Home, from 22:00.')
@@ -252,7 +255,7 @@ describe('days in a prompt', () => {
 
 describe('what the story keeps track of, in a prompt', () => {
   it('is told to a character as how it is and what it can tell of those with it', () => {
-    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, tracked: { self: 'Health: hurt (2); Valence: unhappy (-0.5), usually even (0)', others: [{ name: 'Arthur', text: 'Health: well (10)' }] } }
+    const request: CharacterRequest = { member: alice, cast: [arthur, alice], situation: 'Arthur orders.', attempt: 1, turn: 2, lookup: false, text: shippedRequestText, tracked: { self: 'Health: hurt (2); Valence: unhappy (-0.5), usually even (0)', others: [{ name: 'Arthur', text: 'Health: well (10)' }] } }
     const prompt = sharedContext.brief(request).prompt
     expect(prompt).toContain('How you are (what you can tell of yourself):\nHealth: hurt (2); Valence: unhappy (-0.5), usually even (0)')
     expect(prompt).toContain('What you can tell of the others here:\n- Arthur: Health: well (10)')

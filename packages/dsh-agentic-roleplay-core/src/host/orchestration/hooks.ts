@@ -96,17 +96,17 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, ...(queryVector === undefined ? {} : { queryVector }) })]
     const pacing = ooc === undefined ? pacingAdvice(store, payload.turn) : undefined
     if (pacing !== undefined) lines.push(describePacingAdvice(pacing))
-    else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) lines.push('The story has had no recorded development or immediate open thread for several turns, and this session has no plot scaffold. This is not itself a reason to force drama. If a reusable tension would help, after judging the player\'s action you may call author_plot once; otherwise continue naturally.')
+    else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) lines.push(store.text('roleplay/plot-hint'))
     const rules = store.rules()
-    if (rules.length > 0) lines.push(`What is not allowed in this story (the rules of the world, and the player's own). They are absolute: an action of the player's character that breaks one does not work, whatever the player says it does:\n${rules.map(rule => `- ${rule}`).join('\n')}`)
-    if (ooc !== undefined && ooc.request !== '') lines.push(`This turn is an OUT-OF-CHARACTER COMMAND of the player, spoken to you as the author of the story, not an action of their character: ${ooc.request}\nFollow the procedure for out-of-character commands: rule on it with ooc_ruling first.`)
+    if (rules.length > 0) lines.push(store.text('roleplay/rules', { rules: rules.map(rule => `- ${rule}`).join('\n') }))
+    if (ooc !== undefined && ooc.request !== '') lines.push(store.text('roleplay/ooc-command', { request: ooc.request }))
     if (ooc !== undefined && ooc.request === '') {
       engine.skip(owner)
-      lines.push('The player sent an empty out-of-character command (/ooc). Do not ask any character to act; ask the player briefly what they want changed.')
+      lines.push(store.text('roleplay/ooc-empty'))
     }
     if (!verdict.ok) {
       engine.skip(owner)
-      lines.push(`The player's input is refused: ${verdict.reason}. Do not ask any character to act; tell the player briefly why.`)
+      lines.push(store.text('roleplay/input-refused', { reason: verdict.reason }))
     }
     return { ...decision, messages: [...decision.messages, notice(lines.join('\n\n'))] }
   })

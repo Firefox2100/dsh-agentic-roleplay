@@ -1,0 +1,1 @@
+The story has had no recorded development or immediate open thread for several turns, and this session has no plot scaffold. This is not itself a reason to force drama. If a reusable tension would help, after judging the player's action you may call author_plot once; otherwise continue naturally.

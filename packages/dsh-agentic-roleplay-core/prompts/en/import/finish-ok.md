@@ -1,0 +1,1 @@
+The import is done. Tell the person briefly what was imported, what was left out and why, whether there is a playable character (if not, say that none was found and offer to add one), and any notes that matter.

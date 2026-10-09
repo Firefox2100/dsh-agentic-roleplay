@@ -9,6 +9,9 @@ import { createApiHandler } from '../../../src/host/http/api.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
 import { DEFAULT_SETTINGS, SETTINGS_SPEC } from '../../../src/shared/settings.ts'
 import { InvalidSettingsError } from '../../../src/host/sessions/settings.ts'
+import { ImportCardError } from '../../../src/host/import/card.ts'
+import { ImportNotFoundError } from '../../../src/host/import/store.ts'
+import type { ImportPreview } from '../../../src/shared/import-card.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
@@ -31,6 +34,9 @@ let settingsError: Error | undefined
 let notesError: Error | undefined
 let timelineError: Error | undefined
 let archiveError: Error | undefined
+let importError: Error | undefined
+let importCalls: string[] = []
+const preview: ImportPreview = { id: 'i1', hasAvatar: false, choices: { name: 'Card', disabledEntries: [], opening: { kind: 'first' } }, card: { sourceSpec: 'chara_card_v3', name: 'Card', description: '', personality: '', scenario: '', firstMessage: 'Hello', alternateGreetings: [], messageExample: '', creatorNotes: '', systemPrompt: '', postHistoryInstructions: '', tags: [], creator: '', characterVersion: '', ignored: { scripts: 0, extensions: [] } } }
 let editorError: Error | undefined
 let edited: string[] = []
 let archived: string[] = []
@@ -55,6 +61,8 @@ beforeEach(async () => {
   timelineError = undefined
   moved = undefined
   archiveError = undefined
+  importError = undefined
+  importCalls = []
   editorError = undefined
   edited = []
   archived = []
@@ -78,6 +86,15 @@ beforeEach(async () => {
     worldCharacters: async () => {
       if (charactersError !== undefined) throw charactersError
       return cast
+    },
+    importer: {
+      maxUploadBytes: 1024,
+      upload: (file, name) => { importCalls.push(`upload ${file.length} ${name}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
+      read: (id) => { importCalls.push(`read ${id}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
+      choose: (id, choices) => { importCalls.push(`choose ${id} ${JSON.stringify(choices)}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
+      discard: (id) => { importCalls.push(`discard ${id}`); return Promise.resolve() },
+      start: (id, choices) => { importCalls.push(`start ${id} ${choices.name}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
+      picture: () => Promise.reject(new Error('no picture')),
     },
     worldEditor: {
       read: (worldId) => {
@@ -256,9 +273,9 @@ describe('roleplay API', () => {
 
   it('rejects unknown routes and wrong methods', async () => {
     expect((await fetch(`${origin}/nope`)).status).toBe(404)
-    const wrong = await fetch(`${origin}/worlds`, { method: 'POST' })
+    const wrong = await fetch(`${origin}/worlds`, { method: 'DELETE' })
     expect(wrong.status).toBe(405)
-    expect(wrong.headers.get('allow')).toBe('GET')
+    expect(wrong.headers.get('allow')).toBe('GET, POST')
     expect((await fetch(`${origin}/worlds/refresh`)).status).toBe(405)
   })
 
@@ -498,6 +515,41 @@ describe('roleplay API', () => {
       expect(((await refused.json()) as { problems: string[] }).problems).toEqual(['there is no place "moon"'])
       editorError = new WorldNotFoundError('no world')
       expect((await fetch(`${origin}/worlds/state?id=nowhere`)).status).toBe(404)
+    })
+  })
+
+  describe('importing a card', () => {
+    const post = (path: string, body: string | Uint8Array, headers: Record<string, string> = {}) => fetch(`${origin}${path}`, { method: 'POST', headers, body })
+    const put = (path: string, body: unknown) => fetch(`${origin}${path}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('takes the card as the body of an upload, with its file name, and answers what the card holds and what is chosen to begin with', async () => {
+      const response = await post('/worlds/import/card', new Uint8Array([1, 2, 3]), { 'x-file-name': encodeURIComponent('我的 card.png'), 'content-type': 'image/png' })
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({ id: 'i1', choices: { name: 'Card' } })
+      expect(importCalls).toEqual(['upload 3 我的 card.png'])
+    })
+
+    it('refuses an upload that is too large without reading it, an empty one, and a file that is not a card, with the reason', async () => {
+      expect((await post('/worlds/import/card', new Uint8Array(2048))).status).toBe(413)
+      expect((await post('/worlds/import/card', new Uint8Array(0))).status).toBe(400)
+      importError = new ImportCardError('x.png is a PNG picture with no character card in it')
+      const refused = await post('/worlds/import/card', new Uint8Array([1]))
+      expect(refused.status).toBe(422)
+      expect(await refused.json()).toEqual({ message: 'x.png is a PNG picture with no character card in it' })
+    })
+
+    it('reads, chooses, starts and discards an import by its id, and says 404 for one that is gone and 422 for choices that cannot be used', async () => {
+      expect((await fetch(`${origin}/worlds/import?id=i1`)).status).toBe(200)
+      const choices = { name: 'New world', disabledEntries: ['entry:1'], opening: { kind: 'alternate', index: 0 } }
+      expect((await put('/worlds/import/choices?id=i1', choices)).status).toBe(200)
+      const started = await post('/worlds/import/start?id=i1', JSON.stringify(choices), { 'content-type': 'application/json' })
+      expect(await started.json()).toEqual({ worldId: 'w', chatSessionId: 'world-author-w', started: true })
+      expect((await fetch(`${origin}/worlds/import?id=i1`, { method: 'DELETE' })).status).toBe(204)
+      expect(importCalls).toEqual(['read i1', `choose i1 ${JSON.stringify(choices)}`, 'start i1 New world', 'discard i1'])
+      expect((await put('/worlds/import/choices?id=i1', { name: 4 })).status).toBe(422)
+      importError = new ImportNotFoundError('there is no import "i1"')
+      expect((await fetch(`${origin}/worlds/import?id=i1`)).status).toBe(404)
+      expect((await fetch(`${origin}/worlds/import/picture?id=i1`)).status).toBe(404)
     })
   })
 

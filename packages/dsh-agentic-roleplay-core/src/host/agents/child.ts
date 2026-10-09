@@ -1,3 +1,4 @@
+import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import { randomUUID } from 'node:crypto'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
@@ -47,7 +48,27 @@ export interface ChildTask {
   maxCalls?: number
   /** How hard the child thinks, as a level the model offers (for example `off` or `low`); the game master's own level when absent. */
   reasoningEffort?: string
+  /** The most tokens one model request of the child may produce; the model's own limit when absent. A child that rambles instead of answering is cut off, not waited for. */
+  maxTokens?: number
+  /** How the model is asked: how freely it writes, and whether it must answer with a tool call. Applied by the language model service that serves the child. */
+  sampling?: ChildSampling
 }
+
+/** The controls of a child's model requests that the plugin decides; the service that serves the route applies them. */
+export interface ChildSampling {
+  temperature?: number
+  toolChoice?: 'auto' | 'required'
+}
+
+/** What the settings of a chat say about how a kind of helper is asked: the characters and the writers of suggestions are free, the keepers of records exact. */
+export function childSampling(settings: { sampling: { characters: number; records: number; tools: 'auto' | 'required' } }, kind: 'characters' | 'records'): ChildSampling {
+  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools }
+}
+
+const samplings = new Map<string, ChildSampling>()
+
+/** The controls set for a running child, by its session id. */
+export const childSamplingOf = (sessionId: string): ChildSampling | undefined => samplings.get(sessionId)
 
 /**
  * Run a child agent to its result. Unlike a sub-agent started through `ctx.subagents`, it can
@@ -60,6 +81,14 @@ export interface ChildTask {
  * this is accepted, which DSH version it is built against, and what to do when DSH changes.
  * @throws {Error} when the child is cancelled, stops without a result, or exceeds its calls.
  */
+function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens'>): AgentOptions | undefined {
+  const options = {
+    ...(task.reasoningEffort === undefined || task.reasoningEffort === '' ? {} : { reasoningEffort: ReasoningEffortId(task.reasoningEffort) }),
+    ...(task.maxTokens === undefined ? {} : { maxTokens: task.maxTokens }),
+  }
+  return Object.keys(options).length === 0 ? undefined : options
+}
+
 export async function runChild<T>(task: ChildTask): Promise<T> {
   const { parent, signal } = task
   let submitted: { value: unknown } | undefined
@@ -115,11 +144,13 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
 
   const depth = resolveChildDepth(parent, undefined)
   const inherited = captureDelegatedPolicyOverrides(parent)
+  const sessionId = SessionId(randomUUID())
+  if (task.sampling !== undefined) samplings.set(sessionId, task.sampling)
   const handle = await parent.ctx.agents.create({
-    sessionId: SessionId(randomUUID()),
+    sessionId,
     parentAgent: parent,
     meta: childSessionMeta(parent, depth, false),
-    agentOptions: resolveChildAgentOptions(parent, task.reasoningEffort === undefined || task.reasoningEffort === '' ? undefined : { reasoningEffort: ReasoningEffortId(task.reasoningEffort) }, depth),
+    agentOptions: resolveChildAgentOptions(parent, childOptions(task), depth),
     signal,
     setup: (childCtx, child) => {
       appendDelegatedPolicyOverrides(child.session, inherited)
@@ -142,10 +173,16 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     await handle.agent.whenIdle()
   } finally {
     signal.removeEventListener('abort', onAbort)
+    samplings.delete(sessionId)
     await handle.dispose()
   }
   if (signal.aborted) throw new Error('cancelled')
   if (overran && submitted === undefined) throw new Error(`the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
-  if (submitted === undefined) throw new Error(`the agent stopped without submitting a result (${calls} call(s))`)
+  if (submitted === undefined) {
+    const ended = handle.agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
+    const reason = ended?.type === 'turn/end' ? ended.data.reason : undefined
+    if (reason?.kind === 'error') throw new Error(`the agent failed: ${reason.error.message}`)
+    throw new Error(`the agent stopped without submitting a result (${calls} call(s))`)
+  }
   return submitted.value as T
 }

@@ -1,14 +1,12 @@
+import { promptFor } from '../prompts/access.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { PlotDefinition } from 'dsh-roleplay-model'
-import { runChild } from '../agents/child.ts'
+import { childSampling, runChild } from '../agents/child.ts'
 import type { TurnStore } from '../orchestration/boundaries.ts'
 import { parsePlotsFile } from '../plots/load.ts'
 import { addSessionPlot } from './director.ts'
 
-const PERSONA = `You are a plot author for an open-ended agentic roleplay. You propose a compact dramatic scaffold from the story as it exists now.
-
-A plot is not a script. Give it optional hooks and several causally compatible developments, with multiple possible resolutions. Reuse the existing characters, factions, places, things, lore and unresolved tensions. Do not invent past events, decide anyone's future action, require the player to participate, prescribe an ending, or hurry the story. Guidance describes an opportunity the game master might make perceptible; avoid states what it must not establish. Prefer one slow, reusable tension over a sequence of scenes.`
 
 interface AuthoredPlot {
   id: string
@@ -39,7 +37,7 @@ export async function authorPlot(parent: Agent, store: TurnStore, turn: number, 
   const events = store.story.events.list().slice(-12).map(event => `- ${event.text}`).join('\n')
   let checked: PlotDefinition | undefined
   const result = await runChild<AuthoredPlot>({
-    parent, signal, persona: PERSONA, reasoningEffort: store.settings().reasoning.children, result: RESULT, maxCalls: 3,
+    parent, signal, sampling: childSampling(store.settings(), 'records'), persona: promptFor(parent, 'roleplay/plot-author', store.settings().prompts.language), reasoningEffort: store.settings().reasoning.children, result: RESULT, maxCalls: 3,
     prompt: `The story has gone quiet by turn ${turn}. Propose one optional plot scaffold that grows from this state.\n\nCharacters:\n${cast || '- none'}\n\nFactions:\n${factions || '- none'}\n\nPlaces: ${places || 'none'}\n\nRecent recorded events:\n${events || '- none'}`,
     beforeSubmit(value) {
       const authored = value as AuthoredPlot

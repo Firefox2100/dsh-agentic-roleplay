@@ -1,3 +1,4 @@
+import { shippedText } from '../prompts/library.ts'
 import { changeVariable, planVariableChange, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from 'dsh-roleplay-state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { WORLD_RULES_KEY, rulesOf } from '../../shared/rules.ts'
@@ -210,7 +211,10 @@ function checkMove(session: Session, characterKey: string, request: MoveRequest)
     : { ok: false, problems: planned.problems }
 }
 
-function storeOf(session: Session, folder: string, problem: (message: string) => void, queryVector: TurnStore['queryVector'], wall: () => number): TurnStore {
+/** An instruction text by its id, in a language. */
+export type PromptText = (language: string, id: string, variables?: Readonly<Record<string, string | number>>) => string
+
+function storeOf(session: Session, folder: string, problem: (message: string) => void, queryVector: TurnStore['queryVector'], wall: () => number, prompt: PromptText): TurnStore {
   const settings = (): ChatSettings => liveSettings(folder, problem)
   return {
     story: session,
@@ -218,6 +222,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     checkMove: (character, request) => checkMove(session, character, request),
     place: locationId => placeViewOf(session, locationId),
     settings,
+    text: (id, variables) => prompt(settings().prompts.language, id, variables),
     rules: () => rulesOf(worldRules(session), settings().rules.own),
     time: turn => readTime(session, settings().clock, turn, wall()),
     beginTurn: turn => startTurn(session, settings().clock, turn, wall()),
@@ -273,12 +278,14 @@ export function storesOf(
   queryVector: (chat: string, text: string, signal?: AbortSignal) => Promise<readonly number[] | undefined> = () => Promise.resolve(undefined),
   /** The wall clock, in UTC milliseconds. */
   wall: () => number = Date.now,
+  /** The instruction texts; the ones the package ships when none are given. */
+  prompt: PromptText = (language, id, variables) => shippedText(id, language, variables),
 ): (chat: string) => TurnStore | undefined {
   return (chat) => {
     const id = roleplaySessionOf(chat)
     if (id === undefined) return undefined
     try {
-      return storeOf(state.openSession(sessionsDir(), id), sessionFolder(sessionsDir(), id), problem, (text, signal) => queryVector(chat, text, signal), wall)
+      return storeOf(state.openSession(sessionsDir(), id), sessionFolder(sessionsDir(), id), problem, (text, signal) => queryVector(chat, text, signal), wall, prompt)
     } catch {
       return undefined
     }

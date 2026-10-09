@@ -3,7 +3,7 @@ import type { Dictionaries } from '../i18n.ts'
 export type SettingsFormKey =
   | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
-  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
+  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
   | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire'
@@ -36,6 +36,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockReal: 'Real clock',
     rulesOwn: 'Your own rules',
     rulesOwnHelp: 'What is not allowed in this story besides what the world itself rules out, one rule per line, in your own words (for example "No one can fly"). The game master holds your actions, and your out-of-character commands, to the world\'s rules and these.',
+    promptsLanguage: 'Language of the instructions',
+    promptsLanguageHelp: 'Which folder of prompts (en, zh) in the roleplay root the models are instructed from, and so the language the characters, narration and records are written in. Edit the files in the prompts folder to change the instructions; delete one to restore it.',
     reasoningChildren: 'Thinking of child agents',
     reasoningChildrenHelp: 'How hard the characters, record keeper, world author, image author and suggestion writer think, as a level the model offers, for example off or low. Empty uses your own level. Thinking is most of what a turn costs on a slow model, and these helpers do well without it.',
     triggersEnabled: 'Events of the world',
@@ -108,6 +110,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockReal: '现实时钟',
     rulesOwn: '你自己的规则',
     rulesOwnHelp: '除世界本身已排除的内容外，这个故事里还不允许什么，每行一条，用你自己的话写（例如“没有人会飞”）。游戏主持会用世界的规则和这些规则来衡量你的行动和你的场外指令。',
+    promptsLanguage: '指令语言',
+    promptsLanguageHelp: '模型使用角色扮演根目录中 prompts 文件夹下哪种语言（en、zh）的指令，也决定了角色、旁白和记录所用的语言。修改 prompts 文件夹中的文件即可改变指令；删除某个文件即可恢复原样。',
     reasoningChildren: '子智能体的思考强度',
     reasoningChildrenHelp: '角色、记录员、世界作者、图像作者和建议作者的思考强度，须是模型提供的级别，例如 off 或 low。留空则与你自己选择的一致。在较慢的模型上，思考占了每轮耗时的大部分，而这些助手即使不思考也做得不错。',
     triggersEnabled: '世界事件',

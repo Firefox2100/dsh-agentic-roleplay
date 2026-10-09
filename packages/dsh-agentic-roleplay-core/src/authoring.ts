@@ -4,19 +4,34 @@ import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
 import { authoredWorldWriteTools, authoringApproval } from './host/authoring/write-tools.ts'
+import { importHooks, importTools } from './host/import/tools.ts'
+import type {} from './host/import/service.ts'
+import type {} from './host/prompts/library.ts'
+import type {} from './host/worlds/authoring-language.ts'
+import type { Agent } from '@deepseek-ai/dsh-agent'
+import { authoredWorldOf } from './shared/authoring-chat.ts'
+import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 
 export const name = 'dsh-agentic-roleplay-core/authoring'
-export const inject = ['roleplayWorlds', 'tools', 'systemPrompt']
+export const inject = ['roleplayWorlds', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'tools', 'systemPrompt']
 
 export function apply(ctx: Context): void {
+  const prompting = { prompts: () => ctx.roleplayPrompts, languages: () => ctx.roleplayAuthoringLanguages }
+  const languageOf = (context: object): string => {
+    const chat = (context as { agent?: Agent }).agent?.session.id
+    const world = chat === undefined ? undefined : authoredWorldOf(chat)
+    return world === undefined ? FALLBACK_LANGUAGE : ctx.roleplayAuthoringLanguages.get(world)
+  }
   const reader = new AuthoredWorldReader(ctx.roleplayWorlds)
   for (const tool of authoredWorldReadTools(reader)) ctx.tools.register(tool)
   for (const tool of authoredWorldWriteTools(reader)) ctx.tools.register(tool)
+  for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
+  importHooks(ctx, ctx.roleplayWorlds, prompting)
   ctx.on('tools/pre-execute', authoringApproval)
-  ctx.systemPrompt.section({
-    name: 'WORLD_AUTHORING_PROCEDURE',
-    order: ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'),
-    interpolate: false,
-    text: 'Use the read tools before making claims or edits. Keys are stable file identities, not display names. Before replacing an element, read its exact source document and preserve fields the requested change does not affect. Every write asks the user for one-time approval. If approval is rejected, cancelled or unavailable, do not retry it automatically: explain that nothing changed and ask how the user wants to proceed.',
-  })
+  for (const [name, order, id] of [
+    ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],
+    ['WORLD_AUTHORING_PROCEDURE', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'world/procedure'],
+  ] as const) {
+    ctx.systemPrompt.section({ name, order, interpolate: false, text: context => ctx.roleplayPrompts.text(id, languageOf(context)) })
+  }
 }

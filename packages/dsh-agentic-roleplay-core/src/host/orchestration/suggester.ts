@@ -1,13 +1,10 @@
+import { promptFor } from '../prompts/access.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import { runChild } from '../agents/child.ts'
+import { childSampling, runChild } from '../agents/child.ts'
 import type { Suggester, SuggestionJob } from './boundaries.ts'
 import { MAX_SUGGESTION, suggestionProblems, tidySuggestions } from './suggestions.ts'
 
-/** Who writes the suggestions and how. The same for every run, so it is the part of each request the provider has cached. */
-export const SUGGESTER_PERSONA = `You suggest what the player could do next in an interactive story. You are shown what the player has just read, and who they play. From that alone, and nothing else, you write short lines in the first person that the player might send as their next move ("Ask Clara about the ledger", "Slip out through the cellar").
-
-Each line is different in kind from the others (say something, do something, leave, look closer), is possible in the scene as it stands, follows from what was just read, and is at most ${MAX_SUGGESTION} characters. Use only what the text says: never a fact, person, place or object it does not mention, and nothing the player's character could not know. Write in the language of the text. No numbering, no quotation marks, no explanation.`
 
 const RESULT: ObjectJsonSchema = {
   type: 'object',
@@ -40,8 +37,8 @@ export function suggestionWriter(deps: { agentOf: (chat: string) => Agent | unde
       const parent = deps.agentOf(job.chat)
       if (parent === undefined) throw new Error(`no agent for chat ${job.chat}`)
       const result = await runChild<{ options: string[] }>({
-        parent, signal, reasoningEffort: job.store.settings().reasoning.children,
-        persona: SUGGESTER_PERSONA,
+        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'characters'),
+        persona: promptFor(parent, 'roleplay/suggester', job.store.settings().prompts.language, { max: MAX_SUGGESTION }),
         prompt: promptOf(job),
         result: RESULT,
         beforeSubmit: (value) => {

@@ -24,7 +24,8 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const options = useEmbeddingOptions('start')
   const playable = dialog.characters.filter(character => character.role === 'playable')
   const selected = choice ?? playable[0]?.id
-  const shown = { ...toDrafts(DEFAULT_SETTINGS, options), ...drafts }
+  const base = { ...DEFAULT_SETTINGS, prompts: { language: t('language') } }
+  const shown = { ...toDrafts(base, options), ...drafts }
   const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting && problemsOf(shown, options).size === 0
 
   return (
@@ -48,7 +49,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, playerCharacterId: selected, ...(drafts === undefined ? {} : { settings: fromDrafts(DEFAULT_SETTINGS, drafts, options) }) })
+          if (canStart) onStart({ name, playerCharacterId: selected, settings: fromDrafts(base, shown, options) })
         }}
       >
         <label className={css.field}>

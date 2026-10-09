@@ -23,11 +23,12 @@ describe('the events of an opening', () => {
   const events = openingEvents(OPENING)
 
   it('are a finished first turn in which the output was delivered the way every turn delivers it', () => {
-    expect(events.map(event => event.type)).toEqual(['turn/start', 'step/start', 'assistant/message', 'tool/call', 'tool/result', 'step/end', 'turn/end'])
-    expect(events.map(event => event.seq)).toEqual([0, 1, 2, 3, 4, 5, 6])
+    expect(events.map(event => event.type)).toEqual(['turn/start', 'step/start', 'system/message', 'assistant/message', 'tool/call', 'tool/result', 'step/end', 'turn/end'])
+    expect(events.map(event => event.seq)).toEqual([0, 1, 2, 3, 4, 5, 6, 7])
     expect(events.at(-1)).toMatchObject({ type: 'turn/end', data: { turn: 1, reason: { kind: 'completed' } } })
-    expect(events[3]).toMatchObject({ type: 'tool/call', data: { name: 'narrate', callId: 'opening-narrate' } })
-    const sent = JSON.parse((events[3]!.data as { arguments: string }).arguments) as { segments: unknown[] }
+    expect(events[4]).toMatchObject({ type: 'tool/call', data: { name: 'narrate', callId: 'opening-narrate' } })
+    expect(events[2]).toMatchObject({ type: 'system/message', surfaceOp: 'append', data: { message: { content: [] } } })
+    const sent = JSON.parse((events[4]!.data as { arguments: string }).arguments) as { segments: unknown[] }
     expect(sent.segments).toEqual([
       { type: 'narration', text: 'The festival lanterns sway as you reach the inn.' },
       { type: 'utterance', character: 'clara', text: 'You are late, Mr. Moore.' },
@@ -44,10 +45,10 @@ describe('the events of an opening', () => {
 
 describe('the opening of an authoring chat', () => {
   it('is a finished assistant turn without pretending that a tool was used', () => {
-    const events = authoringOpeningEvents('Harbor')
-    expect(events.map(event => event.type)).toEqual(['approval/policy', 'turn/start', 'step/start', 'assistant/message', 'step/end', 'turn/end'])
+    const events = authoringOpeningEvents('Welcome to the authoring room for “Harbor”.')
+    expect(events.map(event => event.type)).toEqual(['approval/policy', 'turn/start', 'step/start', 'system/message', 'assistant/message', 'step/end', 'turn/end'])
     expect(events[0]).toMatchObject({ data: { policy: 'ask' } })
-    expect(JSON.stringify(events[3])).toContain('authoring room for “Harbor”')
+    expect(JSON.stringify(events[4])).toContain('authoring room for “Harbor”')
     expect(events.some(event => event.type === 'tool/call')).toBe(false)
   })
 })
@@ -75,7 +76,7 @@ describe('storing a chat with its opening', () => {
     await storeOpening(persistence, { id: 'session-abc', cwd: '/data/roleplay', agentPreset: 'roleplay' }, OPENING)
     expect(log).toEqual(['create', 'append', 'flush', 'close'])
     expect(stored.header).toMatchObject({ version: 4, id: 'session-abc', cwd: '/data/roleplay', isSeeded: false, agentPreset: 'roleplay' })
-    expect(stored.events.map(event => event.type)).toEqual(['turn/start', 'step/start', 'assistant/message', 'tool/call', 'tool/result', 'step/end', 'turn/end'])
+    expect(stored.events.map(event => event.type)).toEqual(['turn/start', 'step/start', 'system/message', 'assistant/message', 'tool/call', 'tool/result', 'step/end', 'turn/end'])
   })
 
   it('lets go of the session when writing fails', async () => {

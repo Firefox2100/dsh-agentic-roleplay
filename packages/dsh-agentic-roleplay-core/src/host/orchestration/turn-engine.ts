@@ -749,7 +749,7 @@ export class TurnEngine {
       const upcoming = store?.upcomingFor(member.character.id, owner.turn) ?? []
       const tracked = store?.trackedFor(member.character.id, (place === undefined ? cast : place.here).map(entry => entry.character.id))
       const request: CharacterRequest = {
-        member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false,
+        member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false, text: (id, variables) => this.storeOf(owner).text(id, variables),
         ...(time === undefined ? {} : { time }),
         ...(agenda === undefined ? {} : { agenda }),
         ...(cues.length === 0 ? {} : { cues }),

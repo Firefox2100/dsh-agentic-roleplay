@@ -12,6 +12,7 @@ import { decodeOutput } from '../../shared/narration.ts'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { liveSettings } from '../sessions/settings.ts'
 import { composeSummary, foldSummaries, type Chronicler } from './chronicle.ts'
+import { promptFor } from '../prompts/access.ts'
 import { subagentChronicler } from './chronicler.ts'
 import { selectFoldRange } from './range.ts'
 
@@ -104,10 +105,10 @@ export class RoleplayCompaction extends BasicCompactionEngine {
     const fold = this.folds.get(agent.session.id)
     if (fold === undefined) return super.summarize(input as never, agent, signal)
     const story = this.ctx.roleplayState.openSession(this.sessionsDir(), fold.id)
-    const { context } = liveSettings(fold.folder)
-    const chronicler: Chronicler = subagentChronicler(this.ctx.subagents, agent)
+    const { context, prompts } = liveSettings(fold.folder)
+    const chronicler: Chronicler = subagentChronicler(this.ctx.subagents, agent, prompts.language)
     const { playerInputs, transcript } = readFolded(input.messages)
-    await foldSummaries({ story, settings: context, uptoTurn: fold.uptoTurn, playerInputs, transcript, chronicler, signal: signal ?? new AbortController().signal })
+    await foldSummaries({ story, settings: context, uptoTurn: fold.uptoTurn, playerInputs, transcript, chronicler, text: (id, variables) => promptFor(agent, `roleplay/chronicle-${id}`, prompts.language, variables), signal: signal ?? new AbortController().signal })
     const config = agent.session.requestHeader()?.config
     return {
       summary: [{ type: 'text', text: composeSummary(story) }],

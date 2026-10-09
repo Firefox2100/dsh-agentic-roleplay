@@ -14,6 +14,8 @@ export const AGENT_PRESET = 'roleplay'
 /** The slice of DSH's session controller used to create a chat. */
 export interface SessionControllerLike {
   create(request: { workspaceId: string; sessionId: string; agentPreset: string }): Promise<{ sessionId: string }>
+  /** Says something in a chat as the person would; it is queued behind what the chat is doing. */
+  prompt(request: { requestId: string; sessionId: string; mode: 'queue'; content: readonly { type: 'text'; text: string }[] }, signal: AbortSignal): Promise<unknown>
   /** Pins the chat's title, so no title is made from the first message. */
   rename(request: { sessionId: string; title: string }): Promise<unknown>
 }

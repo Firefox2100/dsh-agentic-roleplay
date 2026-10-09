@@ -1,3 +1,4 @@
+import { PromptLibrary } from '../../../src/host/prompts/library.ts'
 import { Context } from '@deepseek-ai/cordis'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { createUserMessage, ToolCallId, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
@@ -445,6 +446,7 @@ beforeEach(async () => {
   state = new RoleplayState(ctx, { journalMode: 'delete' })
   ctx.provide('roleplayRoot')
   ctx.set('roleplayRoot', { path: root })
+  new PromptLibrary(ctx, { path: root } as never)
 })
 
 afterEach(async () => {
@@ -593,6 +595,14 @@ describe('a turn with the real agent loop', () => {
       expect(session.clock.get()).toEqual({ mode: 'simulated', now: EVENING + 30_000 })
       expect(session.clock.at(1, 1)).toBe(EVENING)
       expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('It is now Friday 4 October 1912, 21:40 (evening); 30 seconds passed.')
+    })
+
+    it('asks the characters freely and the record keeper exactly, and has the helpers answer with a tool call', async () => {
+      const { adapter } = await playTime('stated')
+      const sampled = (requests: GenerateOptions[]) => requests.map(request => adapter.samplings[adapter.requests.indexOf(request)])
+      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required' })))
+      expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.2, toolChoice: 'required' })))
+      expect(adapter.samplings[adapter.requests.indexOf(masterRequests(adapter)[0]!)]).toBeUndefined()
     })
 
     it('passes the time the game master says a round took, and the keeper is told when it was and how long it took', async () => {

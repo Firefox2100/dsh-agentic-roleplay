@@ -1,7 +1,8 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import { CHRONICLER_PERSONA, type Chronicler } from './chronicle.ts'
+import { promptFor } from '../prompts/access.ts'
+import type { Chronicler } from './chronicle.ts'
 
 const SUMMARY_SCHEMA: ObjectJsonSchema = {
   type: 'object',
@@ -11,7 +12,7 @@ const SUMMARY_SCHEMA: ObjectJsonSchema = {
 }
 
 /** Writes each passage with a one-shot sub-agent of the game master that has the chronicler's persona and no tools. */
-export function subagentChronicler(subagents: Pick<SubagentRuntime, 'start'>, parent: Agent): Chronicler {
+export function subagentChronicler(subagents: Pick<SubagentRuntime, 'start'>, parent: Agent, language: string): Chronicler {
   return {
     async write({ task, material, words }, signal) {
       const run = await subagents.start('spawn', {
@@ -19,7 +20,7 @@ export function subagentChronicler(subagents: Pick<SubagentRuntime, 'start'>, pa
         signal,
         label: 'Chronicler',
         prompt: [{ type: 'text', text: `${task}\n\nWrite at most ${words} words.\n\n${material}` }],
-        persona: CHRONICLER_PERSONA,
+        persona: promptFor(parent, 'roleplay/chronicler', language),
         toolFilter: { allow: [] },
         outputSchema: SUMMARY_SCHEMA,
       })

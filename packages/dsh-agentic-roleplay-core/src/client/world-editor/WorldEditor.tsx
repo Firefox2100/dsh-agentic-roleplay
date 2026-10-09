@@ -75,6 +75,7 @@ export function WorldEditor({ t, source, notEditable }: { t: Translate; source: 
         ))}
       </nav>
       <div className={css.content}>
+        {!load.world.characters.some(character => character.role === 'playable' || character.control === 'player') && <p className={css.warning} role="status" data-testid="roleplay-no-playable">{t('noPlayableWarning')}</p>}
         {section === 'characters' && (
           <CharactersPanel
             t={t}

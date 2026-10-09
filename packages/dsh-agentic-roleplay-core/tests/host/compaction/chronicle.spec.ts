@@ -1,3 +1,4 @@
+import { shippedText } from '../../../src/host/prompts/library.ts'
 import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { composeSummary, estimateTokens, foldSummaries, type Chronicler } from '../../../src/host/compaction/chronicle.ts'
@@ -30,6 +31,8 @@ function chronicler(size = 50): Chronicler & { requests: { task: string; materia
 }
 const context = (overrides: Partial<typeof DEFAULT_SETTINGS.context> = {}) => ({ ...DEFAULT_SETTINGS.context, ...overrides })
 
+const chronicleText = (id: string, variables: Record<string, string | number>): string => shippedText(`roleplay/chronicle-${id}`, 'en', variables)
+
 describe('estimateTokens', () => {
   it('counts dense scripts as more tokens per character than spaced ones', () => {
     expect(estimateTokens('x'.repeat(380))).toBe(100)
@@ -43,7 +46,7 @@ describe('foldSummaries', () => {
     event(2, 'Alice saw Bob with the key.', 3, [alice, bob])
     event(3, 'The band played.', 1)
     const writer = chronicler()
-    await foldSummaries({ story: store, settings: context(), uptoTurn: 2, playerInputs: '- I ask about the key', transcript: 'ignored', chronicler: writer, signal })
+    await foldSummaries({ story: store, settings: context(), uptoTurn: 2, playerInputs: '- I ask about the key', transcript: 'ignored', chronicler: writer, text: chronicleText, signal })
     expect(writer.requests).toHaveLength(1)
     const [request] = writer.requests
     expect(request?.task).toContain('turns 1 to 2')
@@ -58,19 +61,19 @@ describe('foldSummaries', () => {
   it('falls back on the conversation as it was told when a turn has no events', async () => {
     event(1, 'Bob took the key.')
     const writer = chronicler()
-    await foldSummaries({ story: store, settings: context(), uptoTurn: 2, playerInputs: '', transcript: 'Player: hello\n\nBob waves.', chronicler: writer, signal })
+    await foldSummaries({ story: store, settings: context(), uptoTurn: 2, playerInputs: '', transcript: 'Player: hello\n\nBob waves.', chronicler: writer, text: chronicleText, signal })
     expect(writer.requests[0]?.material).toContain('Bob waves.')
   })
 
   it('writes only about the turns not yet covered', async () => {
     event(1, 'first'); event(2, 'second'); event(3, 'third'); event(4, 'fourth')
     const writer = chronicler()
-    await foldSummaries({ story: store, settings: context(), uptoTurn: 2, playerInputs: '', transcript: '', chronicler: writer, signal })
-    await foldSummaries({ story: store, settings: context(), uptoTurn: 4, playerInputs: '', transcript: '', chronicler: writer, signal })
+    await foldSummaries({ story: store, settings: context(), uptoTurn: 2, playerInputs: '', transcript: '', chronicler: writer, text: chronicleText, signal })
+    await foldSummaries({ story: store, settings: context(), uptoTurn: 4, playerInputs: '', transcript: '', chronicler: writer, text: chronicleText, signal })
     expect(writer.requests[1]?.task).toContain('turns 3 to 4')
     expect(writer.requests[1]?.material).not.toContain('first')
     expect(store.summaries.list().map(summary => [summary.fromTurn, summary.toTurn])).toEqual([[1, 2], [3, 4]])
-    await foldSummaries({ story: store, settings: context(), uptoTurn: 4, playerInputs: '', transcript: '', chronicler: writer, signal })
+    await foldSummaries({ story: store, settings: context(), uptoTurn: 4, playerInputs: '', transcript: '', chronicler: writer, text: chronicleText, signal })
     expect(writer.requests).toHaveLength(2)
   })
 
@@ -78,7 +81,7 @@ describe('foldSummaries', () => {
     for (let turn = 1; turn <= 6; turn++) event(turn, `event ${turn}`, 4)
     const writer = chronicler(600)
     const settings = context({ shortTermTokens: 300, longTermTokens: 100_000 })
-    for (const upto of [2, 4, 6]) await foldSummaries({ story: store, settings, uptoTurn: upto, playerInputs: '', transcript: '', chronicler: writer, signal })
+    for (const upto of [2, 4, 6]) await foldSummaries({ story: store, settings, uptoTurn: upto, playerInputs: '', transcript: '', chronicler: writer, text: chronicleText, signal })
     const chapters = store.summaries.list('chapter')
     const digests = store.summaries.list('digest')
     expect(chapters.length).toBeGreaterThan(0)
@@ -96,7 +99,7 @@ describe('foldSummaries', () => {
     store.summaries.add({ level: 'chapter', fromTurn: 3, toTurn: 4, text: 'b'.repeat(1500) })
     store.summaries.add({ level: 'digest', fromTurn: 5, toTurn: 5, text: 'short' })
     const writer = chronicler(100)
-    await foldSummaries({ story: store, settings: context({ longTermTokens: 300 }), uptoTurn: 5, playerInputs: '', transcript: '', chronicler: writer, signal })
+    await foldSummaries({ story: store, settings: context({ longTermTokens: 300 }), uptoTurn: 5, playerInputs: '', transcript: '', chronicler: writer, text: chronicleText, signal })
     const chapters = store.summaries.list('chapter')
     expect(chapters).toHaveLength(1)
     expect([chapters[0]?.fromTurn, chapters[0]?.toTurn]).toEqual([1, 4])
@@ -107,7 +110,7 @@ describe('foldSummaries', () => {
   it('stops when the chronicler fails, leaving what was already stored', async () => {
     event(1, 'x')
     const failing: Chronicler = { write: () => Promise.reject(new Error('model down')) }
-    await expect(foldSummaries({ story: store, settings: context(), uptoTurn: 1, playerInputs: '', transcript: '', chronicler: failing, signal })).rejects.toThrow('model down')
+    await expect(foldSummaries({ story: store, settings: context(), uptoTurn: 1, playerInputs: '', transcript: '', chronicler: failing, text: chronicleText, signal })).rejects.toThrow('model down')
     expect(store.summaries.list()).toEqual([])
   })
 })

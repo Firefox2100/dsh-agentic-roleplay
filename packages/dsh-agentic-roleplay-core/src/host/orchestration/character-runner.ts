@@ -1,6 +1,6 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createCharacterTools } from 'dsh-roleplay-state'
-import { runChild } from '../agents/child.ts'
+import { childSampling, runChild } from '../agents/child.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import { CHARACTER_ACTION_SCHEMA, parseCharacterAction } from './protocol.ts'
 import type { RunCharacter } from './turn-engine.ts'
@@ -17,7 +17,7 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
     const tools = request.lookup
       ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: deps.store.settings().memory, queryVector: deps.store.queryVector }), request.member.character.id)
       : []
-    const result = await runChild({ parent: deps.parent, signal, reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, result: CHARACTER_ACTION_SCHEMA })
+    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(deps.store.settings(), 'characters'), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, result: CHARACTER_ACTION_SCHEMA })
     return parseCharacterAction(result)
   }
 }

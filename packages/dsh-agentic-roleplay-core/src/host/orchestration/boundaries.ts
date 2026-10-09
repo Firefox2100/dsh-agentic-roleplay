@@ -109,6 +109,8 @@ export interface CharacterRequest {
   memories?: readonly Recalled[]
   /** Whether the character can ask itself about more of what it remembers, while it decides. */
   lookup: boolean
+  /** An instruction text in the language of the chat. */
+  text: TurnStore['text']
   /** The place the character is in, when it is in one: the scene it is told is this place and who is here. */
   place?: PlaceView
   /** How the character stands towards people who bear on the moment, where there is a profile of them. */
@@ -388,6 +390,8 @@ export interface TurnStore {
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
+  /** An instruction text in the language of the chat. */
+  text(id: string, variables?: Readonly<Record<string, string | number>>): string
   /** What is not allowed in the story: the world's rules and the player's own. */
   rules(): string[]
   /** What time it is in the story. */
