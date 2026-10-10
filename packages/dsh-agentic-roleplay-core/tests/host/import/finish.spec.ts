@@ -63,7 +63,7 @@ describe('places that contain each other', () => {
 
 describe('finishing an import', () => {
   it('moves the documents in, all valid, and fills in the world\'s own file: description and tags from one call, the chosen opening, the creator and the cover', async () => {
-    const ctx = fakeContext(() => ({ description: 'A fishing town in autumn.', tags: ['harbour', 'harbour', 'autumn'] }))
+    const ctx = fakeContext(() => ({ description: 'A fishing town in autumn.', tags: ['harbour', 'harbour', 'autumn'], starting_time: '1912-10-04T08:00:00' }))
     const result = await finishImport(ctx, input({ picture: Buffer.from('png-bytes') }))
     expect(result).toMatchObject({ ok: true, report: {
       counts: { characters: 1, places: 1, factions: 0, things: 0, lore: 1 }, hasPlayableCharacter: false, opening: 'imported', cover: true,
@@ -72,7 +72,7 @@ describe('finishing an import', () => {
     expect(await read('characters/tam/character.json')).toMatchObject({ id: 'tam', name: 'Old Tam' })
     expect(await read('lore/founding/lore.json')).toMatchObject({ title: 'Founding' })
     expect(await read('world.json')).toEqual({
-      id: 'w1', name: 'Test Harbour', description: 'A fishing town in autumn.', metadata: { tags: ['harbour', 'autumn'] }, opening_message: 'The fog lifts from the pier.', author: { name: 'Someone' }, cover_media_id: 'cover',
+      id: 'w1', name: 'Test Harbour', description: 'A fishing town in autumn.', starting_time: '1912-10-04T08:00:00', metadata: { tags: ['harbour', 'autumn'] }, opening_message: 'The fog lifts from the pier.', author: { name: 'Someone' }, cover_media_id: 'cover',
     })
     expect(await readFile(join(directory, 'media', 'manifest.jsonl'), 'utf8')).toBe('{"id":"cover","file":"media/files/cover.png"}\n')
     expect(await readdir(join(directory, '.import'))).toEqual(['report.json'])

@@ -6,6 +6,7 @@ import type { OffSceneItem } from '../clock/offscene.ts'
 import { ClockError, type SkipRequest } from '../clock/story-clock.ts'
 import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TriggerReport, type TurnStore } from './boundaries.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
+import { sameWords } from './defaults.ts'
 
 /** Asks one character to act; what the game master calls a character is the character's key. */
 export type RunCharacter = (request: CharacterRequest, signal: AbortSignal) => Promise<CharacterAction>
@@ -244,8 +245,10 @@ export class TurnEngine {
     const situation = input.situation.trim()
     if (situation === '') throw new Error('describe the situation: the characters are told nothing else')
     const cast = store.cast()
+    const most = store.settings().maxCharacters
     const keys = this.boundaries().planner.plan({ cast, ...(input.characters === undefined ? {} : { requested: input.characters }) })
     if (keys.length === 0) throw new Error('there is no character to activate')
+    if (keys.length > most) throw new Error(`${keys.length} characters were asked, which is more than one round allows (${most}): ask only those the moment actually reaches, and the others in a later round if the story comes to them`)
     state.situation = situation
     state.cast = cast
     state.recalled.clear()
@@ -838,7 +841,7 @@ export class TurnEngine {
     const refused = [...checked].flatMap(([character, check]) => (check.ok ? [] : [`${character}: ${check.problems.join('; ')}`]))
     if (refused.length > 0) throw new Error(`a move is no longer possible: ${refused.join('; ')}`)
     const spoken = [...decided.values()].flatMap(({ outcome, report }): Utterance[] =>
-      report.utterance === undefined || outcome.spoken === false ? [] : [{ character: report.character, name: report.name, text: report.utterance, round }])
+      report.utterance === undefined || outcome.spoken === false || state.utterances.some(said => said.character === report.character && sameWords(said.text, report.utterance!)) ? [] : [{ character: report.character, name: report.name, text: report.utterance, round }])
     state.rounds = round
     state.situations.push(state.situation)
     state.utterances.push(...spoken)
@@ -975,7 +978,7 @@ export class TurnEngine {
     ]
     let output: TurnOutput
     if (problems.length === 0) {
-      output = { segments: [...segments], repaired: false }
+      output = { segments: asSpoken(segments, state.utterances), repaired: false }
     } else {
       state.refused += 1
       if (!silent && state.refused <= MAX_REFUSALS) {
@@ -993,4 +996,14 @@ export class TurnEngine {
     if (run !== undefined) this.offSceneIfDue(owner, state, run)
     return output
   }
+}
+
+/** The words as the character said them, whatever quotes the game master put around them. */
+function asSpoken(segments: readonly NarrationSegment[], spoken: readonly Utterance[]): NarrationSegment[] {
+  const left = [...spoken]
+  return segments.map((segment) => {
+    if (segment.type !== 'utterance') return segment
+    const at = left.findIndex(said => said.character === segment.character && sameWords(said.text, segment.text))
+    return at === -1 ? segment : { ...segment, text: left.splice(at, 1)[0]!.text }
+  })
 }

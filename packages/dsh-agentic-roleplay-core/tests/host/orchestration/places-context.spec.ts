@@ -109,7 +109,7 @@ describe('the scene the game master is told, with places', () => {
   })
 
   it('lists a character with no place on its own', () => {
-    expect(scene([placed(arthur, bar), alice])).toContain('Characters with no place yet:\n- Alice')
+    expect(scene([placed(arthur, bar), alice])).toContain('Characters with no place (not part of this scene; they cannot be asked to act):\n- Alice')
   })
 
   it('is the plain list of characters when nobody has a place', () => {

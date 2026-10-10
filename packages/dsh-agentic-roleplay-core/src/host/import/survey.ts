@@ -42,7 +42,7 @@ const LEFT_OUT = new Set<Role>(['instruction', 'template', 'irrelevant'])
 export const kindOfRole = (role: Role): Kind | undefined => ENTITY_ROLES[role]
 export const isLeftOut = (classification: Classification): boolean => classification.roles.every(role => LEFT_OUT.has(role))
 
-const MAX_TARGETS = 6
+const MAX_TARGETS = 10
 const MAX_NAME = 100
 
 /** What a name is when it only stands for the person using the card: not a character of the card. */
@@ -237,6 +237,8 @@ export async function buildRoster(ctx: ImportContext, card: NormalizedCard, item
     answer = { characters: as('character'), places: as('place'), factions: as('faction'), things: as('thing') }
   }
   foldNamedAliases(answer, items.map(item => item.text).join('\n'))
+  const supplied = new Set(candidates.filter(candidate => candidate.player).flatMap(candidate => [candidate.name, ...answer.characters.filter(entry => norm(entry.name) === norm(candidate.name)).flatMap(entry => entry.aliases)]).map(norm))
+  for (const entry of answer.characters) if (entry.player === true && ![entry.name, ...entry.aliases].some(name => supplied.has(norm(name)))) entry.player = false
   const taken = new Set<string>()
   const entities: Roster = []
   const add = (kind: Kind, entry: { name: string; aliases: string[]; player?: boolean; parent?: string }): void => {

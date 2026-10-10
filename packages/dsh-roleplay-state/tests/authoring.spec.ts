@@ -102,6 +102,11 @@ describe('making up characters', () => {
     expect(store.consolidation.pending().map(item => item.kind).sort()).toEqual(['character', 'location'])
   })
 
+  it('accepts a key written in any script', () => {
+    store.edit({ turn: 4, places: [{ key: '值班室', name: 'Duty room', exits: [{ to: 'dock' }] }], characters: [{ key: '值班警员', name: 'Officer', summary: 'x', place: { location: '值班室' } }] })
+    expect(store.characters.getBySourceId('值班警员')).toBeDefined()
+  })
+
   it('refuses someone who already exists, by name or alias, including within the same edit, and names the key to reuse', () => {
     const problems = problemsOf({ turn: 4, characters: [{ key: 'robert', name: 'Robert', summary: 'x', aliases: ['bobby'] }, { key: 'bobby2', name: ' BOB ', summary: 'x' }, { key: 'twin1', name: 'Twin', summary: 'x' }, { key: 'twin2', name: 'twin', summary: 'x' }] })
     expect(problems.join('\n')).toMatch(/characters\[0\]: "bobby" is already the name of a character: reuse that one/)

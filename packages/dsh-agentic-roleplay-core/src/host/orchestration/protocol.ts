@@ -90,12 +90,37 @@ export const CHARACTER_ACTION_SCHEMA: ObjectJsonSchema = {
 }
 
 /** @throws {Error} when the value is not a character action. */
+const QUOTE_PAIRS: readonly (readonly [string, string])[] = [['"', '"'], ['“', '”'], ['「', '」'], ['『', '』'], ['«', '»'], ['‘', '’']]
+
+/** Words said aloud, without the quotation marks a model puts around them: the output puts its own. */
+export function unquoted(text: string): string {
+  let words = text.trim()
+  for (let again = true; again;) {
+    again = false
+    for (const [open, close] of QUOTE_PAIRS) {
+      if (words.length >= 2 && words.startsWith(open) && words.endsWith(close) && !words.slice(open.length, -close.length).includes(close)) { words = words.slice(open.length, words.length - close.length).trim(); again = true }
+    }
+  }
+  return words
+}
+
+const LEAKED_FIELD = /<\/?(?:intent|parameter(?:=\w+)?)>/g
+
+/** A model that writes the markup of its call into a field puts the next field's text inside this one. */
+function splitLeakedFields(intent: string): { intent: string; utterance?: string } {
+  const at = intent.search(/<parameter=utterance>/)
+  if (at === -1) return { intent: intent.replace(LEAKED_FIELD, ' ') }
+  const spoken = intent.slice(at).replace(LEAKED_FIELD, ' ').trim()
+  return { intent: intent.slice(0, at).replace(LEAKED_FIELD, ' '), ...(spoken === '' ? {} : { utterance: spoken }) }
+}
+
 export function parseCharacterAction(value: unknown): CharacterAction {
   if (typeof value !== 'object' || value === null) throw new Error('the character did not answer with an object')
-  const { intent, utterance, commitment } = value as Record<string, unknown>
+  const { intent: rawIntent, utterance: rawUtterance, commitment } = value as Record<string, unknown>
+  const { intent, utterance } = typeof rawIntent === 'string' && rawUtterance === undefined ? splitLeakedFields(rawIntent) : { intent: rawIntent, utterance: rawUtterance }
   if (typeof intent !== 'string' || intent.trim() === '') throw new Error('the character gave no intent')
   if (!COMMITMENTS.includes(commitment as Commitment)) throw new Error(`the character gave an unknown commitment "${String(commitment)}"`)
   if (utterance !== undefined && typeof utterance !== 'string') throw new Error('the character\'s utterance is not text')
-  const spoken = utterance?.trim()
+  const spoken = utterance === undefined ? undefined : unquoted(utterance)
   return { intent: intent.trim(), ...(spoken === undefined || spoken === '' ? {} : { utterance: spoken }), commitment: commitment as Commitment }
 }

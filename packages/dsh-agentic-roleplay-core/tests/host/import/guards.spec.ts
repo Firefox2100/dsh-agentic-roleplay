@@ -54,3 +54,41 @@ describe('the subjects of lore', () => {
     expect(result.notes).toHaveLength(2)
   })
 })
+
+describe('the roster', () => {
+  it('names a player only where a piece was about the player', async () => {
+    const { buildRoster } = await import('../../../src/host/import/survey.ts')
+    const items = [{ id: 'a', label: 'a', title: '', keys: [], text: 'Tam keeps the light.' }] as never
+    const classified = { a: { roles: ['character'], targets: [{ name: 'Tam', kind: 'character' }] } } as never
+    const ctx = { concurrency: 1, text: () => 'x', say: () => undefined, run: () => Promise.resolve({ characters: [{ name: 'Tam', aliases: [], player: true }], places: [], factions: [], things: [] }) } as never
+    const { roster } = await buildRoster(ctx, { name: 'Card' } as never, items, classified)
+    expect(roster.find(entity => entity.name === 'Tam')?.player).toBe(false)
+    const supplied = { a: { roles: ['player'], targets: [{ name: 'Tam', kind: 'character' }] } } as never
+    expect((await buildRoster(ctx, { name: 'Card' } as never, items, supplied)).roster.find(entity => entity.name === 'Tam')?.player).toBe(true)
+  })
+})
+
+describe('background kept as written', () => {
+  it('is one entry with the card\'s own words, a title and a first sentence', async () => {
+    const { asWritten, loreDocuments } = await import('../../../src/host/import/extract.ts')
+    const answer = asWritten({ label: 'entry 3', title: '', text: 'The light was built in 1850. It burns oil.' })
+    const [built] = loreDocuments(answer, [] as never, new Set())
+    expect(built!.document).toMatchObject({ title: 'entry 3', summary: 'The light was built in 1850.', body: 'The light was built in 1850. It burns oil.', kind: 'other' })
+  })
+})
+
+describe('the scene of the story', () => {
+  it('has the characters the opening names start in the place it is set in, unless they already start somewhere', async () => {
+    const { placeAtScenario } = await import('../../../src/host/import/extract.ts')
+    const roster = [{ kind: 'character', key: 'tam', name: 'Tam', aliases: [] }, { kind: 'character', key: 'mira', name: 'Mira', aliases: [] }, { kind: 'place', key: 'light', name: 'The Light', aliases: [] }] as never
+    const items = [{ id: 'opening' }] as never
+    const classified = { opening: { roles: ['scenario'], targets: [{ name: 'Tam', kind: 'character' }, { name: 'Mira', kind: 'character' }, { name: 'The Light', kind: 'place' }] } } as never
+    const result = { characters: [{ id: 'tam', start: {} }, { id: 'mira', start: { location: 'cellar' } }, { id: 'other' }] }
+    placeAtScenario(result as never, items, classified, roster)
+    expect(result.characters).toEqual([{ id: 'tam', start: { location: 'light' } }, { id: 'mira', start: { location: 'cellar' } }, { id: 'other' }])
+    const two = { opening: { roles: ['scenario'], targets: [{ name: 'The Light', kind: 'place' }, { name: 'The Cellar', kind: 'place' }] } } as never
+    const unchanged = { characters: [{ id: 'tam', start: {} }] }
+    placeAtScenario(unchanged as never, items, two, [...(roster as unknown as unknown[]), { kind: 'place', key: 'cellar', name: 'The Cellar', aliases: [] }] as never)
+    expect(unchanged.characters[0]).toEqual({ id: 'tam', start: {} })
+  })
+})

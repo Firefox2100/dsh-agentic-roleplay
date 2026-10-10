@@ -5,6 +5,8 @@ import { MAX_OWN_RULES } from './rules.ts'
 export interface ChatSettings {
   /** The most rounds of characters acting that the game master may run for one player message. */
   maxRounds: number
+  /** The most characters asked to act in one round. */
+  maxCharacters: number
   memory: {
     /** Whether characters remember imperfectly: details fade with age and unimportance, and they may misperceive. Off for exact recall. */
     flaky: boolean
@@ -54,10 +56,16 @@ export interface ChatSettings {
     perTurn: number
   }
   sampling: {
-    /** How freely the characters, and the helpers that write for the player (suggestions), write: the temperature of their requests. */
+    /** The temperature of the characters' requests: they write prose, so it is the highest. */
     characters: number
-    /** How exactly the helpers that keep the story's records (the record keeper, the world author, the plot author, the image author) write. */
+    /** The temperature of the helper that writes the suggested actions for the player. */
+    suggestions: number
+    /** The temperature of the helpers that make things up (the world author, the plot author). */
+    authoring: number
+    /** The temperature of the helpers that must be exact (the record keeper, the image author): lower is more faithful to the rounds. */
     records: number
+    /** The most tokens one request of a helper may produce; a helper that rambles is cut off instead of waited for. */
+    maxTokens: number
     /** Whether those helpers must answer with a tool call, which keeps them from writing prose instead of their result. */
     tools: 'auto' | 'required'
   }
@@ -66,7 +74,7 @@ export interface ChatSettings {
     language: string
   }
   reasoning: {
-    /** How hard the child agents think, as a level the model offers (for example `off` or `low`); empty is the game master's own level. */
+    /** How hard the child agents think, as a level the model offers (for example `off` or `low`); empty is the game master's own level. Thinking makes helpers (records, checks) slow, so a model that offers an off level should use it; a level the model does not offer stalls the helper. */
     children: string
   }
   triggers: {
@@ -137,6 +145,7 @@ const text = (max: number, fallback: string): TextSpec => ({ kind: 'text', max, 
 
 export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
+  maxCharacters: integer(1, 30, 4),
   memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4) },
   context: {
     limitTokens: integer(0, 1_000_000, 0),
@@ -148,7 +157,7 @@ export const SETTINGS_SPEC = {
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
   offstage: { perTurn: integer(0, 5, 2) },
-  sampling: { characters: ratio(0, 2, 0.8), records: ratio(0, 2, 0.2), tools: choice(['auto', 'required'], 'required') },
+  sampling: { characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.8), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2) },

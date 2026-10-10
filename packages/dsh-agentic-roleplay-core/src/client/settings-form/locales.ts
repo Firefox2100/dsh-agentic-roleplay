@@ -1,7 +1,8 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
-  | 'maxRounds' | 'maxRoundsHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
+  | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
+  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
@@ -10,6 +11,16 @@ export type SettingsFormKey =
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
+    samplingCharacters: 'Temperature: characters',
+    samplingCharactersHelp: 'How freely the characters write (0 to 2). Higher is more varied, lower more predictable.',
+    samplingSuggestions: 'Temperature: suggested actions',
+    samplingSuggestionsHelp: 'How freely the suggested actions for you are written (0 to 2).',
+    samplingAuthoring: 'Temperature: world and plot authors',
+    samplingAuthoringHelp: 'How freely the helpers that make up characters, places, things and plots write (0 to 2).',
+    samplingRecords: 'Temperature: records and checks',
+    samplingRecordsHelp: 'How exactly the helpers that write the story\'s records and the images\' prompts work (0 to 2). Keep it low: they should follow what happened, not invent.',
+    maxCharacters: 'Characters per round',
+    maxCharactersHelp: 'The most characters the game master may ask to act in one round. More characters make a round slower; the rest stay in the background.',
     maxRounds: 'Rounds of characters per message',
     maxRoundsHelp: 'How many times the game master may hand the scene to the characters before it comes back to you. 1 means one round per message; more lets conversations between characters flow, but it will still stop earlier when the story has a natural pause.',
     flaky: 'Imperfect memory',
@@ -84,6 +95,16 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     embeddingOptionsHelp: 'What the selected embedding provider lets this chat set for each request. Empty uses the provider\'s own setting.',
   },
   zh: {
+    samplingCharacters: '温度：角色',
+    samplingCharactersHelp: '角色写作的自由度（0 到 2）。越高越多变，越低越稳定。',
+    samplingSuggestions: '温度：行动建议',
+    samplingSuggestionsHelp: '为你撰写行动建议的自由度（0 到 2）。',
+    samplingAuthoring: '温度：世界与剧情作者',
+    samplingAuthoringHelp: '创造角色、地点、物品和剧情的辅助者的自由度（0 到 2）。',
+    samplingRecords: '温度：记录与校验',
+    samplingRecordsHelp: '撰写故事记录和图像提示词的辅助者的严谨度（0 到 2）。应保持较低：它们应忠于已发生的事，而不是发挥。',
+    maxCharacters: '每轮的角色数',
+    maxCharactersHelp: '主持人每一轮最多可以让多少个角色行动。角色越多，一轮越慢；其余角色留在后台。',
     maxRounds: '每条消息的角色回合数',
     maxRoundsHelp: '主持人在把场面交还给你之前，最多可以让角色行动多少轮。1 表示每条消息只有一轮；更多轮可以让角色之间的对话自然展开，但故事出现自然停顿时仍会提前交还给你。',
     flaky: '不完美的记忆',

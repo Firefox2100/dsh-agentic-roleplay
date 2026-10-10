@@ -129,8 +129,9 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       },
       characters: {
         type: 'array',
+        required: true,
         items: { type: 'string' },
-        description: 'Keys of the characters to ask. Leave out to ask every character the player does not control, wherever they are. Ask only those the moment reaches: those in the same place, and those elsewhere who can see, hear or are summoned. In a later round ask only those the moment calls for.',
+        description: 'Keys of the characters to ask, chosen by you from the scene (where each is, what each is doing). Ask only those the moment reaches: those in the same place, and those elsewhere who can plainly see, hear or are summoned; a character elsewhere perceives nothing by itself. Never the whole cast. In a later round ask only those the moment calls for.',
       },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderAttempt(value as unknown as AttemptReport) }] },
@@ -138,7 +139,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     async execute(args, exec) {
       const { agent, owner } = ownerOf(exec.agent)
       const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) })
-      return record(await deps.engine.activate(owner, { situation: args.situation, ...(args.characters === undefined ? {} : { characters: args.characters }) }, run, exec.signal))
+      return record(await deps.engine.activate(owner, { situation: args.situation, characters: args.characters }, run, exec.signal))
     },
   })
 

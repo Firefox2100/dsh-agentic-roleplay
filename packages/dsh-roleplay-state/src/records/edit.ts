@@ -535,7 +535,7 @@ function createCharacters(target: RecordsTarget, edit: RecordsEdit): { keys: str
   const wanted = list(edit.characters)
   wanted.forEach((spec, index) => {
     const where = `characters[${index}]`
-    if (!present(spec.key) || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,59}$/.test(spec.key)) problems.push(`${where}: give the character a key of letters, digits, "-" or "_"`)
+    if (!present(spec.key) || !/^[\p{L}\p{N}][\p{L}\p{N}\p{M}_-]{0,59}$/u.test(spec.key)) problems.push(`${where}: give the character a key of letters (any script), digits, "-" or "_"`)
     else if (keys.has(spec.key)) problems.push(`${where}: the key "${spec.key}" is already used by a character`)
     keys.add(spec.key)
     if (!present(spec.name)) problems.push(`${where}: give the character a name`)
@@ -594,7 +594,7 @@ function createItems(target: RecordsTarget, edit: RecordsEdit): { keys: string[]
   const seen = new Set<string>()
   wanted.forEach((spec, index) => {
     const where = `items[${index}]`
-    if (!present(spec.key) || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,59}$/.test(spec.key)) problems.push(`${where}: give the item a key of letters, digits, "-" or "_"`)
+    if (!present(spec.key) || !/^[\p{L}\p{N}][\p{L}\p{N}\p{M}_-]{0,59}$/u.test(spec.key)) problems.push(`${where}: give the item a key of letters (any script), digits, "-" or "_"`)
     else if (target.items.getBySourceId(spec.key) !== undefined || seen.has(spec.key)) problems.push(`${where}: the key "${spec.key}" is already used by an item`)
     seen.add(spec.key)
     if (!present(spec.name)) problems.push(`${where}: give the item a name`)

@@ -88,34 +88,38 @@ const WORLD_SCHEMA = {
   properties: {
     description: { type: 'string', description: `Two or three sentences, at most ${MAX_DESCRIPTION} characters.` },
     tags: { type: 'array', items: { type: 'string' }, description: `At most ${MAX_TAGS} short tags.` },
+    starting_time: { type: 'string', description: 'When the story begins, as an ISO 8601 date and time such as 1921-10-23T08:00:00, only when the text states the date or year; otherwise an empty string.' },
   },
-  required: ['description', 'tags'],
+  required: ['description', 'tags', 'starting_time'],
   additionalProperties: false,
 } as const
 
-interface WorldAnswer { description: string; tags: string[] }
+interface WorldAnswer { description: string; tags: string[]; starting_time: string }
 
-function worldJob(text: TextOf, card: NormalizedCard, roster: Roster, scenario: string): ChildJob<WorldAnswer> {
+const STARTING_TIME = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/
+
+function worldJob(text: TextOf, card: NormalizedCard, roster: Roster, scenario: string, opening: string): ChildJob<WorldAnswer> {
   const names = (kind: string): string => roster.filter(entity => entity.kind === kind).slice(0, 15).map(entity => entity.name).join('; ')
   return {
     persona: text('import/world-summary'),
     prompt: [`Card: ${card.name}`, ...(card.tags.length === 0 ? [] : [`Card tags: ${card.tags.join(', ')}`]), `Characters: ${names('character') || '(none)'}`, `Places: ${names('place') || '(none)'}`,
-      `Scenario:\n${scenario.slice(0, 1200) || '(none)'}`, `Description:\n${cleanText(card.description, card.name).slice(0, 1200) || '(none)'}`, `Creator's notes:\n${cleanText(card.creatorNotes, card.name).slice(0, 600) || '(none)'}`].join('\n\n'),
+      `Scenario:\n${scenario.slice(0, 1200) || '(none)'}`, `Opening:\n${opening.slice(0, 1200) || '(none)'}`, `Description:\n${cleanText(card.description, card.name).slice(0, 1200) || '(none)'}`, `Creator's notes:\n${cleanText(card.creatorNotes, card.name).slice(0, 600) || '(none)'}`].join('\n\n'),
     result: WORLD_SCHEMA as never,
     check: (value) => {
       if (value.description.trim() === '' || value.description.length > MAX_DESCRIPTION) return `the description must be written and at most ${MAX_DESCRIPTION} characters`
       if (value.tags.length > MAX_TAGS || value.tags.some(tag => tag.trim() === '' || tag.length > MAX_TAG)) return `give at most ${MAX_TAGS} tags of at most ${MAX_TAG} characters`
+      if ((value.starting_time ?? '').trim() !== '' && (!STARTING_TIME.test(value.starting_time.trim()) || Number.isNaN(Date.parse(value.starting_time.trim())))) return 'starting_time must be an ISO 8601 date and time such as 1921-10-23T08:00:00, or empty'
       return undefined
     },
   }
 }
 
 /** The description and tags of the world: asked of one call, and from the card's own fields when that fails. */
-export async function describeWorld(ctx: ImportContext, card: NormalizedCard, roster: Roster, items: readonly SourceItem[]): Promise<{ description: string; tags: string[]; note?: string }> {
+export async function describeWorld(ctx: ImportContext, card: NormalizedCard, roster: Roster, items: readonly SourceItem[], opening: string): Promise<{ description: string; tags: string[]; startingTime?: string; note?: string }> {
   const scenario = items.filter(item => item.id.startsWith('field:scenario')).map(item => item.text).join('\n\n')
   try {
-    const answer = await ctx.run(worldJob(ctx.text, card, roster, scenario))
-    return { description: answer.description.trim(), tags: [...new Set(answer.tags.map(tag => tag.trim()))] }
+    const answer = await ctx.run(worldJob(ctx.text, card, roster, scenario, opening))
+    return { description: answer.description.trim(), tags: [...new Set(answer.tags.map(tag => tag.trim()))], ...(answer.starting_time ?? '').trim() === '' ? {} : { startingTime: answer.starting_time.trim() } }
   } catch (error) {
     const fallback = (scenario || cleanText(card.description, card.name)).slice(0, MAX_DESCRIPTION).trim()
     return { description: fallback, tags: card.tags.filter(tag => tag.trim() !== '' && tag.length <= MAX_TAG).slice(0, MAX_TAGS), note: `the description of the world was taken from the card as it is: ${error instanceof Error ? error.message : String(error)}` }
@@ -190,12 +194,13 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
 
   const player = extracted.characters.find(document => document['role'] === 'playable')
   const opening = openingText(card, choices.opening)
-  const described = await describeWorld(ctx, card, roster, items)
+  const described = await describeWorld(ctx, card, roster, items, opening ?? '')
   if (described.note !== undefined) notes.push(described.note)
   described.description = withPlayer(described.description, player === undefined ? undefined : String(player['name']))
   const file = join(directory, WORLD_FILE_NAME)
   const world = JSON.parse((await readFile(file, 'utf8')).replace(/^﻿/, '')) as Document
   world['description'] = described.description
+  if (described.startingTime !== undefined && world['starting_time'] === undefined) world['starting_time'] = described.startingTime
   world['metadata'] = { ...(typeof world['metadata'] === 'object' && world['metadata'] !== null ? world['metadata'] as Document : {}), tags: described.tags }
   if (opening !== undefined) world['opening_message'] = openingMessage(opening, card.name, player === undefined ? undefined : String(player['name']))
   if (card.creator.trim() !== '' && world['author'] === undefined) world['author'] = { name: card.creator.trim() }

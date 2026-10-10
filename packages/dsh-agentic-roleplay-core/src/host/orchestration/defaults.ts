@@ -238,13 +238,22 @@ export const sharedContext: CharacterContextProvider = {
   },
 }
 
-/** Everyone the player does not control acts, unless the game master names who. */
+/**
+ * Whoever is with the player's character acts, unless the game master names who (it always does in play). While the world has places, a character that is in none
+ * is not part of the scene: asking it to act is refused, so that someone the story never placed cannot answer from nowhere. (A character in
+ * another place can be asked when the moment reaches it.)
+ */
 export const everyoneActs: ActivationPlanner = {
   plan({ cast, requested }) {
+    const placed = cast.some(member => member.place !== undefined)
     const available = cast.filter(member => member.character.control === 'agent')
-    if (requested === undefined || requested.length === 0) return available.map(member => member.key)
+    const here = cast.find(member => member.character.control === 'player')?.place?.location.id
+    const inScene = (member: CastMember): boolean => !placed || member.place !== undefined
+    if (requested === undefined || requested.length === 0) return available.filter(member => (placed && here !== undefined ? member.place?.location.id === here : inScene(member))).map(member => member.key)
     const unknown = requested.filter(key => !available.some(member => member.key === key))
     if (unknown.length > 0) throw new Error(`cannot activate ${unknown.join(', ')}: not a character that acts on its own (available: ${available.map(member => member.key).join(', ')})`)
+    const nowhere = [...new Set(requested)].map(key => available.find(member => member.key === key)!).filter(member => !inScene(member))
+    if (nowhere.length > 0) throw new Error(`cannot activate ${nowhere.map(member => member.key).join(', ')}: in no place, so not part of this scene. Only characters that have a place act (${available.filter(inScene).map(member => member.key).join(', ') || 'nobody'}); leave the others out`)
     return [...new Set(requested)]
   },
 }
@@ -298,7 +307,7 @@ function placedScene(cast: readonly CastMember[], player: CastMember | undefined
   const elsewhere = cast.filter(member => member.place !== undefined && member.place.location.id !== here?.id)
   if (elsewhere.length > 0) sections.push(`Characters elsewhere (they perceive nothing here unless the moment reaches them):\n${elsewhere.map(member => `${describeMember(member)} - in ${member.place!.location.name} (${locationKey(member.place!.location)})`).join('\n')}`)
   const nowhere = cast.filter(member => member.place === undefined)
-  if (nowhere.length > 0) sections.push(`Characters with no place yet:\n${nowhere.map(describeMember).join('\n')}`)
+  if (nowhere.length > 0) sections.push(`Characters with no place (not part of this scene; they cannot be asked to act):\n${nowhere.map(describeMember).join('\n')}`)
   return sections.join('\n\n')
 }
 
@@ -350,7 +359,7 @@ export const castSummary: SceneContextProvider = {
   },
 }
 
-const sameCharacter = (utterance: Utterance, character: string): boolean => utterance.character === character
+const sameCharacter = (utterance: Utterance, character: string): boolean => utterance.character === character || utterance.name === character
 
 /** Every utterance appears once, exactly as given and in the order spoken, and no one speaks who did not. */
 export const exactUtterances: NarrationChecker = {

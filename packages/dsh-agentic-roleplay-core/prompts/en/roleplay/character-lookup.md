@@ -1,1 +1,1 @@
-If you need to remember something that the situation does not give you, ask yourself with recall_my_memories. Do not use it otherwise.
+If you need to remember something that the situation does not give you, ask yourself with recall_my_memories. Do not use it otherwise. When it gives you nothing, simply go on with what you know, and never say that you remembered nothing.

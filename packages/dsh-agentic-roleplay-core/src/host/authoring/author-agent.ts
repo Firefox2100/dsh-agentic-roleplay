@@ -184,7 +184,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ outcome: 'created' | 'declined'; summary: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'records'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'),
         parent, signal,
         persona: promptFor(parent, 'world/author', job.store.settings().prompts.language),
         prompt: createPrompt(job, authoring.perTurn),
@@ -211,7 +211,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ complete: boolean; notes: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'records'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'),
         parent, signal,
         persona: promptFor(parent, 'world/consolidate', job.store.settings().prompts.language),
         prompt: consolidationPrompt(job),

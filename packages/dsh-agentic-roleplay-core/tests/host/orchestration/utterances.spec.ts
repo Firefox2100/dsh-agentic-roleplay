@@ -83,10 +83,22 @@ describe('exactUtterances', () => {
 })
 
 describe('parseCharacterAction', () => {
+  it('takes the quotation marks off the words said, but not marks that belong to them', () => {
+    expect(parseCharacterAction({ intent: 'i', utterance: '「走吧。」', commitment: 'low' }).utterance).toBe('走吧。')
+    expect(parseCharacterAction({ intent: 'i', utterance: '"He said \'no\'."', commitment: 'low' }).utterance).toBe("He said 'no'.")
+    expect(parseCharacterAction({ intent: 'i', utterance: '“One,” she said, “two.”', commitment: 'low' }).utterance).toBe('“One,” she said, “two.”')
+  })
+
   it('keeps what the character says and drops an empty utterance', () => {
     expect(parseCharacterAction({ intent: ' stands ', utterance: ' Hello. ', commitment: 'low' })).toEqual({ intent: 'stands', utterance: 'Hello.', commitment: 'low' })
     expect(parseCharacterAction({ intent: 'stands', utterance: '  ', commitment: 'high' })).toEqual({ intent: 'stands', commitment: 'high' })
     expect(() => parseCharacterAction({ intent: 'x', utterance: 3, commitment: 'low' })).toThrow(/not text/)
     expect(() => parseCharacterAction({ intent: 'x', commitment: 'sure' })).toThrow(/unknown commitment/)
+  })
+})
+
+describe('a call written into a field', () => {
+  it('gives the words after the utterance marker back as the utterance', () => {
+    expect(parseCharacterAction({ intent: 'She looks at him.\n</intent>\n<parameter=utterance>\nStay close.', commitment: 'low' })).toEqual({ intent: 'She looks at him.', utterance: 'Stay close.', commitment: 'low' })
   })
 })

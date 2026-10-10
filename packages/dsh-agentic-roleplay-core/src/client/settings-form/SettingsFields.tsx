@@ -65,7 +65,7 @@ export function SettingsFields({ t, drafts, onChange, options = [], disabled = f
                       type="number"
                       min={min}
                       max={max}
-                      step={1}
+                      step={field.kind === 'decimal' ? 0.05 : 1}
                       value={String(drafts[key] ?? '')}
                       disabled={disabled}
                       aria-invalid={bad.has(key)}

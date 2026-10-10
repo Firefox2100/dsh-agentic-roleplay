@@ -314,7 +314,7 @@ function answerWithoutSuggestions(script: Script) {
     if (thisTurn(request).includes('input is refused')) return text('I cannot do that.')
     if (script.lookup === true && timesCalled(request, 'search_events') === 0) return call('m0', 'search_events', { text: 'key' })
     if (script.twoRounds === true) return twoRounds(request, activated, resolved, script.skipRecord !== true)
-    if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.' })
+    if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.', characters: ['alice', 'bob', 'carol', 'dan'] })
     const withMove = (key: string) => round1.map(outcome => (outcome.character === 'bob' ? { ...outcome, moves_to: { location: key, position: 'by the barrels' } } : outcome))
     const handling = (): object[] => round1.map((outcome) => {
       if (script.things === 'take' && outcome.character === 'alice') return { ...outcome, item_changes: [{ item: 'lantern', action: 'take' }] }
@@ -600,8 +600,8 @@ describe('a turn with the real agent loop', () => {
     it('asks the characters freely and the record keeper exactly, and has the helpers answer with a tool call', async () => {
       const { adapter } = await playTime('stated')
       const sampled = (requests: GenerateOptions[]) => requests.map(request => adapter.samplings[adapter.requests.indexOf(request)])
-      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required' })))
-      expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.2, toolChoice: 'required' })))
+      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 8000 })))
+      expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: 8000 })))
       expect(adapter.samplings[adapter.requests.indexOf(masterRequests(adapter)[0]!)]).toBeUndefined()
     })
 

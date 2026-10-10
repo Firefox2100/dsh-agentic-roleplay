@@ -25,6 +25,8 @@ const OVERRUN = 5
 /** The same call, with the same arguments, that failed before is refused after this many repeats, and the child is stopped at twice that: the model is not reading the reasons it was given. */
 const REPEATS_TOLD = 1
 const REPEATS_STOPPED = 4
+/** A result that is refused this many times is not going to be fixed by asking again: the child is stopped and the caller decides what to do without it. */
+const MAX_REFUSALS = 5
 
 /** A one-shot agent of the game master, with tools of its own. */
 export interface ChildTask {
@@ -58,11 +60,15 @@ export interface ChildTask {
 export interface ChildSampling {
   temperature?: number
   toolChoice?: 'auto' | 'required'
+  /** The most tokens one request may produce; used when the task sets none of its own. */
+  maxTokens?: number
 }
 
-/** What the settings of a chat say about how a kind of helper is asked: the characters and the writers of suggestions are free, the keepers of records exact. */
-export function childSampling(settings: { sampling: { characters: number; records: number; tools: 'auto' | 'required' } }, kind: 'characters' | 'records'): ChildSampling {
-  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools }
+export type ChildKind = 'characters' | 'suggestions' | 'authoring' | 'records'
+
+/** What the settings of a chat say about how a kind of helper is asked: prose is free, the keepers of records exact. */
+export function childSampling(settings: { sampling: Record<ChildKind, number> & { tools: 'auto' | 'required'; maxTokens: number } }, kind: ChildKind): ChildSampling {
+  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: settings.sampling.maxTokens }
 }
 
 const samplings = new Map<string, ChildSampling>()
@@ -81,10 +87,11 @@ export const childSamplingOf = (sessionId: string): ChildSampling | undefined =>
  * this is accepted, which DSH version it is built against, and what to do when DSH changes.
  * @throws {Error} when the child is cancelled, stops without a result, or exceeds its calls.
  */
-function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens'>): AgentOptions | undefined {
+function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens' | 'sampling'>): AgentOptions | undefined {
+  const maxTokens = task.maxTokens ?? task.sampling?.maxTokens
   const options = {
     ...(task.reasoningEffort === undefined || task.reasoningEffort === '' ? {} : { reasoningEffort: ReasoningEffortId(task.reasoningEffort) }),
-    ...(task.maxTokens === undefined ? {} : { maxTokens: task.maxTokens }),
+    ...(maxTokens === undefined ? {} : { maxTokens }),
   }
   return Object.keys(options).length === 0 ? undefined : options
 }
@@ -96,6 +103,8 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
   let reminders = 0
   let stopped: (() => void) | undefined
   let overran = false
+  let refusals = 0
+  let lastRefusal = ''
   let previous: { name: string; args: string; failed: boolean; repeats: number } | undefined
   const budget = task.maxCalls ?? DEFAULT_MAX_CALLS
   const counted = (tool: ToolDefinition): ToolDefinition => ({
@@ -135,7 +144,12 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
       const violations = validateJsonSchemaValue(task.result, args)
       if (violations.length > 0) throw new ToolArgsError(violations)
       const refusal = task.beforeSubmit?.(args)
-      if (refusal !== undefined) throw new Error(refusal)
+      if (refusal !== undefined) {
+        refusals += 1
+        lastRefusal = refusal
+        if (refusals >= MAX_REFUSALS) { overran = true; stopped?.() }
+        throw new Error(refusal)
+      }
       submitted = { value: args }
       exec.concludeTurn()
       return Promise.resolve({ recorded: true })
@@ -177,7 +191,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     await handle.dispose()
   }
   if (signal.aborted) throw new Error('cancelled')
-  if (overran && submitted === undefined) throw new Error(`the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
+  if (overran && submitted === undefined) throw new Error(refusals >= MAX_REFUSALS ? `the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}` : `the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
   if (submitted === undefined) {
     const ended = handle.agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
     const reason = ended?.type === 'turn/end' ? ended.data.reason : undefined

@@ -4,6 +4,7 @@ import { SETTINGS_SPEC, isTimeZone, type ChatSettings, type EmbeddingOptions, ty
 /** The settings the form offers, in the order shown. The rest are in the settings file. */
 export const FORM_FIELDS = [
   { path: ['maxRounds'], kind: 'integer', label: 'maxRounds', help: 'maxRoundsHelp' },
+  { path: ['maxCharacters'], kind: 'integer', label: 'maxCharacters', help: 'maxCharactersHelp' },
   { path: ['memory', 'flaky'], kind: 'flag', label: 'flaky', help: 'flakyHelp' },
   { path: ['memory', 'recall'], kind: 'integer', label: 'recall', help: 'recallHelp' },
   { path: ['memory', 'overRetrieve'], kind: 'integer', label: 'overRetrieve', help: 'overRetrieveHelp' },
@@ -28,6 +29,10 @@ export const FORM_FIELDS = [
   { path: ['suggestions', 'count'], kind: 'integer', label: 'suggestionsCount', help: 'suggestionsCountHelp' },
   { path: ['images', 'mode'], kind: 'choice', label: 'imagesMode', help: 'imagesModeHelp', choices: [{ value: 'off', label: 'imagesOff' }, { value: 'manual', label: 'imagesManual' }, { value: 'every-turn', label: 'imagesEveryTurn' }] },
   { path: ['images', 'references'], kind: 'choice', label: 'imageReferences', help: 'imageReferencesHelp', choices: [{ value: 'text-only', label: 'imageReferencesText' }, { value: 'prefer-reference', label: 'imageReferencesPrefer' }, { value: 'require-reference', label: 'imageReferencesRequire' }] },
+  { path: ['sampling', 'characters'], kind: 'decimal', label: 'samplingCharacters', help: 'samplingCharactersHelp' },
+  { path: ['sampling', 'suggestions'], kind: 'decimal', label: 'samplingSuggestions', help: 'samplingSuggestionsHelp' },
+  { path: ['sampling', 'authoring'], kind: 'decimal', label: 'samplingAuthoring', help: 'samplingAuthoringHelp' },
+  { path: ['sampling', 'records'], kind: 'decimal', label: 'samplingRecords', help: 'samplingRecordsHelp' },
   { path: ['offstage', 'perTurn'], kind: 'integer', label: 'offstagePerTurn', help: 'offstagePerTurnHelp' },
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'limitRatio'], kind: 'percent', label: 'limitRatio', help: 'limitRatioHelp' },
@@ -86,7 +91,7 @@ export function problemsOf(drafts: Drafts, options: readonly RequestOption[] = [
     const draft = drafts[keyOf(field)]
     const value = typeof draft === 'string' && draft.trim() !== '' ? Number(draft) : Number.NaN
     const { min, max } = boundsOf(field)
-    if (!Number.isFinite(value) || value < min || value > max || (field.kind !== 'percent' && !Number.isInteger(value))) bad.add(keyOf(field))
+    if (!Number.isFinite(value) || value < min || value > max || (field.kind === 'integer' && !Number.isInteger(value))) bad.add(keyOf(field))
   }
   return bad
 }

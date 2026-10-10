@@ -37,7 +37,7 @@ export async function authorPlot(parent: Agent, store: TurnStore, turn: number, 
   const events = store.story.events.list().slice(-12).map(event => `- ${event.text}`).join('\n')
   let checked: PlotDefinition | undefined
   const result = await runChild<AuthoredPlot>({
-    parent, signal, sampling: childSampling(store.settings(), 'records'), persona: promptFor(parent, 'roleplay/plot-author', store.settings().prompts.language), reasoningEffort: store.settings().reasoning.children, result: RESULT, maxCalls: 3,
+    parent, signal, sampling: childSampling(store.settings(), 'authoring'), persona: promptFor(parent, 'roleplay/plot-author', store.settings().prompts.language), reasoningEffort: store.settings().reasoning.children, result: RESULT, maxCalls: 3,
     prompt: `The story has gone quiet by turn ${turn}. Propose one optional plot scaffold that grows from this state.\n\nCharacters:\n${cast || '- none'}\n\nFactions:\n${factions || '- none'}\n\nPlaces: ${places || 'none'}\n\nRecent recorded events:\n${events || '- none'}`,
     beforeSubmit(value) {
       const authored = value as AuthoredPlot

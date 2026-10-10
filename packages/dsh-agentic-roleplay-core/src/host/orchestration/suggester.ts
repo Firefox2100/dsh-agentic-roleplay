@@ -37,7 +37,7 @@ export function suggestionWriter(deps: { agentOf: (chat: string) => Agent | unde
       const parent = deps.agentOf(job.chat)
       if (parent === undefined) throw new Error(`no agent for chat ${job.chat}`)
       const result = await runChild<{ options: string[] }>({
-        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'characters'),
+        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'suggestions'),
         persona: promptFor(parent, 'roleplay/suggester', job.store.settings().prompts.language, { max: MAX_SUGGESTION }),
         prompt: promptOf(job),
         result: RESULT,

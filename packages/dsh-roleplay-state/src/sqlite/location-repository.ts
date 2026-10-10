@@ -36,7 +36,7 @@ interface PlacementRow {
   feature_key: string | null
 }
 
-const FEATURE_KEY = /^[A-Za-z0-9][A-Za-z0-9_-]{0,59}$/
+const FEATURE_KEY = /^[\p{L}\p{N}][\p{L}\p{N}\p{M}_-]{0,59}$/u
 
 function parseFeatures(text: string): LocationFeature[] {
   try {

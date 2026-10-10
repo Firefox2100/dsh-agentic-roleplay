@@ -250,6 +250,12 @@ export function loreDocuments(answer: Document, roster: Roster, taken: Set<strin
   })
 }
 
+/** A background piece as one entry, in the card's own words: what is kept when the model cannot rewrite it without losing its facts. */
+export function asWritten(item: { label: string; title: string; text: string }): Document {
+  const body = item.text.trim()
+  return { entries: [{ title: (item.title === '' ? item.label : item.title).slice(0, 100), kind: 'other', summary: (/^[^\n。.!?！？]*[。.!?！？]?/u.exec(body)?.[0] ?? body).slice(0, 200), body }] }
+}
+
 /** At most this many entries come of one piece: a piece that is split into many small entries loses what connects its facts. */
 export const MAX_LORE_ENTRIES = 4
 /** The entries of a piece must hold at least this share of its text, from a piece of at least `MIN_CHECKED_CHARS` characters: the facts are kept, not summarised away. */
@@ -265,6 +271,24 @@ export function loreProblem(answer: Document, roster: Roster, source: string): s
   const wanted = Math.round(source.length * MIN_LORE_SHARE)
   if (source.length >= MIN_CHECKED_CHARS && kept < wanted) return `the entries hold ${kept} characters of the ${source.length} of the piece: facts were left out. Keep every name, date, number, cause and rule; the bodies together need at least ${wanted} characters`
   return undefined
+}
+
+/**
+ * Characters the pieces that set the scene name, and that were given no starting place, start in the place those pieces are set in, when
+ * there is exactly one: the story begins there, so whoever it opens with is there.
+ */
+export function placeAtScenario(result: Pick<Extracted, 'characters'>, items: readonly SourceItem[], classified: Classified, roster: Roster): void {
+  const scenes = items.filter(item => (classified[item.id]?.roles ?? []).includes('scenario'))
+  const places = new Set(scenes.flatMap(item => (classified[item.id]?.targets ?? []).filter(target => target.kind === 'place').flatMap((target) => { const found = findEntity(roster, target.name, 'place'); return found === undefined ? [] : [found.key] })))
+  if (places.size !== 1) return
+  const place = [...places][0]!
+  const present = new Set(scenes.flatMap(item => (classified[item.id]?.targets ?? []).filter(target => target.kind === 'character').flatMap((target) => { const found = findEntity(roster, target.name, 'character'); return found === undefined ? [] : [found.key] })))
+  for (const character of result.characters) {
+    if (!present.has(String(character['id']))) continue
+    const start = (character['start'] ?? {}) as Document
+    if (start['location'] !== undefined) continue
+    character['start'] = { ...start, location: place }
+  }
 }
 
 /** Takes out of the lore the subjects that were not written (a thing that is nowhere and nobody's is not made), so that no entry names what the world does not have. */
@@ -340,7 +364,7 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     const group = { character: 'characters', place: 'locations', faction: 'factions', thing: 'items' } as const
     result[group[entity.kind]].push(built.document)
   }
-  const worldItems = items.filter(item => (classified[item.id]?.roles ?? []).includes('world'))
+  const worldItems = items.filter((item) => { const roles = classified[item.id]?.roles ?? []; return roles.includes('world') && !roles.includes('instruction') })
   const taken = new Set<string>()
   const loreResults = await mapLimit(worldItems, ctx.concurrency, async (item, index) => {
     ctx.say(`writing background ${index + 1}/${worldItems.length}: ${item.label}`)
@@ -349,13 +373,15 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
       const answer = await ctx.run<Document>({ persona: ctx.text('import/lore', { rules: ctx.text('import/common-rules') }), prompt, result: LORE_SCHEMA as never, check: value => loreProblem(value, roster, item.text) })
       return { item, answer }
     } catch (error) {
-      return { item, failure: `${item.label}: ${error instanceof Error ? error.message : String(error)}` }
+      return { item, answer: asWritten(item), failure: `${item.label}: kept as the card wrote it, because the model could not rewrite it (${error instanceof Error ? error.message : String(error)})` }
     }
   })
   for (const { answer, failure } of loreResults) {
-    if (failure !== undefined || answer === undefined) { result.notes.push(failure ?? 'a background piece produced nothing'); continue }
+    if (failure !== undefined) result.notes.push(failure)
+    if (answer === undefined) { result.notes.push('a background piece produced nothing'); continue }
     for (const built of loreDocuments(answer, roster, taken)) { result.notes.push(...built.notes); addLore(result.lore, built.document) }
   }
+  placeAtScenario(result, items, classified, roster)
   pruneLoreSubjects(result)
   return result
 }
