@@ -1,0 +1,16 @@
+---
+title: 图片与可选能力
+description: 文件媒体契约、图片任务与可选 AI 服务集成。
+---
+
+视觉身份只保存稳定、与供应商无关的事实。当前服装、表情、动作、伤势、光照和环境属于临时场景提示。创作身份在开局时复制进会话并独立版本化。
+
+规范参考图路径为 `images/global/<global-id>/reference.png`，或 `images/characters|locations|items/<local-id>/reference.png`。场景图为 `images/scenes/turn-<timeline-node>-<serial>.png`；节点避免重新生成后的碰撞，序号允许一个节点多图。写入采用同目录临时文件再原子重命名；参考图可替换，场景图不得覆盖。
+
+PNG 使用名为 `dsh-roleplay` 的 iTXt。当前 `dsh-roleplay-image/v3` 元数据包含用途、时间、描述、标签、供应商/模型、主体与身份版本、生成提示、来源、复用策略和原始文件名。JPEG、WebP、GIF 库图片使用相邻 JSON。元数据用于来源和搜索，稳定路径仍是定位依据。
+
+图库按需索引；向量缓存可删除重建，没有 embedding 时词语搜索仍可用。只有声明支持视觉的模型才能解释图片，也可先由 captioner 产生说明再由聊天模型结构化。不能让非视觉模型凭空描述图片。
+
+`ImageJobs` 每会话只运行一个呈现任务；新节点或回退取消旧任务，文本交付永不等待图片。`use_existing_image` 只能选择本次搜索实际返回的候选。分支链接或复制继承媒体；回退不删文件；`.index.json`、`.vectors.json` 等缓存必须可安全删除。
+
+embedding、reranking、TTS、STT、流式 STT、图片生成和规则都是可选 Cordis 服务。使用时再查询，能力路由应如实报告缺失，并在可行时保留确定性降级。供应商专属选项来自供应商能力描述，不应硬编码进角色扮演状态。交互语音和显式图片使用前台优先级；索引、解释和随回合图片使用后台优先级，并遵守供应商并发限制。

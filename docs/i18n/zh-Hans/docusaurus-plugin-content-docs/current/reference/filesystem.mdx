@@ -1,0 +1,11 @@
+---
+title: 文件系统布局
+---
+
+角色扮演根目录包含 `worlds/<world-folder>/`、`avatars/` 和 `sessions/<uuid>/`。世界拥有自己的实体、提示词和图片；化身以特殊仅角色世界保存；每个会话包含 `session.sqlite`、`settings.json` 和 `images/`。
+
+世界文件夹名不是身份，`world.json.id` 才是会话保存的持久世界引用。实体 ID 在导入数据库时映射成内部整数，同时保留源 ID。
+
+会话文件夹使用 UUID。对应 DSH 对话 ID 由 `session-<uuid>` 推导，无需另存。`session.sqlite` 是演化状态的权威来源，`settings.json` 是实时配置。
+
+参考图文件名稳定；场景图使用时间线节点和序号。元数据和伴随文件使图库在没有数据库时仍可理解。

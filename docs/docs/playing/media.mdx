@@ -1,0 +1,19 @@
+---
+title: Speech and images
+---
+
+## Speech
+
+Set one narration voice in the world or session and a voice for each character. Voice IDs may be selected from the provider when it lists them or entered manually. This is necessary for servers whose voice library is not exposed through the API.
+
+The play button on a full GM response synthesises narration and every utterance separately, then combines them in order. A character-level play button synthesises only that utterance. Requests may run concurrently subject to provider limits.
+
+Voice input uses DSH's speech provider when available. The API provider also exposes completed-file transcription, and live input uses streaming transcription only when the selected provider supports it.
+
+## Images
+
+A portrait click generates or regenerates an entity's canonical reference image. Scene illustration settings can disable images, request them manually, or generate them every turn.
+
+The image author first searches reusable pictures when reuse is enabled. It may choose a fitting image or generate a new one. Uploaded pictures can be interpreted by a vision model, described and added to the searchable library.
+
+Reference images are stable and replaceable. Scene images are immutable and numbered per timeline node. See [Visual identity](../authoring/visual-identity) and [Images and context](../concepts/images-context).

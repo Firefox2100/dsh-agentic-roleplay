@@ -1,0 +1,22 @@
+---
+title: 配置参考
+---
+
+## 插件配置
+
+| 字段 | 默认值 |
+| --- | --- |
+| `rootPath` | `~/dsh-roleplay` |
+| `sessionStorePath` | `~/.dsh/sessions` |
+| `importMaxUploadBytes` | 100 MiB |
+| `importConcurrency` | 4 |
+| `importReasoning` | 空 |
+| `childReasoning` | 空 |
+| `importMaxTokens` | 16000 |
+| `importTemperature` | 0.2 |
+
+## 主要会话默认值
+
+`maxRounds` 为 3，`maxCharacters` 为 4；记忆回忆 12 条、候选倍率 4、积压 6 轮；上下文限制默认取模型窗口 60%，折叠后保留 50%；世界扩展每回合最多 2 个角色或地点；模拟时钟每轮默认 30 秒；回退保留 30 个快照；提供 3 条建议行动；图片为手工模式，优先参考图、启用复用和上传图片理解。
+
+设置界面会给出当前数值边界。未知字段会被拒绝。提供方专属嵌入参数保存在 `embedding.options`。

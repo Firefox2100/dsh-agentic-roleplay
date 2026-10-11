@@ -1,0 +1,18 @@
+---
+title: Start your first session
+---
+
+Select the play button on a world card. The start dialog asks for:
+
+- the session name;
+- the playable character;
+- optional reusable avatars to bring into this session;
+- advanced roleplay settings.
+
+Starting validates the complete cast, creates a UUID-named session folder and SQLite database, copies the world's initial definitions and state, and creates a DSH chat. If any step fails, the incomplete session is removed.
+
+The world's opening message becomes the first completed roleplay output without calling a model. The player's first message starts the normal game-master loop.
+
+The world remains unchanged during play. A session owns its evolving character state, relationships, knowledge, items, clock, memories, plot progress and generated media.
+
+Open existing stories from **Role Play → Sessions**. See [Sessions and timelines](../playing/sessions) for branching, take-back and deletion.

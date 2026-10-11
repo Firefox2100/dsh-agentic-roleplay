@@ -1,0 +1,48 @@
+---
+title: Maintainer guide
+description: Invariants, ownership boundaries, and a map of the repository for maintainers and coding agents.
+---
+
+This section is for people and coding agents changing the bundle itself. [Plugin development](../developers/architecture) explains how another plugin consumes or extends it; this guide explains how to modify it without breaking persisted stories, agent protocols, or DSH lifecycle behaviour.
+
+## Non-negotiable invariants
+
+- World files are authored definitions. Mutable story state belongs to a session's SQLite database.
+- Events are immutable facts after sealing. A character's perceptions and beliefs may change without rewriting the event.
+- Knowledge is closed-world: absent relationship or entity-knowledge edges mean that the character does not know the entity.
+- Every state mutation performed by an agent crosses a validated tool boundary. World-authoring mutations require user approval.
+- Text delivery must not wait for record keeping, world consolidation, suggestions, off-stage action, or image generation.
+- Story time, not turn count or wall time, determines memory age.
+- Generated media is filesystem-first. Stable paths and embedded or sidecar metadata are the index of record.
+- Services, listeners, slots, routes, and timers must be registered through the Cordis context so hot reload disposes them.
+
+## Package ownership
+
+| Package | Owns |
+|---|---|
+| `dsh-roleplay-model` | Canonical types, constants, and cross-package vocabulary; no I/O |
+| `dsh-roleplay-state` | SQLite schema and migrations, repositories, recall, record tools, snapshots |
+| `dsh-agentic-roleplay-core` | Filesystem worlds, UI, sessions, agent loop, prompts, import, images, HTTP API |
+| `dsh-agentic-roleplay` | Bundle manifest and the roleplay agent preset |
+
+Do not redefine a model in both core and state. The private model package is a source dependency and must be fully bundled: inspect the generated JavaScript and declarations for dangling `dsh-roleplay-model` imports after build changes.
+
+## Where to change a feature
+
+Host code is organised by concern under `packages/dsh-agentic-roleplay-core/src/host`; browser features follow the same pattern under `src/client`. Shared wire contracts and pure path/id helpers belong in `src/shared`. State contracts live in `dsh-roleplay-state/src`, with repositories separated from SQLite implementations. The checked-in world specification is under `docs/world-format.md`; the documentation site gives the user-facing form.
+
+A story-model feature is not complete until all affected layers agree:
+
+1. canonical model and constants;
+2. schema migration, row mapping, repository interface, and implementation;
+3. session population and snapshot/restore behaviour;
+4. record-edit wire format, parser, JSON Schema, read-back view, and lint;
+5. keeper and character briefs, recall/indexing, and game-master scene context;
+6. HTTP/client editing where applicable;
+7. fixtures, migration tests, repository tests, loop tests, and documentation.
+
+## Working safely
+
+Preserve unrelated working-tree changes. Use existing parsers and repository APIs rather than editing JSON or SQLite ad hoc. Read current source before relying on this guide: defaults and exact validation bounds are deliberately centralised in code. Avoid copying third-party plugin code; compatible behaviour may be studied and independently implemented.
+
+Continue with [Orchestration](./orchestration) for the turn protocol or [Testing and release](./testing-release) for the completion checklist.

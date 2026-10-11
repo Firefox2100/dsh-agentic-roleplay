@@ -1,0 +1,21 @@
+---
+title: world.json
+---
+
+`world.json` 提供世界的稳定 `id`、必填 `name`、可选 `description`、作者、`metadata.tags`、开场消息、旁白声音和世界级变量初值。
+
+```json
+{
+  "id": "9d56bc2e-83ac-4eb0-b7bf-fac48772a6ef",
+  "name": "黑水镇天文台",
+  "description": "海边小镇仰望着悬崖上沉默的天文台。",
+  "author": {"name": "示例作者"},
+  "metadata": {"tags": ["悬疑", "历史"]},
+  "opening_message": [
+    {"type": "narration", "text": "海上飘来雨云。"},
+    {"type": "utterance", "character": "mara", "text": "我们得在天黑前走。"}
+  ]
+}
+```
+
+开场发言中的 `character` 必须引用已定义角色。开场作为第一回合直接写入对话，不调用模型。旧导出格式的 `manifest.json` 和独立 `author.json` 不属于当前原生格式。

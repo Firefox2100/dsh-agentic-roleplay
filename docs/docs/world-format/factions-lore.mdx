@@ -1,0 +1,33 @@
+---
+title: Factions and lore
+---
+
+## Factions
+
+Factions live at `factions/<folder>/faction.json` and may represent institutions, families, movements or informal alliances.
+
+```json
+{
+  "id": "observatory-trust",
+  "name": "Blackwater Observatory Trust",
+  "summary": "The body that controls access to the observatory.",
+  "description": "Publicly charitable and privately divided.",
+  "values": ["scientific prestige", "secrecy"],
+  "structure": "A board chaired by the town magistrate.",
+  "start": {
+    "public_state": "Preparing its centenary exhibition.",
+    "inner_state": "Trying to suppress records of the 1891 incident.",
+    "goals": [{"id": "contain-records", "name": "Contain the records", "plan": "Recover missing files."}]
+  }
+}
+```
+
+Characters may belong to zero or more factions. Membership has its own role, rank and status. Faction-to-faction relationships are directional, like character relationships. Goals belong to the faction rather than being duplicated across members.
+
+## Lore
+
+Lore entries hold canonical setting facts that are not better represented as an entity or event. Each entry has a stable key, title, kind, summary, body, subjects, related entries and optional sources.
+
+Characters do not automatically know canonical lore. A `knowledge.lore` edge grants access to that entry. The GM may search all lore; character recall is restricted to explicitly known entries.
+
+Use separate entries for facts that may be learned independently. Link their subjects to characters, locations, items or factions so retrieval can find relevant material.

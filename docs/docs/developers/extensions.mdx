@@ -1,0 +1,18 @@
+---
+title: Extension points
+---
+
+Prefer the narrow boundary owned by the feature being replaced.
+
+- **Roleplay state:** consume or replace behaviour through the `roleplayState` service and repositories.
+- **Recall:** the recaller boundary accepts the situation and returns ranked character memories.
+- **AI capabilities:** embedding, reranking, TTS, STT and image generation are optional Cordis services supplied by DSH AI Providers.
+- **Prompts:** override named prompt files by language at the roleplay root, world or session scope.
+- **UI:** pages and panels register through DSH slots; shared editor sources keep world and session views consistent.
+- **Agent tools:** register tools on the relevant child scope through `ctx`, with validation at the mutation boundary.
+
+Feature-detect optional services. In particular, file transcription and streaming transcription are separate interfaces; a provider may offer only the former.
+
+All registrations, listeners, timers and manual resources must belong to a Cordis context or `ctx.effect()` so hot reload disposes them. Avoid retaining credentials or resolved provider instances beyond one request; configuration is live.
+
+When extending authored data, keep file representation, canonical model and session schema separate. One parser should own each external file format.

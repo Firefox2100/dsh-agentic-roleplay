@@ -92,7 +92,7 @@ export function GalleryTab({ t, sessionId }: GalleryTabProps) {
   }
 
   const { images, failures } = load.contents
-  const labels = { description: t('description'), prompt: t('prompt'), subjects: t('subjects'), reusable: t('reusable'), uploaded: t('uploaded'), dialog: t('dialog'), close: t('close') }
+  const labels = { description: t('description') ?? '', prompt: t('prompt') ?? '', subjects: t('subjects') ?? '', reusable: t('reusable') ?? '', uploaded: t('uploaded') ?? '', dialog: t('dialog') ?? '', close: t('close') ?? '' }
   const shown = images.filter(image => filter === 'all' || (filter === 'uploaded' ? image.origin === 'uploaded' : image.purpose === filter))
   return (
     <div className={css.page} data-testid="roleplay-gallery">
@@ -121,7 +121,7 @@ export function GalleryTab({ t, sessionId }: GalleryTabProps) {
               return (
                 <li key={image.path} className={css.cell}>
                   <div className={css.thumb}>
-                    <MediaImage src={imageUrl(session, image)} alt={name} details={image} labels={labels} className={css.image} onOpenClassName={css.open} />
+                    <MediaImage src={imageUrl(session, image)} alt={name} details={image} labels={labels} className={css.image ?? ''} onOpenClassName={css.open ?? ''} />
                     <span className={css.caption}>{name}</span>
                     {image.pending === true && <span className={failed === undefined ? css.status : css.statusError}>{failed === undefined ? t('pending') : t('describeFailed', { message: failed })}</span>}
                     {image.unreadable !== true && image.pending !== true && <button type="button" className={css.editButton} onClick={() => { setEditing(image) }}>{t('edit')}</button>}

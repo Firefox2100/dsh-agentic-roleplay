@@ -1,12 +1,17 @@
 packages:
   - packages/*
+  - docs
+
+overrides:
+  '@types/react': 18.3.31
+  '@types/react-dom': 18.3.7
 
 # Only type packages are consumed here; none of their native install scripts are needed.
 allowBuilds:
   '@deepseek-ai/dsh-subprocess-local': false
   '@google/genai': false
-  '@swc/core': set this to true or false
-  core-js: set this to true or false
+  '@swc/core': true
+  core-js: true
   koffi: false
   node-pty: false
   protobufjs: false

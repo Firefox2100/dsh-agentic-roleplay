@@ -1,0 +1,54 @@
+---
+title: Characters
+---
+
+Each character occupies `characters/<folder>/character.json`.
+
+```json
+{
+  "id": "mara",
+  "name": "Mara Vale",
+  "aliases": ["Dr Vale"],
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "An astronomer who returned to investigate her mentor's disappearance.",
+  "personality": "Patient in public, relentless in private.",
+  "background": "She grew up below the observatory.",
+  "appearance": "Tall, dark-haired, usually dressed for bad weather.",
+  "speech": {"style": "Precise and restrained", "examples": ["Facts first. Fear later."]},
+  "visual_identity": {
+    "description": "A tall woman in her early thirties with dark wavy hair and grey eyes.",
+    "tags": ["dark wavy hair", "grey eyes"],
+    "negative_tags": ["blonde hair"]
+  },
+  "start": {
+    "public_state": "Recently arrived from London.",
+    "activity": "Reviewing her mentor's notes.",
+    "inner_state": "Afraid the old rumours were true.",
+    "location": "observatory-library",
+    "emotion": {"baseline": {"valence": -0.1, "arousal": 0.4, "dominance": 0.2}},
+    "intents": [{"id": "find-mentor", "name": "Find her mentor", "plan": "Trace his final observations."}]
+  }
+}
+```
+
+## Roles and kinds
+
+`role` is `playable` or `npc`. `kind` is `person` or `group`. `tier` is `principal`, `supporting` or `background`. A playable character must be a person and cannot be background.
+
+Age, gender and pronouns are optional. `summary`, `personality`, `background`, `appearance` and speech serve different prompt purposes and should not be collapsed into one biography.
+
+## Initial state
+
+`public_state` is observable, `activity` is what the character is actually doing, and `inner_state` is private. Starting placement, emotion, intents, memberships, inventory and variable values also belong under `start`.
+
+## Relationships and knowledge
+
+`relationships` contains directional profiles from this character to another: label, summary, familiarity, trust, affinity and tension. The reverse direction is a separate record.
+
+`knowledge` seeds explicitly known locations, items, directed exits and lore. No record means unknown. Do not use knowledge edges to encode changing location, ownership or condition.
+
+## Routines
+
+`routine` is an ordered list of recurring windows. Each may specify `days`, `from`, `to`, `activity`, `location`, `feature`, `position` and `interruptible`. Times use `HH:MM`; a window ending before it starts crosses midnight.

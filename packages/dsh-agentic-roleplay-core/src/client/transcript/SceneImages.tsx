@@ -34,7 +34,7 @@ export function SceneImages({ chat, node, t }: { chat: string; node: string; t: 
   if (status?.mode === 'off') return null
   return (
     <div className={css.images} data-testid="roleplay-scene-images">
-      {status?.images.map(image => <MediaImage key={image.serial} src={image.url} alt={t('sceneImage')} details={image.details} labels={{ description: t('imageDescription'), prompt: t('imagePrompt'), subjects: t('imageSubjects'), reusable: t('imageReusable'), uploaded: t('imageUploaded'), dialog: t('imageDialog'), close: t('imageClose') }} className={css.sceneImage} onOpenClassName={css.imageButton} />)}
+      {status?.images.map(image => <MediaImage key={image.serial} src={image.url} alt={t('sceneImage') ?? ''} details={image.details} labels={{ description: t('imageDescription') ?? '', prompt: t('imagePrompt') ?? '', subjects: t('imageSubjects') ?? '', reusable: t('imageReusable') ?? '', uploaded: t('imageUploaded') ?? '', dialog: t('imageDialog') ?? '', close: t('imageClose') ?? '' }} className={css.sceneImage ?? ''} onOpenClassName={css.imageButton ?? ''} />)}
       {status?.state === 'generating' && <span className={css.imageStatus}>{t('imageGenerating')}</span>}
       {(status?.state === 'absent' || status?.state === 'failed') && <Button size="sm" onClick={generate}>{status.state === 'failed' ? t('imageRetry') : t('imageGenerate')}</Button>}
       {status?.state === 'ready' && <Button size="sm" onClick={generate}>{t('imageAnother')}</Button>}

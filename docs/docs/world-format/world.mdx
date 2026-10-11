@@ -1,0 +1,37 @@
+---
+title: world.json
+---
+
+`world.json` identifies the world and provides its top-level presentation and initial settings.
+
+```json
+{
+  "id": "9d56bc2e-83ac-4eb0-b7bf-fac48772a6ef",
+  "name": "Blackwater Observatory",
+  "description": "A coastal town watches a silent observatory above the cliffs.",
+  "author": {"name": "Example Author", "url": "https://example.com"},
+  "metadata": {"tags": ["mystery", "historical"]},
+  "opening_message": [
+    {"type": "narration", "text": "Rain moves in from the sea."},
+    {"type": "utterance", "character": "mara", "text": "We should go before dark."}
+  ],
+  "narration_voice": "narrator",
+  "variables": {"storm_warning": false}
+}
+```
+
+| Field | Requirement | Meaning |
+| --- | --- | --- |
+| `id` | Stable; generated if absent | World identity across folder moves |
+| `name` | Required | Display name |
+| `description` | Optional | Player-facing summary |
+| `author.name` | Required when `author` exists | Attribution |
+| `author.url` | Optional | Attribution link |
+| `metadata.tags` | Optional list | Catalogue filtering and presentation |
+| `opening_message` | Optional | Text or ordered narration/utterance parts |
+| `narration_voice` | Optional | Initial TTS voice for narration |
+| `variables` | Optional object | Initial values for world-scoped variables |
+
+An utterance's `character` must name a defined character. Invalid opening parts prevent session creation. The opening is stored as the first finished chat turn without a model call.
+
+Older export manifests and separate `author.json` files are not part of this native format.

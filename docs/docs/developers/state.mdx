@@ -1,0 +1,26 @@
+---
+title: Using dsh-roleplay-state
+---
+
+`dsh-roleplay-state` is a DSH plugin that exposes `ctx.roleplayState`. Consumers declare it through Cordis injection and use its session-store and repository contracts instead of opening SQLite directly.
+
+```ts
+import type {} from 'dsh-roleplay-state'
+import type {Context} from '@deepseek-ai/cordis'
+
+export const inject = ['roleplayState']
+
+export function apply(ctx: Context) {
+  const store = ctx.roleplayState.openSession('/absolute/root/sessions', sessionId)
+  const characters = store.characters.list()
+  ctx.logger.info('%d characters', characters.length)
+}
+```
+
+Create sessions through the service so the directory, schema and metadata are initialised consistently. Group related edits in one transaction. Repository errors distinguish missing records, invalid input and conflicts such as attempts to mutate sealed events.
+
+## Records
+
+The records API reads a model-facing view and applies validated edits for events, perceptions, beliefs, state, movement, items, relationships, knowledge and other story data. Sealing occurs only after a keeper has completed and verified its commit.
+
+The package re-exports canonical model types, so external consumers do not depend on the private model package. See the package README for lower-level repository contracts and migration guidance.

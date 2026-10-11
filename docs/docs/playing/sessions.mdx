@@ -1,0 +1,19 @@
+---
+title: Sessions and timelines
+---
+
+The Sessions page lists name, world, creation time, last play time and turn count. Opening a row recreates its DSH chat if the chat was removed; the roleplay database remains authoritative.
+
+## Take back
+
+Taking back moves the active timeline pointer to an earlier node. Later history remains available rather than being immediately destroyed. A new action from the earlier point creates a branch.
+
+## Branch
+
+A branch is another continuation of the same earlier state. It receives its own active timeline while preserving the history from which it began. Use branches to explore alternatives without manually copying world files.
+
+## Archive and delete
+
+Archiving affects the DSH chat listing. Deleting from the Sessions page retires the chat and removes the roleplay session folder. The DSH persistence layer may retain an archived chat log because DSH does not expose permanent log deletion.
+
+Deletion is destructive; generated images and the session database are removed with the session folder. The source world and reusable avatars are not changed.

@@ -1,0 +1,19 @@
+---
+title: Authoring assistant
+---
+
+Select **Author world** from the world editor. DSH opens a chat named after the world under the **World Authoring** project and supplies a dedicated agent rather than the general-purpose or roleplay preset.
+
+The assistant can list and read world elements, inspect links and relationships, and propose creating, updating or deleting authored data. Mutation tools write the same files used by the manual editor.
+
+## Approval
+
+Every mutation requires user approval through DSH's approval flow. A refusal leaves files unchanged. After approval, the tool validates the proposed document and writes it atomically; errors are returned to the chat for correction.
+
+Ask for outcomes rather than file operations, for example:
+
+- “Add a locked archive below the town hall and connect it to the records room.”
+- “Give Mara a distrustful relationship toward Elias, but leave his view of her unchanged.”
+- “Review the first plot and reduce the pressure to advance it.”
+
+Use the shared World tab to inspect the result. The chat and editor operate on the same workspace folder.

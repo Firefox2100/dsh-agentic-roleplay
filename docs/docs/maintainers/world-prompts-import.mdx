@@ -1,0 +1,26 @@
+---
+title: Worlds, prompts, and import
+description: Authored-file parsing, prompt resolution, approval, and the resumable import pipeline.
+---
+
+World JSON is untrusted authored input. Read it through the size-capped document reader and feature parser, report every problem with its path, and refuse partial session creation. File-format names are snake_case; canonical TypeScript uses camelCase; database rows are private persistence. Keep those representations separate.
+
+World identity comes from `world.json.id`, never the folder name. A missing id is generated and written atomically while preserving indentation and mode. Duplicate ids are errors. A session stores a relative world source plus copied definitions so later world edits cannot rewrite an existing story.
+
+The public [world format](../world-format/overview) is the compatibility contract. When changing it, update the parser, canonical model, editor, authoring tools, session population, validation fixtures, examples, and both language editions together. Unknown or malformed linked ids must fail at the boundary instead of producing dangling session state.
+
+## Prompt resolution
+
+Packaged originals live in `prompts/<language>` and are copied to the roleplay root only when missing. User edits are never overwritten; deleting a custom copy restores the packaged fallback on the next materialisation. Resolution order is session override, root override, packaged language, then packaged English.
+
+Templates use `${name}`. Missing variables, unknown templates, unknown variables, empty content, and invalid language paths are errors. Do not translate tool names, field names, enum values, or protocol markers. Keep the same template set and variable set in every shipped language; tests enforce this.
+
+The world-authoring agent exposes read and mutation tools over the same parsers used by the manual editor. Mutations require DSH user approval and use recoverable deletion. The agent must read current data before editing and receive validation results after writing.
+
+## Import pipeline
+
+SillyTavern V2/V3 JSON and character-card PNG are staged under the new world's `.import` directory. Import is resumable through `state.json` and has explicit survey, build, review, and finish phases. Survey classifies card material; build creates native entities and lore; finish validates the entire world before publishing metadata, opening content, and cover media.
+
+Only prose style guidance may become prompt overrides. Scripts, rules, hidden instructions, and entity facts must be represented as native world data or excluded. Imported content is data, never executable instructions for the importer.
+
+Remote image retrieval permits only HTTP(S), ports 80/443, no credentials, no private or loopback destination after every DNS lookup and redirect, at most four redirects, strict time and 20 MB size limits, and byte-level image validation. Failures are reported without invalidating otherwise usable imported content. Preserve these checks if the downloader changes.

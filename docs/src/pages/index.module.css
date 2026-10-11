@@ -1,0 +1,12 @@
+.hero {padding:6rem 0 5rem;background:radial-gradient(circle at 80% 15%,rgba(135,92,255,.24),transparent 34%),linear-gradient(145deg,#10121a,#211d38);color:#fff}
+.hero h1 {max-width:820px;font-size:clamp(2.7rem,6vw,5.5rem);line-height:1.02;letter-spacing:-.045em}
+.eyebrow {font-size:.78rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:#c4b5fd}
+.lead {max-width:720px;font-size:1.25rem;color:#d9d7e6}
+.actions {display:flex;gap:.8rem;flex-wrap:wrap;margin-top:2rem}
+.main {padding-top:3.5rem;padding-bottom:5rem}
+.grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem}
+.card {display:block;padding:1.5rem;border:1px solid var(--ifm-color-emphasis-300);border-radius:14px;color:inherit;transition:transform .15s ease,border-color .15s ease}
+.card:hover {text-decoration:none;transform:translateY(-3px);border-color:var(--ifm-color-primary)}
+.card h2 {font-size:1.25rem}.card span {color:var(--ifm-color-primary);font-weight:700}
+.summary {max-width:760px;margin-top:4rem}
+@media (max-width:800px){.hero{padding:4rem 0}.grid{grid-template-columns:1fr}}

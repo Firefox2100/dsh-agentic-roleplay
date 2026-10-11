@@ -1,0 +1,42 @@
+---
+title: Orchestration
+description: The game-master protocol, child-agent boundaries, background work, and extension seams.
+---
+
+The DSH chat agent is the game master. Characters, the record keeper, world and plot authors, image presenter, chronicler, and suggestion writer are bounded one-shot children. Their stable persona and tool list form a cacheable prefix; only the request-specific brief changes.
+
+## Turn protocol
+
+An ordinary turn follows this order:
+
+1. Validate the input and assemble the scene.
+2. Require `judge_action` before simulation. The ruling checks every world and player rule and distinguishes an impossible attempt from a forbidden command.
+3. Optionally publish a short scene preview.
+4. `activate_characters` selects reachable characters and asks each for a structured intent, optional utterance, and commitment.
+5. `resolve_round` records each outcome, public state, movement, and item operations. A failed, high-commitment character may retry once with the first attempt's outcome.
+6. Apply deterministic movement and item validation, commit visible state, run triggers, and enqueue the round for durable records.
+7. Repeat within `maxRounds`, or call `narrate`.
+8. Check that accepted utterances appear once, verbatim, and in order. After two refused repairs the engine repairs the payload itself.
+9. Return `<roleplay-output>` JSON to the renderer and record the turn exactly once.
+
+Later rounds receive earlier outcomes from the same turn. Relationships influence activation priority, context, and recall cues; they are not a second action system.
+
+`/ooc` starts a separate out-of-character turn. It requires `ooc_ruling`, cannot activate characters, and may decree state only after a legal ruling. Its effects still use ordinary validation, records, perceptions, snapshots, and narration.
+
+## Background boundary
+
+Narration is the user-visible completion boundary. Record keeping, consolidation, off-stage action, suggestions, and images continue afterwards. Work that reads or changes story state calls `TurnEngine.settle` before proceeding; a later turn waits for an earlier failed record run and retries it once. Pending work is persisted, so restart, rewind, and branch do not silently lose it.
+
+Triggers are evaluated at turn start, after every committed round, and after a time skip. Fired cues go only to their audience; pending beats must be explicitly addressed by narration and expire according to settings.
+
+## Child agents
+
+`runChild` creates a child through the parent agent context, registers only its scoped tools, validates `submit_result`, enforces a call budget, and reminds a child that stops before submitting. This is intentionally used instead of globally exposing character-specific tools such as `recall_my_memories`.
+
+Keep personas and tool declarations stable. Put changing scene data in the user brief. A tool must enforce every authority and consistency rule in code; prompt instructions are not a security boundary.
+
+## Extension seams
+
+The orchestration service exposes replaceable boundaries including activation planning, character context, output validation, retry policy, input validation, authoring, committing, narration, narration checking, and scene context. Replace the smallest boundary that owns the behaviour. Preserve its error semantics, cancellation, output schema, and lifecycle registration.
+
+When adding a tool or stage, verify ordinary turns, OOC turns, retries, rewind, branch, cancellation, hot reload, and prefix stability. See [DSH contracts](./dsh-contracts) before changing child composition or chat persistence.

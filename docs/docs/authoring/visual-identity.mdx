@@ -1,0 +1,23 @@
+---
+title: Visual identity
+---
+
+Characters, places, items and factions may have an optional visual identity:
+
+- **description:** stable visible facts;
+- **tags:** stable traits useful to an image model;
+- **negative tags:** traits the image must avoid;
+- **global ID:** an optional identity shared across worlds and sessions;
+- **version:** changed when the identity changes.
+
+Do not put expression, pose, temporary clothing, lighting, damage or surroundings into canonical identity. Those belong to the transient description of a scene.
+
+## Reference images
+
+The canonical image is always named `reference.png`. Regeneration replaces that file. When a global ID exists it is stored below `images/global/<id>/`; otherwise it is stored by entity kind and local ID.
+
+## Scene images
+
+A scene combines stable identity, current appearance and the moment's composition. Reference images may be supplied to providers that support image conditioning. Scene files are numbered under `images/scenes/` and are never overwritten.
+
+Metadata is stored with the image, with a sidecar fallback where necessary. The filesystem remains authoritative so users can manage media directly.

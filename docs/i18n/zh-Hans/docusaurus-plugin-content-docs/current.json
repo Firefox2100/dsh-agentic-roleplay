@@ -1,0 +1,10 @@
+{
+  "sidebar.docs.category.Getting started": {"message": "快速开始"},
+  "sidebar.docs.category.Playing": {"message": "游玩"},
+  "sidebar.docs.category.World authoring": {"message": "世界创作"},
+  "sidebar.docs.category.World format": {"message": "世界格式"},
+  "sidebar.docs.category.How it works": {"message": "工作原理"},
+  "sidebar.docs.category.Plugin development": {"message": "插件开发"},
+  "sidebar.docs.category.Maintainer guide": {"message": "维护者指南"},
+  "sidebar.docs.category.Reference": {"message": "参考"}
+}

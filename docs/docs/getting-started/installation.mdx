@@ -1,0 +1,30 @@
+---
+title: Installation
+---
+
+## Requirements
+
+- DeepSeek Harness 0.2.x
+- Node.js 22 or later
+- a DSH profile with the web interface
+- at least one language-model route capable of running the game master and child agents
+
+Install the bundle into the profile in which roleplay should be available:
+
+```bash
+dsh plugin --profile <profile> add dsh-agentic-roleplay
+```
+
+The bundle installs the roleplay core and `dsh-roleplay-state`. Restart the profile after installation, then open **Role Play** in the DSH sidebar.
+
+## Storage root
+
+Open **Settings → Role Play** and choose an absolute roleplay root. `~/dsh-roleplay` is the default; a leading `~` is supported. Worlds, avatars, session databases and media live below this root. Ordinary plugin configuration remains in the DSH profile.
+
+Changing the root switches the catalogue after the new value is valid. An invalid edit is rejected and the previous root remains active.
+
+## Updating
+
+Update the bundle and restart the profile. Before a DSH minor-version upgrade, check the project release notes: the child-agent implementation uses a small set of version-sensitive DSH composition APIs.
+
+Continue with [AI services](./ai-services).

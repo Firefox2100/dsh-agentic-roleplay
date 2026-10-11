@@ -1,0 +1,50 @@
+---
+title: Testing and release
+description: Verification matrix for model, persistence, orchestration, UI, documentation, and packages.
+---
+
+Run from the repository root:
+
+```sh
+pnpm install
+pnpm run typecheck
+pnpm run test
+pnpm run build
+pnpm --dir docs run build
+```
+
+Node.js 22 or later is required. Do not treat a successful build as sufficient for changes involving persistence, agent sequencing, or browser UI.
+
+## Test by risk
+
+| Change | Minimum additional verification |
+|---|---|
+| Canonical model or world format | parser problems, round-trip fixtures, session population, authoring tools |
+| SQLite schema | fresh database, migration from prior schema, snapshot/restore, branch |
+| Record wire format | JSON Schema, parser, atomic application, read-back, keeper verification |
+| Recall | character isolation, no-vector fallback, vector invalidation, story-time fading |
+| Orchestration | protocol order, retries, cancellation, stable child prefix, background settling |
+| DSH integration | contract test, hot reload, chat open/reopen, archive/delete |
+| Browser UI | typecheck, production build, and live verification in a dedicated profile |
+| Documentation | English and Chinese production builds with broken links treated as errors |
+
+Use deterministic fakes for agent-loop tests. Assert tool calls and state transitions, not model prose. Concurrency tests should force overlapping turns/jobs and verify serialization, cancellation, and cleanup. Failure tests must confirm that a partially completed operation either rolls back or remains explicitly resumable.
+
+## Persisted compatibility
+
+Never edit an existing migration after release. Add a new ordered migration and keep row mapping tolerant only where the schema explicitly permits it. Keep world files human-editable and report all validation problems in one pass. Stable ids and media paths must not be silently rewritten.
+
+## Release review
+
+Before publishing:
+
+- inspect generated JavaScript and declarations for private-package imports;
+- confirm bundle dependencies and `cordis.patch.yml` include every required plugin once conceptually;
+- check package files include prompts, client output, and public entry points;
+- verify English and Chinese prompt sets have identical names and variables;
+- test without each optional AI capability;
+- check configuration is represented by Schemastery and documented;
+- update both documentation locales and user-visible release notes;
+- review `git diff` for generated caches, local profiles, test worlds, credentials, and other machine-specific files.
+
+Use a dedicated development profile and disposable session/world fixtures. Never validate by modifying a user's normal DSH profile.

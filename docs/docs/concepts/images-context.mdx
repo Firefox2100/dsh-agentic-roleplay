@@ -1,0 +1,19 @@
+---
+title: Images and context
+---
+
+## Visual continuity
+
+Canonical visual identity is stable data. A reference image renders that identity once at a stable path. A transient scene combines it with current clothing, expression, activity, damage, lighting and surroundings.
+
+The image author can search reusable images before generating. Search uses descriptions, subjects and tags, with optional semantic vectors. When a vision model is available, uploaded images are described before entering the reusable library.
+
+Image metadata travels with the file so copying or editing the media library does not require synchronising a database table.
+
+## Conversation context
+
+The complete conversation remains verbatim until it reaches an explicit token limit or a fraction of the selected model's context window. Compaction removes only whole old turns.
+
+A chronicler writes short-term digests and longer chapters from authoritative events plus player actions. It does not repeatedly summarise summaries without consulting records. The current scene, open threads and relevant older events remain near the conversation tail.
+
+Compaction changes the prompt prefix infrequently. Between folds, new content is appended at the end, preserving language-model prefix cache reuse.

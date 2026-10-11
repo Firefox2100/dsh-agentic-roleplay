@@ -1,0 +1,20 @@
+---
+title: DSH integration
+---
+
+Each roleplay session maps to a real DSH session named `session-<roleplay UUID>`. All roleplay chats share one DSH workspace rooted at the roleplay directory, while the roleplay session folder is resolved through its UUID.
+
+The opening message is persisted as a complete first turn before the DSH controller adopts the session. Appending it after constructing the live agent would leave the loop's cached last-turn state inconsistent.
+
+Most integration uses public Cordis and DSH services: workspace registry, session controller, persistence, tools, slots, configuration forms, attachments and language models.
+
+Character and record-keeper children use DSH's composition helpers below the public sub-agent API. This is deliberate: simultaneous characters need different private tools and results under the same tool names. Contract tests pin the required helper surface to DSH 0.2.x.
+
+Before upgrading DSH:
+
+1. run the DSH contract tests;
+2. verify child creation and scoped tools;
+3. start and reopen a roleplay session;
+4. confirm the authored opening remains turn 1;
+5. test take-back, branching and chat retirement;
+6. verify browser slots and the shared world editor.

@@ -1,0 +1,18 @@
+---
+title: Session settings
+---
+
+Advanced settings can be chosen before a session starts and changed later in **Chat settings**. They are stored in `settings.json` beside the session database and read again before use.
+
+Important groups include:
+
+- **Rounds:** maximum rounds and characters activated for one player message.
+- **Memory:** imperfect memory, recall count, lookup tools, retrieval breadth and keeper verification.
+- **Context:** explicit token limit or a ratio of the selected model's context window, plus short- and long-term summary sizes.
+- **Authoring:** whether the GM may ask the world author to create missing entities and how many may be added per turn.
+- **Images:** generation mode, reference handling, reuse, interpretation and captioning models.
+- **Prompts:** prompt language and overrides.
+- **Reasoning and sampling:** child-agent reasoning and role-specific model sampling.
+- **Provider options:** settings described by the selected embedding or media provider.
+
+An invalid external edit is logged and the last valid settings remain active. The complete defaults are listed in [Configuration reference](../reference/configuration).

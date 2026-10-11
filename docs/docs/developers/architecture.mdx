@@ -1,0 +1,18 @@
+---
+title: Architecture and packages
+---
+
+| Package | Responsibility |
+| --- | --- |
+| `dsh-agentic-roleplay` | Installable bundle and profile patch |
+| `dsh-agentic-roleplay-core` | UI, filesystem worlds, orchestration, agents, prompts, media and HTTP API |
+| `dsh-roleplay-state` | Independent DSH service for session databases, repositories, recall and record tools |
+| `dsh-roleplay-model` | Private canonical models shared as source and bundled into consumers |
+
+The core plugin depends on the `roleplayState` Cordis service rather than importing a concrete database. The state package can be installed independently by other DSH plugins.
+
+The host/client boundary is explicit. Host code validates and mutates files and databases; browser features call authenticated `/roleplay-api` routes and register UI through DSH slots. Shared modules contain transport types, IDs and pure path rules.
+
+World data is filesystem-first. Session story state is transactional and lives in one SQLite database per session. Session configuration remains a readable `settings.json`, and images remain ordinary self-describing files.
+
+Features that add story state must update the canonical model, schema and repositories, record-edit wire format, read tools, record-keeper instructions, recall or injection path, authoring support, editor and documentation together.

@@ -1,0 +1,13 @@
+---
+title: 角色
+---
+
+每个角色位于 `characters/<folder>/character.json`。核心字段包括 ID、名称与别名、`playable` 或 `npc` 角色、`person` 或 `group` 类型，以及 `principal`、`supporting`、`background` 层级。可扮演角色必须是个人且不能是背景角色。
+
+简介、性格、背景、外观和说话方式承担不同提示用途，不应合并成一段传记。年龄、性别和代词都是可选信息。
+
+`start.public_state` 是可观察状态，`activity` 是实际正在做的事，`inner_state` 是私密想法。初始位置、情绪、意图、日程、阵营成员关系、物品和变量值也属于初始状态。
+
+`relationships` 是该角色指向另一角色的单向关系；反向必须单独定义。`knowledge` 显式列出已知地点、物品、有方向的出口和设定资料；没有记录就是不知道。
+
+`routine` 由按顺序匹配的时间窗组成，可指定星期、起止时间、活动、地点、特征和是否可中断。结束早于开始表示跨越午夜。

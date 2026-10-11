@@ -1,0 +1,28 @@
+---
+title: Plots, variables and triggers
+---
+
+## Plots
+
+`plots.json` describes optional story structures. A plot has an ID, name, premise, status, pressure policy and beats. Beats are opportunities or developments with conditions and guidance; they are not commands to force an outcome.
+
+Good plots answer:
+
+- What unresolved situation can enter play?
+- What signs can appear before direct confrontation?
+- What changes if the player ignores it?
+- Which outcomes should close or transform it?
+
+The pacing system selects a small nudge when play lacks direction, respects cooldowns and rejection, and does not advance every active plot at once. Session progress records introduced and rejected material separately from the authored definition.
+
+## Variables
+
+`variables.json` declares typed values used by conditions and tools. Initial values may be supplied by the world or relevant entity. Use variables for facts that need deterministic tests, such as whether an alarm is active or how many seals remain.
+
+Do not turn prose state into variables merely because it can be counted. Relationships, knowledge, placement and item state already have dedicated models.
+
+## Triggers
+
+`triggers.json` defines deterministic reactions to state and story conditions. A trigger has conditions, effects, repetition rules and optional timing. Triggers complement agent judgement: they are appropriate when the same condition must always cause the same world-state change.
+
+Validate all referenced entity and variable IDs. Trigger effects run against session state, never the authored world files.

@@ -1,0 +1,22 @@
+---
+title: Create your first world
+---
+
+Open **Role Play → Worlds**, select **Create world**, and enter:
+
+- a folder name, used only for storage;
+- a world name, shown to users.
+
+The plugin creates `worlds/<folder>/world.json` with a stable world ID and opens the shared world editor.
+
+For the smallest playable world:
+
+1. Add a character.
+2. Set its role to **Playable**.
+3. Give it a name, summary and starting state.
+4. Add at least one location if spatial play matters.
+5. Write an opening message in `world.json` if the session should begin with authored narration.
+
+Use the editor for ordinary work. Direct file editing is also supported; refresh the Worlds page after changing files outside DSH. Validation errors are reported with their document paths and prevent an invalid world from starting.
+
+The **Author world** button opens a dedicated authoring chat in the same workspace. Its mutations require user approval. See [Authoring assistant](../authoring/assistant).

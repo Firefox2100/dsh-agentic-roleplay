@@ -1,0 +1,16 @@
+---
+title: 使用 dsh-roleplay-state
+---
+
+`dsh-roleplay-state` 是提供 `ctx.roleplayState` 的独立 DSH 插件。消费者应通过 Cordis 注入并使用会话存储与仓库接口，不要直接操作 SQLite。
+
+```ts
+import type {} from 'dsh-roleplay-state'
+export const inject = ['roleplayState']
+```
+
+通过服务创建会话，确保目录、模式和元数据一致初始化。相关修改应放在一个事务中。仓库错误会区分记录不存在、输入无效和冲突，例如尝试修改已封存事件。
+
+记录 API 可读取适合模型的视图，并验证事件、感知、信念、状态、移动、物品、关系和知识等编辑。只有记录员完成并验证提交后才封存事件。
+
+该包重新导出规范模型类型，外部插件不需要依赖私有模型包。

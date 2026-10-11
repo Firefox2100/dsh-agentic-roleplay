@@ -1,0 +1,30 @@
+---
+title: Prompts and media
+---
+
+## Prompt overrides
+
+World prompts live under:
+
+```text
+prompts/<language>/<group>/<name>.md
+```
+
+The session can also hold prompt overrides. Resolution prefers the most specific available prompt and falls back through the configured language and bundled defaults.
+
+Prompt files are templates for stable instructions, not storage for current story state. Runtime variables provide the scene, character, records and settings. Keep invariant instructions near the beginning so provider prefix caching remains effective.
+
+## Images
+
+Images live below the world or session `images/` directory:
+
+- `images/global/<global-id>/reference.png` for shared visual identities;
+- `images/<entity-kind>/<local-id>/reference.png` for local identities;
+- `images/scenes/turn-<timeline-node>-<serial>.png` for generated scenes;
+- `images/library/` for uploaded reusable pictures.
+
+Generated PNG files carry roleplay metadata describing purpose, origin, provider, model, prompt, subjects and identity versions. A sidecar is used for formats or metadata that cannot be embedded safely. Files, not a database table, are authoritative.
+
+## Covers
+
+The catalogue currently resolves `cover_media_id` through `media/manifest.jsonl`. A cover row names an ID and an image path inside the world directory. Missing or unsafe covers are reported but do not hide an otherwise valid world.

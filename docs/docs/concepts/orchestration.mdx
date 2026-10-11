@@ -1,0 +1,20 @@
+---
+title: Turn orchestration
+---
+
+One player message may contain several character rounds before the final narration.
+
+1. The game master reads the player's action, current scene, relevant records, pacing cues and rules.
+2. It activates the characters whose decisions matter now.
+3. Each character agent receives its stable persona, current situation, own relationships, known entities and recalled memories.
+4. The GM resolves their intents into outcomes and state changes.
+5. It may start another round or deliver narration.
+6. Delivered output records one played turn and schedules background work.
+
+Character output is structured: intent, optional utterance and commitment. A failed high-commitment action may retry once with the first outcome included. Later rounds see earlier rounds from the same turn.
+
+The GM, character agents, record keeper, world author, chronicler and image author have separate prompts and tool sets. Child agents are one-shot: durable identity and memory come from roleplay state, not a long private chat transcript.
+
+The engine bounds rounds, active characters, tool calls and output tokens. These limits prevent an autonomous scene from running indefinitely while still allowing characters to act without direct player input.
+
+Stable personas and tool declarations precede changing scene data, preserving provider prefix-cache reuse between calls.

@@ -1,0 +1,49 @@
+---
+title: Configuration reference
+---
+
+## Plugin configuration
+
+| Field | Default | Purpose |
+| --- | --- | --- |
+| `rootPath` | `~/dsh-roleplay` | Worlds, avatars, sessions and media |
+| `sessionStorePath` | `~/.dsh/sessions` | DSH session persistence location |
+| `importMaxUploadBytes` | 100 MiB | Character-card upload limit |
+| `importConcurrency` | 4 | Concurrent import model calls |
+| `importReasoning` | empty | Import-agent reasoning level |
+| `childReasoning` | empty | Default reasoning level for roleplay child agents |
+| `importMaxTokens` | 16000 | Import request output limit |
+| `importTemperature` | 0.2 | Import sampling temperature |
+
+## Session defaults
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `maxRounds` | 3 | Character rounds per player message |
+| `maxCharacters` | 4 | Characters activated in one round |
+| `memory.flaky` | `true` | Imperfect perception and story-time fading |
+| `memory.recall` | 12 | Memories supplied per activation |
+| `memory.lookup` | `true` | Character recall tool |
+| `memory.verify` | `true` | Keeper reads edits back |
+| `memory.backlogRounds` | 6 | Forced keeper threshold |
+| `memory.overRetrieve` | 4 | Candidate multiplier before final choice |
+| `context.limitTokens` | 0 | Explicit fold limit; zero follows model metadata |
+| `context.limitRatio` | 0.6 | Share of model context used as the limit |
+| `context.retainRatio` | 0.5 | Verbatim share retained after folding |
+| `context.shortTermTokens` | 1500 | Short-term account target |
+| `context.longTermTokens` | 2500 | Long-term account target |
+| `authoring.enabled` | `true` | Allow necessary world growth |
+| `authoring.perTurn` | 2 | New authored characters/places per turn |
+| `authoring.thingsPerTurn` | 4 | Things the GM may introduce directly |
+| `clock.mode` | `simulated` | Story-time mode |
+| `clock.roundSeconds` | 30 | Default round duration |
+| `offstage.perTurn` | 2 | Due off-stage characters processed per turn |
+| `rewind.keepSnapshots` | 30 | Recent state snapshots |
+| `preview.enabled` | `true` | Show an early scene preview |
+| `suggestions.count` | 3 | Suggested next actions |
+| `images.mode` | `manual` | `off`, `manual` or `every-turn` |
+| `images.references` | `prefer-reference` | Reference-image policy |
+| `images.reuse` | `true` | Search existing pictures first |
+| `images.interpret` | `true` | Describe uploaded pictures |
+
+The settings UI supplies current numeric bounds. Unknown fields are rejected. Provider-specific embedding options are stored under `embedding.options`.

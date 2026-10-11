@@ -1,0 +1,45 @@
+---
+title: State, records, and memory
+description: Persistence rules, record queues, retrieval, forgetting, compaction, and timeline snapshots.
+---
+
+Each session owns `session.sqlite`. Repositories are the persistence contract; SQLite is an implementation. Schema changes require an ordered migration and tests that open an older database.
+
+## Record model
+
+The durable hierarchy is event → perception → recalled memory:
+
+- An event records what happened. It is a draft while the keeper verifies its work, then sealed in the same transaction that completes the pending commit. Sealed events cannot be edited or removed.
+- A perception records what one character took from an event. It can be incomplete or wrong and may later be corrected or added without changing the event.
+- A belief records mutable knowledge beyond one event. Relationships and entity-knowledge edges remain separate structured state.
+- Story threads, intents, commitments, goals, public and inner state, emotion, movement, items, variables, and plot progress have their own repositories.
+
+Rounds enter `pending_commits`. The game master may request `record_memory`; otherwise `memory.backlogRounds` (default `6`) is the backstop. A failed keeper leaves work queued. Read-back verification is controlled by `memory.verify` and must compare the written records with the source round before sealing.
+
+## Recall pipeline
+
+Recall searches only the subject character's perceptions and beliefs:
+
+1. Retrieve by scene cues, FTS5 words, and optional embedding similarity. Similarity below roughly `0.3` contributes nothing.
+2. Fuse searches that ran with weights `1`, `1`, and `1.5` respectively.
+3. Keep up to `memory.overRetrieve × memory.recall` candidates, capped at `60`.
+4. If a reranker exists, combine `70%` reranker score with `30%` fused retrieval score.
+5. Choose by relevance, importance, retention, and recency, then present memories chronologically.
+
+`recall_items` is the canonical search projection, `recall_fts` its word index, and `recall_vec` its per-character vector index. Changed text invalidates its vector. The first successful vectors fix the session's model and dimensions; incompatible vectors are refused while cues and words continue to work.
+
+Imperfect memory uses story time:
+
+```text
+retention = 0.5 ^ (elapsed story days / half-life)
+```
+
+An unimportant event begins with a six-day half-life. Each importance step doubles it, beliefs last four times longer, recall reinforces it, and a deterministic per-record variation avoids uniform fading. Importance `5` never falls below the faded form. With `memory.flaky` off, recall and perception are exact.
+
+## Conversation compaction
+
+Compaction starts at `context.limitTokens`, or by default at `60%` of the model context window with a minimum of 4,000 tokens. Whole turns are folded while at least `context.retainRatio` remains verbatim. A chronicler builds short digests from records, rolls them into chapters at `context.shortTermTokens` (default `1500`), and condenses chapters at `context.longTermTokens` (default `2500`). Earlier summaries are never the authority when records exist.
+
+## Timeline safety
+
+`timeline.json` is an append-only tree of played nodes. SQLite snapshots represent state after nodes; log history is not rewritten. A move restores a snapshot and adds conversation markers. Branching creates a new roleplay session and chat from a cut. Rewind changes the selected path but does not delete media. Any new persisted feature must survive snapshot, restore, branch, archive, and delete.

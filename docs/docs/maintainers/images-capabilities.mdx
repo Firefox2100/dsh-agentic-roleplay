@@ -1,0 +1,35 @@
+---
+title: Images and optional capabilities
+description: Filesystem media contracts, image jobs, and optional AI service integration.
+---
+
+Visual identity is stable, provider-neutral state. Clothing for a particular scene, expression, action, damage, lighting, and surroundings belong to a transient prompt. Authored identities are copied into session state and versioned there.
+
+## Media contract
+
+Canonical references use stable paths:
+
+```text
+images/global/<global-id>/reference.png
+images/characters/<local-id>/reference.png
+images/locations/<local-id>/reference.png
+images/items/<local-id>/reference.png
+```
+
+Scenes use `images/scenes/turn-<timeline-node>-<serial>.png`. The timeline node prevents collisions after regeneration; a serial permits multiple images per node. Writes use a sibling temporary file and atomic rename. Reference generation replaces one path; scene generation never overwrites another scene.
+
+PNG metadata uses the `dsh-roleplay` iTXt chunk. Current `dsh-roleplay-image/v3` metadata carries purpose, timestamps, description, tags, provider/model, subjects and identity versions, prompts for generated media, origin, reuse policy, and original filename where relevant. JPEG, WebP, and GIF library images use an adjacent JSON sidecar. Metadata is provenance and search data; paths remain authoritative.
+
+The gallery indexes files lazily. Descriptions can be embedded into a disposable vector cache; word search remains available without embeddings. Uploaded/library media is reusable and may be interpreted only by a model declared vision-capable, or by a captioner followed by the chat model. Never allow a non-vision model to invent a visual description.
+
+## Jobs and timeline behaviour
+
+`ImageJobs` permits one presenter per session. A newer node or rewind cancels obsolete work. Text delivery never waits. Manual requests always generate; automatic requests may reuse a searched image. `use_existing_image` accepts only a candidate returned during the same search run.
+
+Branching links or copies canonical references and inherited scene files. Rewind changes presentation records but does not delete files. Cache files such as `.index.json` and `.vectors.json` must be safe to remove and rebuild.
+
+## Optional services
+
+Embedding, reranking, TTS, STT, streaming STT, image generation, and rules are optional Cordis services. Look them up at use time, advertise the absence in capability routes, and keep a deterministic fallback where the feature permits one. The built-in DSH speech interface and the AI-provider transcription interface share the non-streaming contract; streaming remains a separate optional method.
+
+Provider options belong to the provider's capability description. Do not hard-code vendor-only settings in roleplay state. Foreground speech and explicit image actions should use interactive priority; indexing, interpretation, and turn-following media are background work. Honour provider concurrency rather than adding an unbounded second queue.

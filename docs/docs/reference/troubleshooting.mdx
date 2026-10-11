@@ -1,0 +1,31 @@
+---
+title: Troubleshooting
+---
+
+## A world is missing
+
+Confirm it is exactly one folder below `<root>/worlds/` and contains readable `world.json`. Refresh the Worlds page. Check reported validation problems, duplicate IDs and whether the catalogue could write a missing world ID.
+
+## A session will not start
+
+Every character document must validate, the selected character must be playable, opening-message character IDs must exist, and DSH session services must be available. The API returns all world problems rather than creating a partial session.
+
+## An optional AI feature is unavailable
+
+Open **Settings → AI Providers** and confirm a provider is selected for that capability. A configured connection is not the same as selecting the provider. For images, confirm the provider returns PNG because roleplay image storage currently requires it.
+
+## Memory search is only lexical
+
+Confirm an embedding provider is selected and sqlite-vec is available. Existing vectors are tied to the session's model and dimensions; changing either requires rebuilding them. Reranking is optional and failure falls back to retrieval order.
+
+## Live transcription does not appear
+
+The selected STT provider may support completed files but not the separate streaming interface. The roleplay UI feature-detects live support.
+
+## A settings edit has no effect
+
+Check `settings.json` for validation errors. During a running story, an invalid external edit is logged once and the last valid settings remain active.
+
+## Authoring chat already exists
+
+Open the existing authoring session for that world. The session identity is stable so repeated clicks do not create competing authors over the same files.

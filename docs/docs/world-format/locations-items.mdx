@@ -1,0 +1,45 @@
+---
+title: Locations and items
+---
+
+## Locations
+
+Locations live at `locations/<folder>/location.json`.
+
+```json
+{
+  "id": "observatory-library",
+  "name": "Observatory Library",
+  "description": "A circular room lined with damp astronomical journals.",
+  "parent": "observatory",
+  "features": [{"id": "catalogue", "name": "Card catalogue", "description": "Several drawers are missing."}],
+  "exits": [{
+    "to": "observatory-hall",
+    "description": "A brass-bound oak door",
+    "one_way": false,
+    "travel_time_seconds": 20,
+    "state": "open"
+  }]
+}
+```
+
+`parent` describes containment, not travel. `exits` describe travel. A non-one-way exit creates the reverse direction using `back_description` when supplied. Exit state is `open`, `locked` or `blocked`; locked exits may list item IDs in `opened_by`.
+
+Features are addressable parts of a location. Their IDs are unique within that location. Avoid modelling every decorative object as a feature.
+
+## Items
+
+Items live at `items/<folder>/item.json`. They may define:
+
+- stable name, aliases, description and visual identity;
+- quantity and condition;
+- whether the item is unique, hidden or always notable;
+- starting holder or location;
+- ownership;
+- container state;
+- wearable slot and compatible equipment information;
+- item-scoped variables.
+
+Use items for things whose identity, possession, condition or use matters. Put fixed scenery in location descriptions or features.
+
+Placements evolve in the session database. The source file describes only the starting arrangement.
