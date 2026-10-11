@@ -15,11 +15,12 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { PERSONA_SECTION, PROTOCOL_SECTION } from './host/orchestration/prompt.ts'
 import { roleplaySessionOf } from './shared/chat.ts'
 import { liveSettings } from './host/sessions/settings.ts'
+import type { ChatSettings } from './shared/settings.ts'
 import { storesOf } from './host/orchestration/store.ts'
 import { sessionFolder } from 'dsh-roleplay-state'
 import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 import { currentTurn } from './host/orchestration/current-turn.ts'
-import { createTools } from './host/orchestration/tools.ts'
+import { createTools, PREVIEW_TOOL } from './host/orchestration/tools.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
 import { rerankMemories, type Reranker } from './host/memory/rerank-memories.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
@@ -50,7 +51,7 @@ export function apply(ctx: Context): void {
     },
     problem,
   })
-  const stores = storesOf(ctx.roleplayState, sessionsDir, problem, (chat, text, signal) => index.queryVector(chat, text, signal), undefined, (language, id, variables) => ctx.roleplayPrompts.text(id, language, variables))
+  const stores = storesOf(ctx.roleplayState, sessionsDir, problem, (chat, text, signal) => index.queryVector(chat, text, signal), undefined, (language, id, variables, session) => ctx.roleplayPrompts.text(id, language, variables, session))
   const engine = new TurnEngine(boundaries, stores, problem, chat => { index.schedule(chat) })
 
   // The ranker exists while a reranking service does, so that it never stands in the way of another plugin's ranker.
@@ -71,18 +72,31 @@ export function apply(ctx: Context): void {
       queryVector: (text, signal) => index.queryVector(agentSessionId, text, signal),
     }
   }), 'roleplay: state tools')
-  const languageOf = (context: object): string => {
+  const settingsOf = (context: object): { session: string; settings: ChatSettings } | undefined => {
     const chat = (context as { agent?: Agent }).agent?.session.id
-    const id = chat === undefined ? undefined : roleplaySessionOf(chat)
-    return id === undefined ? FALLBACK_LANGUAGE : liveSettings(sessionFolder(sessionsDir(), id), problem).prompts.language
+    const session = chat === undefined ? undefined : roleplaySessionOf(chat)
+    return session === undefined ? undefined : { session, settings: liveSettings(sessionFolder(sessionsDir(), session), problem) }
   }
   for (const [name, order, id] of [
     [PERSONA_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'roleplay/persona'],
     [PROTOCOL_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'roleplay/game-master'],
   ] as const) {
-    ctx.systemPrompt.section({ name, order, text: context => ctx.roleplayPrompts.text(id, languageOf(context)), interpolate: false })
+    ctx.systemPrompt.section({
+      name,
+      order,
+      interpolate: false,
+      text: (context) => {
+        const chat = settingsOf(context)
+        const language = chat?.settings.prompts.language ?? FALLBACK_LANGUAGE
+        // A chat that shows no preview is not told about one.
+        const part = (name: string): string => ctx.roleplayPrompts.text(name, language, {}, chat?.session)
+        const variables = id === 'roleplay/game-master' ? { preview: chat?.settings.preview.enabled === false ? '' : part('roleplay/preview') } : id === 'roleplay/persona' ? { style: part('roleplay/style') } : {}
+        return ctx.roleplayPrompts.text(id, language, variables, chat?.session)
+      },
+    })
   }
-  for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })) ctx.tools.register(tool)
+  const [previewTool, ...tools] = [...createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
+  for (const tool of tools) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.idle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
   let imageJobs: ImageJobs | undefined
   const timelines = new Timelines({
@@ -109,5 +123,5 @@ export function apply(ctx: Context): void {
   }, 'roleplay: halt')
   ctx.effect(() => { ctx.roleplayOrchestration.timelines = timelines; return () => { ctx.roleplayOrchestration.timelines = undefined } }, 'roleplay: timelines')
   ctx.effect(() => { ctx.roleplayOrchestration.images = images; return () => { ctx.roleplayOrchestration.images = undefined } }, 'roleplay: images')
-  installHooks(ctx, { engine, boundaries, stores, timelines })
+  installHooks(ctx, { engine, boundaries, stores, timelines, previewTool: previewTool! })
 }

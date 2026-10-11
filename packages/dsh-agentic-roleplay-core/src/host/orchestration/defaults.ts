@@ -230,6 +230,7 @@ export const sharedContext: CharacterContextProvider = {
       persona: [
         describe(member.character),
         request.text('roleplay/character-rules', { name: member.character.name }),
+        request.text('roleplay/character-style', { name: member.character.name }),
         ...(request.lookup ? [request.text('roleplay/character-lookup')] : []),
         request.text('roleplay/character-decide', { name: member.character.name }),
       ].join('\n\n'),

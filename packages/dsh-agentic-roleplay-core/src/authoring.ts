@@ -4,6 +4,7 @@ import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
 import { authoredWorldWriteTools, authoringApproval } from './host/authoring/write-tools.ts'
+import { worldPromptTools } from './host/authoring/prompt-tools.ts'
 import { importHooks, importTools } from './host/import/tools.ts'
 import { isReviewing } from './host/import/run-import.ts'
 import type {} from './host/import/service.ts'
@@ -26,6 +27,7 @@ export function apply(ctx: Context): void {
   const reader = new AuthoredWorldReader(ctx.roleplayWorlds)
   for (const tool of authoredWorldReadTools(reader)) ctx.tools.register(tool)
   for (const tool of authoredWorldWriteTools(reader)) ctx.tools.register(tool)
+  for (const tool of worldPromptTools(reader)) ctx.tools.register(tool)
   for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   importHooks(ctx, ctx.roleplayWorlds, prompting)
   const reviewing = async (chat: string): Promise<boolean> => {

@@ -212,7 +212,7 @@ function checkMove(session: Session, characterKey: string, request: MoveRequest)
 }
 
 /** An instruction text by its id, in a language. */
-export type PromptText = (language: string, id: string, variables?: Readonly<Record<string, string | number>>) => string
+export type PromptText = (language: string, id: string, variables?: Readonly<Record<string, string | number>>, session?: string) => string
 
 function storeOf(session: Session, folder: string, problem: (message: string) => void, queryVector: TurnStore['queryVector'], wall: () => number, prompt: PromptText): TurnStore {
   const settings = (): ChatSettings => liveSettings(folder, problem)
@@ -285,7 +285,7 @@ export function storesOf(
     const id = roleplaySessionOf(chat)
     if (id === undefined) return undefined
     try {
-      return storeOf(state.openSession(sessionsDir(), id), sessionFolder(sessionsDir(), id), problem, (text, signal) => queryVector(chat, text, signal), wall, prompt)
+      return storeOf(state.openSession(sessionsDir(), id), sessionFolder(sessionsDir(), id), problem, (text, signal) => queryVector(chat, text, signal), wall, (language, name, variables) => prompt(language, name, variables, id))
     } catch {
       return undefined
     }

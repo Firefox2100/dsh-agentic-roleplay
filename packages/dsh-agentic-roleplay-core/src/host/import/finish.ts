@@ -17,6 +17,7 @@ import { WORLD_FILE_NAME } from '../worlds/world-file.ts'
 import { loadValidatedWorld } from '../worlds/validated-world.ts'
 import { cleanText, withPlayer, type SourceItem } from './items.ts'
 import type { Extracted } from './extract.ts'
+import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
 import type { ChildJob, ImportContext, TextOf } from './run.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, openingText } from './store.ts'
 import { isLeftOut, type Classified, type Roster } from './survey.ts'
@@ -39,6 +40,8 @@ const FOLDERS = [
 /** What came of an import, for the person and for the chat that ran it. */
 export interface ImportReport {
   counts: { characters: number; places: number; factions: number; things: number; lore: number }
+  /** The prose prompts written into the world from the card's instructions. */
+  prompts: string[]
   hasPlayableCharacter: boolean
   opening: 'imported' | 'none'
   cover: boolean
@@ -209,6 +212,10 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
       if (error instanceof InvalidWorldError) return { ok: false, problems: error.problems.map(problem => `${problem.path.replace(stage, '')}: ${problem.message}`.replace(/^: /, '')).concat(error.problems.length === 0 ? [error.message] : []) }
       throw error
     }
+    for (const { id, text } of extracted.prompts) {
+      const problem = promptProblem('en', id, text)
+      if (problem !== undefined) return { ok: false, problems: [`prompt ${id}: ${problem}`] }
+    }
     for (const { directory: folder } of FOLDERS) {
       const from = join(stage, folder)
       if (await stat(from).then(() => true, () => false)) await rename(from, join(directory, folder))
@@ -218,6 +225,9 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   }
 
   const player = extracted.characters.find(document => document['role'] === 'playable')
+  for (const { id, text } of extracted.prompts) {
+    for (const language of shippedLanguages()) await writeAtomically(join(directory, PROMPTS_FOLDER, language, `${id}.md`), `${withPlayer(text, player === undefined ? undefined : String(player['name']))}\n`)
+  }
   const opening = openingText(card, choices.opening)
   const described = await describeWorld(ctx, card, roster, items, opening ?? '')
   if (described.note !== undefined) notes.push(described.note)
@@ -240,6 +250,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
 
   const taken = (role: 'instruction' | 'template' | 'irrelevant'): number => items.filter(item => { const classification = classified[item.id]; return classification !== undefined && isLeftOut(classification) && classification.roles[0] === role }).length
   const report: ImportReport = {
+    prompts: extracted.prompts.map(entry => entry.id),
     counts: { characters: extracted.characters.length, places: extracted.locations.length, factions: extracted.factions.length, things: extracted.items.length, lore: extracted.lore.length },
     hasPlayableCharacter: player !== undefined,
     opening: opening === undefined ? 'none' : 'imported',

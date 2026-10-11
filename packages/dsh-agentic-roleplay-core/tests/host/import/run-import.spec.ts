@@ -29,6 +29,7 @@ const answers = (job: { prompt: string; persona: string }): unknown => {
     if (prompt.includes('Piece: scenario')) return { roles: ['scenario'], targets: [] }
     return { roles: ['irrelevant'], targets: [] }
   }
+  if (job.persona.startsWith('You turn the instructions')) return { narration: 'Write short answers, in a dry voice.', characters: 'Stay in character as ${name}.', left_out: ['a status panel'] }
   if (job.persona.startsWith('You make the final list')) return { characters: [{ name: 'Old Tam', aliases: ['Tam'] }], places: [{ name: 'The Lighthouse', aliases: [] }], factions: [], things: [] }
   if (prompt.includes('Make the character')) return { tier: 'principal', kind: 'person', summary: 'Keeps the light.', personality: 'Gruff.', background: '', appearance: '', speech: { style: '', examples: [] }, start: { location: 'The Lighthouse' } }
   if (prompt.includes('Make the place')) return { description: 'A white tower.' }
@@ -57,10 +58,10 @@ describe('the steps of an import', () => {
     expect(summary).toMatchObject({ pieces: 7, roles: { character: 1, place: 1, instruction: 1, world: 1, scenario: 1, irrelevant: 2 }, leftOut: 3, roster: { characters: ['Old Tam'], places: ['The Lighthouse'] }, playable: undefined, notes: [] })
     expect(await importPhase(world)).toBe('surveyed')
     const built = await build(fakeContext(answers), world)
-    expect(built).toEqual({ characters: 1, places: 1, factions: 0, things: 0, lore: 1, notes: [] })
+    expect(built).toEqual({ characters: 1, places: 1, factions: 0, things: 0, lore: 1, prompts: ['roleplay/style', 'roleplay/character-style'], notes: ['instructions not carried: a status panel'] })
     expect(await importPhase(world)).toBe('built')
     const done = await finish(fakeContext(answers), world)
-    expect(done).toMatchObject({ ok: true, report: { counts: { characters: 1, places: 1, lore: 1 }, hasPlayableCharacter: false, cover: true, opening: 'imported' } })
+    expect(done).toMatchObject({ ok: true, report: { counts: { characters: 1, places: 1, lore: 1 }, hasPlayableCharacter: false, cover: true, opening: 'imported', prompts: ['roleplay/style', 'roleplay/character-style'] } })
     expect(await importPhase(world)).toBe('done')
     expect(await isReviewing(world)).toBe(true)
     await endReview(world)
@@ -68,16 +69,34 @@ describe('the steps of an import', () => {
     expect(await importPhase(world)).toBe('done')
     expect(JSON.parse(await readFile(join(world, 'characters', 'old-tam', 'character.json'), 'utf8'))).toMatchObject({ role: 'npc', start: { location: 'the-lighthouse' } })
     expect(JSON.parse(await readFile(join(world, 'world.json'), 'utf8'))).toMatchObject({ description: 'A harbour town.', opening_message: 'The fog lifts from the pier.', cover_media_id: 'cover' })
-    expect((await readdir(world)).sort()).toEqual(['.import', 'characters', 'lore', 'locations', 'media', 'world.json'].sort())
+    expect((await readdir(world)).sort()).toEqual(['.import', 'characters', 'lore', 'locations', 'media', 'prompts', 'world.json'].sort())
   })
 
-  it('leaves out the entries that were switched off, and the instructions: nothing about them reaches a later step', async () => {
+  it('carries the instructions of the card into the prose prompts of the world, in every language, and nothing else of them', async () => {
+    await survey(fakeContext(answers), world)
+    await build(fakeContext(answers), world)
+    await finish(fakeContext(answers), world)
+    for (const language of ['en', 'zh']) {
+      expect(await readFile(join(world, 'prompts', language, 'roleplay', 'style.md'), 'utf8')).toBe('Write short answers, in a dry voice.\n')
+      expect(await readFile(join(world, 'prompts', language, 'roleplay', 'character-style.md'), 'utf8')).toBe('Stay in character as ${name}.\n')
+      expect(await readdir(join(world, 'prompts', language, 'roleplay'))).toHaveLength(2)
+    }
+  })
+
+  it('does not carry instructions that use a placeholder the prompt is not given, and says so', async () => {
+    await survey(fakeContext(answers), world)
+    const built = await build(fakeContext(job => (job.persona.startsWith('You turn the instructions') ? { narration: 'Hello ${who}.', characters: '', left_out: [] } : answers(job))), world)
+    expect(built.prompts).toEqual([])
+    expect(built.notes.join(' ')).toContain('not carried over')
+  })
+
+  it('leaves out the entries that were switched off, and shows the instructions only to the step that makes the style', async () => {
     const ctx = fakeContext(answers)
     await survey(ctx, world)
     expect(ctx.asked.some(asked => asked.prompt.includes('Switched off'))).toBe(false)
     const later = fakeContext(answers)
     await build(later, world)
-    expect(later.asked.some(asked => asked.prompt.includes('Write short answers'))).toBe(false)
+    expect(later.asked.filter(asked => asked.prompt.includes('Write short answers')).map(asked => asked.persona.slice(0, 25))).toEqual(['You turn the instructions'])
   })
 
   it('refuses a step that is out of order, or when no card is waiting', async () => {

@@ -6,7 +6,9 @@ import { parseItemFile } from '../items/item-file.ts'
 import { parseLocationFile } from '../locations/location-file.ts'
 import { parseLoreFile } from '../lore/lore-file.ts'
 import type { NormalizedCard } from '../../shared/import-card.ts'
-import { MAX_ITEM_CHARS, type SourceItem } from './items.ts'
+import { cleanText, MAX_ITEM_CHARS, type SourceItem } from './items.ts'
+import { promptProblem } from '../prompts/library.ts'
+import { PROSE_PROMPTS } from '../authoring/prompt-tools.ts'
 import { mapLimit, norm, slug, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { findEntity, isLeftOut, type Classified, type Entity, type Kind, type Roster } from './survey.ts'
 
@@ -19,9 +21,11 @@ export interface Extracted {
   factions: Document[]
   items: Document[]
   lore: Document[]
+  /** The prose prompts the card's instructions became, by prompt id. */
+  prompts: { id: string; text: string }[]
   notes: string[]
 }
-export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], notes: [] })
+export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], notes: [] })
 
 const SOURCE_BUDGET_CHARS = 14_000
 const MAX_TAGGED = 8
@@ -384,4 +388,50 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
   placeAtScenario(result, items, classified, roster)
   pruneLoreSubjects(result)
   return result
+}
+
+const STYLE_SCHEMA = {
+  type: 'object',
+  properties: {
+    narration: { type: 'string', description: 'How the narration is written: voice, tone, perspective, pacing, level of detail. Empty when the instructions say nothing about it.' },
+    characters: { type: 'string', description: 'How every character speaks and behaves: staying in character, manner, and how it deals with what it is asked to do or refuses. Use ${name} for the character. Empty when the instructions say nothing about it.' },
+    left_out: { type: 'array', items: { type: 'string' }, description: 'What the instructions contained that is not prose or behaviour guidance (rules of the game, formats, panels, scripts), one short phrase each.' },
+  },
+  required: ['narration', 'characters', 'left_out'],
+} as const
+
+const MAX_STYLE_CHARS = 2000
+
+/** The instructions to the AI that a card carries: its own system and post-history fields, and the pieces judged to be instructions. */
+export function instructionPieces(card: NormalizedCard, items: readonly SourceItem[], classified: Classified): string[] {
+  const fields = [card.systemPrompt, card.postHistoryInstructions].map(field => cleanText(field, card.name)).filter(field => field !== '')
+  const pieces = items.filter(item => classified[item.id]?.roles[0] === 'instruction').map(item => item.text)
+  return [...fields, ...pieces]
+}
+
+function styleProblem(id: string, value: string): string | undefined {
+  if (value.length > MAX_STYLE_CHARS) return `${id} is ${value.length} characters long; keep it to ${MAX_STYLE_CHARS}`
+  return value === '' ? undefined : promptProblem('en', id, value)
+}
+
+/** Turns the instructions of a card into the prose prompts of the world. Only prose and behaviour are kept: the rules of the game stay the program's. */
+export async function extractStyle(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified): Promise<Pick<Extracted, 'prompts' | 'notes'>> {
+  const pieces = instructionPieces(card, items, classified)
+  if (pieces.length === 0) return { prompts: [], notes: [] }
+  ctx.say('writing the style prompts')
+  try {
+    const prompt = `Card: ${card.name}\n\nThe instructions of the card:\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
+    const answer = await ctx.run<{ narration: string; characters: string; left_out: string[] }>({
+      persona: ctx.text('import/style', { rules: ctx.text('import/common-rules') }),
+      prompt,
+      result: STYLE_SCHEMA as never,
+      check: value => styleProblem('roleplay/style', text(value.narration)) ?? styleProblem('roleplay/character-style', text(value.characters)),
+    })
+    const made = [['roleplay/style', text(answer.narration)], ['roleplay/character-style', text(answer.characters)]] as const
+    const prompts = made.flatMap(([id, body]) => (body === '' ? [] : [{ id, text: body }]))
+    if (!prompts.every(entry => PROSE_PROMPTS.includes(entry.id))) throw new Error('only prose prompts can be made')
+    return { prompts, notes: list(answer.left_out).map(entry => `instructions not carried: ${entry}`) }
+  } catch (error) {
+    return { prompts: [], notes: [`the instructions of the card were not carried over: ${error instanceof Error ? error.message : String(error)}`] }
+  }
 }

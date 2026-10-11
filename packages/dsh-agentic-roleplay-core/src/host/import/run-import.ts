@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { NormalizedCard } from '../../shared/import-card.ts'
-import { emptyExtracted, extractEntities, type Extracted } from './extract.ts'
+import { emptyExtracted, extractEntities, extractStyle, type Extracted } from './extract.ts'
 import { finishImport, type ImportReport } from './finish.ts'
 import { itemise, type SourceItem } from './items.ts'
 import type { ImportContext } from './run.ts'
@@ -116,6 +116,8 @@ export interface BuildSummary {
   factions: number
   things: number
   lore: number
+  /** The prose prompts the card's instructions became. */
+  prompts: string[]
   notes: string[]
 }
 
@@ -126,9 +128,12 @@ export async function build(ctx: ImportContext, world: string): Promise<BuildSum
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
   const roster = await readJson<Roster>(join(folder(world), ROSTER))
   const extracted = await extractEntities(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified, roster)
+  const style = await extractStyle(ctx, card, items, classified)
+  extracted.prompts.push(...style.prompts)
+  extracted.notes.push(...style.notes)
   await writeJson(join(folder(world), EXTRACTED), extracted)
   await writeJson(join(folder(world), STATE), { phase: 'built' })
-  return { characters: extracted.characters.length, places: extracted.locations.length, factions: extracted.factions.length, things: extracted.items.length, lore: extracted.lore.length, notes: extracted.notes }
+  return { characters: extracted.characters.length, places: extracted.locations.length, factions: extracted.factions.length, things: extracted.items.length, lore: extracted.lore.length, prompts: extracted.prompts.map(entry => entry.id), notes: extracted.notes }
 }
 
 /** Last step: check the world as a whole, write it, and fill in its own file. Nothing is written when the world would not start. */
@@ -137,7 +142,7 @@ export async function finish(ctx: ImportContext, world: string): Promise<{ ok: t
   const { card, choices, items, picture } = await load(world)
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
   const roster = await readJson<Roster>(join(folder(world), ROSTER))
-  const extracted = await readJson<Extracted>(join(folder(world), EXTRACTED)).catch(() => emptyExtracted())
+  const extracted = { ...emptyExtracted(), ...await readJson<Partial<Extracted>>(join(folder(world), EXTRACTED)).catch(() => ({})) }
   const result = await finishImport(ctx, {
     directory: world, card, choices, roster, items, classified, extracted,
     ...(picture ? { picture: await readFile(join(folder(world), PICTURE_FILE)) } : {}), notes: [],

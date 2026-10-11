@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { PromptLibrary, languageOf, shippedPromptsDirectory } from '../../../src/host/prompts/library.ts'
+import { PromptLibrary, copyWorldPrompts, languageOf, shippedPromptsDirectory } from '../../../src/host/prompts/library.ts'
 
 let root: string
 let shipped: string
@@ -72,5 +72,64 @@ describe('the prompts that ship', () => {
     expect(await files('zh')).toEqual(english)
     const variables = async (language: string, file: string): Promise<string[]> => [...new Set((await readFile(join(shippedPromptsDirectory(), language, file), 'utf8')).match(/\$\{[A-Za-z]+\}/g) ?? [])].sort()
     for (const file of english) expect(await variables('zh', file), file).toEqual(await variables('en', file))
+  })
+})
+
+describe('prompts of a session and of a world', () => {
+  const session = '3f2b1c9e-8a47-4d5e-9b1a-0c6d7e8f9a10'
+  const folder = (): string => join(root, 'sessions', session)
+
+  it('uses the file of the session in its language, and the root for every prompt it does not carry', async () => {
+    const prompts = library()
+    await mkdir(join(folder(), 'prompts', 'en', 'a'), { recursive: true })
+    await writeFile(join(folder(), 'prompts', 'en', 'a', 'greet.md'), 'Own ${name}.')
+    expect(prompts.text('a/greet', 'en', { name: 'Ana' }, session)).toBe('Own Ana.')
+    expect(prompts.text('a/greet', 'zh', { name: 'Ana' }, session)).toBe('你好，Ana。')
+    expect(prompts.text('a/only-en', 'en', {}, session)).toBe('Only English.')
+    expect(prompts.text('a/greet', 'en', { name: 'Ana' })).toBe('Hello Ana.')
+  })
+
+  it('refuses an empty file in the session', async () => {
+    await mkdir(join(folder(), 'prompts', 'en', 'a'), { recursive: true })
+    await writeFile(join(folder(), 'prompts', 'en', 'a', 'greet.md'), '\n')
+    expect(() => library().text('a/greet', 'en', { name: 'Ana' }, session)).toThrow('is empty')
+  })
+
+  it('drops a line that holds only an optional part given as empty text', () => {
+    const prompts = library()
+    prompts.text('a/greet', 'en', { name: 'x' })
+    return writeFile(join(root, 'prompts', 'en', 'a', 'greet.md'), 'One\n${part}\nTwo').then(() => {
+      expect(prompts.text('a/greet', 'en', { part: '' })).toBe('One\nTwo')
+      expect(prompts.text('a/greet', 'en', { part: 'Middle' })).toBe('One\nMiddle\nTwo')
+    })
+  })
+
+  describe('copying the prompts a world carries', () => {
+    const world = async (files: Record<string, string>): Promise<string> => {
+      const directory = await mkdtemp(join(tmpdir(), 'world-'))
+      for (const [path, text] of Object.entries(files)) { await mkdir(join(directory, 'prompts', path, '..'), { recursive: true }); await writeFile(join(directory, 'prompts', path), text) }
+      return directory
+    }
+
+    it('copies them into the session folder with the same structure', async () => {
+      const directory = await world({ 'en/a/greet.md': 'World says ${name}.' })
+      expect(copyWorldPrompts(directory, folder(), shipped)).toEqual([])
+      expect(await readFile(join(folder(), 'prompts', 'en', 'a', 'greet.md'), 'utf8')).toBe('World says ${name}.')
+      await rm(directory, { recursive: true })
+    })
+
+    it('copies nothing when a world has no prompts', async () => {
+      const directory = await world({})
+      expect(copyWorldPrompts(directory, folder(), shipped)).toEqual([])
+      await rm(directory, { recursive: true })
+    })
+
+    it('reports an unknown prompt, an empty one and a variable the prompt is not given, and copies none of them', async () => {
+      const directory = await world({ 'en/a/greet.md': 'Hi ${who}.', 'en/a/nothing.md': 'x', 'en/a/only-en.md': ' \n' })
+      const problems = copyWorldPrompts(directory, folder(), shipped)
+      expect(problems.map(problem => problem.message).sort()).toEqual(['the prompt is empty', 'there is no prompt "a/nothing"', 'uses ${who}, which the prompt is not given (it is given: name)'])
+      await expect(readFile(join(folder(), 'prompts', 'en', 'a', 'only-en.md'), 'utf8')).rejects.toThrow()
+      await rm(directory, { recursive: true })
+    })
   })
 })

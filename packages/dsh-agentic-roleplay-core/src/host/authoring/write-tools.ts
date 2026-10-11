@@ -6,13 +6,14 @@ import { parsePlotsFile } from '../plots/load.ts'
 import { formatIssue } from '../validation.ts'
 import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, readAuthoredEntityDocument, replaceAuthoredEntity, type AuthoredEntityKind } from './documents.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
+import { PROMPT_MUTATION_TOOLS, PROSE_PROMPTS } from './prompt-tools.ts'
 
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
 const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => output(value) }
 const kindParameter = { type: 'string' as const, required: true as const, enum: AUTHORED_ENTITY_KINDS }
 const keyParameter = { type: 'string' as const, required: true as const, description: 'Stable entity key.' }
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots'])
+export const AUTHORING_MUTATION_TOOLS = new Set(['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', ...PROMPT_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -96,8 +97,21 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
  */
 export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false)): Promise<PreToolDecision> {
   if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return await next()
-  if (await reviewing(exec.agent.session.id)) return await next()
   const args = exec.arguments as Record<string, unknown>
+  const prompt = (PROMPT_MUTATION_TOOLS as readonly string[]).includes(exec.name)
+  const importing = await reviewing(exec.agent.session.id)
+  // The import may set the prose and the persona; the rules of the game are the person's to change.
+  if (importing && prompt && !PROSE_PROMPTS.includes(String(args['id']))) return { kind: 'deny', reason: `an import may change only the prose prompts (${PROSE_PROMPTS.join(', ')}); "${String(args['id'])}" holds rules of the game and is left to the person` }
+  if (importing) return await next()
+  if (prompt) {
+    const target = `prompt “${String(args['language'])}/${String(args['id'])}”`
+    const remove = exec.name.startsWith('delete')
+    return {
+      kind: 'ask',
+      reason: `${remove ? 'delete' : 'write'} authored world ${target}`,
+      displayReason: { en: `${remove ? 'Delete' : 'Write'} ${target} in the world files?`, zh: `${remove ? '删除' : '写入'}世界文件中的${target}？` },
+    }
+  }
   const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : 'plots'
   const key = typeof args['key'] === 'string' ? args['key'] : ''
   const target = key === '' ? kind : `${kind} “${key}”`

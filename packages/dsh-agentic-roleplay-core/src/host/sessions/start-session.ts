@@ -13,6 +13,7 @@ import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
 import { populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
+import { copyWorldPrompts } from '../prompts/library.ts'
 import { loadValidatedWorld } from '../worlds/validated-world.ts'
 
 export const MAX_NAME_LENGTH = 200
@@ -83,6 +84,8 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)
     })
     await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])
+    const promptProblems = copyWorldPrompts(world.directory, sessionFolder(sessionsDir, id))
+    if (promptProblems.length > 0) throw new InvalidWorldError(`the prompts of "${world.summary.name}" have ${promptProblems.length} problem(s)`, promptProblems)
     writeSettings(sessionFolder(sessionsDir, id), settings)
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {

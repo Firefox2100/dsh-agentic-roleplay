@@ -6,6 +6,7 @@ import type { TurnEngine, TurnOwner } from './turn-engine.ts'
 import { roleplaySessionOf } from './store.ts'
 import { parseOoc } from '../../shared/ooc.ts'
 import type { Timelines } from '../timeline/service.ts'
+import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { describePacingAdvice, pacingAdvice, plotAuthorNeeded } from '../pacing/director.ts'
 
 declare module '@deepseek-ai/dsh-llm' {
@@ -19,6 +20,8 @@ export interface HookDeps {
   boundaries: () => Boundaries
   stores: (chat: string) => TurnStore | undefined
   timelines: Timelines
+  /** Registered for each chat that shows a preview, not for all. */
+  previewTool: ToolDefinition
 }
 
 const notice = (text: string) => createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'roleplay' } })
@@ -35,7 +38,15 @@ function ownerOf(agent: Agent, turn: number): TurnOwner | undefined {
  * first checks that it is looking at the game master of a roleplay chat.
  */
 export function installHooks(ctx: Context, deps: HookDeps): void {
-  const { engine, boundaries, stores, timelines } = deps
+  const { engine, boundaries, stores, timelines, previewTool } = deps
+
+  // The preview tool is registered on the agent of a chat that shows one, and withdrawn when the setting is turned off.
+  const shown = new WeakMap<Agent, () => void>()
+  const showPreviewTool = (agent: Agent, enabled: boolean): void => {
+    const withdraw = shown.get(agent)
+    if (enabled && withdraw === undefined) shown.set(agent, agent.ctx.tools.register(previewTool))
+    else if (!enabled && withdraw !== undefined) { shown.delete(agent); withdraw() }
+  }
 
   // The turn that ended is where the next one will have to be cut from.
   ctx.on('session/event', (session, event) => {
@@ -69,9 +80,10 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   // player's input is checked.
   ctx.on('agent/pre-step', async (payload, next) => {
     const decision = await next()
-    if (decision.kind !== 'enter' || payload.step !== 1) return decision
     const owner = ownerOf(payload.agent, payload.turn)
     const store = owner === undefined ? undefined : stores(owner.chat)
+    if (owner !== undefined && store !== undefined) showPreviewTool(payload.agent, store.settings().preview.enabled)
+    if (decision.kind !== 'enter' || payload.step !== 1) return decision
     if (owner === undefined || store === undefined) return decision
     const text = payload.messages
       .filter(message => message.source.kind === 'user')

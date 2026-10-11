@@ -9,6 +9,7 @@ import { readTimeline, writeTimeline } from './file.ts'
 import { branchName, branchTimeline } from './branch.ts'
 import { planMove, type MovePlan } from './plan.ts'
 import { inheritImages } from '../images/storage.ts'
+import { inheritPrompts } from '../prompts/library.ts'
 
 /** The text of the marker that stands for the turns it replaces: never empty, as a model service may refuse an empty message. */
 const MARKER_TEXT = '(empty message)'
@@ -213,6 +214,7 @@ export class Timelines {
       this.deps.state.fork(directory, from, id, branch.from, { name, keep: branch.keep })
       try {
         await inheritImages(this.folder(from), this.folder(id), branch.timeline.nodes.map(node => node.id))
+        inheritPrompts(this.folder(from), this.folder(id))
         const plan = planMove(branch.timeline, branch.timeline.head, [...agent.session.surface.nodes] as number[])
         this.reconcile(agent, plan)
         writeTimeline(this.folder(id), branch.timeline)

@@ -9,7 +9,7 @@ import { STRUCTURED_OUTPUT_TOOL } from '@deepseek-ai/dsh-subagent-in-process-dri
 import * as spawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import { randomUUID } from 'node:crypto'
 import { readdirSync } from 'node:fs'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, sessionFolder, type Session } from 'dsh-roleplay-state'
@@ -300,7 +300,7 @@ function answerWithoutSuggestions(script: Script) {
       if (timesCalled(request, 'resolve_round') === 0) return call('j-res', 'resolve_round', { outcomes: [{ character: 'arthur', result: 'failed', summary: 'Arthur waves a hand at the lamp; nothing comes of it' }] })
       return timesCalled(request, 'narrate') === 0 ? call('j-nar', 'narrate', { segments: [{ type: 'narration', text: 'You wave a hand at the lamp. Nothing happens.' }] }) : text('')
     }
-    if (timesCalled(request, 'preview_scene') === 0 && !thisTurn(request).includes('input is refused')) return call('m-prev', 'preview_scene', { text: PREVIEW })
+    if (toolNames(request).includes('preview_scene') && timesCalled(request, 'preview_scene') === 0 && !thisTurn(request).includes('input is refused')) return call('m-prev', 'preview_scene', { text: PREVIEW })
     const activated = timesCalled(request, 'activate_characters')
     // A refused call still counts as a call, so one refusal is taken off.
     const resolved = timesCalled(request, 'resolve_round') - (script.moves === 'locked-first' && thisTurn(request).includes('cannot go to') ? 1 : 0) - (script.things === 'conflict' && thisTurn(request).includes('cannot take') ? 1 : 0)
@@ -1002,6 +1002,31 @@ describe('a turn with the real agent loop', () => {
       expect(JSON.stringify(characterRequests(adapter).map(request => request.messages))).not.toContain('lamplight')
       expect(outputsOf(agent)).toHaveLength(1)
       expect(timesCalled(masterRequests(adapter).at(-1)!, 'preview_scene')).toBe(1)
+    })
+
+    it('leaves the preview out of a chat that shows none: no instruction, no tool, and the output is still delivered', async () => {
+      const { id } = await addSession('Vault', true)
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { preview: { enabled: false } })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const requests = masterRequests(adapter)
+      expect(requests.some(request => toolNames(request).includes('preview_scene'))).toBe(false)
+      expect(requests.some(request => systemOf(request).includes('preview_scene'))).toBe(false)
+      expect(outputsOf(agent)).toHaveLength(1)
+    })
+
+    it('uses a prompt the session carries instead of the one in the root', async () => {
+      const { id } = await addSession('Vault', true)
+      const folder = join(sessionFolder(join(root, 'sessions'), id), 'prompts', 'en', 'roleplay')
+      await mkdir(folder, { recursive: true })
+      await writeFile(join(folder, 'persona.md'), 'You are the narrator of this one table.')
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(masterRequests(adapter).every(request => systemOf(request).includes('narrator of this one table'))).toBe(true)
     })
 
     it('plays what the game master judges cannot work as a failed attempt: no preview, nobody is asked, and the story is as it was', async () => {
