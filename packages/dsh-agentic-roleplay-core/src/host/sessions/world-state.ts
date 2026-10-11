@@ -227,7 +227,7 @@ export function editWorldRelation(deps: WorldStateDeps, id: string, edit: Relati
   const session = sessionOf(deps, id)
   if (isNewRelation(edit)) return createSessionRelation(session, deps.sessionsDir(), edit)
   const parts = relationParts(edit.key)
-  if (parts[0] !== edit.kind) throw new InvalidEditProblems(['the relation key does not match its kind'])
+  if (parts[0] !== edit.kind) throw new InvalidEditProblems([`the relation key "${edit.key}" is not a ${edit.kind} key: copy it exactly from list_relationships ("${edit.kind}:..."), or to make a new one send create: true with from and to and no key`])
   const number = (value: string | undefined): number => { const parsed = Number(value); if (!Number.isInteger(parsed)) throw new InvalidEditProblems(['the relation key is invalid']); return parsed }
   const turn = session.metadata.get().turns
   try {

@@ -7,6 +7,7 @@ import { ClockError, type SkipRequest } from '../clock/story-clock.ts'
 import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TriggerReport, type TurnStore } from './boundaries.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import { sameWords } from './defaults.ts'
+import { slug, uniqueKey } from '../import/run.ts'
 
 /** Asks one character to act; what the game master calls a character is the character's key. */
 export type RunCharacter = (request: CharacterRequest, signal: AbortSignal) => Promise<CharacterAction>
@@ -142,6 +143,8 @@ export class TurnEngine {
   private readonly states = new Map<string, TurnState>()
   /** The records being written for each chat: one run at a time, behind the story. */
   private readonly chains = new Map<string, Promise<void>>()
+  /** The turn last delivered, whose records may still need a run that the next turn has not yet settled. */
+  private readonly delivered = new Map<string, TurnState>()
   /** How many runs of the keeper are waiting or running for each chat. */
   private readonly runs = new Map<string, number>()
   private readonly objections = new Map<string, number>()
@@ -462,6 +465,40 @@ export class TurnEngine {
     return await this.boundaries().author.create({ chat: owner.chat, turn: owner.turn, need, what, store }, signal)
   }
 
+  /**
+   * The game master introduces a thing the story uses, as a table's game master would: it is made at once where the game master says
+   * (a place, someone's hands, a container; the player's place when it says nothing), with no world author asked.
+   * @throws {Error} when the world is closed, a round is open, the turn's allowance is used, or the thing cannot be put where it was said.
+   */
+  introduce(owner: TurnOwner, input: { name: string; description?: string; quantity?: number; quality?: string; notable?: boolean; hidden?: boolean; at?: string; heldBy?: string; inside?: string }): { key: string; name: string; where: string } {
+    const state = this.stateFor(owner)
+    if (state.phase === 'resolving' || state.phase === 'retrying') throw new Error('resolve the round first: things are introduced between rounds, not in the middle of one')
+    const blocked = this.oocBlock(state)
+    if (blocked !== undefined) throw new Error(blocked)
+    const name = input.name.trim()
+    if (name === '') throw new Error('name the thing')
+    const store = this.storeOf(owner)
+    const { authoring } = store.settings()
+    if (!authoring.enabled) throw new Error('this world is closed: nothing can be made up in it')
+    const kept = store.story.consolidation.createdIn(owner.turn).filter(entry => entry.kind === 'item').length
+    if (kept >= authoring.thingsPerTurn) throw new Error(`${kept} thing${kept === 1 ? ' was' : 's were'} already introduced this turn, which is the most this chat allows`)
+    const where = [input.at, input.heldBy, input.inside].filter(entry => entry !== undefined && entry.trim() !== '').length
+    if (where > 1) throw new Error('say where it is in one way only: at a place, held by a character, or inside a thing')
+    const player = store.cast().find(member => member.character.control === 'player')
+    const here = player?.place?.location
+    const placed = input.heldBy !== undefined && input.heldBy.trim() !== '' ? { heldBy: input.heldBy.trim() }
+      : input.inside !== undefined && input.inside.trim() !== '' ? { inside: input.inside.trim() }
+        : input.at !== undefined && input.at.trim() !== '' ? { at: { location: input.at.trim() } }
+          : here === undefined ? undefined : { at: { location: placeKey(here) } }
+    if (placed === undefined) throw new Error('say where it is: no place is known for the player, so name a place (at), a holder (held_by) or a container (inside)')
+    const key = uniqueKey(slug(name, 'thing'), new Set(store.story.items.list().map(item => item.sourceId).filter((entry): entry is string => entry !== undefined)))
+    store.story.edit({
+      turn: owner.turn,
+      items: [{ key, name, ...(input.description === undefined || input.description.trim() === '' ? {} : { description: input.description.trim() }), ...(input.quantity === undefined ? {} : { quantity: input.quantity }), ...(input.quality === undefined || input.quality.trim() === '' ? {} : { quality: input.quality.trim() }), ...(input.notable === undefined ? {} : { notable: input.notable }), ...(input.hidden === undefined ? {} : { hidden: input.hidden }), ...placed, note: 'introduced by the game master' }],
+    })
+    return { key, name, where: 'heldBy' in placed ? `held by ${placed.heldBy}` : 'inside' in placed ? `inside ${placed.inside}` : `at ${placed.at.location}` }
+  }
+
   /** Whether made-up characters and places are waiting to be fitted into the world. */
   waitingToFit(owner: TurnOwner): number {
     return this.stores(owner.chat)?.story.consolidation.pending().length ?? 0
@@ -566,19 +603,26 @@ export class TurnEngine {
 
   /**
    * Wait until the records of the rounds recorded so far are written or have failed, and run once more for what is still
-   * waiting when the game master asked for it or too many rounds are waiting. Called before the next turn's characters
-   * recall anything, not before the player is shown the output: the writing goes on behind the story.
+   * waiting when the game master asked for it or too many rounds are waiting. A turn starts without it (the game master
+   * judges and previews meanwhile); it is called before anything that recalls or changes the story, so those wait for the
+   * keeper and nothing else does. A call in the turn that was just delivered only waits for a run in flight.
    */
-  async settle(chat: string): Promise<void> {
+  async settle(chat: string, turn?: number): Promise<void> {
     await this.chains.get(chat)
-    const state = this.states.get(chat)
+    const state = this.delivered.get(chat)
     const store = this.stores(chat)
-    if (state === undefined || store === undefined) return
+    if (state === undefined || store === undefined || (turn !== undefined && state.turn >= turn)) return
+    this.delivered.delete(chat)
     const waiting = store.pendingCommits().length
     if (waiting > 0 && (state.requested || waiting >= store.settings().memory.backlogRounds)) {
       this.write({ chat, turn: state.turn }, state)
       await this.chains.get(chat)
     }
+  }
+
+  /** Wait until the run of the keeper in flight, if any, has ended; nothing is started. */
+  async idle(chat: string): Promise<void> {
+    await this.chains.get(chat)
   }
 
   /** What has been said in the turn so far. */
@@ -619,6 +663,7 @@ export class TurnEngine {
     this.states.get(chat)?.cancel.abort()
     this.states.delete(chat)
     this.chains.delete(chat)
+    this.delivered.delete(chat)
     this.runs.delete(chat)
     this.working.delete(chat)
     for (const key of this.objections.keys()) if (key.startsWith(`${chat}#`)) this.objections.delete(key)
@@ -992,6 +1037,7 @@ export class TurnEngine {
     state.phase = 'done'
     this.suggestAfter(owner, state, output)
     this.startDueWrite(owner, state)
+    this.delivered.set(owner.chat, state)
     this.consolidateIfDue(owner, state)
     if (run !== undefined) this.offSceneIfDue(owner, state, run)
     return output

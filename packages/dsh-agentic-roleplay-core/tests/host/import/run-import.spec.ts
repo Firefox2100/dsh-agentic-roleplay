@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readCard } from '../../../src/host/import/card.ts'
-import { ImportStateError, build, finish, importPhase, markReady, survey } from '../../../src/host/import/run-import.ts'
+import { ImportStateError, build, endReview, finish, importPhase, isReviewing, markReady, survey } from '../../../src/host/import/run-import.ts'
 import { ImportStore } from '../../../src/host/import/store.ts'
 import { v3Card } from '../../support/cards.ts'
 import { fakeContext } from '../../support/jobs.ts'
@@ -61,6 +61,10 @@ describe('the steps of an import', () => {
     expect(await importPhase(world)).toBe('built')
     const done = await finish(fakeContext(answers), world)
     expect(done).toMatchObject({ ok: true, report: { counts: { characters: 1, places: 1, lore: 1 }, hasPlayableCharacter: false, cover: true, opening: 'imported' } })
+    expect(await importPhase(world)).toBe('done')
+    expect(await isReviewing(world)).toBe(true)
+    await endReview(world)
+    expect(await isReviewing(world)).toBe(false)
     expect(await importPhase(world)).toBe('done')
     expect(JSON.parse(await readFile(join(world, 'characters', 'old-tam', 'character.json'), 'utf8'))).toMatchObject({ role: 'npc', start: { location: 'the-lighthouse' } })
     expect(JSON.parse(await readFile(join(world, 'world.json'), 'utf8'))).toMatchObject({ description: 'A harbour town.', opening_message: 'The fog lifts from the pier.', cover_media_id: 'cover' })

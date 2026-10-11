@@ -64,7 +64,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
     }),
     defineTool({
       name: 'edit_world_relationship',
-      description: 'Create, update or remove one authored character relationship, knowledge edge, faction membership, faction social tie or map exit. Use list_relationships to obtain keys. Requires user approval.',
+      description: 'Create, update or remove one authored character relationship, knowledge edge, faction membership, faction social tie or map exit. To create: {"create": true, "kind", "from", "to", and the fields the kind needs (label for character and social, role for membership, description for exit, toKind for knowledge)}, with no key. To change: {"kind", "key", the fields to change}, the key copied exactly from list_relationships. To remove: {"kind", "key", "remove": true}. Requires user approval.',
       parameters: { change: { type: 'json', required: true, description: 'Relationship change accepted by the world editor.' } },
       output: jsonOutput,
       async execute(args, exec) {
@@ -90,18 +90,23 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
   ]
 }
 
-export function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>): Promise<PreToolDecision> {
-  if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return next()
+/**
+ * Every change to the world files is put to the person, except in the turn that has just imported a card into the world: it reviews and corrects what it made.
+ * @param reviewing - whether the authoring chat is in such a turn.
+ */
+export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false)): Promise<PreToolDecision> {
+  if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return await next()
+  if (await reviewing(exec.agent.session.id)) return await next()
   const args = exec.arguments as Record<string, unknown>
   const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : 'plots'
   const key = typeof args['key'] === 'string' ? args['key'] : ''
   const target = key === '' ? kind : `${kind} “${key}”`
   const action = exec.name.startsWith('create') ? 'Create' : exec.name.startsWith('delete') ? 'Delete' : 'Edit'
-  return Promise.resolve({
+  return {
     kind: 'ask',
     reason: `${action.toLowerCase()} authored world ${target}`,
     displayReason: { en: `${action} ${target} in the world files?`, zh: `${action === 'Create' ? '创建' : action === 'Delete' ? '删除' : '编辑'}世界文件中的${target}？` },
-  })
+  }
 }
 
 export { readAuthoredEntityDocument }

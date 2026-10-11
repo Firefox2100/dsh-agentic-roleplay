@@ -62,13 +62,15 @@ export interface ChildSampling {
   toolChoice?: 'auto' | 'required'
   /** The most tokens one request may produce; used when the task sets none of its own. */
   maxTokens?: number
+  /** Where the request stands when the model is busy: what the player waits for in the turn (the characters, a thing made up on the spot) goes first, the records and the suggestions after. */
+  priority?: 'foreground' | 'background'
 }
 
 export type ChildKind = 'characters' | 'suggestions' | 'authoring' | 'records'
 
 /** What the settings of a chat say about how a kind of helper is asked: prose is free, the keepers of records exact. */
 export function childSampling(settings: { sampling: Record<ChildKind, number> & { tools: 'auto' | 'required'; maxTokens: number } }, kind: ChildKind): ChildSampling {
-  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: settings.sampling.maxTokens }
+  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: settings.sampling.maxTokens, priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
 }
 
 const samplings = new Map<string, ChildSampling>()

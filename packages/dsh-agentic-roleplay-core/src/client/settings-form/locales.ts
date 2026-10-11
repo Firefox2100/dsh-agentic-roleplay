@@ -1,9 +1,9 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
-  | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
+  | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
   | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
-  | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
+  | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
@@ -11,6 +11,8 @@ export type SettingsFormKey =
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
+    samplingMaster: 'Temperature: game master',
+    samplingMasterHelp: 'How freely the game master decides and narrates (0 to 2). Lower keeps its calls and the world consistent.',
     samplingCharacters: 'Temperature: characters',
     samplingCharactersHelp: 'How freely the characters write (0 to 2). Higher is more varied, lower more predictable.',
     samplingSuggestions: 'Temperature: suggested actions',
@@ -37,6 +39,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     backlogRoundsHelp: 'The game master decides when what happened is worth recording as memories, so quiet rounds are not recorded one by one. When this many rounds are waiting, they are recorded anyway at the end of the turn.',
     authoringEnabled: 'The world can grow',
     authoringEnabledHelp: 'The game master may have a new character or place made up, but only when the story genuinely needs one: the story goes somewhere no known place covers, or someone new truly joins. Turn off for a closed world.',
+    authoringThings: 'Things the game master may introduce per turn',
+    authoringThingsHelp: 'Objects the story uses (a barricade, a found note, a tool) that the game master adds itself, in the place, hand or container it names, with no world author asked. 0 turns it off.',
     authoringPerTurn: 'Most new things per turn',
     authoringPerTurnHelp: 'The most characters and places that may be made up in one turn.',
     consolidateAfter: 'Fit new things in after',
@@ -50,7 +54,7 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     promptsLanguage: 'Language of the instructions',
     promptsLanguageHelp: 'Which folder of prompts (en, zh) in the roleplay root the models are instructed from, and so the language the characters, narration and records are written in. Edit the files in the prompts folder to change the instructions; delete one to restore it.',
     reasoningChildren: 'Thinking of child agents',
-    reasoningChildrenHelp: 'How hard the characters, record keeper, world author, image author and suggestion writer think, as a level the model offers, for example off or low. Empty uses your own level. Thinking is most of what a turn costs on a slow model, and these helpers do well without it.',
+    reasoningChildrenHelp: 'How hard the characters, record keeper, world author, image author and suggestion writer think, as a level the model offers, for example off or low. Empty uses the level named by the `childReasoning` setting of the Role Play plugin, or your own level when it names none. Thinking is most of what a turn costs on a slow model, and these helpers do well without it.',
     triggersEnabled: 'Events of the world',
     triggersEnabledHelp: 'The world acts by itself when what its triggers wait for comes true: a deadline passes, someone arrives, a door gives way. Turn off to play without them.',
     triggersMaxFires: 'Most events at once',
@@ -95,6 +99,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     embeddingOptionsHelp: 'What the selected embedding provider lets this chat set for each request. Empty uses the provider\'s own setting.',
   },
   zh: {
+    samplingMaster: '温度：主持人',
+    samplingMasterHelp: '主持人做决定和叙述的自由度（0 到 2）。越低，它的调用和世界越一致。',
     samplingCharacters: '温度：角色',
     samplingCharactersHelp: '角色写作的自由度（0 到 2）。越高越多变，越低越稳定。',
     samplingSuggestions: '温度：行动建议',
@@ -121,6 +127,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     backlogRoundsHelp: '什么时候值得把发生的事记成记忆，由主持人决定，所以平淡的回合不会逐个记录。积压到这么多回合时，会在本轮结束时强制记录。',
     authoringEnabled: '世界可以扩展',
     authoringEnabledHelp: '只有当故事确实需要时，主持人才可以新建角色或地点：故事走到了已知地点都覆盖不到的地方，或确实有新的人加入。封闭的世界请关闭。',
+    authoringThings: '主持人每轮可引入的物品数',
+    authoringThingsHelp: '故事用到的物件（路障、捡到的字条、工具）由主持人自己加入，放在它指定的地点、手中或容器里，不必请世界作者。0 表示关闭。',
     authoringPerTurn: '每轮最多新建数量',
     authoringPerTurnHelp: '一轮中最多可以新建的角色和地点数量。',
     consolidateAfter: '累计多少后整合',
@@ -134,7 +142,7 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     promptsLanguage: '指令语言',
     promptsLanguageHelp: '模型使用角色扮演根目录中 prompts 文件夹下哪种语言（en、zh）的指令，也决定了角色、旁白和记录所用的语言。修改 prompts 文件夹中的文件即可改变指令；删除某个文件即可恢复原样。',
     reasoningChildren: '子智能体的思考强度',
-    reasoningChildrenHelp: '角色、记录员、世界作者、图像作者和建议作者的思考强度，须是模型提供的级别，例如 off 或 low。留空则与你自己选择的一致。在较慢的模型上，思考占了每轮耗时的大部分，而这些助手即使不思考也做得不错。',
+    reasoningChildrenHelp: '角色、记录员、世界作者、图像作者和建议作者的思考强度，须是模型提供的级别，例如 off 或 low。留空则使用 Role Play 插件设置 `childReasoning` 所指定的级别，未指定时与你自己选择的一致。在较慢的模型上，思考占了每轮耗时的大部分，而这些助手即使不思考也做得不错。',
     triggersEnabled: '世界事件',
     triggersEnabledHelp: '当触发器等待的条件成立时（期限已过、有人到来、门被撞开），世界会自行行动。关闭后将不再触发。',
     triggersMaxFires: '同时触发的事件上限',

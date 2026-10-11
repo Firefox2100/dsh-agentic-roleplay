@@ -28,6 +28,7 @@ let startError: Error | undefined
 let charactersError: Error | undefined
 let deleted: string | undefined
 let deleteError: Error | undefined
+let said: string[]
 let opened: string | undefined
 let openError: Error | undefined
 let settingsError: Error | undefined
@@ -55,6 +56,7 @@ beforeEach(async () => {
   deleted = undefined
   deleteError = undefined
   opened = undefined
+  said = []
   openError = undefined
   settingsError = undefined
   notesError = undefined
@@ -142,6 +144,7 @@ beforeEach(async () => {
         opened = id
         return Promise.resolve({ id, chatSessionId: `session-${id}` })
       },
+      send: (id, text) => { said.push(`${id}: ${text}`); return Promise.resolve() },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
         return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 }
@@ -474,6 +477,20 @@ describe('roleplay API', () => {
       expect(opened.status).toBe(409)
       expect(await opened.json()).toEqual({ message: 'the session is put away' })
       expect((await fetch(`${origin}/sessions/archive?id=abc`)).status).toBe(405)
+    })
+  })
+
+  describe('saying something in a session', () => {
+    const say = (body: unknown): Promise<Response> => fetch(`${origin}/sessions/message`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('opens the chat, queues the words as the player\'s and answers 202; empty or missing text is refused', async () => {
+      const response = await say({ id: 'abc', text: 'I wait.' })
+      expect(response.status).toBe(202)
+      expect(opened).toBe('abc')
+      expect(said).toEqual(['abc: I wait.'])
+      expect((await say({ id: 'abc', text: ' ' })).status).toBe(400)
+      expect((await say({ text: 'x' })).status).toBe(400)
+      expect((await fetch(`${origin}/sessions/message`)).status).toBe(405)
     })
   })
 

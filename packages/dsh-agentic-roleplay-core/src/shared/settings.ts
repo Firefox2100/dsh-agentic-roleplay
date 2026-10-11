@@ -38,6 +38,8 @@ export interface ChatSettings {
     enabled: boolean
     /** The most new characters and places that may be made up in one turn. */
     perTurn: number
+    /** The most things (a barricade, a found note, a tool) the game master may introduce itself in one turn, with no author asked. 0 turns it off. */
+    thingsPerTurn: number
     /** How many made-up characters and places may wait to be fitted into the world (connected to the rest, given relationships) before that is done at the end of the turn. */
     consolidateAfter: number
   }
@@ -56,6 +58,8 @@ export interface ChatSettings {
     perTurn: number
   }
   sampling: {
+    /** The temperature of the game master's own requests: it decides what happens and writes the narration. */
+    master: number
     /** The temperature of the characters' requests: they write prose, so it is the highest. */
     characters: number
     /** The temperature of the helper that writes the suggested actions for the player. */
@@ -154,10 +158,10 @@ export const SETTINGS_SPEC = {
     shortTermTokens: integer(200, 20_000, 1500),
     longTermTokens: integer(200, 40_000, 2500),
   },
-  authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), consolidateAfter: integer(1, 20, 3) },
+  authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), thingsPerTurn: integer(0, 20, 4), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
   offstage: { perTurn: integer(0, 5, 2) },
-  sampling: { characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.8), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000) },
+  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.8), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2) },

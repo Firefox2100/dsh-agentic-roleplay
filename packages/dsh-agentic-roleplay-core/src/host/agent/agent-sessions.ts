@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { chatSessionId } from '../../shared/chat.ts'
@@ -102,6 +103,11 @@ export class AgentSessions {
       await storeOpening(persistence, { id: wanted, cwd: project.path, agentPreset: AGENT_PRESET }, opening)
     }
     return await ensureAgentChat(services, { projectPath: project.path, projectTitle: PROJECT_TITLE, sessionId: wanted, agentPreset: AGENT_PRESET, title }, project)
+  }
+
+  /** Says something in the chat of a session as the player would; it is queued behind what the chat is doing. The chat must exist (`ensure`). */
+  async send(sessionId: string, text: string): Promise<void> {
+    await this.services().controller.prompt({ requestId: randomUUID(), sessionId: chatSessionId(sessionId), mode: 'queue', content: [{ type: 'text', text }] }, new AbortController().signal)
   }
 
   /** Give the chat of a session a new title. A chat that was never created has none to change. */

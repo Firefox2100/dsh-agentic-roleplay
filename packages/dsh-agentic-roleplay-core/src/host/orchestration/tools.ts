@@ -16,6 +16,7 @@ export const RESOLVE_TOOL = 'resolve_round'
 export const NARRATE_TOOL = 'narrate'
 export const RECORD_TOOL = 'record_memory'
 export const EXPAND_TOOL = 'expand_world'
+export const INTRODUCE_TOOL = 'introduce_thing'
 export const TIME_TOOL = 'advance_time'
 export const PREVIEW_TOOL = 'preview_scene'
 export const RULING_TOOL = 'ooc_ruling'
@@ -138,6 +139,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const { agent, owner } = ownerOf(exec.agent)
+      await deps.engine.settle(owner.chat, owner.turn)
       const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) })
       return record(await deps.engine.activate(owner, { situation: args.situation, characters: args.characters }, run, exec.signal))
     },
@@ -216,6 +218,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const { agent, owner } = ownerOf(exec.agent)
+      await deps.engine.settle(owner.chat, owner.turn)
       const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) })
       const outcomes: Outcome[] = args.outcomes.map(outcome => ({
         character: outcome.character,
@@ -263,6 +266,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const { agent, owner } = ownerOf(exec.agent)
+      await deps.engine.settle(owner.chat, owner.turn)
       const segments: RawSegment[] = (args.segments ?? []).map(segment => ({
         type: segment.type as RawSegment['type'],
         text: segment.text,
@@ -323,7 +327,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
 
   const expand = defineTool({
     name: EXPAND_TOOL,
-    description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are), object (a thing that matters has actually been handed over, found or drawn and does not exist yet; or a place on the body that the world has no slot for), trigger (the story set up a moment that is bound to come, such as a deadline given, a promised arrival or a trap laid, that can be stated as a condition: a time, someone in a place, a thing held, a variable, an event), variable (a quantity, state or choice the story established matters from here on and nothing tracked fits: a debt, a health, a reputation). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, loot, props for decoration, or anything an existing character, place or thing can serve; use those. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
+    description: 'Have a new character or place made up and fitted into the world, only when the story genuinely needs it. Valid reasons: scene_change (the story has actually gone somewhere that no known place covers, even as part of one), arrival (someone new has actually arrived or been brought into the scene), introduction (a specific person who has not appeared is needed by what is happening now and the story has established who they are), object (a thing so important or so complex that it needs inventing, such as an artifact with properties or a vehicle; or a place on the body that the world has no slot for; ordinary things the story uses are yours to bring in with introduce_thing), trigger (the story set up a moment that is bound to come, such as a deadline given, a promised arrival or a trap laid, that can be stated as a condition: a time, someone in a place, a thing held, a variable, an event), variable (a quantity, state or choice the story established matters from here on and nothing tracked fits: a debt, a health, a reputation). Not valid: colour, atmosphere, filling a quiet scene, something mentioned in passing, a passer-by or a crowd, scenery, or anything an existing character, place or thing can serve; use those. Ordinary things go through introduce_thing. A world author decides, and may decline and say what exists that can serve. A few things at most per turn.',
     parameters: {
       need: { type: 'string', required: true, enum: AUTHORING_NEEDS, description: 'Why: scene_change, arrival, introduction, object, variable or trigger.' },
       what: { type: 'string', required: true, description: 'What is needed, from what the story has established: who or where (a name when it was given), their role, what happened to make it needed now, and where it is in relation to what exists.' },
@@ -332,7 +336,41 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
+      await deps.engine.settle(owner.chat, owner.turn)
       return record(await deps.engine.expand(owner, { need: args.need, what: args.what }, exec.signal))
+    },
+  })
+
+  const introduce = defineTool({
+    name: INTRODUCE_TOOL,
+    description: 'Bring a thing into the story as a table\'s game master would: something the story is about to use or that the player can find, take or handle (a barricade, a tool, a note, a bottle, a key) and that does not exist yet. It is made at once, where you say: at a place (at, a place key; the player\'s place when you say nothing), in someone\'s hands (held_by, a character key) or inside a thing (inside, an item key). Afterwards it is a thing like any other: use its key in item_changes. Not for scenery nobody will touch (that is just part of the place), not for something important and complex enough to need a world author (use expand_world, reason object), and never for what exists already (list_items). A few things at most per turn.',
+    parameters: {
+      name: { type: 'string', required: true, description: 'What it is called, as the story names it.' },
+      description: { type: 'string', description: 'One or two sentences: what it looks like, what it is made of, what state it is in.' },
+      quantity: { type: 'integer', description: 'How many, when it is a number of the same thing (default 1).' },
+      quality: { type: 'string', description: 'Its condition in a word or two (rusty, new), when that matters.' },
+      notable: { type: 'boolean', description: 'Whether the characters present would notice it at once.' },
+      hidden: { type: 'boolean', description: 'Whether it starts out of sight (until a round reveals it).' },
+      at: { type: 'string', description: 'The key of the place it lies in.' },
+      held_by: { type: 'string', description: 'The key of the character who holds it.' },
+      inside: { type: 'string', description: 'The key of the container it is in.' },
+    },
+    output: { schema: { type: 'json' }, render: (_args, value) => { const made = value as unknown as { key: string; name: string; where: string }; return [{ type: 'text', text: `Introduced ${made.name} [${made.key}], ${made.where}. Use the key in item_changes; nobody has taken it up yet.` }] } },
+    isConcurrencySafe: () => false,
+    async execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      await deps.engine.settle(owner.chat, owner.turn)
+      return record(deps.engine.introduce(owner, {
+        name: args.name,
+        ...(args.description === undefined ? {} : { description: args.description }),
+        ...(args.quantity === undefined ? {} : { quantity: args.quantity }),
+        ...(args.quality === undefined ? {} : { quality: args.quality }),
+        ...(args.notable === undefined ? {} : { notable: args.notable }),
+        ...(args.hidden === undefined ? {} : { hidden: args.hidden }),
+        ...(args.at === undefined ? {} : { at: args.at }),
+        ...(args.held_by === undefined ? {} : { heldBy: args.held_by }),
+        ...(args.inside === undefined ? {} : { inside: args.inside }),
+      }))
     },
   })
 
@@ -347,15 +385,16 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
     output: { schema: { type: 'json' }, render: (_args, value) => { const done = value as unknown as { from: number; to: number; zone: string; moved: { name: string; to: string; activity: string }[]; world: TriggerReport['fired'] }; return [{ type: 'text', text: `${describeDuration(done.to - done.from)} pass. It is now ${describeTime({ now: done.to, zone: done.zone })}.${done.moved.length === 0 ? '' : ` ${done.moved.map(routineLine).join(' ')}`} Nothing else changed: characters with you are still doing what they were, where they were; run a round for them if the time that passed changes that.${done.world.length === 0 ? '' : `\n${renderWorld(done.world).join('\n')}`}` }] } },
     isConcurrencySafe: () => false,
-    execute(args, exec) {
+    async execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
+      await deps.engine.settle(owner.chat, owner.turn)
       const given = [args.by_minutes !== undefined, args.until_time !== undefined].filter(Boolean).length
       if (given !== 1) throw new Error('give exactly one of by_minutes and until_time')
       if (args.days_later !== undefined && args.until_time === undefined) throw new Error('days_later goes with until_time')
       const request: SkipRequest = args.by_minutes !== undefined
         ? { byMinutes: args.by_minutes, reason: args.reason }
         : { untilTime: args.until_time ?? '', ...(args.days_later === undefined ? {} : { daysLater: args.days_later }), reason: args.reason }
-      return Promise.resolve(record(deps.engine.advanceTime(owner, request)))
+      return record(deps.engine.advanceTime(owner, request))
     },
   })
 
@@ -413,5 +452,5 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [judge, preview, ruling, activate, resolve, skip, remember, expand, makePlot, plot, narrate]
+  return [judge, preview, ruling, activate, resolve, skip, remember, expand, introduce, makePlot, plot, narrate]
 }

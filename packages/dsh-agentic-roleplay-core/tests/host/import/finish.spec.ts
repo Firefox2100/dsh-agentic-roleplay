@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readCard } from '../../../src/host/import/card.ts'
 import { emptyExtracted } from '../../../src/host/import/extract.ts'
-import { breakParentCircles, finishImport, openingMessage, replacePlayer } from '../../../src/host/import/finish.ts'
+import { breakParentCircles, finishImport, openingMessage, replacePlayer, shareThePlaces } from '../../../src/host/import/finish.ts'
 import type { SourceItem } from '../../../src/host/import/items.ts'
 import { defaultChoices } from '../../../src/host/import/store.ts'
 import type { Classified, Roster } from '../../../src/host/import/survey.ts'
@@ -52,6 +52,13 @@ describe('the player in the documents', () => {
 })
 
 describe('places that contain each other', () => {
+  it('lets every character know the places and the ways between them, unless its file says what it knows', () => {
+    const characters: Record<string, unknown>[] = [{ id: 'a' }, { id: 'b', knowledge: { locations: ['x'] } }]
+    shareThePlaces(characters, [{ id: 'x', exits: [{ to: 'y' }, { to: 'z', one_way: true }] }, { id: 'y' }, { id: 'z' }])
+    expect(characters[0]!['knowledge']).toEqual({ locations: ['x', 'y', 'z'], exits: [{ from: 'x', to: 'y' }, { from: 'y', to: 'x' }, { from: 'x', to: 'z' }] })
+    expect(characters[1]!['knowledge']).toEqual({ locations: ['x'] })
+  })
+
   it('are untangled by taking the parent off the place that closes the circle', () => {
     const places = [{ id: 'a', name: 'A', parent: 'b' }, { id: 'b', name: 'B', parent: 'c' }, { id: 'c', name: 'C', parent: 'a' }, { id: 'd', name: 'D', parent: 'a' }]
     const notes = breakParentCircles(places)

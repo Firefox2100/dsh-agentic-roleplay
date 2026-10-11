@@ -559,6 +559,19 @@ describe('writing the records', () => {
     expect(store.queue).toHaveLength(1)
   })
 
+  it('retries a failed write only for a later turn: a call in the turn just delivered waits for a run in flight and starts nothing', async () => {
+    let calls = 0
+    boundaries.committer = { commit: () => { calls += 1; return Promise.reject(new Error('down')) } }
+    await play()
+    engine.record(owner)
+    await engine.narrate(owner, hello)
+    await engine.flush(owner)
+    await engine.settle(owner.chat, owner.turn)
+    expect(calls).toBe(1)
+    await engine.settle(owner.chat, owner.turn + 1)
+    expect(calls).toBe(2)
+  })
+
   it('is saved by the second try when the first one failed', async () => {
     let calls = 0
     boundaries.committer = { commit: () => { calls += 1; return calls === 1 ? Promise.reject(new Error('flaky')) : Promise.resolve({ writes: 1, notes: '' }) } }

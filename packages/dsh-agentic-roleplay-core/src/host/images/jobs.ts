@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { ImageGenerationService } from 'dsh-ai-core'
+import type { ImageGenerationService, RequestPriority } from 'dsh-ai-core'
 import { sessionDatabase, sessionFolder, type RoleplayState } from 'dsh-roleplay-state'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import type { TurnOutput } from '../../shared/narration.ts'
@@ -13,6 +13,11 @@ import type { Timelines } from '../timeline/service.ts'
 import { childSampling } from '../agents/child.ts'
 import { runImageAuthor } from './author-agent.ts'
 import type { ImageAuthorJob, ImageAuthorResult } from './author-agent.ts'
+
+/** The same service, whose requests stand where the job's do unless a call says otherwise. */
+function withPriority(service: ImageGenerationService, priority: RequestPriority): ImageGenerationService {
+  return Object.create(service, { generate: { value: (prompt: string, options?: Parameters<ImageGenerationService['generate']>[1]) => service.generate(prompt, { priority, ...options }) } }) as ImageGenerationService
+}
 
 interface ActiveJob {
   node: string
@@ -46,7 +51,7 @@ export class ImageJobs {
     const timelineNode = this.assertNode(id, node)
     const settings = this.deps.settings(id)
     if (settings.images.mode === 'off') throw new Error('scene illustrations are disabled for this chat')
-    this.start(id, node, timelineNode.turn, timelineNode.output!, settings)
+    this.start(id, node, timelineNode.turn, timelineNode.output!, settings, 'foreground')
     return await this.readStatus(id, node)
   }
 
@@ -55,7 +60,7 @@ export class ImageJobs {
     if (id === undefined) return
     const settings = this.deps.settings(id)
     if (settings.images.mode !== 'every-turn') return
-    try { this.start(id, node, this.assertNode(id, node).turn, output, settings) } catch (error) {
+    try { this.start(id, node, this.assertNode(id, node).turn, output, settings, 'background') } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.failures.set(this.key(id, node), message)
       this.deps.problem(`image for ${id}/${node} was not started: ${message}`)
@@ -69,7 +74,8 @@ export class ImageJobs {
     this.active.delete(id)
   }
 
-  private start(id: string, node: string, turn: number, output: TurnOutput, settings: ChatSettings): void {
+  /** @param priority - `foreground` when the player asked for the picture, `background` when it is made on its own after a turn and may wait behind the next one. */
+  private start(id: string, node: string, turn: number, output: TurnOutput, settings: ChatSettings, priority: RequestPriority): void {
     const current = this.active.get(id)
     if (current?.node === node) return
     current?.controller.abort()
@@ -81,7 +87,7 @@ export class ImageJobs {
     this.failures.delete(this.key(id, node))
     const request = output.segments.map(segment => segment.type === 'utterance' ? `${segment.name}: “${segment.text}”` : segment.text).join('\n')
     const promise = (this.deps.author ?? runImageAuthor)({
-      parent, signal: controller.signal, service, story: this.deps.state.openSession(this.deps.sessionsDir(), id),
+      parent, signal: controller.signal, service: withPriority(service, priority), story: this.deps.state.openSession(this.deps.sessionsDir(), id),
       root: sessionFolder(this.deps.sessionsDir(), id), turn, timelineNode: node, request, purpose: 'transient',
       language: settings.prompts.language, sampling: childSampling(settings, 'records'), referenceMode: settings.images.references, ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }),
     }).then(() => undefined).catch((error: unknown) => {

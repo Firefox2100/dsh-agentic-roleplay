@@ -60,6 +60,8 @@ export interface ApiDeps {
     list(): SessionsPayload
     start(request: StartSessionRequest): Promise<StartedSession>
     open(id: string): Promise<OpenedSession>
+    /** Says something in a session's chat as the player would; scripts use it to play. */
+    send(id: string, text: string): Promise<void>
     delete(id: string): Promise<void>
     archive(id: string): Promise<void>
     restore(id: string): Promise<void>
@@ -241,6 +243,22 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidStartError) return sendError(res, 422, error.message)
           if (error instanceof InvalidWorldError) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/message': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { id?: unknown; text?: unknown }
+        if (typeof body.id !== 'string' || typeof body.text !== 'string' || body.text.trim() === '') return sendError(res, 400, 'id and text must be text, and the text must not be empty')
+        try {
+          await sessions.open(body.id)
+          await sessions.send(body.id, body.text)
+          sendJson(res, 202, { sent: true })
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof SessionArchivedError) return sendError(res, 409, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
           throw error
         }

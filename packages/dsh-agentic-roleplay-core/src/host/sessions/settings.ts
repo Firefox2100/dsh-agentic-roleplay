@@ -6,6 +6,14 @@ export const SETTINGS_FILE = 'settings.json'
 
 const known = new Map<string, { modified: number; value: ChatSettings }>()
 
+let childReasoning = ''
+
+/** The thinking level helpers get when a chat's own setting is empty (the profile's choice); returns the function that takes it back. */
+export function useChildReasoning(level: string): () => void {
+  childReasoning = level
+  return () => { childReasoning = '' }
+}
+
 /** The settings are not acceptable; `problems` say what to fix. */
 export class InvalidSettingsError extends Error {
   constructor(readonly problems: readonly string[]) {
@@ -54,6 +62,11 @@ export function writeSettings(folder: string, value: unknown): ChatSettings {
  * (the defaults when there were none) stay in force, so a typo cannot stop a story in the middle.
  */
 export function liveSettings(folder: string, problem: (message: string) => void = () => undefined): ChatSettings {
+  const value = loadedSettings(folder, problem)
+  return value.reasoning.children === '' && childReasoning !== '' ? { ...value, reasoning: { ...value.reasoning, children: childReasoning } } : value
+}
+
+function loadedSettings(folder: string, problem: (message: string) => void): ChatSettings {
   let modified = -1
   try { modified = statSync(join(folder, SETTINGS_FILE)).mtimeMs } catch { /* no file yet: the defaults */ }
   const last = known.get(folder)

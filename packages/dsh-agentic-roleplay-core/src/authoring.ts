@@ -5,6 +5,7 @@ import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
 import { authoredWorldWriteTools, authoringApproval } from './host/authoring/write-tools.ts'
 import { importHooks, importTools } from './host/import/tools.ts'
+import { isReviewing } from './host/import/run-import.ts'
 import type {} from './host/import/service.ts'
 import type {} from './host/prompts/library.ts'
 import type {} from './host/worlds/authoring-language.ts'
@@ -27,7 +28,12 @@ export function apply(ctx: Context): void {
   for (const tool of authoredWorldWriteTools(reader)) ctx.tools.register(tool)
   for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   importHooks(ctx, ctx.roleplayWorlds, prompting)
-  ctx.on('tools/pre-execute', authoringApproval)
+  const reviewing = async (chat: string): Promise<boolean> => {
+    const id = authoredWorldOf(chat)
+    const record = id === undefined ? undefined : await ctx.roleplayWorlds.find(id)
+    return record !== undefined && await isReviewing(record.directory)
+  }
+  ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing))
   for (const [name, order, id] of [
     ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],
     ['WORLD_AUTHORING_PROCEDURE', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'world/procedure'],

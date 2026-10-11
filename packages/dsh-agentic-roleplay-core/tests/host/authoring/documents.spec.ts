@@ -28,6 +28,14 @@ describe('authored entity documents', () => {
     await expect(readFile(join(directory, 'items', 'key', 'item.json'))).rejects.toMatchObject({ code: 'ENOENT' })
   })
 
+  it('refuses a key that would not make a safe folder or image path, and accepts one in any script', async () => {
+    for (const key of ['[player]', 'a b', '../x', 'a/b', '.hidden', '']) {
+      await expect(createAuthoredEntity(world(), 'location', key, { name: 'X' })).rejects.toThrow('key must be letters')
+    }
+    await createAuthoredEntity(world(), 'location', '值班室', { name: '值班室' })
+    expect(await readAuthoredEntityDocument(world(), 'location', '值班室')).toMatchObject({ id: '值班室' })
+  })
+
   it('deletes by moving the owning folder into hidden recoverable trash', async () => {
     const destination = await deleteAuthoredEntity(world(), 'character', 'clara')
     expect(destination).toContain(join(directory, '.trash', 'characters'))

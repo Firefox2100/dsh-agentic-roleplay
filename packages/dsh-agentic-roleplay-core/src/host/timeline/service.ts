@@ -66,12 +66,14 @@ export class Timelines {
     return viewOf(this.read(id))
   }
 
-  /** The player has said something and a turn begins: the turn is added to the timeline after the head, once what the earlier one wrote has settled and its state is kept. */
+  /**
+   * The player has said something and a turn begins: the turn is added to the timeline after the head, and the state the earlier one left is kept at once,
+   * with the records still waiting for the keeper in it (they are in the database, so a restored state carries them).
+   */
   begin(chat: string, turn: number, player: string): Promise<TimelineNode> {
     return this.serial(chat, async () => {
       this.deps.cancel?.(chat)
       const id = this.idOf(chat)
-      await this.deps.engine.quiesce(chat)
       const timeline = this.read(id)
       this.keep(id, timeline, timeline.head)
       const node: TimelineNode = { id: `n${timeline.next}`, parent: timeline.head, turn, userSeq: UNKNOWN_SEQ, player, createdAt: new Date().toISOString() }
@@ -92,11 +94,13 @@ export class Timelines {
     if (node === undefined) return undefined
     node.output = output
     writeTimeline(this.folder(id), timeline)
-    void this.serial(chat, async () => {
-      await this.deps.engine.quiesce(chat)
-      const current = this.read(id)
-      if (current.head === node.id) this.keep(id, current, node.id)
-    }).catch(() => undefined)
+    void this.deps.engine.quiesce(chat)
+      .then(() => this.serial(chat, () => {
+        const current = this.read(id)
+        if (current.head === node.id) this.keep(id, current, node.id)
+        return Promise.resolve()
+      }))
+      .catch(() => undefined)
     return node.id
   }
 

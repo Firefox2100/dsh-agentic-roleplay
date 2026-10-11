@@ -95,7 +95,7 @@ export function TurnsDock({ useChat, useSession, timeline, move, fill, branch, t
         <option value="">{t('branch')}</option>
         {[...view.path].reverse().map(turn => <option key={turn.id} value={turn.endSeq ?? ''} disabled={turn.endSeq === undefined}>{`${t('after')} ${label(turn.player)}`}</option>)}
       </select>
-      {view.forward.length > 0 && <button type="button" className={css.button} disabled={off || !view.forward.at(-1)!.restorable} title={t('redoHint')} onClick={() => { act(view.forward.at(-1)!.id) }}>{t('redo')}</button>}
+      {view.forward.length > 0 && <button type="button" className={css.button} disabled={off || !view.forward.at(-1)!.restorable} title={t('redoHint')} onClick={() => { act(view.forward.at(-1)!.id, () => { fill('', false) }) }}>{t('redo')}</button>}
       {problem !== undefined && <span className={css.error}>{problem}</span>}
     </div>
   )

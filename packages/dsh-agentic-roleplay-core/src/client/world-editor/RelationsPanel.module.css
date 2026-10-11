@@ -12,7 +12,7 @@
 .edgeTitle { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .edgeKind { font-size: 11px; color: var(--dsw-alias-label-tertiary); }
 .empty { padding: 20px; color: var(--dsw-alias-label-tertiary); }
-.inspector { min-width: 0; overflow-y: auto; padding: 24px 24px 120px; }
+.inspector { min-width: 0; overflow-y: auto; padding: 24px 24px 240px; }
 .head h2 { margin: 0 0 8px; font-size: 17px; }
 .entities { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; color: var(--dsw-alias-label-secondary); }
 .notice { margin: 24px 0; color: var(--dsw-alias-label-secondary); }

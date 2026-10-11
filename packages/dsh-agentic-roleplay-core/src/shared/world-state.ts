@@ -411,6 +411,7 @@ export function parseRelationEdit(value: unknown): RelationChange {
   if (!['character', 'knowledge', 'membership', 'social', 'exit'].includes(String(kind))) problems.push('kind is not a relation kind')
   const creating = input['create'] === true
   if (!creating && (typeof key !== 'string' || key.trim() === '' || key.length > 500)) problems.push('key is needed')
+  if (!creating && typeof key === 'string' && key.trim() !== '' && typeof input['from'] === 'string' && typeof input['to'] === 'string' && input['remove'] !== true) problems.push('to make a new relationship send create: true with from and to and no key; a key names one that exists, exactly as list_relationships shows it')
   if ('create' in input && typeof input['create'] !== 'boolean') problems.push('create must be true or false')
   const allowedByKind: Record<string, string[]> = {
     character: ['kind', 'key', 'create', 'from', 'to', 'remove', 'label', 'summary', 'familiarity', 'trust', 'affinity', 'tension'],

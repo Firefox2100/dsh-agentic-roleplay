@@ -73,8 +73,6 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const owner = ownerOf(payload.agent, payload.turn)
     const store = owner === undefined ? undefined : stores(owner.chat)
     if (owner === undefined || store === undefined) return decision
-    // What the last turn left to be written is written before anything is recalled; the player was shown the output long ago.
-    await engine.settle(owner.chat)
     const text = payload.messages
       .filter(message => message.source.kind === 'user')
       .flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])))

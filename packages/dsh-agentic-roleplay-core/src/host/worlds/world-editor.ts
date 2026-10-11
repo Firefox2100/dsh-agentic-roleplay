@@ -343,7 +343,7 @@ const isNewRelation = (edit: RelationChange): edit is NewRelationEdit => 'create
 export async function editWorldRelation(world: EditableWorld, edit: RelationChange): Promise<WorldState> {
   if (isNewRelation(edit)) return await createWorldRelation(world, edit)
   const parts = relationParts(edit.key)
-  if (parts[0] !== edit.kind) throw new InvalidEditProblems(['the relation key does not match its kind'])
+  if (parts[0] !== edit.kind) throw new InvalidEditProblems([`the relation key "${edit.key}" is not a ${edit.kind} key: copy it exactly from list_relationships ("${edit.kind}:..."), or to make a new one send create: true with from and to and no key`])
   if (edit.kind === 'character' || edit.kind === 'knowledge') {
     const character = parts[1]
     if (character === undefined) throw new InvalidEditProblems(['the relation key is invalid'])

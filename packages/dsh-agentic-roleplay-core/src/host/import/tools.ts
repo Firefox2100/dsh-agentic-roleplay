@@ -10,7 +10,7 @@ import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { IMPORT_FOLDER } from './store.ts'
 import type { ImportContext, RunJob, TextOf } from './run.ts'
-import { build, finish, importPhase, survey, type Phase } from './run-import.ts'
+import { build, endReview, finish, importPhase, survey, type Phase } from './run-import.ts'
 import type { ImportSettings } from './service.ts'
 
 export const SURVEY_TOOL = 'import_survey'
@@ -131,6 +131,14 @@ export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Promp
     const phase = record === undefined ? undefined : await importPhase(record.directory)
     if (phase !== undefined && phase !== 'done') { imports.set(chat, payload.turn); objections.delete(chat) }
     return { ...decision, messages: [...decision.messages, createUserMessage({ content: [{ type: 'text', text: importNotice(phase, textFor(worldId)) }], source: { kind: 'roleplay' } })] }
+  })
+
+  // The turn that imported the card may correct the world; when it is over the world is an ordinary one.
+  ctx.on('session/event', async (session, event) => {
+    if (event.type !== 'turn/end' || session.header.origin === 'subagent') return
+    const worldId = authoredWorldOf(session.id)
+    const record = worldId === undefined ? undefined : await worlds.find(worldId)
+    if (record !== undefined) await endReview(record.directory)
   })
 
   ctx.on('agent/turn-stopping', async ({ agent, turn }) => {

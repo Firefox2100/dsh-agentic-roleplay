@@ -19,4 +19,10 @@ describe('world authoring approval gate', () => {
     await expect(authoringApproval(exec('delete_world_element', 'ordinary-chat'), next)).resolves.toEqual({ kind: 'allow' })
     expect(next).toHaveBeenCalledTimes(2)
   })
+
+  it('lets the turn that has just imported a card correct the world without asking', async () => {
+    const next = vi.fn(async () => ({ kind: 'allow' as const }))
+    await expect(authoringApproval(exec('replace_world_element', undefined, { kind: 'location', key: 'dock' }), next, () => Promise.resolve(true))).resolves.toEqual({ kind: 'allow' })
+    expect(next).toHaveBeenCalledTimes(1)
+  })
 })

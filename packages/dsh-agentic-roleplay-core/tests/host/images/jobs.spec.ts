@@ -61,6 +61,26 @@ describe('scene image jobs', () => {
     expect(signal.aborted).toBe(true)
   })
 
+  it('asks the provider for what the player requested ahead of what a turn started on its own', async () => {
+    const manual = await fixture()
+    await manual.jobs.generate(manual.id, 'n1')
+    const automatic = await fixture('every-turn')
+    automatic.jobs.afterDelivery(`session-${automatic.id}`, 'n1', automatic.output)
+    const seen: unknown[] = []
+    const record = (author: typeof manual.author) => {
+      const service = author.mock.calls[0]![0].service as unknown as { generate(prompt: string, options?: object): unknown }
+      return service
+    }
+    for (const fixtureOf of [manual, automatic]) {
+      const service = record(fixtureOf.author)
+      Object.getPrototypeOf(service).generate = (_prompt: string, options: object) => { seen.push(options); return Promise.resolve({}) }
+    }
+    expect(seen).toEqual([])
+    await (record(manual.author) as { generate(prompt: string): Promise<unknown> }).generate('p')
+    await (record(automatic.author) as { generate(prompt: string): Promise<unknown> }).generate('p')
+    expect(seen).toEqual([{ priority: 'foreground' }, { priority: 'background' }])
+  })
+
   it('refuses manual generation when illustrations are off', async () => {
     const { id, jobs } = await fixture('off')
     await expect(jobs.generate(id, 'n1')).rejects.toThrow(/disabled/)

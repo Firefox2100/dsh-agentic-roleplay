@@ -48,7 +48,7 @@
   box-sizing: border-box;
   max-width: 760px;
   /* the composer of the chat floats over the bottom of the tab */
-  padding: 24px 24px 120px;
+  padding: 24px 24px 240px;
 }
 
 .head {

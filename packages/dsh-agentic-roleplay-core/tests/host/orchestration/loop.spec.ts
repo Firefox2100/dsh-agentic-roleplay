@@ -107,6 +107,8 @@ interface Script {
    * character, makes one that is not usable at first (no place) and fixes it when refused, declines, says it made
    * something it did not, or makes two at once.
    */
+  /** The game master introduces things itself: how many it brings in before delivering. */
+  introduce?: number
   expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops' | 'repeats'; need?: string }
   /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
   things?: 'take' | 'conflict' | 'unlock'
@@ -305,7 +307,7 @@ function answerWithoutSuggestions(script: Script) {
     const delivered = timesCalled(request, 'narrate')
     if (script.player === 'walks' && !thisTurn(request).includes('input is refused')) {
       if (resolved === 0) return call('m-walk', 'resolve_round', { outcomes: [{ character: 'arthur', result: 'succeeded', summary: 'Arthur walks out to the street', moves_to: { location: 'street', position: 'by the lamp' } }] })
-      if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'Arthur left the bar.' })
+    if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'Arthur left the bar.' })
       if (delivered === 0) return call('n-walk', 'narrate', { segments: [{ type: 'narration', text: 'You step out onto Main Street.' }] })
       return text('')
     }
@@ -338,6 +340,7 @@ function answerWithoutSuggestions(script: Script) {
     }
     if (script.time === 'skip' && timesCalled(request, 'advance_time') === 0) return call('m-time', 'advance_time', { until_time: '07:00', reason: 'they sleep' })
     if (script.expand !== undefined && timesCalled(request, 'expand_world') === 0) return call('m-exp', 'expand_world', { need: script.expand.need ?? 'arrival', what: script.expand.author === 'object' ? 'A folded note was just handed to Arthur by a stranger at the door.' : 'A ferry pilot named Mira Voss has just come up the lane to the bar with news.' })
+    if (script.introduce !== undefined && timesCalled(request, 'introduce_thing') < script.introduce) return call(`m-intro-${timesCalled(request, 'introduce_thing')}`, 'introduce_thing', { name: `Plank barricade ${timesCalled(request, 'introduce_thing') + 1}`, description: 'Heavy planks, nailed across the door.' })
     if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'The key changed hands.' })
     const delivery = script.delivery ?? 'good'
     if (thisTurn(request).includes('has been delivered to the player')) return text('')
@@ -482,6 +485,20 @@ describe('a turn with the real agent loop', () => {
       expect(masterSaw(adapter)).toContain('now in the cast')
     })
 
+    it('lets the game master introduce a thing itself, where the player is, with no author asked, and not more than the chat allows', async () => {
+      const { session, id } = await addSession('Vault', true)
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { authoring: { thingsPerTurn: 1 } })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', introduce: 2 }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I barricade the door.'))
+      await agent.whenIdle()
+      const things = session.items.list().filter(item => item.name.startsWith('Plank'))
+      expect(things.map(item => item.name)).toEqual(['Plank barricade 1'])
+      expect(session.items.holding(things[0]!.id)).toMatchObject({ holder: { kind: 'location' } })
+      expect(authors(adapter)).toEqual([])
+      expect(JSON.stringify(agent.session.snapshotEvents().filter(event => event.type === 'tool/result'))).toContain('already introduced this turn')
+    })
+
     it('is told the bar, the request, what exists and what happened, before it decides', async () => {
       const { adapter } = await playAuthored('creates')
       const brief = briefOf(authors(adapter)[0]!)
@@ -600,8 +617,8 @@ describe('a turn with the real agent loop', () => {
     it('asks the characters freely and the record keeper exactly, and has the helpers answer with a tool call', async () => {
       const { adapter } = await playTime('stated')
       const sampled = (requests: GenerateOptions[]) => requests.map(request => adapter.samplings[adapter.requests.indexOf(request)])
-      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 8000 })))
-      expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: 8000 })))
+      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 8000, priority: 'foreground' })))
+      expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: 8000, priority: 'background' })))
       expect(adapter.samplings[adapter.requests.indexOf(masterRequests(adapter)[0]!)]).toBeUndefined()
     })
 

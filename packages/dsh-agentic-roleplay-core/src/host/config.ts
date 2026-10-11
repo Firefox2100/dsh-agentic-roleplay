@@ -18,6 +18,8 @@ export interface Config {
   importConcurrency: number
   /** How hard the agents of an import think, as a level the model offers (for example `off`); empty is the model's own level. */
   importReasoning: string
+  /** The thinking level the helpers of a roleplay chat (characters, record keeper, authors, suggestions) get when the chat's own setting is empty, as a level the model offers (for example `off`); empty is the game master's own level. Thinking made them minutes slower and the record keeper gave up before answering. */
+  childReasoning: string
   /** The most tokens one model request of an import may produce. */
   importMaxTokens: number
   /** How freely the agents of an import write; low, because they copy and sort what the card says. */
@@ -30,6 +32,7 @@ export const Config = z.object({
   importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024),
   importConcurrency: z.number().min(1).max(16).default(4),
   importReasoning: z.string().default(''),
+  childReasoning: z.string().default(''),
   importMaxTokens: z.number().min(1000).max(200000).default(16000),
   importTemperature: z.number().min(0).max(2).default(0.2),
 })

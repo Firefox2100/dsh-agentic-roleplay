@@ -6,7 +6,7 @@ import { RoleplayState } from 'dsh-roleplay-state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readChatSettings, writeChatSettings } from '../../../src/host/sessions/chat-settings.ts'
 import { SessionNotFoundError } from '../../../src/host/sessions/errors.ts'
-import { InvalidSettingsError, SETTINGS_FILE, liveSettings, readSettings, writeSettings } from '../../../src/host/sessions/settings.ts'
+import { InvalidSettingsError, SETTINGS_FILE, liveSettings, readSettings, useChildReasoning, writeSettings } from '../../../src/host/sessions/settings.ts'
 import { DEFAULT_SETTINGS, SETTINGS_SPEC } from '../../../src/shared/settings.ts'
 
 let root: string
@@ -39,6 +39,16 @@ describe('the settings file', () => {
 })
 
 describe('the settings in force', () => {
+  it('give the helpers the profile\'s thinking level when the chat names none, and keep the chat\'s own', () => {
+    const undo = useChildReasoning('off')
+    expect(liveSettings(root).reasoning.children).toBe('off')
+    writeSettings(root, { reasoning: { children: 'low' } })
+    expect(liveSettings(root).reasoning.children).toBe('low')
+    undo()
+    writeSettings(root, { reasoning: { children: '' } })
+    expect(liveSettings(root).reasoning.children).toBe('')
+  })
+
   it('are the defaults until a file exists, and follow it as soon as it changes', async () => {
     expect(liveSettings(root)).toEqual(DEFAULT_SETTINGS)
     writeSettings(root, { maxRounds: 2 })

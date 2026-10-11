@@ -31,8 +31,11 @@ const formats: Record<AuthoredEntityKind, { directory: string; file: string; par
   lore: { directory: LORE_DIR, file: LORE_FILE_NAME, parse: parseLoreFile },
 }
 
+/** Keys become folder names and image paths: letters (any script), digits, marks, `.`, `_` and `-`, starting with a letter or digit. */
+const NEW_KEY = /^[\p{L}\p{N}][\p{L}\p{N}\p{M}._-]{0,99}$/u
+
 function validNewKey(key: string): boolean {
-  return key.length > 0 && key.length <= 100 && key !== '.' && key !== '..' && !key.includes('/') && !key.includes('\\') && !key.includes('\0')
+  return NEW_KEY.test(key)
 }
 
 async function find(world: EditableWorld, kind: AuthoredEntityKind, key: string): Promise<{ folder: string; file: string } | undefined> {
@@ -78,7 +81,7 @@ export async function readAuthoredEntityDocument(world: EditableWorld, kind: Aut
 }
 
 export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown): Promise<void> {
-  if (!validNewKey(key)) throw new InvalidEditProblems(['key must be a non-empty file-safe id of at most 100 characters'])
+  if (!validNewKey(key)) throw new InvalidEditProblems(['key must be letters (any script), digits, ".", "_" or "-", starting with a letter or digit, at most 100 characters (no brackets, spaces or slashes)'])
   if (await find(world, kind, key) !== undefined) throw new InvalidEditProblems([`the ${kind} "${key}" already exists`])
   const format = formats[kind]
   const root = join(world.directory, format.directory)

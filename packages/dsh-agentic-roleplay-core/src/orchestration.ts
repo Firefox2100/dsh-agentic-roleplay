@@ -83,7 +83,7 @@ export function apply(ctx: Context): void {
     ctx.systemPrompt.section({ name, order, text: context => ctx.roleplayPrompts.text(id, languageOf(context)), interpolate: false })
   }
   for (const tool of createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })) ctx.tools.register(tool)
-  ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.settle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
+  ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.idle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
   let imageJobs: ImageJobs | undefined
   const timelines = new Timelines({
     state: ctx.roleplayState,

@@ -45,6 +45,21 @@ export async function importPhase(world: string): Promise<Phase | undefined> {
   }
 }
 
+/** Whether the import has just finished and its turn may still correct the world with the editing tools, without asking. */
+export async function isReviewing(world: string): Promise<boolean> {
+  try {
+    return (await readJson<{ reviewing?: boolean }>(join(folder(world), STATE))).reviewing === true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+    throw error
+  }
+}
+
+/** The import turn is over: the world is edited like any other from now on. */
+export async function endReview(world: string): Promise<void> {
+  if (await isReviewing(world)) await writeJson(join(folder(world), STATE), { phase: 'done' })
+}
+
 /** Marks a folder that was just moved into a world as an import that is ready to run. */
 export async function markReady(world: string): Promise<void> {
   await writeJson(join(folder(world), STATE), { phase: 'ready' })
@@ -127,7 +142,7 @@ export async function finish(ctx: ImportContext, world: string): Promise<{ ok: t
     directory: world, card, choices, roster, items, classified, extracted,
     ...(picture ? { picture: await readFile(join(folder(world), PICTURE_FILE)) } : {}), notes: [],
   })
-  if (result.ok) await writeJson(join(folder(world), STATE), { phase: 'done' })
+  if (result.ok) await writeJson(join(folder(world), STATE), { phase: 'done', reviewing: true })
   return result
 }
 

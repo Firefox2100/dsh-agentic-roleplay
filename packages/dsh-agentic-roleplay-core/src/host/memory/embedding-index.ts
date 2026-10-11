@@ -91,7 +91,7 @@ export class EmbeddingIndex {
     for (;;) {
       const waiting = found.story.recallIndex.pending(batch)
       if (waiting.length === 0) return
-      const { vectors, model } = await embedder.embed(waiting.map(item => item.text), { ...found.options(), inputType: 'document' })
+      const { vectors, model } = await embedder.embed(waiting.map(item => item.text), { ...found.options(), inputType: 'document', priority: 'background' })
       if (vectors.length !== waiting.length) throw new Error(`the embedding provider returned ${vectors.length} vectors for ${waiting.length} texts`)
       const stored = found.story.recallIndex.store(model, waiting.map((item, index) => ({ id: item.id, vector: vectors[index]! })))
       if (stored === 0) return

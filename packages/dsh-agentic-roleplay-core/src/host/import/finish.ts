@@ -69,6 +69,30 @@ export function replacePlayer(value: unknown, player?: string): void {
   }
 }
 
+/**
+ * Every character knows every place of the imported world and the ways between them, unless its own file already says what it knows: a card describes a
+ * world its people live in, and without this the closed-world rules would forbid a walk to a famous street. Changes the documents in place.
+ */
+export function shareThePlaces(characters: Document[], locations: Document[]): void {
+  const places = locations.map(location => String(location['id']))
+  const ways: { from: string; to: string }[] = []
+  for (const location of locations) {
+    const from = String(location['id'])
+    for (const exit of Array.isArray(location['exits']) ? location['exits'] as Document[] : []) {
+      const to = String(exit['to'])
+      ways.push({ from, to })
+      if (exit['one_way'] !== true) ways.push({ from: to, to: from })
+    }
+  }
+  for (const character of characters) {
+    const knowledge = (typeof character['knowledge'] === 'object' && character['knowledge'] !== null ? character['knowledge'] : {}) as Document
+    if (knowledge['locations'] !== undefined || knowledge['exits'] !== undefined) continue
+    knowledge['locations'] = places
+    knowledge['exits'] = ways.filter((way, index) => ways.findIndex(other => other.from === way.from && other.to === way.to) === index)
+    character['knowledge'] = knowledge
+  }
+}
+
 /** Places that contain each other in a circle are untangled by taking the parent off the one that closes it. */
 export function breakParentCircles(locations: Document[]): string[] {
   const notes: string[] = []
@@ -172,6 +196,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   const playerName = playing === undefined ? undefined : String(playing['name'])
   for (const key of ['characters', 'locations', 'factions', 'items', 'lore'] as const) replacePlayer(extracted[key], playerName)
   const notes = [...input.notes, ...extracted.notes, ...breakParentCircles(extracted.locations)]
+  shareThePlaces(extracted.characters, extracted.locations)
   const stage = join(directory, IMPORT_FOLDER, STAGE)
   await rm(stage, { recursive: true, force: true })
   try {
