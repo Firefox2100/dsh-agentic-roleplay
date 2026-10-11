@@ -40,3 +40,5 @@ Keep personas and tool declarations stable. Put changing scene data in the user 
 The orchestration service exposes replaceable boundaries including activation planning, character context, output validation, retry policy, input validation, authoring, committing, narration, narration checking, and scene context. Replace the smallest boundary that owns the behaviour. Preserve its error semantics, cancellation, output schema, and lifecycle registration.
 
 When adding a tool or stage, verify ordinary turns, OOC turns, retries, rewind, branch, cancellation, hot reload, and prefix stability. See [DSH contracts](./dsh-contracts) before changing child composition or chat persistence.
+
+The [turn engine specification](../specifications/turn-engine) records the complete tool sequence, movement, items, time, routines, preview, suggestions, triggers, timeline operations, and timing boundaries.

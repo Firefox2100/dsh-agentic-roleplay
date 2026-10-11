@@ -6,5 +6,6 @@
   "sidebar.docs.category.How it works": {"message": "工作原理"},
   "sidebar.docs.category.Plugin development": {"message": "插件开发"},
   "sidebar.docs.category.Maintainer guide": {"message": "维护者指南"},
+  "sidebar.docs.category.Detailed specifications": {"message": "详细规格"},
   "sidebar.docs.category.Reference": {"message": "参考"}
 }

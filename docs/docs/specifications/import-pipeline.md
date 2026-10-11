@@ -1,0 +1,34 @@
+---
+title: Character-card import specification
+description: Staging, resumable phases, classification, image security, approval, and validation.
+---
+
+A SillyTavern character card (PNG with an embedded `ccv3` or `chara` chunk, or its JSON; spec V2 and V3, V2 is normalised to V3 first) becomes a new, blank world. Nothing is kept as a draft: the import writes the world's files, and the person edits them afterwards like any other world, or asks the authoring assistant to.
+
+## Flow
+
+1. **Upload** (Worlds page, *Import*). The host reads the card (`host/import/card.ts`, at most `importMaxUploadBytes`, 100 MB by default), keeps it in a temporary import folder and shows what it holds.
+2. **Choose** what the importer is told: the world's name, which lorebook entries are switched off (they are not passed on), and which one opening is used (the first message or one alternate greeting).
+3. **Start.** A world is created, the upload is moved into its `.import/` folder, its authoring chat is created and the plugin sends the message `/import-st .import/card.json …` for the person. The authoring agent recognises the command (`agent/pre-step`), is told the procedure instead of an ordinary request and may not end the turn before the import is done.
+4. The three tools of the import, each doing its work in narrow agents of their own (`runChild`, one small job per call, several at once up to `importConcurrency`):
+   - `import_survey`: **itemise** every piece of the card (fields, the opening, lorebook entries, long ones cut at paragraph or sentence ends), have each piece **classified** (what it is: character, player, speech, place, faction, thing, world, scenario, instruction, template, irrelevant, and which named things it is about), and **merge the names into a roster** of characters, places, factions and things (a model call, with a deterministic fallback that folds names contained in others).
+   - `import_build`: **extract** one document per entity from the pieces that are about it, and the background pieces as lore entries. Documents are checked with the same parsers the world uses, and refused with the reasons until they are valid.
+   - `import_finish` (then a review): stage everything, check that the **whole world would start** (the same validation a session start uses), write it, and add the description, tags, opening message and cover picture. Nothing is written when the world would not start; the problems are returned. When it succeeds the same turn **reviews** the world like a careful editor with the authoring tools (places and their ways, starting places, duplicates) and corrects what the import got wrong, without asking for each edit (`reviewing` in `.import/state.json` lifts the approval gate until that turn ends); a capable model repairs what the narrow jobs could not see, such as a way to an unrelated place.
+5. The phases are kept in `.import/state.json` (`ready`, `surveyed`, `built`, `done`), so an interrupted import resumes where it was and each step refuses to run out of order.
+
+## Decisions
+
+- Where an entry is in the card, or whether it is constant or keyed, says little about what it is: cards use lorebooks as world background, as reminders for one character, or as the whole definition. Every piece is therefore judged by its content, and the lorebook is never imported as it is.
+- Instructions to the AI are **partly** carried. `import_build` has one narrow job (`import/style`) read the card's system prompt, its post-history instructions and the pieces judged to be instructions, and keep only guidance on how the story is written and how the characters behave (voice, tone, perspective, staying in character, how a character declines). That becomes the world's prose prompts `roleplay/style` and `roleplay/character-style` (`Extracted.prompts`), written by `import_finish` into `prompts/<language>/roleplay/` for every shipped language, because the card's wording does not depend on the interface language. Rules of the game, formats, status panels, scripts and anything about specific entities are not carried; what the job named as left out is a note in the report. A text that is too long or uses a placeholder the prompt is not given is refused and the instructions are then not carried (a note says why); the import goes on.
+- **Pictures the card points to** (`host/import/pictures.ts`). Every string of the card, scripts and extensions included, is scanned for web addresses (`NormalizedCard.urls`). Those that name a PNG, JPEG, WebP or GIF file, or have no file type at all, are fetched in the background from the first import step on (`pictures.json` in the import folder; `import_finish` waits for the run) into the world's `images/library/` as if the person had uploaded them: reusable, undescribed until a session's interpreter reads them, copied into every session started from the world. A failure here never stops an import. Safety: only http/https on ports 80 and 443 without credentials; a literal private address is refused; names are resolved at connection time and refused when any answer is loopback, private, link-local, shared, multicast, reserved or an IPv6 form that embeds one; every redirect (at most four) is vetted again; no proxy. A HEAD request first drops what answers 404/410 or declares a non-image type; a service that refuses HEAD or declares nothing is fetched anyway. The download has a size cap (20 MB) and a timeout, ignores the declared type and keeps a file only when its first bytes are an image of a supported format and it is not tiny (1 KB) or a copy of another picture of the card. There is no limit on how many addresses are tried (cards can hold thousands); eight run at a time.
+- There is no player character unless the card supplies one. A world without a playable character shows a warning in the editor and cannot be started until one is added.
+- The player in the card's text (`{{user}}`) is the marker `[PLAYER]` for the models and is replaced by the player's character or a plain word at the end. `{{char}}` is the card's own name.
+- Ids are made from names in any script. Folder names, ids and image paths accept the letters and digits of every language, never separators or dot segments.
+- Several characters in one card are supported: the roster decides who they are.
+- Cards are the property of their authors: tests use invented cards (`tests/support/cards.ts`), never content of a real one.
+
+## Prompts
+
+All instructions of the import are files under `import/` (see `prompts.md`), in the language the person was using when they started it.
+
+The review that follows an import may adjust those and also write the prose prompts of the world (`roleplay/persona`, `roleplay/style`, `roleplay/character-style`, documented in the [prompt system specification](./prompt-system)) when the card asks for a narration style or for how the characters behave; the other prompts are rules and are refused to it.

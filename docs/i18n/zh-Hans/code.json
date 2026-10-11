@@ -1,0 +1,18 @@
+{
+  "homepage.meta.title": {"message": "持久化智能体角色扮演"},
+  "homepage.meta.description": {"message": "面向 DeepSeek Harness 的智能体角色扮演、世界创作与持久故事状态。"},
+  "homepage.hero.eyebrow": {"message": "DeepSeek Harness 插件套件"},
+  "homepage.hero.title": {"message": "让故事中的角色自主行动"},
+  "homepage.hero.lead": {"message": "构建可编辑的世界，通过游戏主持人智能体游玩，并保存每个角色的知识、记忆与改变。"},
+  "homepage.hero.documentation": {"message": "阅读文档"},
+  "homepage.hero.github": {"message": "在 GitHub 上查看"},
+  "homepage.path.play.title": {"message": "开始游玩"},
+  "homepage.path.play.text": {"message": "安装套件、配置 AI 服务，然后开始一段可持续发展的故事。"},
+  "homepage.path.author.title": {"message": "创作世界"},
+  "homepage.path.author.text": {"message": "使用编辑器或需要审批的创作助手建立角色、地点、阵营、设定资料与剧情。"},
+  "homepage.path.develop.title": {"message": "开发插件"},
+  "homepage.path.develop.text": {"message": "在其他 DSH 插件中使用角色扮演状态、记录系统与扩展点。"},
+  "homepage.path.continue": {"message": "继续"},
+  "homepage.summary.title": {"message": "以智能体为核心设计"},
+  "homepage.summary.text": {"message": "世界提供身份、事实与可能性，而不是固定对话树。GM 协调自主角色智能体，会话状态则记录关系、知识、记忆、时间、物品和行为后果。"}
+}

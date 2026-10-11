@@ -33,3 +33,5 @@ Branching links or copies canonical references and inherited scene files. Rewind
 Embedding, reranking, TTS, STT, streaming STT, image generation, and rules are optional Cordis services. Look them up at use time, advertise the absence in capability routes, and keep a deterministic fallback where the feature permits one. The built-in DSH speech interface and the AI-provider transcription interface share the non-streaming contract; streaming remains a separate optional method.
 
 Provider options belong to the provider's capability description. Do not hard-code vendor-only settings in roleplay state. Foreground speech and explicit image actions should use interactive priority; indexing, interpretation, and turn-following media are background work. Honour provider concurrency rather than adding an unbounded second queue.
+
+Exact contracts: [image system](../specifications/image-system) and [optional capability integration](../specifications/capability-integration).

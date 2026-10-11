@@ -43,3 +43,5 @@ Compaction starts at `context.limitTokens`, or by default at `60%` of the model 
 ## Timeline safety
 
 `timeline.json` is an append-only tree of played nodes. SQLite snapshots represent state after nodes; log history is not rewritten. A move restores a snapshot and adds conversation markers. Branching creates a new roleplay session and chat from a cut. Rewind changes the selected path but does not delete media. Any new persisted feature must survive snapshot, restore, branch, archive, and delete.
+
+See the [story state and memory specification](../specifications/story-state) for the complete retrieval, place, relationship, entity knowledge, world growth, item, clock, routine, off-stage, variable, and trigger contracts.

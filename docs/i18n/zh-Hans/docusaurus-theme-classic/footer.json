@@ -1,0 +1,14 @@
+{
+  "link.title.Start": {"message": "开始", "description": "The title of the Start footer column"},
+  "link.title.Author": {"message": "创作", "description": "The title of the Author footer column"},
+  "link.title.Develop": {"message": "开发", "description": "The title of the Develop footer column"},
+  "link.item.label.Installation": {"message": "安装"},
+  "link.item.label.Create a world": {"message": "创建世界"},
+  "link.item.label.Start a session": {"message": "开始会话"},
+  "link.item.label.World authoring": {"message": "世界创作"},
+  "link.item.label.World format": {"message": "世界格式"},
+  "link.item.label.Architecture": {"message": "架构"},
+  "link.item.label.Maintainer guide": {"message": "维护者指南"},
+  "link.item.label.GitHub": {"message": "GitHub"},
+  "copyright": {"message": "Copyright © 2026 DSH Agentic Roleplay contributors."}
+}

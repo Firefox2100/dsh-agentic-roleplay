@@ -32,6 +32,12 @@ const sidebars: SidebarsConfig = {
       'maintainers/state-memory', 'maintainers/world-prompts-import',
       'maintainers/images-capabilities', 'maintainers/dsh-contracts',
       'maintainers/testing-release',
+      {type: 'category', label: 'Detailed specifications', items: [
+        'specifications/world-files', 'specifications/turn-engine',
+        'specifications/story-state', 'specifications/image-system',
+        'specifications/dsh-api-contract', 'specifications/prompt-system',
+        'specifications/import-pipeline', 'specifications/capability-integration',
+      ]},
     ]},
     {type: 'category', label: 'Reference', items: [
       'reference/configuration', 'reference/filesystem',
