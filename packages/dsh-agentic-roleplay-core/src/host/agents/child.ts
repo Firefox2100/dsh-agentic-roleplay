@@ -1,7 +1,7 @@
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import { randomUUID } from 'node:crypto'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
+import { createUserMessage, ReasoningEffortId, type ImageBlock } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import {
   appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides, childSessionMeta,
@@ -43,11 +43,15 @@ export interface ChildTask {
    * nothing of it. DSH's own global tools are hidden from the child.
    */
   tools?: readonly ToolDefinition[]
+  /** Images the child is shown with the prompt, saved through the attachment service. The model must be able to read images. */
+  images?: readonly ImageBlock['attachment'][]
   /** The shape of the result; the child ends by calling `submit_result` with it. */
   result: ObjectJsonSchema
   /** Refuses the result with a reason when the child may not finish yet; the child then carries on. */
   beforeSubmit?: (result: unknown) => string | undefined
   maxCalls?: number
+  /** The model the child runs on, when it is not the parent's. */
+  model?: { provider: string; model: string }
   /** How hard the child thinks, as a level the model offers (for example `off` or `low`); the game master's own level when absent. */
   reasoningEffort?: string
   /** The most tokens one model request of the child may produce; the model's own limit when absent. A child that rambles instead of answering is cut off, not waited for. */
@@ -89,11 +93,12 @@ export const childSamplingOf = (sessionId: string): ChildSampling | undefined =>
  * this is accepted, which DSH version it is built against, and what to do when DSH changes.
  * @throws {Error} when the child is cancelled, stops without a result, or exceeds its calls.
  */
-function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens' | 'sampling'>): AgentOptions | undefined {
+function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens' | 'sampling' | 'model'>): AgentOptions | undefined {
   const maxTokens = task.maxTokens ?? task.sampling?.maxTokens
   const options = {
     ...(task.reasoningEffort === undefined || task.reasoningEffort === '' ? {} : { reasoningEffort: ReasoningEffortId(task.reasoningEffort) }),
     ...(maxTokens === undefined ? {} : { maxTokens }),
+    ...(task.model === undefined ? {} : { provider: task.model.provider, model: task.model.model }),
   }
   return Object.keys(options).length === 0 ? undefined : options
 }
@@ -185,7 +190,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
   const onAbort = (): void => { handle.agent.cancel({ kind: 'parent' }) }
   signal.addEventListener('abort', onAbort, { once: true })
   try {
-    handle.agent.followup(createUserMessage({ content: [{ type: 'text', text: task.prompt }], source: { kind: 'user' } }))
+    handle.agent.followup(createUserMessage({ content: [{ type: 'text', text: task.prompt }, ...(task.images ?? []).map((attachment): ImageBlock => ({ type: 'image', attachment }))], source: { kind: 'user' } }))
     await handle.agent.whenIdle()
   } finally {
     signal.removeEventListener('abort', onAbort)

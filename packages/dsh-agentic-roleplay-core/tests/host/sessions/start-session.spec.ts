@@ -381,3 +381,32 @@ describe('the triggers of a world', () => {
     await expect(startSession(deps, playAsArthur)).rejects.toThrow(/triggers of "The Blackwater Observatory" have \d+ problem/)
   })
 })
+
+describe('starting with player avatars', () => {
+  async function avatarsDeps() {
+    const { avatarsWorld, createAvatar } = await import('../../../src/host/avatars/avatars.ts')
+    const avatars = await avatarsWorld(root)
+    await createAvatar(avatars, 'Mira')
+    await createAvatar(avatars, 'Arthur')
+    deps = { ...deps, avatars: () => avatarsWorld(root) }
+  }
+
+  it('brings the avatars into the session as characters, and lets the player take one of them; the world is not changed', async () => {
+    await avatarsDeps()
+    const started = await startSession(deps, { worldId: 'blackwater', playerAvatar: 'mira', avatars: ['mira', 'arthur'] })
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    const cast = session.characters.list().map(character => [character.sourceId, character.control])
+    expect(cast).toEqual(expect.arrayContaining([['mira', 'player'], ['arthur-2', 'agent'], ['arthur', 'agent']]))
+    expect(started.characterCount).toBe(5)
+    expect(await readdir(join(root, 'worlds', 'blackwater folder', 'characters'))).not.toContain('mira')
+  })
+
+  it('refuses when neither or both of the player choices are given, or an avatar that is not brought along', async () => {
+    await avatarsDeps()
+    await expect(startSession(deps, { worldId: 'blackwater' })).rejects.toThrow(InvalidStartError)
+    await expect(startSession(deps, { worldId: 'blackwater', playerCharacterId: 'arthur', playerAvatar: 'mira', avatars: ['mira'] })).rejects.toThrow(InvalidStartError)
+    await expect(startSession(deps, { worldId: 'blackwater', playerAvatar: 'mira', avatars: ['arthur'] })).rejects.toThrow(/not among the avatars/)
+    expect(ensured).toEqual([])
+    expect(await readdir(root)).not.toContain('sessions')
+  })
+})

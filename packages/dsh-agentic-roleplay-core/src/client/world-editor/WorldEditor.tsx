@@ -19,6 +19,8 @@ type Load =
   | { status: 'failed'; message: string }
   | { status: 'ready'; world: WorldState }
 
+type SectionId = (typeof SECTIONS)[number]['id']
+
 const SECTIONS = [
   { id: 'characters', label: 'characters', built: true },
   { id: 'places', label: 'places', built: true },
@@ -33,9 +35,10 @@ const SECTIONS = [
  * The world as it can be authored: a drawer of its parts and the part that is open. It reads from and saves to a source, so the same
  * editor serves the story of a session and the files of a world.
  */
-export function WorldEditor({ t, source, notEditable }: { t: Translate; source: WorldSource; notEditable: string }) {
+export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = true, focus }: { t: Translate; source: WorldSource; notEditable: string; /** Shows just these parts, without the drawer when it is one. */ only?: readonly SectionId[]; warnNoPlayable?: boolean; /** The character that is open first. */ focus?: string }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
-  const [section, setSection] = useState<(typeof SECTIONS)[number]['id']>('characters')
+  const [section, setSection] = useState<SectionId>(only?.[0] ?? 'characters')
+  const sections = SECTIONS.filter(entry => only === undefined || only.includes(entry.id))
   const [reload, setReload] = useState(0)
 
   useEffect(() => {
@@ -59,8 +62,8 @@ export function WorldEditor({ t, source, notEditable }: { t: Translate; source: 
 
   return (
     <div className={css.view} data-testid="roleplay-world">
-      <nav className={css.drawer} aria-label={t('sections')}>
-        {SECTIONS.map(entry => (
+      {sections.length > 1 && <nav className={css.drawer} aria-label={t('sections')}>
+        {sections.map(entry => (
           <button
             key={entry.id}
             type="button"
@@ -73,12 +76,13 @@ export function WorldEditor({ t, source, notEditable }: { t: Translate; source: 
             {t(entry.label)}
           </button>
         ))}
-      </nav>
+      </nav>}
       <div className={css.content}>
-        {!load.world.characters.some(character => character.role === 'playable' || character.control === 'player') && <p className={css.warning} role="status" data-testid="roleplay-no-playable">{t('noPlayableWarning')}</p>}
+        {warnNoPlayable && !load.world.characters.some(character => character.role === 'playable' || character.control === 'player') && <p className={css.warning} role="status" data-testid="roleplay-no-playable">{t('noPlayableWarning')}</p>}
         {section === 'characters' && (
           <CharactersPanel
             t={t}
+            {...focus === undefined ? {} : { initial: focus }}
             world={load.world}
             source={source}
             onChanged={changed}

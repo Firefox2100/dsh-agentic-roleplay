@@ -55,12 +55,13 @@ describe('image storage and unwired generators', () => {
     const subject = { kind: 'character' as const, localId: 3, name: 'Mira' }
     const reference = await generateReferenceImage(service, { root: directory, subject, identity })
     expect(reference).toBe(join(directory, 'images/characters/3/reference.png'))
-    expect(await readImageMetadata(reference)).toMatchObject({ purpose: 'reference', provider: 'test', model: 'paint-1', subjects: [{ identityVersion: 2 }] })
+    expect(await readImageMetadata(reference)).toMatchObject({ purpose: 'reference', provider: 'test', model: 'paint-1', subjects: [{ identityVersion: 2 }], description: 'Mira (character): Black hair and grey eyes.', tags: ['Mira', 'black hair'] })
 
     const scene = await generateTransientImage(service, { root: directory, timelineNode: 'n12', turn: 4, serial: 1, scene: 'Mira waits in the rain.', subjects: [{ ...subject, identity, transient: 'Wet coat, guarded expression.' }] })
     expect(scene).toBe(join(directory, 'images/scenes/turn-n12-01.png'))
-    expect(await readImageMetadata(scene)).toMatchObject({ purpose: 'transient', source: { turn: 4, timelineNode: 'n12' } })
-    expect(readPngMetadata(await readFile(scene))).toMatchObject({ schema: 'dsh-roleplay-image/v1' })
+    expect(await readImageMetadata(scene)).toMatchObject({ purpose: 'transient', source: { turn: 4, timelineNode: 'n12' }, description: 'Mira waits in the rain.\nMira: Wet coat, guarded expression.', tags: ['Mira', 'black hair'] })
+    expect((await readImageMetadata(scene))?.prompt).toContain('Mira waits in the rain.')
+    expect(readPngMetadata(await readFile(scene))).toMatchObject({ schema: 'dsh-roleplay-image/v3', origin: 'generated', reusable: false })
   })
 
   it('gives a branch all references but only scenes inherited by its timeline', async () => {

@@ -1,8 +1,10 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { registerPanel } from './panel/index.ts'
+import { registerAvatarsPage } from './pages/avatars/index.ts'
 import { registerSessionsPage } from './pages/sessions/index.ts'
 import { registerWorldsPage } from './pages/worlds/index.ts'
 import { registerBranchNaming } from './branch/index.ts'
+import { registerGallery } from './gallery/index.ts'
 import { registerWorld } from './world/index.ts'
 import { registerChatSettings } from './chat-settings/index.ts'
 import { registerSettings } from './settings/index.ts'
@@ -15,9 +17,11 @@ export function apply(ctx: Context): void {
   registerSettings(ctx)
   registerPanel(ctx)
   registerWorldsPage(ctx)
+  registerAvatarsPage(ctx)
   registerSessionsPage(ctx)
   registerTranscript(ctx)
   registerChatSettings(ctx)
   registerWorld(ctx)
+  registerGallery(ctx)
   registerBranchNaming(ctx)
 }

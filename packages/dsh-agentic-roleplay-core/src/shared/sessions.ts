@@ -21,8 +21,12 @@ export interface StartSessionRequest {
   worldId: string
   /** Defaults to the world's name. */
   name?: string
-  /** Id of the playable character the player takes. */
-  playerCharacterId: string
+  /** Id of the playable character of the world the player takes; exactly one of this and `playerAvatar` is given. */
+  playerCharacterId?: string
+  /** Key of one of `avatars` the player takes. */
+  playerAvatar?: string
+  /** Keys of the player avatars brought into this session as characters; they are not added to the world. */
+  avatars?: string[]
   /** The settings of the chat from its first message; what is left out takes its default. They can be changed later. */
   settings?: unknown
 }

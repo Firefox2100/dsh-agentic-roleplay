@@ -112,6 +112,14 @@ export interface ChatSettings {
     mode: 'off' | 'manual' | 'every-turn'
     /** Whether transient generation ignores, uses when available, or requires canonical reference images. */
     references: 'text-only' | 'prefer-reference' | 'require-reference'
+    /** Whether a picture the story needs on its own (every-turn mode) is first looked for among the images the session already has. */
+    reuse: boolean
+    /** Whether images the person brings are described by a model that can read images, so that they can be found. */
+    interpret: boolean
+    /** The model that describes them, as `provider/model`; empty is the chat's own model, which must be able to read images. */
+    interpreterModel: string
+    /** A model that only writes captions for pictures, as `provider/model` (a captioning model cannot call tools); the chat's model turns its caption into the description. Empty: the model above does both. */
+    captioner: string
   }
   embedding: {
     /**
@@ -169,7 +177,7 @@ export const SETTINGS_SPEC = {
   rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
-  images: { mode: choice(['off', 'manual', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference') },
+  images: { mode: choice(['off', 'manual', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference'), reuse: flag(true), interpret: flag(true), interpreterModel: text(200, ''), captioner: text(200, '') },
   embedding: { options: record() },
 } as const satisfies Spec
 

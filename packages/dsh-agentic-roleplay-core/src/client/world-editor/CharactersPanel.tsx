@@ -139,15 +139,17 @@ function Sheet({ t, character, places, voices, draft, onChange, generating, port
 type Saving = { status: 'idle' } | { status: 'saving' } | { status: 'saved' } | { status: 'failed'; message: string }
 
 /** The characters of the story: one tab each along the top, and the editable sheet of the one chosen. Drafts are kept while another character is looked at. */
-export function CharactersPanel({ t, world, source, onChanged, actions }: {
+export function CharactersPanel({ t, world, source, onChanged, actions, initial }: {
   t: Translate
   world: WorldState
   source: WorldSource
   onChanged: (world: WorldState) => void
   /** Shown at the right end of the tabs. */
   actions: React.ReactNode
+  /** The character that is open first. */
+  initial?: string
 }) {
-  const [chosen, setChosen] = useState<string | undefined>()
+  const [chosen, setChosen] = useState<string | undefined>(initial)
   const [drafts, setDrafts] = useState<Record<string, CharacterDraft>>({})
   const [saving, setSaving] = useState<Saving>({ status: 'idle' })
   const [portrait, setPortrait] = useState<{ key?: string; error?: string }>({})

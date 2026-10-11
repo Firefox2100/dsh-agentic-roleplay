@@ -26,7 +26,21 @@ export interface TransientImageRequest {
   subjects: TransientSubject[]
   artDirection?: string
   references?: { data: Blob; description?: string }[]
+  /** Whether the picture may be shown again in a later scene: true when it shows a place, a lasting look or a repeatable mood rather than a one-off event. */
+  reusable?: boolean
   signal?: AbortSignal
+}
+
+const unique = (values: readonly string[]): string[] => [...new Set(values.map(value => value.trim()).filter(value => value !== ''))]
+
+/** What a reference image shows: the subject and its stable look. */
+export function referenceDescription(request: Pick<ReferenceImageRequest, 'subject' | 'identity'>): string {
+  return `${request.subject.name} (${request.subject.kind}): ${request.identity.description}`.trim()
+}
+
+/** What a scene image shows: the established moment, then how each subject looks in it. */
+export function transientDescription(request: Pick<TransientImageRequest, 'scene' | 'subjects'>): string {
+  return [request.scene.trim(), ...request.subjects.map(subject => (subject.transient.trim() === '' ? undefined : `${subject.name}: ${subject.transient.trim()}`))].filter(part => part !== undefined && part !== '').join('\n')
 }
 
 function lines(parts: readonly (string | undefined)[]): string {
@@ -74,7 +88,8 @@ export async function generateReferenceImage(service: ImageGenerationService, re
   request.signal?.throwIfAborted()
   const path = referenceImagePath(request.root, request.subject)
   const metadata: VisualImageMetadata = {
-    schema: 'dsh-roleplay-image/v1', purpose: 'reference', createdAt: new Date().toISOString(), prompt,
+    schema: 'dsh-roleplay-image/v3', purpose: 'reference', origin: 'generated', reusable: true, createdAt: new Date().toISOString(), prompt,
+    description: referenceDescription(request), tags: unique([request.subject.name, ...request.identity.tags]),
     ...(image.revisedPrompt === undefined ? {} : { revisedPrompt: image.revisedPrompt }),
     provider: service.provider, model: image.model, subjects: [{ ...request.subject, identityVersion: request.identity.version }],
   }
@@ -90,7 +105,8 @@ export async function generateTransientImage(service: ImageGenerationService, re
   request.signal?.throwIfAborted()
   const path = sceneImagePath(request.root, request.timelineNode, request.serial)
   const metadata: VisualImageMetadata = {
-    schema: 'dsh-roleplay-image/v1', purpose: 'transient', createdAt: new Date().toISOString(), prompt,
+    schema: 'dsh-roleplay-image/v3', purpose: 'transient', origin: 'generated', reusable: request.reusable === true, createdAt: new Date().toISOString(), prompt,
+    description: transientDescription(request), tags: unique(request.subjects.flatMap(subject => [subject.name, ...subject.identity.tags])),
     ...(image.revisedPrompt === undefined ? {} : { revisedPrompt: image.revisedPrompt }),
     provider: service.provider, model: image.model,
     subjects: request.subjects.map(({ identity, transient: _transient, ...subject }) => ({ ...subject, identityVersion: identity.version })),

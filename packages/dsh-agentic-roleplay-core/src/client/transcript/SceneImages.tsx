@@ -3,6 +3,7 @@ import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import { roleplaySessionOf } from '../../shared/chat.ts'
+import { MediaImage } from '../widgets/media-image/MediaImage.tsx'
 import css from './NarrationView.module.css'
 
 async function request(chat: string, node: string, method: 'GET' | 'POST'): Promise<SceneImageStatus> {
@@ -33,7 +34,7 @@ export function SceneImages({ chat, node, t }: { chat: string; node: string; t: 
   if (status?.mode === 'off') return null
   return (
     <div className={css.images} data-testid="roleplay-scene-images">
-      {status?.images.map(image => <img key={image.serial} className={css.sceneImage} src={image.url} alt={t('sceneImage')} />)}
+      {status?.images.map(image => <MediaImage key={image.serial} src={image.url} alt={t('sceneImage')} details={image.details} labels={{ description: t('imageDescription'), prompt: t('imagePrompt'), subjects: t('imageSubjects'), reusable: t('imageReusable'), uploaded: t('imageUploaded'), dialog: t('imageDialog'), close: t('imageClose') }} className={css.sceneImage} onOpenClassName={css.imageButton} />)}
       {status?.state === 'generating' && <span className={css.imageStatus}>{t('imageGenerating')}</span>}
       {(status?.state === 'absent' || status?.state === 'failed') && <Button size="sm" onClick={generate}>{status.state === 'failed' ? t('imageRetry') : t('imageGenerate')}</Button>}
       {status?.state === 'ready' && <Button size="sm" onClick={generate}>{t('imageAnother')}</Button>}

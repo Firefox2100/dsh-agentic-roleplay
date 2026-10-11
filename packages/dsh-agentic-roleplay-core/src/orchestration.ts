@@ -24,6 +24,7 @@ import { createTools, PREVIEW_TOOL } from './host/orchestration/tools.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
 import { rerankMemories, type Reranker } from './host/memory/rerank-memories.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
+import type { ImageAttachments } from './host/images/interpreter.ts'
 import { ImageJobs } from './host/images/jobs.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
@@ -114,6 +115,8 @@ export function apply(ctx: Context): void {
     service: () => (ctx as Context & { get(name: 'imageGeneration'): ImageGenerationService | undefined }).get('imageGeneration'),
     agentOf: chat => ctx.agents.get(SessionId(chat)),
     settings: id => liveSettings(sessionFolder(sessionsDir(), id), problem),
+    attachments: () => (ctx as Context & { get(name: 'attachments'): ImageAttachments | undefined }).get('attachments'),
+    embedder: () => (ctx as Context & { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'),
     problem,
   })
   imageJobs = images

@@ -1,5 +1,6 @@
 import { join } from 'node:path'
 import { sessionFolder, systemTimeZone, type RoleplayState } from 'dsh-roleplay-state'
+import type { CharacterDefinition } from 'dsh-roleplay-model'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
 import type { WorldProblem } from '../../shared/worlds.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
@@ -14,6 +15,9 @@ import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './erro
 import { populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
 import { copyWorldPrompts } from '../prompts/library.ts'
+import { broughtAvatars, copyPortrait } from '../avatars/avatars.ts'
+import { parseCharacterFile } from '../characters/character-file.ts'
+import type { EditableWorld } from '../worlds/world-editor.ts'
 import { loadValidatedWorld } from '../worlds/validated-world.ts'
 
 export const MAX_NAME_LENGTH = 200
@@ -22,6 +26,8 @@ export interface StartSessionDeps {
   worlds: Pick<WorldCatalog, 'find'>
   state: Pick<RoleplayState, 'createSession' | 'deleteSession'>
   agent: Pick<AgentSessions, 'ensure' | 'retire'>
+  /** The player avatars, when there are any to bring along. */
+  avatars?: () => Promise<EditableWorld>
   /** Read for each session, because the roleplay root can move. */
   sessionsDir: () => string
   /** The wall clock, in UTC milliseconds. */
@@ -40,12 +46,19 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const world = await deps.worlds.find(request.worldId)
   if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${request.worldId}"`)
 
-  const { characters, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots } = await loadValidatedWorld(world)
+  const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots } = await loadValidatedWorld(world)
 
 
-  const opening = openingOf(world, characters)
-  const player = characters.find(character => character.id === request.playerCharacterId)
-  if (player === undefined) throw new InvalidStartError(`"${world.summary.name}" has no character "${request.playerCharacterId}"`)
+  const opening = openingOf(world, authored)
+  const keys = [...new Set(request.avatars ?? [])]
+  if (keys.length > 0 && deps.avatars === undefined) throw new InvalidStartError('player avatars are not available')
+  const avatars = keys.length === 0 ? undefined : await deps.avatars!()
+  const brought = avatars === undefined ? [] : await broughtAvatars(avatars, keys, authored, locations)
+  const characters = [...authored, ...brought.map(entry => (parseCharacterFile(JSON.stringify(entry.document), entry.id) as { value: CharacterDefinition }).value)]
+  if ((request.playerCharacterId === undefined) === (request.playerAvatar === undefined)) throw new InvalidStartError('name the character the player takes: one of the world\'s or one of the avatars')
+  const playerId = request.playerAvatar === undefined ? request.playerCharacterId : brought.find(entry => entry.from === request.playerAvatar)?.id
+  const player = characters.find(character => character.id === playerId)
+  if (player === undefined) throw new InvalidStartError(request.playerAvatar === undefined ? `"${world.summary.name}" has no character "${request.playerCharacterId}"` : `the avatar "${request.playerAvatar}" is not among the avatars brought along`)
   if (player.role !== 'playable') throw new InvalidStartError(`${player.name} cannot be played`)
   const name = request.name?.trim() || world.summary.name
   if (name.length > MAX_NAME_LENGTH) throw new InvalidStartError(`the name must be at most ${MAX_NAME_LENGTH} characters`)
@@ -84,6 +97,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)
     })
     await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])
+    if (avatars !== undefined) for (const entry of brought) await copyPortrait(avatars, entry.from, entry.document, sessionFolder(sessionsDir, id), entry.id)
     const promptProblems = copyWorldPrompts(world.directory, sessionFolder(sessionsDir, id))
     if (promptProblems.length > 0) throw new InvalidWorldError(`the prompts of "${world.summary.name}" have ${promptProblems.length} problem(s)`, promptProblems)
     writeSettings(sessionFolder(sessionsDir, id), settings)

@@ -1,0 +1,243 @@
+.page {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+  padding: 16px 24px;
+  overflow-y: auto;
+}
+
+.toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.count {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.select {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  font: inherit;
+  font-size: 12px;
+  background: var(--dsw-alias-bg-layer-2);
+  color: var(--dsw-alias-label-primary);
+}
+
+.message {
+  margin: 0;
+  padding: 40px 24px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cell {
+  min-width: 0;
+}
+
+.thumb {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-bg-layer-2);
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+
+.open {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+}
+
+.thumb:hover {
+  border-color: var(--dsw-alias-border-l4);
+}
+
+.image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  background: var(--dsw-alias-bg-layer-3);
+}
+
+.caption {
+  overflow: hidden;
+  padding: 6px 8px;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(640px, 100%);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.large {
+  display: block;
+  max-width: 100%;
+  max-height: 32vh;
+  margin: 0 auto;
+  border-radius: var(--dsw-radius-sm);
+  object-fit: contain;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.facts dt {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.facts dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--dsw-alias-label-primary);
+}
+
+.pre {
+  max-height: 160px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.error {
+  margin: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.status,
+.statusError {
+  padding: 0 8px 6px;
+  font-size: 11px;
+  line-height: 16px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.statusError {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.reusable {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 6px;
+  font-size: 11px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+}
+
+.reusable input {
+  margin: 0;
+  accent-color: var(--dsw-alias-state-business-primary);
+}
+
+.editButton {
+  align-self: flex-start;
+  margin: 0 8px 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  color: var(--dsw-alias-state-business-primary);
+  cursor: pointer;
+}
+
+.edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(480px, 100%);
+}
+
+.editField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.editLabel {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.editHelp {
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.editArea,
+.editInput {
+  padding: 6px 8px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-bg-layer-2);
+  font: inherit;
+  font-size: 13px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.editArea {
+  resize: vertical;
+}

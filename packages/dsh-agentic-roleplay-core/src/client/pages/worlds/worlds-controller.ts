@@ -2,6 +2,7 @@ import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client
 import type { OpenChat } from '../../chat/open-chat.ts'
 import type { ChatSettings } from '../../../shared/settings.ts'
 import type { CharacterSummary, StartedSession, WorldCharactersPayload } from '../../../shared/sessions.ts'
+import { listAvatars, type AvatarSummary } from '../../avatars-api.ts'
 import { API_PREFIX, type WorldProblem, type WorldsPayload } from '../../../shared/worlds.ts'
 
 /** The dialog asking what a new session needs, for one world. */
@@ -10,6 +11,8 @@ export interface StartDialog {
   worldName: string
   status: 'loading' | 'ready' | 'failed'
   characters: readonly CharacterSummary[]
+  /** The player avatars that can be brought along; none when they cannot be read. */
+  avatars: readonly AvatarSummary[]
   /** Why the characters could not be loaded, or why the session could not be started. */
   error?: string
   submitting: boolean
@@ -36,7 +39,11 @@ export interface WorldsState {
 
 export interface StartOptions {
   name: string
-  playerCharacterId: string
+  /** The world's own character the player takes; exactly one of this and `playerAvatar`. */
+  playerCharacterId?: string
+  playerAvatar?: string
+  /** Keys of the avatars brought into the session. */
+  avatars: readonly string[]
   /** Left out unless the player changed them: the defaults apply. */
   settings?: ChatSettings
 }
@@ -129,10 +136,13 @@ export class WorldsController {
   /** Open the dialog for a world and load the characters it offers. */
   async openStartDialog(worldId: string, worldName: string): Promise<void> {
     const token = ++this.dialogs
-    this.store.update((draft) => { draft.dialog = { worldId, worldName, status: 'loading', characters: [], submitting: false } })
+    this.store.update((draft) => { draft.dialog = { worldId, worldName, status: 'loading', characters: [], avatars: [], submitting: false } })
     try {
-      const { characters } = await request<WorldCharactersPayload>(`/worlds/characters?id=${encodeURIComponent(worldId)}`, {}, this.abort.signal)
-      this.updateDialog(token, (dialog) => { dialog.status = 'ready'; dialog.characters = characters })
+      const [{ characters }, avatars] = await Promise.all([
+        request<WorldCharactersPayload>(`/worlds/characters?id=${encodeURIComponent(worldId)}`, {}, this.abort.signal),
+        listAvatars(this.abort.signal).catch((): AvatarSummary[] => []),
+      ])
+      this.updateDialog(token, (dialog) => { dialog.status = 'ready'; dialog.characters = characters; dialog.avatars = avatars })
     } catch (error) {
       if (this.abort.signal.aborted) return
       this.updateDialog(token, (dialog) => { dialog.status = 'failed'; dialog.error = messageOf(error) })
@@ -155,7 +165,7 @@ export class WorldsController {
       const started = await request<StartedSession>('/sessions', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, playerCharacterId: options.playerCharacterId, ...(options.settings === undefined ? {} : { settings: options.settings }) }),
+        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, ...(options.playerCharacterId === undefined ? {} : { playerCharacterId: options.playerCharacterId }), ...(options.playerAvatar === undefined ? {} : { playerAvatar: options.playerAvatar }), ...(options.avatars.length === 0 ? {} : { avatars: options.avatars }), ...(options.settings === undefined ? {} : { settings: options.settings }) }),
       }, this.abort.signal)
       this.dialogs++
       this.store.update((draft) => { delete draft.dialog })

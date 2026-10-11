@@ -16,13 +16,26 @@ export interface VisualImageSubject extends EntityImageAddress {
 }
 
 export interface VisualImageMetadata {
-  schema: 'dsh-roleplay-image/v1'
-  purpose: 'reference' | 'transient'
+  /** v1 images have no description or tags; they are still read. */
+  schema: 'dsh-roleplay-image/v1' | 'dsh-roleplay-image/v2' | 'dsh-roleplay-image/v3'
+  purpose: 'reference' | 'transient' | 'uploaded'
+  /** v3: who made the image. Images before v3 were all generated. */
+  origin?: 'generated' | 'uploaded'
+  /** v3: whether the image may be shown again in a later scene. Before v3: references yes, scenes no. */
+  reusable?: boolean
+  /** An uploaded image: the name of the file as it was brought, and the model that described it. */
+  originalName?: string
+  interpretedBy?: string
   createdAt: string
-  prompt: string
+  /** The prompt the provider was given, art direction and instructions included; none for an uploaded image. */
+  prompt?: string
   revisedPrompt?: string
-  provider: string
-  model: string
+  /** What the picture shows, in plain words that stand on their own: for finding an image again and using it where its prompt would be too much. */
+  description?: string
+  /** Names of the subjects and their stable visual traits. */
+  tags?: string[]
+  provider?: string
+  model?: string
   subjects: VisualImageSubject[]
   source?: { turn: number; timelineNode: string; segment?: number }
 }
@@ -88,7 +101,7 @@ export async function inheritImages(fromRoot: string, toRoot: string, nodes: rea
   const source = join(fromRoot, 'images')
   const target = join(toRoot, 'images')
   const allowedScenes = new Set(nodes)
-  async function walk(from: string, to: string, sceneFiles = false): Promise<void> {
+  async function walk(from: string, to: string, belongsTo?: (file: string) => boolean): Promise<void> {
     let entries
     try { entries = await readdir(from, { withFileTypes: true }) } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
@@ -99,12 +112,13 @@ export async function inheritImages(fromRoot: string, toRoot: string, nodes: rea
       if (entry.isSymbolicLink()) continue
       const childFrom = join(from, entry.name)
       const childTo = join(to, entry.name)
-      if (entry.isDirectory()) await walk(childFrom, childTo, sceneFiles)
-      else if (entry.isFile() && (!sceneFiles || [...allowedScenes].some(node => entry.name.startsWith(`turn-${node}-`)))) await linkOrCopy(childFrom, childTo)
+      if (entry.isDirectory()) await walk(childFrom, childTo, belongsTo)
+      else if (entry.isFile() && (belongsTo === undefined || belongsTo(entry.name))) await linkOrCopy(childFrom, childTo)
     }
   }
-  for (const name of ['global', 'characters', 'locations', 'items']) await walk(join(source, name), join(target, name))
-  await walk(join(source, 'scenes'), join(target, 'scenes'), true)
+  for (const name of ['global', 'characters', 'locations', 'items', 'library']) await walk(join(source, name), join(target, name))
+  await walk(join(source, 'scenes'), join(target, 'scenes'), file => [...allowedScenes].some(node => file.startsWith(`turn-${node}-`)))
+  await walk(join(source, 'presented'), join(target, 'presented'), file => allowedScenes.has(file.replace(/\.json$/, '')))
 }
 
 async function linkOrCopy(from: string, to: string): Promise<void> {

@@ -7,7 +7,7 @@ export type SettingsFormKey =
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
-  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire'
+  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -69,6 +69,14 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     suggestionsCountHelp: 'After each turn, a helper writes this many things your character could do next from what you just read, in the background. Click one to put it in the input box (you can edit it before sending). 0 offers none and makes no model call.',
     imagesMode: 'Scene illustrations',
     imagesModeHelp: 'Manual offers an image button beneath each delivered turn. Every turn also starts an image author in the background after the text appears. Off makes no image calls.',
+    imagesReuse: 'Reuse existing images',
+    imagesReuseHelp: 'When a picture is made on its own after a turn, look first for an image the session already has (one you brought, or an earlier one marked reusable) that fits the moment, and only generate when none does. A picture you ask for with the button is always generated.',
+    imagesInterpret: 'Describe images you bring',
+    imagesInterpretHelp: 'A model that can read images says what each picture you add to the gallery shows, so that it can be found and reused. Without it such pictures stay in the gallery and are never used.',
+    imagesInterpreterModel: 'Model that describes images',
+    imagesInterpreterModelHelp: 'As provider/model. Leave empty to use the chat\'s own model, which must be declared able to read images. Use this to describe images with a vision model while the story runs on another.',
+    imagesCaptioner: 'Captioning model',
+    imagesCaptionerHelp: 'As provider/model. A model that only writes a caption for a picture (it cannot call tools) looks at it, and the chat\'s model turns the caption into the description. Leave empty to have one vision model do both.',
     imagesOff: 'Off',
     imagesManual: 'Manual',
     imagesEveryTurn: 'Every turn',
@@ -157,6 +165,14 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     suggestionsCountHelp: '每轮结束后，一个助手会根据你刚读到的内容，在后台写出这么多条你的角色接下来可以做的事。点击其中一条即可填入输入框（发送前可以修改）。0 表示不提供，也不会调用模型。',
     imagesMode: '场景插图',
     imagesModeHelp: '手动模式会在每轮叙述下方提供生成按钮；每轮模式还会在文字显示后于后台启动图像作者；关闭后不会调用图像服务。',
+    imagesReuse: '复用已有图像',
+    imagesReuseHelp: '在每轮后自动配图时，先在存档已有的图像中（你添加的，或之前标记为可复用的）寻找符合此刻的，没有合适的才生成。你用按钮要求的图像总是重新生成。',
+    imagesInterpret: '描述你添加的图像',
+    imagesInterpretHelp: '由能读取图像的模型说明你添加到图库的每张图片画的是什么，以便被找到并复用。没有它，这些图片只会留在图库里，不会被使用。',
+    imagesInterpreterModel: '描述图像的模型',
+    imagesInterpreterModelHelp: '写成 提供方/模型。留空则使用对话自己的模型，它必须声明能读取图像。可用它让视觉模型描述图像，而故事用另一个模型运行。',
+    imagesCaptioner: '图像说明模型',
+    imagesCaptionerHelp: '写成 提供方/模型。只会给图片写说明文字的模型（不能调用工具）负责看图，再由对话的模型把说明整理成描述。留空则由一个视觉模型完成全部。',
     imagesOff: '关闭',
     imagesManual: '手动',
     imagesEveryTurn: '每轮',

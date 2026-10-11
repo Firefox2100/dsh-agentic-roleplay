@@ -98,10 +98,20 @@
 
 .sceneImage {
   display: block;
-  width: min(100%, 720px);
+  width: auto;
+  max-width: min(100%, 480px);
+  max-height: 50vh;
   height: auto;
+  object-fit: contain;
   border: 1px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-sm);
+}
+
+.imageButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
 }
 
 .imageStatus,

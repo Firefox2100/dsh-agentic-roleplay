@@ -1,0 +1,35 @@
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-sm);
+  cursor: pointer;
+}
+
+.option:has(input:checked) {
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+.option input {
+  margin: 3px 0 0;
+  accent-color: var(--dsw-alias-state-business-primary);
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.summary {
+  font-size: 12px;
+  color: var(--dsw-alias-label-secondary);
+}

@@ -8,6 +8,7 @@ import { ProblemList } from '../../widgets/problem-list/ProblemList.tsx'
 import { WorldCard } from '../../widgets/world-card/WorldCard.tsx'
 import { WorldEditor } from '../../world-editor/WorldEditor.tsx'
 import { worldSource } from '../../world-editor/authored-world-source.ts'
+import { AddAvatarsDialog } from './AddAvatarsDialog.tsx'
 import { StartSessionDialog } from './StartSessionDialog.tsx'
 import { useGridFit } from './use-grid-fit.ts'
 import { CreateWorldDialog } from './CreateWorldDialog.tsx'
@@ -30,6 +31,8 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const [requestedStart, setRequestedStart] = useState(0)
   const [editing, setEditing] = useState<{ id: string; name: string } | undefined>()
   const [creating, setCreating] = useState(false)
+  const [addingAvatars, setAddingAvatars] = useState(false)
+  const [editorVersion, setEditorVersion] = useState(0)
   const [importing, setImporting] = useState<ImportPreview | undefined>()
   const [uploading, setUploading] = useState(false)
   const [importNotice, setImportNotice] = useState<string>()
@@ -77,13 +80,15 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         <div className={css.editHeader}>
           <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
           <span className={css.editTitle}>{editing.name}</span>
-          <Button className={css.authorButton} variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name })) }}>
+          <Button className={css.authorButton} variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
+          <Button variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name })) }}>
             {state.authoring?.worldId === editing.id && state.authoring.error === undefined ? t('openingAuthor') : t('authorWorld')}
           </Button>
         </div>
         {state.authoring?.worldId === editing.id && state.authoring.error !== undefined && <p className={css.notice} role="alert">{t('authorWorldFailed', { message: state.authoring.error })}</p>}
+        {addingAvatars && <AddAvatarsDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setAddingAvatars(false) }} onAdded={() => { setAddingAvatars(false); setEditorVersion(version => version + 1) }} />}
         <div className={css.editBody}>
-          <WorldEditor t={t} source={source} notEditable={t('worldMissing')} />
+          <WorldEditor key={editorVersion} t={t} source={source} notEditable={t('worldMissing')} />
         </div>
       </div>
     )

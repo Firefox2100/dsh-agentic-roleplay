@@ -5,8 +5,11 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { ImageGenerationService, type ImageGenerationResult } from 'dsh-ai-core'
 import { createSessionStore, sessionDatabase } from 'dsh-roleplay-state'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { addToLibrary } from '../../../src/host/images/library.ts'
+import { present } from '../../../src/host/images/presented.ts'
+import { updateImage } from '../../../src/host/images/gallery.ts'
 import { ImageJobs } from '../../../src/host/images/jobs.ts'
-import type { ImageAuthorJob } from '../../../src/host/images/author-agent.ts'
+import type { ImagePresenterJob } from '../../../src/host/images/presenter-agent.ts'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import type { Timeline } from '../../../src/shared/timeline.ts'
 
@@ -19,7 +22,7 @@ class Images extends ImageGenerationService {
   generate(): Promise<ImageGenerationResult> { throw new Error('the fake author does not call the provider') }
 }
 
-async function fixture(mode: 'off' | 'manual' | 'every-turn' = 'manual') {
+async function fixture(mode: 'off' | 'manual' | 'every-turn' = 'manual', extra: Partial<ConstructorParameters<typeof ImageJobs>[0]> = {}) {
   const directory = join(tmpdir(), `image-jobs-${process.pid}-${Date.now()}-${Math.random()}`)
   roots.push(directory)
   const id = '11111111-1111-4111-8111-111111111111'
@@ -29,16 +32,16 @@ async function fixture(mode: 'off' | 'manual' | 'every-turn' = 'manual') {
   const output = { segments: [{ type: 'narration' as const, text: 'Rain crosses the empty street.' }], repaired: false }
   const timeline: Timeline = { version: 1, head: 'n1', next: 2, nodes: [{ id: 'n1', parent: null, turn: 3, userSeq: 1, createdAt: 'now', player: 'wait', output }] }
   let release: (() => void) | undefined
-  const author = vi.fn((job: ImageAuthorJob) => new Promise<{ summary: string; images: string[] }>((resolve, reject) => {
+  const author = vi.fn((job: ImagePresenterJob) => new Promise<{ summary: string; images: string[] }>((resolve, reject) => {
     release = () => resolve({ summary: 'done', images: [] })
     job.signal.addEventListener('abort', () => { reject(job.signal.reason) }, { once: true })
   }))
   const jobs = new ImageJobs({
     state: { openSession: () => story } as never, sessionsDir: () => directory,
     timelines: { read: () => timeline } as never, service: () => new Images(), agentOf: () => ({}) as Agent,
-    settings: () => ({ ...DEFAULT_SETTINGS, images: { ...DEFAULT_SETTINGS.images, mode } }), problem: vi.fn(), author,
+    settings: () => ({ ...DEFAULT_SETTINGS, images: { ...DEFAULT_SETTINGS.images, mode } }), problem: vi.fn(), presenter: author, ...extra,
   })
-  return { id, output, author, jobs, release: () => { release?.() } }
+  return { id, directory, output, author, jobs, release: () => { release?.() } }
 }
 
 describe('scene image jobs', () => {
@@ -84,5 +87,58 @@ describe('scene image jobs', () => {
   it('refuses manual generation when illustrations are off', async () => {
     const { id, jobs } = await fixture('off')
     await expect(jobs.generate(id, 'n1')).rejects.toThrow(/disabled/)
+  })
+})
+
+describe('pictures the person brings', () => {
+  const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
+
+  it('are described in the background once added, and stay as they were when no model can read them', async () => {
+    const interpret = vi.fn(async (job: { sessionFolder: string; path: string }) => updateImage(job.sessionFolder, job.path, { description: 'A foggy dock.' }))
+    const { id, jobs } = await fixture('manual', { attachments: () => ({ saveImage: vi.fn() }) as never, interpret: interpret as never })
+    const path = await jobs.upload(id, 'dock.png', PNG)
+    await jobs.describePending(id, new AbortController().signal)
+    expect(interpret).toHaveBeenCalledTimes(1)
+    expect((await jobs.gallery(id)).images.find(image => image.path === path)).toMatchObject({ description: 'A foggy dock.', reusable: true })
+
+    const without = await fixture('manual')
+    const other = await without.jobs.upload(without.id, 'dock.png', PNG)
+    await without.jobs.describePending(without.id, new AbortController().signal)
+    expect((await without.jobs.gallery(without.id)).images.find(image => image.path === other)).toMatchObject({ pending: true })
+  })
+
+  it('that fail to be described are listed with the reason and tried again by the next run', async () => {
+    let fail = true
+    const interpret = vi.fn(async (job: { sessionFolder: string; path: string }) => { if (fail) throw new Error('the model cannot read images'); return updateImage(job.sessionFolder, job.path, { description: 'ok' }) })
+    const { id, jobs } = await fixture('manual', { attachments: () => ({}) as never, interpret: interpret as never })
+    const path = await jobs.upload(id, 'a.png', PNG)
+    await jobs.describePending(id, new AbortController().signal)
+    expect((await jobs.gallery(id)).failures).toEqual({ [path]: 'the model cannot read images' })
+    fail = false
+    await jobs.describePending(id, new AbortController().signal)
+    const after = await jobs.gallery(id)
+    expect(after.failures).toEqual({})
+    expect(after.images[0]?.description).toBe('ok')
+  })
+
+  it('make an automatic picture look in the library first, and a requested one never', async () => {
+    const automatic = await fixture('every-turn')
+    automatic.jobs.afterDelivery(`session-${automatic.id}`, 'n1', automatic.output)
+    expect(automatic.author.mock.calls[0]![0]).toMatchObject({ reuse: true })
+    const requested = await fixture('manual')
+    await requested.jobs.generate(requested.id, 'n1')
+    expect(requested.author.mock.calls[0]![0]).toMatchObject({ reuse: false })
+    const off = await fixture('every-turn')
+    ;(off.jobs as unknown as { deps: { settings: () => unknown } }).deps.settings = () => ({ ...DEFAULT_SETTINGS, images: { ...DEFAULT_SETTINGS.images, mode: 'every-turn', reuse: false } })
+    off.jobs.afterDelivery(`session-${off.id}`, 'n1', off.output)
+    expect(off.author.mock.calls[0]![0]).toMatchObject({ reuse: false })
+  })
+
+  it('show an existing image for a turn in its status', async () => {
+    const { id, directory, jobs } = await fixture('manual')
+    const path = await addToLibrary(join(directory, id), PNG, 'a.png')
+    await updateImage(join(directory, id), path, { description: 'A dock.' })
+    await present(join(directory, id), 'n1', { path, reason: 'same dock' })
+    expect(await jobs.status(id, 'n1')).toMatchObject({ state: 'ready', images: [{ serial: 1, existing: true, details: { path, description: 'A dock.' } }] })
   })
 })

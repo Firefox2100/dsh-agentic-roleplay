@@ -14,6 +14,8 @@ import type { OpenedSession, SessionsPayload, StartedSession, StartSessionReques
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { InvalidSettingsError } from '../sessions/settings.ts'
 import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
+import type { GalleryImage } from '../../shared/gallery.ts'
+import type { ImageUpdate } from '../images/gallery.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WorldFolderExistsError } from '../worlds/create-world.ts'
 import { readBinaryBody, readJsonBody } from './body.ts'
@@ -43,6 +45,11 @@ export interface ApiDeps {
     start(id: string, choices: ImportChoices, language?: string): Promise<{ worldId: string; chatSessionId: string; started: boolean; failure?: string }>
     picture(id: string): Promise<{ file: string; size: number }>
   }
+  avatars: {
+    create(name: string): Promise<string>
+    remove(key: string): Promise<void>
+    addToWorld(worldId: string, keys: string[]): Promise<string[]>
+  }
   worldEditor: {
     read(worldId: string): Promise<WorldState>
     editCharacter(worldId: string, key: string, edit: CharacterEdit): Promise<WorldState>
@@ -62,6 +69,12 @@ export interface ApiDeps {
     open(id: string): Promise<OpenedSession>
     /** Says something in a session's chat as the player would; scripts use it to play. */
     send(id: string, text: string): Promise<void>
+    /** The images of a session with what their files say. */
+    gallery(id: string): Promise<{ images: GalleryImage[]; failures: Record<string, string> }>
+    galleryFile(id: string, path: string): Promise<{ file: string; size: number; mediaType: string }>
+    /** Adds a picture the person brought to the session's library; it is described in the background. @returns its path. */
+    uploadImage(id: string, name: string, bytes: Uint8Array): Promise<string>
+    updateImage(id: string, path: string, update: ImageUpdate): Promise<GalleryImage>
     delete(id: string): Promise<void>
     archive(id: string): Promise<void>
     restore(id: string): Promise<void>
@@ -92,9 +105,12 @@ export interface ApiDeps {
 
 type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void>
 
-async function sendImage(res: ServerResponse, image: { file: string; size: number }): Promise<void> {
+/** The largest picture that can be added to a gallery. */
+const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+
+async function sendImage(res: ServerResponse, image: { file: string; size: number; mediaType?: string }): Promise<void> {
   res.statusCode = 200
-  res.setHeader('content-type', 'image/png')
+  res.setHeader('content-type', image.mediaType ?? 'image/png')
   res.setHeader('content-length', image.size)
   res.setHeader('x-content-type-options', 'nosniff')
   res.setHeader('cache-control', 'private, max-age=31536000, immutable')
@@ -118,7 +134,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, importer, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, importer, avatars, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -161,6 +177,30 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
         catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/avatars': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { name?: unknown }
+        if (typeof body.name !== 'string' || body.name.trim() === '') return sendError(res, 400, 'name must be text')
+        try { sendJson(res, 201, { key: await avatars.create(body.name) }) }
+        catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error }
+      },
+      DELETE: async (_req, res, url) => {
+        try { await avatars.remove(url.searchParams.get('key') ?? ''); sendJson(res, 200, { deleted: true }) }
+        catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error }
+      },
+    },
+    '/worlds/avatars': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { avatars?: unknown }
+        if (!Array.isArray(body.avatars) || body.avatars.length === 0 || !body.avatars.every(key => typeof key === 'string')) return sendError(res, 400, 'avatars must be a list of keys')
+        try { sendJson(res, 200, { added: await avatars.addToWorld(url.searchParams.get('id') ?? '', body.avatars as string[]) }) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           throw error
         }
       },
@@ -233,12 +273,15 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
     '/sessions': {
       GET: async (_req, res) => { sendJson(res, 200, sessions.list()) },
       POST: async (req, res) => {
-        const { worldId, playerCharacterId, name, settings } = await readJsonBody(req)
+        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings } = await readJsonBody(req)
         if (typeof worldId !== 'string' || worldId.trim() === '') return sendError(res, 400, '"worldId" is required')
-        if (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '') return sendError(res, 400, '"playerCharacterId" is required')
+        if (playerCharacterId === undefined && playerAvatar === undefined) return sendError(res, 400, '"playerCharacterId" or "playerAvatar" is required')
+        if (playerCharacterId !== undefined && (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '')) return sendError(res, 400, '"playerCharacterId" must be text')
+        if (playerAvatar !== undefined && (typeof playerAvatar !== 'string' || playerAvatar.trim() === '')) return sendError(res, 400, '"playerAvatar" must be text')
+        if (brought !== undefined && (!Array.isArray(brought) || !brought.every(key => typeof key === 'string'))) return sendError(res, 400, '"avatars" must be a list of keys')
         if (name !== undefined && typeof name !== 'string') return sendError(res, 400, '"name" must be a string')
         try {
-          sendJson(res, 201, await sessions.start({ worldId, playerCharacterId, ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
+          sendJson(res, 201, await sessions.start({ worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
         } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidStartError) return sendError(res, 422, error.message)
@@ -317,6 +360,36 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
       POST: async (_req, res, url) => {
         try { sendJson(res, 202, await sessions.generateImage(url.searchParams.get('id') ?? '', url.searchParams.get('node') ?? '')) }
         catch (error) { return sendError(res, 409, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/sessions/gallery': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, await sessions.gallery(url.searchParams.get('id') ?? '')) }
+        catch (error) { return sendError(res, 409, error instanceof Error ? error.message : String(error)) }
+      },
+      PUT: async (req, res, url) => {
+        const body = await readJsonBody(req)
+        const update: ImageUpdate = {}
+        if (body['reusable'] !== undefined) { if (typeof body['reusable'] !== 'boolean') return sendError(res, 400, 'reusable must be true or false'); update.reusable = body['reusable'] }
+        if (body['description'] !== undefined) { if (typeof body['description'] !== 'string') return sendError(res, 400, 'description must be text'); update.description = body['description'].trim() }
+        if (body['tags'] !== undefined) { if (!Array.isArray(body['tags']) || !body['tags'].every(tag => typeof tag === 'string')) return sendError(res, 400, 'tags must be a list of text'); update.tags = (body['tags'] as string[]).map(tag => tag.trim()).filter(tag => tag !== '') }
+        try { sendJson(res, 200, await sessions.updateImage(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '', update)) }
+        catch (error) { return sendError(res, 422, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/sessions/gallery/upload': {
+      POST: async (req, res, url) => {
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'image'))
+        try { sendJson(res, 201, { path: await sessions.uploadImage(url.searchParams.get('id') ?? '', name, await readBinaryBody(req, MAX_UPLOAD_BYTES)) }) }
+        catch (error) { return sendError(res, 422, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/sessions/gallery/file': {
+      GET: async (_req, res, url) => {
+        let image: { file: string; size: number }
+        try { image = await sessions.galleryFile(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '') }
+        catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+        await sendImage(res, image)
       },
     },
     '/sessions/images/file': {

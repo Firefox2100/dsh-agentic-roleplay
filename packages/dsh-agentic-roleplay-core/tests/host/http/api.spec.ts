@@ -80,6 +80,7 @@ beforeEach(async () => {
   const handler = createApiHandler({
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
     worlds,
+    avatars: { create: async () => 'new', remove: async () => undefined, addToWorld: async () => [] },
     createWorld: async ({ folder, name }) => ({ id: folder, name, description: '', tags: [] }),
     authorWorld: async worldId => {
       if (worldId === 'missing') throw new WorldNotFoundError('missing world')
@@ -120,6 +121,10 @@ beforeEach(async () => {
     },
     sessions: {
       list: () => listed,
+      gallery: async () => ({ images: [], failures: {} }),
+      galleryFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6, mediaType: 'image/png' }),
+      uploadImage: async (_id, name) => `library/${name}`,
+      updateImage: async (_id, path) => ({ path, purpose: 'uploaded', origin: 'uploaded', reusable: true, createdAt: 'now', tags: [], subjects: [] }),
       editCharacter: (id, key, edit) => {
         if (archiveError !== undefined) throw archiveError
         edited.push(`${id} ${key} ${JSON.stringify(edit)}`)
@@ -334,7 +339,7 @@ describe('roleplay API', () => {
       ['a body without a world', '{"playerCharacterId":"a"}', 400, '"worldId" is required'],
       ['a blank world id', '{"worldId":"  ","playerCharacterId":"a"}', 400, '"worldId" is required'],
       ['a world id that is not text', '{"worldId":3,"playerCharacterId":"a"}', 400, '"worldId" is required'],
-      ['a body without a character', '{"worldId":"harbor"}', 400, '"playerCharacterId" is required'],
+      ['a body without a character', '{"worldId":"harbor"}', 400, '"playerCharacterId" or "playerAvatar" is required'],
       ['a name that is not text', '{"worldId":"harbor","playerCharacterId":"a","name":3}', 400, '"name" must be a string'],
       ['invalid JSON', '{', 400, 'not valid JSON'],
       ['a body that is not an object', '[]', 400, 'must be a JSON object'],

@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from '../../../shared/settings.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../../settings-form/embedding-options.ts'
 import { SettingsFields } from '../../settings-form/SettingsFields.tsx'
+import { AvatarChoices } from '../../widgets/avatar-choices/AvatarChoices.tsx'
 import type { StartDialog, StartOptions } from './worlds-controller.ts'
 import css from './StartSessionDialog.module.css'
 
@@ -18,12 +19,16 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const formId = useId()
   const [name, setName] = useState(dialog.worldName)
   const [choice, setChoice] = useState<string | undefined>()
+  const [brought, setBrought] = useState<ReadonlySet<string>>(new Set())
   const [showSettings, setShowSettings] = useState(false)
   const [drafts, setDrafts] = useState<Drafts | undefined>()
   // Only what has to be chosen before the first request; the rest can be changed in the chat's settings.
   const options = useEmbeddingOptions('start')
   const playable = dialog.characters.filter(character => character.role === 'playable')
-  const selected = choice ?? playable[0]?.id
+  const bringing = dialog.avatars.filter(avatar => brought.has(avatar.key))
+  // Who can be played: the world's own playable characters, then the avatars brought along. A choice is a world id or `avatar:<key>`.
+  const players = [...playable.map(character => ({ value: character.id, name: character.name, summary: character.summary })), ...bringing.map(avatar => ({ value: `avatar:${avatar.key}`, name: avatar.name, summary: avatar.summary }))]
+  const selected = players.find(player => player.value === choice)?.value ?? players[0]?.value
   const base = { ...DEFAULT_SETTINGS, prompts: { language: t('language') } }
   const shown = { ...toDrafts(base, options), ...drafts }
   const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting && problemsOf(shown, options).size === 0
@@ -49,7 +54,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, playerCharacterId: selected, settings: fromDrafts(base, shown, options) })
+          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), settings: fromDrafts(base, shown, options) })
         }}
       >
         <label className={css.field}>
@@ -61,23 +66,31 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
           <legend className={css.label}>{t('playAs')}</legend>
           {dialog.status === 'loading' && <p className={css.message}>{t('loadingCharacters')}</p>}
           {dialog.status === 'failed' && <p className={css.error} role="alert">{t('charactersFailed', { message: dialog.error ?? '' })}</p>}
-          {dialog.status === 'ready' && playable.length === 0 && <p className={css.message}>{t('noPlayable')}</p>}
-          {playable.map(character => (
-            <label key={character.id} className={css.option}>
+          {dialog.status === 'ready' && players.length === 0 && <p className={css.message}>{t('noPlayable')}</p>}
+          {players.map(player => (
+            <label key={player.value} className={css.option}>
               <input
                 type="radio"
                 name={`${formId}-player`}
-                value={character.id}
-                checked={selected === character.id}
-                onChange={() => { setChoice(character.id) }}
+                value={player.value}
+                checked={selected === player.value}
+                onChange={() => { setChoice(player.value) }}
               />
               <span className={css.optionText}>
-                <span className={css.optionName}>{character.name}</span>
-                {character.summary !== '' && <span className={css.optionSummary}>{character.summary}</span>}
+                <span className={css.optionName}>{player.name}</span>
+                {player.summary !== '' && <span className={css.optionSummary}>{player.summary}</span>}
               </span>
             </label>
           ))}
         </fieldset>
+
+        {dialog.status === 'ready' && dialog.avatars.length > 0 && (
+          <fieldset className={css.field} disabled={dialog.submitting}>
+            <legend className={css.label}>{t('startAvatars')}</legend>
+            <p className={css.message}>{t('startAvatarsHelp')}</p>
+            <AvatarChoices avatars={dialog.avatars} selected={brought} onToggle={(key) => { setBrought((current) => { const next = new Set(current); if (!next.delete(key)) next.add(key); return next }) }} />
+          </fieldset>
+        )}
 
         <div className={css.advanced}>
           <button
