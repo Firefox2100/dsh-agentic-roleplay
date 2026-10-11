@@ -73,6 +73,25 @@ function jsonOf(file: Buffer, name: string): unknown {
   }
 }
 
+const URL_PATTERN = /https?:\/\/[^\s"'`<>()[\]{}\\|^]+/gi
+
+/** Every web address in the strings of a document, at any depth; template placeholders and trailing punctuation are not part of one. */
+export function urlsOf(value: unknown): string[] {
+  const found = new Set<string>()
+  const visit = (node: unknown, depth: number): void => {
+    if (depth > 32) return
+    if (typeof node === 'string') {
+      for (const match of node.matchAll(URL_PATTERN)) {
+        const url = match[0].replace(/[.,;:!?*_~]+$/, '')
+        if (!url.includes('$') && url.length <= 2000) found.add(url)
+      }
+    } else if (Array.isArray(node)) for (const entry of node) visit(entry, depth + 1)
+    else if (typeof node === 'object' && node !== null) for (const entry of Object.values(node)) visit(entry, depth + 1)
+  }
+  visit(value, 0)
+  return [...found]
+}
+
 const object = (value: unknown): Record<string, unknown> | undefined => (typeof value === 'object' && value !== null && !Array.isArray(value) ? value as Record<string, unknown> : undefined)
 const text = (value: unknown): string => (typeof value === 'string' ? value : typeof value === 'number' ? String(value) : '')
 const texts = (value: unknown): string[] => (Array.isArray(value) ? value.flatMap(entry => (typeof entry === 'string' ? [entry] : typeof entry === 'number' ? [String(entry)] : [])) : [])
@@ -130,6 +149,7 @@ export function readCard(file: Buffer, name: string): NormalizedCard {
     characterVersion: text(data['character_version']),
     ...(book === undefined ? {} : { book: { name: text(book['name']), description: text(book['description']), entries } }),
     ignored: { scripts, extensions: Object.keys(extensions).filter(key => !['talkativeness', 'fav', 'world', 'depth_prompt'].includes(key)) },
+    urls: urlsOf(data),
   }
 }
 

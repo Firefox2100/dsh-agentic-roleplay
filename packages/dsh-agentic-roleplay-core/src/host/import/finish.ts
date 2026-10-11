@@ -47,6 +47,8 @@ export interface ImportReport {
   cover: boolean
   /** What was read and not carried on, by what it was. */
   leftOut: { instructions: number; templates: number; irrelevant: number; scripts: number }
+  /** The pictures the card pointed to: how many looked like pictures and how many were fetched into the world's image library. */
+  pictures: { found: number; added: number }
   /** Things that could not be carried over, each with its reason. */
   notes: string[]
 }
@@ -181,6 +183,7 @@ export interface FinishInput {
   classified: Classified
   extracted: Extracted
   picture?: Buffer
+  pictures?: { found: number; added: number }
   /** What went wrong earlier in the import, in words. */
   notes: string[]
 }
@@ -256,6 +259,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     opening: opening === undefined ? 'none' : 'imported',
     cover,
     leftOut: { instructions: taken('instruction'), templates: taken('template'), irrelevant: taken('irrelevant'), scripts: card.ignored.scripts },
+    pictures: input.pictures ?? { found: 0, added: 0 },
     notes,
   }
   await writeAtomically(join(directory, IMPORT_FOLDER, 'report.json'), JSON.stringify(report, null, 2))

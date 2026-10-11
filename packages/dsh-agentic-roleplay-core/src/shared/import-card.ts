@@ -33,6 +33,8 @@ export interface NormalizedCard {
   book?: { name: string; description: string; entries: CardEntry[] }
   /** Parts of the card that were left out because they are code or settings of another tool. */
   ignored: { scripts: number; extensions: string[] }
+  /** Every web address found anywhere in the card, scripts included, in the order they appear. */
+  urls?: string[]
 }
 
 /** Which opening the new world starts with: the card's first message, one of its alternate greetings, or none. */

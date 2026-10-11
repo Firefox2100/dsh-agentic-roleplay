@@ -6,6 +6,7 @@ import { emptyExtracted, extractEntities, extractStyle, type Extracted } from '.
 import { finishImport, type ImportReport } from './finish.ts'
 import { itemise, type SourceItem } from './items.ts'
 import type { ImportContext } from './run.ts'
+import { fetchPictures, type PicturesReport } from './pictures.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, readImportFolder } from './store.ts'
 import { buildRoster, classifyItems, isLeftOut, ROLES, type Classified, type Role, type Roster } from './survey.ts'
 
@@ -20,6 +21,7 @@ const CLASSIFICATION = 'classification.json'
 const ROSTER = 'roster.json'
 const EXTRACTED = 'extracted.json'
 const REPORT = 'report.json'
+const PICTURES = 'pictures.json'
 
 const folder = (world: string): string => join(world, IMPORT_FOLDER)
 
@@ -32,6 +34,28 @@ async function writeJson(file: string, value: unknown): Promise<void> {
   await mkdir(join(file, '..'), { recursive: true })
   await writeFile(temporary, JSON.stringify(value))
   await rename(temporary, file)
+}
+
+const fetching = new Map<string, Promise<PicturesReport>>()
+
+/**
+ * Starts fetching the pictures the card points to, next to the work of the agents, once per import; a later call gets the same run or its saved result.
+ * A failure is a report of its own: pictures never stop an import.
+ */
+function ensurePictures(world: string, urls: readonly string[]): Promise<PicturesReport> {
+  const running = fetching.get(world)
+  if (running !== undefined) return running
+  const run = (async (): Promise<PicturesReport> => {
+    try { return await readJson<PicturesReport>(join(folder(world), PICTURES)) } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
+    const report = await fetchPictures(world, urls).catch((error: unknown): PicturesReport => ({ found: 0, added: [], skipped: [{ url: '', reason: error instanceof Error ? error.message : String(error) }] }))
+    await writeJson(join(folder(world), PICTURES), report)
+    return report
+  })()
+  fetching.set(world, run)
+  run.catch(() => fetching.delete(world))
+  return run
 }
 
 /** How far the import of a world has come; nothing when the world holds no card waiting to be imported. */
@@ -90,6 +114,7 @@ export interface SurveySummary {
 export async function survey(ctx: ImportContext, world: string): Promise<SurveySummary> {
   await need(world, ['ready', 'surveyed', 'built'], 'the survey')
   const { card, items } = await load(world)
+  void ensurePictures(world, card.urls ?? [])
   const { classified, failures } = await classifyItems(ctx, card, items)
   if (items.length > 0 && failures.length === items.length) throw new Error(`no piece of the card could be read, so nothing was imported: ${failures[0]}`)
   const { roster, failure } = await buildRoster(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified)
@@ -125,6 +150,7 @@ export interface BuildSummary {
 export async function build(ctx: ImportContext, world: string): Promise<BuildSummary> {
   await need(world, ['surveyed', 'built'], 'the build')
   const { card, items } = await load(world)
+  void ensurePictures(world, card.urls ?? [])
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
   const roster = await readJson<Roster>(join(folder(world), ROSTER))
   const extracted = await extractEntities(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified, roster)
@@ -143,9 +169,10 @@ export async function finish(ctx: ImportContext, world: string): Promise<{ ok: t
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
   const roster = await readJson<Roster>(join(folder(world), ROSTER))
   const extracted = { ...emptyExtracted(), ...await readJson<Partial<Extracted>>(join(folder(world), EXTRACTED)).catch(() => ({})) }
+  const pictures = await ensurePictures(world, card.urls ?? [])
   const result = await finishImport(ctx, {
     directory: world, card, choices, roster, items, classified, extracted,
-    ...(picture ? { picture: await readFile(join(folder(world), PICTURE_FILE)) } : {}), notes: [],
+    ...(picture ? { picture: await readFile(join(folder(world), PICTURE_FILE)) } : {}), notes: [], pictures: { found: pictures.found, added: pictures.added.length },
   })
   if (result.ok) await writeJson(join(folder(world), STATE), { phase: 'done', reviewing: true })
   return result
