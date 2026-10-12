@@ -117,3 +117,28 @@ describe('a world in the editor', () => {
     expect(state.relations).toContainEqual(expect.objectContaining({ kind: 'membership', from: expect.objectContaining({ key: 'arthur' }) }))
   })
 })
+
+describe('lore entries of a world', () => {
+  it('are added by title with a key of their own, never over an existing one, and removed into the trash', async () => {
+    const { addWorldLore, removeWorldLore } = await import('../../../src/host/worlds/lore-entries.ts')
+    const first = await addWorldLore(world, 'The Tide Laws')
+    expect(first.key).toBe('the-tide-laws')
+    expect(first.state.lore?.map(entry => entry.title)).toEqual(['The Tide Laws'])
+    const second = await addWorldLore(world, 'The Tide Laws')
+    expect(second.key).toBe('the-tide-laws-2')
+    await expect(addWorldLore(world, '   ')).rejects.toThrow(/needs a title/)
+    const after = await removeWorldLore(world, 'the-tide-laws')
+    expect(after.lore?.map(entry => entry.key)).toEqual(['the-tide-laws-2'])
+    const { readdir } = await import('node:fs/promises')
+    expect((await readdir(join(world.directory, '.trash', 'lore'))).length).toBe(1)
+    await expect(removeWorldLore(world, 'nothing')).rejects.toThrow(/no lore entry/)
+  })
+
+  it('stay while other lore still refers to them', async () => {
+    const { addWorldLore, removeWorldLore } = await import('../../../src/host/worlds/lore-entries.ts')
+    await addWorldLore(world, 'Origin')
+    await write(join(world.directory, 'lore', 'sequel', 'lore.json'), { title: 'Sequel', related: ['origin'] })
+    await expect(removeWorldLore(world, 'origin')).rejects.toThrow(/Sequel/)
+    expect((await removeWorldLore(world, 'sequel')).lore?.map(entry => entry.key)).toEqual(['origin'])
+  })
+})

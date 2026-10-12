@@ -324,7 +324,17 @@ session metadata), and an item nobody could answer is asked again another time. 
 that nobody sees it) through the ordinary brief, with its day, memories and goals. What it decides stands: its activity is set to its intent, and when its
 commitment is medium or high and the item has a place, it goes there (exits ignored). The round is recorded as a round *off stage* (round numbers from 100, so they
 never collide with the game master's rounds) which only the characters in it perceive, and the record keeper is run at once: it writes what they did and concludes the
-engagement (kept, missed, cancelled) or moves the goal on. The player is not told; the story shows it later, through the characters and the records.
+engagement (kept, missed, cancelled) or moves the goal on.
+
+Nothing runs while the player is away from the chat: there is no timer, so a session left open costs nothing. What the world does without the player is bounded by
+what one player message can start: `offstage.perTurn` characters in all (default 2) and `offstage.perCharacter` times each (default 1; a character with several
+things due is asked about the first, the rest wait for the next turn). Items beyond the limits stay due and are taken up by later turns, a few at a time.
+
+With `offstage.summary` (default on) the same request also yields the summary. The away schema (`AWAY_ACTION_SCHEMA`) is the character's answer plus a required
+`account`: one sentence, third person, past tense, as someone who saw it from outside would tell it, without thoughts or secrets (`CharacterRequest.away`; the
+account is kept to 300 characters). The accounts of a turn, and who went where by their routines when the turn began (`SceneAgenda.moved`, no request at all), are
+added to the `away` note (`addToNote`, at most 8 lines), shown to the player as the *Meanwhile* card and gone when the next turn starts. The card is not part of the
+conversation, so later turns do not carry it; the story still has what the characters did, through the records.
 
 ## What the story tracks (variables)
 

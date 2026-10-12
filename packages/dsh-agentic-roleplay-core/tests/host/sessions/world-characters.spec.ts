@@ -47,10 +47,18 @@ describe('worldCharacters', () => {
   })
 
   it('has no characters for a world without a cast', async () => {
-    expect(await worldCharacters(worlds, 'w')).toEqual({ characters: [], problems: [] })
+    expect(await worldCharacters(worlds, 'w')).toEqual({ characters: [], openings: [], startingTime: '', timeZone: '', problems: [] })
   })
 
   it('fails for an unknown world', async () => {
     await expect(worldCharacters(worlds, 'nope')).rejects.toBeInstanceOf(WorldNotFoundError)
+  })
+})
+
+describe('the starting time offered', () => {
+  it('is the local time of the world\'s start in its zone', async () => {
+    const { localInstant } = await import('../../../src/host/sessions/local-time.ts')
+    expect(localInstant(Date.UTC(1912, 8, 21, 11, 30), 'Asia/Shanghai')).toBe('1912-09-21T19:30:00')
+    expect(localInstant(Date.UTC(2026, 0, 1, 0, 0), 'UTC')).toBe('2026-01-01T00:00:00')
   })
 })

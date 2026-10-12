@@ -31,6 +31,7 @@ export const FORM_FIELDS = [
   { path: ['images', 'mode'], kind: 'choice', label: 'imagesMode', help: 'imagesModeHelp', choices: [{ value: 'off', label: 'imagesOff' }, { value: 'manual', label: 'imagesManual' }, { value: 'every-turn', label: 'imagesEveryTurn' }] },
   { path: ['images', 'references'], kind: 'choice', label: 'imageReferences', help: 'imageReferencesHelp', choices: [{ value: 'text-only', label: 'imageReferencesText' }, { value: 'prefer-reference', label: 'imageReferencesPrefer' }, { value: 'require-reference', label: 'imageReferencesRequire' }] },
   { path: ['images', 'reuse'], kind: 'flag', label: 'imagesReuse', help: 'imagesReuseHelp' },
+  { path: ['images', 'highRes'], kind: 'flag', label: 'imagesHighRes', help: 'imagesHighResHelp' },
   { path: ['images', 'interpret'], kind: 'flag', label: 'imagesInterpret', help: 'imagesInterpretHelp' },
   { path: ['images', 'interpreterModel'], kind: 'text', label: 'imagesInterpreterModel', help: 'imagesInterpreterModelHelp', zone: false, placeholder: 'localai/model-id' },
   { path: ['images', 'captioner'], kind: 'text', label: 'imagesCaptioner', help: 'imagesCaptionerHelp', zone: false, placeholder: 'localai/joycaption' },
@@ -40,10 +41,20 @@ export const FORM_FIELDS = [
   { path: ['sampling', 'authoring'], kind: 'decimal', label: 'samplingAuthoring', help: 'samplingAuthoringHelp' },
   { path: ['sampling', 'records'], kind: 'decimal', label: 'samplingRecords', help: 'samplingRecordsHelp' },
   { path: ['offstage', 'perTurn'], kind: 'integer', label: 'offstagePerTurn', help: 'offstagePerTurnHelp' },
+  { path: ['offstage', 'perCharacter'], kind: 'integer', label: 'offstagePerCharacter', help: 'offstagePerCharacterHelp' },
+  { path: ['offstage', 'summary'], kind: 'flag', label: 'offstageSummary', help: 'offstageSummaryHelp' },
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'limitRatio'], kind: 'percent', label: 'limitRatio', help: 'limitRatioHelp' },
   { path: ['context', 'retainRatio'], kind: 'percent', label: 'retainRatio', help: 'retainRatioHelp' },
 ] as const
+
+/**
+ * Settings that trade depth for speed: no thinking for the helper agents, no scene preview, no verification pass, no memory look-ups by
+ * characters, fewer and smaller rounds, no off-stage rounds and a closed world (nothing is made up in play). Keys are those of the form.
+ */
+export const FAST_PRESET: Drafts = {
+  'reasoning.children': 'off', 'preview.enabled': false, 'memory.verify': false, 'memory.lookup': false, maxRounds: '2', maxCharacters: '3', 'offstage.perTurn': '0', 'authoring.enabled': false,
+}
 
 export type FormField = (typeof FORM_FIELDS)[number]
 export type Drafts = Record<string, string | boolean>

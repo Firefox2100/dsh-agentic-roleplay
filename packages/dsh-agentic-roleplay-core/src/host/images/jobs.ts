@@ -21,8 +21,8 @@ import type { Embedder } from '../memory/embedding-index.ts'
 import { presentedFor } from './presented.ts'
 
 /** The same service, whose requests stand where the job's do unless a call says otherwise. */
-function withPriority(service: ImageGenerationService, priority: RequestPriority): ImageGenerationService {
-  return Object.create(service, { generate: { value: (prompt: string, options?: Parameters<ImageGenerationService['generate']>[1]) => service.generate(prompt, { priority, ...options }) } }) as ImageGenerationService
+function withPriority(service: ImageGenerationService, priority: RequestPriority, highRes: boolean): ImageGenerationService {
+  return Object.create(service, { generate: { value: (prompt: string, options?: Parameters<ImageGenerationService['generate']>[1]) => service.generate(prompt, { priority, ...highRes ? { highRes } : {}, ...options }) } }) as ImageGenerationService
 }
 
 interface ActiveJob {
@@ -105,7 +105,7 @@ export class ImageJobs {
     const request = output.segments.map(segment => segment.type === 'utterance' ? `${segment.name}: “${segment.text}”` : segment.text).join('\n')
     const reuse = automatic && settings.images.reuse
     const present = (): Promise<ImagePresenterResult> => (this.deps.presenter ?? runImagePresenter)({
-      parent, signal: controller.signal, service: withPriority(service, priority), story: this.deps.state.openSession(this.deps.sessionsDir(), id),
+      parent, signal: controller.signal, service: withPriority(service, priority, settings.images.highRes), story: this.deps.state.openSession(this.deps.sessionsDir(), id),
       root: sessionFolder(this.deps.sessionsDir(), id), turn, timelineNode: node, request, purpose: 'transient', reuse,
       language: settings.prompts.language, sampling: childSampling(settings, 'records'), referenceMode: settings.images.references, ...(reuse && this.deps.attachments?.() !== undefined ? { attachments: this.deps.attachments() as ImageAttachments } : {}), ...(reuse && this.deps.embedder?.() !== undefined ? { embedder: this.deps.embedder() as Embedder } : {}), ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }),
     })

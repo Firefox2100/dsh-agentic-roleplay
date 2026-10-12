@@ -7,7 +7,7 @@ import type { CharacterAction } from '../../../src/host/orchestration/protocol.t
 import type { RunCharacter } from '../../../src/host/orchestration/turn-engine.ts'
 import { agendaFor, passRound, skipAhead, startTurn } from '../../../src/host/clock/passage.ts'
 import { fireTriggers, noteStore } from '../../../src/host/triggers/notes.ts'
-import { clearNotes, putNote, readNotes } from '../../../src/host/sessions/notes.ts'
+import { addToNote, clearNotes, putNote, readNotes } from '../../../src/host/sessions/notes.ts'
 import { dueOffScene, markHandled } from '../../../src/host/clock/offscene.ts'
 import { readTime, zoneOf } from '../../../src/host/clock/story-clock.ts'
 
@@ -83,6 +83,7 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     runTriggers: (turn, round) => fireTriggers(session, { settings: store.settings(), turn, round, now: readTime(session, store.settings().clock, turn, store.wall).now, zone: zoneOf(store.settings().clock), problem: (message) => { store.problems.push(message) } }),
     ...noteStore(session, () => store.settings(), turn => { const { now, zone } = readTime(session, store.settings().clock, turn, store.wall); return { now, zone } }),
     putNote: (note) => { putNote(session, note) },
+    addNote: (kind, turn, lines) => { addToNote(session, kind, turn, lines) },
     notes: () => readNotes(session),
     clearNotes: () => { clearNotes(session) },
     agenda: (turn, characterId) => agendaFor(session, store.settings().clock, turn, () => store.wall, characterId),

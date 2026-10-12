@@ -24,7 +24,7 @@ const GIVE_UP_AFTER = 45
 /**
  * What the player could do next, as chips stacked above the input; clicking one fills the input (the player may
  * edit it before sending). They are made in the background once the output of a turn is shown, so the dock asks
- * the host for them for a while. Shown only while they are the latest thing in the chat: once the player has sent
+ * the host for them for a while. What other characters did meanwhile (the `away` note) is a card above them, from the same notes. Shown only while they are the latest thing in the chat: once the player has sent
  * something, or a turn is running, they are gone.
  */
 export function SuggestionsDock({ useChat, useSession, pick, notes, t }: SuggestionsDockProps) {
@@ -37,15 +37,19 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
     return newer ? undefined : output.anchorSeq
   })
   const [offered, setOffered] = useState<readonly string[]>([])
+  const [meanwhile, setMeanwhile] = useState<readonly string[]>([])
 
   useEffect(() => {
     setOffered([])
+    setMeanwhile([])
     if (latest === undefined) return undefined
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const look = (attempt: number): void => {
       notes().then((found) => {
         if (stopped) return
+        const away = found.find(note => note.kind === 'away')?.lines ?? []
+        setMeanwhile(previous => (previous.join('\n') === away.join('\n') ? previous : away))
         const lines = found.find(note => note.kind === 'suggestions')?.lines
         if (lines !== undefined && lines.length > 0) setOffered(lines)
         else if (attempt < GIVE_UP_AFTER) timer = setTimeout(() => { look(attempt + 1) }, POLL_MS)
@@ -55,10 +59,16 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
     return () => { stopped = true; if (timer !== undefined) clearTimeout(timer) }
   }, [latest, notes])
 
-  if (running || offered.length === 0) return null
+  if (running || (offered.length === 0 && meanwhile.length === 0)) return null
   return (
     <div className={css.dock} data-testid="roleplay-suggestions">
-      <span className={css.label}>{t('suggestions')}</span>
+      {meanwhile.length > 0 && (
+        <div className={css.card} data-testid="roleplay-meanwhile">
+          <span className={css.label}>{t('meanwhile')}</span>
+          <ul className={css.lines}>{meanwhile.map(line => <li key={line}>{line}</li>)}</ul>
+        </div>
+      )}
+      {offered.length > 0 && <span className={css.label}>{t('suggestions')}</span>}
       {offered.map(text => (
         <button key={text} type="button" className={css.chip} title={t('suggestionHint')} onClick={() => { pick(text) }}>{text}</button>
       ))}

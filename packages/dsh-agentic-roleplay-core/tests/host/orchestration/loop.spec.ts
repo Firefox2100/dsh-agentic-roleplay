@@ -282,7 +282,8 @@ function answerWithoutSuggestions(script: Script) {
       const later = asText(request).includes('Earlier in this scene')
       if (script.characterLookup === true && timesCalled(request, 'recall_my_memories') === 0) return call(`s-${who}-recall`, 'recall_my_memories', { about: 'the key' })
       if (later && who === 'Bob') return call('s-Bob-later', 'submit_result', { intent: 'Bob objects', utterance: 'Why is he here?', commitment: 'low' })
-      return call(`s-${who}`, 'submit_result', retry ? { intent: `${who} grabs the lantern instead`, utterance: 'Give it here!', commitment: 'medium' } : intents[who]!)
+      const away = asText(request).includes('nothing of this happens in front of anyone') ? { account: `${who} dealt with it out of sight.` } : {}
+      return call(`s-${who}`, 'submit_result', retry ? { intent: `${who} grabs the lantern instead`, utterance: 'Give it here!', commitment: 'medium' } : { ...intents[who]!, ...away })
     }
     if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
     if (!toolNames(request).includes('activate_characters')) return text('a title')
@@ -671,6 +672,8 @@ describe('a turn with the real agent loop', () => {
       await vi.waitFor(() => { expect(session.metadata.getValue('offscene.handled')).toEqual([`e${meeting.id}`]) }, { timeout: 5000 })
       expect(session.placements.get('character', dan)?.locationId).toBe(session.locations.getBySourceId('cellar')!.id)
       expect(session.characterStates.get(dan)?.activity).toBe('Dan takes the key')
+      const away = (session.metadata.getValue('notes') as { kind: string; lines: string[] }[]).find(note => note.kind === 'away')
+      expect(away?.lines.sort()).toEqual(['Carol dealt with it out of sight.', 'Dan dealt with it out of sight.'])
     })
 
     it('has the game master change what is tracked in an outcome: it is applied, said back, kept for the keeper, and told to those who can tell, and in the next scene', async () => {

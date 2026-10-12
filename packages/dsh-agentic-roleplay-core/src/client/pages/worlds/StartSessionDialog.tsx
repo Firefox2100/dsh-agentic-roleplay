@@ -18,6 +18,8 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
 }) {
   const formId = useId()
   const [name, setName] = useState(dialog.worldName)
+  const [opening, setOpening] = useState('')
+  const [startTime, setStartTime] = useState('')
   const [choice, setChoice] = useState<string | undefined>()
   const [brought, setBrought] = useState<ReadonlySet<string>>(new Set())
   const [showSettings, setShowSettings] = useState(false)
@@ -54,7 +56,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), settings: fromDrafts(base, shown, options) })
+          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(opening === '' ? {} : { opening: Number(opening) }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
         }}
       >
         <label className={css.field}>
@@ -84,6 +86,24 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
           ))}
         </fieldset>
 
+        {dialog.status === 'ready' && dialog.openings.length > 0 && (
+          <label className={css.field}>
+            <span className={css.label}>{t('startOpening')}</span>
+            <select value={opening} disabled={dialog.submitting} onChange={(event) => { setOpening(event.target.value) }}>
+              <option value="">{t('startOpeningDefault')}</option>
+              {dialog.openings.map((title, index) => <option key={index} value={String(index)}>{title}</option>)}
+            </select>
+          </label>
+        )}
+
+        {dialog.status === 'ready' && shown['clock.mode'] !== 'real' && (
+          <label className={css.field}>
+            <span className={css.label}>{t('startTime')}</span>
+            <input value={startTime} disabled={dialog.submitting} placeholder={dialog.startingTime === '' ? 'YYYY-MM-DDTHH:MM:SS' : dialog.startingTime} onChange={(event) => { setStartTime(event.target.value) }} />
+            <span className={css.message}>{t('startTimeHelp', { zone: dialog.timeZone === '' ? 'UTC' : dialog.timeZone })}</span>
+          </label>
+        )}
+
         {dialog.status === 'ready' && dialog.avatars.length > 0 && (
           <fieldset className={css.field} disabled={dialog.submitting}>
             <legend className={css.label}>{t('startAvatars')}</legend>
@@ -105,7 +125,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
           {showSettings && (
             <div className={css.advancedBody}>
               <p className={css.message}>{t('advancedHelp')}</p>
-              <SettingsFields t={t} drafts={shown} options={options} disabled={dialog.submitting} onChange={(key, value) => { setDrafts({ ...shown, [key]: value }) }} />
+              <SettingsFields t={t} drafts={shown} options={options} disabled={dialog.submitting} onChange={(key, value) => { setDrafts({ ...shown, [key]: value }) }} onPreset={(changes) => { setDrafts({ ...shown, ...changes }) }} />
             </div>
           )}
         </div>

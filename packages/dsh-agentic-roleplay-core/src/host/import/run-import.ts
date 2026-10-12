@@ -2,7 +2,7 @@ import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
 import type { NormalizedCard } from '../../shared/import-card.ts'
-import { emptyExtracted, extractEntities, extractStyle, type Extracted } from './extract.ts'
+import { emptyExtracted, extractEntities, extractStyle, extractVariables, type Extracted } from './extract.ts'
 import { finishImport, type ImportReport } from './finish.ts'
 import { itemise, type SourceItem } from './items.ts'
 import type { ImportContext } from './run.ts'
@@ -143,6 +143,8 @@ export interface BuildSummary {
   lore: number
   /** The prose prompts the card's instructions became. */
   prompts: string[]
+  /** How many variables the card's panels and meters became. */
+  variables: number
   notes: string[]
 }
 
@@ -157,9 +159,12 @@ export async function build(ctx: ImportContext, world: string): Promise<BuildSum
   const style = await extractStyle(ctx, card, items, classified)
   extracted.prompts.push(...style.prompts)
   extracted.notes.push(...style.notes)
+  const tracked = await extractVariables(ctx, card, items, classified, roster)
+  extracted.variables.push(...tracked.variables)
+  extracted.notes.push(...tracked.notes)
   await writeJson(join(folder(world), EXTRACTED), extracted)
   await writeJson(join(folder(world), STATE), { phase: 'built' })
-  return { characters: extracted.characters.length, places: extracted.locations.length, factions: extracted.factions.length, things: extracted.items.length, lore: extracted.lore.length, prompts: extracted.prompts.map(entry => entry.id), notes: extracted.notes }
+  return { characters: extracted.characters.length, places: extracted.locations.length, factions: extracted.factions.length, things: extracted.items.length, lore: extracted.lore.length, prompts: extracted.prompts.map(entry => entry.id), variables: extracted.variables.length, notes: extracted.notes }
 }
 
 /** Last step: check the world as a whole, write it, and fill in its own file. Nothing is written when the world would not start. */

@@ -1,14 +1,16 @@
-import { Input, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { localized, type RequestOption } from 'dsh-ai-core'
 import css from './SettingsFields.module.css'
-import { FORM_FIELDS, boundsOf, keyOf, optionKey, problemsOf, type Drafts } from './fields.ts'
+import { FAST_PRESET, FORM_FIELDS, boundsOf, keyOf, optionKey, problemsOf, type Drafts } from './fields.ts'
 import type { SettingsFormKey } from './locales.ts'
 
 /** The settings of a chat as editable fields: one control with its explanation under each. */
-export function SettingsFields({ t, drafts, onChange, options = [], disabled = false, locked = {} }: {
+export function SettingsFields({ t, drafts, onChange, onPreset, options = [], disabled = false, locked = {} }: {
   t: (key: SettingsFormKey, values?: Record<string, string | number>) => string
   drafts: Drafts
   onChange: (key: string, value: string | boolean) => void
+  /** Sets several settings at once, as a preset does. */
+  onPreset: (changes: Drafts) => void
   /** What the embedding provider lets a request set, to show after the settings. */
   options?: readonly RequestOption[]
   disabled?: boolean
@@ -19,6 +21,13 @@ export function SettingsFields({ t, drafts, onChange, options = [], disabled = f
   const locale = t('localeId')
   return (
     <>
+      <div className={css.row} data-testid="settings-presets">
+        <div className={css.field}>
+          <span className={css.label}>{t('presetFast')}</span>
+          <Button variant="outline" size="sm" disabled={disabled} onClick={() => { onPreset(FAST_PRESET) }}>{t('presetApply')}</Button>
+        </div>
+        <p className={css.help}>{t('presetFastHelp')}</p>
+      </div>
       {FORM_FIELDS.map((field) => {
         const key = keyOf(field)
         const { min, max } = field.kind === 'choice' || field.kind === 'text' ? { min: 0, max: 0 } : boundsOf(field)

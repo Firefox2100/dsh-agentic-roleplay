@@ -1,0 +1,63 @@
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it } from 'vitest'
+import { parseWorldInfoEdit } from '../../../src/shared/world-info.ts'
+import { editWorldInfo, readWorldInfo } from '../../../src/host/worlds/world-info.ts'
+
+const roots: string[] = []
+afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))) })
+
+async function world(document: object): Promise<string> {
+  const directory = join(tmpdir(), `world-info-${process.pid}-${Date.now()}-${Math.random()}`)
+  roots.push(directory)
+  await mkdir(directory, { recursive: true })
+  await writeFile(join(directory, 'world.json'), `${JSON.stringify(document, null, 4)}\n`)
+  return directory
+}
+
+describe('the world\'s own fields', () => {
+  it('are read, and changed without touching anything else in the file', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', description: 'Old.', metadata: { tags: ['a'], extra: 1 }, cover_media_id: 'cover', opening_message: 'It begins.', unknown: { keep: true } })
+    expect(await readWorldInfo(directory)).toMatchObject({ name: 'Harbour', tags: ['a'], opening: 'It begins.', openingParts: false, rules: [] })
+    const info = await editWorldInfo(directory, { description: 'New.', tags: ['b', 'c'], rules: ['There is no magic.'], authorName: 'Someone', authorUrl: 'https://example.test', timeZone: 'Europe/London', startingTime: '1912-04-14T23:40:00', opening: '' })
+    expect(info).toMatchObject({ description: 'New.', tags: ['b', 'c'], rules: ['There is no magic.'], authorName: 'Someone', opening: '' })
+    const written = JSON.parse(await readFile(join(directory, 'world.json'), 'utf8')) as Record<string, unknown>
+    expect(written).toMatchObject({ id: 'w1', cover_media_id: 'cover', unknown: { keep: true }, metadata: { tags: ['b', 'c'], extra: 1 }, author: { name: 'Someone', url: 'https://example.test' }, time_zone: 'Europe/London' })
+    expect(written).not.toHaveProperty('opening_message')
+    expect(await readFile(join(directory, 'world.json'), 'utf8')).toContain('\n    "name"')
+  })
+
+  it('are refused when the world would no longer be readable, and nothing is written', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour' })
+    const before = await readFile(join(directory, 'world.json'), 'utf8')
+    await expect(editWorldInfo(directory, { timeZone: 'Nowhere/Land' })).rejects.toThrow(/time zone/)
+    await expect(editWorldInfo(directory, { rules: Array.from({ length: 31 }, (_, n) => `rule ${n}`) })).rejects.toThrow(/more than 30 rules/)
+    expect(await readFile(join(directory, 'world.json'), 'utf8')).toBe(before)
+  })
+
+  it('keep an opening that has lines spoken by characters', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', opening_message: [{ type: 'narration', text: 'Fog.' }, { type: 'utterance', character: 'mira', text: 'Hello.' }] })
+    expect((await readWorldInfo(directory)).openingParts).toBe(true)
+    await expect(editWorldInfo(directory, { opening: 'Replaced.' })).rejects.toThrow(/lines spoken/)
+    expect(await editWorldInfo(directory, { description: 'Fine.' })).toMatchObject({ description: 'Fine.', openingParts: true })
+  })
+
+  it('offer other openings that are read, replaced, and removed again', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', alternate_openings: [{ title: 'Dawn', text: 'Gulls cry.' }], unknown: 1 })
+    expect((await readWorldInfo(directory)).alternateOpenings).toEqual([{ title: 'Dawn', text: 'Gulls cry.' }])
+    const info = await editWorldInfo(directory, { alternateOpenings: [{ title: '', text: 'A bell rings over the quay.' }, { title: 'Night', text: 'Lamps gutter.' }] })
+    expect(info.alternateOpenings.map(entry => entry.title)).toEqual(['A bell rings over the quay.', 'Night'])
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).toMatchObject({ unknown: 1, alternate_openings: [{ title: 'A bell rings over the quay.', text: 'A bell rings over the quay.' }, { title: 'Night', text: 'Lamps gutter.' }] })
+    await editWorldInfo(directory, { alternateOpenings: [] })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('alternate_openings')
+  })
+
+  it('come from the browser checked', () => {
+    expect(parseWorldInfoEdit({ alternateOpenings: [{ title: ' T ', text: ' x ' }, { text: '  ' }] })).toEqual({ alternateOpenings: [{ title: 'T', text: 'x' }] })
+    expect(() => parseWorldInfoEdit({ alternateOpenings: [{ title: 1, text: 'x' }] })).toThrow(/list of/)
+    expect(() => parseWorldInfoEdit({ alternateOpenings: [{ text: 'x'.repeat(20_001) }] })).toThrow(/longer than/)
+    expect(parseWorldInfoEdit({ name: ' X ', tags: [' a ', ''] })).toEqual({ name: 'X', tags: ['a'] })
+    expect(() => parseWorldInfoEdit({ name: '', nope: 1, rules: 'x' })).toThrow(/needs a name/)
+  })
+})

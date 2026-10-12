@@ -200,7 +200,7 @@ function apply(document: Json, edit: CharacterEdit, problems: string[]): void {
 }
 
 /** Written in one step, so an interruption cannot leave a character file half written. */
-async function replaceFile(file: string, text: string): Promise<void> {
+export async function replaceFile(file: string, text: string): Promise<void> {
   const temporary = join(dirname(file), `.${basename(file)}.${process.pid}.${randomUUID()}.tmp`)
   try {
     const mode = await stat(file).then(value => value.mode, (error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return 0o644; throw error })
@@ -238,7 +238,7 @@ export async function editWorldCharacter(world: EditableWorld, key: string, edit
   return await readWorldEditor(world)
 }
 
-async function entityFolder(worldDirectory: string, directory: string, fileName: string, key: string, parse: (text: string, fallback: string) => { ok: boolean; value?: { id: string } }): Promise<string | undefined> {
+export async function entityFolder(worldDirectory: string, directory: string, fileName: string, key: string, parse: (text: string, fallback: string) => { ok: boolean; value?: { id: string } }): Promise<string | undefined> {
   for (const folder of await subfolders(join(worldDirectory, directory))) {
     try {
       const parsed = parse(await readFile(join(worldDirectory, directory, folder, fileName), 'utf8'), folder)

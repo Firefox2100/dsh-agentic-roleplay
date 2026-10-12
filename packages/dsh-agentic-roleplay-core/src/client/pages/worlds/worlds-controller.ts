@@ -13,6 +13,11 @@ export interface StartDialog {
   characters: readonly CharacterSummary[]
   /** The player avatars that can be brought along; none when they cannot be read. */
   avatars: readonly AvatarSummary[]
+  /** The titles of the world's alternate openings, in order. */
+  openings: readonly string[]
+  /** When the world's story begins (local time in `timeZone`), or empty. */
+  startingTime: string
+  timeZone: string
   /** Why the characters could not be loaded, or why the session could not be started. */
   error?: string
   submitting: boolean
@@ -44,6 +49,10 @@ export interface StartOptions {
   playerAvatar?: string
   /** Keys of the avatars brought into the session. */
   avatars: readonly string[]
+  /** The alternate opening chosen (its position), or none for the world's own. */
+  opening?: number
+  /** Local time the story starts at, when the player chose one. */
+  startingTime?: string
   /** Left out unless the player changed them: the defaults apply. */
   settings?: ChatSettings
 }
@@ -136,13 +145,13 @@ export class WorldsController {
   /** Open the dialog for a world and load the characters it offers. */
   async openStartDialog(worldId: string, worldName: string): Promise<void> {
     const token = ++this.dialogs
-    this.store.update((draft) => { draft.dialog = { worldId, worldName, status: 'loading', characters: [], avatars: [], submitting: false } })
+    this.store.update((draft) => { draft.dialog = { worldId, worldName, status: 'loading', characters: [], avatars: [], openings: [], startingTime: '', timeZone: '', submitting: false } })
     try {
-      const [{ characters }, avatars] = await Promise.all([
+      const [{ characters, openings, startingTime, timeZone }, avatars] = await Promise.all([
         request<WorldCharactersPayload>(`/worlds/characters?id=${encodeURIComponent(worldId)}`, {}, this.abort.signal),
         listAvatars(this.abort.signal).catch((): AvatarSummary[] => []),
       ])
-      this.updateDialog(token, (dialog) => { dialog.status = 'ready'; dialog.characters = characters; dialog.avatars = avatars })
+      this.updateDialog(token, (dialog) => { dialog.status = 'ready'; dialog.characters = characters; dialog.avatars = avatars; dialog.openings = openings; dialog.startingTime = startingTime; dialog.timeZone = timeZone })
     } catch (error) {
       if (this.abort.signal.aborted) return
       this.updateDialog(token, (dialog) => { dialog.status = 'failed'; dialog.error = messageOf(error) })
@@ -165,7 +174,7 @@ export class WorldsController {
       const started = await request<StartedSession>('/sessions', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, ...(options.playerCharacterId === undefined ? {} : { playerCharacterId: options.playerCharacterId }), ...(options.playerAvatar === undefined ? {} : { playerAvatar: options.playerAvatar }), ...(options.avatars.length === 0 ? {} : { avatars: options.avatars }), ...(options.settings === undefined ? {} : { settings: options.settings }) }),
+        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, ...(options.playerCharacterId === undefined ? {} : { playerCharacterId: options.playerCharacterId }), ...(options.playerAvatar === undefined ? {} : { playerAvatar: options.playerAvatar }), ...(options.avatars.length === 0 ? {} : { avatars: options.avatars }), ...(options.opening === undefined ? {} : { opening: options.opening }), ...(options.startingTime === undefined ? {} : { startingTime: options.startingTime }), ...(options.settings === undefined ? {} : { settings: options.settings }) }),
       }, this.abort.signal)
       this.dialogs++
       this.store.update((draft) => { delete draft.dialog })

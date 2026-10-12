@@ -19,11 +19,16 @@ import { RoleplayOrchestration } from './host/orchestration/service.ts'
 import { registerApi } from './host/http/index.ts'
 import { deleteSession } from './host/sessions/delete-session.ts'
 import { purgeOf } from './host/agent/purge-services.ts'
+import { editRoutine, editVariables, readRoutines, readVariables } from './host/worlds/daily-life.ts'
+import { addWorldLore, removeWorldLore } from './host/worlds/lore-entries.ts'
 import { editSessionNarrationVoice, editWorldCharacter as editSessionCharacter, editWorldFaction as editSessionFaction, editWorldLore as editSessionLore, editWorldPlots as editSessionPlots, editWorldPlace as editSessionPlace, editWorldRelation as editSessionRelation, editWorldThing as editSessionThing, generateSessionCharacterPortrait, readWorldState, sessionCharacterPortraitFile } from './host/sessions/world-state.ts'
 import { editWorldNarrationVoice, editWorldCharacter as editWorldFileCharacter, editWorldFaction as editWorldFileFaction, editWorldLore as editWorldFileLore, editWorldPlots as editWorldFilePlots, editWorldPlace as editWorldFilePlace, editWorldRelation as editWorldFileRelation, editWorldThing as editWorldFileThing, generateWorldCharacterPortrait, readWorldEditor, worldCharacterPortraitFile } from './host/worlds/world-editor.ts'
 import { addAvatarsToWorld, avatarsWorld, createAvatar, deleteAvatar } from './host/avatars/avatars.ts'
 import { AVATARS_WORLD_ID } from './shared/avatars.ts'
-import { galleryFile } from './host/images/gallery.ts'
+import { galleryFile, listGallery, updateImage } from './host/images/gallery.ts'
+import { addToLibrary } from './host/images/library.ts'
+import { deleteWorldPrompt, listWorldPrompts, readWorldPrompt, writeWorldPrompt } from './host/prompts/world-prompts.ts'
+import { editWorldInfo, readWorldInfo } from './host/worlds/world-info.ts'
 import { loadLocations } from './host/locations/load.ts'
 import { renameSession } from './host/sessions/rename-session.ts'
 import { archiveSession, restoreSession } from './host/sessions/archive-session.ts'
@@ -126,6 +131,22 @@ export function apply(ctx: Context, config: Config): void {
         return await addAvatarsToWorld(await avatarsWorld(root.path), world, keys, locations)
       },
     },
+    worldFiles: {
+      info: async worldId => await readWorldInfo((await editableWorld(worlds, worldId, root.path)).directory),
+      editInfo: async (worldId, edit) => { const info = await editWorldInfo((await editableWorld(worlds, worldId, root.path)).directory, edit); await worlds.list({ refresh: true }); return info },
+      routines: async worldId => await readRoutines(await editableWorld(worlds, worldId, root.path)),
+      editRoutine: async (worldId, key, windows) => await editRoutine(await editableWorld(worlds, worldId, root.path), key, windows),
+      variables: async worldId => await readVariables(await editableWorld(worlds, worldId, root.path)),
+      editVariables: async (worldId, declarations) => await editVariables(await editableWorld(worlds, worldId, root.path), declarations),
+      prompts: async (worldId, language) => listWorldPrompts((await editableWorld(worlds, worldId, root.path)).directory, language),
+      readPrompt: async (worldId, language, prompt) => readWorldPrompt((await editableWorld(worlds, worldId, root.path)).directory, language, prompt),
+      writePrompt: async (worldId, language, prompt, text) => { await writeWorldPrompt((await editableWorld(worlds, worldId, root.path)).directory, language, prompt, text) },
+      deletePrompt: async (worldId, language, prompt) => { await deleteWorldPrompt((await editableWorld(worlds, worldId, root.path)).directory, language, prompt) },
+      gallery: async worldId => ({ images: await listGallery((await editableWorld(worlds, worldId, root.path)).directory), failures: {} }),
+      galleryFile: async (worldId, path) => await galleryFile((await editableWorld(worlds, worldId, root.path)).directory, path),
+      uploadImage: async (worldId, name, bytes) => await addToLibrary((await editableWorld(worlds, worldId, root.path)).directory, bytes, name),
+      updateImage: async (worldId, path, update) => await updateImage((await editableWorld(worlds, worldId, root.path)).directory, path, update),
+    },
     worldEditor: {
       read: async worldId => await readWorldEditor(await editableWorld(worlds, worldId, root.path)),
       editCharacter: async (worldId, key, edit) => await editWorldFileCharacter(await editableWorld(worlds, worldId, root.path), key, edit),
@@ -133,6 +154,8 @@ export function apply(ctx: Context, config: Config): void {
       editThing: async (worldId, key, edit) => await editWorldFileThing(await editableWorld(worlds, worldId, root.path), key, edit),
       editFaction: async (worldId, key, edit) => await editWorldFileFaction(await editableWorld(worlds, worldId, root.path), key, edit),
       editLore: async (worldId, key, edit) => await editWorldFileLore(await editableWorld(worlds, worldId, root.path), key, edit),
+      addLore: async (worldId, title) => (await addWorldLore(await editableWorld(worlds, worldId, root.path), title)).state,
+      removeLore: async (worldId, key) => await removeWorldLore(await editableWorld(worlds, worldId, root.path), key),
       editPlots: async (worldId, edit) => await editWorldFilePlots(await editableWorld(worlds, worldId, root.path), edit),
       editRelation: async (worldId, edit) => await editWorldFileRelation(await editableWorld(worlds, worldId, root.path), edit),
       editNarrationVoice: async (worldId, voice) => await editWorldNarrationVoice(await editableWorld(worlds, worldId, root.path), voice),

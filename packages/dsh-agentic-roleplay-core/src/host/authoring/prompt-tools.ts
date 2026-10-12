@@ -1,12 +1,9 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { listFiles, promptProblem, PROMPTS_FOLDER, shippedPromptsDirectory, languageOf } from '../prompts/library.ts'
+import { shippedPromptsDirectory } from '../prompts/library.ts'
+import { deleteWorldPrompt, listWorldPrompts, PROSE_PROMPTS, readWorldPrompt, writeWorldPrompt } from '../prompts/world-prompts.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
 
-/** The prompts that decide how the story is written and who the models are (prose and persona); every other prompt holds rules of the game. */
-export const PROSE_PROMPTS: readonly string[] = ['roleplay/persona', 'roleplay/style', 'roleplay/character-style']
+export { PROSE_PROMPTS }
 
 export const PROMPT_MUTATION_TOOLS = ['write_world_prompt', 'delete_world_prompt'] as const
 
@@ -15,23 +12,11 @@ const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown,
 const idParameter = { type: 'string' as const, required: true as const, description: 'The prompt id from list_world_prompts, such as roleplay/style.' }
 const languageParameter = { type: 'string' as const, required: true as const, description: 'The language folder, such as en or zh.' }
 
-function shippedFile(shipped: string, language: string, id: string): string | undefined {
-  return [language, 'en'].map(name => join(shipped, name, `${id}.md`)).find(path => existsSync(path))
-}
-
-function fileOf(directory: string, language: string, id: string): string {
-  const problem = promptProblem(language, id, 'x', shippedPromptsDirectory())
-  if (!id.startsWith('roleplay/')) throw new Error(`"${id}" is not a prompt of the story; the ones that can be carried are listed by list_world_prompts`)
-  if (problem !== undefined && problem.startsWith('there is no prompt')) throw new Error(problem)
-  return join(directory, PROMPTS_FOLDER, language, `${id}.md`)
-}
-
 /**
  * Read and write the prompts a world carries, which replace the shipped ones in the sessions started from it. The files are the
  * ones the session start copies, so they are checked as it checks them.
  */
 export function worldPromptTools(reader: AuthoredWorldReader, shipped: string = shippedPromptsDirectory()): ToolDefinition[] {
-  const language = (value: string): string => languageOf(value)
   return [
     defineTool({
       name: 'list_world_prompts',
@@ -41,9 +26,7 @@ export function worldPromptTools(reader: AuthoredWorldReader, shipped: string = 
       isConcurrencySafe: () => true,
       async execute(args, exec) {
         const { record } = await reader.read(exec)
-        const tag = language(args.language)
-        const ids = readdirSync(join(shipped, 'en'), { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name !== 'import' && entry.name !== 'world').flatMap(entry => listFiles(join(shipped, 'en', entry.name), `${entry.name}/`))
-        return ids.sort().map(id => ({ id, kind: PROSE_PROMPTS.includes(id) ? 'prose' : 'rules', carried: existsSync(join(record.directory, PROMPTS_FOLDER, tag, `${id}.md`)) })) as never
+        return listWorldPrompts(record.directory, args.language, shipped) as never
       },
     }),
     defineTool({
@@ -54,11 +37,7 @@ export function worldPromptTools(reader: AuthoredWorldReader, shipped: string = 
       isConcurrencySafe: () => true,
       async execute(args, exec) {
         const { record } = await reader.read(exec)
-        const tag = language(args.language)
-        const own = fileOf(record.directory, tag, args.id)
-        if (existsSync(own)) return { id: args.id, language: tag, carried: true, text: readFileSync(own, 'utf8') } as never
-        const original = shippedFile(shipped, tag, args.id)
-        return { id: args.id, language: tag, carried: false, text: original === undefined ? '' : readFileSync(original, 'utf8') } as never
+        return readWorldPrompt(record.directory, args.language, args.id, shipped) as never
       },
     }),
     defineTool({
@@ -68,15 +47,8 @@ export function worldPromptTools(reader: AuthoredWorldReader, shipped: string = 
       output: jsonOutput,
       async execute(args, exec) {
         const { record } = await reader.read(exec)
-        const tag = language(args.language)
-        const file = fileOf(record.directory, tag, args.id)
-        const problem = promptProblem(tag, args.id, args.text, shipped)
-        if (problem !== undefined) throw new Error(problem)
-        await mkdir(dirname(file), { recursive: true })
-        const temporary = `${file}.tmp`
-        await writeFile(temporary, args.text.endsWith('\n') ? args.text : `${args.text}\n`)
-        await rename(temporary, file)
-        return { action: 'written', id: args.id, language: tag } as never
+        await writeWorldPrompt(record.directory, args.language, args.id, args.text, shipped)
+        return { action: 'written', id: args.id, language: args.language } as never
       },
     }),
     defineTool({
@@ -86,14 +58,8 @@ export function worldPromptTools(reader: AuthoredWorldReader, shipped: string = 
       output: jsonOutput,
       async execute(args, exec) {
         const { record } = await reader.read(exec)
-        const tag = language(args.language)
-        const file = fileOf(record.directory, tag, args.id)
-        if (!existsSync(file)) throw new Error(`the world carries no prompt "${args.id}" in ${tag}`)
-        const aside = join(record.directory, '.trash', PROMPTS_FOLDER, tag, `${args.id}.${Date.now()}.md`)
-        await mkdir(dirname(aside), { recursive: true })
-        await rename(file, aside)
-        await rm(dirname(file), { recursive: false }).catch(() => undefined)
-        return { action: 'deleted', id: args.id, language: tag, trashPath: aside } as never
+        const trashPath = await deleteWorldPrompt(record.directory, args.language, args.id, shipped)
+        return { action: 'deleted', id: args.id, language: args.language, trashPath } as never
       },
     }),
   ]

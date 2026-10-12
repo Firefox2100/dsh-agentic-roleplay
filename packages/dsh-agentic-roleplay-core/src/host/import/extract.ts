@@ -1,14 +1,15 @@
-import { CHARACTER_KINDS, CHARACTER_TIERS, LORE_KINDS, type LoreKind } from 'dsh-roleplay-model'
+import { CHARACTER_KINDS, CHARACTER_TIERS, LORE_KINDS, MAX_VARIABLES, type LoreKind } from 'dsh-roleplay-model'
 import { formatIssue } from '../validation.ts'
 import { parseCharacterFile } from '../characters/character-file.ts'
 import { parseFactionFile } from '../factions/faction-file.ts'
 import { parseItemFile } from '../items/item-file.ts'
 import { parseLocationFile } from '../locations/location-file.ts'
 import { parseLoreFile } from '../lore/lore-file.ts'
+import { parseVariablesFile, variableProblems } from '../variables/load.ts'
 import type { NormalizedCard } from '../../shared/import-card.ts'
 import { cleanText, MAX_ITEM_CHARS, type SourceItem } from './items.ts'
 import { promptProblem } from '../prompts/library.ts'
-import { PROSE_PROMPTS } from '../authoring/prompt-tools.ts'
+import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
 import { mapLimit, norm, slug, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { findEntity, isLeftOut, type Classified, type Entity, type Kind, type Roster } from './survey.ts'
 
@@ -23,9 +24,11 @@ export interface Extracted {
   lore: Document[]
   /** The prose prompts the card's instructions became, by prompt id. */
   prompts: { id: string; text: string }[]
+  /** What the card keeps track of, as the documents of `variables.json`. */
+  variables: Document[]
   notes: string[]
 }
-export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], notes: [] })
+export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], variables: [], notes: [] })
 
 const SOURCE_BUDGET_CHARS = 14_000
 const MAX_TAGGED = 8
@@ -433,5 +436,89 @@ export async function extractStyle(ctx: ImportContext, card: NormalizedCard, ite
     return { prompts, notes: list(answer.left_out).map(entry => `instructions not carried: ${entry}`) }
   } catch (error) {
     return { prompts: [], notes: [`the instructions of the card were not carried over: ${error instanceof Error ? error.message : String(error)}`] }
+  }
+}
+
+const VARIABLES_SCHEMA = {
+  type: 'object',
+  properties: {
+    variables: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Lowercase ASCII letters, digits and underscores, starting with a letter: trust_meter.' },
+          name: { type: 'string' },
+          description: { type: 'string', description: 'What it measures, in a sentence.' },
+          kind: { type: 'string', enum: ['number', 'flag', 'choice'] },
+          subject: { type: 'string', enum: ['character', 'item', 'location', 'world'] },
+          visibility: { type: 'string', enum: ['public', 'private', 'hidden'] },
+          only: { type: 'array', items: { type: 'string' }, description: 'Names from the lists of characters, places or things it is limited to; empty for all.' },
+          min: { type: ['number', 'null'], description: 'The lowest value the card allows, or null.' }, max: { type: ['number', 'null'], description: 'The highest value the card allows, or null.' }, integer: { type: 'boolean', description: 'True when it counts whole units.' },
+          default: { type: ['number', 'boolean', 'string', 'null'], description: 'Where it starts: a number, true or false, or one of the options; null when the card does not say.' },
+          options: { type: 'array', items: { type: 'string' } },
+          bands: { type: 'array', items: { type: 'object', properties: { up_to: { type: 'number' }, label: { type: 'string' } }, required: ['up_to', 'label'], additionalProperties: false } },
+        },
+        // every field is required (empty or null when the card says nothing): models leave optional fields out, and with them the limits and starting values the card gives
+        required: ['key', 'name', 'description', 'kind', 'subject', 'visibility', 'only', 'min', 'max', 'integer', 'default', 'options', 'bands'],
+        additionalProperties: false,
+      },
+    },
+    left_out: { type: 'array', items: { type: 'string' }, description: 'What the card contained that is not a tracked value, one short phrase each.' },
+  },
+  required: ['variables', 'left_out'],
+} as const
+
+/** The pieces that may describe what a card tracks: its panels and formats, and its instructions. */
+function trackingPieces(card: NormalizedCard, items: readonly SourceItem[], classified: Classified): string[] {
+  return [...items.filter(item => classified[item.id]?.roles[0] === 'template').map(item => item.text), ...instructionPieces(card, items, classified)]
+}
+
+/** The documents of `variables.json` an answer describes, with the roster's names turned into keys. */
+export function variableDocuments(answer: Document, roster: Roster): Document[] {
+  const keyOf = (name: string): string | undefined => roster.find(entity => norm(entity.name) === norm(name) || entity.aliases.some(alias => norm(alias) === norm(name)))?.key
+  const taken = new Set<string>()
+  return objects(answer['variables']).map((entry, index) => {
+    const base = slug(text(entry['key']) || text(entry['name']), '').replace(/-/g, '_').slice(0, 40)
+    const document: Document = { key: uniqueKey(/^[a-z][a-z0-9_]*$/.test(base) ? base : `variable_${index + 1}`, taken), name: text(entry['name']), kind: text(entry['kind']), subject: text(entry['subject']) }
+    put(document, 'description', text(entry['description']))
+    put(document, 'visibility', text(entry['visibility']))
+    put(document, 'only', list(entry['only']).flatMap(name => keyOf(name) ?? []))
+    for (const field of ['min', 'max'] as const) if (typeof entry[field] === 'number') document[field] = entry[field]
+    if (typeof entry['integer'] === 'boolean') document['integer'] = entry['integer']
+    if (['number', 'boolean', 'string'].includes(typeof entry['default'])) document['default'] = entry['default']
+    put(document, 'options', list(entry['options']))
+    put(document, 'bands', objects(entry['bands']).filter(band => typeof band['up_to'] === 'number' && text(band['label']) !== '').map(band => ({ up_to: band['up_to'], label: text(band['label']) })))
+    return document
+  })
+}
+
+/** What is wrong with the declarations, as the world would find it; nothing when they can be used. */
+export function variablesProblem(documents: readonly Document[], roster: Roster): string | undefined {
+  if (documents.length > MAX_VARIABLES) return `${documents.length} variables is more than a world may track (${MAX_VARIABLES}): keep the ones that matter`
+  const parsed = parseVariablesFile(JSON.stringify(documents))
+  if (!parsed.ok) return parsed.issues.map(issue => `${issue.path} ${issue.message}`.trim()).join('; ')
+  const ids = (kind: string): { id: string }[] => roster.filter(entity => entity.kind === kind).map(entity => ({ id: entity.key }))
+  const problems = variableProblems({ defs: parsed.value, characters: ids('character') as never, items: ids('thing') as never, locations: ids('place') as never, values: undefined })
+  return problems.length === 0 ? undefined : problems.join('; ')
+}
+
+/** Finds what the card keeps track of, such as status panels and meters, and writes it as the world's tracked variables. */
+export async function extractVariables(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Pick<Extracted, 'variables' | 'notes'>> {
+  const pieces = trackingPieces(card, items, classified)
+  if (pieces.length === 0) return { variables: [], notes: [] }
+  ctx.say('looking for what the card tracks')
+  try {
+    const names = (kind: string): string => roster.filter(entity => entity.kind === kind).map(entity => entity.name).join(', ')
+    const prompt = `Card: ${card.name}\n\nCharacters: ${names('character')}\nPlaces: ${names('place')}\nThings: ${names('thing')}\n\nThe pieces of the card that may describe what it tracks:\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
+    const answer = await ctx.run<Document>({
+      persona: ctx.text('import/variables', { rules: ctx.text('import/common-rules') }),
+      prompt,
+      result: VARIABLES_SCHEMA as never,
+      check: value => variablesProblem(variableDocuments(value, roster), roster),
+    })
+    return { variables: variableDocuments(answer, roster), notes: list(answer['left_out']).map(entry => `not tracked: ${entry}`) }
+  } catch (error) {
+    return { variables: [], notes: [`what the card tracks was not carried over: ${error instanceof Error ? error.message : String(error)}`] }
   }
 }

@@ -14,6 +14,12 @@ export interface CharacterSummary {
 
 export interface WorldCharactersPayload {
   characters: readonly CharacterSummary[]
+  /** The titles of the other openings the player may start with, in order; the world's own opening is always the first choice. */
+  openings: readonly string[]
+  /** When the world's story begins, as local time in its zone (`2024-05-01T08:00:00`), or empty when it has no starting time. */
+  startingTime: string
+  /** The zone that time is in; empty when the world names none. */
+  timeZone: string
   problems: readonly WorldProblem[]
 }
 
@@ -27,6 +33,10 @@ export interface StartSessionRequest {
   playerAvatar?: string
   /** Keys of the player avatars brought into this session as characters; they are not added to the world. */
   avatars?: string[]
+  /** Starts with this alternate opening of the world (its position in the list) instead of the world's own. */
+  opening?: number
+  /** Starts the story at this local time (`2024-05-01T08:00:00`, in the story's zone) instead of the world's starting time; refused when the chat's time follows the wall clock. */
+  startingTime?: string
   /** The settings of the chat from its first message; what is left out takes its default. They can be changed later. */
   settings?: unknown
 }

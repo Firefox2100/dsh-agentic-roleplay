@@ -12,13 +12,16 @@ import { LOCATION_FILE_NAME } from '../locations/location-file.ts'
 import { LOCATIONS_DIR } from '../locations/load.ts'
 import { LORE_FILE_NAME } from '../lore/lore-file.ts'
 import { LORE_DIR } from '../lore/load.ts'
+import { writeImageFileMetadata } from '../images/image-files.ts'
+import { referenceImagePath } from '../images/storage.ts'
+import { VARIABLES_FILE_NAME } from '../variables/load.ts'
 import { InvalidWorldError } from '../sessions/errors.ts'
-import { WORLD_FILE_NAME } from '../worlds/world-file.ts'
+import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, WORLD_FILE_NAME } from '../worlds/world-file.ts'
 import { loadValidatedWorld } from '../worlds/validated-world.ts'
 import { cleanText, withPlayer, type SourceItem } from './items.ts'
 import type { Extracted } from './extract.ts'
 import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
-import type { ChildJob, ImportContext, TextOf } from './run.ts'
+import { norm, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, openingText } from './store.ts'
 import { isLeftOut, type Classified, type Roster } from './survey.ts'
 
@@ -42,15 +45,51 @@ export interface ImportReport {
   counts: { characters: number; places: number; factions: number; things: number; lore: number }
   /** The prose prompts written into the world from the card's instructions. */
   prompts: string[]
+  /** How many tracked variables the card's panels and meters became. */
+  variables: number
   hasPlayableCharacter: boolean
   opening: 'imported' | 'none'
+  /** How many of the card's other greetings the world offers as openings to choose from. */
+  alternateOpenings: number
   cover: boolean
+  /** Whether the card's picture became the portrait of the character it is of. */
+  portrait: boolean
   /** What was read and not carried on, by what it was. */
   leftOut: { instructions: number; templates: number; irrelevant: number; scripts: number }
   /** The pictures the card pointed to: how many looked like pictures and how many were fetched into the world's image library. */
   pictures: { found: number; added: number }
   /** Things that could not be carried over, each with its reason. */
   notes: string[]
+}
+
+/** The card's other greetings, as the other openings a player may start with: the first message and the alternates that were not chosen. */
+export function alternateOpenings(card: NormalizedCard, chosen: ImportChoices['opening'], player?: string): { title: string; text: string }[] {
+  if (chosen.kind === 'none') return []
+  const greetings = [{ title: 'First message', text: card.firstMessage, taken: chosen.kind === 'first' }, ...card.alternateGreetings.map((text, index) => ({ title: `Alternate ${index + 1}`, text, taken: chosen.kind === 'alternate' && chosen.index === index }))]
+  return greetings.flatMap(({ title, text, taken }) => {
+    const cleaned = taken || text.trim() === '' ? '' : openingMessage(text, card.name, player)
+    return cleaned === '' || cleaned.length > MAX_OPENING_CHARS ? [] : [{ title, text: cleaned }]
+  }).slice(0, MAX_ALTERNATE_OPENINGS)
+}
+
+/** The character the card's picture shows: the one that carries the card's name, or the only one there is. */
+function cardCharacter(characters: readonly Document[], cardName: string): Document | undefined {
+  return characters.find(document => norm(String(document['name'])) === norm(cardName)) ?? (characters.length === 1 ? characters[0] : undefined)
+}
+
+/** Makes the card's picture the canonical reference portrait of its character, as an image the person brought. */
+async function writePortrait(directory: string, picture: Buffer, characters: readonly Document[], cardName: string): Promise<boolean> {
+  const character = cardCharacter(characters, cardName)
+  if (character === undefined) return false
+  const id = String(character['id'])
+  const file = referenceImagePath(directory, { kind: 'character', localId: id })
+  await writeAtomically(file, picture)
+  await writeImageFileMetadata(file, {
+    schema: 'dsh-roleplay-image/v3', purpose: 'reference', origin: 'uploaded', reusable: false, createdAt: new Date().toISOString(), originalName: PICTURE_FILE,
+    description: `${String(character['name'])}: the portrait that came with the character card.`, tags: [String(character['name'])],
+    subjects: [{ kind: 'character', localId: id, name: String(character['name']) }],
+  })
+  return true
 }
 
 /** The card's opening as the world's opening message: plain paragraphs, without the markup the card's tool read as emphasis. */
@@ -206,6 +245,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   const stage = join(directory, IMPORT_FOLDER, STAGE)
   await rm(stage, { recursive: true, force: true })
   try {
+    if (extracted.variables.length > 0) await writeAtomically(join(stage, VARIABLES_FILE_NAME), `${JSON.stringify(extracted.variables, null, 2)}\n`)
     for (const { key, directory: folder, file } of FOLDERS) {
       for (const document of extracted[key]) await writeAtomically(join(stage, folder, String(document['id']), file), `${JSON.stringify(document, null, 2)}\n`)
     }
@@ -219,6 +259,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
       const problem = promptProblem('en', id, text)
       if (problem !== undefined) return { ok: false, problems: [`prompt ${id}: ${problem}`] }
     }
+    if (extracted.variables.length > 0) await rename(join(stage, VARIABLES_FILE_NAME), join(directory, VARIABLES_FILE_NAME))
     for (const { directory: folder } of FOLDERS) {
       const from = join(stage, folder)
       if (await stat(from).then(() => true, () => false)) await rename(from, join(directory, folder))
@@ -241,6 +282,8 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   if (described.startingTime !== undefined && world['starting_time'] === undefined) world['starting_time'] = described.startingTime
   world['metadata'] = { ...(typeof world['metadata'] === 'object' && world['metadata'] !== null ? world['metadata'] as Document : {}), tags: described.tags }
   if (opening !== undefined) world['opening_message'] = openingMessage(opening, card.name, player === undefined ? undefined : String(player['name']))
+  const alternates = alternateOpenings(card, choices.opening, player === undefined ? undefined : String(player['name']))
+  if (alternates.length > 0) world['alternate_openings'] = alternates
   if (card.creator.trim() !== '' && world['author'] === undefined) world['author'] = { name: card.creator.trim() }
   let cover = false
   if (input.picture !== undefined) {
@@ -250,14 +293,21 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     cover = true
   }
   await writeAtomically(file, `${JSON.stringify(world, null, 2)}\n`)
+  let portrait = false
+  if (input.picture !== undefined) {
+    try { portrait = await writePortrait(directory, input.picture, extracted.characters, card.name) } catch (error) { notes.push(`the card's picture could not be used as a portrait: ${error instanceof Error ? error.message : String(error)}`) }
+  }
 
   const taken = (role: 'instruction' | 'template' | 'irrelevant'): number => items.filter(item => { const classification = classified[item.id]; return classification !== undefined && isLeftOut(classification) && classification.roles[0] === role }).length
   const report: ImportReport = {
     prompts: extracted.prompts.map(entry => entry.id),
+    variables: extracted.variables.length,
     counts: { characters: extracted.characters.length, places: extracted.locations.length, factions: extracted.factions.length, things: extracted.items.length, lore: extracted.lore.length },
     hasPlayableCharacter: player !== undefined,
     opening: opening === undefined ? 'none' : 'imported',
+    alternateOpenings: alternates.length,
     cover,
+    portrait,
     leftOut: { instructions: taken('instruction'), templates: taken('template'), irrelevant: taken('irrelevant'), scripts: card.ignored.scripts },
     pictures: input.pictures ?? { found: 0, added: 0 },
     notes,

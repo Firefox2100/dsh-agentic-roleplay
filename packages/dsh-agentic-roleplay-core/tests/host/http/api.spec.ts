@@ -45,7 +45,7 @@ let moved: [string, string] | undefined
 let writtenSettings: unknown
 const started = { id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', characterCount: 2 }
 const listed = { directory: '/root/sessions', sessions: [{ id: 'session-id', chatSessionId: 'session-session-id', name: 'Harbor', worldId: 'harbor', worldName: 'Harbor', createdAt: '2026-01-01T00:00:00.000Z', turns: 0 }], problems: [] }
-const cast = { characters: [{ id: 'arthur', name: 'Arthur', summary: '', role: 'playable' as const, tier: 'principal' as const, kind: 'person' as const }], problems: [] }
+const cast = { characters: [{ id: 'arthur', name: 'Arthur', summary: '', role: 'playable' as const, tier: 'principal' as const, kind: 'person' as const }], openings: [], startingTime: '', timeZone: '', problems: [] }
 
 beforeEach(async () => {
   base = await mkdtemp(join(tmpdir(), 'api-'))
@@ -99,6 +99,22 @@ beforeEach(async () => {
       start: (id, choices) => { importCalls.push(`start ${id} ${choices.name}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
       picture: () => Promise.reject(new Error('no picture')),
     },
+    worldFiles: {
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', alternateOpenings: [] }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', alternateOpenings: [] }) },
+      routines: () => Promise.resolve({ characters: [], places: [] }),
+      editRoutine: (_world, key) => (key === 'nobody' ? Promise.reject(new InvalidEditProblems(['there is no character "nobody"'])) : Promise.resolve({ characters: [], places: [] })),
+      variables: () => Promise.resolve([]),
+      editVariables: (_world, declarations) => Promise.resolve(declarations),
+      prompts: () => Promise.resolve([{ id: 'roleplay/style', kind: 'prose', carried: false }]),
+      readPrompt: (_world, language, prompt) => (prompt === 'roleplay/nope' ? Promise.reject(new Error('there is no prompt "roleplay/nope"')) : Promise.resolve({ id: prompt, language, carried: false, text: 'Write plainly.' })),
+      writePrompt: (_world, _language, _prompt, text) => (text === '' ? Promise.reject(new Error('empty')) : Promise.resolve()),
+      deletePrompt: () => Promise.resolve(),
+      gallery: () => Promise.resolve({ images: [], failures: {} }),
+      galleryFile: () => Promise.reject(new Error('there is no such image')),
+      uploadImage: (_world, name) => Promise.resolve(`library/${name}`),
+      updateImage: () => Promise.reject(new Error('there is no such image')),
+    },
     worldEditor: {
       read: (worldId) => {
         if (editorError !== undefined) return Promise.reject(editorError)
@@ -113,6 +129,8 @@ beforeEach(async () => {
       editThing: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       editFaction: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       editLore: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      addLore: async (_world, title) => { if (title.trim() === '') throw new InvalidEditProblems(['the entry needs a title']); edited.push(`add lore ${title}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      removeLore: async (_world, key) => { edited.push(`remove lore ${key}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       editPlots: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       editRelation: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       editNarrationVoice: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
@@ -229,6 +247,35 @@ describe('roleplay API', () => {
     expect(body.directory).toBe(join(base, 'worlds'))
     expect(body.worlds).toMatchObject([{ id: 'harbor', name: 'Harbor', tags: ['noir'] }])
     expect(body.worlds[0]?.coverVersion).toBeTruthy()
+  })
+
+  it('reads and changes what a world says about itself, with the problems of a refused change', async () => {
+    expect(await (await fetch(`${origin}/worlds/info?id=harbor`)).json()).toMatchObject({ name: 'harbor' })
+    const put = (body: unknown) => fetch(`${origin}/worlds/info?id=harbor`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    expect(await (await put({ tags: ['a'] })).json()).toMatchObject({ tags: ['a'] })
+    const refused = await put({ timeZone: 'bad' })
+    expect(refused.status).toBe(422)
+    expect(await refused.json()).toMatchObject({ problems: ['time_zone is not a time zone'] })
+    expect((await put({ name: '' })).status).toBe(422)
+  })
+
+  it('serves a world\'s prompts and takes its own versions', async () => {
+    expect(await (await fetch(`${origin}/worlds/prompts?id=harbor&language=en`)).json()).toEqual([{ id: 'roleplay/style', kind: 'prose', carried: false }])
+    expect(await (await fetch(`${origin}/worlds/prompts/item?id=harbor&language=en&prompt=roleplay/style`)).json()).toMatchObject({ text: 'Write plainly.' })
+    expect((await fetch(`${origin}/worlds/prompts/item?id=harbor&language=en&prompt=roleplay/nope`)).status).toBe(422)
+    const put = (text: unknown) => fetch(`${origin}/worlds/prompts/item?id=harbor&language=en&prompt=roleplay/style`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ text }) })
+    expect((await put('Be brief.')).status).toBe(200)
+    expect((await put('')).status).toBe(422)
+    expect((await put(3)).status).toBe(400)
+    expect((await fetch(`${origin}/worlds/prompts/item?id=harbor&language=en&prompt=roleplay/style`, { method: 'DELETE' })).status).toBe(200)
+  })
+
+  it('serves a world\'s pictures like a session\'s', async () => {
+    expect(await (await fetch(`${origin}/worlds/gallery?id=harbor`)).json()).toEqual({ images: [], failures: {} })
+    const upload = await fetch(`${origin}/worlds/gallery/upload?id=harbor&name=dock.png`, { method: 'POST', headers: { 'content-type': 'application/octet-stream' }, body: new Uint8Array([1, 2, 3]) })
+    expect(await upload.json()).toEqual({ path: 'library/dock.png' })
+    expect((await fetch(`${origin}/worlds/gallery?id=harbor&path=x`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reusable: 'yes' }) })).status).toBe(400)
+    expect((await fetch(`${origin}/worlds/gallery/file?id=harbor&path=x`)).status).toBe(404)
   })
 
   it('opens a dedicated authoring chat for a world', async () => {
@@ -525,6 +572,27 @@ describe('roleplay API', () => {
       expect((await put('/sessions/world/character?id=x&key=clara', { name: 'x' })).status).toBe(404)
       archiveError = undefined
       expect((await fetch(`${origin}/sessions/world/character?id=abc&key=clara`)).status).toBe(405)
+    })
+
+    it('the days and variables of a world are read and replaced; shapes that are wrong and files that would not be valid are 422', async () => {
+      const send = (path: string, body: unknown) => fetch(`${origin}${path}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      expect((await fetch(`${origin}/worlds/routines?id=harbor`)).status).toBe(200)
+      expect((await send('/worlds/routines/item?id=harbor&key=clara', { windows: [{ from: '07:00', to: '08:00', activity: 'x' }] })).status).toBe(200)
+      expect((await send('/worlds/routines/item?id=harbor&key=nobody', { windows: [] })).status).toBe(422)
+      expect((await send('/worlds/routines/item?id=harbor&key=clara', { windows: 3 })).status).toBe(422)
+      expect(await (await fetch(`${origin}/worlds/variables?id=harbor`)).json()).toEqual([])
+      expect((await send('/worlds/variables?id=harbor', { variables: [{ key: 'k', name: 'K', kind: 'flag', subject: 'world', visibility: 'public' }] })).status).toBe(200)
+      expect((await send('/worlds/variables?id=harbor', { variables: [{ key: 'k', name: 'K', kind: 'bad', subject: 'world', visibility: 'public' }] })).status).toBe(422)
+    })
+
+    it('lore entries of a world are added by title and removed by key; a blank title is refused', async () => {
+      const post = (body: unknown) => fetch(`${origin}/worlds/state/lore?id=harbor`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      edited.length = 0
+      expect((await post({ title: 'The tide laws' })).status).toBe(200)
+      expect((await post({ title: '  ' })).status).toBe(422)
+      expect((await post({})).status).toBe(422)
+      expect((await fetch(`${origin}/worlds/state/lore?id=harbor&key=tide-laws`, { method: 'DELETE' })).status).toBe(200)
+      expect(edited).toEqual(['add lore The tide laws', 'remove lore tide-laws'])
     })
 
     it('in a world: is read and edited by the id of the world, 404 for a world there is not, 422 when the files would not be valid', async () => {

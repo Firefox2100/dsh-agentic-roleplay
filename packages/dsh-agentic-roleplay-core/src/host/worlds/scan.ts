@@ -5,7 +5,7 @@ import { errorMessage } from '../errors.ts'
 import { subfolders } from '../folders.ts'
 import { readDocument } from '../read-document.ts'
 import { assignWorldId } from './world-id.ts'
-import { parseWorldFile, WORLD_FILE_NAME, type OpeningSegment, type WorldClock, type WorldFile } from './world-file.ts'
+import { parseWorldFile, WORLD_FILE_NAME, type AlternateOpening, type OpeningSegment, type WorldClock, type WorldFile } from './world-file.ts'
 
 type WorldFileVariables = NonNullable<WorldFile['variables']>
 
@@ -43,6 +43,8 @@ export interface WorldRecord {
   clock?: WorldClock
   /** What the world itself starts with of what it tracks. */
   variables?: WorldFileVariables
+  /** Other openings the player may choose at the start. */
+  alternateOpenings?: AlternateOpening[]
   /** What is not allowed in the world. */
   rules?: string[]
   narrationVoice?: string
@@ -122,6 +124,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.opening === undefined ? {} : { opening: world.opening }),
     ...(world.clock === undefined ? {} : { clock: world.clock }),
     ...(world.variables === undefined ? {} : { variables: world.variables }),
+    ...(world.alternateOpenings === undefined ? {} : { alternateOpenings: world.alternateOpenings }),
     ...(world.rules === undefined ? {} : { rules: world.rules }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
   }

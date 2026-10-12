@@ -105,6 +105,8 @@ export interface CharacterRequest {
   previous?: CharacterAction
   /** The turn being played. */
   turn: number
+  /** The character acts away from the player, and its answer also says in a line what came of it. */
+  away?: true
   /** What the moment reminds this character of, as it comes back to it. */
   memories?: readonly Recalled[]
   /** Whether the character can ask itself about more of what it remembers, while it decides. */
@@ -427,6 +429,8 @@ export interface TurnStore {
   lapseNotes(turn: number): void
   /** Shows the player a note beside the story until the next turn starts. */
   putNote(note: Note): void
+  /** Adds lines to the turn's note of the kind. */
+  addNote(kind: Note['kind'], turn: number, lines: readonly string[]): void
   /** The notes of the session as they stand. */
   notes(): Note[]
   /** Removes the notes: they belong to the turn that made them. */

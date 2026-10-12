@@ -3,7 +3,7 @@ import type { ConversationViewDefinition } from '@deepseek-ai/dsh-client-ui-conv
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { GalleryTab } from './GalleryTab.tsx'
-import { dictionaries, type GalleryLocaleKey } from './locales.ts'
+import { dictionaries, type GalleryLocaleKey } from '../widgets/gallery-view/locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {

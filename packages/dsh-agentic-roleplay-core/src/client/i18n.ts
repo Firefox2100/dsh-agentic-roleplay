@@ -10,3 +10,8 @@ export type Dictionaries<Key extends string> = Record<BuiltInLocaleId, Record<Ke
 export function withDictionaries<Own extends string, Shared extends string>(own: Dictionaries<Own>, shared: Dictionaries<Shared>): Dictionaries<Own | Shared> {
   return Object.fromEntries((Object.keys(own) as BuiltInLocaleId[]).map(locale => [locale, { ...own[locale], ...shared[locale] }])) as Dictionaries<Own | Shared>
 }
+
+/** A shared piece's copy under keys of its own, for a feature whose own keys would collide with it. */
+export function prefixed<Key extends string, Prefix extends string>(dictionaries: Dictionaries<Key>, prefix: Prefix): Dictionaries<`${Prefix}${Key}`> {
+  return Object.fromEntries((Object.keys(dictionaries) as BuiltInLocaleId[]).map(locale => [locale, Object.fromEntries(Object.entries(dictionaries[locale]).map(([key, value]) => [`${prefix}${key}`, value]))])) as Dictionaries<`${Prefix}${Key}`>
+}

@@ -27,6 +27,16 @@ export function putNote(session: NoteSession, note: Note): void {
   session.metadata.setValue(KEY, [...readNotes(session).filter(existing => existing.kind !== note.kind), note])
 }
 
+/** The most lines one note keeps: what is past it is not told. */
+const MAX_NOTE_LINES = 8
+
+/** Adds lines to the note of the kind when it is of the same turn, else starts it. */
+export function addToNote(session: NoteSession, kind: Note['kind'], turn: number, lines: readonly string[]): void {
+  if (lines.length === 0) return
+  const existing = readNotes(session).find(note => note.kind === kind && note.turn === turn)
+  putNote(session, { kind, turn, lines: [...(existing?.lines ?? []), ...lines].slice(0, MAX_NOTE_LINES) })
+}
+
 /** Removes every note: they belong to the turn that made them. */
 export function clearNotes(session: NoteSession): void {
   if (readNotes(session).length > 0) session.metadata.setValue(KEY, [])

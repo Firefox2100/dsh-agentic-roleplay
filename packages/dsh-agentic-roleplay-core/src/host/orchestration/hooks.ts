@@ -100,6 +100,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     store.clearNotes()
     store.lapseNotes(payload.turn)
     const { time, away, agenda } = store.beginTurn(payload.turn)
+    if (store.settings().offstage.summary) store.addNote('away', payload.turn, agenda.moved.map(move => `${move.name} went to ${move.to}.`))
     const fired = engine.fireAtStart(owner)
     const world = { happened: fired.flatMap(entry => [...entry.events.map(text => `${entry.name}: ${text}`), ...entry.cues.map(cue => `${cue.names.join(' and ')} noticed: ${cue.text}`)]), beats: store.pendingBeats(), upcoming: store.upcoming(payload.turn) }
     const tracked = store.tracked()

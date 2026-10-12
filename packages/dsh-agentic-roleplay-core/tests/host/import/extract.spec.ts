@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readCard } from '../../../src/host/import/card.ts'
-import { characterDocument, documentProblem, extractEntities, factionDocument, loreDocuments, placeDocument, sourcesFor, thingDocument } from '../../../src/host/import/extract.ts'
+import { characterDocument, documentProblem, extractEntities, factionDocument, loreDocuments, placeDocument, sourcesFor, thingDocument, variableDocuments, variablesProblem } from '../../../src/host/import/extract.ts'
 import type { SourceItem } from '../../../src/host/import/items.ts'
 import type { Classified, Roster } from '../../../src/host/import/survey.ts'
 import { v3Card } from '../../support/cards.ts'
@@ -131,5 +131,25 @@ describe('extracting a whole roster', () => {
     expect(tamJob.prompt).toContain('[entry:0] Tam\nTam keeps the light.')
     expect(tamJob.prompt).toContain('characters: Old Tam; Mira Voss; Visitor')
     expect(new Set(ctx.asked.filter(asked => asked.prompt.includes('Make the character')).map(asked => asked.persona)).size).toBe(1)
+  })
+})
+
+describe('the variables a card tracks', () => {
+  const roster: Roster = [{ kind: 'character', key: 'mira', name: 'Mira Voss', aliases: [], player: false }]
+  const answer = { variables: [
+    { key: 'Trust in Mira', name: 'Trust', description: '', kind: 'number', subject: 'character', visibility: 'public', only: ['Mira Voss', 'Nobody'], min: 0, max: 100, integer: true, default: 30, options: [], bands: [{ up_to: 40, label: 'wary' }] },
+    { key: '信任', name: 'Coins', description: 'The player\'s money', kind: 'number', subject: 'character', visibility: 'public', only: [], min: null, max: null, integer: false, default: null, options: [], bands: [] },
+  ] }
+
+  it('become documents: keys fitted, names turned into keys, empty and null left out', () => {
+    expect(variableDocuments(answer, roster)).toEqual([
+      { key: 'trust_in_mira', name: 'Trust', kind: 'number', subject: 'character', visibility: 'public', only: ['mira'], min: 0, max: 100, integer: true, default: 30, bands: [{ up_to: 40, label: 'wary' }] },
+      { key: 'variable_2', name: 'Coins', description: 'The player\'s money', kind: 'number', subject: 'character', visibility: 'public', integer: false },
+    ])
+  })
+
+  it('are refused with the reason when the world could not take them', () => {
+    expect(variablesProblem(variableDocuments(answer, roster), roster)).toBeUndefined()
+    expect(variablesProblem([{ key: 'a', name: 'A', kind: 'number', subject: 'character', min: 10, max: 1 }], roster)).toMatch(/bounds/)
   })
 })

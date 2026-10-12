@@ -56,6 +56,10 @@ export interface ChatSettings {
   offstage: {
     /** The most characters, away from the player's character, that may be asked what they do about something that fell due (a commitment whose time came, a deadline that passed) after a turn. 0 turns it off. */
     perTurn: number
+    /** The most times one character is asked in that run: a character with several things due is asked about the first and the rest waits for the next turn. */
+    perCharacter: number
+    /** Whether those characters also say in a line what came of it, in the same request, for the note shown to the player (it costs no request of its own). */
+    summary: boolean
   }
   sampling: {
     /** The temperature of the game master's own requests: it decides what happens and writes the narration. */
@@ -114,6 +118,8 @@ export interface ChatSettings {
     references: 'text-only' | 'prefer-reference' | 'require-reference'
     /** Whether a picture the story needs on its own (every-turn mode) is first looked for among the images the session already has. */
     reuse: boolean
+    /** Whether a picture is rendered again larger from its first result, when the image service can (the hires fix). */
+    highRes: boolean
     /** Whether images the person brings are described by a model that can read images, so that they can be found. */
     interpret: boolean
     /** The model that describes them, as `provider/model`; empty is the chat's own model, which must be able to read images. */
@@ -168,7 +174,7 @@ export const SETTINGS_SPEC = {
   },
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), thingsPerTurn: integer(0, 20, 4), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
-  offstage: { perTurn: integer(0, 5, 2) },
+  offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), summary: flag(true) },
   sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.8), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
@@ -177,7 +183,7 @@ export const SETTINGS_SPEC = {
   rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
-  images: { mode: choice(['off', 'manual', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference'), reuse: flag(true), interpret: flag(true), interpreterModel: text(200, ''), captioner: text(200, '') },
+  images: { mode: choice(['off', 'manual', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference'), reuse: flag(true), highRes: flag(false), interpret: flag(true), interpreterModel: text(200, ''), captioner: text(200, '') },
   embedding: { options: record() },
 } as const satisfies Spec
 

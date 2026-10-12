@@ -1,3 +1,5 @@
+import { parseRoutineEdit, parseVariablesEdit, type VariableDeclaration, type WorldRoutines } from '../../shared/world-daily.ts'
+import type { RoutineDefinition } from 'dsh-roleplay-model'
 import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
@@ -12,6 +14,8 @@ import { TimelineError } from '../timeline/service.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import type { OpenedSession, SessionsPayload, StartedSession, StartSessionRequest, WorldCharactersPayload } from '../../shared/sessions.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
+import { parseWorldInfoEdit, type WorldInfo, type WorldInfoEdit } from '../../shared/world-info.ts'
+import type { WorldPromptEntry } from '../prompts/world-prompts.ts'
 import { InvalidSettingsError } from '../sessions/settings.ts'
 import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import type { GalleryImage } from '../../shared/gallery.ts'
@@ -50,6 +54,23 @@ export interface ApiDeps {
     remove(key: string): Promise<void>
     addToWorld(worldId: string, keys: string[]): Promise<string[]>
   }
+  /** What a world carries beside its cast: its own fields, its prompts and its pictures. */
+  worldFiles: {
+    info(worldId: string): Promise<WorldInfo>
+    editInfo(worldId: string, edit: WorldInfoEdit): Promise<WorldInfo>
+    routines(worldId: string): Promise<WorldRoutines>
+    editRoutine(worldId: string, key: string, windows: RoutineDefinition[]): Promise<WorldRoutines>
+    variables(worldId: string): Promise<VariableDeclaration[]>
+    editVariables(worldId: string, declarations: VariableDeclaration[]): Promise<VariableDeclaration[]>
+    prompts(worldId: string, language: string): Promise<WorldPromptEntry[]>
+    readPrompt(worldId: string, language: string, prompt: string): Promise<{ id: string; language: string; carried: boolean; text: string }>
+    writePrompt(worldId: string, language: string, prompt: string, text: string): Promise<void>
+    deletePrompt(worldId: string, language: string, prompt: string): Promise<void>
+    gallery(worldId: string): Promise<{ images: GalleryImage[]; failures: Record<string, string> }>
+    galleryFile(worldId: string, path: string): Promise<{ file: string; size: number; mediaType: string }>
+    uploadImage(worldId: string, name: string, bytes: Uint8Array): Promise<string>
+    updateImage(worldId: string, path: string, update: ImageUpdate): Promise<GalleryImage>
+  }
   worldEditor: {
     read(worldId: string): Promise<WorldState>
     editCharacter(worldId: string, key: string, edit: CharacterEdit): Promise<WorldState>
@@ -57,6 +78,8 @@ export interface ApiDeps {
     editThing(worldId: string, key: string, edit: ThingEdit): Promise<WorldState>
     editFaction(worldId: string, key: string, edit: FactionEdit): Promise<WorldState>
     editLore(worldId: string, key: string, edit: LoreEdit): Promise<WorldState>
+    addLore(worldId: string, title: string): Promise<WorldState>
+    removeLore(worldId: string, key: string): Promise<WorldState>
     editPlots(worldId: string, edit: PlotsEdit): Promise<WorldState>
     editRelation(worldId: string, edit: RelationChange): Promise<WorldState>
     editNarrationVoice(worldId: string, voice: string): Promise<WorldState>
@@ -108,6 +131,15 @@ type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<vo
 /** The largest picture that can be added to a gallery. */
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 
+/** The changes to a picture's metadata a body asks for, or what is wrong with it. */
+function imageUpdateOf(body: Record<string, unknown>): ImageUpdate | string {
+  const update: ImageUpdate = {}
+  if (body['reusable'] !== undefined) { if (typeof body['reusable'] !== 'boolean') return 'reusable must be true or false'; update.reusable = body['reusable'] }
+  if (body['description'] !== undefined) { if (typeof body['description'] !== 'string') return 'description must be text'; update.description = body['description'].trim() }
+  if (body['tags'] !== undefined) { if (!Array.isArray(body['tags']) || !body['tags'].every(tag => typeof tag === 'string')) return 'tags must be a list of text'; update.tags = (body['tags'] as string[]).map(tag => tag.trim()).filter(tag => tag !== '') }
+  return update
+}
+
 async function sendImage(res: ServerResponse, image: { file: string; size: number; mediaType?: string }): Promise<void> {
   res.statusCode = 200
   res.setHeader('content-type', image.mediaType ?? 'image/png')
@@ -134,7 +166,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, importer, avatars, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -239,9 +271,81 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
       },
     },
     '/worlds/state/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
-    '/worlds/state/lore': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/state/lore': {
+      POST: async (req, res, url) => {
+        try {
+          const body = await readJsonBody(req) as { title?: unknown } | null
+          if (typeof body?.title !== 'string') throw new InvalidEditProblems(['the entry needs a title'])
+          sendJson(res, 200, await worldEditor.addLore(url.searchParams.get('id') ?? '', body.title))
+        } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error }
+      },
+      DELETE: async (_req, res, url) => { try { sendJson(res, 200, await worldEditor.removeLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
+      PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/plots': { PUT: async (req, res, url) => { try { const body = await readJsonBody(req) as { plots?: unknown }; if (!Array.isArray(body.plots)) return sendError(res, 400, 'plots must be a list'); sendJson(res, 200, await worldEditor.editPlots(url.searchParams.get('id') ?? '', { plots: body.plots as PlotsEdit['plots'] })) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/routines': { GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.routines(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } } },
+    '/worlds/routines/item': {
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldFiles.editRoutine(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseRoutineEdit(await readJsonBody(req)))) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/worlds/variables': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.variables(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } },
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldFiles.editVariables(url.searchParams.get('id') ?? '', parseVariablesEdit(await readJsonBody(req)))) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/worlds/info': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.info(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } },
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldFiles.editInfo(url.searchParams.get('id') ?? '', parseWorldInfoEdit(await readJsonBody(req)))) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/worlds/prompts': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.prompts(url.searchParams.get('id') ?? '', url.searchParams.get('language') ?? 'en')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } },
+    },
+    '/worlds/prompts/item': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.readPrompt(url.searchParams.get('id') ?? '', url.searchParams.get('language') ?? 'en', url.searchParams.get('prompt') ?? '')) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 422, error instanceof Error ? error.message : String(error)) } },
+      PUT: async (req, res, url) => {
+        const body = await readJsonBody(req)
+        if (typeof body['text'] !== 'string') return sendError(res, 400, 'text must be text')
+        try { await worldFiles.writePrompt(url.searchParams.get('id') ?? '', url.searchParams.get('language') ?? 'en', url.searchParams.get('prompt') ?? '', body['text']); sendJson(res, 200, {}) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 422, error instanceof Error ? error.message : String(error)) }
+      },
+      DELETE: async (_req, res, url) => { try { await worldFiles.deletePrompt(url.searchParams.get('id') ?? '', url.searchParams.get('language') ?? 'en', url.searchParams.get('prompt') ?? ''); sendJson(res, 200, {}) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 422, error instanceof Error ? error.message : String(error)) } },
+    },
+    '/worlds/gallery': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.gallery(url.searchParams.get('id') ?? '')) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 409, error instanceof Error ? error.message : String(error)) } },
+      PUT: async (req, res, url) => {
+        const update = imageUpdateOf(await readJsonBody(req))
+        if (typeof update === 'string') return sendError(res, 400, update)
+        try { sendJson(res, 200, await worldFiles.updateImage(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '', update)) } catch (error) { return sendError(res, 422, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/worlds/gallery/upload': {
+      POST: async (req, res, url) => {
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'image'))
+        try { sendJson(res, 201, { path: await worldFiles.uploadImage(url.searchParams.get('id') ?? '', name, await readBinaryBody(req, MAX_UPLOAD_BYTES)) }) } catch (error) { return sendError(res, 422, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/worlds/gallery/file': {
+      GET: async (_req, res, url) => {
+        let image: { file: string; size: number }
+        try { image = await worldFiles.galleryFile(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '') } catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+        await sendImage(res, image)
+      },
+    },
     '/worlds/state/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, await worldEditor.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/worlds/state/character/portrait': {
       POST: async (_req, res, url) => {
@@ -273,15 +377,17 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
     '/sessions': {
       GET: async (_req, res) => { sendJson(res, 200, sessions.list()) },
       POST: async (req, res) => {
-        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings } = await readJsonBody(req)
+        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings, opening, startingTime } = await readJsonBody(req)
         if (typeof worldId !== 'string' || worldId.trim() === '') return sendError(res, 400, '"worldId" is required')
         if (playerCharacterId === undefined && playerAvatar === undefined) return sendError(res, 400, '"playerCharacterId" or "playerAvatar" is required')
         if (playerCharacterId !== undefined && (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '')) return sendError(res, 400, '"playerCharacterId" must be text')
         if (playerAvatar !== undefined && (typeof playerAvatar !== 'string' || playerAvatar.trim() === '')) return sendError(res, 400, '"playerAvatar" must be text')
         if (brought !== undefined && (!Array.isArray(brought) || !brought.every(key => typeof key === 'string'))) return sendError(res, 400, '"avatars" must be a list of keys')
         if (name !== undefined && typeof name !== 'string') return sendError(res, 400, '"name" must be a string')
+        if (opening !== undefined && (typeof opening !== 'number' || !Number.isInteger(opening))) return sendError(res, 400, '"opening" must be a whole number')
+        if (startingTime !== undefined && typeof startingTime !== 'string') return sendError(res, 400, '"startingTime" must be text')
         try {
-          sendJson(res, 201, await sessions.start({ worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
+          sendJson(res, 201, await sessions.start({ ...(opening === undefined ? {} : { opening }), ...(startingTime === undefined ? {} : { startingTime }), worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
         } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidStartError) return sendError(res, 422, error.message)
@@ -368,11 +474,8 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
         catch (error) { return sendError(res, 409, error instanceof Error ? error.message : String(error)) }
       },
       PUT: async (req, res, url) => {
-        const body = await readJsonBody(req)
-        const update: ImageUpdate = {}
-        if (body['reusable'] !== undefined) { if (typeof body['reusable'] !== 'boolean') return sendError(res, 400, 'reusable must be true or false'); update.reusable = body['reusable'] }
-        if (body['description'] !== undefined) { if (typeof body['description'] !== 'string') return sendError(res, 400, 'description must be text'); update.description = body['description'].trim() }
-        if (body['tags'] !== undefined) { if (!Array.isArray(body['tags']) || !body['tags'].every(tag => typeof tag === 'string')) return sendError(res, 400, 'tags must be a list of text'); update.tags = (body['tags'] as string[]).map(tag => tag.trim()).filter(tag => tag !== '') }
+        const update = imageUpdateOf(await readJsonBody(req))
+        if (typeof update === 'string') return sendError(res, 400, update)
         try { sendJson(res, 200, await sessions.updateImage(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '', update)) }
         catch (error) { return sendError(res, 422, error instanceof Error ? error.message : String(error)) }
       },

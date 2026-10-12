@@ -17,6 +17,8 @@ export interface CharacterAction {
   /** What the character says aloud, word for word; absent when it stays silent. */
   utterance?: string
   commitment: Commitment
+  /** Asked only when the character acts away from the player: one line of what happened, as someone told of it afterwards would say it. */
+  account?: string
 }
 
 /** A character's action together with who gave it. `character` is the key the game master uses. */
@@ -89,6 +91,18 @@ export const CHARACTER_ACTION_SCHEMA: ObjectJsonSchema = {
   additionalProperties: false,
 }
 
+/** The schema for a character acting away from the player: the same answer, which also says in a line what happened, so no second request is needed. */
+export const AWAY_ACTION_SCHEMA: ObjectJsonSchema = {
+  ...CHARACTER_ACTION_SCHEMA,
+  properties: {
+    ...CHARACTER_ACTION_SCHEMA.properties,
+    account: { type: 'string', description: 'One sentence, in the third person and the past tense, of what came of this, as someone who only saw it from outside would tell it afterwards: no thoughts, no secrets.' },
+  },
+  required: ['intent', 'commitment', 'account'],
+}
+
+const MAX_ACCOUNT = 300
+
 /** @throws {Error} when the value is not a character action. */
 const QUOTE_PAIRS: readonly (readonly [string, string])[] = [['"', '"'], ['“', '”'], ['「', '」'], ['『', '』'], ['«', '»'], ['‘', '’']]
 
@@ -116,11 +130,12 @@ function splitLeakedFields(intent: string): { intent: string; utterance?: string
 
 export function parseCharacterAction(value: unknown): CharacterAction {
   if (typeof value !== 'object' || value === null) throw new Error('the character did not answer with an object')
-  const { intent: rawIntent, utterance: rawUtterance, commitment } = value as Record<string, unknown>
+  const { intent: rawIntent, utterance: rawUtterance, commitment, account } = value as Record<string, unknown>
   const { intent, utterance } = typeof rawIntent === 'string' && rawUtterance === undefined ? splitLeakedFields(rawIntent) : { intent: rawIntent, utterance: rawUtterance }
   if (typeof intent !== 'string' || intent.trim() === '') throw new Error('the character gave no intent')
   if (!COMMITMENTS.includes(commitment as Commitment)) throw new Error(`the character gave an unknown commitment "${String(commitment)}"`)
   if (utterance !== undefined && typeof utterance !== 'string') throw new Error('the character\'s utterance is not text')
   const spoken = utterance === undefined ? undefined : unquoted(utterance)
-  return { intent: intent.trim(), ...(spoken === undefined || spoken === '' ? {} : { utterance: spoken }), commitment: commitment as Commitment }
+  const told = typeof account === 'string' ? account.trim().slice(0, MAX_ACCOUNT) : ''
+  return { intent: intent.trim(), ...(spoken === undefined || spoken === '' ? {} : { utterance: spoken }), commitment: commitment as Commitment, ...(told === '' ? {} : { account: told }) }
 }

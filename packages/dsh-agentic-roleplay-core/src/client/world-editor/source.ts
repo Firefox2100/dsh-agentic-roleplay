@@ -2,6 +2,8 @@ import type { CharacterEdit, FactionEdit, LoreEdit, PlaceEdit, PlotsEdit, Relati
 
 /** Where the editor reads a world from and writes its changes to: a session's story, or a world's files. */
 export interface WorldSource {
+  /** The authored world this source reads, when it is one: only a world's files have fields, prompts and pictures of their own. */
+  worldId?: string
   load(signal: AbortSignal): Promise<WorldState>
   /** Saves the changes of one character and answers the world as it stands after. */
   saveCharacter(key: string, edit: CharacterEdit, signal: AbortSignal): Promise<WorldState>
@@ -9,6 +11,9 @@ export interface WorldSource {
   saveThing(key: string, edit: ThingEdit, signal: AbortSignal): Promise<WorldState>
   saveFaction(key: string, edit: FactionEdit, signal: AbortSignal): Promise<WorldState>
   saveLore(key: string, edit: LoreEdit, signal: AbortSignal): Promise<WorldState>
+  /** Only a world's files can have entries added and removed; a session's story keeps the lore it started with. */
+  addLore?(title: string, signal: AbortSignal): Promise<WorldState>
+  removeLore?(key: string, signal: AbortSignal): Promise<WorldState>
   savePlots(edit: PlotsEdit, signal: AbortSignal): Promise<WorldState>
   saveRelation(edit: RelationChange, signal: AbortSignal): Promise<WorldState>
   saveNarrationVoice(voice: string, signal: AbortSignal): Promise<WorldState>
@@ -36,6 +41,14 @@ export async function answer(response: Response): Promise<WorldState> {
 
 export async function put(url: string, edit: CharacterEdit | PlaceEdit | ThingEdit | FactionEdit | LoreEdit | PlotsEdit | RelationChange | { voice: string }, signal: AbortSignal): Promise<WorldState> {
   return await answer(await fetch(url, { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(edit), signal }))
+}
+
+export async function postJson(url: string, body: { title: string }, signal: AbortSignal): Promise<WorldState> {
+  return await answer(await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), signal }))
+}
+
+export async function remove(url: string, signal: AbortSignal): Promise<WorldState> {
+  return await answer(await fetch(url, { method: 'DELETE', credentials: 'same-origin', signal }))
 }
 
 export async function post(url: string, signal: AbortSignal): Promise<WorldState> {

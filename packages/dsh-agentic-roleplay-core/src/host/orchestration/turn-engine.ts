@@ -80,6 +80,8 @@ interface TurnState {
   /** The rounds recorded so far. */
   rounds: number
   situations: string[]
+  /** Who was asked about what in the rounds of the turn, as `keys|situation`, so that the same question is not asked twice. */
+  asked: string[]
   /** What the current round is about. */
   situation: string
   first?: Attempt
@@ -132,6 +134,8 @@ const MAX_ROUND_SECONDS = 86_400
 const STALE_AFTER_TURNS = 4
 /** The game master is asked to correct its output this many times before it is corrected for it. */
 const MAX_REFUSALS = 2
+/** The runs of the record keeper that may fail one after another before the rounds waiting for it are given up, so that they cannot pile up for ever. */
+const MAX_FAILED_RUNS = 3
 
 /**
  * The loop of one turn: rounds of characters acting, each resolved by the game master
@@ -147,6 +151,7 @@ export class TurnEngine {
   private readonly delivered = new Map<string, TurnState>()
   /** How many runs of the keeper are waiting or running for each chat. */
   private readonly runs = new Map<string, number>()
+  private readonly failedRuns = new Map<string, number>()
   private readonly objections = new Map<string, number>()
   /** What runs in the background of each chat and writes to its story, other than the records: fitting in what was made up, and the characters away. */
   private readonly working = new Map<string, Set<Promise<unknown>>>()
@@ -252,6 +257,8 @@ export class TurnEngine {
     const keys = this.boundaries().planner.plan({ cast, ...(input.characters === undefined ? {} : { requested: input.characters }) })
     if (keys.length === 0) throw new Error('there is no character to activate')
     if (keys.length > most) throw new Error(`${keys.length} characters were asked, which is more than one round allows (${most}): ask only those the moment actually reaches, and the others in a later round if the story comes to them`)
+    const signature = `${[...keys].sort().join(',')}|${situation.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()}`
+    if (state.asked.includes(signature)) throw new Error('the same characters were already asked about the same situation in this message, so nothing new would come of it: say what changed, ask others, or deliver the output with narrate')
     state.situation = situation
     state.cast = cast
     state.recalled.clear()
@@ -260,6 +267,7 @@ export class TurnEngine {
     delete state.second
     const attempt = await this.runAttempt(owner, 1, keys, cast, state, run, signal)
     if (attempt.reports.length === 0) return { attempt: 1, reports: [], failures: attempt.failures }
+    state.asked.push(signature)
     state.first = attempt
     state.phase = 'resolving'
     return { attempt: 1, reports: attempt.reports, failures: attempt.failures }
@@ -533,7 +541,7 @@ export class TurnEngine {
   private offSceneIfDue(owner: TurnOwner, state: TurnState, run: RunCharacter): void {
     const store = this.stores(owner.chat)
     if (store === undefined || this.offstage.has(owner.chat)) return
-    const limit = store.settings().offstage.perTurn
+    const { perTurn: limit } = store.settings().offstage
     if (limit === 0) return
     const due = store.dueOffScene(owner.turn)
     if (due.length === 0) return
@@ -546,17 +554,20 @@ export class TurnEngine {
   }
 
   private async runOffScene(owner: TurnOwner, state: TurnState, store: TurnStore, due: readonly OffSceneItem[], limit: number, run: RunCharacter): Promise<void> {
+    const { summary, perCharacter } = store.settings().offstage
     let budget = limit
+    const acted = new Map<string, number>()
     for (const item of due) {
       if (budget <= 0) break
       const cast = store.cast()
-      const keys = item.characters.filter(key => cast.some(member => member.key === key)).slice(0, budget)
+      const keys = item.characters.filter(key => cast.some(member => member.key === key) && (acted.get(key) ?? 0) < perCharacter).slice(0, budget)
       if (keys.length === 0) continue
       budget -= keys.length
+      for (const key of keys) acted.set(key, (acted.get(key) ?? 0) + 1)
       const asked: TurnState = { ...state, situation: item.text, history: [], recalled: new Map() }
       delete asked.first
       delete asked.second
-      const attempt = await this.runAttempt(owner, 1, keys, cast, asked, run, state.cancel.signal)
+      const attempt = await this.runAttempt(owner, 1, keys, cast, asked, run, state.cancel.signal, summary)
       if (attempt.reports.length === 0) continue
       const where = item.place
       const moves = new Map(attempt.reports.flatMap((report) => {
@@ -586,6 +597,10 @@ export class TurnEngine {
       })
       store.markHandled([item.key])
       this.write(owner, state)
+      if (summary && this.states.get(owner.chat) === state) {
+        const lines = attempt.reports.flatMap(report => (report.account === undefined ? [] : [report.account]))
+        store.addNote('away', owner.turn, lines)
+      }
     }
   }
 
@@ -672,7 +687,7 @@ export class TurnEngine {
   private stateFor({ chat, turn }: TurnOwner): TurnState {
     const known = this.states.get(chat)
     if (known?.turn === turn) return known
-    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0, previewed: false, previewWanted: this.stores(chat)?.settings().preview.enabled ?? false, focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map(), cues: new Map(), addressed: [] }
+    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], asked: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], refused: 0, previewed: false, previewWanted: this.stores(chat)?.settings().preview.enabled ?? false, focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map(), cues: new Map(), addressed: [] }
     this.states.set(chat, fresh)
     return fresh
   }
@@ -772,7 +787,7 @@ export class TurnEngine {
   }
 
   /** Every character acts at the same time; one that fails or answers badly is reported, not fatal. */
-  private async runAttempt(owner: TurnOwner, number: 1 | 2, keys: readonly string[], cast: readonly CastMember[], state: TurnState, run: RunCharacter, signal: AbortSignal): Promise<Attempt> {
+  private async runAttempt(owner: TurnOwner, number: 1 | 2, keys: readonly string[], cast: readonly CastMember[], state: TurnState, run: RunCharacter, signal: AbortSignal, away = false): Promise<Attempt> {
     const store = this.stores(owner.chat)
     const { outputValidator } = this.boundaries()
     const reaction = number === 2 ? this.reactions(state) : undefined
@@ -797,7 +812,7 @@ export class TurnEngine {
       const upcoming = store?.upcomingFor(member.character.id, owner.turn) ?? []
       const tracked = store?.trackedFor(member.character.id, (place === undefined ? cast : place.here).map(entry => entry.character.id))
       const request: CharacterRequest = {
-        member, cast, situation: state.situation, attempt: number, turn: owner.turn, lookup: store?.settings().memory.lookup ?? false, text: (id, variables) => this.storeOf(owner).text(id, variables),
+        member, cast, situation: state.situation, attempt: number, turn: owner.turn, ...(away ? { away: true as const } : {}), lookup: store?.settings().memory.lookup ?? false, text: (id, variables) => this.storeOf(owner).text(id, variables),
         ...(time === undefined ? {} : { time }),
         ...(agenda === undefined ? {} : { agenda }),
         ...(cues.length === 0 ? {} : { cues }),
@@ -983,9 +998,17 @@ export class TurnEngine {
         await this.boundaries().committer.commit({ chat: owner.chat, rounds, store, ...(state.focus.length === 0 ? {} : { focus: [...state.focus] }) }, state.cancel.signal)
         store.completeCommits(rounds)
         state.focus = []
+        this.failedRuns.delete(owner.chat)
         this.written(owner.chat)
       } catch (error) {
-        if (!state.cancel.signal.aborted) this.problem(`the records of ${rounds.map(round => `${round.turn}.${round.round}`).join(', ')} were not written: ${error instanceof Error ? error.message : String(error)}`)
+        if (state.cancel.signal.aborted) return
+        const failed = (this.failedRuns.get(owner.chat) ?? 0) + 1
+        const label = rounds.map(round => `${round.turn}.${round.round}`).join(', ')
+        this.problem(`the records of ${label} were not written: ${error instanceof Error ? error.message : String(error)}`)
+        if (failed < MAX_FAILED_RUNS) { this.failedRuns.set(owner.chat, failed); return }
+        this.failedRuns.delete(owner.chat)
+        store.completeCommits(rounds)
+        this.problem(`the records of ${label} were given up after ${MAX_FAILED_RUNS} failed runs: what the game master decided stands, but those rounds are not in the memory`)
       }
     }).finally(() => { this.runs.set(owner.chat, (this.runs.get(owner.chat) ?? 1) - 1) }))
   }

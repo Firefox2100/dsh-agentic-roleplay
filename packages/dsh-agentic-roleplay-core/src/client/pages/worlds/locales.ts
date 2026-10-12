@@ -10,7 +10,7 @@ export type WorldsLocaleKey =
   | 'previousPage' | 'nextPage' | 'pageOf'
   | 'problems'
   | 'play' | 'chatNotOpened'
-  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
+  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startTime' | 'startTimeHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
   | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed'
   | 'authorWorld' | 'openingAuthor' | 'authorWorldFailed' | 'authoringChatTitle'
@@ -43,10 +43,10 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     chatNotOpened: 'Started the session "{name}", but could not open its chat: {message}',
     advanced: 'Advanced settings',
     advancedHelp: 'These are used from the first message. You can change them later in the chat\'s settings tab.',
-    language: 'en',
     startTitle: 'Start a new session',
     sessionName: 'Session name',
     playAs: 'Play as',
+    startOpening: 'Opening', startOpeningDefault: 'The world\'s own opening', startTime: 'Story starts at', startTimeHelp: 'Local time in {zone}, like 1912-04-14T23:40:00. Leave empty for the world\'s own start. Not used when the story follows the real clock.',
     loadingCharacters: 'Loading characters…',
     charactersFailed: 'Could not load the characters: {message}',
     noPlayable: 'This world has no playable characters, so a session cannot be started.',
@@ -85,10 +85,10 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     chatNotOpened: '已开始存档“{name}”，但无法打开对话：{message}',
     advanced: '高级设置',
     advancedHelp: '从第一条消息起就按这些设置运行，之后可在对话的“对话设置”页中修改。',
-    language: 'zh',
     startTitle: '开始新存档',
     sessionName: '存档名称',
     playAs: '扮演角色',
+    startOpening: '开场', startOpeningDefault: '世界自带的开场', startTime: '故事开始于', startTimeHelp: '{zone} 的本地时间，例如 1912-04-14T23:40:00。留空则使用世界自带的开始时间。故事跟随真实时钟时不适用。',
     loadingCharacters: '正在加载角色…',
     charactersFailed: '无法加载角色：{message}',
     noPlayable: '这张世界卡没有可扮演的角色，无法开始存档。',

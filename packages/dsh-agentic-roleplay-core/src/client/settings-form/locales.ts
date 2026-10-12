@@ -4,10 +4,10 @@ export type SettingsFormKey =
   | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
   | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
-  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
+  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
-  | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'embeddingOptions' | 'embeddingOptionsHelp'
-  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp'
+  | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
+  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -69,6 +69,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     suggestionsCountHelp: 'After each turn, a helper writes this many things your character could do next from what you just read, in the background. Click one to put it in the input box (you can edit it before sending). 0 offers none and makes no model call.',
     imagesMode: 'Scene illustrations',
     imagesModeHelp: 'Manual offers an image button beneath each delivered turn. Every turn also starts an image author in the background after the text appears. Off makes no image calls.',
+    imagesHighRes: 'Hires fix',
+    imagesHighResHelp: 'Render each picture twice: first at the configured size, then again larger from that result, which adds detail while keeping the composition. Slower; only image services that can repaint an image do it, the others ignore it.',
     imagesReuse: 'Reuse existing images',
     imagesReuseHelp: 'When a picture is made on its own after a turn, look first for an image the session already has (one you brought, or an earlier one marked reusable) that fits the moment, and only generate when none does. A picture you ask for with the button is always generated.',
     imagesInterpret: 'Describe images you bring',
@@ -86,6 +88,10 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imageReferencesPrefer: 'Prefer',
     imageReferencesRequire: 'Require',
     offstagePerTurn: 'Characters acting off stage per turn',
+    offstagePerCharacter: 'Times one character acts off stage per turn',
+    offstagePerCharacterHelp: 'A character with several things due is asked about the first; the rest wait for your next turn. With the limit above, this caps what the world does without you: nothing runs while you are away from the chat, and each message you send lets at most this many characters act.',
+    offstageSummary: 'Tell me what happened meanwhile',
+    offstageSummaryHelp: 'Characters acting off stage also say in a line what came of it, in the same request (no extra cost), and it is shown as a card beside the story until your next message, outside the conversation.',
     offstagePerTurnHelp: 'When something falls due for characters who are away from you (a meeting whose time has come, a deadline that passed), up to this many of them are asked, in the background after your turn, what they do about it. What they decide is recorded and can be seen in the story later. 0 turns it off.',
     clockLocked: 'The story\'s time is simulated and has its own dates, so it cannot follow the real clock any more.',
     clockTimeZone: 'Time zone',
@@ -103,6 +109,7 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     retainRatioHelp: 'The share of the limit that stays word for word when the oldest turns are folded.',
     invalid: 'Enter a number from {min} to {max}.',
     localeId: 'en',
+    presetFast: 'Fast preset', presetApply: 'Apply', presetFastHelp: 'Sets the settings below for speed: no thinking for the helper agents, no scene preview, no verification pass, no memory look-ups by characters, at most 2 rounds of 3 characters, no off-stage rounds and a closed world. You can change any of them afterwards.',
     embeddingOptions: 'Embedding',
     embeddingOptionsHelp: 'What the selected embedding provider lets this chat set for each request. Empty uses the provider\'s own setting.',
   },
@@ -165,6 +172,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     suggestionsCountHelp: '每轮结束后，一个助手会根据你刚读到的内容，在后台写出这么多条你的角色接下来可以做的事。点击其中一条即可填入输入框（发送前可以修改）。0 表示不提供，也不会调用模型。',
     imagesMode: '场景插图',
     imagesModeHelp: '手动模式会在每轮叙述下方提供生成按钮；每轮模式还会在文字显示后于后台启动图像作者；关闭后不会调用图像服务。',
+    imagesHighRes: '高清修复',
+    imagesHighResHelp: '每张图渲染两次：先按设定尺寸，再以该结果为基础放大重绘，保持构图并增加细节。更慢；只有支持图生图的图像服务才会执行，其他服务会忽略。',
     imagesReuse: '复用已有图像',
     imagesReuseHelp: '在每轮后自动配图时，先在存档已有的图像中（你添加的，或之前标记为可复用的）寻找符合此刻的，没有合适的才生成。你用按钮要求的图像总是重新生成。',
     imagesInterpret: '描述你添加的图像',
@@ -182,6 +191,10 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imageReferencesPrefer: '优先',
     imageReferencesRequire: '必须',
     offstagePerTurn: '每轮台下行动的角色数',
+    offstagePerCharacter: '每个角色每轮台下行动次数',
+    offstagePerCharacterHelp: '同一角色有多件事到期时，只询问第一件，其余等你的下一轮。配合上面的上限，这限制了世界在无人操作时的行动：你离开聊天时什么都不会运行，你每发一条消息最多让这么多次角色行动。',
+    offstageSummary: '告诉我期间发生了什么',
+    offstageSummaryHelp: '台下行动的角色会在同一次请求里用一句话说明结果（不额外消耗请求），并以卡片形式显示在故事旁，直到你发送下一条消息，不会进入对话记录。',
     offstagePerTurnHelp: '当有事对不在你身边的角色到期时（约定的时间到了、期限过了），每轮结束后会在后台最多询问这么多角色打算怎么办。他们的决定会被记录，之后可在故事中看到。0 表示关闭。',
     clockLocked: '故事时间已经是模拟的，有自己的日期，不能再改为跟随现实时钟。',
     clockTimeZone: '时区',
@@ -199,6 +212,7 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     retainRatioHelp: '折叠最早几轮时，占上限比例的这部分对话会原文保留。',
     invalid: '请输入 {min} 到 {max} 之间的数字。',
     localeId: 'zh',
+    presetFast: '快速预设', presetApply: '应用', presetFastHelp: '把下面的设置调成偏重速度：辅助智能体不思考、不预览场景、不做核对、角色不查记忆、每条消息最多 2 轮且每轮最多 3 个角色、不做幕后回合、世界封闭。应用后仍可逐项修改。',
     embeddingOptions: '嵌入',
     embeddingOptionsHelp: '所选嵌入提供方允许本对话为每次请求设置的内容。留空则使用提供方自己的设置。',
   },

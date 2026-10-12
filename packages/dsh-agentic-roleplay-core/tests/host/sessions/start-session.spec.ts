@@ -129,6 +129,15 @@ describe('startSession', () => {
     expect(ensured).toEqual([[started.id, 'The Blackwater Observatory', [{ type: 'narration', text: 'The festival lanterns sway.' }]]])
   })
 
+  it('starts with an alternate opening the player chose, and refuses one the world does not have', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: 'The lanterns sway.', alternate_openings: [{ title: 'Arriving late', text: 'You arrive after dark.' }, { text: 'It is already morning.' }] })
+    const started = await startSession(deps, { ...playAsArthur, opening: 1 })
+    expect(ensured).toEqual([[started.id, 'The Blackwater Observatory', [{ type: 'narration', text: 'It is already morning.' }]]])
+    await expect(startSession(deps, { ...playAsArthur, opening: 2 })).rejects.toThrow(/no alternate opening 2/)
+    await expect(startSession(deps, { ...playAsArthur, opening: -1 })).rejects.toThrow(InvalidStartError)
+    expect(ensured).toHaveLength(1)
+  })
+
   it('names the characters who speak in the opening', async () => {
     await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: [
       { type: 'narration', text: 'Dusk.' }, { type: 'utterance', character: 'clara', text: 'You are late.' },
@@ -331,6 +340,14 @@ describe('starting the clock', () => {
     const started = await startSession(deps, playAsArthur)
     expect(await clockOf(started)).toEqual({ mode: 'simulated', now: Date.UTC(1912, 8, 21, 11, 30) })
     expect(readSettings(join(root, 'sessions', started.id)).clock.timeZone).toBe('Asia/Shanghai')
+  })
+
+  it('starts at the time the player chose, read in the story\'s zone, instead of the world\'s', async () => {
+    await write(world(), { id: 'blackwater', name: 'B', time_zone: 'Asia/Shanghai', starting_time: '1912-09-21T19:30' })
+    const started = await startSession(deps, { ...playAsArthur, startingTime: '1912-10-01T08:00' })
+    expect(await clockOf(started)).toEqual({ mode: 'simulated', now: Date.UTC(1912, 9, 1, 0, 0) })
+    await expect(startSession(deps, { ...playAsArthur, startingTime: 'tomorrow-ish' })).rejects.toThrow(/starting time/)
+    await expect(startSession(deps, { ...playAsArthur, startingTime: '1912-10-01T08:00', settings: { clock: { mode: 'real' } } })).rejects.toThrow(/wall clock/)
   })
 
   it('starts at the minute it is when the world says nothing, and in UTC', async () => {

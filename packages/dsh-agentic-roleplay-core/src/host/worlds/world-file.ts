@@ -27,10 +27,36 @@ export interface WorldFile {
   clock?: WorldClock
   /** What the world starts with of what it tracks, for the variables of the whole story. */
   variables?: Record<string, VariableValue>
+  /** Other ways the story can begin, which the player may choose when starting a session; each is one narration. */
+  alternateOpenings?: AlternateOpening[]
   /** What is not allowed in this world, as short rules in the author's own words ("There is no magic"). */
   rules?: string[]
   /** Provider voice id used for narration when a session starts. */
   narrationVoice?: string
+}
+
+export interface AlternateOpening {
+  title: string
+  text: string
+}
+
+import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS } from '../../shared/world-info.ts'
+export { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS }
+
+/** `alternate_openings` is a list of `{ title, text }`: other first messages the player may start with. */
+function readAlternateOpenings(reader: Reader): AlternateOpening[] | undefined {
+  const value = reader.raw('alternate_openings')
+  if (value === undefined || value === null) return undefined
+  if (!Array.isArray(value)) { reader.fail('alternate_openings', 'must be a list'); return undefined }
+  if (value.length > MAX_ALTERNATE_OPENINGS) reader.fail('alternate_openings', `has more than ${MAX_ALTERNATE_OPENINGS} openings`)
+  const openings: AlternateOpening[] = []
+  for (const entry of reader.objects('alternate_openings')) {
+    const text = entry.string('text', { required: true })?.trim()
+    if (text === undefined || text === '') continue
+    if (text.length > MAX_OPENING_CHARS) entry.fail('text', `is longer than ${MAX_OPENING_CHARS} characters`)
+    openings.push({ title: entry.string('title')?.trim() || text.slice(0, 40), text })
+  }
+  return openings.length === 0 ? undefined : openings
 }
 
 /** The most rules a world may state, and the longest one: they are told to the game master every turn. */
@@ -127,6 +153,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const clock = readClock(reader)
   const variables = readVariableValues(reader)
   const rules = readRules(reader)
+  const alternateOpenings = readAlternateOpenings(reader)
   const narrationVoice = reader.string('narration_voice')?.trim() || undefined
   if (name === undefined || issues.length > 0) return { ok: false, issues }
 
@@ -143,6 +170,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(clock === undefined ? {} : { clock }),
       ...(variables === undefined ? {} : { variables }),
       ...(rules === undefined ? {} : { rules }),
+      ...(alternateOpenings === undefined ? {} : { alternateOpenings }),
       ...(narrationVoice === undefined ? {} : { narrationVoice }),
     },
   }

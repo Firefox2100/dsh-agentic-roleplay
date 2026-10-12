@@ -395,13 +395,15 @@ describe('delivering the output', () => {
 
 describe('writing the records', () => {
   const voices = { alice: { intent: 'a', utterance: 'Hello.', commitment: 'low' as const } }
-  const only = (runner: ReturnType<typeof scriptedRunner>) => engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+  let asked = 0
+  const only = (runner: ReturnType<typeof scriptedRunner>) => engine.activate(owner, { situation: `${situation} (${asked++})`, characters: ['alice'] }, runner.run, signal)
   const aliceSucceeds = [outcome('alice', 'succeeded', 'Alice greets him', 'smiling')]
   const hello = [{ type: 'utterance' as const, character: 'alice', text: 'Hello.' }]
   let problems: string[]
   let written: string[]
 
   beforeEach(() => {
+    asked = 0
     problems = []
     written = []
     engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), (message) => { problems.push(message) }, (chat) => { written.push(chat) })
@@ -488,7 +490,7 @@ describe('writing the records', () => {
     const second = { chat: 'session-1', turn: 2 }
     await engine.activate(second, { situation, characters: ['alice'] }, runner.run, signal)
     await engine.resolve(second, aliceSucceeds, runner.run, signal)
-    await engine.activate(second, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(second, { situation: `${situation} (${491})`, characters: ['alice'] }, runner.run, signal)
     await engine.resolve(second, aliceSucceeds, runner.run, signal)
     expect(engine.waiting(second)).toBe(3)
     engine.record(second, 'the second turn')
@@ -544,6 +546,22 @@ describe('writing the records', () => {
     expect(store.queue).toEqual([])
   })
 
+  it('gives up the records of rounds that failed three runs in a row, saying so', async () => {
+    boundaries.committer = { commit: () => Promise.reject(new Error('down')) }
+    await play()
+    for (let run = 0; run < 3; run += 1) { engine.record(owner); await engine.flush(owner) }
+    expect(store.queue).toEqual([])
+    expect(problems.at(-1)).toMatch(/given up after 3 failed runs/)
+  })
+
+  it('refuses to ask the same characters about the same situation twice in a turn', async () => {
+    const runner = scriptedRunner({ alice: [voices.alice, { ...voices.alice }] })
+    await play(runner)
+    await only(runner)
+    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    await expect(engine.activate(owner, { situation: `${situation} (0)`, characters: ['alice'] }, runner.run, signal)).rejects.toThrow(/nothing new/)
+  })
+
   it('tries once more when the next turn starts if the records were asked for, and goes on without them when that fails too', async () => {
     let calls = 0
     boundaries.committer = { commit: () => { calls += 1; return Promise.reject(new Error('down')) } }
@@ -590,7 +608,7 @@ describe('writing the records', () => {
     store.settings = () => ({ ...base(), memory: { ...base().memory, backlogRounds: 2 } })
     const runner = scriptedRunner({ alice: [voices.alice, { intent: 'a', commitment: 'low' as const }] })
     await play(runner)
-    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(owner, { situation: `${situation} (${609})`, characters: ['alice'] }, runner.run, signal)
     await engine.resolve(owner, aliceSucceeds, runner.run, signal)
     await engine.narrate(owner, hello)
     expect(calls).toBe(1)
@@ -1107,7 +1125,7 @@ describe('characters away from the player', () => {
 
   it('are not asked when the chat turns it off, when the turn gave no way to ask, or when nothing is due', async () => {
     store.dueOffScene = () => [item()]
-    store.settings = () => ({ ...QUIET, offstage: { perTurn: 0 } })
+    store.settings = () => ({ ...QUIET, offstage: { ...QUIET.offstage, perTurn: 0 } })
     const off = await deliver({ bob: { intent: 'x', commitment: 'high' } })
     expect(off.requests.map(request => request.member.key)).toEqual(['alice'])
     engine.forget(owner.chat)
@@ -1123,10 +1141,36 @@ describe('characters away from the player', () => {
 
   it('are no more than the chat allows, oldest first, and what did not fit is left for the next turn', async () => {
     store.dueOffScene = () => [item({ key: 'e1', characters: ['bob', 'carol'] }), item({ key: 'e2', characters: ['dan'] })]
-    store.settings = () => ({ ...QUIET, offstage: { perTurn: 2 } })
+    store.settings = () => ({ ...QUIET, offstage: { ...QUIET.offstage, perTurn: 2 } })
     await deliver({ bob: { intent: 'b', commitment: 'low' }, carol: { intent: 'c', commitment: 'low' }, dan: { intent: 'd', commitment: 'low' } })
     await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
     expect(written.filter(record => record.offstage === true)).toHaveLength(1)
+  })
+
+  it('are asked to say in a line what came of it, in the same request, and the lines are the note for the player', async () => {
+    store.dueOffScene = () => [item()]
+    const runner = await deliver({ bob: { intent: 'Bob goes to the street', commitment: 'high', account: 'Bob waited at the street.' }, carol: { intent: 'Carol stays in', commitment: 'low' } })
+    await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
+    expect(runner.requests.filter(request => request.member.key !== 'alice').every(request => request.away === true)).toBe(true)
+    expect(runner.requests.filter(request => request.member.key === 'alice').every(request => request.away === undefined)).toBe(true)
+    expect(store.notes().find(note => note.kind === 'away')).toEqual({ kind: 'away', turn: 1, lines: ['Bob waited at the street.'] })
+  })
+
+  it('are not asked for the line, and leave no note, when the chat does not want the summary', async () => {
+    store.dueOffScene = () => [item()]
+    store.settings = () => ({ ...QUIET, offstage: { ...QUIET.offstage, summary: false } })
+    const runner = await deliver({ bob: { intent: 'b', commitment: 'low', account: 'x' }, carol: { intent: 'c', commitment: 'low' } })
+    await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
+    expect(runner.requests.some(request => request.away === true)).toBe(false)
+    expect(store.notes().some(note => note.kind === 'away')).toBe(false)
+  })
+
+  it('act no more than the chat allows each, so that several things due do not make one character act again and again', async () => {
+    store.dueOffScene = () => [item({ key: 'e1', characters: ['bob'] }), item({ key: 'e2', characters: ['bob'] }), item({ key: 'e3', characters: ['carol'] })]
+    store.settings = () => ({ ...QUIET, offstage: { ...QUIET.offstage, perTurn: 5, perCharacter: 1 } })
+    await deliver({ bob: { intent: 'b', commitment: 'low' }, carol: { intent: 'c', commitment: 'low' } })
+    await vi.waitFor(() => { expect(handled).toEqual(['e1', 'e3']) })
+    expect(written.filter(record => record.offstage === true)).toHaveLength(2)
   })
 
   it('stay as they were when nobody could answer: it is asked again another time', async () => {
@@ -1139,7 +1183,7 @@ describe('characters away from the player', () => {
 
   it('do not go anywhere when they will not try hard, or when there is no place, or when it cannot be reached', async () => {
     store.dueOffScene = () => [item({ characters: ['bob', 'carol', 'dan'] })]
-    store.settings = () => ({ ...QUIET, offstage: { perTurn: 3 } })
+    store.settings = () => ({ ...QUIET, offstage: { ...QUIET.offstage, perTurn: 3 } })
     store.checkMove = (who) => (who === 'dan' ? { ok: false, problems: ['no way'] } : { ok: true, move: { to: street.id }, plan: { from: 1, to: street.id, via: [street.id] }, to: { key: 'street', name: 'Street' } })
     await deliver({ bob: { intent: 'b', commitment: 'low' }, carol: { intent: 'c', commitment: 'medium' }, dan: { intent: 'd', commitment: 'high' } })
     await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
@@ -1375,7 +1419,7 @@ describe('the world acting by itself', () => {
     make('storm')
     expect((await round()).report.done?.world).toHaveLength(1)
     const runner = scriptedRunner({ alice: [only.alice, { ...only.alice }] })
-    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(owner, { situation: `${situation} (${1394})`, characters: ['alice'] }, runner.run, signal)
     expect((await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)).done?.world).toEqual([])
   })
 
@@ -1384,13 +1428,13 @@ describe('the world acting by itself', () => {
     const first = await round()
     expect(first.runner.requests[0]?.cues).toBeUndefined()
     const runner = scriptedRunner({ alice: [{ intent: 'a', commitment: 'high' }, { intent: 'again', commitment: 'high' }, { intent: 'c', commitment: 'low' }] })
-    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(owner, { situation: `${situation} (${1403})`, characters: ['alice'] }, runner.run, signal)
     expect(runner.requests[0]?.cues).toEqual(['You hear a scream upstairs.'])
     const retry = await engine.resolve(owner, [outcome('alice', 'failed')], runner.run, signal)
     expect(retry.next?.attempt).toBe(2)
     expect(runner.requests[1]?.cues).toEqual(['You hear a scream upstairs.'])
     await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)
-    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(owner, { situation: `${situation} (after)`, characters: ['alice'] }, runner.run, signal)
     expect(runner.requests[2]?.cues).toBeUndefined()
     expect(store.session.triggers.notes({ status: 'pending' })).toEqual([])
   })
@@ -1587,7 +1631,7 @@ describe('a character saying the same thing again', () => {
     const same = scriptedRunner({ alice: { intent: 'a', utterance: 'Hello.', commitment: 'low' } })
     await engine.activate(owner, { situation, characters: ['alice'] }, same.run, signal)
     await engine.resolve(owner, [outcome('alice', 'succeeded')], same.run, signal)
-    await engine.activate(owner, { situation, characters: ['alice'] }, same.run, signal)
+    await engine.activate(owner, { situation: `${situation} (${1606})`, characters: ['alice'] }, same.run, signal)
     await engine.resolve(owner, [outcome('alice', 'succeeded')], same.run, signal)
     expect(engine.spoken(owner).map(utterance => utterance.text)).toEqual(['Hello.'])
   })

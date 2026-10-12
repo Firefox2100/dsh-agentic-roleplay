@@ -30,6 +30,7 @@ const answers = (job: { prompt: string; persona: string }): unknown => {
     return { roles: ['irrelevant'], targets: [] }
   }
   if (job.persona.startsWith('You turn the instructions')) return { narration: 'Write short answers, in a dry voice.', characters: 'Stay in character as ${name}.', left_out: ['a status panel'] }
+  if (job.persona.startsWith('You find what a character card keeps track of')) return { variables: [{ key: 'Trust Meter', name: 'Trust', kind: 'number', subject: 'character', only: ['Old Tam'], min: 0, max: 100, integer: true, default: 50, bands: [{ up_to: 40, label: 'Wary' }, { up_to: 100, label: 'Easy' }] }], left_out: ['an output format'] }
   if (job.persona.startsWith('You make the final list')) return { characters: [{ name: 'Old Tam', aliases: ['Tam'] }], places: [{ name: 'The Lighthouse', aliases: [] }], factions: [], things: [] }
   if (prompt.includes('Make the character')) return { tier: 'principal', kind: 'person', summary: 'Keeps the light.', personality: 'Gruff.', background: '', appearance: '', speech: { style: '', examples: [] }, start: { location: 'The Lighthouse' } }
   if (prompt.includes('Make the place')) return { description: 'A white tower.' }
@@ -58,10 +59,11 @@ describe('the steps of an import', () => {
     expect(summary).toMatchObject({ pieces: 7, roles: { character: 1, place: 1, instruction: 1, world: 1, scenario: 1, irrelevant: 2 }, leftOut: 3, roster: { characters: ['Old Tam'], places: ['The Lighthouse'] }, playable: undefined, notes: [] })
     expect(await importPhase(world)).toBe('surveyed')
     const built = await build(fakeContext(answers), world)
-    expect(built).toEqual({ characters: 1, places: 1, factions: 0, things: 0, lore: 1, prompts: ['roleplay/style', 'roleplay/character-style'], notes: ['instructions not carried: a status panel'] })
+    expect(built).toEqual({ characters: 1, places: 1, factions: 0, things: 0, lore: 1, prompts: ['roleplay/style', 'roleplay/character-style'], variables: 1, notes: ['instructions not carried: a status panel', 'not tracked: an output format'] })
     expect(await importPhase(world)).toBe('built')
     const done = await finish(fakeContext(answers), world)
-    expect(done).toMatchObject({ ok: true, report: { counts: { characters: 1, places: 1, lore: 1 }, hasPlayableCharacter: false, cover: true, opening: 'imported', prompts: ['roleplay/style', 'roleplay/character-style'] } })
+    expect(done).toMatchObject({ ok: true, report: { counts: { characters: 1, places: 1, lore: 1 }, hasPlayableCharacter: false, cover: true, opening: 'imported', prompts: ['roleplay/style', 'roleplay/character-style'], variables: 1 } })
+    expect(JSON.parse(await readFile(join(world, 'variables.json'), 'utf8'))).toEqual([{ key: 'trust_meter', name: 'Trust', kind: 'number', subject: 'character', only: ['old-tam'], min: 0, max: 100, integer: true, default: 50, bands: [{ up_to: 40, label: 'Wary' }, { up_to: 100, label: 'Easy' }] }])
     expect(await importPhase(world)).toBe('done')
     expect(await isReviewing(world)).toBe(true)
     await endReview(world)
@@ -69,7 +71,7 @@ describe('the steps of an import', () => {
     expect(await importPhase(world)).toBe('done')
     expect(JSON.parse(await readFile(join(world, 'characters', 'old-tam', 'character.json'), 'utf8'))).toMatchObject({ role: 'npc', start: { location: 'the-lighthouse' } })
     expect(JSON.parse(await readFile(join(world, 'world.json'), 'utf8'))).toMatchObject({ description: 'A harbour town.', opening_message: 'The fog lifts from the pier.', cover_media_id: 'cover' })
-    expect((await readdir(world)).sort()).toEqual(['.import', 'characters', 'lore', 'locations', 'media', 'prompts', 'world.json'].sort())
+    expect((await readdir(world)).sort()).toEqual(['.import', 'characters', 'images', 'lore', 'locations', 'media', 'prompts', 'variables.json', 'world.json'].sort())
   })
 
   it('carries the instructions of the card into the prose prompts of the world, in every language, and nothing else of them', async () => {
@@ -96,7 +98,7 @@ describe('the steps of an import', () => {
     expect(ctx.asked.some(asked => asked.prompt.includes('Switched off'))).toBe(false)
     const later = fakeContext(answers)
     await build(later, world)
-    expect(later.asked.filter(asked => asked.prompt.includes('Write short answers')).map(asked => asked.persona.slice(0, 25))).toEqual(['You turn the instructions'])
+    expect(later.asked.filter(asked => asked.prompt.includes('Write short answers')).map(asked => asked.persona.slice(0, 25))).toEqual(['You turn the instructions', 'You find what a character'])
   })
 
   it('refuses a step that is out of order, or when no card is waiting', async () => {

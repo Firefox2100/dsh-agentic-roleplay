@@ -71,7 +71,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       <p className={css.description}>{t('description')}</p>
       {payload.pendingConsolidation > 0 && <p className={css.notice} role="status">{t('pendingConsolidation', { count: payload.pendingConsolidation })}</p>}
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
-      <SettingsFields t={t} drafts={drafts} onChange={change} options={options} disabled={saving} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
+      <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}
       <div className={css.actions}>
         <Button variant="primary" size="sm" type="submit" disabled={!changed || saving}>{saving ? t('saving') : t('save')}</Button>

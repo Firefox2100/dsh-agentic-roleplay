@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { sessionFolder, systemTimeZone, type RoleplayState } from 'dsh-roleplay-state'
+import { parseInstant, sessionFolder, systemTimeZone, type RoleplayState } from 'dsh-roleplay-state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
 import type { WorldProblem } from '../../shared/worlds.ts'
@@ -49,7 +49,8 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots } = await loadValidatedWorld(world)
 
 
-  const opening = openingOf(world, authored)
+  if (request.opening !== undefined && (!Number.isInteger(request.opening) || request.opening < 0 || request.opening >= (world.alternateOpenings?.length ?? 0))) throw new InvalidStartError(`the world has no alternate opening ${String(request.opening)}`)
+  const opening = request.opening === undefined ? openingOf(world, authored) : [{ type: 'narration' as const, text: world.alternateOpenings![request.opening]!.text }]
   const keys = [...new Set(request.avatars ?? [])]
   if (keys.length > 0 && deps.avatars === undefined) throw new InvalidStartError('player avatars are not available')
   const avatars = keys.length === 0 ? undefined : await deps.avatars!()
@@ -73,6 +74,12 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const timeZone = settings.clock.timeZone !== '' ? settings.clock.timeZone : settings.clock.mode === 'real' ? systemTimeZone() : world.clock?.timeZone ?? 'UTC'
   settings = { ...settings, clock: { ...settings.clock, timeZone } }
 
+  let startsAt = world.clock?.startingTime
+  if (request.startingTime !== undefined && request.startingTime.trim() !== '') {
+    if (settings.clock.mode === 'real') throw new InvalidStartError('the story\'s time follows the wall clock, so it has no starting time to choose')
+    try { startsAt = parseInstant(request.startingTime.trim(), timeZone) } catch (error) { throw new InvalidStartError(`the starting time is not acceptable: ${error instanceof Error ? error.message : String(error)}`) }
+  }
+
   const sessionsDir = deps.sessionsDir()
   const session = deps.state.createSession(sessionsDir, {
     name,
@@ -92,7 +99,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
       populateTriggers(session, scripted.triggers)
       populatePlots(session.metadata, authoredPlots.plots)
-      populateClock(session, settings.clock, world.clock, (deps.now ?? Date.now)())
+      populateClock(session, settings.clock, startsAt === undefined ? undefined : { startingTime: startsAt }, (deps.now ?? Date.now)())
       if (world.rules !== undefined) session.metadata.setValue(WORLD_RULES_KEY, world.rules)
       if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)
     })

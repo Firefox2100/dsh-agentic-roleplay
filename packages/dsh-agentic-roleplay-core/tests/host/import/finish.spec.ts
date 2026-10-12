@@ -2,9 +2,10 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { readPngMetadata } from '../../../src/host/images/png-metadata.ts'
 import { readCard } from '../../../src/host/import/card.ts'
 import { emptyExtracted } from '../../../src/host/import/extract.ts'
-import { breakParentCircles, finishImport, openingMessage, replacePlayer, shareThePlaces } from '../../../src/host/import/finish.ts'
+import { alternateOpenings, breakParentCircles, finishImport, openingMessage, replacePlayer, shareThePlaces } from '../../../src/host/import/finish.ts'
 import type { SourceItem } from '../../../src/host/import/items.ts'
 import { defaultChoices } from '../../../src/host/import/store.ts'
 import type { Classified, Roster } from '../../../src/host/import/survey.ts'
@@ -12,6 +13,7 @@ import { v3Card } from '../../support/cards.ts'
 import { fakeContext } from '../../support/jobs.ts'
 
 let directory: string
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
 const card = readCard(Buffer.from(JSON.stringify(v3Card({ creator: 'Someone' }))), 'x.json')
 const roster: Roster = [{ kind: 'character', key: 'tam', name: 'Old Tam', aliases: [], player: false }, { kind: 'place', key: 'light', name: 'The Lighthouse', aliases: [], player: false }]
 const items: SourceItem[] = [{ id: 'field:scenario', label: 'scenario', title: '', keys: [], text: 'Autumn in the town.' }, { id: 'entry:0', label: 'entry', title: 'Style', keys: [], text: 'Write short.' }]
@@ -68,21 +70,33 @@ describe('places that contain each other', () => {
   })
 })
 
+describe('the other greetings of a card', () => {
+  const greeted = readCard(Buffer.from(JSON.stringify(v3Card({ first_mes: 'The fog lifts.', alternate_greetings: ['Night falls on the pier.', '  ', 'Morning at the dock, {{user}}.'] }))), 'x.json')
+
+  it('become openings to choose from, except the one that was chosen', () => {
+    expect(alternateOpenings(greeted, { kind: 'first' }, 'Arthur')).toEqual([{ title: 'Alternate 1', text: 'Night falls on the pier.' }, { title: 'Alternate 3', text: 'Morning at the dock, Arthur.' }])
+    expect(alternateOpenings(greeted, { kind: 'alternate', index: 0 })).toEqual([{ title: 'First message', text: 'The fog lifts.' }, { title: 'Alternate 3', text: expect.stringContaining('Morning at the dock') }])
+    expect(alternateOpenings(greeted, { kind: 'none' })).toEqual([])
+  })
+})
+
 describe('finishing an import', () => {
   it('moves the documents in, all valid, and fills in the world\'s own file: description and tags from one call, the chosen opening, the creator and the cover', async () => {
     const ctx = fakeContext(() => ({ description: 'A fishing town in autumn.', tags: ['harbour', 'harbour', 'autumn'], starting_time: '1912-10-04T08:00:00' }))
-    const result = await finishImport(ctx, input({ picture: Buffer.from('png-bytes') }))
+    const result = await finishImport(ctx, input({ picture: PNG }))
     expect(result).toMatchObject({ ok: true, report: {
-      counts: { characters: 1, places: 1, factions: 0, things: 0, lore: 1 }, hasPlayableCharacter: false, opening: 'imported', cover: true,
+      counts: { characters: 1, places: 1, factions: 0, things: 0, lore: 1 }, hasPlayableCharacter: false, opening: 'imported', cover: true, portrait: true,
       leftOut: { instructions: 1, templates: 0, irrelevant: 0, scripts: 0 }, notes: ['classifying failed once', 'Mira: not written'],
     } })
     expect(await read('characters/tam/character.json')).toMatchObject({ id: 'tam', name: 'Old Tam' })
     expect(await read('lore/founding/lore.json')).toMatchObject({ title: 'Founding' })
     expect(await read('world.json')).toEqual({
-      id: 'w1', name: 'Test Harbour', description: 'A fishing town in autumn.', starting_time: '1912-10-04T08:00:00', metadata: { tags: ['harbour', 'autumn'] }, opening_message: 'The fog lifts from the pier.', author: { name: 'Someone' }, cover_media_id: 'cover',
+      id: 'w1', name: 'Test Harbour', description: 'A fishing town in autumn.', starting_time: '1912-10-04T08:00:00', metadata: { tags: ['harbour', 'autumn'] }, opening_message: 'The fog lifts from the pier.', author: { name: 'Someone' }, cover_media_id: 'cover', alternate_openings: [{ title: 'Alternate 1', text: 'A second morning.' }],
     })
     expect(await readFile(join(directory, 'media', 'manifest.jsonl'), 'utf8')).toBe('{"id":"cover","file":"media/files/cover.png"}\n')
     expect(await readdir(join(directory, '.import'))).toEqual(['report.json'])
+    const portrait = await readFile(join(directory, 'images', 'characters', 'tam', 'reference.png'))
+    expect(readPngMetadata(portrait)).toMatchObject({ purpose: 'reference', origin: 'uploaded', subjects: [{ kind: 'character', localId: 'tam', name: 'Old Tam' }] })
   })
 
   it('takes the description from the card when the call fails, and says so; no opening is written when none was chosen', async () => {

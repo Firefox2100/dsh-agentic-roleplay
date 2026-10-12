@@ -7,7 +7,13 @@ import { FactionsPanel } from './FactionsPanel.tsx'
 import { RelationsPanel } from './RelationsPanel.tsx'
 import { LorePanel } from './LorePanel.tsx'
 import { PlotsPanel } from './PlotsPanel.tsx'
+import { InfoPanel } from './InfoPanel.tsx'
+import { PromptsPanel } from './PromptsPanel.tsx'
+import { RoutinesPanel } from './RoutinesPanel.tsx'
+import { VariablesPanel } from './VariablesPanel.tsx'
+import { GalleryView } from '../widgets/gallery-view/GalleryView.tsx'
 import type { WorldLocaleKey } from './locales.ts'
+import type { GalleryLocaleKey } from '../widgets/gallery-view/locales.ts'
 import { NotEditableError, type WorldSource } from './source.ts'
 import css from './WorldEditor.module.css'
 
@@ -22,6 +28,7 @@ type Load =
 type SectionId = (typeof SECTIONS)[number]['id']
 
 const SECTIONS = [
+  { id: 'info', label: 'sectionInfo', built: true, ownFiles: true },
   { id: 'characters', label: 'characters', built: true },
   { id: 'places', label: 'places', built: true },
   { id: 'things', label: 'things', built: true },
@@ -29,7 +36,11 @@ const SECTIONS = [
   { id: 'lore', label: 'lore', built: true },
   { id: 'plots', label: 'plots', built: true },
   { id: 'relations', label: 'relationships', built: true },
-] as const
+  { id: 'routines', label: 'sectionRoutines', built: true, ownFiles: true },
+  { id: 'variables', label: 'sectionVariables', built: true, ownFiles: true },
+  { id: 'prompts', label: 'sectionPrompts', built: true, ownFiles: true },
+  { id: 'images', label: 'sectionImages', built: true, ownFiles: true },
+] as const satisfies readonly { id: string; label: WorldLocaleKey; built: boolean; ownFiles?: boolean }[]
 
 /**
  * The world as it can be authored: a drawer of its parts and the part that is open. It reads from and saves to a source, so the same
@@ -37,8 +48,8 @@ const SECTIONS = [
  */
 export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = true, focus }: { t: Translate; source: WorldSource; notEditable: string; /** Shows just these parts, without the drawer when it is one. */ only?: readonly SectionId[]; warnNoPlayable?: boolean; /** The character that is open first. */ focus?: string }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
-  const [section, setSection] = useState<SectionId>(only?.[0] ?? 'characters')
-  const sections = SECTIONS.filter(entry => only === undefined || only.includes(entry.id))
+  const [section, setSection] = useState<SectionId>(only?.[0] ?? (focus !== undefined || source.worldId === undefined ? 'characters' : 'info'))
+  const sections = SECTIONS.filter(entry => (only === undefined || only.includes(entry.id)) && (!('ownFiles' in entry) || source.worldId !== undefined))
   const [reload, setReload] = useState(0)
 
   useEffect(() => {
@@ -53,6 +64,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
     return () => { abort.abort() }
   }, [source, reload])
 
+  const galleryText = useCallback((key: GalleryLocaleKey, values?: Record<string, string | number>) => t(`gallery_${key}`, values), [t])
   const refresh = useCallback(() => { setReload(count => count + 1) }, [])
   const changed = useCallback((world: WorldState) => { setLoad({ status: 'ready', world }) }, [])
 
@@ -79,6 +91,11 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
       </nav>}
       <div className={css.content}>
         {warnNoPlayable && !load.world.characters.some(character => character.role === 'playable' || character.control === 'player') && <p className={css.warning} role="status" data-testid="roleplay-no-playable">{t('noPlayableWarning')}</p>}
+        {section === 'info' && source.worldId !== undefined && <InfoPanel t={t} worldId={source.worldId} onSaved={refresh} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'prompts' && source.worldId !== undefined && <PromptsPanel t={t} worldId={source.worldId} language={t('language')} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'routines' && source.worldId !== undefined && <RoutinesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'variables' && source.worldId !== undefined && <VariablesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'images' && source.worldId !== undefined && <GalleryView t={galleryText} target={{ kind: 'worlds', id: source.worldId }} />}
         {section === 'characters' && (
           <CharactersPanel
             t={t}
