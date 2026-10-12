@@ -1,11 +1,11 @@
 ---
-title: 使用 dsh-roleplay-state
+title: 使用 @dsh-agentic-roleplay/state
 ---
 
-`dsh-roleplay-state` 是提供 `ctx.roleplayState` 的独立 DSH 插件。消费者应通过 Cordis 注入并使用会话存储与仓库接口，不要直接操作 SQLite。
+`@dsh-agentic-roleplay/state` 是提供 `ctx.roleplayState` 的独立 DSH 插件。消费者应通过 Cordis 注入并使用会话存储与仓库接口，不要直接操作 SQLite。
 
 ```ts
-import type {} from 'dsh-roleplay-state'
+import type {} from '@dsh-agentic-roleplay/state'
 export const inject = ['roleplayState']
 ```
 

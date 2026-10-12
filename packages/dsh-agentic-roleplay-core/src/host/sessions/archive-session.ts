@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs'
-import { isSessionId, sessionDatabase, sessionFolder } from 'dsh-roleplay-state'
+import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import { SessionNotFoundError } from './errors.ts'
 import { readStatus, writeStatus } from './status.ts'

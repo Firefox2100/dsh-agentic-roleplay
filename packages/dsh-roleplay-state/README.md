@@ -1,22 +1,26 @@
-# dsh-roleplay-state
+# @dsh-agentic-roleplay/state
+
+The persistent session-state and memory service for DSH Agentic Roleplay, maintained by Firefox2100.
+
+Most users should install [`@dsh-agentic-roleplay/all`](https://www.npmjs.com/package/@dsh-agentic-roleplay/all). Install this package separately when another DSH plugin needs the roleplay database, repositories, recall engine, or model-facing record tools without the complete roleplay interface.
 
 A DeepSeek Harness plugin that keeps the state of roleplay sessions: one SQLite
 database per session, reached through repositories over canonical models. It
 does no orchestration and has no UI, so it can be installed on its own to get a
 roleplay database and state management without the rest of the roleplay bundle.
 Other plugins use it through the `roleplayState` service. Model-facing tools
-will be added to the same plugin later.
+are included and can be enabled through its configuration.
 
 Requires DSH 0.2 and Node 22.19 or later (it uses the built-in `node:sqlite`).
 
 ```sh
-dsh plugin --profile <name> add dsh-roleplay-state
+dsh plugin --profile <name> add @dsh-agentic-roleplay/state
 ```
 
 ## Using it from another plugin
 
 ```ts
-import type {} from 'dsh-roleplay-state'            // types `ctx.roleplayState`
+import type {} from '@dsh-agentic-roleplay/state'            // types `ctx.roleplayState`
 import type { Context } from '@deepseek-ai/cordis'
 
 export const inject = ['roleplayState']
@@ -86,6 +90,8 @@ Tools registered with the DSH tool registry (`defineTool`, typed output, honorin
 | Driver | `SqlDriver` / `SqlDatabase`: the few operations the implementation needs (`exec`, `run`, `get`, `all`, `transaction`). `nodeSqliteDriver` is built on `node:sqlite`. |
 
 Everything is synchronous, as the embedded SQLite libraries are.
+
+This is an independent community project, not an official DSH package. [Documentation](https://firefox2100.github.io/dsh-agentic-roleplay/docs/developers/state) · [Source](https://github.com/Firefox2100/dsh-agentic-roleplay) · [Issues](https://github.com/Firefox2100/dsh-agentic-roleplay/issues) · GPL-3.0-only
 
 ## The session
 

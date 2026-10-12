@@ -1,4 +1,4 @@
-import type { RequestOption } from 'dsh-ai-core'
+import type { RequestOption } from '@dsh-ai-providers/core'
 import { SETTINGS_SPEC, isTimeZone, type ChatSettings, type EmbeddingOptions, type EmbeddingValue } from '../../shared/settings.ts'
 
 /** The settings the form offers, in the order shown. The rest are in the settings file. */

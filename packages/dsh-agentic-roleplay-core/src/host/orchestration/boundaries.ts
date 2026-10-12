@@ -1,5 +1,5 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
-import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from 'dsh-roleplay-state'
+import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from '@dsh-agentic-roleplay/state'
 import type { Note } from '../../shared/notes.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'

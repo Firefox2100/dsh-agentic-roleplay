@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { parseInstant, sessionFolder, systemTimeZone, type RoleplayState } from 'dsh-roleplay-state'
+import { parseInstant, sessionFolder, systemTimeZone, type RoleplayState } from '@dsh-agentic-roleplay/state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
 import type { WorldProblem } from '../../shared/worlds.ts'

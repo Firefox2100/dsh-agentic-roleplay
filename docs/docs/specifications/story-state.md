@@ -36,7 +36,7 @@ about it reaches the output. The chat settings tab shows how many are waiting.
 ## What a character remembers
 
 Characters are one-shot agents, so each activation is told what the moment calls to mind
-(`dsh-roleplay-state`, `session.recallRanked()`, reached through the core's `recaller` boundary). Reminding is a
+(`@dsh-agentic-roleplay/state`, `session.recallRanked()`, reached through the core's `recaller` boundary). Reminding is a
 pipeline of retrieve, judge and choose:
 
 1. **Retrieve with three searches**, each scoring the character's own perceptions and beliefs from 0 to 1:

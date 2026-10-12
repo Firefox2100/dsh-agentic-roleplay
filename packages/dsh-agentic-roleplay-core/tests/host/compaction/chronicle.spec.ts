@@ -1,5 +1,5 @@
 import { shippedText } from '../../../src/host/prompts/library.ts'
-import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
+import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { composeSummary, estimateTokens, foldSummaries, type Chronicler } from '../../../src/host/compaction/chronicle.ts'
 import { readFolded } from '../../../src/host/compaction/engine.ts'

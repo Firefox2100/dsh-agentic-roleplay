@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES, type CharacterDefinition, type ItemDefinition, type LocationDefinition, type VariableDefinitionInput, type VariableKind, type VariableSubject, type VariableValue, type VariableVisibility } from 'dsh-roleplay-model'
-import { createSessionStore, valueIssue } from 'dsh-roleplay-state'
+import { createSessionStore, valueIssue } from '@dsh-agentic-roleplay/state'
 import type { WorldProblem } from '../../shared/worlds.ts'
 import { errorMessage } from '../errors.ts'
 import { readDocument } from '../read-document.ts'

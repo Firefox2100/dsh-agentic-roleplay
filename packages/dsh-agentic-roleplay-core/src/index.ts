@@ -2,9 +2,9 @@ import { join } from 'node:path'
 import { roleplaySessionOf } from './shared/chat.ts'
 import { liveSettings, useChildReasoning } from './host/sessions/settings.ts'
 import type { Context } from '@deepseek-ai/cordis'
-import type { ImageGenerationService } from 'dsh-ai-core'
+import type { ImageGenerationService } from '@dsh-ai-providers/core'
 // Type-only: declares `ctx.roleplayState`.
-import type {} from 'dsh-roleplay-state'
+import type {} from '@dsh-agentic-roleplay/state'
 import { AgentSessions, agentServicesOf } from './host/agent/agent-sessions.ts'
 import { isPng, pictureOf, readCard } from './host/import/card.ts'
 import { childSamplingOf } from './host/agents/child.ts'
@@ -40,7 +40,7 @@ import { startSession } from './host/sessions/start-session.ts'
 import { createWorld } from './host/worlds/create-world.ts'
 import { worldCharacters } from './host/sessions/world-characters.ts'
 import { RoleplayRoot } from './host/storage/roleplay-root.ts'
-import { isSessionId, sessionDatabase, sessionFolder } from 'dsh-roleplay-state'
+import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
 import { existsSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import { chatSessionId } from './shared/chat.ts'
@@ -56,7 +56,7 @@ export { Config } from './host/config.ts'
 export type * from './host/orchestration/boundaries.ts'
 export type { CharacterAction, CharacterFailure, CharacterReport, Commitment, Outcome, Result } from './host/orchestration/protocol.ts'
 export { RoleplayOrchestration } from './host/orchestration/service.ts'
-export const name = 'dsh-agentic-roleplay-core'
+export const name = '@dsh-agentic-roleplay/core'
 
 /** Sessions are kept by the state plugin, which the bundle installs with this one. */
 export const inject = ['roleplayState']
@@ -194,13 +194,13 @@ function imageGenerationOf(ctx: Context): ImageGenerationService {
 }
 
 function textToSpeechOf(ctx: Context) {
-  const service = (ctx as Context & { get(name: 'textToSpeech'): import('dsh-ai-core').TtsService | undefined }).get('textToSpeech')
+  const service = (ctx as Context & { get(name: 'textToSpeech'): import('@dsh-ai-providers/core').TtsService | undefined }).get('textToSpeech')
   if (service === undefined) throw new AgentUnavailableError('no text-to-speech provider is selected')
   return service
 }
 
-function streamingSpeechToTextOf(ctx: Context): import('dsh-ai-core').StreamingSttService | undefined {
-  return (ctx as Context & { get(name: 'streamingSpeechToText'): import('dsh-ai-core').StreamingSttService | undefined }).get('streamingSpeechToText')
+function streamingSpeechToTextOf(ctx: Context): import('@dsh-ai-providers/core').StreamingSttService | undefined {
+  return (ctx as Context & { get(name: 'streamingSpeechToText'): import('@dsh-ai-providers/core').StreamingSttService | undefined }).get('streamingSpeechToText')
 }
 
 /** The timelines of the sessions, which the orchestration keeps; a profile without it has none. */

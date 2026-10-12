@@ -18,7 +18,7 @@ below so it can be checked when DSH moves.
 | Browser HTTP API | `ctx.webServer.register`, `ctx.connection.requestRejection` | `host/http/` |
 | The chat of a session | `ctx.sessionController.create/rename`, `ctx.workspaceRegistry.create/archiveSession`, `ctx.sessionPersistence` | `host/agent/` |
 | Agent presets | the `@deepseek-ai/dsh-agent-preset` row with `plugins` (persona, our two plugins, a `compaction` group) | the bundle's `cordis.patch.yml` |
-| Game master tools | `ctx.tools.register(defineTool(...))` | `host/orchestration/tools.ts`, `dsh-roleplay-state` |
+| Game master tools | `ctx.tools.register(defineTool(...))` | `host/orchestration/tools.ts`, `@dsh-agentic-roleplay/state` |
 | Prompt | `ctx.systemPrompt.section` | `orchestration.ts` |
 | Turn control | `agent/pre-step` (waterfall), `agent/turn-stopping`, `agent.steer`, `exec.concludeTurn()`, `exec.agent`, `exec.signal` | `host/orchestration/hooks.ts`, `tools.ts` |
 | Chronicler (no tools) | `ctx.subagents.start('spawn', { persona, toolFilter, outputSchema, prompt, parent, signal })`, `SubagentRun.result/dispose` | `compaction/chronicler.ts` |

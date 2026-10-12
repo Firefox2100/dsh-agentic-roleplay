@@ -1,4 +1,4 @@
-import type { TtsService, TtsVoice } from 'dsh-ai-core'
+import type { TtsService, TtsVoice } from '@dsh-ai-providers/core'
 
 export interface SpeechPart { text: string; voice?: string }
 export interface SpeechAudio { bytes: Uint8Array; mediaType: string }

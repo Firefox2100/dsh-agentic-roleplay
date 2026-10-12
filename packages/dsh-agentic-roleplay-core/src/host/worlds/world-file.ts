@@ -1,4 +1,4 @@
-import { isTimeZone, parseInstant } from 'dsh-roleplay-state'
+import { isTimeZone, parseInstant } from '@dsh-agentic-roleplay/state'
 import type { VariableValue } from 'dsh-roleplay-model'
 import { readVariableValues } from '../variables/values.ts'
 import type { WorldAuthor } from '../../shared/worlds.ts'

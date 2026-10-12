@@ -1,5 +1,5 @@
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import type { ItemChangeSpec, VariableChangeSpec } from 'dsh-roleplay-state'
+import type { ItemChangeSpec, VariableChangeSpec } from '@dsh-agentic-roleplay/state'
 import type { NarrationSegment, TurnOutput } from '../../shared/narration.ts'
 
 export const COMMITMENTS = ['low', 'medium', 'high'] as const

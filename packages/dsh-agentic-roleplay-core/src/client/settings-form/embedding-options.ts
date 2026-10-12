@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AI_API_PREFIX, AI_API_ROUTES, type CapabilitiesPayload, type RequestOption } from 'dsh-ai-core'
+import { AI_API_PREFIX, AI_API_ROUTES, type CapabilitiesPayload, type RequestOption } from '@dsh-ai-providers/core'
 
 /**
  * What the selected embedding provider lets a request set, as the provider describes it, for the chat

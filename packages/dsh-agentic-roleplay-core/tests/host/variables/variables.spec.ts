@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
+import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { parseCharacterFile } from '../../../src/host/characters/character-file.ts'
 import { parseItemFile } from '../../../src/host/items/item-file.ts'

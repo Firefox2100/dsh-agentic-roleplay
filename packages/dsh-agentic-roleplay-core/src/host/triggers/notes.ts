@@ -1,4 +1,4 @@
-import { announcements, describeDuration, describeInstant, inAudience, locationKey, type Announcement, type Session } from 'dsh-roleplay-state'
+import { announcements, describeDuration, describeInstant, inAudience, locationKey, type Announcement, type Session } from '@dsh-agentic-roleplay/state'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { TriggerReport, TurnStore } from '../orchestration/boundaries.ts'
 

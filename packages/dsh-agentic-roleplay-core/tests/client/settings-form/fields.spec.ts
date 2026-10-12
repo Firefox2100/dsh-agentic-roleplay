@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { RequestOption } from 'dsh-ai-core'
+import type { RequestOption } from '@dsh-ai-providers/core'
 import { FAST_PRESET, FORM_FIELDS, boundsOf, fromDrafts, keyOf, optionKey, problemsOf, toDrafts } from '../../../src/client/settings-form/fields.ts'
 import { DEFAULT_SETTINGS, parseSettings } from '../../../src/shared/settings.ts'
 

@@ -1,12 +1,12 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { relative } from 'node:path'
-import type { ImageGenerationService } from 'dsh-ai-core'
+import type { ImageGenerationService } from '@dsh-ai-providers/core'
 import type { ImageBlock } from '@deepseek-ai/dsh-llm'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import {
   characterKey, itemKey, locationKey, type SessionStore, type VisualIdentity, type VisualSubjectKind,
-} from 'dsh-roleplay-state'
+} from '@dsh-agentic-roleplay/state'
 import { generateReferenceImage, generateTransientImage } from './generator.ts'
 import { listGallery } from './gallery.ts'
 import { present } from './presented.ts'

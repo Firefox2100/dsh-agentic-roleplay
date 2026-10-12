@@ -1,4 +1,4 @@
-import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
+import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dueOffScene, markHandled } from '../../../src/host/clock/offscene.ts'
 

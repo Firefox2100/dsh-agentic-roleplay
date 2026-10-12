@@ -1,6 +1,6 @@
 import { shippedText } from '../../../src/host/prompts/library.ts'
 import type { Character, CharacterState, Location } from 'dsh-roleplay-model'
-import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
+import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
 import type { CastMember, RoundRecord, TurnStore } from '../../../src/host/orchestration/boundaries.ts'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import type { CharacterAction } from '../../../src/host/orchestration/protocol.ts'

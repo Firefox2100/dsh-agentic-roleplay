@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
+import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
 import type { PlotDefinition } from 'dsh-roleplay-model'
 import type { TurnStore } from '../../../src/host/orchestration/boundaries.ts'
 import { describePacingAdvice, pacingAdvice, populatePlots, updatePlotProgress } from '../../../src/host/pacing/director.ts'

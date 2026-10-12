@@ -1,4 +1,4 @@
-import { describeValue, type ShownVariable } from 'dsh-roleplay-state'
+import { describeValue, type ShownVariable } from '@dsh-agentic-roleplay/state'
 
 /** What is tracked of a subject, in a line: `Health: hurt (2); Valence: unhappy (-0.4), usually even (0)`. */
 export function describeShown(shown: readonly ShownVariable[]): string {

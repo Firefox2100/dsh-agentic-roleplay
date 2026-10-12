@@ -1,4 +1,4 @@
-import type { SemanticRanker } from 'dsh-roleplay-state'
+import type { SemanticRanker } from '@dsh-agentic-roleplay/state'
 
 /** What the ranker needs of the reranking service another plugin supplies as `ctx.rerankers`. */
 export interface Reranker {

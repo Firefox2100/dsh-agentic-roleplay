@@ -1,7 +1,8 @@
 {
-  "name": "dsh-roleplay-state",
-  "version": "0.0.0",
+  "name": "@dsh-agentic-roleplay/state",
+  "version": "0.1.0",
   "description": "DSH plugin for roleplay session state: one SQLite database per session, exposed to other plugins as a service over canonical models.",
+  "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
   "type": "module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -15,6 +16,11 @@
   "engines": {
     "node": "^22.19.0 || >=24.0.0"
   },
+  "repository": {"type": "git", "url": "git+https://github.com/Firefox2100/dsh-agentic-roleplay.git", "directory": "packages/dsh-roleplay-state"},
+  "homepage": "https://firefox2100.github.io/dsh-agentic-roleplay/docs/developers/state",
+  "bugs": {"url": "https://github.com/Firefox2100/dsh-agentic-roleplay/issues"},
+  "keywords": ["deepseek-harness", "dsh", "agentic-roleplay", "sqlite", "memory"],
+  "publishConfig": {"access": "public", "registry": "https://registry.npmjs.org/"},
   "scripts": {
     "build": "tsdown",
     "watch": "tsdown --watch",
@@ -24,7 +30,8 @@
   "files": [
     "lib",
     "cordis.patch.yml",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "license": "GPL-3.0-only",
   "devDependencies": {

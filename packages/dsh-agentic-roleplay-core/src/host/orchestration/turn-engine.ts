@@ -1,4 +1,4 @@
-import { describeValue, locationKey as placeKey, mentioned, type ItemEffect, type Recalled } from 'dsh-roleplay-state'
+import { describeValue, locationKey as placeKey, mentioned, type ItemEffect, type Recalled } from '@dsh-agentic-roleplay/state'
 import { MAX_OOC_NOTE, type OocRuling } from '../../shared/ooc.ts'
 import { suggestionProblems, tidySuggestions } from './suggestions.ts'
 import type { RoutineMove } from '../clock/agenda.ts'

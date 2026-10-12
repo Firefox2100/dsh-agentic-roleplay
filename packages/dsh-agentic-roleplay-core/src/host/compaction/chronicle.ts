@@ -1,4 +1,4 @@
-import type { Session } from 'dsh-roleplay-state'
+import type { Session } from '@dsh-agentic-roleplay/state'
 import type { Summary, StoryEvent } from 'dsh-roleplay-model'
 import type { ChatSettings } from '../../shared/settings.ts'
 

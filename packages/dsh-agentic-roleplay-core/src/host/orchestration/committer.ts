@@ -1,7 +1,7 @@
 import { promptFor } from '../prompts/access.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
-import { InvalidEditError, characterKey, createTools, dayPart, describeDuration, describeInstant, localTime, parseRecordsEdit } from 'dsh-roleplay-state'
+import { InvalidEditError, characterKey, createTools, dayPart, describeDuration, describeInstant, localTime, parseRecordsEdit } from '@dsh-agentic-roleplay/state'
 import { zoneOf } from '../clock/story-clock.ts'
 import { childSampling, runChild } from '../agents/child.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'

@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
-import { isSessionId, sessionDatabase, type RoleplayState } from 'dsh-roleplay-state'
+import { isSessionId, sessionDatabase, type RoleplayState } from '@dsh-agentic-roleplay/state'
 import type { OpenedSession } from '../../shared/sessions.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import { SessionArchivedError, SessionNotFoundError } from './errors.ts'
 import { readStatus } from './status.ts'
-import { sessionFolder } from 'dsh-roleplay-state'
+import { sessionFolder } from '@dsh-agentic-roleplay/state'
 
 export interface OpenSessionDeps {
   state: Pick<RoleplayState, 'openSession'>

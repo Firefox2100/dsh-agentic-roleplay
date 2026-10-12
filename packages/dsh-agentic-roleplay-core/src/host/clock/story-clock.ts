@@ -1,4 +1,4 @@
-import { DAY, MINUTE, SECOND, clockTime, dayPart, describeInstant, localTime, nextTimeOfDay, type ClockMode, type Session } from 'dsh-roleplay-state'
+import { DAY, MINUTE, SECOND, clockTime, dayPart, describeInstant, localTime, nextTimeOfDay, type ClockMode, type Session } from '@dsh-agentic-roleplay/state'
 import type { ChatSettings } from '../../shared/settings.ts'
 
 export type ClockSettings = ChatSettings['clock']

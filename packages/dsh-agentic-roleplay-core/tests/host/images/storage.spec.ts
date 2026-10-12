@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { ImageGenerationService, type ImageGenerationResult } from 'dsh-ai-core'
+import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
 import { afterEach, describe, expect, it } from 'vitest'
 import { generateReferenceImage, generateTransientImage } from '../../../src/host/images/generator.ts'
 import { readPngMetadata, withPngMetadata } from '../../../src/host/images/png-metadata.ts'

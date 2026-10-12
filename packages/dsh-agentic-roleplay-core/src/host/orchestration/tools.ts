@@ -5,7 +5,7 @@ import type { Boundaries, CreateReport, TriggerReport, TurnStore } from './bound
 import { characterRunner } from './character-runner.ts'
 import { encodeOutput, encodePreview } from '../../shared/narration.ts'
 import { AUTHORING_NEEDS } from './boundaries.ts'
-import { ITEM_ACTIONS, describeDuration, type ItemAction } from 'dsh-roleplay-state'
+import { ITEM_ACTIONS, describeDuration, type ItemAction } from '@dsh-agentic-roleplay/state'
 import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } from './turn-engine.ts'
 import { plotAuthorNeeded, updatePlotProgress } from '../pacing/director.ts'

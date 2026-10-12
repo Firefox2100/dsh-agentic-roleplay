@@ -5,8 +5,8 @@ title: 架构与软件包
 | 软件包 | 职责 |
 | --- | --- |
 | `dsh-agentic-roleplay` | 可安装套件与配置补丁 |
-| `dsh-agentic-roleplay-core` | UI、文件世界、编排、智能体、提示词、媒体和 HTTP API |
-| `dsh-roleplay-state` | 独立 DSH 状态服务、SQLite 仓库、回忆和记录工具 |
+| `@dsh-agentic-roleplay/core` | UI、文件世界、编排、智能体、提示词、媒体和 HTTP API |
+| `@dsh-agentic-roleplay/state` | 独立 DSH 状态服务、SQLite 仓库、回忆和记录工具 |
 | `dsh-roleplay-model` | 以源码共享并打包进消费者的私有规范模型 |
 
 核心插件依赖 Cordis 的 `roleplayState` 服务，而不是直接打开数据库。主机端验证和修改文件与数据库；浏览器端通过认证的 `/roleplay-api` 和 DSH 插槽工作。共享模块只放传输类型、ID 与纯路径规则。

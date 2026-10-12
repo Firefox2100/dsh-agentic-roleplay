@@ -1,5 +1,5 @@
 import { Button, Input, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
-import { localized, type RequestOption } from 'dsh-ai-core'
+import { localized, type RequestOption } from '@dsh-ai-providers/core'
 import css from './SettingsFields.module.css'
 import { FAST_PRESET, FORM_FIELDS, boundsOf, keyOf, optionKey, problemsOf, type Drafts } from './fields.ts'
 import type { SettingsFormKey } from './locales.ts'

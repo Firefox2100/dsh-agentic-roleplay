@@ -15,3 +15,6 @@ allowBuilds:
   koffi: false
   node-pty: false
   protobufjs: false
+
+minimumReleaseAgeExclude:
+  - '@dsh-ai-providers/core@0.1.0'

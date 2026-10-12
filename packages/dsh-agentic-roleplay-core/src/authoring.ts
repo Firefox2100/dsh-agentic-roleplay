@@ -14,7 +14,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { authoredWorldOf } from './shared/authoring-chat.ts'
 import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 
-export const name = 'dsh-agentic-roleplay-core/authoring'
+export const name = '@dsh-agentic-roleplay/core/authoring'
 export const inject = ['roleplayWorlds', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'tools', 'systemPrompt']
 
 export function apply(ctx: Context): void {

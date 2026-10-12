@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { sessionDatabase, sessionFolder, type RoleplayState } from 'dsh-roleplay-state'
+import { sessionDatabase, sessionFolder, type RoleplayState } from '@dsh-agentic-roleplay/state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { TurnOutput } from '../../shared/narration.ts'
 import { START_SNAPSHOT, childrenOf, noticeText, pathTo, snapshotOf, viewOf, type Timeline, type TimelineNode, type TimelineView } from '../../shared/timeline.ts'

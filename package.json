@@ -1,7 +1,9 @@
 {
   "name": "dsh-agentic-roleplay-workspace",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.3.4",
   "engines": {
     "node": ">=22"
   },
@@ -9,6 +11,9 @@
     "build": "pnpm -r run build",
     "watch": "pnpm -r --parallel run watch",
     "typecheck": "pnpm -r run typecheck",
-    "test": "pnpm -r run test"
+    "test": "pnpm -r run test",
+    "release:build": "pnpm --filter './packages/**' run build",
+    "release:check": "node scripts/check-release.mjs",
+    "release:publish": "node scripts/publish.mjs"
   }
 }

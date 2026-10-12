@@ -15,7 +15,7 @@ import {
   type KnowledgeDefinition,
   type RoutineDefinition,
 } from 'dsh-roleplay-model'
-import { MAX_ROUTINE_WINDOWS } from 'dsh-roleplay-state'
+import { MAX_ROUTINE_WINDOWS } from '@dsh-agentic-roleplay/state'
 import { readIdentifier } from '../identifiers.ts'
 import { readVariableValues } from '../variables/values.ts'
 import { readVisualIdentity } from '../visual/identity-file.ts'

@@ -5,8 +5,8 @@ title: Architecture and packages
 | Package | Responsibility |
 | --- | --- |
 | `dsh-agentic-roleplay` | Installable bundle and profile patch |
-| `dsh-agentic-roleplay-core` | UI, filesystem worlds, orchestration, agents, prompts, media and HTTP API |
-| `dsh-roleplay-state` | Independent DSH service for session databases, repositories, recall and record tools |
+| `@dsh-agentic-roleplay/core` | UI, filesystem worlds, orchestration, agents, prompts, media and HTTP API |
+| `@dsh-agentic-roleplay/state` | Independent DSH service for session databases, repositories, recall and record tools |
 | `dsh-roleplay-model` | Private canonical models shared as source and bundled into consumers |
 
 The core plugin depends on the `roleplayState` Cordis service rather than importing a concrete database. The state package can be installed independently by other DSH plugins.

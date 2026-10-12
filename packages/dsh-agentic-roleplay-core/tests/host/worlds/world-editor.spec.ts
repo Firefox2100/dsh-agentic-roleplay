@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ImageGenerationService, type ImageGenerationResult } from 'dsh-ai-core'
+import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
 import { editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, readWorldEditor } from '../../../src/host/worlds/world-editor.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 

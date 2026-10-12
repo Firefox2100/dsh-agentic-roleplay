@@ -2,7 +2,7 @@ import { Context } from '@deepseek-ai/cordis'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { RoleplayState } from 'dsh-roleplay-state'
+import { RoleplayState } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { listSessions } from '../../../src/host/sessions/list-sessions.ts'
 

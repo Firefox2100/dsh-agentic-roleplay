@@ -77,7 +77,7 @@ The child's dedicated tools are:
 
 Generation requires a stored identity for every subject. Tool code—not the model—resolves ids and paths, combines canonical and transient prompts, writes metadata, and records the generated relative paths returned by the child. Hidden-item state is exposed so the author does not depict a concealed object merely because it exists in storage.
 
-The reusable entry point is `dsh-agentic-roleplay-core/images`.
+The reusable entry point is `@dsh-agentic-roleplay/core/images`.
 
 ## Turn integration
 

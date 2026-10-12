@@ -21,8 +21,8 @@ description: 面向维护者与编码智能体的项目边界、不变量与源�
 | 包 | 职责 |
 |---|---|
 | `dsh-roleplay-model` | 规范类型、常量和跨包词汇；不做 I/O |
-| `dsh-roleplay-state` | SQLite 架构与迁移、仓库、回忆、记录工具、快照 |
-| `dsh-agentic-roleplay-core` | 文件世界、界面、会话、智能体循环、提示词、导入和图片 |
+| `@dsh-agentic-roleplay/state` | SQLite 架构与迁移、仓库、回忆、记录工具、快照 |
+| `@dsh-agentic-roleplay/core` | 文件世界、界面、会话、智能体循环、提示词、导入和图片 |
 | `dsh-agentic-roleplay` | Bundle 清单和 roleplay 智能体预设 |
 
 不要在 core 和 state 各自重定义模型。私有 model 包必须被完整打包；构建后检查 JavaScript 和声明文件里没有悬空的 `dsh-roleplay-model` 导入。

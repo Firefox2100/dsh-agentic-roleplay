@@ -3,7 +3,7 @@ title: Turn engine specification
 description: Exact game-master protocol, tools, stages, timelines, branching, and background work.
 ---
 
-A roleplay session is played in a DSH chat under the `roleplay` agent preset. The chat's agent is the **game master**; every character that the player does not control is played by a one-shot **character agent** (a DSH sub-agent) that the game master's tools start. The preset mounts `dsh-agentic-roleplay-core/orchestration`, which adds the game master's tools, hooks and instructions to roleplay chats only.
+A roleplay session is played in a DSH chat under the `roleplay` agent preset. The chat's agent is the **game master**; every character that the player does not control is played by a one-shot **character agent** (a DSH sub-agent) that the game master's tools start. The preset mounts `@dsh-agentic-roleplay/core/orchestration`, which adds the game master's tools, hooks and instructions to roleplay chats only.
 
 ## The loop
 

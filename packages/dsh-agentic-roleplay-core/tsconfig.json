@@ -8,7 +8,7 @@
       "node"
     ],
     "paths": {
-      "dsh-roleplay-state": [
+      "@dsh-agentic-roleplay/state": [
         "../dsh-roleplay-state/src/index.ts"
       ]
     }

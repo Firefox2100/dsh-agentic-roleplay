@@ -1,4 +1,4 @@
-import { ENGAGEMENT_GRACE, MINUTE, agendaAt, nextOccurrence, occurrenceAt, type Session } from 'dsh-roleplay-state'
+import { ENGAGEMENT_GRACE, MINUTE, agendaAt, nextOccurrence, occurrenceAt, type Session } from '@dsh-agentic-roleplay/state'
 
 type AgendaSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'routines' | 'engagements' | 'intents' | 'metadata' | 'move' | 'transaction' | 'consolidation'>
 

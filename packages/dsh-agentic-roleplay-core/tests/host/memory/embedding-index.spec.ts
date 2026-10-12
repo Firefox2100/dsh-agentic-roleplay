@@ -1,4 +1,4 @@
-import { createSessionStore, type SessionStore } from 'dsh-roleplay-state'
+import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { EmbeddingIndex, type Embedder } from '../../../src/host/memory/embedding-index.ts'
 

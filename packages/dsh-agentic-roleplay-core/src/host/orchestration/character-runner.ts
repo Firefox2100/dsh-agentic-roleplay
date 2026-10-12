@@ -1,5 +1,5 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createCharacterTools } from 'dsh-roleplay-state'
+import { createCharacterTools } from '@dsh-agentic-roleplay/state'
 import { childSampling, runChild } from '../agents/child.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import { AWAY_ACTION_SCHEMA, CHARACTER_ACTION_SCHEMA, parseCharacterAction } from './protocol.ts'

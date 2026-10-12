@@ -5,7 +5,7 @@ description: Exact embedding, reranking, speech, image, model, rules, priority, 
 
 The bundle needs model capabilities that vanilla DSH does not have: embeddings, reranking,
 text-to-speech, speech-to-text and image generation. They come from a separate set of plugins, `dsh-ai-providers`
-(`dsh-ai-core` for the contract, `dsh-ai-providers` for the registry, the settings UI and the
+(`@dsh-ai-providers/core` for the contract, `dsh-ai-providers` for the registry, the settings UI and the
 configured services, `dsh-ai-<vendor>` for implementations), which put them on the DSH context as
 `ctx.embeddings` and so on; this bundle only consumes them, and works without them.
 
@@ -30,7 +30,7 @@ alone and the log says why; a cancellation is passed through.
 
 The chat's settings carry what the selected embedding provider lets a request set (`embedding.options`,
 a flat set of values by the provider's own option names), because it is per chat that vectors are
-stored and compared. The provider describes its options (`dsh-ai-core`'s `RequestOption`, served by
+stored and compared. The provider describes its options (`@dsh-ai-providers/core`'s `RequestOption`, served by
 `GET /ai-api/capabilities`); the chat settings tab shows all of them, and the start dialog's advanced
 section only those marked `atStart` (for the OpenAI provider the number of dimensions: vectors of
 different sizes cannot be compared, so it is chosen before the first request).

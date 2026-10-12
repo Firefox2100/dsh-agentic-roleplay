@@ -1,11 +1,11 @@
 ---
-title: Using dsh-roleplay-state
+title: Using @dsh-agentic-roleplay/state
 ---
 
-`dsh-roleplay-state` is a DSH plugin that exposes `ctx.roleplayState`. Consumers declare it through Cordis injection and use its session-store and repository contracts instead of opening SQLite directly.
+`@dsh-agentic-roleplay/state` is a DSH plugin that exposes `ctx.roleplayState`. Consumers declare it through Cordis injection and use its session-store and repository contracts instead of opening SQLite directly.
 
 ```ts
-import type {} from 'dsh-roleplay-state'
+import type {} from '@dsh-agentic-roleplay/state'
 import type {Context} from '@deepseek-ai/cordis'
 
 export const inject = ['roleplayState']

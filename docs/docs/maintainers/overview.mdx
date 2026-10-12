@@ -21,15 +21,15 @@ This section is for people and coding agents changing the bundle itself. [Plugin
 | Package | Owns |
 |---|---|
 | `dsh-roleplay-model` | Canonical types, constants, and cross-package vocabulary; no I/O |
-| `dsh-roleplay-state` | SQLite schema and migrations, repositories, recall, record tools, snapshots |
-| `dsh-agentic-roleplay-core` | Filesystem worlds, UI, sessions, agent loop, prompts, import, images, HTTP API |
+| `@dsh-agentic-roleplay/state` | SQLite schema and migrations, repositories, recall, record tools, snapshots |
+| `@dsh-agentic-roleplay/core` | Filesystem worlds, UI, sessions, agent loop, prompts, import, images, HTTP API |
 | `dsh-agentic-roleplay` | Bundle manifest and the roleplay agent preset |
 
 Do not redefine a model in both core and state. The private model package is a source dependency and must be fully bundled: inspect the generated JavaScript and declarations for dangling `dsh-roleplay-model` imports after build changes.
 
 ## Where to change a feature
 
-Host code is organised by concern under `packages/dsh-agentic-roleplay-core/src/host`; browser features follow the same pattern under `src/client`. Shared wire contracts and pure path/id helpers belong in `src/shared`. State contracts live in `dsh-roleplay-state/src`, with repositories separated from SQLite implementations. The [complete world file schema](../specifications/world-files) is the exact authored-file contract; the World format section gives its task-oriented form.
+Host code is organised by concern under `packages/dsh-agentic-roleplay-core/src/host`; browser features follow the same pattern under `src/client`. Shared wire contracts and pure path/id helpers belong in `src/shared`. State contracts live in `packages/dsh-roleplay-state/src`, with repositories separated from SQLite implementations. The [complete world file schema](../specifications/world-files) is the exact authored-file contract; the World format section gives its task-oriented form.
 
 A story-model feature is not complete until all affected layers agree:
 

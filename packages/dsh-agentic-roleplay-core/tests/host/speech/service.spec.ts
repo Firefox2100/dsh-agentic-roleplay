@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { TtsService, type TtsOptions, type TtsResult } from 'dsh-ai-core'
+import { TtsService, type TtsOptions, type TtsResult } from '@dsh-ai-providers/core'
 import { speakParts } from '../../../src/host/speech/service.ts'
 
 class Speech extends TtsService {

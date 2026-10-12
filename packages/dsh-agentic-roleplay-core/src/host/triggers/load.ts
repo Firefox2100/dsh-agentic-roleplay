@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import type { TriggerDefinition } from 'dsh-roleplay-model'
-import { readTriggerDefinition } from 'dsh-roleplay-state'
+import { readTriggerDefinition } from '@dsh-agentic-roleplay/state'
 import type { WorldProblem } from '../../shared/worlds.ts'
 import { errorMessage } from '../errors.ts'
 import { readDocument } from '../read-document.ts'

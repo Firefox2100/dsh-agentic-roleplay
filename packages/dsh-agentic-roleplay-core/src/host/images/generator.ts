@@ -1,4 +1,4 @@
-import type { ImageGenerationService } from 'dsh-ai-core'
+import type { ImageGenerationService } from '@dsh-ai-providers/core'
 import type { VisualIdentity } from 'dsh-roleplay-model'
 import { referenceImagePath, sceneImagePath, writeImage, type EntityImageAddress, type VisualImageMetadata, type VisualImageSubject } from './storage.ts'
 

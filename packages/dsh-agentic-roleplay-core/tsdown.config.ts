@@ -75,7 +75,7 @@ const host: UserConfig = {
   platform: 'node',
   target: 'es2024',
   dts: false,
-  clean: false,
+  clean: true,
   sourcemap: true,
   fixedExtension: false,
   deps: {

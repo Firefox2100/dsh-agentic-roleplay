@@ -1,5 +1,5 @@
 import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type FactionDefinition, type Holder, type ItemDefinition, type LocationDefinition, type LoreDefinition, type LoreSubject, type Slot } from 'dsh-roleplay-model'
-import { MINUTE, parseTimeOfDay, triggerReferenceProblems, type Session } from 'dsh-roleplay-state'
+import { MINUTE, parseTimeOfDay, triggerReferenceProblems, type Session } from '@dsh-agentic-roleplay/state'
 import { InvalidWorldError } from './errors.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
 import type { ChatSettings } from '../../shared/settings.ts'

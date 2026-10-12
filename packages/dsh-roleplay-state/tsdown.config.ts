@@ -10,7 +10,7 @@ export default defineConfig(({ watch }) => ({
   platform: 'node',
   target: 'es2024',
   dts: watch ? false : { eager: true },
-  clean: false,
+  clean: true,
   sourcemap: true,
   fixedExtension: false,
   deps: { neverBundle: specifier => specifier.startsWith('@deepseek-ai/') },

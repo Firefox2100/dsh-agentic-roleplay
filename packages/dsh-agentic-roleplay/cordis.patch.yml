@@ -2,9 +2,9 @@
 # and must match ENTRY_ID in the core package.
 - insert:
     - id: roleplay-state
-      name: dsh-roleplay-state
+      name: '@dsh-agentic-roleplay/state'
     - id: roleplay
-      name: dsh-agentic-roleplay-core
+      name: '@dsh-agentic-roleplay/core'
     - id: speech-to-text
       name: '@deepseek-ai/dsh-experimental-speech-to-text'
       config:
@@ -32,7 +32,7 @@
               prefix: ''
               suffix: ''
           - id: orchestration
-            name: dsh-agentic-roleplay-core/orchestration
+            name: '@dsh-agentic-roleplay/core/orchestration'
           # Folds the oldest turns of a long conversation into summaries written
           # from the story's recorded events, at the limit set per chat.
           - id: compaction
@@ -42,7 +42,7 @@
               compaction: true
             config:
               - id: roleplay-compaction
-                name: dsh-agentic-roleplay-core/compaction
+                name: '@dsh-agentic-roleplay/core/compaction'
     # This first authoring preset deliberately mounts only its persona and
     # therefore cannot inherit the stock agent's filesystem tools.
     - id: preset-world-authoring
@@ -57,4 +57,4 @@
               prefix: ''
               suffix: ''
           - id: authoring
-            name: dsh-agentic-roleplay-core/authoring
+            name: '@dsh-agentic-roleplay/core/authoring'

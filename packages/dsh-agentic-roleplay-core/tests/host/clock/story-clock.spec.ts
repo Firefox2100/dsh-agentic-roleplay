@@ -1,4 +1,4 @@
-import { createSessionStore, DAY, HOUR, MINUTE } from 'dsh-roleplay-state'
+import { createSessionStore, DAY, HOUR, MINUTE } from '@dsh-agentic-roleplay/state'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ClockError, beginTurn, endRound, readTime, skipTime, type ClockSettings } from '../../../src/host/clock/story-clock.ts'
 

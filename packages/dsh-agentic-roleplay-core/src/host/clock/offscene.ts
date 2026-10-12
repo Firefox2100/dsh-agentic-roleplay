@@ -1,4 +1,4 @@
-import { ENGAGEMENT_GRACE, parseInstant, type Session } from 'dsh-roleplay-state'
+import { ENGAGEMENT_GRACE, parseInstant, type Session } from '@dsh-agentic-roleplay/state'
 import { describeWhen } from './story-clock.ts'
 
 type OffSceneSession = Pick<Session, 'characters' | 'placements' | 'locations' | 'engagements' | 'intents' | 'metadata'>

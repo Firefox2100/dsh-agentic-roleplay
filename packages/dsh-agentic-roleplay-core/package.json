@@ -1,7 +1,8 @@
 {
-  "name": "dsh-agentic-roleplay-core",
-  "version": "0.0.0",
+  "name": "@dsh-agentic-roleplay/core",
+  "version": "0.1.0",
   "description": "Core plugin of the agentic roleplay bundle for DeepSeek Harness: roleplay UI, orchestration and storage.",
+  "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -27,6 +28,12 @@
       "platform": "web"
     }
   },
+  "engines": {"node": ">=22"},
+  "repository": {"type": "git", "url": "git+https://github.com/Firefox2100/dsh-agentic-roleplay.git", "directory": "packages/dsh-agentic-roleplay-core"},
+  "homepage": "https://firefox2100.github.io/dsh-agentic-roleplay/docs/developers/architecture",
+  "bugs": {"url": "https://github.com/Firefox2100/dsh-agentic-roleplay/issues"},
+  "keywords": ["deepseek-harness", "dsh", "agentic-roleplay", "roleplay", "ai-agents"],
+  "publishConfig": {"access": "public", "registry": "https://registry.npmjs.org/"},
   "scripts": {
     "build": "tsdown",
     "watch": "tsdown --watch",
@@ -37,14 +44,18 @@
     "lib/*.js",
     "prompts",
     "lib/client.js",
-    "lib/client.js.map"
+    "lib/client.js.map",
+    "README.md",
+    "LICENSE"
   ],
   "license": "GPL-3.0-only",
   "peerDependencies": {
     "@deepseek-ai/dsh": ">=0.2.0-rc.2 <0.3.0"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "^3.18.4"
+    "@deepseek-ai/schemastery": "^3.18.4",
+    "@dsh-ai-providers/core": "^0.1.0",
+    "@dsh-agentic-roleplay/state": "workspace:0.1.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
@@ -79,9 +90,7 @@
     "@deepseek-ai/dsh-user-approval": "0.2.0-rc.2",
     "@types/node": "^22.20.0",
     "@types/react": "~18.3.1",
-    "dsh-ai-core": "link:../../../dsh-ai-providers/packages/dsh-ai-core",
     "dsh-roleplay-model": "workspace:*",
-    "dsh-roleplay-state": "workspace:*",
     "lightningcss": "^1.33.0",
     "react": "^18.3.1",
     "tsdown": "^0.22.2",

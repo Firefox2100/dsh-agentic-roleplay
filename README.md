@@ -2,6 +2,8 @@
 
 Persistent, agent-driven roleplay for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness). The bundle provides a game-master loop, autonomous character agents, durable world and session state, authoring tools, multimedia services, and a dedicated roleplay interface.
 
+This project is independently maintained by [Firefox2100](https://github.com/Firefox2100). It is not an official DeepSeek Harness project.
+
 ## Documentation
 
 - [English documentation](https://firefox2100.github.io/dsh-agentic-roleplay/docs/intro)
@@ -16,9 +18,9 @@ Persistent, agent-driven roleplay for [DeepSeek Harness](https://github.com/deep
 
 | Package | Role |
 |---|---|
-| `dsh-agentic-roleplay` | Installable bundle containing the complete experience. |
-| `dsh-agentic-roleplay-core` | UI, orchestration, authoring, media, and filesystem integration. |
-| `dsh-roleplay-state` | Standalone DSH service for session databases, repositories, recall, and model-facing record tools. |
+| `@dsh-agentic-roleplay/all` | Installable bundle containing the complete experience. |
+| `@dsh-agentic-roleplay/core` | UI, orchestration, authoring, media, and filesystem integration. |
+| `@dsh-agentic-roleplay/state` | Standalone DSH service for session databases, repositories, recall, and model-facing record tools. |
 | `dsh-roleplay-model` | Private canonical model package, bundled into the published plugins. |
 
 ## Installation
@@ -26,7 +28,7 @@ Persistent, agent-driven roleplay for [DeepSeek Harness](https://github.com/deep
 Install the complete bundle into a DSH profile:
 
 ```bash
-dsh plugin --profile <profile> add dsh-agentic-roleplay
+dsh plugin --profile <profile> add @dsh-agentic-roleplay/all
 ```
 
 Restart the profile, then configure the storage root under **Settings → Role Play**. AI features are supplied by compatible provider plugins; see [AI services](https://firefox2100.github.io/dsh-agentic-roleplay/docs/getting-started/ai-services).

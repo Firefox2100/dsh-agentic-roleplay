@@ -1,7 +1,7 @@
 import { join } from 'node:path'
-import type { RoleplayState } from 'dsh-roleplay-state'
+import type { RoleplayState } from '@dsh-agentic-roleplay/state'
 import type { SessionSummary, SessionsPayload } from '../../shared/sessions.ts'
-import { sessionFolder } from 'dsh-roleplay-state'
+import { sessionFolder } from '@dsh-agentic-roleplay/state'
 import { chatSessionId } from '../agent/agent-sessions.ts'
 import { readStatus } from './status.ts'
 

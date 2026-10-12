@@ -1,4 +1,4 @@
-import { createSessionStore, HOUR, MINUTE, type SessionStore } from 'dsh-roleplay-state'
+import { createSessionStore, HOUR, MINUTE, type SessionStore } from '@dsh-agentic-roleplay/state'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { agendaView, sceneAgenda } from '../../../src/host/clock/agenda.ts'
 import { passRound, skipAhead, startTurn } from '../../../src/host/clock/passage.ts'

@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import type { ClockMode } from 'dsh-roleplay-model'
-import { isSessionId, sessionDatabase, sessionFolder } from 'dsh-roleplay-state'
+import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
 import { SETTINGS_SPEC, parseSettings, type SettingsPayload } from '../../shared/settings.ts'
 import { SessionNotFoundError } from './errors.ts'
 import { InvalidSettingsError, readSettings, writeSettings } from './settings.ts'

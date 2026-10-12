@@ -1,7 +1,8 @@
 {
-  "name": "dsh-agentic-roleplay",
-  "version": "0.0.0",
+  "name": "@dsh-agentic-roleplay/all",
+  "version": "0.1.0",
   "description": "Agentic roleplay bundle for DeepSeek Harness. Install this one package to get every roleplay plugin.",
+  "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
   "type": "module",
   "dsh": {
     "engines": {
@@ -11,8 +12,16 @@
       "patch": "./cordis.patch.yml"
     }
   },
+  "engines": {"node": ">=22"},
+  "repository": {"type": "git", "url": "git+https://github.com/Firefox2100/dsh-agentic-roleplay.git", "directory": "packages/dsh-agentic-roleplay"},
+  "homepage": "https://firefox2100.github.io/dsh-agentic-roleplay/docs/intro",
+  "bugs": {"url": "https://github.com/Firefox2100/dsh-agentic-roleplay/issues"},
+  "keywords": ["deepseek-harness", "dsh", "agentic-roleplay", "roleplay", "plugin-bundle"],
+  "publishConfig": {"access": "public", "registry": "https://registry.npmjs.org/"},
   "files": [
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE"
   ],
   "license": "GPL-3.0-only",
   "dependencies": {
@@ -21,7 +30,7 @@
     "@deepseek-ai/dsh-experimental-speech-to-text-sensevoice": "0.2.0-rc.2",
     "@deepseek-ai/dsh-experimental-api-speech-to-text": "0.2.0-rc.2",
     "@deepseek-ai/dsh-experimental-client-ui-voice-input": "0.2.0-rc.2",
-    "dsh-agentic-roleplay-core": "workspace:*",
-    "dsh-roleplay-state": "workspace:*"
+    "@dsh-agentic-roleplay/core": "workspace:0.1.0",
+    "@dsh-agentic-roleplay/state": "workspace:0.1.0"
   }
 }

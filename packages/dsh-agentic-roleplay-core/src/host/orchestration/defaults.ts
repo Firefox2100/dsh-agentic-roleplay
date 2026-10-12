@@ -4,7 +4,7 @@ import type {
   ActivationPlanner, Author, Boundaries, Suggester, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
-import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from 'dsh-roleplay-state'
+import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from '@dsh-agentic-roleplay/state'
 import type { NarrationSegment, Utterance } from './protocol.ts'
 import type { AgendaView, SceneAgenda } from '../clock/agenda.ts'
 import { describeTime, describeWhen, type StoryTime } from '../clock/story-clock.ts'
