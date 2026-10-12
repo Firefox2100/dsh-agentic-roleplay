@@ -17,4 +17,4 @@ allowBuilds:
   protobufjs: false
 
 minimumReleaseAgeExclude:
-  - '@dsh-ai-providers/core@0.1.0'
+  - '@dsh-ai-providers/core@0.1.2'

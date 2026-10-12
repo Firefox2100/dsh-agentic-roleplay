@@ -35,16 +35,33 @@ for (const { folder, name } of releasePackages) {
     }
   }
 
+  if (folder !== 'dsh-agentic-roleplay') {
+    for (const dependency of Object.keys(manifest.dependencies ?? {})) {
+      if (dependency.startsWith('@deepseek-ai/')) throw new Error(`${name}: ${dependency} must be a peer dependency`)
+    }
+  }
+
   if (manifest.main) await access(resolve(directory, manifest.main))
   if (manifest.types) await access(resolve(directory, manifest.types))
 }
 
 await access(resolve(root, 'LICENSE'))
 
-for (const folder of ['dsh-roleplay-state', 'dsh-agentic-roleplay']) {
+for (const folder of ['dsh-roleplay-state', 'dsh-agentic-roleplay-core', 'dsh-agentic-roleplay']) {
   const manifest = JSON.parse(await readFile(resolve(root, 'packages', folder, 'package.json'), 'utf8'))
   if (manifest.dsh?.bundle?.patch !== './cordis.patch.yml') throw new Error(`${manifest.name}: missing DSH bundle declaration`)
   await access(resolve(root, 'packages', folder, 'cordis.patch.yml'))
+}
+
+
+const standaloneBundles = [
+  ['dsh-roleplay-state', '@dsh-agentic-roleplay/state', 'roleplay-state'],
+  ['dsh-agentic-roleplay-core', '@dsh-agentic-roleplay/core', 'roleplay'],
+]
+for (const [folder, name, id] of standaloneBundles) {
+  const directory = resolve(root, 'packages', folder)
+  const expected = `- insert:\n    - id: ${id}\n      name: '${name}'\n`
+  if (await readFile(resolve(directory, 'cordis.patch.yml'), 'utf8') !== expected) throw new Error(`${name}: standalone bundle must insert only its own plugin row`)
 }
 
 console.log(`Release metadata and build outputs are valid for ${releasePackages.length} packages at ${version}.`)

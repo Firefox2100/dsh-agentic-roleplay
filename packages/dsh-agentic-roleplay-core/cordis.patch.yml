@@ -1,0 +1,3 @@
+- insert:
+    - id: roleplay
+      name: '@dsh-agentic-roleplay/core'

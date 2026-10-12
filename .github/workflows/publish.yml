@@ -1,0 +1,52 @@
+name: Publish stable packages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: publish-stable-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    environment: npm
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Validate
+        run: |
+          pnpm typecheck
+          pnpm test
+          pnpm release:build
+          pnpm release:check
+      - name: Check published versions
+        id: published
+        run: node scripts/check-published.mjs >> "$GITHUB_OUTPUT"
+      - name: Publish state service
+        if: steps.published.outputs.state != 'true'
+        run: pnpm run release:publish -- dsh-roleplay-state
+      - name: Publish core plugin
+        if: steps.published.outputs.core != 'true'
+        run: pnpm run release:publish -- dsh-agentic-roleplay-core
+      - name: Publish complete bundle
+        if: steps.published.outputs.all != 'true'
+        run: pnpm run release:publish -- dsh-agentic-roleplay

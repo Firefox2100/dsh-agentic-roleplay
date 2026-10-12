@@ -9,8 +9,11 @@ It provides the game-master loop, autonomous character agents, world and session
 Most users should install [`@dsh-agentic-roleplay/all`](https://www.npmjs.com/package/@dsh-agentic-roleplay/all). Install this package separately only when assembling a custom DSH profile:
 
 ```bash
+dsh plugin --profile <profile> add @dsh-agentic-roleplay/state
 dsh plugin --profile <profile> add @dsh-agentic-roleplay/core
 ```
+
+The state package must be installed and enabled first. Installing the core package brings the state package code into the profile, but DSH activates only bundles selected explicitly.
 
 This is an independent community project maintained by Firefox2100, not an official DSH package.
 

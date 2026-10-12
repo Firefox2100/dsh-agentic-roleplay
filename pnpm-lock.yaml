@@ -188,15 +188,12 @@ importers:
       '@deepseek-ai/dsh':
         specifier: '>=0.2.0-rc.2 <0.3.0'
         version: 0.2.0-rc.2(0c11fc91f26666d36cedbca9d4a4236d)
-      '@deepseek-ai/schemastery':
-        specifier: ^3.18.4
-        version: 3.18.4
       '@dsh-agentic-roleplay/state':
         specifier: workspace:0.1.0
         version: link:../dsh-roleplay-state
       '@dsh-ai-providers/core':
-        specifier: ^0.1.0
-        version: 0.1.0(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-llm@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))
+        specifier: ^0.1.2
+        version: 0.1.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-llm@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: ^4.0.4
@@ -288,6 +285,9 @@ importers:
       '@deepseek-ai/dsh-user-approval':
         specifier: 0.2.0-rc.2
         version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-agent@0.2.0-rc.2(fee0e653b72a3883e0f0da2d9a46bb50))(@deepseek-ai/dsh-brand@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-llm@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)))(@deepseek-ai/dsh-session@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-scope@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))))(@deepseek-ai/dsh-system-prompt@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-llm@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))))
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.4
+        version: 3.18.4
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.4
@@ -324,9 +324,6 @@ importers:
       '@deepseek-ai/dsh':
         specifier: '>=0.2.0-rc.2 <0.3.0'
         version: 0.2.0-rc.2(0c11fc91f26666d36cedbca9d4a4236d)
-      '@deepseek-ai/schemastery':
-        specifier: ^3.18.4
-        version: 3.18.4
       sqlite-vec:
         specifier: ^0.1.9
         version: 0.1.9
@@ -352,6 +349,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: 0.2.0-rc.2
         version: 0.2.0-rc.2(52b5a8ab481be2b3d891c22a71641755)
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.4
+        version: 3.18.4
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.4
@@ -4065,8 +4065,8 @@ packages:
     resolution: {integrity: sha512-xx0W3eav2uW1NRIpuHJWNwLTC15xPNjU4Uxi9NSnd3swYC96BE3vFiT93SD8s24kmAAWNwgZwfZ2fghGZ01Lcw==}
     engines: {node: '>=20.0'}
 
-  '@dsh-ai-providers/core@0.1.0':
-    resolution: {integrity: sha512-tSI+xSpJwDsPW5KFaht825daoLm+IrScRdbHwDJrmZB2oGLnf1Ea/7/RVlgoRXsmQpiD0pnpD17ipRTTwXgGSA==}
+  '@dsh-ai-providers/core@0.1.2':
+    resolution: {integrity: sha512-OP0gGcL7sJuSMnZz/Jh2fMwH/skqwSN1Q/ER36AYUfhU+kUEZAi7EawQBYWLilVNfb1VF32CEPlkMku44+XKqg==}
     engines: {node: '>=22'}
     peerDependencies:
       '@deepseek-ai/cordis': ^4.0.4
@@ -15464,7 +15464,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@dsh-ai-providers/core@0.1.0(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-llm@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))':
+  '@dsh-ai-providers/core@0.1.2(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-llm@0.2.0-rc.2(@deepseek-ai/cordis@4.0.4))':
     dependencies:
       '@deepseek-ai/cordis': 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
       '@deepseek-ai/dsh-llm': 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
