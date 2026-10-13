@@ -129,7 +129,7 @@ export class SqliteItemRepository implements ItemRepository {
       if (patch.container !== undefined && !CONTAINER_STATES.includes(patch.container.state)) throw new InvalidValueError(`unknown container state "${String(patch.container.state)}"`)
       this.db.run('UPDATE items SET name = ?, description = ?, quantity = ?, quality = ?, notable = ?, hidden = ?, container_state = ?, owner_id = ? WHERE id = ?', [
         name, (patch.description ?? current.description).trim(), quantity, (patch.quality ?? current.quality).trim(), (patch.notable ?? current.notable) ? 1 : 0, (patch.hidden ?? current.hidden) ? 1 : 0,
-        patch.container?.state ?? current.container?.state ?? null, patch.ownerId ?? current.ownerId ?? null, id,
+        patch.container?.state ?? current.container?.state ?? null, patch.ownerId === undefined ? current.ownerId ?? null : patch.ownerId, id,
       ])
       return this.require(id)
     }))

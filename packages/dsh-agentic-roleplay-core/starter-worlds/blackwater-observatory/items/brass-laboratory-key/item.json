@@ -1,0 +1,10 @@
+{
+  "id": "brass-laboratory-key",
+  "name": "Brass Laboratory Key",
+  "description": "A small brass key that opens the locked laboratory in Blackwater Observatory.",
+  "unique": true,
+  "location": "town-square",
+  "position": "hidden behind the monument plaque",
+  "hidden": true,
+  "notable": true
+}

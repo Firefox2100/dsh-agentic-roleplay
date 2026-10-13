@@ -1113,7 +1113,9 @@ describe('characters away from the player', () => {
     store.dueOffScene = () => [item()]
     const runner = await deliver({ bob: { intent: 'Bob goes to the street to wait', commitment: 'high' }, carol: { intent: 'Carol stays in', commitment: 'low' } })
     await vi.waitFor(() => { expect(handled).toEqual(['e1']) })
-    expect(runner.requests.filter(request => request.situation === 'You were to meet at the Street. Decide.').map(request => request.member.key).sort()).toEqual(['bob', 'carol'])
+    const asked = runner.requests.filter(request => request.situation.startsWith('You were to meet at the Street. Decide.'))
+    expect(asked.map(request => request.member.key)).toEqual(['bob', 'carol'])
+    expect(asked.map(request => request.situation)).toEqual(['You were to meet at the Street. Decide.', 'You were to meet at the Street. Decide.\nBob has decided: Bob goes to the street to wait.'])
     const last = store.commits.at(-1)!
     expect(last.map(update => [update.character, update.patch, update.move])).toEqual([
       [bob.character.id, { activity: 'Bob goes to the street to wait' }, { to: street.id }],

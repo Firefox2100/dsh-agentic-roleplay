@@ -24,6 +24,7 @@ title: Configuration reference
 | `memory.flaky` | `true` | Imperfect perception and story-time fading |
 | `memory.recall` | 12 | Memories supplied per activation |
 | `memory.lookup` | `true` | Character recall tool |
+| `memory.lookupCalls` | 5 | Most memory look-ups per character decision |
 | `memory.verify` | `true` | Keeper reads edits back |
 | `memory.backlogRounds` | 6 | Forced keeper threshold |
 | `memory.overRetrieve` | 4 | Candidate multiplier before final choice |
@@ -40,6 +41,8 @@ title: Configuration reference
 | `offstage.perTurn` | 2 | Due off-stage characters processed per turn |
 | `offstage.perCharacter` | 1 | Times one character is asked per turn |
 | `offstage.summary` | `true` | Off-stage characters also say in a line what happened (same request), shown as the *Meanwhile* card |
+| `models.characters`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own |
+| `sampling.maxTokens`, `sampling.shortMaxTokens` | 8000, 2000 | Most tokens one helper request may produce; the short limit is for characters and suggestions, whose answers are brief (settings file only) |
 | `rewind.keepSnapshots` | 30 | Recent state snapshots |
 | `preview.enabled` | `true` | Show an early scene preview |
 | `suggestions.count` | 3 | Suggested next actions |

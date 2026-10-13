@@ -1,15 +1,16 @@
 import { announcements, describeDuration, describeInstant, inAudience, locationKey, type Announcement, type Session } from '@dsh-agentic-roleplay/state'
+import { verdictReader } from './judged.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { TriggerReport, TurnStore } from '../orchestration/boundaries.ts'
 
-type TriggerSession = Pick<Session, 'triggers' | 'characters' | 'locations' | 'placements' | 'runTriggers' | 'lapseNotes' | 'transaction'>
+type TriggerSession = Pick<Session, 'metadata' | 'triggers' | 'characters' | 'locations' | 'placements' | 'runTriggers' | 'lapseNotes' | 'transaction'>
 
 /** Fires the triggers whose conditions just came true, and says what each did in words. A trigger that could not be applied is reported and given up. */
 export function fireTriggers(session: TriggerSession, input: { settings: ChatSettings; turn: number; round: number; now: number; zone: string; problem: (message: string) => void }): TriggerReport {
   const { settings, turn, round, now, zone, problem } = input
   if (!settings.triggers.enabled) return { fired: [] }
   const before = Math.max(0, ...session.triggers.notes().map(note => note.id))
-  const run = session.runTriggers({ turn, round, now, zone, maxFires: settings.triggers.maxFires })
+  const run = session.runTriggers({ turn, round, now, zone, maxFires: settings.triggers.maxFires, judged: verdictReader(session) })
   for (const failure of run.failed) problem(`the trigger "${failure.trigger.key}" could not fire and is given up: ${failure.problem}`)
   const names = new Map(session.characters.list().map(character => [character.id, character.name]))
   const fresh = session.triggers.notes({ status: 'pending' }).filter(note => note.id > before)

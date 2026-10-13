@@ -1,4 +1,6 @@
 import { CLOCK_MODES, type ClockMode } from 'dsh-roleplay-model'
+import type { ActivityEntry } from './activity.ts'
+import type { VectorStatus } from './vectors.ts'
 import { MAX_OWN_RULES } from './rules.ts'
 
 /** What can be set for one chat. Stored as a file next to the chat's database: it is configuration, not story state. */
@@ -14,6 +16,8 @@ export interface ChatSettings {
     recall: number
     /** Whether a character can ask itself about more of what it remembers while it decides what to do. It makes a character's turn a little longer. */
     lookup: boolean
+    /** The most times a character may look into its memory while it decides, when it can at all; it is then told to answer. A character that keeps looking costs minutes. */
+    lookupCalls: number
     /** Whether the record keeper must read back what it wrote and compare it with the round before it finishes. It costs a couple more model calls in the background of the narration; turn it off where speed matters more. */
     verify: boolean
     /** How many recorded rounds may wait for the memory keeper before it is run regardless of the game master. The game master normally decides when what happened is worth recording. */
@@ -58,6 +62,8 @@ export interface ChatSettings {
     perTurn: number
     /** The most times one character is asked in that run: a character with several things due is asked about the first and the rest waits for the next turn. */
     perCharacter: number
+    /** Whether the characters of one commitment decide one after another, each told who has already meant to come, so that they meet; off, each decides alone, all at once. */
+    joint: boolean
     /** Whether those characters also say in a line what came of it, in the same request, for the note shown to the player (it costs no request of its own). */
     summary: boolean
   }
@@ -74,6 +80,8 @@ export interface ChatSettings {
     records: number
     /** The most tokens one request of a helper may produce; a helper that rambles is cut off instead of waited for. */
     maxTokens: number
+    /** The same for the helpers whose answer is short (the characters and the suggestion writer): a run that does not stop costs minutes, so it is cut off much sooner. */
+    shortMaxTokens: number
     /** Whether those helpers must answer with a tool call, which keeps them from writing prose instead of their result. */
     tools: 'auto' | 'required'
   }
@@ -85,6 +93,22 @@ export interface ChatSettings {
     /** How hard the child agents think, as a level the model offers (for example `off` or `low`); empty is the game master's own level. Thinking makes helpers (records, checks) slow, so a model that offers an off level should use it; a level the model does not offer stalls the helper. */
     children: string
   }
+  factions: {
+    /** The most organisations that decide what they do after one player message; 0 turns it off. Each is one request, and only when its own time has come. */
+    perTurn: number
+    /** How many days of story time pass between one organisation's decisions. */
+    everyDays: number
+  }
+  models: {
+    /** The model each kind of helper runs on, as `provider/model`; empty is the chat's own model. A smaller, faster model suits the helpers that do not write the story's prose. */
+    characters: string
+    /** The record keeper. */
+    records: string
+    /** The writer of suggested actions. */
+    suggestions: string
+    /** The world author and the plot author. */
+    authoring: string
+  }
   triggers: {
     /** Whether the world acts by itself when what its triggers wait for comes true. */
     enabled: boolean
@@ -94,6 +118,8 @@ export interface ChatSettings {
     beatTurns: number
     /** How many turns a cue a character did not get to act on stays pending. */
     cueTurns: number
+    /** The most statements that triggers wait on ("the mayor has lost the town's trust") a model judges after one player message, in one request; 0 turns judging off, and such triggers never fire. */
+    judgedPerTurn: number
   }
   rewind: {
     /** How many of the turns most recently played keep a snapshot of the story's state, so that the story can be taken back to them; 0 keeps none and turns rewinding off. */
@@ -164,7 +190,7 @@ const text = (max: number, fallback: string): TextSpec => ({ kind: 'text', max, 
 export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
   maxCharacters: integer(1, 30, 4),
-  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4) },
+  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), lookupCalls: integer(1, 20, 5), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4) },
   context: {
     limitTokens: integer(0, 1_000_000, 0),
     limitRatio: ratio(0.1, 0.9, 0.6),
@@ -174,11 +200,13 @@ export const SETTINGS_SPEC = {
   },
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), thingsPerTurn: integer(0, 20, 4), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
-  offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), summary: flag(true) },
-  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.8), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000) },
+  offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), joint: flag(true), summary: flag(true) },
+  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.8), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
-  triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2) },
+  factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },
+  models: { characters: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
+  triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
   rewind: { keepSnapshots: integer(0, 500, 30) },
   rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },
@@ -207,6 +235,9 @@ export function isTimeZone(zone: string): boolean {
     return false
   }
 }
+
+/** A model as `provider/model`: both parts present, no spaces. */
+export const MODEL_NAME = /^[^\s/]+\/\S+$/
 
 const OPTION_NAME = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
 
@@ -268,6 +299,9 @@ export function parseSettings(value: unknown): SettingsParse {
   const parsed = parseLevel(SETTINGS_SPEC, value, '', problems)
   const zone = (parsed['clock'] as { timeZone?: unknown } | undefined)?.timeZone
   if (typeof zone === 'string' && zone !== '' && !isTimeZone(zone)) problems.push(`"clock.timeZone" is not a time zone this system knows: write it like Europe/London or UTC`)
+  for (const [kind, name] of Object.entries((parsed['models'] ?? {}) as Record<string, unknown>)) {
+    if (typeof name === 'string' && name !== '' && !MODEL_NAME.test(name)) problems.push(`"models.${kind}" must be written provider/model, for example localai/qwen`)
+  }
   return problems.length > 0 ? { ok: false, problems } : { ok: true, value: parsed as unknown as ChatSettings }
 }
 
@@ -279,6 +313,10 @@ export interface SettingsPayload {
   pendingRecords: number
   /** How many made-up characters, places and things are waiting to be fitted into the world. */
   pendingConsolidation: number
+  /** How the latest runs of the story's helper agents went, oldest first. */
+  activity: ActivityEntry[]
+  /** The state of the session's search by meaning. */
+  vectors: VectorStatus
   /** The mode the story's clock is in now; time that is simulated cannot be made to follow the real clock again. */
   clockMode?: ClockMode
 }

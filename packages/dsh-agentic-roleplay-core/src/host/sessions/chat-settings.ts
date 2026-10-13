@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs'
 import type { ClockMode } from 'dsh-roleplay-model'
 import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
+import type { ActivityEntry } from '../../shared/activity.ts'
+import type { VectorStatus } from '../../shared/vectors.ts'
 import { SETTINGS_SPEC, parseSettings, type SettingsPayload } from '../../shared/settings.ts'
 import { SessionNotFoundError } from './errors.ts'
 import { InvalidSettingsError, readSettings, writeSettings } from './settings.ts'
@@ -10,6 +12,8 @@ export interface ChatSettingsDeps {
   /** How many recorded rounds of the session are not yet written into its records. */
   pendingRecords: (id: string) => number
   pendingConsolidation: (id: string) => number
+  activity: (id: string) => ActivityEntry[]
+  vectors: (id: string) => VectorStatus
   /** The mode the session's clock is in, once it has one. */
   clockMode: (id: string) => ClockMode | undefined
 }
@@ -45,5 +49,5 @@ export function writeChatSettings(deps: ChatSettingsDeps, id: string, value: unk
 
 function payloadOf(deps: ChatSettingsDeps, id: string, settings: SettingsPayload['settings']): SettingsPayload {
   const clockMode = deps.clockMode(id)
-  return { settings, bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id), ...(clockMode === undefined ? {} : { clockMode }) }
+  return { settings, bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id), activity: deps.activity(id), vectors: deps.vectors(id), ...(clockMode === undefined ? {} : { clockMode }) }
 }

@@ -43,6 +43,15 @@ beforeEach(() => {
 afterEach(() => { store.close() })
 
 describe('slots', () => {
+  it('can be given to someone or to no one', () => {
+    store.items.update(item('lantern').id, { ownerId: idOf('bob') })
+    expect(item('lantern').ownerId).toBe(idOf('bob'))
+    store.items.update(item('lantern').id, { description: 'Dented.' })
+    expect(item('lantern').ownerId).toBe(idOf('bob'))
+    store.items.update(item('lantern').id, { ownerId: null })
+    expect(item('lantern').ownerId).toBeUndefined()
+  })
+
   it('start as the usual ones, and a world can add its own or change how many fit', () => {
     expect(store.slots.list().map(slot => [slot.id, slot.capacity])).toEqual(expect.arrayContaining([['head', 1], ['torso', 2], ['fingers', 4]]))
     store.slots.upsert({ id: 'tail', name: 'tail', capacity: 1 })

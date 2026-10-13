@@ -1,5 +1,6 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
 import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from '@dsh-agentic-roleplay/state'
+import type { ActivityEntry } from '../../shared/activity.ts'
 import type { Note } from '../../shared/notes.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'
@@ -357,6 +358,36 @@ export interface Author {
   consolidate(job: ConsolidateJob, signal: AbortSignal): Promise<ConsolidateReport>
 }
 
+export interface StrategyJob {
+  chat: string
+  turn: number
+  store: TurnStore
+}
+
+export interface StrategyReport {
+  /** What the organisations did, one sentence each, by name. */
+  acted: { faction: string; summary: string }[]
+}
+
+/**
+ * Lets organisations act on their own as story time passes: after a turn, a few whose time has come decide what they do, and their
+ * state, goals and a record of it are written. Nothing a faction does decides what a character does.
+ */
+export interface Strategist {
+  strategize(job: StrategyJob, signal: AbortSignal): Promise<StrategyReport>
+}
+
+export interface JudgeJob {
+  chat: string
+  turn: number
+  store: TurnStore
+}
+
+/** Says, after a turn, whether the statements that triggers wait on hold in the story now; the verdicts are what such a trigger reads. */
+export interface TriggerJudge {
+  judge(job: JudgeJob, signal: AbortSignal): Promise<{ judged: number }>
+}
+
 export interface Boundaries {
   planner: ActivationPlanner
   characterContext: CharacterContextProvider
@@ -367,6 +398,8 @@ export interface Boundaries {
   narrationChecker: NarrationChecker
   committer: Committer
   author: Author
+  strategist: Strategist
+  judge: TriggerJudge
   suggester: Suggester
   recaller: Recaller
   sceneContext: SceneContextProvider
@@ -388,7 +421,7 @@ export interface TriggerReport {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers'>
+  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers' | 'transaction'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
@@ -431,6 +464,8 @@ export interface TurnStore {
   putNote(note: Note): void
   /** Adds lines to the turn's note of the kind. */
   addNote(kind: Note['kind'], turn: number, lines: readonly string[]): void
+  /** Keeps how a helper's run went, for the settings tab. */
+  recordActivity(entry: ActivityEntry): void
   /** The notes of the session as they stand. */
   notes(): Note[]
   /** Removes the notes: they belong to the turn that made them. */

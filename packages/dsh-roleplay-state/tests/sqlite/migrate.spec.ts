@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -23,6 +24,22 @@ describe('migrate', () => {
     migrate(db)
     expect(inspect(db).version).toBe(LATEST_VERSION)
     db.close()
+  })
+
+  it('keeps the migrations of the 0.1.0 release as they were published', () => {
+    const released: Record<number, string> = {
+      1: '7fe43a969076c940ccc06f00a170800b59fae8108f4a6b3c26cc8c09e2c2941e',
+      2: 'd4c45efd6a1262ea796bb1a291940e132f6fd281c53243474467e88a5346b53b',
+      3: 'e475e2cb2785b71913ac24f2fce6a12aa86b5ec8af0a6ac6b4d0999fda4ddaa5',
+      4: '9fdcd72cec06d5b81db418ea66c446660257103e8746b504e1b0e2d98ddb4dc7',
+      5: '56d3b40c78d2010196563e64b72b501276ee87e70729690721b027c5abea7cdb',
+      6: '50a6dbce0acfe194f2b11e09b58db626504f61681cb07ef26ac85f0ad5247cdf',
+    }
+    for (const [version, hash] of Object.entries(released)) {
+      const migration = MIGRATIONS.find(candidate => candidate.version === Number(version))
+      expect(migration, `migration ${version} is missing`).toBeDefined()
+      expect(createHash('sha256').update(migration!.sql).digest('hex'), `migration ${version} was edited after release; add a new migration instead`).toBe(hash)
+    }
   })
 
   it('numbers its migrations consecutively from 1', () => {

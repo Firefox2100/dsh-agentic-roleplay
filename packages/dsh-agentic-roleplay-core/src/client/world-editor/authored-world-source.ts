@@ -1,5 +1,5 @@
 import { API_PREFIX } from '../../shared/worlds.ts'
-import { answer, listVoices, post, postJson, put, remove, type WorldSource } from './source.ts'
+import { answer, listVoices, post, postFile, postJson, put, remove, type WorldSource } from './source.ts'
 
 /** An authored world's files, shared by the catalogue editor and its authoring chat. */
 export function worldSource(worldId: string): WorldSource {
@@ -19,5 +19,6 @@ export function worldSource(worldId: string): WorldSource {
     saveNarrationVoice: async (voice, signal) => await put(`${API_PREFIX}/worlds/state/narration-voice?id=${id}`, { voice }, signal),
     listVoices: async signal => await listVoices(`${API_PREFIX}/speech/voices`, signal),
     generatePortrait: async (key, signal) => await post(`${API_PREFIX}/worlds/state/character/portrait?id=${id}&key=${encodeURIComponent(key)}`, signal),
+    uploadPortrait: async (key, file, signal) => await postFile(`${API_PREFIX}/worlds/state/character/portrait/upload?id=${id}&key=${encodeURIComponent(key)}`, file, signal),
   }
 }

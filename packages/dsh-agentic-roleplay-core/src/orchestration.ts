@@ -9,6 +9,8 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { recordKeeper } from './host/orchestration/committer.ts'
 import { Timelines } from './host/timeline/service.ts'
 import { suggestionWriter } from './host/orchestration/suggester.ts'
+import { triggerJudge } from './host/triggers/judge.ts'
+import { factionStrategist } from './host/factions/strategist.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
 import { installHooks } from './host/orchestration/hooks.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -60,6 +62,8 @@ export function apply(ctx: Context): void {
     scope.effect(() => ctx.roleplayState.rankMemories(rerankMemories({ reranker: () => (scope as Context & { rerankers: Reranker }).rerankers, problem })), 'roleplay: rerank memories')
   })
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: trigger judge')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: world author')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ suggester: suggestionWriter({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: suggestions')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {

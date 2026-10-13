@@ -1,9 +1,10 @@
 import { join } from 'node:path'
-import { parseInstant, sessionFolder, systemTimeZone, type RoleplayState } from '@dsh-agentic-roleplay/state'
+import { lintWorld, parseInstant, sessionFolder, systemTimeZone, type RoleplayState } from '@dsh-agentic-roleplay/state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
 import type { WorldProblem } from '../../shared/worlds.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
+import { addToNote } from './notes.ts'
 import { populatePlots } from '../pacing/director.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -42,6 +43,12 @@ export interface StartSessionDeps {
  * @throws {InvalidStartError} when the name or the player's character is not acceptable.
  * @throws {AgentUnavailableError} when the chat cannot be created.
  */
+/** What is unfinished in the world as it was started, errors first, for the player's card before the first message. */
+function worldFindings(session: Parameters<typeof lintWorld>[0]): string[] {
+  const rank = { error: 0, warning: 1, info: 2 } as const
+  return lintWorld(session).filter(finding => finding.severity !== 'info').sort((a, b) => rank[a.severity] - rank[b.severity]).map(finding => finding.message)
+}
+
 export async function startSession(deps: StartSessionDeps, request: StartSessionRequest): Promise<StartedSession> {
   const world = await deps.worlds.find(request.worldId)
   if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${request.worldId}"`)
@@ -83,7 +90,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const sessionsDir = deps.sessionsDir()
   const session = deps.state.createSession(sessionsDir, {
     name,
-    world: { id: world.summary.id, name: world.summary.name, source: `worlds/${world.folder}` },
+    world: { id: world.summary.id, name: world.summary.name, ...(world.summary.version === undefined ? {} : { version: world.summary.version }), source: `worlds/${world.folder}` },
   })
   const { id } = session.metadata.get()
   let chatSessionId: string
@@ -108,6 +115,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     const promptProblems = copyWorldPrompts(world.directory, sessionFolder(sessionsDir, id))
     if (promptProblems.length > 0) throw new InvalidWorldError(`the prompts of "${world.summary.name}" have ${promptProblems.length} problem(s)`, promptProblems)
     writeSettings(sessionFolder(sessionsDir, id), settings)
+    addToNote(session, 'world', 1, worldFindings(session))
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {
     deps.state.deleteSession(sessionsDir, id)

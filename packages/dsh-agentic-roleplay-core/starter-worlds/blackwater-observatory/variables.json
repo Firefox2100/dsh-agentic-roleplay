@@ -1,0 +1,39 @@
+[
+  {
+    "key": "town_unrest",
+    "name": "Unrest in the town",
+    "description": "How close Blackwater Ridge is to open trouble over the director's disappearance: 0 calm, 10 a riot.",
+    "kind": "number",
+    "subject": "world",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "hidden",
+    "always": true,
+    "bands": [
+      { "up_to": 2, "label": "calm" },
+      { "up_to": 5, "label": "uneasy" },
+      { "up_to": 8, "label": "tense" },
+      { "up_to": 10, "label": "volatile" }
+    ]
+  },
+  {
+    "key": "fatigue",
+    "name": "Fatigue",
+    "description": "How tired the character is: 0 rested, 10 exhausted.",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 0,
+    "visibility": "public",
+    "bands": [
+      { "up_to": 2, "label": "rested" },
+      { "up_to": 5, "label": "tired" },
+      { "up_to": 8, "label": "weary" },
+      { "up_to": 10, "label": "exhausted" }
+    ]
+  }
+]

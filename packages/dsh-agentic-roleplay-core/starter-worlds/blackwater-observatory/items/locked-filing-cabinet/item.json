@@ -1,0 +1,10 @@
+{
+  "id": "locked-filing-cabinet",
+  "name": "Locked Filing Cabinet",
+  "description": "A reinforced metal cabinet for observatory administrative records and research paperwork.",
+  "container": {
+    "state": "locked"
+  },
+  "notable": true,
+  "location": "observatory-directors-office"
+}

@@ -20,6 +20,8 @@ export interface WorldSource {
   listVoices(signal: AbortSignal): Promise<{ id: string; name?: string }[]>
   /** Generate or replace the character's canonical portrait and answer the refreshed world. */
   generatePortrait(key: string, signal: AbortSignal): Promise<WorldState>
+  /** Use a PNG picture the author brought as the character's portrait and answer the refreshed world. */
+  uploadPortrait(key: string, file: File, signal: AbortSignal): Promise<WorldState>
 }
 
 /** The chat or the world is not something that can be edited: it does not exist, or is not a roleplay session. */
@@ -53,6 +55,11 @@ export async function remove(url: string, signal: AbortSignal): Promise<WorldSta
 
 export async function post(url: string, signal: AbortSignal): Promise<WorldState> {
   return await answer(await fetch(url, { method: 'POST', credentials: 'same-origin', signal }))
+}
+
+/** Sends a picture file as the body, with its name, and answers the refreshed world. */
+export async function postFile(url: string, file: File, signal: AbortSignal): Promise<WorldState> {
+  return await answer(await fetch(url, { method: 'POST', credentials: 'same-origin', headers: { 'x-file-name': encodeURIComponent(file.name), 'content-type': file.type || 'application/octet-stream' }, body: file, signal }))
 }
 
 /** Voice discovery is optional: an unavailable or unsupported endpoint leaves manual entry usable. */

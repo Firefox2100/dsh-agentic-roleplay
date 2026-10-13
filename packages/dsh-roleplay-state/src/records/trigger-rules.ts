@@ -13,6 +13,7 @@ const MAX_DEPTH = 4
 const MAX_NODES = 24
 const MAX_EFFECTS = 6
 const MAX_TEXT = 1000
+const MAX_JUDGED = 300
 
 const text = (entry: Wire, key: string): string | undefined => (typeof entry[key] === 'string' && entry[key].trim() !== '' ? entry[key].trim() : undefined)
 
@@ -58,6 +59,11 @@ function parseCondition(value: unknown, path: string, problems: string[], count:
     }
     case 'event': { const tag = need('tag'); return tag === undefined ? undefined : { type: 'event', tag: tag.toLowerCase() } }
     case 'fired': { const trigger = need('trigger'); return trigger === undefined ? undefined : { type: 'fired', trigger } }
+    case 'judged': {
+      const statement = need('text')
+      if (statement !== undefined && statement.length > MAX_JUDGED) { problems.push(`${path}.text: at most ${MAX_JUDGED} characters`); return undefined }
+      return statement === undefined ? undefined : { type: 'judged', text: statement }
+    }
     case 'all':
     case 'any': {
       if (!Array.isArray(value['conditions']) || value['conditions'].length === 0) { problems.push(`${path}.conditions: a list with at least one condition`); return undefined }
@@ -69,7 +75,7 @@ function parseCondition(value: unknown, path: string, problems: string[], count:
       return inner === undefined ? undefined : { type: 'not', condition: inner }
     }
     default:
-      problems.push(`${path}.type: one of time, place, variable, item, event, fired, all, any, not`)
+      problems.push(`${path}.type: one of time, place, variable, item, event, fired, judged, all, any, not`)
       return undefined
   }
 }
@@ -173,6 +179,7 @@ function conditionProblems(target: Reading, condition: TriggerCondition, path: s
     ]
     case 'event': return []
     case 'fired': return known.has(condition.trigger) ? [] : [`${path}: there is no trigger "${condition.trigger}"`]
+    case 'judged': return []
     case 'all': case 'any': return condition.conditions.flatMap((part, index) => conditionProblems(target, part, `${path}.conditions[${index}]`, known))
     case 'not': return conditionProblems(target, condition.condition, `${path}.condition`, known)
   }
@@ -204,6 +211,18 @@ function compare(op: Comparison, have: VariableValue, want: VariableValue): bool
 export interface TriggerClock {
   now: number
   zone: string
+  /** Whether a model has judged a statement true; a statement nobody judged is false. */
+  judged?: (statement: string) => boolean
+}
+
+/** The statements of the `judged` parts of a condition, in order, each once. */
+export function judgedStatements(condition: TriggerCondition): string[] {
+  switch (condition.type) {
+    case 'judged': return [condition.text]
+    case 'all': case 'any': return [...new Set(condition.conditions.flatMap(judgedStatements))]
+    case 'not': return judgedStatements(condition.condition)
+    default: return []
+  }
 }
 
 function holds(target: RecordsTarget, condition: TriggerCondition, clock: TriggerClock): boolean {
@@ -243,6 +262,7 @@ function holds(target: RecordsTarget, condition: TriggerCondition, clock: Trigge
     }
     case 'event': return target.events.list().some(event => event.tags.includes(condition.tag))
     case 'fired': return (target.triggers.getByKey(condition.trigger)?.fireCount ?? 0) > 0
+    case 'judged': return clock.judged?.(condition.text) ?? false
     case 'all': return condition.conditions.every(part => holds(target, part, clock))
     case 'any': return condition.conditions.some(part => holds(target, part, clock))
     case 'not': return !holds(target, condition.condition, clock)

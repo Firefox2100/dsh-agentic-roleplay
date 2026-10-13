@@ -139,7 +139,14 @@ export class SqliteLocationRepository implements LocationRepository {
         const standing = this.db.get('SELECT 1 FROM placements WHERE location_id = ? AND feature_key = ?', [id, feature.key])
         if (standing !== undefined) throw new ConflictError(`feature "${feature.key}" cannot be removed while someone is at it`)
       }
-      this.db.run('UPDATE locations SET name = ?, description = ?, features = ? WHERE id = ?', [name, (patch.description ?? current.description).trim(), toJson(features), id])
+      const parentId = patch.parentId === undefined ? current.parentId ?? null : patch.parentId
+      if (parentId !== null && parentId !== (current.parentId ?? null)) {
+        if (this.get(parentId) === undefined) throw new NotFoundError(`the parent place ${parentId} does not exist`)
+        for (let ancestor: number | null = parentId; ancestor !== null; ancestor = this.get(ancestor)?.parentId ?? null) {
+          if (ancestor === id) throw new InvalidValueError(`${current.name} cannot be inside itself or a place within it`)
+        }
+      }
+      this.db.run('UPDATE locations SET name = ?, description = ?, features = ?, parent_id = ? WHERE id = ?', [name, (patch.description ?? current.description).trim(), toJson(features), parentId, id])
       if (name !== current.name) this.renamed(id)
       return this.require(id)
     }))

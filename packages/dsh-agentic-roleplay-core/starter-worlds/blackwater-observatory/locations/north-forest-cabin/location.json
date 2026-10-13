@@ -1,0 +1,18 @@
+{
+  "id": "north-forest-cabin",
+  "name": "North Forest - Abandoned Cabin",
+  "description": "An abandoned cabin in the north forest.",
+  "parent": "blackwater-ridge",
+  "features": [
+    {
+      "id": "cabin-hearth",
+      "name": "Cabin Hearth",
+      "description": "A cold stone hearth."
+    },
+    {
+      "id": "loose-floorboard",
+      "name": "Loose Floorboard",
+      "description": "A floorboard that does not sit flat."
+    }
+  ]
+}

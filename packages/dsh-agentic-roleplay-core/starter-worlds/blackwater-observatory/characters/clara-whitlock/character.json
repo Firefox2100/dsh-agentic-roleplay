@@ -1,0 +1,87 @@
+{
+  "id": "clara-whitlock",
+  "name": "Clara Whitlock",
+  "age": 29,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "tier": "principal",
+  "summary": "Innkeeper of the Iron Stag Inn.",
+  "personality": "She is friendly, socially perceptive, and outwardly cheerful, but much sharper than she first appears. She quietly keeps track of gossip, strange visitors, debts, arguments, and overheard remarks.",
+  "appearance": "A lively woman with attentive eyes, quick expressions, and a practiced welcoming smile.",
+  "start": {
+    "public_state": "Running the Iron Stag Inn during the Founder's Festival, serving guests, listening to rumours, and presenting herself as merely curious about Arthur Moore's arrival.",
+    "inner_state": "Trying to uncover the truth behind Director Harlan's disappearance, partly out of concern and partly because she believes the story could be valuable to a newspaper.",
+    "activity": "serving festival guests",
+    "emotion": {
+      "baseline": {
+        "valence": 0.3,
+        "arousal": 0.4,
+        "dominance": 0.1
+      }
+    },
+    "intents": [
+      {
+        "type": "agenda",
+        "name": "Uncover the truth behind Harlan's disappearance",
+        "description": "Use inn gossip and guest records to learn what officials are hiding.",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.7,
+        "urgency": 0.5,
+        "plan": [
+          "Watch Arthur",
+          "Check the Visitor's Room Ledger",
+          "Compare rumours"
+        ]
+      }
+    ],
+    "location": "iron-stag-bar",
+    "position": "behind the bar"
+  },
+  "relationships": [
+    {
+      "to": "arthur-moore",
+      "label": "new guest",
+      "summary": "Arrived recently and keeps to himself, asking careful questions.",
+      "familiarity": 0.2,
+      "trust": 0.1,
+      "affinity": 0.1
+    },
+    {
+      "to": "eleanor-graves",
+      "label": "the mayor",
+      "summary": "A powerful regular whose moods set the tone of the festival.",
+      "familiarity": 0.6,
+      "trust": 0.1,
+      "tension": 0.2
+    }
+  ],
+  "routine": [
+    {
+      "from": "07:00",
+      "to": "10:00",
+      "activity": "prepares breakfast and sees to the rooms",
+      "location": "iron-stag-bar"
+    },
+    {
+      "from": "10:00",
+      "to": "16:00",
+      "activity": "runs errands and gathers gossip",
+      "location": "town-square"
+    },
+    {
+      "from": "16:00",
+      "to": "01:00",
+      "activity": "tends the bar and listens",
+      "location": "iron-stag-bar",
+      "position": "behind the bar"
+    },
+    {
+      "from": "01:00",
+      "to": "07:00",
+      "activity": "sleeps",
+      "location": "iron-stag-bar"
+    }
+  ]
+}

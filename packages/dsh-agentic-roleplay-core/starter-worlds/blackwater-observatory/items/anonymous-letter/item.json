@@ -1,0 +1,9 @@
+{
+  "id": "anonymous-letter",
+  "name": "Anonymous Letter",
+  "description": "The letter that brought Arthur Moore to Blackwater Ridge, requesting an investigation into Director Harlan's disappearance.",
+  "unique": true,
+  "owner": "arthur-moore",
+  "held_by": "arthur-moore",
+  "notable": true
+}

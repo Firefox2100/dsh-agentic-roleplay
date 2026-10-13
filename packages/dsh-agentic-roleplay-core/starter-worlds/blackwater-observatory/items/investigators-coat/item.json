@@ -1,0 +1,10 @@
+{
+  "id": "investigators-coat",
+  "name": "Investigator's Coat",
+  "description": "A practical dark travelling coat with deep pockets for papers, tools, and evidence.",
+  "wearable": "torso",
+  "notable": true,
+  "owner": "arthur-moore",
+  "worn_by": "arthur-moore",
+  "position": "torso"
+}

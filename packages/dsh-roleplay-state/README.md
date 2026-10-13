@@ -149,9 +149,9 @@ application id, so a file that is not a session database is refused.
 ## Changing the schema
 
 Migrations are applied in order when a session is opened and are never edited
-once released: a change is a new entry in `src/sqlite/schema.ts`. Before the
-first release the schema is still being shaped, and migration 1 is edited in
-place. A database from a newer version is refused rather than damaged.
+once released: a change is a new entry in `src/sqlite/schema.ts`, and a test
+pins the migrations of each release. A database from a newer version is refused
+rather than damaged.
 
 ## Errors
 

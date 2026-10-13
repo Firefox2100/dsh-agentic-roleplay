@@ -1,0 +1,9 @@
+{
+  "id": "room-7-cash-receipt",
+  "name": "Room 7 Cash Receipt",
+  "description": "A receipt for the unknown visitor's payment for Room 7. The name is believed to be false.",
+  "unique": true,
+  "owner": "clara-whitlock",
+  "held_by": "clara-whitlock",
+  "notable": true
+}

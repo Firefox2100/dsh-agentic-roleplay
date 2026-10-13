@@ -35,11 +35,13 @@ const DEFAULT_MAX_FIRES = 3
 
 /** An edit effect, as it is applied at this turn and round: events default to now and to what those in their place saw. */
 function editOf(target: RecordsTarget, raw: Wire, options: TriggerRunOptions) {
+  // A trigger looked at when a turn begins has no round yet; the events it makes belong to the first.
+  const round = Math.max(1, options.round)
   const events = Array.isArray(raw['events']) ? raw['events'].filter(isObject).map((event) => {
     const where = typeof event['location'] === 'string' ? target.locations.list().find(entry => locationKey(entry) === event['location'])?.id : undefined
-    if (event['perceived_by'] === 'everyone') return { turn: options.turn, round: options.round, importance: 3, tags: [], involves: [], ...event, perceived_by: target.characters.list().map(entry => ({ character: characterKey(entry), mode: 'told' })) }
+    if (event['perceived_by'] === 'everyone') return { turn: options.turn, round, importance: 3, tags: [], involves: [], ...event, perceived_by: target.characters.list().map(entry => ({ character: characterKey(entry), mode: 'told' })) }
     const present = where === undefined ? [] : target.characters.list().filter(entry => target.placements.get('character', entry.id)?.locationId === where).map(entry => ({ character: characterKey(entry), mode: 'witnessed' }))
-    return { turn: options.turn, round: options.round, importance: 3, tags: [], involves: [], ...(present.length === 0 ? {} : { perceived_by: present }), ...event }
+    return { turn: options.turn, round, importance: 3, tags: [], involves: [], ...(present.length === 0 ? {} : { perceived_by: present }), ...event }
   }) : undefined
   return parseRecordsEdit({ ...raw, turn: options.turn, time_zone: options.zone, ...(events === undefined ? {} : { events }) })
 }

@@ -1,7 +1,7 @@
 import { promptFor } from '../prompts/access.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import { childSampling, runChild } from '../agents/child.ts'
+import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { Suggester, SuggestionJob } from './boundaries.ts'
 import { MAX_SUGGESTION, suggestionProblems, tidySuggestions } from './suggestions.ts'
 
@@ -37,7 +37,7 @@ export function suggestionWriter(deps: { agentOf: (chat: string) => Agent | unde
       const parent = deps.agentOf(job.chat)
       if (parent === undefined) throw new Error(`no agent for chat ${job.chat}`)
       const result = await runChild<{ options: string[] }>({
-        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'suggestions'),
+        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'suggestions'), ...childModel(job.store.settings(), 'suggestions'), trace: childTrace(job.store, 'suggestions', 'suggestions'),
         persona: promptFor(parent, 'roleplay/suggester', job.store.settings().prompts.language, { max: MAX_SUGGESTION }),
         prompt: promptOf(job),
         result: RESULT,

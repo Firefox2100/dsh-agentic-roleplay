@@ -14,7 +14,7 @@ describe('the settings form', () => {
   })
 
   it('starts from the settings, with a share shown as a percentage', () => {
-    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', maxCharacters: '4', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.verify': true, 'memory.backlogRounds': '6', 'authoring.enabled': true, 'authoring.perTurn': '2', 'authoring.thingsPerTurn': '4', 'authoring.consolidateAfter': '3', 'clock.mode': 'simulated', 'clock.timeZone': '', 'clock.roundSeconds': '30', 'clock.maxSkipDays': '30', 'rules.own': '', 'prompts.language': 'en', 'reasoning.children': '', 'triggers.enabled': true, 'triggers.maxFires': '3', 'triggers.beatTurns': '3', 'rewind.keepSnapshots': '30', 'preview.enabled': true, 'suggestions.count': '3', 'images.mode': 'manual', 'images.references': 'prefer-reference', 'images.reuse': true, 'images.highRes': false, 'images.interpret': true, 'images.interpreterModel': '', 'images.captioner': '', 'sampling.master': '0.7', 'sampling.characters': '0.8', 'sampling.suggestions': '0.8', 'sampling.authoring': '0.4', 'sampling.records': '0.1', 'offstage.perTurn': '2', 'offstage.perCharacter': '1', 'offstage.summary': true, 'context.limitTokens': '0', 'context.limitRatio': '60', 'context.retainRatio': '50' })
+    expect(toDrafts(DEFAULT_SETTINGS)).toEqual({ maxRounds: '3', maxCharacters: '4', 'memory.flaky': true, 'memory.recall': '12', 'memory.overRetrieve': '4', 'memory.lookup': true, 'memory.lookupCalls': '5', 'memory.verify': true, 'memory.backlogRounds': '6', 'authoring.enabled': true, 'authoring.perTurn': '2', 'authoring.thingsPerTurn': '4', 'authoring.consolidateAfter': '3', 'clock.mode': 'simulated', 'clock.timeZone': '', 'clock.roundSeconds': '30', 'clock.maxSkipDays': '30', 'rules.own': '', 'prompts.language': 'en', 'reasoning.children': '', 'factions.perTurn': '1', 'factions.everyDays': '3', 'models.characters': '', 'models.records': '', 'models.suggestions': '', 'models.authoring': '', 'triggers.enabled': true, 'triggers.maxFires': '3', 'triggers.beatTurns': '3', 'triggers.judgedPerTurn': '2', 'rewind.keepSnapshots': '30', 'preview.enabled': true, 'suggestions.count': '3', 'images.mode': 'manual', 'images.references': 'prefer-reference', 'images.reuse': true, 'images.highRes': false, 'images.interpret': true, 'images.interpreterModel': '', 'images.captioner': '', 'sampling.master': '0.7', 'sampling.characters': '0.8', 'sampling.suggestions': '0.8', 'sampling.authoring': '0.4', 'sampling.records': '0.1', 'offstage.perTurn': '2', 'offstage.perCharacter': '1', 'offstage.joint': true, 'offstage.summary': true, 'context.limitTokens': '0', 'context.limitRatio': '60', 'context.retainRatio': '50' })
   })
 
   it('gives back settings that parse, with what the form does not show left as it was', () => {
@@ -40,6 +40,12 @@ describe('the settings form', () => {
     expect([...problemsOf(drafts)]).toEqual([])
     expect([...problemsOf({ ...drafts, 'clock.timeZone': 'Mars/Olympus' })]).toEqual(['clock.timeZone'])
     expect([...problemsOf({ ...drafts, 'clock.timeZone': '', 'clock.roundSeconds': '4000' })]).toEqual(['clock.roundSeconds'])
+  })
+
+  it('finds a model that is not written provider/model', () => {
+    const drafts = toDrafts(DEFAULT_SETTINGS)
+    expect(problemsOf({ ...drafts, 'models.records': 'localai/qwen' }).size).toBe(0)
+    expect([...problemsOf({ ...drafts, 'models.records': 'qwen' })]).toEqual(['models.records'])
   })
 
   it('takes its bounds from the settings themselves', () => {

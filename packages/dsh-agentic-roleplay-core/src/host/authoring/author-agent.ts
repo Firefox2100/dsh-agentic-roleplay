@@ -3,7 +3,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { characterKey, createTools, describeHolder, itemKey, lintWorld, locationKey, parseRecordsEdit, type LintFinding } from '@dsh-agentic-roleplay/state'
 import { zoneOf } from '../clock/story-clock.ts'
-import { childSampling, runChild } from '../agents/child.ts'
+import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { Author, ConsolidateJob, ConsolidateReport, CreateJob, CreateReport, TurnStore } from '../orchestration/boundaries.ts'
 
 
@@ -184,7 +184,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ outcome: 'created' | 'declined'; summary: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world author'),
         parent, signal,
         persona: promptFor(parent, 'world/author', job.store.settings().prompts.language),
         prompt: createPrompt(job, authoring.perTurn),
@@ -211,7 +211,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ complete: boolean; notes: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world consolidation'),
         parent, signal,
         persona: promptFor(parent, 'world/consolidate', job.store.settings().prompts.language),
         prompt: consolidationPrompt(job),

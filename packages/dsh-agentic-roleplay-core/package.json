@@ -1,6 +1,6 @@
 {
   "name": "@dsh-agentic-roleplay/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Core plugin of the agentic roleplay bundle for DeepSeek Harness: roleplay UI, orchestration and storage.",
   "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
   "type": "module",
@@ -46,6 +46,7 @@
   "files": [
     "lib/*.js",
     "prompts",
+    "starter-worlds",
     "lib/client.js",
     "lib/client.js.map",
     "cordis.patch.yml",
@@ -59,7 +60,7 @@
   },
   "dependencies": {
     "@dsh-ai-providers/core": "^0.1.2",
-    "@dsh-agentic-roleplay/state": "workspace:0.1.0"
+    "@dsh-agentic-roleplay/state": "workspace:0.1.1"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",

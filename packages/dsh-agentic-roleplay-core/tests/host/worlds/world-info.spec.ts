@@ -36,6 +36,17 @@ describe('the world\'s own fields', () => {
     expect(await readFile(join(directory, 'world.json'), 'utf8')).toBe(before)
   })
 
+  it('carry the author\'s version label, which can be changed and cleared', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', version: '1.0' })
+    expect(await readWorldInfo(directory)).toMatchObject({ version: '1.0' })
+    expect(await editWorldInfo(directory, { version: '1.1' })).toMatchObject({ version: '1.1' })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).toMatchObject({ version: '1.1' })
+    expect(await editWorldInfo(directory, { version: '' })).toMatchObject({ version: '' })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('version')
+    expect(() => parseWorldInfoEdit({ version: 'x'.repeat(41) })).toThrow(/version is longer than 40/)
+    await expect(editWorldInfo(await world({ id: 'w2', name: 'Bay', version: 'y'.repeat(41) }), { description: 'x' })).rejects.toThrow(/version/)
+  })
+
   it('keep an opening that has lines spoken by characters', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour', opening_message: [{ type: 'narration', text: 'Fog.' }, { type: 'utterance', character: 'mira', text: 'Hello.' }] })
     expect((await readWorldInfo(directory)).openingParts).toBe(true)

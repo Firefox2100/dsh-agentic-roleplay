@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { RoleplayState, isSessionId } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
+import { readNotes } from '../../../src/host/sessions/notes.ts'
 import { readSettings } from '../../../src/host/sessions/settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { startSession, type StartSessionDeps } from '../../../src/host/sessions/start-session.ts'
@@ -114,6 +115,12 @@ describe('startSession', () => {
     const arthur = session.characters.getBySourceId('arthur')!
     expect(session.visualIdentities.get('character', arthur.id)).toMatchObject({ description: 'A weathered face.', tags: ['grey coat'], negativeTags: ['hat'], globalId: 'person-arthur', version: 1 })
     expect(await readFile(join(root, 'sessions', started.id, 'images', 'global', 'person-arthur', 'reference.png'), 'utf8')).toBe('portrait')
+  })
+
+  it('records the version of the world in the session', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', version: '2.1' })
+    const started = await startSession(deps, playAsArthur)
+    expect(state.openSession(join(root, 'sessions'), started.id).metadata.get().world).toMatchObject({ id: 'blackwater', version: '2.1' })
   })
 
   it('creates the chat of the new session, named after it', async () => {
@@ -253,6 +260,28 @@ describe('starting in a world with places', () => {
     const arthur = session.characters.getBySourceId('arthur')!
     expect(session.placements.get('character', arthur.id)).toMatchObject({ locationId: session.locations.getBySourceId('bar')!.id, position: 'at the bar', featureKey: 'counter' })
     expect(session.placements.get('character', session.characters.getBySourceId('clara')!.id)).toBeUndefined()
+  })
+
+  const everyoneInTown = async () => {
+    for (const [id, name, role] of [['arthur', 'Arthur Moore', 'playable'], ['clara', 'Clara Whitlock', 'npc'], ['marcus', 'Marcus Reed', 'playable']] as const) {
+      await write(join(world(), 'characters', id, 'character.json'), { name, role, start: { location: 'bar' } })
+    }
+  }
+
+  it('tells the player before the first message what is unfinished in the world, without refusing the start', async () => {
+    await places()
+    await everyoneInTown()
+    await write(join(world(), 'locations', 'cellar', 'location.json'), { id: 'cellar', name: 'Cellar', parent: 'town' })
+    const started = await startSession(deps, playAsArthur)
+    const note = readNotes(state.openSession(join(root, 'sessions'), started.id)).find(entry => entry.kind === 'world')
+    expect(note?.lines).toEqual([expect.stringMatching(/Cellar has no way in or out/)])
+  })
+
+  it('has no note when the world is whole', async () => {
+    await places()
+    await everyoneInTown()
+    const started = await startSession(deps, playAsArthur)
+    expect(readNotes(state.openSession(join(root, 'sessions'), started.id))).toEqual([])
   })
 
   it('refuses a world whose places have problems, naming them, before anything is created', async () => {

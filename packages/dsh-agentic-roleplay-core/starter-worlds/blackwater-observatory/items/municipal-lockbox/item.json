@@ -1,0 +1,10 @@
+{
+  "id": "municipal-lockbox",
+  "name": "Municipal Lockbox",
+  "description": "A compact iron lockbox for sensitive town documents and private administrative records.",
+  "container": {
+    "state": "locked"
+  },
+  "notable": true,
+  "location": "town-hall-mayors-office"
+}

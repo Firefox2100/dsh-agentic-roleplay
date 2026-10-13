@@ -1,5 +1,6 @@
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import { randomUUID } from 'node:crypto'
+import type { ActivityEntry } from '../../shared/activity.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, ReasoningEffortId, type ImageBlock } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -58,6 +59,18 @@ export interface ChildTask {
   maxTokens?: number
   /** How the model is asked: how freely it writes, and whether it must answer with a tool call. Applied by the language model service that serves the child. */
   sampling?: ChildSampling
+  /** Told how the run went when it ends, however it ends. */
+  trace?: (run: ChildRun) => void
+}
+
+/** How one run of a child went, for the record of what the helpers did. */
+export interface ChildRun {
+  /** Wall-clock milliseconds the run took. */
+  ms: number
+  /** Tool calls the child made, `submit_result` included. */
+  calls: number
+  /** The error message when the run did not end with a result. */
+  error?: string
 }
 
 /** The controls of a child's model requests that the plugin decides; the service that serves the route applies them. */
@@ -73,8 +86,22 @@ export interface ChildSampling {
 export type ChildKind = 'characters' | 'suggestions' | 'authoring' | 'records'
 
 /** What the settings of a chat say about how a kind of helper is asked: prose is free, the keepers of records exact. */
-export function childSampling(settings: { sampling: Record<ChildKind, number> & { tools: 'auto' | 'required'; maxTokens: number } }, kind: ChildKind): ChildSampling {
-  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: settings.sampling.maxTokens, priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
+export function childSampling(settings: { sampling: Record<ChildKind, number> & { tools: 'auto' | 'required'; maxTokens: number; shortMaxTokens: number } }, kind: ChildKind): ChildSampling {
+  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: kind === 'characters' || kind === 'suggestions' ? settings.sampling.shortMaxTokens : settings.sampling.maxTokens, priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
+}
+
+/** What a caller passes as `trace`: files each run of a kind of helper under a label in the store's record of activity. */
+export function childTrace(store: { settings(): { models: Record<ChildKind, string> }; recordActivity(entry: ActivityEntry): void }, kind: ChildKind, label: string): NonNullable<ChildTask['trace']> {
+  const model = store.settings().models[kind].trim()
+  return (run) => { store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }) }) }
+}
+
+/** The `model` the settings give a kind of helper, to spread into its task; nothing when it runs on the chat's own model. */
+export function childModel(settings: { models: Record<ChildKind, string> }, kind: ChildKind): Pick<ChildTask, 'model'> {
+  const named = settings.models[kind].trim()
+  if (named === '') return {}
+  const slash = named.indexOf('/')
+  return { model: { provider: named.slice(0, slash), model: named.slice(slash + 1) } }
 }
 
 const samplings = new Map<string, ChildSampling>()
@@ -103,10 +130,41 @@ function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens' | 's
   return Object.keys(options).length === 0 ? undefined : options
 }
 
+/** A model that is cut off in the middle of its tool call leaves an unfinished argument no one can read; asking again usually gives a whole one. */
+export const isUnfinishedCall = (error: unknown): boolean => error instanceof Error && /parse tool call arguments|unfinished tool call/i.test(error.message)
+
 export async function runChild<T>(task: ChildTask): Promise<T> {
+  for (let attempt = 1; ; attempt += 1) {
+    const began = Date.now()
+    const stats = { calls: 0 }
+    try {
+      const result = await execute<T>(task, stats)
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls })
+      return result
+    } catch (error) {
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error) })
+      if (attempt >= 2 || task.signal.aborted || !isUnfinishedCall(error)) throw error
+    }
+  }
+}
+
+/**
+ * The thinking level a child may be given on its model: the one asked for when the model offers it, none when it does not (a model chosen for a
+ * helper has its own levels, and one that lacks the level the chat asks for would refuse the request).
+ */
+export async function supportedEffort(task: Pick<ChildTask, 'parent' | 'signal' | 'model' | 'reasoningEffort'>): Promise<string | undefined> {
+  const level = task.reasoningEffort
+  if (level === undefined || level === '' || task.model === undefined) return level
+  try {
+    const info = await task.parent.ctx.llm.resolveModelInfo(task.model.provider, task.model.model, task.signal)
+    return info.reasoning?.efforts.some(effort => effort.id === level) === true ? level : undefined
+  } catch { return level }
+}
+
+async function execute<T>(task: ChildTask, stats: { calls: number }): Promise<T> {
   const { parent, signal } = task
+  const reasoningEffort = await supportedEffort(task)
   let submitted: { value: unknown } | undefined
-  let calls = 0
   let reminders = 0
   let stopped: (() => void) | undefined
   let overran = false
@@ -117,12 +175,12 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
   const counted = (tool: ToolDefinition): ToolDefinition => ({
     ...tool,
     execute: async (args, exec) => {
-      calls += 1
-      if (calls > budget + OVERRUN) {
+      stats.calls += 1
+      if (stats.calls > budget + OVERRUN) {
         overran = true
         stopped?.()
       }
-      if (calls > budget) throw new Error(`you have made ${budget} calls: submit your result now and say what is still missing`)
+      if (stats.calls > budget) throw new Error(`you have made ${budget} calls: submit your result now and say what is still missing`)
       const signature = JSON.stringify(args)
       const repeats = previous?.name === tool.name && previous.args === signature && previous.failed ? previous.repeats + 1 : 0
       if (repeats >= REPEATS_STOPPED) {
@@ -171,7 +229,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     sessionId,
     parentAgent: parent,
     meta: childSessionMeta(parent, depth, false),
-    agentOptions: resolveChildAgentOptions(parent, childOptions(task), depth),
+    agentOptions: resolveChildAgentOptions(parent, childOptions({ ...task, ...(reasoningEffort === undefined ? { reasoningEffort: '' } : { reasoningEffort }) }), depth),
     signal,
     setup: (childCtx, child) => {
       appendDelegatedPolicyOverrides(child.session, inherited)
@@ -203,7 +261,7 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     const ended = handle.agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
     const reason = ended?.type === 'turn/end' ? ended.data.reason : undefined
     if (reason?.kind === 'error') throw new Error(`the agent failed: ${reason.error.message}`)
-    throw new Error(`the agent stopped without submitting a result (${calls} call(s))`)
+    throw new Error(`the agent stopped without submitting a result (${stats.calls} call(s))`)
   }
   return submitted.value as T
 }

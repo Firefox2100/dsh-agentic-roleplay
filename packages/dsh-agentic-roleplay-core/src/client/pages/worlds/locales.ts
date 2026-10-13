@@ -4,7 +4,7 @@ import { dictionaries as editor, type WorldLocaleKey } from '../../world-editor/
 
 export type WorldsLocaleKey =
   | SettingsFormKey | WorldLocaleKey | 'advanced' | 'advancedHelp' | 'worldMissing' | 'importCard' | 'importUploading' | 'importUploadFailed' | 'importTitle' | 'importSource' | 'importWorldName' | 'importNoPicture' | 'importTags' | 'importCreator' | 'importFields' | 'importFieldDescription' | 'importFieldPersonality' | 'importFieldScenario' | 'importFieldExamples' | 'importFieldNotes' | 'importFieldInstructions' | 'importNotCarried' | 'importOpening' | 'importOpeningHelp' | 'importOpeningFirst' | 'importOpeningAlternate' | 'importOpeningNone' | 'importLorebook' | 'importLorebookHelp' | 'importEntryCount' | 'importEnableAll' | 'importDisableAll' | 'importConstant' | 'importKeys' | 'importNoKeys' | 'importScripts' | 'importStart' | 'importStarting' | 'importStartFailed' | 'importCancel' | 'importEmpty' | 'importNotStarted'
-  | 'nav' | 'loading' | 'loadFailed' | 'empty'
+  | 'nav' | 'loading' | 'loadFailed' | 'empty' | 'starterAdd' | 'starterAdding' | 'starterFailed'
   | 'countOne' | 'countOther'
   | 'refresh' | 'refreshing'
   | 'previousPage' | 'nextPage' | 'pageOf'
@@ -21,6 +21,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     nav: 'Worlds',
     loading: 'Loading worlds…',
     loadFailed: 'Could not load worlds: {message}',
+    starterAdd: 'Add this sample world', starterAdding: 'Adding…', starterFailed: 'Could not add the sample world: {message}',
     empty: 'No worlds yet. Create one here, or put a folder with a world.json inside {directory}.',
     countOne: '{count} world',
     countOther: '{count} worlds',
@@ -63,6 +64,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     nav: '世界卡',
     loading: '正在加载世界卡…',
     loadFailed: '无法加载世界卡：{message}',
+    starterAdd: '添加这个示例世界', starterAdding: '正在添加…', starterFailed: '无法添加示例世界：{message}',
     empty: '还没有世界卡。可在此创建，也可在 {directory} 中新建文件夹并放入 world.json。',
     countOne: '{count} 张世界卡',
     countOther: '{count} 张世界卡',

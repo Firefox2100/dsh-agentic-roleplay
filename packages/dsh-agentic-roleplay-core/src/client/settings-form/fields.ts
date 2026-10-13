@@ -1,5 +1,5 @@
 import type { RequestOption } from '@dsh-ai-providers/core'
-import { SETTINGS_SPEC, isTimeZone, type ChatSettings, type EmbeddingOptions, type EmbeddingValue } from '../../shared/settings.ts'
+import { MODEL_NAME, SETTINGS_SPEC, isTimeZone, type ChatSettings, type EmbeddingOptions, type EmbeddingValue } from '../../shared/settings.ts'
 
 /** The settings the form offers, in the order shown. The rest are in the settings file. */
 export const FORM_FIELDS = [
@@ -9,6 +9,7 @@ export const FORM_FIELDS = [
   { path: ['memory', 'recall'], kind: 'integer', label: 'recall', help: 'recallHelp' },
   { path: ['memory', 'overRetrieve'], kind: 'integer', label: 'overRetrieve', help: 'overRetrieveHelp' },
   { path: ['memory', 'lookup'], kind: 'flag', label: 'lookup', help: 'lookupHelp' },
+  { path: ['memory', 'lookupCalls'], kind: 'integer', label: 'lookupCalls', help: 'lookupCallsHelp' },
   { path: ['memory', 'verify'], kind: 'flag', label: 'verify', help: 'verifyHelp' },
   { path: ['memory', 'backlogRounds'], kind: 'integer', label: 'backlogRounds', help: 'backlogRoundsHelp' },
   { path: ['authoring', 'enabled'], kind: 'flag', label: 'authoringEnabled', help: 'authoringEnabledHelp' },
@@ -22,8 +23,15 @@ export const FORM_FIELDS = [
   { path: ['rules', 'own'], kind: 'text', label: 'rulesOwn', help: 'rulesOwnHelp', zone: false, placeholder: '', rows: 4 },
   { path: ['prompts', 'language'], kind: 'text', label: 'promptsLanguage', help: 'promptsLanguageHelp', zone: false, placeholder: 'en' },
   { path: ['reasoning', 'children'], kind: 'text', label: 'reasoningChildren', help: 'reasoningChildrenHelp', zone: false, placeholder: 'off' },
+  { path: ['factions', 'perTurn'], kind: 'integer', label: 'factionsPerTurn', help: 'factionsPerTurnHelp' },
+  { path: ['factions', 'everyDays'], kind: 'integer', label: 'factionsEveryDays', help: 'factionsEveryDaysHelp' },
+  { path: ['models', 'characters'], kind: 'text', label: 'modelsCharacters', help: 'modelsCharactersHelp', zone: false, placeholder: 'localai/model-id' },
+  { path: ['models', 'records'], kind: 'text', label: 'modelsRecords', help: 'modelsRecordsHelp', zone: false, placeholder: 'localai/model-id' },
+  { path: ['models', 'suggestions'], kind: 'text', label: 'modelsSuggestions', help: 'modelsSuggestionsHelp', zone: false, placeholder: 'localai/model-id' },
+  { path: ['models', 'authoring'], kind: 'text', label: 'modelsAuthoring', help: 'modelsAuthoringHelp', zone: false, placeholder: 'localai/model-id' },
   { path: ['triggers', 'enabled'], kind: 'flag', label: 'triggersEnabled', help: 'triggersEnabledHelp' },
   { path: ['triggers', 'maxFires'], kind: 'integer', label: 'triggersMaxFires', help: 'triggersMaxFiresHelp' },
+  { path: ['triggers', 'judgedPerTurn'], kind: 'integer', label: 'triggersJudged', help: 'triggersJudgedHelp' },
   { path: ['triggers', 'beatTurns'], kind: 'integer', label: 'triggersBeatTurns', help: 'triggersBeatTurnsHelp' },
   { path: ['rewind', 'keepSnapshots'], kind: 'integer', label: 'rewindKeep', help: 'rewindKeepHelp' },
   { path: ['preview', 'enabled'], kind: 'flag', label: 'previewEnabled', help: 'previewEnabledHelp' },
@@ -42,6 +50,7 @@ export const FORM_FIELDS = [
   { path: ['sampling', 'records'], kind: 'decimal', label: 'samplingRecords', help: 'samplingRecordsHelp' },
   { path: ['offstage', 'perTurn'], kind: 'integer', label: 'offstagePerTurn', help: 'offstagePerTurnHelp' },
   { path: ['offstage', 'perCharacter'], kind: 'integer', label: 'offstagePerCharacter', help: 'offstagePerCharacterHelp' },
+  { path: ['offstage', 'joint'], kind: 'flag', label: 'offstageJoint', help: 'offstageJointHelp' },
   { path: ['offstage', 'summary'], kind: 'flag', label: 'offstageSummary', help: 'offstageSummaryHelp' },
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'limitRatio'], kind: 'percent', label: 'limitRatio', help: 'limitRatioHelp' },
@@ -103,6 +112,7 @@ export function problemsOf(drafts: Drafts, options: readonly RequestOption[] = [
     if (field.kind === 'text') {
       const draft = drafts[keyOf(field)]
       if (field.zone && typeof draft === 'string' && draft.trim() !== '' && !isTimeZone(draft.trim())) bad.add(keyOf(field))
+      if (field.path[0] === 'models' && typeof draft === 'string' && draft.trim() !== '' && !MODEL_NAME.test(draft.trim())) bad.add(keyOf(field))
       continue
     }
     const draft = drafts[keyOf(field)]

@@ -19,6 +19,8 @@ export interface WorldFile {
   /** From `metadata.tags`. */
   tags: string[]
   author?: WorldAuthor
+  /** The author's own version label of the world (`version`), up to 40 characters. */
+  version?: string
   /** Id of a row in `media/manifest.jsonl`. */
   coverMediaId?: string
   /** What the story opens with: shown as the first message of a new session, before the player says anything. */
@@ -40,7 +42,7 @@ export interface AlternateOpening {
   text: string
 }
 
-import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS } from '../../shared/world-info.ts'
+import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, MAX_WORLD_VERSION } from '../../shared/world-info.ts'
 export { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS }
 
 /** `alternate_openings` is a list of `{ title, text }`: other first messages the player may start with. */
@@ -148,6 +150,10 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const description = reader.text('description')
   const tags = reader.object('metadata')?.strings('tags') ?? []
   const author = readAuthor(reader.object('author'))
+  const rawVersion = reader.raw('version')
+  if (rawVersion !== undefined && rawVersion !== null && typeof rawVersion !== 'string' && typeof rawVersion !== 'number') reader.fail('version', 'must be text or a number')
+  const version = (typeof rawVersion === 'string' || typeof rawVersion === 'number' ? String(rawVersion).trim() : '') || undefined
+  if (version !== undefined && version.length > MAX_WORLD_VERSION) reader.fail('version', `is longer than ${MAX_WORLD_VERSION} characters`)
   const coverMediaId = reader.string('cover_media_id')
   const opening = readOpening(reader)
   const clock = readClock(reader)
@@ -165,6 +171,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       description,
       tags,
       ...(author === undefined ? {} : { author }),
+      ...(version === undefined ? {} : { version }),
       ...(coverMediaId === undefined ? {} : { coverMediaId }),
       ...(opening === undefined ? {} : { opening }),
       ...(clock === undefined ? {} : { clock }),

@@ -1,0 +1,10 @@
+{
+  "id": "rusting-mine-cart",
+  "name": "Rusting Mine Cart",
+  "description": "An old ore cart on warped rails, half-filled with stone fragments and rotting wood.",
+  "container": {
+    "state": "open"
+  },
+  "notable": true,
+  "location": "old-mine-main-tunnel"
+}

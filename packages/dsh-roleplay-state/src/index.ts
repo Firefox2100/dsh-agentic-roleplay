@@ -36,7 +36,7 @@ export { addLocalDays, clockTime, DAY, DAY_PARTS, HOUR, MINUTE, SECOND, catchUpP
 export { lapseNotes, runTriggers, type FiredTrigger, type TriggerRun, type TriggerRunOptions } from './records/triggers.ts'
 export { readTriggerDefinition } from './records/wire.ts'
 export { announcements, audienceIds, inAudience, type Announcement } from './records/trigger-rules.ts'
-export { conditionHolds, parseTriggerDefinition, seededRoll, triggerReferenceProblems, type EditChecker, type TriggerClock } from './records/trigger-rules.ts'
+export { conditionHolds, judgedStatements, parseTriggerDefinition, seededRoll, triggerReferenceProblems, type EditChecker, type TriggerClock } from './records/trigger-rules.ts'
 export { lintWorld, type LintFinding, type LintSeverity, type LintTarget } from './records/lint.ts'
 export { readRecords, type RecordsScope, type RecordsView } from './records/read.ts'
 export { clarityAt, denseScore, DEFAULT_MEMORY_POLICY, jitter, mentioned, overlap, finishRecall, fuseScores, poolCandidates, recall, recallCandidates, recallPool, retention, tokens, type Clarity, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallPool, type RecallQuery, type RecallSource, type Recalled } from './memory/recall.ts'

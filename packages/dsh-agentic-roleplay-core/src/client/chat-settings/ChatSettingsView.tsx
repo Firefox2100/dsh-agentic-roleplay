@@ -4,9 +4,11 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import css from './ChatSettingsView.module.css'
-import { NotRoleplayError, loadSettings, saveSettings } from './settings-api.ts'
+import { NotRoleplayError, loadSettings, resetVectors, saveSettings } from './settings-api.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
+import { VectorsSection } from './VectorsSection.tsx'
+import { ActivityList } from './ActivityList.tsx'
 import { SettingsFields } from '../settings-form/SettingsFields.tsx'
 
 export type ChatSettingsViewProps = PropsRuntime<'conversation.view'> & PropsLocale<'roleplay.chatSettings'>
@@ -54,6 +56,22 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     setSaved(false)
   }
 
+  const reset = (): void => {
+    if (session === undefined) return
+    resetVectors(session, new AbortController().signal).then(
+      refreshActivity,
+      (failure: unknown) => { setError(t('vectorsFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
+    )
+  }
+
+  const refreshActivity = (): void => {
+    if (session === undefined) return
+    loadSettings(session, new AbortController().signal).then(
+      (next) => { setLoad({ status: 'ready', payload: { ...payload, activity: next.activity, vectors: next.vectors, pendingRecords: next.pendingRecords, pendingConsolidation: next.pendingConsolidation } }) },
+      (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) },
+    )
+  }
+
   const save = (): void => {
     if (session === undefined || !changed) return
     setSaving(true)
@@ -72,6 +90,8 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       {payload.pendingConsolidation > 0 && <p className={css.notice} role="status">{t('pendingConsolidation', { count: payload.pendingConsolidation })}</p>}
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
       <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
+      <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
+      <ActivityList t={t} entries={payload.activity} onRefresh={refreshActivity} />
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}
       <div className={css.actions}>
         <Button variant="primary" size="sm" type="submit" disabled={!changed || saving}>{saving ? t('saving') : t('save')}</Button>

@@ -22,6 +22,7 @@ import type { GalleryImage } from '../../shared/gallery.ts'
 import type { ImageUpdate } from '../images/gallery.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WorldFolderExistsError } from '../worlds/create-world.ts'
+import { UnknownStarterError } from '../worlds/starter.ts'
 import { readBinaryBody, readJsonBody } from './body.ts'
 import { ImportCardError } from '../import/card.ts'
 import { ImportNotFoundError, parseChoices } from '../import/store.ts'
@@ -36,6 +37,8 @@ export interface ApiConnection {
 export interface ApiDeps {
   worlds: WorldCatalog
   createWorld(input: { folder: string; name: string }): Promise<import('../../shared/worlds.ts').WorldSummary>
+  /** The worlds the package ships, and adding one to the person's worlds. */
+  starter: { list(): Promise<import('../../shared/starter.ts').StarterWorld[]>; add(folder: string): Promise<import('../../shared/worlds.ts').WorldSummary> }
   authorWorld(worldId: string, title: string, language?: string): Promise<{ chatSessionId: string }>
   worldCharacters(worldId: string): Promise<WorldCharactersPayload>
   /** The characters and places of a world's files, as the editor shows them. */
@@ -85,6 +88,7 @@ export interface ApiDeps {
     editNarrationVoice(worldId: string, voice: string): Promise<WorldState>
     generatePortrait(worldId: string, key: string): Promise<WorldState>
     portraitFile(worldId: string, key: string): Promise<{ file: string; size: number }>
+    uploadPortrait(worldId: string, key: string, png: Uint8Array, originalName?: string): Promise<WorldState>
   }
   sessions: {
     list(): SessionsPayload
@@ -102,6 +106,8 @@ export interface ApiDeps {
     archive(id: string): Promise<void>
     restore(id: string): Promise<void>
     rename(id: string, name: string): Promise<void>
+    /** Forgets the session's stored search vectors. */
+    resetVectors(id: string): void
     world(id: string): WorldState
     editCharacter(id: string, key: string, edit: CharacterEdit): WorldState
     editPlace(id: string, key: string, edit: PlaceEdit): WorldState
@@ -113,6 +119,7 @@ export interface ApiDeps {
     editNarrationVoice(id: string, voice: string): WorldState
     generatePortrait(id: string, key: string): Promise<WorldState>
     portraitFile(id: string, key: string): Promise<{ file: string; size: number }>
+    uploadPortrait(id: string, key: string, png: Uint8Array, originalName?: string): Promise<WorldState>
     readSettings(id: string): SettingsPayload
     writeSettings(id: string, value: unknown): SettingsPayload
     notes(id: string): Note[]
@@ -166,7 +173,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ worlds, createWorld, authorWorld, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, createWorld, starter, authorWorld, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -174,6 +181,18 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
       POST: async (req, res) => { try { const body = await readJsonBody(req) as { folder?: unknown; name?: unknown }; if (typeof body.folder !== 'string' || typeof body.name !== 'string') return sendError(res, 400, 'folder and name must be text'); sendJson(res, 201, await createWorld({ folder: body.folder, name: body.name })) } catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message); throw error } },
+    },
+    '/worlds/starter': {
+      GET: async (_req, res) => { sendJson(res, 200, await starter.list()) },
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { folder?: unknown }
+        if (typeof body.folder !== 'string') return sendError(res, 400, 'folder must be text')
+        try { sendJson(res, 201, await starter.add(body.folder)) } catch (error) {
+          if (error instanceof UnknownStarterError) return sendError(res, 404, error.message)
+          if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message)
+          throw error
+        }
+      },
     },
     '/worlds/import/card': {
       POST: async (req, res, url) => {
@@ -355,6 +374,16 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           return sendError(res, 409, error instanceof Error ? error.message : String(error))
+        }
+      },
+    },
+    '/worlds/state/character/portrait/upload': {
+      POST: async (req, res, url) => {
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? 'portrait.png'))
+        try { sendJson(res, 200, await worldEditor.uploadPortrait(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', await readBinaryBody(req, MAX_UPLOAD_BYTES), name)) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
         }
       },
     },
@@ -600,10 +629,32 @@ export function createApiHandler({ worlds, createWorld, authorWorld, worldCharac
         }
       },
     },
+    '/sessions/world/character/portrait/upload': {
+      POST: async (req, res, url) => {
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? 'portrait.png'))
+        try { sendJson(res, 200, await sessions.uploadPortrait(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', await readBinaryBody(req, MAX_UPLOAD_BYTES), name)) } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
     '/sessions/world/character/portrait/file': {
       GET: async (_req, res, url) => {
         try { await sendImage(res, await sessions.portraitFile(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) }
         catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/sessions/vectors/reset': {
+      POST: async (_req, res, url) => {
+        try {
+          sessions.resetVectors(url.searchParams.get('id') ?? '')
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+        res.statusCode = 204
+        res.end()
       },
     },
     '/sessions/rename': {

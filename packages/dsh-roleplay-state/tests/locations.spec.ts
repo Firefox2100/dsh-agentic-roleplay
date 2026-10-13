@@ -53,6 +53,17 @@ describe('places', () => {
 })
 
 describe('exits', () => {
+  it('can be moved into another place or taken out of the one they are in, but never into themselves or what they hold', () => {
+    store.locations.update(place('quarry').id, { parentId: place('bar').id })
+    expect(place('quarry').parentId).toBe(place('bar').id)
+    store.locations.update(place('quarry').id, { parentId: null })
+    expect(place('quarry').parentId).toBeUndefined()
+    expect(() => store.locations.update(place('bar').id, { parentId: place('cellar').id })).toThrow(InvalidValueError)
+    expect(() => store.locations.update(place('bar').id, { parentId: place('bar').id })).toThrow(InvalidValueError)
+    expect(() => store.locations.update(place('bar').id, { parentId: 9999 })).toThrow(NotFoundError)
+    expect(place('bar').parentId).toBe(place('town').id)
+  })
+
   it('lead one way at a time, made both ways unless told otherwise', () => {
     expect(store.locations.exitsFrom(place('street').id).map(exit => [exit.toId, exit.state, exit.travelSeconds])).toEqual([[place('bar').id, 'open', 20]])
     expect(store.locations.getExit(place('bar').id, place('street').id)).toMatchObject({ description: 'the bar door', travelSeconds: 20 })

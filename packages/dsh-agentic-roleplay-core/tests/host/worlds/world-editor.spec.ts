@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
-import { editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, readWorldEditor } from '../../../src/host/worlds/world-editor.ts'
+import { editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, readWorldEditor, uploadWorldCharacterPortrait } from '../../../src/host/worlds/world-editor.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
@@ -84,12 +84,35 @@ describe('a world in the editor', () => {
     expect(await readFile(join(world.directory, 'images', 'global', 'person-clara', 'reference.png'))).toBeTruthy()
   })
 
+  it('takes a PNG the author brought as the portrait, with no visual identity needed, and refuses any other picture', async () => {
+    const state = await uploadWorldCharacterPortrait(world, 'clara', new Uint8Array(PNG), 'clara face.png')
+    expect(state.characters.find(character => character.key === 'clara')?.portrait).toBeTruthy()
+    expect(await readFile(join(world.directory, 'images', 'characters', 'clara', 'reference.png'))).toBeTruthy()
+    await expect(uploadWorldCharacterPortrait(world, 'clara', new Uint8Array([0xff, 0xd8, 0xff]), 'face.jpg')).rejects.toThrow(/must be a PNG/)
+  })
+
   it('edits places and things without changing their structural fields', async () => {
     const place = await editWorldPlace(world, 'bar', { description: 'A crowded public room.', features: [{ key: 'counter', name: 'Counter', description: 'Dark oak.' }] })
     expect(place.places.find(entry => entry.key === 'bar')).toMatchObject({ description: 'A crowded public room.', features: [{ key: 'counter', name: 'Counter' }] })
     const things = await editWorldThing(world, 'ledger', { quality: 'water-damaged', notable: true, quantity: 2 })
     expect(things.things).toEqual([expect.objectContaining({ key: 'ledger', quality: 'water-damaged', notable: true, quantity: 2, holder: 'The Bar' })])
     expect(JSON.parse(await readFile(join(world.directory, 'items', 'ledger', 'item.json'), 'utf8')).location).toBe('bar')
+  })
+
+  it('puts a place inside another and takes it out again, refuses a place that is not there and a circle, and gives a thing an owner or none', async () => {
+    const inside = await editWorldPlace(world, 'cellar', { parent: 'bar' })
+    expect(inside.places.find(entry => entry.key === 'cellar')?.parent).toEqual({ key: 'bar', name: 'The Bar' })
+    expect(JSON.parse(await readFile(join(world.directory, 'locations', 'cellar', 'location.json'), 'utf8')).parent).toBe('bar')
+    await expect(editWorldPlace(world, 'bar', { parent: 'cellar' })).rejects.toThrow(/inside itself/)
+    await expect(editWorldPlace(world, 'bar', { parent: 'nowhere' })).rejects.toThrow(/no place "nowhere"/)
+    const out = await editWorldPlace(world, 'cellar', { parent: null })
+    expect(out.places.find(entry => entry.key === 'cellar')).not.toHaveProperty('parent')
+    expect(JSON.parse(await readFile(join(world.directory, 'locations', 'cellar', 'location.json'), 'utf8'))).not.toHaveProperty('parent')
+
+    const owned = await editWorldThing(world, 'ledger', { owner: 'clara' })
+    expect(owned.things[0]?.owner).toEqual({ key: 'clara', name: 'Clara' })
+    await expect(editWorldThing(world, 'ledger', { owner: 'ghost' })).rejects.toThrow(/no character "ghost"/)
+    expect((await editWorldThing(world, 'ledger', { owner: null })).things[0]).not.toHaveProperty('owner')
   })
 
   it('edits faction identity and state while preserving its social graph', async () => {

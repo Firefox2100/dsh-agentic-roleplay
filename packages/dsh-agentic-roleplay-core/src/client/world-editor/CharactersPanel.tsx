@@ -185,6 +185,14 @@ export function CharactersPanel({ t, world, source, onChanged, actions, initial 
     setDrafts(({ [current.key]: _discarded, ...rest }) => rest)
     setSaving({ status: 'idle' })
   }
+  const uploadPortrait = (file: File | undefined): void => {
+    if (file === undefined || dirty) return
+    setPortrait({ key: current.key })
+    source.uploadPortrait(current.key, file, new AbortController().signal).then(
+      (next) => { setPortrait({}); onChanged(next) },
+      (failure: unknown) => { setPortrait({ error: failure instanceof Error ? failure.message : String(failure) }) },
+    )
+  }
   const generatePortrait = (): void => {
     if (dirty) return
     setPortrait({ key: current.key })
@@ -224,6 +232,7 @@ export function CharactersPanel({ t, world, source, onChanged, actions, initial 
         </div>
       )}
       <div className={css.body} ref={body}>
+        <div><label className={css.portraitHint}><input type="file" accept="image/png" hidden disabled={dirty || portrait.key === current.key} onChange={(event) => { uploadPortrait(event.target.files?.[0]); event.target.value = '' }} /><span role="button" tabIndex={0}>{t('portraitUpload')}</span></label></div>
         {portrait.error !== undefined && <p className={css.portraitError} role="alert">{t('portraitFailed', { message: portrait.error })}</p>}
         {draft.visualDescription.trim() === '' && <p className={css.portraitHint}>{t('portraitIdentityRequired')}</p>}
         {dirty && draft.visualDescription.trim() !== '' && <p className={css.portraitHint}>{t('portraitSaveFirst')}</p>}

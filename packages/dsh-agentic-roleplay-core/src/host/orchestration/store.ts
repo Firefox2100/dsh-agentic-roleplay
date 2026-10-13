@@ -7,6 +7,8 @@ import type { ItemChangeSpec } from '@dsh-agentic-roleplay/state'
 import type { ChatSettings } from '../../shared/settings.ts'
 import { liveSettings } from '../sessions/settings.ts'
 import { fireTriggers, noteStore } from '../triggers/notes.ts'
+import { observeAsPlayer, observeSurroundings } from './observation.ts'
+import { recordActivity } from '../sessions/activity.ts'
 import { addToNote, clearNotes, putNote, readNotes } from '../sessions/notes.ts'
 import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
 import { dueOffScene, markHandled } from '../clock/offscene.ts'
@@ -80,19 +82,11 @@ function carriedBy(session: Session, characterId: number): ItemView[] {
 }
 
 function knowledgeOf(session: Session, characterId: number, turn: number, visibleCharacters?: readonly number[]): KnowledgeView {
+  observeSurroundings(session, characterId, turn)
   const placement = session.placements.get('character', characterId)
-  if (placement !== undefined) {
-    session.knowledge.learn(characterId, 'location', placement.locationId, turn, true)
-    for (const exit of session.locations.exitsFrom(placement.locationId)) {
-      session.knowledge.learn(characterId, 'exit', exit.id, turn, true)
-      session.knowledge.learn(characterId, 'location', exit.toId, turn)
-    }
-    for (const { item } of session.items.contents({ kind: 'location', id: placement.locationId })) if (!item.hidden) session.knowledge.learn(characterId, 'item', item.id, turn, true)
-  }
   for (const otherId of visibleCharacters ?? (placement === undefined ? [] : session.placements.at(placement.locationId, 'character').map(other => other.entityId))) {
     if (otherId !== characterId && session.relationships.get(characterId, otherId) === undefined) session.relationships.upsert(characterId, otherId, { label: 'acquaintance' }, turn)
   }
-  for (const { item } of session.items.contents({ kind: 'character', id: characterId })) session.knowledge.learn(characterId, 'item', item.id, turn, true)
   const locations = session.knowledge.list(characterId, 'location').flatMap(entry => { const place = session.locations.get(entry.subjectId); return place === undefined ? [] : [`${place.name} (${locationKey(place)})`] })
   const items = session.knowledge.list(characterId, 'item').flatMap(entry => { const item = session.items.get(entry.subjectId); return item === undefined ? [] : [`${item.name} (${itemKey(item)})`] })
   const allExits = session.locations.allExits()
@@ -225,7 +219,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     text: (id, variables) => prompt(settings().prompts.language, id, variables),
     rules: () => rulesOf(worldRules(session), settings().rules.own),
     time: turn => readTime(session, settings().clock, turn, wall()),
-    beginTurn: turn => startTurn(session, settings().clock, turn, wall()),
+    beginTurn: (turn) => { observeAsPlayer(session, turn); return startTurn(session, settings().clock, turn, wall()) },
     endRound: (turn, round, stated, minimum) => passRound(session, settings().clock, turn, round, wall(), stated, minimum),
     skipTime: (turn, round, request) => skipAhead(session, settings().clock, turn, round, wall(), request),
     checkVariableChanges: changes => changes.flatMap((spec) => { const planned = planVariableChange(session, spec); return planned.ok ? [] : planned.problems }),
@@ -242,6 +236,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     ...noteStore(session, () => liveSettings(folder, problem), turn => { const { now, zone } = readTime(session, liveSettings(folder, problem).clock, turn, wall()); return { now, zone } }),
     putNote: (note) => { putNote(session, note) },
     addNote: (kind, turn, lines) => { addToNote(session, kind, turn, lines) },
+    recordActivity: (entry) => { recordActivity(session, entry) },
     notes: () => readNotes(session),
     clearNotes: () => { clearNotes(session) },
     agenda: (turn, characterId) => agendaFor(session, settings().clock, turn, wall, characterId),

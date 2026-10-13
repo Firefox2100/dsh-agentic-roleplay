@@ -1,0 +1,27 @@
+{
+  "id": "51e09bac-6c9e-4ffd-a285-82fbc9c4399c",
+  "name": "The Blackwater Observatory",
+  "description": "The year is 1912. The isolated mountain town of Blackwater Ridge was built around an astronomical observatory that once conducted secret government-funded research.\n\nThree weeks ago, the observatory's director vanished. Officially, he left without notice. However, nobody believes that. The player arrives in town during the annual Founder's Festival, where tensions between residents are beginning to surface.",
+  "starting_time": "1912-09-21T19:30",
+  "time_zone": "UTC",
+  "author": {
+    "name": "Firefox2100",
+    "url": "https://github.com/Firefox2100"
+  },
+  "metadata": {
+    "tags": [
+      "mystery",
+      "historical",
+      "1912",
+      "gothic",
+      "small town",
+      "conspiracy"
+    ]
+  },
+  "rules": [
+    "There is no magic or supernatural power: nothing happens that could not happen in 1912.",
+    "Guns are rare in Blackwater Ridge."
+  ],
+  "version": "1.0",
+  "opening_message": "Blackwater Ridge is loud tonight. Lanterns hang across the square for the Founder's Festival, and the band is warming up somewhere beyond the Iron Stag's fogged windows.\n\nYou sit at the bar with a glass you have barely touched. A letter without a signature brought you to this town; the director of the observatory has been missing for three weeks; and the woman behind the counter has been watching you since you sat down, polishing the same glass.\n\nSomeone in this room knows what happened on the hill. You have until the festival ends to find out who."
+}

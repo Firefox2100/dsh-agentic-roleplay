@@ -1,0 +1,65 @@
+{
+  "id": "arthur-moore",
+  "name": "Arthur Moore",
+  "age": 37,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "playable",
+  "tier": "principal",
+  "summary": "Independent investigator.",
+  "personality": "He is competent, observant, and experienced enough to read people without immediately showing his conclusions. His politeness conceals deep distrust.",
+  "appearance": "A neatly kept man with a reserved expression, watchful eyes, and the habit of pausing before he answers.",
+  "start": {
+    "public_state": "Arriving in Blackwater Ridge during the Founder's Festival as an independent investigator.",
+    "inner_state": "Investigating who anonymously hired him, why payment depends on obtaining evidence, and whether Harlan's disappearance is connected to the observatory, the old mine, or the town's leadership.",
+    "activity": "questioning Clara at the bar",
+    "emotion": {
+      "baseline": {
+        "valence": 0.0,
+        "arousal": 0.2,
+        "dominance": 0.3
+      }
+    },
+    "intents": [
+      {
+        "type": "quest",
+        "name": "Investigate Harlan's disappearance",
+        "description": "Determine what happened to Director Harlan and who anonymously hired Arthur.",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.9,
+        "urgency": 0.7,
+        "plan": [
+          "Question Clara about Room 7",
+          "Learn who rented the room before Harlan vanished",
+          "Avoid revealing the anonymous letter too early"
+        ],
+        "open_threads": [
+          "Who hired Arthur?",
+          "What happened to Harlan?",
+          "How are the observatory and old mine connected?"
+        ]
+      }
+    ],
+    "location": "iron-stag-bar",
+    "position": "at the bar"
+  },
+  "relationships": [
+    {
+      "to": "eleanor-graves",
+      "label": "person of interest",
+      "summary": "The mayor, who seems keen to manage the story of the missing director.",
+      "familiarity": 0.1,
+      "trust": -0.1,
+      "tension": 0.2
+    },
+    {
+      "to": "clara-whitlock",
+      "label": "innkeeper",
+      "summary": "Runs the bar where he is staying.",
+      "familiarity": 0.2,
+      "trust": 0.2,
+      "affinity": 0.2
+    }
+  ]
+}

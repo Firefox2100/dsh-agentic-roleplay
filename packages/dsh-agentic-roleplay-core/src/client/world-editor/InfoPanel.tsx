@@ -5,16 +5,16 @@ import type { Translate } from './WorldEditor.tsx'
 import { loadInfo, saveInfo } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
-interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; alternates: { title: string; text: string }[] }
+interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; alternates: { title: string; text: string }[] }
 
-const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, alternates: info.alternateOpenings })
+const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, alternates: info.alternateOpenings })
 const lines = (value: string): string[] => value.split('\n').map(line => line.trim()).filter(line => line !== '')
 const words = (value: string): string[] => value.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag !== '')
 
 /** The edit that turns the saved fields into the drafted ones: only what changed. */
 function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   const edit: Record<string, unknown> = {}
-  for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
+  for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
   if (JSON.stringify(words(draft.tags)) !== JSON.stringify(words(saved.tags))) edit['tags'] = words(draft.tags)
   if (JSON.stringify(lines(draft.rules)) !== JSON.stringify(lines(saved.rules))) edit['rules'] = lines(draft.rules)
   const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), text: entry.text.trim() })).filter(entry => entry.text !== '')
@@ -97,6 +97,7 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
             <h3 className={css.sectionTitle}>{t('infoStory')}</h3>
             <div className={css.grid}>
               {field('authorName', 'infoAuthor')}
+              {field('version', 'infoVersion', 'infoVersionHelp', { placeholder: '1.0' })}
               {field('authorUrl', 'infoAuthorUrl', undefined, { placeholder: 'https://' })}
               {field('timeZone', 'infoTimeZone', 'infoTimeZoneHelp', { placeholder: 'Europe/London' })}
               {field('startingTime', 'infoStartingTime', 'infoStartingTimeHelp', { placeholder: '1912-04-14T23:40:00' })}

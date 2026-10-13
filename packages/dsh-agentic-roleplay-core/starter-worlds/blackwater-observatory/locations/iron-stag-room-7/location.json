@@ -1,0 +1,18 @@
+{
+  "id": "iron-stag-room-7",
+  "name": "Iron Stag Inn - Room 7",
+  "description": "A modest guest room on the upper floor with a writing desk and a window over the side alley.",
+  "parent": "iron-stag-bar",
+  "features": [
+    {
+      "id": "writing-desk",
+      "name": "Room 7 Writing Desk",
+      "description": "A small desk with a lamp and a blotter."
+    },
+    {
+      "id": "guest-room-window",
+      "name": "Guest Room Window",
+      "description": "A narrow window over the side alley."
+    }
+  ]
+}

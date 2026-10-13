@@ -15,6 +15,9 @@ Important groups include:
 - **Images:** generation mode, reference handling, reuse, interpretation and captioning models, and the hires fix (render again larger from the first result, when the image service can).
 - **Prompts:** prompt language and overrides.
 - **Reasoning and sampling:** child-agent reasoning and role-specific model sampling.
+- **Models:** the model of each kind of helper (characters, record keeper, suggestion writer, world and plot author) as `provider/model`; empty uses the chat's own. Characters run side by side and write short answers, and the keeper runs in the background, so a smaller, faster model often does as well there.
 - **Provider options:** settings described by the selected embedding or media provider.
+
+The **What the helpers did lately** list at the bottom of the tab shows the latest runs of those helpers: which one, on which model, how long it took, how many tool calls it made, and why it failed when it did. Use it to see where a slow turn went.
 
 An invalid external edit is logged and the last valid settings remain active. The complete defaults are listed in [Configuration reference](../reference/configuration).

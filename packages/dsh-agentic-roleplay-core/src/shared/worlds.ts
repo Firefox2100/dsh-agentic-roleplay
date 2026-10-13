@@ -13,6 +13,8 @@ export interface WorldSummary {
   description: string
   tags: readonly string[]
   author?: WorldAuthor
+  /** The author's own version label of the world. */
+  version?: string
   /** Changes whenever the cover file does; absent when the world has no usable cover. */
   coverVersion?: string
 }

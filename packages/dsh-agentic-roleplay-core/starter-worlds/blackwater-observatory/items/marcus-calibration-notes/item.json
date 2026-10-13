@@ -1,0 +1,9 @@
+{
+  "id": "marcus-calibration-notes",
+  "name": "Marcus's Calibration Notes",
+  "description": "Marcus Reed's notes on telescope alignment and unauthorized signal experiments.",
+  "unique": true,
+  "owner": "marcus-reed",
+  "held_by": "marcus-reed",
+  "notable": true
+}

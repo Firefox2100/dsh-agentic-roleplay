@@ -1,0 +1,27 @@
+{
+  "id": "old-mine-entrance",
+  "name": "Old Mine - Mine Entrance",
+  "description": "The mouth of the old silver mine, with a boarded entrance and a faded warning sign.",
+  "parent": "blackwater-ridge",
+  "features": [
+    {
+      "id": "boarded-mine-entrance",
+      "name": "Boarded Mine Entrance",
+      "description": "Heavy boards nailed across the entrance."
+    },
+    {
+      "id": "old-warning-sign",
+      "name": "Old Warning Sign",
+      "description": "A faded sign warning against entering."
+    }
+  ],
+  "exits": [
+    {
+      "to": "old-mine-main-tunnel",
+      "description": "boarded-up entrance into the mine",
+      "state": "blocked",
+      "note": "the entrance is boarded up",
+      "travel_time_seconds": 60
+    }
+  ]
+}

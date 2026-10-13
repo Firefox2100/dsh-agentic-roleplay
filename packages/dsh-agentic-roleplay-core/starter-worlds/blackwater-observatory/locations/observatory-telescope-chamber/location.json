@@ -1,0 +1,25 @@
+{
+  "id": "observatory-telescope-chamber",
+  "name": "Blackwater Observatory - Telescope Chamber",
+  "description": "The main chamber of the observatory, dominated by a large brass-and-steel telescope mounted beneath the rotating dome.",
+  "parent": "blackwater-ridge",
+  "features": [
+    {
+      "id": "main-telescope",
+      "name": "Main Telescope",
+      "description": "The observatory's primary telescope, functional but not set to its resting alignment."
+    },
+    {
+      "id": "signal-recording-apparatus",
+      "name": "Signal Recording Apparatus",
+      "description": "Coils, receivers, and paper rolls used to record strange underground signal patterns."
+    }
+  ],
+  "exits": [
+    {
+      "to": "town-square",
+      "description": "the long switchback road down to the town",
+      "travel_time_seconds": 900
+    }
+  ]
+}

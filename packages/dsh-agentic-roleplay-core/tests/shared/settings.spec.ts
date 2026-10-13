@@ -25,6 +25,12 @@ describe('parseSettings', () => {
     expect(parseSettings({ memory: { recall: 0 } })).toEqual({ ok: false, problems: ['"memory.recall" must be a whole number from 1 to 30'] })
   })
 
+  it('takes a model as provider/model, or empty for the chat\'s own', () => {
+    expect(parseSettings({ models: { characters: 'localai/qwen 3', records: '' } }).ok).toBe(false)
+    expect(parseSettings({ models: { characters: 'localai/qwen' } })).toEqual({ ok: true, value: { ...DEFAULT_SETTINGS, models: { ...DEFAULT_SETTINGS.models, characters: 'localai/qwen' } } })
+    for (const bad of ['qwen', '/qwen', 'localai/']) expect(parseSettings({ models: { records: bad } })).toEqual({ ok: false, problems: ['"models.records" must be written provider/model, for example localai/qwen'] })
+  })
+
   it('wants a true or false for a flag', () => {
     expect(parseSettings({ memory: { flaky: 'no' } })).toEqual({ ok: false, problems: ['"memory.flaky" must be true or false'] })
   })
@@ -85,7 +91,7 @@ describe('the clock settings', () => {
 
 describe('the off stage setting', () => {
   it('is two characters per turn by default, from none to five', () => {
-    expect(DEFAULT_SETTINGS.offstage).toEqual({ perTurn: 2, perCharacter: 1, summary: true })
+    expect(DEFAULT_SETTINGS.offstage).toEqual({ perTurn: 2, perCharacter: 1, joint: true, summary: true })
     expect(parseSettings({ offstage: { perTurn: 0 } }).ok).toBe(true)
     expect(parseSettings({ offstage: { perTurn: 6 } })).toEqual({ ok: false, problems: ['"offstage.perTurn" must be a whole number from 0 to 5'] })
   })

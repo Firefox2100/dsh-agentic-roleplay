@@ -1,0 +1,25 @@
+{
+  "id": "town-hall-mayors-office",
+  "name": "Town Hall - Mayor's Office",
+  "description": "Eleanor Graves's formal, controlled, carefully arranged office inside Town Hall.",
+  "parent": "blackwater-ridge",
+  "features": [
+    {
+      "id": "mayors-desk",
+      "name": "Mayor's Desk",
+      "description": "A large, immaculate desk."
+    }
+  ],
+  "exits": [
+    {
+      "to": "town-hall-records-room",
+      "description": "a door to the records room",
+      "travel_time_seconds": 20
+    },
+    {
+      "to": "town-square",
+      "description": "the Town Hall steps down to the square",
+      "travel_time_seconds": 60
+    }
+  ]
+}

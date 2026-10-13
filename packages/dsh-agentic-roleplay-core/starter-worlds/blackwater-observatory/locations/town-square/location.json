@@ -1,0 +1,30 @@
+{
+  "id": "town-square",
+  "name": "Town Square - Festival Monument",
+  "description": "The town square around the festival monument, where the annual festival is held.",
+  "parent": "blackwater-ridge",
+  "features": [
+    {
+      "id": "festival-monument",
+      "name": "Festival Monument",
+      "description": "A weathered stone monument."
+    },
+    {
+      "id": "festival-stalls",
+      "name": "Festival Stalls",
+      "description": "Wooden stalls set up for the festival."
+    }
+  ],
+  "exits": [
+    {
+      "to": "old-mine-entrance",
+      "description": "the track up to the old mine",
+      "travel_time_seconds": 1200
+    },
+    {
+      "to": "north-forest-cabin",
+      "description": "a path into the north forest",
+      "travel_time_seconds": 1800
+    }
+  ]
+}

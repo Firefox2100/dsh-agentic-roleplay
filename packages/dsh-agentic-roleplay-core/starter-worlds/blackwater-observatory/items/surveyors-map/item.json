@@ -1,0 +1,10 @@
+{
+  "id": "surveyors-map",
+  "name": "Surveyor's Map",
+  "description": "An old surveyor's map showing a tunnel not present on official town records.",
+  "unique": true,
+  "quality": "aged",
+  "owner": "eleanor-graves",
+  "held_by": "eleanor-graves",
+  "notable": true
+}

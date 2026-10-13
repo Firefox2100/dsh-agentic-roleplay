@@ -1,0 +1,13 @@
+{
+  "id": "old-mine-main-tunnel",
+  "name": "Old Mine - Main Tunnel",
+  "description": "The main tunnel of the old mine.",
+  "parent": "old-mine-entrance",
+  "features": [
+    {
+      "id": "collapsed-side-passage",
+      "name": "Collapsed Side Passage",
+      "description": "A side passage choked with fallen rock."
+    }
+  ]
+}

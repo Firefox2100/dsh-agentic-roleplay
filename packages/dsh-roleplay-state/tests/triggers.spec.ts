@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { InvalidEditError, announcements, audienceIds, inAudience, parseRecordsEdit, readTriggerDefinition, recordsEditSchema, seededRoll, type SessionStore, type TriggerDefinition } from '../src/index.ts'
+import { InvalidEditError, announcements, judgedStatements, audienceIds, inAudience, parseRecordsEdit, readTriggerDefinition, recordsEditSchema, seededRoll, type SessionStore, type TriggerDefinition } from '../src/index.ts'
 import { memoryStore, newCharacter } from './helpers.ts'
 
 let store: SessionStore
@@ -55,6 +55,24 @@ describe('the conditions', () => {
     expect(run(1).fired.map(entry => entry.trigger.key)).toEqual(['saturday'])
     expect(fires('later', Date.UTC(1912, 9, 5, 13, 30))).toBe(true)
     expect(fires('night', Date.UTC(1912, 9, 5, 23))).toBe(true)
+  })
+
+  it('judged: false until a model has judged the statement true, and only then, on the rise, once', () => {
+    const verdicts = new Set<string>()
+    const look = (turn: number) => store.runTriggers({ turn, round: 1, now: NOON, zone: 'UTC', judged: statement => verdicts.has(statement) }).fired.map(entry => entry.trigger.key)
+    define({ key: 'distrust', condition: { type: 'all', conditions: [{ type: 'judged', text: 'The mayor has lost the town\'s trust.' }, { type: 'not', condition: { type: 'judged', text: 'The mayor has resigned.' } }] } })
+    expect(look(1)).toEqual([])
+    verdicts.add('The mayor has lost the town\'s trust.')
+    expect(look(2)).toEqual(['distrust'])
+    expect(look(3)).toEqual([])
+    verdicts.add('The mayor has resigned.')
+    expect(look(4)).toEqual([])
+  })
+
+  it('judged statements are read from a file, listed once in order, and must be given', () => {
+    const read = readTriggerDefinition({ key: 'j', name: 'J', when: { type: 'any', conditions: [{ type: 'judged', text: 'A' }, { type: 'all', conditions: [{ type: 'judged', text: 'B' }, { type: 'judged', text: 'A' }, { type: 'event', tag: 'x' }] }] }, effects: [{ type: 'beat', text: 'x' }] }, 't')
+    expect('definition' in read && judgedStatements(read.definition.condition)).toEqual(['A', 'B'])
+    expect(readTriggerDefinition({ key: 'j', name: 'J', when: { type: 'judged' }, effects: [{ type: 'beat', text: 'x' }] }, 't')).toMatchObject({ problems: ['t.when.text: required text'] })
   })
 
   it('place, variable and item', () => {
@@ -281,6 +299,16 @@ describe('telling everyone, or those in a place', () => {
     run(4)
     const [event] = store.events.list({ turn: 4 })
     expect(store.events.perceptionsOf(event!.id).map(entry => [entry.characterId, entry.mode]).sort()).toEqual([[alice(), 'told'], [store.characters.getBySourceId('bob')!.id, 'told']].sort())
+  })
+})
+
+describe('a trigger looked at when a turn begins', () => {
+  it('has no round yet, and the events of its edit effects belong to the first', () => {
+    define({ key: 'curfew', condition: { type: 'time', from: '1912-10-01T00:00' }, effects: [{ type: 'edit', edit: { events: [{ text: 'A curfew was announced.', tags: ['curfew'], perceived_by: 'everyone' }] } }] })
+    const result = run(5, NOON, { round: 0 })
+    expect(result.failed).toEqual([])
+    expect(result.fired.map(entry => entry.trigger.key)).toEqual(['curfew'])
+    expect(store.events.list({ turn: 5 })[0]).toMatchObject({ text: 'A curfew was announced.', round: 1 })
   })
 })
 

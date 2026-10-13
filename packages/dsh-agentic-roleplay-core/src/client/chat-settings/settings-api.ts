@@ -30,3 +30,9 @@ export async function saveSettings(id: string, settings: ChatSettings, signal: A
     signal,
   }))
 }
+
+/** Forgets the chat's stored search vectors. */
+export async function resetVectors(id: string, signal: AbortSignal): Promise<void> {
+  const response = await fetch(`${API_PREFIX}/sessions/vectors/reset?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', signal })
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
+}

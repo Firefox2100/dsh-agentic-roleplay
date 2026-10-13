@@ -32,6 +32,25 @@ function ownerOf(agent: Agent, turn: number): TurnOwner | undefined {
   return roleplaySessionOf(agent.session.id) === undefined ? undefined : { chat: agent.session.id, turn }
 }
 
+/** Where the withdrawal of an agent's preview tool is kept: on the agent, so that a reloaded plugin still finds what its earlier self registered. */
+const PREVIEW_SHOWN = Symbol.for('dsh-agentic-roleplay.preview-tool')
+
+/** Registers the preview tool on the agent of a chat that shows one, once, and withdraws it when the setting is turned off. */
+export function previewToggle(tool: Parameters<Agent['ctx']['tools']['register']>[0]): (agent: Agent, enabled: boolean) => void {
+  return (agent, enabled) => {
+    const holder = agent as unknown as Record<symbol, (() => void) | undefined>
+    const withdraw = holder[PREVIEW_SHOWN]
+    if (enabled && withdraw === undefined) {
+      try { holder[PREVIEW_SHOWN] = agent.ctx.tools.register(tool) } catch (error) {
+        // A copy of this plugin from before a reload registered it and cannot be reached any more: the tool is there, which is all that is wanted.
+        if (!(error instanceof Error) || !error.message.includes('already registered')) throw error
+        holder[PREVIEW_SHOWN] = () => undefined
+      }
+    }
+    else if (!enabled && withdraw !== undefined) { delete holder[PREVIEW_SHOWN]; withdraw() }
+  }
+}
+
 /**
  * The listeners of a roleplay preset. Preset listeners are shared by every chat
  * that uses the preset and also hear the agents that chat spawns, so each one
@@ -40,13 +59,7 @@ function ownerOf(agent: Agent, turn: number): TurnOwner | undefined {
 export function installHooks(ctx: Context, deps: HookDeps): void {
   const { engine, boundaries, stores, timelines, previewTool } = deps
 
-  // The preview tool is registered on the agent of a chat that shows one, and withdrawn when the setting is turned off.
-  const shown = new WeakMap<Agent, () => void>()
-  const showPreviewTool = (agent: Agent, enabled: boolean): void => {
-    const withdraw = shown.get(agent)
-    if (enabled && withdraw === undefined) shown.set(agent, agent.ctx.tools.register(previewTool))
-    else if (!enabled && withdraw !== undefined) { shown.delete(agent); withdraw() }
-  }
+  const showPreviewTool = previewToggle(previewTool)
 
   // The turn that ended is where the next one will have to be cut from.
   ctx.on('session/event', (session, event) => {

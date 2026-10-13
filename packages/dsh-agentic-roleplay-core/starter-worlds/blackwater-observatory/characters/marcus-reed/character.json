@@ -1,0 +1,73 @@
+{
+  "id": "marcus-reed",
+  "name": "Marcus Reed",
+  "age": 35,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "tier": "principal",
+  "summary": "Assistant at Blackwater Observatory.",
+  "personality": "He is intelligent, technically capable, and deeply anxious. His obsession with strange underground signals has begun to affect his judgement.",
+  "appearance": "A thin, pale man with restless hands, ink-stained fingers, and dark circles under his eyes.",
+  "start": {
+    "public_state": "Continuing limited observatory work while insisting that Director Harlan's disappearance must have a rational explanation.",
+    "inner_state": "Desperate to recover Harlan's missing notebook before Eleanor, Arthur, or anyone else uses it to expose his unauthorized experiments.",
+    "activity": "checking observatory instruments",
+    "emotion": {
+      "baseline": {
+        "valence": -0.4,
+        "arousal": 0.6,
+        "dominance": -0.3
+      }
+    },
+    "intents": [
+      {
+        "type": "need",
+        "name": "Recover Harlan's missing notebook",
+        "description": "Find Harlan's notebook before it exposes Marcus's unauthorized signal experiments.",
+        "status": "active",
+        "horizon": "immediate",
+        "priority": 0.85,
+        "urgency": 0.8
+      }
+    ],
+    "location": "observatory-directors-office",
+    "position": "reviewing papers"
+  },
+  "relationships": [
+    {
+      "to": "eleanor-graves",
+      "label": "the mayor",
+      "summary": "Someone he answers to when the observatory comes up in town business.",
+      "familiarity": 0.4,
+      "trust": 0.0,
+      "tension": 0.3
+    }
+  ],
+  "routine": [
+    {
+      "from": "09:00",
+      "to": "17:00",
+      "activity": "keeps the observatory records and instruments",
+      "location": "observatory-directors-office",
+      "interruptible": false
+    },
+    {
+      "from": "17:00",
+      "to": "20:00",
+      "activity": "watches the sky",
+      "location": "observatory-telescope-chamber"
+    },
+    {
+      "from": "20:00",
+      "to": "23:00",
+      "activity": "joins the festival and keeps to himself",
+      "location": "town-square"
+    },
+    {
+      "from": "23:00",
+      "to": "09:00",
+      "activity": "sleeps"
+    }
+  ]
+}

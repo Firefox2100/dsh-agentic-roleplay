@@ -1,0 +1,13 @@
+{
+  "id": "town-hall-records-room",
+  "name": "Town Hall - Records Room",
+  "description": "A cramped archival room filled with deeds, survey papers, council minutes, and tax records.",
+  "parent": "blackwater-ridge",
+  "features": [
+    {
+      "id": "property-record-shelves",
+      "name": "Property Record Shelves",
+      "description": "Shelves of property and survey records."
+    }
+  ]
+}

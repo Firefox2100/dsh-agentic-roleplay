@@ -5,10 +5,10 @@ export interface Migration {
 }
 
 /**
- * Migrations are applied in order and never edited once released: a change to
- * the schema is a new entry. Until the first release the schema is still being
- * shaped, so migration 1 is edited in place. Enumerations are spelled out so that
- * a later change to the model cannot alter what an old migration did.
+ * Migrations are applied in order and never edited once released (0.1.0 released
+ * versions 1 to 6; tests/sqlite/migrate.spec.ts pins them): a change to the schema
+ * is a new entry. Enumerations are spelled out so that a later change to the model
+ * cannot alter what an old migration did.
  */
 export const MIGRATIONS: readonly Migration[] = [
   {

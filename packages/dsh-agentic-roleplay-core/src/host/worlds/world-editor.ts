@@ -20,7 +20,7 @@ import { LORE_FILE_NAME, parseLoreFile } from '../lore/lore-file.ts'
 import { formatIssue } from '../validation.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
-import { generateReferenceImage } from '../images/generator.ts'
+import { generateReferenceImage, uploadReferenceImage } from '../images/generator.ts'
 import { loadPlots, parsePlotsFile, plotReferenceProblems, PLOTS_FILE_NAME } from '../plots/load.ts'
 
 /** What of a world the editor needs: the folder it is in. */
@@ -268,18 +268,31 @@ async function editEntityFile(world: EditableWorld, directory: string, fileName:
 }
 
 export async function editWorldPlace(world: EditableWorld, key: string, edit: PlaceEdit): Promise<WorldState> {
+  if (edit.parent !== undefined && edit.parent !== null) {
+    const places = (await readWorldEditor(world)).places
+    if (!places.some(place => place.key === edit.parent)) throw new InvalidEditProblems([`there is no place "${edit.parent}" to put it in`])
+    const parents = new Map(places.map(place => [place.key, place.parent?.key]))
+    for (let at: string | undefined = edit.parent; at !== undefined; at = parents.get(at)) {
+      if (at === key) throw new InvalidEditProblems(['a place cannot be inside itself or a place within it'])
+    }
+  }
   return await editEntityFile(world, LOCATIONS_DIR, LOCATION_FILE_NAME, key, parseLocationFile, (document) => {
     if (edit.name !== undefined) document['name'] = edit.name
     if (edit.description !== undefined) document['description'] = edit.description
     if (edit.features !== undefined) document['features'] = edit.features.map(feature => ({ id: feature.key, name: feature.name, description: feature.description }))
+    if (edit.parent === null) delete document['parent']
+    else if (edit.parent !== undefined) document['parent'] = edit.parent
     setVisualIdentity(document, edit.visualIdentity)
   })
 }
 
 export async function editWorldThing(world: EditableWorld, key: string, edit: ThingEdit): Promise<WorldState> {
+  if (edit.owner !== undefined && edit.owner !== null && !(await readWorldEditor(world)).characters.some(character => character.key === edit.owner)) throw new InvalidEditProblems([`there is no character "${edit.owner}" to own it`])
   return await editEntityFile(world, ITEMS_DIR, ITEM_FILE_NAME, key, parseItemFile, (document) => {
     for (const field of ['name', 'description', 'quantity', 'quality', 'notable', 'hidden'] as const) if (edit[field] !== undefined) document[field] = edit[field]
     if (edit.containerState !== undefined) object(document, 'container')['state'] = edit.containerState
+    if (edit.owner === null) delete document['owner']
+    else if (edit.owner !== undefined) document['owner'] = edit.owner
     setVisualIdentity(document, edit.visualIdentity)
   })
 }
@@ -425,6 +438,15 @@ export async function generateWorldCharacterPortrait(world: EditableWorld, key: 
     subject: { kind: 'character', localId: character.id, name: character.name, ...(identity.globalId === undefined ? {} : { globalId: identity.globalId }) },
     identity: { ...identity, subjectKind: 'character', subjectId: 0, version: 1, updatedAt: '' },
   })
+  return await readWorldEditor(world)
+}
+
+/** The picture the author brought becomes the character's portrait. */
+export async function uploadWorldCharacterPortrait(world: EditableWorld, key: string, png: Uint8Array, originalName?: string): Promise<WorldState> {
+  const character = await characterOf(world, key)
+  try {
+    await uploadReferenceImage({ root: world.directory, subject: { kind: 'character', localId: character.id, name: character.name, ...(character.visualIdentity?.globalId === undefined ? {} : { globalId: character.visualIdentity.globalId }) }, png, ...(originalName === undefined ? {} : { originalName }) })
+  } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
   return await readWorldEditor(world)
 }
 

@@ -27,14 +27,17 @@ export interface WorldInfo {
   timeZone: string
   /** When the story begins, as written in the file, or empty. */
   startingTime: string
+  /** The author's own version label, or empty. */
+  version: string
   alternateOpenings: AlternateOpeningText[]
 }
 
 export type WorldInfoEdit = Partial<Omit<WorldInfo, 'openingParts'>>
 
-const TEXT_FIELDS = ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime'] as const
+const TEXT_FIELDS = ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version'] as const
 const LIST_FIELDS = ['tags', 'rules'] as const
 export const MAX_WORLD_NAME = 200
+export const MAX_WORLD_VERSION = 40
 
 /** Reads a body that came from the browser; every field is checked and each problem is reported. */
 export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
@@ -66,6 +69,7 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
       edit['alternateOpenings'] = kept
     }
   }
+  if (typeof edit['version'] === 'string' && edit['version'].length > MAX_WORLD_VERSION) problems.push(`the version is longer than ${MAX_WORLD_VERSION} characters`)
   if (edit['name'] === '') problems.push('the world needs a name')
   if (typeof edit['name'] === 'string' && edit['name'].length > MAX_WORLD_NAME) problems.push(`the name is longer than ${MAX_WORLD_NAME} characters`)
   if (problems.length > 0) throw new InvalidEditProblems(problems)

@@ -120,6 +120,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
       description: world.description,
       tags: world.tags,
       ...(world.author === undefined ? {} : { author: world.author }),
+      ...(world.version === undefined ? {} : { version: world.version }),
     },
     ...(world.opening === undefined ? {} : { opening: world.opening }),
     ...(world.clock === undefined ? {} : { clock: world.clock }),

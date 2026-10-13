@@ -29,8 +29,8 @@ export interface Location {
 
 export type NewLocation = Omit<Location, 'id' | 'createdAt'>
 
-/** What may change about a place once it exists; where it is stays. */
-export type LocationPatch = Partial<Pick<Location, 'name' | 'description' | 'features'>>
+/** What may change about a place once it exists. `parentId: null` takes it out of the place that contains it. */
+export type LocationPatch = Partial<Pick<Location, 'name' | 'description' | 'features'>> & { parentId?: LocationId | null }
 
 /** Whether people can go through an exit now. */
 export const EXIT_STATES = ['open', 'locked', 'blocked'] as const

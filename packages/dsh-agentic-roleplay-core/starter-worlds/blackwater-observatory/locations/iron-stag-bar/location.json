@@ -1,0 +1,30 @@
+{
+  "id": "iron-stag-bar",
+  "name": "Iron Stag Inn - Bar",
+  "description": "The busy ground-floor bar of the Iron Stag Inn. Locals gather here for drink, gossip, and festival talk.",
+  "parent": "blackwater-ridge",
+  "features": [
+    {
+      "id": "visitors-room-ledger",
+      "name": "Visitor's Room Ledger",
+      "description": "The inn's ledger of room usage, dates, names, and payments."
+    },
+    {
+      "id": "notice-board",
+      "name": "Notice Board",
+      "description": "A cork board crowded with festival notices and handwritten messages."
+    }
+  ],
+  "exits": [
+    {
+      "to": "iron-stag-room-7",
+      "description": "a narrow stair to the guest rooms",
+      "travel_time_seconds": 30
+    },
+    {
+      "to": "town-square",
+      "description": "the inn door onto the square",
+      "travel_time_seconds": 60
+    }
+  ]
+}

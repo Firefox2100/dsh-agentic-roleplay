@@ -1,0 +1,10 @@
+{
+  "id": "survey-archive-cabinet",
+  "name": "Survey Archive Cabinet",
+  "description": "A cabinet containing older surveyor records and historical mine documentation.",
+  "container": {
+    "state": "closed"
+  },
+  "notable": true,
+  "location": "town-hall-records-room"
+}

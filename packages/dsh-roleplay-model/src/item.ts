@@ -68,7 +68,8 @@ export interface Item {
 }
 
 export type NewItem = Omit<Item, 'id' | 'createdAt'>
-export type ItemPatch = Partial<Pick<Item, 'name' | 'description' | 'quantity' | 'quality' | 'notable' | 'hidden' | 'ownerId'>> & { container?: ContainerSpec }
+/** What may change about a thing. `ownerId: null` says it belongs to no one. */
+export type ItemPatch = Partial<Pick<Item, 'name' | 'description' | 'quantity' | 'quality' | 'notable' | 'hidden'>> & { ownerId?: CharacterId | null; container?: ContainerSpec }
 
 /** What holds an item: a place, a character (in its hands, or worn) or another item (inside it). */
 export type Holder =

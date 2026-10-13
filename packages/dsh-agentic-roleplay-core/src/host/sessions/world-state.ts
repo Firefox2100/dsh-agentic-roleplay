@@ -6,7 +6,7 @@ import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdi
 import { SessionNotFoundError } from './errors.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
-import { generateReferenceImage } from '../images/generator.ts'
+import { generateReferenceImage, uploadReferenceImage } from '../images/generator.ts'
 import { PLOTS_METADATA_KEY, plotProgressOf, populatePlots } from '../pacing/director.ts'
 import { parsePlotsFile, plotReferenceProblems } from '../plots/load.ts'
 
@@ -177,7 +177,10 @@ export function editWorldPlace(deps: WorldStateDeps, id: string, key: string, ed
   if (place === undefined) throw new InvalidEditProblems([`there is no place "${key}"`])
   try {
     session.transaction(() => {
-      const { visualIdentity, ...patch } = edit
+      const { visualIdentity, parent, ...rest } = edit
+      const container = parent === undefined ? undefined : parent === null ? null : session.locations.list().find(candidate => (candidate.sourceId ?? String(candidate.id)) === parent)?.id
+      if (container === undefined && parent !== undefined) throw new InvalidEditProblems([`there is no place "${parent}" to put it in`])
+      const patch = { ...rest, ...(container === undefined ? {} : { parentId: container }) }
       if (Object.keys(patch).length > 0) session.locations.update(place.id, patch)
       if (visualIdentity === null) session.visualIdentities.remove('location', place.id)
       else if (visualIdentity !== undefined) session.visualIdentities.set('location', place.id, visualIdentity)
@@ -195,8 +198,10 @@ export function editWorldThing(deps: WorldStateDeps, id: string, key: string, ed
   if (item === undefined) throw new InvalidEditProblems([`there is no thing "${key}"`])
   try {
     session.transaction(() => {
-      const { visualIdentity, containerState, ...patch } = edit
-      const changes = { ...patch, ...(containerState === undefined ? {} : { container: { state: containerState } }) }
+      const { visualIdentity, containerState, owner, ...patch } = edit
+      const holder = owner === undefined ? undefined : owner === null ? null : session.characters.list().find(candidate => (candidate.sourceId ?? String(candidate.id)) === owner)?.id
+      if (holder === undefined && owner !== undefined) throw new InvalidEditProblems([`there is no character "${owner}" to own it`])
+      const changes = { ...patch, ...(containerState === undefined ? {} : { container: { state: containerState } }), ...(holder === undefined ? {} : { ownerId: holder }) }
       if (Object.keys(changes).length > 0) session.items.update(item.id, changes)
       if (visualIdentity === null) session.visualIdentities.remove('item', item.id)
       else if (visualIdentity !== undefined) session.visualIdentities.set('item', item.id, visualIdentity)
@@ -296,6 +301,17 @@ export async function generateSessionCharacterPortrait(deps: WorldStateDeps, id:
     subject: { kind: 'character', localId: character.sourceId ?? character.id, name: character.name, ...(identity.globalId === undefined ? {} : { globalId: identity.globalId }) },
     identity,
   })
+  return worldOf(session, deps.sessionsDir())
+}
+
+/** The picture the player brought becomes the session character's portrait. */
+export async function uploadSessionCharacterPortrait(deps: WorldStateDeps, id: string, key: string, png: Uint8Array, originalName?: string): Promise<WorldState> {
+  const session = sessionOf(deps, id)
+  const character = characterOf(session, key)
+  const identity = session.visualIdentities.get('character', character.id)
+  try {
+    await uploadReferenceImage({ root: sessionFolder(deps.sessionsDir(), id), subject: { kind: 'character', localId: character.sourceId ?? character.id, name: character.name, ...(identity?.globalId === undefined ? {} : { globalId: identity.globalId }) }, png, ...(originalName === undefined ? {} : { originalName }) })
+  } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
   return worldOf(session, deps.sessionsDir())
 }
 

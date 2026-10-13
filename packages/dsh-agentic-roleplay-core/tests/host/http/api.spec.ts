@@ -16,6 +16,8 @@ import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
+import { WorldFolderExistsError } from '../../../src/host/worlds/create-world.ts'
+import { UnknownStarterError } from '../../../src/host/worlds/starter.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
 
@@ -81,6 +83,7 @@ beforeEach(async () => {
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
     worlds,
     avatars: { create: async () => 'new', remove: async () => undefined, addToWorld: async () => [] },
+    starter: { list: async () => [{ folder: 'sample', name: 'Sample', description: '', tags: [], installed: false }], add: async (folder) => { if (folder === 'nothing') throw new UnknownStarterError('no such starter'); if (folder === 'have') throw new WorldFolderExistsError('you have it'); return { id: folder, name: 'Sample', description: '', tags: [] } } },
     createWorld: async ({ folder, name }) => ({ id: folder, name, description: '', tags: [] }),
     authorWorld: async worldId => {
       if (worldId === 'missing') throw new WorldNotFoundError('missing world')
@@ -100,8 +103,8 @@ beforeEach(async () => {
       picture: () => Promise.reject(new Error('no picture')),
     },
     worldFiles: {
-      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', alternateOpenings: [] }),
-      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', alternateOpenings: [] }) },
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', alternateOpenings: [] }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', alternateOpenings: [] }) },
       routines: () => Promise.resolve({ characters: [], places: [] }),
       editRoutine: (_world, key) => (key === 'nobody' ? Promise.reject(new InvalidEditProblems(['there is no character "nobody"'])) : Promise.resolve({ characters: [], places: [] })),
       variables: () => Promise.resolve([]),
@@ -136,6 +139,7 @@ beforeEach(async () => {
       editNarrationVoice: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
+      uploadPortrait: async (...args: unknown[]) => { if (args[2] instanceof Uint8Array && args[2][0] === 0xff) throw new InvalidEditProblems(['the portrait must be a PNG picture: convert it first']); edited.push(`portrait ${String(args[0])} ${String(args[1])} ${(args[2] as Uint8Array).length} ${String(args[3])}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
     },
     sessions: {
       list: () => listed,
@@ -157,6 +161,7 @@ beforeEach(async () => {
       editNarrationVoice: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
+      uploadPortrait: async (...args: unknown[]) => { if (args[2] instanceof Uint8Array && args[2].length === 0) throw new InvalidEditProblems(['the portrait must be a PNG picture: convert it first']); edited.push(`portrait ${String(args[0])} ${String(args[1])} ${(args[2] as Uint8Array).length} ${String(args[3])}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       start: async (request) => {
         startedWith = request
         if (startError !== undefined) throw startError
@@ -170,12 +175,12 @@ beforeEach(async () => {
       send: (id, text) => { said.push(`${id}: ${text}`); return Promise.resolve() },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
-        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 }
+        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], vectors: { available: true, embedded: 0, pending: 0 } }
       },
       writeSettings: (_id, value) => {
         if (settingsError !== undefined) throw settingsError
         writtenSettings = value
-        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 }
+        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], vectors: { available: true, embedded: 0, pending: 0 } }
       },
       timeline: (id) => {
         if (timelineError !== undefined) throw timelineError
@@ -197,6 +202,7 @@ beforeEach(async () => {
         if (archiveError !== undefined) throw archiveError
         return { characters: [{ key: id, name: 'Clara', aliases: [], role: 'npc', tier: 'principal', kind: 'person', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, state: { publicState: '', innerState: '', activity: '' }, goals: [] }], places: [], things: [], factions: [], relations: [], plots: [] }
       },
+      resetVectors: (id) => { if (archiveError !== undefined) throw archiveError; archived.push(`reset ${id}`) },
       rename: (id, name) => {
         if (archiveError !== undefined) return Promise.reject(archiveError)
         archived.push(`rename ${id} ${name}`)
@@ -332,6 +338,34 @@ describe('roleplay API', () => {
     expect(wrong.status).toBe(405)
     expect(wrong.headers.get('allow')).toBe('GET, POST')
     expect((await fetch(`${origin}/worlds/refresh`)).status).toBe(405)
+  })
+
+  describe('uploading a portrait', () => {
+    const upload = (path: string, body: Uint8Array) => fetch(`${origin}${path}`, { method: 'POST', headers: { 'x-file-name': encodeURIComponent('clara face.png') }, body })
+
+    it('hands the bytes and the name to the world or the session, and says why a picture is refused', async () => {
+      expect((await upload('/worlds/state/character/portrait/upload?id=w&key=clara', new Uint8Array([1, 2, 3]))).status).toBe(200)
+      expect((await upload('/sessions/world/character/portrait/upload?id=abc&key=clara', new Uint8Array([1, 2]))).status).toBe(200)
+      expect(edited).toEqual(['portrait w clara 3 clara face.png', 'portrait abc clara 2 clara face.png'])
+      expect((await upload('/worlds/state/character/portrait/upload?id=w&key=clara', new Uint8Array([0xff]))).status).toBe(422)
+      expect((await fetch(`${origin}/worlds/state/character/portrait/upload?id=w&key=clara`)).status).toBe(405)
+    })
+  })
+
+  describe('the starter worlds', () => {
+    it('lists the worlds the package ships', async () => {
+      expect(await (await fetch(`${origin}/worlds/starter`)).json()).toEqual([{ folder: 'sample', name: 'Sample', description: '', tags: [], installed: false }])
+    })
+
+    it('adds one, and says why it cannot', async () => {
+      const post = (body: unknown) => fetch(`${origin}/worlds/starter`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      const added = await post({ folder: 'sample' })
+      expect(added.status).toBe(201)
+      expect(await added.json()).toMatchObject({ id: 'sample', name: 'Sample' })
+      expect((await post({ folder: 'nothing' })).status).toBe(404)
+      expect((await post({ folder: 'have' })).status).toBe(409)
+      expect((await post({ folder: 3 })).status).toBe(400)
+    })
   })
 
   describe('the characters of a world', () => {
@@ -643,6 +677,17 @@ describe('roleplay API', () => {
     })
   })
 
+  describe('forgetting the vectors of a session', () => {
+    it('is a POST that answers with nothing; an unknown session is 404', async () => {
+      expect((await fetch(`${origin}/sessions/vectors/reset?id=abc`, { method: 'POST' })).status).toBe(204)
+      expect(archived).toEqual(['reset abc'])
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/vectors/reset?id=x`, { method: 'POST' })).status).toBe(404)
+      archiveError = undefined
+      expect((await fetch(`${origin}/sessions/vectors/reset?id=abc`)).status).toBe(405)
+    })
+  })
+
   describe('naming a session', () => {
     const rename = (body: unknown, id = 'abc') => fetch(`${origin}/sessions/rename?id=${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
@@ -742,7 +787,7 @@ describe('roleplay API', () => {
     it('are read, with the bounds', async () => {
       const response = await fetch(url())
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0 })
+      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], vectors: { available: true, embedded: 0, pending: 0 } })
     })
 
     it('are replaced by the body', async () => {

@@ -1,0 +1,20 @@
+[
+  {
+    "key": "festival-band",
+    "name": "The festival band strikes up",
+    "when": { "type": "time", "from": "1912-09-21T19:31" },
+    "effects": [
+      { "type": "beat", "text": "The festival band strikes up in the square outside, loud enough to be heard through the walls." },
+      { "type": "cue", "audience": { "place": "iron-stag-bar" }, "text": "The band has started early; the bar will fill up soon." }
+    ],
+    "announce": { "audience": "everyone", "text": "The Founder's Festival band plays on the square this evening.", "at": "1912-09-21T19:31" }
+  },
+  {
+    "key": "mayors-announcement",
+    "name": "The mayor's announcement",
+    "when": { "type": "time", "from": "1912-09-22T12:00" },
+    "effects": [
+      { "type": "edit", "edit": { "events": [{ "text": "Mayor Graves announced a curfew for the whole town.", "tags": ["curfew"], "importance": 4, "perceived_by": "everyone" }] } }
+    ]
+  }
+]

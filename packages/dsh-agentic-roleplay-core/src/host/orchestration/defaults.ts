@@ -1,7 +1,7 @@
 import type { Character } from 'dsh-roleplay-model'
 import type {
   ItemView, KnownRelationship, SceneItems,
-  ActivationPlanner, Author, Boundaries, Suggester, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  ActivationPlanner, Author, Boundaries, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
 import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from '@dsh-agentic-roleplay/state'
@@ -442,6 +442,12 @@ export const declinesToAuthor: Author = {
   consolidate: () => Promise.resolve({ resolved: 0, notes: '' }),
 }
 
+/** Lets no organisation act: without a strategist factions change only through what the story records. */
+export const factionsStayPut: Strategist = { strategize: () => Promise.resolve({ acted: [] }) }
+
+/** Judges nothing: without a judge a trigger that waits on a statement never sees it hold. */
+export const judgesNothing: TriggerJudge = { judge: () => Promise.resolve({ judged: 0 }) }
+
 /** Offers nothing: without a suggester the player writes their own move. */
 export const offersNothing: Suggester = { suggest: () => Promise.resolve([]) }
 
@@ -456,6 +462,8 @@ export function defaultBoundaries(): Boundaries {
     narrationChecker: exactUtterances,
     committer: writesNothing,
     author: declinesToAuthor,
+    strategist: factionsStayPut,
+    judge: judgesNothing,
     suggester: offersNothing,
     recaller: recordsRecall,
     sceneContext: castSummary,

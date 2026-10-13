@@ -97,6 +97,21 @@ export async function generateReferenceImage(service: ImageGenerationService, re
   return path
 }
 
+const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+
+/** Takes a picture the person brought as the stable reference.png of one entity, replacing the one there. Only PNG is stored, so any other format is refused. */
+export async function uploadReferenceImage(request: { root: string; subject: VisualImageSubject; png: Uint8Array; originalName?: string }): Promise<string> {
+  if (request.png.length < PNG_SIGNATURE.length || PNG_SIGNATURE.some((byte, index) => request.png[index] !== byte)) throw new Error('the portrait must be a PNG picture: convert it first')
+  const path = referenceImagePath(request.root, request.subject)
+  const metadata: VisualImageMetadata = {
+    schema: 'dsh-roleplay-image/v3', purpose: 'reference', origin: 'uploaded', reusable: true, createdAt: new Date().toISOString(),
+    description: `${request.subject.name}, a picture brought by the author.`, tags: [request.subject.name],
+    ...(request.originalName === undefined ? {} : { originalName: request.originalName }), subjects: [request.subject],
+  }
+  await writeImage(path, request.png, metadata, { replace: true })
+  return path
+}
+
 /** Generates one immutable scene image for a timeline node. It is intentionally not registered in the live roleplay loop yet. */
 export async function generateTransientImage(service: ImageGenerationService, request: TransientImageRequest): Promise<string> {
   if (request.subjects.length === 0) throw new Error('a transient image needs at least one subject')

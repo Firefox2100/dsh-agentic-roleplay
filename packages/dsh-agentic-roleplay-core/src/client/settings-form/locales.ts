@@ -2,12 +2,12 @@ import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
   | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
-  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
+  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
-  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
+  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
-  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp'
+  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'modelsCharacters' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -33,6 +33,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     overRetrieveHelp: 'To choose what a character is reminded of, this many times as many candidates are retrieved (by the moment\'s cues, by words and by meaning) and the best are kept; a reranking service, when one is configured, judges the wider net. 1 chooses straight from the first search.',
     lookup: 'Characters can look up memories',
     lookupHelp: 'While it decides, a character can ask itself about something it remembers beyond what the moment already brought to mind. Each character only reaches its own memories. It makes a character\'s turn a little longer.',
+    lookupCalls: 'Memory look-ups per decision',
+    lookupCallsHelp: 'The most times a character may look into its memory while it decides. After that it is told to answer. A character that keeps looking makes the turn much longer.',
     verify: 'Check the records',
     verifyHelp: 'The record keeper reads back what it wrote about each round, compares it with the round and fixes mistakes before it finishes. It runs in the background of the narration, so it rarely delays you; turn it off for speed or to save model calls.',
     backlogRounds: 'Most rounds waiting to be remembered',
@@ -79,6 +81,20 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imagesInterpreterModelHelp: 'As provider/model. Leave empty to use the chat\'s own model, which must be declared able to read images. Use this to describe images with a vision model while the story runs on another.',
     imagesCaptioner: 'Captioning model',
     imagesCaptionerHelp: 'As provider/model. A model that only writes a caption for a picture (it cannot call tools) looks at it, and the chat\'s model turns the caption into the description. Leave empty to have one vision model do both.',
+    triggersJudged: 'Statements judged after a turn',
+    triggersJudgedHelp: 'The most statements that triggers wait on (such as "the mayor has lost the town\'s trust") that a model judges after one of your messages, in one background request. A trigger fires from the verdict at the next look. 0 turns it off, and such triggers never fire.',
+    factionsPerTurn: 'Organisations acting on their own',
+    factionsPerTurnHelp: 'The most organisations that decide what they do after one of your messages, when story time has passed since they last did. Each is one request in the background. 0 turns it off.',
+    factionsEveryDays: 'Days between their decisions',
+    factionsEveryDaysHelp: 'How many days of story time pass before an organisation decides again.',
+    modelsCharacters: 'Model for characters',
+    modelsCharactersHelp: 'As provider/model. Leave empty to use the chat\'s own model. Characters run side by side and write short answers, so a smaller, faster model often does as well.',
+    modelsRecords: 'Model for the record keeper',
+    modelsRecordsHelp: 'As provider/model. Leave empty to use the chat\'s own model. The keeper runs in the background and must call tools correctly.',
+    modelsSuggestions: 'Model for suggested actions',
+    modelsSuggestionsHelp: 'As provider/model. Leave empty to use the chat\'s own model.',
+    modelsAuthoring: 'Model for the world and plot author',
+    modelsAuthoringHelp: 'As provider/model. Leave empty to use the chat\'s own model. Made-up characters, places and things are only as good as this model.',
     imagesOff: 'Off',
     imagesManual: 'Manual',
     imagesEveryTurn: 'Every turn',
@@ -90,6 +106,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     offstagePerTurn: 'Characters acting off stage per turn',
     offstagePerCharacter: 'Times one character acts off stage per turn',
     offstagePerCharacterHelp: 'A character with several things due is asked about the first; the rest wait for your next turn. With the limit above, this caps what the world does without you: nothing runs while you are away from the chat, and each message you send lets at most this many characters act.',
+    offstageJoint: 'Meetings happen between people',
+    offstageJointHelp: 'The people of one off-stage commitment decide one after another, each told who has already meant to come, so they meet instead of each guessing. It takes longer in the background but asks the same number of times. Off: each decides alone, all at once.',
     offstageSummary: 'Tell me what happened meanwhile',
     offstageSummaryHelp: 'Characters acting off stage also say in a line what came of it, in the same request (no extra cost), and it is shown as a card beside the story until your next message, outside the conversation.',
     offstagePerTurnHelp: 'When something falls due for characters who are away from you (a meeting whose time has come, a deadline that passed), up to this many of them are asked, in the background after your turn, what they do about it. What they decide is recorded and can be seen in the story later. 0 turns it off.',
@@ -136,6 +154,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     overRetrieveHelp: '为了选出角色被唤起的记忆，会先检索出此倍数的候选（按情境线索、字词和语义），再保留最好的；若已配置重排序服务，则由它评判这张更大的网。1 表示直接从第一次检索中选取。',
     lookup: '角色可主动回忆',
     lookupHelp: '角色在决定行动时，可以主动向自己追问更多记忆，超出当前情境已唤起的部分。每个角色只能查到自己的记忆。会让角色的回合稍长一些。',
+    lookupCalls: '每次决定的记忆查询次数',
+    lookupCallsHelp: '角色在决定行动时最多可以查询自己记忆的次数，超过后会被要求直接作答。反复查询会让这一轮慢得多。',
     verify: '核对记录',
     verifyHelp: '记录员在结束前会回读自己写入的记录，对照回合内容并纠正错误。它在叙述的同时于后台运行，通常不会拖慢你；追求速度或想节省模型调用时可以关闭。',
     backlogRounds: '等待记录的回合上限',
@@ -182,6 +202,20 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imagesInterpreterModelHelp: '写成 提供方/模型。留空则使用对话自己的模型，它必须声明能读取图像。可用它让视觉模型描述图像，而故事用另一个模型运行。',
     imagesCaptioner: '图像说明模型',
     imagesCaptionerHelp: '写成 提供方/模型。只会给图片写说明文字的模型（不能调用工具）负责看图，再由对话的模型把说明整理成描述。留空则由一个视觉模型完成全部。',
+    triggersJudged: '每回合评判的陈述数',
+    triggersJudgedHelp: '触发器所等待的陈述（例如“市长已失去全镇信任”）中，你发送一条消息后最多让模型评判多少条，合并为一次后台请求。触发器在下一次检查时根据结论触发。0 表示关闭，此类触发器永远不会触发。',
+    factionsPerTurn: '组织自主行动',
+    factionsPerTurnHelp: '你发送一条消息后，最多让多少个组织决定自己的行动（前提是自它们上次行动以来故事时间已经过去）。每个组织占用一次后台请求。0 表示关闭。',
+    factionsEveryDays: '决策间隔天数',
+    factionsEveryDaysHelp: '组织再次决策之前要经过多少天故事时间。',
+    modelsCharacters: '角色使用的模型',
+    modelsCharactersHelp: '写成 提供方/模型。留空则使用对话自己的模型。角色并行运行且回答简短，较小较快的模型通常也能胜任。',
+    modelsRecords: '记录员使用的模型',
+    modelsRecordsHelp: '写成 提供方/模型。留空则使用对话自己的模型。记录员在后台运行，必须能正确调用工具。',
+    modelsSuggestions: '行动建议使用的模型',
+    modelsSuggestionsHelp: '写成 提供方/模型。留空则使用对话自己的模型。',
+    modelsAuthoring: '世界与剧情作者使用的模型',
+    modelsAuthoringHelp: '写成 提供方/模型。留空则使用对话自己的模型。新编造的角色、地点和物品的质量取决于这个模型。',
     imagesOff: '关闭',
     imagesManual: '手动',
     imagesEveryTurn: '每轮',
@@ -193,6 +227,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     offstagePerTurn: '每轮台下行动的角色数',
     offstagePerCharacter: '每个角色每轮台下行动次数',
     offstagePerCharacterHelp: '同一角色有多件事到期时，只询问第一件，其余等你的下一轮。配合上面的上限，这限制了世界在无人操作时的行动：你离开聊天时什么都不会运行，你每发一条消息最多让这么多次角色行动。',
+    offstageJoint: '约定在人与人之间发生',
+    offstageJointHelp: '同一个台下约定的人依次决定，后者会被告知谁已决定前来，因此他们会碰面而不是各自猜测。后台耗时更长，但请求次数不变。关闭则各自同时独立决定。',
     offstageSummary: '告诉我期间发生了什么',
     offstageSummaryHelp: '台下行动的角色会在同一次请求里用一句话说明结果（不额外消耗请求），并以卡片形式显示在故事旁，直到你发送下一条消息，不会进入对话记录。',
     offstagePerTurnHelp: '当有事对不在你身边的角色到期时（约定的时间到了、期限过了），每轮结束后会在后台最多询问这么多角色打算怎么办。他们的决定会被记录，之后可在故事中看到。0 表示关闭。',

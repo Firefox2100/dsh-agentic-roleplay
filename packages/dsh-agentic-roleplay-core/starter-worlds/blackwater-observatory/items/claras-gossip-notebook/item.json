@@ -1,0 +1,9 @@
+{
+  "id": "claras-gossip-notebook",
+  "name": "Clara's Gossip Notebook",
+  "description": "Clara Whitlock's private notebook of rumours, guest observations, and overheard conversations.",
+  "unique": true,
+  "owner": "clara-whitlock",
+  "held_by": "clara-whitlock",
+  "notable": true
+}

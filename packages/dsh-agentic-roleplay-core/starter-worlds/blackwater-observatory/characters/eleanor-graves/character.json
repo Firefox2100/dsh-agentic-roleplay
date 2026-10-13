@@ -1,0 +1,80 @@
+{
+  "id": "eleanor-graves",
+  "name": "Eleanor Graves",
+  "age": 42,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "tier": "principal",
+  "summary": "Mayor of Blackwater Ridge.",
+  "personality": "She is calculating, practical, and deeply attached to her office. It is difficult to tell whether she acts out of civic duty or personal instinct, because the two have become almost indistinguishable. She is fiercely protective of the town's reputation and prefers to contain trouble before it becomes public.",
+  "appearance": "A composed woman with sharp features, tired eyes, and an immaculate posture. She usually carries herself with formal restraint.",
+  "start": {
+    "public_state": "Welcoming Arthur Moore to Blackwater Ridge while presenting the town as orderly, festive, and untroubled by Director Harlan's disappearance.",
+    "inner_state": "Trying to determine what Arthur Moore is actually here for and whether his presence threatens altered property records, the town's finances, or her own position.",
+    "activity": "managing festival appearances",
+    "emotion": {
+      "baseline": {
+        "valence": -0.1,
+        "arousal": 0.3,
+        "dominance": 0.5
+      }
+    },
+    "intents": [
+      {
+        "type": "agenda",
+        "name": "Contain public scandal",
+        "description": "Protect the town's reputation and prevent dangerous property-record details from surfacing.",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.8,
+        "urgency": 0.6
+      }
+    ],
+    "location": "iron-stag-bar",
+    "position": "near the mayoral party"
+  },
+  "relationships": [
+    {
+      "to": "arthur-moore",
+      "label": "unwelcome outsider",
+      "summary": "An investigator who asks too many questions at a delicate time.",
+      "familiarity": 0.1,
+      "trust": -0.3,
+      "affinity": -0.1,
+      "tension": 0.5
+    }
+  ],
+  "routine": [
+    {
+      "from": "08:00",
+      "to": "12:00",
+      "activity": "works through town business",
+      "location": "town-hall-mayors-office",
+      "interruptible": true
+    },
+    {
+      "from": "12:00",
+      "to": "14:00",
+      "activity": "lunches and talks with townspeople",
+      "location": "town-square"
+    },
+    {
+      "from": "14:00",
+      "to": "18:00",
+      "activity": "works through town business",
+      "location": "town-hall-mayors-office"
+    },
+    {
+      "from": "18:00",
+      "to": "23:00",
+      "activity": "attends the festival and receives guests",
+      "location": "iron-stag-bar"
+    },
+    {
+      "from": "23:00",
+      "to": "08:00",
+      "activity": "sleeps"
+    }
+  ]
+}

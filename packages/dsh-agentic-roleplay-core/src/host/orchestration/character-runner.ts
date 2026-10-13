@@ -1,6 +1,6 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createCharacterTools } from '@dsh-agentic-roleplay/state'
-import { childSampling, runChild } from '../agents/child.ts'
+import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import { AWAY_ACTION_SCHEMA, CHARACTER_ACTION_SCHEMA, parseCharacterAction } from './protocol.ts'
 import type { RunCharacter } from './turn-engine.ts'
@@ -17,7 +17,7 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
     const tools = request.lookup
       ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: deps.store.settings().memory, queryVector: deps.store.queryVector }), request.member.character.id)
       : []
-    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(deps.store.settings(), 'characters'), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA })
+    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(deps.store.settings(), 'characters'), ...childModel(deps.store.settings(), 'characters'), trace: childTrace(deps.store, 'characters', request.member.character.name), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, maxCalls: deps.store.settings().memory.lookupCalls, result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA })
     return parseCharacterAction(result)
   }
 }

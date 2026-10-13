@@ -274,6 +274,8 @@ function answerFor(script: Script = {}) {
 function answerWithoutSuggestions(script: Script) {
   return (request: GenerateOptions): StreamChunk[] => {
     if (systemOf(request).includes('You suggest what the player could do next')) return script.suggester === 'forgets' && !asText(request).includes('You have not finished') ? text('1. Ask Alice about the key') : call('sg-submit', 'submit_result', { options: SUGGESTED })
+    if (systemOf(request).includes('You judge statements about an interactive story')) return call('t-judge', 'submit_result', { verdicts: [{ number: 1, holds: true, reason: 'The records show Alice at the vault.' }] })
+    if (systemOf(request).includes('strategist of an organisation')) return call('f-submit', 'submit_result', { summary: 'The Guild quietly buys the cellar lease.', public_state: 'Seen at the cellar door.', new_goal: { name: 'Hold the cellar', description: 'Keep others out of the cellar.', plan: ['post a guard'] } })
     if (systemOf(request).includes('record keeper of an interactive story')) return keeperAnswer(request, script)
     if (systemOf(request).includes('world author of an interactive story')) return authorAnswer(request, script)
     const who = /You are (Alice|Bob|Carol|Dan)\./.exec(systemOf(request))?.[1]
@@ -282,7 +284,7 @@ function answerWithoutSuggestions(script: Script) {
       const later = asText(request).includes('Earlier in this scene')
       if (script.characterLookup === true && timesCalled(request, 'recall_my_memories') === 0) return call(`s-${who}-recall`, 'recall_my_memories', { about: 'the key' })
       if (later && who === 'Bob') return call('s-Bob-later', 'submit_result', { intent: 'Bob objects', utterance: 'Why is he here?', commitment: 'low' })
-      const away = asText(request).includes('nothing of this happens in front of anyone') ? { account: `${who} dealt with it out of sight.` } : {}
+      const away = asText(request).includes('nothing of this happens in front of anyone') ? { account: `${who} dealt with it out of sight.`, ...(who === 'Carol' ? { commitment: 'medium' } : {}) } : {}
       return call(`s-${who}`, 'submit_result', retry ? { intent: `${who} grabs the lantern instead`, utterance: 'Give it here!', commitment: 'medium' } : { ...intents[who]!, ...away })
     }
     if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
@@ -618,7 +620,7 @@ describe('a turn with the real agent loop', () => {
     it('asks the characters freely and the record keeper exactly, and has the helpers answer with a tool call', async () => {
       const { adapter } = await playTime('stated')
       const sampled = (requests: GenerateOptions[]) => requests.map(request => adapter.samplings[adapter.requests.indexOf(request)])
-      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 8000, priority: 'foreground' })))
+      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 2000, priority: 'foreground' })))
       expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: 8000, priority: 'background' })))
       expect(adapter.samplings[adapter.requests.indexOf(masterRequests(adapter)[0]!)]).toBeUndefined()
     })
@@ -669,11 +671,35 @@ describe('a turn with the real agent loop', () => {
       const asked = characterRequests(adapter).filter(request => briefOf(request).includes('You were to meet in the cellar at Cellar'))
       expect(asked.map(request => /You are (Carol|Dan)\./.exec(systemOf(request))?.[1]).sort()).toEqual(['Carol', 'Dan'])
       expect(briefOf(asked[0]!)).toContain('It was with: Carol, Dan.')
+      const told = asked.filter(request => briefOf(request).includes('has decided:'))
+      expect(told).toHaveLength(1)
+      expect(systemOf(told[0]!)).toContain('You are Dan.')
+      expect(briefOf(told[0]!)).toContain('Carol has decided: Carol takes the key, saying "Oh, please.".')
       await vi.waitFor(() => { expect(session.metadata.getValue('offscene.handled')).toEqual([`e${meeting.id}`]) }, { timeout: 5000 })
       expect(session.placements.get('character', dan)?.locationId).toBe(session.locations.getBySourceId('cellar')!.id)
       expect(session.characterStates.get(dan)?.activity).toBe('Dan takes the key')
       const away = (session.metadata.getValue('notes') as { kind: string; lines: string[] }[]).find(note => note.kind === 'away')
       expect(away?.lines.sort()).toEqual(['Carol dealt with it out of sight.', 'Dan dealt with it out of sight.'])
+      const ran = (session.metadata.getValue('activity') as { label: string; error?: string }[]).map(run => run.label)
+      expect(ran).toEqual(expect.arrayContaining(['Carol', 'Dan']))
+    })
+
+    it('lets an organisation whose time has come decide what it does after the turn, within the limit of the chat, and records it as a deed no one knows', async () => {
+      const { session, id } = await addSession('Vault', true)
+      const guild = session.factions.add({ sourceId: 'guild', name: 'The Guild', aliases: [], summary: 'Merchants.', description: '', values: [], structure: '' })
+      session.factionStates.create(guild.id, { publicState: 'Quiet.' })
+      session.factionIntents.add(guild.id, { type: 'agenda', name: 'Control the market', description: 'All of it.', status: 'active', horizon: 'short', priority: 0.6, urgency: 0.4, plan: [], openThreads: [], constraints: [] })
+      session.metadata.setValue('strategy.last', { guild: -1e13 })
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      await vi.waitFor(() => { expect(session.factionStates.get(guild.id)?.publicState).toBe('Seen at the cellar door.') }, { timeout: 5000 })
+      expect(session.factionIntents.list(guild.id, { status: 'active' }).map(goal => goal.name)).toContain('Hold the cellar')
+      const deed = session.events.list().find(event => event.text.startsWith('The Guild: '))
+      expect(deed).toBeDefined()
+      expect(session.events.perceptionsOf(deed!.id)).toEqual([])
+      expect((session.metadata.getValue('activity') as { label: string }[]).map(run => run.label)).toContain('faction The Guild')
     })
 
     it('has the game master change what is tracked in an outcome: it is applied, said back, kept for the keeper, and told to those who can tell, and in the next scene', async () => {
@@ -725,6 +751,23 @@ describe('a turn with the real agent loop', () => {
       await agent.whenIdle()
       await vi.waitFor(() => { expect(session.metadata.getValue('notes')).toEqual([{ kind: 'suggestions', turn: 1, lines: SUGGESTED }]) }, { timeout: 5000 })
       expect(adapter.requests.filter(request => systemOf(request).includes('You suggest what the player could do next'))).toHaveLength(2)
+    })
+
+    it('has a model judge a statement a trigger waits on after the turn, and fires the trigger from the verdict at the next turn, not before', async () => {
+      const { session, id } = await addSession('Vault', true)
+      session.triggers.add({ key: 'trust', name: 'Trust broken', condition: { type: 'judged', text: 'Alice no longer trusts Bob.' }, effects: [{ type: 'beat', text: 'Alice keeps her distance from Bob.' }], repeat: false, priority: 0 }, 'world', 0)
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      expect(session.triggers.getByKey('trust')?.status).toBe('dormant')
+      await vi.waitFor(() => { expect(session.metadata.getValue('triggers.judged')).toEqual({ 'Alice no longer trusts Bob.': { holds: true, turn: 1 } }) }, { timeout: 5000 })
+      const judge = adapter.requests.find(request => systemOf(request).includes('You judge statements about an interactive story'))!
+      expect(asText(judge)).toContain('1. Alice no longer trusts Bob.')
+      agent.followup(say('I look around.'))
+      await agent.whenIdle()
+      expect(session.triggers.getByKey('trust')).toMatchObject({ status: 'fired', fireCount: 1 })
+      expect(thisTurn(masterRequests(adapter).at(-1)!)).toContain('Alice keeps her distance from Bob.')
     })
 
     it('has the world act by itself: what came true at the start of the turn is told to the game master with its beat, the character is made to notice its cue, and the beat is done once woven in', async () => {

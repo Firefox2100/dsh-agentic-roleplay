@@ -6,7 +6,7 @@ export const COMPARISONS = ['eq', 'ne', 'lt', 'le', 'gt', 'ge'] as const
 export type Comparison = (typeof COMPARISONS)[number]
 
 /**
- * When something happens, decided in code from what the story has recorded; nothing here is judged by a model.
+ * When something happens, decided in code from what the story has recorded; only `judged` is a model's reading of the story, kept as a verdict that the code reads.
  * Keys name characters, places, items and variables as the world's files and the tools do. Times are local to
  * the story's zone: `YYYY-MM-DDTHH:MM`, and `HH:MM` for a time of day.
  */
@@ -23,6 +23,8 @@ export type TriggerCondition =
   | { type: 'event'; tag: string }
   /** Another trigger has fired. */
   | { type: 'fired'; trigger: string }
+  /** A statement about the story that a model judges true or false after each turn, for what no record can say ("the mayor has lost the town's trust"); false until judged. */
+  | { type: 'judged'; text: string }
   | { type: 'all'; conditions: TriggerCondition[] }
   | { type: 'any'; conditions: TriggerCondition[] }
   | { type: 'not'; condition: TriggerCondition }

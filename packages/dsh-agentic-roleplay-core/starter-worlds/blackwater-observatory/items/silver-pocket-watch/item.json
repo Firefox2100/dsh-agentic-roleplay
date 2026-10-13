@@ -1,0 +1,9 @@
+{
+  "id": "silver-pocket-watch",
+  "name": "Silver Pocket Watch",
+  "description": "Director Harlan's silver pocket watch. It stopped at 11:17 PM.",
+  "unique": true,
+  "quality": "damaged",
+  "location": "observatory-directors-office",
+  "notable": true
+}

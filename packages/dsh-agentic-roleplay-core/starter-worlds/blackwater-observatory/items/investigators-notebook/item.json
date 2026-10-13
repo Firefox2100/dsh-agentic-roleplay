@@ -1,0 +1,9 @@
+{
+  "id": "investigators-notebook",
+  "name": "Investigator's Notebook",
+  "description": "Arthur Moore's notebook for case notes, witness statements, deductions, and timelines.",
+  "unique": true,
+  "owner": "arthur-moore",
+  "held_by": "arthur-moore",
+  "notable": true
+}

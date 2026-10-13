@@ -68,6 +68,7 @@ describe('parseWorldFile', () => {
       description: 'The year is 1912.',
       tags: ['mystery', 'gothic'],
       author: { name: 'Dev Fixture', url: 'https://example.test' },
+      version: '1',
       coverMediaId: 'media-1',
       clock: { startingTime: Date.UTC(1912, 8, 21, 19, 30) },
     })

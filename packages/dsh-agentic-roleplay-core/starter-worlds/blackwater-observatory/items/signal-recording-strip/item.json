@@ -1,0 +1,9 @@
+{
+  "id": "signal-recording-strip",
+  "name": "Signal Recording Strip",
+  "description": "A paper strip marked with irregular signal patterns detected beneath Blackwater Ridge.",
+  "unique": true,
+  "owner": "marcus-reed",
+  "held_by": "marcus-reed",
+  "notable": true
+}

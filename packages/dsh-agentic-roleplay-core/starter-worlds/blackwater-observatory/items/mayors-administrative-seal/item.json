@@ -1,0 +1,9 @@
+{
+  "id": "mayors-administrative-seal",
+  "name": "Mayor's Administrative Seal",
+  "description": "Eleanor Graves's official municipal seal, used to authenticate town documents.",
+  "unique": true,
+  "owner": "eleanor-graves",
+  "held_by": "eleanor-graves",
+  "notable": true
+}

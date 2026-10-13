@@ -148,6 +148,8 @@ export interface FactionEdit {
 }
 
 export interface PlaceEdit {
+  /** The key of the place that contains this one, or null for none. */
+  parent?: string | null
   name?: string
   description?: string
   features?: WorldPlace['features']
@@ -155,6 +157,8 @@ export interface PlaceEdit {
 }
 
 export interface ThingEdit {
+  /** The key of the character it belongs to, or null for no one. */
+  owner?: string | null
   name?: string
   description?: string
   quantity?: number
@@ -307,7 +311,14 @@ function parseEntityEdit(value: unknown, kind: 'place' | 'thing'): PlaceEdit | T
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new InvalidEditProblems(['the edit must be an object'])
   const input = value as Record<string, unknown>
   const edit: Record<string, unknown> = {}
-  const allowed = kind === 'place' ? ['name', 'description', 'features', 'visualIdentity'] : ['name', 'description', 'quantity', 'quality', 'notable', 'hidden', 'containerState', 'visualIdentity']
+  const allowed = kind === 'place' ? ['name', 'description', 'features', 'visualIdentity', 'parent'] : ['name', 'description', 'quantity', 'quality', 'notable', 'hidden', 'containerState', 'visualIdentity', 'owner']
+  const link = kind === 'place' ? 'parent' : 'owner'
+  if (link in input) {
+    const target = input[link]
+    if (target === null) edit[link] = null
+    else if (typeof target !== 'string') problems.push(`${link} must be a key or null`)
+    else edit[link] = target.trim() === '' ? null : target.trim()
+  }
   for (const key of Object.keys(input)) if (!allowed.includes(key)) problems.push(`${key} is not something that can be edited`)
   for (const key of ['name', 'description', 'quality'] as const) {
     if (!(key in input)) continue

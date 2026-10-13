@@ -1,0 +1,10 @@
+{
+  "id": "unknown-visitors-note-fragment",
+  "name": "Unknown Visitor's Note Fragment",
+  "description": "A torn paper fragment connected to the unknown visitor who rented Room 7.",
+  "unique": true,
+  "quality": "torn",
+  "location": "iron-stag-room-7",
+  "position": "inside the desk drawer",
+  "notable": true
+}

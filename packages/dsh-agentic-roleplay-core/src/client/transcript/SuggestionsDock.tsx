@@ -24,7 +24,7 @@ const GIVE_UP_AFTER = 45
 /**
  * What the player could do next, as chips stacked above the input; clicking one fills the input (the player may
  * edit it before sending). They are made in the background once the output of a turn is shown, so the dock asks
- * the host for them for a while. What other characters did meanwhile (the `away` note) is a card above them, from the same notes. Shown only while they are the latest thing in the chat: once the player has sent
+ * the host for them for a while. What other characters did meanwhile (the `away` note) is a card above them, from the same notes; what the world check found at the start (the `world` note) is another. Shown only while they are the latest thing in the chat: once the player has sent
  * something, or a turn is running, they are gone.
  */
 export function SuggestionsDock({ useChat, useSession, pick, notes, t }: SuggestionsDockProps) {
@@ -38,10 +38,12 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
   })
   const [offered, setOffered] = useState<readonly string[]>([])
   const [meanwhile, setMeanwhile] = useState<readonly string[]>([])
+  const [unfinished, setUnfinished] = useState<readonly string[]>([])
 
   useEffect(() => {
     setOffered([])
     setMeanwhile([])
+    setUnfinished([])
     if (latest === undefined) return undefined
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -50,6 +52,8 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
         if (stopped) return
         const away = found.find(note => note.kind === 'away')?.lines ?? []
         setMeanwhile(previous => (previous.join('\n') === away.join('\n') ? previous : away))
+        const world = found.find(note => note.kind === 'world')?.lines ?? []
+        setUnfinished(previous => (previous.join('\n') === world.join('\n') ? previous : world))
         const lines = found.find(note => note.kind === 'suggestions')?.lines
         if (lines !== undefined && lines.length > 0) setOffered(lines)
         else if (attempt < GIVE_UP_AFTER) timer = setTimeout(() => { look(attempt + 1) }, POLL_MS)
@@ -59,9 +63,15 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
     return () => { stopped = true; if (timer !== undefined) clearTimeout(timer) }
   }, [latest, notes])
 
-  if (running || (offered.length === 0 && meanwhile.length === 0)) return null
+  if (running || (offered.length === 0 && meanwhile.length === 0 && unfinished.length === 0)) return null
   return (
     <div className={css.dock} data-testid="roleplay-suggestions">
+      {unfinished.length > 0 && (
+        <div className={css.card} data-testid="roleplay-world-findings">
+          <span className={css.label}>{t('worldFindings')}</span>
+          <ul className={css.lines}>{unfinished.map(line => <li key={line}>{line}</li>)}</ul>
+        </div>
+      )}
       {meanwhile.length > 0 && (
         <div className={css.card} data-testid="roleplay-meanwhile">
           <span className={css.label}>{t('meanwhile')}</span>

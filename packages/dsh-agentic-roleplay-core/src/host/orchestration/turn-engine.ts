@@ -5,6 +5,7 @@ import type { RoutineMove } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
 import { ClockError, type SkipRequest } from '../clock/story-clock.ts'
 import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TriggerReport, type TurnStore } from './boundaries.ts'
+import { AfterTurnJobs } from './after-turn.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import { sameWords } from './defaults.ts'
 import { slug, uniqueKey } from '../import/run.ts'
@@ -130,8 +131,6 @@ export const MAX_PREVIEW = 700
 export const OFFSTAGE_ROUND = 100
 /** The most a single round may be said to take: a day. A longer time passing is skipped with `advanceTime`. */
 const MAX_ROUND_SECONDS = 86_400
-/** Something made up that has waited this many turns is fitted into the world even if few are waiting. */
-const STALE_AFTER_TURNS = 4
 /** The game master is asked to correct its output this many times before it is corrected for it. */
 const MAX_REFUSALS = 2
 /** The runs of the record keeper that may fail one after another before the rounds waiting for it are given up, so that they cannot pile up for ever. */
@@ -155,8 +154,7 @@ export class TurnEngine {
   private readonly objections = new Map<string, number>()
   /** What runs in the background of each chat and writes to its story, other than the records: fitting in what was made up, and the characters away. */
   private readonly working = new Map<string, Set<Promise<unknown>>>()
-  /** Chats whose made-up characters and places are being fitted into the world now: one run at a time. */
-  private readonly consolidating = new Set<string>()
+  private readonly afterTurn: AfterTurnJobs
   /** Chats whose characters away from the player are being asked about what fell due: one run at a time. */
   private readonly offstage = new Set<string>()
 
@@ -167,7 +165,9 @@ export class TurnEngine {
     private readonly problem: (message: string) => void = () => undefined,
     /** Told when the records of a chat were written, so that what is new in them can be indexed. */
     private readonly written: (chat: string) => void = () => undefined,
-  ) {}
+  ) {
+    this.afterTurn = new AfterTurnJobs({ boundaries: () => this.boundaries(), stores: chat => this.stores(chat), track: (chat, job) => { this.track(chat, job) }, problem: message => { this.problem(message) }, written: chat => { this.written(chat) } })
+  }
 
   /**
    * The turn is an out-of-character command of the player: nobody is asked to act and no preview is shown. The game master rules on
@@ -513,26 +513,6 @@ export class TurnEngine {
   }
 
   /**
-   * Fit what was made up into the rest of the world in the background, when enough of it is waiting or some
-   * has waited long: the turn does not wait for it, and a failed run leaves everything queued for the next.
-   */
-  private consolidateIfDue(owner: TurnOwner, state: TurnState): void {
-    const store = this.stores(owner.chat)
-    if (store === undefined || this.consolidating.has(owner.chat)) return
-    const { authoring } = store.settings()
-    const pending = store.story.consolidation.pending()
-    if (!authoring.enabled || pending.length === 0) return
-    if (pending.length < authoring.consolidateAfter && !pending.some(item => owner.turn - item.createdTurn >= STALE_AFTER_TURNS)) return
-    this.consolidating.add(owner.chat)
-    this.track(owner.chat, this.boundaries().author.consolidate({ chat: owner.chat, turn: owner.turn, store }, state.cancel.signal)
-      .then(() => { this.written(owner.chat) })
-      .catch((error: unknown) => {
-        if (!state.cancel.signal.aborted) this.problem(`made-up characters and places were not fitted into the world: ${error instanceof Error ? error.message : String(error)}`)
-      })
-      .finally(() => { this.consolidating.delete(owner.chat) }))
-  }
-
-  /**
    * After the turn, in the background: characters away from the player's character, for whom something fell due (a commitment whose
    * time has come, a deadline that passed), are asked what they do about it, as many as the chat allows. What they decide is applied
    * (their activity, and a move to where the commitment was when they mean to keep it) and recorded as a round only they perceive;
@@ -554,7 +534,7 @@ export class TurnEngine {
   }
 
   private async runOffScene(owner: TurnOwner, state: TurnState, store: TurnStore, due: readonly OffSceneItem[], limit: number, run: RunCharacter): Promise<void> {
-    const { summary, perCharacter } = store.settings().offstage
+    const { summary, perCharacter, joint } = store.settings().offstage
     let budget = limit
     const acted = new Map<string, number>()
     for (const item of due) {
@@ -564,18 +544,23 @@ export class TurnEngine {
       if (keys.length === 0) continue
       budget -= keys.length
       for (const key of keys) acted.set(key, (acted.get(key) ?? 0) + 1)
-      const asked: TurnState = { ...state, situation: item.text, history: [], recalled: new Map() }
-      delete asked.first
-      delete asked.second
-      const attempt = await this.runAttempt(owner, 1, keys, cast, asked, run, state.cancel.signal, summary)
-      if (attempt.reports.length === 0) continue
+      const reports: CharacterReport[] = []
+      // The people of one commitment decide one after another, each told who has already meant to come, so that they meet instead of each guessing; the number of asks is the same.
+      for (const group of joint ? keys.map(key => [key]) : [keys]) {
+        const attending = reports.filter(report => report.commitment !== 'low').map(report => `${report.name} has decided: ${report.intent}${report.utterance === undefined ? '' : `, saying "${report.utterance}"`}.`)
+        const asked: TurnState = { ...state, situation: attending.length === 0 ? item.text : `${item.text}\n${attending.join('\n')}`, history: [], recalled: new Map() }
+        delete asked.first
+        delete asked.second
+        reports.push(...(await this.runAttempt(owner, 1, group, cast, asked, run, state.cancel.signal, summary)).reports)
+      }
+      if (reports.length === 0) continue
       const where = item.place
-      const moves = new Map(attempt.reports.flatMap((report) => {
+      const moves = new Map(reports.flatMap((report) => {
         if (report.commitment === 'low' || where === undefined) return []
         const check = store.checkMove(report.character, { location: where, ignoreExits: true })
         return check.ok ? [[report.character, check] as const] : []
       }))
-      store.commit(attempt.reports.flatMap((report) => {
+      store.commit(reports.flatMap((report) => {
         const member = cast.find(candidate => candidate.key === report.character)
         const move = moves.get(report.character)
         return member === undefined ? [] : [{ character: member.character.id, patch: { activity: report.intent }, ...(move?.ok === true ? { move: move.move } : {}) }]
@@ -585,7 +570,7 @@ export class TurnEngine {
       store.queueCommit({
         turn: owner.turn, round: OFFSTAGE_ROUND + state.offstage, situation: item.text, offstage: true,
         time: { from: time.now, to: time.now, zone: time.zone },
-        entries: attempt.reports.map((report) => {
+        entries: reports.map((report) => {
           const at = cast.find(candidate => candidate.key === report.character)?.place?.location
           const move = moves.get(report.character)
           return {
@@ -598,7 +583,7 @@ export class TurnEngine {
       store.markHandled([item.key])
       this.write(owner, state)
       if (summary && this.states.get(owner.chat) === state) {
-        const lines = attempt.reports.flatMap(report => (report.account === undefined ? [] : [report.account]))
+        const lines = reports.flatMap(report => (report.account === undefined ? [] : [report.account]))
         store.addNote('away', owner.turn, lines)
       }
     }
@@ -1061,7 +1046,7 @@ export class TurnEngine {
     this.suggestAfter(owner, state, output)
     this.startDueWrite(owner, state)
     this.delivered.set(owner.chat, state)
-    this.consolidateIfDue(owner, state)
+    this.afterTurn.start(owner, state.cancel.signal)
     if (run !== undefined) this.offSceneIfDue(owner, state, run)
     return output
   }

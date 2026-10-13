@@ -1,0 +1,10 @@
+{
+  "id": "harlans-notebook",
+  "name": "Harlan's Notebook",
+  "description": "Director Harlan's missing notebook, containing research notes, rough mine sketches, observatory calculations, and several encoded entries.",
+  "unique": true,
+  "location": "old-mine-main-tunnel",
+  "position": "not immediately visible",
+  "hidden": true,
+  "notable": true
+}

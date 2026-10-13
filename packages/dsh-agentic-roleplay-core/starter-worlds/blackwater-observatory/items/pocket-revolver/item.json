@@ -1,0 +1,10 @@
+{
+  "id": "pocket-revolver",
+  "name": "Pocket Revolver",
+  "description": "Arthur Moore's compact personal revolver, carried for protection rather than intimidation.",
+  "wearable": "waist",
+  "notable": true,
+  "owner": "arthur-moore",
+  "worn_by": "arthur-moore",
+  "position": "inside coat pocket"
+}

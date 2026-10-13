@@ -12,6 +12,7 @@ import { AddAvatarsDialog } from './AddAvatarsDialog.tsx'
 import { StartSessionDialog } from './StartSessionDialog.tsx'
 import { useGridFit } from './use-grid-fit.ts'
 import { CreateWorldDialog } from './CreateWorldDialog.tsx'
+import { StarterWorlds } from './StarterWorlds.tsx'
 import { ImportCardPage } from './ImportCardPage.tsx'
 import { uploadCard } from './import-api.ts'
 import type { ImportPreview } from '../../../shared/import-card.ts'
@@ -122,7 +123,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
           : failedWithoutData
             ? <p className={css.message} role="alert">{t('loadFailed', { message: state.error ?? '' })}</p>
             : worlds.length === 0
-              ? <p className={css.message}>{t('empty', { directory: state.payload?.directory ?? '' })}</p>
+              ? <><p className={css.message}>{t('empty', { directory: state.payload?.directory ?? '' })}</p><StarterWorlds t={t} onAdded={refresh} /></>
               : (
                 <ul className={css.grid}>
                   {visible.map(world => (

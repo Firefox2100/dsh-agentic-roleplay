@@ -3,7 +3,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { InvalidEditError, characterKey, createTools, dayPart, describeDuration, describeInstant, localTime, parseRecordsEdit } from '@dsh-agentic-roleplay/state'
 import { zoneOf } from '../clock/story-clock.ts'
-import { childSampling, runChild } from '../agents/child.ts'
+import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
 
@@ -134,7 +134,7 @@ export function recordKeeper(deps: { agentOf: (chat: string) => Agent | undefine
       const progress = { edits: 0, unchecked: false }
       let warned = false
       const result = await runChild<{ complete: boolean; notes: string }>({
-        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'records'),
+        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'records'), ...childModel(job.store.settings(), 'records'), trace: childTrace(job.store, 'records', 'record keeper'),
         persona: promptFor(parent, 'roleplay/record-keeper', job.store.settings().prompts.language),
         prompt: describePrompt(job, memory),
         tools: keeperTools(job, memory, progress),
