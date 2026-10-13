@@ -3,9 +3,17 @@ title: DSH Agentic Roleplay
 sidebar_position: 1
 ---
 
-DSH Agentic Roleplay is a roleplaying bundle for [DeepSeek Harness](https://github.com/DeepSeek-AI/DeepSeek-Harness). A game-master agent runs the scene, while characters act through independent agents with their own goals, relationships, knowledge and memories.
+DSH Agentic Roleplay turns [DeepSeek Harness](https://github.com/DeepSeek-AI/DeepSeek-Harness) into a workspace for creating and playing persistent interactive worlds. A game-master agent runs the scene, while characters act through independent agents with their own goals, relationships, knowledge and memories.
 
-The world is not a fixed dialogue tree. It supplies people, places, things, lore and possible plots; the runtime decides what happens from the player's actions and the characters' choices. Persistent session state records the consequences.
+The world is not a fixed dialogue tree and the player is not choosing from a closed list of actions. A world supplies people, places, things, lore and possible plots; the runtime decides what happens from free-form player actions and the characters' choices. Persistent session state records the consequences instead of asking one chat transcript to remember everything.
+
+## The experience
+
+Write what your character says or attempts. The GM brings in the characters whose decisions matter, resolves their intentions in bounded rounds, and presents the result as narration and dialogue. Other people and factions can continue their own business, routines and commitments when they are outside the current scene. Plots can nudge a quiet story back into motion without forcing a predetermined route.
+
+Characters do not receive an omniscient copy of the database. Each is informed by its own relationships, explicit knowledge, perceptions, beliefs and imperfect recall. Two people can therefore understand the same event differently, remember different details, or act on incompatible assumptions.
+
+You can begin with the included sample world, build one through the visual editor, or collaborate with the dedicated world-authoring assistant. Worlds remain ordinary files that can be backed up and edited directly; each played session evolves independently in its own database.
 
 ## What it provides
 
@@ -17,6 +25,12 @@ The world is not a fixed dialogue tree. It supplies people, places, things, lore
 - optional portraits, scene illustrations, speech and transcription;
 - a dedicated world-authoring agent whose changes require approval;
 - branching, take-back and durable sessions backed by SQLite.
+
+Only a language model is required for play. Embeddings, reranking, image generation, text-to-speech and speech-to-text improve particular parts of the experience but remain optional.
+
+## Designed for open-ended stories
+
+The system is most useful when you want recurring characters, consequences and an explorable setting rather than a short single-scene chat. It deliberately separates objective events from character perception, authored world facts from session state, and story opportunities from mandatory plot steps. That structure gives the agents room to improvise without making the world disposable.
 
 ## Choose a path
 

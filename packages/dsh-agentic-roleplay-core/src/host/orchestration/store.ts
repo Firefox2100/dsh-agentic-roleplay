@@ -8,7 +8,7 @@ import type { ChatSettings } from '../../shared/settings.ts'
 import { liveSettings } from '../sessions/settings.ts'
 import { fireTriggers, noteStore } from '../triggers/notes.ts'
 import { observeAsPlayer, observeSurroundings } from './observation.ts'
-import { recordActivity } from '../sessions/activity.ts'
+import { forgetRunDetails, keepRunDetail, recordActivity } from '../sessions/activity.ts'
 import { addToNote, clearNotes, putNote, readNotes } from '../sessions/notes.ts'
 import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
 import { dueOffScene, markHandled } from '../clock/offscene.ts'
@@ -236,7 +236,10 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     ...noteStore(session, () => liveSettings(folder, problem), turn => { const { now, zone } = readTime(session, liveSettings(folder, problem).clock, turn, wall()); return { now, zone } }),
     putNote: (note) => { putNote(session, note) },
     addNote: (kind, turn, lines) => { addToNote(session, kind, turn, lines) },
-    recordActivity: (entry) => { recordActivity(session, entry) },
+    recordActivity: (entry, detail) => {
+      if (detail !== undefined && entry.run !== undefined) keepRunDetail(folder, entry.run, detail)
+      forgetRunDetails(folder, recordActivity(session, entry))
+    },
     notes: () => readNotes(session),
     clearNotes: () => { clearNotes(session) },
     agenda: (turn, characterId) => agendaFor(session, settings().clock, turn, wall, characterId),

@@ -60,9 +60,16 @@ export function describeValue(def: Pick<VariableDefinition, 'kind' | 'bands'>, v
   return band === undefined ? shortNumber(value) : `${band.label} (${shortNumber(value)})`
 }
 
+/** A variable written by its name or in other letter case ("Valence" for `valence`), when exactly one variable has that name or key. */
+function namedVariable(variables: Pick<VariableRepository, 'defs'>, written: string): VariableDefinition | undefined {
+  const wanted = written.trim().normalize('NFKC').toLowerCase()
+  const found = wanted === '' ? [] : variables.defs().filter(def => def.key.normalize('NFKC').toLowerCase() === wanted || def.name.normalize('NFKC').toLowerCase() === wanted)
+  return found.length === 1 ? found[0] : undefined
+}
+
 /** Whether a change can be made, and what it would come to. Nothing is changed. */
 export function planVariableChange(context: VariableContext, spec: VariableChangeSpec): VariablePlan {
-  const def = context.variables.def(spec.variable)
+  const def = context.variables.def(spec.variable) ?? namedVariable(context.variables, spec.variable)
   if (def === undefined) return { ok: false, problems: [`there is no variable "${spec.variable}" (list_variables shows them)`] }
   const given = [spec.to, spec.by, spec.baseline].filter(value => value !== undefined).length
   if (given !== 1) return { ok: false, problems: [`${def.key}: give exactly one of to, by and baseline`] }

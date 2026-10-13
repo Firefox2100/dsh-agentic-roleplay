@@ -1,9 +1,9 @@
 {
   "homepage.meta.title": {"message": "持久化智能体角色扮演"},
-  "homepage.meta.description": {"message": "面向 DeepSeek Harness 的智能体角色扮演、世界创作与持久故事状态。"},
+  "homepage.meta.description": {"message": "在 DeepSeek Harness 中创作世界，扮演角色，并让自主角色与持久故事状态共同推动剧情。"},
   "homepage.hero.eyebrow": {"message": "DeepSeek Harness 插件套件"},
   "homepage.hero.title": {"message": "让故事中的角色自主行动"},
-  "homepage.hero.lead": {"message": "构建可编辑的世界，通过游戏主持人智能体游玩，并保存每个角色的知识、记忆与改变。"},
+  "homepage.hero.lead": {"message": "创作一个世界，选择要成为的角色，进入一段会记忆、会决策、会改变的开放式故事。"},
   "homepage.hero.documentation": {"message": "阅读文档"},
   "homepage.hero.github": {"message": "在 GitHub 上查看"},
   "homepage.path.play.title": {"message": "开始游玩"},
@@ -14,5 +14,15 @@
   "homepage.path.develop.text": {"message": "在其他 DSH 插件中使用角色扮演状态、记录系统与扩展点。"},
   "homepage.path.continue": {"message": "继续"},
   "homepage.summary.title": {"message": "以智能体为核心设计"},
-  "homepage.summary.text": {"message": "世界提供身份、事实与可能性，而不是固定对话树。GM 协调自主角色智能体，会话状态则记录关系、知识、记忆、时间、物品和行为后果。"}
+  "homepage.summary.text": {"message": "世界提供身份、事实与可能性，而不是固定对话树。GM 协调自主角色智能体，会话状态则记录关系、知识、记忆、时间、物品和行为后果。你可以从内置示例开始，再改造它或创作完全属于自己的世界。"},
+  "homepage.introduction.title": {"message": "不只是与一个角色聊天"},
+  "homepage.introduction.text": {"message": "GM 在结构化故事状态上协调多个独立角色智能体。设定始终可编辑，每个会话独立发展，还可通过可选的语音与图片让场景更加鲜活。"},
+  "homepage.highlight.perspective.title": {"message": "拥有自身视角的角色"},
+  "homepage.highlight.perspective.text": {"message": "关系、私有知识、感知和记忆共同影响每个角色的决定。"},
+  "homepage.highlight.persistence.title": {"message": "会保留后果的世界"},
+  "homepage.highlight.persistence.text": {"message": "时间、移动、物品、承诺、信念和剧情进度不会随当前提示消失。"},
+  "homepage.highlight.freedom.title": {"message": "有方向，但不被剧情绑架"},
+  "homepage.highlight.freedom.text": {"message": "剧情和触发器为 GM 提供素材，自由行动则决定故事实际走向。"},
+  "homepage.highlight.authoring.title": {"message": "无需离开 DSH 即可创作"},
+  "homepage.highlight.authoring.text": {"message": "使用可视化编辑器、需要批准的创作智能体，或直接掌控世界文件。"}
 }

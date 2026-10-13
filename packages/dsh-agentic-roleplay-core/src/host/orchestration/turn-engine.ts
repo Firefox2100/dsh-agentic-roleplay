@@ -1,5 +1,5 @@
 import { describeValue, locationKey as placeKey, mentioned, type ItemEffect, type Recalled } from '@dsh-agentic-roleplay/state'
-import { MAX_OOC_NOTE, type OocRuling } from '../../shared/ooc.ts'
+import { MAX_OOC_ANSWER, MAX_OOC_NOTE, type OocRuling } from '../../shared/ooc.ts'
 import { suggestionProblems, tidySuggestions } from './suggestions.ts'
 import type { RoutineMove } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
@@ -8,10 +8,14 @@ import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterReques
 import { AfterTurnJobs } from './after-turn.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import { sameWords } from './defaults.ts'
+import { whereabouts } from './whereabouts.ts'
 import { slug, uniqueKey } from '../import/run.ts'
 
 /** Asks one character to act; what the game master calls a character is the character's key. */
 export type RunCharacter = (request: CharacterRequest, signal: AbortSignal) => Promise<CharacterAction>
+
+/** Answers a question of the player from what the player's character knows, given as the request a character would be given. */
+export type RunAnswer = (request: CharacterRequest, signal: AbortSignal) => Promise<string>
 
 export interface TurnOwner {
   /** The chat the turn belongs to. */
@@ -116,8 +120,8 @@ interface TurnState {
   cues: Map<string, readonly string[]>
   /** The beats the game master said it wove into the output it is delivering. */
   addressed: number[]
-  /** Set when the turn is an out-of-character command of the player: what it asks, and how the game master ruled on it. */
-  ooc?: { request: string; ruling?: OocRuling }
+  /** Set when the turn is an out-of-character command or question of the player: what it asks, and how the game master ruled on it or answered it. */
+  ooc?: { request: string; question?: true; ruling?: OocRuling }
   /** The game master's judgment of the player's action, which it gives before anything else in an ordinary turn. */
   judgement?: { allowed: boolean; reason: string }
   /** Whether the game master has to judge the player's action before anything else: the loop asks for it at the start of an ordinary turn. */
@@ -131,6 +135,52 @@ export const MAX_PREVIEW = 700
 export const OFFSTAGE_ROUND = 100
 /** The most a single round may be said to take: a day. A longer time passing is skipped with `advanceTime`. */
 const MAX_ROUND_SECONDS = 86_400
+/**
+ * A model sometimes sends who speaks as a segment of its own (an utterance with no character whose text is the character's key or name) followed by the words with no
+ * character either. When the label is exactly a character of the scene, the label is folded into the words that follow it.
+ */
+function foldSpeakerLabels(segments: readonly RawSegment[], cast: readonly CastMember[]): RawSegment[] {
+  const found = (label: string): CastMember | undefined => {
+    const wanted = label.trim().normalize('NFKC').toLowerCase()
+    return wanted === '' ? undefined : cast.find(member => member.key.toLowerCase() === wanted || member.character.name.normalize('NFKC').toLowerCase() === wanted)
+  }
+  const folded: RawSegment[] = []
+  for (let index = 0; index < segments.length; index += 1) {
+    const segment = segments[index]!
+    const next = segments[index + 1]
+    const speaker = segment.type === 'utterance' && (segment.character ?? '') === '' && next?.type === 'utterance' && (next.character ?? '') === '' ? found(segment.text) : undefined
+    if (speaker === undefined) { folded.push(segment); continue }
+    folded.push({ ...next!, character: speaker.key })
+    index += 1
+  }
+  return folded
+}
+
+/** How alike two situations have to be for a round about the second to bring nothing new, by the share of three-letter pieces they have in common. */
+const SAME_SITUATION = 0.85
+
+const pieces = (text: string): Set<string> => {
+  const found = new Set<string>()
+  const chars = [...text]
+  for (let index = 0; index + 3 <= chars.length; index += 1) found.add(chars.slice(index, index + 3).join(''))
+  return found
+}
+
+/** Whether the same characters (or some of them) are asked about a situation that is, but for a few words, one they were already asked about in the turn. */
+function repeatsEarlier(signature: string, asked: readonly string[]): boolean {
+  const [keys = '', text = ''] = signature.split('|')
+  const now = new Set(keys.split(','))
+  const mine = pieces(text)
+  return asked.some((earlier) => {
+    const [before = '', was = ''] = earlier.split('|')
+    if (![...now].every(key => before.split(',').includes(key))) return false
+    const theirs = pieces(was)
+    const shared = [...mine].filter(piece => theirs.has(piece)).length
+    const union = mine.size + theirs.size - shared
+    return union === 0 || shared / union >= SAME_SITUATION
+  })
+}
+
 /** The game master is asked to correct its output this many times before it is corrected for it. */
 const MAX_REFUSALS = 2
 /** The runs of the record keeper that may fail one after another before the rounds waiting for it are given up, so that they cannot pile up for ever. */
@@ -173,10 +223,55 @@ export class TurnEngine {
    * The turn is an out-of-character command of the player: nobody is asked to act and no preview is shown. The game master rules on
    * whether it is allowed (`rule`) and, if so, makes it happen with outcomes for any characters, with the world's tools, and says what the player perceives.
    */
-  beginOoc(owner: TurnOwner, request: string): void {
+  beginOoc(owner: TurnOwner, request: string, question = false): void {
     const state = this.stateFor(owner)
-    state.ooc = { request }
+    state.ooc = { request, ...(question ? { question: true as const } : {}) }
     state.previewWanted = false
+  }
+
+  /**
+   * The answer to an out-of-character question, which is the whole of that turn: nothing in the story changes and nobody is asked to act. It is not the game
+   * master's to write, who knows what the player's character does not: it comes from what the player's character knows (what it remembers, knows exists, has
+   * on it and sees where it is), so that nothing hidden can be given away.
+   * @throws {Error} when the turn is not a question, it was already answered, or the answer is empty.
+   */
+  async answer(owner: TurnOwner, run: RunAnswer, signal: AbortSignal): Promise<OocRuling> {
+    const state = this.stateFor(owner)
+    if (state.ooc?.question !== true) throw new Error('this turn is not an out-of-character question: there is nothing to answer')
+    if (state.ooc.ruling !== undefined) throw new Error('this question was already answered')
+    const text = (await run(await this.askedRequest(owner, state.ooc.request, signal), signal)).trim()
+    if (text === '') throw new Error('the answer is empty')
+    if (state.ooc.ruling !== undefined) throw new Error('this question was already answered')
+    state.ooc.ruling = { legal: true, note: text.length > MAX_OOC_ANSWER ? `${text.slice(0, MAX_OOC_ANSWER - 1)}…` : text, question: true }
+    state.phase = 'between'
+    return state.ooc.ruling
+  }
+
+  /** What the player's character is given to answer a question with: the same as a character is given to act, with the question as the moment. */
+  private async askedRequest(owner: TurnOwner, question: string, signal: AbortSignal): Promise<CharacterRequest> {
+    const store = this.storeOf(owner)
+    const cast = store.cast()
+    const member = cast.find(candidate => candidate.character.control === 'player')
+    if (member === undefined) throw new Error('there is no player\'s character to answer for')
+    const queryVector = await store.queryVector(question, signal)
+    const memories = await this.boundaries().recaller.recall({ member, situation: question, turn: owner.turn, policy: store.settings().memory, ...(queryVector === undefined ? {} : { queryVector }) }, store.story, signal)
+    const place = member.place === undefined ? undefined : store.place(member.place.location.id)
+    const company = place === undefined ? cast : place.here
+    const relationships = this.knownRelationships(member, company, question, cast, store)
+    const carrying = store.carried(member.character.id)
+    const affiliations = store.affiliations(member.character.id)
+    const tracked = store.trackedFor(member.character.id, company.map(entry => entry.character.id))
+    return {
+      member, cast, situation: question, attempt: 1, turn: owner.turn, lookup: false, text: (id, variables) => store.text(id, variables),
+      time: store.time(owner.turn),
+      knowledge: store.knowledge(member.character.id, owner.turn, company.map(entry => entry.character.id)),
+      ...(tracked.self === '' && tracked.others.length === 0 ? {} : { tracked }),
+      ...(place === undefined ? {} : { place }),
+      ...(relationships.length === 0 ? {} : { relationships }),
+      ...(carrying.length === 0 ? {} : { carrying }),
+      ...(affiliations.length === 0 ? {} : { affiliations }),
+      ...(memories.length === 0 ? {} : { memories }),
+    }
   }
 
   /**
@@ -187,6 +282,7 @@ export class TurnEngine {
   rule(owner: TurnOwner, legal: boolean, reason: string): OocRuling {
     const state = this.stateFor(owner)
     if (state.ooc === undefined) throw new Error('this turn is not an out-of-character command: there is nothing to rule on')
+    if (state.ooc.question === true) throw new Error('this turn is an out-of-character question: answer it with ooc_answer')
     if (state.ooc.ruling !== undefined) throw new Error('this command was already ruled on')
     const note = reason.trim()
     if (note === '') throw new Error('give the reason, in plain words to the player')
@@ -199,15 +295,28 @@ export class TurnEngine {
   /**
    * The game master judges what the player's character tries, before anything else in an ordinary turn: it works unless it is not viable or it breaks a rule of the
    * world or of the player. What does not work is played as a failed attempt for the player's character: nobody is asked to act on it.
-   * @throws {Error} when the turn is not an ordinary one, was already judged, or the reason is empty.
+   * When the action is said to happen at a place (`at`, a place key) and the character is somewhere else, it does not work whatever was judged: the character has to get there first.
+   * @throws {Error} when the turn is not an ordinary one, was already judged, the reason is empty, or `at` is not a place.
    */
-  judge(owner: TurnOwner, allowed: boolean, reason: string): { allowed: boolean; reason: string } {
+  judge(owner: TurnOwner, allowed: boolean, reason: string, at?: string): { allowed: boolean; reason: string; elsewhere?: true } {
     const state = this.stateFor(owner)
-    if (state.ooc !== undefined) throw new Error('this turn is an out-of-character command: rule on it with ooc_ruling')
+    if (state.ooc !== undefined) throw new Error('this turn is an out-of-character ' + (state.ooc.question === true ? 'question: answer it with ooc_answer' : 'command: rule on it with ooc_ruling'))
     if (state.phase !== 'idle') throw new Error('the action is judged first, before anything else')
     if (state.judgement !== undefined) throw new Error('the action was already judged')
     const why = reason.trim()
     if (why === '') throw new Error('give the reason: what the character tries, and the rule or the fact that decides it')
+    const place = at?.trim() ?? ''
+    if (place !== '') {
+      const store = this.storeOf(owner)
+      const player = store.cast().find(member => member.character.control === 'player')
+      const found = whereabouts(store.story.locations.list(), player?.place?.location, place)
+      if (found.kind === 'unknown') throw new Error(`there is no place "${place}" (list_locations shows the keys): name the place where the action happens, or leave "at" out when it happens where the character is`)
+      if (found.kind === 'elsewhere') {
+        const name = player?.character.name ?? 'The character'
+        state.judgement = { allowed: false, reason: `${name} is at ${found.here.name}, not at ${found.target.name} where this happens: ${name} has to go there first` }
+        return { ...state.judgement, elsewhere: true }
+      }
+    }
     state.judgement = { allowed, reason: why }
     return state.judgement
   }
@@ -225,6 +334,7 @@ export class TurnEngine {
   /** Why an out-of-character command may not change anything yet, when it may not. */
   private oocBlock(state: TurnState): string | undefined {
     if (state.ooc === undefined) return undefined
+    if (state.ooc.question === true) return state.ooc.ruling === undefined ? 'this turn is an out-of-character question: answer it first with ooc_answer' : 'a question changes nothing: call narrate with no segments'
     if (state.ooc.ruling === undefined) return 'this turn is an out-of-character command: rule on it first with ooc_ruling'
     return state.ooc.ruling.legal ? undefined : 'the command was refused: nothing changes; call narrate with no segments to tell the player'
   }
@@ -240,7 +350,7 @@ export class TurnEngine {
    */
   async activate(owner: TurnOwner, input: { situation: string; characters?: readonly string[] }, run: RunCharacter, signal: AbortSignal): Promise<AttemptReport> {
     const state = this.stateFor(owner)
-    if (state.ooc !== undefined) throw new Error('an out-of-character command asks nobody to act: decree what happens with resolve_round, or narrate')
+    if (state.ooc !== undefined) throw new Error(state.ooc.question === true ? 'a question asks nobody to act and changes nothing: answer it with ooc_answer' : 'an out-of-character command asks nobody to act: decree what happens with resolve_round, or narrate')
     if (state.phase !== 'idle' && state.phase !== 'between') throw new Error(this.explain(state, 'activate_characters'))
     if (this.judgeDue(state)) throw new Error(this.explain(state, 'activate_characters'))
     if (state.judgement?.allowed === false && state.rounds === 0) throw new Error(`the action cannot work (${state.judgement.reason}): nobody is asked to act on it. Play the failed attempt with resolve_round: one outcome for the player's character, result failed`)
@@ -258,7 +368,7 @@ export class TurnEngine {
     if (keys.length === 0) throw new Error('there is no character to activate')
     if (keys.length > most) throw new Error(`${keys.length} characters were asked, which is more than one round allows (${most}): ask only those the moment actually reaches, and the others in a later round if the story comes to them`)
     const signature = `${[...keys].sort().join(',')}|${situation.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()}`
-    if (state.asked.includes(signature)) throw new Error('the same characters were already asked about the same situation in this message, so nothing new would come of it: say what changed, ask others, or deliver the output with narrate')
+    if (repeatsEarlier(signature, state.asked)) throw new Error('the same characters were already asked about the same situation in this message, so nothing new would come of it: say what changed, ask others, or deliver the output with narrate')
     state.situation = situation
     state.cast = cast
     state.recalled.clear()
@@ -368,7 +478,7 @@ export class TurnEngine {
    */
   preview(owner: TurnOwner, text: string): string {
     const state = this.stateFor(owner)
-    if (state.ooc !== undefined) throw new Error('an out-of-character command shows no preview: rule on it with ooc_ruling')
+    if (state.ooc !== undefined) throw new Error('an out-of-character turn shows no preview: go on with ' + (state.ooc.question === true ? 'ooc_answer' : 'ooc_ruling'))
     if (this.judgeDue(state)) throw new Error('judge the action first with judge_action')
     if (!this.storeOf(owner).settings().preview.enabled) throw new Error('this chat shows no preview: go on with activate_characters')
     if (state.previewed) throw new Error('a preview was already shown for this message: go on with activate_characters')
@@ -435,6 +545,7 @@ export class TurnEngine {
     if (unknown.length > 0) throw new Error(`addressed: ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not ${unknown.length === 1 ? 'a beat' : 'beats'} still to weave in (the scene lists them)`)
     state.addressed = [...new Set(addressed)]
     if (state.ooc !== undefined) {
+      if (state.ooc.question === true && segments.length > 0) throw new Error('a question is answered with ooc_answer: deliver no segments, the player is shown the answer')
       if (state.ooc.ruling?.legal !== true && segments.length > 0) throw new Error('the command was refused: deliver no segments, the player is told why')
       if (segments.some(segment => segment.type === 'utterance')) throw new Error('nobody was asked to speak in an out-of-character command: narrate only what the player perceives')
       return await this.deliver(owner, state, segments.map((segment): NarrationSegment => ({ type: 'narration', text: segment.text })), true, run)
@@ -444,7 +555,7 @@ export class TurnEngine {
       if (written === undefined) throw new Error('deliver the output: give its segments')
       return await this.deliver(owner, state, written, true, run)
     }
-    const typed = segments.map((segment): NarrationSegment => segment.type === 'utterance'
+    const typed = foldSpeakerLabels(segments, state.cast).map((segment): NarrationSegment => segment.type === 'utterance'
       ? { type: 'utterance', character: segment.character ?? '', name: state.cast.find(member => member.key === segment.character)?.character.name ?? segment.character ?? '', text: segment.text }
       : { type: 'narration', text: segment.text })
     return await this.deliver(owner, state, typed, false, run)
@@ -689,6 +800,9 @@ export class TurnEngine {
   }
 
   private explain(state: TurnState, attempted: 'activate_characters' | 'resolve_round' | 'narrate' | undefined): string {
+    if (state.ooc?.question === true && (state.phase === 'idle' || state.phase === 'between')) {
+      return state.ooc.ruling === undefined ? 'this turn is an out-of-character question: answer it first with ooc_answer' : 'a question changes nothing: call narrate with no segments'
+    }
     if (state.ooc !== undefined && (state.phase === 'idle' || state.phase === 'between')) {
       return state.ooc.ruling === undefined
         ? 'this turn is an out-of-character command: rule on it first with ooc_ruling'
@@ -702,9 +816,13 @@ export class TurnEngine {
         ? 'call judge_action first: does what the player\'s character tries work? It does not when it is not viable or it breaks a rule of the world or of the player'
         : this.previewDue(state)
         ? 'call preview_scene first: two or three sentences that show the player how the scene opens, before the characters are asked'
+        : state.judgement?.allowed === false && attempted !== 'activate_characters'
+        ? `the attempt does not work (${state.judgement.reason}): call resolve_round with one outcome, for the player's character only (result failed, a sentence on what it does and why nothing comes of it)${attempted === 'narrate' ? ', then narrate' : ''}`
         : attempted === 'activate_characters' || attempted === undefined
         ? 'call activate_characters to let the characters act'
-        : `nothing to ${attempted === 'narrate' ? 'deliver' : 'resolve'} yet: call activate_characters first`
+        : attempted === 'narrate'
+        ? 'nothing to deliver yet: call activate_characters to let the characters act, or, when nobody else needs to react, call resolve_round with an outcome for the player\'s character alone, and then narrate'
+        : 'nothing to resolve yet: call activate_characters first'
       case 'resolving': return attempted === 'activate_characters'
         ? 'the characters already acted in this round: call resolve_round'
         : attempted === 'narrate'
@@ -784,7 +902,7 @@ export class TurnEngine {
       if (member === undefined) return { character: key, name: key, reason: 'no such character' }
       const previous = number === 2 ? state.first?.reports.find(report => report.character === key) : undefined
       const memories = number === 1 && store !== undefined
-        ? await this.boundaries().recaller.recall({ member, situation: state.situation, turn: owner.turn, policy: store.settings().memory, ...(queryVector === undefined ? {} : { queryVector }) }, store.story, signal)
+        ? await this.boundaries().recaller.recall({ member, situation: state.situation, turn: owner.turn, policy: store.settings().memory, ...(store.settings().diagnostics.keepRuns ? { explain: true } : {}), ...(queryVector === undefined ? {} : { queryVector }) }, store.story, signal)
         : state.recalled.get(key) ?? []
       if (number === 1 && memories.length > 0) state.recalled.set(key, memories)
       const place = member.place === undefined ? undefined : store?.place(member.place.location.id)

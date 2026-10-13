@@ -1,6 +1,18 @@
 # DSH Agentic Roleplay
 
-Persistent, agent-driven roleplay for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness). The bundle provides a game-master loop, autonomous character agents, durable world and session state, authoring tools, multimedia services, and a dedicated roleplay interface.
+Persistent, agent-driven roleplay for [DeepSeek Harness](https://github.com/deepseek-ai/DeepSeek-Harness). Create a world, choose who to play, and enter an evolving story whose characters can make decisions of their own.
+
+Instead of treating roleplay as one long prompt, the bundle separates the game master, character decisions, record keeping, world authoring, and media work. The story keeps structured state for what happened, what each character perceived and remembers, where people and things are, how relationships change, and which possibilities remain open.
+
+## What makes it different
+
+- **Characters have their own point of view.** They act from their goals, relationships, knowledge, memories, and current situation—not from everything stored in the world.
+- **The world changes without becoming a script.** Plots can provide direction and pressure, while player choices and autonomous character actions determine what actually happens.
+- **Stories remain editable and durable.** Worlds are filesystem-first, sessions use SQLite, and branching or taking back does not require rebuilding the setting.
+- **Creation happens inside DSH.** Build worlds in the editor, ask an approval-gated authoring agent for help, import character cards, and generate portraits or scene illustrations when providers are available.
+- **Media is optional.** Text play works without image, speech, embedding, or reranking services; add them when you want portraits, voiced scenes, voice input, or richer recall.
+
+The bundle includes a complete roleplay interface, a bounded game-master loop, autonomous character and faction activity, story-time memory, relationships and knowledge, locations and items, plots and triggers, reusable avatars, world authoring, speech, and image workflows.
 
 This project is independently maintained by [Firefox2100](https://github.com/Firefox2100). It is not an official DeepSeek Harness project.
 
@@ -32,6 +44,8 @@ dsh plugin --profile <profile> add @dsh-agentic-roleplay/all
 ```
 
 Restart the profile, then configure the storage root under **Settings → Role Play**. AI features are supplied by compatible provider plugins; see [AI services](https://firefox2100.github.io/dsh-agentic-roleplay/docs/getting-started/ai-services).
+
+New users can add the included *Blackwater Observatory* sample world from the Worlds page, inspect how it is built, and begin a session immediately after configuring a language model.
 
 ## Development
 

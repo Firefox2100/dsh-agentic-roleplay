@@ -2,9 +2,17 @@
 title: DSH Agentic Roleplay
 ---
 
-DSH Agentic Roleplay 是 [DeepSeek Harness](https://github.com/DeepSeek-AI/DeepSeek-Harness) 的智能体角色扮演套件。游戏主持人智能体负责场景，多名角色智能体依据各自的目标、关系、知识和记忆自主行动。
+DSH Agentic Roleplay 将 [DeepSeek Harness](https://github.com/DeepSeek-AI/DeepSeek-Harness) 变成创作和游玩持久互动世界的工作空间。游戏主持人智能体负责场景，多名角色智能体依据各自的目标、关系、知识和记忆自主行动。
 
-世界不是固定的对话树。世界卡提供人物、地点、物品、设定资料和可能的剧情；实际发展由玩家选择和角色决策共同产生，并持久保存到会话状态中。
+世界不是固定的对话树，玩家也不必从封闭的行动列表中选择。世界卡提供人物、地点、物品、设定资料和可能的剧情；实际发展由玩家的自由输入和角色决策共同产生。后果会保存为持久会话状态，而不是要求一段不断增长的聊天记录记住一切。
+
+## 游玩体验
+
+你只需写下角色说的话或尝试的行动。GM 会召集当前需要作出决定的角色，在有上限的行动轮次中解决各自意图，再以旁白和对白呈现结果。当前场景之外的人物和阵营也可以继续自己的日常、承诺和计划。剧情可以在故事失去方向时提供推动，但不会强制沿预定路线发展。
+
+角色不会得到数据库的全知副本。每个角色只依据自己的关系、明确知识、感知、信念和不完整记忆行动。因此，两个人可以对同一事件产生不同理解，记住不同细节，甚至依据互相冲突的判断采取行动。
+
+你可以从内置示例世界开始，也可以通过可视化编辑器创作世界，或与专用世界创作助手协作。世界始终是可备份、可直接编辑的普通文件；每个游玩会话则在独立数据库中自行发展。
 
 ## 主要能力
 
@@ -17,4 +25,15 @@ DSH Agentic Roleplay 是 [DeepSeek Harness](https://github.com/DeepSeek-AI/DeepS
 - 需要用户批准修改的专用世界创作智能体；
 - 基于 SQLite 的持久会话、回退与分支。
 
-新用户请依次阅读[安装](./getting-started/installation)、[配置 AI 服务](./getting-started/ai-services)、[创建世界](./getting-started/first-world)和[开始会话](./getting-started/first-session)。
+游玩只强制需要语言模型。嵌入、重排序、图片生成、TTS 和 STT 可以增强特定体验，但都是可选能力。
+
+## 为开放式长篇故事设计
+
+当你想要反复登场的角色、持续后果和可探索设定，而不只是一次短场景对话时，这套系统最能发挥作用。它刻意区分客观事件与角色感知、作者设定与会话状态，以及故事机会与强制剧情步骤，让智能体能够即兴发挥，同时不让世界变成一次性内容。
+
+## 选择阅读路径
+
+- 新用户：依次阅读[安装](./getting-started/installation)、[配置 AI 服务](./getting-started/ai-services)和[创建世界](./getting-started/first-world)。
+- 玩家：了解[角色扮演界面](./playing/interface)和[会话控制](./playing/sessions)。
+- 世界作者：从[创作概览](./authoring/overview)或[世界格式](./world-format/overview)开始。
+- 插件开发者：阅读[架构](./developers/architecture)和 [`@dsh-agentic-roleplay/state` 指南](./developers/state)。

@@ -1,6 +1,6 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
 import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from '@dsh-agentic-roleplay/state'
-import type { ActivityEntry } from '../../shared/activity.ts'
+import type { ActivityEntry, RunDetail } from '../../shared/activity.ts'
 import type { Note } from '../../shared/notes.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'
@@ -302,7 +302,7 @@ export interface Committer {
  * through `roleplayState.rankMemories`); replace it to recall in another way altogether.
  */
 export interface Recaller {
-  recall(query: { member: CastMember; situation: string; turn: number; policy: MemoryPolicy; /** The vector of the situation, when stored vectors exist to compare it with. */ queryVector?: readonly number[] }, story: TurnStore['story'], signal: AbortSignal): Promise<Recalled[]>
+  recall(query: { member: CastMember; situation: string; turn: number; policy: MemoryPolicy; /** The vector of the situation, when stored vectors exist to compare it with. */ queryVector?: readonly number[]; /** Whether to say why each thing came back (`Recalled.why`). */ explain?: boolean }, story: TurnStore['story'], signal: AbortSignal): Promise<Recalled[]>
 }
 
 /** The state of the scene the game master is told at the start of a turn. */
@@ -465,7 +465,7 @@ export interface TurnStore {
   /** Adds lines to the turn's note of the kind. */
   addNote(kind: Note['kind'], turn: number, lines: readonly string[]): void
   /** Keeps how a helper's run went, for the settings tab. */
-  recordActivity(entry: ActivityEntry): void
+  recordActivity(entry: ActivityEntry, detail?: RunDetail): void
   /** The notes of the session as they stand. */
   notes(): Note[]
   /** Removes the notes: they belong to the turn that made them. */

@@ -15,6 +15,7 @@ import { join } from 'node:path'
 import { RoleplayState, sessionFolder, type Session } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoleplayOrchestration } from '../../../src/host/orchestration/service.ts'
+import { readRunDetail } from '../../../src/host/sessions/activity.ts'
 import { writeSettings } from '../../../src/host/sessions/settings.ts'
 import { decodeOutput } from '../../../src/shared/narration.ts'
 import { readTimeline, writeTimeline } from '../../../src/host/timeline/file.ts'
@@ -92,6 +93,8 @@ interface Script {
   keeper?: 'careful' | 'hasty' | 'duplicating' | 'refused' | 'stuck'
   /** Every character asks itself about the key before it decides. */
   characterLookup?: boolean
+  /** Every character keeps looking into its memory this many times, whatever it is told, before it decides. */
+  characterLooksUp?: number
   /** Makes every delivered output this many characters longer, so the conversation grows. */
   padding?: number
   /** The game master looks up the records before it acts. */
@@ -117,7 +120,7 @@ interface Script {
   /** How the game master judges the player's action: allows it (the default), refuses it, or does not judge at all. */
   judge?: 'refuses' | 'skipped'
   /** The turn is an out-of-character command: the game master rules it legal and sends Bob down to the cellar by decree, spawns nothing, or rules it illegal. */
-  ooc?: 'moves-bob' | 'illegal' | 'acts-before-ruling'
+  ooc?: 'moves-bob' | 'illegal' | 'acts-before-ruling' | 'question'
   /** The player's character walks out to the street, and nobody else needs to react: the game master resolves a round with only its outcome. */
   player?: 'walks'
   /** The suggester writes its lines as plain text instead of submitting them, until it is reminded. */
@@ -278,10 +281,12 @@ function answerWithoutSuggestions(script: Script) {
     if (systemOf(request).includes('strategist of an organisation')) return call('f-submit', 'submit_result', { summary: 'The Guild quietly buys the cellar lease.', public_state: 'Seen at the cellar door.', new_goal: { name: 'Hold the cellar', description: 'Keep others out of the cellar.', plan: ['post a guard'] } })
     if (systemOf(request).includes('record keeper of an interactive story')) return keeperAnswer(request, script)
     if (systemOf(request).includes('world author of an interactive story')) return authorAnswer(request, script)
+    if (systemOf(request).includes('out-of-character question that a player asks')) return call('q-answerer', 'submit_result', { answer: 'Bob has not told Alice, so she does not know.' })
     const who = /You are (Alice|Bob|Carol|Dan)\./.exec(systemOf(request))?.[1]
     if (who !== undefined) {
       const retry = asText(request).includes('trying again')
       const later = asText(request).includes('Earlier in this scene')
+      if (script.characterLooksUp !== undefined && toolNames(request).includes('recall_my_memories') && timesCalled(request, 'recall_my_memories') < script.characterLooksUp) return call(`s-${who}-look-${timesCalled(request, 'recall_my_memories')}`, 'recall_my_memories', { about: `the key ${timesCalled(request, 'recall_my_memories')}` })
       if (script.characterLookup === true && timesCalled(request, 'recall_my_memories') === 0) return call(`s-${who}-recall`, 'recall_my_memories', { about: 'the key' })
       if (later && who === 'Bob') return call('s-Bob-later', 'submit_result', { intent: 'Bob objects', utterance: 'Why is he here?', commitment: 'low' })
       const away = asText(request).includes('nothing of this happens in front of anyone') ? { account: `${who} dealt with it out of sight.`, ...(who === 'Carol' ? { commitment: 'medium' } : {}) } : {}
@@ -289,6 +294,10 @@ function answerWithoutSuggestions(script: Script) {
     }
     if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
     if (!toolNames(request).includes('activate_characters')) return text('a title')
+    if (script.ooc === 'question' && thisTurn(request).includes('OUT-OF-CHARACTER QUESTION')) {
+      if (timesCalled(request, 'ooc_answer') === 0) return call('q-ans', 'ooc_answer', {})
+      return timesCalled(request, 'narrate') === 0 ? call('q-nar', 'narrate', { segments: [] }) : text('')
+    }
     if (script.ooc !== undefined && thisTurn(request).includes('OUT-OF-CHARACTER COMMAND')) {
       const ruled = timesCalled(request, 'ooc_ruling')
       if (script.ooc === 'acts-before-ruling' && ruled === 0 && timesCalled(request, 'resolve_round') === 0) return call('o-early', 'resolve_round', { outcomes: [{ character: 'bob', result: 'succeeded', summary: 'Bob leaves', moves_to: { location: 'cellar', ignore_exits: true } }] })
@@ -620,7 +629,7 @@ describe('a turn with the real agent loop', () => {
     it('asks the characters freely and the record keeper exactly, and has the helpers answer with a tool call', async () => {
       const { adapter } = await playTime('stated')
       const sampled = (requests: GenerateOptions[]) => requests.map(request => adapter.samplings[adapter.requests.indexOf(request)])
-      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 2000, priority: 'foreground' })))
+      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 800, priority: 'foreground' })))
       expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: 8000, priority: 'background' })))
       expect(adapter.samplings[adapter.requests.indexOf(masterRequests(adapter)[0]!)]).toBeUndefined()
     })
@@ -682,6 +691,27 @@ describe('a turn with the real agent loop', () => {
       expect(away?.lines.sort()).toEqual(['Carol dealt with it out of sight.', 'Dan dealt with it out of sight.'])
       const ran = (session.metadata.getValue('activity') as { label: string; error?: string }[]).map(run => run.label)
       expect(ran).toEqual(expect.arrayContaining(['Carol', 'Dan']))
+    })
+
+    it('keeps what each helper was told and did, only when the chat asks for it', async () => {
+      const { session, id } = await addSession('Vault', true)
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { diagnostics: { keepRuns: true } })
+      const alice = session.characters.getBySourceId('alice')!.id
+      session.events.add({ turn: 0, round: 1, text: 'Alice saw the vault door being sealed.', importance: 3, tags: ['vault'], involves: [] }, [{ characterId: alice, mode: 'witnessed', content: 'The vault door was sealed in front of me.', gist: 'the vault was sealed', accuracy: 'accurate' }])
+      const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      await vi.waitFor(() => { expect((session.metadata.getValue('activity') as { run?: string }[] | undefined)?.some(run => run.run !== undefined)).toBe(true) }, { timeout: 5000 })
+      const runs = (session.metadata.getValue('activity') as { label: string; run?: string }[]).filter(run => run.run !== undefined)
+      const details = runs.map(run => readRunDetail(sessionFolder(join(root, 'sessions'), id), run.run!))
+      expect(details.every(detail => detail !== undefined && detail.persona !== '' && detail.prompt !== '')).toBe(true)
+      expect(details.some(detail => detail!.result !== undefined)).toBe(true)
+      expect(details.every(detail => detail!.calls.length > 0)).toBe(true)
+      expect(details.some(detail => detail!.calls.some(call => call.tool === 'submit_result' && !call.failed))).toBe(true)
+      const reminded = details.flatMap(detail => detail!.recalled ?? [])
+      expect(reminded.map(entry => entry.text)).toContain('The vault door was sealed in front of me.')
+      expect(reminded.every(entry => entry.why !== undefined && entry.why.cues.words >= 0)).toBe(true)
     })
 
     it('lets an organisation whose time has come decide what it does after the turn, within the limit of the chat, and records it as a deed no one knows', async () => {
@@ -1152,10 +1182,26 @@ describe('a turn with the real agent loop', () => {
         expect(characterRequests(adapter).length).toBeGreaterThan(0)
       })
 
+      it('answers a question with /ask as a turn of its own that changes nothing, and the player reads the answer', async () => {
+        const { session, adapter, agent } = await playOoc('question', '/ask Does Alice know where Bob went?')
+        expect(characterRequests(adapter)).toEqual([])
+        expect(adapter.requests.some(request => thisTurn(request).includes('OUT-OF-CHARACTER QUESTION') && timesCalled(request, 'preview_scene') > 0)).toBe(false)
+        expect(bobAt(session)).toBe(false)
+        expect(outputsOf(agent)[0]).toMatchObject({ segments: [], ooc: { legal: true, note: 'Bob has not told Alice, so she does not know.', question: true } })
+        expect(session.metadata.get().turns).toBe(1)
+        expect(keepers(adapter)).toEqual([])
+      })
+
+      it('is told to ask what the player wants when the question is empty', async () => {
+        const { adapter } = await playOoc('question', '/ask')
+        expect(characterRequests(adapter)).toEqual([])
+        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('empty out-of-character message (/ask)')
+      })
+
       it('is not an empty command: the game master is told to ask what the player wants, and nobody acts', async () => {
         const { adapter } = await playOoc('moves-bob', '/ooc')
         expect(characterRequests(adapter)).toEqual([])
-        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('The player sent an empty out-of-character command')
+        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('The player sent an empty out-of-character message (/ooc)')
       })
     })
 
@@ -1750,8 +1796,19 @@ describe('a turn with the real agent loop', () => {
       expect(result('Alice')).not.toContain('BOB-ONLY')
       expect(result('Bob')).toContain('BOB-ONLY')
       expect(result('Bob')).not.toContain('ALICE-ONLY')
-      expect(result('Carol')).toBe('You do not remember anything about that.')
+      expect(result('Carol')).toBe('You do not remember anything about that, and there is nothing more to find: go on with what you know.')
       expect(session.events.perceivedBy(idOf('alice'))[0]?.perception.recalls).toBeGreaterThan(0)
+    })
+
+    it('are left with only the way to submit once they have used their look-ups, so that a model forced to call something can only finish', async () => {
+      const { id } = await addSession('Vault')
+      const adapter = new ScriptedAdapter(answerFor({ characterLooksUp: 9 }))
+      const agent = await chat(`session-${id}`, adapter)
+      agent.followup(say('I open the vault door.'))
+      await agent.whenIdle()
+      const alice = characterRequests(adapter).filter(candidate => /You are Alice\./.test(systemOf(candidate)))
+      expect(alice.map(request => toolNames(request).length)).toEqual([...Array(5).fill(4), 1])
+      expect(toolNames(alice.at(-1)!)).toEqual(['submit_result'])
     })
 
     it('are not offered the tool when the chat turns it off', async () => {
@@ -1803,7 +1860,7 @@ describe('a turn with the real agent loop', () => {
     expect(asText(asAlice!)).toContain('What you remember that bears on this')
     expect(asText(asAlice!)).toContain('I saw Dan sneak out with a key under his coat.')
     expect(asText(asBob!)).not.toContain('sneak out')
-    expect(asText(asBob!)).not.toContain('What you remember')
+    expect(asText(asBob!)).not.toContain('What you remember that bears on this')
     expect(session.events.perceivedBy(idOf('alice'))[0]?.perception.recalls).toBe(1)
   })
 

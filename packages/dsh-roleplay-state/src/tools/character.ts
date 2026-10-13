@@ -24,7 +24,7 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
       parameters: { about: { type: 'string', required: true, description: 'What to remember: a name, an object, a topic or a short description of the moment.' } },
       output: {
         schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { clarity: { type: 'string', required: true }, turn: { type: 'integer', required: true }, text: { type: 'string', required: true } } } },
-        render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You do not remember anything about that.' : value.map(entry => `- (${entry.clarity === 'clear' ? '' : entry.clarity === 'faded' ? 'the details are fuzzy' : 'you barely remember'}) ${entry.text}`.replace('- () ', '- ')).join('\n') }],
+        render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You do not remember anything about that, and there is nothing more to find: go on with what you know.' : value.map(entry => `- (${entry.clarity === 'clear' ? '' : entry.clarity === 'faded' ? 'the details are fuzzy' : 'you barely remember'}) ${entry.text}`.replace('- () ', '- ')).join('\n') }],
       },
       isConcurrencySafe: () => false,
       async execute(args, exec) {

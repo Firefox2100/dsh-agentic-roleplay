@@ -107,7 +107,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const cast = store.cast()
     const ooc = parseOoc(text)
     const verdict = ooc === undefined ? boundaries().inputValidator.validate({ text, turn: payload.turn, cast }) : { ok: true as const }
-    if (ooc !== undefined && ooc.request !== '') engine.beginOoc(owner, ooc.request)
+    if (ooc !== undefined && ooc.request !== '') engine.beginOoc(owner, ooc.request, ooc.question)
     else if (ooc === undefined) engine.expectJudgement(owner)
     const queryVector = await store.queryVector(ooc?.request ?? text)
     store.clearNotes()
@@ -123,10 +123,10 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) lines.push(store.text('roleplay/plot-hint'))
     const rules = store.rules()
     if (rules.length > 0) lines.push(store.text('roleplay/rules', { rules: rules.map(rule => `- ${rule}`).join('\n') }))
-    if (ooc !== undefined && ooc.request !== '') lines.push(store.text('roleplay/ooc-command', { request: ooc.request }))
+    if (ooc !== undefined && ooc.request !== '') lines.push(store.text(ooc.question ? 'roleplay/ask-question' : 'roleplay/ooc-command', { request: ooc.request }))
     if (ooc !== undefined && ooc.request === '') {
       engine.skip(owner)
-      lines.push(store.text('roleplay/ooc-empty'))
+      lines.push(store.text('roleplay/ooc-empty', { command: ooc.question ? '/ask' : '/ooc' }))
     }
     if (!verdict.ok) {
       engine.skip(owner)

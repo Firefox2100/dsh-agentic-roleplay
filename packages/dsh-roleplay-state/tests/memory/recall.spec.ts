@@ -152,6 +152,60 @@ describe('recall', () => {
     expect(belief?.clarity).not.toBeUndefined()
   })
 
+  it('says why each thing came back only when asked to', () => {
+    saw(1, 'Bob took the brass key from the desk.', 4, [bob.id], { tags: ['key'] })
+    saw(1, 'A band played marches.', 2, [])
+    store.clock.resync('simulated', start + 86_400_000, 2)
+    const query = { characterId: alice.id, characters: store.characters.list(), situation: 'Alice asks Bob about the key', turn: 2, policy: { ...DEFAULT_MEMORY_POLICY, recall: 2 } }
+    expect(recall(store, query).every(entry => entry.why === undefined)).toBe(true)
+    const explained = recall(store, { ...query, explain: true }, { lexical: new Map([['p:1', 0.8]]) })
+    const key = explained.find(entry => entry.text.includes('key'))
+    expect(key?.why).toMatchObject({ cues: { people: 3, words: 5, place: 0 }, lexical: 0.8, importance: 4, ageDays: 1 })
+    expect(key?.why?.score).toBeGreaterThan(explained.find(entry => entry.text.includes('marches'))?.why?.score ?? Infinity)
+    expect(explained.find(entry => entry.text.includes('marches'))?.why).toMatchObject({ cues: { people: 0, words: 0, place: 0 } })
+    expect(explained.find(entry => entry.text.includes('marches'))?.why).not.toHaveProperty('lexical')
+  })
+
+  describe('what comes to mind with what was recalled', () => {
+    const scene = () => {
+      saw(1, 'Bob took the brass key from the desk.', 4, [bob.id], { tags: ['key', 'cellar'] })
+      saw(1, 'Bob wept alone in the cellar.', 4, [bob.id], { tags: ['cellar'] })
+      saw(1, 'Bob mentioned the weather.', 4, [bob.id])
+      saw(1, 'Bob shrugged at the doorway in the cellar.', 2, [bob.id], { tags: ['cellar'] })
+      saw(1, 'Carol wept in the cellar.', 4, [], { tags: ['cellar'] })
+    }
+    const asked = (overrides: Partial<MemoryPolicy> = {}, situation = 'Alice asks Bob about the key') => ask(situation, 2, { recall: 1, ...overrides })
+
+    it('adds what shares people and a tag or place with the thing recalled, and says it was linked', () => {
+      scene()
+      const found = asked()
+      expect(found.map(entry => entry.text)).toEqual(['Bob took the brass key from the desk.', 'Bob wept alone in the cellar.'])
+      expect(found.map(entry => entry.linked)).toEqual([undefined, true])
+    })
+
+    it('leaves out what is tied only by one person, what matters little, and what shares no person', () => {
+      scene()
+      const texts = asked().map(entry => entry.text)
+      expect(texts).not.toContain('Bob mentioned the weather.')
+      expect(texts).not.toContain('Bob shrugged at the doorway in the cellar.')
+      expect(texts).not.toContain('Carol wept in the cellar.')
+    })
+
+    it('is off when no association is asked for, and needs something that matched the moment', () => {
+      scene()
+      expect(asked({ associate: 0 })).toHaveLength(1)
+      expect(asked({}, 'The band is tuning up')).toHaveLength(1)
+    })
+
+    it('is limited to the number asked for and explains the tie when asked to', () => {
+      scene()
+      saw(1, 'Bob swore in the cellar once.', 5, [bob.id], { tags: ['cellar'] })
+      const found = recall(store, { characterId: alice.id, characters: store.characters.list(), situation: 'Alice asks Bob about the key', turn: 2, explain: true, policy: { ...DEFAULT_MEMORY_POLICY, recall: 1, associate: 1 } })
+      expect(found.filter(entry => entry.linked)).toHaveLength(1)
+      expect(found.find(entry => entry.linked)?.why?.linked).toEqual({ people: 1, tags: 1, place: false })
+    })
+  })
+
   it('tells how a vague memory was about people, not what happened', () => {
     saw(1, 'Bob whispered the secret code to Eleanor in the cellar.', 2, [bob.id], { gist: 'a whispered code' })
     const vague = ask('unrelated', 30)

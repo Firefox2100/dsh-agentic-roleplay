@@ -17,8 +17,8 @@ describe('childModel', () => {
 
 describe('childSampling', () => {
   it('cuts the helpers that answer briefly off much sooner than the ones that write records or make things up', () => {
-    expect(childSampling(DEFAULT_SETTINGS, 'characters')).toMatchObject({ maxTokens: 2000, priority: 'foreground' })
-    expect(childSampling(DEFAULT_SETTINGS, 'suggestions')).toMatchObject({ maxTokens: 2000, priority: 'background' })
+    expect(childSampling(DEFAULT_SETTINGS, 'characters')).toMatchObject({ maxTokens: 800, priority: 'foreground' })
+    expect(childSampling(DEFAULT_SETTINGS, 'suggestions')).toMatchObject({ maxTokens: 800, priority: 'background' })
     expect(childSampling(DEFAULT_SETTINGS, 'records').maxTokens).toBe(8000)
     expect(childSampling(DEFAULT_SETTINGS, 'authoring').maxTokens).toBe(8000)
   })

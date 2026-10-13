@@ -8,6 +8,7 @@ export const FORM_FIELDS = [
   { path: ['memory', 'flaky'], kind: 'flag', label: 'flaky', help: 'flakyHelp' },
   { path: ['memory', 'recall'], kind: 'integer', label: 'recall', help: 'recallHelp' },
   { path: ['memory', 'overRetrieve'], kind: 'integer', label: 'overRetrieve', help: 'overRetrieveHelp' },
+  { path: ['memory', 'associate'], kind: 'integer', label: 'associate', help: 'associateHelp' },
   { path: ['memory', 'lookup'], kind: 'flag', label: 'lookup', help: 'lookupHelp' },
   { path: ['memory', 'lookupCalls'], kind: 'integer', label: 'lookupCalls', help: 'lookupCallsHelp' },
   { path: ['memory', 'verify'], kind: 'flag', label: 'verify', help: 'verifyHelp' },
@@ -55,6 +56,7 @@ export const FORM_FIELDS = [
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'limitRatio'], kind: 'percent', label: 'limitRatio', help: 'limitRatioHelp' },
   { path: ['context', 'retainRatio'], kind: 'percent', label: 'retainRatio', help: 'retainRatioHelp' },
+  { path: ['diagnostics', 'keepRuns'], kind: 'flag', label: 'diagnosticsKeepRuns', help: 'diagnosticsKeepRunsHelp' },
 ] as const
 
 /**

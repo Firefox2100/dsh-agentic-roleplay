@@ -92,6 +92,7 @@ describe('the clock settings', () => {
 describe('the off stage setting', () => {
   it('is two characters per turn by default, from none to five', () => {
     expect(DEFAULT_SETTINGS.offstage).toEqual({ perTurn: 2, perCharacter: 1, joint: true, summary: true })
+    expect(DEFAULT_SETTINGS.diagnostics).toEqual({ keepRuns: false })
     expect(parseSettings({ offstage: { perTurn: 0 } }).ok).toBe(true)
     expect(parseSettings({ offstage: { perTurn: 6 } })).toEqual({ ok: false, problems: ['"offstage.perTurn" must be a whole number from 0 to 5'] })
   })

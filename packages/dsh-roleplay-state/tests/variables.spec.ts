@@ -146,6 +146,14 @@ describe('changing what is tracked', () => {
     expect(store.variables.value('alarm', 'world', 0)).toBe(true)
   })
 
+  it('finds a variable written by its name or in other letter case, when only one has it', () => {
+    expect(changeVariable(store, { variable: 'Health', subject: 'alice', to: 6 }, 2)).toMatchObject({ variable: { key: 'health' }, to: 6 })
+    expect(changeVariable(store, { variable: ' VALENCE ', subject: 'alice', to: 0.2 }, 2).variable.key).toBe('valence')
+    store.variables.define({ key: 'wounds', name: 'Health', kind: 'number', subject: 'character' })
+    const plan = planVariableChange(store, { variable: 'HEALTH', subject: 'alice', to: 1 })
+    expect(plan.ok).toBe(false)
+  })
+
   it('moves a temperament apart from the feeling', () => {
     changeVariable(store, { variable: 'valence', subject: 'alice', to: -0.4 }, 2)
     changeVariable(store, { variable: 'valence', subject: 'alice', baseline: 0.3 }, 2)

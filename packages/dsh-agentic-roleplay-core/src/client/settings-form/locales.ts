@@ -2,9 +2,9 @@ import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
   | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
-  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp'
+  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
-  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
+  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
   | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'modelsCharacters' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
@@ -31,6 +31,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     recallHelp: 'The most memories brought back to a character each time it acts, chosen by what the moment calls to mind.',
     overRetrieve: 'Memories considered per memory recalled',
     overRetrieveHelp: 'To choose what a character is reminded of, this many times as many candidates are retrieved (by the moment\'s cues, by words and by meaning) and the best are kept; a reranking service, when one is configured, judges the wider net. 1 chooses straight from the first search.',
+    associate: 'Memories that come to mind with others',
+    associateHelp: 'The most extra memories a character is reminded of because they are strongly tied (the same people together with the same place or tags) to something the moment called to mind, and matter enough. 0 turns it off.',
     lookup: 'Characters can look up memories',
     lookupHelp: 'While it decides, a character can ask itself about something it remembers beyond what the moment already brought to mind. Each character only reaches its own memories. It makes a character\'s turn a little longer.',
     lookupCalls: 'Memory look-ups per decision',
@@ -106,6 +108,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     offstagePerTurn: 'Characters acting off stage per turn',
     offstagePerCharacter: 'Times one character acts off stage per turn',
     offstagePerCharacterHelp: 'A character with several things due is asked about the first; the rest wait for your next turn. With the limit above, this caps what the world does without you: nothing runs while you are away from the chat, and each message you send lets at most this many characters act.',
+    diagnosticsKeepRuns: 'Keep what the helpers were told',
+    diagnosticsKeepRunsHelp: 'Each helper run (a character, the record keeper, the suggestions) keeps its instructions, what it was asked, its tool calls and its result, for the latest 60 runs. Open a run in the activity list to see why it said or wrote what it did. The texts include what the characters know in private, so leave it off unless you are looking for a problem.',
     offstageJoint: 'Meetings happen between people',
     offstageJointHelp: 'The people of one off-stage commitment decide one after another, each told who has already meant to come, so they meet instead of each guessing. It takes longer in the background but asks the same number of times. Off: each decides alone, all at once.',
     offstageSummary: 'Tell me what happened meanwhile',
@@ -152,6 +156,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     recallHelp: '角色每次行动时最多被唤起的记忆条数，按当前情境联想到的内容挑选。',
     overRetrieve: '每条回忆的候选倍数',
     overRetrieveHelp: '为了选出角色被唤起的记忆，会先检索出此倍数的候选（按情境线索、字词和语义），再保留最好的；若已配置重排序服务，则由它评判这张更大的网。1 表示直接从第一次检索中选取。',
+    associate: '顺带想起的记忆',
+    associateHelp: '角色会因为与当前情境唤起的某件事紧密相连（相同的人物，加上相同的地点或标签）且足够重要，而顺带想起的额外记忆的最大条数。0 表示关闭。',
     lookup: '角色可主动回忆',
     lookupHelp: '角色在决定行动时，可以主动向自己追问更多记忆，超出当前情境已唤起的部分。每个角色只能查到自己的记忆。会让角色的回合稍长一些。',
     lookupCalls: '每次决定的记忆查询次数',
@@ -227,6 +233,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     offstagePerTurn: '每轮台下行动的角色数',
     offstagePerCharacter: '每个角色每轮台下行动次数',
     offstagePerCharacterHelp: '同一角色有多件事到期时，只询问第一件，其余等你的下一轮。配合上面的上限，这限制了世界在无人操作时的行动：你离开聊天时什么都不会运行，你每发一条消息最多让这么多次角色行动。',
+    diagnosticsKeepRuns: '保留助手收到的内容',
+    diagnosticsKeepRunsHelp: '每次助手运行（角色、记录员、建议）都会保存它的指令、被问的内容、工具调用和结果，保留最近 60 次。在活动列表中打开一次运行，可查看它为何那样说或写。内容包含角色私下所知的信息，因此除非要排查问题，请保持关闭。',
     offstageJoint: '约定在人与人之间发生',
     offstageJointHelp: '同一个台下约定的人依次决定，后者会被告知谁已决定前来，因此他们会碰面而不是各自猜测。后台耗时更长，但请求次数不变。关闭则各自同时独立决定。',
     offstageSummary: '告诉我期间发生了什么',

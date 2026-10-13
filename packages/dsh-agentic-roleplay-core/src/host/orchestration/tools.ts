@@ -2,7 +2,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { describeTime, type SkipRequest } from '../clock/story-clock.ts'
 import type { Boundaries, CreateReport, TriggerReport, TurnStore } from './boundaries.ts'
-import { characterRunner } from './character-runner.ts'
+import { answerRunner, characterRunner } from './character-runner.ts'
 import { encodeOutput, encodePreview } from '../../shared/narration.ts'
 import { AUTHORING_NEEDS } from './boundaries.ts'
 import { ITEM_ACTIONS, describeDuration, type ItemAction } from '@dsh-agentic-roleplay/state'
@@ -20,6 +20,7 @@ export const INTRODUCE_TOOL = 'introduce_thing'
 export const TIME_TOOL = 'advance_time'
 export const PREVIEW_TOOL = 'preview_scene'
 export const RULING_TOOL = 'ooc_ruling'
+export const ANSWER_TOOL = 'ooc_answer'
 export const JUDGE_TOOL = 'judge_action'
 export const PLOT_TOOL = 'record_plot_progress'
 export const AUTHOR_PLOT_TOOL = 'author_plot'
@@ -431,6 +432,18 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
+  const answer = defineTool({
+    name: ANSWER_TOOL,
+    description: 'Have the player\'s out-of-character question answered, as the very first thing of a question turn. You do not write the answer: it is written from what the player\'s character knows (what it remembers, knows to exist, carries and sees where it is), so that nothing hidden is given away. Nothing in the story changes, nobody is asked to act and time does not pass.',
+    parameters: {},
+    output: { schema: { type: 'json' }, render: () => [{ type: 'text', text: `The player is shown the answer. Now call ${NARRATE_TOOL} with no segments.` }] },
+    isConcurrencySafe: () => false,
+    async execute(_args, exec) {
+      const { agent, owner } = ownerOf(exec.agent)
+      return record(await deps.engine.answer(owner, answerRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) }), exec.signal))
+    },
+  })
+
   const judge = defineTool({
     name: JUDGE_TOOL,
     description: 'Judge what the player\'s character tries, as the very first thing of an ordinary turn (nothing else is accepted before it): allowed is false when it is not viable (what it needs is out of reach, is not there, or the character cannot do it or does not have it) or when it breaks a rule of the world or of the player (the scene lists them and they are absolute: no magic means no spell works). The player\'s claim of an effect is not a fact. What merely looks strange, rash or foolish is allowed. When it is not allowed the attempt is played as a failure for the player\'s character, and nobody is asked to act on it.',
@@ -438,19 +451,20 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       rule_check: { type: 'string', required: true, description: 'First, go through every rule the scene lists, one by one, in a few words each: does what the character tries need what the rule excludes? The rules are literal. Then whether it is viable here. Write "no rules listed" when there are none.' },
       allowed: { type: 'boolean', required: true, description: 'Whether what the character tries can work: false when any listed rule is broken or it is not viable.' },
       reason: { type: 'string', required: true, description: 'What the character tries, and the rule or the fact that decides it, in a sentence.' },
+      at: { type: 'string', description: 'The key of the place where the action happens, only when the player says it happens at a particular place (talking to the baker in the market, searching the cellar) rather than where the character is. If the character is somewhere else the action cannot work: it has to go there first. Leave it out when the action happens where the character is, and when the player is going somewhere (the journey is its own action).' },
     },
     output: {
       schema: { type: 'json' },
       render: (_args, value) => [{ type: 'text', text: (value as unknown as { allowed: boolean }).allowed
         ? `Judged: it can work. Now call ${PREVIEW_TOOL} (when the scene asks for it) and ${ACTIVATE_TOOL}, describing only what the character does.`
-        : `Judged: it cannot work. Play the failed attempt: ${RESOLVE_TOOL} with one outcome for the player's character (result failed, one sentence: what it does, what comes of it, why not) and nothing else, then ${NARRATE_TOOL}. Narrate what a witness would see of the attempt, never the effect the player claimed.` }],
+        : `Judged: it cannot work${(value as unknown as { elsewhere?: true }).elsewhere === true ? ` (${(value as unknown as { reason: string }).reason})` : ''}. Play the failed attempt: ${RESOLVE_TOOL} with one outcome for the player's character (result failed, one sentence: what it does, what comes of it, why not) and nothing else, then ${NARRATE_TOOL}. Narrate what a witness would see of the attempt, never the effect the player claimed.` }],
     },
     isConcurrencySafe: () => false,
     execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
-      return Promise.resolve(record(deps.engine.judge(owner, args.allowed, args.reason)))
+      return Promise.resolve(record(deps.engine.judge(owner, args.allowed, args.reason, args.at)))
     },
   })
 
-  return [judge, preview, ruling, activate, resolve, skip, remember, expand, introduce, makePlot, plot, narrate]
+  return [judge, preview, ruling, answer, activate, resolve, skip, remember, expand, introduce, makePlot, plot, narrate]
 }

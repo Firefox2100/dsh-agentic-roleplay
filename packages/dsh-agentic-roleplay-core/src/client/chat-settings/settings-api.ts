@@ -1,3 +1,4 @@
+import type { RunDetail } from '../../shared/activity.ts'
 import type { ChatSettings, SettingsPayload } from '../../shared/settings.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 
@@ -35,4 +36,12 @@ export async function saveSettings(id: string, settings: ChatSettings, signal: A
 export async function resetVectors(id: string, signal: AbortSignal): Promise<void> {
   const response = await fetch(`${API_PREFIX}/sessions/vectors/reset?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', signal })
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
+}
+
+/** What a helper run was told and did; nothing when the run was not kept or has been dropped. */
+export async function loadRun(id: string, run: string, signal: AbortSignal): Promise<RunDetail | undefined> {
+  const response = await fetch(`${API_PREFIX}/sessions/activity/run?id=${encodeURIComponent(id)}&run=${encodeURIComponent(run)}`, { credentials: 'same-origin', signal })
+  if (response.status === 404) return undefined
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
+  return await response.json() as RunDetail
 }

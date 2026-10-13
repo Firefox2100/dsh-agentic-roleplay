@@ -1,6 +1,6 @@
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import { randomUUID } from 'node:crypto'
-import type { ActivityEntry } from '../../shared/activity.ts'
+import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type RunCall, type RunDetail } from '../../shared/activity.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, ReasoningEffortId, type ImageBlock } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -23,6 +23,9 @@ const DEFAULT_MAX_CALLS = 40
 const MAX_REMINDERS = 2
 /** A child that goes on calling tools this many times past its budget, in spite of being told to submit, is stopped: it would otherwise loop for as long as the model keeps at it. */
 const OVERRUN = 5
+/** Steps a child gets to submit once its other tools are withdrawn: a model that keeps calling tools that are gone is stopped. */
+const STEPS_AFTER_RETIRE = 3
+
 /** The same call, with the same arguments, that failed before is refused after this many repeats, and the child is stopped at twice that: the model is not reading the reasons it was given. */
 const REPEATS_TOLD = 1
 const REPEATS_STOPPED = 4
@@ -71,6 +74,8 @@ export interface ChildRun {
   calls: number
   /** The error message when the run did not end with a result. */
   error?: string
+  /** What the child was told and did. */
+  detail: RunDetail
 }
 
 /** The controls of a child's model requests that the plugin decides; the service that serves the route applies them. */
@@ -90,10 +95,14 @@ export function childSampling(settings: { sampling: Record<ChildKind, number> & 
   return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: kind === 'characters' || kind === 'suggestions' ? settings.sampling.shortMaxTokens : settings.sampling.maxTokens, priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
 }
 
-/** What a caller passes as `trace`: files each run of a kind of helper under a label in the store's record of activity. */
-export function childTrace(store: { settings(): { models: Record<ChildKind, string> }; recordActivity(entry: ActivityEntry): void }, kind: ChildKind, label: string): NonNullable<ChildTask['trace']> {
+/** What a caller passes as `trace`: files each run of a kind of helper under a label in the store's record of activity, with its detail when the chat keeps it. */
+export function childTrace(store: { settings(): { models: Record<ChildKind, string>; diagnostics: { keepRuns: boolean } }; recordActivity(entry: ActivityEntry, detail?: RunDetail): void }, kind: ChildKind, label: string, extra: Pick<RunDetail, 'recalled'> = {}): NonNullable<ChildTask['trace']> {
   const model = store.settings().models[kind].trim()
-  return (run) => { store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }) }) }
+  return (run) => {
+    const keep = store.settings().diagnostics.keepRuns
+    const id = keep ? randomUUID() : undefined
+    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
+  }
 }
 
 /** The `model` the settings give a kind of helper, to spread into its task; nothing when it runs on the chat's own model. */
@@ -136,13 +145,14 @@ export const isUnfinishedCall = (error: unknown): boolean => error instanceof Er
 export async function runChild<T>(task: ChildTask): Promise<T> {
   for (let attempt = 1; ; attempt += 1) {
     const began = Date.now()
-    const stats = { calls: 0 }
+    const stats: RunStats = { calls: 0, record: [] }
+    const detail = (): RunDetail => ({ persona: task.persona.slice(0, MAX_RUN_PROMPT), prompt: task.prompt.slice(0, MAX_RUN_PROMPT), calls: stats.record, ...(stats.result === undefined ? {} : { result: stats.result }) })
     try {
       const result = await execute<T>(task, stats)
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail() })
       return result
     } catch (error) {
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error) })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail() })
       if (attempt >= 2 || task.signal.aborted || !isUnfinishedCall(error)) throw error
     }
   }
@@ -161,12 +171,22 @@ export async function supportedEffort(task: Pick<ChildTask, 'parent' | 'signal' 
   } catch { return level }
 }
 
-async function execute<T>(task: ChildTask, stats: { calls: number }): Promise<T> {
+/** What one run counts and keeps for its trace. */
+interface RunStats { calls: number; record: RunCall[]; result?: string }
+
+const cut = (value: unknown, limit = MAX_RUN_TEXT): string => {
+  const text = typeof value === 'string' ? value : (JSON.stringify(value) ?? '')
+  return text.length > limit ? `${text.slice(0, limit)} ... (${text.length - limit} more characters)` : text
+}
+
+async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
   const { parent, signal } = task
   const reasoningEffort = await supportedEffort(task)
   let submitted: { value: unknown } | undefined
   let reminders = 0
   let stopped: (() => void) | undefined
+  let retire: (() => void) | undefined
+  let stepsAfterRetire = -1
   let overran = false
   let refusals = 0
   let lastRefusal = ''
@@ -176,11 +196,12 @@ async function execute<T>(task: ChildTask, stats: { calls: number }): Promise<T>
     ...tool,
     execute: async (args, exec) => {
       stats.calls += 1
+      const note = (outcome: unknown, failed: boolean): void => { if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: tool.name, args: cut(args), outcome: cut(outcome), failed }) }
       if (stats.calls > budget + OVERRUN) {
         overran = true
         stopped?.()
       }
-      if (stats.calls > budget) throw new Error(`you have made ${budget} calls: submit your result now and say what is still missing`)
+      if (stats.calls > budget) { const message = `you have made ${budget} calls: submit your result now and say what is still missing`; note(message, true); throw new Error(message) }
       const signature = JSON.stringify(args)
       const repeats = previous?.name === tool.name && previous.args === signature && previous.failed ? previous.repeats + 1 : 0
       if (repeats >= REPEATS_STOPPED) {
@@ -189,14 +210,22 @@ async function execute<T>(task: ChildTask, stats: { calls: number }): Promise<T>
       }
       if (repeats >= REPEATS_TOLD) {
         previous = { name: tool.name, args: signature, failed: true, repeats }
-        throw new Error('this is exactly the call that just failed, with the same arguments, so it fails for the same reasons: read the reasons the last result gave and change the arguments to fix every one of them')
+        const message = 'this is exactly the call that just failed, with the same arguments, so it fails for the same reasons: read the reasons the last result gave and change the arguments to fix every one of them'
+        note(message, true)
+        throw new Error(message)
       }
       previous = { name: tool.name, args: signature, failed: false, repeats }
       try {
-        return await tool.execute(args, exec)
+        const outcome = await tool.execute(args, exec)
+        note(outcome, false)
+        return outcome
       } catch (error) {
         if (previous !== undefined) previous.failed = true
+        note(error instanceof Error ? error.message : String(error), true)
         throw error
+      } finally {
+        // with a call required at every step, a model that is out of calls but still has tools picks one again; with only the submit tool left it can only submit
+        if (stats.calls >= budget) retire?.()
       }
     },
   })
@@ -210,12 +239,15 @@ async function execute<T>(task: ChildTask, stats: { calls: number }): Promise<T>
       if (violations.length > 0) throw new ToolArgsError(violations)
       const refusal = task.beforeSubmit?.(args)
       if (refusal !== undefined) {
+        if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: SUBMIT_TOOL, args: cut(args), outcome: cut(refusal), failed: true })
         refusals += 1
         lastRefusal = refusal
         if (refusals >= MAX_REFUSALS) { overran = true; stopped?.() }
         throw new Error(refusal)
       }
       submitted = { value: args }
+      stats.result = cut(args, MAX_RUN_PROMPT)
+      if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: SUBMIT_TOOL, args: cut(args), outcome: 'Result recorded.', failed: false })
       exec.concludeTurn()
       return Promise.resolve({ recorded: true })
     },
@@ -234,7 +266,18 @@ async function execute<T>(task: ChildTask, stats: { calls: number }): Promise<T>
     setup: (childCtx, child) => {
       appendDelegatedPolicyOverrides(child.session, inherited)
       applyChildComposition(childCtx, parent, { persona: `${task.persona}\n\n${SUBMIT_RULE}`, toolFilter: { allow: [] } })
-      for (const tool of task.tools ?? []) childCtx.tools.register(counted(tool))
+      const registered = (task.tools ?? []).map(tool => childCtx.tools.register(counted(tool)))
+      retire = () => {
+        for (const dispose of registered) dispose()
+        if (stepsAfterRetire < 0) stepsAfterRetire = 0
+      }
+      childCtx.on('agent/pre-step', async (_payload, next) => {
+        const decision = await next()
+        if (stepsAfterRetire < 0) return decision
+        stepsAfterRetire += 1
+        if (stepsAfterRetire > STEPS_AFTER_RETIRE && submitted === undefined) { overran = true; stopped?.() }
+        return decision
+      })
       childCtx.tools.register(submit)
       childCtx.on('agent/turn-stopping', () => {
         if (submitted !== undefined || reminders >= MAX_REMINDERS) return

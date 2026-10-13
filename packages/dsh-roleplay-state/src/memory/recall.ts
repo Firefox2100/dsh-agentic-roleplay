@@ -14,9 +14,14 @@ export interface MemoryPolicy {
    * reranker judges, and it also gives importance and recency something to choose between. At least 1.
    */
   overRetrieve?: number
+  /**
+   * How many more things come to mind because they are strongly tied to what the moment recalled (the same people together with the same
+   * place or tags) and matter enough. 0 or absent: none.
+   */
+  associate?: number
 }
 
-export const DEFAULT_MEMORY_POLICY: MemoryPolicy = { flaky: true, recall: 12, overRetrieve: 4 }
+export const DEFAULT_MEMORY_POLICY: MemoryPolicy = { flaky: true, recall: 12, overRetrieve: 4, associate: 2 }
 
 /** How much of a memory is left: what the character is told of it. */
 export type Clarity = 'clear' | 'faded' | 'vague'
@@ -31,6 +36,31 @@ export interface Recalled {
   /** When it happened in story time, when the story clock records it. */
   at?: number
   source: { kind: 'perception' | 'memory'; id: number }
+  /** It did not match the moment itself: it came to mind with something that did ({@link MemoryPolicy.associate}). */
+  linked?: true
+  /** Why it came back, when the query asked to be told ({@link RecallQuery.explain}). */
+  why?: RecallWhy
+}
+
+/** What made one thing come back, for finding out why a character was or was not reminded of something. */
+export interface RecallWhy {
+  /** What the cues of the moment gave, in the units of a cue: people named (a name counts 3, more for social weight), words and tags shared (at most 6), being where it happened. */
+  cues: { people: number; words: number; place: number }
+  /** What each search scored it, from 0 to 1; absent when that search did not run or did not find it. */
+  lexical?: number
+  dense?: number
+  rerank?: number
+  /** What it counted for in the end: the fused retrieval score, blended with the reranker's when there was one. */
+  relevance: number
+  importance: number
+  /** How long ago it was in story days; 0 when the story has no clock. */
+  ageDays: number
+  /** How much of it is left in mind, from 1 to 0, when memories fade. */
+  retention?: number
+  /** What it was ranked by, together with how much it matters and how recent it is. */
+  score: number
+  /** For something that came to mind with another: what it shares with the closest of the things recalled for the moment. */
+  linked?: { people: number; tags: number; place: boolean }
 }
 
 export interface RecallQuery {
@@ -43,6 +73,8 @@ export interface RecallQuery {
   locationId?: number
   turn: number
   policy: MemoryPolicy
+  /** Say why each thing came back ({@link Recalled.why}). */
+  explain?: boolean
 }
 
 /** What recall reads: the events a character took in and what it believes. */
@@ -126,10 +158,19 @@ export function mentioned(text: string, characters: readonly Character[]): Set<n
   return ids
 }
 
+/** What ties a candidate to others: the people it involves (other than the one remembering), its tags and where it happened. */
+interface Links {
+  people: readonly number[]
+  tags: readonly string[]
+  place?: number
+}
+
 interface Candidate {
   key: string
-  recalled: Omit<Recalled, 'clarity' | 'text'> & { clear: string; faded: string; vague: string }
+  links: Links
+  recalled: Omit<Recalled, 'clarity' | 'text' | 'why'> & { clear: string; faded: string; vague: string }
   relevance: number
+  cues: RecallWhy['cues']
   importance: number
   ageDays: number
   recalls: number
@@ -235,11 +276,13 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
   return [
     ...source.events.perceivedBy(characterId).map((seen): Candidate => {
       const at = rounds.get(`${seen.event.turn}:${seen.event.round}`) ?? atTurn(seen.event.turn)
+      const cue = { people: peopleCue(seen.event.involves), words: overlap(cues, `${seen.perception.content} ${seen.event.text}`, seen.event.tags), place: locationId !== undefined && seen.event.locationId === locationId ? PLACE_CUE : 0 }
       return ({
       key: `p:${seen.perception.id}`,
+      links: { people: seen.event.involves.filter(id => id !== characterId), tags: seen.event.tags.map(tag => tag.toLowerCase()), ...(seen.event.locationId === undefined ? {} : { place: seen.event.locationId }) },
       recalled: describeEvent(seen, names, at),
-      relevance: peopleCue(seen.event.involves) + overlap(cues, `${seen.perception.content} ${seen.event.text}`, seen.event.tags)
-        + (locationId !== undefined && seen.event.locationId === locationId ? PLACE_CUE : 0),
+      cues: cue,
+      relevance: cue.people + cue.words + cue.place,
       importance: seen.event.importance,
       ageDays: ageDays(at),
       recalls: seen.perception.recalls,
@@ -248,10 +291,13 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
     })}),
     ...source.memories.list(characterId).map((belief): Candidate => {
       const at = atTurn(belief.turn)
+      const cue = { people: peopleCue(belief.about), words: overlap(cues, belief.text, []), place: 0 }
       return ({
       key: `m:${belief.id}`,
+      links: { people: belief.about.filter(id => id !== characterId), tags: [] },
       recalled: describeBelief(belief, at),
-      relevance: peopleCue(belief.about) + overlap(cues, belief.text, []),
+      cues: cue,
+      relevance: cue.people + cue.words,
       importance: belief.importance,
       ageDays: ageDays(at),
       recalls: belief.recalls,
@@ -281,23 +327,29 @@ interface PoolEntry {
   candidate: Candidate
   /** How well retrieval alone matches the moment, from 0 to 1. */
   fused: number
+  /** What each search scored it, when it was found by it. */
+  found: { lexical?: number; dense?: number }
 }
 
 /** What retrieval over-retrieved for one recall, waiting for a reranker's judgement and the final choice. */
 export interface RecallPool {
   entries: readonly PoolEntry[]
-  query: Pick<RecallQuery, 'policy'>
+  /** What retrieval left out, which an association may still bring to mind. */
+  others: readonly Candidate[]
+  query: Pick<RecallQuery, 'policy' | 'explain'>
 }
 
 /** How well a candidate stands once its relevance is known: what the moment calls to mind, how much it matters and how recent it is. */
-function judged(candidate: Candidate, relevance: number, policy: MemoryPolicy): { clarity: Clarity; score: number; text: string } | undefined {
+function judged(candidate: Candidate, relevance: number, policy: MemoryPolicy): { clarity: Clarity; score: number; text: string; retention?: number } | undefined {
   let clarity: Clarity | undefined = 'clear'
+  let kept: number | undefined
   if (policy.flaky) {
-    clarity = clarityAt(retention({ ageDays: candidate.ageDays, importance: candidate.importance, recalls: candidate.recalls, seed: candidate.seed, durability: candidate.durability, cue: relevance >= CUE_RELEVANCE }), candidate.importance)
+    kept = retention({ ageDays: candidate.ageDays, importance: candidate.importance, recalls: candidate.recalls, seed: candidate.seed, durability: candidate.durability, cue: relevance >= CUE_RELEVANCE })
+    clarity = clarityAt(kept, candidate.importance)
   }
   if (clarity === undefined) return undefined
   const score = RELEVANCE_SCALE * relevance + 0.6 * candidate.importance + 2 / (1 + Math.max(0, candidate.ageDays)) + (clarity === 'vague' ? -1 : 0)
-  return { clarity, score, text: candidate.recalled[clarity === 'clear' ? 'clear' : clarity === 'faded' ? 'faded' : 'vague'] }
+  return { clarity, score, text: candidate.recalled[clarity === 'clear' ? 'clear' : clarity === 'faded' ? 'faded' : 'vague'], ...(kept === undefined ? {} : { retention: kept }) }
 }
 
 /**
@@ -308,7 +360,7 @@ function judged(candidate: Candidate, relevance: number, policy: MemoryPolicy): 
  * is, and not what has faded from memory altogether). A reranker may then judge that pool.
  */
 export function recallPool(source: RecallSource, query: RecallQuery, evidence: Omit<RecallEvidence, 'rerank'> = {}): RecallPool {
-  const { policy } = query
+  const { policy, explain } = query
   const candidates = gather(source, query)
   const fused = fuseScores([
     { weight: FUSION_WEIGHTS.cues, scores: new Map(candidates.map(candidate => [candidate.key, candidate.relevance / FULL_CUE])) },
@@ -316,22 +368,35 @@ export function recallPool(source: RecallSource, query: RecallQuery, evidence: O
     { weight: FUSION_WEIGHTS.dense, scores: evidence.dense },
   ])
   const width = Math.min(MAX_POOL, Math.max(policy.recall, Math.ceil(policy.recall * Math.max(1, policy.overRetrieve ?? 1))))
-  const entries = candidates
-    .map(candidate => ({ candidate, fused: fused.get(candidate.key) ?? 0 }))
+  const ranked = candidates
+    .map(candidate => ({ candidate, fused: fused.get(candidate.key) ?? 0, found: { ...(evidence.lexical?.get(candidate.key) === undefined ? {} : { lexical: evidence.lexical.get(candidate.key)! }), ...(evidence.dense?.get(candidate.key) === undefined ? {} : { dense: evidence.dense.get(candidate.key)! }) } }))
     .flatMap((entry) => {
       const standing = judged(entry.candidate, entry.fused, policy)
       return standing === undefined ? [] : [{ entry, score: standing.score }]
     })
     .sort((a, b) => b.score - a.score || b.entry.candidate.recalled.turn - a.entry.candidate.recalled.turn)
-    .slice(0, width)
     .map(({ entry }) => entry)
-  return { entries, query: { policy } }
+  const entries = ranked.slice(0, width)
+  const kept = new Set(entries.map(entry => entry.candidate.key))
+  return { entries, others: candidates.filter(candidate => !kept.has(candidate.key)), query: { policy, ...(explain === true ? { explain } : {}) } }
 }
 
 /** What a reranker is asked to judge: every candidate of the pool, with the text it would be recalled by. */
 export function poolCandidates(pool: RecallPool): RecallCandidate[] {
   return pool.entries.map(({ candidate }) => ({ key: candidate.key, text: candidate.recalled.clear, turn: candidate.recalled.turn, importance: candidate.importance }))
 }
+
+/** Two things are tied by the same people, the same tags and the same place; this is how strongly (people count most, tags and place add a little). */
+function tie(a: Links, b: Links): { strength: number; people: number; tags: number; place: boolean } {
+  const people = a.people.filter(id => b.people.includes(id)).length
+  const tags = a.tags.filter(tag => b.tags.includes(tag)).length
+  const place = a.place !== undefined && a.place === b.place
+  return { strength: 2 * Math.min(people, 2) + Math.min(tags, 2) + (place ? 1 : 0), people, tags, place }
+}
+/** The least a tie has to be for one thing to bring the other to mind. */
+const STRONG_TIE = 3
+/** What does not matter much is not brought back by association. */
+const ASSOCIABLE_IMPORTANCE = 3
 
 /**
  * The last stage: choose the `policy.recall` best of the pool. With a reranker's judgement each
@@ -340,16 +405,39 @@ export function poolCandidates(pool: RecallPool): RecallCandidate[] {
  */
 export function finishRecall(pool: RecallPool, rerank?: ReadonlyMap<string, number>): Recalled[] {
   const { policy } = pool.query
-  return pool.entries
-    .flatMap(({ candidate, fused }) => {
+  const standing = pool.entries
+    .flatMap(({ candidate, fused, found }) => {
       const relevance = rerank === undefined ? fused : RERANK_BLEND * Math.min(1, Math.max(0, rerank.get(candidate.key) ?? 0)) + (1 - RERANK_BLEND) * fused
-      const standing = judged(candidate, relevance, policy)
-      return standing === undefined ? [] : [{ candidate, ...standing }]
+      const judgement = judged(candidate, relevance, policy)
+      if (judgement === undefined) return []
+      const why: RecallWhy | undefined = pool.query.explain === true
+        ? { cues: candidate.cues, ...found, ...(rerank === undefined ? {} : { rerank: rerank.get(candidate.key) ?? 0 }), relevance, importance: candidate.importance, ageDays: candidate.ageDays, ...(judgement.retention === undefined ? {} : { retention: judgement.retention }), score: judgement.score }
+        : undefined
+      return [{ candidate, relevance, ...judgement, why }]
     })
     .sort((a, b) => b.score - a.score || b.candidate.recalled.turn - a.candidate.recalled.turn)
-    .slice(0, policy.recall)
-    .sort((a, b) => a.candidate.recalled.turn - b.candidate.recalled.turn)
-    .map(({ candidate, clarity, text }) => ({ clarity, text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source }))
+  const chosen = standing.slice(0, policy.recall)
+  const result = chosen.map(({ candidate, clarity, text, why }): Recalled => ({ clarity, text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source, ...(why === undefined ? {} : { why }) }))
+  const anchors = chosen.filter(entry => entry.relevance >= CUE_RELEVANCE)
+  const wanted = anchors.length === 0 ? 0 : Math.max(0, policy.associate ?? 0)
+  if (wanted > 0) {
+    const taken = new Set(chosen.map(entry => entry.candidate.key))
+    const rest = [...standing.slice(policy.recall).map(entry => entry.candidate), ...pool.others].filter(candidate => !taken.has(candidate.key) && candidate.importance >= ASSOCIABLE_IMPORTANCE)
+    const tied = rest.flatMap((candidate) => {
+      const best = anchors.map(anchor => tie(anchor.candidate.links, candidate.links)).sort((a, b) => b.strength - a.strength)[0]
+      const judgement = best === undefined || best.strength < STRONG_TIE ? undefined : judged(candidate, 0, policy)
+      return best === undefined || judgement === undefined || judgement.clarity === 'vague' ? [] : [{ candidate, best, judgement }]
+    })
+      .sort((a, b) => b.best.strength - a.best.strength || b.candidate.importance - a.candidate.importance || b.candidate.recalled.turn - a.candidate.recalled.turn)
+      .slice(0, wanted)
+    for (const { candidate, best, judgement } of tied) {
+      result.push({
+        clarity: judgement.clarity, text: judgement.text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source, linked: true,
+        ...(pool.query.explain === true ? { why: { cues: candidate.cues, relevance: 0, importance: candidate.importance, ageDays: candidate.ageDays, ...(judgement.retention === undefined ? {} : { retention: judgement.retention }), score: judgement.score, linked: { people: best.people, tags: best.tags, place: best.place } } } : {}),
+      })
+    }
+  }
+  return result.sort((a, b) => a.turn - b.turn)
 }
 
 /** Remind a character of what the moment calls to mind, in one call: {@link recallPool}, then {@link finishRecall} with the `rerank` evidence if there is any. */

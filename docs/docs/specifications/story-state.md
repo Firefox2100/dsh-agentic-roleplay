@@ -55,6 +55,10 @@ pipeline of retrieve, judge and choose:
    or if it fails (reported once in the log), retrieval alone decides.
 5. **Choose** the best `memory.recall` by relevance, importance and recency, and tell each in the way it is
    remembered, in the order it happened.
+6. **Associate**: up to `memory.associate` (default 2) more come to mind because they are strongly tied to something
+   the moment really matched: the same people together with the same tag or place (or two of the same people), and
+   important enough (3 or more). They are marked as coming to mind with the rest. Nothing matching the moment means
+   nothing is associated.
 
 What comes back is the character's own version, not the facts. Memories that nothing matches still come back
 by importance and recency (a character always remembers something recent that mattered).
@@ -129,6 +133,7 @@ settings stay in force, so a typo cannot stop a story in the middle.
 | `memory.recall` | 12 | most things a character is reminded of per action |
 | `memory.lookup` | true | a character can ask itself about more of its own memories while it decides |
 | `memory.overRetrieve` | 4 | how many times `memory.recall` candidates are retrieved before the best are chosen; a reranker judges the wider net, and 1 chooses straight from retrieval |
+| `memory.associate` | 2 | the most extra memories that come to mind because they are strongly tied to what the moment recalled; 0 turns it off |
 | `memory.verify` | true | the record keeper must read back what it wrote and compare it with the round before it finishes |
 | `context.limitTokens` | 0 | size at which the oldest turns are folded; 0 follows the model |
 | `context.limitRatio` | 0.6 | with no limit given, the share of the model's context window |

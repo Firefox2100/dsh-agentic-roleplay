@@ -64,7 +64,7 @@ provider registers alongside SenseVoice, while disabling API STT withdraws only 
 
 The models that agents talk to are served to DSH by the AI providers plugins (a provider that offers `llm` registers routes; one adapter serves them all) instead of DSH's stock adapter. The plugin does not depend on that: it only
 hands the controls of its helper agents to whichever service answers (`ctx.aiProviders.policy`, looked up on use), and works unchanged with DSH's own adapter, which ignores them. The controls are the temperature and whether the
-helper must answer with a tool call (`sampling.master` 0.7 for the game master's own requests, `sampling.characters` 0.8, `sampling.suggestions` 0.8, `sampling.authoring` 0.4, `sampling.records` 0.1 (record keeper, image author), `sampling.tools` in a chat's settings, all in the settings form except the tool choice; `importTemperature` for imports). Output length and thinking of the import's agents
+helper must answer with a tool call (`sampling.master` 0.7 for the game master's own requests, `sampling.characters` 0.8, `sampling.suggestions` 0.2, `sampling.authoring` 0.4, `sampling.records` 0.1 (record keeper, image author), `sampling.tools` in a chat's settings, all in the settings form except the tool choice; `importTemperature` for imports). Output length and thinking of the import's agents
 are `importMaxTokens` and `importReasoning`.
 
 ## Sharing a busy resource

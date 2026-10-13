@@ -4,8 +4,8 @@ import { dictionaries as form, type SettingsFormKey } from '../settings-form/loc
 export type ChatSettingsLocaleKey =
   | SettingsFormKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
-  | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed'
-  | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed'
+  | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
+  | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
 const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
@@ -31,6 +31,26 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     activityOwnModel: 'chat model',
     activityDone: 'done',
     activityFailed: 'failed: {reason}',
+    runShow: 'Show',
+    runHide: 'Hide',
+    runGone: 'This run was not kept, or has been dropped to make room for newer ones.',
+    runFailed: 'Could not load the run: {message}',
+    runPersona: 'Instructions',
+    runPrompt: 'What it was asked',
+    runRefused: 'refused',
+    runResult: 'Result',
+    runRecalled: 'What it was reminded of, and why',
+    whyCues: 'cues: names {people}, words {words}, place {place}',
+    whyIndex: 'words search {value}',
+    whyMeaning: 'meaning search {value}',
+    whyRerank: 'reranker {value}',
+    whyMatters: 'matters {value}/5',
+    whyAge: '{value} story days ago',
+    whyKept: 'still in mind {value}',
+    whyScore: 'ranked {value}',
+    whyLinked: 'came to mind with another memory (shares {people} people, {tags} tags{place})',
+    whyLinkedPlace: ', the place',
+    runNoResult: 'It submitted no result.',
     vectorsTitle: 'Search by meaning',
     vectorsUnavailable: 'Vector search is not available here, so memories are found by their words only.',
     vectorsNone: 'No vectors are stored yet ({pending} texts waiting). They are made in the background once an embedding model is selected and the story searches.',
@@ -67,6 +87,26 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     activityOwnModel: '对话模型',
     activityDone: '完成',
     activityFailed: '失败：{reason}',
+    runShow: '查看',
+    runHide: '收起',
+    runGone: '这次运行没有保留，或已被较新的运行挤出。',
+    runFailed: '无法加载这次运行：{message}',
+    runPersona: '指令',
+    runPrompt: '被问的内容',
+    runRefused: '被拒绝',
+    runResult: '结果',
+    runRecalled: '它被提醒了什么，以及原因',
+    whyCues: '线索：人名 {people}，字词 {words}，地点 {place}',
+    whyIndex: '字词检索 {value}',
+    whyMeaning: '含义检索 {value}',
+    whyRerank: '重排序 {value}',
+    whyMatters: '重要性 {value}/5',
+    whyAge: '{value} 个故事日前',
+    whyKept: '记忆保留 {value}',
+    whyScore: '排名分 {value}',
+    whyLinked: '与另一条记忆一同想起（共有 {people} 个人物、{tags} 个标签{place}）',
+    whyLinkedPlace: '、地点',
+    runNoResult: '它没有提交结果。',
     vectorsTitle: '按含义检索',
     vectorsUnavailable: '此处无法使用向量检索，记忆只按字词查找。',
     vectorsNone: '尚未存储向量（{pending} 条文本等待中）。选择嵌入模型并在故事检索时会在后台生成。',

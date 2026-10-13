@@ -23,6 +23,10 @@ Later rounds receive earlier outcomes from the same turn. Relationships influenc
 
 `/ooc` starts a separate out-of-character turn. It requires `ooc_ruling`, cannot activate characters, and may decree state only after a legal ruling. Its effects still use ordinary validation, records, perceptions, snapshots, and narration.
 
+`/ask` starts an out-of-character question turn. `ooc_answer` is its only action, and the answer is written by an agent that is given only what the player's character knows, so the game master cannot give away what is hidden: no ruling, no round, no preview, no time, no creation; `narrate` then delivers no segments and the answer rides in `TurnOutput.ooc` with `question`.
+
+`judge_action` may name the place where the action happens (`at`, a place key). When the player's character is in another place that neither contains nor is inside it, the action is judged not to work whatever the game master said, with the reason that the character has to go there first. A character in no place, or a world without places, is no evidence and never blocks.
+
 ## Background boundary
 
 Narration is the user-visible completion boundary. Record keeping, consolidation, off-stage action, suggestions, and images continue afterwards. Work that reads or changes story state calls `TurnEngine.settle` before proceeding; a later turn waits for an earlier failed record run and retries it once. Pending work is persisted, so restart, rewind, and branch do not silently lose it.
@@ -31,7 +35,7 @@ Triggers are evaluated at turn start, after every committed round, and after a t
 
 ## Child agents
 
-`runChild` creates a child through the parent agent context, registers only its scoped tools, validates `submit_result`, enforces a call budget, and reminds a child that stops before submitting. This is intentionally used instead of globally exposing character-specific tools such as `recall_my_memories`.
+`runChild` creates a child through the parent agent context, registers only its scoped tools, validates `submit_result`, enforces a call budget (once it is used up the child's other tools are withdrawn, so that a model made to call a tool at every step can only submit; it is stopped if it still does not within three steps), and reminds a child that stops before submitting. This is intentionally used instead of globally exposing character-specific tools such as `recall_my_memories`.
 
 Keep personas and tool declarations stable. Put changing scene data in the user brief. A tool must enforce every authority and consistency rule in code; prompt instructions are not a security boundary.
 

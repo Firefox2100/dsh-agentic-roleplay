@@ -171,9 +171,8 @@ function age(at: number | undefined, now: number | undefined): string {
 /** What a character remembers, in the way it remembers it: what is faded or vague is told as such. */
 function remembered(memories: readonly Recalled[], now?: number): string {
   return memories.map((memory) => {
-    if (memory.clarity === 'clear') return `- (${age(memory.at, now)}) ${memory.text}`
-    if (memory.clarity === 'faded') return `- (${age(memory.at, now)}, the details are fuzzy) ${memory.text}`
-    return `- (${age(memory.at, now)}, you barely remember) ${memory.text}`
+    const how = memory.clarity === 'clear' ? age(memory.at, now) : `${age(memory.at, now)}, ${memory.clarity === 'faded' ? 'the details are fuzzy' : 'you barely remember'}`
+    return `- (${how}${memory.linked === true ? ', it comes to mind with the rest' : ''}) ${memory.text}`
   }).join('\n')
 }
 
@@ -216,6 +215,8 @@ export const sharedContext: CharacterContextProvider = {
     }
     if (memories !== undefined && memories.length > 0) {
       sections.splice(1, 0, `What you remember that bears on this (only what you took in yourself; do not claim to remember more, and be unsure of what is fuzzy):\n${remembered(memories, time?.now)}`)
+    } else if (memories !== undefined) {
+      sections.splice(1, 0, 'What you remember that bears on this: nothing comes to mind.')
     }
     if (earlier !== undefined && earlier.length > 0) {
       sections.push(`Earlier in this scene, before this moment:\n${earlier.map(said).join('\n')}`)
@@ -424,8 +425,8 @@ export const exactUtterances: NarrationChecker = {
 
 /** What a character is reminded of is what the story's records bring back for it: by the cues of the moment, by its words, and by its meaning when vectors exist. */
 export const recordsRecall: Recaller = {
-  recall: ({ member, situation, turn, policy, queryVector }, story, signal) =>
-    story.recallRanked({ characterId: member.character.id, situation, turn, policy, ...(member.place === undefined ? {} : { locationId: member.place.location.id }) }, signal, queryVector === undefined ? {} : { queryVector }),
+  recall: ({ member, situation, turn, policy, queryVector, explain }, story, signal) =>
+    story.recallRanked({ characterId: member.character.id, situation, turn, policy, ...(explain === true ? { explain } : {}), ...(member.place === undefined ? {} : { locationId: member.place.location.id }) }, signal, queryVector === undefined ? {} : { queryVector }),
 }
 
 /**

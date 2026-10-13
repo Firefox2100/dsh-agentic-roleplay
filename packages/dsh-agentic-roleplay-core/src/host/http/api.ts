@@ -3,6 +3,7 @@ import type { RoutineDefinition } from 'dsh-roleplay-model'
 import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
+import type { RunDetail } from '../../shared/activity.ts'
 import type { Note } from '../../shared/notes.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import { languageOf } from '../prompts/library.ts'
@@ -106,6 +107,8 @@ export interface ApiDeps {
     archive(id: string): Promise<void>
     restore(id: string): Promise<void>
     rename(id: string, name: string): Promise<void>
+    /** What a helper run was told and did, when the session kept it. @throws {SessionNotFoundError} */
+    activityRun(id: string, run: string): RunDetail | undefined
     /** Forgets the session's stored search vectors. */
     resetVectors(id: string): void
     world(id: string): WorldState
@@ -643,6 +646,19 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, wo
       GET: async (_req, res, url) => {
         try { await sendImage(res, await sessions.portraitFile(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) }
         catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+      },
+    },
+    '/sessions/activity/run': {
+      GET: async (_req, res, url) => {
+        try {
+          const detail = sessions.activityRun(url.searchParams.get('id') ?? '', url.searchParams.get('run') ?? '')
+          if (detail === undefined) return sendError(res, 404, 'this run was not kept, or has been dropped to make room')
+          sendJson(res, 200, detail)
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof RangeError) return sendError(res, 400, error.message)
+          throw error
+        }
       },
     },
     '/sessions/vectors/reset': {

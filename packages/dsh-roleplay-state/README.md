@@ -66,7 +66,7 @@ The package owns how a story is remembered, not only where it is stored:
 - `session.records(scope)` reads the records back in the same wire format.
 - `session.recall({ characterId, situation, turn, policy })` is what a character is reminded of: events it took in and things it believes, by who the situation mentions, shared words and tags, importance and story-time recency; with `policy.flaky` the older and less important are told as faded or vague, or are gone. Age is elapsed story time from `session.clock`, never turn count; an unimportant event has a six-story-day half-life. It counts what it brings back as recalled, which makes it last longer.
 - `session.recallStored(query, { queryVector? })` adds the session's search index to the cues: texts that match the situation by words and, with the vector of the situation, by meaning. `session.searchEvents({ text, vector?, fromTurn, toTurn, minImportance, limit })` finds what happened by the same two searches, merged by reciprocal rank.
-- `session.recallRanked(query, signal, { queryVector? })` is the call for anything that reminds a character of something: `recall`, ranked by meaning when a plugin has registered a ranker with `roleplayState.rankMemories(ranker)` (an embedding model, a reranker; see `docs/capabilities.md`). `session.recallCandidates(query)` gives what could be recalled, with the text to match, for a ranker.
+- `session.recallRanked(query, signal, { queryVector? })` is the call for anything that reminds a character of something: `recall`, ranked by meaning when a plugin has registered a ranker with `roleplayState.rankMemories(ranker)` (an embedding model, a reranker; see `docs/capabilities.md`). `session.recallCandidates(query)` gives what could be recalled, with the text to match, for a ranker. With `explain: true` in the query each recalled thing carries `why`: the cues of the moment (people named, words shared, place), what each search scored it, how much it matters, how long ago it was, how much of it is left in mind and what it was ranked by.
 - `session.knowledge` is the closed-world awareness graph for locations, items and directed exits (`learn`, `knows`, `get`, `list`, `forget`). Directional relationships are the corresponding character-to-character edges. Awareness grants identity only, not current state or whereabouts. `session.planKnownMove` plans through only a character's known places and exits; `planMove` remains the authoritative world planner.
 - `session.factions`, `factionStates`, `factionMemberships`, `factionRelationships` and `factionIntents` store persistent organisations separately from characters that act in scenes. Membership is many-to-many; relationships involving factions are directional and double as closed-world awareness edges.
 - `roleplayState.bind(resolver)` tells the tools which roleplay session an agent works in (the plugin that runs the agents supplies it, with the turn being played and the memory policy).
@@ -152,6 +152,12 @@ Migrations are applied in order when a session is opened and are never edited
 once released: a change is a new entry in `src/sqlite/schema.ts`, and a test
 pins the migrations of each release. A database from a newer version is refused
 rather than damaged.
+
+Before a file that is behind the latest schema is upgraded, it must pass SQLite's
+quick integrity check (a damaged file is refused with `CorruptDataError`, untouched)
+and a copy of it as it was is written to `migration-backups/schema-<version>.sqlite`
+beside the database, once per old version. `migrationBackupPath(location, version)`
+says where.
 
 ## Errors
 

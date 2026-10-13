@@ -1,11 +1,12 @@
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import type { CharacterId, Move, MovePlan, NewSession, StoryEvent, TriggerNote } from 'dsh-roleplay-model'
 import { lapseNotes, runTriggers, type TriggerRun, type TriggerRunOptions } from './records/triggers.ts'
 import { moveCharacter, planKnownMove, planMove } from './records/movement.ts'
 import { systemClock, type Clock } from './clock.ts'
 import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
-import { ConflictError, NotFoundError, SchemaError } from './errors.ts'
+import { ConflictError, CorruptDataError, NotFoundError, SchemaError } from './errors.ts'
 import type {
   ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
@@ -340,12 +341,34 @@ export function openSessionStore(location: string, options: StoreOptions = {}): 
   try {
     const state = inspect(db)
     if (state.version === 0 || state.applicationId !== APPLICATION_ID) throw new SchemaError(`${location} is not a session database`)
+    if (state.version < LATEST_VERSION && location !== ':memory:') backUpBeforeMigrating(db, location, state.version)
     migrate(db)
     return new SqliteSessionStore(db, options.clock ?? systemClock, vectors)
   } catch (error) {
     db.close()
     throw error
   }
+}
+
+/** Folder, beside the database, holding the copies made before a schema upgrade. */
+export const MIGRATION_BACKUP_FOLDER = 'migration-backups'
+
+/** Where the copy of a database as it was at schema `version` is kept. */
+export function migrationBackupPath(location: string, version: number): string {
+  return join(dirname(location), MIGRATION_BACKUP_FOLDER, `schema-${version}.sqlite`)
+}
+
+/**
+ * A released session cannot be rebuilt, so an upgrade starts from a copy that passed the integrity check; one copy per old version is kept.
+ * @throws {CorruptDataError} when the database is damaged, before anything is changed.
+ */
+function backUpBeforeMigrating(db: SqlDatabase, location: string, version: number): void {
+  const check = db.get<{ quick_check: string }>('PRAGMA quick_check')?.quick_check
+  if (check !== 'ok') throw new CorruptDataError(`${location} failed its integrity check, so it was not upgraded: ${check ?? 'no result'}`)
+  const target = migrationBackupPath(location, version)
+  if (existsSync(target)) return
+  mkdirSync(dirname(target), { recursive: true })
+  db.run('VACUUM INTO ?', [target])
 }
 
 export { LATEST_VERSION as SCHEMA_VERSION }

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -6,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   CHARACTER_CONTROLS, CHARACTER_KINDS, CHARACTER_ROLES, CHARACTER_TIERS,
   INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES,
-  SchemaError, nodeSqliteDriver, openSessionStore,
+  SchemaError, migrationBackupPath, nodeSqliteDriver, openSessionStore,
 } from '../../src/index.ts'
 import { inspect, migrate } from '../../src/sqlite/migrate.ts'
 import { APPLICATION_ID, LATEST_VERSION, MIGRATIONS } from '../../src/sqlite/schema.ts'
@@ -79,6 +80,46 @@ describe('migrate', () => {
     expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'factions'")?.name).toBe('factions')
     expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'faction_memberships'")?.name).toBe('faction_memberships')
     db.close()
+  })
+
+  describe('before an upgrade', () => {
+    function oldDatabase(version: number): string {
+      const file = join(dir, 'session.sqlite')
+      const db = nodeSqliteDriver.open(file)
+      for (const migration of MIGRATIONS.slice(0, version)) db.exec(migration.sql)
+      db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+      db.exec(`PRAGMA user_version = ${version}`)
+      db.close()
+      return file
+    }
+
+    it('keeps a copy of the database as it was, once per old version', () => {
+      const file = oldDatabase(3)
+      openSessionStore(file, { vectors: false }).close()
+      const backup = migrationBackupPath(file, 3)
+      expect(existsSync(backup)).toBe(true)
+      const copy = nodeSqliteDriver.open(backup)
+      expect(inspect(copy).version).toBe(3)
+      copy.close()
+      writeFileSync(backup, 'kept')
+      openSessionStore(file, { vectors: false }).close()
+      expect(readFileSync(backup, 'utf8')).toBe('kept')
+    })
+
+    it('makes no copy when the schema is current', () => {
+      const file = oldDatabase(LATEST_VERSION)
+      openSessionStore(file, { vectors: false }).close()
+      expect(existsSync(migrationBackupPath(file, LATEST_VERSION))).toBe(false)
+    })
+
+    it('does not upgrade a database that fails its integrity check', () => {
+      const file = oldDatabase(2)
+      const bytes = readFileSync(file)
+      for (let index = 4096; index < bytes.length; index += 97) bytes[index] = 0xff
+      writeFileSync(file, bytes)
+      expect(() => openSessionStore(file, { vectors: false })).toThrow()
+      expect(existsSync(migrationBackupPath(file, 2))).toBe(false)
+    })
   })
 
   it('refuses a database that holds something else', () => {

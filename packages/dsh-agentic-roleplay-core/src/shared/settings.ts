@@ -24,6 +24,7 @@ export interface ChatSettings {
     backlogRounds: number
     /** How many times the number of memories a character is reminded of are retrieved before a reranker (when there is one) and the memory's own weight choose the best. */
     overRetrieve: number
+    associate: number
   }
   context: {
     /** The size of the conversation, in tokens, at which the oldest part is folded into the summaries; 0 takes a share of the model's context window (`limitRatio`). */
@@ -56,6 +57,10 @@ export interface ChatSettings {
     roundSeconds: number
     /** The longest the game master may skip ahead in one go. */
     maxSkipDays: number
+  }
+  diagnostics: {
+    /** Whether each helper run keeps what the helper was told and did (its instructions, what it was asked, its tool calls and its result), so that the chat settings can show why it said or wrote what it did. The latest 60 runs are kept. */
+    keepRuns: boolean
   }
   offstage: {
     /** The most characters, away from the player's character, that may be asked what they do about something that fell due (a commitment whose time came, a deadline that passed) after a turn. 0 turns it off. */
@@ -190,7 +195,7 @@ const text = (max: number, fallback: string): TextSpec => ({ kind: 'text', max, 
 export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
   maxCharacters: integer(1, 30, 4),
-  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), lookupCalls: integer(1, 20, 5), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4) },
+  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), lookupCalls: integer(1, 20, 5), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4), associate: integer(0, 10, 2) },
   context: {
     limitTokens: integer(0, 1_000_000, 0),
     limitRatio: ratio(0.1, 0.9, 0.6),
@@ -200,8 +205,9 @@ export const SETTINGS_SPEC = {
   },
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), thingsPerTurn: integer(0, 20, 4), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
+  diagnostics: { keepRuns: flag(false) },
   offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), joint: flag(true), summary: flag(true) },
-  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.8), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000) },
+  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 800) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },

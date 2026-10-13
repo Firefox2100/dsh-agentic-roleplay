@@ -28,6 +28,7 @@ title: Configuration reference
 | `memory.verify` | `true` | Keeper reads edits back |
 | `memory.backlogRounds` | 6 | Forced keeper threshold |
 | `memory.overRetrieve` | 4 | Candidate multiplier before final choice |
+| `memory.associate` | 2 | Most extra memories that come to mind with a matched one (strong tie, enough importance) |
 | `context.limitTokens` | 0 | Explicit fold limit; zero follows model metadata |
 | `context.limitRatio` | 0.6 | Share of model context used as the limit |
 | `context.retainRatio` | 0.5 | Verbatim share retained after folding |
@@ -42,7 +43,8 @@ title: Configuration reference
 | `offstage.perCharacter` | 1 | Times one character is asked per turn |
 | `offstage.summary` | `true` | Off-stage characters also say in a line what happened (same request), shown as the *Meanwhile* card |
 | `models.characters`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own |
-| `sampling.maxTokens`, `sampling.shortMaxTokens` | 8000, 2000 | Most tokens one helper request may produce; the short limit is for characters and suggestions, whose answers are brief (settings file only) |
+| `sampling.maxTokens`, `sampling.shortMaxTokens` | 8000, 800 | Most tokens one helper request may produce; the short limit is for characters and suggestions, whose answers are brief (settings file only) |
+| `diagnostics.keepRuns` | `false` | Keep what each helper run was told and did (its instructions, what it was asked, its tool calls and result, and for a character what it was reminded of and why), for the latest 60 runs; shown in the activity list of Chat settings |
 | `rewind.keepSnapshots` | 30 | Recent state snapshots |
 | `preview.enabled` | `true` | Show an early scene preview |
 | `suggestions.count` | 3 | Suggested next actions |

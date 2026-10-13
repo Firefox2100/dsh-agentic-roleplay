@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Boundaries, RoundRecord } from '../../../src/host/orchestration/boundaries.ts'
 import { defaultBoundaries, everyoneActs } from '../../../src/host/orchestration/defaults.ts'
 import type { Outcome } from '../../../src/host/orchestration/protocol.ts'
-import { TurnEngine, type RawSegment, type RunCharacter, type TurnOwner } from '../../../src/host/orchestration/turn-engine.ts'
+import { TurnEngine, type RawSegment, type RunAnswer, type RunCharacter, type TurnOwner } from '../../../src/host/orchestration/turn-engine.ts'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import { alice, arthur, bob, carol, dan, fakeStore, location, placed, scriptedRunner, type FakeStore } from './fixtures.ts'
 
@@ -11,6 +11,8 @@ const QUIET = { ...DEFAULT_SETTINGS, preview: { enabled: false }, suggestions: {
 const signal = new AbortController().signal
 const owner: TurnOwner = { chat: 'session-1', turn: 1 }
 const situation = 'Arthur opens the vault door.'
+/** A different moment for every number: the same words with a counter would be the same situation. */
+const moment = (number: number): string => `${situation} ${Array.from({ length: 5 }, (_, word) => Array.from({ length: 6 }, (_, letter) => String.fromCharCode(97 + ((number + 3) * (word + 5) * (letter + 7) + word * 11 + letter * letter * number) % 26)).join('')).join(' ')}`
 
 let boundaries: Boundaries
 let store: FakeStore
@@ -362,7 +364,7 @@ describe('delivering the output', () => {
   })
 
   it('needs an output even when nobody spoke, and refuses one before a round is recorded', async () => {
-    await expect(engine.narrate(owner, narration())).rejects.toThrow(/nothing to deliver yet: call activate_characters first/)
+    await expect(engine.narrate(owner, narration())).rejects.toThrow(/nothing to deliver yet: call activate_characters to let the characters act, or, when nobody else needs to react, call resolve_round/)
     const runner = scriptedRunner(calm)
     await engine.activate(owner, { situation }, runner.run, signal)
     await expect(engine.narrate(owner, narration())).rejects.toThrow(/resolve the round first/)
@@ -396,7 +398,7 @@ describe('delivering the output', () => {
 describe('writing the records', () => {
   const voices = { alice: { intent: 'a', utterance: 'Hello.', commitment: 'low' as const } }
   let asked = 0
-  const only = (runner: ReturnType<typeof scriptedRunner>) => engine.activate(owner, { situation: `${situation} (${asked++})`, characters: ['alice'] }, runner.run, signal)
+  const only = (runner: ReturnType<typeof scriptedRunner>) => engine.activate(owner, { situation: moment(asked++), characters: ['alice'] }, runner.run, signal)
   const aliceSucceeds = [outcome('alice', 'succeeded', 'Alice greets him', 'smiling')]
   const hello = [{ type: 'utterance' as const, character: 'alice', text: 'Hello.' }]
   let problems: string[]
@@ -490,7 +492,7 @@ describe('writing the records', () => {
     const second = { chat: 'session-1', turn: 2 }
     await engine.activate(second, { situation, characters: ['alice'] }, runner.run, signal)
     await engine.resolve(second, aliceSucceeds, runner.run, signal)
-    await engine.activate(second, { situation: `${situation} (${491})`, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(second, { situation: moment(491), characters: ['alice'] }, runner.run, signal)
     await engine.resolve(second, aliceSucceeds, runner.run, signal)
     expect(engine.waiting(second)).toBe(3)
     engine.record(second, 'the second turn')
@@ -559,7 +561,29 @@ describe('writing the records', () => {
     await play(runner)
     await only(runner)
     await engine.resolve(owner, aliceSucceeds, runner.run, signal)
-    await expect(engine.activate(owner, { situation: `${situation} (0)`, characters: ['alice'] }, runner.run, signal)).rejects.toThrow(/nothing new/)
+    await expect(engine.activate(owner, { situation: moment(0), characters: ['alice'] }, runner.run, signal)).rejects.toThrow(/nothing new/)
+  })
+
+  it('also refuses a round about a situation that only differs by a few words, but not one where something happened', async () => {
+    const runner = scriptedRunner({ alice: [voices.alice, { ...voices.alice }, { ...voices.alice }] })
+    await play(runner)
+    await only(runner)
+    await engine.resolve(owner, aliceSucceeds, runner.run, signal)
+    await expect(engine.activate(owner, { situation: `${moment(asked - 1)} Now!`, characters: ['alice'] }, runner.run, signal)).rejects.toThrow(/nothing new/)
+    await expect(engine.activate(owner, { situation: `${situation} Behind it a lantern swings, Bob steps back and Alice demands to know who left it burning.`, characters: ['alice'] }, runner.run, signal)).resolves.toBeDefined()
+  })
+
+  it('reads a speaker sent as a segment of its own as the character of the words that follow, only when it names someone in the scene', async () => {
+    await play()
+    const words = (hello.find(segment => segment.type === 'utterance') as RawSegment).text
+    const output = await engine.narrate(owner, [{ type: 'utterance', text: 'alice' }, { type: 'utterance', text: words }])
+    expect(output).toEqual({ segments: [{ type: 'utterance', character: 'alice', name: 'Alice', text: words }], repaired: false })
+  })
+
+  it('does not guess a speaker that is not in the scene', async () => {
+    await play()
+    const words = (hello.find(segment => segment.type === 'utterance') as RawSegment).text
+    await expect(engine.narrate(owner, [{ type: 'utterance', text: 'Nobody' }, { type: 'utterance', text: words }])).rejects.toThrow(/an utterance needs the character who says it/)
   })
 
   it('tries once more when the next turn starts if the records were asked for, and goes on without them when that fails too', async () => {
@@ -608,7 +632,7 @@ describe('writing the records', () => {
     store.settings = () => ({ ...base(), memory: { ...base().memory, backlogRounds: 2 } })
     const runner = scriptedRunner({ alice: [voices.alice, { intent: 'a', commitment: 'low' as const }] })
     await play(runner)
-    await engine.activate(owner, { situation: `${situation} (${609})`, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(owner, { situation: moment(609), characters: ['alice'] }, runner.run, signal)
     await engine.resolve(owner, aliceSucceeds, runner.run, signal)
     await engine.narrate(owner, hello)
     expect(calls).toBe(1)
@@ -1421,7 +1445,7 @@ describe('the world acting by itself', () => {
     make('storm')
     expect((await round()).report.done?.world).toHaveLength(1)
     const runner = scriptedRunner({ alice: [only.alice, { ...only.alice }] })
-    await engine.activate(owner, { situation: `${situation} (${1394})`, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(owner, { situation: moment(1394), characters: ['alice'] }, runner.run, signal)
     expect((await engine.resolve(owner, [outcome('alice', 'succeeded')], runner.run, signal)).done?.world).toEqual([])
   })
 
@@ -1430,7 +1454,7 @@ describe('the world acting by itself', () => {
     const first = await round()
     expect(first.runner.requests[0]?.cues).toBeUndefined()
     const runner = scriptedRunner({ alice: [{ intent: 'a', commitment: 'high' }, { intent: 'again', commitment: 'high' }, { intent: 'c', commitment: 'low' }] })
-    await engine.activate(owner, { situation: `${situation} (${1403})`, characters: ['alice'] }, runner.run, signal)
+    await engine.activate(owner, { situation: moment(1403), characters: ['alice'] }, runner.run, signal)
     expect(runner.requests[0]?.cues).toEqual(['You hear a scream upstairs.'])
     const retry = await engine.resolve(owner, [outcome('alice', 'failed')], runner.run, signal)
     expect(retry.next?.attempt).toBe(2)
@@ -1537,11 +1561,45 @@ describe('judging what the player tries', () => {
     engine.expectJudgement(owner)
     engine.judge(owner, false, 'There is no magic.')
     await expect(engine.activate(owner, { situation }, run, signal)).rejects.toThrow(/the action cannot work \(There is no magic\.\)/)
+    await expect(engine.narrate(owner, narration('Nothing happens.'))).rejects.toThrow(/the attempt does not work \(There is no magic\.\): call resolve_round with one outcome, for the player's character only.*then narrate/)
     await expect(engine.resolve(owner, [outcome('arthur', 'succeeded')], run, signal)).rejects.toThrow(/must be failed/)
     const resolved = await engine.resolve(owner, [outcome('arthur', 'failed', 'Arthur waves a hand; nothing comes of it')], run, signal)
     expect(resolved.done?.updated).toEqual(['arthur'])
     expect(requests).toEqual([])
     await expect(engine.narrate(owner, narration('Nothing happens.'))).resolves.toMatchObject({ repaired: false })
+  })
+})
+
+describe('judging where the action happens', () => {
+  const tavern = location(1, 'Tavern')
+  const cellar = location(2, 'Cellar', { parentId: 1 })
+  const market = location(3, 'Market')
+
+  beforeEach(() => {
+    for (const place of [tavern, cellar, market]) store.session.locations.add({ sourceId: place.sourceId!, name: place.name, description: '', features: [], ...(place.parentId === undefined ? {} : { parentId: place.parentId }) })
+  })
+
+  const standing = (where: typeof tavern | undefined) => { store.cast = () => [where === undefined ? arthur : placed(arthur, where), alice, bob] }
+
+  it('does not work when the character is somewhere else: it has to go there first, whatever was judged', async () => {
+    standing(tavern)
+    expect(engine.judge(owner, true, 'Arthur talks to the baker.', 'market')).toEqual({ allowed: false, reason: 'Arthur is at Tavern, not at Market where this happens: Arthur has to go there first', elsewhere: true })
+    await expect(engine.activate(owner, { situation }, scriptedRunner(calm).run, signal)).rejects.toThrow(/Arthur has to go there first/)
+  })
+
+  it('stands as judged when the place is the character\'s own, or holds it or is inside it, or none is said', () => {
+    standing(cellar)
+    for (const [turn, at] of [[1, 'cellar'], [2, 'tavern'], [3, undefined], [4, '  ']] as const) {
+      expect(engine.judge({ chat: 'session-1', turn }, true, 'Arthur searches.', at)).toEqual({ allowed: true, reason: 'Arthur searches.' })
+    }
+    standing(tavern)
+    expect(engine.judge({ chat: 'session-1', turn: 5 }, true, 'Arthur searches.', 'cellar')).toEqual({ allowed: true, reason: 'Arthur searches.' })
+  })
+
+  it('takes a character that is in no place as no evidence, and asks for a place that exists', () => {
+    standing(undefined)
+    expect(engine.judge(owner, true, 'Arthur talks to the baker.', 'market')).toEqual({ allowed: true, reason: 'Arthur talks to the baker.' })
+    expect(() => engine.judge({ chat: 'session-1', turn: 2 }, true, 'x', 'moon')).toThrow(/there is no place "moon"/)
   })
 })
 
@@ -1598,6 +1656,50 @@ describe('an out-of-character command', () => {
   })
 })
 
+describe('an out-of-character question', () => {
+  const answering = (text: string) => { const asked: Parameters<RunAnswer>[0][] = []; return { asked, run: ((request) => { asked.push(request); return Promise.resolve(text) }) as RunAnswer } }
+
+  it('is answered first; nothing can change, nobody is asked, and no ruling is given on it', async () => {
+    const { run, requests } = scriptedRunner(calm)
+    engine.beginOoc(owner, 'Who is the man at the bar?', true)
+    await expect(engine.activate(owner, { situation }, run, signal)).rejects.toThrow(/question asks nobody to act and changes nothing/)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], run, signal)).rejects.toThrow(/answer it first with ooc_answer/)
+    expect(() => engine.advanceTime(owner, { byMinutes: 5, reason: 'x' })).toThrow(/answer it first/)
+    await expect(engine.expand(owner, { need: 'object', what: 'a key' }, signal)).rejects.toThrow(/answer it first/)
+    expect(() => engine.preview(owner, 'x')).toThrow(/ooc_answer/)
+    expect(() => engine.rule(owner, true, 'fine')).toThrow(/answer it with ooc_answer/)
+    await expect(engine.narrate(owner, [])).rejects.toThrow(/answer it first/)
+    expect(engine.missing(owner)).toMatch(/answer it first with ooc_answer/)
+    expect(requests).toEqual([])
+  })
+
+  it('is answered from what the player\'s character is given, with the question as the moment, and delivered as the answer alone', async () => {
+    const { run } = scriptedRunner(calm)
+    const { asked, run: answer } = answering(' Arthur has not met him. ')
+    engine.beginOoc(owner, 'Who is the man at the bar?', true)
+    await expect(engine.answer(owner, answer, signal)).resolves.toEqual({ legal: true, note: 'Arthur has not met him.', question: true })
+    expect(asked).toHaveLength(1)
+    expect(asked[0]).toMatchObject({ member: { key: 'arthur' }, situation: 'Who is the man at the bar?', attempt: 1, lookup: false })
+    await expect(engine.answer(owner, answer, signal)).rejects.toThrow(/already answered/)
+    await expect(engine.resolve(owner, [outcome('alice', 'succeeded')], run, signal)).rejects.toThrow(/changes nothing/)
+    await expect(engine.narrate(owner, narration('A stranger.'))).rejects.toThrow(/deliver no segments/)
+    await expect(engine.narrate(owner, [])).resolves.toEqual({ segments: [], repaired: false, ooc: { legal: true, note: 'Arthur has not met him.', question: true } })
+    expect(store.commits).toEqual([])
+    expect(store.completed).toBe(1)
+  })
+
+  it('is not answered when it is not a question, with nothing, and an answer that is too long is cut', async () => {
+    await expect(engine.answer(owner, answering('x').run, signal)).rejects.toThrow(/not an out-of-character question/)
+    engine.beginOoc(owner, 'Who is he?')
+    await expect(engine.answer(owner, answering('x').run, signal)).rejects.toThrow(/not an out-of-character question/)
+    engine.beginOoc(owner, 'Who is he?', true)
+    await expect(engine.answer(owner, answering('  ').run, signal)).rejects.toThrow(/answer is empty/)
+    const long = await engine.answer(owner, answering('y'.repeat(2000)).run, signal)
+    expect(long.note).toHaveLength(1200)
+    expect(long.note.endsWith('…')).toBe(true)
+  })
+})
+
 describe('who acts when the world has places', () => {
   const bar = location(1, 'The Bar')
   it('leaves out, and refuses when named, a character that is in no place', () => {
@@ -1633,7 +1735,7 @@ describe('a character saying the same thing again', () => {
     const same = scriptedRunner({ alice: { intent: 'a', utterance: 'Hello.', commitment: 'low' } })
     await engine.activate(owner, { situation, characters: ['alice'] }, same.run, signal)
     await engine.resolve(owner, [outcome('alice', 'succeeded')], same.run, signal)
-    await engine.activate(owner, { situation: `${situation} (${1606})`, characters: ['alice'] }, same.run, signal)
+    await engine.activate(owner, { situation: moment(1606), characters: ['alice'] }, same.run, signal)
     await engine.resolve(owner, [outcome('alice', 'succeeded')], same.run, signal)
     expect(engine.spoken(owner).map(utterance => utterance.text)).toEqual(['Hello.'])
   })

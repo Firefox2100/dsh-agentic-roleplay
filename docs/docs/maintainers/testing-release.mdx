@@ -28,11 +28,32 @@ Node.js 22 or later is required. Do not treat a successful build as sufficient f
 | Browser UI | typecheck, production build, and live verification in a dedicated profile |
 | Documentation | English and Chinese production builds with broken links treated as errors |
 
+`tests/support/architecture.spec.ts` in the core package and `tests/architecture.spec.ts` in the state package read the source imports and fail on a broken layering: shared code imports only itself and the model; the browser half never imports host code, Node or the state package; the host never imports the browser half; packages are used only through their root exports; SQLite is reached through the driver alone; the tools, records and memory never see the driver; the model package imports nothing but itself. When a new rule is wanted, add it there rather than describing it.
+
 Use deterministic fakes for agent-loop tests. Assert tool calls and state transitions, not model prose. Concurrency tests should force overlapping turns/jobs and verify serialization, cancellation, and cleanup. Failure tests must confirm that a partially completed operation either rolls back or remains explicitly resumable.
+
+## Live evaluation
+
+Scripted-model tests cannot show what a real model does with the prompts. `eval/` plays scenarios (look around and talk, walk through an exit, try something the world's rules forbid, wait for hours, say something a character must remember) into a running dev DSH with the model you want to judge, then checks the story's database, the chat log and the helpers' record. Use a throwaway roleplay root, never your own:
+
+```sh
+node eval/run.mjs "<dsh url with token>" --label qwen-35b
+node eval/run.mjs "<dsh url with token>" --label qwen-35b-2 --baseline eval/results/qwen-35b.json
+```
+
+Scenarios that a model plays (`soak`: it pursues a goal in its own words for a few turns, and the story must stay sound) need a model for the player, any OpenAI-compatible endpoint, and are skipped without one:
+
+```sh
+node eval/run.mjs "<dsh url with token>" --only soak --player-model <name> [--player-url http://localhost:8081/v1] [--player-key-env VAR] [--player-reasoning none|omit|low|high]
+```
+
+The player is bounded on every side: at most `--player-turns` turns (default 6, never above 30), `--player-tokens` tokens spent by the player's own model (default 30000), `--player-minutes` of wall time (default 40) and none that would pass it by the typical turn time; one reply is at most 160 tokens and an action 300 characters; it is sent only the latest narration and its last five actions, never the whole story. It stops when it says it is done, repeats itself, is given nothing to read twice, writes something that is not an action (a `/` command), or a turn fails or ends without delivering anything, and the report says which (`stop`: `done`, `turns`, `tokens`, `time`, `stuck`, `invalid`, `failed`). `eval/player.test.mjs` tests these limits against a stub (`node --test eval/player.test.mjs`).
+
+A report is written to `eval/results/<label>.json`. With `--baseline` the run says which scenarios got more than twice as slow and which checks passed before and fail now, and exits non-zero. Scenarios are small files in `eval/scenarios/`; add one when a live session finds a bug.
 
 ## Persisted compatibility
 
-Never edit an existing migration after release. Add a new ordered migration and keep row mapping tolerant only where the schema explicitly permits it. Keep world files human-editable and report all validation problems in one pass. Stable ids and media paths must not be silently rewritten.
+Never edit an existing migration after release. Add a new ordered migration and keep row mapping tolerant only where the schema explicitly permits it. Opening a session that is behind the latest schema first checks its integrity and keeps a copy of it as it was in `migration-backups/schema-<version>.sqlite` beside the database; a migration that damages data can be undone by putting that copy back as `session.sqlite`. Keep world files human-editable and report all validation problems in one pass. Stable ids and media paths must not be silently rewritten.
 
 ## Release review
 

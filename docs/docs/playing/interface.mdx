@@ -8,7 +8,14 @@ The roleplay session is a normal DSH chat using the `roleplay` agent preset. The
 
 Write what your character says, attempts or pays attention to. You may combine action and dialogue. The GM determines consequences, chooses which autonomous characters should act, and may run more than one character round before narrating.
 
-Out-of-character instructions are allowed when clearly marked. They guide presentation or intent; they do not directly rewrite the database unless the relevant roleplay operation supports that change.
+You do not need to restate character sheets, scene facts or earlier events. The engine assembles current state and relevant memories for the agents. Specific actions still produce better play than abstract instructions: “ask Mara where she found the key” gives the scene more to resolve than “advance the plot.”
+
+Out-of-character messages are allowed when they begin with a command, and are a turn of their own:
+
+- `/ooc <command>` speaks to the game master as the author of the story ("Claire goes backstage", "there is a key under the table"). The game master first rules whether it breaks a rule of the world or your own rules; if not, it makes it happen with the ordinary checks and records, and you read a note beside the narration.
+- `/ask <question>` asks the game master something about the story ("does Alice know where Bob went?"). The answer comes from what you have been shown and what your character has seen, heard, been told or could know; other characters' secrets and what the story has not revealed stay unsaid. Nobody acts, nothing changes and no story time passes.
+
+Both can be taken back, regenerated and branched like any other turn.
 
 ## Additional tabs
 
@@ -17,5 +24,15 @@ Out-of-character instructions are allowed when clearly marked. They guide presen
 - **Gallery** shows generated and uploaded images with their metadata.
 
 Suggested actions are optional prompts, not forced choices. The user can always enter a different action.
+
+## What happens after sending
+
+The activity indicator may cover more than one model request. The GM decides who matters, selected character agents answer from their own perspectives, the GM resolves outcomes, and the record keeper may persist events and perceptions. Optional suggestion, speech, image and indexing work can follow. The latest helper activity and failures are visible in **Chat settings**.
+
+If a response fails before delivery, the turn is not silently presented as complete. Retry after correcting the provider or configuration problem. Story state is committed through explicit tools rather than inferred from partially displayed prose.
+
+## Playing out of character
+
+Use a clearly marked instruction such as `OOC:` when asking for a presentation change, clarification or pause. OOC instructions are guidance to the GM, not a hidden administrator command. Use the World tab when you intentionally want to inspect or edit session state.
 
 Characters know only their own relationships, perceptions, beliefs and explicit entity knowledge. They should not act on facts merely because those facts exist in the world database.

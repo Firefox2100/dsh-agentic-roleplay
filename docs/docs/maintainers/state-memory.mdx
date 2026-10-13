@@ -25,6 +25,7 @@ Recall searches only the subject character's perceptions and beliefs:
 3. Keep up to `memory.overRetrieve × memory.recall` candidates, capped at `60`.
 4. If a reranker exists, combine `70%` reranker score with `30%` fused retrieval score.
 5. Choose by relevance, importance, retention, and recency, then present memories chronologically.
+6. Associate: up to `memory.associate` more candidates that share people with a matched memory plus a tag or the place (or two people), have importance of at least `3`, and are not vague, marked `linked`. Without a matched memory nothing is associated.
 
 `recall_items` is the canonical search projection, `recall_fts` its word index, and `recall_vec` its per-character vector index. Changed text invalidates its vector. The first successful vectors fix the session's model and dimensions; incompatible vectors are refused while cues and words continue to work.
 

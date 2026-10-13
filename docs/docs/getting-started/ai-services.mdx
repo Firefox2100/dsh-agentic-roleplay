@@ -15,6 +15,8 @@ Roleplay always needs a DSH language-model route. Other AI capabilities are opti
 
 Install and configure providers through [DSH AI Providers](https://firefox2100.github.io/dsh-ai-providers/docs/intro). Select services under **Settings → AI Providers**, and configure language-model routes for DSH.
 
+When using DSH AI Providers for language models, follow its profile setup instructions: disable DSH's stock `@deepseek-ai/dsh-llm-pi-ai` adapter and `ui-settings-models` page, but keep the core `llm` service enabled. Provider coexistence is a profile-level choice and is not changed automatically by the roleplay bundle.
+
 For local inference, describe shared GPU or server limits in the AI Providers concurrency settings. Player-facing calls receive foreground priority; indexing and similar maintenance work use background priority.
 
 ### Model guidance
@@ -23,5 +25,16 @@ For local inference, describe shared GPU or server limits in the AI Providers co
 - Character agents can use a faster model if the selected DSH setup supports routing them separately.
 - Image interpretation requires a model declared as accepting image input.
 - Provider model metadata should include its context window; automatic context limits depend on it.
+
+One capable model can run every role, which is the simplest place to start. Later, **Chat settings → Models** can assign faster or cheaper routes to characters, the record keeper, suggestions, world authoring and plot work. Empty role-specific fields continue using the chat's selected model.
+
+Agentic turns can make several model calls: the GM may activate multiple characters, the keeper can record the result, and optional summaries, suggestions or images may follow. Use the **Fast preset** when latency or local inference capacity matters, then increase depth selectively. See [Session settings](../playing/settings).
+
+### Recommended order
+
+1. Verify one language model with tool use before starting a session.
+2. Add embeddings when you want semantic memory and lore retrieval.
+3. Add reranking only if the wider retrieval set benefits from it.
+4. Add image, TTS and STT providers according to the presentation features you actually use.
 
 Capability failures do not corrupt the story. Optional background work is retried or omitted, while required turn operations fail visibly.

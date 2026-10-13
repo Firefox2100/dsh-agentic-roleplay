@@ -195,6 +195,11 @@ beforeEach(async () => {
         if (notesError !== undefined) throw notesError
         return [{ kind: 'suggestions', turn: 2, lines: [`from ${id}`] }]
       },
+      activityRun: (id, run) => {
+        if (id !== 'abc') throw new SessionNotFoundError(`no session "${id}"`)
+        if (run === 'bad') throw new RangeError('"bad" is not a run')
+        return run === 'kept' ? { persona: 'p', prompt: 'q', calls: [], result: '{}' } : undefined
+      },
       imageStatus: id => Promise.resolve({ node: 'n2', mode: 'manual', state: 'absent', images: [], message: id }),
       generateImage: () => Promise.resolve({ node: 'n2', mode: 'manual', state: 'generating', images: [] }),
       imageFile: () => Promise.resolve({ file: join(base, 'worlds', 'harbor', 'media', 'files', 'm.png'), size: 9 }),
@@ -752,6 +757,26 @@ describe('roleplay API', () => {
       expect((await fetch(url())).status).toBe(401)
       allowed = true
       expect((await fetch(url(), { method: 'POST' })).status).toBe(405)
+    })
+  })
+
+  describe('what a helper run was told and did', () => {
+    const url = (run: string, id = 'abc') => `${origin}/sessions/activity/run?id=${id}&run=${run}`
+
+    it('is served when kept, and answers 404 when it was not or the session is unknown, and 400 for a bad run id', async () => {
+      const kept = await fetch(url('kept'))
+      expect(kept.status).toBe(200)
+      expect(await kept.json()).toEqual({ persona: 'p', prompt: 'q', calls: [], result: '{}' })
+      expect((await fetch(url('gone'))).status).toBe(404)
+      expect((await fetch(url('kept', 'x'))).status).toBe(404)
+      expect((await fetch(url('bad'))).status).toBe(400)
+    })
+
+    it('needs authentication and allows only GET', async () => {
+      expect((await fetch(url('kept'), { method: 'POST' })).status).toBe(405)
+      allowed = false
+      expect((await fetch(url('kept'))).status).toBe(401)
+      allowed = true
     })
   })
 

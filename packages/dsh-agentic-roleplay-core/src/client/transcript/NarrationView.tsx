@@ -32,7 +32,7 @@ export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData;
       <button type="button" className={css.playAll} disabled={playing} title={t('speakAll')} onClick={() => { void play(data.segments) }}>▶ {t(playing ? 'speaking' : 'speakAll')}</button>
       {data.ooc !== undefined && (
         <p className={data.ooc.legal ? css.oocNote : css.oocRefused} data-testid="roleplay-ooc">
-          <span className={css.oocLabel}>{t(data.ooc.legal ? 'oocDone' : 'oocRefused')}</span> {data.ooc.note}
+          <span className={css.oocLabel}>{t(data.ooc.question === true ? 'oocAnswer' : data.ooc.legal ? 'oocDone' : 'oocRefused')}</span> {data.ooc.note}
         </p>
       )}
       {data.segments.map((segment, index) => segment.type === 'narration'

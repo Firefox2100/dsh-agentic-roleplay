@@ -188,7 +188,7 @@ describe('the tools of one character', () => {
 
   it('say so when there is nothing to remember, and counts what it brings back as recalled', async () => {
     const tool = createCharacterTools(() => link!, store.characters.getBySourceId('alice')!.id)[0]!
-    expect(tool.output.render({} as never, [] as never).map(block => (block.type === 'text' ? block.text : '')).join('')).toBe('You do not remember anything about that.')
+    expect(tool.output.render({} as never, [] as never).map(block => (block.type === 'text' ? block.text : '')).join('')).toBe('You do not remember anything about that, and there is nothing more to find: go on with what you know.')
     store.edit({ turn: 1, events: [{ turn: 1, round: 1, text: 'x key', importance: 3, tags: ['key'], perceivedBy: [{ character: 'alice', mode: 'witnessed' }] }] })
     await tool.execute({ about: 'key' } as never, exec() as never)
     expect(store.events.perceivedBy(store.characters.getBySourceId('alice')!.id)[0]?.perception.recalls).toBe(1)

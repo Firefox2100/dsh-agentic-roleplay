@@ -9,6 +9,8 @@ title: Installation
 - a DSH profile with the web interface
 - at least one language-model route capable of running the game master and child agents
 
+A dedicated DSH profile is recommended. The bundle adds its own roleplay preset, sidebar experience, settings, session tabs, voice input, and supporting plugins; keeping them together avoids changing an unrelated DSH workspace.
+
 Install the bundle into the profile in which roleplay should be available:
 
 ```bash
@@ -17,11 +19,22 @@ dsh plugin --profile <profile> add @dsh-agentic-roleplay/all
 
 The bundle installs the roleplay core and `@dsh-agentic-roleplay/state`. Restart the profile after installation, then open **Role Play** in the DSH sidebar.
 
+## First-run checklist
+
+1. Set the storage root under **Settings → Role Play**.
+2. Configure at least one language-model route. The project-maintained provider integration is described in [AI services](./ai-services).
+3. Open **Role Play → Worlds** and add the sample world or create your own.
+4. Select the play button on a world card, choose a playable character, and start the session.
+
+The bundle does not include model credentials or download models. Optional media and retrieval features appear only when their corresponding services are available.
+
 ## Storage root
 
 Open **Settings → Role Play** and choose an absolute roleplay root. `~/dsh-roleplay` is the default; a leading `~` is supported. Worlds, avatars, session databases and media live below this root. Ordinary plugin configuration remains in the DSH profile.
 
 Changing the root switches the catalogue after the new value is valid. An invalid edit is rejected and the previous root remains active.
+
+Treat this folder as your roleplay library. Backing it up preserves authored worlds, reusable avatars, session databases, generated media, and session settings. Do not point two simultaneously running profiles at the same root.
 
 ## Updating
 
