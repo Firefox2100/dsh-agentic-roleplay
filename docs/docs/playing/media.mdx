@@ -6,14 +6,37 @@ title: Speech and images
 
 Set one narration voice in the world or session and a voice for each character. Voice IDs may be selected from the provider when it lists them or entered manually. This is necessary for servers whose voice library is not exposed through the API.
 
+Voice choices are presentation settings. They do not change character identity, story records or the text delivered by the GM. A world can provide useful defaults, while an individual session can change them without modifying the world used by future sessions.
+
 The play button on a full GM response synthesises narration and every utterance separately, then combines them in order. A character-level play button synthesises only that utterance. Requests may run concurrently subject to provider limits.
 
 Voice input uses DSH's speech provider when available. The API provider also exposes completed-file transcription, and live input uses streaming transcription only when the selected provider supports it.
+
+### Choosing and testing voices
+
+- Give narration a voice that remains clear across both description and scene transitions.
+- Use distinct voices only where they improve recognition; a large cast does not require every minor character to have a unique voice.
+- Enter a provider voice ID manually when the service cannot list its catalogue.
+- Test a short utterance before synthesising a long response. Provider limits and supported options differ.
+
+Speech is generated from the final delivered response, not from hidden character deliberation. If synthesis fails, the text turn remains complete and can still be read or retried.
 
 ## Images
 
 A portrait click generates or regenerates an entity's canonical reference image. Scene illustration settings can disable images, request them manually, or generate them every turn.
 
+Portrait generation is an authoring action: it updates the replaceable reference for that character, place, item or faction. Scene generation is a play action: it captures one moment on one timeline node and does not replace canonical identity.
+
 The image author first searches reusable pictures when reuse is enabled. It may choose a fitting image or generate a new one. Uploaded pictures can be interpreted by a vision model, described and added to the searchable library.
 
 Reference images are stable and replaceable. Scene images are immutable and numbered per timeline node. See [Visual identity](../authoring/visual-identity) and [Images and context](../concepts/images-context).
+
+## The gallery and reuse
+
+The session **Gallery** shows generated and uploaded images together with their subjects, origin and other metadata. Reuse lets the image author search this library before requesting a new generation. This is useful for recurring rooms, establishing shots and other material that should not consume another generation whenever it appears.
+
+An uploaded picture can become searchable after a vision-capable model describes it. Without image understanding, it can still be stored and viewed, but semantic reuse has less information to work with.
+
+## When a capability is missing
+
+Media is optional. The story remains playable without image, speech or transcription providers. If a control is unavailable, check that a provider is both configured and selected for that capability under **Settings → AI Providers**. See [Configure AI services](../getting-started/ai-services) for the distinction between a connection and an active capability.

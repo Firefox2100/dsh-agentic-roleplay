@@ -8,10 +8,31 @@ Player avatars live under the roleplay root rather than inside one world. Create
 
 Copies are independent. Later edits to the reusable avatar do not rewrite worlds or existing sessions.
 
+Use a reusable avatar for the stable parts of a player character: name, pronouns, appearance, voice, personality and a portable background. Keep world-specific relationships, local knowledge, possessions and starting location in the world or session copy. This prevents an avatar brought into several settings from carrying impossible knowledge between them.
+
+### World copy or session-only copy?
+
+- Copy an avatar into a **world** when it belongs to that world's designed cast and should be offered in every future session.
+- Add an avatar to a **new session** when one player wants to bring it into a particular run without changing the world.
+- Edit the resulting copy when the setting needs a local variation. The reusable source remains unchanged.
+
 ## Character cards
 
 The importer accepts a supported character card, extracts its text and pictures, and asks an import agent to map the material into the native character format. Imported pictures enter the world's image library when they can be fetched and validated.
 
 Review imported data before play. Character cards rarely distinguish public facts, private state, stable appearance, starting activity and long-term goals as precisely as the native model does.
 
+During review, pay particular attention to:
+
+- facts that other characters may safely see versus secrets for `inner_state` or explicit knowledge;
+- prose instructions that describe a chatbot response style rather than a person in a world;
+- example dialogue that should become speech guidance rather than current dialogue;
+- appearance details that are stable enough for visual identity;
+- goals and starting activity, which give the character something to do when play begins;
+- imported names or IDs that conflict with the existing cast.
+
+An import is a draft, not a live compatibility layer. After conversion, the native character files and copied images are authoritative; changing the original card does not update them.
+
 Import limits, concurrency, reasoning effort, token budget and temperature are configured on the core plugin. Network images are fetched only after their addresses and response types pass validation.
+
+If an import is too large or ambiguous, reduce the source material to the facts that define the character and add setting-specific material in the editor afterwards. A focused character with clear motives is more useful to the runtime than a long card full of duplicated examples and instructions.

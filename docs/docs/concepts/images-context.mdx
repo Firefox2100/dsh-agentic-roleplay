@@ -6,14 +6,30 @@ title: Images and context
 
 Canonical visual identity is stable data. A reference image renders that identity once at a stable path. A transient scene combines it with current clothing, expression, activity, damage, lighting and surroundings.
 
+Keeping these layers apart prevents a dramatic moment from rewriting what an entity normally looks like. A rain-soaked coat, a bandaged hand or candlelight belongs to the scene description. Age, facial structure, a heraldic mark or the material of a distinctive object belongs to canonical identity.
+
 The image author can search reusable images before generating. Search uses descriptions, subjects and tags, with optional semantic vectors. When a vision model is available, uploaded images are described before entering the reusable library.
 
 Image metadata travels with the file so copying or editing the media library does not require synchronising a database table.
+
+Identity versions make deliberate changes visible. When an author changes stable appearance, increasing the version tells later image work that an older reference may no longer represent the current identity. A scene image remains an immutable record of the moment in which it was made.
+
+## What reaches an image request
+
+The image author assembles only what is useful for the requested picture: the scene composition, visible subjects, their stable identities and relevant current appearance. It can attach reference images when the provider accepts them. Private thoughts and unrelated world records do not need to enter an image prompt.
+
+When reuse is enabled, the author searches existing media first. A suitable library image may be selected instead of generating another. This keeps recurring visual material consistent and reduces unnecessary calls.
 
 ## Conversation context
 
 The complete conversation remains verbatim until it reaches an explicit token limit or a fraction of the selected model's context window. Compaction removes only whole old turns.
 
+The roleplay state and the conversation serve different purposes. The conversation preserves what the player read and said; the database preserves the world's durable facts and each character's perspective. Compaction can therefore shorten old chat history without erasing the event, relationship or belief records needed later.
+
 A chronicler writes short-term digests and longer chapters from authoritative events plus player actions. It does not repeatedly summarise summaries without consulting records. The current scene, open threads and relevant older events remain near the conversation tail.
 
 Compaction changes the prompt prefix infrequently. Between folds, new content is appended at the end, preserving language-model prefix cache reuse.
+
+The chronicler's digest is not treated as a new source of truth. It is rebuilt from authoritative events and player actions, then used as a compact narrative bridge. Current scene data, unresolved threads and retrieved memories remain separately available near the changing end of the prompt.
+
+This design keeps long-running stories within a model's context window while avoiding the common failure mode where repeated summaries gradually replace specific facts with their own paraphrases.

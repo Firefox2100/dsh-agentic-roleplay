@@ -4,16 +4,36 @@ title: Sessions and timelines
 
 The Sessions page lists name, world, creation time, last play time and turn count. Opening a row recreates its DSH chat if the chat was removed; the roleplay database remains authoritative.
 
+Each session is a separate copy of a world's starting state. Playing, editing session state, generating images or changing session settings never rewrites the source world and never changes another session. This makes a session the right boundary for experimentation: one world can support several players, protagonists or alternate histories without duplicating its authored files.
+
+## Resume a story
+
+Open **Role Play → Sessions** and select the story. The session restores its active timeline, settings, current world state and roleplay chat. If the DSH chat entry was archived or removed, the plugin recreates the entry from the roleplay session; it does not reconstruct state by rereading prose.
+
+The turn count describes completed player turns on the active story. Background records, character decisions and generated media belong to those turns but do not each count as another player turn.
+
 ## Take back
 
 Taking back moves the active timeline pointer to an earlier node. Later history remains available rather than being immediately destroyed. A new action from the earlier point creates a branch.
 
+Use take-back when the last action was a mistake, a provider failed partway through a turn, or you deliberately want to revisit a decision. State follows the selected node: character locations, items, relationships, clock, events and other records return to what they were at that point. Generated files from later nodes may remain on disk, but they are not treated as the active scene.
+
 ## Branch
 
 A branch is another continuation of the same earlier state. It receives its own active timeline while preserving the history from which it began. Use branches to explore alternatives without manually copying world files.
+
+For example, take back to the moment before opening a sealed door, then send a different action. The original continuation remains part of the timeline history while the new message becomes the active branch. Branches share the same session folder and source world; they are not separate entries on the Sessions page.
+
+## What belongs to the timeline
+
+The timeline covers story state committed by turns: objective events, perceptions, beliefs, placement, inventory, variables, plot progress and story time. A take-back restores these together so the database cannot claim that a character remembers an event which no longer happened on the active branch.
+
+Session settings are live configuration rather than story history. Changing a model route, memory limit or image policy affects later work and is not undone by moving the timeline pointer.
 
 ## Archive and delete
 
 Archiving affects the DSH chat listing. Deleting from the Sessions page retires the chat and removes the roleplay session folder. The DSH persistence layer may retain an archived chat log because DSH does not expose permanent log deletion.
 
 Deletion is destructive; generated images and the session database are removed with the session folder. The source world and reusable avatars are not changed.
+
+Back up the session directory before deletion if you may want the story again. Copying only the visible chat is not enough: the database contains the durable state and the image directory contains the session's media.

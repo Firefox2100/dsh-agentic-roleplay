@@ -6,6 +6,8 @@ Select **Author world** from the world editor. DSH opens a chat named after the 
 
 The assistant can list and read world elements, inspect links and relationships, and propose creating, updating or deleting authored data. Mutation tools write the same files used by the manual editor.
 
+Use it for changes that benefit from synthesis across several parts of a world: adding a person who fits an existing faction, finding incomplete connections, turning a premise into a small set of optional beats, or checking whether private knowledge has been placed on the right characters. For precise field edits, the visual editor is usually faster.
+
 ## Approval
 
 Every mutation requires user approval through DSH's approval flow. A refusal leaves files unchanged. After approval, the tool validates the proposed document and writes it atomically; errors are returned to the chat for correction.
@@ -17,3 +19,25 @@ Ask for outcomes rather than file operations, for example:
 - “Review the first plot and reduce the pressure to advance it.”
 
 Use the shared World tab to inspect the result. The chat and editor operate on the same workspace folder.
+
+## A productive workflow
+
+1. State the desired outcome and any facts that must remain unchanged.
+2. Ask the assistant to inspect the relevant world elements before proposing edits.
+3. Review each approval request, especially IDs, relationships, placement and private knowledge.
+4. Open the World tab and verify the result in context.
+5. Run a short session before asking for more breadth.
+
+Good requests provide constraints without dictating the storage format:
+
+- “Add two ways into the archive. One should require the brass key; the other should be risky but possible without it.”
+- “Give the trust a concrete goal for tonight and a reason not to involve the police.”
+- “Check which characters know about the 1891 incident. Do not reveal it to anyone new.”
+
+Avoid asking for a whole setting in one mutation. Smaller approved steps are easier to inspect, produce clearer validation errors and let you correct the direction before the world becomes crowded.
+
+## Concurrent editing
+
+The authoring chat and visual editor address the same files, but neither is a collaborative document editor. Finish and review an approved assistant change before making overlapping manual edits. If files were changed outside DSH, refresh the editor before continuing.
+
+The assistant changes authored worlds, not active session databases. Use the session's World tab for deliberate changes to a story already in progress.

@@ -13,14 +13,35 @@ The memory hierarchy is **turn → event → perception → belief**.
 
 The record keeper writes queued rounds when the GM requests it or the backlog limit is reached. It may read its edits back before completion. Events are sealed with the completed commit; later corrections edit perceptions rather than rewriting history.
 
+This separation prevents narration from becoming the database. The prose can be concise or stylistic, while a durable event still records who was involved, where it happened and what changed. A character's perception can omit or misread part of that event without changing the objective record.
+
+### A small example
+
+Suppose Elias unlocks the west door while Mara watches from the stairs:
+
+- the **event** records that Elias unlocked the door;
+- Mara's **perception** records what she saw and heard;
+- a person outside the building receives no perception merely because the event exists;
+- Mara may later form the **belief** that Elias possesses the key, even if he borrowed it.
+
+Recall can bring Mara's experience back later. It does not grant the same memory to every character.
+
 ## Recall
 
 Recall combines explicit cues, full-text search and optional semantic vectors. A reranking provider can refine a wider candidate pool. Importance, relevance, story-time recency and retention choose the final memories.
 
 Imperfect memory fades detail according to elapsed story time, importance and repeated recall. Important memories remain at least faded. Disabling it gives exact recall and accurate perceptions.
 
+Recall first retrieves more candidates than the character will receive, then chooses a small, relevant and varied set. Closely related memories may come along when they share people, place or a strong tag, allowing one recollection to cue another without exposing unrelated records. With diagnostics enabled, the run inspector can show why a memory was selected; those scores are never shown to the model.
+
+Memory uses story time. Skipping a month can fade a recollection more than playing twenty turns during the same evening. Importance and retention keep consequential experiences available longer than incidental details.
+
 ## Relationships and knowledge
 
 Character relationships are directional profiles. No outgoing profile means the other character is a stranger. Meeting someone creates an acquaintance edge when appropriate.
 
 Knowledge of locations, items, exits and lore is an explicit closed-world graph. No edge means unknown. A knowledge edge identifies an entity; it does not reveal its current location, owner, contents or condition. Navigation intended by a character uses only its known map.
+
+Relationships and knowledge answer different questions. A relationship describes how one person regards another. Entity knowledge says that the person can identify something at all. Perceptions and beliefs then hold what the person has experienced or concluded about it.
+
+This layered model is why adding a fact to a public world description is not interchangeable with granting character knowledge. Authors should place secrets on the people who know them, and let play create new perceptions and beliefs for everyone else.

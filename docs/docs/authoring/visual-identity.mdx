@@ -12,12 +12,43 @@ Characters, places, items and factions may have an optional visual identity:
 
 Do not put expression, pose, temporary clothing, lighting, damage or surroundings into canonical identity. Those belong to the transient description of a scene.
 
+A useful identity describes what another artist would need to recognise the same subject in a different composition. Prefer concrete visual facts over style adjectives:
+
+```json
+{
+  "description": "A woman in her early thirties with grey eyes, dark wavy hair and a narrow scar through her left eyebrow.",
+  "tags": ["grey eyes", "dark wavy hair", "left eyebrow scar"],
+  "negative_tags": ["blonde hair", "blue eyes"],
+  "version": 1
+}
+```
+
+Do not repeat every description in all three fields. The description supplies natural-language identity, tags reinforce compact positive anchors, and negative tags prevent recurring high-cost mistakes.
+
 ## Reference images
 
 The canonical image is always named `reference.png`. Regeneration replaces that file. When a global ID exists it is stored below `images/global/<id>/`; otherwise it is stored by entity kind and local ID.
+
+Use a global ID only when two authored entities are intentionally the same visual subject across worlds or copies. Reusing a name is not enough: two unrelated characters called “Mara” should not share a global identity.
+
+Uploading a PNG portrait is an alternative to generation. The uploaded file becomes the current reference and records its origin. Keep your original asset elsewhere if you may want to restore it after regeneration.
 
 ## Scene images
 
 A scene combines stable identity, current appearance and the moment's composition. Reference images may be supplied to providers that support image conditioning. Scene files are numbered under `images/scenes/` and are never overwritten.
 
 Metadata is stored with the image, with a sidecar fallback where necessary. The filesystem remains authoritative so users can manage media directly.
+
+## Versioning an identity
+
+Increase `version` when a stable visual fact changes: a redesigned uniform, a permanent scar, a rebuilt object or a faction's new insignia. Do not increase it for expression, weather, temporary injury or a change of camera angle.
+
+Existing scene images are not regenerated when the version changes. They remain records of earlier moments. Generate or upload a new reference so future scenes can condition on the revised identity.
+
+## Authoring for consistent scenes
+
+- Keep stable identity independent of pose and environment.
+- Give visually important items and locations their own identities instead of burying them in a character prompt.
+- Use current session state for temporary clothing, condition and activity.
+- Prefer a few distinguishing traits over a long list of generic beauty or quality terms.
+- Check the Gallery metadata when an image appears inconsistent; it shows which identities and versions were used.
