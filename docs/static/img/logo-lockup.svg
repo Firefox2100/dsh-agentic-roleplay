@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 80" role="img" aria-labelledby="title desc">
+  <title id="title">Agentic Roleplay</title>
+  <desc id="desc">Living folio symbol with the Agentic Roleplay name.</desc>
+  <g transform="translate(8 8)">
+    <rect width="64" height="64" fill="#18303a"/>
+    <path fill="#f2ecde" d="M8 11h21l3 4 3-4h21v40H36l-4 3-4-3H8z"/>
+    <path fill="none" stroke="#18303a" stroke-width="2" d="M32 15v39"/>
+    <path fill="none" stroke="#9c3f34" stroke-width="4" d="M13 42h11l8-13 8 8h11"/>
+    <rect x="11" y="40" width="5" height="5" fill="#9c3f34"/>
+    <rect x="29.5" y="26.5" width="5" height="5" fill="#9c3f34"/>
+    <rect x="48" y="34.5" width="5" height="5" fill="#9c3f34"/>
+  </g>
+  <text x="92" y="51" fill="#18303a" font-family="EB Garamond, Georgia, serif" font-size="40" font-weight="600" letter-spacing="-1">Agentic Roleplay</text>
+  <path stroke="#4f7465" stroke-width="2" d="M94 62h306"/>
+</svg>

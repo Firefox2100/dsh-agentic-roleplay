@@ -28,23 +28,23 @@ export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData;
     } catch (error) { console.warn('roleplay: speech could not be played', error); setPlaying(false) }
   }
   return (
-    <div className={css.output} data-testid="roleplay-narration">
+    <div className={css.output} data-testid="roleplay-narration" data-rp="narration">
       <button type="button" className={css.playAll} disabled={playing} title={t('speakAll')} onClick={() => { void play(data.segments) }}>▶ {t(playing ? 'speaking' : 'speakAll')}</button>
       {data.ooc !== undefined && (
-        <p className={data.ooc.legal ? css.oocNote : css.oocRefused} data-testid="roleplay-ooc">
+        <p className={data.ooc.legal ? css.oocNote : css.oocRefused} data-testid="roleplay-ooc" data-rp="ooc">
           <span className={css.oocLabel}>{t(data.ooc.question === true ? 'oocAnswer' : data.ooc.legal ? 'oocDone' : 'oocRefused')}</span> {data.ooc.note}
         </p>
       )}
       {data.segments.map((segment, index) => segment.type === 'narration'
-        ? <p key={index} className={css.narration}>{segment.text}</p>
+        ? <p key={index} className={css.narration} data-rp="prose">{segment.text}</p>
         : (
-          <div key={index} className={css.line} data-testid="roleplay-utterance">
-            <div className={css.avatar} style={{ background: `hsl(${hueOf(segment.name)} 32% 40%)` }} aria-hidden="true">
+          <div key={index} className={css.line} data-testid="roleplay-utterance" data-rp="utterance">
+            <div className={css.avatar} data-rp="avatar" style={{ background: `hsl(${hueOf(segment.name)} 32% 40%)` }} aria-hidden="true">
               {Array.from(segment.name)[0]?.toUpperCase()}
             </div>
             <div className={css.speech}>
-              <span className={css.name}>{segment.name}<button type="button" className={css.playLine} disabled={playing} title={t('speakLine')} onClick={() => { void play([segment]) }}>▶</button></span>
-              <span className={css.words}>{segment.text}</span>
+              <span className={css.name} data-rp="speaker">{segment.name}<button type="button" className={css.playLine} disabled={playing} title={t('speakLine')} onClick={() => { void play([segment]) }}>▶</button></span>
+              <span className={css.words} data-rp="words">{segment.text}</span>
             </div>
           </div>
         ))}

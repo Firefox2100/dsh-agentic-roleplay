@@ -12,7 +12,7 @@ const sidebars: SidebarsConfig = {
     ]},
     {type: 'category', label: 'World authoring', items: [
       'authoring/overview', 'authoring/editor', 'authoring/assistant',
-      'authoring/avatars-import', 'authoring/visual-identity',
+      'authoring/avatars-import', 'authoring/visual-identity', 'authoring/interface-packs',
     ]},
     {type: 'category', label: 'World format', items: [
       'world-format/overview', 'world-format/world', 'world-format/characters',
@@ -30,7 +30,7 @@ const sidebars: SidebarsConfig = {
     {type: 'category', label: 'Maintainer guide', items: [
       'maintainers/overview', 'maintainers/orchestration',
       'maintainers/state-memory', 'maintainers/world-prompts-import',
-      'maintainers/images-capabilities', 'maintainers/dsh-contracts',
+      'maintainers/images-capabilities', 'maintainers/interface-packs', 'maintainers/dsh-contracts',
       'maintainers/testing-release',
       {type: 'category', label: 'Detailed specifications', items: [
         'specifications/world-files', 'specifications/turn-engine',
@@ -40,7 +40,7 @@ const sidebars: SidebarsConfig = {
       ]},
     ]},
     {type: 'category', label: 'Reference', items: [
-      'reference/configuration', 'reference/filesystem',
+      'reference/configuration', 'reference/filesystem', 'reference/interface-pack-format',
       'reference/troubleshooting', 'reference/glossary',
     ]},
   ],

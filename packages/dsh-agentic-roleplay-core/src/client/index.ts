@@ -5,6 +5,7 @@ import { registerSessionsPage } from './pages/sessions/index.ts'
 import { registerWorldsPage } from './pages/worlds/index.ts'
 import { registerBranchNaming } from './branch/index.ts'
 import { registerGallery } from './gallery/index.ts'
+import { registerInterface } from './interface/index.ts'
 import { registerWorld } from './world/index.ts'
 import { registerChatSettings } from './chat-settings/index.ts'
 import { registerSettings } from './settings/index.ts'
@@ -23,5 +24,6 @@ export function apply(ctx: Context): void {
   registerChatSettings(ctx)
   registerWorld(ctx)
   registerGallery(ctx)
+  registerInterface(ctx)
   registerBranchNaming(ctx)
 }

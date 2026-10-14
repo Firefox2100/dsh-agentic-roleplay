@@ -58,6 +58,7 @@ export const FORM_FIELDS = [
   { path: ['context', 'limitTokens'], kind: 'integer', label: 'limitTokens', help: 'limitTokensHelp' },
   { path: ['context', 'limitRatio'], kind: 'percent', label: 'limitRatio', help: 'limitRatioHelp' },
   { path: ['context', 'retainRatio'], kind: 'percent', label: 'retainRatio', help: 'retainRatioHelp' },
+  { path: ['interface', 'pack'], kind: 'text', label: 'interfacePack', help: 'interfacePackHelp', zone: false, placeholder: 'none' },
   { path: ['diagnostics', 'keepRuns'], kind: 'flag', label: 'diagnosticsKeepRuns', help: 'diagnosticsKeepRunsHelp' },
 ] as const
 

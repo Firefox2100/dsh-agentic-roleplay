@@ -65,7 +65,7 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
 
   if (running || (offered.length === 0 && meanwhile.length === 0 && unfinished.length === 0)) return null
   return (
-    <div className={css.dock} data-testid="roleplay-suggestions">
+    <div className={css.dock} data-testid="roleplay-suggestions" data-rp="suggestions">
       {unfinished.length > 0 && (
         <div className={css.card} data-testid="roleplay-world-findings">
           <span className={css.label}>{t('worldFindings')}</span>
@@ -80,7 +80,7 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
       )}
       {offered.length > 0 && <span className={css.label}>{t('suggestions')}</span>}
       {offered.map(text => (
-        <button key={text} type="button" className={css.chip} title={t('suggestionHint')} onClick={() => { pick(text) }}>{text}</button>
+        <button key={text} type="button" className={css.chip} data-rp="suggestion" title={t('suggestionHint')} onClick={() => { pick(text) }}>{text}</button>
       ))}
     </div>
   )

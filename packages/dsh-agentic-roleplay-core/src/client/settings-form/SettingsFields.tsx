@@ -5,7 +5,7 @@ import { FAST_PRESET, FORM_FIELDS, boundsOf, keyOf, optionKey, problemsOf, type 
 import type { SettingsFormKey } from './locales.ts'
 
 /** The settings of a chat as editable fields: one control with its explanation under each. */
-export function SettingsFields({ t, drafts, onChange, onPreset, options = [], disabled = false, locked = {} }: {
+export function SettingsFields({ t, drafts, onChange, onPreset, options = [], disabled = false, locked = {}, hidden = [] }: {
   t: (key: SettingsFormKey, values?: Record<string, string | number>) => string
   drafts: Drafts
   onChange: (key: string, value: string | boolean) => void
@@ -16,6 +16,8 @@ export function SettingsFields({ t, drafts, onChange, onPreset, options = [], di
   disabled?: boolean
   /** Choices that cannot be chosen now, by field and value, with why. */
   locked?: Readonly<Record<string, Readonly<Record<string, string>>>>
+  /** Fields that something else on the page edits. */
+  hidden?: readonly string[]
 }) {
   const bad = problemsOf(drafts, options)
   const locale = t('localeId')
@@ -28,7 +30,7 @@ export function SettingsFields({ t, drafts, onChange, onPreset, options = [], di
         </div>
         <p className={css.help}>{t('presetFastHelp')}</p>
       </div>
-      {FORM_FIELDS.map((field) => {
+      {FORM_FIELDS.filter(field => !hidden.includes(keyOf(field))).map((field) => {
         const key = keyOf(field)
         const { min, max } = field.kind === 'choice' || field.kind === 'text' ? { min: 0, max: 0 } : boundsOf(field)
         return (

@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic'
 const config: Config = {
   title: 'DSH Agentic Roleplay',
   tagline: 'Persistent, agent-driven roleplay for DeepSeek Harness',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.svg',
   future: {v4: true, faster: false},
   url: 'https://firefox2100.github.io',
   baseUrl: '/dsh-agentic-roleplay/',
@@ -36,6 +36,7 @@ const config: Config = {
     colorMode: {respectPrefersColorScheme: true},
     navbar: {
       title: 'DSH Agentic Roleplay',
+      logo: {alt: 'Agentic Roleplay', src: 'img/logo.svg'},
       items: [
         {type: 'docSidebar', sidebarId: 'docs', position: 'left', label: 'Documentation'},
         {type: 'localeDropdown', position: 'right'},

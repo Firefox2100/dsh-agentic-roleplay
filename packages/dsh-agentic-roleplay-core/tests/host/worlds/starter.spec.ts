@@ -8,6 +8,7 @@ import { startSession } from '../../../src/host/sessions/start-session.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { WorldFolderExistsError } from '../../../src/host/worlds/create-world.ts'
+import { listWorldPacks } from '../../../src/host/interface/world-packs.ts'
 import { UnknownStarterError, addStarterWorld, listStarterWorlds, starterDirectory } from '../../../src/host/worlds/starter.ts'
 
 let root: string
@@ -27,7 +28,7 @@ describe('the starter worlds', () => {
   it('are copied into the worlds as a world of their own, and then count as added', async () => {
     const added = await addStarterWorld(catalog, 'blackwater-observatory')
     expect(added).toMatchObject({ name: 'The Blackwater Observatory', version: '1.0', author: { name: 'Firefox2100' } })
-    expect((await readdir(join(root, 'worlds', 'blackwater-observatory'))).sort()).toEqual(['characters', 'items', 'locations', 'triggers.json', 'variables.json', 'world.json'])
+    expect((await readdir(join(root, 'worlds', 'blackwater-observatory'))).sort()).toEqual(['characters', 'items', 'locations', 'triggers.json', 'ui', 'variables.json', 'world.json'])
     expect((await listStarterWorlds(catalog))[0]?.installed).toBe(true)
     expect((await catalog.list()).problems).toEqual([])
   })
@@ -69,5 +70,10 @@ describe('the starter worlds', () => {
 
   it('are found from the source folder as from the build', () => {
     expect(starterDirectory()).toMatch(/starter-worlds$/)
+  })
+  it('ships an interface pack that can be used, with a strip and a tab', () => {
+    const packs = listWorldPacks(join(starterDirectory(), 'blackwater-observatory'))
+    expect(packs).toEqual([expect.objectContaining({ id: 'notebook', name: 'Field notebook', problems: [] })])
+    expect(packs[0]?.files).toEqual(expect.arrayContaining(['pack.json', 'skin.css', 'strip.html', 'notebook.html']))
   })
 })

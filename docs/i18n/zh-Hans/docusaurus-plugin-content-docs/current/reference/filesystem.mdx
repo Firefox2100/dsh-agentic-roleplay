@@ -2,7 +2,7 @@
 title: 文件系统布局
 ---
 
-角色扮演根目录包含 `worlds/<world-folder>/`、`avatars/` 和 `sessions/<uuid>/`。世界拥有自己的实体、提示词和图片；化身以特殊仅角色世界保存；每个会话包含 `session.sqlite`、`settings.json` 和 `images/`。
+角色扮演根目录包含 `worlds/<world-folder>/`、`avatars/` 和 `sessions/<uuid>/`。世界拥有自己的实体、提示词和图片；化身以特殊仅角色世界保存；每个会话包含 `session.sqlite`、`settings.json` 和 `images/`。世界、根目录和会话中的 `ui/<包>/` 文件夹保存[界面包](../authoring/interface-packs.mdx)：世界自带的、你自己的，以及会话实际使用的副本。
 
 世界文件夹名不是身份，`world.json.id` 才是会话保存的持久世界引用。实体 ID 在导入数据库时映射成内部整数，同时保留源 ID。
 

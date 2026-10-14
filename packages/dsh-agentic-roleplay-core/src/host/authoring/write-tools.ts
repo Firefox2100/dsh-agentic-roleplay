@@ -6,6 +6,7 @@ import { parsePlotsFile } from '../plots/load.ts'
 import { formatIssue } from '../validation.ts'
 import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, readAuthoredEntityDocument, replaceAuthoredEntity, type AuthoredEntityKind } from './documents.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
+import { PACK_MUTATION_TOOLS } from './pack-tools.ts'
 import { PROMPT_MUTATION_TOOLS, PROSE_PROMPTS } from './prompt-tools.ts'
 
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
@@ -13,7 +14,7 @@ const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown,
 const kindParameter = { type: 'string' as const, required: true as const, enum: AUTHORED_ENTITY_KINDS }
 const keyParameter = { type: 'string' as const, required: true as const, description: 'Stable entity key.' }
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', ...PROMPT_MUTATION_TOOLS])
+export const AUTHORING_MUTATION_TOOLS = new Set(['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -99,10 +100,21 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
   if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return await next()
   const args = exec.arguments as Record<string, unknown>
   const prompt = (PROMPT_MUTATION_TOOLS as readonly string[]).includes(exec.name)
+  const pack = (PACK_MUTATION_TOOLS as readonly string[]).includes(exec.name)
   const importing = await reviewing(exec.agent.session.id)
+  if (importing && pack) return { kind: 'deny', reason: 'an import does not write interface packs; they are left to the person' }
   // The import may set the prose and the persona; the rules of the game are the person's to change.
   if (importing && prompt && !PROSE_PROMPTS.includes(String(args['id']))) return { kind: 'deny', reason: `an import may change only the prose prompts (${PROSE_PROMPTS.join(', ')}); "${String(args['id'])}" holds rules of the game and is left to the person` }
   if (importing) return await next()
+  if (pack) {
+    const target = `file “${String(args['path'])}” of interface pack “${String(args['pack'])}”`
+    const remove = exec.name.startsWith('delete')
+    return {
+      kind: 'ask',
+      reason: `${remove ? 'delete' : 'write'} authored world ${target}`,
+      displayReason: { en: `${remove ? 'Delete' : 'Write'} ${target} in the world files?`, zh: `${remove ? '删除' : '写入'}世界文件中界面包“${String(args['pack'])}”的文件“${String(args['path'])}”？` },
+    }
+  }
   if (prompt) {
     const target = `prompt “${String(args['language'])}/${String(args['id'])}”`
     const remove = exec.name.startsWith('delete')

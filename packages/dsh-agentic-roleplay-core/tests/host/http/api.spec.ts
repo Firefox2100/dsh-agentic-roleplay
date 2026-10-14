@@ -81,6 +81,7 @@ beforeEach(async () => {
   const worlds = new WorldCatalog(new Context(), { path: base } as RoleplayRoot)
   const handler = createApiHandler({
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
+    packs: { status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
     worlds,
     avatars: { create: async () => 'new', remove: async () => undefined, addToWorld: async () => [] },
     starter: { list: async () => [{ folder: 'sample', name: 'Sample', description: '', tags: [], installed: false }], add: async (folder) => { if (folder === 'nothing') throw new UnknownStarterError('no such starter'); if (folder === 'have') throw new WorldFolderExistsError('you have it'); return { id: folder, name: 'Sample', description: '', tags: [] } } },
@@ -242,6 +243,18 @@ afterEach(async () => {
 })
 
 describe('roleplay API', () => {
+  it('serves the files a sandboxed frame loads by the key in their address without a login, and everything else only with one', async () => {
+    allowed = false
+    expect((await fetch(`${origin}/sessions/interface/frame/good/hud.html`)).status).toBe(200)
+    expect((await fetch(`${origin}/sessions/interface/frame/wrong/hud.html`)).status).toBe(404)
+    expect((await fetch(`${origin}/sessions/interface/frame/good`)).status).toBe(404)
+    expect((await fetch(`${origin}/sessions/interface/pack/sess/hud.html`)).status).toBe(401)
+    expect((await fetch(`${origin}/sessions/interface?id=sess`)).status).toBe(401)
+    expect((await fetch(`${origin}/sessions/interface/frame/good/hud.html`, { method: 'POST' })).status).toBe(401)
+    allowed = true
+    expect((await fetch(`${origin}/sessions/interface/pack/sess/hud.html`)).status).toBe(200)
+  })
+
   it('lists voices and returns synthesized audio', async () => {
     expect(await (await fetch(`${origin}/speech/capabilities`)).json()).toEqual({ streaming: true })
     const voices = await fetch(`${origin}/speech/voices`)

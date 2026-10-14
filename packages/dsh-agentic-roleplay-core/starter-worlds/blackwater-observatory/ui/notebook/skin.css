@@ -1,0 +1,16 @@
+[data-rp="utterance"] {
+  border-left: 2px solid var(--dsw-alias-brand-primary);
+  padding-left: 10px;
+}
+
+[data-rp="utterance"] [data-rp="words"] {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+[data-rp="speaker"] {
+  color: var(--dsw-alias-brand-primary);
+}
+
+[data-rp="ooc"] {
+  font-style: italic;
+}

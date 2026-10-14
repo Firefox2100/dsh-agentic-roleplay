@@ -1,0 +1,98 @@
+---
+title: Interface packs
+description: How packs are read, served, sandboxed and bridged, and what to check when DSH changes.
+---
+
+For the author's view see [Interface packs](../authoring/interface-packs) and the [format reference](../reference/interface-pack-format). This page is for changing the feature itself.
+
+## Invariants
+
+- **No pack code runs in the DSH page.** Scripts run only in `<iframe sandbox="allow-scripts">`, without `allow-same-origin`. The page puts into itself only a theme override layer and a checked stylesheet.
+- **The player view is a whitelist.** It is built field by field from what the player's character could know. A field is added to `PlayerView` only with a line in the leak test that puts a secret in its source.
+- **Packs are read afresh.** Nothing about a pack is cached beyond one request; the client polls and reloads when the revision moves.
+- **A pack with any problem is not used.** Start refuses a world whose packs have problems; a story shows no pack until its copy is fixed.
+- **Nothing here writes story state.** A surface can send words as the player or fill the input box; the model stays the game master.
+- **Prompt injection and everything that changes what a model is told are out of scope.**
+
+## Where things live
+
+| Path in `packages/dsh-agentic-roleplay-core/src` | Owns |
+|---|---|
+| `shared/interface-pack.ts` | Manifest and view types, limits, surface names and heights |
+| `host/interface/pack.ts` | Reading and checking a pack folder, its revision, safe file lookup |
+| `host/interface/skin.ts` | The CSS check and the rewriting of `url()` |
+| `host/interface/packs.ts` | Finding packs, copying a world's at start, inheriting on branch, comparing and syncing |
+| `host/interface/player-view.ts` | The player view |
+| `host/interface/frame.ts` | The bridge script, the page policy, the headers |
+| `host/interface/service.ts`, `routes.ts` | What the routes answer, the frame key |
+| `host/interface/storage.ts` | The pack's small store in session metadata |
+| `host/interface/world-packs.ts` | Listing, checking and deleting a world's pack files for the authoring tools |
+| `host/authoring/pack-jail.ts`, `pack-tools.ts` | The jail on DSH's file tools and the pack tools of the authoring chat |
+| `client/interface/` | Frames, docks, the tab, the bridge, the backdrop, polling |
+| `client/chat-settings/InterfaceSection.tsx` | Status, choice and sync in Chat settings |
+
+## Flow
+
+1. **Start.** `startSession` calls `copyWorldPacks`, which checks every pack of the world and copies them to `<session>/ui/`; problems refuse the start (422). A branch copies the session's packs (`inheritPacks`).
+2. **Choice.** `activePack` takes the setting `interface.pack`: empty is the story's first pack, `none` is off, a name is the story's pack or else one of the root's.
+3. **Page.** The client asks `GET /sessions/interface` (the description with the checked skin and theme), polls `GET /sessions/interface/view` with the last revision, and mounts a frame per surface. One `PackDock` serves `hud`, `dock` and `opening` as slots of `conversation.input.dock`; the `hud` one also applies the skin and the theme and mounts the backdrop. Polls are shared per story.
+4. **Bridge.** The frame posts requests; the page answers through `Bridge` (permissions, limits) and the host routes (view, history, storage).
+
+## Routes
+
+All under `/roleplay-api`.
+
+| Route | Purpose |
+|---|---|
+| `GET /sessions/interface?id=` | The pack in use, with the problems if there is none |
+| `GET /sessions/interface/view?id=&revision=` | The player view, or `{ unchanged: true }` |
+| `GET /sessions/interface/history?id=&limit=` | The turns so far |
+| `GET /sessions/interface/status?id=` | The setting, the pack in use, the packs available, the world's packs against the copies |
+| `POST /sessions/interface/sync?id=` | Bring the world's packs in |
+| `POST /sessions/interface/storage?id=` | Get, set or remove a value of the pack |
+| `GET /interface/availability` | Whether any pack has a tab |
+| `GET /sessions/interface/pack/<id>/<file>` | A pack file for the page (skin urls), with the login |
+| `GET /sessions/interface/frame/<key>/<file>` | A pack file for a surface, **without a login** |
+
+### Why the frame route has no login
+
+A sandboxed frame has an opaque origin, so the browser sends no cookie for what the frame loads itself (stylesheets, scripts, images). The frame document is loaded with the login, but its subresources are not. The frame's files are therefore served under a key in the path, which is also what makes relative addresses work. The key is 24 random bytes per story, made when the host starts and given only by the authenticated description route. It opens the pack's own files, read-only, and never the player view, which travels only over `postMessage`. The API handler skips the login check for exactly `GET` on this prefix; `tests/host/http/api.spec.ts` checks that every other route and method still needs it.
+
+Every pack file is served with `Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; base-uri 'self'`, `nosniff` and `no-referrer`. The `sandbox` directive is in the header as well as on the frame, so the page is just as closed when its address is opened alone. HTML pages get the bridge script first.
+
+## The bridge
+
+`frame.ts` holds the script a surface gets (plain ES5, only posts messages). `client/interface/bridge.ts` answers: the action list from the manifest, 20 requests a second, one `say` per turn (or 30 seconds), 2000 characters of words, limits on history. The page ignores a message whose source is not the frame's window, or whose shape is unknown. `parseFrameMessage` is the only reader of what comes from a frame.
+
+**Never name a prop injected into a dock `input`.** DSH's own dock props have one, and it shadowed ours (found live: `rp.say` failed with "input.say is not a function"). Ours is `frameInput`.
+
+## The skin check
+
+`checkSkin` is a small tokenizer and rule walker, not a CSS engine. It keeps `@media`, `@supports`, `@keyframes`, `@font-face`, requires `[data-rp...]` standing on its own (outside a function) in every compound selector, refuses nesting and escapes outside strings, and rewrites each `url()` to the file route. When extending it, add a refusal test before an allowance.
+
+## The backdrop
+
+The conversation paints an opaque root and a scrolling body above anything under it, so a layer cannot sit behind the text by `z-index` alone. `client/interface/backdrop.ts` finds the body (the parent of the element whose class contains `_scrollBody`, from the dock upward), inserts a layer as its first child and lifts the scrolling body above it with the attribute `data-rp-lifted` (`position: relative; z-index: 1`). DSH's fade above the composer covers the lower part. If the structure is not found there is no backdrop and a console warning.
+
+## Authoring
+
+The world-authoring preset mounts DSH's `tool-fs` (row `tool-fs` in the bundle patch). `registerPackJail` registers, first in `tools/pre-execute`, a listener that limits `read`, `write` and `edit` in authoring chats to text files of `<world>/ui/<pack>/` (at most 200 KB a call), refuses writes during an import review, calls the rest of the chain, and turns only a plain allow into the plugin's own ask; a later listener's deny or ask stands. `tests/host/authoring/pack-jail-runtime.spec.ts` runs this in DSH's real tool runtime, and fails if the jail is registered without `prepend`. The plugin's own tools are `world_pack_guide`, `list_world_packs`, `check_world_pack` and `delete_world_pack_file` (DSH's file tools cannot delete).
+
+Paths are given to the model relative to the chat's folder; a long absolute path was mistyped by the model in the first live try. The refusal text tells it to stop and report, because it otherwise retries other paths and `sandbox_permissions`.
+
+## What to check when DSH changes
+
+| Touchpoint | Check |
+|---|---|
+| Slot `conversation.input.dock` and its props | Our injected names do not collide; order values 1, 3 and 20 still sit where intended |
+| Slot `conversation.view` and `uiConversation.views` | The tab registers after a late `availability` answer |
+| Theme service `overrideTokens` (looked up with `scope.get('theme')`) | Still there, still takes `{ light, dark }` pairs |
+| The body attribute `data-ds-dark-theme` | Still marks dark; the frame's scheme follows it |
+| Class fragments `_scrollBody`, `_composerSeat` | The backdrop and any measuring still find them |
+| Tools `read`, `write`, `edit` with `file_path` | Names and argument names the jail reads; `exec.agent.session.header.cwd` |
+| `tools/pre-execute` with `{ prepend: true }` | The runtime test still passes |
+| `react-dom` as an external module | Typed by `src/client/react-dom.d.ts`; the shell must still provide it |
+
+## Testing
+
+Unit and integration tests cover the pack check, the skin check, the player view (a secret in every source), the routes (including the unauthenticated frame route and the sync), the bridge, the backdrop's lookup, the jail and the authoring tools. What no test covers is seen in a browser: load a story with the example pack, check the strip, dock, opening card, backdrop and tab in light and dark, edit a file and see it follow, break a skin and see the report in Chat settings, change the world's pack and update the story, and have the assistant write a pack with the approvals.

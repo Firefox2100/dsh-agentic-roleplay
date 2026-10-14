@@ -133,6 +133,10 @@ export interface ChatSettings {
     /** The most statements that triggers wait on ("the mayor has lost the town's trust") a model judges after one player message, in one request; 0 turns judging off, and such triggers never fire. */
     judgedPerTurn: number
   }
+  interface: {
+    /** The interface pack the story uses: empty is the first pack the story carries, `none` turns packs off, a name picks that pack of the story or of the roleplay root. */
+    pack: string
+  }
   rewind: {
     /** How many of the turns most recently played keep a snapshot of the story's state, so that the story can be taken back to them; 0 keeps none and turns rewinding off. */
     keepSnapshots: number
@@ -220,6 +224,7 @@ export const SETTINGS_SPEC = {
   factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
+  interface: { pack: text(60, '') },
   rewind: { keepSnapshots: integer(0, 500, 30) },
   rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },

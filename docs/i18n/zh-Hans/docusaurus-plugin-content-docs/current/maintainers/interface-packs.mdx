@@ -1,0 +1,98 @@
+---
+title: 界面包
+description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH 变化时要检查什么。
+---
+
+作者视角见[界面包](../authoring/interface-packs)和[格式参考](../reference/interface-pack-format)。本页面向要修改这个功能本身的人。
+
+## 不变量
+
+- **包的代码不会在 DSH 页面中运行。** 脚本只运行在 `<iframe sandbox="allow-scripts">` 中，不带 `allow-same-origin`。页面自身只会放入一层主题覆盖和一份检查过的样式表。
+- **玩家视图是白名单。** 它按字段由玩家角色可能知道的内容构建。只有在泄露测试里为该字段的来源放入一个秘密，才可以向 `PlayerView` 添加字段。
+- **包每次都重新读取。** 除一次请求外不缓存关于包的任何内容；客户端轮询，修订号变化时重新加载。
+- **有任何问题的包不会被使用。** 世界的包有问题时，开始故事会被拒绝；故事的副本修好之前，不显示任何包。
+- **这里没有任何东西写入故事状态。** 页面可以以玩家身份发送文字或填写输入框；模型仍是游戏主持人。
+- **提示词注入以及一切会改变模型所得信息的功能都不在范围内。**
+
+## 各部分位置
+
+| `packages/dsh-agentic-roleplay-core/src` 中的路径 | 负责 |
+|---|---|
+| `shared/interface-pack.ts` | 清单和视图的类型、限制、页面名和高度 |
+| `host/interface/pack.ts` | 读取并检查包文件夹、它的修订号、安全的文件查找 |
+| `host/interface/skin.ts` | CSS 检查和 `url()` 重写 |
+| `host/interface/packs.ts` | 查找包、开始时复制世界的包、分支继承、比较与同步 |
+| `host/interface/player-view.ts` | 玩家视图 |
+| `host/interface/frame.ts` | 桥接脚本、页面策略、响应头 |
+| `host/interface/service.ts`、`routes.ts` | 各路由的应答、框架密钥 |
+| `host/interface/storage.ts` | 包保存在会话元数据中的小型存储 |
+| `host/interface/world-packs.ts` | 为创作工具列出、检查和删除世界的包文件 |
+| `host/authoring/pack-jail.ts`、`pack-tools.ts` | DSH 文件工具上的限制，以及创作对话的包工具 |
+| `client/interface/` | 框架、dock、标签页、桥接、背景、轮询 |
+| `client/chat-settings/InterfaceSection.tsx` | 对话设置中的状态、选择与同步 |
+
+## 流程
+
+1. **开始。** `startSession` 调用 `copyWorldPacks`，检查世界的每个包并复制到 `<会话>/ui/`；有问题则拒绝开始（422）。分支会复制会话的包（`inheritPacks`）。
+2. **选择。** `activePack` 读取设置 `interface.pack`：留空为故事自带的第一个包，`none` 为关闭，填名称则为故事的包，否则为根目录中的包。
+3. **页面。** 客户端请求 `GET /sessions/interface`（带已检查皮肤和主题的描述），带着上一个修订号轮询 `GET /sessions/interface/view`，并为每个页面挂载一个框架。一个 `PackDock` 以 `conversation.input.dock` 的槽位同时服务 `hud`、`dock` 和 `opening`；`hud` 那个还会应用皮肤和主题并挂载背景。每个故事共享轮询。
+4. **桥接。** 框架发出请求；页面通过 `Bridge`（权限、限制）和宿主路由（视图、回顾、存储）作答。
+
+## 路由
+
+均在 `/roleplay-api` 下。
+
+| 路由 | 用途 |
+|---|---|
+| `GET /sessions/interface?id=` | 正在使用的包；没有时给出问题 |
+| `GET /sessions/interface/view?id=&revision=` | 玩家视图，或 `{ unchanged: true }` |
+| `GET /sessions/interface/history?id=&limit=` | 至今的回合 |
+| `GET /sessions/interface/status?id=` | 设置、正在使用的包、可用的包、世界的包与副本的对比 |
+| `POST /sessions/interface/sync?id=` | 带入世界的包 |
+| `POST /sessions/interface/storage?id=` | 读取、设置或移除包的一个值 |
+| `GET /interface/availability` | 是否有包带有标签页 |
+| `GET /sessions/interface/pack/<id>/<file>` | 供页面使用的包文件（皮肤的 url），需要登录 |
+| `GET /sessions/interface/frame/<key>/<file>` | 供页面框架使用的包文件，**无需登录** |
+
+### 为什么框架路由不需要登录
+
+沙盒框架的来源是不透明的，所以浏览器不会为框架自己加载的内容（样式表、脚本、图片）发送 Cookie。框架文档是带登录加载的，但它的子资源不是。因此框架的文件在路径中带一个密钥提供，这同时也让相对地址得以生效。密钥是每个故事 24 个随机字节，在宿主启动时生成，只由需要登录的描述路由给出。它只打开包自己的文件，只读，绝不涉及玩家视图，玩家视图只通过 `postMessage` 传递。API 处理器只对这个前缀上的 `GET` 跳过登录检查；`tests/host/http/api.spec.ts` 检查其他所有路由和方法仍然需要登录。
+
+每个包文件都带有 `Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; base-uri 'self'`，以及 `nosniff` 和 `no-referrer`。`sandbox` 指令既在响应头里也在框架上，所以单独打开它的地址时页面同样是封闭的。HTML 页面会先得到桥接脚本。
+
+## 桥接
+
+`frame.ts` 保存页面得到的脚本（纯 ES5，只发送消息）。`client/interface/bridge.ts` 负责应答：清单中的操作列表、每秒 20 个请求、每回合一次 `say`（或 30 秒）、2000 个字符的文字、回顾的限制。页面会忽略来源不是该框架窗口、或形状未知的消息。`parseFrameMessage` 是读取框架来信的唯一入口。
+
+**永远不要把注入 dock 的属性命名为 `input`。** DSH 自己的 dock 属性里就有一个，它遮住了我们的（现场发现：`rp.say` 报“input.say is not a function”）。我们的叫 `frameInput`。
+
+## 皮肤检查
+
+`checkSkin` 是一个小型的词法分析器加规则遍历，不是 CSS 引擎。它保留 `@media`、`@supports`、`@keyframes`、`@font-face`，要求每个复合选择器中都有独立（不在函数内）的 `[data-rp...]`，拒绝嵌套和字符串之外的转义，并把每个 `url()` 改写为文件路由。扩展它时，先写拒绝的测试，再放宽。
+
+## 背景
+
+对话会绘制一个不透明的根和位于其上的滚动主体，所以仅靠 `z-index` 无法把一层放到文字后面。`client/interface/backdrop.ts` 找到主体（从 dock 向上，类名包含 `_scrollBody` 的元素的父元素），把一个图层插为它的第一个子元素，并用属性 `data-rp-lifted`（`position: relative; z-index: 1`）把滚动主体提到它上面。DSH 在输入框上方自带的渐隐会遮住下部。找不到这个结构时，就没有背景，并在控制台给出警告。
+
+## 创作
+
+世界创作预设挂载 DSH 的 `tool-fs`（捆绑补丁中的 `tool-fs` 行）。`registerPackJail` 在 `tools/pre-execute` 中最先注册一个监听器，把创作对话中的 `read`、`write` 和 `edit` 限制在 `<世界>/ui/<包>/` 的文本文件上（每次调用最多 200 KB），在导入审阅期间拒绝写入，调用链上的其余部分，并且只把单纯的放行改为本插件自己的询问；之后的监听器的拒绝或询问仍然有效。`tests/host/authoring/pack-jail-runtime.spec.ts` 在 DSH 真实的工具运行时中运行这一切，若注册时没有 `prepend` 它就会失败。插件自己的工具是 `world_pack_guide`、`list_world_packs`、`check_world_pack` 和 `delete_world_pack_file`（DSH 的文件工具无法删除）。
+
+给模型的路径是相对于对话所在文件夹的；第一次实测中模型把一条很长的绝对路径写错了。拒绝信息会让它停下来并报告，否则它会反复尝试其他路径和 `sandbox_permissions`。
+
+## DSH 变化时要检查什么
+
+| 接触点 | 检查 |
+|---|---|
+| 槽位 `conversation.input.dock` 及其属性 | 我们注入的名称不冲突；顺序值 1、3、20 仍在预期位置 |
+| 槽位 `conversation.view` 与 `uiConversation.views` | 标签页在较晚的 `availability` 应答后仍能注册 |
+| 主题服务 `overrideTokens`（用 `scope.get('theme')` 查找） | 仍在，仍接受 `{ light, dark }` 对 |
+| body 属性 `data-ds-dark-theme` | 仍表示深色；框架的配色方案跟随它 |
+| 类名片段 `_scrollBody`、`_composerSeat` | 背景和任何测量仍能找到它们 |
+| 带 `file_path` 的工具 `read`、`write`、`edit` | 限制所读取的名称和参数名；`exec.agent.session.header.cwd` |
+| 带 `{ prepend: true }` 的 `tools/pre-execute` | 运行时测试仍通过 |
+| 作为外部模块的 `react-dom` | 由 `src/client/react-dom.d.ts` 提供类型；外壳必须仍然提供它 |
+
+## 测试
+
+单元和集成测试覆盖：包检查、皮肤检查、玩家视图（每个来源都放入一个秘密）、路由（包括无需登录的框架路由和同步）、桥接、背景的查找、限制和创作工具。没有测试覆盖的部分要在浏览器里看：用示例包加载一个故事，在浅色和深色下检查状态条、dock、开场卡片、背景和标签页，编辑文件并看它跟随变化，写坏皮肤并在对话设置中看到报告，修改世界的包并更新故事，让助手写一个包并完成批准流程。

@@ -29,3 +29,31 @@ Check `settings.json` for validation errors. During a running story, an invalid 
 ## Authoring chat already exists
 
 Open the existing authoring session for that world. The session identity is stable so repeated clicks do not create competing authors over the same files.
+
+## An interface pack does not show
+
+Open the story's **Chat settings** and look at the **Interface pack** section. It says which pack is in use or why none is. The setting may be *None*; the pack may have problems, listed with their file and line; or the story may have no pack because its world had none when it started (use **Update from the world** if the world has one now). The **Interface** tab appears only if some pack declared a tab when the page loaded: reload the page after adding the first one.
+
+## A pack's page is blank or unstyled
+
+A pack's page may load only files of the pack, by relative address; nothing from the internet. Check the file names and paths in `pack.json` and in the page (letters, digits, `-`, `_` and `.` only), and that the file types are allowed. The page cannot make network requests, so a script that fetches something fails inside the frame.
+
+## A pack's button does nothing
+
+Calls that speak or fill the input need `say`, `fill` or `choose` in the pack's `actions`; a call that is refused rejects with the reason. Words are 1 to 2000 characters, `say` works once per turn, and more than 20 requests a second are refused.
+
+## The backdrop is hidden or missing
+
+DSH paints a fade above the input box, which covers the lower part of a backdrop; a short story shows less of it. If it is missing altogether the browser console says the page has no place for one, which can happen after a DSH upgrade changes the chat's structure. The rest of the pack is unaffected.
+
+## The world's pack changed but my story did not
+
+A story copies the world's packs when it starts. Open its **Chat settings** and use **Update from the world**. The copies it replaces are kept in the story's `.trash` folder.
+
+## The assistant could not write a file
+
+In the authoring chat the file tools reach only text files of `<world>/ui/<pack>/` (html, css, js, json, txt, svg, up to 200 KB a call). Anything else is refused, and no wider access can be asked for. Add pictures and fonts by hand.
+
+## I am asked twice to approve each change
+
+A permission plugin that asks before every `write` asks first, and this plugin asks too. Relax its rule for the world's `ui` files, or accept both prompts.

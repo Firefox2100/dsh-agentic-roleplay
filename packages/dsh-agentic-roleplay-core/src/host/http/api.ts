@@ -29,6 +29,7 @@ import { ImportCardError } from '../import/card.ts'
 import { ImportNotFoundError, parseChoices } from '../import/store.ts'
 import type { ImportChoices, ImportPreview } from '../../shared/import-card.ts'
 import { HttpError, sendError, sendJson } from './respond.ts'
+import { FRAME_FILES, PACK_FILES, interfaceRoutes, sendPackFile, type InterfaceApi } from '../interface/routes.ts'
 
 /** The slice of DSH's connection service this API relies on for browser authentication. */
 export interface ApiConnection {
@@ -132,6 +133,8 @@ export interface ApiDeps {
     generateImage(id: string, node: string): Promise<SceneImageStatus>
     imageFile(id: string, node: string, serial: number): Promise<{ file: string; size: number }>
   }
+  /** Interface packs: the pack a story uses, what it may be shown, and its files. */
+  packs: InterfaceApi
   connection: ApiConnection
   speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio>; streaming(): boolean }
 }
@@ -176,7 +179,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ worlds, createWorld, starter, authorWorld, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, createWorld, starter, authorWorld, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -703,6 +706,7 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, wo
         res.end()
       },
     },
+    ...interfaceRoutes(packs),
     '/worlds/cover': {
       GET: async (_req, res, url) => {
         const cover = await worlds.cover(url.searchParams.get('id') ?? '')
@@ -723,14 +727,23 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, wo
 
 
   return async (req, res) => {
-    const rejection = connection.requestRejection(req)
+    const url = new URL(req.url ?? '/', 'http://localhost')
+    const path = url.pathname.slice(`/${API_PREFIX}`.length) || '/'
+    // The files a sandboxed frame loads itself come without a login (it has no origin, so no cookie); their address holds a key only the page was given.
+    const framed = path.startsWith(FRAME_FILES) && req.method === 'GET'
+    const rejection = framed ? undefined : connection.requestRejection(req)
     if (rejection !== undefined) {
       res.statusCode = rejection
       res.end()
       return
     }
-    const url = new URL(req.url ?? '/', 'http://localhost')
-    const path = url.pathname.slice(`/${API_PREFIX}`.length) || '/'
+    if ((path.startsWith(PACK_FILES) || framed) && req.method === 'GET') {
+      try { await sendPackFile(packs, path, res) } catch (error) {
+        if (res.headersSent) res.destroy()
+        else sendError(res, 500, error instanceof Error ? error.message : 'internal error')
+      }
+      return
+    }
     const methods = routes[path]
     if (methods === undefined) return sendError(res, 404, 'not found')
     const route = methods[req.method ?? '']

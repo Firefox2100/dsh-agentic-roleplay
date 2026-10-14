@@ -16,6 +16,7 @@ import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './erro
 import { populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
 import { copyWorldPrompts } from '../prompts/library.ts'
+import { copyWorldPacks } from '../interface/packs.ts'
 import { broughtAvatars, copyPortrait } from '../avatars/avatars.ts'
 import { parseCharacterFile } from '../characters/character-file.ts'
 import type { EditableWorld } from '../worlds/world-editor.ts'
@@ -114,6 +115,8 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     if (avatars !== undefined) for (const entry of brought) await copyPortrait(avatars, entry.from, entry.document, sessionFolder(sessionsDir, id), entry.id)
     const promptProblems = copyWorldPrompts(world.directory, sessionFolder(sessionsDir, id))
     if (promptProblems.length > 0) throw new InvalidWorldError(`the prompts of "${world.summary.name}" have ${promptProblems.length} problem(s)`, promptProblems)
+    const packProblems = copyWorldPacks(world.directory, sessionFolder(sessionsDir, id))
+    if (packProblems.length > 0) throw new InvalidWorldError(`the interface packs of "${world.summary.name}" have ${packProblems.length} problem(s)`, packProblems)
     writeSettings(sessionFolder(sessionsDir, id), settings)
     addToNote(session, 'world', 1, worldFindings(session))
     chatSessionId = await deps.agent.ensure(id, name, opening)

@@ -36,6 +36,7 @@ import { readChatSettings, writeChatSettings } from './host/sessions/chat-settin
 import { resetVectors, vectorStatus } from './host/sessions/vectors.ts'
 import { readActivity, readRunDetail } from './host/sessions/activity.ts'
 import { readInterventions } from './host/sessions/interventions.ts'
+import { InterfaceService } from './host/interface/service.ts'
 import { notesOfSession } from './host/sessions/notes.ts'
 import { openSession } from './host/sessions/open-session.ts'
 import { listSessions } from './host/sessions/list-sessions.ts'
@@ -107,6 +108,7 @@ export function apply(ctx: Context, config: Config): void {
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), avatars: () => avatarsWorld(root.path) }
   registerApi(ctx, {
+    packs: new InterfaceService({ open: id => ctx.roleplayState.openSession(deps.sessionsDir(), id), root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory }),
     speech: {
       voices: async () => await voicesOf(textToSpeechOf(ctx)),
       speak: async parts => await speakParts(textToSpeechOf(ctx), parts),

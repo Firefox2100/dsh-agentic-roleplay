@@ -43,8 +43,9 @@
             config:
               - id: roleplay-compaction
                 name: '@dsh-agentic-roleplay/core/compaction'
-    # This first authoring preset deliberately mounts only its persona and
-    # therefore cannot inherit the stock agent's filesystem tools.
+    # The authoring preset mounts its persona and its own tools, plus DSH's read,
+    # write and edit for the interface packs only: the authoring plugin keeps them
+    # on `<world>/ui/<pack>/` and asks before any change.
     - id: preset-world-authoring
       name: '@deepseek-ai/dsh-agent-preset'
       config:
@@ -56,5 +57,7 @@
             config:
               prefix: ''
               suffix: ''
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
           - id: authoring
             name: '@dsh-agentic-roleplay/core/authoring'

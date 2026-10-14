@@ -4,6 +4,8 @@ import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
 import { authoredWorldWriteTools, authoringApproval } from './host/authoring/write-tools.ts'
+import { registerPackJail } from './host/authoring/pack-jail.ts'
+import { worldPackTools } from './host/authoring/pack-tools.ts'
 import { worldPromptTools } from './host/authoring/prompt-tools.ts'
 import { importHooks, importTools } from './host/import/tools.ts'
 import { isReviewing } from './host/import/run-import.ts'
@@ -28,6 +30,7 @@ export function apply(ctx: Context): void {
   for (const tool of authoredWorldReadTools(reader)) ctx.tools.register(tool)
   for (const tool of authoredWorldWriteTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPromptTools(reader)) ctx.tools.register(tool)
+  for (const tool of worldPackTools(reader)) ctx.tools.register(tool)
   for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   importHooks(ctx, ctx.roleplayWorlds, prompting)
   const reviewing = async (chat: string): Promise<boolean> => {
@@ -35,6 +38,11 @@ export function apply(ctx: Context): void {
     const record = id === undefined ? undefined : await ctx.roleplayWorlds.find(id)
     return record !== undefined && await isReviewing(record.directory)
   }
+  const worldDirectory = async (chat: string): Promise<string | undefined> => {
+    const id = authoredWorldOf(chat)
+    return id === undefined ? undefined : (await ctx.roleplayWorlds.find(id))?.directory
+  }
+  registerPackJail(ctx, { worldDirectory, reviewing })
   ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing))
   for (const [name, order, id] of [
     ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],

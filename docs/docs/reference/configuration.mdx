@@ -46,6 +46,7 @@ title: Configuration reference
 | `models.characters`, `models.background`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own (`background` is for background-tier characters and falls back to `characters`) |
 | `sampling.maxTokens`, `sampling.shortMaxTokens`, `sampling.headroom` | 8000, 2000, 2 | Ceilings on what one helper request may produce; the short one is for characters and suggestions, whose answers have declared sizes: they may produce `headroom` times the estimate of their answer, never more than the ceiling (settings file only) |
 | `diagnostics.keepRuns` | `false` | Keep what each helper run was told and did (its instructions, what it was asked, its tool calls and result, and for a character what it was reminded of and why), for the latest 60 runs; shown in the activity list of Chat settings |
+| `interface.pack` | empty | The interface pack to use: empty is the story's first, `none` is no pack, a name picks one |
 | `rewind.keepSnapshots` | 30 | Recent state snapshots |
 | `preview.enabled` | `true` | Show an early scene preview |
 | `suggestions.count` | 3 | Suggested next actions |

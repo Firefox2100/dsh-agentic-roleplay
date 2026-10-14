@@ -1,0 +1,186 @@
+---
+title: 界面包格式
+description: 界面包的每个字段、限制、钩子和调用。
+---
+
+这是[界面包](../authoring/interface-packs)的参考。界面包是世界、故事或你的角色扮演目录中的 `ui/<包>/` 文件夹。
+
+## 包文件夹
+
+文件夹名就是包的 id：字母、数字、`-` 和 `_`，以字母或数字开头，最长 60 个字符。文件夹中必须有 `pack.json`。
+
+| 限制 | 值 |
+|---|---|
+| 一个包的文件数 | 200 |
+| 一个包的大小 | 5 MB |
+| 单个文件大小 | 1 MB |
+| 文件夹深度 | 4 |
+| 文件和文件夹名 | 字母、数字、`-`、`_` 和 `.`，不能以点开头 |
+| 文件类型 | html、css、js、json、txt、png、jpg、jpeg、webp、gif、avif、svg、woff、woff2、ttf、otf、mp3、ogg、wav |
+
+符号链接、其他文件类型以及不符合上述规则的名称都算问题。有任何问题的包不会被使用，每个问题都会指出所在文件。
+
+## `pack.json`
+
+```json
+{
+  "name": "Atlas",
+  "version": "0.1",
+  "description": "状态条和地图标签页。",
+  "api": 1,
+  "theme": { "--dsw-alias-brand-primary": { "light": "#8a3b12", "dark": "#e0a36b" } },
+  "skin": "skin.css",
+  "actions": ["say", "fill", "choose"],
+  "surfaces": {
+    "hud": { "file": "hud.html", "height": 48 },
+    "tab": { "file": "map.html", "title": "Atlas" }
+  }
+}
+```
+
+| 字段 | 含义 |
+|---|---|
+| `name` | 设置中显示的名称。缺省为文件夹名。 |
+| `version`、`description` | 写给人看的自由文本。 |
+| `api` | 包所针对的桥接版本。只有 `1`；其他数字算问题。 |
+| `theme` | 要替换的颜色令牌。名称必须以 `--dsw-alias-` 开头，每个值给出 `light` 和 `dark` 两个普通 CSS 颜色（不含 `url(`、`var(`、`;`、`{`、`}` 或 `@import`，最长 120 个字符）。 |
+| `skin` | 包内的一个 `.css` 文件。见[皮肤](#皮肤)。 |
+| `actions` | 包的页面可为玩家执行的操作：`say`、`fill`、`choose`。未列出的会被拒绝。默认没有。 |
+| `surfaces` | 按位置列出的页面：`hud`、`dock`、`opening`、`backdrop`、`tab`。未知位置算问题。 |
+
+页面写作 `{ "file": "page.html", "title": "...", "height": 48 }`。`file` 必须是包内的 `.html` 文件。`title` 是 `tab` 页面的无障碍名称，缺省为包名；标签页本身在 DSH 的标签栏中始终显示为 *界面*。`height` 是条带的初始高度（像素）。
+
+## 页面位置
+
+| 页面 | 显示位置 | 高度 |
+|---|---|---|
+| `hud` | 回合操作、建议行动和输入框上方的一条。 | 24–320 px，默认 56 |
+| `dock` | 紧靠输入框上方、建议行动下方的一条。 | 24–320 px，默认 48 |
+| `opening` | 在条带位置显示的卡片，只在第一个回合播放之前、且没有回合正在运行时显示。回退到开头后会再次出现。 | 120–640 px，默认 320 |
+| `backdrop` | 聊天中文字后面的一层。它不接收点击。其下部会被 DSH 输入框上方自带的渐隐遮住。 | 聊天区域 |
+| `tab` | 聊天旁的标签页，标签显示为 *界面*。 | 标签页 |
+
+只要世界、故事或你的角色扮演目录中有包声明了标签页，就会提供该标签页；新增的标签页需要刷新页面才会被发现。条带和开场卡片用 `rp.resize` 申请别的高度，超出范围的高度会被调整到范围内。如果聊天的结构不是背景所期望的（例如 DSH 升级之后），背景会被跳过，并在浏览器控制台留下一条说明；其他部分不受影响。
+
+## 皮肤
+
+皮肤改变故事自身元素的样式。包被使用期间它应用于页面，并随包一起移除。
+
+### 元素
+
+| `data-rp` | 元素 |
+|---|---|
+| `narration` | 一个已送达的回合 |
+| `prose` | 一段叙述 |
+| `utterance` | 一句台词 |
+| `avatar`、`speaker`、`words` | 台词的各部分 |
+| `ooc` | 一条游戏外说明 |
+| `suggestions`、`suggestion` | 建议行动条及其中一条 |
+| `turns` | 回合操作：重新生成、回退、分支 |
+| `hud`、`dock`、`opening`、`backdrop`、`tab` | 容纳包自身页面的框架 |
+
+### 规则
+
+- 顶层只允许样式规则、`@media`、`@supports`、`@keyframes` 和 `@font-face`（最后一个只能在顶层）。其他一切，如 `@import`、`@namespace`、`@container` 和 `@page`，都会被拒绝。
+- 每个选择器的每一部分都必须用 `[data-rp="..."]` 指明上述元素之一。`body`、`:root`、单独的类选择器或元素选择器、`:not([data-rp])` 和嵌套都会被拒绝。
+- `url()` 只能用相对路径指向包内文件。带协议的地址、绝对路径、`data:` 地址、`image-set()` 和 `expression()` 都会被拒绝。字符串之外的反斜杠转义会被拒绝。
+- 有任何问题的皮肤会整体被拒绝，问题会带有行号。
+
+属性不受过滤：皮肤可以隐藏或移动它所指明的元素。
+
+## 框架
+
+每个页面都显示在一个只能运行自己脚本的框架里：
+
+- 它无法访问 DSH 页面、你的登录状态、Cookie 或存储，也不能打开窗口或提交表单。
+- 它不能发出网络请求。样式表、脚本、图片、字体和声音只能来自包本身。
+- 框架仍可自行跳转到别的地址。对待他人的包，请像对待你打开的任何文件一样谨慎。
+
+脚本运行之前，宿主会先把 `rp` 对象放进页面。框架加载的内容（`<script src>`、`<link>`、图片）从包自己的文件夹提供。
+
+DSH 的颜色以 CSS 变量提供给框架，框架的根元素带有 `data-rp-scheme="light"` 或 `"dark"`：
+
+`--dsw-alias-bg-base`、`--dsw-alias-bg-layer-1`、`--dsw-alias-bg-layer-2`、`--dsw-alias-bg-overlay`、`--dsw-alias-border-l1` 到 `-l4`、`--dsw-alias-brand-primary`、`--dsw-alias-label-primary`、`--dsw-alias-label-secondary`、`--dsw-alias-label-tertiary`、`--dsw-alias-link`、`--dsw-alias-state-business-primary`、`--dsw-alias-state-error-primary`、`--dsw-alias-state-idle-primary`、`--dsw-alias-state-success-primary`、`--dsw-alias-state-warn-primary`、`--dsw-radius-sm`。
+
+## `rp` 对象
+
+| 调用 | 返回 | 作用 |
+|---|---|---|
+| `rp.api` | `1` | 桥接版本。 |
+| `rp.state()` | [玩家视图](#玩家视图)的 Promise | 当前的视图。 |
+| `rp.watch(fn)` | 函数 | 立即调用 `fn(view)`，此后每次变化再调用；返回的函数用于停止。 |
+| `rp.on(name, fn)` | 函数 | `name` 为 `turn`（回合送达，带 `{ turn }`）、`suggestions`（列表变化）或 `theme`（`{ scheme, tokens }` 变化）。返回的函数用于停止。 |
+| `rp.say(text)` | Promise | 以玩家身份发送 `text`。需要 `say`。每回合一次：第二次调用会失败，直到回合数变化或过了 30 秒。 |
+| `rp.fill(text)` | Promise | 把 `text` 放入输入框但不发送。需要 `fill`。 |
+| `rp.choose(n)` | Promise | 把第 n 条建议行动（从 0 起）放入输入框。需要 `choose`。 |
+| `rp.history(n)` | 列表的 Promise | 最近 `n` 个回合（默认 20，最多 100），由旧到新。见[回顾](#回顾)。 |
+| `rp.storage.get(key)`、`.set(key, value)`、`.remove(key)` | Promise | 包在此故事中的小型存储。值为 JSON，键 1–100 个字符，总共 64 KB。缺失的键 `get` 返回 `null`。 |
+| `rp.resize(height)` | 无 | 申请高度（像素，仅条带）。 |
+| `rp.theme()` | `{ scheme, tokens }` 的 Promise | 当前生效的配色方案和令牌。 |
+
+用 `say` 或 `fill` 发送的文字为 1 到 2000 个字符。每秒最多处理 20 个请求，其余会失败并给出说明。失败的调用会以说明原因的消息拒绝其 Promise（例如该操作不在 `actions` 中）。
+
+## 玩家视图
+
+视图只由玩家角色可能知道的内容构成，不含其他任何东西：
+
+```ts
+interface PlayerView {
+  api: 1
+  revision: string                       // 视图变化时它就变化
+  story: { name: string; turn: number }  // turn：已播放的回合数
+  player?: { key: string; name: string; summary: string; publicState: string }
+  place?: {
+    key: string; name: string; description: string
+    features: { key: string; name: string }[]
+    exits: { name: string; open: boolean }[]          // 仅通往角色已知的地点
+    items: { name: string; quantity: number }[]       // 未隐藏
+    here: { key: string; name: string; publicState: string }[]   // 在场，不含玩家
+  }
+  time?: { iso: string; zone: string; text: string }  // 时钟启动之前没有
+  carried: { name: string; quantity: number; where: string }[]
+  variables: { subject: string; name: string; value: string }[] // 任何人都能看出的
+  map: {
+    places: { key: string; name: string; parent?: string; here: boolean }[]
+    routes: { from: string; to: string }[]
+  }
+  suggestions: string[]
+}
+```
+
+从不包含：私有和隐藏的变量（包括感受）、任何人的内心状态或意图、关系、其他角色的所知、隐藏的物品、角色没听说过的地点和路线、世界的文件，以及你的设置。
+
+### 回顾
+
+`rp.history(n)` 按故事当前的状态，给出玩家经历过的回合：
+
+```ts
+interface HistoryTurn {
+  turn: number          // 按已播放顺序编号；与 story.turn 的计数一致
+  player: string        // 玩家说的话
+  segments: { type: 'narration' | 'utterance'; name?: string; text: string }[]
+  note?: string         // 对于游戏外命令或提问：玩家被告知的内容
+}
+```
+
+已被回退的回合不在其中，尚未讲述完的回合也不在其中。
+
+## 包可能有的问题
+
+每个问题都会指出所在文件。最常见的几种：
+
+| 消息 | 含义 |
+|---|---|
+| `the pack has no pack.json` | 文件夹里没有清单。 |
+| `api: this version knows only api 1` | `api` 不是 `1`。 |
+| `surfaces.x.file: the pack has no file "..."` | 页面指向的文件不存在。 |
+| `surfaces.x: there is no such place` | 页面名不是上述五个之一。 |
+| `actions: "x" is not an action` | 操作不是 `say`、`fill`、`choose` 之一。 |
+| `theme.--x: only tokens named --dsw-alias-... can be set` | 主题名称不在 DSH 的别名令牌之内。 |
+| `skin.css: line N: ... must name one of our elements` | 选择器触及了故事自身元素之外的内容。 |
+| `this kind of file is not allowed` | 文件类型不在上面的列表中。 |
+| `symbolic links are not allowed` | 包内有链接。 |
+
+## 读取与复制
+
+世界的界面包在故事开始时被检查；任何一个包有问题，该世界都无法开始故事，问题会被列出。对话设置可以把世界中已改动的包带入进行中的故事。设置键是 `interface.pack`：留空为故事自带的第一个包，`none` 为不用，或者填某个包的 id（先找故事自己的，再找你的角色扮演目录中的）。见[配置](./configuration)和[文件系统布局](./filesystem)。

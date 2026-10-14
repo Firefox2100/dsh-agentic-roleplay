@@ -1,4 +1,5 @@
 import type { RunDetail } from '../../shared/activity.ts'
+import type { InterfaceStatus, InterfaceSync } from '../../shared/interface-pack.ts'
 import type { ChatSettings, SettingsPayload } from '../../shared/settings.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 
@@ -44,4 +45,23 @@ export async function loadRun(id: string, run: string, signal: AbortSignal): Pro
   if (response.status === 404) return undefined
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
   return await response.json() as RunDetail
+}
+
+async function interfaceReply<T>(response: Response): Promise<T> {
+  if (!response.ok) {
+    const body = await response.json().catch(() => undefined) as { message?: unknown; problems?: unknown } | undefined
+    const problems = Array.isArray(body?.problems) ? body.problems.map((problem: { path?: string; message?: string }) => `${problem.path ?? ''} ${problem.message ?? ''}`.trim()).join('; ') : ''
+    throw new Error(`${typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim()}${problems === '' ? '' : ` (${problems})`}`)
+  }
+  return await response.json() as T
+}
+
+/** The interface pack of the chat's story: the one in use, the ones it could use, and how the world's compare with its copies. */
+export async function loadInterfaceStatus(id: string, signal: AbortSignal): Promise<InterfaceStatus> {
+  return await interfaceReply(await fetch(`${API_PREFIX}/sessions/interface/status?id=${encodeURIComponent(id)}`, { credentials: 'same-origin', signal }))
+}
+
+/** Brings the world's interface packs into the chat's story. */
+export async function syncInterface(id: string, signal: AbortSignal): Promise<InterfaceSync> {
+  return await interfaceReply(await fetch(`${API_PREFIX}/sessions/interface/sync?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', signal }))
 }

@@ -60,7 +60,7 @@ export function TurnsDock({ useChat, useSession, timeline, move, fill, branch, t
   const label = (text: string): string => (text.length > LABEL_LENGTH ? `${text.slice(0, LABEL_LENGTH - 1)}…` : text)
 
   return (
-    <div className={css.dock} data-testid="roleplay-turns">
+    <div className={css.dock} data-testid="roleplay-turns" data-rp="turns">
       {style}
       {alternatives.length > 1 && (
         <span className={css.group}>

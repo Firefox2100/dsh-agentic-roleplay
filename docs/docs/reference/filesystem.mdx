@@ -12,7 +12,9 @@ title: Filesystem layout
     factions/
     lore/
     prompts/
+    ui/<pack>/pack.json
     images/
+  ui/<pack>/pack.json
   avatars/
     world.json
     characters/<avatar>/character.json
@@ -20,12 +22,15 @@ title: Filesystem layout
   sessions/<uuid>/
     session.sqlite
     settings.json
+    ui/<pack>/
     images/
 ```
 
 The roleplay root is portable content. Base plugin configuration and credentials remain in the DSH profile.
 
 World folder names are not identities. `world.json.id` is the durable world reference stored by sessions. Entity IDs are local to a world and are remapped into session database IDs on import while retained as source IDs.
+
+The `ui` folders hold [interface packs](../authoring/interface-packs.mdx): the world's own, your own in the root, and the copies a session plays with.
 
 Every session directory is named by a UUID. Its DSH chat ID is derived as `session-<uuid>` and is not stored separately. `session.sqlite` is the authoritative evolving state; `settings.json` is live configuration.
 

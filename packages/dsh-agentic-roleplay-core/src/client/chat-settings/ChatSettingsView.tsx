@@ -7,6 +7,7 @@ import css from './ChatSettingsView.module.css'
 import { NotRoleplayError, loadSettings, resetVectors, saveSettings } from './settings-api.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
+import { InterfaceSection } from './InterfaceSection.tsx'
 import { VectorsSection } from './VectorsSection.tsx'
 import { ActivityList } from './ActivityList.tsx'
 import { InterventionList } from './InterventionList.tsx'
@@ -90,7 +91,8 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       <p className={css.description}>{t('description')}</p>
       {payload.pendingConsolidation > 0 && <p className={css.notice} role="status">{t('pendingConsolidation', { count: payload.pendingConsolidation })}</p>}
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
-      <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
+      <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} hidden={['interface.pack']} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
+      {session !== undefined && <InterfaceSection t={t} session={session} value={String(drafts['interface.pack'] ?? '')} onChange={(next) => { change('interface.pack', next) }} saved={payload.settings.interface.pack} disabled={saving} />}
       <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
       <InterventionList t={t} entries={payload.interventions} />
       {session !== undefined && <ActivityList t={t} session={session} entries={payload.activity} onRefresh={refreshActivity} />}

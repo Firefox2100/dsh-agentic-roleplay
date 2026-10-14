@@ -1,0 +1,41 @@
+.frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+
+.fill {
+  height: 100%;
+  min-height: 0;
+}
+
+.message {
+  margin: 0;
+  padding: 16px 24px;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-secondary);
+}
+
+.problems {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.hud {
+  box-sizing: border-box;
+  width: min(800px, 100%);
+  margin: 0 auto 8px;
+  padding: 0 16px;
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+}

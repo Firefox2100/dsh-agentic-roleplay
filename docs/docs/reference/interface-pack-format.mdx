@@ -1,0 +1,186 @@
+---
+title: Interface pack format
+description: Every field, limit, hook and call of an interface pack.
+---
+
+This is the reference for [interface packs](../authoring/interface-packs). A pack is a folder `ui/<pack>/` of a world, of a story, or of your roleplay folder.
+
+## The pack folder
+
+The folder name is the pack's id: letters, digits, `-` and `_`, starting with a letter or digit, up to 60 characters. The folder must hold a `pack.json`.
+
+| Limit | Value |
+|---|---|
+| Files in a pack | 200 |
+| Size of a pack | 5 MB |
+| Size of one file | 1 MB |
+| Depth of folders | 4 |
+| File and folder names | letters, digits, `-`, `_` and `.`; not starting with a dot |
+| File types | html, css, js, json, txt, png, jpg, jpeg, webp, gif, avif, svg, woff, woff2, ttf, otf, mp3, ogg, wav |
+
+Symbolic links, other file types and names outside these rules are problems. A pack with any problem is not used, and every problem is reported with its file.
+
+## `pack.json`
+
+```json
+{
+  "name": "Atlas",
+  "version": "0.1",
+  "description": "A status strip and a map tab.",
+  "api": 1,
+  "theme": { "--dsw-alias-brand-primary": { "light": "#8a3b12", "dark": "#e0a36b" } },
+  "skin": "skin.css",
+  "actions": ["say", "fill", "choose"],
+  "surfaces": {
+    "hud": { "file": "hud.html", "height": 48 },
+    "tab": { "file": "map.html", "title": "Atlas" }
+  }
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `name` | The name shown in settings. The folder name when absent. |
+| `version`, `description` | Free text for people. |
+| `api` | The bridge version the pack was written for. Only `1` exists; another number is a problem. |
+| `theme` | Colour tokens to replace. Each name must start with `--dsw-alias-`, and each value gives `light` and `dark` as plain CSS colours (no `url(`, `var(`, `;`, `{`, `}` or `@import`, at most 120 characters). |
+| `skin` | One `.css` file inside the pack. See [Skin](#skin). |
+| `actions` | What the pack's pages may do for the player: `say`, `fill`, `choose`. Anything not listed is refused. Default: none. |
+| `surfaces` | The pages, by place: `hud`, `dock`, `opening`, `backdrop`, `tab`. An unknown place is a problem. |
+
+A surface is `{ "file": "page.html", "title": "...", "height": 48 }`. `file` must be an `.html` file inside the pack. `title` is the accessible name of a `tab`'s page and defaults to the pack's name; the tab itself is always labelled *Interface* in DSH's tab strip. `height` is the first height of a strip in pixels.
+
+## Surfaces
+
+| Surface | Where it shows | Height |
+|---|---|---|
+| `hud` | A strip above the turn controls, the suggested actions and the input box. | 24–320 px, default 56 |
+| `dock` | A strip just above the input box, below the suggested actions. | 24–320 px, default 48 |
+| `opening` | A card in the strip's place, shown only until the first turn has been played and while no turn is running. It returns after a rewind to the start. | 120–640 px, default 320 |
+| `backdrop` | A layer behind the story's text in the chat. It takes no clicks. DSH's own fade above the input box covers its lower part. | the chat area |
+| `tab` | A tab beside Chat, labelled *Interface*. | the tab |
+
+The tab is offered when some pack of a world, a story or your roleplay folder declares one, and the page is reloaded to notice a new one. Strips and the opening card ask for another height with `rp.resize`; a height outside the range is brought into it. If the chat is not built the way the backdrop expects (after a DSH upgrade, for instance), the backdrop is skipped and a note is left in the browser console; nothing else is affected.
+
+## Skin
+
+A skin restyles the elements of the story itself. It is applied to the page while the pack is in use and removed with it.
+
+### Elements
+
+| `data-rp` | Element |
+|---|---|
+| `narration` | One delivered turn |
+| `prose` | A narration paragraph |
+| `utterance` | One spoken line |
+| `avatar`, `speaker`, `words` | The parts of a spoken line |
+| `ooc` | An out-of-character note |
+| `suggestions`, `suggestion` | The strip of suggested actions, and one of them |
+| `turns` | The turn controls: regenerate, rewind, branch |
+| `hud`, `dock`, `opening`, `backdrop`, `tab` | The frames that hold the pack's own surfaces |
+
+### Rules
+
+- Allowed at the top level: style rules, `@media`, `@supports`, `@keyframes` and `@font-face` (the last only at the top). Everything else, such as `@import`, `@namespace`, `@container` and `@page`, is refused.
+- Every part of every selector must name one of the elements above with `[data-rp="..."]`. `body`, `:root`, class and element selectors alone, `:not([data-rp])` and nesting are refused.
+- `url()` may point only to a file of the pack, by a relative path. Addresses with a scheme, absolute paths, `data:` addresses, `image-set()` and `expression()` are refused. Backslash escapes outside strings are refused.
+- A skin with any problem is refused whole, and the problems carry the line.
+
+Properties are not filtered: a skin may hide or move the elements it names.
+
+## The frame
+
+Each surface is an HTML page shown in a frame that can run its own scripts and nothing else:
+
+- It has no access to the DSH page, your login, cookies or storage, and cannot open windows or submit forms.
+- It cannot make network requests. Stylesheets, scripts, images, fonts and sounds come only from the pack.
+- The frame can still navigate itself to another address. Treat a pack from someone else as you would any file you open.
+
+The host puts the `rp` object in the page before your scripts run. Pages loaded by the frame (`<script src>`, `<link>`, images) are served from the pack's own folder.
+
+DSH's colours are available as CSS variables in the frame, and the frame's root element carries `data-rp-scheme="light"` or `"dark"`:
+
+`--dsw-alias-bg-base`, `--dsw-alias-bg-layer-1`, `--dsw-alias-bg-layer-2`, `--dsw-alias-bg-overlay`, `--dsw-alias-border-l1` to `-l4`, `--dsw-alias-brand-primary`, `--dsw-alias-label-primary`, `--dsw-alias-label-secondary`, `--dsw-alias-label-tertiary`, `--dsw-alias-link`, `--dsw-alias-state-business-primary`, `--dsw-alias-state-error-primary`, `--dsw-alias-state-idle-primary`, `--dsw-alias-state-success-primary`, `--dsw-alias-state-warn-primary`, `--dsw-radius-sm`.
+
+## The `rp` object
+
+| Call | Returns | What it does |
+|---|---|---|
+| `rp.api` | `1` | The bridge version. |
+| `rp.state()` | promise of the [player view](#the-player-view) | The view as it is now. |
+| `rp.watch(fn)` | function | Calls `fn(view)` at once and after every change; the returned function stops it. |
+| `rp.on(name, fn)` | function | `name` is `turn` (a turn was delivered, with `{ turn }`), `suggestions` (the list changed) or `theme` (`{ scheme, tokens }` changed). The returned function stops it. |
+| `rp.say(text)` | promise | Sends `text` as the player. Needs `say`. Once per turn: a second call fails until the turn number moves or 30 seconds pass. |
+| `rp.fill(text)` | promise | Puts `text` in the input box without sending. Needs `fill`. |
+| `rp.choose(n)` | promise | Puts the n-th suggested action (counting from 0) in the input box. Needs `choose`. |
+| `rp.history(n)` | promise of a list | The last `n` turns (20 by default, 100 at most), oldest first. See [History](#history). |
+| `rp.storage.get(key)`, `.set(key, value)`, `.remove(key)` | promise | A small store for the pack in this story. Values are JSON, keys 1–100 characters, 64 KB in all. `get` gives `null` for a missing key. |
+| `rp.resize(height)` | nothing | Asks for a height in pixels (a strip only). |
+| `rp.theme()` | promise of `{ scheme, tokens }` | The colour scheme and the tokens now in force. |
+
+Words sent with `say` or `fill` are 1 to 2000 characters. At most 20 requests a second are answered; the rest fail with a message. A call that fails rejects its promise with a message that says why (for example that the action is not in `actions`).
+
+## The player view
+
+The view is built from what the player's character could know, and nothing else:
+
+```ts
+interface PlayerView {
+  api: 1
+  revision: string                       // changes whenever the view does
+  story: { name: string; turn: number }  // turn: turns played so far
+  player?: { key: string; name: string; summary: string; publicState: string }
+  place?: {
+    key: string; name: string; description: string
+    features: { key: string; name: string }[]
+    exits: { name: string; open: boolean }[]          // only to places the character knows
+    items: { name: string; quantity: number }[]       // not hidden
+    here: { key: string; name: string; publicState: string }[]   // present, not the player
+  }
+  time?: { iso: string; zone: string; text: string }  // absent until the clock has started
+  carried: { name: string; quantity: number; where: string }[]
+  variables: { subject: string; name: string; value: string }[] // those anyone can tell
+  map: {
+    places: { key: string; name: string; parent?: string; here: boolean }[]
+    routes: { from: string; to: string }[]
+  }
+  suggestions: string[]
+}
+```
+
+Never included: private and hidden variables (including feelings), anyone's inner state or intentions, relationships, other characters' knowledge, hidden things, places and routes the character has not heard of, the world's files and your settings.
+
+### History
+
+`rp.history(n)` gives the turns the player has been through, as the story stands now:
+
+```ts
+interface HistoryTurn {
+  turn: number          // numbered as played; the same count as story.turn
+  player: string        // what the player said
+  segments: { type: 'narration' | 'utterance'; name?: string; text: string }[]
+  note?: string         // for an out-of-character command or question: what the player was told
+}
+```
+
+A turn that was taken back is not in it, and neither is a turn that has not been told yet.
+
+## Problems a pack can have
+
+Every problem names its file. The ones met most often:
+
+| Message | Meaning |
+|---|---|
+| `the pack has no pack.json` | The folder has no manifest. |
+| `api: this version knows only api 1` | `api` is not `1`. |
+| `surfaces.x.file: the pack has no file "..."` | A surface names a file that is not there. |
+| `surfaces.x: there is no such place` | A surface name other than the five above. |
+| `actions: "x" is not an action` | An action other than `say`, `fill`, `choose`. |
+| `theme.--x: only tokens named --dsw-alias-... can be set` | A theme name outside DSH's alias tokens. |
+| `skin.css: line N: ... must name one of our elements` | A selector reaches beyond the story's own elements. |
+| `this kind of file is not allowed` | A file type outside the list above. |
+| `symbolic links are not allowed` | A link inside the pack. |
+
+## Reading and copying
+
+A world's packs are checked when a story starts; a world with a problem in any pack cannot start a story, and the problems are listed. Chat settings can bring a changed world pack into a running story. The settings key is `interface.pack`: empty for the first pack of the story, `none` for no pack, or a pack's id (the story's own, else one from your roleplay folder). See [configuration](./configuration) and [the filesystem layout](./filesystem).

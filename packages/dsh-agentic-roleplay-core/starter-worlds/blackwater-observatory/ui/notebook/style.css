@@ -1,0 +1,15 @@
+:root { color-scheme: light dark; }
+html, body { margin: 0; background: transparent; color: var(--dsw-alias-label-primary, CanvasText); font: 13px/20px system-ui, sans-serif; }
+h2 { margin: 20px 0 6px; font-size: 14px; font-weight: 600; color: var(--dsw-alias-brand-primary, inherit); }
+h2:first-child { margin-top: 0; }
+ul { margin: 0; padding: 0; list-style: none; }
+li { padding: 2px 0; }
+.muted { color: var(--dsw-alias-label-tertiary, GrayText); }
+.here { font-weight: 600; }
+button { font: inherit; text-align: left; border: 1px solid var(--dsw-alias-border-l3, #8886); border-radius: var(--dsw-radius-sm, 8px); background: transparent; color: inherit; padding: 4px 10px; margin: 0 6px 6px 0; cursor: pointer; }
+button:hover { border-color: var(--dsw-alias-brand-primary, currentColor); }
+textarea { box-sizing: border-box; width: 100%; min-height: 140px; resize: vertical; font: inherit; padding: 8px 10px; border: 1px solid var(--dsw-alias-border-l3, #8886); border-radius: var(--dsw-radius-sm, 8px); background: var(--dsw-alias-bg-layer-1, transparent); color: inherit; }
+.strip { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--dsw-alias-border-l3, #8886); border-radius: var(--dsw-radius-sm, 8px); background: var(--dsw-alias-bg-layer-1, transparent); }
+.strip .place { font-weight: 600; color: var(--dsw-alias-brand-primary, inherit); }
+.strip .time, .strip .more { color: var(--dsw-alias-label-secondary, inherit); }
+.page { box-sizing: border-box; max-width: 720px; padding: 20px 24px 40px; }
