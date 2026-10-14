@@ -15,8 +15,10 @@ Important groups include:
 - **Images:** generation mode, reference handling, reuse, interpretation and captioning models, and the hires fix (render again larger from the first result, when the image service can).
 - **Prompts:** prompt language and overrides.
 - **Reasoning and sampling:** child-agent reasoning and role-specific model sampling.
-- **Models:** the model of each kind of helper (characters, record keeper, suggestion writer, world and plot author) as `provider/model`; empty uses the chat's own. Characters run side by side and write short answers, and the keeper runs in the background, so a smaller, faster model often does as well there.
+- **Models:** the model of each kind of helper (characters, background characters, record keeper, suggestion writer, world and plot author) as `provider/model`; empty uses the chat's own. Characters run side by side and write short answers, and the keeper runs in the background, so a smaller, faster model often does as well there.
 - **Provider options:** settings described by the selected embedding or media provider.
+
+The **What the world put in front of the story** list above it shows what triggers delivered lately: beats for the game master and cues for characters, each marked waiting, taken up (the game master wove the beat in, or a character acted on the cue) or lapsed (nobody did in time). Use it to see whether a trigger had an effect.
 
 The **What the helpers did lately** list at the bottom of the tab shows the latest runs of those helpers: which one, on which model, how long it took, how many tool calls it made, and why it failed when it did. Use it to see where a slow turn went.
 

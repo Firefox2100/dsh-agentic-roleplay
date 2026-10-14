@@ -1,0 +1,40 @@
+{
+  "dimensions": [
+    {
+      "id": "consistency",
+      "label": "Consistency of the story's facts",
+      "scope": "story",
+      "errors": [
+        { "id": "contradiction", "penalty": 15, "description": "Two records state facts that cannot both be true (a person alive and dead, an object in two places, a place open and locked at one time)." },
+        { "id": "fabrication", "penalty": 10, "description": "A record states something as established that no earlier record, character sheet or the player's input gives a basis for." },
+        { "id": "timeline", "penalty": 8, "description": "The order or timing of records is impossible (something is reacted to before it happens)." }
+      ]
+    },
+    {
+      "id": "memory",
+      "label": "What characters know and remember",
+      "scope": "character",
+      "errors": [
+        { "id": "knowledge-leak", "penalty": 15, "description": "A character acts on something it never perceived (it has no perception of the event, and nobody told it)." },
+        { "id": "memory-lapse", "penalty": 10, "description": "A character fails to use or contradicts something it plainly perceived shortly before and that bears on the moment." }
+      ]
+    },
+    {
+      "id": "persona",
+      "label": "Fidelity to who a character is",
+      "scope": "character",
+      "errors": [
+        { "id": "persona-drift", "penalty": 10, "description": "A character acts against its personality, speech style or situation without a reason in the story." },
+        { "id": "speaking-for-player", "penalty": 15, "description": "A record gives the player's character thoughts, words or decisions the player did not provide." }
+      ]
+    },
+    {
+      "id": "variety",
+      "label": "Freshness of the telling",
+      "scope": "story",
+      "errors": [
+        { "id": "repetition", "penalty": 8, "description": "Records repeat the same beat, phrase or reaction without anything new happening." }
+      ]
+    }
+  ]
+}

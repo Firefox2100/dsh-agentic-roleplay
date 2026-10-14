@@ -3,6 +3,7 @@ import type { CharacterId } from 'dsh-roleplay-model'
 import { vectorOf, type AgentLink } from './index.ts'
 import { characterKey, locationKey } from '../records/edit-types.ts'
 import { itemKey } from '../records/items.ts'
+import { mentioned } from '../memory/recall.ts'
 
 /**
  * The tools of one character's own agent. They are built for that character and registered
@@ -21,7 +22,10 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
     defineTool({
       name: 'recall_my_memories',
       description: 'Ask yourself what you remember about something: a person, an object, a place or an earlier moment. You get your own version of it, what you took in yourself and what you believe, and what has faded comes back as hazy or not at all. Use it only when you need a memory that the situation does not already give you.',
-      parameters: { about: { type: 'string', required: true, description: 'What to remember: a name, an object, a topic or a short description of the moment.' } },
+      parameters: {
+        about: { type: 'string', required: true, description: 'What to remember: a name, an object, a topic or a short description of the moment.' },
+        person: { type: 'string', description: 'Only what concerns this person (a name or alias you know): everything you remember of them.' },
+      },
       output: {
         schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { clarity: { type: 'string', required: true }, turn: { type: 'integer', required: true }, text: { type: 'string', required: true } } } },
         render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You do not remember anything about that, and there is nothing more to find: go on with what you know.' : value.map(entry => `- (${entry.clarity === 'clear' ? '' : entry.clarity === 'faded' ? 'the details are fuzzy' : 'you barely remember'}) ${entry.text}`.replace('- () ', '- ')).join('\n') }],
@@ -30,14 +34,17 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
       async execute(args, exec) {
         const agent = link()
         const { session, turn, policy } = agent
-        return (await session.recallRanked({ characterId, situation: args.about, turn, policy, ...placeOf(session, characterId) }, exec.signal, await vectorOf(agent, args.about, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
+        const who = args.person === undefined || args.person.trim() === '' ? [] : [...mentioned(args.person, session.characters.list())].filter(id => id !== characterId)
+        if (args.person !== undefined && args.person.trim() !== '' && who.length === 0) return []
+        const situation = who.length === 0 ? args.about : `${args.about} ${args.person}`
+        return (await session.recallRanked({ characterId, situation, turn, policy, ...(who.length === 0 ? {} : { about: who }), ...placeOf(session, characterId) }, exec.signal, await vectorOf(agent, situation, exec.signal))).map(entry => ({ clarity: entry.clarity, turn: entry.turn, text: entry.text }))
       },
     }),
     defineTool({
       name: 'recall_my_known_entities',
       description: 'Recall the people, places, things and routes you know exist. This says only that you know them, not where they are now or their current state.',
       parameters: { about: { type: 'string', description: 'Optional name or word to narrow the result.' } },
-      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { kind: { type: 'string', required: true }, key: { type: 'string', required: true }, name: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You know of nothing matching that.' : value.map(entry => `- ${entry.kind}: ${entry.name} (${entry.key})`).join('\n') }] },
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { kind: { type: 'string', required: true }, key: { type: 'string', required: true }, name: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You know of nothing matching that.' : value.map(entry => `- ${entry.kind}: ${entry.name}`).join('\n') }] },
       isConcurrencySafe: () => true,
       async execute(args) {
         const { session } = link()

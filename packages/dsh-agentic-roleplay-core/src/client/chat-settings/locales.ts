@@ -6,6 +6,7 @@ export type ChatSettingsLocaleKey =
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
   | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
   | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed'
+  | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
 const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
@@ -18,6 +19,18 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     notRoleplay: 'This chat is not a roleplay session, so it has no roleplay settings.',
     pendingConsolidation: '{count} character(s), place(s) or thing(s) made up in play are waiting to be fitted into the world (connected to the rest, given relationships). It is done in the background.',
     pendingRecords: '{count} round(s) are waiting to be written into the story\'s memory. The game master records them when the story moves on, or once too many pile up.',
+    interventionsTitle: 'What the world put in front of the story',
+    interventionsHelp: 'Beats and cues that triggers delivered lately. A beat is for the game master to weave in; a cue is for characters. Taken up means it was used; lapsed means nobody did within its time.',
+    interventionsEmpty: 'No trigger has delivered anything yet.',
+    interventionTurn: 'Turn',
+    interventionKind: 'For',
+    interventionText: 'What',
+    interventionStatus: 'Became of it',
+    interventionBeat: 'Game master (beat)',
+    interventionCue: 'Cue for {who}',
+    interventionWaiting: 'Waiting',
+    interventionTaken: 'Taken up',
+    interventionLapsed: 'Lapsed, nobody took it up',
     activityTitle: 'What the helpers did lately',
     activityHelp: 'Characters, the record keeper, the suggestion writer and the authors run in the background of a turn. The latest runs are listed here, with how long each took.',
     activityRefresh: 'Refresh',
@@ -74,6 +87,18 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     notRoleplay: '此对话不是角色扮演存档，没有角色扮演设置。',
     pendingConsolidation: '有 {count} 个在故事中新建的角色、地点或物品等待融入世界（与其余部分建立连接和关系），将在后台完成。',
     pendingRecords: '有 {count} 个回合等待写入故事记忆。主持人会在故事推进时记录，积压过多时也会自动记录。',
+    interventionsTitle: '世界摆到故事面前的东西',
+    interventionsHelp: '触发器最近送出的节拍与提示。节拍交给游戏主持人织入故事，提示交给角色。“已采用”表示被用上了，“已失效”表示在期限内没有人理会。',
+    interventionsEmpty: '还没有触发器送出过任何东西。',
+    interventionTurn: '回合',
+    interventionKind: '送给',
+    interventionText: '内容',
+    interventionStatus: '结果',
+    interventionBeat: '游戏主持人（节拍）',
+    interventionCue: '给 {who} 的提示',
+    interventionWaiting: '等待中',
+    interventionTaken: '已采用',
+    interventionLapsed: '已失效，无人理会',
     activityTitle: '助手最近做了什么',
     activityHelp: '角色、记录员、建议作者和世界作者都在每一轮的后台运行。这里列出最近的运行及各自耗时。',
     activityRefresh: '刷新',

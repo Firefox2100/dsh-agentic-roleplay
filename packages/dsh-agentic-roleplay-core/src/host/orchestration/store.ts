@@ -87,8 +87,8 @@ function knowledgeOf(session: Session, characterId: number, turn: number, visibl
   for (const otherId of visibleCharacters ?? (placement === undefined ? [] : session.placements.at(placement.locationId, 'character').map(other => other.entityId))) {
     if (otherId !== characterId && session.relationships.get(characterId, otherId) === undefined) session.relationships.upsert(characterId, otherId, { label: 'acquaintance' }, turn)
   }
-  const locations = session.knowledge.list(characterId, 'location').flatMap(entry => { const place = session.locations.get(entry.subjectId); return place === undefined ? [] : [`${place.name} (${locationKey(place)})`] })
-  const items = session.knowledge.list(characterId, 'item').flatMap(entry => { const item = session.items.get(entry.subjectId); return item === undefined ? [] : [`${item.name} (${itemKey(item)})`] })
+  const locations = session.knowledge.list(characterId, 'location').flatMap(entry => { const place = session.locations.get(entry.subjectId); return place === undefined ? [] : [place.name] })
+  const items = session.knowledge.list(characterId, 'item').flatMap(entry => { const item = session.items.get(entry.subjectId); return item === undefined ? [] : [item.name] })
   const allExits = session.locations.allExits()
   const routes = session.knowledge.list(characterId, 'exit').flatMap(entry => {
     const exit = allExits.find(candidate => candidate.id === entry.subjectId)
@@ -96,8 +96,8 @@ function knowledgeOf(session: Session, characterId: number, turn: number, visibl
     const to = exit === undefined ? undefined : session.locations.get(exit.toId)
     return from === undefined || to === undefined ? [] : [`${from.name} -> ${to.name}`]
   })
-  const characters = session.relationships.from(characterId).flatMap(relation => { const character = session.characters.get(relation.toId); return character === undefined ? [] : [`${character.name} (${keyOfCharacter(character)})`] })
-  const factions = session.factionRelationships.from('character', characterId).filter(relation => relation.toKind === 'faction').flatMap(relation => { const faction = session.factions.get(relation.toId); return faction === undefined ? [] : [`${faction.name} (${faction.sourceId ?? faction.id})`] })
+  const characters = session.relationships.from(characterId).flatMap(relation => { const character = session.characters.get(relation.toId); return character === undefined ? [] : [character.name] })
+  const factions = session.factionRelationships.from('character', characterId).filter(relation => relation.toKind === 'faction').flatMap(relation => { const faction = session.factions.get(relation.toId); return faction === undefined ? [] : [faction.name] })
   return { characters, factions, locations, items, routes }
 }
 

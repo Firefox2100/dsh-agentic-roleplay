@@ -629,7 +629,7 @@ describe('a turn with the real agent loop', () => {
     it('asks the characters freely and the record keeper exactly, and has the helpers answer with a tool call', async () => {
       const { adapter } = await playTime('stated')
       const sampled = (requests: GenerateOptions[]) => requests.map(request => adapter.samplings[adapter.requests.indexOf(request)])
-      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 800, priority: 'foreground' })))
+      expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 810, priority: 'foreground' })))
       expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: 8000, priority: 'background' })))
       expect(adapter.samplings[adapter.requests.indexOf(masterRequests(adapter)[0]!)]).toBeUndefined()
     })
@@ -1337,6 +1337,17 @@ describe('a turn with the real agent loop', () => {
       const carolsBrief = briefFor(adapter, 'Carol')
       expect(carolsBrief).toContain('Where you are:\nCellar: Cold.')
       expect(carolsBrief).toMatch(/Present:\n- Carol \(you\)[^\n]*(?:\n|$)/)
+    })
+
+    it('never shows a character a key or the number of a turn or round: those belong to the code, the story has only names and times', async () => {
+      const { adapter } = await playPlaced({})
+      const requests = characterRequests(adapter)
+      expect(requests.length).toBeGreaterThan(0)
+      for (const request of requests) {
+        const shown = `${systemOf(request)}\n${asText(request)}`
+        expect(shown).not.toMatch(/\((arthur|alice|bob|carol|dan|bar|cellar)\)/)
+        expect(shown).not.toMatch(/\b(turn|round|step) \d+\b/i)
+      }
     })
 
     it('moves a character the game master sends somewhere, with the round, and commits it for the keeper', async () => {

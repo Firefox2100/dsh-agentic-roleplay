@@ -1,4 +1,5 @@
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
+import { outputBudget } from './budget.ts'
 import { randomUUID } from 'node:crypto'
 import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type RunCall, type RunDetail } from '../../shared/activity.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -51,6 +52,8 @@ export interface ChildTask {
   images?: readonly ImageBlock['attachment'][]
   /** The shape of the result; the child ends by calling `submit_result` with it. */
   result: ObjectJsonSchema
+  /** Fields the model is asked for as required (so an engine that writes required fields first, in order, writes them first) but whose absence is not refused. */
+  unenforced?: readonly string[]
   /** Refuses the result with a reason when the child may not finish yet; the child then carries on. */
   beforeSubmit?: (result: unknown) => string | undefined
   maxCalls?: number
@@ -90,14 +93,18 @@ export interface ChildSampling {
 
 export type ChildKind = 'characters' | 'suggestions' | 'authoring' | 'records'
 
-/** What the settings of a chat say about how a kind of helper is asked: prose is free, the keepers of records exact. */
-export function childSampling(settings: { sampling: Record<ChildKind, number> & { tools: 'auto' | 'required'; maxTokens: number; shortMaxTokens: number } }, kind: ChildKind): ChildSampling {
-  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: kind === 'characters' || kind === 'suggestions' ? settings.sampling.shortMaxTokens : settings.sampling.maxTokens, priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
+/**
+ * What the settings of a chat say about how a kind of helper is asked: prose is free, the keepers of records exact. A helper whose answer has a declared size (its `estimate`, in tokens)
+ * is let produce that with room to spare, no more than the chat's ceiling for its kind.
+ */
+export function childSampling(settings: { sampling: Record<ChildKind, number> & { tools: 'auto' | 'required'; maxTokens: number; shortMaxTokens: number; headroom: number } }, kind: ChildKind, estimate?: number): ChildSampling {
+  const ceiling = kind === 'characters' || kind === 'suggestions' ? settings.sampling.shortMaxTokens : settings.sampling.maxTokens
+  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: estimate === undefined ? ceiling : Math.min(ceiling, outputBudget(estimate, settings.sampling.headroom)), priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
 }
 
 /** What a caller passes as `trace`: files each run of a kind of helper under a label in the store's record of activity, with its detail when the chat keeps it. */
-export function childTrace(store: { settings(): { models: Record<ChildKind, string>; diagnostics: { keepRuns: boolean } }; recordActivity(entry: ActivityEntry, detail?: RunDetail): void }, kind: ChildKind, label: string, extra: Pick<RunDetail, 'recalled'> = {}): NonNullable<ChildTask['trace']> {
-  const model = store.settings().models[kind].trim()
+export function childTrace(store: { settings(): { models: Record<ChildKind, string>; diagnostics: { keepRuns: boolean } }; recordActivity(entry: ActivityEntry, detail?: RunDetail): void }, kind: ChildKind, label: string, extra: Pick<RunDetail, 'recalled'> = {}, named?: string): NonNullable<ChildTask['trace']> {
+  const model = (named ?? store.settings().models[kind]).trim()
   return (run) => {
     const keep = store.settings().diagnostics.keepRuns
     const id = keep ? randomUUID() : undefined
@@ -106,8 +113,8 @@ export function childTrace(store: { settings(): { models: Record<ChildKind, stri
 }
 
 /** The `model` the settings give a kind of helper, to spread into its task; nothing when it runs on the chat's own model. */
-export function childModel(settings: { models: Record<ChildKind, string> }, kind: ChildKind): Pick<ChildTask, 'model'> {
-  const named = settings.models[kind].trim()
+export function childModel(settings: { models: Record<ChildKind, string> }, kind: ChildKind, override?: string): Pick<ChildTask, 'model'> {
+  const named = (override ?? settings.models[kind]).trim()
   if (named === '') return {}
   const slash = named.indexOf('/')
   return { model: { provider: named.slice(0, slash), model: named.slice(slash + 1) } }
@@ -137,6 +144,12 @@ function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens' | 's
     ...(task.model === undefined ? {} : { provider: task.model.provider, model: task.model.model }),
   }
   return Object.keys(options).length === 0 ? undefined : options
+}
+
+/** The schema an answer is checked against: the one the model was given, without requiring what it was only asked for ({@link ChildTask.unenforced}). */
+export function enforcedSchema(task: Pick<ChildTask, 'result' | 'unenforced'>): ObjectJsonSchema {
+  const skipped = task.unenforced ?? []
+  return skipped.length === 0 || task.result.required === undefined ? task.result : { ...task.result, required: task.result.required.filter(name => !skipped.includes(name)) }
 }
 
 /** A model that is cut off in the middle of its tool call leaves an unfinished argument no one can read; asking again usually gives a whole one. */
@@ -235,7 +248,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     parameters: task.result as unknown as Record<string, unknown>,
     output: { schema: { type: 'object', properties: { recorded: { type: 'boolean', const: true } }, required: ['recorded'], additionalProperties: false }, render: () => [{ type: 'text', text: 'Result recorded.' }] },
     execute(args, exec) {
-      const violations = validateJsonSchemaValue(task.result, args)
+      const violations = validateJsonSchemaValue(enforcedSchema(task), args)
       if (violations.length > 0) throw new ToolArgsError(violations)
       const refusal = task.beforeSubmit?.(args)
       if (refusal !== undefined) {

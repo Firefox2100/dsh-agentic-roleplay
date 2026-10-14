@@ -76,9 +76,17 @@ describe('activating the characters', () => {
     const attempt = await engine.activate(owner, { situation }, run, signal)
     expect(attempt.reports.map(report => report.character)).toEqual(['alice', 'dan'])
     expect(attempt.failures).toEqual([
-      { character: 'bob', name: 'Bob', reason: 'model unavailable' },
+      { character: 'bob', name: 'Bob', reason: 'model unavailable', technical: true },
       { character: 'carol', name: 'Carol', reason: 'that is not an intent' },
     ])
+  })
+
+  it('puts the reason of a fault of the system in the log, where the story cannot read it', async () => {
+    const logged: string[] = []
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), (message) => { logged.push(message) })
+    const { run } = scriptedRunner({ alice: new Error('model unavailable'), bob: { intent: 'b', commitment: 'low' } })
+    await engine.activate(owner, { situation, characters: ['alice', 'bob'] }, run, signal)
+    expect(logged).toEqual(['Alice could not act: model unavailable'])
   })
 
   it('lets the game master try again when nobody could act', async () => {

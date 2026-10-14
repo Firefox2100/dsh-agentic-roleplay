@@ -1,6 +1,8 @@
 import { promptFor } from '../prompts/access.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import { estimateAnswer } from '../agents/budget.ts'
+import { referent } from './referent.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { Suggester, SuggestionJob } from './boundaries.ts'
 import { MAX_SUGGESTION, suggestionProblems, tidySuggestions } from './suggestions.ts'
@@ -23,7 +25,7 @@ function promptOf(job: SuggestionJob): string {
   const place = player?.place?.location.name
   return [
     `Write exactly ${job.count} suggestion${job.count === 1 ? '' : 's'}.`,
-    `The player plays ${player?.character.name ?? 'their character'}${place === undefined ? '' : `, who is at ${place}`}.`,
+    `The player plays ${player === undefined ? 'their character' : referent(player.character)}${place === undefined ? '' : `, who is at ${place}`}.`,
     '',
     'What the player has just read:',
     readingOf(job),
@@ -37,7 +39,7 @@ export function suggestionWriter(deps: { agentOf: (chat: string) => Agent | unde
       const parent = deps.agentOf(job.chat)
       if (parent === undefined) throw new Error(`no agent for chat ${job.chat}`)
       const result = await runChild<{ options: string[] }>({
-        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'suggestions'), ...childModel(job.store.settings(), 'suggestions'), trace: childTrace(job.store, 'suggestions', 'suggestions'),
+        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'suggestions', estimateAnswer(Array.from({ length: job.count }, () => MAX_SUGGESTION), job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'suggestions'), trace: childTrace(job.store, 'suggestions', 'suggestions'),
         persona: promptFor(parent, 'roleplay/suggester', job.store.settings().prompts.language, { max: MAX_SUGGESTION }),
         prompt: promptOf(job),
         result: RESULT,

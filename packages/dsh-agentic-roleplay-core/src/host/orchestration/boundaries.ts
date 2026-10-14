@@ -98,6 +98,8 @@ export interface CharacterRequest {
   situation: string
   /** 1 for the first time the characters are asked in a round, 2 for the one retry. */
   attempt: 1 | 2
+  /** The language of the chat's instructions, which says how long each part of the answer may run (English when left out). */
+  language?: string
   /** What happened in the earlier rounds of this turn, in order. */
   earlier?: readonly Reaction[]
   /** On the retry: what everyone's intents became in the attempt before. */

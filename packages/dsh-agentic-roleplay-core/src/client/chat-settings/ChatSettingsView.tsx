@@ -9,6 +9,7 @@ import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { VectorsSection } from './VectorsSection.tsx'
 import { ActivityList } from './ActivityList.tsx'
+import { InterventionList } from './InterventionList.tsx'
 import { SettingsFields } from '../settings-form/SettingsFields.tsx'
 
 export type ChatSettingsViewProps = PropsRuntime<'conversation.view'> & PropsLocale<'roleplay.chatSettings'>
@@ -67,7 +68,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
   const refreshActivity = (): void => {
     if (session === undefined) return
     loadSettings(session, new AbortController().signal).then(
-      (next) => { setLoad({ status: 'ready', payload: { ...payload, activity: next.activity, vectors: next.vectors, pendingRecords: next.pendingRecords, pendingConsolidation: next.pendingConsolidation } }) },
+      (next) => { setLoad({ status: 'ready', payload: { ...payload, activity: next.activity, interventions: next.interventions, vectors: next.vectors, pendingRecords: next.pendingRecords, pendingConsolidation: next.pendingConsolidation } }) },
       (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) },
     )
   }
@@ -91,6 +92,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
       <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
       <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
+      <InterventionList t={t} entries={payload.interventions} />
       {session !== undefined && <ActivityList t={t} session={session} entries={payload.activity} onRefresh={refreshActivity} />}
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}
       <div className={css.actions}>

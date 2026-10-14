@@ -91,13 +91,13 @@ describe('the settings in force', () => {
 describe('the settings of a session', () => {
   const sessionsDir = () => join(root, 'sessions')
   let clockMode: 'simulated' | 'real' | undefined
-  const deps = { sessionsDir, pendingRecords: () => 2, pendingConsolidation: () => 3, activity: () => [], vectors: () => ({ available: false, embedded: 0, pending: 0 }), clockMode: () => clockMode }
+  const deps = { sessionsDir, pendingRecords: () => 2, pendingConsolidation: () => 3, activity: () => [], interventions: () => [], vectors: () => ({ available: false, embedded: 0, pending: 0 }), clockMode: () => clockMode }
   beforeEach(() => { clockMode = undefined })
   const state = new RoleplayState(new Context(), { journalMode: 'delete' })
 
   it('are read and written through the session, with the bounds the form needs', () => {
     const { id } = state.createSession(sessionsDir(), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
-    expect(readChatSettings(deps, id)).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 2, pendingConsolidation: 3, activity: [], vectors: { available: false, embedded: 0, pending: 0 } })
+    expect(readChatSettings(deps, id)).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 2, pendingConsolidation: 3, activity: [], interventions: [], vectors: { available: false, embedded: 0, pending: 0 } })
     expect(writeChatSettings(deps, id, { maxRounds: 4 }).settings.maxRounds).toBe(4)
     expect(readChatSettings(deps, id).settings.maxRounds).toBe(4)
   })

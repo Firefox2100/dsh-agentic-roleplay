@@ -37,6 +37,12 @@ Triggers are evaluated at turn start, after every committed round, and after a t
 
 `runChild` creates a child through the parent agent context, registers only its scoped tools, validates `submit_result`, enforces a call budget (once it is used up the child's other tools are withdrawn, so that a model made to call a tool at every step can only submit; it is stopped if it still does not within three steps), and reminds a child that stops before submitting. This is intentionally used instead of globally exposing character-specific tools such as `recall_my_memories`.
 
+**Order of fields.** In every tool schema and helper answer, a field that others depend on comes before them: a selector that shapes what follows (who is asked, where the action happens) before the text it shapes, reasoning before the verdict it supports, and an amount after what it measures (how long a round took after its outcomes). A character first writes a short first-person `thought`. It is optional and read by no one, so an engine that does not write fields in order, or a model that leaves it out, gives the same result; the order is a best effort that costs nothing when it is not respected (a backend may sort the fields alphabetically or follow the order of earlier calls in the conversation; `thought` is asked for as required but not enforced when the answer is checked).
+
+**Sizes.** Every text of a character's answer states its limit in the instructions (`ANSWER_LIMITS`, by language) and the most a request may produce is estimated from those limits: `outputBudget(estimate, sampling.headroom)`, never more than the ceiling `sampling.shortMaxTokens` or `sampling.maxTokens`. A helper whose answer has no declared size uses the ceiling.
+
+**Faults are not story.** A character that could not act because of a fault of the system is not recorded and the game master is not given the reason, only that nothing is to be written for it; the reason goes to the log and the run's record. Characters are shown names (with pronouns), never keys, and never the number of a turn or round.
+
 Keep personas and tool declarations stable. Put changing scene data in the user brief. A tool must enforce every authority and consistency rule in code; prompt instructions are not a security boundary.
 
 ## Extension seams

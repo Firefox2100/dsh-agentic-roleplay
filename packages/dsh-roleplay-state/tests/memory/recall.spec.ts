@@ -166,6 +166,35 @@ describe('recall', () => {
     expect(explained.find(entry => entry.text.includes('marches'))?.why).not.toHaveProperty('lexical')
   })
 
+  it('recalls only what concerns the people asked about, whatever the words say', () => {
+    saw(1, 'The lamp on the table flickered.', 4, [])
+    saw(1, 'Bob locked the lamp room.', 3, [bob.id])
+    const found = recall(store, { characterId: alice.id, characters: store.characters.list(), situation: 'the lamp', turn: 2, about: [bob.id], policy: { ...DEFAULT_MEMORY_POLICY, associate: 0 } })
+    expect(found.map(entry => entry.text)).toEqual(['Bob locked the lamp room.'])
+  })
+
+  describe('not the same thing three times', () => {
+    const scene = () => {
+      saw(1, 'Bob took the brass key from the desk drawer.', 4, [bob.id])
+      saw(1, 'Bob took the brass key from the desk drawer quietly.', 4, [bob.id])
+      saw(1, 'Bob took the brass key from the desk drawer at night.', 4, [bob.id])
+      saw(1, 'Bob said the cellar door has not opened in years.', 3, [bob.id])
+    }
+    const asked = (diversity: number) => ask('Alice asks Bob about the brass key and the cellar door', 2, { recall: 2, associate: 0, diversity }).map(entry => entry.text)
+
+    it('keeps the best by score when no diversity is asked for', () => {
+      scene()
+      expect(asked(0).filter(text => text.includes('brass key'))).toHaveLength(2)
+    })
+
+    it('prefers something that adds to what is already chosen over a repeat of it', () => {
+      scene()
+      const texts = asked(0.6)
+      expect(texts.filter(text => text.includes('brass key'))).toHaveLength(1)
+      expect(texts).toContain('Bob said the cellar door has not opened in years.')
+    })
+  })
+
   describe('what comes to mind with what was recalled', () => {
     const scene = () => {
       saw(1, 'Bob took the brass key from the desk.', 4, [bob.id], { tags: ['key', 'cellar'] })

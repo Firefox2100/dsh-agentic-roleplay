@@ -28,6 +28,7 @@ title: Configuration reference
 | `memory.verify` | `true` | Keeper reads edits back |
 | `memory.backlogRounds` | 6 | Forced keeper threshold |
 | `memory.overRetrieve` | 4 | Candidate multiplier before final choice |
+| `memory.diversity` | 0.3 | How much a repeat of an already recalled memory counts against it (0 to 1) |
 | `memory.associate` | 2 | Most extra memories that come to mind with a matched one (strong tie, enough importance) |
 | `context.limitTokens` | 0 | Explicit fold limit; zero follows model metadata |
 | `context.limitRatio` | 0.6 | Share of model context used as the limit |
@@ -42,8 +43,8 @@ title: Configuration reference
 | `offstage.perTurn` | 2 | Due off-stage characters processed per turn |
 | `offstage.perCharacter` | 1 | Times one character is asked per turn |
 | `offstage.summary` | `true` | Off-stage characters also say in a line what happened (same request), shown as the *Meanwhile* card |
-| `models.characters`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own |
-| `sampling.maxTokens`, `sampling.shortMaxTokens` | 8000, 800 | Most tokens one helper request may produce; the short limit is for characters and suggestions, whose answers are brief (settings file only) |
+| `models.characters`, `models.background`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own (`background` is for background-tier characters and falls back to `characters`) |
+| `sampling.maxTokens`, `sampling.shortMaxTokens`, `sampling.headroom` | 8000, 2000, 2 | Ceilings on what one helper request may produce; the short one is for characters and suggestions, whose answers have declared sizes: they may produce `headroom` times the estimate of their answer, never more than the ceiling (settings file only) |
 | `diagnostics.keepRuns` | `false` | Keep what each helper run was told and did (its instructions, what it was asked, its tool calls and result, and for a character what it was reminded of and why), for the latest 60 runs; shown in the activity list of Chat settings |
 | `rewind.keepSnapshots` | 30 | Recent state snapshots |
 | `preview.enabled` | `true` | Show an early scene preview |

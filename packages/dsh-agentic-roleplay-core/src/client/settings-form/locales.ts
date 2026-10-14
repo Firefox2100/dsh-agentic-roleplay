@@ -2,12 +2,12 @@ import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
   | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
-  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp'
+  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp' | 'diversity' | 'diversityHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
-  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'modelsCharacters' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
+  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'modelsCharacters' | 'modelsBackground' | 'modelsBackgroundHelp' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -33,6 +33,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     overRetrieveHelp: 'To choose what a character is reminded of, this many times as many candidates are retrieved (by the moment\'s cues, by words and by meaning) and the best are kept; a reranking service, when one is configured, judges the wider net. 1 chooses straight from the first search.',
     associate: 'Memories that come to mind with others',
     associateHelp: 'The most extra memories a character is reminded of because they are strongly tied (the same people together with the same place or tags) to something the moment called to mind, and matter enough. 0 turns it off.',
+    diversity: 'Spread of what is recalled',
+    diversityHelp: 'From 0 to 1: how much a memory that says what one already chosen says counts against it, so that a character is not reminded of the same moment several times. 0 chooses by score alone.',
     lookup: 'Characters can look up memories',
     lookupHelp: 'While it decides, a character can ask itself about something it remembers beyond what the moment already brought to mind. Each character only reaches its own memories. It makes a character\'s turn a little longer.',
     lookupCalls: 'Memory look-ups per decision',
@@ -89,6 +91,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     factionsPerTurnHelp: 'The most organisations that decide what they do after one of your messages, when story time has passed since they last did. Each is one request in the background. 0 turns it off.',
     factionsEveryDays: 'Days between their decisions',
     factionsEveryDaysHelp: 'How many days of story time pass before an organisation decides again.',
+    modelsBackground: 'Model for background characters',
+    modelsBackgroundHelp: 'As provider/model. Characters of the background tier (crowds, passers-by) run on this model; empty uses the model for characters. They take part in the same way as the others, only on a cheaper model.',
     modelsCharacters: 'Model for characters',
     modelsCharactersHelp: 'As provider/model. Leave empty to use the chat\'s own model. Characters run side by side and write short answers, so a smaller, faster model often does as well.',
     modelsRecords: 'Model for the record keeper',
@@ -156,6 +160,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     recallHelp: '角色每次行动时最多被唤起的记忆条数，按当前情境联想到的内容挑选。',
     overRetrieve: '每条回忆的候选倍数',
     overRetrieveHelp: '为了选出角色被唤起的记忆，会先检索出此倍数的候选（按情境线索、字词和语义），再保留最好的；若已配置重排序服务，则由它评判这张更大的网。1 表示直接从第一次检索中选取。',
+    diversity: '回忆的分散程度',
+    diversityHelp: '0 到 1：与已选中的某条记忆说的是同一件事的记忆要被扣多少分，这样角色就不会把同一个时刻想起好几遍。0 表示只按得分选择。',
     associate: '顺带想起的记忆',
     associateHelp: '角色会因为与当前情境唤起的某件事紧密相连（相同的人物，加上相同的地点或标签）且足够重要，而顺带想起的额外记忆的最大条数。0 表示关闭。',
     lookup: '角色可主动回忆',
@@ -214,6 +220,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     factionsPerTurnHelp: '你发送一条消息后，最多让多少个组织决定自己的行动（前提是自它们上次行动以来故事时间已经过去）。每个组织占用一次后台请求。0 表示关闭。',
     factionsEveryDays: '决策间隔天数',
     factionsEveryDaysHelp: '组织再次决策之前要经过多少天故事时间。',
+    modelsBackground: '背景角色使用的模型',
+    modelsBackgroundHelp: '写成 提供方/模型。背景层级的角色（人群、路人）使用此模型；留空则使用“角色使用的模型”。它们的参与方式与其他角色相同，只是换成更便宜的模型。',
     modelsCharacters: '角色使用的模型',
     modelsCharactersHelp: '写成 提供方/模型。留空则使用对话自己的模型。角色并行运行且回答简短，较小较快的模型通常也能胜任。',
     modelsRecords: '记录员使用的模型',

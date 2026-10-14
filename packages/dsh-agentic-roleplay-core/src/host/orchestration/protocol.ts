@@ -1,3 +1,4 @@
+import { estimateAnswer } from '../agents/budget.ts'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { ItemChangeSpec, VariableChangeSpec } from '@dsh-agentic-roleplay/state'
 import type { NarrationSegment, TurnOutput } from '../../shared/narration.ts'
@@ -29,11 +30,15 @@ export interface CharacterReport extends CharacterAction {
   forced?: true
 }
 
-/** A character that could not act, and why. */
+/**
+ * A character that could not act, and why. A `technical` failure is a fault of the system (the model failed, ran out of calls, was cut off), not an event of the story: the game master
+ * is not told the reason, so that it cannot be written into the story, and nothing is recorded for the character.
+ */
 export interface CharacterFailure {
   character: string
   name: string
   reason: string
+  technical?: true
 }
 
 /** The game master's decision for one character in a round. */
@@ -75,10 +80,33 @@ export interface Utterance {
 
 export type { NarrationSegment, TurnOutput }
 
-/** What a character is asked to produce; the sub-agent runtime enforces it. */
+const MAX_ACCOUNT = 300
+
+/**
+ * How long, in characters, each text of a character's answer is asked to run to: the instructions state these, and the most a character's request may produce is estimated from them.
+ * A character of a script written without spaces says more in fewer.
+ */
+export const ANSWER_LIMITS = {
+  en: { thought: 240, intent: 300, utterance: 600, account: MAX_ACCOUNT },
+  zh: { thought: 100, intent: 120, utterance: 240, account: 120 },
+} as const
+
+export const answerLimits = (language: string): (typeof ANSWER_LIMITS)[keyof typeof ANSWER_LIMITS] => (language.toLowerCase().startsWith('zh') ? ANSWER_LIMITS.zh : ANSWER_LIMITS.en)
+
+/** What the answer of a character comes to at most, in tokens (an answer about what happened out of sight has its account too). */
+export function answerEstimate(language: string, away: boolean): number {
+  const limits = answerLimits(language)
+  return estimateAnswer([limits.thought, limits.intent, limits.utterance, ...(away ? [limits.account] : [])], language)
+}
+
+/**
+ * What a character is asked to produce; the sub-agent runtime enforces it. The order is the order of what depends on what: the thought comes first so that the
+ * choice that follows is made after it, which an engine that does not write fields in order simply does without (it is optional and read by no one).
+ */
 export const CHARACTER_ACTION_SCHEMA: ObjectJsonSchema = {
   type: 'object',
   properties: {
+    thought: { type: 'string', description: 'First, in your own voice and a sentence or two: what you notice in the moment and what you want from it. No one is shown it.' },
     intent: { type: 'string', description: 'What the character does, or tries to do, now, as an action in one or two sentences, without any speech.' },
     utterance: { type: 'string', description: 'What the character says aloud, word for word and in its own voice, exactly as it will be shown. Leave out when it says nothing.' },
     commitment: {
@@ -87,7 +115,7 @@ export const CHARACTER_ACTION_SCHEMA: ObjectJsonSchema = {
       description: 'How hard the character will keep trying if this does not work out: low gives up at once, high persists.',
     },
   },
-  required: ['intent', 'commitment'],
+  required: ['thought', 'intent', 'commitment'],
   additionalProperties: false,
 }
 
@@ -98,10 +126,9 @@ export const AWAY_ACTION_SCHEMA: ObjectJsonSchema = {
     ...CHARACTER_ACTION_SCHEMA.properties,
     account: { type: 'string', description: 'One sentence, in the third person and the past tense, of what came of this, as someone who only saw it from outside would tell it afterwards: no thoughts, no secrets.' },
   },
-  required: ['intent', 'commitment', 'account'],
+  required: ['thought', 'intent', 'commitment', 'account'],
 }
 
-const MAX_ACCOUNT = 300
 
 /** @throws {Error} when the value is not a character action. */
 const QUOTE_PAIRS: readonly (readonly [string, string])[] = [['"', '"'], ['“', '”'], ['「', '」'], ['『', '』'], ['«', '»'], ['‘', '’']]

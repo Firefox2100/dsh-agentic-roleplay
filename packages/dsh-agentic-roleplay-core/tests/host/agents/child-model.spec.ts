@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { childModel, childSampling, isUnfinishedCall, supportedEffort } from '../../../src/host/agents/child.ts'
+import { childModel, childSampling, isUnfinishedCall, supportedEffort, enforcedSchema } from '../../../src/host/agents/child.ts'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 
 describe('childModel', () => {
@@ -11,16 +11,35 @@ describe('childModel', () => {
     const settings = { ...DEFAULT_SETTINGS, models: { ...DEFAULT_SETTINGS.models, characters: ' localai/qwen/small ', records: 'openai/gpt-mini' } }
     expect(childModel(settings, 'characters')).toEqual({ model: { provider: 'localai', model: 'qwen/small' } })
     expect(childModel(settings, 'records')).toEqual({ model: { provider: 'openai', model: 'gpt-mini' } })
+    expect(childModel(settings, 'characters', 'localai/tiny')).toEqual({ model: { provider: 'localai', model: 'tiny' } })
+    expect(childModel(settings, 'characters', '')).toEqual({})
     expect(childModel(settings, 'suggestions')).toEqual({})
+  })
+})
+
+describe('what an answer is checked against', () => {
+  const result = { type: 'object', properties: { thought: { type: 'string' }, intent: { type: 'string' } }, required: ['thought', 'intent'] } as never
+
+  it('asks for what it does not enforce, and checks the rest', () => {
+    expect(enforcedSchema({ result, unenforced: ['thought'] }).required).toEqual(['intent'])
+    expect(enforcedSchema({ result }).required).toEqual(['thought', 'intent'])
+    expect((result as { required: string[] }).required).toEqual(['thought', 'intent'])
   })
 })
 
 describe('childSampling', () => {
   it('cuts the helpers that answer briefly off much sooner than the ones that write records or make things up', () => {
-    expect(childSampling(DEFAULT_SETTINGS, 'characters')).toMatchObject({ maxTokens: 800, priority: 'foreground' })
-    expect(childSampling(DEFAULT_SETTINGS, 'suggestions')).toMatchObject({ maxTokens: 800, priority: 'background' })
+    expect(childSampling(DEFAULT_SETTINGS, 'characters')).toMatchObject({ maxTokens: 2000, priority: 'foreground' })
+    expect(childSampling(DEFAULT_SETTINGS, 'suggestions')).toMatchObject({ maxTokens: 2000, priority: 'background' })
     expect(childSampling(DEFAULT_SETTINGS, 'records').maxTokens).toBe(8000)
     expect(childSampling(DEFAULT_SETTINGS, 'authoring').maxTokens).toBe(8000)
+  })
+
+  it('lets a helper with a declared answer size produce that with room to spare, and never more than the ceiling of its kind', () => {
+    expect(childSampling(DEFAULT_SETTINGS, 'characters', 400).maxTokens).toBe(800)
+    expect(childSampling(DEFAULT_SETTINGS, 'characters', 5000).maxTokens).toBe(2000)
+    expect(childSampling({ sampling: { ...DEFAULT_SETTINGS.sampling, headroom: 3 } }, 'characters', 401).maxTokens).toBe(1210)
+    expect(childSampling(DEFAULT_SETTINGS, 'records', 5000).maxTokens).toBe(8000)
   })
 })
 

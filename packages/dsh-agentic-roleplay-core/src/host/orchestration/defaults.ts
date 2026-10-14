@@ -5,9 +5,16 @@ import type {
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
 import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from '@dsh-agentic-roleplay/state'
-import type { NarrationSegment, Utterance } from './protocol.ts'
+import { answerLimits, type NarrationSegment, type Utterance } from './protocol.ts'
+import { referent } from './referent.ts'
 import type { AgendaView, SceneAgenda } from '../clock/agenda.ts'
 import { describeTime, describeWhen, type StoryTime } from '../clock/story-clock.ts'
+
+/** What the instructions say about how long each part of a character's answer may run. */
+const limitVariables = (language: string): { thoughtLimit: number; intentLimit: number; utteranceLimit: number } => {
+  const limits = answerLimits(language)
+  return { thoughtLimit: limits.thought, intentLimit: limits.intent, utteranceLimit: limits.utterance }
+}
 
 function describe(character: Character): string {
   const lines = [`You are ${character.name}.`]
@@ -131,7 +138,7 @@ function present(cast: readonly CastMember[], self: string): string {
     const { key, character, state } = member
     const seen = [state?.publicState, state?.activity].filter(text => text !== undefined && text.trim() !== '')
     const where = whereIs(member)
-    return `- ${character.name}${key === self ? ' (you)' : ''}${where === '' ? '' : ` (${where})`}${seen.length > 0 ? `: ${seen.join('; ')}` : ''}`
+    return `- ${key === self ? character.name : referent(character)}${key === self ? ' (you)' : ''}${where === '' ? '' : ` (${where})`}${seen.length > 0 ? `: ${seen.join('; ')}` : ''}`
   }).join('\n')
 }
 
@@ -233,7 +240,7 @@ export const sharedContext: CharacterContextProvider = {
         request.text('roleplay/character-rules', { name: member.character.name }),
         request.text('roleplay/character-style', { name: member.character.name }),
         ...(request.lookup ? [request.text('roleplay/character-lookup')] : []),
-        request.text('roleplay/character-decide', { name: member.character.name }),
+        request.text('roleplay/character-decide', { name: member.character.name, ...limitVariables(request.language ?? 'en') }),
       ].join('\n\n'),
       prompt: sections.join('\n\n'),
     }
@@ -320,7 +327,7 @@ export const castSummary: SceneContextProvider = {
       const role = character.control === 'player' ? `the player's character, "${key}"` : `acts through "${key}"`
       const seen = [state?.publicState, state?.activity].filter(text => text !== undefined && text.trim() !== '')
       const where = whereIs(member)
-      return `- ${character.name} (${role})${where === '' ? '' : ` [${where}]`}${character.summary === '' ? '' : `: ${character.summary}`}${seen.length > 0 ? ` Currently: ${seen.join('; ')}` : ''}`
+      return `- ${referent(character)} (${role})${where === '' ? '' : ` [${where}]`}${character.summary === '' ? '' : `: ${character.summary}`}${seen.length > 0 ? ` Currently: ${seen.join('; ')}` : ''}`
     }
     const player = cast.find(member => member.character.control === 'player')
     const days = time?.agenda === undefined ? '' : describeSceneAgenda(time.agenda, time.now.now)

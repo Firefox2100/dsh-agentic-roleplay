@@ -2,9 +2,11 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createCharacterTools, type Recalled } from '@dsh-agentic-roleplay/state'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { MAX_RUN_RECALLED, type RunRecall } from '../../shared/activity.ts'
+import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
+import { MAX_OOC_ANSWER } from '../../shared/ooc.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
-import { AWAY_ACTION_SCHEMA, CHARACTER_ACTION_SCHEMA, parseCharacterAction } from './protocol.ts'
+import { AWAY_ACTION_SCHEMA, CHARACTER_ACTION_SCHEMA, answerEstimate, parseCharacterAction } from './protocol.ts'
 import type { RunAnswer, RunCharacter } from './turn-engine.ts'
 
 /**
@@ -19,7 +21,9 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
     const tools = request.lookup
       ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: deps.store.settings().memory, queryVector: deps.store.queryVector }), request.member.character.id)
       : []
-    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(deps.store.settings(), 'characters'), ...childModel(deps.store.settings(), 'characters'), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request)), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, maxCalls: deps.store.settings().memory.lookupCalls, result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA })
+    const settings = deps.store.settings()
+    const named = request.member.character.tier === 'background' && settings.models.background.trim() !== '' ? settings.models.background : settings.models.characters
+    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, maxCalls: deps.store.settings().memory.lookupCalls, result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'] })
     return parseCharacterAction(result)
   }
 }
@@ -45,7 +49,7 @@ export function answerRunner(deps: { parent: Agent; boundaries: () => Boundaries
   return async (request, signal) => {
     const brief = deps.boundaries().characterContext.brief(request)
     const result = await runChild<{ answer: string }>({
-      parent: deps.parent, signal, sampling: childSampling(deps.store.settings(), 'records'), ...childModel(deps.store.settings(), 'records'), trace: childTrace(deps.store, 'records', 'answer to the player'), reasoningEffort: deps.store.settings().reasoning.children,
+      parent: deps.parent, signal, sampling: childSampling(deps.store.settings(), 'records', estimateAnswer([MAX_OOC_ANSWER], deps.store.settings().prompts.language)), ...childModel(deps.store.settings(), 'records'), trace: childTrace(deps.store, 'records', 'answer to the player'), reasoningEffort: deps.store.settings().reasoning.children,
       persona: request.text('roleplay/ask-answerer', { name: request.member.character.name }), prompt: brief.prompt, tools: [], maxCalls: 3, result: ANSWER_SCHEMA,
     })
     return result.answer

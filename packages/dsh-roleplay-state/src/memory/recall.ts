@@ -19,9 +19,14 @@ export interface MemoryPolicy {
    * place or tags) and matter enough. 0 or absent: none.
    */
   associate?: number
+  /**
+   * How much a memory that says what one already chosen says counts against it, from 0 (the best by score, repeats
+   * included) to 1 (only what adds something new): maximal marginal relevance over the pool. 0 or absent: none.
+   */
+  diversity?: number
 }
 
-export const DEFAULT_MEMORY_POLICY: MemoryPolicy = { flaky: true, recall: 12, overRetrieve: 4, associate: 2 }
+export const DEFAULT_MEMORY_POLICY: MemoryPolicy = { flaky: true, recall: 12, overRetrieve: 4, associate: 2, diversity: 0.3 }
 
 /** How much of a memory is left: what the character is told of it. */
 export type Clarity = 'clear' | 'faded' | 'vague'
@@ -75,6 +80,8 @@ export interface RecallQuery {
   policy: MemoryPolicy
   /** Say why each thing came back ({@link Recalled.why}). */
   explain?: boolean
+  /** Only what involves or is about one of these people comes back: "what do I know about her", which a name in the words would not reliably find. */
+  about?: readonly CharacterId[]
 }
 
 /** What recall reads: the events a character took in and what it believes. */
@@ -255,7 +262,7 @@ export interface RecallEvidence {
 /** Being where something happened calls it to mind, about as much as sharing two words with it. */
 const PLACE_CUE = 2
 
-function gather(source: RecallSource, { characterId, characters, situation, locationId }: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId'>): Candidate[] {
+function gather(source: RecallSource, { characterId, characters, situation, locationId, about }: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId' | 'about'>): Candidate[] {
   const names = new Map(characters.map(character => [character.id, character.name]))
   const peers = mentioned(situation, characters)
   peers.delete(characterId)
@@ -273,8 +280,9 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
   }
   const atTurn = (eventTurn: number): number | undefined => turns.get(eventTurn) ?? start
   const ageDays = (at: number | undefined): number => now === undefined || at === undefined ? 0 : Math.max(0, now - at) / DAY
+  const concerns = (ids: readonly number[]): boolean => about === undefined || about.length === 0 || ids.some(id => about.includes(id))
   return [
-    ...source.events.perceivedBy(characterId).map((seen): Candidate => {
+    ...source.events.perceivedBy(characterId).filter(seen => concerns(seen.event.involves)).map((seen): Candidate => {
       const at = rounds.get(`${seen.event.turn}:${seen.event.round}`) ?? atTurn(seen.event.turn)
       const cue = { people: peopleCue(seen.event.involves), words: overlap(cues, `${seen.perception.content} ${seen.event.text}`, seen.event.tags), place: locationId !== undefined && seen.event.locationId === locationId ? PLACE_CUE : 0 }
       return ({
@@ -289,7 +297,7 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
       seed: seen.perception.id,
       durability: 1,
     })}),
-    ...source.memories.list(characterId).map((belief): Candidate => {
+    ...source.memories.list(characterId).filter(belief => concerns(belief.about)).map((belief): Candidate => {
       const at = atTurn(belief.turn)
       const cue = { people: peopleCue(belief.about), words: overlap(cues, belief.text, []), place: 0 }
       return ({
@@ -308,7 +316,7 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
 }
 
 /** Everything the character could be reminded of, for a caller that ranks by meaning (an embedding, a reranker) before asking for the recall. */
-export function recallCandidates(source: RecallSource, query: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId'>): RecallCandidate[] {
+export function recallCandidates(source: RecallSource, query: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId' | 'about'>): RecallCandidate[] {
   return gather(source, query).map(candidate => ({ key: candidate.key, text: candidate.recalled.clear, turn: candidate.recalled.turn, importance: candidate.importance }))
 }
 
@@ -398,8 +406,41 @@ const STRONG_TIE = 3
 /** What does not matter much is not brought back by association. */
 const ASSOCIABLE_IMPORTANCE = 3
 
+/** How much two texts say the same, from 0 to 1: the share of their words (or pairs of characters) they have in common. */
+export function resemblance(a: ReadonlySet<string>, b: ReadonlySet<string>): number {
+  if (a.size === 0 || b.size === 0) return 0
+  let shared = 0
+  for (const word of a) if (b.has(word)) shared++
+  return shared / (a.size + b.size - shared)
+}
+
 /**
- * The last stage: choose the `policy.recall` best of the pool. With a reranker's judgement each
+ * Choose `count` of the ranked entries by maximal marginal relevance: each pick is the one with the best score
+ * discounted by how much it resembles what is already chosen, so that three memories of the same moment do not
+ * crowd out one of another. `diversity` 0 keeps the ranking as it is.
+ */
+function diversified<T extends { candidate: Candidate; score: number }>(ranked: readonly T[], count: number, diversity: number): T[] {
+  const weight = Math.min(1, Math.max(0, diversity))
+  if (weight === 0 || ranked.length <= 1) return ranked.slice(0, count)
+  const top = Math.max(...ranked.map(entry => entry.score), Number.EPSILON)
+  const words = new Map(ranked.map(entry => [entry, tokens(entry.candidate.recalled.clear)]))
+  const left = [...ranked]
+  const chosen: T[] = []
+  while (chosen.length < count && left.length > 0) {
+    let best = 0
+    let bestValue = -Infinity
+    left.forEach((entry, index) => {
+      const repeat = Math.max(0, ...chosen.map(picked => resemblance(words.get(entry)!, words.get(picked)!)))
+      const value = (1 - weight) * Math.max(0, entry.score) / top - weight * repeat
+      if (value > bestValue) { best = index; bestValue = value }
+    })
+    chosen.push(left.splice(best, 1)[0]!)
+  }
+  return chosen
+}
+
+/**
+ * The last stage: choose the `policy.recall` best of the pool, spread by `policy.diversity`. With a reranker's judgement each
  * candidate's relevance is mostly that (a candidate it left out counts as 0), and the rest is what
  * retrieval found; without, it is what retrieval found.
  */
@@ -416,13 +457,13 @@ export function finishRecall(pool: RecallPool, rerank?: ReadonlyMap<string, numb
       return [{ candidate, relevance, ...judgement, why }]
     })
     .sort((a, b) => b.score - a.score || b.candidate.recalled.turn - a.candidate.recalled.turn)
-  const chosen = standing.slice(0, policy.recall)
+  const chosen = diversified(standing, policy.recall, policy.diversity ?? 0)
   const result = chosen.map(({ candidate, clarity, text, why }): Recalled => ({ clarity, text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source, ...(why === undefined ? {} : { why }) }))
   const anchors = chosen.filter(entry => entry.relevance >= CUE_RELEVANCE)
   const wanted = anchors.length === 0 ? 0 : Math.max(0, policy.associate ?? 0)
   if (wanted > 0) {
     const taken = new Set(chosen.map(entry => entry.candidate.key))
-    const rest = [...standing.slice(policy.recall).map(entry => entry.candidate), ...pool.others].filter(candidate => !taken.has(candidate.key) && candidate.importance >= ASSOCIABLE_IMPORTANCE)
+    const rest = [...standing.filter(entry => !chosen.includes(entry)).map(entry => entry.candidate), ...pool.others].filter(candidate => !taken.has(candidate.key) && candidate.importance >= ASSOCIABLE_IMPORTANCE)
     const tied = rest.flatMap((candidate) => {
       const best = anchors.map(anchor => tie(anchor.candidate.links, candidate.links)).sort((a, b) => b.strength - a.strength)[0]
       const judgement = best === undefined || best.strength < STRONG_TIE ? undefined : judged(candidate, 0, policy)

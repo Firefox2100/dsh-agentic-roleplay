@@ -6,6 +6,7 @@ import type { OffSceneItem } from '../clock/offscene.ts'
 import { ClockError, type SkipRequest } from '../clock/story-clock.ts'
 import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type KnownRelationship, type Reaction, type TriggerReport, type TurnStore } from './boundaries.ts'
 import { AfterTurnJobs } from './after-turn.ts'
+import { referent } from './referent.ts'
 import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import { sameWords } from './defaults.ts'
 import { whereabouts } from './whereabouts.ts'
@@ -262,7 +263,7 @@ export class TurnEngine {
     const affiliations = store.affiliations(member.character.id)
     const tracked = store.trackedFor(member.character.id, company.map(entry => entry.character.id))
     return {
-      member, cast, situation: question, attempt: 1, turn: owner.turn, lookup: false, text: (id, variables) => store.text(id, variables),
+      member, cast, situation: question, attempt: 1, language: store.settings().prompts.language, turn: owner.turn, lookup: false, text: (id, variables) => store.text(id, variables),
       time: store.time(owner.turn),
       knowledge: store.knowledge(member.character.id, owner.turn, company.map(entry => entry.character.id)),
       ...(tracked.self === '' && tracked.others.length === 0 ? {} : { tracked }),
@@ -915,7 +916,7 @@ export class TurnEngine {
       const upcoming = store?.upcomingFor(member.character.id, owner.turn) ?? []
       const tracked = store?.trackedFor(member.character.id, (place === undefined ? cast : place.here).map(entry => entry.character.id))
       const request: CharacterRequest = {
-        member, cast, situation: state.situation, attempt: number, turn: owner.turn, ...(away ? { away: true as const } : {}), lookup: store?.settings().memory.lookup ?? false, text: (id, variables) => this.storeOf(owner).text(id, variables),
+        member, cast, situation: state.situation, attempt: number, language: store?.settings().prompts.language ?? 'en', turn: owner.turn, ...(away ? { away: true as const } : {}), lookup: store?.settings().memory.lookup ?? false, text: (id, variables) => this.storeOf(owner).text(id, variables),
         ...(time === undefined ? {} : { time }),
         ...(agenda === undefined ? {} : { agenda }),
         ...(cues.length === 0 ? {} : { cues }),
@@ -938,7 +939,9 @@ export class TurnEngine {
         return { character: key, name: member.character.name, ...action }
       } catch (error) {
         if (signal.aborted) throw error
-        return { character: key, name: member.character.name, reason: error instanceof Error ? error.message : String(error) }
+        const reason = error instanceof Error ? error.message : String(error)
+        this.problem(`${member.character.name} could not act: ${reason}`)
+        return { character: key, name: member.character.name, reason, technical: true }
       }
     }))
     return {
@@ -965,7 +968,7 @@ export class TurnEngine {
     return store.story.relationships.from(member.character.id).flatMap((relation) => {
       if (!present.has(relation.toId) && !relevant.has(relation.toId)) return []
       const other = cast.find(candidate => candidate.character.id === relation.toId)
-      return other === undefined || other.key === member.key ? [] : [{ name: other.character.name, label: relation.label, summary: relation.summary, present: present.has(relation.toId), familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }]
+      return other === undefined || other.key === member.key ? [] : [{ name: referent(other.character), label: relation.label, summary: relation.summary, present: present.has(relation.toId), familiarity: relation.familiarity, trust: relation.trust, affinity: relation.affinity, tension: relation.tension }]
     })
   }
 

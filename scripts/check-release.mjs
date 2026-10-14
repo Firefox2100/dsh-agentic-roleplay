@@ -25,6 +25,8 @@ for (const { folder, name } of releasePackages) {
   if (manifest.bugs?.url !== 'https://github.com/Firefox2100/dsh-agentic-roleplay/issues') throw new Error(`${name}: issue tracker is incorrect`)
   if (!Array.isArray(manifest.keywords) || !manifest.keywords.includes('deepseek-harness')) throw new Error(`${name}: keywords are missing`)
   if (!Array.isArray(manifest.files) || !manifest.files.includes('README.md') || !manifest.files.includes('LICENSE')) throw new Error(`${name}: README.md and LICENSE must be included`)
+  if (manifest.scripts?.prepack !== 'node -e "require(\'node:fs\').copyFileSync(\'../../LICENSE\', \'LICENSE\')"') throw new Error(`${name}: prepack must copy the repository license into the package`)
+  if (manifest.scripts?.postpack !== 'node -e "require(\'node:fs\').rmSync(\'LICENSE\', { force: true })"') throw new Error(`${name}: postpack must remove the staged package license`)
 
   const readme = await readFile(resolve(directory, 'README.md'), 'utf8')
   if (!readme.startsWith(`# ${name}\n`)) throw new Error(`${name}: README heading must match the package name`)

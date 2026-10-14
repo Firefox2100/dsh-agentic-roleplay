@@ -41,10 +41,12 @@ function record(value: unknown): never {
 }
 
 function failures(list: readonly CharacterFailure[]): string[] {
-  return list.length === 0 ? [] : ['', 'Could not act:', ...list.map(failure => `- ${failure.character} (${failure.name}): ${failure.reason}`)]
+  return list.length === 0 ? [] : ['', 'Could not act:', ...list.map(failure => (failure.technical === true
+    ? `- ${failure.character} (${failure.name}): no decision came back. That is a fault of the system, not something that happened in the story: nothing is recorded for ${failure.name} this round, so write nothing for them and say nothing about why`
+    : `- ${failure.character} (${failure.name}): ${failure.reason}`))]
 }
 
-function renderAttempt(attempt: AttemptReport): string {
+export function renderAttempt(attempt: AttemptReport): string {
   const heading = attempt.attempt === 1
     ? 'The characters acted. Their intents may conflict with each other; you decide what actually happens.'
     : 'These characters failed but were highly committed, so each tried once more, knowing what just happened.'
@@ -124,16 +126,16 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     name: ACTIVATE_TOOL,
     description: 'Let the characters act: one round of the turn. Each character asked is asked, separately and at the same time, what it intends to do and say in the situation you describe and how committed it is. Call it after reading what the player did, and again for a later round only when the story genuinely needs the characters to react to what just happened; the number of rounds for one player message is limited.',
     parameters: {
-      situation: {
-        type: 'string',
-        required: true,
-        description: 'An objective description of the moment: in the first round what the player\'s character just did or said; in a later round what is happening now, following from the rounds before (they are told those too). Every character is told this and nothing more, so leave out anyone\'s private thoughts.',
-      },
       characters: {
         type: 'array',
         required: true,
         items: { type: 'string' },
         description: 'Keys of the characters to ask, chosen by you from the scene (where each is, what each is doing). Ask only those the moment reaches: those in the same place, and those elsewhere who can plainly see, hear or are summoned; a character elsewhere perceives nothing by itself. Never the whole cast. In a later round ask only those the moment calls for.',
+      },
+      situation: {
+        type: 'string',
+        required: true,
+        description: 'An objective description of the moment: in the first round what the player\'s character just did or said; in a later round what is happening now, following from the rounds before (they are told those too). Every character is told this and nothing more, so leave out anyone\'s private thoughts.',
       },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderAttempt(value as unknown as AttemptReport) }] },
@@ -150,10 +152,6 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     name: RESOLVE_TOOL,
     description: 'Decide what actually happens to each character that acted in the current round, from their intents and the scene only. Intents can conflict; settle them consistently. A character whose intent fails and who was highly committed gets one more chance, and you resolve that attempt too. The player\'s character is not asked to act, but you may include an outcome for it (its key is in the scene) when what the player did moves it somewhere or has it handle things; when nobody else needs to react (the player just walks somewhere, picks something up), call this with only that outcome, without activate_characters. When nobody retries, the round is recorded and you decide whether another round is needed or the turn goes back to the player.',
     parameters: {
-      elapsed_seconds: {
-        type: 'integer',
-        description: 'How long this round took in the story, in seconds:: a few seconds for a remark, a minute or two for a conversation, longer for work or a journey. Left out, the chat\'s default applies. Not when the story\'s time follows the wall clock.',
-      },
       outcomes: {
         type: 'array',
         required: true,
@@ -213,6 +211,10 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
             },
           },
         },
+      },
+      elapsed_seconds: {
+        type: 'integer',
+        description: 'How long this round took in the story, in seconds:: a few seconds for a remark, a minute or two for a conversation, longer for work or a journey. Left out, the chat\'s default applies. Not when the story\'s time follows the wall clock.',
       },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderResolution(value as unknown as ResolveReport) }] },
@@ -379,10 +381,10 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     name: TIME_TOOL,
     description: 'Skip ahead in the story\'s time, between rounds: the player\'s character sleeps till morning, waits, or travels for days. Say either how long (by_minutes) or until when (until_time, and days_later for a later day). Time does not otherwise pass faster than the rounds take; use this only for a stretch that is summarised rather than played. Nothing else changes: if the skip changes what characters are doing or where they are, run a round for them afterwards. Not available when the story\'s time follows the wall clock.',
     parameters: {
+      reason: { type: 'string', required: true, description: 'What happens in the time that passes, in a sentence ("they sleep", "the ferry crosses").' },
       by_minutes: { type: 'integer', description: 'How many minutes to skip.' },
       until_time: { type: 'string', description: 'The time of day to skip to, 24-hour HH:MM: the next time the clock reads it, or the day given by days_later.' },
       days_later: { type: 'integer', description: 'With until_time: that many days after today (0 is later today, 1 is tomorrow).' },
-      reason: { type: 'string', required: true, description: 'What happens in the time that passes, in a sentence ("they sleep", "the ferry crosses").' },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => { const done = value as unknown as { from: number; to: number; zone: string; moved: { name: string; to: string; activity: string }[]; world: TriggerReport['fired'] }; return [{ type: 'text', text: `${describeDuration(done.to - done.from)} pass. It is now ${describeTime({ now: done.to, zone: done.zone })}.${done.moved.length === 0 ? '' : ` ${done.moved.map(routineLine).join(' ')}`} Nothing else changed: characters with you are still doing what they were, where they were; run a round for them if the time that passed changes that.${done.world.length === 0 ? '' : `\n${renderWorld(done.world).join('\n')}`}` }] } },
     isConcurrencySafe: () => false,
@@ -449,9 +451,9 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     description: 'Judge what the player\'s character tries, as the very first thing of an ordinary turn (nothing else is accepted before it): allowed is false when it is not viable (what it needs is out of reach, is not there, or the character cannot do it or does not have it) or when it breaks a rule of the world or of the player (the scene lists them and they are absolute: no magic means no spell works). The player\'s claim of an effect is not a fact. What merely looks strange, rash or foolish is allowed. When it is not allowed the attempt is played as a failure for the player\'s character, and nobody is asked to act on it.',
     parameters: {
       rule_check: { type: 'string', required: true, description: 'First, go through every rule the scene lists, one by one, in a few words each: does what the character tries need what the rule excludes? The rules are literal. Then whether it is viable here. Write "no rules listed" when there are none.' },
+      at: { type: 'string', description: 'The key of the place where the action happens, only when the player says it happens at a particular place (talking to the baker in the market, searching the cellar) rather than where the character is. If the character is somewhere else the action cannot work: it has to go there first. Leave it out when the action happens where the character is, and when the player is going somewhere (the journey is its own action).' },
       allowed: { type: 'boolean', required: true, description: 'Whether what the character tries can work: false when any listed rule is broken or it is not viable.' },
       reason: { type: 'string', required: true, description: 'What the character tries, and the rule or the fact that decides it, in a sentence.' },
-      at: { type: 'string', description: 'The key of the place where the action happens, only when the player says it happens at a particular place (talking to the baker in the market, searching the cellar) rather than where the character is. If the character is somewhere else the action cannot work: it has to go there first. Leave it out when the action happens where the character is, and when the player is going somewhere (the journey is its own action).' },
     },
     output: {
       schema: { type: 'json' },

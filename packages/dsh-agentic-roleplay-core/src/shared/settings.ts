@@ -1,5 +1,6 @@
 import { CLOCK_MODES, type ClockMode } from 'dsh-roleplay-model'
 import type { ActivityEntry } from './activity.ts'
+import type { Intervention } from './interventions.ts'
 import type { VectorStatus } from './vectors.ts'
 import { MAX_OWN_RULES } from './rules.ts'
 
@@ -25,6 +26,8 @@ export interface ChatSettings {
     /** How many times the number of memories a character is reminded of are retrieved before a reranker (when there is one) and the memory's own weight choose the best. */
     overRetrieve: number
     associate: number
+    /** How much a memory that repeats one already chosen counts against it, from 0 (none) to 1: maximal marginal relevance over the pool. */
+    diversity: number
   }
   context: {
     /** The size of the conversation, in tokens, at which the oldest part is folded into the summaries; 0 takes a share of the model's context window (`limitRatio`). */
@@ -87,6 +90,8 @@ export interface ChatSettings {
     maxTokens: number
     /** The same for the helpers whose answer is short (the characters and the suggestion writer): a run that does not stop costs minutes, so it is cut off much sooner. */
     shortMaxTokens: number
+    /** How many times the estimated size of an answer a helper may produce before it is cut off (the room for a model that says a little before it answers). */
+    headroom: number
     /** Whether those helpers must answer with a tool call, which keeps them from writing prose instead of their result. */
     tools: 'auto' | 'required'
   }
@@ -107,6 +112,8 @@ export interface ChatSettings {
   models: {
     /** The model each kind of helper runs on, as `provider/model`; empty is the chat's own model. A smaller, faster model suits the helpers that do not write the story's prose. */
     characters: string
+    /** The characters of the background tier, when they should run on a cheaper model than the others; empty is the same as `characters`. */
+    background: string
     /** The record keeper. */
     records: string
     /** The writer of suggested actions. */
@@ -195,7 +202,7 @@ const text = (max: number, fallback: string): TextSpec => ({ kind: 'text', max, 
 export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
   maxCharacters: integer(1, 30, 4),
-  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), lookupCalls: integer(1, 20, 5), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4), associate: integer(0, 10, 2) },
+  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), lookupCalls: integer(1, 20, 5), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4), associate: integer(0, 10, 2), diversity: ratio(0, 1, 0.3) },
   context: {
     limitTokens: integer(0, 1_000_000, 0),
     limitRatio: ratio(0.1, 0.9, 0.6),
@@ -207,11 +214,11 @@ export const SETTINGS_SPEC = {
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
   diagnostics: { keepRuns: flag(false) },
   offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), joint: flag(true), summary: flag(true) },
-  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 800) },
+  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000), headroom: ratio(1, 10, 2) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },
-  models: { characters: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
+  models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
   rewind: { keepSnapshots: integer(0, 500, 30) },
   rules: { own: text(MAX_OWN_RULES, '') },
@@ -321,6 +328,8 @@ export interface SettingsPayload {
   pendingConsolidation: number
   /** How the latest runs of the story's helper agents went, oldest first. */
   activity: ActivityEntry[]
+  /** What the story's triggers delivered lately (beats for the game master, cues for characters) and what became of each. */
+  interventions: Intervention[]
   /** The state of the session's search by meaning. */
   vectors: VectorStatus
   /** The mode the story's clock is in now; time that is simulated cannot be made to follow the real clock again. */

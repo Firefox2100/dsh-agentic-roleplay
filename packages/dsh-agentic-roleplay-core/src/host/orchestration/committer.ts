@@ -4,6 +4,7 @@ import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { InvalidEditError, characterKey, createTools, dayPart, describeDuration, describeInstant, localTime, parseRecordsEdit } from '@dsh-agentic-roleplay/state'
 import { zoneOf } from '../clock/story-clock.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
+import { referent } from './referent.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
 
@@ -12,7 +13,7 @@ const VERIFY_SECTIONS = ['characters', 'factions', 'faction_relationships', 'eve
 
 const label = (round: { turn: number; round: number }): string => `turn ${round.turn}, round ${round.round}`
 
-function describeRound(round: RoundRecord): string[] {
+function describeRound(round: RoundRecord, known: ReadonlyMap<string, string>): string[] {
   return [
     `## ${label(round)}`,
     round.offstage === true ? `Off stage (away from the player's character; only the characters named here perceive it, and only those who were together perceive each other): ${round.situation}` : `The moment (includes what the player's character did or said): ${round.situation}`,
@@ -20,7 +21,7 @@ function describeRound(round: RoundRecord): string[] {
     ...(round.time === undefined ? [] : [`When: ${describeInstant(round.time.from, round.time.zone)} (${dayPart(localTime(round.time.from, round.time.zone).minuteOfDay)})${round.time.to > round.time.from ? `; the round took ${describeDuration(round.time.to - round.time.from)}` : ''}`]),
     'What each character did, and what became of it:',
     ...round.entries.map(entry => [
-      entry.forced === true ? `- ${entry.character} (${entry.name}): decreed, not chosen: ${entry.result}: ${entry.summary}` : entry.player === true ? `- ${entry.character} (${entry.name}, the player's character): ${entry.result}: ${entry.summary}` : `- ${entry.character} (${entry.name}): intended "${entry.intent}" [commitment: ${entry.commitment}]; ${entry.result}: ${entry.summary}`,
+      entry.forced === true ? `- ${entry.character} (${known.get(entry.character) ?? entry.name}): decreed, not chosen: ${entry.result}: ${entry.summary}` : entry.player === true ? `- ${entry.character} (${known.get(entry.character) ?? entry.name}, the player's character): ${entry.result}: ${entry.summary}` : `- ${entry.character} (${known.get(entry.character) ?? entry.name}): intended "${entry.intent}" [commitment: ${entry.commitment}]; ${entry.result}: ${entry.summary}`,
       entry.utterance === undefined ? '' : `  said${entry.spoken ? '' : ' (but was prevented from saying)'}: "${entry.utterance}"`,
       entry.publicState === undefined ? '' : `  the game master says anyone present can now see: ${entry.publicState}`,
       entry.variables === undefined ? '' : `  the game master changed what is tracked: ${entry.variables.map(change => `${change.subject}'s ${change.name} ${change.from} -> ${change.to}`).join('; ')}`,
@@ -37,6 +38,7 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
   const first = job.rounds[0]!
   const records = job.store.story.records({ timeZone: zoneOf(job.store.settings().clock) })
   const own = job.store.story.records({ rounds }).events
+  const known = new Map(job.store.cast().map(member => [member.key, referent(member.character)]))
   const before = records.events.filter(event => event.turn < first.turn || (event.turn === first.turn && event.round < first.round)).slice(-6)
   return [
     memory.flaky
@@ -49,9 +51,9 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     job.rounds.length > 1 ? `${job.rounds.length} rounds are due for records: write all of them, oldest first.` : `${label(first)} is due for records.`,
     ...(job.focus === undefined || job.focus.length === 0 ? [] : ['', `The game master says this is worth keeping: ${job.focus.join('; ')}`]),
     '',
-    ...job.rounds.flatMap(describeRound),
+    ...job.rounds.flatMap(round => describeRound(round, known)),
     '## State of the characters now',
-    ...records.characters.map(entry => `- ${entry.character} (${entry.name}, ${entry.controlled_by}): public: ${entry.public_state || '-'}; inner: ${entry.inner_state || '-'}; doing: ${entry.activity || '-'}${entry.location === null ? '' : `; in: ${entry.location}${entry.position === '' ? '' : ` (${entry.position})`}`}`),
+    ...records.characters.map(entry => `- ${entry.character} (${known.get(entry.character) ?? entry.name}, ${entry.controlled_by}): public: ${entry.public_state || '-'}; inner: ${entry.inner_state || '-'}; doing: ${entry.activity || '-'}${entry.location === null ? '' : `; in: ${entry.location}${entry.position === '' ? '' : ` (${entry.position})`}`}`),
     '',
     '## Recorded before these rounds (do not repeat)',
     ...(before.length === 0 ? ['- nothing'] : before.map(event => `- [turn ${event.turn}] ${event.text}`)),

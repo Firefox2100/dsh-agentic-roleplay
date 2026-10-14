@@ -53,8 +53,9 @@ pipeline of retrieve, judge and choose:
 4. **Rerank** the pool, when a reranking service is configured: it reads the situation with each candidate and scores
    it from 0 to 1. A candidate's relevance becomes 70% that and 30% the fused retrieval score. Without a service,
    or if it fails (reported once in the log), retrieval alone decides.
-5. **Choose** the best `memory.recall` by relevance, importance and recency, and tell each in the way it is
-   remembered, in the order it happened.
+5. **Choose** the best `memory.recall` by relevance, importance and recency, spread by maximal marginal relevance
+   (`memory.diversity`, default 0.3: a memory that repeats what is already chosen, by shared words, loses that much of
+   its score), and tell each in the way it is remembered, in the order it happened.
 6. **Associate**: up to `memory.associate` (default 2) more come to mind because they are strongly tied to something
    the moment really matched: the same people together with the same tag or place (or two of the same people), and
    important enough (3 or more). They are marked as coming to mind with the rest. Nothing matching the moment means
@@ -133,6 +134,7 @@ settings stay in force, so a typo cannot stop a story in the middle.
 | `memory.recall` | 12 | most things a character is reminded of per action |
 | `memory.lookup` | true | a character can ask itself about more of its own memories while it decides |
 | `memory.overRetrieve` | 4 | how many times `memory.recall` candidates are retrieved before the best are chosen; a reranker judges the wider net, and 1 chooses straight from retrieval |
+| `memory.diversity` | 0.3 | how much a memory repeating one already chosen counts against it (0 to 1, 0 = score alone) |
 | `memory.associate` | 2 | the most extra memories that come to mind because they are strongly tied to what the moment recalled; 0 turns it off |
 | `memory.verify` | true | the record keeper must read back what it wrote and compare it with the round before it finishes |
 | `context.limitTokens` | 0 | size at which the oldest turns are folded; 0 follows the model |
