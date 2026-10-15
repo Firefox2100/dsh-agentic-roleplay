@@ -1,15 +1,31 @@
 {
   "name": "Field notebook",
   "version": "1.0",
-  "description": "A status strip above the input box, and a notebook tab with the places you know, who is here, what you carry and notes of your own.",
+  "description": "A status strip above the input box, a notebook tab, and a live map in the right sidebar.",
   "api": 1,
   "theme": {
-    "--dsw-alias-brand-primary": { "light": "#8a3b12", "dark": "#e0a36b" }
+    "--dsw-alias-brand-primary": {
+      "light": "#8a3b12",
+      "dark": "#e0a36b"
+    }
   },
   "skin": "skin.css",
-  "actions": ["choose"],
+  "actions": [
+    "choose",
+    "open"
+  ],
   "surfaces": {
-    "hud": { "file": "strip.html", "height": 40 },
-    "tab": { "file": "notebook.html", "title": "Notebook" }
+    "hud": {
+      "file": "strip.html",
+      "height": 40
+    },
+    "tab": {
+      "file": "notebook.html",
+      "title": "Notebook"
+    },
+    "sidebar": {
+      "file": "map.html",
+      "title": "Map"
+    }
   }
 }

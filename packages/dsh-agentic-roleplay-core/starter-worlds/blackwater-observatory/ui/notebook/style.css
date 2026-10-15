@@ -13,3 +13,11 @@ textarea { box-sizing: border-box; width: 100%; min-height: 140px; resize: verti
 .strip .place { font-weight: 600; color: var(--dsw-alias-brand-primary, inherit); }
 .strip .time, .strip .more { color: var(--dsw-alias-label-secondary, inherit); }
 .page { box-sizing: border-box; max-width: 720px; padding: 20px 24px 40px; }
+.strip button { margin: 0 0 0 auto; padding: 0 8px; }
+svg { display: block; width: 100%; height: 100%; }
+.edge { stroke: var(--dsw-alias-border-l2, #8888); stroke-width: 1.5; }
+.node circle { fill: var(--dsw-alias-bg-layer-2, #8882); stroke: var(--dsw-alias-border-l2, #888); stroke-width: 1.5; }
+.node.here circle { fill: var(--dsw-alias-brand-primary, #a52); stroke: none; }
+.node text { fill: var(--dsw-alias-label-secondary, currentColor); font-size: 11px; text-anchor: middle; }
+.node.here text { fill: var(--dsw-alias-label-primary, currentColor); font-weight: 600; }
+.map-empty { padding: 24px; }

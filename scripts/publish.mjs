@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { isAbsolute, join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { isPublished } from './npm-registry.mjs'
+import { parsePackOutput } from './pack-output.mjs'
 import { releasePackages } from './release-packages.mjs'
 
 const root = resolve(import.meta.dirname, '..')
@@ -27,7 +28,7 @@ try {
     }
 
     const output = run('pnpm', ['--dir', `packages/${entry.folder}`, 'pack', '--json', '--pack-destination', staging])
-    const packed = JSON.parse(output)
+    const packed = parsePackOutput(output)
     const archive = isAbsolute(packed.filename) ? packed.filename : resolve(root, packed.filename)
     run('npm', ['publish', archive], { stdio: 'inherit' })
   }

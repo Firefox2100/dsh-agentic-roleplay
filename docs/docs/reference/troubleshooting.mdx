@@ -42,6 +42,10 @@ A pack's page may load only files of the pack, by relative address; nothing from
 
 Calls that speak or fill the input need `say`, `fill` or `choose` in the pack's `actions`; a call that is refused rejects with the reason. Words are 1 to 2000 characters, `say` works once per turn, and more than 20 requests a second are refused.
 
+## The sidebar has no entry for the pack's page
+
+Open the right sidebar's guide page (its **+** control, or collapse and reopen it). The entry appears only in a story whose pack has a `sidebar` page and is in use; check **Chat settings → Interface pack**. If the sidebar is not part of this DSH profile, the page cannot be shown.
+
 ## The backdrop is hidden or missing
 
 DSH paints a fade above the input box, which covers the lower part of a backdrop; a short story shows less of it. If it is missing altogether the browser console says the page has no place for one, which can happen after a DSH upgrade changes the chat's structure. The rest of the pack is unaffected.

@@ -20,6 +20,7 @@ export interface BridgeEnv {
   view(): PlayerView | undefined
   say(text: string): void | Promise<void>
   fill(text: string): void | Promise<void>
+  open(surface: 'tab' | 'sidebar'): void | Promise<void>
   storage(op: 'get' | 'set' | 'remove', key: string, value?: unknown): Promise<unknown>
   history(limit: number): Promise<HistoryTurn[]>
   theme(): ThemeData
@@ -114,6 +115,13 @@ export class Bridge {
         const chosen = typeof index === 'number' && Number.isInteger(index) ? view?.suggestions[index] : undefined
         if (chosen === undefined) throw new Error('there is no such suggestion')
         await this.env.fill(chosen)
+        return null
+      }
+      case 'open': {
+        this.allowed('open')
+        const surface = params['surface']
+        if (surface !== 'tab' && surface !== 'sidebar') throw new Error('surface must be "tab" or "sidebar"')
+        await this.env.open(surface)
         return null
       }
       case 'storage.get': return await this.env.storage('get', text(params, 'key'))

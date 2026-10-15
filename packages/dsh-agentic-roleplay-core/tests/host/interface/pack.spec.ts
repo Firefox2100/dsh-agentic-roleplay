@@ -26,6 +26,14 @@ describe('reading a pack', () => {
     expect(pack?.revision).toMatch(/^[0-9a-f]{16}$/)
   })
 
+  it('reads a sidebar page like the other pages, without a height', () => {
+    manifest({ surfaces: { sidebar: { file: 'map.html', title: 'Map', height: 99 } }, actions: ['open'] })
+    write('map.html', '<p>map</p>')
+    const { pack, problems } = read()
+    expect(problems).toEqual([])
+    expect(pack?.manifest.surfaces.sidebar).toEqual({ file: 'map.html', title: 'Map' })
+  })
+
   it('changes its revision when a file changes', () => {
     manifest()
     const before = read().pack?.revision
@@ -38,15 +46,15 @@ describe('reading a pack', () => {
   })
 
   it('reports every problem with its file', () => {
-    manifest({ api: 2, actions: ['say', 'delete'], theme: { '--other': { light: 'red', dark: 'blue' }, '--dsw-alias-x': { light: 'url(a)', dark: 'red' } }, skin: 'none.css', surfaces: { hud: { file: 'missing.html' }, sidebar: { file: 'hud.html' } } })
+    manifest({ api: 2, actions: ['say', 'delete'], theme: { '--other': { light: 'red', dark: 'blue' }, '--dsw-alias-x': { light: 'url(a)', dark: 'red' } }, skin: 'none.css', surfaces: { hud: { file: 'missing.html' }, panel: { file: 'hud.html' } } })
     expect(reasons()).toEqual(expect.arrayContaining([
       'pack.json: api: this version knows only api 1, the pack asks for 2',
-      'pack.json: actions: "delete" is not an action (say, fill, choose)',
+      'pack.json: actions: "delete" is not an action (say, fill, choose, open)',
       'pack.json: theme.--other: only tokens named --dsw-alias-... can be set',
       'pack.json: theme.--dsw-alias-x: values must be plain CSS colours',
       'pack.json: skin: the pack has no file "none.css"',
       'pack.json: surfaces.hud.file: the pack has no file "missing.html"',
-      'pack.json: surfaces.sidebar: there is no such place (hud, dock, opening, backdrop, tab)',
+      'pack.json: surfaces.panel: there is no such place (hud, dock, opening, backdrop, tab, sidebar)',
     ]))
   })
 

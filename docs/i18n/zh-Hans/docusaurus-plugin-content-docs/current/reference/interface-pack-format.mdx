@@ -45,10 +45,10 @@ description: 界面包的每个字段、限制、钩子和调用。
 | `api` | 包所针对的桥接版本。只有 `1`；其他数字算问题。 |
 | `theme` | 要替换的颜色令牌。名称必须以 `--dsw-alias-` 开头，每个值给出 `light` 和 `dark` 两个普通 CSS 颜色（不含 `url(`、`var(`、`;`、`{`、`}` 或 `@import`，最长 120 个字符）。 |
 | `skin` | 包内的一个 `.css` 文件。见[皮肤](#皮肤)。 |
-| `actions` | 包的页面可为玩家执行的操作：`say`、`fill`、`choose`。未列出的会被拒绝。默认没有。 |
-| `surfaces` | 按位置列出的页面：`hud`、`dock`、`opening`、`backdrop`、`tab`。未知位置算问题。 |
+| `actions` | 包的页面可以执行的操作：`say`、`fill`、`choose`（为玩家执行）和 `open`（显示包自己的标签页或侧栏页面）。未列出的会被拒绝。默认没有。 |
+| `surfaces` | 按位置列出的页面：`hud`、`dock`、`opening`、`backdrop`、`tab`、`sidebar`。未知位置算问题。 |
 
-页面写作 `{ "file": "page.html", "title": "...", "height": 48 }`。`file` 必须是包内的 `.html` 文件。`title` 是 `tab` 页面的无障碍名称，缺省为包名；标签页本身在 DSH 的标签栏中始终显示为 *界面*。`height` 是条带的初始高度（像素）。
+页面写作 `{ "file": "page.html", "title": "...", "height": 48 }`。`file` 必须是包内的 `.html` 文件。`title` 是 `tab` 页面的无障碍名称，也是 `sidebar` 页面在引导入口和细栏中的名称，缺省为包名；标签页本身在 DSH 的标签栏中始终显示为 *界面*。`height` 是条带的初始高度（像素）。
 
 ## 页面位置
 
@@ -59,6 +59,7 @@ description: 界面包的每个字段、限制、钩子和调用。
 | `opening` | 在条带位置显示的卡片，只在第一个回合播放之前、且没有回合正在运行时显示。回退到开头后会再次出现。 | 120–640 px，默认 320 |
 | `backdrop` | 聊天中文字后面的一层。它不接收点击。其下部会被 DSH 输入框上方自带的渐隐遮住。 | 聊天区域 |
 | `tab` | 聊天旁的标签页，标签显示为 *界面*。 | 标签页 |
+| `sidebar` | 右侧栏中的页面，从其引导页进入，上方有带返回按钮的细栏。隐藏时仍保持运行。 | 侧栏的其余部分 |
 
 只要世界、故事或你的角色扮演目录中有包声明了标签页，就会提供该标签页；新增的标签页需要刷新页面才会被发现。条带和开场卡片用 `rp.resize` 申请别的高度，超出范围的高度会被调整到范围内。如果聊天的结构不是背景所期望的（例如 DSH 升级之后），背景会被跳过，并在浏览器控制台留下一条说明；其他部分不受影响。
 
@@ -77,7 +78,7 @@ description: 界面包的每个字段、限制、钩子和调用。
 | `ooc` | 一条游戏外说明 |
 | `suggestions`、`suggestion` | 建议行动条及其中一条 |
 | `turns` | 回合操作：重新生成、回退、分支 |
-| `hud`、`dock`、`opening`、`backdrop`、`tab` | 容纳包自身页面的框架 |
+| `hud`、`dock`、`opening`、`backdrop`、`tab`、`sidebar` | 容纳包自身页面的框架 |
 
 ### 规则
 
@@ -90,13 +91,16 @@ description: 界面包的每个字段、限制、钩子和调用。
 
 ## 框架
 
-每个页面都显示在一个只能运行自己脚本的框架里：
+每个页面都显示在一个没有自己来源的框架里。它的脚本会运行，并且：
 
-- 它无法访问 DSH 页面、你的登录状态、Cookie 或存储，也不能打开窗口或提交表单。
-- 它不能发出网络请求。样式表、脚本、图片、字体和声音只能来自包本身。
-- 框架仍可自行跳转到别的地址。对待他人的包，请像对待你打开的任何文件一样谨慎。
+- 它无法访问 DSH 页面、你的登录状态、Cookie 或存储，也不能打开窗口、提交表单或让页面跳转。
+- 它只能加载和获取自己那个包的文件：样式表、脚本、图片、字体、声音、数据文件、worker。对其他任何地方（包括 DSH 服务器自己的 API）的普通 `fetch` 和资源加载都会失败。
+- 在这些限制之内，它不受约束。canvas、WebGL、WebAudio、worker（包括来自 blob 的）、WebAssembly 和 `eval` 都可用，所以包可以带上自己的库，绘制或计算任何它想要的东西。
+- 框架仍可自行跳转到别的地址。浏览器没有已支持的 CSP 指令能阻止自行跳转，因此恶意界面包可以把故事数据放进该地址。界面包属于受信任的输入：启用之前请检查其代码和来源。
 
-脚本运行之前，宿主会先把 `rp` 对象放进页面。框架加载的内容（`<script src>`、`<link>`、图片）从包自己的文件夹提供。
+宿主随每个包文件发送的策略是 `sandbox allow-scripts`，加上 `default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'; frame-src 'self'; form-action 'none'; base-uri 'self'`。隔离来自缺失的来源、资源加载指令和狭窄的桥接接口；它不会让恶意的界面包代码变得安全。
+
+脚本运行之前，宿主会先把 `rp` 对象放进页面。框架加载的内容（`<script src>`、`<link>`、图片、`fetch`）按相对地址从包自己的文件夹提供。
 
 DSH 的颜色以 CSS 变量提供给框架，框架的根元素带有 `data-rp-scheme="light"` 或 `"dark"`：
 
@@ -115,6 +119,7 @@ DSH 的颜色以 CSS 变量提供给框架，框架的根元素带有 `data-rp-s
 | `rp.choose(n)` | Promise | 把第 n 条建议行动（从 0 起）放入输入框。需要 `choose`。 |
 | `rp.history(n)` | 列表的 Promise | 最近 `n` 个回合（默认 20，最多 100），由旧到新。见[回顾](#回顾)。 |
 | `rp.storage.get(key)`、`.set(key, value)`、`.remove(key)` | Promise | 包在此故事中的小型存储。值为 JSON，键 1–100 个字符，总共 64 KB。缺失的键 `get` 返回 `null`。 |
+| `rp.open(surface)` | Promise | 显示包自己的 `'tab'` 或 `'sidebar'` 页面（侧栏处于关闭时会打开）。需要 `open`。 |
 | `rp.resize(height)` | 无 | 申请高度（像素，仅条带）。 |
 | `rp.theme()` | `{ scheme, tokens }` 的 Promise | 当前生效的配色方案和令牌。 |
 

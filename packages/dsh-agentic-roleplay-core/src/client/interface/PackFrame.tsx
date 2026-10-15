@@ -9,6 +9,8 @@ import { readTheme, watchTheme } from './theme.ts'
 export interface FrameInput {
   say: (text: string) => void
   fill: (text: string) => void
+  /** Shows the pack's own tab or its page in the right sidebar. */
+  open: (surface: 'tab' | 'sidebar') => void
 }
 
 export interface PackFrameProps {
@@ -34,6 +36,7 @@ export function PackFrame({ session, pack, surface, view, input, onResize, fill,
   const frame = useRef<HTMLIFrameElement>(null)
   const [ready, setReady] = useState(false)
   const latest = useRef({ view, input, actions: pack.actions })
+  const before = useRef<PlayerView | undefined>(undefined)
   latest.current = { view, input, actions: pack.actions }
   const file = pack.surfaces[surface]?.file
 
@@ -43,6 +46,7 @@ export function PackFrame({ session, pack, surface, view, input, onResize, fill,
       view: () => latest.current.view,
       say: (text) => { latest.current.input.say(text) },
       fill: (text) => { latest.current.input.fill(text) },
+      open: (surface) => { latest.current.input.open(surface) },
       history: limit => historyOf(session, limit),
       storage: (op, key, value) => storeOf(session, { op, key, ...(value === undefined ? {} : { value }) }),
       theme: () => readTheme(),
@@ -55,6 +59,7 @@ export function PackFrame({ session, pack, surface, view, input, onResize, fill,
 
   useEffect(() => {
     setReady(false)
+    before.current = undefined
     const onMessage = (event: MessageEvent): void => {
       if (event.source === null || event.source !== frame.current?.contentWindow) return
       const message = parseFrameMessage(event.data)
@@ -74,7 +79,6 @@ export function PackFrame({ session, pack, surface, view, input, onResize, fill,
     return watchTheme(push)
   }, [ready])
 
-  const before = useRef<PlayerView | undefined>(undefined)
   useEffect(() => {
     if (!ready || view === undefined) return
     send({ type: 'event', name: 'state', data: view })

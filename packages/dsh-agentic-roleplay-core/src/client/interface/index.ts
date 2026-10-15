@@ -7,6 +7,8 @@ import { facadeOf } from '../chat-input.ts'
 import { availability } from './api.ts'
 import { PackDock } from './PackDock.tsx'
 import { InterfaceTab } from './InterfaceTab.tsx'
+import { SIDEBAR_ID, SIDEBAR_KIND, SidebarBody, SidebarGuide } from './SidebarPage.tsx'
+import { IconGlobeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { dictionaries, type InterfaceLocaleKey } from './locales.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -40,7 +42,15 @@ export function registerInterface(ctx: Context): void {
   ctx.inject(['uiConversation'], (scope) => {
     const input = (sessionId: string) => {
       const facade = facadeOf(scope, sessionId)
-      return { say: (text: string) => { facade.fill(text, true) }, fill: (text: string) => { facade.fill(text, false) } }
+      return {
+        say: (text: string) => { facade.fill(text, true) },
+        fill: (text: string) => { facade.fill(text, false) },
+        // Resolved on use: a client without the right sidebar cannot show the page.
+        open: (surface: 'tab' | 'sidebar') => {
+          if (surface === 'sidebar') (scope.get('sidebarRight' as never) as { openTab(kind: string): void } | undefined)?.openTab(SIDEBAR_KIND)
+          else scope.uiConversation.binding(sessionId as never).activate(VIEW_ID)
+        },
+      }
     }
     // Resolved on use: a client without the theme service shows the pack without its colours.
     const overrideTokens = (source: string, tokens: Record<string, PackToken>): (() => void) => (scope.get('theme' as never) as ThemeLike | undefined)?.overrideTokens(source, tokens) ?? (() => undefined)
@@ -53,6 +63,29 @@ export function registerInterface(ctx: Context): void {
         inject: (sessionId: string) => ({ surface, frameInput: input(sessionId), overrideTokens }),
       }, PackDock))
     }
+
+    // The pack's page in the right sidebar: a tab type, its entry in the guide, and its body.
+    scope.inject(['sidebarRight', 'sidebarRightTabs'], (right) => {
+      right.effect(() => right.sidebarRightTabs.register({
+        id: SIDEBAR_ID,
+        kind: SIDEBAR_KIND,
+        keepMounted: true,
+        title: () => t('sidebarTitle'),
+        guide: [{ id: 'page', order: 30, title: () => t('sidebarTitle'), description: () => t('sidebarDescription'), icon: IconGlobeOutlineRegular }],
+      }), 'roleplay: sidebar tab type')
+      right.effect(() => right.slots.inject('sidebar.right.tab.guide.entry', () => right.slots.register({
+        name: 'sidebar.right.tab.guide.entry',
+        key: SIDEBAR_ID,
+        locale: NAMESPACE,
+        inject: (sessionId: string) => ({ sessionId }),
+      }, SidebarGuide as never)), 'roleplay: sidebar guide entry')
+      right.effect(() => right.slots.inject('sidebar.right.pane.tab', () => right.slots.register({
+        name: 'sidebar.right.pane.tab',
+        key: SIDEBAR_ID,
+        locale: NAMESPACE,
+        inject: (sessionId: string) => ({ sessionId, frameInput: input(sessionId) }),
+      }, SidebarBody as never)), 'roleplay: sidebar body')
+    })
 
     let offered = false
     void availability().then((found) => {

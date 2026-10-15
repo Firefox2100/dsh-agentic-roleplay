@@ -113,6 +113,8 @@ export async function sendPackFile(api: InterfaceApi, path: string, res: ServerR
   res.statusCode = 200
   for (const [name, value] of Object.entries(PACK_HEADERS)) res.setHeader(name, value)
   res.setHeader('content-type', file.mediaType)
+  // A frame has no origin, so its own fetches of the pack's files are cross-origin and need to be allowed to read them.
+  if (framed) res.setHeader('access-control-allow-origin', '*')
   if (file.kind === 'page') {
     const body = Buffer.from(file.body)
     res.setHeader('content-length', body.length)

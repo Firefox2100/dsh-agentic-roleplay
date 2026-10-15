@@ -45,10 +45,10 @@ Symbolic links, other file types and names outside these rules are problems. A p
 | `api` | The bridge version the pack was written for. Only `1` exists; another number is a problem. |
 | `theme` | Colour tokens to replace. Each name must start with `--dsw-alias-`, and each value gives `light` and `dark` as plain CSS colours (no `url(`, `var(`, `;`, `{`, `}` or `@import`, at most 120 characters). |
 | `skin` | One `.css` file inside the pack. See [Skin](#skin). |
-| `actions` | What the pack's pages may do for the player: `say`, `fill`, `choose`. Anything not listed is refused. Default: none. |
-| `surfaces` | The pages, by place: `hud`, `dock`, `opening`, `backdrop`, `tab`. An unknown place is a problem. |
+| `actions` | What the pack's pages may do: `say`, `fill`, `choose` (for the player) and `open` (show the pack's own tab or sidebar page). Anything not listed is refused. Default: none. |
+| `surfaces` | The pages, by place: `hud`, `dock`, `opening`, `backdrop`, `tab`, `sidebar`. An unknown place is a problem. |
 
-A surface is `{ "file": "page.html", "title": "...", "height": 48 }`. `file` must be an `.html` file inside the pack. `title` is the accessible name of a `tab`'s page and defaults to the pack's name; the tab itself is always labelled *Interface* in DSH's tab strip. `height` is the first height of a strip in pixels.
+A surface is `{ "file": "page.html", "title": "...", "height": 48 }`. `file` must be an `.html` file inside the pack. `title` is the accessible name of a `tab`'s page and the name of a `sidebar` page in the guide entry and its bar; it defaults to the pack's name. The tab itself is always labelled *Interface* in DSH's tab strip. `height` is the first height of a strip in pixels.
 
 ## Surfaces
 
@@ -59,6 +59,7 @@ A surface is `{ "file": "page.html", "title": "...", "height": 48 }`. `file` mus
 | `opening` | A card in the strip's place, shown only until the first turn has been played and while no turn is running. It returns after a rewind to the start. | 120–640 px, default 320 |
 | `backdrop` | A layer behind the story's text in the chat. It takes no clicks. DSH's own fade above the input box covers its lower part. | the chat area |
 | `tab` | A tab beside Chat, labelled *Interface*. | the tab |
+| `sidebar` | A page in the right sidebar, entered from its guide page, under a bar with a Back button. Kept running while hidden. | the rest of the sidebar |
 
 The tab is offered when some pack of a world, a story or your roleplay folder declares one, and the page is reloaded to notice a new one. Strips and the opening card ask for another height with `rp.resize`; a height outside the range is brought into it. If the chat is not built the way the backdrop expects (after a DSH upgrade, for instance), the backdrop is skipped and a note is left in the browser console; nothing else is affected.
 
@@ -77,7 +78,7 @@ A skin restyles the elements of the story itself. It is applied to the page whil
 | `ooc` | An out-of-character note |
 | `suggestions`, `suggestion` | The strip of suggested actions, and one of them |
 | `turns` | The turn controls: regenerate, rewind, branch |
-| `hud`, `dock`, `opening`, `backdrop`, `tab` | The frames that hold the pack's own surfaces |
+| `hud`, `dock`, `opening`, `backdrop`, `tab`, `sidebar` | The frames that hold the pack's own surfaces |
 
 ### Rules
 
@@ -90,13 +91,16 @@ Properties are not filtered: a skin may hide or move the elements it names.
 
 ## The frame
 
-Each surface is an HTML page shown in a frame that can run its own scripts and nothing else:
+Each surface is an HTML page shown in a frame that has no origin of its own. Its scripts run, and:
 
-- It has no access to the DSH page, your login, cookies or storage, and cannot open windows or submit forms.
-- It cannot make network requests. Stylesheets, scripts, images, fonts and sounds come only from the pack.
-- The frame can still navigate itself to another address. Treat a pack from someone else as you would any file you open.
+- It has no access to the DSH page, your login, cookies or storage, and cannot open windows, submit forms or navigate the page.
+- It can load and fetch only the files of its own pack: stylesheets, scripts, images, fonts, sounds, data files, workers. Ordinary fetches and resource loads to anywhere else, including the DSH server's own API, fail.
+- Inside those limits it is not restricted. Canvas, WebGL, WebAudio, workers (also from a blob), WebAssembly and `eval` all work, so a pack can bring its own libraries and draw or compute whatever it likes.
+- The frame can still navigate itself to another address. Browsers have no supported CSP directive that blocks self-navigation, so a hostile pack could put story data in that address. Interface packs are trusted input: inspect their code and source before enabling them.
 
-The host puts the `rp` object in the page before your scripts run. Pages loaded by the frame (`<script src>`, `<link>`, images) are served from the pack's own folder.
+The policy the host sends with every pack file is `sandbox allow-scripts` with `default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'; frame-src 'self'; form-action 'none'; base-uri 'self'`. The containment comes from the missing origin, the fetch directives and the narrow bridge. It does not make hostile pack code safe.
+
+The host puts the `rp` object in the page before your scripts run. Files the frame loads (`<script src>`, `<link>`, images, `fetch`) come from the pack's own folder by relative address.
 
 DSH's colours are available as CSS variables in the frame, and the frame's root element carries `data-rp-scheme="light"` or `"dark"`:
 
@@ -115,6 +119,7 @@ DSH's colours are available as CSS variables in the frame, and the frame's root 
 | `rp.choose(n)` | promise | Puts the n-th suggested action (counting from 0) in the input box. Needs `choose`. |
 | `rp.history(n)` | promise of a list | The last `n` turns (20 by default, 100 at most), oldest first. See [History](#history). |
 | `rp.storage.get(key)`, `.set(key, value)`, `.remove(key)` | promise | A small store for the pack in this story. Values are JSON, keys 1–100 characters, 64 KB in all. `get` gives `null` for a missing key. |
+| `rp.open(surface)` | promise | Shows the pack's own `'tab'` or `'sidebar'` page (the sidebar opens if it is closed). Needs `open`. |
 | `rp.resize(height)` | nothing | Asks for a height in pixels (a strip only). |
 | `rp.theme()` | promise of `{ scheme, tokens }` | The colour scheme and the tokens now in force. |
 

@@ -28,7 +28,7 @@ description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH
 | `host/interface/storage.ts` | 包保存在会话元数据中的小型存储 |
 | `host/interface/world-packs.ts` | 为创作工具列出、检查和删除世界的包文件 |
 | `host/authoring/pack-jail.ts`、`pack-tools.ts` | DSH 文件工具上的限制，以及创作对话的包工具 |
-| `client/interface/` | 框架、dock、标签页、桥接、背景、轮询 |
+| `client/interface/` | 框架、dock、标签页、侧栏页面、桥接、背景、轮询 |
 | `client/chat-settings/InterfaceSection.tsx` | 对话设置中的状态、选择与同步 |
 
 ## 流程
@@ -56,15 +56,21 @@ description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH
 
 ### 为什么框架路由不需要登录
 
-沙盒框架的来源是不透明的，所以浏览器不会为框架自己加载的内容（样式表、脚本、图片）发送 Cookie。框架文档是带登录加载的，但它的子资源不是。因此框架的文件在路径中带一个密钥提供，这同时也让相对地址得以生效。密钥是每个故事 24 个随机字节，在宿主启动时生成，只由需要登录的描述路由给出。它只打开包自己的文件，只读，绝不涉及玩家视图，玩家视图只通过 `postMessage` 传递。API 处理器只对这个前缀上的 `GET` 跳过登录检查；`tests/host/http/api.spec.ts` 检查其他所有路由和方法仍然需要登录。
+沙盒框架的来源是不透明的，因此它不能通过需要登录的包路由加载文档或子资源。框架的所有文件都通过路径中的密钥以只读方式提供，这同时也让相对地址得以生效。密钥是每个故事 24 个随机字节，在宿主启动时生成，只由需要登录的描述路由给出。它只能打开当前启用的包自己的文件，绝不涉及玩家视图；玩家视图只通过 `postMessage` 传递。API 处理器只对这个前缀上的 `GET` 跳过登录检查；`tests/host/http/api.spec.ts` 检查其他所有路由和方法仍然需要登录。
 
-每个包文件都带有 `Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; base-uri 'self'`，以及 `nosniff` 和 `no-referrer`。`sandbox` 指令既在响应头里也在框架上，所以单独打开它的地址时页面同样是封闭的。HTML 页面会先得到桥接脚本。
+每个包文件都带有 `Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'; frame-src 'self'; form-action 'none'; base-uri 'self'`，以及 `nosniff` 和 `no-referrer`；框架路由提供的文件还带有 `Access-Control-Allow-Origin: *`，因为没有来源的框架是跨源读取自己的文件的。
+
+为什么框架内部的策略这么宽：缺失的来源让代码无法接触宿主页面、Cookie 和存储，资源加载指令则把普通资源请求限制在包内。限制 `eval`、worker 或 WebAssembly 并不能约束界面包的计算能力，反而会让常见的库无法使用。`connect-src 'self'` 让页面可以 `fetch('data.json')`；框架向需要登录的 DSH API 发出的请求不带登录，其应答也无法读取。已在真实浏览器框架中验证：自己的文件、worker、WebAssembly、`eval`、WebGL 和 canvas 可用；外部的 fetch、图片和 WebSocket、宿主 API、父页面、存储、Cookie、弹窗和顶层跳转都不可用。**自行跳转仍然可用，而且能把数据放进 URL；目前没有正式发布的浏览器支持可阻止它的 CSP 指令。因此界面包属于受信任的输入。** `sandbox` 指令既在响应头里也在框架上，所以单独打开框架地址时文档限制仍然生效。HTML 页面会先得到桥接脚本。
 
 ## 桥接
 
 `frame.ts` 保存页面得到的脚本（纯 ES5，只发送消息）。`client/interface/bridge.ts` 负责应答：清单中的操作列表、每秒 20 个请求、每回合一次 `say`（或 30 秒）、2000 个字符的文字、回顾的限制。页面会忽略来源不是该框架窗口、或形状未知的消息。`parseFrameMessage` 是读取框架来信的唯一入口。
 
 **永远不要把注入 dock 的属性命名为 `input`。** DSH 自己的 dock 属性里就有一个，它遮住了我们的（现场发现：`rp.say` 报“input.say is not a function”）。我们的叫 `frameInput`。
+
+## 侧栏页面
+
+`client/interface/SidebarPage.tsx` 和 `index.ts` 中的注册，通过 `sidebarRightTabs` 为 DSH 的右侧栏添加一个标签类型（`roleplay-pack`，id 为 `@dsh-agentic-roleplay/core/interface-sidebar`，`keepMounted`），在 `sidebar.right.tab.guide.entry` 下添加一张引导卡片，在 `sidebar.right.pane.tab` 下添加主体。卡片是我们自己按胶囊外观写的，对于界面包没有 `sidebar` 页面的故事它什么也不渲染，所以普通聊天的引导页不受影响。主体是一条细栏（返回按钮调用 `openTab('guide', { replaceTab: true })`），下面是占满其余空间的 `PackFrame`。`rp.open` 经由 `PackFrame` 的 `FrameInput.open`，它调用 `sidebarRight.openTab` 或激活包的标签视图。
 
 ## 皮肤检查
 
@@ -76,7 +82,7 @@ description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH
 
 ## 创作
 
-世界创作预设挂载 DSH 的 `tool-fs`（捆绑补丁中的 `tool-fs` 行）。`registerPackJail` 在 `tools/pre-execute` 中最先注册一个监听器，把创作对话中的 `read`、`write` 和 `edit` 限制在 `<世界>/ui/<包>/` 的文本文件上（每次调用最多 200 KB），在导入审阅期间拒绝写入，调用链上的其余部分，并且只把单纯的放行改为本插件自己的询问；之后的监听器的拒绝或询问仍然有效。`tests/host/authoring/pack-jail-runtime.spec.ts` 在 DSH 真实的工具运行时中运行这一切，若注册时没有 `prepend` 它就会失败。插件自己的工具是 `world_pack_guide`、`list_world_packs`、`check_world_pack` 和 `delete_world_pack_file`（DSH 的文件工具无法删除）。
+世界创作预设挂载 DSH 的 `tool-fs`（捆绑补丁中的 `tool-fs` 行）。`registerPackJail` 在 `tools/pre-execute` 中最先注册一个监听器，把创作对话中的 `read`、`write` 和 `edit` 限制在 `<世界>/ui/<包>/` 的普通文本文件上（每次调用最多 200 KB），拒绝路径中的任何符号链接，在导入审阅期间拒绝写入，调用链上的其余部分，并且只把单纯的放行改为本插件自己的询问；之后的监听器的拒绝或询问仍然有效。`tests/host/authoring/pack-jail-runtime.spec.ts` 在 DSH 真实的工具运行时中运行这一切，若注册时没有 `prepend` 它就会失败。插件自己的工具是 `world_pack_guide`、`list_world_packs`、`check_world_pack` 和 `delete_world_pack_file`（DSH 的文件工具无法删除）。
 
 给模型的路径是相对于对话所在文件夹的；第一次实测中模型把一条很长的绝对路径写错了。拒绝信息会让它停下来并报告，否则它会反复尝试其他路径和 `sandbox_permissions`。
 
@@ -86,6 +92,7 @@ description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH
 |---|---|
 | 槽位 `conversation.input.dock` 及其属性 | 我们注入的名称不冲突；顺序值 1、3、20 仍在预期位置 |
 | 槽位 `conversation.view` 与 `uiConversation.views` | 标签页在较晚的 `availability` 应答后仍能注册 |
+| `sidebarRightTabs.register`、槽位 `sidebar.right.tab.guide.entry` 与 `sidebar.right.pane.tab`、`openTab(kind, { replaceTab })` | 入口出现在其他入口旁，页面能打开，返回能回到引导页 |
 | 主题服务 `overrideTokens`（用 `scope.get('theme')` 查找） | 仍在，仍接受 `{ light, dark }` 对 |
 | body 属性 `data-ds-dark-theme` | 仍表示深色；框架的配色方案跟随它 |
 | 类名片段 `_scrollBody`、`_composerSeat` | 背景和任何测量仍能找到它们 |

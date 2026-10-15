@@ -2,11 +2,11 @@
 export const PACK_API = 1
 
 /** What a surface may do for the player; a pack lists the ones it uses. */
-export const PACK_ACTIONS = ['say', 'fill', 'choose'] as const
+export const PACK_ACTIONS = ['say', 'fill', 'choose', 'open'] as const
 export type PackAction = (typeof PACK_ACTIONS)[number]
 
 /** The places in the interface that take a surface. */
-export const SURFACE_NAMES = ['hud', 'dock', 'opening', 'backdrop', 'tab'] as const
+export const SURFACE_NAMES = ['hud', 'dock', 'opening', 'backdrop', 'tab', 'sidebar'] as const
 export type SurfaceName = (typeof SURFACE_NAMES)[number]
 
 /** The surfaces that sit in a strip of the chat and so have a height of their own, with the heights they may ask for. */
@@ -59,7 +59,7 @@ export interface PackToken { light: string; dark: string }
 export interface PackSurface {
   /** The HTML file of the surface, relative to the pack. */
   file: string
-  /** Name of the tab (`tab` only); the pack's name when empty. */
+  /** The name of a `tab` or `sidebar` page, for the guide card and assistive technology; the pack's name when empty. */
   title: string
   /** First guess of the height in pixels, for the surfaces that sit in a strip (`hud`, `dock`, `opening`). */
   height?: number

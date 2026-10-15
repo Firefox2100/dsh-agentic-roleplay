@@ -4,14 +4,15 @@ import type { PlayerView } from '../../../src/shared/interface-pack.ts'
 
 const view = (turn = 1, suggestions = ['Ask Clara.', 'Leave.']): PlayerView => ({ api: 1, revision: 'r', story: { name: 'S', turn }, map: { places: [], routes: [] }, carried: [], variables: [], suggestions })
 
-function setup(actions: BridgeEnv['actions'] = ['say', 'fill', 'choose'], current: PlayerView | null = view()) {
+function setup(actions: BridgeEnv['actions'] = ['say', 'fill', 'choose', 'open'], current: PlayerView | null = view()) {
   let clock = 0
-  const state = { view: current ?? undefined, said: [] as string[], filled: [] as string[] }
+  const state = { view: current ?? undefined, said: [] as string[], filled: [] as string[], opened: [] as string[] }
   const env: BridgeEnv = {
     actions,
     view: () => state.view,
     say: (text) => { state.said.push(text) },
     fill: (text) => { state.filled.push(text) },
+    open: (surface) => { state.opened.push(surface) },
     storage: vi.fn(() => Promise.resolve('kept')),
     history: vi.fn((limit: number) => Promise.resolve([{ turn: limit, player: 'hi', segments: [{ type: 'narration' as const, text: 'Rain.' }] }])),
     theme: () => ({ scheme: 'dark', tokens: { '--dsw-alias-bg-base': '#000' } }),
@@ -84,6 +85,15 @@ describe('answering a surface', () => {
     await ask(bridge, 'storage.set', { key: 'seen', value: [1] })
     expect(env.storage).toHaveBeenLastCalledWith('set', 'seen', [1])
     expect(await ask(bridge, 'theme')).toEqual({ ok: true, value: { scheme: 'dark', tokens: { '--dsw-alias-bg-base': '#000' } } })
+  })
+
+  it('shows the pack\'s own tab or sidebar page when asked and allowed, and nothing else', async () => {
+    const { bridge, state } = setup(['open'])
+    expect((await ask(bridge, 'open', { surface: 'sidebar' })).ok).toBe(true)
+    expect((await ask(bridge, 'open', { surface: 'tab' })).ok).toBe(true)
+    expect(state.opened).toEqual(['sidebar', 'tab'])
+    expect(await ask(bridge, 'open', { surface: 'settings' })).toEqual({ ok: false, error: 'surface must be "tab" or "sidebar"' })
+    expect(await ask(setup(['say']).bridge, 'open', { surface: 'tab' })).toEqual({ ok: false, error: 'the pack did not ask for "open" in its pack.json actions' })
   })
 
   it('gives the story so far, as many turns as asked within the limit', async () => {

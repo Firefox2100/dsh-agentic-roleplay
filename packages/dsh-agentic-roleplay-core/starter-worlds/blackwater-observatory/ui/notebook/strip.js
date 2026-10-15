@@ -8,3 +8,5 @@ rp.watch((view) => {
   text('more', [here.length > 0 ? `with ${here.join(', ')}` : 'alone', ...tracked].join(' · '))
   rp.resize(document.documentElement.scrollHeight)
 })
+
+document.getElementById('map').addEventListener('click', () => { rp.open('sidebar').catch(error => console.warn(error)) })

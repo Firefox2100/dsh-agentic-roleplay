@@ -7,7 +7,7 @@ An interface pack changes how a story looks and adds small pieces of interface o
 
 A pack is a folder of plain files: a manifest, an optional stylesheet, and HTML pages with a little JavaScript. There is nothing to install and nothing to build.
 
-A pack never runs code in the DSH page. Its scripts run in a sandboxed frame that cannot reach the page, your login, the browser's storage or the network. It talks to the page through a small fixed API, and it is told only what the player's character could know. The full details are in the [pack format reference](../reference/interface-pack-format).
+A pack never runs code in the DSH page. Its scripts run in an opaque-origin sandboxed frame that cannot reach the page, your login or the browser's storage. Fetches, images and similar resource loads are restricted to files shipped in the pack. The frame talks to the page through a small fixed API, and it is told only what the player's character could know. A pack is still trusted code: it can navigate its own frame to an external address, including one containing data it received. The full details are in the [pack format reference](../reference/interface-pack-format).
 
 ## What a pack can do
 
@@ -20,8 +20,21 @@ A pack never runs code in the DSH page. Its scripts run in a sandboxed frame tha
 | **Opening card** (`opening`) | A card shown until the first turn is played. | Yes |
 | **Backdrop** (`backdrop`) | A layer behind the story's text. | Yes |
 | **Tab** (`tab`) | A page beside Chat: a map, a notebook, an inventory. | Yes |
+| **Sidebar page** (`sidebar`) | A page of any kind in the right sidebar, opened from its guide page: a live map, a status panel, a rendering of something. | Yes |
 
 A pack may have any of these, and most have only one or two.
+
+## A page in the right sidebar
+
+The right sidebar of DSH opens on a guide page with an entry for each thing it can show: workspace files, a terminal. A story whose pack has a `sidebar` page gets one more entry there, named by the page's `title`. Picking it opens the pack's page in the sidebar, under a thin bar of ours with a **Back** button that returns to the guide page. Everything under the bar is the pack's: the author decides what the page shows and how.
+
+```json
+"surfaces": { "sidebar": { "file": "map.html", "title": "Map" } }
+```
+
+The page is the same sandboxed kind as the others and gets the same `rp` object, so it can follow the story live with `rp.watch`. It keeps running while another sidebar tab is showing, so a map or an animation does not start over each time. Another surface can bring it up with `rp.open('sidebar')` (list `open` in the manifest's `actions`): the example's strip has a Map button that does that.
+
+Inside the frame the page may use canvas, WebGL, audio, workers, WebAssembly, and `fetch` of the pack's own files, such as a data file or a library it ships. It cannot read the DSH page, your login or browser storage, and ordinary external fetches, images and WebSockets are blocked. Self-navigation is the exception, so use only packs you trust; see [the frame](../reference/interface-pack-format#the-frame).
 
 ## Try the example
 
@@ -76,7 +89,7 @@ A few habits make a pack look right:
 - **Use DSH's colours.** The frame gets them as CSS variables, so `color: var(--dsw-alias-label-primary)` and `background: var(--dsw-alias-bg-layer-1)` follow the light and dark theme. Do not hard-code white or black.
 - **Keep strips short.** A strip asks for its height with `rp.resize(height)`; strips may be 24 to 320 pixels tall, the opening card 120 to 640.
 - **List only the actions you use.** Buttons that speak or fill the input need `say`, `fill` or `choose` in the manifest's `actions`; anything not listed is refused.
-- **Use relative addresses** for your own stylesheet, scripts and images. Nothing can be loaded from the internet.
+- **Use relative addresses** for your own stylesheet, scripts, data and images. Nothing can be loaded from the internet, so ship what you need, libraries included.
 - **Build with text, not markup from the story.** Set `textContent`, not `innerHTML`, when you show names and descriptions.
 
 ## Restyle the story's text
@@ -95,7 +108,7 @@ The elements you can style, and the rules a skin must follow, are in the [refere
 
 The world authoring assistant can write a pack for you. Describe what you want to see and where, for example “a strip with the time and the mood of the people here”. It reads a short guide, writes the files one at a time, and checks the pack until it reports no problems.
 
-It uses DSH's own file tools, and in this chat they are limited to the text files of the world's interface packs (`<world>/ui/<pack>/`: html, css, js, json, txt and svg, up to 200 KB a call). It cannot reach any other file of the world, and asking for wider access does not change that. Every change asks you first, and DSH shows what changes as a diff. Pictures and fonts are added by hand.
+It uses DSH's own file tools, and in this chat they are limited to ordinary text files of the world's interface packs (`<world>/ui/<pack>/`: html, css, js, json, txt and svg, up to 200 KB a call). Symbolic links in the path are refused, so an approved pack path cannot redirect a tool outside the world. It cannot reach any other file of the world, and asking for wider access does not change that. Every change asks you first, and DSH shows what changes as a diff. Pictures and fonts are added by hand.
 
 ## Plugins you may want (third-party)
 
@@ -114,6 +127,6 @@ Other review or permission plugins may work too; we have not tried them. One we 
 
 A world's packs travel with the world's folder. Anyone who gets the folder gets the packs, and each story they start copies them.
 
-A pack is code from whoever wrote it, even though it runs sandboxed: it cannot reach your files, your login or the network, but it can show you anything it likes inside its frame, and a frame can navigate itself. Read a pack from someone else, as you would any file, before you use it. A story's **Chat settings** can switch packs off for that story (*None*).
+A pack is code from whoever wrote it. The sandbox keeps it out of your files, login, browser storage and DSH page, and blocks ordinary network resource loads, but the pack can show anything inside its frame and can navigate that frame to an external URL. That URL could contain story data the bridge gave it. Read and trust a pack before you use it; the sandbox is containment, not a substitute for trust. A story's **Chat settings** can switch packs off for that story (*None*).
 
 If something does not work, see [Troubleshooting](../reference/troubleshooting).

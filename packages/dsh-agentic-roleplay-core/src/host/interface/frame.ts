@@ -3,18 +3,23 @@ import { PACK_API } from '../../shared/interface-pack.ts'
 /**
  * What a surface may load and do. The `sandbox` directive is in the header as well as on the frame, so that
  * the page is just as closed when someone opens its address on its own.
+ *
+ * The sandbox keeps a pack out of the host page, its credentials and browser storage. Fetch-like loads are limited
+ * to the pack's own files. Scripts remain trusted input: browsers do not provide a CSP directive that prevents a
+ * frame from navigating itself, so a hostile pack could put data in an outbound navigation URL.
  */
 export const FRAME_POLICY = [
   'sandbox allow-scripts',
   "default-src 'none'",
-  "script-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'",
+  "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "media-src 'self' data: blob:",
-  "connect-src 'none'",
+  "connect-src 'self'",
+  "frame-src 'self'",
   "form-action 'none'",
-  "frame-src 'none'",
   "base-uri 'self'",
 ].join('; ')
 
@@ -93,6 +98,7 @@ export const BRIDGE_SCRIPT = `(function () {
       remove: function (key) { return request('storage.remove', { key: String(key) }); }
     },
     history: function (limit) { return request('history', { limit: limit }); },
+    open: function (surface) { return request('open', { surface: String(surface) }); },
     resize: function (height) { post({ type: 'resize', height: Number(height) }); },
     theme: function () { return request('theme'); }
   });

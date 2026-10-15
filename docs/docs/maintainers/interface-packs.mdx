@@ -28,7 +28,7 @@ For the author's view see [Interface packs](../authoring/interface-packs) and th
 | `host/interface/storage.ts` | The pack's small store in session metadata |
 | `host/interface/world-packs.ts` | Listing, checking and deleting a world's pack files for the authoring tools |
 | `host/authoring/pack-jail.ts`, `pack-tools.ts` | The jail on DSH's file tools and the pack tools of the authoring chat |
-| `client/interface/` | Frames, docks, the tab, the bridge, the backdrop, polling |
+| `client/interface/` | Frames, docks, the tab, the sidebar page, the bridge, the backdrop, polling |
 | `client/chat-settings/InterfaceSection.tsx` | Status, choice and sync in Chat settings |
 
 ## Flow
@@ -56,15 +56,21 @@ All under `/roleplay-api`.
 
 ### Why the frame route has no login
 
-A sandboxed frame has an opaque origin, so the browser sends no cookie for what the frame loads itself (stylesheets, scripts, images). The frame document is loaded with the login, but its subresources are not. The frame's files are therefore served under a key in the path, which is also what makes relative addresses work. The key is 24 random bytes per story, made when the host starts and given only by the authenticated description route. It opens the pack's own files, read-only, and never the player view, which travels only over `postMessage`. The API handler skips the login check for exactly `GET` on this prefix; `tests/host/http/api.spec.ts` checks that every other route and method still needs it.
+A sandboxed frame has an opaque origin, so it cannot use the authenticated pack route for its document or subresources. All of the frame's files are therefore served read-only under a key in the path, which also makes relative addresses work. The key is 24 random bytes per story, made when the host starts and given only by the authenticated description route. It opens only the currently active pack's files and never the player view, which travels only over `postMessage`. The API handler skips the login check for exactly `GET` on this prefix; `tests/host/http/api.spec.ts` checks that every other route and method still needs it.
 
-Every pack file is served with `Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'none'; form-action 'none'; frame-src 'none'; base-uri 'self'`, `nosniff` and `no-referrer`. The `sandbox` directive is in the header as well as on the frame, so the page is just as closed when its address is opened alone. HTML pages get the bridge script first.
+Every pack file is served with `Content-Security-Policy: sandbox allow-scripts; default-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; worker-src 'self' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; media-src 'self' data: blob:; connect-src 'self'; frame-src 'self'; form-action 'none'; base-uri 'self'`, `nosniff` and `no-referrer`; files served on the frame route also carry `Access-Control-Allow-Origin: *`, because a frame without an origin reads its own files cross-origin.
+
+Why the policy is wide inside the frame: the missing origin keeps code out of the host page, cookies and storage, while fetch directives limit ordinary resource loads to the pack. Restricting `eval`, workers or WebAssembly would not constrain what the pack can compute and would break ordinary libraries. `connect-src 'self'` lets a page `fetch('data.json')`; a request to the authenticated DSH API carries no login and its answer cannot be read. Checked in a real browser frame: own files, workers, WebAssembly, `eval`, WebGL and canvas work; external fetch, images and WebSockets, the host API, the parent page, storage, cookies, popups and top navigation do not. **Self-navigation remains possible and can carry data in its URL; no shipping browser supports a CSP directive that prevents it. Packs are therefore trusted input.** The `sandbox` directive is in the header as well as on the frame, so opening a frame address directly still applies the document restrictions. HTML pages get the bridge script first.
 
 ## The bridge
 
 `frame.ts` holds the script a surface gets (plain ES5, only posts messages). `client/interface/bridge.ts` answers: the action list from the manifest, 20 requests a second, one `say` per turn (or 30 seconds), 2000 characters of words, limits on history. The page ignores a message whose source is not the frame's window, or whose shape is unknown. `parseFrameMessage` is the only reader of what comes from a frame.
 
 **Never name a prop injected into a dock `input`.** DSH's own dock props have one, and it shadowed ours (found live: `rp.say` failed with "input.say is not a function"). Ours is `frameInput`.
+
+## The sidebar page
+
+`client/interface/SidebarPage.tsx` and the registration in `index.ts` add a tab type (`roleplay-pack`, id `@dsh-agentic-roleplay/core/interface-sidebar`, `keepMounted`) to DSH's right sidebar through `sidebarRightTabs`, a guide card under `sidebar.right.tab.guide.entry` and the body under `sidebar.right.pane.tab`. The card is our own copy of the capsule look and renders nothing for a story whose pack has no `sidebar` page, so the guide of an ordinary chat is unchanged. The body is a bar (a Back button that calls `openTab('guide', { replaceTab: true })`) over a `PackFrame` that fills the rest. `rp.open` goes through `PackFrame`'s `FrameInput.open`, which calls `sidebarRight.openTab` or activates the pack's tab view.
 
 ## The skin check
 
@@ -76,7 +82,7 @@ The conversation paints an opaque root and a scrolling body above anything under
 
 ## Authoring
 
-The world-authoring preset mounts DSH's `tool-fs` (row `tool-fs` in the bundle patch). `registerPackJail` registers, first in `tools/pre-execute`, a listener that limits `read`, `write` and `edit` in authoring chats to text files of `<world>/ui/<pack>/` (at most 200 KB a call), refuses writes during an import review, calls the rest of the chain, and turns only a plain allow into the plugin's own ask; a later listener's deny or ask stands. `tests/host/authoring/pack-jail-runtime.spec.ts` runs this in DSH's real tool runtime, and fails if the jail is registered without `prepend`. The plugin's own tools are `world_pack_guide`, `list_world_packs`, `check_world_pack` and `delete_world_pack_file` (DSH's file tools cannot delete).
+The world-authoring preset mounts DSH's `tool-fs` (row `tool-fs` in the bundle patch). `registerPackJail` registers, first in `tools/pre-execute`, a listener that limits `read`, `write` and `edit` in authoring chats to ordinary text files of `<world>/ui/<pack>/` (at most 200 KB a call), refuses any symbolic-link component, refuses writes during an import review, calls the rest of the chain, and turns only a plain allow into the plugin's own ask; a later listener's deny or ask stands. `tests/host/authoring/pack-jail-runtime.spec.ts` runs this in DSH's real tool runtime, and fails if the jail is registered without `prepend`. The plugin's own tools are `world_pack_guide`, `list_world_packs`, `check_world_pack` and `delete_world_pack_file` (DSH's file tools cannot delete).
 
 Paths are given to the model relative to the chat's folder; a long absolute path was mistyped by the model in the first live try. The refusal text tells it to stop and report, because it otherwise retries other paths and `sandbox_permissions`.
 
@@ -86,6 +92,7 @@ Paths are given to the model relative to the chat's folder; a long absolute path
 |---|---|
 | Slot `conversation.input.dock` and its props | Our injected names do not collide; order values 1, 3 and 20 still sit where intended |
 | Slot `conversation.view` and `uiConversation.views` | The tab registers after a late `availability` answer |
+| `sidebarRightTabs.register`, the slots `sidebar.right.tab.guide.entry`, `sidebar.right.pane.tab`, `openTab(kind, { replaceTab })` | The entry appears next to the others, the page opens, Back returns to the guide |
 | Theme service `overrideTokens` (looked up with `scope.get('theme')`) | Still there, still takes `{ light, dark }` pairs |
 | The body attribute `data-ds-dark-theme` | Still marks dark; the frame's scheme follows it |
 | Class fragments `_scrollBody`, `_composerSeat` | The backdrop and any measuring still find them |

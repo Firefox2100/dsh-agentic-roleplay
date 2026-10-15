@@ -1,8 +1,11 @@
 {
   "name": "@dsh-agentic-roleplay/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Core plugin of the agentic roleplay bundle for DeepSeek Harness: roleplay UI, orchestration and storage.",
-  "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
+  "author": {
+    "name": "Firefox2100",
+    "url": "https://github.com/Firefox2100"
+  },
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -31,12 +34,29 @@
       "platform": "web"
     }
   },
-  "engines": {"node": ">=22"},
-  "repository": {"type": "git", "url": "git+https://github.com/Firefox2100/dsh-agentic-roleplay.git", "directory": "packages/dsh-agentic-roleplay-core"},
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Firefox2100/dsh-agentic-roleplay.git",
+    "directory": "packages/dsh-agentic-roleplay-core"
+  },
   "homepage": "https://firefox2100.github.io/dsh-agentic-roleplay/docs/developers/architecture",
-  "bugs": {"url": "https://github.com/Firefox2100/dsh-agentic-roleplay/issues"},
-  "keywords": ["deepseek-harness", "dsh", "agentic-roleplay", "roleplay", "ai-agents"],
-  "publishConfig": {"access": "public", "registry": "https://registry.npmjs.org/"},
+  "bugs": {
+    "url": "https://github.com/Firefox2100/dsh-agentic-roleplay/issues"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "agentic-roleplay",
+    "roleplay",
+    "ai-agents"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsdown",
     "watch": "tsdown --watch",
@@ -61,8 +81,8 @@
     "@deepseek-ai/schemastery": "^3.18.4"
   },
   "dependencies": {
-    "@dsh-ai-providers/core": "^0.1.2",
-    "@dsh-agentic-roleplay/state": "workspace:0.2.0"
+    "@dsh-agentic-roleplay/state": "workspace:0.2.1",
+    "@dsh-ai-providers/core": "^0.1.2"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
@@ -80,6 +100,7 @@
     "@deepseek-ai/dsh-client-ui-session": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-settings": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-sidebar": "0.2.0-rc.2",
+    "@deepseek-ai/dsh-client-ui-sidebar-right": "0.2.0-rc.2",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.2",
     "@deepseek-ai/dsh-compaction": "0.2.0-rc.2",
     "@deepseek-ai/dsh-compaction-basic": "0.2.0-rc.2",

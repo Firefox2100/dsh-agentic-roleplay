@@ -1,3 +1,6 @@
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { MAX_PACK_TEXT, packFileProblem, packJail } from '../../../src/host/authoring/pack-jail.ts'
 import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
@@ -23,6 +26,15 @@ describe('which files of a world a file tool may reach', () => {
   it('may carry no more text than a pack file holds', () => {
     expect(packFileProblem('write', `${WORLD}/ui/atlas/a.html`, WORLD, ['x'.repeat(MAX_PACK_TEXT)])).toBeUndefined()
     expect(packFileProblem('write', `${WORLD}/ui/atlas/a.html`, WORLD, ['x'.repeat(MAX_PACK_TEXT + 1)])).toContain('at most 200 KB')
+  })
+
+  it('does not follow a symbolic link inside the interface-pack path', () => {
+    const root = mkdtempSync(join(tmpdir(), 'pack-jail-'))
+    const world = join(root, 'world')
+    mkdirSync(join(world, 'ui', 'atlas'), { recursive: true })
+    symlinkSync(join(root, 'outside'), join(world, 'ui', 'atlas', 'linked'))
+    expect(packFileProblem('write', join(world, 'ui', 'atlas', 'linked', 'page.html'), world)).toContain('symbolic link')
+    rmSync(root, { recursive: true, force: true })
   })
 })
 

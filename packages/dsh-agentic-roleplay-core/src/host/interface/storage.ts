@@ -7,6 +7,11 @@ const keyOf = (pack: string): string => `roleplay.interface.${pack}`
 
 type Store = Record<string, unknown>
 
+function checkedKey(key: string): string {
+  if (key === '' || key.length > 100) throw new RangeError('a key is 1 to 100 characters')
+  return key
+}
+
 function read(session: StorageSession, pack: string): Store {
   const stored = session.metadata.getValue(keyOf(pack))
   return typeof stored === 'object' && stored !== null && !Array.isArray(stored) ? stored as Store : {}
@@ -17,18 +22,21 @@ export class PackStorage {
   constructor(private readonly session: StorageSession, private readonly pack: string) {}
 
   get(key: string): unknown {
-    return read(this.session, this.pack)[key] ?? null
+    return read(this.session, this.pack)[checkedKey(key)] ?? null
   }
 
   /** @throws {RangeError} when the store would pass its limit. */
   set(key: string, value: unknown): void {
-    if (key === '' || key.length > 100) throw new RangeError('a key is 1 to 100 characters')
-    const next: Store = { ...read(this.session, this.pack), [key]: value === undefined ? null : value }
-    if (JSON.stringify(next).length > PACK_LIMITS.storageBytes) throw new RangeError(`a pack keeps at most ${PACK_LIMITS.storageBytes / 1024} KB in a story`)
+    const next: Store = { ...read(this.session, this.pack), [checkedKey(key)]: value === undefined ? null : value }
+    let json: string
+    try { json = JSON.stringify(next) }
+    catch { throw new RangeError('a stored value must be JSON') }
+    if (Buffer.byteLength(json) > PACK_LIMITS.storageBytes) throw new RangeError(`a pack keeps at most ${PACK_LIMITS.storageBytes / 1024} KB in a story`)
     this.session.metadata.setValue(keyOf(this.pack), next as never)
   }
 
   remove(key: string): void {
+    checkedKey(key)
     const { [key]: _removed, ...rest } = read(this.session, this.pack)
     this.session.metadata.setValue(keyOf(this.pack), rest as never)
   }

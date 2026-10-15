@@ -1,3 +1,4 @@
+import { lstatSync } from 'node:fs'
 import { extname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type { PreToolDecision, ToolExecution } from '@deepseek-ai/dsh-tools'
@@ -12,6 +13,22 @@ const WRITING: readonly string[] = ['write', 'edit']
 
 /** The most text a call may carry. */
 export const MAX_PACK_TEXT = 200 * 1024
+
+function unsafePath(ui: string, path: string): string | undefined {
+  const parts = relative(ui, path).split(sep)
+  let current = ui
+  for (const part of ['', ...parts]) {
+    if (part !== '') current = join(current, part)
+    try {
+      if (lstatSync(current).isSymbolicLink()) return `the path passes through the symbolic link ${current}`
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') break
+      if ((error as NodeJS.ErrnoException).code === 'ENOTDIR') return `${current} cannot be traversed as a folder`
+      throw error
+    }
+  }
+  return undefined
+}
 
 /**
  * Why a call of a file tool is not one on an interface pack of the world, or nothing when it is: the file must be a text
@@ -28,6 +45,8 @@ export function packFileProblem(tool: string, path: string, world: string, texts
   if (!isPackId(segments[0] as string)) return `"${segments[0]}" is not a usable pack name (letters, digits, "-" and "_"): ${hint}`
   if (segments.some(segment => segment.startsWith('.'))) return `${path}: names may not start with a dot`
   if (!TEXT_EXTENSIONS.includes(extname(path).slice(1).toLowerCase())) return `${path} is not a text file of a pack (${TEXT_EXTENSIONS.join(', ')}); pictures and other files are added by hand`
+  const unsafe = unsafePath(ui, path)
+  if (unsafe !== undefined) return `${path}: ${unsafe}; file tools do not follow symbolic links in interface packs`
   if (WRITING.includes(tool) && texts.some(text => Buffer.byteLength(text) > MAX_PACK_TEXT)) return `a call may carry at most ${MAX_PACK_TEXT / 1024} KB of text`
   return undefined
 }

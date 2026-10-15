@@ -1,6 +1,6 @@
 import type { Dictionaries } from '../i18n.ts'
 
-export type InterfaceLocaleKey = 'tab' | 'notRoleplay' | 'noPack' | 'noTab' | 'problems' | 'hud' | 'dock' | 'opening' | 'backdrop'
+export type InterfaceLocaleKey = 'tab' | 'notRoleplay' | 'noPack' | 'noTab' | 'problems' | 'hud' | 'dock' | 'opening' | 'backdrop' | 'sidebar' | 'sidebarTitle' | 'sidebarDescription' | 'sidebarBack' | 'sidebarNone'
 
 export const dictionaries: Dictionaries<InterfaceLocaleKey> = {
   en: {
@@ -13,6 +13,11 @@ export const dictionaries: Dictionaries<InterfaceLocaleKey> = {
     dock: 'Actions',
     opening: 'Opening',
     backdrop: 'Backdrop',
+    sidebar: 'Sidebar page',
+    sidebarTitle: 'Interface page',
+    sidebarDescription: 'A page of this story\'s interface pack',
+    sidebarBack: 'Back',
+    sidebarNone: 'This story\'s interface pack has no page for the sidebar.',
   },
   zh: {
     tab: '界面',
@@ -24,5 +29,10 @@ export const dictionaries: Dictionaries<InterfaceLocaleKey> = {
     dock: '操作',
     opening: '开场',
     backdrop: '背景',
+    sidebar: '侧栏页面',
+    sidebarTitle: '界面页面',
+    sidebarDescription: '此故事界面包的一个页面',
+    sidebarBack: '返回',
+    sidebarNone: '此故事的界面包没有侧栏页面。',
   },
 }

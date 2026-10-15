@@ -30,6 +30,8 @@ describe('the pack tools of world authoring', () => {
     expect((result as unknown as { relative: string }).relative).toBe(join(basename(directory), 'ui'))
     expect(result.guide).toContain('data-rp')
     expect(result.guide).toContain('rp.watch')
+    expect(result.guide).toContain('sidebar a page')
+    expect(result.guide).toContain("rp.open('tab' | 'sidebar')")
     expect(result.guide).toContain('200 files')
     expect(result.guide).toContain('write, edit and read')
     expect(result.guide).toContain('a promise of the player view')
