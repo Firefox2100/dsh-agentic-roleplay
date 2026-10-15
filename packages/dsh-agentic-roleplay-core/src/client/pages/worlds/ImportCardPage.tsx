@@ -65,7 +65,7 @@ export function ImportCardPage({ t, preview, onCancelled, onStarted }: { t: T; p
       <div className={css.body}>
         <section className={css.top}>
           {preview.hasAvatar
-            ? <img className={css.picture} src={pictureUrl(preview.id)} alt="" />
+            ? <img className={css.picture} src={pictureUrl(preview.id)} alt="" loading="lazy" decoding="async" />
             : <div className={`${css.picture} ${css.noPicture}`}>{t('importNoPicture')}</div>}
           <div className={css.about}>
             <label className={css.label}>

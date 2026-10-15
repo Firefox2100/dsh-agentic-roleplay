@@ -1,0 +1,11 @@
+{
+  "name": "Scene",
+  "version": "1.0",
+  "description": "A status strip above the input box (place, time, who is here) and a live map of the places you know in the right sidebar. Works with any world.",
+  "api": 1,
+  "actions": ["open"],
+  "surfaces": {
+    "hud": { "file": "strip.html", "height": 40 },
+    "sidebar": { "file": "map.html", "title": "Map" }
+  }
+}

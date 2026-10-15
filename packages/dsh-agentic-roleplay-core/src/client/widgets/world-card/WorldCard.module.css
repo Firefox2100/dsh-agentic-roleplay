@@ -1,12 +1,13 @@
 .card {
+  position: relative;
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-sm);
-  background: var(--dsw-alias-bg-layer-2);
+  border: 0.5px solid var(--dsw-alias-settings-card-stroke);
+  border-radius: var(--dsw-radius-xl);
+  background: var(--dsw-alias-settings-card-fill);
   transition: border-color 120ms ease;
 }
 
@@ -53,6 +54,7 @@
 
 .play {
   position: absolute;
+  z-index: 2;
   top: 8px;
   right: 8px;
   display: flex;
@@ -63,6 +65,7 @@
   padding: 0;
   border: 0;
   border-radius: 50%;
+  corner-shape: round;
   background: rgb(0 0 0 / 35%);
   color: #fff;
   opacity: 0.6;
@@ -114,6 +117,19 @@
   flex: none;
 }
 
-.open {
+.openButton {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
   cursor: pointer;
+}
+
+.openButton:focus-visible {
+  outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color);
+  outline-offset: -2px;
 }

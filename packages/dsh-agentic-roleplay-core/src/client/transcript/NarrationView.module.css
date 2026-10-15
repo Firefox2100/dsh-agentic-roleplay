@@ -30,6 +30,7 @@
   width: 28px;
   height: 28px;
   border-radius: 14px;
+  corner-shape: round;
   font-size: 12px;
   font-weight: 500;
   color: #fff;
@@ -42,8 +43,9 @@
   min-width: 0;
   max-width: 100%;
   padding: 6px 10px;
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-sm);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-lg);
+  background: var(--dsw-alias-bg-layer-1);
 }
 
 .name {
@@ -103,8 +105,8 @@
   max-height: 50vh;
   height: auto;
   object-fit: contain;
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-sm);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-lg);
 }
 
 .imageButton {
@@ -123,7 +125,15 @@
 .imageError {
   color: var(--dsw-alias-state-error-primary);
 }
-.playAll, .playLine { border: 0; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; }
-.playAll { float: right; margin: 0 0 8px 12px; font-size: 12px; }
-.playLine { margin-left: 8px; padding: 0 3px; font-size: 10px; }
+.playAll, .playLine { align-items: center; justify-content: center; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; }
+.playAll { display: inline-flex; float: right; gap: 4px; min-height: 28px; margin: 0 0 8px 12px; padding: 2px 4px; font-size: 12px; }
+.playLine { display: inline-flex; width: 28px; height: 28px; margin: -5px -6px -5px 4px; padding: 6px; vertical-align: middle; }
+.playAll svg, .playLine svg { width: 14px; height: 14px; }
 .playAll:disabled, .playLine:disabled { cursor: wait; opacity: .5; }
+.playAll:hover, .playLine:hover { color: var(--dsw-alias-label-primary); }
+.playAll:focus-visible, .playLine:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color); outline-offset: 2px; border-radius: var(--dsw-radius-xs); }
+
+@media (pointer: coarse) {
+  .playAll, .playLine { min-width: 44px; min-height: 44px; }
+  .playLine { width: 44px; height: 44px; margin-block: -13px; }
+}

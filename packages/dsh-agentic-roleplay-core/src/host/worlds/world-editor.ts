@@ -4,7 +4,7 @@ import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
 import type { ImageGenerationService } from '@dsh-ai-providers/core'
-import { InvalidEditProblems, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
+import { InvalidEditProblems, type WorldTrigger, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
 import { CHARACTER_FILE_NAME, parseCharacterFile } from '../characters/character-file.ts'
 import { subfolders } from '../folders.ts'
@@ -21,6 +21,9 @@ import { formatIssue } from '../validation.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { generateReferenceImage, uploadReferenceImage } from '../images/generator.ts'
+import { triggerProblemsOf } from '../triggers/check.ts'
+import { loadTriggers } from '../triggers/load.ts'
+import { loadVariables } from '../variables/load.ts'
 import { loadPlots, parsePlotsFile, plotReferenceProblems, PLOTS_FILE_NAME } from '../plots/load.ts'
 
 /** What of a world the editor needs: the folder it is in. */
@@ -59,10 +62,24 @@ function stateOf(world: EditableWorld, definition: CharacterDefinition, names: R
   }
 }
 
+/** The triggers of the world's file as the editor shows them, with what each names that the world does not have; or why the file cannot be shown. */
+function triggersOf(parts: Parameters<typeof triggerProblemsOf>[0], scripted: Awaited<ReturnType<typeof loadTriggers>>): { triggers: WorldTrigger[]; triggersProblem?: string } {
+  if (scripted.problems.length > 0) return { triggers: [], triggersProblem: scripted.problems.map(problem => problem.message).join('; ') }
+  const view = (problems: ReadonlyMap<string, string[]>): WorldTrigger[] => scripted.triggers.map(definition => ({ key: definition.key, name: definition.name, when: definition.condition, effects: definition.effects, repeat: definition.repeat, priority: definition.priority, ...(definition.cooldownSeconds === undefined ? {} : { cooldownSeconds: definition.cooldownSeconds }), ...(definition.chance === undefined ? {} : { chance: definition.chance }), ...(definition.expires === undefined ? {} : { expires: definition.expires }), announced: definition.announce !== undefined, problems: problems.get(definition.key) ?? [] }))
+  try {
+    return { triggers: view(triggerProblemsOf(parts, scripted.triggers)) }
+  } catch (error) {
+    return { triggers: view(new Map()), triggersProblem: `what the triggers name could not be checked, because the rest of the world has a problem: ${error instanceof Error ? error.message : String(error)}` }
+  }
+}
+
 /** The characters of a world as they start, and the places they can start in. */
 export async function readWorldEditor(world: EditableWorld): Promise<WorldState> {
   const [{ characters }, { locations }, { factions }, { lore }, { plots }] = await Promise.all([loadCharacters(world.directory), loadLocations(world.directory), loadFactions(world.directory), loadLore(world.directory), loadPlots(world.directory)])
-  const { items } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
+  const { items, slots } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
+  const scripted = await loadTriggers(world.directory)
+  const declared = await loadVariables(world.directory)
+  const { triggers, triggersProblem } = triggersOf({ characters, locations, items, slots, variables: declared.defs }, scripted)
   const names = new Map(locations.map(location => [location.id, location.name]))
   const characterNames = new Map(characters.map(character => [character.id, character.name]))
   const itemNames = new Map(items.map(item => [item.id, item.name]))
@@ -94,6 +111,8 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
     things: items.map(item => ({ key: item.id, name: item.name, description: item.description, quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearable === undefined ? {} : { wearable: item.wearable }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.owner === undefined ? {} : { owner: { key: item.owner, name: characterNames.get(item.owner) ?? item.owner } }), holder: holder(item), ...(item.visualIdentity === undefined ? {} : { visualIdentity: item.visualIdentity }) })),
     factions: factions.map(faction => ({ key: faction.id, name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: faction.start.publicState, innerState: faction.start.innerState }, goals: faction.start.goals.map((goal, index) => ({ ref: String(index), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: faction.members.map(member => ({ ...member, name: characterNames.get(member.character) ?? member.character })), relationships: faction.relationships.map(relationship => ({ target: `${relationship.to.kind}:${relationship.to.id}`, label: relationship.label, summary: relationship.summary ?? '' })) })),
     lore: lore.map(entry => ({ key: entry.id, title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: subject.id, name: subject.kind === 'character' ? characterNames.get(subject.id) ?? subject.id : subject.kind === 'faction' ? factionNames.get(subject.id) ?? subject.id : subject.kind === 'location' ? names.get(subject.id) ?? subject.id : subject.kind === 'item' ? itemNames.get(subject.id) ?? subject.id : lore.find(candidate => candidate.id === subject.id)?.title ?? subject.id })), related: entry.related.map(key => ({ key, title: lore.find(candidate => candidate.id === key)?.title ?? key })), sources: entry.sources })),
+    triggers,
+    ...(triggersProblem === undefined ? {} : { triggersProblem }),
     plots: plots.map(definition => ({ definition })),
     relations,
   }

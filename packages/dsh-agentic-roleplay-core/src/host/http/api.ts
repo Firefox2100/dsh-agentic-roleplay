@@ -18,7 +18,7 @@ import { API_PREFIX } from '../../shared/worlds.ts'
 import { parseWorldInfoEdit, type WorldInfo, type WorldInfoEdit } from '../../shared/world-info.ts'
 import type { WorldPromptEntry } from '../prompts/world-prompts.ts'
 import { InvalidSettingsError } from '../sessions/settings.ts'
-import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
+import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import type { GalleryImage } from '../../shared/gallery.ts'
 import type { ImageUpdate } from '../images/gallery.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -110,6 +110,8 @@ export interface ApiDeps {
     rename(id: string, name: string): Promise<void>
     /** What a helper run was told and did, when the session kept it. @throws {SessionNotFoundError} */
     activityRun(id: string, run: string): RunDetail | undefined
+    /** Starts the characters sorting what they took in into what they believe; it runs in the background. @throws {SessionNotFoundError} @throws {ReflectionRefusedError} */
+    reflect(id: string): Promise<void>
     /** Forgets the session's stored search vectors. */
     resetVectors(id: string): void
     world(id: string): WorldState
@@ -662,6 +664,19 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, wo
           if (error instanceof RangeError) return sendError(res, 400, error.message)
           throw error
         }
+      },
+    },
+    '/sessions/reflect': {
+      POST: async (_req, res, url) => {
+        try {
+          await sessions.reflect(url.searchParams.get('id') ?? '')
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof ReflectionRefusedError) return sendError(res, 409, error.message)
+          throw error
+        }
+        res.statusCode = 202
+        res.end()
       },
     },
     '/sessions/vectors/reset': {

@@ -1,8 +1,9 @@
-import { COMPARISONS, WEEKDAY_NAMES, type Comparison, type Trigger, type TriggerAnnouncement, type TriggerAudience, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type VariableValue } from 'dsh-roleplay-model'
+import { COMPARISONS, SELF, WEEKDAY_NAMES, type Comparison, type Trigger, type TriggerAnnouncement, type TriggerAudience, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type VariableValue } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
 import { itemKey } from './items.ts'
 import { inWindow, localTime, parseInstant, parseTimeOfDay } from './time.ts'
+import { placeholdersOf } from './template.ts'
 import { subjectOf } from './variables.ts'
 
 export type Wire = Record<string, unknown>
@@ -104,20 +105,46 @@ function parseAnnouncement(value: unknown, path: string, problems: string[]): Tr
 /** Checks that an edit effect is shaped as an edit; it throws {@link InvalidEditError} when not. */
 export type EditChecker = (edit: Wire) => void
 
+/** Whether words or a condition name the character a cue is said to. */
+function usesSelf(words: string, condition: TriggerCondition | undefined): boolean {
+  const inWords = placeholdersOf(words).found.some(placeholder => placeholder.args.includes(SELF))
+  return inWords || (condition !== undefined && mentionsSelf(condition))
+}
+
+function mentionsSelf(condition: TriggerCondition): boolean {
+  switch (condition.type) {
+    case 'place': return condition.character === SELF
+    case 'variable': return condition.subject === SELF
+    case 'item': return condition.item === SELF || condition.heldBy === SELF
+    case 'all': case 'any': return condition.conditions.some(mentionsSelf)
+    case 'not': return mentionsSelf(condition.condition)
+    default: return false
+  }
+}
+
 function parseEffect(value: unknown, path: string, problems: string[], checkEdit: EditChecker): TriggerEffect | undefined {
   if (!isObject(value)) { problems.push(`${path}: an effect is an object`); return undefined }
   if (value['type'] === 'edit') {
     if (!isObject(value['edit'])) { problems.push(`${path}.edit: an edit, as the record keeper writes one`); return undefined }
     try { checkEdit({ turn: 0, ...value['edit'] }) } catch (error) { problems.push(`${path}.edit: ${error instanceof InvalidEditError ? error.problems.join('; ') : String(error)}`); return undefined }
+    if (value['while'] !== undefined) { problems.push(`${path}.while: only a beat or a cue can wait on a condition when it is told`); return undefined }
     return { type: 'edit', edit: value['edit'] }
   }
   if (value['type'] !== 'beat' && value['type'] !== 'cue') { problems.push(`${path}.type: one of edit, beat, cue`); return undefined }
   const words = text(value, 'text')
   if (words === undefined || words.length > MAX_TEXT) { problems.push(`${path}.text: required text of at most ${MAX_TEXT} characters`); return undefined }
-  if (value['type'] === 'beat') return { type: 'beat', text: words }
+  const template = placeholdersOf(words)
+  for (const problem of template.problems) problems.push(`${path}.text: ${problem}`)
+  const waiting = value['while'] === undefined ? undefined : parseCondition(value['while'], `${path}.while`, problems, { nodes: 0 })
+  if (value['while'] !== undefined && waiting === undefined) return undefined
+  if (waiting !== undefined && judgedStatements(waiting).length > 0) problems.push(`${path}.while: a statement a model judges (judged) cannot be waited on when something is told; use what the story records`)
+  if (value['type'] === 'beat') {
+    if (usesSelf(words, waiting)) problems.push(`${path}: only a cue is said to someone, so only a cue can name ${SELF}`)
+    return template.problems.length > 0 ? undefined : { type: 'beat', text: words, ...(waiting === undefined ? {} : { while: waiting }) }
+  }
   if (value['type'] === 'cue') {
     const audience = value['audience'] !== undefined ? parseAudience(value['audience'], `${path}.audience`, problems) : parseAudience({ characters: value['characters'] }, `${path}.characters`, problems)
-    return audience === undefined ? undefined : { type: 'cue', audience, text: words }
+    return audience === undefined || template.problems.length > 0 ? undefined : { type: 'cue', audience, text: words, ...(waiting === undefined ? {} : { while: waiting }) }
   }
   problems.push(`${path}.type: one of edit, beat, cue`)
   return undefined
@@ -157,8 +184,8 @@ export function parseTriggerDefinition(value: unknown, path: string, checkEdit: 
 
 type Reading = Pick<RecordsTarget, 'characters' | 'locations' | 'items' | 'variables' | 'triggers'>
 
-function conditionProblems(target: Reading, condition: TriggerCondition, path: string, known: ReadonlySet<string>): string[] {
-  const character = (key: string): string[] => (target.characters.list().some(entry => characterKey(entry) === key) ? [] : [`${path}: there is no character "${key}"`])
+function conditionProblems(target: Reading, condition: TriggerCondition, path: string, known: ReadonlySet<string>, self = false): string[] {
+  const character = (key: string): string[] => ((self && key === SELF) || target.characters.list().some(entry => characterKey(entry) === key) ? [] : [`${path}: there is no character "${key}"`])
   const place = (key: string): string[] => (target.locations.list().some(entry => locationKey(entry) === key) ? [] : [`${path}: there is no place "${key}"`])
   switch (condition.type) {
     case 'time': return []
@@ -167,22 +194,45 @@ function conditionProblems(target: Reading, condition: TriggerCondition, path: s
       const def = target.variables.def(condition.variable)
       if (def === undefined) return [`${path}: there is no variable "${condition.variable}"`]
       if (def.subject === 'world' ? condition.subject !== undefined : condition.subject === undefined) return [`${path}: ${def.subject === 'world' ? 'a world variable has no subject' : `give the ${def.subject} it is about as subject`}`]
-      const subject = condition.subject === undefined ? undefined : subjectOf(target, def.subject, condition.subject)
+      const subject = condition.subject === undefined || (self && condition.subject === SELF) ? undefined : subjectOf(target, def.subject, condition.subject)
       return [
-        ...(condition.subject !== undefined && subject === undefined ? [`${path}: there is no ${def.subject} "${condition.subject}"`] : []),
+        ...(condition.subject !== undefined && subject === undefined && !(self && condition.subject === SELF) ? [`${path}: there is no ${def.subject} "${condition.subject}"`] : []),
         ...(def.kind !== 'number' && condition.op !== 'eq' && condition.op !== 'ne' ? [`${path}: ${def.kind} variables compare with eq or ne only`] : []),
       ]
     }
     case 'item': return [
-      ...(target.items.list().some(entry => itemKey(entry) === condition.item) ? [] : [`${path}: there is no item "${condition.item}"`]),
+      ...((self && condition.item === SELF) || target.items.list().some(entry => itemKey(entry) === condition.item) ? [] : [`${path}: there is no item "${condition.item}"`]),
       ...(condition.heldBy === undefined ? [] : character(condition.heldBy)), ...(condition.at === undefined ? [] : place(condition.at)),
     ]
     case 'event': return []
     case 'fired': return known.has(condition.trigger) ? [] : [`${path}: there is no trigger "${condition.trigger}"`]
     case 'judged': return []
-    case 'all': case 'any': return condition.conditions.flatMap((part, index) => conditionProblems(target, part, `${path}.conditions[${index}]`, known))
-    case 'not': return conditionProblems(target, condition.condition, `${path}.condition`, known)
+    case 'all': case 'any': return condition.conditions.flatMap((part, index) => conditionProblems(target, part, `${path}.conditions[${index}]`, known, self))
+    case 'not': return conditionProblems(target, condition.condition, `${path}.condition`, known, self)
   }
+}
+
+/** What the words of a cue or beat name by `{kind:key}` that the story does not have. */
+function wordsProblems(target: Reading, words: string, path: string, self: boolean): string[] {
+  return placeholdersOf(words).found.flatMap((placeholder): string[] => {
+    const key = placeholder.args[0]!
+    const selfKey = self && key === SELF
+    const missing = (what: string): string[] => [`${path}: ${placeholder.raw}: there is no ${what} "${key}"`]
+    switch (placeholder.kind) {
+      case 'character': case 'where': return selfKey || target.characters.list().some(entry => characterKey(entry) === key) ? [] : missing('character')
+      case 'place': return target.locations.list().some(entry => locationKey(entry) === key) ? [] : missing('place')
+      case 'item': case 'holder': return target.items.list().some(entry => itemKey(entry) === key) ? [] : missing('item')
+      case 'value': {
+        const def = target.variables.def(key)
+        if (def === undefined) return missing('variable')
+        const subject = placeholder.args[1]
+        if (def.subject === 'world') return subject === undefined ? [] : [`${path}: ${placeholder.raw}: a world variable has no subject`]
+        if (subject === undefined) return [`${path}: ${placeholder.raw}: give the ${def.subject} it is about`]
+        return (self && subject === SELF) || subjectOf(target, def.subject, subject) !== undefined ? [] : [`${path}: ${placeholder.raw}: there is no ${def.subject} "${subject}"`]
+      }
+      case 'time': return []
+    }
+  })
 }
 
 /**
@@ -197,8 +247,12 @@ export function triggerReferenceProblems(target: Reading, definition: TriggerDef
     return who.characters.flatMap(key => (target.characters.list().some(entry => characterKey(entry) === key) ? [] : [`${path}: there is no character "${key}"`]))
   }
   const cues = definition.effects.flatMap((effect, index) => (effect.type !== 'cue' ? [] : audience(effect.audience, `effects[${index}]`)))
+  const said = definition.effects.flatMap((effect, index) => (effect.type === 'edit' ? [] : [
+    ...(effect.while === undefined ? [] : conditionProblems(target, effect.while, `effects[${index}].while`, known, effect.type === 'cue')),
+    ...wordsProblems(target, effect.text, `effects[${index}].text`, effect.type === 'cue'),
+  ]))
   const announced = definition.announce === undefined ? [] : audience(definition.announce.audience, 'announce')
-  return [...conditionProblems(target, definition.condition, 'when', known), ...cues, ...announced].map(problem => `${definition.key}: ${problem}`)
+  return [...conditionProblems(target, definition.condition, 'when', known), ...cues, ...said, ...announced].map(problem => `${definition.key}: ${problem}`)
 }
 
 const COMPARE: Record<Comparison, (a: number, b: number) => boolean> = { eq: (a, b) => a === b, ne: (a, b) => a !== b, lt: (a, b) => a < b, le: (a, b) => a <= b, gt: (a, b) => a > b, ge: (a, b) => a >= b }

@@ -22,6 +22,8 @@
 
 .toolbarActions {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 8px;
   align-items: center;
 }
@@ -92,11 +94,12 @@
 
 .editHeader {
   display: flex;
+  flex-wrap: wrap;
   flex: 0 0 auto;
   gap: 8px;
   align-items: center;
   padding: 8px 16px;
-  border-bottom: 1px solid var(--dsw-alias-border-l3);
+  border-bottom: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 .editTitle {
@@ -130,9 +133,35 @@
   gap: 6px;
   max-width: 480px;
   padding: 12px 16px;
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-sm);
+  border: 0.5px solid var(--dsw-alias-settings-card-stroke);
+  border-radius: var(--dsw-radius-xl);
+  background: var(--dsw-alias-settings-card-fill);
   font-size: 13px;
   text-align: center;
   color: var(--dsw-alias-label-secondary);
+}
+
+@media (max-width: 640px) {
+  .toolbar {
+    align-items: flex-start;
+  }
+
+  .count {
+    padding-top: 6px;
+  }
+
+  .toolbarActions {
+    max-width: 75%;
+  }
+
+  .editTitle {
+    flex: 1 1 calc(100% - 96px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .authorButton {
+    margin-left: 0;
+  }
 }

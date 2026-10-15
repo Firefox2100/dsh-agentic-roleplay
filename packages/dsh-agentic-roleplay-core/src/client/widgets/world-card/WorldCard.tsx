@@ -11,10 +11,12 @@ function hueOf(name: string): number {
 }
 
 /** A world as a card. It fills the grid cell it is placed in. */
-export function WorldCard({ world, playLabel, onPlay, onOpen }: {
+export function WorldCard({ world, playLabel, openLabel, onPlay, onOpen }: {
   world: WorldSummary
   /** Accessible name of the play button; the button is shown only with `onPlay`. */
   playLabel?: string
+  /** Accessible name of the control that opens the world editor. */
+  openLabel?: string
   onPlay?: (world: WorldSummary) => void
   /** Opens the world; clicking anywhere on the card does, the play button excepted. */
   onOpen?: (world: WorldSummary) => void
@@ -25,19 +27,11 @@ export function WorldCard({ world, playLabel, onPlay, onOpen }: {
 
   return (
     <Tooltip label={world.description} side="bottom" delayMs={400} maxWidth={320} portal disabled={world.description === ''}>
-      <div
-        className={`${css.card} ${onOpen === undefined ? '' : css.open}`}
-        tabIndex={0}
-        data-testid="world-card"
-        {...(onOpen === undefined ? {} : {
-          role: 'button',
-          onClick: () => { onOpen(world) },
-          onKeyDown: (event: React.KeyboardEvent) => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onOpen(world) } },
-        })}
-      >
+      <div className={css.card} data-testid="world-card">
+        {onOpen !== undefined && <button type="button" className={css.openButton} aria-label={openLabel ?? world.name} onClick={() => { onOpen(world) }} />}
         <div className={css.cover}>
           {showCover
-            ? <img className={css.image} src={coverSrc} alt="" draggable={false} onError={() => { setFailedSrc(coverSrc) }} />
+            ? <img className={css.image} src={coverSrc} alt="" loading="lazy" decoding="async" draggable={false} onError={() => { setFailedSrc(coverSrc) }} />
             : (
               <div className={css.placeholder} style={{ '--rp-hue': hueOf(world.name) } as CSSProperties} aria-hidden="true">
                 {Array.from(world.name)[0]}

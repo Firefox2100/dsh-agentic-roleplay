@@ -13,7 +13,7 @@ import { ImportCardError } from '../../../src/host/import/card.ts'
 import { ImportNotFoundError } from '../../../src/host/import/store.ts'
 import type { ImportPreview } from '../../../src/shared/import-card.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
-import { AgentUnavailableError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
+import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
 import { WorldFolderExistsError } from '../../../src/host/worlds/create-world.ts'
@@ -81,7 +81,7 @@ beforeEach(async () => {
   const worlds = new WorldCatalog(new Context(), { path: base } as RoleplayRoot)
   const handler = createApiHandler({
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
-    packs: { status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
+    packs: { worldPacks: () => Promise.resolve([]), preview: () => Promise.reject(new Error('no preview here')), status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
     worlds,
     avatars: { create: async () => 'new', remove: async () => undefined, addToWorld: async () => [] },
     starter: { list: async () => [{ folder: 'sample', name: 'Sample', description: '', tags: [], installed: false }], add: async (folder) => { if (folder === 'nothing') throw new UnknownStarterError('no such starter'); if (folder === 'have') throw new WorldFolderExistsError('you have it'); return { id: folder, name: 'Sample', description: '', tags: [] } } },
@@ -176,12 +176,12 @@ beforeEach(async () => {
       send: (id, text) => { said.push(`${id}: ${text}`); return Promise.resolve() },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
-        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 } }
+        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
       },
       writeSettings: (_id, value) => {
         if (settingsError !== undefined) throw settingsError
         writtenSettings = value
-        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 } }
+        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
       },
       timeline: (id) => {
         if (timelineError !== undefined) throw timelineError
@@ -208,6 +208,7 @@ beforeEach(async () => {
         if (archiveError !== undefined) throw archiveError
         return { characters: [{ key: id, name: 'Clara', aliases: [], role: 'npc', tier: 'principal', kind: 'person', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, state: { publicState: '', innerState: '', activity: '' }, goals: [] }], places: [], things: [], factions: [], relations: [], plots: [] }
       },
+      reflect: (id) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`reflect ${id}`); return Promise.resolve() },
       resetVectors: (id) => { if (archiveError !== undefined) throw archiveError; archived.push(`reset ${id}`) },
       rename: (id, name) => {
         if (archiveError !== undefined) return Promise.reject(archiveError)
@@ -695,6 +696,20 @@ describe('roleplay API', () => {
     })
   })
 
+  describe('asking the characters to reflect', () => {
+    it('is a POST that is accepted and runs behind; an unknown session is 404, a refusal is 409', async () => {
+      expect((await fetch(`${origin}/sessions/reflect?id=abc`, { method: 'POST' })).status).toBe(202)
+      expect(archived).toEqual(['reflect abc'])
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/reflect?id=x`, { method: 'POST' })).status).toBe(404)
+      archiveError = new ReflectionRefusedError('a turn is being played')
+      const refused = await fetch(`${origin}/sessions/reflect?id=abc`, { method: 'POST' })
+      expect(refused.status).toBe(409)
+      archiveError = undefined
+      expect((await fetch(`${origin}/sessions/reflect?id=abc`)).status).toBe(405)
+    })
+  })
+
   describe('forgetting the vectors of a session', () => {
     it('is a POST that answers with nothing; an unknown session is 404', async () => {
       expect((await fetch(`${origin}/sessions/vectors/reset?id=abc`, { method: 'POST' })).status).toBe(204)
@@ -825,7 +840,7 @@ describe('roleplay API', () => {
     it('are read, with the bounds', async () => {
       const response = await fetch(url())
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 } })
+      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } })
     })
 
     it('are replaced by the body', async () => {

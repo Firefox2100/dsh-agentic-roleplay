@@ -1,8 +1,9 @@
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { usePack, usePlayerView } from './hooks.ts'
-import { PackFrame, type FrameInput } from './PackFrame.tsx'
-import css from './PackFrame.module.css'
+import { PackFrame, type FrameInput } from '../widgets/pack-frame/PackFrame.tsx'
+import { sessionBackend } from '../widgets/pack-frame/frame-api.ts'
+import css from '../widgets/pack-frame/PackFrame.module.css'
 
 export interface InterfaceTabInjected {
   frameInput: (sessionId: string) => FrameInput
@@ -30,7 +31,7 @@ export function InterfaceTab({ sessionId, frameInput, t }: InterfaceTabProps) {
   if (tab === undefined) return <p className={css.message}>{t('noTab')}</p>
   return (
     <div className={css.tab} data-rp="tab">
-      <PackFrame session={session} pack={pack} surface="tab" view={view} input={frameInput(sessionId)} fill title={tab.title === '' ? pack.name : tab.title} />
+      <PackFrame backend={sessionBackend(session)} pack={pack} surface="tab" view={view} input={frameInput(sessionId)} fill title={tab.title === '' ? pack.name : tab.title} />
     </div>
   )
 }

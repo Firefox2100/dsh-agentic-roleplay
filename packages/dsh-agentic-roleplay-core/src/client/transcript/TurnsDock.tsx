@@ -6,7 +6,7 @@ import { withdrawnKeys, type NodeLike } from './withdrawn.ts'
 
 /** What the dock does besides showing: ask the host for the turns and take the story to one, and put words in the input, sending them when asked. */
 export interface TurnsInjected {
-  timeline: () => Promise<TimelineView>
+  timeline: () => Promise<TimelineView | undefined>
   move: (to: string) => Promise<{ draft?: string }>
   fill: (text: string, send: boolean) => void
   /** Makes a new session from the story as it stands after the turn that ended at the seq, and shows it. */

@@ -9,7 +9,7 @@ export type WorldsLocaleKey =
   | 'refresh' | 'refreshing'
   | 'previousPage' | 'nextPage' | 'pageOf'
   | 'problems'
-  | 'play' | 'chatNotOpened'
+  | 'play' | 'openWorld' | 'chatNotOpened'
   | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startTime' | 'startTimeHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
   | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed'
@@ -32,6 +32,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     pageOf: 'Page {page} of {pages}',
     problems: '{count} problem(s) found while reading worlds',
     play: 'Start a new session',
+    openWorld: 'Edit {name}',
     worldMissing: 'This world is no longer there.',
     importCard: 'Import card', importUploading: 'Reading the card…', importUploadFailed: 'Could not read the card: {message}', importTitle: 'Import a character card',
     importSource: 'A {spec} card{converted}.', importWorldName: 'Name of the new world', importNoPicture: 'No picture', importTags: 'Tags', importCreator: 'Made by',
@@ -75,6 +76,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     pageOf: '第 {page} 页，共 {pages} 页',
     problems: '读取世界卡时发现 {count} 个问题',
     play: '开始新存档',
+    openWorld: '编辑{name}',
     worldMissing: '这个世界已经不存在了。',
     importCard: '导入角色卡', importUploading: '正在读取角色卡…', importUploadFailed: '无法读取角色卡：{message}', importTitle: '导入角色卡',
     importSource: '{spec} 角色卡{converted}。', importWorldName: '新世界的名称', importNoPicture: '没有图片', importTags: '标签', importCreator: '作者',

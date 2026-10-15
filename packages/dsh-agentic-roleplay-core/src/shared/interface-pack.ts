@@ -157,6 +157,29 @@ export interface PackChoice {
   problems: PackProblem[]
 }
 
+/** A pack of a world as the editor shows it: what it holds, asks for and gets wrong. */
+export interface WorldPackDetail {
+  id: string
+  name: string
+  version: string
+  description: string
+  actions: PackAction[]
+  surfaces: Partial<Record<SurfaceName, PackSurface>>
+  skin?: string
+  /** How many theme tokens it sets. */
+  tokens: number
+  files: { path: string; size: number }[]
+  /** What is wrong with it; a pack with problems cannot be used, and shows no preview. */
+  problems: PackProblem[]
+}
+
+/** A pack shown as it would be in a story of its world: its surfaces, and the view they are given. */
+export interface PackPreview {
+  pack: InterfaceDescription
+  /** What the story would show at its start: the player's character, place and people, the map, what the world tracks. */
+  view: PlayerView
+}
+
 /** How a pack of the world compares with the story's copy of it. */
 export type WorldPackState = 'same' | 'different' | 'new'
 

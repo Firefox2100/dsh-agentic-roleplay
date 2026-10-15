@@ -7,7 +7,7 @@ export type SettingsFormKey =
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'interfacePack' | 'interfacePackHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
-  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'modelsCharacters' | 'modelsBackground' | 'modelsBackgroundHelp' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
+  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'reflectionAuto' | 'reflectionAutoHelp' | 'reflectionEveryTurns' | 'reflectionEveryTurnsHelp' | 'reflectionOnScene' | 'reflectionOnSceneHelp' | 'reflectionSceneDays' | 'reflectionSceneDaysHelp' | 'reflectionMinTurns' | 'reflectionMinTurnsHelp' | 'reflectionPerRun' | 'reflectionPerRunHelp' | 'reflectionMinNew' | 'reflectionMinNewHelp' | 'modelsCharacters' | 'modelsBackground' | 'modelsBackgroundHelp' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -91,6 +91,20 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     factionsPerTurnHelp: 'The most organisations that decide what they do after one of your messages, when story time has passed since they last did. Each is one request in the background. 0 turns it off.',
     factionsEveryDays: 'Days between their decisions',
     factionsEveryDaysHelp: 'How many days of story time pass before an organisation decides again.',
+    reflectionAuto: 'Reflect on its own',
+    reflectionAutoHelp: 'Now and then the characters sort what they have taken in into what they believe: beliefs are merged, firmed up or let go, each only from events it can name. One request per character in the background. A reflection can always be started by hand from the chat settings.',
+    reflectionEveryTurns: 'Reflect every … turns',
+    reflectionEveryTurnsHelp: 'Reflect once this many of your messages have passed since the last reflection. 0 turns this off.',
+    reflectionOnScene: 'Reflect when the scene changes',
+    reflectionOnSceneHelp: 'Also reflect when your character has gone somewhere else, or a night has passed (see the next setting), once the minimum number of turns has gone by.',
+    reflectionSceneDays: 'Days that count as a change of scene',
+    reflectionSceneDaysHelp: 'How many days of story time since the last reflection count as a change of scene. 0 turns this off.',
+    reflectionMinTurns: 'Fewest turns between reflections',
+    reflectionMinTurnsHelp: 'However it is triggered, an automatic reflection waits until this many turns have passed since the last one.',
+    reflectionPerRun: 'Characters per reflection',
+    reflectionPerRunHelp: 'The most characters one automatic reflection takes up, those with the most new to sort first. Each is one request.',
+    reflectionMinNew: 'New memories needed',
+    reflectionMinNewHelp: 'A character is taken up only when this many things it took in are waiting. A reflection started by hand takes up one.',
     modelsBackground: 'Model for background characters',
     modelsBackgroundHelp: 'As provider/model. Characters of the background tier (crowds, passers-by) run on this model; empty uses the model for characters. They take part in the same way as the others, only on a cheaper model.',
     modelsCharacters: 'Model for characters',
@@ -222,6 +236,20 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     factionsPerTurnHelp: '你发送一条消息后，最多让多少个组织决定自己的行动（前提是自它们上次行动以来故事时间已经过去）。每个组织占用一次后台请求。0 表示关闭。',
     factionsEveryDays: '决策间隔天数',
     factionsEveryDaysHelp: '组织再次决策之前要经过多少天故事时间。',
+    reflectionAuto: '自动反思',
+    reflectionAutoHelp: '角色们会时不时把近期的见闻整理成自己的信念：合并、巩固或放下旧信念，且每一条都必须能指出依据的事件。每个角色占用一次后台请求。你也可以随时在对话设置里手动开始一次反思。',
+    reflectionEveryTurns: '每隔多少回合反思',
+    reflectionEveryTurnsHelp: '自上次反思以来过了这么多条你的消息就反思一次。0 表示关闭。',
+    reflectionOnScene: '场景转换时反思',
+    reflectionOnSceneHelp: '当你的角色去了别处，或经过了一夜（见下一项）时也反思，但要先满足最少回合数。',
+    reflectionSceneDays: '算作场景转换的天数',
+    reflectionSceneDaysHelp: '自上次反思以来故事时间过去多少天算作场景转换。0 表示关闭。',
+    reflectionMinTurns: '两次反思之间的最少回合数',
+    reflectionMinTurnsHelp: '无论由什么触发，自动反思都要等到距上一次至少过了这么多回合。',
+    reflectionPerRun: '每次反思的角色数',
+    reflectionPerRunHelp: '一次自动反思最多处理多少个角色，新见闻最多的先处理。每个角色一次请求。',
+    reflectionMinNew: '所需新记忆数',
+    reflectionMinNewHelp: '只有角色积攒了这么多新的见闻才会被处理。手动开始的反思只需要一条。',
     modelsBackground: '背景角色使用的模型',
     modelsBackgroundHelp: '写成 提供方/模型。背景层级的角色（人群、路人）使用此模型；留空则使用“角色使用的模型”。它们的参与方式与其他角色相同，只是换成更便宜的模型。',
     modelsCharacters: '角色使用的模型',

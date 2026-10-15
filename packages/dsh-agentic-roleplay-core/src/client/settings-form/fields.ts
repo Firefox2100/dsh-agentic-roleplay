@@ -27,6 +27,13 @@ export const FORM_FIELDS = [
   { path: ['reasoning', 'children'], kind: 'text', label: 'reasoningChildren', help: 'reasoningChildrenHelp', zone: false, placeholder: 'off' },
   { path: ['factions', 'perTurn'], kind: 'integer', label: 'factionsPerTurn', help: 'factionsPerTurnHelp' },
   { path: ['factions', 'everyDays'], kind: 'integer', label: 'factionsEveryDays', help: 'factionsEveryDaysHelp' },
+  { path: ['reflection', 'auto'], kind: 'flag', label: 'reflectionAuto', help: 'reflectionAutoHelp' },
+  { path: ['reflection', 'everyTurns'], kind: 'integer', label: 'reflectionEveryTurns', help: 'reflectionEveryTurnsHelp' },
+  { path: ['reflection', 'onSceneChange'], kind: 'flag', label: 'reflectionOnScene', help: 'reflectionOnSceneHelp' },
+  { path: ['reflection', 'sceneDays'], kind: 'integer', label: 'reflectionSceneDays', help: 'reflectionSceneDaysHelp' },
+  { path: ['reflection', 'minTurns'], kind: 'integer', label: 'reflectionMinTurns', help: 'reflectionMinTurnsHelp' },
+  { path: ['reflection', 'perRun'], kind: 'integer', label: 'reflectionPerRun', help: 'reflectionPerRunHelp' },
+  { path: ['reflection', 'minNew'], kind: 'integer', label: 'reflectionMinNew', help: 'reflectionMinNewHelp' },
   { path: ['models', 'characters'], kind: 'text', label: 'modelsCharacters', help: 'modelsCharactersHelp', zone: false, placeholder: 'localai/model-id' },
   { path: ['models', 'background'], kind: 'text', label: 'modelsBackground', help: 'modelsBackgroundHelp', zone: false, placeholder: 'localai/model-id' },
   { path: ['models', 'records'], kind: 'text', label: 'modelsRecords', help: 'modelsRecordsHelp', zone: false, placeholder: 'localai/model-id' },
@@ -67,7 +74,7 @@ export const FORM_FIELDS = [
  * characters, fewer and smaller rounds, no off-stage rounds and a closed world (nothing is made up in play). Keys are those of the form.
  */
 export const FAST_PRESET: Drafts = {
-  'reasoning.children': 'off', 'preview.enabled': false, 'memory.verify': false, 'memory.lookup': false, maxRounds: '2', maxCharacters: '3', 'offstage.perTurn': '0', 'authoring.enabled': false,
+  'reasoning.children': 'off', 'preview.enabled': false, 'memory.verify': false, 'memory.lookup': false, maxRounds: '2', maxCharacters: '3', 'offstage.perTurn': '0', 'authoring.enabled': false, 'reflection.auto': false,
 }
 
 export type FormField = (typeof FORM_FIELDS)[number]

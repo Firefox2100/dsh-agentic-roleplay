@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { Bridge, MAX_REQUESTS_PER_SECOND, clampHeight, parseFrameMessage, type BridgeEnv } from '../../../src/client/interface/bridge.ts'
-import type { PlayerView } from '../../../src/shared/interface-pack.ts'
+import { Bridge, MAX_REQUESTS_PER_SECOND, clampHeight, parseFrameMessage, type BridgeEnv } from '../../../../src/client/widgets/pack-frame/bridge.ts'
+import type { PlayerView } from '../../../../src/shared/interface-pack.ts'
 
 const view = (turn = 1, suggestions = ['Ask Clara.', 'Leave.']): PlayerView => ({ api: 1, revision: 'r', story: { name: 'S', turn }, map: { places: [], routes: [] }, carried: [], variables: [], suggestions })
 
@@ -15,7 +15,7 @@ function setup(actions: BridgeEnv['actions'] = ['say', 'fill', 'choose', 'open']
     open: (surface) => { state.opened.push(surface) },
     storage: vi.fn(() => Promise.resolve('kept')),
     history: vi.fn((limit: number) => Promise.resolve([{ turn: limit, player: 'hi', segments: [{ type: 'narration' as const, text: 'Rain.' }] }])),
-    theme: () => ({ scheme: 'dark', tokens: { '--dsw-alias-bg-base': '#000' } }),
+    theme: () => ({ scheme: 'dark', language: 'zh', tokens: { '--dsw-alias-bg-base': '#000' } }),
     now: () => clock,
   }
   return { env, state, bridge: new Bridge(env), tick: (ms: number) => { clock += ms } }
@@ -84,7 +84,7 @@ describe('answering a surface', () => {
     expect(await ask(bridge, 'storage.get', { key: 'seen' })).toEqual({ ok: true, value: 'kept' })
     await ask(bridge, 'storage.set', { key: 'seen', value: [1] })
     expect(env.storage).toHaveBeenLastCalledWith('set', 'seen', [1])
-    expect(await ask(bridge, 'theme')).toEqual({ ok: true, value: { scheme: 'dark', tokens: { '--dsw-alias-bg-base': '#000' } } })
+    expect(await ask(bridge, 'theme')).toEqual({ ok: true, value: { scheme: 'dark', language: 'zh', tokens: { '--dsw-alias-bg-base': '#000' } } })
   })
 
   it('shows the pack\'s own tab or sidebar page when asked and allowed, and nothing else', async () => {

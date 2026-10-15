@@ -5,6 +5,7 @@ import type { WorldRoutines } from '../../shared/world-daily.ts'
 import type { Translate } from './WorldEditor.tsx'
 import { loadRoutines, saveRoutine } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
+import { navigateEditorTabs } from './EditorTabs.tsx'
 
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const
 const BLANK: RoutineDefinition = { days: [], from: '08:00', to: '12:00', activity: '', interruptible: true }
@@ -39,8 +40,8 @@ export function RoutinesPanel({ t, worldId, actions }: { t: Translate; worldId: 
 
   return (
     <div className={css.panel} data-testid="roleplay-routines">
-      <div className={css.tabs} role="tablist">
-        {world.characters.map(entry => <button key={entry.key} type="button" role="tab" aria-selected={entry.key === character.key} className={`${css.tab} ${entry.key === character.key ? css.tabOn : ''}`} onClick={() => { setChosen(entry.key); setStatus({ state: 'idle' }) }}>{entry.name}</button>)}
+      <div className={css.tabs} role="tablist" aria-label={t('characters')} onKeyDown={navigateEditorTabs}>
+        {world.characters.map(entry => <button key={entry.key} type="button" role="tab" aria-selected={entry.key === character.key} tabIndex={entry.key === character.key ? 0 : -1} className={`${css.tab} ${entry.key === character.key ? css.tabOn : ''}`} onClick={() => { setChosen(entry.key); setStatus({ state: 'idle' }) }}>{entry.name}</button>)}
         <span className={css.tabsSpace} />{actions}
       </div>
       {(dirty || status.state !== 'idle') && (

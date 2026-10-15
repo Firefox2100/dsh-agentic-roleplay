@@ -2,6 +2,7 @@ import type { Character, CharacterState, CharacterStatePatch, Exit, Location, Lo
 import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from '@dsh-agentic-roleplay/state'
 import type { ActivityEntry, RunDetail } from '../../shared/activity.ts'
 import type { Note } from '../../shared/notes.ts'
+import type { ReflectionOutcome, ReflectionReason } from '../../shared/reflection.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
@@ -379,6 +380,26 @@ export interface Strategist {
   strategize(job: StrategyJob, signal: AbortSignal): Promise<StrategyReport>
 }
 
+export interface ReflectionJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  reason: ReflectionReason
+}
+
+export interface ReflectionReport {
+  /** What came of each character that was taken up, by name. */
+  characters: ReflectionOutcome[]
+}
+
+/**
+ * Has characters sort what they have taken in since the last time into what they believe: beliefs are made, firmed up, merged or let go,
+ * each only from things the character itself took in. It writes beliefs and nothing else, and never an event.
+ */
+export interface Reflector {
+  reflect(job: ReflectionJob, signal: AbortSignal): Promise<ReflectionReport>
+}
+
 export interface JudgeJob {
   chat: string
   turn: number
@@ -401,6 +422,7 @@ export interface Boundaries {
   committer: Committer
   author: Author
   strategist: Strategist
+  reflector: Reflector
   judge: TriggerJudge
   suggester: Suggester
   recaller: Recaller

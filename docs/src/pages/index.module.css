@@ -12,3 +12,27 @@
 @media(prefers-reduced-motion:no-preference){.clockBefore{animation:clock-before .9s cubic-bezier(.16,1,.3,1) 1.45s forwards}.clockAfter{animation:clock-after .9s cubic-bezier(.16,1,.3,1) 1.45s forwards}@keyframes clock-before{to{opacity:0;transform:translateY(-.5rem)}}@keyframes clock-after{to{opacity:1;transform:translateY(0)}}}
 @media(prefers-reduced-motion:reduce){.clockBefore{display:none}.clockAfter{position:static;opacity:1}}
 @media(max-width:600px){.route{min-height:500px}.routeLine{inset:15% 2% 22%}.routeNode{width:124px;font-size:.75rem}.routeNode small{font-size:.75rem;line-height:1.25}.routeStart{bottom:16%}.routeDecision{left:31%;top:34%;padding:.4rem;background:#e7decb}.routeState{right:3%;top:7%}.mapNote{width:46%;font-size:.75rem}.mapNote b{font-size:.7rem}.commitNote{bottom:17%}.storyClock{top:57%;right:4%;min-width:132px;font-size:.68rem}.illustrative{bottom:10%;font-size:.65rem}}
+
+:global([data-theme='dark']) .page{--paper:#22373d;--paper-deep:#1d3036;--ink:#f2ecde;--ink-soft:#aebeba;--green:#8fb3a4;--brass:#e0c177;background:#15252b;color:var(--ink)}
+:global([data-theme='dark']) .hero{background:#101c20}
+:global([data-theme='dark']) .folio{background:linear-gradient(90deg,transparent calc(50% - 1px),rgba(242,236,222,.14) 50%,transparent calc(50% + 1px)),var(--paper);box-shadow:0 18px 42px rgba(0,0,0,.34)}
+:global([data-theme='dark']) .folio:before{background:#8fb3a4}
+:global([data-theme='dark']) .folio:after{background:#9c3f34}
+:global([data-theme='dark']) .primaryAction{color:#fff;background:#9c3f34}
+:global([data-theme='dark']) .primaryAction:hover{color:#fff;background:#81362e}
+:global([data-theme='dark']) .secondaryAction,:global([data-theme='dark']) .path{color:var(--ink)}
+:global([data-theme='dark']) .secondaryAction:hover,:global([data-theme='dark']) .path:hover,:global([data-theme='dark']) .storyClock,:global([data-theme='dark']) .commitNote b{color:#e0a498}
+:global([data-theme='dark']) .route{border-color:rgba(242,236,222,.28);background:#1d3036}
+:global([data-theme='dark']) .route:before{border-color:rgba(242,236,222,.12)}
+:global([data-theme='dark']) .routeLine path{stroke:#d68172}
+:global([data-theme='dark']) .routeLine .routeEcho{stroke:var(--green)}
+:global([data-theme='dark']) .routeNode>span{color:#f2ecde;background:#18303a}
+:global([data-theme='dark']) .routeState>span{background:#9c3f34}
+:global([data-theme='dark']) .mapNote{color:var(--ink-soft);background:rgba(21,37,43,.94);border-color:var(--green)}
+:global([data-theme='dark']) .mapNote b{color:var(--green)}
+:global([data-theme='dark']) .commitNote{border-color:#d68172}
+:global([data-theme='dark']) .mapKey,:global([data-theme='dark']) .pathList,:global([data-theme='dark']) .path,:global([data-theme='dark']) .bundle dl,:global([data-theme='dark']) .bundle dl>div{border-color:rgba(242,236,222,.24)}
+:global([data-theme='dark']) .mechanism{background:#101c20;color:#f2ecde}
+:global([data-theme='dark']) .mechanism h2{color:#f2ecde}
+:global([data-theme='dark']) .closing{background:var(--paper-deep)}
+@media(max-width:600px){:global([data-theme='dark']) .routeDecision{background:#1d3036}}

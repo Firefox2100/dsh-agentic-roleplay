@@ -2,6 +2,8 @@ import { existsSync, mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { CharacterId, Move, MovePlan, NewSession, StoryEvent, TriggerNote } from 'dsh-roleplay-model'
 import { lapseNotes, runTriggers, type TriggerRun, type TriggerRunOptions } from './records/triggers.ts'
+import { deliverNotes, type Delivery } from './records/deferred.ts'
+import type { TriggerClock } from './records/trigger-rules.ts'
 import { moveCharacter, planKnownMove, planMove } from './records/movement.ts'
 import { systemClock, type Clock } from './clock.ts'
 import { nodeSqliteDriver } from './driver/node-sqlite.ts'
@@ -129,6 +131,8 @@ export interface SessionStore {
   runTriggers(options: TriggerRunOptions): TriggerRun
   /** Let go of the beats and cues nobody took up in this many turns. */
   lapseNotes(turn: number, kept: { beats: number; cues: number }): TriggerNote[]
+  /** Which of these notes are still to be told, and in what words as the story stands now; the others are withdrawn, with the reason. Nothing is changed. */
+  deliverNotes(notes: readonly TriggerNote[], clock: TriggerClock): Delivery
   /** Write a consistent copy of the whole database to `path`, which must not exist. */
   snapshotTo(path: string): void
   close(): void
@@ -280,6 +284,10 @@ class SqliteSessionStore implements SessionStore {
 
   runTriggers(options: TriggerRunOptions): TriggerRun {
     return runTriggers(this, options)
+  }
+
+  deliverNotes(notes: readonly TriggerNote[], clock: TriggerClock): Delivery {
+    return deliverNotes(this, notes, clock)
   }
 
   lapseNotes(turn: number, kept: { beats: number; cues: number }): TriggerNote[] {

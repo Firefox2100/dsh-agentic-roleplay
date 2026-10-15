@@ -5,6 +5,7 @@ import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import type { WorldState } from '../../shared/world-state.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { readWorldEditor } from '../worlds/world-editor.ts'
+import { readTriggerDocuments } from '../triggers/files.ts'
 import { AUTHORED_ENTITY_KINDS, readAuthoredEntityDocument, type AuthoredEntityKind } from './documents.ts'
 
 type AgentExec = { agent?: { session: { id: string } } }
@@ -109,6 +110,20 @@ export function authoredWorldReadTools(reader: AuthoredWorldReader): ToolDefinit
     }),
     listTool(reader, 'list_plots', 'List authored plot scaffolds with stable keys, premises, status and pressure.', world => world.plots.map(entry => ({ ...entry.definition, key: entry.definition.id, name: entry.definition.name })), entry => entry),
     getTool(reader, 'get_plot', 'Read one complete authored plot scaffold.', world => world.plots.map(entry => ({ ...entry.definition, key: entry.definition.id, name: entry.definition.name }))),
+    listTool(reader, 'list_world_triggers', 'List the world’s triggers (what the world does by itself): key, name, what each waits for (when), the kinds of its effects, whether it repeats, and what it names that the world does not have (problems).', world => (world.triggers ?? []).map(entry => ({ ...entry, name: entry.name })), entry => ({ key: entry.key, name: entry.name, when: entry.when, effects: entry.effects.map(effect => effect.type), repeat: entry.repeat, priority: entry.priority, announced: entry.announced, problems: entry.problems })),
+    defineTool({
+      name: 'get_world_trigger',
+      description: 'Read the exact snake_case JSON document stored for one trigger in triggers.json. Use this before replacing a trigger.',
+      parameters: { key: keyParameter },
+      output: jsonOutput,
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        const found = (await readTriggerDocuments(record.directory)).find(entry => entry['key'] === args.key)
+        if (found === undefined) throw new Error(`there is no trigger with key "${args.key}"`)
+        return json(found)
+      },
+    }),
     defineTool({
       name: 'list_relationships',
       description: 'Read authored character relationships, knowledge, faction memberships, social ties and map exits. Optionally narrow by kind or endpoint key.',

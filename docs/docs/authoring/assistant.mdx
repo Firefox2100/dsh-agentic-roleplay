@@ -6,6 +6,8 @@ Select **Author world** from the world editor. DSH opens a chat named after the 
 
 The assistant can list and read world elements, inspect links and relationships, and propose creating, updating or deleting authored data. Mutation tools write the same files used by the manual editor.
 
+It also reads and writes the world's **triggers** (what the world does by itself): `list_world_triggers` and `get_world_trigger` read them, and `write_world_trigger` and `delete_world_trigger` create, replace and remove one by its key. A trigger is read as a story start reads it and refused, with every problem at once, when it is malformed or names a character, place, item, variable or trigger the world does not have; a removed trigger's document is kept in the world's `.trash/triggers`, and one that other triggers wait for cannot be removed.
+
 Use it for changes that benefit from synthesis across several parts of a world: adding a person who fits an existing faction, finding incomplete connections, turning a premise into a small set of optional beats, or checking whether private knowledge has been placed on the right characters. For precise field edits, the visual editor is usually faster.
 
 ## Approval

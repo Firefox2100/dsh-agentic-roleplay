@@ -278,6 +278,10 @@ function answerWithoutSuggestions(script: Script) {
   return (request: GenerateOptions): StreamChunk[] => {
     if (systemOf(request).includes('You suggest what the player could do next')) return script.suggester === 'forgets' && !asText(request).includes('You have not finished') ? text('1. Ask Alice about the key') : call('sg-submit', 'submit_result', { options: SUGGESTED })
     if (systemOf(request).includes('You judge statements about an interactive story')) return call('t-judge', 'submit_result', { verdicts: [{ number: 1, holds: true, reason: 'The records show Alice at the vault.' }] })
+    if (systemOf(request).includes('You tidy the memory of one character')) {
+      const taken = [...asText(request).matchAll(/- p(\d+)/g)].map(match => Number(match[1]))
+      return call('r-submit', 'submit_result', { add: taken.length < 2 ? [] : [{ kind: 'belief', text: 'Bob keeps taking what is not his.', about: ['Bob'], importance: 3, perceptions: taken.slice(0, 2) }], revise: [], drop: [] })
+    }
     if (systemOf(request).includes('strategist of an organisation')) return call('f-submit', 'submit_result', { summary: 'The Guild quietly buys the cellar lease.', public_state: 'Seen at the cellar door.', new_goal: { name: 'Hold the cellar', description: 'Keep others out of the cellar.', plan: ['post a guard'] } })
     if (systemOf(request).includes('record keeper of an interactive story')) return keeperAnswer(request, script)
     if (systemOf(request).includes('world author of an interactive story')) return authorAnswer(request, script)
@@ -730,6 +734,51 @@ describe('a turn with the real agent loop', () => {
       expect(deed).toBeDefined()
       expect(session.events.perceptionsOf(deed!.id)).toEqual([])
       expect((session.metadata.getValue('activity') as { label: string }[]).map(run => run.label)).toContain('faction The Guild')
+    })
+
+    describe('reflection', () => {
+      const seed = (session: Session): void => {
+        for (const turn of [1, 2]) session.edit({ turn, events: [{ turn, round: 1, text: `Bob pockets something at the bar (${turn})`, importance: 2, tags: [], involves: ['bob'], perceivedBy: [{ character: 'alice', mode: 'witnessed', content: `Alice saw Bob pocket something (${turn}).`, gist: 'Bob pockets things' }] }] }, { seal: true })
+      }
+      const reflections = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('You tidy the memory of one character'))
+
+      it('has a character sort what it took in once the turns asked for have passed, and writes a belief that rests on what it was shown', async () => {
+        const { session, id } = await addSession('Vault', true)
+        seed(session)
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { reflection: { auto: true, everyTurns: 1, onSceneChange: false, minTurns: 1, perRun: 1, minNew: 1 } })
+        session.metadata.setValue('reflection.anchor', { now: 0 })
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        await vi.waitFor(() => { expect(session.memories.list(session.characters.getBySourceId('alice')!.id).map(belief => belief.text)).toContain('Bob keeps taking what is not his.') }, { timeout: 5000 })
+        const belief = session.memories.list(session.characters.getBySourceId('alice')!.id).find(entry => entry.text.startsWith('Bob keeps'))!
+        expect(belief.about).toEqual([session.characters.getBySourceId('bob')!.id])
+        expect(session.metadata.getValue('reflection.last')).toMatchObject({ turn: 1, reason: 'turns', characters: [{ name: 'Alice', added: 1, revised: 0, dropped: 0 }] })
+        const asked = reflections(adapter)
+        expect(asked).toHaveLength(1)
+        expect(toolNames(asked[0]!)).toEqual(['submit_result'])
+        expect(asText(asked[0]!)).toContain('Alice saw Bob pocket something (1).')
+        expect(asText(asked[0]!)).not.toContain('Bob pockets something at the bar')
+        expect((session.metadata.getValue('activity') as { label: string }[]).map(run => run.label)).toContain('reflection Alice')
+        expect(session.events.list().some(event => event.text.includes('Bob keeps taking'))).toBe(false)
+      })
+
+      it('does nothing by itself while the setting is off, and does it when asked', async () => {
+        const { session, id } = await addSession('Vault', true)
+        seed(session)
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { reflection: { auto: false, everyTurns: 1, onSceneChange: false, minTurns: 1, perRun: 1, minNew: 1 } })
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        await orchestration.settle(`session-${id}`)
+        expect(reflections(adapter)).toHaveLength(0)
+        await orchestration.reflect(`session-${id}`)
+        await vi.waitFor(() => { expect(session.metadata.getValue('reflection.last')).toMatchObject({ reason: 'manual' }) }, { timeout: 5000 })
+        expect(session.memories.list(session.characters.getBySourceId('alice')!.id).map(belief => belief.text)).toContain('Bob keeps taking what is not his.')
+        expect(orchestration.reflecting(`session-${id}`)).toBe(false)
+      })
     })
 
     it('has the game master change what is tracked in an outcome: it is applied, said back, kept for the keeper, and told to those who can tell, and in the next scene', async () => {

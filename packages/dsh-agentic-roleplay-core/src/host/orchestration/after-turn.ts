@@ -1,4 +1,7 @@
+import { dueReflection, recordFailure } from '../memory/reflection.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
+import type { ReflectionReason } from '../../shared/reflection.ts'
+import { ReflectionRefusedError } from '../sessions/errors.ts'
 
 /** Something made up that has waited this many turns is fitted into the world even if few are waiting. */
 const STALE_AFTER_TURNS = 4
@@ -24,6 +27,7 @@ export class AfterTurnJobs {
   private readonly consolidating = new Set<string>()
   private readonly strategizing = new Set<string>()
   private readonly judging = new Set<string>()
+  private readonly reflecting = new Set<string>()
 
   constructor(private readonly deps: AfterTurnDeps) {}
 
@@ -31,6 +35,40 @@ export class AfterTurnJobs {
     this.consolidate(owner, cancel)
     this.strategize(owner, cancel)
     this.judge(owner, cancel)
+    const reason = this.reflectionDue(owner)
+    if (reason !== undefined) this.reflect(owner, reason, cancel)
+  }
+
+  /** Whether a reflection is running for the chat. */
+  isReflecting(chat: string): boolean {
+    return this.reflecting.has(chat)
+  }
+
+  /** Starts a reflection the player asked for, without waiting for it. @throws {ReflectionRefusedError} when one is already running. */
+  reflectNow(owner: { chat: string; turn: number }, cancel: AbortSignal): void {
+    if (this.deps.stores(owner.chat) === undefined) throw new Error(`no story for chat ${owner.chat}`)
+    if (this.reflecting.has(owner.chat)) throw new ReflectionRefusedError('a reflection is already running')
+    this.reflect(owner, 'manual', cancel)
+  }
+
+  private reflectionDue(owner: { chat: string; turn: number }): Exclude<ReflectionReason, 'manual'> | undefined {
+    const store = this.deps.stores(owner.chat)
+    return store === undefined || this.reflecting.has(owner.chat) ? undefined : dueReflection(store, owner.turn)
+  }
+
+  /** The characters sort what they have taken in into what they believe. The one failure that matters to the player, a pass they asked for, is kept for the settings tab. */
+  private reflect(owner: { chat: string; turn: number }, reason: ReflectionReason, cancel: AbortSignal): void {
+    const store = this.deps.stores(owner.chat)
+    if (store === undefined) return
+    this.reflecting.add(owner.chat)
+    this.deps.track(owner.chat, this.deps.boundaries().reflector.reflect({ chat: owner.chat, turn: owner.turn, store, reason }, cancel)
+      .then((report) => { if (report.characters.length > 0) this.deps.written(owner.chat) })
+      .catch((error: unknown) => {
+        if (cancel.aborted) return
+        recordFailure(store.story, messageOf(error))
+        this.deps.problem(`what the characters believe was not sorted: ${messageOf(error)}`)
+      })
+      .finally(() => { this.reflecting.delete(owner.chat) }))
   }
 
   /** Fit what was made up into the rest of the world, when enough of it is waiting or some has waited long. */

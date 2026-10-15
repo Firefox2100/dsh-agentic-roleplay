@@ -30,7 +30,7 @@ beforeEach(async () => {
   root = mkdtempSync(join(tmpdir(), 'ifc-'))
   mkdirSync(join(root, 'sessions', ID), { recursive: true })
   store = createSessionStore(join(root, 'sessions', ID, 'session.sqlite'), { id: ID, name: 'A story', world: { id: 'w', name: 'W' } })
-  const api = new InterfaceService({ open: () => store, root: () => root, wall: () => 0, worldDirectory: async () => join(root, 'worlds', 'harbor') })
+  const api = new InterfaceService({ open: () => store, root: () => root, wall: () => 0, worldDirectory: async () => join(root, 'worlds', 'harbor'), world: async id => (id === 'harbor' ? { directory: join(root, 'worlds', 'harbor'), summary: { id: 'harbor', name: 'Harbor', description: '', tags: [] } } : undefined) })
   const routes = interfaceRoutes(api)
   server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', 'http://localhost')
@@ -212,7 +212,7 @@ describe('the packs of a world', () => {
     const world = join(root, 'worlds', 'harbor')
     pack(world)
     expect(copyWorldPacks(world, join(root, 'sessions', ID))).toEqual([])
-    expect(new InterfaceService({ open: () => store, root: () => root, worldDirectory: async () => join(root, 'worlds', 'harbor') }).describe(ID).pack?.id).toBe('gothic')
+    expect(new InterfaceService({ open: () => store, root: () => root, worldDirectory: async () => join(root, 'worlds', 'harbor'), world: async () => undefined }).describe(ID).pack?.id).toBe('gothic')
     write(join(world, 'ui', 'bad', 'pack.json'), '{ "api": 3 }')
     const problems = copyWorldPacks(world, join(root, 'sessions', 'other'))
     expect(problems.map(problem => problem.message)).toEqual([expect.stringContaining('api 1')])
@@ -222,6 +222,66 @@ describe('the packs of a world', () => {
   it('go to a branch', () => {
     pack(join(root, 'sessions', ID))
     inheritPacks(join(root, 'sessions', ID), join(root, 'sessions', 'branch'))
-    expect(new InterfaceService({ open: () => store, root: () => root, worldDirectory: async () => join(root, 'worlds', 'harbor') }).availability()).toEqual({ tab: true })
+    expect(new InterfaceService({ open: () => store, root: () => root, worldDirectory: async () => join(root, 'worlds', 'harbor'), world: async () => undefined }).availability()).toEqual({ tab: true })
+  })
+})
+
+describe('the packs of a world in the editor', () => {
+  const harbor = (): string => join(root, 'worlds', 'harbor')
+  const json = (path: string, value: unknown): void => { write(path, JSON.stringify(value)) }
+  const getJson = async (path: string) => { const response = await fetch(`${origin}${path}`); return { status: response.status, body: await response.json() as Record<string, unknown> & { problems?: string[] } } }
+
+  beforeEach(() => {
+    json(join(harbor(), 'locations', 'inn', 'location.json'), { name: 'The Inn', description: 'Smoky.', exits: [{ to: 'dock', description: 'a wet lane' }] })
+    json(join(harbor(), 'locations', 'dock', 'location.json'), { name: 'The Dock' })
+    json(join(harbor(), 'characters', 'arthur', 'character.json'), { name: 'Arthur', role: 'playable', summary: 'A stranger.', start: { location: 'inn' } })
+    json(join(harbor(), 'characters', 'clara', 'character.json'), { name: 'Clara', role: 'npc', summary: 'Innkeeper.', start: { location: 'inn', public_state: 'Wiping glasses' } })
+    pack(harbor())
+  })
+
+  it('are listed with what each holds and asks for, and what is wrong with one that cannot be used', async () => {
+    json(join(harbor(), 'ui', 'broken', 'pack.json'), { api: 7 })
+    const { status, body } = await getJson('/worlds/interface?id=harbor') as unknown as { status: number; body: { id: string; name: string; actions: string[]; skin: string; files: { path: string }[]; problems: { message: string }[] }[] }
+    expect(status).toBe(200)
+    expect(body.map(entry => entry.id)).toEqual(['broken', 'gothic'])
+    expect(body[1]).toMatchObject({ name: 'Gothic', actions: ['say'], skin: 'skin.css', surfaces: { hud: { file: 'hud.html' }, tab: { file: 'map.html', title: 'Map' } }, problems: [] })
+    expect(body[1]!.files.map(file => file.path)).toEqual(['app.js', 'hud.html', 'map.html', 'pack.json', 'skin.css'])
+    expect(body[0]!.problems[0]!.message).toContain('api 1')
+    expect((await getJson('/worlds/interface?id=nowhere')).status).toBe(404)
+  })
+
+  it('show the surfaces as a story of the world would start: the view comes from the files, the frame from the world folder, without a story', async () => {
+    const { status, body } = await getJson('/worlds/interface/preview?id=harbor&pack=gothic')
+    expect(status).toBe(200)
+    const view = body['view'] as { player: { name: string }; place: { name: string; here: { name: string; publicState: string }[]; exits: { name: string }[] }; suggestions: string[]; map: { places: { name: string }[] } }
+    expect(view.player.name).toBe('Arthur')
+    expect(view.place).toMatchObject({ name: 'The Inn', here: [{ name: 'Clara', publicState: 'Wiping glasses' }], exits: [{ name: 'The Dock' }] })
+    expect(view.map.places.map(place => place.name).sort()).toEqual(['The Dock', 'The Inn'])
+    expect(view.suggestions).toHaveLength(3)
+    const frame = (body['pack'] as { frame: string }).frame
+    const page = await fetch(`${origin}${FRAME_FILES}${frame}/hud.html`)
+    expect(page.status).toBe(200)
+    expect(await page.text()).toContain('window.rp')
+    expect((await fetch(`${origin}${FRAME_FILES}${frame}/app.js`)).headers.get('access-control-allow-origin')).toBe('*')
+    expect((await fetch(`${origin}${FRAME_FILES}${frame}/pack.json`)).status).toBe(200)
+    expect((await fetch(`${origin}${FRAME_FILES}${frame}/missing.js`)).status).toBe(404)
+    expect((await fetch(`${origin}${FRAME_FILES}${frame}/../../x`)).status).toBeGreaterThanOrEqual(400)
+  })
+
+  it('keep the same frame for the same pack, and refuse a pack with problems, a missing pack or world, and a world with problems of its own', async () => {
+    const first = (await getJson('/worlds/interface/preview?id=harbor&pack=gothic')).body['pack'] as { frame: string }
+    const again = (await getJson('/worlds/interface/preview?id=harbor&pack=gothic')).body['pack'] as { frame: string }
+    expect(again.frame).toBe(first.frame)
+    json(join(harbor(), 'ui', 'broken', 'pack.json'), { api: 7 })
+    const broken = await getJson('/worlds/interface/preview?id=harbor&pack=broken')
+    expect(broken.status).toBe(422)
+    expect(broken.body.problems?.[0]).toContain('api 1')
+    expect((await getJson('/worlds/interface/preview?id=harbor&pack=none')).status).toBe(404)
+    expect((await getJson('/worlds/interface/preview?id=harbor&pack=..%2F..')).status).toBe(404)
+    expect((await getJson('/worlds/interface/preview?id=nowhere&pack=gothic')).status).toBe(404)
+    json(join(harbor(), 'items', 'bad', 'item.json'), { name: 'Bad', location: 'nowhere' })
+    const unfit = await getJson('/worlds/interface/preview?id=harbor&pack=gothic')
+    expect(unfit.status).toBe(422)
+    expect(unfit.body.problems?.[0]).toContain('other files have problems')
   })
 })

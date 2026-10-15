@@ -22,7 +22,7 @@ function Card({ avatar, editLabel, deleteLabel, onEdit, onDelete }: { avatar: Av
       <button type="button" className={css.open} aria-label={`${editLabel}: ${avatar.name}`} onClick={onEdit}>
         {avatar.portrait === undefined
           ? <span className={css.placeholder} style={{ background: `hsl(${hueOf(avatar.name)} 22% 88%)` }} aria-hidden="true">{Array.from(avatar.name)[0]?.toUpperCase()}</span>
-          : <img className={css.portrait} src={avatar.portrait} alt="" />}
+          : <img className={css.portrait} src={avatar.portrait} alt="" loading="lazy" decoding="async" />}
         <span className={css.text}>
           <span className={css.name}>{avatar.name}</span>
           {avatar.summary !== '' && <span className={css.summary}>{avatar.summary}</span>}

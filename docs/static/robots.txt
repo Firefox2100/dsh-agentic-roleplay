@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://firefox2100.github.io/dsh-agentic-roleplay/sitemap.xml
+Sitemap: https://firefox2100.github.io/dsh-agentic-roleplay/zh-Hans/sitemap.xml

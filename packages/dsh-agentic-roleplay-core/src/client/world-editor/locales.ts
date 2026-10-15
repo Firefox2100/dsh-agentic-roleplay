@@ -1,5 +1,7 @@
 import { prefixed, withDictionaries, type Dictionaries } from '../i18n.ts'
 import { dictionaries as galleryDictionaries, type GalleryLocaleKey } from '../widgets/gallery-view/locales.ts'
+import { dictionaries as packsDictionaries, type PacksLocaleKey } from './packs-locales.ts'
+import { dictionaries as triggersDictionaries, type TriggersLocaleKey } from './triggers-locales.ts'
 
 type OwnKey =
   | 'language' | 'sectionInfo' | 'sectionPrompts' | 'sectionImages' | 'infoTags' | 'infoTagsHelp' | 'infoRules' | 'infoRulesHelp' | 'infoOpening' | 'infoOpeningHelp' | 'infoOpeningParts' | 'infoStory' | 'sectionRoutines' | 'sectionVariables' | 'routinesNoCharacters' | 'routinesHelp' | 'routineFrom' | 'routineTo' | 'routineActivity' | 'routineDays' | 'routineDaysHelp' | 'routinePlace' | 'routineNoPlace' | 'routineFeature' | 'routinePosition' | 'routineInterruptible' | 'routineRemove' | 'routineAdd' | `day_${'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'}`
@@ -103,6 +105,6 @@ const own: Dictionaries<OwnKey> = {
   },
 }
 
-export type WorldLocaleKey = OwnKey | `gallery_${GalleryLocaleKey}`
+export type WorldLocaleKey = OwnKey | `gallery_${GalleryLocaleKey}` | `trig_${TriggersLocaleKey}` | `pk_${PacksLocaleKey}`
 
-export const dictionaries: Dictionaries<WorldLocaleKey> = withDictionaries(own, prefixed(galleryDictionaries, 'gallery_'))
+export const dictionaries: Dictionaries<WorldLocaleKey> = withDictionaries(withDictionaries(withDictionaries(own, prefixed(galleryDictionaries, 'gallery_')), prefixed(triggersDictionaries, 'trig_')), prefixed(packsDictionaries, 'pk_'))

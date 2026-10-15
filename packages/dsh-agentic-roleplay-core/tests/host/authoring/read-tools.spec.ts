@@ -38,10 +38,23 @@ async function call(name: string, args: Record<string, unknown> = {}, chat?: str
 }
 
 describe('authored world read tools', () => {
+  it('lists the triggers with what each names that the world does not have, and reads the stored document of one', async () => {
+    await write(join(directory, 'triggers.json'), [
+      { key: 'knock', name: 'Knock', when: { type: 'place', character: 'clara', location: 'inn' }, effects: [{ type: 'beat', text: 'Someone knocks at {place:inn}.' }] },
+      { key: 'ghost', name: 'Ghost', when: { type: 'place', character: 'nobody', location: 'inn' }, effects: [{ type: 'cue', characters: ['clara'], text: 'Cold.', while: { type: 'item', item: 'key', held_by: '@self' } }] },
+    ])
+    expect(await call('list_world_triggers')).toEqual([
+      { key: 'knock', name: 'Knock', when: { type: 'place', character: 'clara', location: 'inn' }, effects: ['beat'], repeat: false, priority: 0, announced: false, problems: [] },
+      { key: 'ghost', name: 'Ghost', when: { type: 'place', character: 'nobody', location: 'inn' }, effects: ['cue'], repeat: false, priority: 0, announced: false, problems: ['when: there is no character "nobody"'] },
+    ])
+    expect(await call('get_world_trigger', { key: 'knock' })).toMatchObject({ key: 'knock', effects: [{ type: 'beat', text: 'Someone knocks at {place:inn}.' }] })
+    await expect(call('get_world_trigger', { key: 'none' })).rejects.toThrow(/no trigger with key "none"/)
+  })
+
   it('provides the complete read-only catalogue', () => {
     expect(tools().map(tool => tool.name)).toEqual([
       'get_world_overview', 'list_characters', 'get_character', 'list_locations', 'get_location', 'list_items', 'get_item',
-      'list_factions', 'get_faction', 'list_lore', 'get_lore', 'get_world_element_source', 'list_plots', 'get_plot', 'list_relationships',
+      'list_factions', 'get_faction', 'list_lore', 'get_lore', 'get_world_element_source', 'list_plots', 'get_plot', 'list_world_triggers', 'get_world_trigger', 'list_relationships',
     ])
   })
 

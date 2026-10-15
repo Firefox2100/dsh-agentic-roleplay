@@ -40,6 +40,14 @@ Inside the frame the page may use canvas, WebGL, audio, workers, WebAssembly, an
 
 The starter world, The Blackwater Observatory, carries a pack called *Field notebook*. Add the world, start a story, and you get a status strip with the place, the time and who is here, and an **Interface** tab with the places you know, who is here, what you carry, the suggested actions, the story so far and a notes box that is kept with the story. Its files are in `ui/notebook/` of the world; copy that folder as a starting point.
 
+## The Scene pack that ships with the plugin
+
+The plugin ships a small pack, *Scene*, that works with any world: a status strip with the place, the time and who is here, and a live map of the places you know in the right sidebar. It is put in your roleplay folder's `ui` folder when DSH starts (a copy you edited is never overwritten; one you deleted comes back). To use it in a story, pick **Scene** in the story's Chat settings, or write `scene` as the **Interface pack** when you start it. It follows the interface language (English or Chinese), which is also what your own packs can read from `rp.theme()`.
+
+## Look at a pack while you write it
+
+In the world editor, the **Interface** section lists the packs the world carries: what each asks for and holds, every problem with the file it is in, and a **preview**. The preview shows one surface at a time (the status strip, the tab, the right-sidebar page and so on) in a frame, at a narrow, medium or wide width, as a story of the world would start: the first playable character, where they stand, who is with them and the places they know. Press a button in the pack and the section tells you what it asked for ("said as the player…", "asked to open the sidebar"); nothing is sent anywhere. What a pack keeps stays in memory until you reload. The skin and the theme are applied in a story, not in the preview, and the story so far is empty because no turn has been played. Edit the files, press **Reload**, and look again.
+
 ## Where packs live and which one a story uses
 
 | Place | Used for |

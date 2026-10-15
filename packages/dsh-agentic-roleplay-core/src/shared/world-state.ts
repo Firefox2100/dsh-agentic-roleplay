@@ -1,4 +1,4 @@
-import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, LORE_KINDS, MEMBERSHIP_STATUSES, type LoreKind, type LoreSubjectKind, type PlotDefinition, type PlotProgress, type VisualIdentityInput } from 'dsh-roleplay-model'
+import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, LORE_KINDS, MEMBERSHIP_STATUSES, type LoreKind, type LoreSubjectKind, type PlotDefinition, type PlotProgress, type TriggerCondition, type TriggerEffect, type TriggerStatus, type VisualIdentityInput } from 'dsh-roleplay-model'
 
 /** One thing a character wants, as the World editor shows it. */
 export interface WorldGoal {
@@ -65,6 +65,27 @@ export interface WorldThing {
   visualIdentity?: VisualIdentityInput
 }
 
+/** A trigger as the editor shows it: what it waits for and does, and in a story how it stands. */
+export interface WorldTrigger {
+  key: string
+  name: string
+  when: TriggerCondition
+  effects: TriggerEffect[]
+  repeat: boolean
+  priority: number
+  cooldownSeconds?: number
+  chance?: number
+  expires?: string
+  /** Whether what is coming is known beforehand by someone. */
+  announced: boolean
+  /** In a story: whether it fired, and how often. */
+  status?: TriggerStatus
+  fireCount?: number
+  origin?: 'world' | 'story'
+  /** What is wrong with it: a thing it names that the world does not have, or why it failed. */
+  problems: string[]
+}
+
 export interface WorldState {
   narrationVoice?: string
   characters: WorldCharacter[]
@@ -72,6 +93,9 @@ export interface WorldState {
   things: WorldThing[]
   factions: WorldFaction[]
   lore?: WorldLore[]
+  triggers?: WorldTrigger[]
+  /** What is wrong with `triggers.json` as a whole, when it cannot be read. */
+  triggersProblem?: string
   plots: { definition: PlotDefinition; progress?: Omit<PlotProgress, 'plot'> }[]
   relations: WorldRelation[]
 }

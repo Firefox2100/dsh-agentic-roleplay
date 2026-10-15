@@ -3,6 +3,8 @@ import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import { InvalidEditProblems, parseRelationEdit } from '../../shared/world-state.ts'
 import { editWorldPlots, editWorldRelation, readWorldEditor } from '../worlds/world-editor.ts'
 import { parsePlotsFile } from '../plots/load.ts'
+import { deleteTriggerDocument, writeTriggerDocument } from '../triggers/files.ts'
+import { loadWorldParts } from '../triggers/parts.ts'
 import { formatIssue } from '../validation.ts'
 import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, readAuthoredEntityDocument, replaceAuthoredEntity, type AuthoredEntityKind } from './documents.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
@@ -14,7 +16,7 @@ const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown,
 const kindParameter = { type: 'string' as const, required: true as const, enum: AUTHORED_ENTITY_KINDS }
 const keyParameter = { type: 'string' as const, required: true as const, description: 'Stable entity key.' }
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
+export const AUTHORING_MUTATION_TOOLS = new Set(['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -89,6 +91,28 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
         return result('replaced', 'plots', '*', state) as never
       },
     }),
+    defineTool({
+      name: 'write_world_trigger',
+      description: 'Create or replace one trigger (something the world does by itself) in triggers.json, from a complete document in the file format, by its key. It is read as a story start reads it and refused, with every problem, when it is malformed or names a character, place, item, variable or trigger the world does not have; read get_world_trigger first when replacing. Requires user approval.',
+      parameters: { key: keyParameter, document: { type: 'json', required: true, description: 'Complete snake_case trigger: name, when (condition), effects (one to six: edit, beat, cue), and optionally repeat, cooldown_seconds, chance, priority, expires, announce. A beat or cue may have a while condition and names such as {where:character}.' } },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        const action = await writeTriggerDocument(record.directory, await loadWorldParts(record.directory), args.key, args.document)
+        return result(action, 'trigger', args.key, await readWorldEditor({ id: record.summary.id, directory: record.directory })) as never
+      },
+    }),
+    defineTool({
+      name: 'delete_world_trigger',
+      description: 'Remove one trigger from triggers.json. Its document is kept in the world’s .trash/triggers so it can be put back. A trigger that others wait for cannot be removed. Requires user approval.',
+      parameters: { key: keyParameter },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        const kept = await deleteTriggerDocument(record.directory, args.key)
+        return result('deleted', 'trigger', args.key, await readWorldEditor({ id: record.summary.id, directory: record.directory }), { recoverable: true, trashPath: kept }) as never
+      },
+    }),
   ]
 }
 
@@ -124,14 +148,14 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
       displayReason: { en: `${remove ? 'Delete' : 'Write'} ${target} in the world files?`, zh: `${remove ? '删除' : '写入'}世界文件中的${target}？` },
     }
   }
-  const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : 'plots'
+  const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : exec.name.endsWith('trigger') ? 'trigger' : 'plots'
   const key = typeof args['key'] === 'string' ? args['key'] : ''
   const target = key === '' ? kind : `${kind} “${key}”`
-  const action = exec.name.startsWith('create') ? 'Create' : exec.name.startsWith('delete') ? 'Delete' : 'Edit'
+  const action = exec.name.startsWith('create') ? 'Create' : exec.name.startsWith('delete') ? 'Delete' : exec.name === 'write_world_trigger' ? 'Write' : 'Edit'
   return {
     kind: 'ask',
     reason: `${action.toLowerCase()} authored world ${target}`,
-    displayReason: { en: `${action} ${target} in the world files?`, zh: `${action === 'Create' ? '创建' : action === 'Delete' ? '删除' : '编辑'}世界文件中的${target}？` },
+    displayReason: { en: `${action} ${target} in the world files?`, zh: `${action === 'Create' ? '创建' : action === 'Delete' ? '删除' : action === 'Write' ? '写入' : '编辑'}世界文件中的${target}？` },
   }
 }
 

@@ -11,6 +11,7 @@ import { RESULTS, type CharacterAction, type CharacterFailure, type CharacterRep
 import { sameWords } from './defaults.ts'
 import { whereabouts } from './whereabouts.ts'
 import { slug, uniqueKey } from '../import/run.ts'
+import { ReflectionRefusedError } from '../sessions/errors.ts'
 
 /** Asks one character to act; what the game master calls a character is the character's key. */
 export type RunCharacter = (request: CharacterRequest, signal: AbortSignal) => Promise<CharacterAction>
@@ -206,6 +207,8 @@ export class TurnEngine {
   /** What runs in the background of each chat and writes to its story, other than the records: fitting in what was made up, and the characters away. */
   private readonly working = new Map<string, Set<Promise<unknown>>>()
   private readonly afterTurn: AfterTurnJobs
+  /** What a reflection the player asked for is cancelled with, as `stop` does for the turn. */
+  private readonly reflectionCancels = new Map<string, AbortController>()
   /** Chats whose characters away from the player are being asked about what fell due: one run at a time. */
   private readonly offstage = new Set<string>()
 
@@ -732,6 +735,28 @@ export class TurnEngine {
     }
   }
 
+  /**
+   * Starts a reflection the player asked for: the records still waiting are written first, so that what the characters took in is there to
+   * sort, and the pass then runs in the background. @throws {ReflectionRefusedError} while a turn is being played, or when a pass is already running.
+   */
+  async reflect(chat: string): Promise<void> {
+    const store = this.stores(chat)
+    if (store === undefined) throw new Error(`no story for chat ${chat}`)
+    const turning = this.states.get(chat)
+    if (turning !== undefined && ['resolving', 'retrying', 'between'].includes(turning.phase)) throw new ReflectionRefusedError('a turn is being played; reflect when it is over')
+    const delivered = this.delivered.get(chat)
+    if (delivered !== undefined && store.pendingCommits().length > 0) this.write({ chat, turn: delivered.turn }, delivered)
+    await this.chains.get(chat)
+    const cancel = new AbortController()
+    this.reflectionCancels.set(chat, cancel)
+    this.afterTurn.reflectNow({ chat, turn: store.story.metadata.get().turns }, cancel.signal)
+  }
+
+  /** Whether a reflection is running for the chat. */
+  reflecting(chat: string): boolean {
+    return this.afterTurn.isReflecting(chat)
+  }
+
   /** Wait until the run of the keeper in flight, if any, has ended; nothing is started. */
   async idle(chat: string): Promise<void> {
     await this.chains.get(chat)
@@ -760,6 +785,7 @@ export class TurnEngine {
   /** Stops what the turn of a chat has in flight: nothing it started is cancelled halfway through a write, but nothing new is asked of a model. */
   stop(chat: string): void {
     this.states.get(chat)?.cancel.abort()
+    this.reflectionCancels.get(chat)?.abort()
   }
 
   /** Resolves when nothing of the chat writes to its story any more: the records, what was made up being fitted in, the characters away. */
@@ -773,6 +799,8 @@ export class TurnEngine {
 
   forget(chat: string): void {
     this.states.get(chat)?.cancel.abort()
+    this.reflectionCancels.get(chat)?.abort()
+    this.reflectionCancels.delete(chat)
     this.states.delete(chat)
     this.chains.delete(chat)
     this.delivered.delete(chat)

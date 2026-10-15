@@ -19,8 +19,9 @@
 }
 
 .button {
-  padding: 2px 8px;
-  border: 1px solid var(--dsw-alias-border-l3);
+  min-height: 28px;
+  padding: 2px 10px;
+  border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-sm);
   background: transparent;
   color: var(--dsw-alias-label-secondary);
@@ -48,14 +49,18 @@
 
 .select {
   max-width: 220px;
-  padding: 2px 4px;
-  border: 1px solid var(--dsw-alias-border-l3);
+  min-width: 96px;
+  min-height: 28px;
+  padding: 2px 6px;
+  border: 0.5px solid var(--dsw-alias-border-l3);
   border-radius: var(--dsw-radius-sm);
   background: transparent;
   color: var(--dsw-alias-label-secondary);
   font: inherit;
 }
 
-.error {
-  color: var(--dsw-alias-state-error-primary, #d1242f);
+.error { color: var(--dsw-alias-state-error-primary); }
+
+@media (pointer: coarse) {
+  .button, .select { min-height: 44px; }
 }

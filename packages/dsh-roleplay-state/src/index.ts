@@ -36,6 +36,8 @@ export { addLocalDays, clockTime, DAY, DAY_PARTS, HOUR, MINUTE, SECOND, catchUpP
 export { lapseNotes, runTriggers, type FiredTrigger, type TriggerRun, type TriggerRunOptions } from './records/triggers.ts'
 export { readTriggerDefinition } from './records/wire.ts'
 export { announcements, audienceIds, inAudience, type Announcement } from './records/trigger-rules.ts'
+export { deliverNotes, renderWords, UnwritableError, type Delivery } from './records/deferred.ts'
+export { TEMPLATE_KINDS, placeholdersOf, type Placeholder, type TemplateKind } from './records/template.ts'
 export { conditionHolds, judgedStatements, parseTriggerDefinition, seededRoll, triggerReferenceProblems, type EditChecker, type TriggerClock } from './records/trigger-rules.ts'
 export { lintWorld, type LintFinding, type LintSeverity, type LintTarget } from './records/lint.ts'
 export { readRecords, type RecordsScope, type RecordsView } from './records/read.ts'

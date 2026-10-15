@@ -56,6 +56,7 @@ export const BRIDGE_SCRIPT = `(function () {
     var root = document.documentElement;
     root.setAttribute('data-rp-scheme', data.scheme);
     root.style.colorScheme = data.scheme;
+    if (data.language) root.setAttribute('lang', data.language);
     Object.keys(data.tokens).forEach(function (name) { root.style.setProperty(name, data.tokens[name]); });
   }
   function remove(list, listener) { var index = list.indexOf(listener); if (index >= 0) list.splice(index, 1); }

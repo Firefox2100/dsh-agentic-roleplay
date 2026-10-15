@@ -1,4 +1,4 @@
-import { PACK_API, PACK_LIMITS, STRIP_HEIGHTS, type HistoryTurn, type PackAction, type PlayerView, type StripSurface } from '../../shared/interface-pack.ts'
+import { PACK_API, PACK_LIMITS, STRIP_HEIGHTS, type HistoryTurn, type PackAction, type PlayerView, type StripSurface } from '../../../shared/interface-pack.ts'
 
 /** What a surface sends to the page. */
 export type FrameMessage =
@@ -11,6 +11,8 @@ export type Answer = { ok: true; value: unknown } | { ok: false; error: string }
 
 export interface ThemeData {
   scheme: 'light' | 'dark'
+  /** The language of the interface, as a two-letter code (`en`, `zh`). */
+  language: string
   tokens: Record<string, string>
 }
 

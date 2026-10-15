@@ -28,8 +28,18 @@ For the author's view see [Interface packs](../authoring/interface-packs) and th
 | `host/interface/storage.ts` | The pack's small store in session metadata |
 | `host/interface/world-packs.ts` | Listing, checking and deleting a world's pack files for the authoring tools |
 | `host/authoring/pack-jail.ts`, `pack-tools.ts` | The jail on DSH's file tools and the pack tools of the authoring chat |
-| `client/interface/` | Frames, docks, the tab, the sidebar page, the bridge, the backdrop, polling |
+| `host/interface/preview.ts` | The view a story of a world would start with, from a scratch story made out of the world's files |
+| `host/interface/first-party.ts`, `packs/` | The packs shipped with the package and their install into the root's `ui` folder |
+| `client/widgets/pack-frame/` | The frame, the bridge, the theme reading: used by the story's surfaces and by the editor's preview |
+| `client/interface/` | Docks, the tab, the sidebar page, the backdrop, polling |
+| `client/world-editor/PacksPanel.tsx` | The editor's Interface section: the packs of a world, their problems, the preview |
 | `client/chat-settings/InterfaceSection.tsx` | Status, choice and sync in Chat settings |
+
+## The preview and the packs that ship
+
+`GET /worlds/interface?id=` lists a world's packs with what each holds and its problems (`InterfaceService.worldPacks`); `GET /worlds/interface/preview?id=&pack=` answers with the pack as a story would load it and the view it would be given (`preview`). The view comes from `previewViewOf`: the world's files are loaded as a start loads them, a story is made in memory (`:memory:` store, nothing written), the first playable character is the player, they look around as at the start of a turn, and `playerViewOf` reads it, with three sample suggestions. A frame key is made per world and pack and stays the same for the life of the host; the frame route serves such a key with the id `preview:<key>`, so the files are read from the world folder and nothing is copied. The editor gives the frame a backend that has no turns and keeps what the pack stores in memory.
+
+The packs in `packs/` (today `scene`) are put into `<root>/ui/` at startup if the folder is missing (`installFirstPartyPacks`); a pack with a tab surface must not ship there, because any pack with a tab makes the Interface tab appear for every story (`availability`).
 
 ## Flow
 
@@ -95,7 +105,7 @@ Paths are given to the model relative to the chat's folder; a long absolute path
 | `sidebarRightTabs.register`, the slots `sidebar.right.tab.guide.entry`, `sidebar.right.pane.tab`, `openTab(kind, { replaceTab })` | The entry appears next to the others, the page opens, Back returns to the guide |
 | Theme service `overrideTokens` (looked up with `scope.get('theme')`) | Still there, still takes `{ light, dark }` pairs |
 | The body attribute `data-ds-dark-theme` | Still marks dark; the frame's scheme follows it |
-| Class fragments `_scrollBody`, `_composerSeat` | The backdrop and any measuring still find them |
+| Class fragments `_scrollBody`, `_composerSeat` | The backdrop and any measuring still find them (`tests/support/dsh-contract.spec.ts` checks `_scrollBody` in the installed conversation bundle) |
 | Tools `read`, `write`, `edit` with `file_path` | Names and argument names the jail reads; `exec.agent.session.header.cwd` |
 | `tools/pre-execute` with `{ prepend: true }` | The runtime test still passes |
 | `react-dom` as an external module | Typed by `src/client/react-dom.d.ts`; the shell must still provide it |

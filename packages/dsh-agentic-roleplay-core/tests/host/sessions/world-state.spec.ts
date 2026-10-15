@@ -47,6 +47,14 @@ describe('the world of a session', () => {
     expect(readWorldState(deps(), id).places).toEqual([{ key: 'bar', name: 'The Bar', description: '', features: [] }])
   })
 
+  it('is its triggers as they stand: what each waits for and does, whether and how often it fired, and where it came from', () => {
+    const session = state().createSession(sessionsDir(), { name: 'Night', world: { id: 'w', name: 'W' } })
+    const { id } = session.metadata.get()
+    const made = session.triggers.add({ key: 'knock', name: 'Knock', condition: { type: 'event', tag: 'door' }, effects: [{ type: 'beat', text: 'A knock.' }], repeat: false, priority: 1 }, 'story', 2)
+    session.triggers.update(made.id, { status: 'fired', fireCount: 1, lastResult: true })
+    expect(readWorldState(deps(), id).triggers).toEqual([{ key: 'knock', name: 'Knock', when: { type: 'event', tag: 'door' }, effects: [{ type: 'beat', text: 'A knock.' }], repeat: false, priority: 1, announced: false, status: 'fired', fireCount: 1, origin: 'story', problems: [] }])
+  })
+
   it('refuses an id that names no session, and ids that are not session ids', () => {
     expect(() => readWorldState(deps(), '3f1c1d6e-6f6b-4f55-9d0f-0d6a1c2b3a4d')).toThrow(SessionNotFoundError)
     expect(() => readWorldState(deps(), '../x')).toThrow(SessionNotFoundError)

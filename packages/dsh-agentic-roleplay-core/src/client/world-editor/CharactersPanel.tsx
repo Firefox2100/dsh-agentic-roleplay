@@ -6,6 +6,7 @@ import { draftProblems, editOf, isDirty, toDraft, type CharacterDraft } from './
 import { RefusedEditError, type WorldSource } from './source.ts'
 import type { Translate } from './WorldEditor.tsx'
 import css from './CharactersPanel.module.css'
+import { navigateEditorTabs } from './EditorTabs.tsx'
 
 /** A steady colour per name, for a portrait that does not exist yet. */
 function hueOf(name: string): number {
@@ -18,7 +19,7 @@ function Portrait({ character, t, generating, disabled, onGenerate }: { characte
   const action = generating ? t('portraitGenerating') : character.portrait === undefined ? t('portraitGenerate') : t('portraitRetry')
   return <button className={css.portraitBox} type="button" disabled={disabled || generating} aria-label={action} title={action} onClick={onGenerate}>
     {character.portrait !== undefined
-      ? <img className={css.portrait} src={character.portrait} alt="" />
+      ? <img className={css.portrait} src={character.portrait} alt="" loading="lazy" decoding="async" />
       : <div className={`${css.portrait} ${css.placeholder}`} style={{ background: `hsl(${hueOf(character.name)} 22% 88%)` }} role="img" aria-label={t('portraitMissing')}>
           <span className={css.initial} aria-hidden="true">{Array.from(character.name)[0]?.toUpperCase()}</span>
           <span className={css.missing}>{t('portraitMissing')}</span>
@@ -204,13 +205,14 @@ export function CharactersPanel({ t, world, source, onChanged, actions, initial 
 
   return (
     <div className={css.panel}>
-      <div className={css.tabs} role="tablist" aria-label={t('characters')}>
+      <div className={css.tabs} role="tablist" aria-label={t('characters')} onKeyDown={navigateEditorTabs}>
         {world.characters.map(character => (
           <button
             key={character.key}
             type="button"
             role="tab"
             aria-selected={character.key === current.key}
+            tabIndex={character.key === current.key ? 0 : -1}
             className={`${css.tab} ${character.key === current.key ? css.tabOn : ''}`}
             onClick={() => { setChosen(character.key); setSaving({ status: 'idle' }) }}
           >

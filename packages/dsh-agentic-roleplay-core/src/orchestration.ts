@@ -11,6 +11,7 @@ import { Timelines } from './host/timeline/service.ts'
 import { suggestionWriter } from './host/orchestration/suggester.ts'
 import { triggerJudge } from './host/triggers/judge.ts'
 import { factionStrategist } from './host/factions/strategist.ts'
+import { memoryReflector } from './host/memory/reflection.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
 import { installHooks } from './host/orchestration/hooks.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -64,6 +65,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: trigger judge')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: reflection')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: world author')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ suggester: suggestionWriter({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: suggestions')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
@@ -102,6 +104,7 @@ export function apply(ctx: Context): void {
   }
   const [previewTool, ...tools] = [...createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)
+  ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); return () => { ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false } }, 'roleplay: reflection control')
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.idle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
   let imageJobs: ImageJobs | undefined
   const timelines = new Timelines({

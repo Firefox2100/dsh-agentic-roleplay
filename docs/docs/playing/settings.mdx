@@ -4,22 +4,25 @@ title: Session settings
 
 Advanced settings can be chosen before a session starts and changed later in **Chat settings**. They are stored in `settings.json` beside the session database and read again before use.
 
-The **Fast preset** button at the top of the form fills in settings that trade depth for speed: no thinking for the helper agents, no scene preview, no verification pass, no memory look-ups by characters, at most two rounds of three characters, no off-stage rounds and a closed world. Nothing is saved until you save or start the session, and each setting can be changed afterwards.
+The **Fast preset** button at the top of the form fills in settings that trade depth for speed: no thinking for the helper agents, no scene preview, no verification pass, no memory look-ups by characters, at most two rounds of three characters, no off-stage rounds, no automatic reflection and a closed world. Nothing is saved until you save or start the session, and each setting can be changed afterwards.
 
 Important groups include:
 
 - **Rounds:** maximum rounds and characters activated for one player message.
 - **Memory:** imperfect memory, recall count, lookup tools, retrieval breadth and keeper verification.
+- **Reflection:** whether the characters sort what they have taken in into what they believe by themselves, every how many turns, whether a change of scene also starts it, the fewest turns between two reflections, how many characters one takes up and how much new a character needs.
 - **Context:** explicit token limit or a ratio of the selected model's context window, plus short- and long-term summary sizes.
 - **Authoring:** whether the GM may ask the world author to create missing entities and how many may be added per turn.
 - **Images:** generation mode, reference handling, reuse, interpretation and captioning models, and the hires fix (render again larger from the first result, when the image service can).
 - **Prompts:** prompt language and overrides.
-- **Interface pack:** which [interface pack](../authoring/interface-packs) the story uses, or none. In Chat settings this is a section of its own that also reports problems and can bring in the world's newer packs.
+- **Interface pack:** which [interface pack](../authoring/interface-packs) the story uses, or none; the *Scene* pack that ships with the plugin can be named in any world. In Chat settings this is a section of its own that also reports problems and can bring in the world's newer packs.
 - **Reasoning and sampling:** child-agent reasoning and role-specific model sampling.
 - **Models:** the model of each kind of helper (characters, background characters, record keeper, suggestion writer, world and plot author) as `provider/model`; empty uses the chat's own. Characters run side by side and write short answers, and the keeper runs in the background, so a smaller, faster model often does as well there.
 - **Provider options:** settings described by the selected embedding or media provider.
 
 The **What the world put in front of the story** list above it shows what triggers delivered lately: beats for the game master and cues for characters, each marked waiting, taken up (the game master wove the beat in, or a character acted on the cue) or lapsed (nobody did in time). Use it to see whether a trigger had an effect.
+
+The **Reflection** section shows when the characters last sorted their memories, what each came to (new beliefs, changed, let go) and why a pass failed when it did. **Reflect now** starts a pass at once, also when automatic reflection is off; it runs in the background, and cannot be started while a turn is being played or another pass is running.
 
 The **What the helpers did lately** list at the bottom of the tab shows the latest runs of those helpers: which one, on which model, how long it took, how many tool calls it made, and why it failed when it did. Use it to see where a slow turn went.
 

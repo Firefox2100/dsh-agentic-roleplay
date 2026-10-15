@@ -29,10 +29,12 @@ declare module '@deepseek-ai/dsh-client-ui-chat/client' {
 const NAMESPACE = 'roleplay.transcript'
 
 /** The turns of a roleplay session, as the host keeps them. */
-async function timelineOf(chat: string): Promise<TimelineView> {
+async function timelineOf(chat: string): Promise<TimelineView | undefined> {
   const id = roleplaySessionOf(chat)
   if (id === undefined) throw new Error('this chat is not a roleplay session')
   const response = await fetch(`roleplay-api/sessions/timeline?id=${encodeURIComponent(id)}`)
+  // Ordinary DSH chats use the same id shape. A missing roleplay session means this dock does not own the chat.
+  if (response.status === 404) return undefined
   if (!response.ok) throw new Error(`the turns could not be read (${response.status})`)
   const view = await response.json() as Partial<TimelineView> & Pick<TimelineView, 'head' | 'path' | 'forward' | 'canStart'>
   return { ...view, withdrawn: view.withdrawn ?? [] }

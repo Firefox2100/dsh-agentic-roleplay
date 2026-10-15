@@ -1,4 +1,5 @@
 import type { RoutineDefinition } from 'dsh-roleplay-model'
+import type { PackPreview, WorldPackDetail } from '../../shared/interface-pack.ts'
 import type { VariableDeclaration, WorldRoutines } from '../../shared/world-daily.ts'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
@@ -30,3 +31,6 @@ export const loadRoutines = async (world: string, signal: AbortSignal): Promise<
 export const saveRoutine = async (world: string, key: string, windows: readonly RoutineDefinition[], signal: AbortSignal): Promise<WorldRoutines> => await read(await fetch(`${API_PREFIX}/worlds/routines/item?${query(world)}&key=${encodeURIComponent(key)}`, init('PUT', signal, { windows })))
 export const loadVariables = async (world: string, signal: AbortSignal): Promise<VariableDeclaration[]> => await read(await fetch(`${API_PREFIX}/worlds/variables?${query(world)}`, init('GET', signal)))
 export const saveVariables = async (world: string, variables: readonly VariableDeclaration[], signal: AbortSignal): Promise<VariableDeclaration[]> => await read(await fetch(`${API_PREFIX}/worlds/variables?${query(world)}`, init('PUT', signal, { variables })))
+
+export const loadWorldPacks = async (world: string, signal: AbortSignal): Promise<WorldPackDetail[]> => await read(await fetch(`${API_PREFIX}/worlds/interface?${query(world)}`, init('GET', signal)))
+export const loadPackPreview = async (world: string, pack: string, signal: AbortSignal): Promise<PackPreview> => await read(await fetch(`${API_PREFIX}/worlds/interface/preview?${query(world)}&pack=${encodeURIComponent(pack)}`, init('GET', signal)))

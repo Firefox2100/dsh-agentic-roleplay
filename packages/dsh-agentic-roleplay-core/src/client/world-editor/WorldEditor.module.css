@@ -17,8 +17,8 @@
   padding: 8px 12px;
   font-size: 13px;
   color: var(--dsw-alias-label-primary);
-  border: 1px solid var(--dsw-alias-border-l3);
-  border-radius: var(--dsw-radius-sm);
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-lg);
   background: var(--dsw-alias-bg-layer-2);
 }
 
@@ -29,7 +29,7 @@
   gap: 2px;
   box-sizing: border-box;
   padding: 16px 8px;
-  border-right: 1px solid var(--dsw-alias-border-l3);
+  border-right: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 .drawerItem {
@@ -37,7 +37,7 @@
   width: 100%;
   padding: 6px 12px;
   border: 0;
-  border-radius: var(--dsw-radius-sm);
+  border-radius: var(--dsw-radius-md);
   background: transparent;
   font: inherit;
   font-size: 13px;
@@ -45,6 +45,28 @@
   text-align: left;
   color: var(--dsw-alias-label-secondary);
   cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .view {
+    flex-direction: column;
+  }
+
+  .drawer {
+    flex: none;
+    flex-direction: row;
+    width: 100%;
+    overflow-x: auto;
+    padding: 8px;
+    border-right: 0;
+    border-bottom: 0.5px solid var(--dsw-alias-border-l3);
+  }
+
+  .drawerItem {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
 }
 
 .drawerItem:disabled {

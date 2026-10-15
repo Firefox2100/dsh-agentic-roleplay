@@ -113,7 +113,7 @@ DSH 的颜色以 CSS 变量提供给框架，框架的根元素带有 `data-rp-s
 | `rp.api` | `1` | 桥接版本。 |
 | `rp.state()` | [玩家视图](#玩家视图)的 Promise | 当前的视图。 |
 | `rp.watch(fn)` | 函数 | 立即调用 `fn(view)`，此后每次变化再调用；返回的函数用于停止。 |
-| `rp.on(name, fn)` | 函数 | `name` 为 `turn`（回合送达，带 `{ turn }`）、`suggestions`（列表变化）或 `theme`（`{ scheme, tokens }` 变化）。返回的函数用于停止。 |
+| `rp.on(name, fn)` | 函数 | `name` 为 `turn`（回合送达，带 `{ turn }`）、`suggestions`（列表变化）或 `theme`（`{ scheme, language, tokens }` 变化）。返回的函数用于停止。 |
 | `rp.say(text)` | Promise | 以玩家身份发送 `text`。需要 `say`。每回合一次：第二次调用会失败，直到回合数变化或过了 30 秒。 |
 | `rp.fill(text)` | Promise | 把 `text` 放入输入框但不发送。需要 `fill`。 |
 | `rp.choose(n)` | Promise | 把第 n 条建议行动（从 0 起）放入输入框。需要 `choose`。 |
@@ -121,7 +121,7 @@ DSH 的颜色以 CSS 变量提供给框架，框架的根元素带有 `data-rp-s
 | `rp.storage.get(key)`、`.set(key, value)`、`.remove(key)` | Promise | 包在此故事中的小型存储。值为 JSON，键 1–100 个字符，总共 64 KB。缺失的键 `get` 返回 `null`。 |
 | `rp.open(surface)` | Promise | 显示包自己的 `'tab'` 或 `'sidebar'` 页面（侧栏处于关闭时会打开）。需要 `open`。 |
 | `rp.resize(height)` | 无 | 申请高度（像素，仅条带）。 |
-| `rp.theme()` | `{ scheme, tokens }` 的 Promise | 当前生效的配色方案和令牌。 |
+| `rp.theme()` | `{ scheme, language, tokens }` 的 Promise | 当前生效的配色方案、界面语言（两位代码，`en`、`zh`）和令牌。框架的 `<html lang>` 会设为该语言，所以 CSS 的 `:lang(zh)` 也可用。 |
 
 用 `say` 或 `fill` 发送的文字为 1 到 2000 个字符。每秒最多处理 20 个请求，其余会失败并给出说明。失败的调用会以说明原因的消息拒绝其 Promise（例如该操作不在 `actions` 中）。
 

@@ -7,6 +7,8 @@ import { FactionsPanel } from './FactionsPanel.tsx'
 import { RelationsPanel } from './RelationsPanel.tsx'
 import { LorePanel } from './LorePanel.tsx'
 import { PlotsPanel } from './PlotsPanel.tsx'
+import { PacksPanel } from './PacksPanel.tsx'
+import { TriggersPanel } from './TriggersPanel.tsx'
 import { InfoPanel } from './InfoPanel.tsx'
 import { PromptsPanel } from './PromptsPanel.tsx'
 import { RoutinesPanel } from './RoutinesPanel.tsx'
@@ -16,6 +18,7 @@ import type { WorldLocaleKey } from './locales.ts'
 import type { GalleryLocaleKey } from '../widgets/gallery-view/locales.ts'
 import { NotEditableError, type WorldSource } from './source.ts'
 import css from './WorldEditor.module.css'
+import { navigateEditorTabs } from './EditorTabs.tsx'
 
 export type Translate = (key: WorldLocaleKey, values?: Record<string, string | number>) => string
 
@@ -35,10 +38,12 @@ const SECTIONS = [
   { id: 'factions', label: 'factions', built: true },
   { id: 'lore', label: 'lore', built: true },
   { id: 'plots', label: 'plots', built: true },
+  { id: 'triggers', label: 'trig_title', built: true },
   { id: 'relations', label: 'relationships', built: true },
   { id: 'routines', label: 'sectionRoutines', built: true, ownFiles: true },
   { id: 'variables', label: 'sectionVariables', built: true, ownFiles: true },
   { id: 'prompts', label: 'sectionPrompts', built: true, ownFiles: true },
+  { id: 'interface', label: 'pk_title', built: true, ownFiles: true },
   { id: 'images', label: 'sectionImages', built: true, ownFiles: true },
 ] as const satisfies readonly { id: string; label: WorldLocaleKey; built: boolean; ownFiles?: boolean }[]
 
@@ -73,7 +78,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
   if (load.status === 'failed') return <p className={css.message} role="alert">{t('editorLoadFailed', { message: load.message })}</p>
 
   return (
-    <div className={css.view} data-testid="roleplay-world">
+    <div className={css.view} data-testid="roleplay-world" onKeyDownCapture={navigateEditorTabs}>
       {sections.length > 1 && <nav className={css.drawer} aria-label={t('sections')}>
         {sections.map(entry => (
           <button
@@ -95,6 +100,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
         {section === 'prompts' && source.worldId !== undefined && <PromptsPanel t={t} worldId={source.worldId} language={t('language')} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'routines' && source.worldId !== undefined && <RoutinesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'variables' && source.worldId !== undefined && <VariablesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'interface' && source.worldId !== undefined && <PacksPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'images' && source.worldId !== undefined && <GalleryView t={galleryText} target={{ kind: 'worlds', id: source.worldId }} />}
         {section === 'characters' && (
           <CharactersPanel
@@ -111,6 +117,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
         {section === 'factions' && <FactionsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'lore' && <LorePanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'plots' && <PlotsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'triggers' && <TriggersPanel t={t} world={load.world} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'relations' && <RelationsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
       </div>
     </div>

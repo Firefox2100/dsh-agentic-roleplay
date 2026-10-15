@@ -22,7 +22,7 @@ export function InterventionList({ t, entries }: { t: Translate; entries: readon
                   <td>{entry.turn}</td>
                   <td>{entry.kind === 'beat' ? t('interventionBeat') : t('interventionCue', { who: entry.characters.join(', ') })}</td>
                   <td>{entry.text}</td>
-                  <td>{t(entry.status === 'waiting' ? 'interventionWaiting' : entry.status === 'taken' ? 'interventionTaken' : 'interventionLapsed')}</td>
+                  <td>{entry.status === 'withdrawn' ? t('interventionWithdrawn', { reason: entry.reason ?? '' }) : t(entry.status === 'waiting' ? 'interventionWaiting' : entry.status === 'taken' ? 'interventionTaken' : 'interventionLapsed')}</td>
                 </tr>
               ))}
             </tbody>

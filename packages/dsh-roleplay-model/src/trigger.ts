@@ -46,14 +46,21 @@ export interface TriggerAnnouncement {
   at?: string
 }
 
+/** In a cue, the key of the character it is said to: in a `while` condition and in the words of the cue. */
+export const SELF = '@self'
+
 /** What happens when a trigger fires. */
 export type TriggerEffect =
   /** A checked change of the story's records, in the format of an edit (events, variable changes, exit and item changes, moves, goals, engagements). */
   | { type: 'edit'; edit: Record<string, unknown> }
-  /** Something the game master is told to weave into the story, until it says it did or a few turns pass. */
-  | { type: 'beat'; text: string }
-  /** Something the audience notices, said to each of them the next time they act. */
-  | { type: 'cue'; audience: TriggerAudience; text: string }
+  /**
+   * Something the game master is told to weave into the story, until it says it did or a few turns pass. It is written when it is told, not when
+   * the trigger fired: `text` may name things the story has by `{kind:key}` and so is said as the story stands then (see `TEMPLATE_KINDS`), and
+   * `while` is a condition that must still hold then, or the beat is withdrawn instead.
+   */
+  | { type: 'beat'; text: string; while?: TriggerCondition }
+  /** Something the audience notices, said to each of them the next time they act; written, and withdrawn, as a beat is, for each of them (`SELF` is the one it is said to). */
+  | { type: 'cue'; audience: TriggerAudience; text: string; while?: TriggerCondition }
 
 export const TRIGGER_STATUSES = ['dormant', 'fired', 'failed', 'expired'] as const
 export type TriggerStatus = (typeof TRIGGER_STATUSES)[number]

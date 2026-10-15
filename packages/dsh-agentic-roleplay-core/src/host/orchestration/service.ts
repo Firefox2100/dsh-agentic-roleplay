@@ -23,6 +23,12 @@ export class RoleplayOrchestration extends Service {
   /** Stops everything a chat has in flight in the background and waits for it; there while the orchestration is. */
   halt: (chat: string) => Promise<void> = () => Promise.resolve()
 
+  /** Starts a reflection of a chat's characters on what they have taken in, in the background; there while the orchestration is. */
+  reflect: (chat: string) => Promise<void> = () => Promise.reject(new Error('the orchestration is not running'))
+
+  /** Whether a reflection of the chat is running; there while the orchestration is. */
+  reflecting: (chat: string) => boolean = () => false
+
   /** What the story's turns are and taking the story back to one; there while the orchestration is. */
   timelines: Timelines | undefined
 

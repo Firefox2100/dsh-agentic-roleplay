@@ -319,3 +319,79 @@ describe('an edit effect read from a file', () => {
     expect(readTriggerDefinition({ ...base, effects: [{ type: 'edit', edit: { events: [{ text: 'War broke out.', perceived_by: 'nobody' }] } }] }, 't')).toMatchObject({ problems: [expect.stringContaining('perceived_by must be a list')] })
   })
 })
+
+describe('written when it is told', () => {
+  const clock = { now: NOON, zone: 'UTC' }
+  const cue = (text: string, extra: object = {}) => ({ type: 'cue' as const, audience: { characters: ['alice'] }, text, ...extra })
+  const pending = () => store.triggers.notes({ status: 'pending' })
+  const cellar = () => store.locations.getBySourceId('cellar')!.id
+  const toCellar = (): void => { store.placements.place('character', alice(), { locationId: cellar() }) }
+
+  it('keeps the words of a note as the world wrote them, and says them as the story stands when they are told', () => {
+    define({ key: 'noise', condition: { type: 'time', from: '1912-10-01T00:00' }, effects: [{ type: 'beat', text: '{character:alice} is in {where:alice}; the key is with {holder:key} at {time}.' }] })
+    run(1)
+    expect(pending().map(note => note.text)).toEqual(['{character:alice} is in {where:alice}; the key is with {holder:key} at {time}.'])
+    expect(store.deliverNotes(pending(), clock).shown.map(entry => entry.text)).toEqual(['Alice is in The Bar; the key is with The Bar at 12:00.'])
+    store.items.place(store.items.getBySourceId('key')!.id, { kind: 'character', characterId: alice(), mode: 'held' })
+    toCellar()
+    store.locations.update(cellar(), { name: 'The Old Cellar' })
+    expect(store.deliverNotes(pending(), { now: Date.UTC(1912, 9, 5, 19, 5), zone: 'UTC' }).shown.map(entry => entry.text)).toEqual(['Alice is in The Old Cellar; the key is with Alice at 19:05.'])
+  })
+
+  it('withdraws a cue whose condition no longer holds for the character it is said to, and says it to one it still holds for', () => {
+    store.placements.place('character', store.characters.getBySourceId('bob')!.id, { locationId: store.locations.getBySourceId('bar')!.id })
+    define({ key: 'smell', condition: { type: 'time', from: '1912-10-01T00:00' }, effects: [cue('You smell smoke; you are in {where:@self}.', { audience: { characters: ['alice', 'bob'] }, while: { type: 'place', character: '@self', location: 'bar' } })] })
+    run(1)
+    expect(pending()).toHaveLength(2)
+    toCellar()
+    const delivery = store.deliverNotes(pending(), clock)
+    expect(delivery.shown.map(entry => [entry.note.characterIds[0] === alice(), entry.text])).toEqual([[false, 'You smell smoke; you are in The Bar.']])
+    expect(delivery.withdrawn.map(entry => [entry.note.characterIds[0] === alice(), entry.reason])).toEqual([[true, 'what it was waiting on no longer holds']])
+    expect(pending()).toHaveLength(2)
+  })
+
+  it('waits on what the story records as a trigger does, with not, all and variables', () => {
+    store.variables.define({ key: 'alarm', name: 'Alarm', kind: 'flag', subject: 'world' })
+    define({ key: 'quiet', condition: { type: 'time', from: '1912-10-01T00:00' }, effects: [{ type: 'beat', text: 'It is quiet.', while: { type: 'all', conditions: [{ type: 'not', condition: { type: 'variable', variable: 'alarm', op: 'eq', value: true } }, { type: 'item', item: 'key', at: 'bar' }] } }] })
+    run(1)
+    expect(store.deliverNotes(pending(), clock).shown).toHaveLength(1)
+    store.variables.set('alarm', 'world', 0, { value: true }, 2)
+    expect(store.deliverNotes(pending(), clock).withdrawn).toHaveLength(1)
+  })
+
+  it('says a variable in words, with its band, and one about a character by its key or as @self', () => {
+    store.variables.define({ key: 'health', name: 'Health', kind: 'number', subject: 'character', min: 0, max: 10, default: 10, visibility: 'public', bands: [{ upTo: 3, label: 'hurt' }, { upTo: 10, label: 'well' }] })
+    store.variables.set('health', 'character', alice(), { value: 2 }, 1)
+    define({ key: 'look', condition: { type: 'time', from: '1912-10-01T00:00' }, effects: [cue('You feel {value:health:@self}.'), { type: 'beat', text: 'Alice is {value:health:alice}.' }] })
+    run(1)
+    expect(store.deliverNotes(pending(), clock).shown.map(entry => entry.text)).toEqual(['You feel hurt (2).', 'Alice is hurt (2).'])
+  })
+
+  it('withdraws what cannot be written as the story stands, with the reason, and leaves the other words alone', () => {
+    define({ key: 'where', condition: { type: 'time', from: '1912-10-01T00:00' }, effects: [{ type: 'beat', text: 'Bob is in {where:bob}.' }, { type: 'beat', text: 'Plain {braces that are no placeholder} stay.' }] })
+    run(1)
+    const delivery = store.deliverNotes(pending(), clock)
+    expect(delivery.withdrawn.map(entry => entry.reason)).toEqual(['{where:bob}: Bob is nowhere in particular'])
+    expect(delivery.shown.map(entry => entry.text)).toEqual(['Plain {braces that are no placeholder} stay.'])
+  })
+
+  it('is refused when it is read: unknown placeholders, a beat that names @self, a wait on a judged statement, a wait on an edit', () => {
+    const read = (effect: object) => readTriggerDefinition({ key: 'k', name: 'K', when: { type: 'event', tag: 'x' }, effects: [effect] }, 't')
+    expect(read({ type: 'beat', text: 'See {plce:bar}.' })).toMatchObject({ problems: [expect.stringContaining('there is no "plce"')] })
+    expect(read({ type: 'beat', text: '{value}' })).toMatchObject({ problems: [expect.stringContaining('{value:variable}')] })
+    expect(read({ type: 'beat', text: '{time:now}' })).toMatchObject({ problems: [expect.stringContaining('{time} takes nothing')] })
+    expect(read({ type: 'beat', text: 'Hello {where:@self}.' })).toMatchObject({ problems: [expect.stringContaining('only a cue')] })
+    expect(read({ type: 'beat', text: 'x', while: { type: 'place', character: '@self', location: 'bar' } })).toMatchObject({ problems: [expect.stringContaining('only a cue')] })
+    expect(read({ type: 'beat', text: 'x', while: { type: 'judged', text: 'The mayor is angry.' } })).toMatchObject({ problems: [expect.stringContaining('cannot be waited on')] })
+    expect(read({ type: 'edit', edit: {}, while: { type: 'event', tag: 'x' } })).toMatchObject({ problems: [expect.stringContaining('only a beat or a cue')] })
+    expect(read(cue('{where:@self}', { while: { type: 'place', character: '@self', location: 'bar' } }))).toMatchObject({ definition: { effects: [{ type: 'cue', while: { type: 'place', character: '@self', location: 'bar' } }] } })
+  })
+
+  it('is refused when it names what the story does not have, and @self is only valid in a cue', () => {
+    const made = (effects: object[]) => parseRecordsEdit({ turn: 3, triggers: [{ key: 'ball', name: 'Ball', when: { type: 'time', from: '1912-10-12T20:00' }, effects }] })
+    expect(() => store.edit(made([{ type: 'beat', text: 'Go to {place:moon}.' }]))).toThrow(/ball: effects\[0\]\.text: \{place:moon\}: there is no place "moon"/)
+    expect(() => store.edit(made([{ type: 'beat', text: 'x', while: { type: 'place', character: 'zed', location: 'bar' } }]))).toThrow(/ball: effects\[0\]\.while: there is no character "zed"/)
+    expect(() => store.edit(made([cue('{value:health}')]))).toThrow(/there is no variable "health"/)
+    expect(() => store.edit(made([cue('{where:@self} {holder:key}', { while: { type: 'place', character: '@self', location: 'bar' } })]))).not.toThrow()
+  })
+})

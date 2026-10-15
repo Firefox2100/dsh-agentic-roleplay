@@ -1,10 +1,11 @@
 import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
-import type { HistoryTurn, InterfaceAvailability, InterfacePayload, InterfaceStatus, InterfaceSync, PlayerViewReply } from '../../shared/interface-pack.ts'
+import type { HistoryTurn, InterfaceAvailability, InterfacePayload, InterfaceStatus, InterfaceSync, PackPreview, PlayerViewReply, WorldPackDetail } from '../../shared/interface-pack.ts'
 import { readJsonBody } from '../http/body.ts'
 import { sendError, sendJson } from '../http/respond.ts'
 import { SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
+import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { InvalidPacksError } from './service.ts'
 import { PACK_HEADERS } from './frame.ts'
 import type { PackResponse } from './service.ts'
@@ -20,6 +21,8 @@ export interface InterfaceApi {
   availability(): InterfaceAvailability
   status(id: string): Promise<InterfaceStatus>
   sync(id: string): Promise<InterfaceSync>
+  worldPacks(worldId: string): Promise<WorldPackDetail[]>
+  preview(worldId: string, pack: string): Promise<PackPreview>
 }
 
 export type InterfaceRoute = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void>
@@ -83,6 +86,20 @@ export function interfaceRoutes(api: InterfaceApi): Record<string, Partial<Recor
       POST: async (_req, res, url) => {
         try { sendJson(res, 200, await api.sync(url.searchParams.get('id') ?? '')) } catch (error) {
           if (error instanceof InvalidPacksError) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          notFound(res, error)
+        }
+      },
+    },
+    '/worlds/interface': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, await api.worldPacks(url.searchParams.get('id') ?? '')) } catch (error) { notFound(res, error) }
+      },
+    },
+    '/worlds/interface/preview': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, await api.preview(url.searchParams.get('id') ?? '', url.searchParams.get('pack') ?? '')) } catch (error) {
+          if (error instanceof InvalidPacksError) return sendJson(res, 422, { message: error.message, problems: error.problems.map(problem => `${problem.path === '' ? '' : `${problem.path}: `}${problem.message}`) })
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           notFound(res, error)
         }
       },

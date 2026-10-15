@@ -28,8 +28,18 @@ description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH
 | `host/interface/storage.ts` | 包保存在会话元数据中的小型存储 |
 | `host/interface/world-packs.ts` | 为创作工具列出、检查和删除世界的包文件 |
 | `host/authoring/pack-jail.ts`、`pack-tools.ts` | DSH 文件工具上的限制，以及创作对话的包工具 |
-| `client/interface/` | 框架、dock、标签页、侧栏页面、桥接、背景、轮询 |
+| `host/interface/preview.ts` | 由某个世界开始的故事会得到的视图，来自用世界文件做出的临时故事 |
+| `host/interface/first-party.ts`、`packs/` | 随包发布的界面包，以及把它们安装到根目录 `ui` 文件夹 |
+| `client/widgets/pack-frame/` | 框架、桥接、主题读取：故事的界面位置和编辑器的预览共用 |
+| `client/interface/` | dock、标签页、侧栏页面、背景、轮询 |
+| `client/world-editor/PacksPanel.tsx` | 编辑器的“界面”部分：世界的界面包、问题、预览 |
 | `client/chat-settings/InterfaceSection.tsx` | 对话设置中的状态、选择与同步 |
+
+## 预览与随包发布的界面包
+
+`GET /worlds/interface?id=` 列出世界的界面包及其内容和问题（`InterfaceService.worldPacks`）；`GET /worlds/interface/preview?id=&pack=` 返回故事加载时的界面包和会给它的视图（`preview`）。视图来自 `previewViewOf`：像开始故事那样加载世界文件，在内存里建一个故事（`:memory:`，不写入任何东西），第一个可扮演的角色作为玩家，像回合开始时那样环顾四周，再由 `playerViewOf` 读取，并附三条示例建议。每个世界和界面包生成一个框架密钥，在宿主运行期间保持不变；框架路由以 `preview:<密钥>` 作为 id 处理这样的密钥，文件直接从世界文件夹读取，不会复制。编辑器给框架的后端没有回合，界面包保存的内容只留在内存里。
+
+`packs/` 中的界面包（目前是 `scene`）在启动时如果文件夹不存在就放入 `<root>/ui/`（`installFirstPartyPacks`）；带标签页位置的包不能随包发布，因为任何带标签页的包都会让所有故事出现“界面”标签（`availability`）。
 
 ## 流程
 
@@ -95,7 +105,7 @@ description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH
 | `sidebarRightTabs.register`、槽位 `sidebar.right.tab.guide.entry` 与 `sidebar.right.pane.tab`、`openTab(kind, { replaceTab })` | 入口出现在其他入口旁，页面能打开，返回能回到引导页 |
 | 主题服务 `overrideTokens`（用 `scope.get('theme')` 查找） | 仍在，仍接受 `{ light, dark }` 对 |
 | body 属性 `data-ds-dark-theme` | 仍表示深色；框架的配色方案跟随它 |
-| 类名片段 `_scrollBody`、`_composerSeat` | 背景和任何测量仍能找到它们 |
+| 类名片段 `_scrollBody`、`_composerSeat` | 背景和任何测量仍能找到它们（`tests/support/dsh-contract.spec.ts` 会在已安装的 conversation 包里检查 `_scrollBody`） |
 | 带 `file_path` 的工具 `read`、`write`、`edit` | 限制所读取的名称和参数名；`exec.agent.session.header.cwd` |
 | 带 `{ prepend: true }` 的 `tools/pre-execute` | 运行时测试仍通过 |
 | 作为外部模块的 `react-dom` | 由 `src/client/react-dom.d.ts` 提供类型；外壳必须仍然提供它 |

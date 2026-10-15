@@ -36,6 +36,18 @@ Recall first retrieves more candidates than the character will receive, then cho
 
 Memory uses story time. Skipping a month can fade a recollection more than playing twenty turns during the same evening. Importance and retention keep consequential experiences available longer than incidental details.
 
+## Reflection
+
+Beliefs do not appear by themselves. After a stretch of play, a **reflection** has each character sort what it has taken in since the last time into what it believes: it may add a belief, firm up or doubt an existing one, merge duplicates, or let one go. A reflection works from that character's own perceptions and beliefs only, so it cannot give a character something it never took in, and what it writes is the character's view, which may be wrong.
+
+Every change names the perceptions it rests on, and the engine checks the claim before writing anything:
+
+- A new belief must rest on things from at least two different turns (or on one event of high importance that turned the story). One passing moment is not yet a belief.
+- A belief is revised or let go only for something that came after it was formed, or because it was merged into another belief that stays.
+- It writes beliefs and nothing else. It never changes or adds an event, so history stays as it was.
+
+A reflection starts by itself when `reflection.everyTurns` turns have passed since the last one (20 by default), or when the scene changes: your character has gone somewhere that is neither where it was nor inside or around it, or a day of story time has passed. Two automatic reflections are never closer than `reflection.minTurns` turns. It takes up the characters with the most new to sort first, at most `reflection.perRun` of them, and only those with at least `reflection.minNew` new perceptions; characters you play and background characters are left out. You can also start one yourself with **Reflect now** in the chat settings, which takes up every character with anything new. It runs in the background and can be turned off with `reflection.auto`.
+
 ## Relationships and knowledge
 
 Character relationships are directional profiles. No outgoing profile means the other character is a stranger. Meeting someone creates an acquaintance edge when appropriate.

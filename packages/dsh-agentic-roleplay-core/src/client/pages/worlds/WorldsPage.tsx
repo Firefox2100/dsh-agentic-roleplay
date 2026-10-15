@@ -131,6 +131,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
                       <WorldCard
                         world={world}
                         playLabel={t('play')}
+                        openLabel={t('openWorld', { name: world.name })}
                         onPlay={() => { openStartDialog(world.id, world.name) }}
                         onOpen={() => { setEditing({ id: world.id, name: world.name }) }}
                       />

@@ -1,6 +1,7 @@
 import { CLOCK_MODES, type ClockMode } from 'dsh-roleplay-model'
 import type { ActivityEntry } from './activity.ts'
 import type { Intervention } from './interventions.ts'
+import type { ReflectionStatus } from './reflection.ts'
 import type { VectorStatus } from './vectors.ts'
 import { MAX_OWN_RULES } from './rules.ts'
 
@@ -108,6 +109,22 @@ export interface ChatSettings {
     perTurn: number
     /** How many days of story time pass between one organisation's decisions. */
     everyDays: number
+  }
+  reflection: {
+    /** Whether the story reflects on its own: characters sort what they have taken in into what they believe, now and then (see `everyTurns`, `onSceneChange`). A pass can always be started by hand. */
+    auto: boolean
+    /** Reflect after this many turns since the last reflection; 0 turns this trigger off. */
+    everyTurns: number
+    /** Also reflect when the scene changes: the player's character has gone somewhere else, or `sceneDays` of story time have passed. */
+    onSceneChange: boolean
+    /** The days of story time since the last reflection that count as a change of scene; 0 turns that off. */
+    sceneDays: number
+    /** The fewest turns between two automatic reflections, whatever the trigger. */
+    minTurns: number
+    /** The most characters one automatic reflection takes up; each is one request in the background. */
+    perRun: number
+    /** A character is taken up only when this many things it took in are waiting; a pass started by hand takes one. */
+    minNew: number
   }
   models: {
     /** The model each kind of helper runs on, as `provider/model`; empty is the chat's own model. A smaller, faster model suits the helpers that do not write the story's prose. */
@@ -222,6 +239,7 @@ export const SETTINGS_SPEC = {
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },
+  reflection: { auto: flag(true), everyTurns: integer(0, 500, 20), onSceneChange: flag(true), sceneDays: integer(0, 365, 1), minTurns: integer(1, 100, 5), perRun: integer(1, 6, 3), minNew: integer(1, 50, 4) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
   interface: { pack: text(60, '') },
@@ -337,6 +355,8 @@ export interface SettingsPayload {
   interventions: Intervention[]
   /** The state of the session's search by meaning. */
   vectors: VectorStatus
+  /** Whether the characters are sorting what they took in into what they believe, and the latest time they did. */
+  reflection: ReflectionStatus
   /** The mode the story's clock is in now; time that is simulated cannot be made to follow the real clock again. */
   clockMode?: ClockMode
 }

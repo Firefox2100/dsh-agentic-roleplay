@@ -25,4 +25,15 @@ Do not turn prose state into variables merely because it can be counted. Relatio
 
 `triggers.json` defines deterministic reactions to state and story conditions. A trigger has conditions, effects, repetition rules and optional timing. Triggers complement agent judgement: they are appropriate when the same condition must always cause the same world-state change.
 
+A cue or beat is told when its audience next acts or the game master next looks, which can be a turn or two after the trigger fired. Two optional parts make it say what is true then, not what was true at the time of firing:
+
+- **`while`** is a condition, in the same form as `when`, that must still hold at that moment; if it does not, the cue or beat is withdrawn instead of being told, and the chat settings list it as withdrawn with the reason. In a cue, `"@self"` stands for the character it is said to, so `{"type": "place", "character": "@self", "location": "cellar"}` keeps a cue from reaching someone who has left.
+- **Names in the words:** `text` may name things as `{character:key}`, `{place:key}`, `{item:key}`, `{where:character}` (where someone is), `{holder:item}` (who has it, or where it lies), `{value:variable}` or `{value:variable:subject}` (a variable in words) and `{time}`. They are filled in from the story when the cue or beat is told, and a cue or beat that names something that is not there is withdrawn instead of being told with a guess.
+
+```json
+{ "type": "cue", "characters": ["clara-whitlock", "arthur-moore"],
+  "while": { "type": "place", "character": "@self", "location": "bar" },
+  "text": "You smell gas; {holder:lantern} still has the only light." }
+```
+
 Validate all referenced entity and variable IDs. Trigger effects run against session state, never the authored world files.

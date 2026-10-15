@@ -36,6 +36,27 @@ beforeEach(async () => {
 })
 afterEach(async () => { await rm(world.directory, { recursive: true, force: true }) })
 
+describe('the triggers of a world in the editor', () => {
+  it('are shown with what each names that the world does not have, and the file is reported when it cannot be read', async () => {
+    await write(join(world.directory, 'triggers.json'), [
+      { key: 'knock', name: 'Knock', when: { type: 'place', character: 'clara', location: 'bar' }, effects: [{ type: 'beat', text: 'Someone knocks.' }], announce: { audience: 'everyone', text: 'A visitor is expected.' } },
+      { key: 'ghost', name: 'Ghost', when: { type: 'place', character: 'clara', location: 'moon' }, effects: [{ type: 'beat', text: 'x' }], repeat: true, priority: 2 },
+    ])
+    const unchecked = await readWorldEditor(world)
+    expect(unchecked.triggers?.map(entry => [entry.key, entry.problems])).toEqual([['knock', []], ['ghost', []]])
+    expect(unchecked.triggersProblem).toMatch(/could not be checked.*no feature "counter"/)
+    await write(fileOf('clara'), { name: 'Clara', role: 'npc', start: { location: 'bar' } })
+    expect((await readWorldEditor(world)).triggers).toEqual([
+      { key: 'knock', name: 'Knock', when: { type: 'place', character: 'clara', location: 'bar' }, effects: [{ type: 'beat', text: 'Someone knocks.' }], repeat: false, priority: 0, announced: true, problems: [] },
+      { key: 'ghost', name: 'Ghost', when: { type: 'place', character: 'clara', location: 'moon' }, effects: [{ type: 'beat', text: 'x' }], repeat: true, priority: 2, announced: false, problems: ['when: there is no place "moon"'] },
+    ])
+    await writeFile(join(world.directory, 'triggers.json'), '{ nope')
+    const broken = await readWorldEditor(world)
+    expect(broken.triggers).toEqual([])
+    expect(broken.triggersProblem).toMatch(/invalid JSON/)
+  })
+})
+
 describe('a world in the editor', () => {
   it('is its characters as they start, and the places they can start in', async () => {
     const state = await readWorldEditor(world)

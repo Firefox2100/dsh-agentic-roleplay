@@ -1,3 +1,6 @@
+/** How the conversation's scrolling body is found: DSH's class name ends in this, with a prefix of its build's own. */
+export const SCROLL_BODY = '_scrollBody'
+
 /** The part of an element this needs, so that it can be checked without a page. */
 export interface ElementLike {
   parentElement: ElementLike | null
@@ -10,7 +13,7 @@ export interface ElementLike {
  */
 export function conversationBody<T extends ElementLike>(from: T): { body: T; scroll: T } | undefined {
   for (let at = from.parentElement as T | null; at !== null; at = at.parentElement as T | null) {
-    const scroll = at.querySelector('[class*="_scrollBody"]') as T | null
+    const scroll = at.querySelector(`[class*="${SCROLL_BODY}"]`) as T | null
     if (scroll?.parentElement != null) return { body: scroll.parentElement as T, scroll }
   }
   return undefined

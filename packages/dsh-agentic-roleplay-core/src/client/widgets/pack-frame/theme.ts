@@ -12,7 +12,13 @@ export const SHARED_TOKENS = [
 
 const DARK_ATTRIBUTE = 'data-ds-dark-theme'
 
-/** The scheme and the colours the page uses now. */
+/** The language of the interface: the page's own, else the browser's, else English. */
+export function readLanguage(root: Element = document.documentElement): string {
+  const written = root.getAttribute('lang') ?? (typeof navigator === 'undefined' ? '' : navigator.language)
+  return /^[a-z]{2}/i.exec(written)?.[0]?.toLowerCase() ?? 'en'
+}
+
+/** The scheme, the language and the colours the page uses now. */
 export function readTheme(body: Element = document.body): ThemeData {
   const style = getComputedStyle(body)
   const tokens: Record<string, string> = {}
@@ -20,12 +26,13 @@ export function readTheme(body: Element = document.body): ThemeData {
     const value = style.getPropertyValue(name).trim()
     if (value !== '') tokens[name] = value
   }
-  return { scheme: body.hasAttribute(DARK_ATTRIBUTE) ? 'dark' : 'light', tokens }
+  return { scheme: body.hasAttribute(DARK_ATTRIBUTE) ? 'dark' : 'light', language: readLanguage(), tokens }
 }
 
-/** Calls back when the page changes its scheme or its colours. @returns stop. */
-export function watchTheme(callback: () => void, body: HTMLElement = document.body): () => void {
+/** Calls back when the page changes its scheme, its language or its colours. @returns stop. */
+export function watchTheme(callback: () => void, body: HTMLElement = document.body, root: HTMLElement = document.documentElement): () => void {
   const observer = new MutationObserver(callback)
   observer.observe(body, { attributes: true, attributeFilter: [DARK_ATTRIBUTE, 'style', 'class'] })
+  observer.observe(root, { attributes: true, attributeFilter: ['lang'] })
   return () => { observer.disconnect() }
 }

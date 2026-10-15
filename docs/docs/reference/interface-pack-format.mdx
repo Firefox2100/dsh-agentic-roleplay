@@ -113,7 +113,7 @@ DSH's colours are available as CSS variables in the frame, and the frame's root 
 | `rp.api` | `1` | The bridge version. |
 | `rp.state()` | promise of the [player view](#the-player-view) | The view as it is now. |
 | `rp.watch(fn)` | function | Calls `fn(view)` at once and after every change; the returned function stops it. |
-| `rp.on(name, fn)` | function | `name` is `turn` (a turn was delivered, with `{ turn }`), `suggestions` (the list changed) or `theme` (`{ scheme, tokens }` changed). The returned function stops it. |
+| `rp.on(name, fn)` | function | `name` is `turn` (a turn was delivered, with `{ turn }`), `suggestions` (the list changed) or `theme` (`{ scheme, language, tokens }` changed). The returned function stops it. |
 | `rp.say(text)` | promise | Sends `text` as the player. Needs `say`. Once per turn: a second call fails until the turn number moves or 30 seconds pass. |
 | `rp.fill(text)` | promise | Puts `text` in the input box without sending. Needs `fill`. |
 | `rp.choose(n)` | promise | Puts the n-th suggested action (counting from 0) in the input box. Needs `choose`. |
@@ -121,7 +121,7 @@ DSH's colours are available as CSS variables in the frame, and the frame's root 
 | `rp.storage.get(key)`, `.set(key, value)`, `.remove(key)` | promise | A small store for the pack in this story. Values are JSON, keys 1–100 characters, 64 KB in all. `get` gives `null` for a missing key. |
 | `rp.open(surface)` | promise | Shows the pack's own `'tab'` or `'sidebar'` page (the sidebar opens if it is closed). Needs `open`. |
 | `rp.resize(height)` | nothing | Asks for a height in pixels (a strip only). |
-| `rp.theme()` | promise of `{ scheme, tokens }` | The colour scheme and the tokens now in force. |
+| `rp.theme()` | promise of `{ scheme, language, tokens }` | The colour scheme, the interface language as a two-letter code (`en`, `zh`) and the tokens now in force. The frame's `<html lang>` is set to the language, so CSS `:lang(zh)` works too. |
 
 Words sent with `say` or `fill` are 1 to 2000 characters. At most 20 requests a second are answered; the rest fail with a message. A call that fails rejects its promise with a message that says why (for example that the action is not in `actions`).
 

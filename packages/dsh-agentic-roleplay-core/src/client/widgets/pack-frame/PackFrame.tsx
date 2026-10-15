@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { isStrip, type InterfaceDescription, type PlayerView, type SurfaceName } from '../../shared/interface-pack.ts'
-import { frameAddress, historyOf, storeOf } from './api.ts'
+import { isStrip, type InterfaceDescription, type PlayerView, type SurfaceName } from '../../../shared/interface-pack.ts'
+import { frameAddress, type FrameBackend } from './frame-api.ts'
 import { Bridge, clampHeight, parseFrameMessage, type Answer, type BridgeEnv } from './bridge.ts'
 import css from './PackFrame.module.css'
 import { readTheme, watchTheme } from './theme.ts'
@@ -14,8 +14,8 @@ export interface FrameInput {
 }
 
 export interface PackFrameProps {
-  /** The roleplay session. */
-  session: string
+  /** Where the surface's requests for the story's past and for what it keeps go. */
+  backend: FrameBackend
   pack: InterfaceDescription
   surface: SurfaceName
   view: PlayerView | undefined
@@ -32,7 +32,7 @@ export interface PackFrameProps {
  * A surface of a pack, in a frame that can run its scripts and nothing more: no access to this page,
  * its storage or the network. The only way out is the bridge, which answers what the pack asked for.
  */
-export function PackFrame({ session, pack, surface, view, input, onResize, fill, height, title }: PackFrameProps) {
+export function PackFrame({ backend, pack, surface, view, input, onResize, fill, height, title }: PackFrameProps) {
   const frame = useRef<HTMLIFrameElement>(null)
   const [ready, setReady] = useState(false)
   const latest = useRef({ view, input, actions: pack.actions })
@@ -47,13 +47,13 @@ export function PackFrame({ session, pack, surface, view, input, onResize, fill,
       say: (text) => { latest.current.input.say(text) },
       fill: (text) => { latest.current.input.fill(text) },
       open: (surface) => { latest.current.input.open(surface) },
-      history: limit => historyOf(session, limit),
-      storage: (op, key, value) => storeOf(session, { op, key, ...(value === undefined ? {} : { value }) }),
+      history: limit => backend.history(limit),
+      storage: (op, key, value) => backend.storage(op, key, value),
       theme: () => readTheme(),
       now: () => Date.now(),
     }
     return new Bridge(env)
-  }, [session])
+  }, [backend])
 
   const send = (message: Record<string, unknown>): void => { frame.current?.contentWindow?.postMessage({ rp: 1, ...message }, '*') }
 

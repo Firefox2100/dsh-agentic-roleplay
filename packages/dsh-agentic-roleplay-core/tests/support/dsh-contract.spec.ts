@@ -1,7 +1,10 @@
+import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
+import { dirname, join } from 'node:path'
 import * as subagent from '@deepseek-ai/dsh-subagent'
 import * as tools from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
+import { SCROLL_BODY } from '../../src/client/interface/conversation-body.ts'
 
 /**
  * The bundle builds its children (characters, record keeper) below DSH's sub-agent API, from the
@@ -25,5 +28,10 @@ describe('the DSH this bundle is built against', () => {
     }
     expect(typeof tools.validateJsonSchemaValue).toBe('function')
     expect(typeof tools.ToolArgsError).toBe('function')
+  })
+
+  it('still styles the conversation\'s scrolling body with a class the interface packs\' backdrop finds it by', () => {
+    const client = readFileSync(join(dirname(require.resolve('@deepseek-ai/dsh-client-ui-conversation/package.json')), 'lib', 'client.js'), 'utf8')
+    expect(client).toMatch(new RegExp(`\\.[A-Za-z0-9]+${SCROLL_BODY}\\{`))
   })
 })

@@ -4,10 +4,11 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import css from './ChatSettingsView.module.css'
-import { NotRoleplayError, loadSettings, resetVectors, saveSettings } from './settings-api.ts'
+import { NotRoleplayError, loadSettings, resetVectors, saveSettings, startReflection } from './settings-api.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { InterfaceSection } from './InterfaceSection.tsx'
+import { ReflectionSection } from './ReflectionSection.tsx'
 import { VectorsSection } from './VectorsSection.tsx'
 import { ActivityList } from './ActivityList.tsx'
 import { InterventionList } from './InterventionList.tsx'
@@ -66,10 +67,19 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     )
   }
 
+  const reflect = (): void => {
+    if (session === undefined) return
+    setError(undefined)
+    startReflection(session, new AbortController().signal).then(
+      refreshActivity,
+      (failure: unknown) => { setError(t('reflectFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
+    )
+  }
+
   const refreshActivity = (): void => {
     if (session === undefined) return
     loadSettings(session, new AbortController().signal).then(
-      (next) => { setLoad({ status: 'ready', payload: { ...payload, activity: next.activity, interventions: next.interventions, vectors: next.vectors, pendingRecords: next.pendingRecords, pendingConsolidation: next.pendingConsolidation } }) },
+      (next) => { setLoad({ status: 'ready', payload: { ...payload, activity: next.activity, interventions: next.interventions, vectors: next.vectors, reflection: next.reflection, pendingRecords: next.pendingRecords, pendingConsolidation: next.pendingConsolidation } }) },
       (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) },
     )
   }
@@ -93,6 +103,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
       <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} hidden={['interface.pack']} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
       {session !== undefined && <InterfaceSection t={t} session={session} value={String(drafts['interface.pack'] ?? '')} onChange={(next) => { change('interface.pack', next) }} saved={payload.settings.interface.pack} disabled={saving} />}
+      <ReflectionSection t={t} status={payload.reflection} disabled={saving} onStart={reflect} onRefresh={refreshActivity} />
       <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
       <InterventionList t={t} entries={payload.interventions} />
       {session !== undefined && <ActivityList t={t} session={session} entries={payload.activity} onRefresh={refreshActivity} />}

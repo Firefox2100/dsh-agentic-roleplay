@@ -4,6 +4,7 @@ import type { VisualIdentityInput } from 'dsh-roleplay-model'
 import type { PlaceEdit, ThingEdit, WorldPlace, WorldState, WorldThing } from '../../shared/world-state.ts'
 import type { Translate } from './WorldEditor.tsx'
 import { RefusedEditError, type WorldSource } from './source.ts'
+import { EditorTabs } from './EditorTabs.tsx'
 import css from './CharactersPanel.module.css'
 
 type Status = { state: 'idle' | 'saving' | 'saved' | 'failed'; message?: string }
@@ -11,7 +12,7 @@ const split = (value: string): string[] => value.split(',').map(part => part.tri
 const visual = (description: string, tags: string, negativeTags: string, globalId: string): VisualIdentityInput | null => description.trim() === '' ? null : { description: description.trim(), tags: split(tags), negativeTags: split(negativeTags), ...(globalId.trim() === '' ? {} : { globalId: globalId.trim() }) }
 
 function Tabs<T extends { key: string; name: string }>({ entries, chosen, choose, actions }: { entries: T[]; chosen?: string; choose: (key: string) => void; actions: React.ReactNode }) {
-  return <div className={css.tabs} role="tablist">{entries.map(entry => <button key={entry.key} type="button" role="tab" aria-selected={entry.key === chosen} className={`${css.tab} ${entry.key === chosen ? css.tabOn : ''}`} onClick={() => { choose(entry.key) }}>{entry.name}</button>)}<span className={css.tabsSpace} />{actions}</div>
+  return <EditorTabs tabs={entries.map(entry => ({ key: entry.key, label: entry.name }))} value={chosen ?? ''} label={entries.find(entry => entry.key === chosen)?.name ?? entries[0]?.name ?? ''} onChange={choose}><span className={css.tabsSpace} />{actions}</EditorTabs>
 }
 
 function SaveBar({ t, dirty, status, save, reset }: { t: Translate; dirty: boolean; status: Status; save: () => void; reset: () => void }) {

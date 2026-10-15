@@ -19,3 +19,6 @@ export class AgentUnavailableError extends Error {}
 
 /** The session is put away and cannot be played until it is brought back. */
 export class SessionArchivedError extends Error {}
+
+/** A reflection cannot be started now: a turn is being played, or one is already running. */
+export class ReflectionRefusedError extends Error {}

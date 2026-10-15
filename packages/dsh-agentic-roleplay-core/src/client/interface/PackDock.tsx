@@ -5,8 +5,9 @@ import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { PackToken, StripSurface } from '../../shared/interface-pack.ts'
 import { useBackdropHost } from './backdrop.ts'
 import { usePack, usePlayerView } from './hooks.ts'
-import { PackFrame, type FrameInput } from './PackFrame.tsx'
-import css from './PackFrame.module.css'
+import { PackFrame, type FrameInput } from '../widgets/pack-frame/PackFrame.tsx'
+import { sessionBackend } from '../widgets/pack-frame/frame-api.ts'
+import css from '../widgets/pack-frame/PackFrame.module.css'
 
 /** What a dock needs of the page: which strip it is, the input box, and the theme service to lay the pack's colours over DSH's. */
 export interface DockInjected {
@@ -58,11 +59,11 @@ export function PackDock({ sessionId, surface, frameInput, overrideTokens, useSe
     <>
       {shown && strip !== undefined && (
         <div className={css.hud} data-rp={surface}>
-          <PackFrame session={session} pack={pack} surface={surface} view={view} input={frameInput} onResize={resize} {...(height === undefined && strip.height === undefined ? {} : { height: height ?? strip.height as number })} title={t(surface)} />
+          <PackFrame backend={sessionBackend(session)} pack={pack} surface={surface} view={view} input={frameInput} onResize={resize} {...(height === undefined && strip.height === undefined ? {} : { height: height ?? strip.height as number })} title={t(surface)} />
         </div>
       )}
       {backdrop !== undefined && <span ref={anchor} hidden />}
-      {layer !== undefined && createPortal(<PackFrame session={session} pack={pack} surface="backdrop" view={view} input={frameInput} fill title={t('backdrop')} />, layer)}
+      {layer !== undefined && createPortal(<PackFrame backend={sessionBackend(session)} pack={pack} surface="backdrop" view={view} input={frameInput} fill title={t('backdrop')} />, layer)}
     </>
   )
 }

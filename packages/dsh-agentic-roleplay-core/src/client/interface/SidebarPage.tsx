@@ -4,7 +4,8 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { usePack, usePlayerView } from './hooks.ts'
-import { PackFrame, type FrameInput } from './PackFrame.tsx'
+import { PackFrame, type FrameInput } from '../widgets/pack-frame/PackFrame.tsx'
+import { sessionBackend } from '../widgets/pack-frame/frame-api.ts'
 import css from './SidebarPage.module.css'
 
 /** The kind of the tab type, and the identity it registers its card and body under. */
@@ -61,7 +62,7 @@ export function SidebarBody({ sessionId, useTabInfo, frameInput, t }: SidebarBod
       <div className={css.content}>
         {session === undefined || pack === undefined || page === undefined
           ? <p className={css.message}>{t('sidebarNone')}</p>
-          : <PackFrame session={session} pack={pack} surface="sidebar" view={view} input={frameInput} fill title={page.title === '' ? pack.name : page.title} />}
+          : <PackFrame backend={sessionBackend(session)} pack={pack} surface="sidebar" view={view} input={frameInput} fill title={page.title === '' ? pack.name : page.title} />}
       </div>
     </div>
   )

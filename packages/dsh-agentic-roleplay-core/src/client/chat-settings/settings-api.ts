@@ -39,6 +39,15 @@ export async function resetVectors(id: string, signal: AbortSignal): Promise<voi
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
 }
 
+/** Starts the characters sorting what they took in; it runs in the background. */
+export async function startReflection(id: string, signal: AbortSignal): Promise<void> {
+  const response = await fetch(`${API_PREFIX}/sessions/reflect?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', signal })
+  if (!response.ok) {
+    const body = await response.json().catch(() => undefined) as { message?: unknown } | undefined
+    throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
+  }
+}
+
 /** What a helper run was told and did; nothing when the run was not kept or has been dropped. */
 export async function loadRun(id: string, run: string, signal: AbortSignal): Promise<RunDetail | undefined> {
   const response = await fetch(`${API_PREFIX}/sessions/activity/run?id=${encodeURIComponent(id)}&run=${encodeURIComponent(run)}`, { credentials: 'same-origin', signal })

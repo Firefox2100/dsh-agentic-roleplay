@@ -90,14 +90,14 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
                   <tbody>
                     {visible.map(session => (
                       <tr key={session.id} data-testid="session-row" className={session.archivedAt === undefined ? undefined : css.archived}>
-                        <td className={css.name} title={session.name}>{session.name}{session.archivedAt !== undefined && <span className={css.badge}>{t('archived')}</span>}</td>
-                        <td className={css.secondary} title={session.worldName}>{session.worldName}</td>
-                        <td className={css.secondary}>{dateTime.format(new Date(session.createdAt))}</td>
-                        <td className={css.secondary}>
+                        <td className={css.name} data-label={t('columnName')} title={session.name}>{session.name}{session.archivedAt !== undefined && <span className={css.badge}>{t('archived')}</span>}</td>
+                        <td className={css.secondary} data-label={t('columnWorld')} title={session.worldName}>{session.worldName}</td>
+                        <td className={css.secondary} data-label={t('columnCreated')}>{dateTime.format(new Date(session.createdAt))}</td>
+                        <td className={css.secondary} data-label={t('columnLastPlayed')}>
                           {session.lastPlayedAt === undefined ? t('neverPlayed') : dateTime.format(new Date(session.lastPlayedAt))}
                         </td>
-                        <td className={`${css.secondary} ${css.number}`}>{session.turns}</td>
-                        <td className={css.actions}>
+                        <td className={`${css.secondary} ${css.number}`} data-label={t('columnTurns')}>{session.turns}</td>
+                        <td className={css.actions} data-label={t('columnActions')}>
                           <Button
                             variant="ghost"
                             size="sm"

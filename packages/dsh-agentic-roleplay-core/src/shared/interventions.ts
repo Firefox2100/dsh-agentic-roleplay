@@ -9,8 +9,10 @@ export interface Intervention {
   trigger: string
   /** The characters a cue was for. */
   characters: string[]
-  /** `waiting`: delivered, not yet taken up. `taken`: the game master wove the beat in, or a character acted on the cue. `lapsed`: nobody did within its time. */
-  status: 'waiting' | 'taken' | 'lapsed'
+  /** `waiting`: delivered, not yet taken up. `taken`: the game master wove the beat in, or a character acted on the cue. `lapsed`: nobody did within its time. `withdrawn`: it no longer applied when it was to be told, or could not be written (`reason`). */
+  status: 'waiting' | 'taken' | 'lapsed' | 'withdrawn'
+  /** Why it was withdrawn. */
+  reason?: string
 }
 
 /** How many of the latest are listed. */

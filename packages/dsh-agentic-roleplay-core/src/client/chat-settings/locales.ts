@@ -5,8 +5,8 @@ export type ChatSettingsLocaleKey =
   | SettingsFormKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
   | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
-  | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed'
-  | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed'
+  | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed' | 'reflectTitle' | 'reflectNone' | 'reflectLast' | 'reflectTurns' | 'reflectScene' | 'reflectManual' | 'reflectOutcome' | 'reflectNothing' | 'reflectRunning' | 'reflectNow' | 'reflectHelp' | 'reflectFailed' | 'reflectError'
+  | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed' | 'interventionWithdrawn'
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
@@ -21,7 +21,7 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     pendingConsolidation: '{count} character(s), place(s) or thing(s) made up in play are waiting to be fitted into the world (connected to the rest, given relationships). It is done in the background.',
     pendingRecords: '{count} round(s) are waiting to be written into the story\'s memory. The game master records them when the story moves on, or once too many pile up.',
     interventionsTitle: 'What the world put in front of the story',
-    interventionsHelp: 'Beats and cues that triggers delivered lately. A beat is for the game master to weave in; a cue is for characters. Taken up means it was used; lapsed means nobody did within its time.',
+    interventionsHelp: 'Beats and cues that triggers delivered lately. A beat is for the game master to weave in; a cue is for characters. Taken up means it was used; lapsed means nobody did within its time; withdrawn means that when it was to be told it no longer applied (or its words could not be written), and the reason is shown.',
     interventionsEmpty: 'No trigger has delivered anything yet.',
     interventionTurn: 'Turn',
     interventionKind: 'For',
@@ -32,6 +32,7 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     interventionWaiting: 'Waiting',
     interventionTaken: 'Taken up',
     interventionLapsed: 'Lapsed, nobody took it up',
+    interventionWithdrawn: 'Withdrawn: {reason}',
     activityTitle: 'What the helpers did lately',
     activityHelp: 'Characters, the record keeper, the suggestion writer and the authors run in the background of a turn. The latest runs are listed here, with how long each took.',
     activityRefresh: 'Refresh',
@@ -74,6 +75,19 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     vectorsCancel: 'Cancel',
     vectorsHelp: 'Use this after you select another embedding model. The texts stay; they are embedded again by the new model as the story needs them, and until then memories are found by their words.',
     vectorsFailed: 'Could not reset the vectors: {message}',
+    reflectTitle: 'Reflection',
+    reflectNone: 'The characters have not sorted their memories yet.',
+    reflectLast: 'Last pass after turn {turn} ({reason}).',
+    reflectTurns: 'on schedule',
+    reflectScene: 'the scene changed',
+    reflectManual: 'started by you',
+    reflectOutcome: '{name}: {added} new, {revised} changed, {dropped} let go',
+    reflectNothing: 'No character had enough new to sort.',
+    reflectRunning: 'The characters are sorting what they took in…',
+    reflectNow: 'Reflect now',
+    reflectHelp: 'Each character with something new sorts it into what it believes: beliefs are merged, firmed up or let go, each resting on events it took in. It runs in the background; you can keep playing.',
+    reflectFailed: 'Could not start the reflection: {message}',
+    reflectError: 'The last pass failed: {message}',
     packTitle: 'Interface pack',
     packHelp: 'A pack changes how this story looks and can add a status strip, buttons, an opening card, a backdrop or a tab. A world can carry packs; yours go in the ui folder of your roleplay folder.',
     packActive: 'In use: {name}',
@@ -109,7 +123,7 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     pendingConsolidation: '有 {count} 个在故事中新建的角色、地点或物品等待融入世界（与其余部分建立连接和关系），将在后台完成。',
     pendingRecords: '有 {count} 个回合等待写入故事记忆。主持人会在故事推进时记录，积压过多时也会自动记录。',
     interventionsTitle: '世界摆到故事面前的东西',
-    interventionsHelp: '触发器最近送出的节拍与提示。节拍交给游戏主持人织入故事，提示交给角色。“已采用”表示被用上了，“已失效”表示在期限内没有人理会。',
+    interventionsHelp: '触发器最近送出的节拍与提示。节拍交给游戏主持人织入故事，提示交给角色。“已采用”表示被用上了，“已失效”表示在期限内没有人理会，“已撤回”表示轮到它被说出时已不再适用（或其文字无法写出），并显示原因。',
     interventionsEmpty: '还没有触发器送出过任何东西。',
     interventionTurn: '回合',
     interventionKind: '送给',
@@ -120,6 +134,7 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     interventionWaiting: '等待中',
     interventionTaken: '已采用',
     interventionLapsed: '已失效，无人理会',
+    interventionWithdrawn: '已撤回：{reason}',
     activityTitle: '助手最近做了什么',
     activityHelp: '角色、记录员、建议作者和世界作者都在每一轮的后台运行。这里列出最近的运行及各自耗时。',
     activityRefresh: '刷新',
@@ -162,6 +177,19 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
     vectorsCancel: '取消',
     vectorsHelp: '更换嵌入模型后使用。文本会保留，之后按需由新模型重新生成向量，在此之前记忆只按字词查找。',
     vectorsFailed: '无法重置向量：{message}',
+    reflectTitle: '反思',
+    reflectNone: '角色们还没有整理过记忆。',
+    reflectLast: '上一次在第 {turn} 回合之后（{reason}）。',
+    reflectTurns: '按计划',
+    reflectScene: '场景转换',
+    reflectManual: '由你发起',
+    reflectOutcome: '{name}：新增 {added}，修改 {revised}，放下 {dropped}',
+    reflectNothing: '没有角色积攒了足够多的新见闻。',
+    reflectRunning: '角色们正在整理所见所闻……',
+    reflectNow: '立即反思',
+    reflectHelp: '每个有新见闻的角色会把它们整理成自己的信念：合并、巩固或放下，每一条都要依据它接收到的事件。反思在后台进行，你可以继续游玩。',
+    reflectFailed: '无法开始反思：{message}',
+    reflectError: '上一次反思失败：{message}',
     packTitle: '界面包',
     packHelp: '界面包会改变此故事的外观，并可添加状态条、按钮、开场卡片、背景或标签页。世界可以自带界面包；你自己的放在角色扮演目录的 ui 文件夹中。',
     packActive: '使用中：{name}',

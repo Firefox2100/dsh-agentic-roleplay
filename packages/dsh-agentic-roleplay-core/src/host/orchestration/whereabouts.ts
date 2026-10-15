@@ -18,6 +18,9 @@ const within = (inner: Location, outer: Location, places: readonly Location[]): 
   return false
 }
 
+/** Whether two places are one scene: the same place, or one inside the other (a room and its building). */
+export const sameScene = (a: Location, b: Location, places: readonly Location[]): boolean => within(a, b, places) || within(b, a, places)
+
 /**
  * Compares the place an action is said to happen at (by key) with where the character is. Only a proven mismatch counts: a character that is
  * nowhere, or a world without places, is no evidence, and a place that contains the other (a room and its building) is the same for this.

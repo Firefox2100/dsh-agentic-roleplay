@@ -221,6 +221,7 @@ export class RoleplayState extends Service {
       edit: (edit, options) => store.edit(edit, options),
       runTriggers: options => store.runTriggers(options),
       lapseNotes: (turn, kept) => store.lapseNotes(turn, kept),
+      deliverNotes: (notes, clock) => store.deliverNotes(notes, clock),
       records: scope => store.records(scope),
     }
     this.sessions.set(key, { store, session })

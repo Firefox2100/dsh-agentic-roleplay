@@ -37,7 +37,7 @@ export function MediaImage({ src, alt, details, labels, className, onOpenClassNa
     <>
       <Tooltip label={summary} side="right" delayMs={400} maxWidth={460} portal disabled={summary === ''}>
         <button type="button" className={onOpenClassName} aria-label={alt} onClick={() => { setOpen(true) }}>
-          <img className={className} src={src} alt={alt} />
+          <img className={className} src={src} alt={alt} loading="lazy" decoding="async" />
         </button>
       </Tooltip>
       {open && <ImageLightbox src={src} alt={alt} labels={{ dialog: labels.dialog, close: labels.close }} onClose={() => { setOpen(false) }} />}

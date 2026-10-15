@@ -2,14 +2,16 @@ import { randomBytes } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
-import { PACKS_FOLDER, PACK_LIMITS, type HistoryTurn, type InterfaceAvailability, type InterfacePayload, type InterfaceStatus, type InterfaceSync, type PackChoice, type PlayerViewReply, type SurfaceName } from '../../shared/interface-pack.ts'
+import { PACKS_FOLDER, PACK_LIMITS, type HistoryTurn, type InterfaceAvailability, type InterfacePayload, type InterfaceStatus, type InterfaceSync, type PackChoice, type PackPreview, type PlayerViewReply, type SurfaceName, type WorldPackDetail } from '../../shared/interface-pack.ts'
 import { pathTo } from '../../shared/timeline.ts'
 import { readTimeline } from '../timeline/file.ts'
 import { zoneOf } from '../clock/story-clock.ts'
 import { SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import { liveSettings } from '../sessions/settings.ts'
 import { withBridge } from './frame.ts'
-import { describePack, packFile, readPack } from './pack.ts'
+import type { WorldRecord } from '../worlds/scan.ts'
+import { describePack, isPackId, packFile, readPack, type LoadedPack } from './pack.ts'
+import { previewViewOf } from './preview.ts'
 import { activePack, anyTab, packIds, syncWorldPacks, worldPackStates, type ActivePack } from './packs.ts'
 import { playerViewOf, type ViewSession } from './player-view.ts'
 import { PackStorage } from './storage.ts'
@@ -23,6 +25,8 @@ export interface InterfaceDeps {
   open(id: string): ViewSession
   /** The folder of the world with that id, when the person still has it. */
   worldDirectory(worldId: string): Promise<string | undefined>
+  /** The world with that id, when the person still has it. */
+  world(worldId: string): Promise<Pick<WorldRecord, 'directory' | 'summary' | 'clock' | 'variables'> | undefined>
   /** The roleplay root. */
   root(): string
   wall?: () => number
@@ -31,12 +35,17 @@ export interface InterfaceDeps {
 /** A pack file as the browser gets it: the bytes of a file, or a page made of one. */
 export type PackResponse = { kind: 'file'; file: string; size: number; mediaType: string } | { kind: 'page'; body: string; mediaType: string }
 
+/** What stands for a pack looked at in the editor where a session id would be; the key after it is the frame's. */
+const PREVIEW = 'preview:'
+
 const addressFor = (session: string) => (path: string): string => `roleplay-api/sessions/interface/pack/${session}/${path.split('/').map(encodeURIComponent).join('/')}`
 
 /** What the interface packs of the stories show and do, for the browser. */
 export class InterfaceService {
   private readonly keys = new Map<string, string>()
   private readonly keyOf = new Map<string, string>()
+  /** The pack folders being previewed, by frame key. */
+  private readonly previews = new Map<string, { folder: string; pack: string }>()
 
   constructor(private readonly deps: InterfaceDeps) {}
 
@@ -54,6 +63,43 @@ export class InterfaceService {
   sessionOfFrame(key: string): string | undefined { return this.keys.get(key) }
 
   private sessions(): string { return join(this.deps.root(), 'sessions') }
+
+  private async worldOf(worldId: string): Promise<Pick<WorldRecord, 'directory' | 'summary' | 'clock' | 'variables'>> {
+    const world = await this.deps.world(worldId)
+    if (world === undefined) throw new WorldNotFoundError(`there is no world "${worldId}"`)
+    return world
+  }
+
+  /** The packs of a world, each with what it holds and what is wrong with it. @throws {WorldNotFoundError} */
+  async worldPacks(worldId: string): Promise<WorldPackDetail[]> {
+    const { directory } = await this.worldOf(worldId)
+    return packIds(directory).map((id): WorldPackDetail => {
+      const { pack, problems } = readPack(join(directory, PACKS_FOLDER, id), id, file => file)
+      if (pack === undefined) return { id, name: id, version: '', description: '', actions: [], surfaces: {}, tokens: 0, files: [], problems }
+      const { manifest } = pack
+      return { id, name: manifest.name, version: manifest.version, description: manifest.description, actions: manifest.actions, surfaces: manifest.surfaces, ...(manifest.skin === undefined ? {} : { skin: manifest.skin }), tokens: Object.keys(manifest.theme).length, files: [...pack.files].map(([path, file]) => ({ path, size: file.size })), problems }
+    })
+  }
+
+  /**
+   * A pack of a world as a story of that world would start with it: its surfaces load their own files, and are given the view the story would show.
+   * @throws {WorldNotFoundError} when the world, or the pack in it, is not there.
+   * @throws {InvalidPacksError} when the pack has problems.
+   * @throws {InvalidEditProblems} when the rest of the world has problems of its own.
+   */
+  async preview(worldId: string, packId: string): Promise<PackPreview> {
+    const world = await this.worldOf(worldId)
+    const folder = join(world.directory, PACKS_FOLDER, packId)
+    if (!isPackId(packId) || !existsSync(folder)) throw new WorldNotFoundError(`the world carries no pack "${packId}"`)
+    const name = `${worldId}\n${packId}`
+    const key = this.keyOf.get(`${PREVIEW}${name}`) ?? randomBytes(24).toString('base64url')
+    const { pack, problems } = readPack(folder, packId, addressFor(`${PREVIEW}${key}`))
+    if (pack === undefined) throw new InvalidPacksError(`the pack "${packId}" has ${problems.length} problem(s)`, problems.map(problem => ({ path: problem.file, message: problem.message })))
+    this.keyOf.set(`${PREVIEW}${name}`, key)
+    this.keys.set(key, `${PREVIEW}${key}`)
+    this.previews.set(key, { folder, pack: packId })
+    return { pack: describePack(pack, key), view: await previewViewOf(world, (this.deps.wall ?? Date.now)()) }
+  }
 
   private session(id: string): { folder: string; session: ViewSession } {
     if (!isSessionId(id) || !existsSync(sessionDatabase(this.sessions(), id))) throw new SessionNotFoundError(`no session "${id}"`)
@@ -139,12 +185,18 @@ export class InterfaceService {
 
   /** A file of the session's pack; a page of it comes with the bridge. @returns nothing when the pack has no such file. */
   file(id: string, path: string): PackResponse | undefined {
-    const { pack } = this.active(id)
+    const pack = id.startsWith(PREVIEW) ? this.previewed(id) : this.active(id).pack
     const found = pack === undefined ? undefined : packFile(pack, path)
     if (found === undefined) return undefined
     return found.mediaType.startsWith('text/html')
       ? { kind: 'page', body: withBridge(readFileSync(found.file, 'utf8')), mediaType: found.mediaType }
       : { kind: 'file', ...found }
+  }
+
+  /** The pack of a preview, read afresh. */
+  private previewed(id: string): LoadedPack | undefined {
+    const shown = this.previews.get(id.slice(PREVIEW.length))
+    return shown === undefined ? undefined : readPack(shown.folder, shown.pack, addressFor(id)).pack
   }
 
   /** What the pack keeps in the session. @throws {RangeError} when a value does not fit. */
