@@ -125,6 +125,8 @@ export function materialOf(session: ReflectionSession, minNew: number): Material
 export interface Proposal {
   add: { kind: string; text: string; about?: string[]; importance: number; confidence?: MemoryConfidence; perceptions?: number[]; beliefs?: number[] }[]
   revise: { id: number; text?: string; importance?: number; confidence?: MemoryConfidence; perceptions?: number[]; contradicted_by?: number[] }[]
+  /** Beliefs that something since speaks against: they are held with more doubt, and what speaks against them is linked. */
+  doubt?: { id: number; contradicted_by: number[]; text?: string }[]
   drop: { id: number; perceptions?: number[]; merged_into?: number }[]
 }
 
@@ -168,6 +170,20 @@ const RESULT: ObjectJsonSchema = {
         additionalProperties: false,
       },
     },
+    doubt: {
+      type: 'array',
+      description: 'Beliefs that something the character took in since speaks against, which it still holds but with more doubt: name the belief and the numbers of what speaks against it, and its confidence is lowered for you. This is the way to answer a belief that a later event contradicts, instead of revising or dropping it.',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'integer', description: 'The number of the belief, as listed.' },
+          contradicted_by: { ...idList, description: 'The numbers of the things it took in since that speak against the belief.' },
+          text: { type: 'string', description: 'The belief reworded to say what is now in doubt, when its words need it; one or two sentences, and nothing but the belief: its confidence and the numbers are not part of the text.' },
+        },
+        required: ['id', 'contradicted_by'],
+        additionalProperties: false,
+      },
+    },
     drop: {
       type: 'array',
       description: 'Beliefs to let go: settled or overturned by what came after, or merged into another.',
@@ -205,6 +221,12 @@ function shownOf(session: ReflectionSession, material: Material): Shown {
 
 const rankOf = (confidence: MemoryConfidence): number => MEMORY_CONFIDENCES.indexOf(confidence)
 
+/** What a model writes into a belief's text when it has not put it in the fields: its confidence, importance or the numbers it rests on. */
+const MIXED_IN = /\((?:[^)]*\b(?:doubtful|likely|sure|importance)\b[^)]*|[^)]*\bperceptions?\s*\[?\d[^)]*)\)|\bperceptions?\s*\[\d/i
+
+/** One step less sure, and no less than doubtful. */
+const lowered = (confidence: MemoryConfidence): MemoryConfidence => MEMORY_CONFIDENCES[Math.max(0, rankOf(confidence) - 1)]!
+
 /**
  * Why a proposal cannot be written, or nothing when it can. A belief must rest on what the character took in: on things from at least two
  * different turns, or on one event that turned the story; a belief is changed or let go only for what came after it, or for being merged
@@ -215,8 +237,9 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
   const add = proposal.add ?? []
   const revise = proposal.revise ?? []
   const drop = proposal.drop ?? []
+  const doubt = proposal.doubt ?? []
   if (add.length > MAX_ADDED) problems.push(tr('add: at most {max} new beliefs in one pass; merge or choose', { max: MAX_ADDED }))
-  if (add.length + revise.length + drop.length > MAX_CHANGES) problems.push(tr('at most {max} changes in one pass', { max: MAX_CHANGES }))
+  if (add.length + revise.length + drop.length + doubt.length > MAX_CHANGES) problems.push(tr('at most {max} changes in one pass', { max: MAX_CHANGES }))
   const cited = (ids: readonly number[] | undefined, where: string): PerceivedEvent[] => (ids ?? []).flatMap((id) => {
     const entry = shown.perceptions.get(id)
     if (entry === undefined) problems.push(tr('{where}: there is no thing it took in numbered {id}', { where, id }))
@@ -262,7 +285,8 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
     const supports = cited(change.perceptions, where)
     const against = cited(change.contradicted_by, where)
     if (change.text === undefined && change.importance === undefined && change.confidence === undefined && against.length === 0) problems.push(tr('{where}: say what changes', { where }))
-    if (change.text !== undefined && (change.text.trim() === '' || change.text.trim().length > MAX_TEXT)) problems.push(tr('{where}: the text must be there and at most {max} characters', { where, max: MAX_TEXT }))
+    if (change.text !== undefined && (change.text.trim() === '' || change.text.trim().length > MAX_TEXT)) problems.push(tr('{where}: the text must be there and at most {max} characters; leave it out to keep the belief as it is', { where, max: MAX_TEXT }))
+    if (change.text !== undefined && MIXED_IN.test(change.text)) problems.push(tr('{where}: the confidence, the importance and the numbers are fields of their own, not part of the text', { where }))
     if (change.importance !== undefined && (!Number.isInteger(change.importance) || change.importance < IMPORTANCE_MIN || change.importance > IMPORTANCE_MAX)) problems.push(tr('{where}: importance runs from {min} to {max}', { where, min: IMPORTANCE_MIN, max: IMPORTANCE_MAX }))
     fresh([...supports, ...against], belief, where)
     if (!known(change.confidence, where) || change.confidence === undefined) {
@@ -275,6 +299,17 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
       const turns = new Set([...(shown.supportTurns?.get(belief.id) ?? []), ...supports.map(entry => entry.event.turn)])
       if (turns.size < 2) problems.push(tr('{where}: to be sure of something it must rest on things from at least two different turns', { where }))
     }
+  })
+  doubt.forEach((change, index) => {
+    const where = `doubt[${index}]`
+    const belief = shown.beliefs.get(change.id)
+    if (belief === undefined) { problems.push(tr('{where}: there is no belief numbered {id}', { where, id: change.id })); return }
+    touch(change.id, where)
+    const against = cited(change.contradicted_by, where)
+    if (against.length === 0) problems.push(tr('{where}: name what speaks against the belief in contradicted_by', { where }))
+    fresh(against, belief, where)
+    if (change.text !== undefined && (change.text.trim() === '' || change.text.trim().length > MAX_TEXT)) problems.push(tr('{where}: the text must be there and at most {max} characters; leave it out to keep the belief as it is', { where, max: MAX_TEXT }))
+    if (change.text !== undefined && MIXED_IN.test(change.text)) problems.push(tr('{where}: the confidence, the importance and the numbers are fields of their own, not part of the text', { where }))
   })
   const dropped = new Set(drop.map(entry => entry.id))
   drop.forEach((change, index) => {
@@ -294,12 +329,12 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
 const keysOf = (names: readonly string[] | undefined, resolveName: (name: string) => string | undefined): string[] => (names ?? []).flatMap((name) => { const key = resolveName(name); return key === undefined ? [] : [key] })
 
 /** The edit that writes a proposal that passed. */
-export function editOf(turn: number, character: Character, proposal: Proposal, resolveName: (name: string) => string | undefined): RecordsEdit {
+export function editOf(turn: number, character: Character, proposal: Proposal, resolveName: (name: string) => string | undefined, confidenceOf: (belief: number) => MemoryConfidence | undefined = () => undefined): RecordsEdit {
   const who = characterKey(character)
   return {
     turn,
     beliefs: (proposal.add ?? []).map(belief => ({ character: who, kind: belief.kind as MemoryKind, text: belief.text.trim(), about: keysOf(belief.about, resolveName), importance: belief.importance, ...(belief.confidence === undefined ? {} : { confidence: belief.confidence }), evidenceFor: belief.perceptions ?? [] })),
-    beliefEdits: (proposal.revise ?? []).map(change => ({ id: change.id, ...(change.text === undefined ? {} : { text: change.text.trim() }), ...(change.importance === undefined ? {} : { importance: change.importance }), ...(change.confidence === undefined ? {} : { confidence: change.confidence }), evidenceFor: change.perceptions ?? [], evidenceAgainst: change.contradicted_by ?? [] })),
+    beliefEdits: [...(proposal.revise ?? []), ...(proposal.doubt ?? []).map(change => ({ id: change.id, ...(change.text === undefined ? {} : { text: change.text }), confidence: lowered(confidenceOf(change.id) ?? 'likely'), contradicted_by: change.contradicted_by }))].map(change => ({ id: change.id, ...(change.text === undefined ? {} : { text: change.text.trim() }), ...('importance' in change && change.importance !== undefined ? { importance: change.importance } : {}), ...(change.confidence === undefined ? {} : { confidence: change.confidence }), evidenceFor: 'perceptions' in change ? change.perceptions ?? [] : [], evidenceAgainst: change.contradicted_by ?? [] })),
     beliefRetractions: (proposal.drop ?? []).map(change => change.id),
   }
 }
@@ -358,17 +393,17 @@ export function memoryReflector(deps: { agentOf: (chat: string) => Agent | undef
           result: RESULT,
           beforeSubmit: (value) => {
             const given = value as Proposal
-            const problems = [...proposalProblems(given, shown, resolveName, tr), ...[wrongLanguage(settings.prompts.language, { beliefs: [...(given.add ?? []), ...(given.revise ?? [])].map(belief => belief.text ?? '').join(' ') })].flatMap(problem => (problem === undefined ? [] : [problem]))]
+            const problems = [...proposalProblems(given, shown, resolveName, tr), ...[wrongLanguage(settings.prompts.language, { beliefs: [...(given.add ?? []), ...(given.revise ?? []), ...(given.doubt ?? [])].map(belief => belief.text ?? '').join(' ') })].flatMap(problem => (problem === undefined ? [] : [problem]))]
             return problems.length === 0 ? undefined : tr('not acceptable: {problems}', { problems: problems.join('; ') })
           },
           maxCalls: 3,
         })
         const reached = Math.max(...material.fresh.map(entry => entry.perception.id))
         session.transaction(() => {
-          session.edit(editOf(job.turn, material.character, proposal, resolveName))
+          session.edit(editOf(job.turn, material.character, proposal, resolveName, belief => shown.beliefs.get(belief)?.confidence))
           session.metadata.setValue(CURSOR_KEY, { ...readCursor(session), [characterKey(material.character)]: reached })
         })
-        characters.push({ name: material.character.name, added: proposal.add?.length ?? 0, revised: proposal.revise?.length ?? 0, dropped: proposal.drop?.length ?? 0 })
+        characters.push({ name: material.character.name, added: proposal.add?.length ?? 0, revised: (proposal.revise?.length ?? 0) + (proposal.doubt?.length ?? 0), dropped: proposal.drop?.length ?? 0 })
       }
       session.metadata.setValue(LAST_KEY, { turn: job.turn, at: new Date().toISOString(), reason: job.reason, characters } satisfies Last)
       writeAnchor(session, playerPlace(store), now)

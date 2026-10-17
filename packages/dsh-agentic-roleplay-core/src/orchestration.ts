@@ -4,6 +4,8 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@dsh-agentic-roleplay/state'
 import type { ImageGenerationService } from '@dsh-ai-providers/core'
+import { languageOf, translator } from 'dsh-roleplay-model'
+import { RESOURCE_HINT_SECTION, resourceHint } from './host/tools/resource-hint.ts'
 import { join } from 'node:path'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { recordKeeper } from './host/orchestration/committer.ts'
@@ -20,7 +22,9 @@ import { roleplaySessionOf } from './shared/chat.ts'
 import { liveSettings } from './host/sessions/settings.ts'
 import type { ChatSettings } from './shared/settings.ts'
 import { storesOf } from './host/orchestration/store.ts'
-import { sessionFolder } from '@dsh-agentic-roleplay/state'
+import { toolEnabled } from './shared/tools.ts'
+import { describeChecks } from './host/dice/describe.ts'
+import { createDiceTools, sessionFolder, type DiceLink } from '@dsh-agentic-roleplay/state'
 import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 import { currentTurn } from './host/orchestration/current-turn.ts'
 import { createTools, PREVIEW_TOOL } from './host/orchestration/tools.ts'
@@ -84,6 +88,16 @@ export function apply(ctx: Context): void {
     const session = chat === undefined ? undefined : roleplaySessionOf(chat)
     return session === undefined ? undefined : { session, settings: liveSettings(sessionFolder(sessionsDir(), session), problem) }
   }
+  /** What the game master is told of the dice, when it has a dice tool; nothing when it has none. */
+  const diceSection = (context: object, chat: { session: string; settings: ChatSettings } | undefined, language: string): string => {
+    const chatId = (context as { agent?: Agent }).agent?.session.id
+    const store = chatId === undefined ? undefined : stores(chatId)
+    if (chat === undefined || store === undefined) return ''
+    const on = ['roll_check', 'roll_dice', 'list_checks'].filter(tool => toolEnabled(chat.settings.tools, 'gameMaster', tool))
+    if (on.length === 0) return ''
+    const checks = on.includes('roll_check') ? describeChecks(store.story.dice.checks(), translator(languageOf(language))) : ''
+    return ctx.roleplayPrompts.text('roleplay/dice', language, { tools: on.join(', '), checks }, chat.session)
+  }
   for (const [name, order, id] of [
     [PERSONA_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'roleplay/persona'],
     [PROTOCOL_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'roleplay/game-master'],
@@ -97,11 +111,20 @@ export function apply(ctx: Context): void {
         const language = chat?.settings.prompts.language ?? FALLBACK_LANGUAGE
         // A chat that shows no preview is not told about one.
         const part = (name: string): string => ctx.roleplayPrompts.text(name, language, {}, chat?.session)
-        const variables = id === 'roleplay/game-master' ? { preview: chat?.settings.preview.enabled === false ? '' : part('roleplay/preview') } : id === 'roleplay/persona' ? { style: part('roleplay/style') } : {}
+        const variables = id === 'roleplay/game-master' ? { preview: chat?.settings.preview.enabled === false ? '' : part('roleplay/preview'), dice: diceSection(context, chat, language) } : id === 'roleplay/persona' ? { style: part('roleplay/style') } : {}
         return ctx.roleplayPrompts.text(id, language, variables, chat?.session)
       },
     })
   }
+  ctx.systemPrompt.section({
+    name: RESOURCE_HINT_SECTION,
+    order: ctx.systemPrompt.getSectionOrder('MCP_SERVERS'),
+    interpolate: false,
+    text: (context) => {
+      const chat = settingsOf(context)
+      return resourceHint(ctx.tools.schemas(context.scope).map(tool => tool.name), ctx.tools.schemas().map(tool => tool.name), translator(languageOf(chat?.settings.prompts.language ?? FALLBACK_LANGUAGE)))
+    },
+  })
   const [previewTool, ...tools] = [...createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); return () => { ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false } }, 'roleplay: reflection control')
@@ -133,5 +156,10 @@ export function apply(ctx: Context): void {
   }, 'roleplay: halt')
   ctx.effect(() => { ctx.roleplayOrchestration.timelines = timelines; return () => { ctx.roleplayOrchestration.timelines = undefined } }, 'roleplay: timelines')
   ctx.effect(() => { ctx.roleplayOrchestration.images = images; return () => { ctx.roleplayOrchestration.images = undefined } }, 'roleplay: images')
-  installHooks(ctx, { engine, boundaries, stores, timelines, previewTool: previewTool! })
+  const diceLink = (chat: string): DiceLink | undefined => {
+    const store = stores(chat)
+    const agent = ctx.agents.get(SessionId(chat))
+    return store === undefined || agent === undefined ? undefined : { session: store.story, turn: currentTurn(agent) }
+  }
+  installHooks(ctx, { engine, boundaries, stores, timelines, previewTool: previewTool!, optionalTools: createDiceTools(diceLink) })
 }

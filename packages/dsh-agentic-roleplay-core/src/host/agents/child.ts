@@ -48,6 +48,8 @@ export interface ChildTask {
    * nothing of it. DSH's own global tools are hidden from the child.
    */
   tools?: readonly ToolDefinition[]
+  /** Tools other plugins registered for everyone (a file or shell tool, an MCP server's) that this child may use, by name; the child has none of them otherwise. Names not registered now are left out. */
+  external?: readonly string[]
   /** Images the child is shown with the prompt, saved through the attachment service. The model must be able to read images. */
   images?: readonly ImageBlock['attachment'][]
   /** The shape of the result; the child ends by calling `submit_result` with it. */
@@ -278,7 +280,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     signal,
     setup: (childCtx, child) => {
       appendDelegatedPolicyOverrides(child.session, inherited)
-      applyChildComposition(childCtx, parent, { persona: `${task.persona}\n\n${SUBMIT_RULE}`, toolFilter: { allow: [] } })
+      applyChildComposition(childCtx, parent, { persona: `${task.persona}\n\n${SUBMIT_RULE}`, toolFilter: { allow: [...(task.external ?? [])] } })
       const registered = (task.tools ?? []).map(tool => childCtx.tools.register(counted(tool)))
       retire = () => {
         for (const dispose of registered) dispose()

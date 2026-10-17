@@ -250,6 +250,8 @@ export interface CommitEntry {
   variables?: { subject: string; name: string; from: string; to: string }[]
   /** What it did with things, and what came of each. */
   items?: { name: string; action: string; summary: string }[]
+  /** The dice that decided it, in words: what was rolled and what it came to. */
+  rolled?: string
   /** The player's character: it was not asked to act, so `intent` is what the game master decided it did. */
   player?: true
   /** Decreed by the player's out-of-character command: the character did not choose it, `intent` is what the game master decreed it did. */
@@ -262,6 +264,8 @@ export interface CommitEntry {
 
 /** One recorded round, as it is kept until its records are written. */
 export interface RoundRecord {
+  /** The dice rolled since the last round was recorded that no outcome took its result from (the player's own attempt, a plain roll), in words. */
+  rolls?: string[]
   turn: number
   round: number
   /** What the round was about, including what the player's character did. */
@@ -445,7 +449,7 @@ export interface TriggerReport {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers' | 'transaction'>
+  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers' | 'dice' | 'transaction'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings

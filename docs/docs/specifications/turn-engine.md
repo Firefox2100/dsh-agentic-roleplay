@@ -210,7 +210,19 @@ through the same checks as any outcome and is recorded as a round (`decree`, ent
 the ruling is the note the player reads above the narration (`TurnOutput.ooc`, `roleplay-ooc` in the transcript). The turn is a normal timeline turn: it can be taken back, regenerated or branched.
 Characters perceive what the command changed under the ordinary perception rules.
 
-## Taking the story back
+## Dice in the loop
+
+A chat's game master has the dice tools `roll_check`, `roll_dice` and `list_checks` when its settings say so (`tools.gameMaster`, on by default): each is registered on the game master's agent while the setting allows it and withdrawn when it does not, and the game master prompt carries the `roleplay/dice` text with the world's checks listed (`${dice}`, empty when the agent has none). The rules it is given are the same in every world: roll only when the outcome is uncertain and matters, once per attempt, after `judge_action` and before `resolve_round`, and let the result stand. The dice are rolled by code from the system's random source and each roll is recorded for the turn.
+
+`resolve_round` takes an optional `roll` for each outcome. The engine refuses (and tells the game master why) an outcome whose roll is not of this turn, was a plain roll with no result, was made for another character or already decided another outcome, an outcome that names a roll whose result it does not carry, and an outcome for a character that was rolled for which does not cite the roll. The round's record for the keeper says what the dice decided. What the player sees is the chat setting `dice.visibility`: `card` attaches the turn's rolls to the delivered output, which the transcript shows as a collapsed card, and `hidden` attaches none. A message that begins with `/roll NdM` rolls those dice for the player before the turn and tells the game master the result as a fact; a notation that cannot be read refuses the turn with the reason, like any input the game master is not asked to judge.
+
+## Tools of other plugins
+
+The tools that other plugins registered for everyone (found through the tool registry's global view, minus this plugin's and the state plugin's own and DSH's reserved transport) are off for every agent of a story unless its settings switch them on, by kind of agent (`tools.<agent>.<name>: true`). For the game master the restriction is DSH's `tools.restrict({ deny })` on its agent, set when the agent is created and followed at each step as the settings change, so the first request never lists a tool it was not given. For children (characters, record keeper) the tools they were given are passed as the allow-list of their tool filter (`ChildTask.external`), which is empty by default; a character that has some may make a few more calls than its memory look-ups. `GET /roleplay-api/tools` lists what is registered now for the interface; a name in a story's switches that is not registered is kept and ignored, and tool names may hold letters, digits and `_ . : -`.
+
+DSH's MCP resource plugin also adds a paragraph to every agent's system prompt that names the resource tools and the MCP servers, whether or not the agent can use them. The plugin replaces it, in the agent's scope, with a paragraph that appears only for an agent that can see one of the resource tools (`list_mcp_resources`, `list_mcp_resource_templates`, `read_mcp_resource`), in the chat's language, naming the servers that have a tool registered. This holds for any MCP server.
+
+
 
 The story's turns are kept in `<session folder>/timeline.json` (outside the database, so that putting the state back never changes it): a tree of `TimelineNode`s, one per turn
 played, each with the turn it follows, the log seq of the player's message (`userSeq`) and where the turn ends (`endSeq`, `startSeq`), what was said, what was delivered and the name

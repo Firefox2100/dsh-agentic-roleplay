@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { previewToggle } from '../../../src/host/orchestration/hooks.ts'
+import { optionalToolSwitch, previewToggle } from '../../../src/host/orchestration/hooks.ts'
 
 function fakeAgent() {
   const registered = new Set<string>()
@@ -39,6 +39,31 @@ describe('the preview tool of an agent', () => {
     const reloaded = previewToggle(tool)
     expect(() => { reloaded(agent, true) }).not.toThrow()
     reloaded(agent, false)
+    expect([...registered]).toEqual([])
+  })
+})
+
+describe('the optional tools of an agent', () => {
+  const tools = [{ name: 'roll_check' }, { name: 'roll_dice' }] as never[]
+
+  it('are registered when switched on, once, and withdrawn when switched off, each by itself', () => {
+    const { agent, registered } = fakeAgent()
+    const show = optionalToolSwitch(tools)
+    show(agent, () => true)
+    show(agent, () => true)
+    expect([...registered].sort()).toEqual(['roll_check', 'roll_dice'])
+    show(agent, name => name === 'roll_dice')
+    expect([...registered]).toEqual(['roll_dice'])
+    show(agent, () => false)
+    expect([...registered]).toEqual([])
+  })
+
+  it('are not registered a second time by a plugin that was reloaded', () => {
+    const { agent, registered } = fakeAgent()
+    optionalToolSwitch(tools)(agent, () => true)
+    const reloaded = optionalToolSwitch(tools)
+    expect(() => { reloaded(agent, () => true) }).not.toThrow()
+    reloaded(agent, () => false)
     expect([...registered]).toEqual([])
   })
 })

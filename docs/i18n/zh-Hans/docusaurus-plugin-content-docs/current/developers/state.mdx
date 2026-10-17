@@ -16,3 +16,7 @@ export const inject = ['roleplayState']
 会话元数据还可保存世界日历。日程与触发器辅助函数在判断日期、季节和节日规则时会读取它；外部消费者应使用该包导出的日历函数，不要自行解释 `on` 标记。
 
 该包重新导出规范模型类型，外部插件不需要依赖私有模型包。
+
+## 骰子
+
+会话保存骰子检定和掷骰记录（数据库结构版本 8）。`session.dice` 用来定义和读取检定、记录掷骰。`createDiceTools(resolve)` 为智能体构建 `roll_dice`、`roll_check` 和 `list_checks`：骰子来自系统的随机源（测试中可注入掷骰器），检定按其自带的区段解读，每次掷骰都会连同回合、角色和发起者一并记录。记法、检定校验和解读在 `parseNotation`、`rollCheck`、`readBands` 和 `checkProblems` 中。只有插件配置了 `diceTools: true` 时，它才会为角色扮演会话的每个智能体注册这些工具；角色扮演核心保持关闭，并根据自己的工具开关为各智能体分别注册。

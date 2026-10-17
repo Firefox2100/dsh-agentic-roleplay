@@ -7,6 +7,7 @@ title: Filesystem layout
   worlds/<world-folder>/
     world.json
     calendar.json
+    dice.json
     characters/
     locations/
     items/
@@ -27,7 +28,7 @@ title: Filesystem layout
     images/
 ```
 
-`calendar.json` is optional. It defines named holidays and the hemisphere used by date-aware routines and triggers.
+`calendar.json` is optional. It defines named holidays and the hemisphere used by date-aware routines and triggers. `dice.json` is optional too: it defines the [dice checks](../world-format/dice) the game master rolls, and is copied into the story when it starts.
 
 The roleplay root is portable content. Base plugin configuration and credentials remain in the DSH profile.
 

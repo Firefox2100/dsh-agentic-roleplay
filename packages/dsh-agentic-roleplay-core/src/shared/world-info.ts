@@ -1,3 +1,4 @@
+import { parseSwitchboard, type Switchboard } from './settings.ts'
 import { InvalidEditProblems } from './world-state.ts'
 
 /** The most alternate openings a world may offer, and the longest one. */
@@ -30,6 +31,8 @@ export interface WorldInfo {
   /** The author's own version label, or empty. */
   version: string
   alternateOpenings: AlternateOpeningText[]
+  /** The optional tools the world's agents have switched on or off, by kind of agent: only what was chosen, and names this version does not know. */
+  tools: Switchboard
 }
 
 export type WorldInfoEdit = Partial<Omit<WorldInfo, 'openingParts'>>
@@ -46,7 +49,7 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
   if (input === undefined) throw new InvalidEditProblems(['the changes must be an object'])
   const edit: Record<string, unknown> = {}
   for (const key of Object.keys(input)) {
-    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings') problems.push(`there is no field "${key}"`)
+    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings' && key !== 'tools') problems.push(`there is no field "${key}"`)
   }
   for (const key of TEXT_FIELDS) {
     if (input[key] === undefined) continue
@@ -68,6 +71,11 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
       if (kept.some(entry => entry.text.length > MAX_OPENING_CHARS)) problems.push(`an alternate opening is longer than ${MAX_OPENING_CHARS} characters`)
       edit['alternateOpenings'] = kept
     }
+  }
+  if (input['tools'] !== undefined) {
+    const board = parseSwitchboard(input['tools'], 'tools')
+    if (typeof board === 'string') problems.push(board)
+    else edit['tools'] = board
   }
   if (typeof edit['version'] === 'string' && edit['version'].length > MAX_WORLD_VERSION) problems.push(`the version is longer than ${MAX_WORLD_VERSION} characters`)
   if (edit['name'] === '') problems.push('the world needs a name')

@@ -1,0 +1,55 @@
+---
+title: Dice checks
+---
+
+A world may include `dice.json` to say how uncertain attempts are settled. The dice are rolled by code, never by the model, and the world decides what a roll means: the game master is told which band the roll fell in and narrates it, so no number is ever made up or interpreted freely. This project ships no dice rules, because tabletop systems differ too much; you write the ones your world uses. A world without `dice.json` has no checks, and its game master can still roll plain dice for things that have none.
+
+```json
+{
+  "checks": [
+    {
+      "key": "skill",
+      "name": "Skill check",
+      "use": "A character attempts something difficult where failure has a cost: picking a lock, climbing, persuading a hostile person.",
+      "dice": "1d20",
+      "compare": "over",
+      "bands": [
+        {"max": -10, "label": "critical failure", "result": "failed", "critical": true},
+        {"min": -9, "max": -1, "label": "failure", "result": "failed"},
+        {"min": 0, "max": 4, "label": "partial success", "result": "partial"},
+        {"min": 5, "max": 9, "label": "success", "result": "succeeded"},
+        {"min": 10, "label": "critical success", "result": "succeeded", "critical": true}
+      ]
+    }
+  ]
+}
+```
+
+The editor's **Dice** section edits this file as a form.
+
+## A check
+
+| Field | Meaning |
+| --- | --- |
+| `key` | Lower-case letters, digits, `-` and `_`, starting with a letter. The game master names the check by it. |
+| `name` | What the check is called. |
+| `use` | When the game master rolls it, in your words. This is what the game master reads to choose between checks, so say what kind of attempt it is for. |
+| `dice` | Dice notation (below). |
+| `reading` | `total` (default) reads the sum of the dice. `successes` counts the dice that show at least `hit`, which is then required. |
+| `compare` | What the value is compared with. `absolute` (default) reads the total itself. `over` reads how far the total is above a target the game master gives (a difficulty to meet or beat). `under` reads how far it stays below a target (a skill to roll under). |
+| `modifier` | The key of a number variable of the acting character, added to the total. The game master then names the character. |
+| `bands` | At least one, at most 20. Each has an optional `min` and `max` (a missing end runs on for ever), a `label`, a `result` of `succeeded`, `partial` or `failed`, and optionally `critical`. The first band that holds the value wins. |
+
+When a check can give a value that no band holds, the world is refused when a story starts, with the value named. A check read against a target cannot be checked this way, so leave no gap there either: a roll that falls in one fails with a message. A world has at most 40 checks.
+
+## Dice notation
+
+`NdM` rolls N dice with M sides; `d%` is `d100`. Terms are added or subtracted: `2d6+1`, `1d8+1d4-1`. Add `kh` or `kl` to keep the highest or lowest dice (`4d6kh3`, `2d20kl1`) and `dh` or `dl` to drop them. A roll has at most 100 dice of at most 1000 sides and eight terms.
+
+## What the game master does with it
+
+The game master rolls a check only when an attempt can go either way and matters, after judging that the attempt is possible and before deciding what happens. The tool returns the band, and the outcome it then gives that character must carry the roll's result: an outcome that names a roll with a different result is refused, a roll serves one outcome, and a character that was rolled for cannot be given an outcome that ignores the roll. A critical band does not change the result; it tells the game master the outcome deserves more. Each roll is also written into the round the memory keeper records, so the story's memory agrees with the dice.
+
+The player can roll too: a message that starts with `/roll 2d6+1 pick the lock` rolls those dice with the system's random source and tells the game master the result as a fact. Whether the player sees the dice at all is the chat setting **Dice**: a collapsed card under the narration that can be opened, or hidden.
+
+Rolls are kept in the session database; what a world defines is copied into the story when it starts, like its calendar.

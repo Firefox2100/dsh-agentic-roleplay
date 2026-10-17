@@ -57,6 +57,8 @@ export interface Outcome {
   itemChanges?: ItemChangeSpec[]
   /** What it changes of what the story tracks: a feeling, a health, a flag. */
   variableChanges?: VariableChangeSpec[]
+  /** The id of the dice roll that decided it: the result is the one the roll gave. */
+  roll?: number
 }
 
 /** A request to send a character somewhere, with places named by key. */

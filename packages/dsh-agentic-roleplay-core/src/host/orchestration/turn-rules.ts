@@ -22,6 +22,13 @@ export function previewDue(state: TurnState): boolean {
   return state.phase === 'idle' && state.previewWanted && !state.previewed && state.judgement?.allowed !== false
 }
 
+/** Whether the game master still has to roll for an attempt it judged uncertain: nobody is asked to act before the dice are rolled. */
+export function rollDue(state: TurnState, store: TurnStore): boolean {
+  return state.rollWanted === true && state.phase === 'idle' && state.judgement?.allowed !== false && store.story.dice.rolls({ turn: state.turn }).every(roll => roll.by !== 'agent')
+}
+
+export const ROLL_FIRST = 'the attempt is uncertain and matters, so roll for it before anyone is asked to act: call roll_check with the check that fits (list_checks shows them), naming the character it is for; roll_dice only when no check fits'
+
 export function explainPhase(state: TurnState, attempted: 'activate_characters' | 'resolve_round' | 'narrate' | undefined): string {
   if (state.ooc?.question === true && (state.phase === 'idle' || state.phase === 'between')) {
     return state.ooc.ruling === undefined ? 'this turn is an out-of-character question: answer it first with ooc_answer' : 'a question changes nothing: call narrate with no segments'
@@ -76,7 +83,7 @@ export function mustSay(state: TurnState): string {
 }
 
 /** `player` is the key of the player's character when an outcome for it is acceptable: it is not asked to act, but what it did can move it or have it handle things. */
-export function checkOutcomes(attempt: Attempt, outcomes: readonly Outcome[], store: TurnStore, player?: string, decreed?: readonly CastMember[]): void {
+export function checkOutcomes(attempt: Attempt, outcomes: readonly Outcome[], store: TurnStore, player?: string, decreed?: readonly CastMember[], state?: Pick<TurnState, 'turn' | 'cited'>): void {
   const expected = decreed === undefined ? attempt.reports.map(report => report.character) : [...new Set(outcomes.map(outcome => outcome.character))]
   const unknown = decreed === undefined ? [] : [...new Set(outcomes.map(outcome => outcome.character))].filter(key => !decreed.some(member => member.key === key)).map(key => `${key} is not a character of the story`)
   const given = outcomes.filter(outcome => outcome.character !== player).map(outcome => outcome.character)
@@ -91,8 +98,35 @@ export function checkOutcomes(attempt: Attempt, outcomes: readonly Outcome[], st
     ...outcomes.flatMap(outcome => moveProblems(outcome, store)),
     ...itemProblems(outcomes, store),
     ...outcomes.flatMap(outcome => store.checkVariableChanges(outcome.variableChanges ?? []).map(problem => `${outcome.character}: ${problem}`)),
+    ...(state === undefined ? [] : rollProblems(outcomes, store, state)),
   ]
   if (problems.length > 0) throw new Error(`the outcomes are not acceptable: ${problems.join('; ')} (expected exactly: ${expected.join(', ')})`)
+  for (const outcome of outcomes) if (outcome.roll !== undefined) state?.cited.add(outcome.roll)
+}
+
+/**
+ * Why an outcome does not follow the dice, if it does not. A roll decides what it was rolled for: the result of the outcome is the roll's own, a roll serves one outcome,
+ * and a character a check was rolled for cannot be given an outcome without it.
+ */
+export function rollProblems(outcomes: readonly Outcome[], store: TurnStore, state: Pick<TurnState, 'turn' | 'cited'>): string[] {
+  const rolls = store.story.dice.rolls({ turn: state.turn })
+  const problems: string[] = []
+  const taken = new Set<number>()
+  for (const outcome of outcomes) {
+    if (outcome.roll === undefined) continue
+    const roll = rolls.find(candidate => candidate.id === outcome.roll)
+    if (roll === undefined) problems.push(`${outcome.character}: there is no roll ${outcome.roll} in this turn: use the id the roll tool gave`)
+    else if (roll.readout === undefined) problems.push(`${outcome.character}: roll ${roll.id} was a plain roll with no result to take: leave roll out and decide it yourself`)
+    else if (state.cited.has(roll.id) || taken.has(roll.id)) problems.push(`${outcome.character}: roll ${roll.id} already decided another outcome: roll again for this one`)
+    else if (roll.character !== undefined && roll.character !== outcome.character) problems.push(`${outcome.character}: roll ${roll.id} was for ${roll.character}`)
+    else if (roll.readout.result !== outcome.result) problems.push(`${outcome.character}: roll ${roll.id} gave ${roll.readout.result} (${roll.readout.label}), so the outcome's result is ${roll.readout.result}, not ${outcome.result}: the dice decide it`)
+    taken.add(outcome.roll)
+  }
+  for (const roll of rolls) {
+    if (roll.readout === undefined || roll.character === undefined || state.cited.has(roll.id) || taken.has(roll.id)) continue
+    if (outcomes.some(outcome => outcome.character === roll.character && outcome.roll === undefined)) problems.push(`${roll.character}: you rolled for this character (roll ${roll.id}: ${roll.readout.label}, ${roll.readout.result}): give the outcome the result ${roll.readout.result} and cite the roll by adding "roll": ${roll.id} to that outcome`)
+  }
+  return problems
 }
 
 /** Why a character cannot go where the outcome sends it, if it cannot: the game master hears it before the round is recorded. */

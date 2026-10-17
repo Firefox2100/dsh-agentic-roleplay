@@ -24,3 +24,5 @@ title: 配置参考
 `sampling.maxTokens` 默认为 `8000`，`sampling.shortMaxTokens` 默认为 `2000`，分别作为一般辅助智能体及角色/建议作者单次请求的生成上限。对于已经声明回答大小的辅助智能体，实际预算按估算值乘以 `sampling.headroom`（默认 `2`）计算，但不会超过相应上限。
 
 设置界面会给出当前数值边界。未知字段会被拒绝。提供方专属嵌入参数保存在 `embedding.options`。
+
+`dice.visibility` 为 `card`（默认）时在叙述下方用折叠卡片显示掷出的骰子，为 `hidden` 时什么都不显示。`tools` 按智能体类别（`gameMaster`、`characters`、`records`）和工具名给出 `true` 或 `false`；不认识的名字会被保留并忽略。状态插件另有配置项 `diceTools`（默认 `false`），为所有角色扮演会话的智能体注册骰子工具。

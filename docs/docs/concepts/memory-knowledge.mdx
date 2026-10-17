@@ -45,7 +45,7 @@ Beliefs do not appear by themselves. After a stretch of play, a **reflection** h
 Each belief has a confidence of `doubtful`, `likely` or `sure`. A reflection names perceptions that support or contradict every change, and the engine checks those links before writing anything:
 
 - A new belief must rest on things from at least two different turns (or on one event of high importance that turned the story). One passing moment is not yet a belief.
-- A new `sure` belief needs supporting perceptions from at least two turns. New support may raise an existing belief, while contradictory evidence may lower it. Lowering confidence requires a contradicting perception.
+- A new `sure` belief needs supporting perceptions from at least two turns. New support may raise an existing belief, while contradictory evidence may lower it. Lowering confidence requires a contradicting perception. Doubting is its own step: the reflection names the belief and what speaks against it, and the belief's confidence is lowered one step for it (never below `doubtful`) while the contradicting perceptions are linked to it; a model asked to doubt does not have to juggle the text, the confidence and the numbers together. Whatever it writes into a belief's text that belongs in a field (its confidence, importance or the numbers it rests on) is refused with that reason.
 - A belief is revised or let go only for something that came after it was formed, or because it was merged into another belief that stays.
 - It writes beliefs and nothing else. It never changes or adds an event, so history stays as it was.
 

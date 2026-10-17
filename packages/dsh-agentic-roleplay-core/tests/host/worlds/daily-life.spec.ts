@@ -2,7 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { editCalendar, editRoutine, editVariables, readCalendarDocument, readRoutines, readVariables } from '../../../src/host/worlds/daily-life.ts'
+import { editCalendar, editDice, editRoutine, editVariables, readCalendarDocument, readDiceDocument, readRoutines, readVariables } from '../../../src/host/worlds/daily-life.ts'
+import { parseDiceEdit } from '../../../src/shared/world-dice.ts'
 import { parseCalendarEdit, parseRoutineEdit, parseVariablesEdit } from '../../../src/shared/world-daily.ts'
 
 let world: { id: string; directory: string }
@@ -86,5 +87,35 @@ describe('the calendar of a world', () => {
     await expect(editCalendar(world, { hemisphere: 'north', holidays: [] })).rejects.toThrow(/a trigger names the holiday "fair"/)
     expect(JSON.parse(await readFile(calendarFile(), 'utf8')).holidays).toHaveLength(1)
     expect(() => parseCalendarEdit({ hemisphere: 'moon', holidays: [{ id: 1 }] })).toThrow(/hemisphere/)
+  })
+})
+
+describe('the dice checks of a world', () => {
+  const skill = { key: 'skill', name: 'Skill', use: 'A hard attempt.', dice: '1d20', compare: 'over', bands: [{ max: -1, label: 'failure', result: 'failed' }, { min: 0, label: 'success', result: 'succeeded', critical: false }] }
+  const file = () => join(world.directory, 'dice.json')
+
+  it('are read, written as the file keeps them (defaults left out), and removed with the last one', async () => {
+    expect(await readDiceDocument(world)).toEqual({ checks: [] })
+    const done = await editDice(world, parseDiceEdit({ checks: [{ ...skill, reading: 'total', bands: skill.bands }] }))
+    expect(done.checks[0]).toMatchObject({ key: 'skill', compare: 'over', bands: [{ label: 'failure', max: -1 }, { label: 'success', min: 0 }] })
+    const written = JSON.parse(await readFile(file(), 'utf8')) as { checks: Record<string, unknown>[] }
+    expect(written.checks[0]).not.toHaveProperty('reading')
+    expect(written.checks[0]?.['bands']).toEqual([{ max: -1, label: 'failure', result: 'failed' }, { min: 0, label: 'success', result: 'succeeded' }])
+    await editDice(world, { checks: [] })
+    await expect(readFile(file(), 'utf8')).rejects.toThrow()
+  })
+
+  it('are refused with every problem, and nothing is written, when a check cannot be read or adds a quality the world does not declare', async () => {
+    await expect(editDice(world, parseDiceEdit({ checks: [{ ...skill, dice: 'lots', bands: [] }] }))).rejects.toThrow(/dice/)
+    await expect(editDice(world, parseDiceEdit({ checks: [skill, skill] }))).rejects.toThrow(/more than one check/)
+    await expect(editDice(world, parseDiceEdit({ checks: [{ ...skill, modifier: 'brawn' }] }))).rejects.toThrow(/does not declare "brawn"|brawn/)
+    await expect(readFile(file(), 'utf8')).rejects.toThrow()
+    await write(join(world.directory, 'variables.json'), [{ key: 'brawn', name: 'Brawn', kind: 'number', subject: 'character', visibility: 'public' }])
+    expect((await editDice(world, parseDiceEdit({ checks: [{ ...skill, modifier: 'brawn' }] }))).checks[0]?.modifier).toBe('brawn')
+  })
+
+  it('arrive from the browser with their shape checked', () => {
+    expect(() => parseDiceEdit({ checks: [{ ...skill, nope: 1, bands: [{ label: 'x', result: 'maybe' }] }] })).toThrow(/nope is not a field[\s\S]*result must be one of|result must be one of[\s\S]*nope/)
+    expect(() => parseDiceEdit({})).toThrow(/checks/)
   })
 })

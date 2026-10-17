@@ -7,6 +7,7 @@ import type { SessionStore, StoreOptions } from './store.ts'
 import type { RecallQuery, Recalled } from './memory/recall.ts'
 import type { SemanticRanker } from './memory/ranker.ts'
 import { poolCandidates } from './memory/recall.ts'
+import { createDiceTools } from './tools/dice.ts'
 import { createTools, type AgentResolver } from './tools/index.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -23,11 +24,17 @@ export interface Config {
    * tools are always there; leave writing off where another agent is responsible for the records.
    */
   writeTools: boolean
+  /**
+   * Whether the dice tools (`roll_dice`, `roll_check`, `list_checks`) are registered for every agent of a roleplay session. Leave off where another plugin
+   * decides which agents may roll, as the roleplay core does with its per-agent tool settings.
+   */
+  diceTools: boolean
 }
 
 export const Config: z<Config> = z.object({
   journalMode: z.union(['delete', 'wal'] as const).default('delete'),
   writeTools: z.boolean().default(false),
+  diceTools: z.boolean().default(false),
 })
 
 /** A session's repositories. Connections belong to the service, so there is nothing to close. */
@@ -63,6 +70,7 @@ export class RoleplayState extends Service {
     }
     ctx.inject(['tools'], (scope) => {
       for (const tool of createTools(resolve, { write: config.writeTools ?? false })) scope.tools.register(tool)
+      if (config.diceTools === true) for (const tool of createDiceTools(resolve)) scope.tools.register(tool)
     })
   }
 
@@ -193,6 +201,7 @@ export class RoleplayState extends Service {
       routines: store.routines,
       engagements: store.engagements,
       triggers: store.triggers,
+      dice: store.dice,
       planMove: (characterId, move) => store.planMove(characterId, move),
       planKnownMove: (characterId, move) => store.planKnownMove(characterId, move),
       move: (characterId, move) => store.move(characterId, move),

@@ -1,8 +1,10 @@
 import { withDictionaries, type Dictionaries } from '../i18n.ts'
 import { dictionaries as form, type SettingsFormKey } from '../settings-form/locales.ts'
+import { dictionaries as toolSwitches, type ToolSwitchKey } from '../widgets/tool-switches/locales.ts'
 
 export type ChatSettingsLocaleKey =
   | SettingsFormKey
+  | ToolSwitchKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
   | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
   | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed' | 'reflectTitle' | 'reflectNone' | 'reflectLast' | 'reflectTurns' | 'reflectScene' | 'reflectManual' | 'reflectOutcome' | 'reflectNothing' | 'reflectRunning' | 'reflectNow' | 'reflectHelp' | 'reflectFailed' | 'reflectError'
@@ -10,7 +12,7 @@ export type ChatSettingsLocaleKey =
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
-const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
+const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwitchKey>> = {
   en: {
     tab: 'Chat settings',
     title: 'Chat settings',
@@ -217,4 +219,4 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey>> = {
   },
 }
 
-export const dictionaries = withDictionaries(own, form)
+export const dictionaries = withDictionaries(withDictionaries(own, form), toolSwitches)

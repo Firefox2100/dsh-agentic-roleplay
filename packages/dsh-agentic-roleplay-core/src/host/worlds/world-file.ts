@@ -3,6 +3,7 @@ import type { VariableValue } from 'dsh-roleplay-model'
 import { readVariableValues } from '../variables/values.ts'
 import type { WorldAuthor } from '../../shared/worlds.ts'
 import { readIdentifier } from '../identifiers.ts'
+import { parseSwitchboard, type Switchboard } from '../../shared/settings.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
 
 export const WORLD_FILE_NAME = 'world.json'
@@ -33,6 +34,8 @@ export interface WorldFile {
   alternateOpenings?: AlternateOpening[]
   /** What is not allowed in this world, as short rules in the author's own words ("There is no magic"). */
   rules?: string[]
+  /** The optional tools the world's agents have switched on or off, by kind of agent; names this version does not know are kept. */
+  tools?: Switchboard
   /** Provider voice id used for narration when a session starts. */
   narrationVoice?: string
 }
@@ -64,6 +67,15 @@ function readAlternateOpenings(reader: Reader): AlternateOpening[] | undefined {
 /** The most rules a world may state, and the longest one: they are told to the game master every turn. */
 export const MAX_RULES = 30
 export const MAX_RULE_LENGTH = 300
+
+/** `tools`: switches by kind of agent and tool name; a world carried from a version with other tools still loads. */
+function readTools(reader: Reader): Switchboard | undefined {
+  const value = reader.raw('tools')
+  if (value === undefined) return undefined
+  const board = parseSwitchboard(value, 'tools')
+  if (typeof board === 'string') { reader.fail('tools', board.replace(/^"tools"\s*/, '')); return undefined }
+  return Object.keys(board).length === 0 ? undefined : board
+}
 
 /** `rules` is one rule as text, or a list of them; blank ones are left out. */
 function readRules(reader: Reader): string[] | undefined {
@@ -159,6 +171,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const clock = readClock(reader)
   const variables = readVariableValues(reader)
   const rules = readRules(reader)
+  const tools = readTools(reader)
   const alternateOpenings = readAlternateOpenings(reader)
   const narrationVoice = reader.string('narration_voice')?.trim() || undefined
   if (name === undefined || issues.length > 0) return { ok: false, issues }
@@ -177,6 +190,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(clock === undefined ? {} : { clock }),
       ...(variables === undefined ? {} : { variables }),
       ...(rules === undefined ? {} : { rules }),
+      ...(tools === undefined ? {} : { tools }),
       ...(alternateOpenings === undefined ? {} : { alternateOpenings }),
       ...(narrationVoice === undefined ? {} : { narrationVoice }),
     },

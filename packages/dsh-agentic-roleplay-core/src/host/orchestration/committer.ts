@@ -6,6 +6,7 @@ import { zoneOf } from '../clock/story-clock.ts'
 import { FIELD_TOKENS, tokensOf } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { wrongLanguage } from '../translate/language.ts'
+import { externalGiven } from '../tools/external.ts'
 import { referent } from './referent.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
@@ -21,11 +22,13 @@ function describeRound(round: RoundRecord, known: ReadonlyMap<string, string>): 
     round.offstage === true ? `Off stage (away from the player's character; only the characters named here perceive it, and only those who were together perceive each other): ${round.situation}` : `The moment (includes what the player's character did or said): ${round.situation}`,
     ...(round.place === undefined ? [] : [`Place of the moment: ${round.place.name} (${round.place.key})`]),
     ...(round.time === undefined ? [] : [`When: ${describeInstant(round.time.from, round.time.zone)} (${dayPart(localTime(round.time.from, round.time.zone).minuteOfDay)})${round.time.to > round.time.from ? `; the round took ${describeDuration(round.time.to - round.time.from)}` : ''}`]),
+    ...(round.rolls === undefined ? [] : ['Dice rolled this round, which are facts (not interpreted by anyone):', ...round.rolls.map(line => `- ${line}`)]),
     'What each character did, and what became of it:',
     ...round.entries.map(entry => [
       entry.forced === true ? `- ${entry.character} (${known.get(entry.character) ?? entry.name}): decreed, not chosen: ${entry.result}: ${entry.summary}` : entry.player === true ? `- ${entry.character} (${known.get(entry.character) ?? entry.name}, the player's character): ${entry.result}: ${entry.summary}` : `- ${entry.character} (${known.get(entry.character) ?? entry.name}): intended "${entry.intent}" [commitment: ${entry.commitment}]; ${entry.result}: ${entry.summary}`,
       entry.utterance === undefined ? '' : `  said${entry.spoken ? '' : ' (but was prevented from saying)'}: "${entry.utterance}"`,
       entry.publicState === undefined ? '' : `  the game master says anyone present can now see: ${entry.publicState}`,
+      entry.rolled === undefined ? '' : `  decided by the dice: ${entry.rolled}`,
       entry.variables === undefined ? '' : `  the game master changed what is tracked: ${entry.variables.map(change => `${change.subject}'s ${change.name} ${change.from} -> ${change.to}`).join('; ')}`,
       entry.items === undefined ? '' : `  with things: ${entry.items.map(thing => `${thing.name} (${thing.action}: ${thing.summary})`).join('; ')}`,
       entry.at === undefined ? '' : `  was in ${entry.at.name} (${entry.at.key})${entry.moved === undefined ? '' : ` and went to ${entry.moved.name} (${entry.moved.key})${entry.moved.position === undefined ? '' : `, ${entry.moved.position}`}`}`,
@@ -158,6 +161,7 @@ export function recordKeeper(deps: { agentOf: (chat: string) => Agent | undefine
         persona: promptFor(parent, 'roleplay/record-keeper', job.store.settings().prompts.language),
         prompt: describePrompt(job, memory),
         tools: keeperTools(job, memory, progress),
+        external: externalGiven(parent.ctx.tools, job.store.settings().tools, 'records'),
         result: RESULT,
         beforeSubmit: () => {
           if (progress.edits === 0 && !warned) {

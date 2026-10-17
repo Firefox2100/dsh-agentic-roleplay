@@ -1,5 +1,6 @@
 import { readFile, realpath, stat } from 'node:fs/promises'
 import { extname, isAbsolute, join, relative, resolve } from 'node:path'
+import type { Switchboard } from '../../shared/settings.ts'
 import type { WorldProblem, WorldSummary } from '../../shared/worlds.ts'
 import { errorMessage } from '../errors.ts'
 import { subfolders } from '../folders.ts'
@@ -47,6 +48,8 @@ export interface WorldRecord {
   alternateOpenings?: AlternateOpening[]
   /** What is not allowed in the world. */
   rules?: string[]
+  /** The optional tools switched on or off for the world's agents. */
+  tools?: Switchboard
   narrationVoice?: string
 }
 
@@ -127,6 +130,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.variables === undefined ? {} : { variables: world.variables }),
     ...(world.alternateOpenings === undefined ? {} : { alternateOpenings: world.alternateOpenings }),
     ...(world.rules === undefined ? {} : { rules: world.rules }),
+    ...(world.tools === undefined ? {} : { tools: world.tools }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
   }
   // The cover is optional; a world that names one it cannot supply is still listed, with the reason reported.

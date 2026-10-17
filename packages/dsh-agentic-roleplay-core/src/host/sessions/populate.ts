@@ -1,4 +1,5 @@
 import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type FactionDefinition, type Holder, type ItemDefinition, type LocationDefinition, type LoreDefinition, type LoreSubject, type Slot } from 'dsh-roleplay-model'
+import type { DiceCheckDefinition } from 'dsh-roleplay-model'
 import { MINUTE, dayTokenProblems, parseTimeOfDay, triggerReferenceProblems, writeCalendar, type Calendar, type Session } from '@dsh-agentic-roleplay/state'
 import { InvalidWorldError } from './errors.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
@@ -100,6 +101,11 @@ export function routineProblems(characters: readonly CharacterDefinition[], loca
     if (window.feature !== undefined && !location.features.some(feature => feature.key === window.feature)) return [`${character.id}: routine[${index}].feature "${window.feature}" is not a feature of ${location.name}`]
     return []
   }))
+}
+
+/** Keeps the checks of the world with the story: what its game master rolls and how the dice are read. */
+export function populateDice(session: Pick<Session, 'dice'>, checks: readonly DiceCheckDefinition[]): void {
+  for (const check of checks) session.dice.define(check)
 }
 
 /** Keeps the world's calendar with the story, for the days a routine or a trigger waits for. */

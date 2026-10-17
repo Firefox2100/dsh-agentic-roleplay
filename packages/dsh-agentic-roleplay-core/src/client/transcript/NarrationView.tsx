@@ -49,6 +49,14 @@ export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData;
             </div>
           </div>
         ))}
+      {data.rolls !== undefined && data.rolls.length > 0 && (
+        <details className={css.dice} data-testid="roleplay-dice" data-rp="dice">
+          <summary className={css.diceSummary}>{t('diceRolled', { count: String(data.rolls.length) })}</summary>
+          <ul className={css.diceList}>
+            {data.rolls.map(roll => <li key={roll.id} data-rp="roll">{roll.by === 'player' ? `${t('dicePlayer')} ` : ''}{roll.text}</li>)}
+          </ul>
+        </details>
+      )}
       {data.repaired && <span className={css.note}>{t('repaired')}</span>}
     </div>
   )

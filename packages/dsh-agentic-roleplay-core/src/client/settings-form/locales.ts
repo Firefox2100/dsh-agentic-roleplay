@@ -7,6 +7,7 @@ export type SettingsFormKey =
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'interfacePack' | 'interfacePackHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
+  | 'diceVisibility' | 'diceVisibilityHelp' | 'diceHidden' | 'diceCard'
   | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'reflectionAuto' | 'reflectionAutoHelp' | 'reflectionEveryTurns' | 'reflectionEveryTurnsHelp' | 'reflectionOnScene' | 'reflectionOnSceneHelp' | 'reflectionSceneDays' | 'reflectionSceneDaysHelp' | 'reflectionMinTurns' | 'reflectionMinTurnsHelp' | 'reflectionPerRun' | 'reflectionPerRunHelp' | 'reflectionMinNew' | 'reflectionMinNewHelp' | 'modelsCharacters' | 'modelsBackground' | 'modelsBackgroundHelp' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
@@ -117,6 +118,7 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     modelsSuggestionsHelp: 'As provider/model. Leave empty to use the chat\'s own model.',
     modelsAuthoring: 'Model for the world and plot author',
     modelsAuthoringHelp: 'As provider/model. Leave empty to use the chat\'s own model. Made-up characters, places and things are only as good as this model.',
+    diceVisibility: 'Dice', diceVisibilityHelp: 'What the player sees of the dice the game master rolls: a collapsed card under the narration to open when you want to check, or nothing, to stay in the story. The dice are rolled either way.', diceHidden: 'Hidden', diceCard: 'Collapsed card',
     imagesOff: 'Off',
     imagesManual: 'Manual',
     imagesEveryTurn: 'Every turn',
@@ -264,6 +266,7 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     modelsSuggestionsHelp: '写成 提供方/模型。留空则使用对话自己的模型。',
     modelsAuthoring: '世界与剧情作者使用的模型',
     modelsAuthoringHelp: '写成 提供方/模型。留空则使用对话自己的模型。新编造的角色、地点和物品的质量取决于这个模型。',
+    diceVisibility: '骰子', diceVisibilityHelp: '玩家能看到主持人掷出的骰子的什么：叙述下方一张折叠的卡片，想核对时可以展开；或什么都不显示，保持沉浸在故事里。无论哪种，骰子都会照常掷出。', diceHidden: '隐藏', diceCard: '折叠卡片',
     imagesOff: '关闭',
     imagesManual: '手动',
     imagesEveryTurn: '每轮',

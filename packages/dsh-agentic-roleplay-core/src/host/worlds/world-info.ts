@@ -3,6 +3,7 @@ import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
+import { parseSwitchboard } from '../../shared/settings.ts'
 import { formatIssue } from '../validation.ts'
 import { parseWorldFile, WORLD_FILE_NAME } from './world-file.ts'
 
@@ -23,6 +24,8 @@ async function replaceFile(file: string, text: string): Promise<void> {
 
 const textOf = (value: unknown): string => (typeof value === 'string' ? value : '')
 
+const toolsOf = (value: unknown): WorldInfo['tools'] => { const board = value === undefined ? {} : parseSwitchboard(value, 'tools'); return typeof board === 'string' ? {} : board }
+
 function infoOf(document: Json): WorldInfo {
   const opening = document['opening_message']
   const parts = Array.isArray(opening) && opening.some(part => typeof part === 'object' && part !== null && (part as Json)['type'] === 'utterance')
@@ -36,6 +39,7 @@ function infoOf(document: Json): WorldInfo {
     rules: typeof rules === 'string' ? [rules] : Array.isArray(rules) ? rules.filter((rule): rule is string => typeof rule === 'string') : [],
     opening: plain, openingParts: parts, authorName: textOf(author['name']), authorUrl: textOf(author['url']),
     timeZone: textOf(document['time_zone']), startingTime: textOf(document['starting_time']), version: (typeof document['version'] === 'number' ? String(document['version']) : textOf(document['version'])),
+    tools: toolsOf(document['tools']),
     alternateOpenings: Array.isArray(document['alternate_openings']) ? document['alternate_openings'].flatMap((entry): { title: string; text: string }[] => (typeof entry === 'object' && entry !== null && typeof (entry as Json)['text'] === 'string' ? [{ title: textOf((entry as Json)['title']), text: (entry as Json)['text'] as string }] : [])) : [],
   }
 }
@@ -80,6 +84,7 @@ export async function editWorldInfo(directory: string, edit: WorldInfoEdit): Pro
   if (edit.startingTime !== undefined) setOrRemove(document, 'starting_time', edit.startingTime)
   if (edit.version !== undefined) setOrRemove(document, 'version', edit.version)
   if (edit.alternateOpenings !== undefined) { if (edit.alternateOpenings.length === 0) delete document['alternate_openings']; else document['alternate_openings'] = edit.alternateOpenings.map(entry => ({ title: entry.title === '' ? entry.text.slice(0, 40) : entry.title, text: entry.text })) }
+  if (edit.tools !== undefined) { if (Object.keys(edit.tools).length === 0) delete document['tools']; else document['tools'] = edit.tools }
   const next = JSON.stringify(document, null, /^([ \t]+)"/m.exec(text)?.[1] ?? '  ') + (text.endsWith('\n') ? '\n' : '')
   const parsed = parseWorldFile(next)
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))

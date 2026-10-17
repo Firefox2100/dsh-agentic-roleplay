@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCalendar, populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
+import { populateCalendar, populateCharacters, populateDice, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
 import { copyWorldPrompts } from '../prompts/library.ts'
 import { copyWorldPacks } from '../interface/packs.ts'
@@ -54,7 +54,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const world = await deps.worlds.find(request.worldId)
   if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${request.worldId}"`)
 
-  const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar } = await loadValidatedWorld(world)
+  const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar, checks } = await loadValidatedWorld(world)
 
 
   if (request.opening !== undefined && (!Number.isInteger(request.opening) || request.opening < 0 || request.opening >= (world.alternateOpenings?.length ?? 0))) throw new InvalidStartError(`the world has no alternate opening ${String(request.opening)}`)
@@ -80,7 +80,9 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   }
   // The zone a story is read in is chosen once, here: the zone of the computer when time follows the wall clock, otherwise the world's.
   const timeZone = settings.clock.timeZone !== '' ? settings.clock.timeZone : settings.clock.mode === 'real' ? systemTimeZone() : world.clock?.timeZone ?? 'UTC'
-  settings = { ...settings, clock: { ...settings.clock, timeZone } }
+  // What the world says of its tools is where the story starts from; a choice made at the start is added on top, tool by tool.
+  const tools = Object.fromEntries([...new Set([...Object.keys(world.tools ?? {}), ...Object.keys(settings.tools)])].map(agent => [agent, { ...world.tools?.[agent], ...settings.tools[agent] }]))
+  settings = { ...settings, clock: { ...settings.clock, timeZone }, tools }
 
   let startsAt = world.clock?.startingTime
   if (request.startingTime !== undefined && request.startingTime.trim() !== '') {
@@ -101,6 +103,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateCharacters(session, characters, player.id)
       populateFactions(session, factions)
       populateCalendar(session, calendar)
+      populateDice(session, checks)
       populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
       populateLore(session, authoredLore.lore)

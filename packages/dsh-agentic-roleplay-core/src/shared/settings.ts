@@ -188,6 +188,15 @@ export interface ChatSettings {
     /** A model that only writes captions for pictures, as `provider/model` (a captioning model cannot call tools); the chat's model turns its caption into the description. Empty: the model above does both. */
     captioner: string
   }
+  dice: {
+    /** Whether the player sees what was rolled: a collapsed card under the narration that can be opened, or nothing, to stay in the story. The dice are rolled either way. */
+    visibility: 'hidden' | 'card'
+  }
+  /**
+   * The optional tools each kind of agent may use, as switches by tool name: a tool named true is on, false is off, one not named is as it is by default.
+   * Names this version does not know are kept and have no effect, so that settings carried from a version with other tools still load.
+   */
+  tools: Switchboard
   embedding: {
     /**
      * What is set per request to the embedding provider, by the name the provider gives each option
@@ -197,6 +206,13 @@ export interface ChatSettings {
     options: EmbeddingOptions
   }
 }
+
+/** Kinds of agent, each with a switch for each of its optional tools. */
+export type Switchboard = Record<string, Record<string, boolean>>
+
+/** At most this many kinds of agent and tools of one, so that a settings file cannot grow without bound. */
+export const MAX_SWITCH_AGENTS = 20
+export const MAX_SWITCHES = 300
 
 export type EmbeddingValue = number | string | boolean
 export type EmbeddingOptions = Record<string, EmbeddingValue>
@@ -210,15 +226,18 @@ interface ChoiceSpec { kind: 'choice'; options: readonly string[]; fallback: str
 interface TextSpec { kind: 'text'; max: number; fallback: string }
 /** A flat set of named values whose names are not known here. */
 interface RecordSpec { kind: 'record'; fallback: EmbeddingOptions }
+/** Switches by kind of agent and tool name, whose names are not known here. */
+interface SwitchSpec { kind: 'switchboard' }
 interface NumberSpec { kind: 'integer' | 'number'; min: number; max: number; fallback: number }
 interface FlagSpec { kind: 'flag'; fallback: boolean }
-type FieldSpec = NumberSpec | FlagSpec | RecordSpec | ChoiceSpec | TextSpec
+type FieldSpec = NumberSpec | FlagSpec | RecordSpec | ChoiceSpec | TextSpec | SwitchSpec
 type Spec = { [key: string]: FieldSpec | Spec }
 
 const integer = (min: number, max: number, fallback: number): NumberSpec => ({ kind: 'integer', min, max, fallback })
 const ratio = (min: number, max: number, fallback: number): NumberSpec => ({ kind: 'number', min, max, fallback })
 const flag = (fallback: boolean): FlagSpec => ({ kind: 'flag', fallback })
 const record = (): RecordSpec => ({ kind: 'record', fallback: {} })
+const switchboard = (): SwitchSpec => ({ kind: 'switchboard' })
 const choice = (options: readonly string[], fallback: string): ChoiceSpec => ({ kind: 'choice', options, fallback })
 const text = (max: number, fallback: string): TextSpec => ({ kind: 'text', max, fallback })
 
@@ -250,13 +269,15 @@ export const SETTINGS_SPEC = {
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
   images: { mode: choice(['off', 'manual', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference'), reuse: flag(true), highRes: flag(false), interpret: flag(true), interpreterModel: text(200, ''), captioner: text(200, '') },
+  dice: { visibility: choice(['hidden', 'card'], 'card') },
+  tools: switchboard(),
   embedding: { options: record() },
 } as const satisfies Spec
 
 const isField = (spec: FieldSpec | Spec): spec is FieldSpec => 'kind' in spec && typeof spec['kind'] === 'string'
 
 function defaultsOf(spec: Spec): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(spec).map(([key, entry]) => [key, isField(entry) ? (entry.kind === 'record' ? { ...entry.fallback } : entry.fallback) : defaultsOf(entry)]))
+  return Object.fromEntries(Object.entries(spec).map(([key, entry]) => [key, isField(entry) ? (entry.kind === 'record' ? { ...entry.fallback } : entry.kind === 'switchboard' ? {} : entry.fallback) : defaultsOf(entry)]))
 }
 
 export const DEFAULT_SETTINGS = defaultsOf(SETTINGS_SPEC) as unknown as ChatSettings
@@ -279,6 +300,9 @@ export const MODEL_NAME = /^[^\s/]+\/\S+$/
 
 const OPTION_NAME = /^[A-Za-z][A-Za-z0-9_]{0,39}$/
 
+/** What tools registered by other plugins are named: letters, digits and `_ . : -`, as MCP servers and others name theirs. */
+export const TOOL_NAME = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,79}$/
+
 /** The options, or what is wrong with them. */
 function parseOptions(value: unknown, name: string): EmbeddingOptions | string {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return `"${name}" must be an object`
@@ -287,6 +311,24 @@ function parseOptions(value: unknown, name: string): EmbeddingOptions | string {
   const bad = entries.find(([key, entry]) => !OPTION_NAME.test(key) || !(typeof entry === 'boolean' || typeof entry === 'string' || (typeof entry === 'number' && Number.isFinite(entry))))
   if (bad !== undefined) return `"${name}.${bad[0]}" must be a number, text or true/false, under a name of letters, digits and underscores`
   return Object.fromEntries(entries) as EmbeddingOptions
+}
+
+/** The switches, or what is wrong with them. Names are not checked against any list: what this version does not know is kept for the version that does. */
+export function parseSwitchboard(value: unknown, name: string): Switchboard | string {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return `"${name}" must be an object`
+  const agents = Object.entries(value)
+  if (agents.length > MAX_SWITCH_AGENTS) return `"${name}" may name at most ${MAX_SWITCH_AGENTS} kinds of agent`
+  const result: Switchboard = {}
+  for (const [agent, switches] of agents) {
+    if (!OPTION_NAME.test(agent)) return `"${name}.${agent}" is not a name of letters, digits and underscores`
+    if (typeof switches !== 'object' || switches === null || Array.isArray(switches)) return `"${name}.${agent}" must be an object`
+    const entries = Object.entries(switches)
+    if (entries.length > MAX_SWITCHES) return `"${name}.${agent}" may name at most ${MAX_SWITCHES} tools`
+    const bad = entries.find(([tool, on]) => !TOOL_NAME.test(tool) || typeof on !== 'boolean')
+    if (bad !== undefined) return `"${name}.${agent}.${bad[0]}" must be true or false, under a tool's name (letters, digits and _ . : -)`
+    result[agent] = Object.fromEntries(entries) as Record<string, boolean>
+  }
+  return result
 }
 
 function describe(spec: NumberSpec): string {
@@ -308,7 +350,11 @@ function parseLevel(spec: Spec, input: unknown, path: string, problems: string[]
     if (!isField(entry)) {
       result[key] = parseLevel(entry, given === undefined ? {} : given, name, problems)
     } else if (given === undefined) {
-      result[key] = entry.kind === 'record' ? { ...entry.fallback } : entry.fallback
+      result[key] = entry.kind === 'record' ? { ...entry.fallback } : entry.kind === 'switchboard' ? {} : entry.fallback
+    } else if (entry.kind === 'switchboard') {
+      const board = parseSwitchboard(given, name)
+      if (typeof board === 'string') problems.push(board)
+      else result[key] = board
     } else if (entry.kind === 'record') {
       const options = parseOptions(given, name)
       if (typeof options === 'string') problems.push(options)

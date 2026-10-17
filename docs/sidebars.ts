@@ -15,7 +15,7 @@ const sidebars: SidebarsConfig = {
       'authoring/avatars-import', 'authoring/visual-identity', 'authoring/interface-packs',
     ]},
     {type: 'category', label: 'World format', items: [
-      'world-format/overview', 'world-format/world', 'world-format/calendar', 'world-format/characters',
+      'world-format/overview', 'world-format/world', 'world-format/calendar', 'world-format/dice', 'world-format/characters',
       'world-format/locations-items', 'world-format/factions-lore',
       'world-format/plots-automation', 'world-format/prompts-media',
     ]},

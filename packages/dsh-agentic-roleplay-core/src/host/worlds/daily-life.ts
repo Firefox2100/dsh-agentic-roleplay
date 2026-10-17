@@ -1,16 +1,18 @@
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { RoutineDefinition } from 'dsh-roleplay-model'
+import type { DiceDocument } from '../../shared/world-dice.ts'
 import type { CalendarDocument, VariableDeclaration, WorldRoutines } from '../../shared/world-daily.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
 import { CHARACTER_FILE_NAME, parseCharacterFile } from '../characters/character-file.ts'
+import { DICE_FILE_NAME, loadDice, parseDiceFile } from '../dice/load.ts'
 import { CALENDAR_FILE_NAME, loadCalendar, parseCalendarFile } from '../calendar/load.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
 import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
 import { routineProblems } from '../sessions/populate.ts'
-import { parseVariablesFile, variableProblems, VARIABLES_FILE_NAME } from '../variables/load.ts'
+import { loadVariables, parseVariablesFile, variableProblems, VARIABLES_FILE_NAME } from '../variables/load.ts'
 import { formatIssue } from '../validation.ts'
 import { parseWorldFile, WORLD_FILE_NAME } from './world-file.ts'
 import { entityFolder, replaceFile, type EditableWorld } from './world-editor.ts'
@@ -111,4 +113,32 @@ export async function editCalendar(world: EditableWorld, calendar: CalendarDocum
   if (calendar.holidays.length === 0 && calendar.hemisphere === 'north') await rm(join(world.directory, CALENDAR_FILE_NAME), { force: true })
   else await replaceFileOrCreate(join(world.directory, CALENDAR_FILE_NAME), text)
   return await readCalendarDocument(world)
+}
+
+/** The checks of a world as its `dice.json` has them; none without the file. */
+export async function readDiceDocument(world: EditableWorld): Promise<DiceDocument> {
+  const { checks } = await loadDice(world.directory)
+  return { checks }
+}
+
+/**
+ * Replaces the world's checks. They are read as a story start reads them, and a quality of the character that a check adds must be a number the world
+ * declares for characters. No checks is no file at all.
+ * @throws {InvalidEditProblems} naming each problem; nothing is written.
+ */
+export async function editDice(world: EditableWorld, dice: DiceDocument): Promise<DiceDocument> {
+  const written = dice.checks.map(({ reading, compare, ...check }) => ({ ...check, ...(reading === undefined || reading === 'total' ? {} : { reading }), ...(compare === undefined || compare === 'absolute' ? {} : { compare }) }))
+  const text = `${JSON.stringify({ checks: written }, null, 2)}\n`
+  const parsed = parseDiceFile(text)
+  if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
+  const declared = await loadVariables(world.directory)
+  const problems = parsed.value.flatMap((check) => {
+    if (check.modifier === undefined) return []
+    const variable = declared.defs.find(def => def.key === check.modifier)
+    return variable === undefined || variable.kind !== 'number' || (variable.subject !== 'character') ? [`the check "${check.key}" adds "${check.modifier}", which the world does not declare as a number about characters (Tracked values)`] : []
+  })
+  if (problems.length > 0) throw new InvalidEditProblems(problems)
+  if (dice.checks.length === 0) await rm(join(world.directory, DICE_FILE_NAME), { force: true })
+  else await replaceFileOrCreate(join(world.directory, DICE_FILE_NAME), text)
+  return await readDiceDocument(world)
 }

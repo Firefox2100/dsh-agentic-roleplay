@@ -10,7 +10,7 @@ import { nodeSqliteDriver } from './driver/node-sqlite.ts'
 import type { OpenOptions, SqlDatabase, SqlDriver } from './driver/types.ts'
 import { ConflictError, CorruptDataError, NotFoundError, SchemaError } from './errors.ts'
 import type {
-  ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
+  ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, DiceRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
   FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
   LoreRepository,
@@ -24,6 +24,7 @@ import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRep
 import { SqliteRecallIndex } from './sqlite/recall-index.ts'
 import { SqliteEngagementRepository, SqliteRoutineRepository } from './sqlite/agenda-repositories.ts'
 import { SqliteTriggerRepository } from './sqlite/trigger-repository.ts'
+import { SqliteDiceRepository } from './sqlite/dice-repository.ts'
 import { SqliteClockRepository } from './sqlite/clock-repository.ts'
 import { SqliteVariableRepository } from './sqlite/variable-repository.ts'
 import { SqliteItemRepository, SqliteSlotRepository } from './sqlite/item-repository.ts'
@@ -84,6 +85,7 @@ export interface SessionStore {
   /** What characters have committed to, by date. */
   readonly engagements: EngagementRepository
   readonly triggers: TriggerRepository
+  readonly dice: DiceRepository
   /** What the session can be searched by: its texts by words, and by meaning once vectors are stored. */
   readonly recallIndex: RecallIndexRepository
   /** Run `fn` atomically across the repositories; see {@link SqlDatabase.transaction}. */
@@ -172,6 +174,7 @@ class SqliteSessionStore implements SessionStore {
   readonly routines: RoutineRepository
   readonly engagements: EngagementRepository
   readonly triggers: TriggerRepository
+  readonly dice: DiceRepository
   readonly recallIndex: SqliteRecallIndex
   private readonly eventRepository: SqliteEventRepository
 
@@ -202,6 +205,7 @@ class SqliteSessionStore implements SessionStore {
     this.routines = new SqliteRoutineRepository(db)
     this.engagements = new SqliteEngagementRepository(db)
     this.triggers = new SqliteTriggerRepository(db)
+    this.dice = new SqliteDiceRepository(db, clock)
     this.eventRepository = new SqliteEventRepository(db, clock, this.recallIndex, id => this.locations.get(id)?.name, id => this.items.get(id)?.name)
     this.events = this.eventRepository
     this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)

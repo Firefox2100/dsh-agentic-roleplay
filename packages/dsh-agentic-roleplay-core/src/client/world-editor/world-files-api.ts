@@ -1,5 +1,6 @@
 import type { RoutineDefinition } from 'dsh-roleplay-model'
 import type { PackPreview, WorldPackDetail } from '../../shared/interface-pack.ts'
+import type { DiceDocument } from '../../shared/world-dice.ts'
 import type { CalendarDocument, VariableDeclaration, WorldRoutines } from '../../shared/world-daily.ts'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
@@ -29,6 +30,8 @@ export const savePrompt = async (world: string, language: string, prompt: string
 export const removePrompt = async (world: string, language: string, prompt: string, signal: AbortSignal): Promise<void> => { await read(await fetch(`${API_PREFIX}/worlds/prompts/item?${query(world, language, prompt)}`, init('DELETE', signal))) }
 export const loadRoutines = async (world: string, signal: AbortSignal): Promise<WorldRoutines> => await read(await fetch(`${API_PREFIX}/worlds/routines?${query(world)}`, init('GET', signal)))
 export const saveRoutine = async (world: string, key: string, windows: readonly RoutineDefinition[], signal: AbortSignal): Promise<WorldRoutines> => await read(await fetch(`${API_PREFIX}/worlds/routines/item?${query(world)}&key=${encodeURIComponent(key)}`, init('PUT', signal, { windows })))
+export const loadDice = async (world: string, signal: AbortSignal): Promise<DiceDocument> => await read(await fetch(`${API_PREFIX}/worlds/dice?${query(world)}`, init('GET', signal)))
+export const saveDice = async (world: string, dice: DiceDocument, signal: AbortSignal): Promise<DiceDocument> => await read(await fetch(`${API_PREFIX}/worlds/dice?${query(world)}`, init('PUT', signal, dice)))
 export const loadCalendar = async (world: string, signal: AbortSignal): Promise<CalendarDocument> => await read(await fetch(`${API_PREFIX}/worlds/calendar?${query(world)}`, init('GET', signal)))
 export const saveCalendar = async (world: string, calendar: CalendarDocument, signal: AbortSignal): Promise<CalendarDocument> => await read(await fetch(`${API_PREFIX}/worlds/calendar?${query(world)}`, init('PUT', signal, calendar)))
 export const loadVariables = async (world: string, signal: AbortSignal): Promise<VariableDeclaration[]> => await read(await fetch(`${API_PREFIX}/worlds/variables?${query(world)}`, init('GET', signal)))

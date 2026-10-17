@@ -1,5 +1,6 @@
 import type {
   CharacterPatch,
+  DiceCheck, DiceCheckDefinition, DiceRoll, NewDiceRoll,
   NewTriggerNote, Trigger, TriggerDefinition, TriggerId, TriggerNote, TriggerNoteKind, TriggerStatus,
   StoredVariable, VariableDefinition, VariableDefinitionInput, VariableSubject, VariableValue,
   Engagement, EngagementFilter, EngagementId, EngagementPatch, NewEngagement, RoutineWindow, StoredRoutineWindow,
@@ -534,4 +535,17 @@ export interface TriggerRepository {
   notes(filter?: { status?: TriggerNote['status']; kind?: TriggerNoteKind }): TriggerNote[]
   /** @throws {NotFoundError} */
   resolveNote(id: number, status: 'done' | 'lapsed'): void
+}
+
+export interface DiceRepository {
+  /** @throws {ConflictError} for a key that exists. @throws {InvalidValueError} when the story has too many. */
+  define(definition: DiceCheckDefinition): DiceCheck
+  /** In the order defined. */
+  checks(): DiceCheck[]
+  check(key: string): DiceCheck | undefined
+  /** @throws {NotFoundError} */
+  removeCheck(key: string): void
+  record(roll: NewDiceRoll): DiceRoll
+  /** Oldest first: the rolls of one turn, or the latest ones. */
+  rolls(filter?: { turn?: number; limit?: number }): DiceRoll[]
 }

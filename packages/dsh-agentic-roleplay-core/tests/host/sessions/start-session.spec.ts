@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -354,6 +355,39 @@ describe('the rules of the world', () => {
   it('leave a session with none when the world states none', async () => {
     const started = await startSession(deps, playAsArthur)
     expect(state.openSession(join(root, 'sessions'), started.id).metadata.getValue('rules')).toBeUndefined()
+  })
+})
+
+describe('the tools of the world', () => {
+  const world = () => join(root, 'worlds', 'blackwater folder', 'world.json')
+
+  it('are where the story starts from, with a choice at the start added on top tool by tool, and names this version does not know kept', async () => {
+    await write(world(), { id: 'blackwater', name: 'B', tools: { gameMaster: { roll_dice: false, future_tool: true }, wizard: { spell: true } } })
+    const plain = await startSession(deps, playAsArthur)
+    const settings = (id: string) => JSON.parse(readFileSync(join(root, 'sessions', id, 'settings.json'), 'utf8')) as { tools: unknown }
+    expect(settings(plain.id).tools).toEqual({ gameMaster: { roll_dice: false, future_tool: true }, wizard: { spell: true } })
+    const chosen = await startSession(deps, { ...playAsArthur, settings: { tools: { gameMaster: { roll_dice: true, roll_check: false } } } })
+    expect(settings(chosen.id).tools).toEqual({ gameMaster: { roll_dice: true, future_tool: true, roll_check: false }, wizard: { spell: true } })
+  })
+
+  it('are none when the world says nothing', async () => {
+    const started = await startSession(deps, playAsArthur)
+    expect(JSON.parse(readFileSync(join(root, 'sessions', started.id, 'settings.json'), 'utf8'))).toMatchObject({ tools: {} })
+  })
+
+  it('refuse a world whose tools are not switches', async () => {
+    await write(world(), { id: 'blackwater', name: 'B', tools: { gameMaster: { roll_dice: 'yes' } } })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow()
+  })
+})
+
+describe('the dice checks of the world', () => {
+  it('are kept with the story, and a world with a check that cannot be read does not start', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'dice.json'), { checks: [{ key: 'luck', name: 'Luck', use: 'Pure chance.', dice: 'd100', bands: [{ max: 49, label: 'no', result: 'failed' }, { min: 50, label: 'yes', result: 'succeeded' }] }] })
+    const started = await startSession(deps, playAsArthur)
+    expect(state.openSession(join(root, 'sessions'), started.id).dice.checks().map(check => check.key)).toEqual(['luck'])
+    await write(join(root, 'worlds', 'blackwater folder', 'dice.json'), { checks: [{ key: 'luck', name: 'Luck', use: 'x', dice: 'd100', bands: [{ min: 60, label: 'yes', result: 'succeeded' }] }] })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/dice checks of .* have 1 problem/)
   })
 })
 

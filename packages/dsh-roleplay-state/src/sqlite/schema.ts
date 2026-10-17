@@ -6,7 +6,7 @@ export interface Migration {
 
 /**
  * Migrations are applied in order and never edited once released (0.1.0 released
- * versions 1 to 6; tests/sqlite/migrate.spec.ts pins them): a change to the schema
+ * versions 1 to 6; tests/sqlite/migrate.spec.ts pins the released ones): a change to the schema
  * is a new entry. Enumerations are spelled out so that a later change to the model
  * cannot alter what an old migration did.
  */
@@ -585,6 +585,36 @@ export const MIGRATIONS: readonly Migration[] = [
       ) STRICT;
       CREATE INDEX memory_evidence_perception ON memory_evidence (perception_id);
       ALTER TABLE routine_windows ADD COLUMN filters TEXT NOT NULL DEFAULT '[]';
+    `,
+  },
+  {
+    version: 8,
+    sql: `
+      CREATE TABLE dice_checks (
+        id INTEGER PRIMARY KEY,
+        key TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        use_text TEXT NOT NULL,
+        definition TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE dice_rolls (
+        id INTEGER PRIMARY KEY,
+        turn INTEGER NOT NULL,
+        check_key TEXT,
+        expression TEXT NOT NULL,
+        faces TEXT NOT NULL,
+        kept TEXT NOT NULL,
+        modifier INTEGER NOT NULL,
+        target INTEGER,
+        total INTEGER NOT NULL,
+        value INTEGER NOT NULL,
+        readout TEXT,
+        reason TEXT NOT NULL,
+        character TEXT,
+        by TEXT NOT NULL CHECK (by IN ('agent', 'player')),
+        at TEXT NOT NULL
+      ) STRICT;
+      CREATE INDEX dice_rolls_turn ON dice_rolls (turn, id);
     `,
   },
 ]

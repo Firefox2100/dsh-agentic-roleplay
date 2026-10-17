@@ -364,6 +364,10 @@ number words; optionally a baseline) and each subject has its own value (`variab
   (the scene first, at most 14 lines); the keeper the non-default values and `list_variables`. Only values that differ from the default are told (or those marked `always`),
   at most eight for one subject.
 
+## Dice
+
+Dice checks and rolls are part of a story's state (schema version 8). `dice_checks` holds a world's checks, copied from its `dice.json` when the session starts: a key, a name, when to use it (`use_text`) and a JSON definition of the dice, the reading (`total` or `successes`), the comparison (`absolute`, `over` or `under` a target), an optional character variable to add, and the bands. `dice_rolls` is a log: the turn, the check (none for a plain roll), the expression, every die and the kept dice, the modifier, the target, the total, the value that was read, the band it fell in, the reason, the character and who asked (`agent` or `player`). A roll is recorded when it is made, in the same step as the tool answers, so a restart or a rewind restores exactly the rolls the restored state had. A check is refused when its notation is not valid, when it has no bands or a band without a label or a result, and when the dice can give a value no band holds (checks read against a target or a modifier are checked when rolled).
+
 ## What the world does by itself (triggers)
 
 Characters' plans, goals and engagements say what *they* want to do; a *trigger* is what the *world* does: a condition decided in code, and an effect. They are stored in `triggers` (definition,

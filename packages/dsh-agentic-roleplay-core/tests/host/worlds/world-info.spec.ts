@@ -17,6 +17,16 @@ async function world(document: object): Promise<string> {
 }
 
 describe('the world\'s own fields', () => {
+  it('carry the tools the world\'s agents have switched, with names this version does not know kept', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', tools: { gameMaster: { roll_dice: false, future_tool: true } } })
+    expect(await readWorldInfo(directory)).toMatchObject({ tools: { gameMaster: { roll_dice: false, future_tool: true } } })
+    expect(await editWorldInfo(directory, { tools: { gameMaster: { roll_check: false } } })).toMatchObject({ tools: { gameMaster: { roll_check: false } } })
+    expect(await editWorldInfo(directory, { tools: {} })).toMatchObject({ tools: {} })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('tools')
+    expect(() => parseWorldInfoEdit({ tools: { gameMaster: { roll_dice: 1 } } })).toThrow(/true or false/)
+    expect(parseWorldInfoEdit({ tools: { gameMaster: { roll_dice: false } } })).toEqual({ tools: { gameMaster: { roll_dice: false } } })
+  })
+
   it('are read, and changed without touching anything else in the file', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour', description: 'Old.', metadata: { tags: ['a'], extra: 1 }, cover_media_id: 'cover', opening_message: 'It begins.', unknown: { keep: true } })
     expect(await readWorldInfo(directory)).toMatchObject({ name: 'Harbour', tags: ['a'], opening: 'It begins.', openingParts: false, rules: [] })

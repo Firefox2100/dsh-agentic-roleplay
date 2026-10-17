@@ -10,6 +10,9 @@ import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { InterfaceSection } from './InterfaceSection.tsx'
 import { ReflectionSection } from './ReflectionSection.tsx'
 import { VectorsSection } from './VectorsSection.tsx'
+import { ToolSwitches } from '../widgets/tool-switches/ToolSwitches.tsx'
+import { loadExternalTools } from '../widgets/tool-switches/tools-api.ts'
+import type { ExternalTool } from '../../shared/tools.ts'
 import { ActivityList } from './ActivityList.tsx'
 import { InterventionList } from './InterventionList.tsx'
 import { SettingsFields } from '../settings-form/SettingsFields.tsx'
@@ -30,7 +33,15 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | undefined>()
+  const [toolsError, setToolsError] = useState<string | undefined>()
+  const [external, setExternal] = useState<ExternalTool[]>([])
   const options = useEmbeddingOptions('all')
+
+  useEffect(() => {
+    const abort = new AbortController()
+    loadExternalTools(abort.signal).then(setExternal, () => undefined)
+    return () => { abort.abort() }
+  }, [])
 
   useEffect(() => {
     if (session === undefined) return undefined
@@ -84,6 +95,16 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     )
   }
 
+  const setTools = (tools: SettingsPayload['settings']['tools']): void => {
+    if (session === undefined) return
+    setSaving(true)
+    setToolsError(undefined)
+    saveSettings(session, { ...payload.settings, tools }, new AbortController().signal).then(
+      (next) => { setLoad({ status: 'ready', payload: next }) },
+      (failure: unknown) => { setToolsError(failure instanceof Error ? failure.message : String(failure)) },
+    ).finally(() => { setSaving(false) })
+  }
+
   const save = (): void => {
     if (session === undefined || !changed) return
     setSaving(true)
@@ -103,6 +124,7 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
       <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} hidden={['interface.pack']} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
       {session !== undefined && <InterfaceSection t={t} session={session} value={String(drafts['interface.pack'] ?? '')} onChange={(next) => { change('interface.pack', next) }} saved={payload.settings.interface.pack} disabled={saving} />}
+      <ToolSwitches board={payload.settings.tools} onChange={setTools} disabled={saving} external={external} {...(toolsError === undefined ? {} : { error: toolsError })} t={t} />
       <ReflectionSection t={t} status={payload.reflection} disabled={saving} onStart={reflect} onRefresh={refreshActivity} />
       <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
       <InterventionList t={t} entries={payload.interventions} />

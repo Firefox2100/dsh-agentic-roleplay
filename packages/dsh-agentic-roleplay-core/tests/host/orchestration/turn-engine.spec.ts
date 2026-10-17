@@ -1758,3 +1758,91 @@ describe('delivering what was said', () => {
     expect(out.segments).toEqual([{ type: 'utterance', character: 'alice', name: 'Alice', text: 'Hello.' }])
   })
 })
+
+describe('what the dice decide', () => {
+  const rolled = (character: string | undefined, result: 'succeeded' | 'partial' | 'failed' | undefined, turn = 1): number => store.story.dice.record({
+    turn, expression: '1d20', faces: [10], kept: [10], modifier: 0, total: 10, value: 10, reason: 'an attempt', by: 'agent',
+    ...(character === undefined ? {} : { character }), ...(result === undefined ? {} : { check: 'skill', readout: { label: 'a label', result, critical: false } }),
+  }).id
+  const start = async () => {
+    const { run } = scriptedRunner({ alice: { intent: 'a', commitment: 'low' }, bob: { intent: 'b', commitment: 'low' } })
+    await engine.activate(owner, { situation, characters: ['alice', 'bob'] }, run, signal)
+    return run
+  }
+
+  it('takes the result from the roll an outcome cites, and refuses a different one', async () => {
+    const run = await start()
+    const roll = rolled('alice', 'failed')
+    await expect(engine.resolve(owner, [{ ...outcome('alice', 'succeeded'), roll }, outcome('bob', 'succeeded')], run, signal)).rejects.toThrow(/roll \d+ gave failed.*the dice decide it/)
+    const report = await engine.resolve(owner, [{ ...outcome('alice', 'failed'), roll }, outcome('bob', 'succeeded')], run, signal)
+    expect(report.done?.updated).toEqual(['alice', 'bob'])
+  })
+
+  it('refuses an outcome for a character that was rolled for when it does not cite the roll', async () => {
+    const run = await start()
+    const roll = rolled('alice', 'partial')
+    await expect(engine.resolve(owner, [outcome('alice', 'partial'), outcome('bob', 'succeeded')], run, signal)).rejects.toThrow(new RegExp(`alice: you rolled for this character \\(roll ${roll}`))
+  })
+
+  it('refuses a roll that is not of this turn, was for someone else, has no result or already decided another outcome', async () => {
+    const run = await start()
+    const old = rolled('alice', 'failed', 0)
+    const others = rolled('bob', 'failed')
+    const plain = rolled(undefined, undefined)
+    await expect(engine.resolve(owner, [{ ...outcome('alice', 'failed'), roll: old }, outcome('bob', 'succeeded')], run, signal)).rejects.toThrow(/no roll \d+ in this turn/)
+    await expect(engine.resolve(owner, [{ ...outcome('alice', 'failed'), roll: others }, outcome('bob', 'succeeded')], run, signal)).rejects.toThrow(/was for bob/)
+    await expect(engine.resolve(owner, [{ ...outcome('alice', 'failed'), roll: plain }, outcome('bob', 'succeeded')], run, signal)).rejects.toThrow(/plain roll with no result/)
+    await expect(engine.resolve(owner, [{ ...outcome('alice', 'failed'), roll: others }, { ...outcome('bob', 'failed'), roll: others }], run, signal)).rejects.toThrow(/already decided another outcome|was for bob/)
+  })
+
+  it('leaves an outcome that nothing was rolled for to the game master', async () => {
+    const run = await start()
+    rolled(undefined, undefined)
+    const report = await engine.resolve(owner, [outcome('alice', 'failed'), outcome('bob', 'succeeded')], run, signal)
+    expect(report.done).toBeDefined()
+  })
+})
+
+describe('rolling for an uncertain attempt', () => {
+  const judged = (uncertain: boolean | undefined) => engine.judge(owner, true, 'It can work.', undefined, uncertain)
+
+  it('asks nobody to act until the game master has rolled, when it judged the attempt uncertain', async () => {
+    const { run } = scriptedRunner(calm)
+    expect(judged(true)).toMatchObject({ allowed: true, roll: true })
+    await expect(engine.activate(owner, { situation }, run, signal)).rejects.toThrow(/roll for it before anyone is asked to act/)
+    store.story.dice.record({ turn: 1, expression: '1d20', faces: [9], kept: [9], modifier: 0, total: 9, value: 9, reason: 'x', by: 'agent' })
+    expect((await engine.activate(owner, { situation }, run, signal)).attempt).toBe(1)
+  })
+
+  it('is not asked of an attempt that is not uncertain, and a roll of the player does not count', async () => {
+    const { run } = scriptedRunner(calm)
+    expect(judged(false)).toEqual({ allowed: true, reason: 'It can work.' })
+    expect((await engine.activate(owner, { situation }, run, signal)).attempt).toBe(1)
+    engine.forget(owner.chat)
+    engine.expectJudgement({ chat: owner.chat, turn: 2 })
+    engine.judge({ chat: owner.chat, turn: 2 }, true, 'It can work.', undefined, true)
+    store.story.dice.record({ turn: 2, expression: '2d6', faces: [3, 4], kept: [3, 4], modifier: 0, total: 7, value: 7, reason: 'the player rolled', by: 'player' })
+    await expect(engine.activate({ chat: owner.chat, turn: 2 }, { situation }, run, signal)).rejects.toThrow(/roll for it/)
+  })
+
+  it('is not asked when the game master has no dice, or when the attempt cannot work', async () => {
+    const { run } = scriptedRunner(calm)
+    const bare = { ...store.settings(), tools: { gameMaster: { roll_check: false, roll_dice: false } } }
+    store.settings = () => bare
+    expect(judged(true)).toEqual({ allowed: true, reason: 'It can work.' })
+    expect((await engine.activate(owner, { situation }, run, signal)).attempt).toBe(1)
+  })
+})
+
+describe('what the keeper is told of the dice', () => {
+  it('has the dice no outcome took its result from told once, with the first round that follows', async () => {
+    const { run } = scriptedRunner({ alice: { intent: 'a', commitment: 'low' } })
+    store.story.dice.record({ turn: 1, check: 'skill', expression: '1d20', faces: [9], kept: [9], modifier: 0, target: 10, total: 9, value: -1, readout: { label: 'failure', result: 'failed', critical: false }, reason: 'Arthur slips past Clara', character: 'arthur', by: 'agent' })
+    await engine.activate(owner, { situation, characters: ['alice'] }, run, signal)
+    await engine.resolve(owner, [outcome('alice', 'succeeded')], run, signal)
+    expect(store.queue[0]?.rolls).toEqual(['Arthur slips past Clara: 1d20 came to 9: failure (failed)'])
+    await engine.activate(owner, { situation: moment(2), characters: ['alice'] }, run, signal)
+    await engine.resolve(owner, [outcome('alice', 'succeeded')], run, signal)
+    expect(store.queue[1]?.rolls).toBeUndefined()
+  })
+})

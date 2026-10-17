@@ -14,6 +14,18 @@ const ZH: Readonly<Record<string, string>> = {
   'You are also called {names}.': '你也被称作{names}。',
   'age: {value}': '年龄：{value}', 'gender: {value}': '性别：{value}', 'pronouns: {value}': '代词：{value}',
 
+  // the dice the game master rolls
+  '- {key} ({name}): {use}': '- {key}（{name}）：{use}',
+  'Rolls {dice}.': '掷 {dice}。',
+  'Give a target: the difficulty, the number to meet or beat; set it by how hard the attempt is.': '需给出 target：难度，即要达到或超过的数字；按这次尝试的难易来定。',
+  'Give a target: the number to stay under; set it by how hard the attempt is.': '需给出 target：要低于的数字；按这次尝试的难易来定。',
+  'It adds the character\'s {variable}.': '它会加上该角色的 {variable}。',
+  'Counts the dice that show {hit} or more.': '统计显示 {hit} 或更高的骰子数。',
+  'the player\'s roll': '玩家的掷骰',
+  'The player rolled {dice} ({reason}) and got {total}: dice {faces}. This is a fact, decided by the dice: take it into account when you judge the attempt and decide what happens.': '玩家掷了 {dice}（{reason}），得到 {total}：骰面 {faces}。这是由骰子决定的事实：在你判断这次尝试、决定发生什么时把它考虑进去。',
+  'The checks of this story:': '本故事的检定：',
+  'No checks are defined: use roll_dice only.': '没有定义检定：只用 roll_dice。',
+
   // the scene a character is told
   'Situation:': '当前情形：',
   'Now: {time}.': '现在是：{time}。',
@@ -99,7 +111,9 @@ const ZH: Readonly<Record<string, string>> = {
   '{where}: say what it took in since that bears on it': '{where}：请写出此后与之相关的经历',
   '{where}: thing {id} came before the belief was formed; cite what came after': '{where}：经历 {id} 发生在看法形成之前；请引用之后发生的事',
   '{where}: say what changes': '{where}：请写出有何改变',
-  '{where}: the text must be there and at most {max} characters': '{where}：必须有文字，且最多 {max} 个字符',
+  '{where}: the text must be there and at most {max} characters; leave it out to keep the belief as it is': '{where}：文字不能为空，且最多 {max} 个字符；想保持信念原样就不要写这一项',
+  '{where}: the confidence, the importance and the numbers are fields of their own, not part of the text': '{where}：把握程度、重要性和编号是各自独立的字段，不属于文字',
+  '{where}: name what speaks against the belief in contradicted_by': '{where}：在 contradicted_by 里写出与该信念相悖的内容的编号',
   '{where}: a belief that something contradicts must be doubted: lower its confidence': '{where}：被事实相悖的看法必须存疑：请降低其 confidence',
   '{where}: to doubt a belief, name what contradicts it in contradicted_by': '{where}：要对看法存疑，请在 contradicted_by 中写明与之相悖的经历',
   '{where}: merge into a belief that stays': '{where}：请合并到保留的看法中',
@@ -155,5 +169,7 @@ const ZH: Readonly<Record<string, string>> = {
   'You are not with the player\'s character and nothing of this happens in front of anyone: decide what you do about it.': '你不和玩家的角色在一起，这件事也不会发生在任何人面前：决定你要怎么处理。',
   '{names} noticed: {text}': '{names}注意到：{text}',
   '{name} went to {place}.': '{name}去了{place}。',
+  '## MCP resource servers\n\nUse {tools} with the server argument naming an MCP server.': '## MCP 资源服务器\n\n使用 {tools}，server 参数填 MCP 服务器的名称。',
+  '## MCP resource servers\n\nUse {tools} with one of these names as the server argument: {servers}.': '## MCP 资源服务器\n\n使用 {tools}，server 参数填下列名称之一：{servers}。',
 }
 export { ZH }

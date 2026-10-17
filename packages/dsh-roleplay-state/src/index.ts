@@ -21,6 +21,8 @@ export { apply, Config, name, RoleplayState, type Session } from './plugin.ts'
 export type { SemanticRanker } from './memory/ranker.ts'
 export { createTools, type AgentLink, type AgentResolver } from './tools/index.ts'
 export { createCharacterTools } from './tools/character.ts'
+export { createDiceTools, describeRoll, LIST_CHECKS_TOOL, ROLL_CHECK_TOOL, ROLL_DICE_TOOL, type DiceLink } from './tools/dice.ts'
+export { checkProblems, notationRange, parseNotation, readBands, rollCheck, rollNotation, rollPlain, systemRoller, type CheckRoll, type Notation, type PlainRoll, type Roller } from './records/dice.ts'
 export {
   applyRecordsEdit, characterKey, locationKey, parseRecordsEdit, recordsEditSchema,
   type BeliefEdit, type CharacterMove, type EditResult, type EventEdit, type ExitChange, type NewBelief, type NewEvent, type NewExit as NewExitEdit, type NewExitBetween, type NewPlace, type ItemChange, type ItemEditSpec, type NewCharacterSpec, type NewItemSpec, type PlaceEdit, type RelationshipRetraction, type RelationshipSet, type PerceivedBy, type PerceptionAddition, type PerceptionEdit, type RecordsEdit, type RecordsTarget, type StatePatch,

@@ -38,6 +38,10 @@ export interface TurnState {
   reports: CharacterReport[]
   outcomes: Outcome[]
   utterances: Utterance[]
+  /** The dice rolls of this turn that an outcome has already taken its result from. */
+  cited: Set<number>
+  /** The dice rolls of this turn already told to the record keeper with a round. */
+  reported: Set<number>
   /** How many times the game master delivered an output that was refused. */
   refused: number
   /** The most rounds the chat's settings allowed when last asked. */
@@ -67,4 +71,6 @@ export interface TurnState {
   judgement?: { allowed: boolean; reason: string }
   /** Whether the game master has to judge the player's action before anything else: the loop asks for it at the start of an ordinary turn. */
   judgeWanted?: true
+  /** The judgement found the attempt uncertain and the game master has dice: it has to roll before anyone is asked to act. */
+  rollWanted?: true
 }

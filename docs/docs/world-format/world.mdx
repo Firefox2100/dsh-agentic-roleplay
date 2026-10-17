@@ -33,6 +33,7 @@ title: world.json
 | `alternate_openings` | Optional list | Other first messages the player may choose when starting a session: `{title, text}`, plain narration, at most 30 of at most 20,000 characters; a missing title is the first words of the text |
 | `narration_voice` | Optional | Initial TTS voice for narration |
 | `variables` | Optional object | Initial values for world-scoped variables |
+| `tools` | Optional object | Optional tools switched on or off for the world's agents, by kind of agent: `{"gameMaster": {"roll_dice": false}}`. A story starts from it, and a choice made at the start is added on top. Names this version does not know are kept and have no effect |
 
 The start dialog offers the alternate openings beside the world's own. A session started from one stores it as its first finished turn like any other opening.
 

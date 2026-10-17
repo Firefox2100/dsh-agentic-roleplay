@@ -137,6 +137,6 @@ export class Reader {
   }
 
   private child(key: string): string {
-    return this.path === '' ? key : `${this.path}.${key}`
+    return this.path === '' ? key : key === '' ? this.path : `${this.path}.${key}`
   }
 }

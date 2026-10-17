@@ -26,3 +26,7 @@ The records API reads a model-facing view and applies validated edits for events
 Session metadata may also hold the world's calendar. Agenda and trigger helpers read it when evaluating date, season and holiday rules, so consumers should use the exported calendar functions rather than interpreting `on` tokens independently.
 
 The package re-exports canonical model types, so external consumers do not depend on the private model package. See the package README for lower-level repository contracts and migration guidance.
+
+## Dice
+
+Sessions keep dice checks and a log of rolls (schema version 8). `session.dice` defines and reads checks and records rolls. `createDiceTools(resolve)` builds `roll_dice`, `roll_check` and `list_checks` for an agent: dice come from the system's random source (a roller can be injected in tests), a check is read with its own bands, and every roll is recorded with the turn, the character and who asked. Notation, check validation and reading live in `parseNotation`, `rollCheck`, `readBands` and `checkProblems`. The plugin registers the tools for every agent of a roleplay session only when its configuration has `diceTools: true`; the roleplay core leaves it off and registers them per agent from its own tool switches.

@@ -34,7 +34,7 @@ Prose and rules. `roleplay/persona`, `roleplay/style` and `roleplay/character-st
 
 The world authoring chat edits a world's prompts with `list_world_prompts`, `read_world_prompt`, `write_world_prompt` and `delete_world_prompt` (a delete moves the file to `.trash/prompts/`). Writing and deleting need the person's approval like any other change to the world files, and a write is checked as session start checks it. In the turn that has just imported a card, which runs without asking, the prose prompts can be written without approval and the rules prompts are refused outright.
 
-Optional parts: the game master's prompt holds `${preview}` on a line of its own, which is the text of `roleplay/preview` when the chat's `preview.enabled` is on and nothing when it is off (a line that holds only a variable given as empty text is dropped). A chat that shows no preview also has no `preview_scene` tool.
+Optional parts: the game master's prompt holds `${preview}` on a line of its own, which is the text of `roleplay/preview` when the chat's `preview.enabled` is on and nothing when it is off (a line that holds only a variable given as empty text is dropped). A chat that shows no preview also has no `preview_scene` tool. In the same way `${dice}` is the text of `roleplay/dice` (when to roll, how the result is read, that it stands, and the world's checks listed from the story) while the game master has a dice tool switched on, and nothing when it has none.
 
 ## Variables
 

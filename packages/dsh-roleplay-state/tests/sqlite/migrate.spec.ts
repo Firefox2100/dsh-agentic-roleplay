@@ -102,6 +102,21 @@ describe('migrate', () => {
     db.close()
   })
 
+  it('adds dice checks and rolls to a version 7 session without touching what it has', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 7)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 7')
+    db.run("INSERT INTO characters (name, name_key, kind, tier, role, control, created_at) VALUES ('A', 'a', 'person', 'principal', 'npc', 'agent', 'now')")
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ count: number }>('SELECT count(*) AS count FROM characters')?.count).toBe(1)
+    db.run("INSERT INTO dice_checks (key, name, use_text, definition) VALUES ('skill', 'Skill', 'x', '{}')")
+    expect(() => db.run("INSERT INTO dice_checks (key, name, use_text, definition) VALUES ('skill', 'Skill', 'x', '{}')")).toThrow()
+    expect(() => db.run("INSERT INTO dice_rolls (turn, expression, faces, kept, modifier, total, value, reason, by, at) VALUES (1, '1d6', '[3]', '[3]', 0, 3, 3, 'r', 'nobody', 'now')")).toThrow()
+    db.close()
+  })
+
   describe('before an upgrade', () => {
     function oldDatabase(version: number): string {
       const file = join(dir, 'session.sqlite')

@@ -4,6 +4,13 @@ export type NarrationSegment =
   | { type: 'utterance'; character: string; name: string; text: string }
   | { type: 'narration'; text: string }
 
+/** One dice roll of the turn as the player may read it, in a card under the narration. */
+export interface RollView {
+  id: number
+  text: string
+  by: 'agent' | 'player'
+}
+
 /** What the player is shown for a turn: utterances and narration, in order. */
 export interface TurnOutput {
   segments: NarrationSegment[]
@@ -11,6 +18,8 @@ export interface TurnOutput {
   repaired: boolean
   /** For an out-of-character command: whether it was allowed, and what the player is told of it. */
   ooc?: OocRuling
+  /** What was rolled this turn, when the chat lets the player see it. */
+  rolls?: RollView[]
   /** Stable identity of this generation in the roleplay timeline. Opening messages predate the timeline and omit it. */
   timelineNode?: string
 }
@@ -67,7 +76,8 @@ export function decodeOutput(text: string): TurnOutput | undefined {
     const ooc = value['ooc']
     const ruled = typeof ooc === 'object' && ooc !== null && typeof (ooc as Record<string, unknown>)['legal'] === 'boolean' && typeof (ooc as Record<string, unknown>)['note'] === 'string' ? ooc as OocRuling : undefined
     const timelineNode = typeof value['timelineNode'] === 'string' ? value['timelineNode'] : undefined
-    return { segments, repaired: value['repaired'], ...(ruled === undefined ? {} : { ooc: ruled }), ...(timelineNode === undefined ? {} : { timelineNode }) }
+    const rolls = Array.isArray(value['rolls']) ? value['rolls'].filter((entry): entry is RollView => typeof entry === 'object' && entry !== null && typeof (entry as RollView).id === 'number' && typeof (entry as RollView).text === 'string' && ((entry as RollView).by === 'agent' || (entry as RollView).by === 'player')) : []
+    return { segments, repaired: value['repaired'], ...(ruled === undefined ? {} : { ooc: ruled }), ...(rolls.length === 0 ? {} : { rolls }), ...(timelineNode === undefined ? {} : { timelineNode }) }
   } catch {
     return undefined
   }

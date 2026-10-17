@@ -1,3 +1,5 @@
+import type { ExternalTool } from '../../shared/tools.ts'
+import { parseDiceEdit, type DiceDocument } from '../../shared/world-dice.ts'
 import { parseCalendarEdit, parseRoutineEdit, parseVariablesEdit, type CalendarDocument, type VariableDeclaration, type WorldRoutines } from '../../shared/world-daily.ts'
 import type { RoutineDefinition } from 'dsh-roleplay-model'
 import { createReadStream } from 'node:fs'
@@ -37,6 +39,8 @@ export interface ApiConnection {
 }
 
 export interface ApiDeps {
+  /** The tools other plugins registered for everyone, which a story can give to an agent. */
+  externalTools?(): ExternalTool[]
   worlds: WorldCatalog
   createWorld(input: { folder: string; name: string }): Promise<import('../../shared/worlds.ts').WorldSummary>
   /** The worlds the package ships, and adding one to the person's worlds. */
@@ -70,6 +74,8 @@ export interface ApiDeps {
     routines(worldId: string): Promise<WorldRoutines>
     editRoutine(worldId: string, key: string, windows: RoutineDefinition[]): Promise<WorldRoutines>
     variables(worldId: string): Promise<VariableDeclaration[]>
+    dice(worldId: string): Promise<DiceDocument>
+    editDice(worldId: string, dice: DiceDocument): Promise<DiceDocument>
     calendar(worldId: string): Promise<CalendarDocument>
     editCalendar(worldId: string, calendar: CalendarDocument): Promise<CalendarDocument>
     editVariables(worldId: string, declarations: VariableDeclaration[]): Promise<VariableDeclaration[]>
@@ -187,7 +193,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -343,6 +349,16 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, tr
     '/worlds/routines/item': {
       PUT: async (req, res, url) => {
         try { sendJson(res, 200, await worldFiles.editRoutine(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseRoutineEdit(await readJsonBody(req)))) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/worlds/dice': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.dice(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } },
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldFiles.editDice(url.searchParams.get('id') ?? '', parseDiceEdit(await readJsonBody(req)))) } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           throw error
@@ -579,6 +595,9 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, tr
         catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
         await sendImage(res, image)
       },
+    },
+    '/tools': {
+      GET: async (_req, res) => { sendJson(res, 200, { tools: externalTools?.() ?? [] }) },
     },
     '/sessions/settings': {
       GET: async (_req, res, url) => {

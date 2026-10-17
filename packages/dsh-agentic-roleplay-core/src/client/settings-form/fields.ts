@@ -47,6 +47,7 @@ export const FORM_FIELDS = [
   { path: ['rewind', 'keepSnapshots'], kind: 'integer', label: 'rewindKeep', help: 'rewindKeepHelp' },
   { path: ['preview', 'enabled'], kind: 'flag', label: 'previewEnabled', help: 'previewEnabledHelp' },
   { path: ['suggestions', 'count'], kind: 'integer', label: 'suggestionsCount', help: 'suggestionsCountHelp' },
+  { path: ['dice', 'visibility'], kind: 'choice', label: 'diceVisibility', help: 'diceVisibilityHelp', choices: [{ value: 'hidden', label: 'diceHidden' }, { value: 'card', label: 'diceCard' }] },
   { path: ['images', 'mode'], kind: 'choice', label: 'imagesMode', help: 'imagesModeHelp', choices: [{ value: 'off', label: 'imagesOff' }, { value: 'manual', label: 'imagesManual' }, { value: 'every-turn', label: 'imagesEveryTurn' }] },
   { path: ['images', 'references'], kind: 'choice', label: 'imageReferences', help: 'imageReferencesHelp', choices: [{ value: 'text-only', label: 'imageReferencesText' }, { value: 'prefer-reference', label: 'imageReferencesPrefer' }, { value: 'require-reference', label: 'imageReferencesRequire' }] },
   { path: ['images', 'reuse'], kind: 'flag', label: 'imagesReuse', help: 'imagesReuseHelp' },

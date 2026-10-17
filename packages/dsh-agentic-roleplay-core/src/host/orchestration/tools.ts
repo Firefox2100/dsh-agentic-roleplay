@@ -162,6 +162,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
             character: { type: 'string', required: true, description: 'The character\'s key; for the player\'s character, only when it moves or handles things; in an out-of-character command, any character of the story.' },
             result: { type: 'string', required: true, enum: RESULTS, description: 'Whether the character\'s intent went through.' },
             summary: { type: 'string', required: true, description: 'What concretely happens to the character, in a sentence. It becomes what the character is doing.' },
+            roll: { type: 'integer', description: 'The id of the dice roll that decided this outcome (the id roll_check gave), when you rolled for it: the result you give must be the roll\'s.' },
             spoken: { type: 'boolean', description: 'Whether the character gets to say its utterance. It does unless something prevents it, such as being silenced or knocked out first.' },
             public_state: { type: 'string', description: 'What anyone present can now see or infer about the character, when that changed.' },
             item_changes: {
@@ -229,6 +230,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         summary: outcome.summary,
         ...(outcome.public_state === undefined ? {} : { publicState: outcome.public_state }),
         ...(outcome.spoken === undefined ? {} : { spoken: outcome.spoken }),
+        ...(outcome.roll === undefined ? {} : { roll: outcome.roll }),
         ...(outcome.item_changes === undefined || outcome.item_changes.length === 0 ? {} : { itemChanges: outcome.item_changes.map(change => ({ item: change.item, action: change.action as ItemAction, ...(change.to === undefined ? {} : { to: change.to }), ...(change.quantity === undefined ? {} : { quantity: change.quantity }), ...(change.position === undefined ? {} : { position: change.position }), ...(change.feature === undefined ? {} : { feature: change.feature }), ...(change.with === undefined ? {} : { with: change.with }), ...(change.exit === undefined ? {} : { exit: change.exit }), ...(change.forced === true ? { forced: true } : {}) })) }),
         ...(outcome.variable_changes === undefined || outcome.variable_changes.length === 0 ? {} : { variableChanges: outcome.variable_changes.map(change => ({ variable: change.variable, subject: change.subject, ...(change.to === undefined ? {} : { to: change.to }), ...(change.by === undefined ? {} : { by: change.by }), ...(change.baseline === undefined ? {} : { baseline: change.baseline }) })) }),
         ...(outcome.moves_to === undefined ? {} : { moveTo: { location: outcome.moves_to.location, ...(outcome.moves_to.position === undefined ? {} : { position: outcome.moves_to.position }), ...(outcome.moves_to.feature === undefined ? {} : { feature: outcome.moves_to.feature }), ...(outcome.moves_to.ignore_exits === true ? { ignoreExits: true } : {}) } }),
@@ -453,18 +455,19 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       rule_check: { type: 'string', required: true, description: 'First, go through every rule the scene lists, one by one, in a few words each: does what the character tries need what the rule excludes? The rules are literal. Then whether it is viable here. Write "no rules listed" when there are none.' },
       at: { type: 'string', description: 'The key of the place where the action happens, only when the player says it happens at a particular place (talking to the baker in the market, searching the cellar) rather than where the character is. If the character is somewhere else the action cannot work: it has to go there first. Leave it out when the action happens where the character is, and when the player is going somewhere (the journey is its own action).' },
       allowed: { type: 'boolean', required: true, description: 'Whether what the character tries can work: false when any listed rule is broken or it is not viable.' },
+      uncertain: { type: 'boolean', required: true, description: 'Always answer, when it can work: true when it can plainly go either way and the result matters to the story, such as talking round someone wary or hostile, a hard lock, a stealthy approach past someone watching, a climb, a leap, a chase, a fight, a hurried search; false for what plainly succeeds (walking, opening an unlocked door, asking a friendly question) or has nothing at stake. When it is true and you have dice tools, you roll for it before anyone is asked to act and the dice decide; without dice tools it changes nothing.' },
       reason: { type: 'string', required: true, description: 'What the character tries, and the rule or the fact that decides it, in a sentence.' },
     },
     output: {
       schema: { type: 'json' },
       render: (_args, value) => [{ type: 'text', text: (value as unknown as { allowed: boolean }).allowed
-        ? `Judged: it can work. Now call ${PREVIEW_TOOL} (when the scene asks for it) and ${ACTIVATE_TOOL}, describing only what the character does.`
+        ? `Judged: it can work${(value as unknown as { roll?: true }).roll === true ? ' but it is uncertain: roll for it now with roll_check (list_checks shows the checks), naming the character it is for; nobody is asked to act before the dice are rolled. Then' : '. Now'} call ${PREVIEW_TOOL} (when the scene asks for it) and ${ACTIVATE_TOOL}, describing only what the character does.`
         : `Judged: it cannot work${(value as unknown as { elsewhere?: true }).elsewhere === true ? ` (${(value as unknown as { reason: string }).reason})` : ''}. Play the failed attempt: ${RESOLVE_TOOL} with one outcome for the player's character (result failed, one sentence: what it does, what comes of it, why not) and nothing else, then ${NARRATE_TOOL}. Narrate what a witness would see of the attempt, never the effect the player claimed.` }],
     },
     isConcurrencySafe: () => false,
     execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
-      return Promise.resolve(record(deps.engine.judge(owner, args.allowed, args.reason, args.at)))
+      return Promise.resolve(record(deps.engine.judge(owner, args.allowed, args.reason, args.at, args.uncertain)))
     },
   })
 

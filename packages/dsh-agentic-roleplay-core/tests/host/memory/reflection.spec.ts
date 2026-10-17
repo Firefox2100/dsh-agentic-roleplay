@@ -127,6 +127,29 @@ describe('what a proposal may rest on', () => {
     expect(problems({ revise: [{ id: honest, contradicted_by: [at(1)], confidence: 'doubtful' }] })).toEqual([expect.stringContaining('came before the belief was formed')])
   })
 
+  it('has doubting a belief be one step: the belief and what speaks against it, the confidence lowered for the character', () => {
+    const honest = belief('The mayor is honest.')
+    expect(problems({ doubt: [{ id: honest, contradicted_by: [at(4)] }] })).toEqual([])
+    expect(problems({ doubt: [{ id: honest, contradicted_by: [] }] })).toEqual(expect.arrayContaining([expect.stringContaining('name what speaks against the belief in contradicted_by')]))
+    expect(problems({ doubt: [{ id: honest, contradicted_by: [at(1)] }] })).toEqual([expect.stringContaining('came before the belief was formed')])
+    expect(problems({ doubt: [{ id: 999, contradicted_by: [at(4)] }] })).toEqual([expect.stringContaining('there is no belief numbered 999')])
+    expect(problems({ doubt: [{ id: honest, contradicted_by: [at(4)] }], drop: [{ id: honest, perceptions: [at(4)] }] })).toEqual([expect.stringContaining('already changed')])
+    expect(problems({ doubt: [{ id: honest, contradicted_by: [at(4)], text: 'The mayor is honest (doubtful, importance 4, perceptions [3])' }] })).toEqual([expect.stringContaining('fields of their own')])
+    expect(problems({ revise: [{ id: honest, text: 'The mayor lied. (sure, importance 4)', perceptions: [at(4)] }] })).toEqual([expect.stringContaining('fields of their own')])
+  })
+
+  it('writes a doubt as a lower confidence and a link to what speaks against the belief', () => {
+    const honest = belief('The mayor is honest.')
+    session.memories.update(honest, { confidence: 'sure' })
+    const clara = session.characters.getBySourceId('clara')!
+    const proposal: Proposal = { add: [], revise: [], doubt: [{ id: honest, contradicted_by: [at(4)], text: 'The mayor may not be honest after all.' }], drop: [] }
+    session.edit(editOf(7, clara, proposal, named, belief => session.memories.get(belief)?.confidence))
+    expect(session.memories.get(honest)).toMatchObject({ confidence: 'likely', text: 'The mayor may not be honest after all.' })
+    expect(session.memories.evidenceOf(honest)).toEqual([{ memoryId: honest, perceptionId: at(4), relation: 'contradicts', turn: 7 }])
+    session.edit(editOf(8, clara, { add: [], revise: [], doubt: [{ id: honest, contradicted_by: [at(6)] }], drop: [] }, named, belief => session.memories.get(belief)?.confidence))
+    expect(session.memories.get(honest)?.confidence).toBe('doubtful')
+  })
+
   it('lets a belief be made sure only by things from two turns, counting what it already rests on', () => {
     const honest = belief('The mayor is honest.')
     expect(problems({ revise: [{ id: honest, perceptions: [at(4)], confidence: 'sure' }] })).toEqual([expect.stringContaining('at least two different turns')])
