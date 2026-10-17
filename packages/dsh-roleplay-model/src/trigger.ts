@@ -11,8 +11,8 @@ export type Comparison = (typeof COMPARISONS)[number]
  * the story's zone: `YYYY-MM-DDTHH:MM`, and `HH:MM` for a time of day.
  */
 export type TriggerCondition =
-  /** True from `from` on, until `to`; or while the time of day is in `window` (past midnight when it ends before it starts), on `days` (`mon` to `sun`) when given. */
-  | { type: 'time'; from?: string; to?: string; window?: { from: string; to: string }; days?: string[] }
+  /** True from `from` on, until `to`; or while the time of day is in `window` (past midnight when it ends before it starts), on `days` (`mon` to `sun`) when given and on the days `on` allows (months, dates, seasons, holidays of the world's calendar). */
+  | { type: 'time'; from?: string; to?: string; window?: { from: string; to: string }; days?: string[]; on?: string[] }
   /** A character is in a place, at a feature of it when given. */
   | { type: 'place'; character: string; location: string; feature?: string }
   /** A variable compares to a value; `subject` is the key of the character, item or place it is about, none for a world variable. */

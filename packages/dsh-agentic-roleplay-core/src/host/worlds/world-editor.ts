@@ -21,6 +21,7 @@ import { formatIssue } from '../validation.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { generateReferenceImage, uploadReferenceImage } from '../images/generator.ts'
+import { loadCalendar } from '../calendar/load.ts'
 import { triggerProblemsOf } from '../triggers/check.ts'
 import { loadTriggers } from '../triggers/load.ts'
 import { loadVariables } from '../variables/load.ts'
@@ -79,7 +80,8 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
   const { items, slots } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
   const scripted = await loadTriggers(world.directory)
   const declared = await loadVariables(world.directory)
-  const { triggers, triggersProblem } = triggersOf({ characters, locations, items, slots, variables: declared.defs }, scripted)
+  const { calendar } = await loadCalendar(world.directory)
+  const { triggers, triggersProblem } = triggersOf({ characters, locations, items, slots, variables: declared.defs, calendar }, scripted)
   const names = new Map(locations.map(location => [location.id, location.name]))
   const characterNames = new Map(characters.map(character => [character.id, character.name]))
   const itemNames = new Map(items.map(item => [item.id, item.name]))

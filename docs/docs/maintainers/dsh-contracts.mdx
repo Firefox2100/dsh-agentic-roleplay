@@ -3,7 +3,7 @@ title: DSH contracts
 description: DSH services, chat persistence, scoped child tools, rendering, approval, and upgrade checks.
 ---
 
-The core package supports DSH `>=0.2.0-rc.2 <0.3.0`. Most integration uses public Cordis services and slots. One deliberate exception is child composition for per-agent scoped tools; it is guarded by contract tests and must be reviewed during every DSH upgrade.
+The core package supports DSH `>=0.2.0-rc.2 <0.2.1`. Most integration uses public Cordis services and slots. One deliberate exception is child composition for per-agent scoped tools. Development dependencies and contract tests stay pinned to one exact tested DSH release; every DSH upgrade requires a fresh review before the supported range is widened.
 
 ## Chat and workspace lifecycle
 

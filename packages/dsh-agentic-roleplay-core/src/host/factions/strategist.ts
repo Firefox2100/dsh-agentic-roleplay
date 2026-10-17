@@ -2,6 +2,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { describeDuration, type Session } from '@dsh-agentic-roleplay/state'
 import { INTENT_STATUSES, type Faction } from 'dsh-roleplay-model'
+import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { promptFor } from '../prompts/access.ts'
 import type { Strategist, StrategyJob, TurnStore } from '../orchestration/boundaries.ts'
@@ -13,6 +14,8 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const STRATEGY_ROUND = 200
 const MAX_ACTIVE_GOALS = 8
 const MAX_TEXT = 400
+/** What a decision may hold: the summary, both states, a new goal with its plan, and the status of each active goal. */
+const DECISION_LIMITS = [MAX_TEXT, MAX_TEXT, MAX_TEXT, 120, MAX_TEXT, ...Array.from({ length: 6 }, () => 200), ...Array.from({ length: MAX_ACTIVE_GOALS }, () => 10)]
 
 type StrategySession = Pick<Session, 'factions' | 'factionStates' | 'factionIntents' | 'factionMemberships' | 'factionRelationships' | 'characters' | 'events' | 'metadata' | 'edit' | 'transaction'>
 
@@ -141,7 +144,7 @@ export function factionStrategist(deps: { agentOf: (chat: string) => Agent | und
       for (const faction of dueFactions(session, now, everyDays).slice(0, perTurn)) {
         const store: TurnStore = job.store
         const strategy = await runChild<Strategy>({
-          parent, signal, reasoningEffort: store.settings().reasoning.children, sampling: childSampling(store.settings(), 'authoring'), ...childModel(store.settings(), 'authoring'), trace: childTrace(store, 'authoring', `faction ${faction.name}`),
+          parent, signal, reasoningEffort: store.settings().reasoning.children, sampling: childSampling(store.settings(), 'authoring', estimateAnswer(DECISION_LIMITS, store.settings().prompts.language)), ...childModel(store.settings(), 'authoring'), trace: childTrace(store, 'authoring', `faction ${faction.name}`),
           persona: promptFor(parent, 'roleplay/faction-strategist', store.settings().prompts.language),
           prompt: brief(session, faction, now, zone, last[keyOf(faction)] ?? now),
           result: RESULT,

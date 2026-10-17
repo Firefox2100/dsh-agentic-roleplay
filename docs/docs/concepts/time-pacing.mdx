@@ -6,11 +6,13 @@ title: Story time, routines and pacing
 
 In `simulated` mode, time advances by the duration the GM records for rounds and explicit skips. In `real` mode, story time follows the wall clock in the configured IANA time zone. Once a simulated story has its own dates, it cannot be changed back to real time.
 
-Memory age, deadlines, routines and off-stage work use story time—not turn count or elapsed real time. A hundred rapid turns can occupy one story minute; a single skip may move several days.
+Memory age, deadlines, routines and off-stage work use story time, not turn count or elapsed real time. A hundred rapid turns can occupy one story minute; a single skip may move several days.
 
 ## Routines and off-stage action
 
 Routine windows describe where a character normally is and what it does. They provide a default, not a rail: an ongoing commitment, interruption or story event can override the routine.
+
+Authors can limit a routine by weekday, month, recurring or one-time date, date span, day of the month, season or a holiday declared by the world. Exclusions make cases such as “weekdays except Founder's Day” deterministic. Seasons follow the hemisphere in the world's `calendar.json`; see [Calendar and day rules](../world-format/calendar).
 
 After a turn, a bounded number of off-stage characters may act when commitments or deadlines become due. Their consequences enter the same record system as on-stage action.
 

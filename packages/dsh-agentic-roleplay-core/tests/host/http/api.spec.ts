@@ -90,6 +90,10 @@ beforeEach(async () => {
       if (worldId === 'missing') throw new WorldNotFoundError('missing world')
       return { chatSessionId: `world-author-${worldId}` }
     },
+    translation: {
+      language: async id => { if (id === 'missing') throw new WorldNotFoundError('missing world'); return id === 'harbor' ? 'en' : undefined },
+      start: async (id, to) => { if (id === 'harbor' && to === 'en') throw new InvalidEditProblems(['this world is already written in English']); return { chatSessionId: `world-author-${id}`, started: true } },
+    },
     worldCharacters: async () => {
       if (charactersError !== undefined) throw charactersError
       return cast
@@ -106,6 +110,8 @@ beforeEach(async () => {
     worldFiles: {
       info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', alternateOpenings: [] }),
       editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', alternateOpenings: [] }) },
+      calendar: () => Promise.resolve({ hemisphere: 'north', holidays: [] }),
+      editCalendar: (_world, calendar) => (calendar.holidays.some(holiday => holiday.id === '') ? Promise.reject(new InvalidEditProblems(['holidays[0].id is required'])) : Promise.resolve(calendar)),
       routines: () => Promise.resolve({ characters: [], places: [] }),
       editRoutine: (_world, key) => (key === 'nobody' ? Promise.reject(new InvalidEditProblems(['there is no character "nobody"'])) : Promise.resolve({ characters: [], places: [] })),
       variables: () => Promise.resolve([]),
@@ -301,6 +307,26 @@ describe('roleplay API', () => {
     expect(await upload.json()).toEqual({ path: 'library/dock.png' })
     expect((await fetch(`${origin}/worlds/gallery?id=harbor&path=x`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reusable: 'yes' }) })).status).toBe(400)
     expect((await fetch(`${origin}/worlds/gallery/file?id=harbor&path=x`)).status).toBe(404)
+  })
+
+  it('reads and replaces the calendar of a world', async () => {
+    expect(await (await fetch(`${origin}/worlds/calendar?id=harbor`)).json()).toEqual({ hemisphere: 'north', holidays: [] })
+    const put = (body: unknown) => fetch(`${origin}/worlds/calendar?id=harbor`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    expect(await (await put({ hemisphere: 'south', holidays: [{ id: 'fair', name: 'Fair', on: ['09-28'] }] })).json()).toEqual({ hemisphere: 'south', holidays: [{ id: 'fair', name: 'Fair', on: ['09-28'] }] })
+    expect((await put({ hemisphere: 'south', holidays: [{ id: '', name: 'Fair', on: [] }] })).status).toBe(422)
+    expect((await put({ hemisphere: 'moon', holidays: [] })).status).toBe(422)
+  })
+
+  it('says which language a world is written in, and asks for its translation', async () => {
+    const known = await fetch(`${origin}/worlds/language?id=harbor`)
+    expect(await known.json()).toEqual({ language: 'en' })
+    expect(await (await fetch(`${origin}/worlds/language?id=other`)).json()).toEqual({ language: null })
+    expect((await fetch(`${origin}/worlds/language?id=missing`)).status).toBe(404)
+    const ask = (id: string, body: object) => fetch(`${origin}/worlds/translate?id=${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    expect(await (await ask('other', { to: 'zh', title: 'Translating' })).json()).toEqual({ chatSessionId: 'world-author-other', started: true })
+    expect((await ask('harbor', { to: 'en', title: 'Translating' })).status).toBe(422)
+    expect((await ask('harbor', { to: 'fr', title: 'Translating' })).status).toBe(400)
+    expect((await ask('harbor', { to: 'zh' })).status).toBe(400)
   })
 
   it('opens a dedicated authoring chat for a world', async () => {

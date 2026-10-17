@@ -19,6 +19,50 @@ const problemsOf = (change: RecordsEdit): string[] => {
 }
 const idOf = (key: string) => store.characters.getBySourceId(key)!.id
 
+describe('what a belief rests on', () => {
+  const seen = (character: string, text = 'Bob took the key.') => store.edit(edit({ events: [{ turn: 1, round: 1, text, importance: 3, perceivedBy: [{ character, mode: 'witnessed' }] }] })).eventIds[0]!
+  const perception = (eventId: number, character: string): number => store.events.perceptionsOf(eventId).find(entry => entry.characterId === idOf(character))!.id
+
+  it('is written with the belief, with how sure the character is, and is read back', () => {
+    const mine = perception(seen('alice'), 'alice')
+    const result = store.edit(edit({ turn: 2, beliefs: [{ character: 'alice', kind: 'belief', text: 'Bob is a thief.', importance: 3, confidence: 'sure', evidenceFor: [mine] }] }))
+    const [belief] = store.memories.list(idOf('alice'))
+    expect(belief).toMatchObject({ id: result.beliefIds[0], confidence: 'sure' })
+    expect(store.memories.evidenceOf(belief!.id)).toEqual([{ memoryId: belief!.id, perceptionId: mine, relation: 'supports', turn: 2 }])
+    expect(readRecords(store).beliefs).toMatchObject([{ id: belief!.id, confidence: 'sure', evidence_for: [mine], evidence_against: [] }])
+  })
+
+  it('can be added to a belief, which then doubts itself, and goes with the belief', () => {
+    const mine = perception(seen('alice'), 'alice')
+    const later = perception(seen('alice', 'Bob returned the key.'), 'alice')
+    store.edit(edit({ beliefs: [{ character: 'alice', kind: 'belief', text: 'Bob is a thief.', importance: 3, evidenceFor: [mine] }] }))
+    const [belief] = store.memories.list(idOf('alice'))
+    expect(belief!.confidence).toBe('likely')
+    store.edit(edit({ turn: 3, beliefEdits: [{ id: belief!.id, confidence: 'doubtful', evidenceAgainst: [later] }] }))
+    expect(store.memories.get(belief!.id)?.confidence).toBe('doubtful')
+    expect(store.memories.evidenceIndex(idOf('alice'))).toEqual({ folded: new Map([[mine, [belief!.id]], [later, [belief!.id]]]), disputed: new Set([belief!.id]) })
+    store.edit(edit({ beliefRetractions: [belief!.id] }))
+    expect(store.memories.evidenceOf(belief!.id)).toEqual([])
+  })
+
+  it('names what is wrong with it: a confidence that is not one, a perception that is not there or is another character\'s', () => {
+    const bobs = perception(seen('bob'), 'bob')
+    expect(problemsOf(edit({ beliefs: [{ character: 'alice', kind: 'belief', text: 'x', importance: 2, confidence: 'certain' as never, evidenceFor: [bobs, 999] }] }))).toEqual([
+      'beliefs[0]: confidence is one of doubtful, likely, sure',
+      `beliefs[0].evidence_for: perception ${bobs} is not one the character took in`,
+      'beliefs[0].evidence_for: there is no perception 999',
+    ])
+  })
+
+  it('is read from the wire format, and offered in its schema', () => {
+    const parsed = parseRecordsEdit({ turn: 1, beliefs: [{ character: 'alice', kind: 'belief', text: 'x', importance: 2, confidence: 'sure', evidence_for: [4], evidence_against: [5] }], belief_edits: [{ id: 1, confidence: 'doubtful', evidence_against: [6] }] })
+    expect(parsed.beliefs?.[0]).toMatchObject({ confidence: 'sure', evidenceFor: [4], evidenceAgainst: [5] })
+    expect(parsed.beliefEdits?.[0]).toMatchObject({ confidence: 'doubtful', evidenceAgainst: [6] })
+    const schema = recordsEditSchema() as unknown as { properties: { beliefs: { items: { properties: Record<string, unknown> } } } }
+    expect(Object.keys(schema.properties.beliefs.items.properties)).toEqual(expect.arrayContaining(['confidence', 'evidence_for', 'evidence_against']))
+  })
+})
+
 describe('applying an edit', () => {
   it('writes state, events with who took them in, beliefs and threads together', () => {
     const result = store.edit(edit({

@@ -1,4 +1,4 @@
-import type { CharacterMemory, CharacterMemoryPatch, MemoryId, NewCharacterMemory } from 'dsh-roleplay-model'
+import { DEFAULT_CONFIDENCE, type CharacterMemory, type CharacterMemoryPatch, type EvidenceRelation, type MemoryEvidence, type MemoryId, type NewCharacterMemory, type PerceptionId } from 'dsh-roleplay-model'
 import type { Clock } from '../clock.ts'
 import type { SqlDatabase } from '../driver/types.ts'
 import { NotFoundError } from '../errors.ts'
@@ -13,6 +13,7 @@ interface MemoryRow {
   text: string
   about: string
   importance: number
+  confidence: CharacterMemory['confidence']
   turn: number
   recalls: number
   last_recalled_turn: number | null
@@ -26,6 +27,7 @@ const toMemory = (row: MemoryRow): CharacterMemory => ({
   text: row.text,
   about: parseNumberList(row.about, 'memories.about'),
   importance: row.importance,
+  confidence: row.confidence,
   turn: row.turn,
   recalls: row.recalls,
   ...(row.last_recalled_turn === null ? {} : { lastRecalledTurn: row.last_recalled_turn }),
@@ -38,8 +40,8 @@ export class SqliteMemoryRepository implements MemoryRepository {
   add(memory: NewCharacterMemory): CharacterMemory {
     return guard(() => {
       const { lastInsertRowid } = this.db.run(
-        'INSERT INTO memories (character_id, kind, text, about, importance, turn, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        [memory.characterId, memory.kind, memory.text, toJson(memory.about), memory.importance, memory.turn, this.clock().toISOString()],
+        'INSERT INTO memories (character_id, kind, text, about, importance, confidence, turn, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        [memory.characterId, memory.kind, memory.text, toJson(memory.about), memory.importance, memory.confidence ?? DEFAULT_CONFIDENCE, memory.turn, this.clock().toISOString()],
       )
       const added = this.require(Number(lastInsertRowid))
       this.index.put({ kind: 'memory', refId: added.id, characterId: added.characterId, text: added.text })
@@ -59,8 +61,8 @@ export class SqliteMemoryRepository implements MemoryRepository {
   update(id: MemoryId, patch: CharacterMemoryPatch): CharacterMemory {
     return guard(() => {
       const current = this.require(id)
-      this.db.run('UPDATE memories SET text = ?, about = ?, importance = ? WHERE id = ?', [
-        patch.text ?? current.text, toJson(patch.about ?? current.about), patch.importance ?? current.importance, id,
+      this.db.run('UPDATE memories SET text = ?, about = ?, importance = ?, confidence = ? WHERE id = ?', [
+        patch.text ?? current.text, toJson(patch.about ?? current.about), patch.importance ?? current.importance, patch.confidence ?? current.confidence, id,
       ])
       const changed = this.require(id)
       this.index.put({ kind: 'memory', refId: id, characterId: changed.characterId, text: changed.text })
@@ -77,6 +79,27 @@ export class SqliteMemoryRepository implements MemoryRepository {
   remove(id: MemoryId): boolean {
     this.index.remove('memory', id)
     return this.db.run('DELETE FROM memories WHERE id = ?', [id]).changes > 0
+  }
+
+  addEvidence(memoryId: MemoryId, perceptionId: PerceptionId, relation: EvidenceRelation, turn: number): void {
+    this.require(memoryId)
+    guard(() => this.db.run('INSERT INTO memory_evidence (memory_id, perception_id, relation, turn) VALUES (?, ?, ?, ?) ON CONFLICT (memory_id, perception_id) DO UPDATE SET relation = excluded.relation, turn = excluded.turn', [memoryId, perceptionId, relation, turn]))
+  }
+
+  evidenceOf(memoryId: MemoryId): MemoryEvidence[] {
+    return this.db.all<{ memory_id: number; perception_id: number; relation: EvidenceRelation; turn: number }>('SELECT * FROM memory_evidence WHERE memory_id = ? ORDER BY perception_id', [memoryId])
+      .map(row => ({ memoryId: row.memory_id, perceptionId: row.perception_id, relation: row.relation, turn: row.turn }))
+  }
+
+  evidenceIndex(characterId: number): { folded: Map<PerceptionId, MemoryId[]>; disputed: Set<MemoryId> } {
+    const rows = this.db.all<{ memory_id: number; perception_id: number; relation: EvidenceRelation }>('SELECT e.memory_id, e.perception_id, e.relation FROM memory_evidence e JOIN memories m ON m.id = e.memory_id WHERE m.character_id = ? ORDER BY e.memory_id', [characterId])
+    const folded = new Map<PerceptionId, MemoryId[]>()
+    const disputed = new Set<MemoryId>()
+    for (const row of rows) {
+      folded.set(row.perception_id, [...(folded.get(row.perception_id) ?? []), row.memory_id])
+      if (row.relation === 'contradicts') disputed.add(row.memory_id)
+    }
+    return { folded, disputed }
   }
 
   private require(id: MemoryId): CharacterMemory {

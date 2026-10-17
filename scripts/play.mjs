@@ -16,7 +16,14 @@ const TURN_LIMIT_MS = 30 * 60_000
 const login = await fetch(url, { redirect: 'manual' })
 const cookie = (login.headers.getSetCookie?.() ?? []).map(entry => entry.split(';')[0]).join('; ')
 if (cookie === '') { console.error('the DSH did not give a session cookie: is the token current?'); process.exit(1) }
-const api = (path, init = {}) => fetch(`${base}/roleplay-api${path}`, { ...init, headers: { ...init.headers, cookie, 'content-type': 'application/json' } })
+const api = async (path, init = {}, attempts = 5) => {
+  for (let attempt = 1; ; attempt += 1) {
+    try { return await fetch(`${base}/roleplay-api${path}`, { ...init, headers: { ...init.headers, cookie, 'content-type': 'application/json' } }) } catch (error) {
+      if (attempt === attempts || init.method === 'POST') throw error
+      await new Promise(resolve => setTimeout(resolve, 1000 * attempt))
+    }
+  }
+}
 const turnsOf = async () => {
   const { sessions } = await (await api('/sessions')).json()
   const found = sessions.find(session => session.id === id)

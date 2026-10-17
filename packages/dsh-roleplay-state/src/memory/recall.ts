@@ -1,4 +1,4 @@
-import type { Character, CharacterId, CharacterMemory, PerceivedEvent } from 'dsh-roleplay-model'
+import type { Character, CharacterId, CharacterMemory, MemoryConfidence, PerceivedEvent } from 'dsh-roleplay-model'
 import type { ClockRepository, EventRepository, MemoryRepository, RelationshipRepository } from '../repositories.ts'
 
 const DAY = 86_400_000
@@ -24,9 +24,14 @@ export interface MemoryPolicy {
    * included) to 1 (only what adds something new): maximal marginal relevance over the pool. 0 or absent: none.
    */
   diversity?: number
+  /**
+   * How long what a character took in lasts once a belief rests on it, as a share of how long it would last: below 1 it fades sooner, the
+   * belief having taken over, and it is not told again when that belief is told. 1 or absent: no change.
+   */
+  foldedFade?: number
 }
 
-export const DEFAULT_MEMORY_POLICY: MemoryPolicy = { flaky: true, recall: 12, overRetrieve: 4, associate: 2, diversity: 0.3 }
+export const DEFAULT_MEMORY_POLICY: MemoryPolicy = { flaky: true, recall: 12, overRetrieve: 4, associate: 2, diversity: 0.3, foldedFade: 0.5 }
 
 /** How much of a memory is left: what the character is told of it. */
 export type Clarity = 'clear' | 'faded' | 'vague'
@@ -43,6 +48,10 @@ export interface Recalled {
   source: { kind: 'perception' | 'memory'; id: number }
   /** It did not match the moment itself: it came to mind with something that did ({@link MemoryPolicy.associate}). */
   linked?: true
+  /** For what the character believes: how sure it is. */
+  confidence?: MemoryConfidence
+  /** For what the character believes: something it took in since speaks against it. */
+  disputed?: true
   /** Why it came back, when the query asked to be told ({@link RecallQuery.explain}). */
   why?: RecallWhy
 }
@@ -87,7 +96,7 @@ export interface RecallQuery {
 /** What recall reads: the events a character took in and what it believes. */
 export interface RecallSource {
   events: Pick<EventRepository, 'perceivedBy'>
-  memories: Pick<MemoryRepository, 'list'>
+  memories: Pick<MemoryRepository, 'list'> & Partial<Pick<MemoryRepository, 'evidenceIndex'>>
   clock: Pick<ClockRepository, 'get' | 'log'>
   /** Optional for lightweight callers; a session supplies it so socially charged people are stronger cues. */
   relationships?: Pick<RelationshipRepository, 'from'>
@@ -183,6 +192,8 @@ interface Candidate {
   recalls: number
   seed: number
   durability: number
+  /** For something the character took in that beliefs rest on: those beliefs. */
+  covered?: number[]
 }
 
 const first = (text: string): string => {
@@ -210,8 +221,8 @@ function describeEvent({ perception, event }: PerceivedEvent, names: ReadonlyMap
   }
 }
 
-function describeBelief(memory: CharacterMemory, at?: number): Candidate['recalled'] {
-  return { turn: memory.turn, ...(at === undefined ? {} : { at }), source: { kind: 'memory', id: memory.id }, clear: memory.text, faded: first(memory.text), vague: first(memory.text) }
+function describeBelief(memory: CharacterMemory, at: number | undefined, disputed: boolean): Candidate['recalled'] {
+  return { turn: memory.turn, ...(at === undefined ? {} : { at }), source: { kind: 'memory', id: memory.id }, confidence: memory.confidence, ...(disputed ? { disputed: true as const } : {}), clear: memory.text, faded: first(memory.text), vague: first(memory.text) }
 }
 
 /** One thing a character could be reminded of, with the text to match it against the moment. */
@@ -262,7 +273,9 @@ export interface RecallEvidence {
 /** Being where something happened calls it to mind, about as much as sharing two words with it. */
 const PLACE_CUE = 2
 
-function gather(source: RecallSource, { characterId, characters, situation, locationId, about }: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId' | 'about'>): Candidate[] {
+function gather(source: RecallSource, { characterId, characters, situation, locationId, about, policy }: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId' | 'about'> & { policy?: MemoryPolicy }): Candidate[] {
+  const evidence = source.memories.evidenceIndex?.(characterId)
+  const folding = Math.min(1, Math.max(0.05, policy?.foldedFade ?? 1))
   const names = new Map(characters.map(character => [character.id, character.name]))
   const peers = mentioned(situation, characters)
   peers.delete(characterId)
@@ -295,7 +308,8 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
       ageDays: ageDays(at),
       recalls: seen.perception.recalls,
       seed: seen.perception.id,
-      durability: 1,
+      durability: evidence?.folded.has(seen.perception.id) === true ? folding : 1,
+      ...(evidence?.folded.has(seen.perception.id) === true ? { covered: evidence.folded.get(seen.perception.id)! } : {}),
     })}),
     ...source.memories.list(characterId).filter(belief => concerns(belief.about)).map((belief): Candidate => {
       const at = atTurn(belief.turn)
@@ -303,7 +317,7 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
       return ({
       key: `m:${belief.id}`,
       links: { people: belief.about.filter(id => id !== characterId), tags: [] },
-      recalled: describeBelief(belief, at),
+      recalled: describeBelief(belief, at, evidence?.disputed.has(belief.id) === true),
       cues: cue,
       relevance: cue.people + cue.words,
       importance: belief.importance,
@@ -316,7 +330,7 @@ function gather(source: RecallSource, { characterId, characters, situation, loca
 }
 
 /** Everything the character could be reminded of, for a caller that ranks by meaning (an embedding, a reranker) before asking for the recall. */
-export function recallCandidates(source: RecallSource, query: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId' | 'about'>): RecallCandidate[] {
+export function recallCandidates(source: RecallSource, query: Pick<RecallQuery, 'characterId' | 'characters' | 'situation' | 'turn' | 'locationId' | 'about'> & { policy?: MemoryPolicy }): RecallCandidate[] {
   return gather(source, query).map(candidate => ({ key: candidate.key, text: candidate.recalled.clear, turn: candidate.recalled.turn, importance: candidate.importance }))
 }
 
@@ -439,6 +453,27 @@ function diversified<T extends { candidate: Candidate; score: number }>(ranked: 
   return chosen
 }
 
+/** How sure the character is of a belief, and whether something since speaks against it. */
+function beliefOf(candidate: Candidate): Pick<Recalled, 'confidence' | 'disputed'> {
+  const { confidence, disputed } = candidate.recalled
+  return { ...(confidence === undefined ? {} : { confidence }), ...(disputed === undefined ? {} : { disputed }) }
+}
+
+/**
+ * Chooses as {@link diversified} does, but does not tell what the character took in when a belief resting on it is told as well: the belief says it,
+ * and the place goes to the next best.
+ */
+function chooseUncovered<T extends { candidate: Candidate; score: number }>(standing: readonly T[], count: number, diversity: number): T[] {
+  let pool = standing
+  for (;;) {
+    const chosen = diversified(pool, count, diversity)
+    const told = new Set(chosen.filter(entry => entry.candidate.recalled.source.kind === 'memory').map(entry => entry.candidate.recalled.source.id))
+    const repeated = chosen.filter(entry => entry.candidate.covered?.some(id => told.has(id)) === true)
+    if (repeated.length === 0) return chosen
+    pool = pool.filter(entry => !repeated.includes(entry))
+  }
+}
+
 /**
  * The last stage: choose the `policy.recall` best of the pool, spread by `policy.diversity`. With a reranker's judgement each
  * candidate's relevance is mostly that (a candidate it left out counts as 0), and the rest is what
@@ -457,8 +492,8 @@ export function finishRecall(pool: RecallPool, rerank?: ReadonlyMap<string, numb
       return [{ candidate, relevance, ...judgement, why }]
     })
     .sort((a, b) => b.score - a.score || b.candidate.recalled.turn - a.candidate.recalled.turn)
-  const chosen = diversified(standing, policy.recall, policy.diversity ?? 0)
-  const result = chosen.map(({ candidate, clarity, text, why }): Recalled => ({ clarity, text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source, ...(why === undefined ? {} : { why }) }))
+  const chosen = chooseUncovered(standing, policy.recall, policy.diversity ?? 0)
+  const result = chosen.map(({ candidate, clarity, text, why }): Recalled => ({ clarity, text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source, ...beliefOf(candidate), ...(why === undefined ? {} : { why }) }))
   const anchors = chosen.filter(entry => entry.relevance >= CUE_RELEVANCE)
   const wanted = anchors.length === 0 ? 0 : Math.max(0, policy.associate ?? 0)
   if (wanted > 0) {
@@ -473,7 +508,7 @@ export function finishRecall(pool: RecallPool, rerank?: ReadonlyMap<string, numb
       .slice(0, wanted)
     for (const { candidate, best, judgement } of tied) {
       result.push({
-        clarity: judgement.clarity, text: judgement.text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source, linked: true,
+        clarity: judgement.clarity, text: judgement.text, turn: candidate.recalled.turn, ...(candidate.recalled.at === undefined ? {} : { at: candidate.recalled.at }), source: candidate.recalled.source, ...beliefOf(candidate), linked: true,
         ...(pool.query.explain === true ? { why: { cues: candidate.cues, relevance: 0, importance: candidate.importance, ageDays: candidate.ageDays, ...(judgement.retention === undefined ? {} : { retention: judgement.retention }), score: judgement.score, linked: { people: best.people, tags: best.tags, place: best.place } } } : {}),
       })
     }

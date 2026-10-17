@@ -1,4 +1,4 @@
-import { createSessionStore, triggerReferenceProblems, type Session } from '@dsh-agentic-roleplay/state'
+import { createSessionStore, triggerReferenceProblems, writeCalendar, type Calendar, type Session } from '@dsh-agentic-roleplay/state'
 import type { CharacterDefinition, ItemDefinition, LocationDefinition, Slot, TriggerDefinition, VariableDefinitionInput } from 'dsh-roleplay-model'
 import { populateCharacters, populateItems, populateLocations, populateVariables } from '../sessions/populate.ts'
 
@@ -8,6 +8,7 @@ export interface WorldParts {
   items: readonly ItemDefinition[]
   slots: readonly Slot[]
   variables: readonly VariableDefinitionInput[]
+  calendar?: Calendar
 }
 
 /**
@@ -22,6 +23,7 @@ export function triggerProblemsOf(parts: WorldParts, definitions: readonly Trigg
   try {
     // The populate functions use only the repositories, which a store has; the search a session adds is not needed.
     const session = scratch as unknown as Session
+    if (parts.calendar !== undefined) writeCalendar(scratch.metadata, parts.calendar)
     populateLocations(session, parts.locations)
     populateCharacters(session, parts.characters, parts.characters.find(character => character.role === 'playable')?.id ?? '')
     populateItems(session, parts.items, parts.slots, parts.locations)

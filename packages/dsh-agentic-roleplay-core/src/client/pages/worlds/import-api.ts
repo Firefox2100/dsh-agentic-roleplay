@@ -1,7 +1,7 @@
 import type { ImportChoices, ImportPreview } from '../../../shared/import-card.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
 
-async function answer<T>(response: Response): Promise<T> {
+export async function answer<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const body = await response.json().catch(() => undefined) as { message?: unknown; problems?: unknown } | undefined
     const problems = Array.isArray(body?.problems) ? body.problems.join('; ') : undefined

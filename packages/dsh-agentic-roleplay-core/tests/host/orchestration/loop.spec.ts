@@ -1,3 +1,5 @@
+import { outputBudget } from '../../../src/host/agents/budget.ts'
+import { keeperEstimate } from '../../../src/host/orchestration/committer.ts'
 import { PromptLibrary } from '../../../src/host/prompts/library.ts'
 import { Context } from '@deepseek-ai/cordis'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
@@ -634,7 +636,7 @@ describe('a turn with the real agent loop', () => {
       const { adapter } = await playTime('stated')
       const sampled = (requests: GenerateOptions[]) => requests.map(request => adapter.samplings[adapter.requests.indexOf(request)])
       expect(sampled(characterRequests(adapter))).toEqual(characterRequests(adapter).map(() => ({ temperature: 0.8, toolChoice: 'required', maxTokens: 810, priority: 'foreground' })))
-      expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: 8000, priority: 'background' })))
+      expect(sampled(keepers(adapter))).toEqual(keepers(adapter).map(() => ({ temperature: 0.1, toolChoice: 'required', maxTokens: outputBudget(keeperEstimate(1, 'en'), 2), priority: 'background' })))
       expect(adapter.samplings[adapter.requests.indexOf(masterRequests(adapter)[0]!)]).toBeUndefined()
     })
 

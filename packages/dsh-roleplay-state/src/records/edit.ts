@@ -1,5 +1,5 @@
 import {
-  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_TYPES, KNOWLEDGE_KINDS, MAX_LOCATION_FEATURES, MEMBERSHIP_STATUSES, MEMORY_KINDS, PERCEPTION_MODES, SLOT_ID,
+  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_TYPES, KNOWLEDGE_KINDS, MAX_LOCATION_FEATURES, MEMBERSHIP_STATUSES, MEMORY_CONFIDENCES, MEMORY_KINDS, PERCEPTION_MODES, SLOT_ID,
   type CharacterId, type CharacterStatePatch, type Holder, type Location, type LocationFeature, type NewPerception, type RelationshipPatch,
 } from 'dsh-roleplay-model'
 import { InvalidEditError, InvalidMoveError } from '../errors.ts'
@@ -270,20 +270,33 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     return one === undefined ? [] : [{ eventId: added.event, perception: one }]
   })
 
+  const confidence = (value: unknown, where: string): void => {
+    if (value !== undefined && !MEMORY_CONFIDENCES.includes(value as never)) problems.push(`${where}: confidence is one of ${MEMORY_CONFIDENCES.join(', ')}`)
+  }
+  /** Perceptions a belief of one character is said to rest on, or to be contradicted by: they must be the character's own. */
+  const evidence = (value: readonly number[] | undefined, characterId: CharacterId | undefined, where: string): number[] => (value ?? []).flatMap((id) => {
+    const seen = target.events.getPerception(id)
+    if (seen === undefined) { problems.push(`${where}: there is no perception ${id}`); return [] }
+    if (characterId !== undefined && seen.characterId !== characterId) { problems.push(`${where}: perception ${id} is not one the character took in`); return [] }
+    return [id]
+  })
   const beliefs = list(edit.beliefs).flatMap((belief, index) => {
     const where = `beliefs[${index}]`
     const character = idOf(belief.character, where)
     if (!MEMORY_KINDS.includes(belief.kind)) problems.push(`${where}: unknown kind "${String(belief.kind)}"`)
     if (!present(belief.text)) problems.push(`${where}: say what the character believes or knows`)
     importance(belief.importance, where)
-    return character === undefined ? [] : [{ belief, character, about: ids(belief.about, `${where}.about`) }]
+    confidence(belief.confidence, where)
+    return character === undefined ? [] : [{ belief, character, about: ids(belief.about, `${where}.about`), evidenceFor: evidence(belief.evidenceFor, character, `${where}.evidence_for`), evidenceAgainst: evidence(belief.evidenceAgainst, character, `${where}.evidence_against`) }]
   })
   const beliefEdits = list(edit.beliefEdits).map((change, index) => {
     const where = `belief_edits[${index}]`
-    if (target.memories.get(change.id) === undefined) problems.push(`${where}: there is no belief ${change.id}`)
+    const current = target.memories.get(change.id)
+    if (current === undefined) problems.push(`${where}: there is no belief ${change.id}`)
     if (change.text !== undefined && !present(change.text)) problems.push(`${where}: say what the character believes or knows`)
     importance(change.importance, where)
-    return { change, about: change.about === undefined ? undefined : ids(change.about, `${where}.about`) }
+    confidence(change.confidence, where)
+    return { change, about: change.about === undefined ? undefined : ids(change.about, `${where}.about`), evidenceFor: evidence(change.evidenceFor, current?.characterId, `${where}.evidence_for`), evidenceAgainst: evidence(change.evidenceAgainst, current?.characterId, `${where}.evidence_against`) }
   })
   for (const id of list(edit.beliefRetractions)) if (target.memories.get(id) === undefined) problems.push(`belief_retractions: there is no belief ${id}`)
   for (const [index, text] of list(edit.threadsOpened).entries()) if (!present(text)) problems.push(`threads_opened[${index}]: say what is unsettled`)
@@ -484,16 +497,22 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
       learnEventEntities(target.events.get(eventId)!, perception.characterId)
       result.writes += 1
     }
-    for (const { belief, character, about } of beliefs) {
-      result.beliefIds.push(target.memories.add({ characterId: character, kind: belief.kind, text: belief.text.trim(), about, importance: belief.importance, turn: edit.turn }).id)
+    for (const { belief, character, about, evidenceFor, evidenceAgainst } of beliefs) {
+      const added = target.memories.add({ characterId: character, kind: belief.kind, text: belief.text.trim(), about, importance: belief.importance, ...(belief.confidence === undefined ? {} : { confidence: belief.confidence }), turn: edit.turn })
+      result.beliefIds.push(added.id)
+      for (const id of evidenceFor) target.memories.addEvidence(added.id, id, 'supports', edit.turn)
+      for (const id of evidenceAgainst) target.memories.addEvidence(added.id, id, 'contradicts', edit.turn)
       result.writes += 1
     }
-    for (const { change, about } of beliefEdits) {
+    for (const { change, about, evidenceFor, evidenceAgainst } of beliefEdits) {
       target.memories.update(change.id, {
         ...(change.text === undefined ? {} : { text: change.text.trim() }),
         ...(about === undefined ? {} : { about }),
         ...(change.importance === undefined ? {} : { importance: change.importance }),
+        ...(change.confidence === undefined ? {} : { confidence: change.confidence }),
       })
+      for (const id of evidenceFor) target.memories.addEvidence(change.id, id, 'supports', edit.turn)
+      for (const id of evidenceAgainst) target.memories.addEvidence(change.id, id, 'contradicts', edit.turn)
       result.writes += 1
     }
     for (const id of list(edit.beliefRetractions)) { target.memories.remove(id); result.writes += 1 }

@@ -55,6 +55,19 @@ describe('what a character is told', () => {
     expect(prompt).not.toContain('Bob')
   })
 
+  it('is written in the language of the chat, with what it is sure of and doubts', () => {
+    const { prompt } = sharedContext.brief(request({ language: 'zh', text: (id, variables) => shippedText(id, 'zh', variables), memories: [
+      { turn: 1, at: 0, source: { kind: 'memory', id: 1 }, clarity: 'clear', text: '亚瑟欠她钱。', confidence: 'doubtful', disputed: true },
+      { turn: 1, source: { kind: 'perception', id: 2 }, clarity: 'faded', text: '酒吧很吵。' },
+    ] }))
+    expect(prompt).toContain('当前情形：\nArthur orders a drink.')
+    expect(prompt).toContain('你所在之处：')
+    expect(prompt).toContain('- Alice（你）')
+    expect(prompt).toContain('你对此存疑，此后你所见所闻有与之相悖的地方')
+    expect(prompt).toContain('一段时间以前，细节已经模糊')
+    expect(prompt).not.toContain('Situation:')
+  })
+
   it('is everyone, as before, when the story has no places', () => {
     const { place: _place, ...plain } = request({ member: alice, cast: [arthur, alice, bob] })
     const { prompt } = sharedContext.brief(plain)
@@ -180,6 +193,13 @@ describe('time in a prompt', () => {
   it('tells the game master the time and, in simulated time, that it moves only as the game master says', () => {
     const text = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' } }, cast: [arthur, alice], turn: 2, input: 'I look around.', story: story() })
     expect(text.split('\n\n')[0]).toBe('Time: Friday 4 October 1912, 21:40 (evening). The story\'s time moves only as you say: each round takes what you give it (elapsed_seconds in resolve_round, or the default), and advance_time skips ahead.')
+  })
+
+  it('is told in the language of the chat', () => {
+    const text = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' } }, cast: [arthur, alice], turn: 2, input: 'I look around.', story: story(), language: 'zh' })
+    expect(text.split('\n\n')[0]).toBe('时间：1912年10月4日 星期五 21:40 (傍晚)。 故事的时间只按你说的推进：每一轮耗时由你给定（resolve_round 的 elapsed_seconds，或取默认值），advance_time 可以跳过一段时间。')
+    expect(text).toContain('第 2 回合之前的场景：')
+    expect(text).toContain('玩家角色，“arthur”')
   })
 
   it('tells it that the real clock cannot be skipped, and how long the player was away when that is long enough to matter', () => {

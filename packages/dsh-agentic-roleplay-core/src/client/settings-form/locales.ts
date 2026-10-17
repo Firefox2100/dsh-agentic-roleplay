@@ -2,7 +2,7 @@ import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
   | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
-  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp' | 'diversity' | 'diversityHelp'
+  | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp' | 'diversity' | 'diversityHelp' | 'foldedFade' | 'foldedFadeHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'interfacePack' | 'interfacePackHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
@@ -35,6 +35,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     associateHelp: 'The most extra memories a character is reminded of because they are strongly tied (the same people together with the same place or tags) to something the moment called to mind, and matter enough. 0 turns it off.',
     diversity: 'Spread of what is recalled',
     diversityHelp: 'From 0 to 1: how much a memory that says what one already chosen says counts against it, so that a character is not reminded of the same moment several times. 0 chooses by score alone.',
+    foldedFade: 'How long digested memories last',
+    foldedFadeHelp: 'From 0.05 to 1. Once a belief rests on something a character took in, that memory fades this much as fast (a half means it fades twice as soon), and it is not told again when the belief is. 1 changes nothing.',
     lookup: 'Characters can look up memories',
     lookupHelp: 'While it decides, a character can ask itself about something it remembers beyond what the moment already brought to mind. Each character only reaches its own memories. It makes a character\'s turn a little longer.',
     lookupCalls: 'Memory look-ups per decision',
@@ -176,6 +178,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     recallHelp: '角色每次行动时最多被唤起的记忆条数，按当前情境联想到的内容挑选。',
     overRetrieve: '每条回忆的候选倍数',
     overRetrieveHelp: '为了选出角色被唤起的记忆，会先检索出此倍数的候选（按情境线索、字词和语义），再保留最好的；若已配置重排序服务，则由它评判这张更大的网。1 表示直接从第一次检索中选取。',
+    foldedFade: '已归纳记忆保留多久',
+    foldedFadeHelp: '0.05 到 1。一旦某个信念建立在角色见闻之上，那条记忆的保留时间就缩短到这个比例（0.5 表示淡忘速度快一倍），并且在讲到该信念时不再重复讲它。1 表示不改变。',
     diversity: '回忆的分散程度',
     diversityHelp: '0 到 1：与已选中的某条记忆说的是同一件事的记忆要被扣多少分，这样角色就不会把同一个时刻想起好几遍。0 表示只按得分选择。',
     associate: '顺带想起的记忆',

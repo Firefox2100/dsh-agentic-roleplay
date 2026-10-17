@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { editRoutine, editVariables, readRoutines, readVariables } from '../../../src/host/worlds/daily-life.ts'
-import { parseRoutineEdit, parseVariablesEdit } from '../../../src/shared/world-daily.ts'
+import { editCalendar, editRoutine, editVariables, readCalendarDocument, readRoutines, readVariables } from '../../../src/host/worlds/daily-life.ts'
+import { parseCalendarEdit, parseRoutineEdit, parseVariablesEdit } from '../../../src/shared/world-daily.ts'
 
 let world: { id: string; directory: string }
 const write = async (path: string, value: unknown) => { await mkdir(join(path, '..'), { recursive: true }); await writeFile(path, `${JSON.stringify(value, null, 4)}\n`) }
@@ -61,5 +61,30 @@ describe('the variables of a world', () => {
 
   it('leave out what is empty when they come from the browser', () => {
     expect(parseVariablesEdit({ variables: [{ key: ' k ', name: 'K', kind: 'flag', subject: 'world', visibility: 'hidden', description: '', default: '', only: [' '], bands: [] }] })).toEqual([{ key: 'k', name: 'K', kind: 'flag', subject: 'world', visibility: 'hidden' }])
+  })
+})
+
+describe('the calendar of a world', () => {
+  const calendarFile = () => join(world.directory, 'calendar.json')
+
+  it('is written as the file, read back, and removed again when it says nothing', async () => {
+    expect(await readCalendarDocument(world)).toEqual({ hemisphere: 'north', holidays: [] })
+    const done = await editCalendar(world, parseCalendarEdit({ hemisphere: 'south', holidays: [{ id: 'founders', name: "Founder's Day", on: ['09-21', ' nth:fri:last '] }] }))
+    expect(done).toEqual({ hemisphere: 'south', holidays: [{ id: 'founders', name: "Founder's Day", on: ['09-21', 'nth:fri:last'] }] })
+    expect(JSON.parse(await readFile(calendarFile(), 'utf8'))).toEqual(done)
+    await editCalendar(world, { hemisphere: 'north', holidays: [] })
+    await expect(readFile(calendarFile(), 'utf8')).rejects.toThrow(/ENOENT/)
+  })
+
+  it('is refused when a day is wrong, when a character still keeps a holiday, or when a trigger still names it', async () => {
+    await expect(editCalendar(world, { hemisphere: 'north', holidays: [{ id: 'x', name: 'X', on: ['someday'] }] })).rejects.toThrow(/someday/)
+    await editCalendar(world, { hemisphere: 'north', holidays: [{ id: 'fair', name: 'Fair', on: ['09-28'] }] })
+    await editRoutine(world, 'clara', parseRoutineEdit({ windows: [{ on: ['holiday:fair'], from: '09:00', to: '12:00', activity: 'Runs a stall', location: 'bar' }] }))
+    await expect(editCalendar(world, { hemisphere: 'north', holidays: [] })).rejects.toThrow(/fair/)
+    await editRoutine(world, 'clara', [])
+    await write(join(world.directory, 'triggers.json'), [{ key: 'bell', when: { type: 'time', on: ['holiday:fair'] }, effects: [] }])
+    await expect(editCalendar(world, { hemisphere: 'north', holidays: [] })).rejects.toThrow(/a trigger names the holiday "fair"/)
+    expect(JSON.parse(await readFile(calendarFile(), 'utf8')).holidays).toHaveLength(1)
+    expect(() => parseCalendarEdit({ hemisphere: 'moon', holidays: [{ id: 1 }] })).toThrow(/hemisphere/)
   })
 })

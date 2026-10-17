@@ -101,9 +101,12 @@ export function parseInstant(text: string, zone: string): number {
   throw new RangeError(`"${text}" is not a date and time: write it as 1912-10-04T19:30 (or with an offset, 1912-10-04T19:30+01:00)`)
 }
 
-/** `Tuesday 4 October 1912, 21:40`. */
-export function describeInstant(instant: number, zone: string): string {
+const WEEKDAYS_ZH = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'] as const
+
+/** `Tuesday 4 October 1912, 21:40`, or `1912年10月4日 星期二 21:40`. */
+export function describeInstant(instant: number, zone: string, language: 'en' | 'zh' = 'en'): string {
   const local = localTime(instant, zone)
+  if (language === 'zh') return `${local.year}年${local.month}月${local.day}日 ${WEEKDAYS_ZH[local.weekday]} ${pad(local.hour)}:${pad(local.minute)}`
   return `${WEEKDAYS[local.weekday]} ${local.day} ${MONTHS[local.month - 1]} ${local.year}, ${pad(local.hour)}:${pad(local.minute)}`
 }
 
@@ -124,9 +127,21 @@ export function dayPart(minuteOfDay: number): DayPart {
   return hour < 5 || hour >= 22 ? 'night' : hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening'
 }
 
-/** In words and rounded to what matters: `45 seconds`, `3 hours 12 minutes`, `2 days 3 hours`. */
-export function describeDuration(milliseconds: number): string {
+/** In words and rounded to what matters: `45 seconds`, `3 hours 12 minutes`, `2 days 3 hours`; or `45秒`, `3小时12分钟`, `2天3小时`. */
+export function describeDuration(milliseconds: number, language: 'en' | 'zh' = 'en'): string {
   const total = Math.max(0, Math.round(milliseconds / SECOND))
+  if (language === 'zh') {
+    if (total < 60) return `${total}秒`
+    const parts: string[] = []
+    let left = total
+    for (const [name, size] of [['天', 86_400], ['小时', 3600], ['分钟', 60]] as const) {
+      const count = Math.floor(left / size)
+      left -= count * size
+      if (count > 0) parts.push(`${count}${name}`)
+      if (parts.length === 2) break
+    }
+    return parts.join('')
+  }
   if (total < 60) return `${total} second${total === 1 ? '' : 's'}`
   const units: [string, number][] = [['day', 86_400], ['hour', 3600], ['minute', 60]]
   const parts: string[] = []

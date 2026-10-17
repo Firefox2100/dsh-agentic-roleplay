@@ -12,6 +12,7 @@ import { TriggersPanel } from './TriggersPanel.tsx'
 import { InfoPanel } from './InfoPanel.tsx'
 import { PromptsPanel } from './PromptsPanel.tsx'
 import { RoutinesPanel } from './RoutinesPanel.tsx'
+import { CalendarPanel } from './CalendarPanel.tsx'
 import { VariablesPanel } from './VariablesPanel.tsx'
 import { GalleryView } from '../widgets/gallery-view/GalleryView.tsx'
 import type { WorldLocaleKey } from './locales.ts'
@@ -41,6 +42,7 @@ const SECTIONS = [
   { id: 'triggers', label: 'trig_title', built: true },
   { id: 'relations', label: 'relationships', built: true },
   { id: 'routines', label: 'sectionRoutines', built: true, ownFiles: true },
+  { id: 'calendar', label: 'sectionCalendar', built: true, ownFiles: true },
   { id: 'variables', label: 'sectionVariables', built: true, ownFiles: true },
   { id: 'prompts', label: 'sectionPrompts', built: true, ownFiles: true },
   { id: 'interface', label: 'pk_title', built: true, ownFiles: true },
@@ -99,6 +101,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
         {section === 'info' && source.worldId !== undefined && <InfoPanel t={t} worldId={source.worldId} onSaved={refresh} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'prompts' && source.worldId !== undefined && <PromptsPanel t={t} worldId={source.worldId} language={t('language')} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'routines' && source.worldId !== undefined && <RoutinesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'calendar' && source.worldId !== undefined && <CalendarPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'variables' && source.worldId !== undefined && <VariablesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'interface' && source.worldId !== undefined && <PacksPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'images' && source.worldId !== undefined && <GalleryView t={galleryText} target={{ kind: 'worlds', id: source.worldId }} />}

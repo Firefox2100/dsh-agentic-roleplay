@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { describeInstant, describeValue, itemKey, locationKey, shownVariables, type Session, type ShownVariable } from '@dsh-agentic-roleplay/state'
+import { addLocalDays, describeInstant, describeValue, holidaysOn, itemKey, locationKey, readCalendar, seasonOf, shownVariables, type Session, type ShownVariable } from '@dsh-agentic-roleplay/state'
 import { PACK_API, type PlayerView } from '../../shared/interface-pack.ts'
 import { readNotes } from '../sessions/notes.ts'
 
@@ -37,7 +37,9 @@ export function playerViewOf(session: ViewSession, options: ViewOptions): Player
   const clock = session.clock.get()
   if (clock !== undefined) {
     const now = clock.mode === 'real' ? options.wall : clock.now
-    view.time = { iso: new Date(now).toISOString(), zone: options.zone, text: describeInstant(now, options.zone) }
+    const calendar = readCalendar(session.metadata)
+    const day = addLocalDays(now, options.zone, 0)
+    view.time = { iso: new Date(now).toISOString(), zone: options.zone, text: describeInstant(now, options.zone), season: seasonOf(day, calendar.hemisphere), holidays: holidaysOn(calendar, day).map(holiday => holiday.name) }
   }
   view.variables.push(...shown('the world', shownVariables(session, 'world', 0, 'world', 'others')))
   if (player === undefined) return finish(view, session)

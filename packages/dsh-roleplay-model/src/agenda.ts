@@ -5,6 +5,11 @@ import type { LocationId } from './location.ts'
 export interface RoutineWindow {
   /** The days of the week it applies on, 0 for Sunday; every day when empty. A window past midnight belongs to the day it starts on. */
   days: number[]
+  /**
+   * Other days it applies on or does not (`dec`, `12-24`, `season:winter`, `nth:mon:1`, `holiday:<id>`, a `!` before one for a day it does not apply
+   * on): it applies on a day that is among `days` and that these allow. Every day when empty or left out.
+   */
+  on?: string[]
   /** The minute of the day it starts, 0 to 1439. */
   start: number
   /** The minute it ends (exclusive); before `start` it ends the next day. Equal to `start` is not a window. */
@@ -19,6 +24,7 @@ export interface RoutineWindow {
 }
 
 export interface StoredRoutineWindow extends RoutineWindow {
+  on: string[]
   id: number
   characterId: CharacterId
 }
@@ -27,6 +33,8 @@ export interface StoredRoutineWindow extends RoutineWindow {
 export interface RoutineDefinition {
   /** Three-letter days (`mon` to `sun`); every day when left out. */
   days: string[]
+  /** Other days it applies on or does not, as for {@link RoutineWindow.on}. */
+  on?: string[]
   /** `HH:MM`. */
   from: string
   to: string

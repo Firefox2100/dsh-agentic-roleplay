@@ -14,6 +14,7 @@ import { useGridFit } from './use-grid-fit.ts'
 import { CreateWorldDialog } from './CreateWorldDialog.tsx'
 import { StarterWorlds } from './StarterWorlds.tsx'
 import { ImportCardPage } from './ImportCardPage.tsx'
+import { TranslateBanner } from './TranslateBanner.tsx'
 import { uploadCard } from './import-api.ts'
 import type { ImportPreview } from '../../../shared/import-card.ts'
 import type { WorldsFace } from './worlds-controller.ts'
@@ -87,6 +88,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
           </Button>
         </div>
         {state.authoring?.worldId === editing.id && state.authoring.error !== undefined && <p className={css.notice} role="alert">{t('authorWorldFailed', { message: state.authoring.error })}</p>}
+        <TranslateBanner t={t} worldId={editing.id} worldName={editing.name} openChat={openChat} />
         {addingAvatars && <AddAvatarsDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setAddingAvatars(false) }} onAdded={() => { setAddingAvatars(false); setEditorVersion(version => version + 1) }} />}
         <div className={css.editBody}>
           <WorldEditor key={editorVersion} t={t} source={source} notEditable={t('worldMissing')} />

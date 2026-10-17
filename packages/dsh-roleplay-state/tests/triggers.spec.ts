@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { InvalidEditError, announcements, judgedStatements, audienceIds, inAudience, parseRecordsEdit, readTriggerDefinition, recordsEditSchema, seededRoll, type SessionStore, type TriggerDefinition } from '../src/index.ts'
+import { InvalidEditError, writeCalendar, announcements, judgedStatements, audienceIds, inAudience, parseRecordsEdit, readTriggerDefinition, recordsEditSchema, seededRoll, type SessionStore, type TriggerDefinition } from '../src/index.ts'
 import { memoryStore, newCharacter } from './helpers.ts'
 
 let store: SessionStore
@@ -317,6 +317,31 @@ describe('an edit effect read from a file', () => {
     const base = { key: 'war', name: 'War', when: { type: 'time', from: '1912-10-20T00:00' } }
     expect(readTriggerDefinition({ ...base, effects: [{ type: 'edit', edit: { events: [{ text: 'War broke out.', perceived_by: 'everyone' }] } }] }, 't')).toMatchObject({ definition: { key: 'war' } })
     expect(readTriggerDefinition({ ...base, effects: [{ type: 'edit', edit: { events: [{ text: 'War broke out.', perceived_by: 'nobody' }] } }] }, 't')).toMatchObject({ problems: [expect.stringContaining('perceived_by must be a list')] })
+  })
+})
+
+describe('time conditions beyond the days of the week', () => {
+  const fires = (key: string, now: number): boolean => run(1, now).fired.some(entry => entry.trigger.key === key)
+
+  it('wait for months, dates, seasons and the holidays of the world, and for the morning side of a window past midnight', () => {
+    writeCalendar(store.metadata, { hemisphere: 'north', holidays: [{ id: 'festival', name: 'Festival', on: ['10-05'] }] })
+    define({ key: 'december', condition: { type: 'time', on: ['dec'] } })
+    define({ key: 'festival-night', condition: { type: 'time', window: { from: '22:00', to: '06:00' }, on: ['holiday:festival'] } })
+    define({ key: 'autumn-weekend', condition: { type: 'time', days: ['sat', 'sun'], on: ['season:autumn'] } })
+    expect(run(1, Date.UTC(1912, 9, 5, 23)).fired.map(entry => entry.trigger.key).sort()).toEqual(['autumn-weekend', 'festival-night'])
+    expect(run(2, Date.UTC(1912, 11, 5, 12)).fired.map(entry => entry.trigger.key)).toEqual(['december'])
+  })
+
+  it('count the small hours as belonging to the day before', () => {
+    writeCalendar(store.metadata, { hemisphere: 'north', holidays: [{ id: 'festival', name: 'Festival', on: ['10-05'] }] })
+    define({ key: 'late', condition: { type: 'time', window: { from: '22:00', to: '06:00' }, on: ['holiday:festival'] } })
+    expect(fires('late', Date.UTC(1912, 9, 6, 2))).toBe(true)
+  })
+
+  it('are read from the file, and refused when a day is not one or a holiday is not the world\'s', () => {
+    expect(readTriggerDefinition({ key: 'k', name: 'K', when: { type: 'time', on: ['dec', '!holiday:x'] }, effects: [{ type: 'beat', text: 'x' }] }, 't')).toMatchObject({ definition: { condition: { type: 'time', on: ['dec', '!holiday:x'] } } })
+    expect(readTriggerDefinition({ key: 'k', name: 'K', when: { type: 'time', on: ['someday'] }, effects: [{ type: 'beat', text: 'x' }] }, 't')).toMatchObject({ problems: [expect.stringContaining('"someday": not a day')] })
+    expect(() => store.edit(parseRecordsEdit({ turn: 2, triggers: [{ key: 'h', name: 'H', when: { type: 'time', on: ['holiday:nothing'] }, effects: [{ type: 'beat', text: 'x' }] }] }))).toThrow(/the world names no holiday "nothing"/)
   })
 })
 

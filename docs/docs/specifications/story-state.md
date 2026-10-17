@@ -24,7 +24,8 @@ The tiers are **turn -> event -> perception -> memory**. A turn is a player mess
   later learn more, remember it differently (`perception_edits`), or take in an old event only
   now because it was told (`perceptions_added`). The event itself never changes.
 - **Beliefs** (memories proper): what a character has come to believe or know beyond a single event
-  (belief, relationship, knowledge), from its own point of view. They are mutable.
+  (belief, relationship, knowledge), from its own point of view. They are mutable, carry a confidence (`doubtful`, `likely` or `sure`), and cite the character's
+  perceptions that support or contradict them.
 - **Story threads**: promises, mysteries and goals that are not settled yet.
 - **Character state**: public state, inner state, activity and emotion, as before.
 
@@ -68,6 +69,8 @@ by importance and recency (a character always remembers something recent that ma
 deterministically: the retention of a memory is `0.5 ^ (story days / half-life)`. An
 unimportant event has a six-story-day half-life; the half-life doubles with each step of importance, grows with every time it was recalled,
 is four times longer for beliefs, and is varied a little per memory (seeded by its id).
+A perception used as supporting evidence for a belief has its half-life multiplied by `memory.foldedFade` (default 0.5) and is not selected beside that belief.
+The record remains available as evidence. A belief with contradictory evidence is marked disputed when recalled.
 A cue in the situation brings back part of what faded. Retention maps to how it is told:
 clear (the full version), faded (the gist, "the details are fuzzy"), vague (only who it
 involved, "you barely remember"), or gone. Importance 5 never fades below faded. When a
@@ -288,8 +291,9 @@ instant the round began (`session.clock.at(turn, round)`). Changing the mode is 
 the start of each turn and after each round, each character as `Now: ...`, and the record keeper is given when each round began and how long it took.
 
 The helpers a schedule will need are in the state package: `inWindow` (half-open minute-of-day windows that wrap midnight), `catchUpPlan` (only the newest
-bounded part of a gap, in a bounded number of steps), `nextTimeOfDay`, `parseInstant`, `describeInstant`, `describeDuration`, `dayPart`. Calendars are
-Gregorian (what `Intl` knows): a world with its own calendar reads its times through the prompt for now.
+bounded part of a gap, in a bounded number of steps), `nextTimeOfDay`, `parseInstant`, `describeInstant`, `describeDuration`, `dayPart`. Dates remain
+Gregorian. The state package also parses and evaluates recurring months and dates, date spans, days of the month, weekday occurrences, hemisphere-aware
+seasons, named world holidays and exclusions. A world's optional `calendar.json` is copied into session metadata when the session starts.
 
 ## The player's character in a round
 
@@ -305,7 +309,7 @@ round takes at least as long as the journey the player's character made (the exi
 Three layers say what a character is up to, merged by code (`agendaAt` in the state package):
 
 - **Routine**: the recurring windows of the character's day (`routine_windows`), authored in `character.json` or made by the world author. A window holds
-  by the clock of the story's zone and the day of the week; the first that fits applies.
+  by the clock of the story's zone, the optional weekdays in `days`, and the optional calendar tokens in `on`; the first that fits applies.
 - **Engagements**: dated commitments (`engagements`: title, when, where, who, status pending/kept/missed/cancelled). They come from the story, written by
   the record keeper (`engagements`, `engagement_edits`; times as `1912-10-05T21:00` in the story's zone). Nothing in code decides whether one was kept: a
   pending one past its time stays pending and is shown as overdue to the character and the game master, and the keeper concludes it from what the rounds show.

@@ -29,6 +29,8 @@ export interface ChatSettings {
     associate: number
     /** How much a memory that repeats one already chosen counts against it, from 0 (none) to 1: maximal marginal relevance over the pool. */
     diversity: number
+    /** How long what a character took in lasts once a belief rests on it, as a share of how long it would: below 1 it fades sooner and is not told again together with that belief. 1 changes nothing. */
+    foldedFade: number
   }
   context: {
     /** The size of the conversation, in tokens, at which the oldest part is folded into the summaries; 0 takes a share of the model's context window (`limitRatio`). */
@@ -223,7 +225,7 @@ const text = (max: number, fallback: string): TextSpec => ({ kind: 'text', max, 
 export const SETTINGS_SPEC = {
   maxRounds: integer(1, 10, 3),
   maxCharacters: integer(1, 30, 4),
-  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), lookupCalls: integer(1, 20, 5), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4), associate: integer(0, 10, 2), diversity: ratio(0, 1, 0.3) },
+  memory: { flaky: flag(true), recall: integer(1, 30, 12), lookup: flag(true), lookupCalls: integer(1, 20, 5), verify: flag(true), backlogRounds: integer(1, 100, 6), overRetrieve: integer(1, 10, 4), associate: integer(0, 10, 2), diversity: ratio(0, 1, 0.3), foldedFade: ratio(0.05, 1, 0.5) },
   context: {
     limitTokens: integer(0, 1_000_000, 0),
     limitRatio: ratio(0.1, 0.9, 0.6),

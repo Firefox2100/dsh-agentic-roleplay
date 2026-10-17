@@ -1,8 +1,9 @@
-import { DAY, MINUTE, SECOND, clockTime, dayPart, describeInstant, localTime, nextTimeOfDay, type ClockMode, type Session } from '@dsh-agentic-roleplay/state'
+import { DAY, MINUTE, SECOND, addLocalDays, clockTime, dayPart, describeInstant, holidaysOn, localTime, readCalendar, nextTimeOfDay, seasonOf, type Calendar, type ClockMode, type Session } from '@dsh-agentic-roleplay/state'
+import { translator, type Language } from 'dsh-roleplay-model'
 import type { ChatSettings } from '../../shared/settings.ts'
 
 export type ClockSettings = ChatSettings['clock']
-type ClockSession = Pick<Session, 'clock' | 'transaction'>
+type ClockSession = Pick<Session, 'clock' | 'transaction'> & Partial<Pick<Session, 'metadata'>>
 
 /** What time it is in the story. */
 export interface StoryTime {
@@ -11,6 +12,8 @@ export interface StoryTime {
   now: number
   /** The zone it is read in. */
   zone: string
+  /** The world's holidays and seasons, when it has any. */
+  calendar?: Calendar
 }
 
 /** How the game master asks for time to be skipped. */
@@ -21,15 +24,24 @@ export type SkipRequest =
 export class ClockError extends Error {}
 
 /** A moment as it is told next to `now`: the clock when it is the same day, the date as well when it is not. */
-export function describeWhen(instant: number, now: number, zone: string): string {
+export function describeWhen(instant: number, now: number, zone: string, language: Language = 'en'): string {
   const a = localTime(instant, zone)
   const b = localTime(now, zone)
-  return a.year === b.year && a.month === b.month && a.day === b.day ? clockTime(instant, zone) : describeInstant(instant, zone)
+  return a.year === b.year && a.month === b.month && a.day === b.day ? clockTime(instant, zone) : describeInstant(instant, zone, language)
 }
 
-/** The time in a sentence: the day and date, the clock, and the part of the day. */
-export function describeTime(time: { now: number; zone: string }): string {
-  return `${describeInstant(time.now, time.zone)} (${dayPart(localTime(time.now, time.zone).minuteOfDay)})`
+/**
+ * The time in a sentence: the day and date, the clock, and the part of the day; and, when the world has a calendar, the season and the holidays that
+ * fall on the day.
+ */
+export function describeTime(time: { now: number; zone: string; calendar?: Calendar }, language: Language = 'en'): string {
+  const { calendar } = time
+  const tr = translator(language)
+  const base = `${describeInstant(time.now, time.zone, language)} (${tr(dayPart(localTime(time.now, time.zone).minuteOfDay))})`
+  if (calendar === undefined || (calendar.holidays.length === 0 && calendar.hemisphere === 'north')) return base
+  const day = addLocalDays(time.now, time.zone, 0)
+  const holidays = holidaysOn(calendar, day).map(holiday => holiday.name)
+  return `${base}${tr(', ')}${tr(seasonOf(day, calendar.hemisphere))}${holidays.length === 0 ? '' : `${tr('; ')}${tr('today is {holidays}', { holidays: holidays.join(tr(', ')) })}`}`
 }
 
 /** The time zone the story is read in. */
@@ -48,11 +60,14 @@ function ensure(session: ClockSession, config: ClockSettings, turn: number, wall
   return session.clock.get() ?? current
 }
 
-const timeOf = (state: { mode: ClockMode; now: number }, config: ClockSettings): StoryTime => ({ mode: state.mode, now: state.now, zone: zoneOf(config) })
+function timeOf(session: ClockSession, state: { mode: ClockMode; now: number }, config: ClockSettings): StoryTime {
+  const calendar = session.metadata === undefined ? undefined : readCalendar(session.metadata)
+  return { mode: state.mode, now: state.now, zone: zoneOf(config), ...(calendar === undefined || (calendar.holidays.length === 0 && calendar.hemisphere === 'north') ? {} : { calendar }) }
+}
 
 /** What time it is, without letting any pass. */
 export function readTime(session: ClockSession, config: ClockSettings, turn: number, wall: number): StoryTime {
-  return session.transaction(() => timeOf(ensure(session, config, turn, wall), config))
+  return session.transaction(() => timeOf(session, ensure(session, config, turn, wall), config))
 }
 
 /**
@@ -64,9 +79,9 @@ export function beginTurn(session: ClockSession, config: ClockSettings, turn: nu
     const state = ensure(session, config, turn, wall)
     if (state.mode === 'real' && wall > state.now) {
       session.clock.advance({ to: wall, turn, round: 0, kind: 'real', reason: 'between turns' })
-      return { time: timeOf({ mode: 'real', now: wall }, config), away: wall - state.now }
+      return { time: timeOf(session, { mode: 'real', now: wall }, config), away: wall - state.now }
     }
-    return { time: timeOf(state, config) }
+    return { time: timeOf(session, state, config) }
   })
 }
 

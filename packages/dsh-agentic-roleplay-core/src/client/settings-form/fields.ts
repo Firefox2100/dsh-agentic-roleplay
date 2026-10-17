@@ -10,6 +10,7 @@ export const FORM_FIELDS = [
   { path: ['memory', 'overRetrieve'], kind: 'integer', label: 'overRetrieve', help: 'overRetrieveHelp' },
   { path: ['memory', 'associate'], kind: 'integer', label: 'associate', help: 'associateHelp' },
   { path: ['memory', 'diversity'], kind: 'decimal', label: 'diversity', help: 'diversityHelp' },
+  { path: ['memory', 'foldedFade'], kind: 'decimal', label: 'foldedFade', help: 'foldedFadeHelp' },
   { path: ['memory', 'lookup'], kind: 'flag', label: 'lookup', help: 'lookupHelp' },
   { path: ['memory', 'lookupCalls'], kind: 'integer', label: 'lookupCalls', help: 'lookupCallsHelp' },
   { path: ['memory', 'verify'], kind: 'flag', label: 'verify', help: 'verifyHelp' },

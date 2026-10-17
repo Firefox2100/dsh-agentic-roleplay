@@ -1,5 +1,6 @@
 import type { WorldRecord } from './scan.ts'
 import { loadCharacters } from '../characters/load.ts'
+import { loadCalendar } from '../calendar/load.ts'
 import { loadFactions } from '../factions/load.ts'
 import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
@@ -28,7 +29,10 @@ export async function loadValidatedWorld(world: Pick<WorldRecord, 'directory' | 
   const placing = startingPlaceProblems(characters, locations)
   if (placing.length > 0) throw new InvalidWorldError(`the starting places of "${world.summary.name}" have ${placing.length} problem(s)`, placing.map(message => ({ path: world.directory, message })))
 
-  const days = routineProblems(characters, locations)
+  const { calendar, problems: calendarProblems } = await loadCalendar(world.directory)
+  if (calendarProblems.length > 0) throw new InvalidWorldError(`the calendar of "${world.summary.name}" has ${calendarProblems.length} problem(s)`, calendarProblems)
+
+  const days = routineProblems(characters, locations, calendar)
   if (days.length > 0) throw new InvalidWorldError(`the days of the characters of "${world.summary.name}" have ${days.length} problem(s)`, days.map(message => ({ path: world.directory, message })))
 
   const { items, slots, problems: itemProblems } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
@@ -54,5 +58,5 @@ export async function loadValidatedWorld(world: Pick<WorldRecord, 'directory' | 
 
   const related = relationshipProblems(characters)
   if (related.length > 0) throw new InvalidWorldError(`the relationships of "${world.summary.name}" have ${related.length} problem(s)`, related.map(message => ({ path: world.directory, message })))
-  return { characters, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots }
+  return { characters, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar }
 }

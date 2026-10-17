@@ -36,7 +36,11 @@ export function languageOf(tag: string | undefined): string {
   return primary
 }
 
-function fill(id: string, text: string, variables: PromptVariables): string {
+/** How a language is named inside a prompt, for the instruction to write in it. */
+const LANGUAGE_NAMES: Record<string, string> = { en: 'English', zh: '中文' }
+
+function fill(id: string, text: string, given: PromptVariables, tag: string): string {
+  const variables: PromptVariables = { language: LANGUAGE_NAMES[tag] ?? tag, ...given }
   // A line that holds only a variable given as empty text is dropped with it, so that an optional paragraph leaves no gap.
   const lines = text.trim().replace(/^\$\{([A-Za-z]+)\}[ \t]*(\r?\n|$)/gm, (match, name: string) => (variables[name] === '' ? '' : match))
   return lines.replace(VARIABLE, (_match, name: string) => {
@@ -48,7 +52,7 @@ function fill(id: string, text: string, variables: PromptVariables): string {
 
 /** A prompt as the package ships it, without a roleplay root: for code that has none, such as tests. */
 export function shippedText(id: string, language = FALLBACK_LANGUAGE, variables: PromptVariables = {}): string {
-  return fill(id, readFileSync(join(shippedPromptsDirectory(), language, `${id}.md`), 'utf8'), variables)
+  return fill(id, readFileSync(join(shippedPromptsDirectory(), language, `${id}.md`), 'utf8'), variables, language)
 }
 
 export function listFiles(directory: string, prefix = ''): string[] {
@@ -90,7 +94,7 @@ export class PromptLibrary extends Service {
     if (!ID.test(id)) throw new Error(`"${id}" is not a prompt id`)
     const tag = languageOf(language)
     const own = session === undefined ? undefined : this.override(id, tag, session)
-    return fill(id, readFileSync(own ?? this.file(id, tag), 'utf8'), variables)
+    return fill(id, readFileSync(own ?? this.file(id, tag), 'utf8'), variables, tag)
   }
 
   private override(id: string, language: string, session: string): string | undefined {

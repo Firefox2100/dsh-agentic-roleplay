@@ -12,6 +12,7 @@ import { PromptLibrary } from './host/prompts/library.ts'
 import { AuthoringLanguages } from './host/worlds/authoring-language.ts'
 import { RoleplayImport } from './host/import/service.ts'
 import { startImport } from './host/import/start-import.ts'
+import { startTranslation, worldLanguage } from './host/translate/service.ts'
 import { ImportStore } from './host/import/store.ts'
 import { AuthoringSessions } from './host/agent/authoring-sessions.ts'
 import { Config } from './host/config.ts'
@@ -19,7 +20,7 @@ import { RoleplayOrchestration } from './host/orchestration/service.ts'
 import { registerApi } from './host/http/index.ts'
 import { deleteSession } from './host/sessions/delete-session.ts'
 import { purgeOf } from './host/agent/purge-services.ts'
-import { editRoutine, editVariables, readRoutines, readVariables } from './host/worlds/daily-life.ts'
+import { editCalendar, editRoutine, editVariables, readCalendarDocument, readRoutines, readVariables } from './host/worlds/daily-life.ts'
 import { addWorldLore, removeWorldLore } from './host/worlds/lore-entries.ts'
 import { editSessionNarrationVoice, editWorldCharacter as editSessionCharacter, editWorldFaction as editSessionFaction, editWorldLore as editSessionLore, editWorldPlots as editSessionPlots, editWorldPlace as editSessionPlace, editWorldRelation as editSessionRelation, editWorldThing as editSessionThing, generateSessionCharacterPortrait, readWorldState, sessionCharacterPortraitFile, uploadSessionCharacterPortrait } from './host/sessions/world-state.ts'
 import { editWorldNarrationVoice, editWorldCharacter as editWorldFileCharacter, editWorldFaction as editWorldFileFaction, editWorldLore as editWorldFileLore, editWorldPlots as editWorldFilePlots, editWorldPlace as editWorldFilePlace, editWorldRelation as editWorldFileRelation, editWorldThing as editWorldFileThing, generateWorldCharacterPortrait, readWorldEditor, worldCharacterPortraitFile, uploadWorldCharacterPortrait } from './host/worlds/world-editor.ts'
@@ -126,6 +127,10 @@ export function apply(ctx: Context, config: Config): void {
       if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
       return { chatSessionId: await authoring.ensure(world.summary.id, world.summary.name, title, language) }
     },
+    translation: {
+      language: id => worldLanguage(worlds, id),
+      start: (id, to, title, language) => startTranslation({ worlds, authoring, text: (key, lang, variables) => prompts.text(key, lang, variables) }, id, to, title, language),
+    },
     importer: {
       maxUploadBytes: config.importMaxUploadBytes,
       upload: async (file, name) => { const card = readCard(file, name); return await imports.create(card, isPng(file) ? pictureOf(file) : undefined) },
@@ -150,6 +155,8 @@ export function apply(ctx: Context, config: Config): void {
       editInfo: async (worldId, edit) => { const info = await editWorldInfo((await editableWorld(worlds, worldId, root.path)).directory, edit); await worlds.list({ refresh: true }); return info },
       routines: async worldId => await readRoutines(await editableWorld(worlds, worldId, root.path)),
       editRoutine: async (worldId, key, windows) => await editRoutine(await editableWorld(worlds, worldId, root.path), key, windows),
+      calendar: async worldId => await readCalendarDocument(await editableWorld(worlds, worldId, root.path)),
+      editCalendar: async (worldId, calendar) => await editCalendar(await editableWorld(worlds, worldId, root.path), calendar),
       variables: async worldId => await readVariables(await editableWorld(worlds, worldId, root.path)),
       editVariables: async (worldId, declarations) => await editVariables(await editableWorld(worlds, worldId, root.path), declarations),
       prompts: async (worldId, language) => listWorldPrompts((await editableWorld(worlds, worldId, root.path)).directory, language),

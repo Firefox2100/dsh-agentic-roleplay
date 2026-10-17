@@ -34,7 +34,7 @@ const output = (render: (value: never) => string) => ({ schema: { type: 'json' a
 const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as never
 
 /** The runner of an import: every job is a narrow agent below the chat's own, on the chat's model. */
-function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf): ImportContext {
+export function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf): ImportContext {
   const agent = exec.agent
   if (agent === undefined) throw new Error('the import tools can only be called by an agent')
   const run: RunJob = async (job) => {
@@ -55,7 +55,7 @@ function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf):
   return { run, concurrency: settings.concurrency, text, say: () => undefined }
 }
 
-async function worldOf(worlds: WorldCatalog, exec: ToolExecution): Promise<{ id: string; directory: string }> {
+export async function worldOf(worlds: WorldCatalog, exec: ToolExecution): Promise<{ id: string; directory: string }> {
   const chat = exec.agent?.session.id
   const worldId = chat === undefined ? undefined : authoredWorldOf(chat)
   if (worldId === undefined) throw new Error('the import tools are available only in a world authoring chat')
@@ -65,7 +65,7 @@ async function worldOf(worlds: WorldCatalog, exec: ToolExecution): Promise<{ id:
 }
 
 /** What each step is given besides its tools: the language of the world's authoring, and the texts in it. */
-interface Prompting { prompts: () => PromptLibrary; languages: () => AuthoringLanguages }
+export interface Prompting { prompts: () => PromptLibrary; languages: () => AuthoringLanguages }
 
 const toolNames = { survey: SURVEY_TOOL, build: BUILD_TOOL, finish: FINISH_TOOL }
 

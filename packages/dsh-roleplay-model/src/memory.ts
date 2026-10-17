@@ -14,6 +14,15 @@ export type Accuracy = (typeof ACCURACIES)[number]
 export const MEMORY_KINDS = ['belief', 'relationship', 'knowledge'] as const
 export type MemoryKind = (typeof MEMORY_KINDS)[number]
 
+/** How sure a character is of what it believes, from least to most. */
+export const MEMORY_CONFIDENCES = ['doubtful', 'likely', 'sure'] as const
+export type MemoryConfidence = (typeof MEMORY_CONFIDENCES)[number]
+export const DEFAULT_CONFIDENCE: MemoryConfidence = 'likely'
+
+/** Whether a perception speaks for a belief or against it. */
+export const EVIDENCE_RELATIONS = ['supports', 'contradicts'] as const
+export type EvidenceRelation = (typeof EVIDENCE_RELATIONS)[number]
+
 export const THREAD_STATUSES = ['open', 'resolved'] as const
 export type ThreadStatus = (typeof THREAD_STATUSES)[number]
 
@@ -118,6 +127,8 @@ export interface CharacterMemory {
   /** The characters it is about. */
   about: CharacterId[]
   importance: number
+  /** How sure the character is of it. */
+  confidence: MemoryConfidence
   /** The turn it was formed in. */
   turn: number
   recalls: number
@@ -125,12 +136,22 @@ export interface CharacterMemory {
   createdAt: string
 }
 
-export type NewCharacterMemory = Omit<CharacterMemory, 'id' | 'createdAt' | 'recalls' | 'lastRecalledTurn'>
+export type NewCharacterMemory = Omit<CharacterMemory, 'id' | 'createdAt' | 'recalls' | 'lastRecalledTurn' | 'confidence'> & { confidence?: MemoryConfidence }
 
 export interface CharacterMemoryPatch {
   text?: string
   about?: CharacterId[]
   importance?: number
+  confidence?: MemoryConfidence
+}
+
+/** What a character took in that a belief rests on, or that speaks against it. */
+export interface MemoryEvidence {
+  memoryId: MemoryId
+  perceptionId: PerceptionId
+  relation: EvidenceRelation
+  /** The turn the link was made. */
+  turn: number
 }
 
 /** Something in the story that is not settled yet: a promise, a mystery, a goal. */

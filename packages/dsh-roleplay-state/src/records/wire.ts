@@ -1,9 +1,9 @@
 import type { JsonSchemaNode, ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import {
-  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, ENGAGEMENT_STATUSES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, KNOWLEDGE_KINDS, MEMORY_KINDS, PERCEPTION_MODES, WEEKDAY_NAMES,
+  ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, ENGAGEMENT_STATUSES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, KNOWLEDGE_KINDS, MEMORY_CONFIDENCES, MEMORY_KINDS, PERCEPTION_MODES, WEEKDAY_NAMES,
   VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES,
   type VariableDefinitionInput, type VariableKind, type VariableSubject, type VariableValue, type VariableVisibility,
-  type TriggerDefinition, type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type KnowledgeKind, type MemoryKind, type PerceptionMode, type Slot,
+  type TriggerDefinition, type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type KnowledgeKind, type MemoryConfidence, type MemoryKind, type PerceptionMode, type Slot,
 } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import type {
@@ -55,6 +55,12 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     if (found === undefined || found === null) return undefined
     if (!Array.isArray(found) || found.some(item => typeof item !== 'string')) { problems.push(`${key} must be a list of text`); return undefined }
     return found as string[]
+  }
+  const numbersOf = (entry: Wire, key: string): number[] | undefined => {
+    const found = entry[key]
+    if (found === undefined || found === null) return undefined
+    if (!Array.isArray(found) || found.some(item => typeof item !== 'number')) { problems.push(`${key} must be a list of numbers`); return undefined }
+    return found as number[]
   }
   const text = (entry: Wire, key: string): string | undefined => (typeof entry[key] === 'string' ? entry[key] : undefined)
   /** A key, slot or position the model may leave blank instead of leaving out: blank is nothing given, not a name that does not exist. */
@@ -158,8 +164,9 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     })),
     beliefs: array('beliefs').map((entry): NewBelief => defined<NewBelief>({
       character: text(entry, 'character') ?? '', kind: (text(entry, 'kind') ?? '') as MemoryKind, text: text(entry, 'text') ?? '', about: strings(entry, 'about'), importance: num(entry, 'importance') ?? 0,
+      confidence: text(entry, 'confidence') as MemoryConfidence | undefined, evidenceFor: numbersOf(entry, 'evidence_for'), evidenceAgainst: numbersOf(entry, 'evidence_against'),
     })),
-    beliefEdits: array('belief_edits').map((entry): BeliefEdit => defined<BeliefEdit>({ id: num(entry, 'id') ?? 0, text: text(entry, 'text'), about: strings(entry, 'about'), importance: num(entry, 'importance') })),
+    beliefEdits: array('belief_edits').map((entry): BeliefEdit => defined<BeliefEdit>({ id: num(entry, 'id') ?? 0, text: text(entry, 'text'), about: strings(entry, 'about'), importance: num(entry, 'importance'), confidence: text(entry, 'confidence') as MemoryConfidence | undefined, evidenceFor: numbersOf(entry, 'evidence_for'), evidenceAgainst: numbersOf(entry, 'evidence_against') })),
     beliefRetractions: numbers('belief_retractions'),
     threadsOpened: Array.isArray(value['threads_opened']) ? (value['threads_opened'] as unknown[]).filter((entry): entry is string => typeof entry === 'string') : [],
     threadsResolved: numbers('threads_resolved'),
@@ -196,7 +203,7 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     routines: array('routines').map((entry): RoutineSet => ({
       character: text(entry, 'character') ?? '',
       windows: Array.isArray(entry['windows']) ? entry['windows'].filter(isObject).map((window): RoutineWindowSpec => defined<RoutineWindowSpec>({
-        days: strings(window, 'days'), from: text(window, 'from') ?? '', to: text(window, 'to') ?? '', activity: text(window, 'activity') ?? '',
+        days: strings(window, 'days'), on: strings(window, 'on'), from: text(window, 'from') ?? '', to: text(window, 'to') ?? '', activity: text(window, 'activity') ?? '',
         location: text(window, 'location'), feature: text(window, 'feature'), position: text(window, 'position'), interruptible: bool(window, 'interruptible'),
       })) : [],
     })),
@@ -207,6 +214,9 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
 
 const scalarValue: JsonSchemaNode = { oneOf: [{ type: 'number' }, { type: 'boolean' }, { type: 'string' }], description: 'A number, true or false, or one of the words of a choice.' }
 
+const CONFIDENCE: JsonSchemaNode = { type: 'string', enum: [...MEMORY_CONFIDENCES], description: 'How sure the character is: doubtful, likely (the default) or sure. Sure only for what it has seen more than once or cannot doubt.' }
+const EVIDENCE_FOR: JsonSchemaNode = { type: 'array', items: { type: 'integer' }, description: 'The numbers of perceptions of the character (from read_records) that this rests on.' }
+const EVIDENCE_AGAINST: JsonSchemaNode = { type: 'array', items: { type: 'integer' }, description: 'The numbers of perceptions of the character that speak against this; lower the confidence then.' }
 const IMPORTANCE: JsonSchemaNode = { type: 'integer', enum: [1, 2, 3, 4, 5], description: `From ${IMPORTANCE_MIN} (a passing detail) to ${IMPORTANCE_MAX} (turns the story).` }
 
 /**
@@ -288,6 +298,9 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
           text: { type: 'string' },
           about: keys,
           importance: IMPORTANCE,
+          confidence: CONFIDENCE,
+          evidence_for: EVIDENCE_FOR,
+          evidence_against: EVIDENCE_AGAINST,
         },
         required: ['character', 'kind', 'text', 'importance'],
         additionalProperties: false,
@@ -588,6 +601,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
                 type: 'object',
                 properties: {
                   days: { type: 'array', items: { type: 'string', enum: [...WEEKDAY_NAMES] }, description: 'Leave out for every day.' },
+                  on: { type: 'array', items: { type: 'string' }, description: 'Other days it applies on, as well as days: months (dec), dates (12-24, 1912-09-21), stretches (12-20..01-05), dom:1, nth:mon:1 (first Monday), season:winter, holiday:<id>; a ! before one is a day it does not apply on (!holiday:festival). Leave out for every day.' },
                   from: { type: 'string', description: 'HH:MM, 24-hour.' },
                   to: { type: 'string', description: 'HH:MM; a time before from ends the next day (22:00 to 06:00).' },
                   activity: { type: 'string', description: 'What it is doing: "minds the shop", "sleeps".' },
@@ -760,7 +774,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
       },
       belief_edits: {
         type: 'array',
-        items: { type: 'object', properties: { id: { type: 'integer' }, text: { type: 'string' }, about: keys, importance: IMPORTANCE }, required: ['id'], additionalProperties: false },
+        items: { type: 'object', properties: { id: { type: 'integer' }, text: { type: 'string' }, about: keys, importance: IMPORTANCE, confidence: CONFIDENCE, evidence_for: EVIDENCE_FOR, evidence_against: EVIDENCE_AGAINST }, required: ['id'], additionalProperties: false },
       },
       belief_retractions: { type: 'array', items: { type: 'integer' } },
     })

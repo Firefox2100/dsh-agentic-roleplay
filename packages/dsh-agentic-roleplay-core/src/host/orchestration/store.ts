@@ -1,3 +1,4 @@
+import { languageOf } from 'dsh-roleplay-model'
 import { shippedText } from '../prompts/library.ts'
 import { changeVariable, planVariableChange, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from '@dsh-agentic-roleplay/state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
@@ -226,7 +227,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     changeVariables: (turn, changes) => session.transaction(() => changes.map(spec => changeVariable(session, spec, turn))),
     trackedFor: (characterId, presentIds) => trackedFor(session, characterId, presentIds),
     tracked: () => trackedLines(session),
-    dueOffScene: turn => dueOffScene(session, zoneOf(settings().clock), readTime(session, settings().clock, turn, wall()).now),
+    dueOffScene: turn => dueOffScene(session, zoneOf(settings().clock), readTime(session, settings().clock, turn, wall()).now, languageOf(settings().prompts.language)),
     markHandled: keys => { markHandled(session, keys) },
     runTriggers: (turn, round) => {
       const settings = liveSettings(folder, problem)

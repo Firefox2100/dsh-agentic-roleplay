@@ -195,6 +195,65 @@ describe('recall', () => {
     })
   })
 
+  describe('what a belief rests on', () => {
+    const scene = () => {
+      const first = saw(1, 'Bob took the brass key from the desk drawer.', 3, [bob.id], { tags: ['key'] })
+      const second = saw(2, 'Bob pocketed the brass key again at night.', 3, [bob.id], { tags: ['key'] })
+      const belief = store.memories.add({ characterId: alice.id, kind: 'belief', text: 'Bob keeps taking the brass key.', about: [bob.id], importance: 3, confidence: 'sure', turn: 3 })
+      return { first: first.perceptions[0]!.id, second: second.perceptions[0]!.id, belief: belief.id }
+    }
+    const asked = (policy: Partial<MemoryPolicy> = {}, about?: number[]) => (store.clock.resync('simulated', start + 3 * 86_400_000, 4), recall(store, { characterId: alice.id, characters: store.characters.list(), situation: 'Alice asks Bob about the brass key', turn: 4, ...(about === undefined ? {} : { about }), policy: { ...DEFAULT_MEMORY_POLICY, recall: 3, associate: 0, diversity: 0, ...policy } }))
+
+    it('keeps who is sure and who is not, the same on every belief that does not say', () => {
+      const ids = scene()
+      const other = store.memories.add({ characterId: alice.id, kind: 'belief', text: 'Bob is sleeping badly.', about: [bob.id], importance: 3, turn: 3 })
+      expect(store.memories.get(ids.belief)?.confidence).toBe('sure')
+      expect(other.confidence).toBe('likely')
+      expect(asked().find(entry => entry.source.kind === 'memory' && entry.source.id === ids.belief)).toMatchObject({ confidence: 'sure' })
+      expect(asked().find(entry => entry.source.kind === 'memory' && entry.source.id === ids.belief)?.disputed).toBeUndefined()
+    })
+
+    it('does not tell again what it took in when the belief resting on it is told, and the place goes to something else', () => {
+      const ids = scene()
+      store.memories.addEvidence(ids.belief, ids.first, 'supports', 3)
+      store.memories.addEvidence(ids.belief, ids.second, 'supports', 3)
+      saw(2, 'Eleanor mentioned the brass key to the band leader.', 2, [], { tags: ['key'] })
+      const told = asked({ recall: 3 }).map(entry => entry.text)
+      expect(told).toContain('Bob keeps taking the brass key.')
+      expect(told.filter(text => text.startsWith('Bob took') || text.startsWith('Bob pocketed'))).toEqual([])
+      expect(told).toContain('Eleanor mentioned the brass key to the band leader.')
+      expect(asked({ recall: 3, flaky: false }).map(entry => entry.text).filter(text => text.startsWith('Bob '))).toHaveLength(1)
+    })
+
+    it('tells what it took in when the belief resting on it is not told with it', () => {
+      const ids = scene()
+      const aside = store.memories.add({ characterId: alice.id, kind: 'belief', text: 'I am the one who keeps watch.', about: [alice.id], importance: 3, turn: 3 })
+      store.memories.addEvidence(aside.id, ids.first, 'supports', 3)
+      const told = asked({ recall: 3 }, [bob.id]).map(entry => entry.text)
+      expect(told).toContain('Bob took the brass key from the desk drawer.')
+      expect(told).not.toContain('I am the one who keeps watch.')
+    })
+
+    it('lets what a belief rests on fade sooner, as much as the policy says, and not at all when it says 1', () => {
+      const ids = scene()
+      const about = store.memories.add({ characterId: alice.id, kind: 'belief', text: 'I am the one who keeps watch.', about: [alice.id], importance: 3, turn: 3 })
+      const kept = (foldedFade: number): number | undefined => (store.clock.resync('simulated', start + 11 * 86_400_000, 12),
+        recall(store, { characterId: alice.id, characters: store.characters.list(), situation: 'Alice asks Bob about the brass key', turn: 12, about: [bob.id], explain: true, policy: { ...DEFAULT_MEMORY_POLICY, recall: 5, associate: 0, diversity: 0, foldedFade } })
+          .find(entry => entry.source.kind === 'perception' && entry.source.id === ids.first)?.why?.retention)
+      const alone = kept(0.5)
+      store.memories.addEvidence(about.id, ids.first, 'supports', 3)
+      expect(kept(1)).toBe(alone)
+      expect(kept(0.5)).toBeLessThan(alone!)
+      expect(kept(0.25)).toBeLessThan(kept(0.5)!)
+    })
+
+    it('says a belief is disputed once something the character took in since speaks against it', () => {
+      const ids = scene()
+      store.memories.addEvidence(ids.belief, ids.second, 'contradicts', 4)
+      expect(asked().find(entry => entry.source.kind === 'memory' && entry.source.id === ids.belief)).toMatchObject({ disputed: true })
+    })
+  })
+
   describe('what comes to mind with what was recalled', () => {
     const scene = () => {
       saw(1, 'Bob took the brass key from the desk.', 4, [bob.id], { tags: ['key', 'cellar'] })

@@ -11,14 +11,14 @@ import { SCROLL_BODY } from '../../src/client/interface/conversation-body.ts'
  * helpers DSH exports for sub-agent providers. This fails when DSH changes what they rely on,
  * so that an upgrade is a deliberate piece of work (see docs/dsh-api-usage.md) and not a surprise.
  */
-const SERIES = /^0\.2\./
+const TESTED_DSH_RELEASE = '0.2.0-rc.2'
 const require = createRequire(import.meta.url)
 
 describe('the DSH this bundle is built against', () => {
-  it('is the 0.2 series (release candidates included), for every package whose internals the bundle uses', () => {
+  it('is the exact DSH release whose contracts this bundle was tested against', () => {
     for (const name of ['dsh-subagent', 'dsh-tools', 'dsh-agent', 'dsh-session', 'dsh-compaction-basic']) {
       const { version } = require(`@deepseek-ai/${name}/package.json`) as { version: string }
-      expect(version, `@deepseek-ai/${name}`).toMatch(SERIES)
+      expect(version, `@deepseek-ai/${name}`).toBe(TESTED_DSH_RELEASE)
     }
   })
 

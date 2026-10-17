@@ -51,11 +51,11 @@ ends it with a `submit_result` tool whose arguments are the result.
 This is accepted on purpose, because per-agent tools are a core feature of the bundle. The
 consequences, and how they are contained:
 
-- **Version series.** The packages declare DSH `>=0.2.0-rc.2 <0.3.0` (`dsh.engines` and the peer
-  dependency): the 0.2 series, release candidates included, which are not expected to change these
-  helpers; the dev dependencies are the exact version the types come from, bumped when convenient.
-  `tests/support/dsh-contract.spec.ts` fails if an installed package leaves the 0.2 series or a helper
-  disappears, so a move to 0.3 is a deliberate piece of work, not a surprise.
+- **Exact tested release.** The packages currently declare DSH `>=0.2.0-rc.2 <0.2.1`
+  (`dsh.engines` and the peer dependency). Development dependencies and
+  `tests/support/dsh-contract.spec.ts` are pinned to the exact tested release, `0.2.0-rc.2`.
+  Supporting a later patch tuple requires inspecting its changes, porting every affected integration,
+  and testing against that exact release before widening the range.
 - **One file.** Nothing else builds an agent below the public API; when DSH offers per-agent tools
   properly, `runChild` is what is replaced.
 - **Not in the parent's catalog.** Such a child writes no sub-agent descriptor (that part of DSH is

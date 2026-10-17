@@ -3,7 +3,9 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { InvalidEditError, characterKey, createTools, dayPart, describeDuration, describeInstant, localTime, parseRecordsEdit } from '@dsh-agentic-roleplay/state'
 import { zoneOf } from '../clock/story-clock.ts'
+import { FIELD_TOKENS, tokensOf } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
+import { wrongLanguage } from '../translate/language.ts'
 import { referent } from './referent.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
@@ -102,6 +104,16 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
             if (outside.length > 0) {
               throw new InvalidEditError(outside.map(event => `an event has turn ${event.turn}, round ${event.round}, which is not one of the rounds given: ${job.rounds.map(label).join('; ')}`))
             }
+            const edit = parseRecordsEdit(args)
+            const wording = wrongLanguage(job.store.settings().prompts.language, {
+              events: [...(edit.events ?? []).map(event => event.text), ...(edit.eventEdits ?? []).map(event => event.text)].join(' '),
+              perceptions: [
+                ...(edit.events ?? []).flatMap(event => (event.perceivedBy ?? []).map(seen => seen.content)),
+                ...(edit.perceptionEdits ?? []).map(seen => seen.content),
+                ...(edit.perceptionsAdded ?? []).map(seen => seen.content),
+              ].join(' '),
+            })
+            if (wording !== undefined) throw new InvalidEditError([wording])
             const result = await tool.execute(args, exec)
             progress.edits += 1
             progress.unchecked = true
@@ -117,6 +129,12 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
       return tool
     })
 }
+
+/** What one request of the keeper may carry: the events and what each witness took in, for every round it was given, and the shape of the call. */
+const KEEPER_CHARACTERS_PER_ROUND = 4000
+const KEEPER_FIELDS = 24
+
+export const keeperEstimate = (rounds: number, language: string): number => tokensOf(rounds * KEEPER_CHARACTERS_PER_ROUND, language) + KEEPER_FIELDS * FIELD_TOKENS
 
 /**
  * Writes rounds into the story's records with a child agent of the game master that has the
@@ -136,7 +154,7 @@ export function recordKeeper(deps: { agentOf: (chat: string) => Agent | undefine
       const progress = { edits: 0, unchecked: false }
       let warned = false
       const result = await runChild<{ complete: boolean; notes: string }>({
-        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'records'), ...childModel(job.store.settings(), 'records'), trace: childTrace(job.store, 'records', 'record keeper'),
+        parent, signal, reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'records', keeperEstimate(job.rounds.length, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'records'), trace: childTrace(job.store, 'records', 'record keeper'),
         persona: promptFor(parent, 'roleplay/record-keeper', job.store.settings().prompts.language),
         prompt: describePrompt(job, memory),
         tools: keeperTools(job, memory, progress),

@@ -212,6 +212,7 @@ stays where it is, and, if it matters and was away while time passed, the world 
 | Field | Type | Default | Notes |
 |---|---|---|---|
 | `days` | list of `mon` … `sun` | every day | A window past midnight belongs to the day it starts on. |
+| `on` | list of day tokens | every day | Months, dates, spans, days of the month, weekday occurrences, seasons, holidays and `!` exclusions. It combines with `days`. |
 | `from`, `to` | `HH:MM` | | Required. `to` before `from` ends the next day (`22:00` to `06:00`); equal is empty. |
 | `activity` | string | | Required. What it is doing: `minds the shop`. |
 | `location`, `feature`, `position` | string | | The id of a place of the world, a feature of it, and where in it. `feature` needs `location`. |

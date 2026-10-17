@@ -142,7 +142,7 @@ interface PlayerView {
     items: { name: string; quantity: number }[]       // not hidden
     here: { key: string; name: string; publicState: string }[]   // present, not the player
   }
-  time?: { iso: string; zone: string; text: string }  // absent until the clock has started
+  time?: { iso: string; zone: string; text: string; season: "spring" | "summer" | "autumn" | "winter"; holidays: string[] }  // absent until the clock has started
   carried: { name: string; quantity: number; where: string }[]
   variables: { subject: string; name: string; value: string }[] // those anyone can tell
   map: {

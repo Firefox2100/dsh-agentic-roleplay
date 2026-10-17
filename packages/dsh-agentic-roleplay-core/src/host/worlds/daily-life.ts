@@ -1,10 +1,12 @@
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { RoutineDefinition } from 'dsh-roleplay-model'
-import type { VariableDeclaration, WorldRoutines } from '../../shared/world-daily.ts'
+import type { CalendarDocument, VariableDeclaration, WorldRoutines } from '../../shared/world-daily.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
 import { CHARACTER_FILE_NAME, parseCharacterFile } from '../characters/character-file.ts'
+import { CALENDAR_FILE_NAME, loadCalendar, parseCalendarFile } from '../calendar/load.ts'
+import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
 import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
 import { routineProblems } from '../sessions/populate.ts'
@@ -40,7 +42,8 @@ export async function editRoutine(world: EditableWorld, key: string, windows: re
   const parsed = parseCharacterFile(next, folder)
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
   const { locations } = await loadLocations(world.directory)
-  const places = routineProblems([parsed.value], locations)
+  const { calendar } = await loadCalendar(world.directory)
+  const places = routineProblems([parsed.value], locations, calendar)
   if (places.length > 0) throw new InvalidEditProblems(places)
   await replaceFile(file, next)
   return await readRoutines(world)
@@ -83,3 +86,29 @@ async function replaceFileOrCreate(file: string, text: string): Promise<void> {
   }
 }
 
+
+/** The calendar of the world as `calendar.json` writes it; a world without one has the northern seasons and no holidays. */
+export async function readCalendarDocument(world: EditableWorld): Promise<CalendarDocument> {
+  const { calendar } = await loadCalendar(world.directory)
+  return { hemisphere: calendar.hemisphere, holidays: calendar.holidays.map(holiday => ({ id: holiday.id, name: holiday.name, on: [...holiday.on] })) }
+}
+
+/**
+ * Replaces the calendar. The days are read as the file is at a start, and a holiday that a routine of a character or a trigger still names cannot be removed or renamed.
+ * A calendar with no holidays and the northern seasons is no file at all.
+ * @throws {InvalidEditProblems} naming each problem; nothing is written.
+ */
+export async function editCalendar(world: EditableWorld, calendar: CalendarDocument): Promise<CalendarDocument> {
+  const text = `${JSON.stringify(calendar, null, 2)}\n`
+  const parsed = parseCalendarFile(text)
+  if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
+  const [{ characters }, { locations }] = await Promise.all([loadCharacters(world.directory), loadLocations(world.directory)])
+  const problems = routineProblems(characters, locations, parsed.value)
+  const triggers = await readFile(join(world.directory, TRIGGERS_FILE_NAME), 'utf8').catch((error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return ''; throw error })
+  const named = new Set(calendar.holidays.map(holiday => holiday.id))
+  for (const id of new Set([...triggers.matchAll(/holiday:([\p{L}\p{N}_-]+)/gu)].map(match => match[1]!))) if (!named.has(id)) problems.push(`a trigger names the holiday "${id}", which the calendar does not have`)
+  if (problems.length > 0) throw new InvalidEditProblems(problems)
+  if (calendar.holidays.length === 0 && calendar.hemisphere === 'north') await rm(join(world.directory, CALENDAR_FILE_NAME), { force: true })
+  else await replaceFileOrCreate(join(world.directory, CALENDAR_FILE_NAME), text)
+  return await readCalendarDocument(world)
+}

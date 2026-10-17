@@ -20,3 +20,5 @@ title: 剧情、变量与触发器
   "while": { "type": "place", "character": "@self", "location": "bar" },
   "text": "你闻到煤气味；{holder:lantern} 手里还握着唯一的光。" }
 ```
+
+`time` 条件可使用绝对的 `from` 或 `to`、每天重复的 `window`、`days` 中的星期，以及 `on` 中的共用日历规则。`on` 支持月份、日期、日期区间、季节、自定义节日和排除项，详见[日历与日期规则](./calendar)。同时提供 `days` 与 `on` 时，两者都必须满足。

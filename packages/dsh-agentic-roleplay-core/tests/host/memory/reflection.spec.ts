@@ -111,6 +111,43 @@ describe('what a proposal may rest on', () => {
     expect(problems({ add: many })).toEqual(expect.arrayContaining([expect.stringContaining('at most 4 new beliefs')]))
   })
 
+  it('refuses a confidence that is not one, and being sure from one turn', () => {
+    expect(problems({ add: [{ kind: 'belief', text: 'The mayor lied.', importance: 4, confidence: 'certain' as never, perceptions: [at(4)] }] })).toEqual([expect.stringContaining('confidence is one of doubtful, likely, sure')])
+    expect(problems({ add: [{ kind: 'belief', text: 'The mayor lied.', importance: 4, confidence: 'sure', perceptions: [at(4)] }] })).toEqual([expect.stringContaining('at least two different turns')])
+    expect(problems({ add: [{ kind: 'belief', text: 'The mayor hides something.', importance: 3, confidence: 'sure', perceptions: [at(4), at(6)] }] })).toEqual([])
+    expect(problems({ add: [{ kind: 'belief', text: 'The mayor hides something.', importance: 3, confidence: 'doubtful', perceptions: [at(4)] }] })).toEqual([])
+  })
+
+  it('has a belief that something contradicts doubted, and a belief doubted only for what contradicts it', () => {
+    const honest = belief('The mayor is honest.')
+    expect(problems({ revise: [{ id: honest, contradicted_by: [at(4)], confidence: 'doubtful' }] })).toEqual([])
+    expect(problems({ revise: [{ id: honest, contradicted_by: [at(4)] }] })).toEqual([expect.stringContaining('must be doubted: lower its confidence')])
+    expect(problems({ revise: [{ id: honest, contradicted_by: [at(4)], confidence: 'likely' }] })).toEqual([expect.stringContaining('must be doubted: lower its confidence')])
+    expect(problems({ revise: [{ id: honest, perceptions: [at(4)], confidence: 'doubtful' }] })).toEqual([expect.stringContaining('name what contradicts it in contradicted_by')])
+    expect(problems({ revise: [{ id: honest, contradicted_by: [at(1)], confidence: 'doubtful' }] })).toEqual([expect.stringContaining('came before the belief was formed')])
+  })
+
+  it('lets a belief be made sure only by things from two turns, counting what it already rests on', () => {
+    const honest = belief('The mayor is honest.')
+    expect(problems({ revise: [{ id: honest, perceptions: [at(4)], confidence: 'sure' }] })).toEqual([expect.stringContaining('at least two different turns')])
+    expect(problems({ revise: [{ id: honest, perceptions: [at(4), at(6)], confidence: 'sure' }] })).toEqual([])
+    const resting = { ...shown, supportTurns: new Map([[honest, new Set([2])]]) }
+    expect(proposalProblems({ ...none, revise: [{ id: honest, perceptions: [at(4)], confidence: 'sure' }] }, resting, named)).toEqual([])
+  })
+
+  it('writes the confidence, what a belief rests on and what speaks against it', () => {
+    const honest = belief('The mayor is honest.')
+    const proposal: Proposal = { add: [{ kind: 'belief', text: 'Arthur is hiding why he came.', importance: 3, confidence: 'doubtful', perceptions: [at(1), at(6)] }], revise: [{ id: honest, contradicted_by: [at(4)], confidence: 'doubtful' }], drop: [] }
+    expect(problems(proposal)).toEqual([])
+    session.edit(editOf(7, session.characters.getBySourceId('clara')!, proposal, named))
+    const added = session.memories.list(id('clara')).find(entry => entry.text.startsWith('Arthur'))!
+    expect(added.confidence).toBe('doubtful')
+    expect(session.memories.evidenceOf(added.id).map(entry => [entry.perceptionId, entry.relation])).toEqual([[at(1), 'supports'], [at(6), 'supports']])
+    expect(session.memories.get(honest)?.confidence).toBe('doubtful')
+    expect(session.memories.evidenceOf(honest)).toEqual([{ memoryId: honest, perceptionId: at(4), relation: 'contradicts', turn: 7 }])
+    expect(session.memories.evidenceIndex(id('clara')).disputed).toEqual(new Set([honest]))
+  })
+
   it('writes what passed as beliefs of that character only, found by the names it gave', () => {
     const honest = belief('The mayor is honest.')
     const straight = belief('The mayor is straight.')

@@ -15,7 +15,7 @@ import {
   type KnowledgeDefinition,
   type RoutineDefinition,
 } from 'dsh-roleplay-model'
-import { MAX_ROUTINE_WINDOWS } from '@dsh-agentic-roleplay/state'
+import { MAX_ROUTINE_WINDOWS, dayTokenProblems } from '@dsh-agentic-roleplay/state'
 import { readIdentifier } from '../identifiers.ts'
 import { readVariableValues } from '../variables/values.ts'
 import { readVisualIdentity } from '../visual/identity-file.ts'
@@ -83,6 +83,8 @@ function readRoutine(reader: Reader): RoutineDefinition[] {
     if (from !== undefined && from === to) window.fail('to', 'a window that ends when it starts is empty')
     const activity = window.string('activity', { required: true })
     const days = window.strings('days').map(day => day.toLowerCase())
+    const on = window.strings('on')
+    for (const problem of dayTokenProblems(on, 'on', 'any')) window.fail('on', problem.replace(/^on: /, ''))
     for (const day of days) if (!WEEKDAY_NAMES.includes(day as (typeof WEEKDAY_NAMES)[number])) window.fail('days', `"${day}" is not a day (${WEEKDAY_NAMES.join(', ')})`)
     const location = window.string('location')
     const feature = window.string('feature')
@@ -91,7 +93,7 @@ function readRoutine(reader: Reader): RoutineDefinition[] {
     const flag = window.raw('interruptible')
     if (flag !== undefined && typeof flag !== 'boolean') window.fail('interruptible', 'must be true or false')
     if (from === undefined || to === undefined || activity === undefined) return []
-    return [{ days, from, to, activity, ...(location === undefined ? {} : { location }), ...(feature === undefined ? {} : { feature }), ...(position === undefined ? {} : { position }), interruptible: flag !== false }]
+    return [{ days, ...(on.length === 0 ? {} : { on }), from, to, activity, ...(location === undefined ? {} : { location }), ...(feature === undefined ? {} : { feature }), ...(position === undefined ? {} : { position }), interruptible: flag !== false }]
   })
   if (windows.length > MAX_ROUTINE_WINDOWS) reader.fail('routine', `a character has at most ${MAX_ROUTINE_WINDOWS} windows in its day`)
   return windows

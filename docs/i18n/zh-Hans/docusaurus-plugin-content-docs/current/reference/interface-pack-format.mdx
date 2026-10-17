@@ -142,7 +142,7 @@ interface PlayerView {
     items: { name: string; quantity: number }[]       // 未隐藏
     here: { key: string; name: string; publicState: string }[]   // 在场，不含玩家
   }
-  time?: { iso: string; zone: string; text: string }  // 时钟启动之前没有
+  time?: { iso: string; zone: string; text: string; season: "spring" | "summer" | "autumn" | "winter"; holidays: string[] }  // 时钟启动之前没有；holidays 是世界在当天设定的节日名称
   carried: { name: string; quantity: number; where: string }[]
   variables: { subject: string; name: string; value: string }[] // 任何人都能看出的
   map: {

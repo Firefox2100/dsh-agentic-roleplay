@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
+import { populateCalendar, populateCharacters, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
 import { copyWorldPrompts } from '../prompts/library.ts'
 import { copyWorldPacks } from '../interface/packs.ts'
@@ -54,7 +54,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const world = await deps.worlds.find(request.worldId)
   if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${request.worldId}"`)
 
-  const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots } = await loadValidatedWorld(world)
+  const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar } = await loadValidatedWorld(world)
 
 
   if (request.opening !== undefined && (!Number.isInteger(request.opening) || request.opening < 0 || request.opening >= (world.alternateOpenings?.length ?? 0))) throw new InvalidStartError(`the world has no alternate opening ${String(request.opening)}`)
@@ -100,6 +100,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateLocations(session, locations)
       populateCharacters(session, characters, player.id)
       populateFactions(session, factions)
+      populateCalendar(session, calendar)
       populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
       populateLore(session, authoredLore.lore)

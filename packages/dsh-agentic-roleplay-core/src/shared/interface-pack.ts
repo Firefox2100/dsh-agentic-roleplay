@@ -123,7 +123,8 @@ export interface PlayerView {
     here: { key: string; name: string; publicState: string }[]
   }
   /** Absent until the story's clock has started. */
-  time?: { iso: string; zone: string; text: string }
+  /** The story's time: `season` is spring, summer, autumn or winter by the world's hemisphere, and `holidays` are the names of those the world has on the day. */
+  time?: { iso: string; zone: string; text: string; season: 'spring' | 'summer' | 'autumn' | 'winter'; holidays: string[] }
   carried: { name: string; quantity: number; where: string }[]
   variables: { subject: string; name: string; value: string }[]
   map: {

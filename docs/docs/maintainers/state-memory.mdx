@@ -7,11 +7,11 @@ Each session owns `session.sqlite`. Repositories are the persistence contract; S
 
 ## Record model
 
-The durable hierarchy is event → perception → recalled memory:
+The durable hierarchy moves from event to perception to recalled memory:
 
 - An event records what happened. It is a draft while the keeper verifies its work, then sealed in the same transaction that completes the pending commit. Sealed events cannot be edited or removed.
 - A perception records what one character took from an event. It can be incomplete or wrong and may later be corrected or added without changing the event.
-- A belief records mutable knowledge beyond one event. Relationships and entity-knowledge edges remain separate structured state.
+- A belief records mutable knowledge beyond one event, a confidence of `doubtful`, `likely` or `sure`, and links to perceptions that support or contradict it. Relationships and entity-knowledge edges remain separate structured state.
 - Story threads, intents, commitments, goals, public and inner state, emotion, movement, items, variables, and plot progress have their own repositories.
 
 Rounds enter `pending_commits`. The game master may request `record_memory`; otherwise `memory.backlogRounds` (default `6`) is the backstop. A failed keeper leaves work queued. Read-back verification is controlled by `memory.verify` and must compare the written records with the source round before sealing.
@@ -36,6 +36,8 @@ retention = 0.5 ^ (elapsed story days / half-life)
 ```
 
 An unimportant event begins with a six-day half-life. Each importance step doubles it, beliefs last four times longer, recall reinforces it, and a deterministic per-record variation avoids uniform fading. Importance `5` never falls below the faded form. With `memory.flaky` off, recall and perception are exact.
+
+Once a belief cites a perception as support, recall avoids presenting both together and multiplies that perception's half-life by `memory.foldedFade` (default `0.5`). Contradictory evidence marks a recalled belief as disputed. Evidence does not rewrite or remove the underlying perception.
 
 ## Conversation compaction
 

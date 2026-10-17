@@ -18,6 +18,8 @@ import type {
   RecallHit,
   RecallItemKind,
   CharacterMemory,
+  EvidenceRelation,
+  MemoryEvidence,
   CharacterMemoryPatch,
   EventId,
   MemoryId,
@@ -217,6 +219,14 @@ export interface MemoryRepository {
   /** Count a memory as recalled in `turn`. */
   touch(ids: readonly MemoryId[], turn: number): void
   remove(id: MemoryId): boolean
+  /** Record that a perception of the character's speaks for a belief or against it; one link per pair, the later replaces the earlier. @throws {NotFoundError} */
+  addEvidence(memoryId: MemoryId, perceptionId: PerceptionId, relation: EvidenceRelation, turn: number): void
+  evidenceOf(memoryId: MemoryId): MemoryEvidence[]
+  /**
+   * What a character's beliefs rest on: for each perception that some belief of the character cites, the beliefs that do (it is folded into them),
+   * and the beliefs something it took in speaks against (disputed).
+   */
+  evidenceIndex(characterId: CharacterId): { folded: Map<PerceptionId, MemoryId[]>; disputed: Set<MemoryId> }
 }
 
 export interface ThreadRepository {

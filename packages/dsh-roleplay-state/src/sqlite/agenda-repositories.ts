@@ -2,7 +2,7 @@ import type { CharacterId, Engagement, EngagementFilter, EngagementId, Engagemen
 import type { SqlDatabase, SqlValue } from '../driver/types.ts'
 import { InvalidValueError, NotFoundError } from '../errors.ts'
 import type { EngagementRepository, RoutineRepository } from '../repositories.ts'
-import { guard, parseNumberList, toJson } from './support.ts'
+import { guard, parseNumberList, parseStringList, toJson } from './support.ts'
 
 /** At most this many windows for one character, so that a day stays something a model can hold. */
 export const MAX_ROUTINE_WINDOWS = 24
@@ -12,6 +12,7 @@ interface WindowRow {
   id: number
   character_id: number
   days: string
+  filters: string
   start_minute: number
   end_minute: number
   activity: string
@@ -25,6 +26,7 @@ const toWindow = (row: WindowRow): StoredRoutineWindow => ({
   id: row.id,
   characterId: row.character_id,
   days: parseNumberList(row.days, 'routine_windows.days'),
+  on: parseStringList(row.filters, 'routine_windows.filters'),
   start: row.start_minute,
   end: row.end_minute,
   activity: row.activity,
@@ -61,8 +63,8 @@ export class SqliteRoutineRepository implements RoutineRepository {
       this.db.run('DELETE FROM routine_windows WHERE character_id = ?', [characterId])
       windows.forEach((window, index) => {
         this.db.run(
-          'INSERT INTO routine_windows (character_id, ordinal, days, start_minute, end_minute, activity, location_id, feature_key, position, interruptible) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [characterId, index, toJson([...new Set(window.days)].sort()), window.start, window.end, window.activity.trim(), window.locationId ?? null, window.featureKey ?? null, window.position ?? '', window.interruptible ? 1 : 0],
+          'INSERT INTO routine_windows (character_id, ordinal, days, filters, start_minute, end_minute, activity, location_id, feature_key, position, interruptible) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [characterId, index, toJson([...new Set(window.days)].sort()), toJson([...new Set(window.on ?? [])]), window.start, window.end, window.activity.trim(), window.locationId ?? null, window.featureKey ?? null, window.position ?? '', window.interruptible ? 1 : 0],
         )
       })
       return this.list(characterId)

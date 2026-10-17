@@ -2,6 +2,7 @@ import { ENGAGEMENT_STATUSES, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, WE
 import { InvalidEditError } from '../errors.ts'
 import { MAX_ROUTINE_WINDOWS } from '../sqlite/agenda-repositories.ts'
 import type { RecordsEdit, RecordsTarget } from './edit-types.ts'
+import { dayTokenProblems, readCalendar } from './calendar.ts'
 import { isTimeZone, parseInstant, parseTimeOfDay } from './time.ts'
 
 const MAX_PLAN_STEPS = 8
@@ -139,6 +140,8 @@ export function prepareAgenda(target: RecordsTarget, edit: RecordsEdit, context:
         if (found < 0) problems.push(`${here}.days: "${day}" is not a day (${WEEKDAY_NAMES.join(', ')})`)
         return found < 0 ? [] : [found]
       })
+      const holidays = new Set(readCalendar(target.metadata).holidays.map(holiday => holiday.id))
+      problems.push(...dayTokenProblems(list(window.on), `${here}.on`, holidays))
       if (window.location !== undefined) {
         placeKnown(window.location, `${here}.location`)
         const place = context.places.get(window.location)
@@ -146,7 +149,7 @@ export function prepareAgenda(target: RecordsTarget, edit: RecordsEdit, context:
       } else if (window.feature !== undefined) problems.push(`${here}: a feature needs a location`)
       if (start === undefined || end === undefined) return []
       return [{
-        days, start, end, activity: window.activity.trim(), interruptible: window.interruptible ?? true,
+        days, on: [...list(window.on)], start, end, activity: window.activity.trim(), interruptible: window.interruptible ?? true,
         ...(window.location === undefined ? {} : { location: window.location }), ...(window.feature === undefined ? {} : { featureKey: window.feature }),
         ...(window.position === undefined || window.position.trim() === '' ? {} : { position: window.position.trim() }),
       }]

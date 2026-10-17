@@ -2,6 +2,7 @@ import { promptFor } from '../prompts/access.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { PlotDefinition } from 'dsh-roleplay-model'
+import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { TurnStore } from '../orchestration/boundaries.ts'
 import { parsePlotsFile } from '../plots/load.ts'
@@ -30,6 +31,10 @@ const RESULT: ObjectJsonSchema = {
   },
 }
 
+/** A scaffold is about two dozen short texts: premise, hook, developments with their guidance, stakes and resolutions. */
+const PLOT_TEXTS = 24
+const PLOT_TEXT_CHARS = 300
+
 export async function authorPlot(parent: Agent, store: TurnStore, turn: number, signal: AbortSignal): Promise<PlotDefinition> {
   const cast = store.cast().map(member => `${member.character.name} (${member.key}): ${member.character.summary}`).join('\n')
   const factions = store.story.factions.list().map(faction => `${faction.name} (${faction.sourceId ?? faction.id}): ${faction.summary}`).join('\n')
@@ -37,7 +42,7 @@ export async function authorPlot(parent: Agent, store: TurnStore, turn: number, 
   const events = store.story.events.list().slice(-12).map(event => `- ${event.text}`).join('\n')
   let checked: PlotDefinition | undefined
   const result = await runChild<AuthoredPlot>({
-    parent, signal, sampling: childSampling(store.settings(), 'authoring'), ...childModel(store.settings(), 'authoring'), trace: childTrace(store, 'authoring', 'plot author'), persona: promptFor(parent, 'roleplay/plot-author', store.settings().prompts.language), reasoningEffort: store.settings().reasoning.children, result: RESULT, maxCalls: 3,
+    parent, signal, sampling: childSampling(store.settings(), 'authoring', estimateAnswer(Array.from({ length: PLOT_TEXTS }, () => PLOT_TEXT_CHARS), store.settings().prompts.language)), ...childModel(store.settings(), 'authoring'), trace: childTrace(store, 'authoring', 'plot author'), persona: promptFor(parent, 'roleplay/plot-author', store.settings().prompts.language), reasoningEffort: store.settings().reasoning.children, result: RESULT, maxCalls: 3,
     prompt: `The story has gone quiet by turn ${turn}. Propose one optional plot scaffold that grows from this state.\n\nCharacters:\n${cast || '- none'}\n\nFactions:\n${factions || '- none'}\n\nPlaces: ${places || 'none'}\n\nRecent recorded events:\n${events || '- none'}`,
     beforeSubmit(value) {
       const authored = value as AuthoredPlot

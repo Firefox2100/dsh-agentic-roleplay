@@ -36,4 +36,6 @@ A cue or beat is told when its audience next acts or the game master next looks,
   "text": "You smell gas; {holder:lantern} still has the only light." }
 ```
 
+A `time` condition may use an absolute `from` or `to`, a daily `window`, weekdays in `days`, and the shared calendar rules in `on`. The latter supports months, dates, spans, seasons, named holidays and exclusions. See [Calendar and day rules](./calendar). A time condition with both `days` and `on` must satisfy both.
+
 Validate all referenced entity and variable IDs. Trigger effects run against session state, never the authored world files.

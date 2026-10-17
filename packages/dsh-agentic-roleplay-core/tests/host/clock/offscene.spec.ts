@@ -50,6 +50,11 @@ describe('what falls due off stage', () => {
     expect(items[0]?.text).toBe('The time you had for "Return the key" has passed (20:00; it is 21:00 now): Promised Bob. You are not with the player\'s character and nothing of this happens in front of anyone: decide what you do about it.')
   })
 
+  it('is told in the language of the story', () => {
+    meeting()
+    expect(dueOffScene(session, 'UTC', at(4, 21, 25), 'zh')[0]?.text).toBe('你本应在Bar：meet at the bar，时间是21:00（about the ledger）。 现在是21:25。 同你一起的有：Clara，Marcus。 你不和玩家的角色在一起，这件事也不会发生在任何人面前：决定你要怎么处理。')
+  })
+
   it('is dealt with once, and oldest first', () => {
     const late = meeting({ title: 'later one', at: at(4, 21, 10) })
     const early = meeting()

@@ -1,4 +1,4 @@
-import { parseRoutineEdit, parseVariablesEdit, type VariableDeclaration, type WorldRoutines } from '../../shared/world-daily.ts'
+import { parseCalendarEdit, parseRoutineEdit, parseVariablesEdit, type CalendarDocument, type VariableDeclaration, type WorldRoutines } from '../../shared/world-daily.ts'
 import type { RoutineDefinition } from 'dsh-roleplay-model'
 import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
@@ -42,6 +42,10 @@ export interface ApiDeps {
   /** The worlds the package ships, and adding one to the person's worlds. */
   starter: { list(): Promise<import('../../shared/starter.ts').StarterWorld[]>; add(folder: string): Promise<import('../../shared/worlds.ts').WorldSummary> }
   authorWorld(worldId: string, title: string, language?: string): Promise<{ chatSessionId: string }>
+  translation: {
+    language(worldId: string): Promise<'en' | 'zh' | undefined>
+    start(worldId: string, to: 'en' | 'zh', title: string, language: string): Promise<{ chatSessionId: string; started: boolean; failure?: string }>
+  }
   worldCharacters(worldId: string): Promise<WorldCharactersPayload>
   /** The characters and places of a world's files, as the editor shows them. */
   /** Character cards uploaded to become worlds. */
@@ -66,6 +70,8 @@ export interface ApiDeps {
     routines(worldId: string): Promise<WorldRoutines>
     editRoutine(worldId: string, key: string, windows: RoutineDefinition[]): Promise<WorldRoutines>
     variables(worldId: string): Promise<VariableDeclaration[]>
+    calendar(worldId: string): Promise<CalendarDocument>
+    editCalendar(worldId: string, calendar: CalendarDocument): Promise<CalendarDocument>
     editVariables(worldId: string, declarations: VariableDeclaration[]): Promise<VariableDeclaration[]>
     prompts(worldId: string, language: string): Promise<WorldPromptEntry[]>
     readPrompt(worldId: string, language: string, prompt: string): Promise<{ id: string; language: string; carried: boolean; text: string }>
@@ -181,7 +187,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ worlds, createWorld, starter, authorWorld, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -235,6 +241,29 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, wo
         try { sendJson(res, 200, await authorWorld(url.searchParams.get('id') ?? '', body.title.trim(), languageField(body.language))) }
         catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/worlds/language': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, { language: await translation.language(url.searchParams.get('id') ?? '') ?? null }) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/worlds/translate': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { to?: unknown; title?: unknown; language?: unknown }
+        if (body.to !== 'en' && body.to !== 'zh') return sendError(res, 400, 'to must be "en" or "zh"')
+        if (typeof body.title !== 'string' || body.title.trim() === '' || body.title.length > 300) return sendError(res, 400, 'the request needs a valid chat title')
+        try { sendJson(res, 200, await translation.start(url.searchParams.get('id') ?? '', body.to, body.title.trim(), languageField(body.language) ?? 'en')) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
           throw error
         }
@@ -314,6 +343,16 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, wo
     '/worlds/routines/item': {
       PUT: async (req, res, url) => {
         try { sendJson(res, 200, await worldFiles.editRoutine(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseRoutineEdit(await readJsonBody(req)))) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/worlds/calendar': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.calendar(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } },
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldFiles.editCalendar(url.searchParams.get('id') ?? '', parseCalendarEdit(await readJsonBody(req)))) } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           throw error

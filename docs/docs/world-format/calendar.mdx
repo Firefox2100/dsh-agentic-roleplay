@@ -1,0 +1,41 @@
+---
+title: Calendar and day rules
+---
+
+A world may include `calendar.json` to name holidays and choose which hemisphere defines its seasons. Without this file, seasons follow the northern hemisphere and the world has no named holidays.
+
+```json
+{
+  "hemisphere": "north",
+  "holidays": [
+    {"id": "founders-day", "name": "Founder's Day", "on": ["09-21"]},
+    {"id": "winter-market", "name": "Winter Market", "on": ["nth:fri:last"]}
+  ]
+}
+```
+
+`hemisphere` is `north` or `south` and defaults to `north`. A world may define at most 60 holidays. Holiday IDs contain letters, digits, hyphens and underscores and must be unique. A holiday cannot be defined in terms of another holiday.
+
+## Day tokens
+
+The `on` list on a holiday, character routine or time trigger uses the same tokens:
+
+| Token | Meaning |
+| --- | --- |
+| `mon` through `sun` | A weekday |
+| `jan` through `dec` | A whole month |
+| `12-24` | That date every year |
+| `1912-09-21` | That date once |
+| `12-20..01-05` | An annual span, including a span across New Year |
+| `1912-09-21..1912-09-22` | A one-time date span |
+| `dom:1`, `dom:last` | A numbered or final day of the month |
+| `nth:mon:1`, `nth:fri:last` | An occurrence of a weekday within the month |
+| `season:winter` | A season, interpreted using `hemisphere` |
+| `holiday:founders-day` | A holiday declared by this world |
+| `!12-25` | Exclude a matching day |
+
+Positive entries are alternatives: one must match. Any matching entry prefixed with `!` excludes the day. An empty `on` list allows every day. When a routine also has `days`, both `days` and `on` must allow the date.
+
+Holiday definitions may use weekdays, months, dates, spans, days of the month, weekday occurrences and seasons. They may not use `holiday:` because holidays cannot refer to one another.
+
+The calendar can be edited in the world editor's **Calendar** section. It is copied into a new session. Later edits to `calendar.json` therefore affect new sessions, not stories already in progress.

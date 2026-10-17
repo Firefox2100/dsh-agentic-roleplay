@@ -1,5 +1,5 @@
 import { WEEKDAY_NAMES, type TriggerDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue, type CharacterDefinition, type FactionDefinition, type Holder, type ItemDefinition, type LocationDefinition, type LoreDefinition, type LoreSubject, type Slot } from 'dsh-roleplay-model'
-import { MINUTE, parseTimeOfDay, triggerReferenceProblems, type Session } from '@dsh-agentic-roleplay/state'
+import { MINUTE, dayTokenProblems, parseTimeOfDay, triggerReferenceProblems, writeCalendar, type Calendar, type Session } from '@dsh-agentic-roleplay/state'
 import { InvalidWorldError } from './errors.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
@@ -88,9 +88,12 @@ export function populateVariables(session: Session, defs: readonly VariableDefin
 }
 
 /** What is wrong with the days characters are given, found before anything is created: places that are not in the world. */
-export function routineProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[]): string[] {
+export function routineProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[], calendar: Calendar = { hemisphere: 'north', holidays: [] }): string[] {
   const byId = new Map(locations.map(location => [location.id, location]))
+  const holidays = new Set(calendar.holidays.map(holiday => holiday.id))
   return characters.flatMap(character => (character.routine ?? []).flatMap((window, index) => {
+    const days = dayTokenProblems(window.on ?? [], `${character.id}: routine[${index}].on`, holidays)
+    if (days.length > 0) return days
     if (window.location === undefined) return []
     const location = byId.get(window.location)
     if (location === undefined) return [`${character.id}: routine[${index}].location "${window.location}" is not a place of this world`]
@@ -99,12 +102,17 @@ export function routineProblems(characters: readonly CharacterDefinition[], loca
   }))
 }
 
+/** Keeps the world's calendar with the story, for the days a routine or a trigger waits for. */
+export function populateCalendar(session: Pick<Session, 'metadata'>, calendar: Calendar): void {
+  if (calendar.holidays.length > 0 || calendar.hemisphere !== 'north') writeCalendar(session.metadata, calendar)
+}
+
 /** Gives each character its recurring day, with the places by their ids in the world. */
 export function populateRoutines(session: Session, characters: readonly CharacterDefinition[]): void {
   for (const { id, routine } of characters) {
     if (routine === undefined || routine.length === 0) continue
     session.routines.replace(session.characters.getBySourceId(id)!.id, routine.map(window => ({
-      days: window.days.map(day => WEEKDAY_NAMES.indexOf(day as (typeof WEEKDAY_NAMES)[number])),
+      days: window.days.map(day => WEEKDAY_NAMES.indexOf(day as (typeof WEEKDAY_NAMES)[number])), on: window.on ?? [],
       start: parseTimeOfDay(window.from)!, end: parseTimeOfDay(window.to)!, activity: window.activity, interruptible: window.interruptible,
       ...(window.location === undefined ? {} : { locationId: session.locations.getBySourceId(window.location)!.id }),
       ...(window.feature === undefined ? {} : { featureKey: window.feature }), ...(window.position === undefined ? {} : { position: window.position }),

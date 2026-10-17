@@ -21,6 +21,8 @@ Create sessions through the service so the directory, schema and metadata are in
 
 ## Records
 
-The records API reads a model-facing view and applies validated edits for events, perceptions, beliefs, state, movement, items, relationships, knowledge and other story data. Sealing occurs only after a keeper has completed and verified its commit.
+The records API reads a model-facing view and applies validated edits for events, perceptions, beliefs, state, movement, items, relationships, knowledge and other story data. Beliefs carry a confidence and explicit links to perceptions that support or contradict them. Sealing occurs only after a keeper has completed and verified its commit.
+
+Session metadata may also hold the world's calendar. Agenda and trigger helpers read it when evaluating date, season and holiday rules, so consumers should use the exported calendar functions rather than interpreting `on` tokens independently.
 
 The package re-exports canonical model types, so external consumers do not depend on the private model package. See the package README for lower-level repository contracts and migration guidance.

@@ -572,6 +572,21 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX entity_knowledge_subject ON entity_knowledge (subject_kind, subject_id);
     `,
   },
+  {
+    version: 7,
+    sql: `
+      ALTER TABLE memories ADD COLUMN confidence TEXT NOT NULL DEFAULT 'likely' CHECK (confidence IN ('doubtful', 'likely', 'sure'));
+      CREATE TABLE memory_evidence (
+        memory_id INTEGER NOT NULL REFERENCES memories (id) ON DELETE CASCADE,
+        perception_id INTEGER NOT NULL REFERENCES perceptions (id) ON DELETE CASCADE,
+        relation TEXT NOT NULL CHECK (relation IN ('supports', 'contradicts')),
+        turn INTEGER NOT NULL,
+        PRIMARY KEY (memory_id, perception_id)
+      ) STRICT;
+      CREATE INDEX memory_evidence_perception ON memory_evidence (perception_id);
+      ALTER TABLE routine_windows ADD COLUMN filters TEXT NOT NULL DEFAULT '[]';
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

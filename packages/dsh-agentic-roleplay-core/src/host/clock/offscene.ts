@@ -1,4 +1,5 @@
 import { ENGAGEMENT_GRACE, parseInstant, type Session } from '@dsh-agentic-roleplay/state'
+import { translator, type Language } from 'dsh-roleplay-model'
 import { describeWhen } from './story-clock.ts'
 
 type OffSceneSession = Pick<Session, 'characters' | 'placements' | 'locations' | 'engagements' | 'intents' | 'metadata'>
@@ -38,7 +39,9 @@ export function markHandled(session: OffSceneSession, keys: readonly string[]): 
  * whose time has come with everyone to do with them away from the scene, and goals whose deadline has passed.
  * Oldest first.
  */
-export function dueOffScene(session: OffSceneSession, zone: string, now: number): OffSceneItem[] {
+export function dueOffScene(session: OffSceneSession, zone: string, now: number, language: Language = 'en'): OffSceneItem[] {
+  const tr = translator(language)
+  const when = (instant: number): string => describeWhen(instant, now, zone, language)
   const handled = handledKeys(session)
   const characters = session.characters.list()
   const player = characters.find(character => character.control === 'player')
@@ -55,7 +58,12 @@ export function dueOffScene(session: OffSceneSession, zone: string, now: number)
     items.push({
       key, kind: 'engagement', at: engagement.at, characters: everyone.map(id => keyOf(agents.get(id)!)),
       ...(place === undefined ? {} : { place: place.sourceId ?? String(place.id) }),
-      text: `You were to ${engagement.title}${place === undefined ? '' : ` at ${place.name}`}, at ${describeWhen(engagement.at, now, zone)}${engagement.note === '' ? '' : ` (${engagement.note})`}. It is ${describeWhen(now, now, zone)} now${now > engagement.at + ENGAGEMENT_GRACE ? ' and the time has passed' : ''}. It was with: ${everyone.map(id => agents.get(id)!.name).join(', ')}. You are not with the player's character, and nothing of this happens in front of anyone: decide what you do about it.`,
+      text: [
+        `${place === undefined ? tr('You were to {title}, at {when}', { title: engagement.title, when: when(engagement.at) }) : tr('You were to {title} at {place}, at {when}', { title: engagement.title, place: place.name, when: when(engagement.at) })}${engagement.note === '' ? '' : tr(' ({note})', { note: engagement.note })}${tr('.')}`,
+        now > engagement.at + ENGAGEMENT_GRACE ? tr('It is {now} now and the time has passed.', { now: when(now) }) : tr('It is {now} now.', { now: when(now) }),
+        tr('It was with: {who}.', { who: everyone.map(id => agents.get(id)!.name).join(tr(', ')) }),
+        tr('You are not with the player\'s character, and nothing of this happens in front of anyone: decide what you do about it.'),
+      ].join(' '),
     })
   }
   for (const character of agents.values()) {
@@ -65,7 +73,7 @@ export function dueOffScene(session: OffSceneSession, zone: string, now: number)
       let deadline: number | undefined
       try { deadline = goal.deadline === undefined ? undefined : parseInstant(goal.deadline, zone) } catch { deadline = undefined }
       if (handled.has(key) || deadline === undefined || deadline >= now) continue
-      items.push({ key, kind: 'goal', at: deadline, characters: [keyOf(character)], text: `The time you had for "${goal.name}" has passed (${describeWhen(deadline, now, zone)}; it is ${describeWhen(now, now, zone)} now)${goal.description === '' ? '' : `: ${goal.description}`} You are not with the player's character and nothing of this happens in front of anyone: decide what you do about it.` })
+      items.push({ key, kind: 'goal', at: deadline, characters: [keyOf(character)], text: `${tr('The time you had for "{goal}" has passed ({when}; it is {now} now)', { goal: goal.name, when: when(deadline), now: when(now) })}${goal.description === '' ? '' : `${tr(': ')}${goal.description}`} ${tr('You are not with the player\'s character and nothing of this happens in front of anyone: decide what you do about it.')}` })
     }
   }
   return items.sort((a, b) => a.at - b.at)

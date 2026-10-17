@@ -4,11 +4,11 @@ title: Memory, knowledge and relationships
 
 ## Recorded experience
 
-The memory hierarchy is **turn → event → perception → belief**.
+The memory hierarchy moves from **turn** to **event**, then **perception** and **belief**.
 
 - An event is the objective, immutable record of what happened.
 - A perception records what one character witnessed, heard, was told or inferred. It may be partial or mistaken.
-- A belief records what a character has come to believe beyond one event.
+- A belief records what a character has come to believe beyond one event, how confident it is, and which perceptions support or contradict it.
 - Story threads retain unresolved promises, mysteries and goals.
 
 The record keeper writes queued rounds when the GM requests it or the backlog limit is reached. It may read its edits back before completion. Events are sealed with the completed commit; later corrections edit perceptions rather than rewriting history.
@@ -32,6 +32,8 @@ Recall combines explicit cues, full-text search and optional semantic vectors. A
 
 Imperfect memory fades detail according to elapsed story time, importance and repeated recall. Important memories remain at least faded. Disabling it gives exact recall and accurate perceptions.
 
+When a perception has been digested into a belief, recall normally favours the belief instead of repeating both records. The supporting perception also fades sooner according to `memory.foldedFade`. The default of `0.5` gives it half its previous retention time; `1` leaves its retention unchanged. The perception remains in the record and can still be cited as evidence.
+
 Recall first retrieves more candidates than the character will receive, then chooses a small, relevant and varied set. Closely related memories may come along when they share people, place or a strong tag, allowing one recollection to cue another without exposing unrelated records. With diagnostics enabled, the run inspector can show why a memory was selected; those scores are never shown to the model.
 
 Memory uses story time. Skipping a month can fade a recollection more than playing twenty turns during the same evening. Importance and retention keep consequential experiences available longer than incidental details.
@@ -40,9 +42,10 @@ Memory uses story time. Skipping a month can fade a recollection more than playi
 
 Beliefs do not appear by themselves. After a stretch of play, a **reflection** has each character sort what it has taken in since the last time into what it believes: it may add a belief, firm up or doubt an existing one, merge duplicates, or let one go. A reflection works from that character's own perceptions and beliefs only, so it cannot give a character something it never took in, and what it writes is the character's view, which may be wrong.
 
-Every change names the perceptions it rests on, and the engine checks the claim before writing anything:
+Each belief has a confidence of `doubtful`, `likely` or `sure`. A reflection names perceptions that support or contradict every change, and the engine checks those links before writing anything:
 
 - A new belief must rest on things from at least two different turns (or on one event of high importance that turned the story). One passing moment is not yet a belief.
+- A new `sure` belief needs supporting perceptions from at least two turns. New support may raise an existing belief, while contradictory evidence may lower it. Lowering confidence requires a contradicting perception.
 - A belief is revised or let go only for something that came after it was formed, or because it was merged into another belief that stays.
 - It writes beliefs and nothing else. It never changes or adds an event, so history stays as it was.
 

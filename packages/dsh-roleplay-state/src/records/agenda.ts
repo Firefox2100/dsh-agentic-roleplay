@@ -1,5 +1,6 @@
 import type { CharacterId, CharacterIntent, Engagement, StoredRoutineWindow } from 'dsh-roleplay-model'
 import type { EngagementRepository, IntentRepository, RoutineRepository } from '../repositories.ts'
+import { NO_CALENDAR, dayMatches, readCalendar, type Calendar } from './calendar.ts'
 import { DAY, HOUR, MINUTE, addLocalDays, parseInstant, zonedInstant } from './time.ts'
 
 /** One occurrence of a routine window: the stretch of time it holds on a particular day. */
@@ -12,8 +13,9 @@ export interface Occurrence {
 /** An engagement still pending this long after it was due (or over) is overdue. */
 export const ENGAGEMENT_GRACE = 30 * MINUTE
 
-function occurrenceOn(window: StoredRoutineWindow, day: { year: number; month: number; day: number; weekday: number }, zone: string): Occurrence | undefined {
+function occurrenceOn(window: StoredRoutineWindow, day: { year: number; month: number; day: number; weekday: number }, zone: string, calendar: Calendar): Occurrence | undefined {
   if (window.days.length > 0 && !window.days.includes(day.weekday)) return undefined
+  if (window.on.length > 0 && !dayMatches(window.on, day, calendar)) return undefined
   const startsAt = zonedInstant({ ...day, hour: Math.floor(window.start / 60), minute: window.start % 60 }, zone)
   const wraps = window.end < window.start
   const endDay = wraps ? addLocalDays(startsAt, zone, 1) : day
@@ -22,11 +24,11 @@ function occurrenceOn(window: StoredRoutineWindow, day: { year: number; month: n
 }
 
 /** The window that holds at an instant (the first of the list that does), with the stretch of this occurrence of it. */
-export function occurrenceAt(windows: readonly StoredRoutineWindow[], now: number, zone: string): Occurrence | undefined {
+export function occurrenceAt(windows: readonly StoredRoutineWindow[], now: number, zone: string, calendar: Calendar = NO_CALENDAR): Occurrence | undefined {
   const days = [addLocalDays(now, zone, 0), addLocalDays(now, zone, -1)]
   for (const window of windows) {
     for (const day of days) {
-      const occurrence = occurrenceOn(window, day, zone)
+      const occurrence = occurrenceOn(window, day, zone, calendar)
       if (occurrence !== undefined && occurrence.startsAt <= now && now < occurrence.endsAt) return occurrence
     }
   }
@@ -34,12 +36,12 @@ export function occurrenceAt(windows: readonly StoredRoutineWindow[], now: numbe
 }
 
 /** The window that starts next after an instant, within `horizon`. */
-export function nextOccurrence(windows: readonly StoredRoutineWindow[], now: number, zone: string, horizon: number): Occurrence | undefined {
+export function nextOccurrence(windows: readonly StoredRoutineWindow[], now: number, zone: string, horizon: number, calendar: Calendar = NO_CALENDAR): Occurrence | undefined {
   let best: Occurrence | undefined
   for (const offset of [0, 1, 2]) {
     const day = addLocalDays(now, zone, offset)
     for (const window of windows) {
-      const occurrence = occurrenceOn(window, day, zone)
+      const occurrence = occurrenceOn(window, day, zone, calendar)
       if (occurrence === undefined || occurrence.startsAt <= now || occurrence.startsAt > now + horizon) continue
       if (best === undefined || occurrence.startsAt < best.startsAt) best = occurrence
     }
@@ -94,7 +96,7 @@ const DEFAULTS = { horizon: 24 * HOUR, goals: 3, engagements: 4 } as const
 
 /** What a character is expected to be doing and to have done at an instant: its routine, its commitments and its goals. */
 export function agendaAt(
-  source: { routines: Pick<RoutineRepository, 'list'>; engagements: Pick<EngagementRepository, 'list'>; intents: Pick<IntentRepository, 'list'> },
+  source: { routines: Pick<RoutineRepository, 'list'>; engagements: Pick<EngagementRepository, 'list'>; intents: Pick<IntentRepository, 'list'>; metadata?: { getValue(key: string): unknown } },
   characterId: CharacterId,
   now: number,
   zone: string,
@@ -102,8 +104,9 @@ export function agendaAt(
 ): Agenda {
   const horizon = options.horizon ?? DEFAULTS.horizon
   const windows = source.routines.list(characterId)
-  const current = occurrenceAt(windows, now, zone)
-  const next = nextOccurrence(windows, now, zone, horizon)
+  const calendar = source.metadata === undefined ? NO_CALENDAR : readCalendar(source.metadata)
+  const current = occurrenceAt(windows, now, zone, calendar)
+  const next = nextOccurrence(windows, now, zone, horizon, calendar)
   const engagements = source.engagements.list({ status: 'pending', participant: characterId, to: now + horizon })
     .map((engagement): AgendaEngagement => ({ engagement, overdue: now > (engagement.until ?? engagement.at + ENGAGEMENT_GRACE) }))
     .slice(0, options.engagements ?? DEFAULTS.engagements)

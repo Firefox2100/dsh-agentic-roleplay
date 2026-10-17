@@ -11,7 +11,7 @@ function render() {
   if (view === undefined) return
   const w = words()
   text('place', view.place ? view.place.name : w.nowhere)
-  text('time', view.time ? view.time.text : '')
+  text('time', view.time ? [view.time.text, ...view.time.holidays].join(' · ') : '')
   const here = view.place ? view.place.here.map(person => person.name) : []
   const tracked = view.variables.filter(entry => entry.subject !== 'the world').map(entry => `${entry.subject}: ${entry.name} ${entry.value}`)
   text('more', [here.length > 0 ? `${w.with} ${here.join(', ')}` : w.alone, ...tracked].join(' · '))

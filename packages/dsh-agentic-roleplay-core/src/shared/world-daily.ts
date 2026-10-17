@@ -28,7 +28,7 @@ export interface VariableDeclaration {
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const ROUTINE_FIELDS = ['days', 'from', 'to', 'activity', 'location', 'feature', 'position', 'interruptible']
+const ROUTINE_FIELDS = ['days', 'on', 'from', 'to', 'activity', 'location', 'feature', 'position', 'interruptible']
 
 /**
  * The windows of a day as the browser sends them.
@@ -49,6 +49,7 @@ export function parseRoutineEdit(value: unknown): RoutineDefinition[] {
     const text = (key: string): string => (typeof entry[key] === 'string' ? (entry[key] as string).trim() : '')
     return {
       days: Array.isArray(entry['days']) ? (entry['days'] as string[]).map(day => day.trim().toLowerCase()).filter(day => day !== '') : [],
+      ...(Array.isArray(entry['on']) && entry['on'].length > 0 ? { on: (entry['on'] as string[]).map(day => String(day).trim()).filter(day => day !== '') } : {}),
       from: text('from'), to: text('to'), activity: text('activity'),
       ...(text('location') === '' ? {} : { location: text('location') }), ...(text('feature') === '' ? {} : { feature: text('feature') }), ...(text('position') === '' ? {} : { position: text('position') }),
       interruptible: entry['interruptible'] !== false,
@@ -106,4 +107,35 @@ export function parseVariablesEdit(value: unknown): VariableDeclaration[] {
   })
   if (problems.length > 0) throw new InvalidEditProblems(problems)
   return declarations
+}
+
+/** `calendar.json` as the editor shows it: the hemisphere its seasons follow and the holidays the world names. */
+export interface CalendarDocument {
+  hemisphere: 'north' | 'south'
+  holidays: { id: string; name: string; on: string[] }[]
+}
+
+/**
+ * The calendar as the browser sends it.
+ * @throws {InvalidEditProblems} naming every field that has the wrong shape; whether the days and ids are acceptable is checked as the file is read.
+ */
+export function parseCalendarEdit(value: unknown): CalendarDocument {
+  const problems: string[] = []
+  if (!isObject(value)) throw new InvalidEditProblems(['the calendar must be { hemisphere, holidays: [...] }'])
+  if (value['hemisphere'] !== 'north' && value['hemisphere'] !== 'south') problems.push('hemisphere must be "north" or "south"')
+  const list = Array.isArray(value['holidays']) ? value['holidays'] : undefined
+  if (list === undefined) problems.push('holidays must be a list')
+  const holidays = (list ?? []).map((entry, index): CalendarDocument['holidays'][number] => {
+    const at = `holidays[${index}]`
+    if (!isObject(entry)) { problems.push(`${at} must be an object`); return { id: '', name: '', on: [] } }
+    for (const key of Object.keys(entry)) if (!['id', 'name', 'on'].includes(key)) problems.push(`${at}.${key} is not a field of a holiday`)
+    for (const key of ['id', 'name'] as const) if (typeof entry[key] !== 'string') problems.push(`${at}.${key} must be text`)
+    if (!(Array.isArray(entry['on']) && entry['on'].every(day => typeof day === 'string'))) problems.push(`${at}.on must be a list of days`)
+    return {
+      id: typeof entry['id'] === 'string' ? entry['id'].trim() : '', name: typeof entry['name'] === 'string' ? entry['name'].trim() : '',
+      on: Array.isArray(entry['on']) ? (entry['on'] as string[]).map(day => String(day).trim()).filter(day => day !== '') : [],
+    }
+  })
+  if (problems.length > 0) throw new InvalidEditProblems(problems)
+  return { hemisphere: value['hemisphere'] as 'north' | 'south', holidays }
 }

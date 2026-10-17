@@ -69,6 +69,11 @@ export function RoutinesPanel({ t, worldId, actions }: { t: Translate; worldId: 
                     ))}</span>
                     <span className={css.help}>{t('routineDaysHelp')}</span>
                   </div>
+                  <label className={`${css.field} ${css.wide}`}>
+                    <span className={css.label}>{t('routineOn')}</span>
+                    <input className={css.nameInput} value={(window.on ?? []).join(', ')} placeholder="dec, 12-24, season:winter, !holiday:festival" onChange={(event) => { const on = event.target.value.split(',').map(part => part.trim()).filter(part => part !== ''); const { on: _o, ...rest } = window; change(draft.map((item, at) => (at === index ? { ...rest, ...(on.length === 0 ? {} : { on }) } : item))) }} />
+                    <span className={css.help}>{t('routineOnHelp')}</span>
+                  </label>
                   <label className={css.field}>
                     <span className={css.label}>{t('routinePlace')}</span>
                     <select value={window.location ?? ''} onChange={(event) => { const { feature: _f, location: _l, ...rest } = window; change(draft.map((item, at) => (at === index ? { ...rest, ...optional(event.target.value) } : item))) }}>

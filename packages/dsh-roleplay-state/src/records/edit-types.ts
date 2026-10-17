@@ -1,10 +1,10 @@
 import type {
   VariableDefinitionInput, TriggerDefinition,
-  Accuracy, Character, CharacterKind, CharacterStatePatch, CharacterTier, ContainerState, EngagementStatus, ExitState, IntentHorizon, IntentStatus, IntentType, KnowledgeKind, Location, MemoryKind, PerceptionMode, Slot,
+  Accuracy, Character, CharacterKind, CharacterStatePatch, CharacterTier, ContainerState, EngagementStatus, ExitState, IntentHorizon, IntentStatus, IntentType, KnowledgeKind, Location, MemoryConfidence, MemoryKind, PerceptionMode, Slot,
 } from 'dsh-roleplay-model'
 import type {
   CharacterRepository, CharacterStateRepository, ConsolidationRepository, EngagementRepository, EventRepository, IntentRepository, ItemRepository, LocationRepository, MemoryRepository,
-  KnowledgeRepository, PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository, TriggerRepository, VariableRepository,
+  KnowledgeRepository, MetadataRepository, PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository, TriggerRepository, VariableRepository,
   FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
 } from '../repositories.ts'
 import type { ItemChangeSpec } from './items.ts'
@@ -41,6 +41,8 @@ export interface RecordsTarget {
   routines: RoutineRepository
   engagements: EngagementRepository
   triggers: TriggerRepository
+  /** What the story keeps about itself; the calendar of its world is read from here. */
+  metadata: Pick<MetadataRepository, 'getValue'>
   transaction<T>(fn: () => T): T
 }
 
@@ -267,6 +269,11 @@ export interface NewBelief {
   text: string
   about?: string[]
   importance: number
+  /** How sure the character is; likely when not said. */
+  confidence?: MemoryConfidence
+  /** The numbers of perceptions of the character's own that it rests on, and that speak against it. */
+  evidenceFor?: number[]
+  evidenceAgainst?: number[]
 }
 
 export interface BeliefEdit {
@@ -274,6 +281,9 @@ export interface BeliefEdit {
   text?: string
   about?: string[]
   importance?: number
+  confidence?: MemoryConfidence
+  evidenceFor?: number[]
+  evidenceAgainst?: number[]
 }
 
 /**
@@ -333,6 +343,8 @@ export interface EngagementEditSpec {
 export interface RoutineWindowSpec {
   /** `mon` to `sun`; every day when left out. */
   days?: string[]
+  /** Other days it applies on or not: `dec`, `12-24`, `season:winter`, `nth:mon:1`, `holiday:<id>`, `!` before one for a day it does not apply on. */
+  on?: string[]
   /** `HH:MM`. */
   from: string
   to: string

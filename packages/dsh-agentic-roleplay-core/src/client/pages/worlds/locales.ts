@@ -14,6 +14,7 @@ export type WorldsLocaleKey =
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
   | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed'
   | 'authorWorld' | 'openingAuthor' | 'authorWorldFailed' | 'authoringChatTitle'
+  | 'translateWarning' | 'translateAction' | 'translateOpening' | 'translateChatTitle' | 'translateFailed' | 'translateNotStarted' | 'languageEnglish' | 'languageChinese' | 'startLanguageNote'
   | 'addAvatars' | 'addAvatarsTitle' | 'addAvatarsHelp' | 'addAvatarsNone' | 'addAvatarsAdding' | 'addAvatarsFailed' | 'addAvatarsLoadFailed' | 'startAvatars' | 'startAvatarsHelp'
 
 const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKey>> = {
@@ -59,6 +60,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startFailed: 'Could not start the session: {message}',
     createWorld: 'Create world', creatingWorld: 'Creating…', createWorldTitle: 'Create a world', createWorldHelp: 'This creates a minimal world and opens it in the editor. Add characters, places and everything else there.', worldFolder: 'Folder name', worldFolderHelp: 'A new folder directly inside the roleplay worlds directory.', worldName: 'World name', createWorldFailed: 'Could not create the world: {message}',
     authorWorld: 'Author with AI', openingAuthor: 'Opening…', authorWorldFailed: 'Could not open the authoring chat: {message}', authoringChatTitle: 'Authoring {name}',
+    translateWarning: 'This world is written in {from}, but you use {to}. Names, descriptions and the characters\' speech may mix the two languages.', translateAction: 'Translate into {to}', translateOpening: 'Opening…', translateChatTitle: 'Translating {name}', translateFailed: 'Could not start the translation: {message}', translateNotStarted: 'The authoring chat opened but the translation did not start: {message}. Ask it to translate the world.', languageEnglish: 'English', languageChinese: 'Chinese', startLanguageNote: 'This world is written in {from}, but the story will be played in {to}: names and descriptions stay in {from}. A translated copy can be made from the world\'s editor.',
     addAvatars: 'Add avatars', addAvatarsTitle: 'Add avatars to the world', addAvatarsHelp: 'Each avatar you tick becomes a playable character of this world, with its own copy of everything. It starts where the world\'s playable characters start.', addAvatarsNone: 'There are no avatars yet. Make some on the Avatars tab.', addAvatarsAdding: 'Adding…', addAvatarsFailed: 'Could not add the avatars: {message}', addAvatarsLoadFailed: 'Could not load the avatars: {message}', startAvatars: 'Bring avatars', startAvatarsHelp: 'Tick the avatars to bring into this session as characters; you can play them too. The world itself is not changed.',
   },
   zh: {
@@ -103,6 +105,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startFailed: '无法开始存档：{message}',
     createWorld: '创建世界', creatingWorld: '正在创建…', createWorldTitle: '创建世界', createWorldHelp: '系统会创建一个最小世界并直接在编辑器中打开；角色、地点等内容可随后添加。', worldFolder: '文件夹名称', worldFolderHelp: '将在角色扮演 worlds 目录下直接创建这个文件夹。', worldName: '世界名称', createWorldFailed: '无法创建世界：{message}',
     authorWorld: '使用 AI 编辑', openingAuthor: '正在打开…', authorWorldFailed: '无法打开世界编辑对话：{message}', authoringChatTitle: '编辑{name}',
+    translateWarning: '这个世界是用{from}写的，而你使用的是{to}。名字、描述和角色的说话可能会两种语言混在一起。', translateAction: '翻译成{to}', translateOpening: '正在打开…', translateChatTitle: '翻译{name}', translateFailed: '无法开始翻译：{message}', translateNotStarted: '世界编辑对话已打开，但翻译没有开始：{message}。可以请它翻译这个世界。', languageEnglish: '英文', languageChinese: '中文', startLanguageNote: '这个世界是用{from}写的，而故事将用{to}进行：名字和描述仍是{from}。可以在世界编辑器里生成一个翻译后的副本。',
     addAvatars: '添加角色形象', addAvatarsTitle: '把角色形象加入世界', addAvatarsHelp: '勾选的每个角色形象都会成为这个世界的可扮演角色，并带有自己的一份副本。它们从世界中可扮演角色的起始位置出发。', addAvatarsNone: '还没有角色形象。请先到“角色形象”标签页创建。', addAvatarsAdding: '正在添加…', addAvatarsFailed: '无法添加角色形象：{message}', addAvatarsLoadFailed: '无法加载角色形象：{message}', startAvatars: '带上角色形象', startAvatarsHelp: '勾选要带进这个存档的角色形象，它们会成为存档中的角色，你也可以扮演它们。世界本身不会改变。',
   },
 }

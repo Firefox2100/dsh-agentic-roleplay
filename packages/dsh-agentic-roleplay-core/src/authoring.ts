@@ -9,6 +9,7 @@ import { worldPackTools } from './host/authoring/pack-tools.ts'
 import { worldPromptTools } from './host/authoring/prompt-tools.ts'
 import { importHooks, importTools } from './host/import/tools.ts'
 import { isReviewing } from './host/import/run-import.ts'
+import { translateTools } from './host/translate/tools.ts'
 import type {} from './host/import/service.ts'
 import type {} from './host/prompts/library.ts'
 import type {} from './host/worlds/authoring-language.ts'
@@ -32,6 +33,7 @@ export function apply(ctx: Context): void {
   for (const tool of worldPromptTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPackTools(reader)) ctx.tools.register(tool)
   for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
+  for (const tool of translateTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   importHooks(ctx, ctx.roleplayWorlds, prompting)
   const reviewing = async (chat: string): Promise<boolean> => {
     const id = authoredWorldOf(chat)

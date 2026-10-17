@@ -53,4 +53,17 @@ Wherever other characters, the game master or the record keeper read about a cha
 
 ## Routines
 
-`routine` is an ordered list of recurring windows. Each may specify `days`, `from`, `to`, `activity`, `location`, `feature`, `position` and `interruptible`. Times use `HH:MM`; a window ending before it starts crosses midnight.
+`routine` is an ordered list of recurring windows. Each may specify `days`, `on`, `from`, `to`, `activity`, `location`, `feature`, `position` and `interruptible`. Times use `HH:MM`; a window ending before it starts crosses midnight.
+
+`days` accepts weekdays from `mon` to `sun`. `on` adds dates, months, seasons, holidays and exclusions using the shared [day-token format](./calendar). When both are present, both must match. This keeps a weekday routine from running during a named holiday, for example:
+
+```json
+{
+  "days": ["mon", "tue", "wed", "thu", "fri"],
+  "on": ["!holiday:founders-day"],
+  "from": "08:00",
+  "to": "16:00",
+  "activity": "Working at the archive",
+  "location": "archive"
+}
+```

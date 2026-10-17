@@ -1,4 +1,5 @@
 import { InvalidEditProblems } from '../../shared/world-state.ts'
+import { loadCalendar } from '../calendar/load.ts'
 import { loadCharacters } from '../characters/load.ts'
 import { loadItems } from '../items/load.ts'
 import { loadLocations } from '../locations/load.ts'
@@ -11,7 +12,8 @@ export async function loadWorldParts(directory: string): Promise<WorldParts> {
   const { locations, problems: locationProblems } = await loadLocations(directory)
   const { items, slots, problems: itemProblems } = await loadItems(directory, { characters: characters.map(character => character.id), locations })
   const { defs, problems: variableProblems } = await loadVariables(directory)
-  const problems = [...characterProblems, ...locationProblems, ...itemProblems, ...variableProblems]
+  const { calendar, problems: calendarProblems } = await loadCalendar(directory)
+  const problems = [...characterProblems, ...locationProblems, ...itemProblems, ...variableProblems, ...calendarProblems]
   if (problems.length > 0) throw new InvalidEditProblems([`the world's other files have problems that come first: ${problems.map(problem => `${problem.path}: ${problem.message}`).join('; ')}`])
-  return { characters, locations, items, slots, variables: defs }
+  return { characters, locations, items, slots, variables: defs, calendar }
 }

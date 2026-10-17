@@ -5,6 +5,8 @@ import { DEFAULT_SETTINGS } from '../../../shared/settings.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../../settings-form/embedding-options.ts'
 import { SettingsFields } from '../../settings-form/SettingsFields.tsx'
+import { languageName, useWorldLanguage } from './TranslateBanner.tsx'
+import { storyLanguageOf } from './translate-api.ts'
 import { AvatarChoices } from '../../widgets/avatar-choices/AvatarChoices.tsx'
 import type { StartDialog, StartOptions } from './worlds-controller.ts'
 import css from './StartSessionDialog.module.css'
@@ -33,6 +35,9 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const selected = players.find(player => player.value === choice)?.value ?? players[0]?.value
   const base = { ...DEFAULT_SETTINGS, prompts: { language: t('language') } }
   const shown = { ...toDrafts(base, options), ...drafts }
+  const written = useWorldLanguage(dialog.worldId)
+  const chosen = shown['prompts.language']
+  const played = storyLanguageOf(typeof chosen === 'string' && chosen.trim() !== '' ? chosen : t('language'))
   const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting && problemsOf(shown, options).size === 0
 
   return (
@@ -63,6 +68,8 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
           <span className={css.label}>{t('sessionName')}</span>
           <Input value={name} maxLength={200} data-modal-autofocus onChange={(event) => { setName(event.target.value) }} />
         </label>
+
+        {written !== undefined && written !== played && <p className={css.message} role="status">{t('startLanguageNote', { from: languageName(t, written), to: languageName(t, played) })}</p>}
 
         <fieldset className={css.field} disabled={dialog.status !== 'ready' || dialog.submitting}>
           <legend className={css.label}>{t('playAs')}</legend>

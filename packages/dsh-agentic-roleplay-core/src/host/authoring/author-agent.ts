@@ -3,6 +3,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { characterKey, createTools, describeHolder, itemKey, lintWorld, locationKey, parseRecordsEdit, type LintFinding } from '@dsh-agentic-roleplay/state'
 import { zoneOf } from '../clock/story-clock.ts'
+import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { Author, ConsolidateJob, ConsolidateReport, CreateJob, CreateReport, TurnStore } from '../orchestration/boundaries.ts'
 
@@ -12,6 +13,15 @@ import type { Author, ConsolidateJob, ConsolidateReport, CreateJob, CreateReport
 interface Work {
   created: { kind: 'character' | 'place' | 'item' | 'variable' | 'trigger'; key: string }[]
 }
+
+/** A made-up thing in one edit: its name, description and the handful of fields a character, place or item carries. */
+const THING_TEXTS = 14
+const THING_TEXT_CHARS = 300
+/** What consolidating one waiting item writes: a way or a relationship with its descriptions. */
+const FIT_TEXTS = 6
+const FIT_TEXT_CHARS = 200
+
+const editEstimate = (things: number, texts: number, chars: number, language: string): number => estimateAnswer(Array.from({ length: Math.max(1, things) * texts }, () => chars), language)
 
 function authorTools(job: { chat: string; store: TurnStore; turn: number }, work: Work, mode: 'create' | 'consolidate', limits: { perTurn: number }): ToolDefinition[] {
   const link = { session: job.store.story, turn: job.turn, policy: job.store.settings().memory, queryVector: job.store.queryVector, timeZone: zoneOf(job.store.settings().clock) }
@@ -184,7 +194,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ outcome: 'created' | 'declined'; summary: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world author'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring', editEstimate(authoring.perTurn, THING_TEXTS, THING_TEXT_CHARS, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world author'),
         parent, signal,
         persona: promptFor(parent, 'world/author', job.store.settings().prompts.language),
         prompt: createPrompt(job, authoring.perTurn),
@@ -211,7 +221,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ complete: boolean; notes: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring'), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world consolidation'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring', editEstimate(pending.length, FIT_TEXTS, FIT_TEXT_CHARS, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world consolidation'),
         parent, signal,
         persona: promptFor(parent, 'world/consolidate', job.store.settings().prompts.language),
         prompt: consolidationPrompt(job),

@@ -1,6 +1,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { judgedStatements } from '@dsh-agentic-roleplay/state'
+import { FIELD_TOKENS } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { promptFor } from '../prompts/access.ts'
 import type { JudgeJob, TriggerJudge } from '../orchestration/boundaries.ts'
@@ -52,7 +53,7 @@ export function triggerJudge(deps: { agentOf: (chat: string) => Agent | undefine
       if (parent === undefined) throw new Error(`no agent for chat ${job.chat}`)
       const store = job.store
       const answer = await runChild<{ verdicts: { number: number; holds: boolean }[] }>({
-        parent, signal, reasoningEffort: store.settings().reasoning.children, sampling: childSampling(store.settings(), 'records'), ...childModel(store.settings(), 'records'), trace: childTrace(store, 'records', 'trigger judge'),
+        parent, signal, reasoningEffort: store.settings().reasoning.children, sampling: childSampling(store.settings(), 'records', statements.length * 2 * FIELD_TOKENS + FIELD_TOKENS), ...childModel(store.settings(), 'records'), trace: childTrace(store, 'records', 'trigger judge'),
         persona: promptFor(parent, 'roleplay/trigger-judge', store.settings().prompts.language),
         prompt: brief(job, statements),
         result: RESULT,

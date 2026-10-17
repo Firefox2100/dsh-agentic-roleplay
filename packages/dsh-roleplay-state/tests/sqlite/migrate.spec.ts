@@ -27,7 +27,7 @@ describe('migrate', () => {
     db.close()
   })
 
-  it('keeps the migrations of the 0.1.0 release as they were published', () => {
+  it('keeps the released migrations as they were published', () => {
     const released: Record<number, string> = {
       1: '7fe43a969076c940ccc06f00a170800b59fae8108f4a6b3c26cc8c09e2c2941e',
       2: 'd4c45efd6a1262ea796bb1a291940e132f6fd281c53243474467e88a5346b53b',
@@ -35,6 +35,7 @@ describe('migrate', () => {
       4: '9fdcd72cec06d5b81db418ea66c446660257103e8746b504e1b0e2d98ddb4dc7',
       5: '56d3b40c78d2010196563e64b72b501276ee87e70729690721b027c5abea7cdb',
       6: '50a6dbce0acfe194f2b11e09b58db626504f61681cb07ef26ac85f0ad5247cdf',
+      7: '6f8bfc5b6c513dc9444ef65ba4a298df8243fe80fb47f2f148070d7f8817eda5',
     }
     for (const [version, hash] of Object.entries(released)) {
       const migration = MIGRATIONS.find(candidate => candidate.version === Number(version))
@@ -79,6 +80,25 @@ describe('migrate', () => {
     expect(inspect(db).version).toBe(LATEST_VERSION)
     expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'factions'")?.name).toBe('factions')
     expect(db.get<{ name: string }>("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'faction_memberships'")?.name).toBe('faction_memberships')
+    db.close()
+  })
+
+  it('adds belief confidence and evidence to a version 6 session: its beliefs stay, as likely, and evidence goes with the belief or the perception', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 6)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 6')
+    db.run("INSERT INTO characters (name, name_key, kind, tier, role, control, created_at) VALUES ('A', 'a', 'person', 'principal', 'npc', 'agent', 'now')")
+    db.run("INSERT INTO memories (character_id, kind, text, importance, turn, created_at) VALUES (1, 'belief', 'The mayor is honest.', 3, 2, 'now')")
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ confidence: string }>('SELECT confidence FROM memories WHERE id = 1')?.confidence).toBe('likely')
+    expect(() => db.run("UPDATE memories SET confidence = 'certain' WHERE id = 1")).toThrow()
+    db.run("INSERT INTO events (turn, round, text, importance, created_at) VALUES (3, 1, 'x', 2, 'now')")
+    db.run("INSERT INTO perceptions (event_id, character_id, mode, content, gist, accuracy, created_at) VALUES (1, 1, 'witnessed', 'x', 'x', 'accurate', 'now')")
+    db.run("INSERT INTO memory_evidence (memory_id, perception_id, relation, turn) VALUES (1, 1, 'contradicts', 3)")
+    db.run('DELETE FROM perceptions WHERE id = 1')
+    expect(db.get<{ count: number }>('SELECT count(*) AS count FROM memory_evidence')?.count).toBe(0)
     db.close()
   })
 

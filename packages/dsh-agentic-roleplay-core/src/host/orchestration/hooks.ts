@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
+import { languageOf, translator } from 'dsh-roleplay-model'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Boundaries, TurnStore } from './boundaries.ts'
@@ -113,11 +114,12 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     store.clearNotes()
     store.lapseNotes(payload.turn)
     const { time, away, agenda } = store.beginTurn(payload.turn)
-    if (store.settings().offstage.summary) store.addNote('away', payload.turn, agenda.moved.map(move => `${move.name} went to ${move.to}.`))
+    const tr = translator(languageOf(store.settings().prompts.language))
+    if (store.settings().offstage.summary) store.addNote('away', payload.turn, agenda.moved.map(move => tr('{name} went to {place}.', { name: move.name, place: move.to })))
     const fired = engine.fireAtStart(owner)
-    const world = { happened: fired.flatMap(entry => [...entry.events.map(text => `${entry.name}: ${text}`), ...entry.cues.map(cue => `${cue.names.join(' and ')} noticed: ${cue.text}`)]), beats: store.pendingBeats(), upcoming: store.upcoming(payload.turn) }
+    const world = { happened: fired.flatMap(entry => [...entry.events.map(text => `${entry.name}: ${text}`), ...entry.cues.map(cue => tr('{names} noticed: {text}', { names: cue.names.join(tr(' and ')), text: cue.text }))]), beats: store.pendingBeats(), upcoming: store.upcoming(payload.turn) }
     const tracked = store.tracked()
-    const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, ...(queryVector === undefined ? {} : { queryVector }) })]
+    const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, language: store.settings().prompts.language, ...(queryVector === undefined ? {} : { queryVector }) })]
     const pacing = ooc === undefined ? pacingAdvice(store, payload.turn) : undefined
     if (pacing !== undefined) lines.push(describePacingAdvice(pacing))
     else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) lines.push(store.text('roleplay/plot-hint'))

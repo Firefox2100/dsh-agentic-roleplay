@@ -1,4 +1,4 @@
-import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
+import { createSessionStore, writeCalendar, type SessionStore } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { playerViewOf } from '../../../src/host/interface/player-view.ts'
 import { observeAsPlayer } from '../../../src/host/orchestration/observation.ts'
@@ -34,13 +34,18 @@ beforeEach(() => {
 afterEach(() => { session.close() })
 
 describe('what a pack is told', () => {
+  it('names the season and the holidays of the day when the world has a calendar', () => {
+    writeCalendar(session.metadata, { hemisphere: 'south', holidays: [{ id: 'harvest', name: 'Harvest Fair', on: ['10-04'] }] })
+    expect(playerViewOf(session, options).time).toMatchObject({ season: 'spring', holidays: ['Harvest Fair'] })
+  })
+
   it('is the place, who is there, what lies or is carried, the time and the public variables', () => {
     const view = playerViewOf(session, options)
     expect(view.story).toEqual({ name: 'A story', turn: 0 })
     expect(view.player).toEqual({ key: 'arthur', name: 'Arthur', summary: 'Arthur, a person.', publicState: 'Wet from the rain.' })
     expect(view.place).toMatchObject({ key: 'bar', name: 'Bar', description: 'Smoky.', items: [{ name: 'Lamp', quantity: 1 }], here: [{ key: 'clara', name: 'Clara', publicState: 'Tired.' }] })
     expect(view.carried).toEqual([{ name: 'Coin', quantity: 3, where: 'carried' }])
-    expect(view.time).toEqual({ iso: '1912-10-04T21:40:00.000Z', zone: 'UTC', text: 'Friday 4 October 1912, 21:40' })
+    expect(view.time).toEqual({ iso: '1912-10-04T21:40:00.000Z', zone: 'UTC', text: 'Friday 4 October 1912, 21:40', season: 'autumn', holidays: [] })
     expect(view.variables).toContainEqual({ subject: 'Clara', name: 'Fatigue', value: '6' })
   })
 

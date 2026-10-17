@@ -2,7 +2,8 @@ import { COMPARISONS, SELF, WEEKDAY_NAMES, type Comparison, type Trigger, type T
 import { InvalidEditError } from '../errors.ts'
 import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
 import { itemKey } from './items.ts'
-import { inWindow, localTime, parseInstant, parseTimeOfDay } from './time.ts'
+import { addLocalDays, inWindow, localTime, parseInstant, parseTimeOfDay } from './time.ts'
+import { dayMatches, dayTokenProblems, readCalendar } from './calendar.ts'
 import { placeholdersOf } from './template.ts'
 import { subjectOf } from './variables.ts'
 
@@ -34,11 +35,14 @@ function parseCondition(value: unknown, path: string, problems: string[], count:
       const to = text(value, 'to')
       const window = isObject(value['window']) ? { from: text(value['window'], 'from') ?? '', to: text(value['window'], 'to') ?? '' } : undefined
       const days = Array.isArray(value['days']) ? value['days'].filter((day): day is string => typeof day === 'string') : undefined
-      if (from === undefined && to === undefined && window === undefined && days === undefined) { problems.push(`${path}: a time condition needs from, to, window or days`); return undefined }
+      const on = Array.isArray(value['on']) ? value['on'].filter((day): day is string => typeof day === 'string') : undefined
+      if (value['on'] !== undefined && on?.length !== (value['on'] as unknown[] | undefined)?.length) problems.push(`${path}.on: a list of days (months, dates, seasons, holidays)`)
+      if (on !== undefined) problems.push(...dayTokenProblems(on, `${path}.on`, 'any'))
+      if (from === undefined && to === undefined && window === undefined && days === undefined && on === undefined) { problems.push(`${path}: a time condition needs from, to, window, days or on`); return undefined }
       if (window !== undefined && (parseTimeOfDay(window.from) === undefined || parseTimeOfDay(window.to) === undefined || window.from === window.to)) problems.push(`${path}.window: from and to are different times of day, HH:MM`)
       for (const day of days ?? []) if (!(WEEKDAY_NAMES as readonly string[]).includes(day)) problems.push(`${path}.days: "${day}" is not mon to sun`)
       if (value['days'] !== undefined && days?.length !== (value['days'] as unknown[] | undefined)?.length) problems.push(`${path}.days: a list of mon to sun`)
-      return { type: 'time', ...(from === undefined ? {} : { from }), ...(to === undefined ? {} : { to }), ...(window === undefined ? {} : { window }), ...(days === undefined ? {} : { days }) }
+      return { type: 'time', ...(from === undefined ? {} : { from }), ...(to === undefined ? {} : { to }), ...(window === undefined ? {} : { window }), ...(days === undefined ? {} : { days }), ...(on === undefined ? {} : { on }) }
     }
     case 'place': {
       const character = need('character'); const location = need('location'); const feature = text(value, 'feature')
@@ -182,13 +186,13 @@ export function parseTriggerDefinition(value: unknown, path: string, checkEdit: 
   }
 }
 
-type Reading = Pick<RecordsTarget, 'characters' | 'locations' | 'items' | 'variables' | 'triggers'>
+type Reading = Pick<RecordsTarget, 'characters' | 'locations' | 'items' | 'variables' | 'triggers' | 'metadata'>
 
 function conditionProblems(target: Reading, condition: TriggerCondition, path: string, known: ReadonlySet<string>, self = false): string[] {
   const character = (key: string): string[] => ((self && key === SELF) || target.characters.list().some(entry => characterKey(entry) === key) ? [] : [`${path}: there is no character "${key}"`])
   const place = (key: string): string[] => (target.locations.list().some(entry => locationKey(entry) === key) ? [] : [`${path}: there is no place "${key}"`])
   switch (condition.type) {
-    case 'time': return []
+    case 'time': return dayTokenProblems(condition.on ?? [], `${path}.on`, new Set(readCalendar(target.metadata).holidays.map(holiday => holiday.id)))
     case 'place': return [...character(condition.character), ...place(condition.location)]
     case 'variable': {
       const def = target.variables.def(condition.variable)
@@ -286,14 +290,20 @@ function holds(target: RecordsTarget, condition: TriggerCondition, clock: Trigge
       if (condition.from !== undefined && now < parseInstant(condition.from, zone)) return false
       if (condition.to !== undefined && now >= parseInstant(condition.to, zone)) return false
       const local = localTime(now, zone)
+      const calendar = readCalendar(target.metadata)
+      /** The day a time belongs to: the morning part of a window past midnight belongs to the day before. */
+      const dayAt = (shift: number) => addLocalDays(now, zone, shift)
+      const onDay = (shift: number): boolean => {
+        const day = dayAt(shift)
+        return (condition.days === undefined || condition.days.length === 0 || condition.days.includes(WEEKDAY_NAMES[day.weekday] ?? '')) && (condition.on === undefined || dayMatches(condition.on, day, calendar))
+      }
       if (condition.window !== undefined) {
         const start = parseTimeOfDay(condition.window.from) ?? 0
         const end = parseTimeOfDay(condition.window.to) ?? 0
         if (!inWindow(local.minuteOfDay, start, end)) return false
-        const weekday = start > end && local.minuteOfDay < end ? (local.weekday + 6) % 7 : local.weekday
-        return condition.days === undefined || condition.days.length === 0 || condition.days.includes(WEEKDAY_NAMES[weekday] ?? '')
+        return onDay(start > end && local.minuteOfDay < end ? -1 : 0)
       }
-      return condition.days === undefined || condition.days.length === 0 || condition.days.includes(WEEKDAY_NAMES[local.weekday] ?? '')
+      return onDay(0)
     }
     case 'place': {
       const who = target.characters.list().find(entry => characterKey(entry) === condition.character)

@@ -5,6 +5,7 @@ import { MAX_RUN_RECALLED, type RunRecall } from '../../shared/activity.ts'
 import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { MAX_OOC_ANSWER } from '../../shared/ooc.ts'
+import { wrongLanguage } from '../translate/language.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import { AWAY_ACTION_SCHEMA, CHARACTER_ACTION_SCHEMA, answerEstimate, parseCharacterAction } from './protocol.ts'
 import type { RunAnswer, RunCharacter } from './turn-engine.ts'
@@ -23,9 +24,15 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
       : []
     const settings = deps.store.settings()
     const named = request.member.character.tier === 'background' && settings.models.background.trim() !== '' ? settings.models.background : settings.models.characters
-    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, maxCalls: deps.store.settings().memory.lookupCalls, result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'] })
+    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, maxCalls: deps.store.settings().memory.lookupCalls, result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: value => spokenIn(settings.prompts.language, value) })
     return parseCharacterAction(result)
   }
+}
+
+/** A character whose sheet is in another language than the chat's writes in the sheet's: the answer is refused until it is in the chat's. */
+function spokenIn(language: string, value: unknown): string | undefined {
+  const given = value as { thought?: string; intent?: string; utterance?: string; account?: string }
+  return wrongLanguage(language, { thought: given.thought, intent: given.intent, utterance: given.utterance, account: given.account })
 }
 
 /** What the character was reminded of and why, for the run's record, when the recall said why. */
