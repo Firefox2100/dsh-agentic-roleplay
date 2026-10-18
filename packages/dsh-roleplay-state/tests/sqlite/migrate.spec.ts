@@ -36,6 +36,7 @@ describe('migrate', () => {
       5: '56d3b40c78d2010196563e64b72b501276ee87e70729690721b027c5abea7cdb',
       6: '50a6dbce0acfe194f2b11e09b58db626504f61681cb07ef26ac85f0ad5247cdf',
       7: '6f8bfc5b6c513dc9444ef65ba4a298df8243fe80fb47f2f148070d7f8817eda5',
+      8: 'b911afaa49f5ecbf1f64f90a72fa39e69f0ba4db090b730d1357ff4e12fac255',
     }
     for (const [version, hash] of Object.entries(released)) {
       const migration = MIGRATIONS.find(candidate => candidate.version === Number(version))

@@ -15,6 +15,11 @@ export async function uploadCard(file: File): Promise<ImportPreview> {
   return await answer(await fetch(`${API_PREFIX}/worlds/import/card`, { method: 'POST', credentials: 'same-origin', headers: { 'x-file-name': encodeURIComponent(file.name), 'content-type': file.type || 'application/octet-stream' }, body: file }))
 }
 
+/** Sends a narration preset to a world, which has its authoring chat turn it into the world's prose prompts. */
+export async function uploadPreset(worldId: string, file: File, language: string): Promise<{ chatSessionId: string; preset: string; started: boolean; failure?: string }> {
+  return await answer(await fetch(`${API_PREFIX}/worlds/import/preset?id=${encodeURIComponent(worldId)}&language=${encodeURIComponent(language)}`, { method: 'POST', credentials: 'same-origin', headers: { 'x-file-name': encodeURIComponent(file.name), 'content-type': 'application/json' }, body: file }))
+}
+
 export async function startImport(id: string, choices: ImportChoices, language: string): Promise<{ worldId: string; chatSessionId: string; started: boolean; failure?: string }> {
   return await answer(await fetch(`${API_PREFIX}/worlds/import/start?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...choices, language }) }))
 }

@@ -30,12 +30,12 @@ title: world.json
 | `author.url` | Optional | Attribution link |
 | `metadata.tags` | Optional list | Catalogue filtering and presentation |
 | `opening_message` | Optional | Text or ordered narration/utterance parts |
-| `alternate_openings` | Optional list | Other first messages the player may choose when starting a session: `{title, text}`, plain narration, at most 30 of at most 20,000 characters; a missing title is the first words of the text |
+| `alternate_openings` | Optional list | Other first messages the player may choose when starting a session: `{title, text, character?}`, plain narration, at most 30 of at most 20,000 characters; a missing title is the first words of the text |
 | `narration_voice` | Optional | Initial TTS voice for narration |
 | `variables` | Optional object | Initial values for world-scoped variables |
 | `tools` | Optional object | Optional tools switched on or off for the world's agents, by kind of agent: `{"gameMaster": {"roll_dice": false}}`. A story starts from it, and a choice made at the start is added on top. Names this version does not know are kept and have no effect |
 
-The start dialog offers the alternate openings beside the world's own. A session started from one stores it as its first finished turn like any other opening.
+The start dialog offers the alternate openings beside the world's own. An opening with a `character` (the id of a playable character) is offered only to a player who takes that character, and a start that names it for anyone else is refused; a `character` that is not a playable character of the world refuses the start with the problem. A session started from one stores it as its first finished turn like any other opening.
 
 An utterance's `character` must name a defined character. Invalid opening parts prevent session creation. The opening is stored as the first finished chat turn without a model call.
 

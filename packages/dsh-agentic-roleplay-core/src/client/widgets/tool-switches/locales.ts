@@ -4,6 +4,7 @@ export type ToolSwitchKey =
   | 'sw_title' | 'sw_help' | 'sw_none' | 'sw_default' | 'sw_failed' | 'sw_external' | 'sw_external_help' | 'sw_external_none'
   | 'sw_agent_gameMaster' | 'sw_agent_gameMaster_hint' | 'sw_agent_characters' | 'sw_agent_characters_hint' | 'sw_agent_records' | 'sw_agent_records_hint'
   | 'sw_tool_roll_check' | 'sw_tool_roll_check_hint' | 'sw_tool_roll_dice' | 'sw_tool_roll_dice_hint' | 'sw_tool_list_checks' | 'sw_tool_list_checks_hint'
+  | 'sw_tool_recall_my_memories' | 'sw_tool_recall_my_memories_hint' | 'sw_tool_recall_my_known_entities' | 'sw_tool_recall_my_known_entities_hint' | 'sw_tool_recall_my_lore' | 'sw_tool_recall_my_lore_hint' | 'sw_tool_search_events' | 'sw_tool_search_events_hint' | 'sw_tool_list_threads' | 'sw_tool_list_threads_hint' | 'sw_tool_list_relationships' | 'sw_tool_list_relationships_hint' | 'sw_tool_list_items' | 'sw_tool_list_items_hint'
 
 export const dictionaries: Dictionaries<ToolSwitchKey> = {
   en: {
@@ -16,6 +17,13 @@ export const dictionaries: Dictionaries<ToolSwitchKey> = {
     sw_tool_roll_check: 'Roll a check', sw_tool_roll_check_hint: 'Rolls one of the world\'s checks for an uncertain attempt and reads the result with the world\'s own rules.',
     sw_tool_roll_dice: 'Roll dice', sw_tool_roll_dice_hint: 'Rolls plain dice (2d6+1, d100) for what has no check, so that no number is made up.',
     sw_tool_list_checks: 'List checks', sw_tool_list_checks_hint: 'Shows the world\'s checks and when each is used.',
+    sw_tool_recall_my_memories: 'Recall memories', sw_tool_recall_my_memories_hint: 'Lets a character look up what it remembers when the scene names something its brief left out.',
+    sw_tool_recall_my_known_entities: 'Recall known places and things', sw_tool_recall_my_known_entities_hint: 'Lets a character look up the places, things and people it knows of.',
+    sw_tool_recall_my_lore: 'Recall lore', sw_tool_recall_my_lore_hint: 'Lets a character read the canon it explicitly knows.',
+    sw_tool_search_events: 'Search events', sw_tool_search_events_hint: 'Lets the record keeper search what already happened before it writes.',
+    sw_tool_list_threads: 'List open threads', sw_tool_list_threads_hint: 'Lets the record keeper see the story threads that are still open.',
+    sw_tool_list_relationships: 'List relationships', sw_tool_list_relationships_hint: 'Lets the record keeper see how characters stand with each other.',
+    sw_tool_list_items: 'List things', sw_tool_list_items_hint: 'Lets the record keeper see the things in the story and where they are.',
   },
   zh: {
     sw_title: '工具', sw_help: '每一类智能体可以使用哪些可选工具。选择对该类的所有智能体生效，而不是只针对某一个角色。此版本不认识的工具保持原样，也不显示。',
@@ -27,5 +35,12 @@ export const dictionaries: Dictionaries<ToolSwitchKey> = {
     sw_tool_roll_check: '进行检定', sw_tool_roll_check_hint: '为不确定的尝试掷出世界定义的检定，并按世界自己的规则解读结果。',
     sw_tool_roll_dice: '掷骰子', sw_tool_roll_dice_hint: '为没有检定的事掷普通骰子（2d6+1、d100），不让任何数字被编造。',
     sw_tool_list_checks: '列出检定', sw_tool_list_checks_hint: '显示世界的检定以及各自的使用场合。',
+    sw_tool_recall_my_memories: '回忆往事', sw_tool_recall_my_memories_hint: '当场景提到简报中没有的内容时，角色可以查阅自己记得的事。',
+    sw_tool_recall_my_known_entities: '回忆所知的地点与事物', sw_tool_recall_my_known_entities_hint: '角色可以查阅自己知道的地点、物品和人物。',
+    sw_tool_recall_my_lore: '回忆典故', sw_tool_recall_my_lore_hint: '角色可以阅读自己明确知道的设定。',
+    sw_tool_search_events: '搜索事件', sw_tool_search_events_hint: '记录员在写入前可以搜索已经发生的事。',
+    sw_tool_list_threads: '列出未了线索', sw_tool_list_threads_hint: '记录员可以查看仍未了结的故事线索。',
+    sw_tool_list_relationships: '列出关系', sw_tool_list_relationships_hint: '记录员可以查看角色之间的关系。',
+    sw_tool_list_items: '列出物品', sw_tool_list_items_hint: '记录员可以查看故事中的物品及其位置。',
   },
 }

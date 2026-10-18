@@ -146,6 +146,19 @@ describe('startSession', () => {
     expect(ensured).toHaveLength(1)
   })
 
+  it('keeps an opening that is for one character to that character', async () => {
+    const opening = { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: 'The lanterns sway.', alternate_openings: [{ title: 'Marcus on watch', text: 'The dome is cold.', character: 'marcus' }, { text: 'It is already morning.' }] }
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), opening)
+    await expect(startSession(deps, { ...playAsArthur, opening: 0 })).rejects.toThrow(/for Marcus Reed, not for Arthur Moore/)
+    const started = await startSession(deps, { worldId: 'blackwater', playerCharacterId: 'marcus', opening: 0 })
+    expect(ensured.at(-1)).toEqual([started.id, 'The Blackwater Observatory', [{ type: 'narration', text: 'The dome is cold.' }]])
+  })
+
+  it('refuses to start a world whose opening is for someone who cannot be played', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', alternate_openings: [{ text: 'x', character: 'clara' }] })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/alternate openings .* have 1 problem/)
+  })
+
   it('names the characters who speak in the opening', async () => {
     await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: [
       { type: 'narration', text: 'Dusk.' }, { type: 'utterance', character: 'clara', text: 'You are late.' },

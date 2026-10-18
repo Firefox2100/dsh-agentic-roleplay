@@ -74,6 +74,14 @@ describe('the world\'s own fields', () => {
     expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('alternate_openings')
   })
 
+  it('can be for one character, read, kept through an edit, and cleared by leaving the character out', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', alternate_openings: [{ title: 'Dawn', text: 'Gulls cry.', character: 'mira' }] })
+    expect((await readWorldInfo(directory)).alternateOpenings).toEqual([{ title: 'Dawn', text: 'Gulls cry.', character: 'mira' }])
+    expect(parseWorldInfoEdit({ alternateOpenings: [{ title: 'T', text: 'x', character: ' mira ' }, { text: 'y', character: ' ' }] })).toEqual({ alternateOpenings: [{ title: 'T', text: 'x', character: 'mira' }, { title: '', text: 'y' }] })
+    await editWorldInfo(directory, { alternateOpenings: [{ title: 'Dawn', text: 'Gulls cry.' }] })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8')).alternate_openings).toEqual([{ title: 'Dawn', text: 'Gulls cry.' }])
+  })
+
   it('come from the browser checked', () => {
     expect(parseWorldInfoEdit({ alternateOpenings: [{ title: ' T ', text: ' x ' }, { text: '  ' }] })).toEqual({ alternateOpenings: [{ title: 'T', text: 'x' }] })
     expect(() => parseWorldInfoEdit({ alternateOpenings: [{ title: 1, text: 'x' }] })).toThrow(/list of/)

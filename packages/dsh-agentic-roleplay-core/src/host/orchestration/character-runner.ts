@@ -4,6 +4,7 @@ import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import { MAX_RUN_RECALLED, type RunRecall } from '../../shared/activity.ts'
 import { estimateAnswer } from '../agents/budget.ts'
 import { externalGiven } from '../tools/external.ts'
+import { toolEnabled } from '../../shared/tools.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { MAX_OOC_ANSWER } from '../../shared/ooc.ts'
 import { wrongLanguage } from '../translate/language.ts'
@@ -20,10 +21,10 @@ import type { RunAnswer, RunCharacter } from './turn-engine.ts'
 export function characterRunner(deps: { parent: Agent; boundaries: () => Boundaries; store: TurnStore }): RunCharacter {
   return async (request, signal) => {
     const brief = deps.boundaries().characterContext.brief(request)
-    const tools = request.lookup
-      ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: deps.store.settings().memory, queryVector: deps.store.queryVector }), request.member.character.id)
-      : []
     const settings = deps.store.settings()
+    const tools = settings.memory.lookup
+      ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: settings.memory, queryVector: deps.store.queryVector }), request.member.character.id).filter(tool => toolEnabled(settings.tools, 'characters', tool.name))
+      : []
     const external = externalGiven(deps.parent.ctx.tools, settings.tools, 'characters')
     const named = request.member.character.tier === 'background' && settings.models.background.trim() !== '' ? settings.models.background : settings.models.characters
     const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: value => spokenIn(settings.prompts.language, value) })

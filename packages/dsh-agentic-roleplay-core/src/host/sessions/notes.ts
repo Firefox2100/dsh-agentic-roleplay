@@ -7,6 +7,7 @@ const KEY = 'notes'
 
 interface NoteSession {
   metadata: { getValue(key: string): unknown; setValue(key: string, value: unknown): void }
+  pendingCommits?: { list(): readonly unknown[] }
 }
 
 const isNote = (value: unknown): value is Note => {
@@ -53,5 +54,7 @@ export interface NotesDeps {
  */
 export function notesOfSession(deps: NotesDeps, id: string): Note[] {
   if (!isSessionId(id) || !existsSync(sessionDatabase(deps.sessionsDir(), id))) throw new SessionNotFoundError(`no session "${id}"`)
-  return readNotes(deps.open(id))
+  const session = deps.open(id)
+  const waiting = session.pendingCommits?.list().length ?? 0
+  return waiting === 0 ? readNotes(session) : [...readNotes(session), { kind: 'unwritten', turn: 0, lines: [], count: waiting }]
 }

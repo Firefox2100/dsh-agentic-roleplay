@@ -106,6 +106,7 @@ beforeEach(async () => {
       discard: (id) => { importCalls.push(`discard ${id}`); return Promise.resolve() },
       start: (id, choices) => { importCalls.push(`start ${id} ${choices.name}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
       picture: () => Promise.reject(new Error('no picture')),
+      uploadPreset: (worldId, file, name, language) => { importCalls.push(`preset ${worldId} ${file.length} ${name} ${language ?? '-'}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
     },
     worldFiles: {
       info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', alternateOpenings: [], tools: {} }),
@@ -216,6 +217,7 @@ beforeEach(async () => {
         if (archiveError !== undefined) throw archiveError
         return { characters: [{ key: id, name: 'Clara', aliases: [], role: 'npc', tier: 'principal', kind: 'person', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, state: { publicState: '', innerState: '', activity: '' }, goals: [] }], places: [], things: [], factions: [], relations: [], plots: [] }
       },
+      doctor: (id, title, language) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`doctor ${id} ${title} ${language}`); return Promise.resolve({ chatSessionId: `doctor-${id}` }) },
       reflect: (id) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`reflect ${id}`); return Promise.resolve() },
       resetVectors: (id) => { if (archiveError !== undefined) throw archiveError; archived.push(`reset ${id}`) },
       rename: (id, name) => {
@@ -700,6 +702,14 @@ describe('roleplay API', () => {
       expect(importCalls).toEqual(['upload 3 我的 card.png'])
     })
 
+    it('takes a narration preset for a world, and refuses one that is not a preset with the reason', async () => {
+      const sent = await post('/worlds/import/preset?id=w1&language=zh', new Uint8Array([1, 2]), { 'x-file-name': encodeURIComponent('narrator.json') })
+      expect(await sent.json()).toEqual({ chatSessionId: 'world-author-w1', preset: 'P', started: true })
+      expect(importCalls).toEqual(['preset w1 2 narrator.json zh'])
+      importError = new ImportCardError('the file is not a preset')
+      expect((await post('/worlds/import/preset?id=w1', new Uint8Array([1]))).status).toBe(422)
+    })
+
     it('refuses an upload that is too large without reading it, an empty one, and a file that is not a card, with the reason', async () => {
       expect((await post('/worlds/import/card', new Uint8Array(2048))).status).toBe(413)
       expect((await post('/worlds/import/card', new Uint8Array(0))).status).toBe(400)
@@ -735,6 +745,20 @@ describe('roleplay API', () => {
       expect(refused.status).toBe(409)
       archiveError = undefined
       expect((await fetch(`${origin}/sessions/reflect?id=abc`)).status).toBe(405)
+    })
+  })
+
+  describe('opening the session doctor', () => {
+    it('is a POST with a title that answers with the chat; an unknown session is 404, a missing title 400', async () => {
+      const post = (id: string, body: unknown) => fetch(`${origin}/sessions/doctor?id=${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      const opened = await post('abc', { title: 'Doctor', language: 'zh' })
+      expect(opened.status).toBe(200)
+      expect(await opened.json()).toEqual({ chatSessionId: 'doctor-abc' })
+      expect(archived).toEqual(['doctor abc Doctor zh'])
+      expect((await post('abc', {})).status).toBe(400)
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await post('x', { title: 'Doctor' })).status).toBe(404)
+      archiveError = undefined
     })
   })
 

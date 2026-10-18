@@ -69,6 +69,10 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const player = characters.find(character => character.id === playerId)
   if (player === undefined) throw new InvalidStartError(request.playerAvatar === undefined ? `"${world.summary.name}" has no character "${request.playerCharacterId}"` : `the avatar "${request.playerAvatar}" is not among the avatars brought along`)
   if (player.role !== 'playable') throw new InvalidStartError(`${player.name} cannot be played`)
+  const openingProblems = (world.alternateOpenings ?? []).flatMap((entry, index) => (entry.character === undefined || authored.some(character => character.id === entry.character && character.role === 'playable') ? [] : [{ path: `alternate_openings[${index}].character`, message: `"${entry.character}" is not a playable character of this world` }]))
+  if (openingProblems.length > 0) throw new InvalidWorldError(`the alternate openings of "${world.summary.name}" have ${openingProblems.length} problem(s)`, openingProblems)
+  const forCharacter = request.opening === undefined ? undefined : world.alternateOpenings![request.opening]!.character
+  if (forCharacter !== undefined && forCharacter !== player.id) throw new InvalidStartError(`this opening is for ${authored.find(character => character.id === forCharacter)?.name ?? forCharacter}, not for ${player.name}`)
   const name = request.name?.trim() || world.summary.name
   if (name.length > MAX_NAME_LENGTH) throw new InvalidStartError(`the name must be at most ${MAX_NAME_LENGTH} characters`)
 

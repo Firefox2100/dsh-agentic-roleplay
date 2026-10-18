@@ -13,7 +13,7 @@ describe('the optional tools of the agents', () => {
     expect(toolEnabled({ gameMaster: { search_the_web: true } }, 'gameMaster', 'search_the_web')).toBe(false)
     expect(toolEnabled({ wizard: { roll_dice: true } }, 'gameMaster', 'roll_dice')).toBe(true)
     const board = { gameMaster: { search_the_web: true, roll_dice: true }, wizard: { x: true } }
-    expect(switchesOf(board).flatMap(entry => entry.tools.map(tool => tool.id))).toEqual(['roll_check', 'roll_dice', 'list_checks'])
+    expect(switchesOf(board).flatMap(entry => entry.tools.map(tool => tool.id))).toEqual(OPTIONAL_TOOLS.map(tool => tool.id))
     const next = withSwitch(board, 'gameMaster', 'roll_check', false)
     expect(next).toEqual({ gameMaster: { search_the_web: true, roll_dice: true, roll_check: false }, wizard: { x: true } })
     expect(withSwitch(next, 'gameMaster', 'roll_check', true)).toEqual(board)

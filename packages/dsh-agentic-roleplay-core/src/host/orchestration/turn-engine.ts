@@ -1,14 +1,15 @@
-import { locationKey as placeKey } from '@dsh-agentic-roleplay/state'
 import { MAX_OOC_ANSWER, MAX_OOC_NOTE, type OocRuling } from '../../shared/ooc.ts'
 import { suggestionProblems, tidySuggestions } from './suggestions.ts'
 import type { RoutineMove } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
 import { ClockError, type SkipRequest } from '../clock/story-clock.ts'
-import { AUTHORING_NEEDS, type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type TriggerReport, type TurnStore } from './boundaries.ts'
+import { type Boundaries, type CastMember, type CharacterRequest, type CreateReport, type TriggerReport, type TurnStore } from './boundaries.ts'
 import { AfterTurnJobs } from './after-turn.ts'
 import { type CharacterAction, type CharacterFailure, type CharacterReport, type NarrationSegment, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
 import { askCharacters } from './character-attempt.ts'
 import { recordRound } from './round-record.ts'
+import { questionRequest } from './question-request.ts'
+import { expandWorld, introduceThing, type ThingInput } from './world-making.ts'
 import { checkedOutput } from './delivery.ts'
 import { toolEnabled } from '../../shared/tools.ts'
 import { rollView } from '../dice/view.ts'
@@ -16,8 +17,7 @@ import { runOffScene } from './off-stage.ts'
 import { whereabouts } from './whereabouts.ts'
 import { foldSpeakerLabels, repeatsEarlier } from './turn-text.ts'
 import type { Attempt, RawSegment, TurnState } from './turn-state.ts'
-import { ROLL_FIRST, checkOutcomes, explainPhase, judgeDue, knownRelationships, oocBlock, previewDue, rollDue } from './turn-rules.ts'
-import { slug, uniqueKey } from '../import/run.ts'
+import { ROLL_FIRST, checkOutcomes, explainPhase, judgeDue, oocBlock, previewDue, rollDue } from './turn-rules.ts'
 import { ReflectionRefusedError } from '../sessions/errors.ts'
 
 export type { RawSegment } from './turn-state.ts'
@@ -137,39 +137,12 @@ export class TurnEngine {
     const state = this.stateFor(owner)
     if (state.ooc?.question !== true) throw new Error('this turn is not an out-of-character question: there is nothing to answer')
     if (state.ooc.ruling !== undefined) throw new Error('this question was already answered')
-    const text = (await run(await this.askedRequest(owner, state.ooc.request, signal), signal)).trim()
+    const text = (await run(await questionRequest(this.boundaries(), this.storeOf(owner), owner, state.ooc.request, signal), signal)).trim()
     if (text === '') throw new Error('the answer is empty')
     if (state.ooc.ruling !== undefined) throw new Error('this question was already answered')
     state.ooc.ruling = { legal: true, note: text.length > MAX_OOC_ANSWER ? `${text.slice(0, MAX_OOC_ANSWER - 1)}…` : text, question: true }
     state.phase = 'between'
     return state.ooc.ruling
-  }
-
-  /** What the player's character is given to answer a question with: the same as a character is given to act, with the question as the moment. */
-  private async askedRequest(owner: TurnOwner, question: string, signal: AbortSignal): Promise<CharacterRequest> {
-    const store = this.storeOf(owner)
-    const cast = store.cast()
-    const member = cast.find(candidate => candidate.character.control === 'player')
-    if (member === undefined) throw new Error('there is no player\'s character to answer for')
-    const queryVector = await store.queryVector(question, signal)
-    const memories = await this.boundaries().recaller.recall({ member, situation: question, turn: owner.turn, policy: store.settings().memory, ...(queryVector === undefined ? {} : { queryVector }) }, store.story, signal)
-    const place = member.place === undefined ? undefined : store.place(member.place.location.id)
-    const company = place === undefined ? cast : place.here
-    const relationships = knownRelationships(member, company, question, cast, store)
-    const carrying = store.carried(member.character.id)
-    const affiliations = store.affiliations(member.character.id)
-    const tracked = store.trackedFor(member.character.id, company.map(entry => entry.character.id))
-    return {
-      member, cast, situation: question, attempt: 1, language: store.settings().prompts.language, turn: owner.turn, lookup: false, text: (id, variables) => store.text(id, variables),
-      time: store.time(owner.turn),
-      knowledge: store.knowledge(member.character.id, owner.turn, company.map(entry => entry.character.id)),
-      ...(tracked.self === '' && tracked.others.length === 0 ? {} : { tracked }),
-      ...(place === undefined ? {} : { place }),
-      ...(relationships.length === 0 ? {} : { relationships }),
-      ...(carrying.length === 0 ? {} : { carrying }),
-      ...(affiliations.length === 0 ? {} : { affiliations }),
-      ...(memories.length === 0 ? {} : { memories }),
-    }
   }
 
   /**
@@ -454,60 +427,16 @@ export class TurnEngine {
   }
 
   /**
-   * The game master asks for something to be made up (a place the story has gone to, someone who has
-   * joined): the world author decides whether the story genuinely needs it, and makes it or says why not.
-   * The world may be closed, and only so many things may be made up in a turn.
-   * @throws {Error} when the world is closed, the limit of the turn is reached, a round is open, or the request is empty.
+   * The game master asks for something to be made up (a place the story has gone to, someone who has joined): the world author decides whether the
+   * story genuinely needs it, and makes it or says why not. @throws {Error} when the world is closed, the turn's limit is reached or a round is open.
    */
   async expand(owner: TurnOwner, input: { need: string; what: string }, signal: AbortSignal): Promise<CreateReport> {
-    const state = this.stateFor(owner)
-    if (state.phase === 'resolving' || state.phase === 'retrying') throw new Error('resolve the round first: the world is extended between rounds, not in the middle of one')
-    const blocked = oocBlock(state)
-    if (blocked !== undefined) throw new Error(blocked)
-    const need = AUTHORING_NEEDS.find(candidate => candidate === input.need)
-    if (need === undefined) throw new Error(`"${input.need}" is not a reason to make something up; the reasons are: ${AUTHORING_NEEDS.join(', ')}`)
-    const what = input.what.trim()
-    if (what === '') throw new Error('say what is needed, from what the story has established: who or where, and why now')
-    const store = this.storeOf(owner)
-    const { authoring } = store.settings()
-    if (!authoring.enabled) throw new Error('this world is closed: nothing can be made up in it')
-    const made = store.story.consolidation.createdIn(owner.turn).length
-    if (made >= authoring.perTurn) throw new Error(`${made} new thing${made === 1 ? ' was' : 's were'} already made up this turn, which is the most this chat allows: work with what exists`)
-    return await this.boundaries().author.create({ chat: owner.chat, turn: owner.turn, need, what, store }, signal)
+    return await expandWorld(this.boundaries(), this.storeOf(owner), this.stateFor(owner), owner, input, signal)
   }
 
-  /**
-   * The game master introduces a thing the story uses, as a table's game master would: it is made at once where the game master says
-   * (a place, someone's hands, a container; the player's place when it says nothing), with no world author asked.
-   * @throws {Error} when the world is closed, a round is open, the turn's allowance is used, or the thing cannot be put where it was said.
-   */
-  introduce(owner: TurnOwner, input: { name: string; description?: string; quantity?: number; quality?: string; notable?: boolean; hidden?: boolean; at?: string; heldBy?: string; inside?: string }): { key: string; name: string; where: string } {
-    const state = this.stateFor(owner)
-    if (state.phase === 'resolving' || state.phase === 'retrying') throw new Error('resolve the round first: things are introduced between rounds, not in the middle of one')
-    const blocked = oocBlock(state)
-    if (blocked !== undefined) throw new Error(blocked)
-    const name = input.name.trim()
-    if (name === '') throw new Error('name the thing')
-    const store = this.storeOf(owner)
-    const { authoring } = store.settings()
-    if (!authoring.enabled) throw new Error('this world is closed: nothing can be made up in it')
-    const kept = store.story.consolidation.createdIn(owner.turn).filter(entry => entry.kind === 'item').length
-    if (kept >= authoring.thingsPerTurn) throw new Error(`${kept} thing${kept === 1 ? ' was' : 's were'} already introduced this turn, which is the most this chat allows`)
-    const where = [input.at, input.heldBy, input.inside].filter(entry => entry !== undefined && entry.trim() !== '').length
-    if (where > 1) throw new Error('say where it is in one way only: at a place, held by a character, or inside a thing')
-    const player = store.cast().find(member => member.character.control === 'player')
-    const here = player?.place?.location
-    const placed = input.heldBy !== undefined && input.heldBy.trim() !== '' ? { heldBy: input.heldBy.trim() }
-      : input.inside !== undefined && input.inside.trim() !== '' ? { inside: input.inside.trim() }
-        : input.at !== undefined && input.at.trim() !== '' ? { at: { location: input.at.trim() } }
-          : here === undefined ? undefined : { at: { location: placeKey(here) } }
-    if (placed === undefined) throw new Error('say where it is: no place is known for the player, so name a place (at), a holder (held_by) or a container (inside)')
-    const key = uniqueKey(slug(name, 'thing'), new Set(store.story.items.list().map(item => item.sourceId).filter((entry): entry is string => entry !== undefined)))
-    store.story.edit({
-      turn: owner.turn,
-      items: [{ key, name, ...(input.description === undefined || input.description.trim() === '' ? {} : { description: input.description.trim() }), ...(input.quantity === undefined ? {} : { quantity: input.quantity }), ...(input.quality === undefined || input.quality.trim() === '' ? {} : { quality: input.quality.trim() }), ...(input.notable === undefined ? {} : { notable: input.notable }), ...(input.hidden === undefined ? {} : { hidden: input.hidden }), ...placed, note: 'introduced by the game master' }],
-    })
-    return { key, name, where: 'heldBy' in placed ? `held by ${placed.heldBy}` : 'inside' in placed ? `inside ${placed.inside}` : `at ${placed.at.location}` }
+  /** The game master introduces a thing the story uses, with no world author asked. @throws {Error} when the world is closed, a round is open, or the thing cannot be put where it was said. */
+  introduce(owner: TurnOwner, input: ThingInput): { key: string; name: string; where: string } {
+    return introduceThing(this.storeOf(owner), this.stateFor(owner), owner, input)
   }
 
   /** Whether made-up characters and places are waiting to be fitted into the world. */

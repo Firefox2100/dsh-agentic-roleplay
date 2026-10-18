@@ -1,6 +1,10 @@
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { sessionDatabase } from '@dsh-agentic-roleplay/state'
 import { describe, expect, it } from 'vitest'
 import { AWAY_ACTION_SCHEMA, parseCharacterAction } from '../../../src/host/orchestration/protocol.ts'
-import { addToNote, clearNotes, putNote, readNotes } from '../../../src/host/sessions/notes.ts'
+import { addToNote, clearNotes, notesOfSession, putNote, readNotes } from '../../../src/host/sessions/notes.ts'
 
 function session() {
   const values = new Map<string, unknown>()
@@ -36,5 +40,18 @@ describe('the account of a character acting away', () => {
     expect(parseCharacterAction({ intent: 'i', commitment: 'low' })).toEqual({ intent: 'i', commitment: 'low' })
     expect(parseCharacterAction({ intent: 'i', commitment: 'low', account: `  ${'x'.repeat(400)}  ` }).account).toHaveLength(300)
     expect(parseCharacterAction({ intent: 'i', commitment: 'low', account: '  ' })).toEqual({ intent: 'i', commitment: 'low' })
+  })
+})
+
+describe('the note of rounds not yet written', () => {
+  const folder = mkdtempSync(join(tmpdir(), 'rp-notes-'))
+  const id = '0f5c6a4e-2b1d-4c3a-8e7f-9a1b2c3d4e5f'
+  mkdirSync(join(folder, id))
+  writeFileSync(sessionDatabase(folder, id), '')
+  const open = (waiting: number) => () => ({ ...session(), pendingCommits: { list: () => Array.from({ length: waiting }, () => ({})) } })
+
+  it('is made from what waits for the record keeper, and is not stored', () => {
+    expect(notesOfSession({ sessionsDir: () => folder, open: open(3) }, id)).toEqual([{ kind: 'unwritten', turn: 0, lines: [], count: 3 }])
+    expect(notesOfSession({ sessionsDir: () => folder, open: open(0) }, id)).toEqual([])
   })
 })

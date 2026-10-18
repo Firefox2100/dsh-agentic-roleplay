@@ -6,6 +6,7 @@ import { encodeOutput, type NarrationSegment } from '../../shared/narration.ts'
 /** What the opening is reported to come from, where a chat shows the source of a message. */
 export const OPENING_SOURCE = { provider: 'roleplay', model: 'opening' } as const
 export const AUTHORING_OPENING_SOURCE = { provider: 'world-authoring', model: 'opening' } as const
+export const DOCTOR_OPENING_SOURCE = { provider: 'session-doctor', model: 'opening' } as const
 
 const NARRATE_TOOL = 'narrate'
 
@@ -74,7 +75,7 @@ export function openingEvents(segments: readonly NarrationSegment[]): readonly S
 }
 
 /** A visible first turn makes a newly created authoring chat a full conversation immediately. */
-export function authoringOpeningEvents(welcome: string): readonly SessionEvent[] {
+export function authoringOpeningEvents(welcome: string, source: { provider: string; model: string } = AUTHORING_OPENING_SOURCE): readonly SessionEvent[] {
   const session = Session.create(SessionId('authoring-opening'))
   setApprovalPolicy(session, 'ask')
   const turn = 1
@@ -89,7 +90,7 @@ export function authoringOpeningEvents(welcome: string): readonly SessionEvent[]
     message: createMessage({
       role: 'assistant',
       content: [{ type: 'text', text: welcome }],
-      source: { kind: 'model', ...AUTHORING_OPENING_SOURCE },
+      source: { kind: 'model', ...source },
     }),
   }, { surfaceOp: 'append' })
   session.append('step/end', { turn, step })
@@ -116,6 +117,14 @@ export async function storeAuthoringOpening(
   welcome: string,
 ): Promise<void> {
   await storeInitialEvents(persistence, chat, authoringOpeningEvents(welcome))
+}
+
+export async function storeDoctorOpening(
+  persistence: SessionPersistenceLike,
+  chat: { id: string; cwd: string; agentPreset: string },
+  welcome: string,
+): Promise<void> {
+  await storeInitialEvents(persistence, chat, authoringOpeningEvents(welcome, DOCTOR_OPENING_SOURCE))
 }
 
 async function storeInitialEvents(

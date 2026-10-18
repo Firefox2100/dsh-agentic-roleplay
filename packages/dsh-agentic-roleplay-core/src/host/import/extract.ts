@@ -83,6 +83,7 @@ const CHARACTER_SCHEMA = {
     start: { type: 'object', properties: { public_state: str(''), inner_state: str(''), activity: str(''), location: str('A name from the list of places.'), position: str('') }, additionalProperties: false },
     goals: { type: 'array', items: { type: 'object', properties: { name: str(''), description: str('') }, required: ['name'], additionalProperties: false } },
     relationships: { type: 'array', items: { type: 'object', properties: { with: str('A name from the list of characters.'), label: str(''), summary: str('') }, required: ['with', 'label'], additionalProperties: false } },
+    knows: { type: 'object', properties: { places: strs('Names from the list of places that they know of.'), things: strs('Names from the list of things that they know of.') }, additionalProperties: false },
   },
   required: ['tier', 'kind', 'summary', 'personality', 'background', 'appearance', 'speech'],
   additionalProperties: false,
@@ -123,6 +124,16 @@ export function characterDocument(entity: Entity, answer: Document, roster: Rost
     relationships.push({ to: other.key, label: text(relation['label']), ...(text(relation['summary']) === '' ? {} : { summary: text(relation['summary']) }) })
   }
   put(document, 'relationships', relationships.slice(0, 60))
+  const knows = (typeof answer['knows'] === 'object' && answer['knows'] !== null ? answer['knows'] : {}) as Document
+  const known = (names: string[], kind: 'place' | 'thing'): string[] => [...new Set(names.flatMap((name) => {
+    const found = findEntity(roster, name, kind)
+    if (found === undefined) notes.push(`${entity.name}: "${name}" is not one of the world's ${kind === 'place' ? 'places' : 'things'}, so they do not know of it`)
+    return found === undefined ? [] : [found.key]
+  }))]
+  const knowledge: Document = {}
+  put(knowledge, 'locations', known(list(knows['places']), 'place'))
+  put(knowledge, 'items', known(list(knows['things']), 'thing'))
+  put(document, 'knowledge', Object.keys(knowledge).length === 0 ? undefined : knowledge)
   return { document, notes }
 }
 
@@ -314,6 +325,53 @@ export function pruneLoreSubjects(result: Pick<Extracted, 'characters' | 'locati
   }
 }
 
+/** Takes out of what characters know the places and things that were not written (a thing that is nowhere and nobody's is not made). */
+export function pruneKnowledge(result: Pick<Extracted, 'characters' | 'locations' | 'items' | 'notes'>): void {
+  const written = { locations: new Set(result.locations.map(entry => String(entry['id']))), items: new Set(result.items.map(entry => String(entry['id']))) }
+  for (const character of result.characters) {
+    const knowledge = character['knowledge'] as Document | undefined
+    if (knowledge === undefined) continue
+    for (const field of ['locations', 'items'] as const) {
+      const keys = (knowledge[field] as string[] | undefined) ?? []
+      const kept = keys.filter(key => written[field].has(key))
+      if (kept.length === keys.length) continue
+      result.notes.push(`${String(character['name'])}: ${keys.length - kept.length} known ${field === 'items' ? 'thing(s)' : 'place(s)'} left out because the world has no such entity`)
+      if (kept.length === 0) delete knowledge[field]
+      else knowledge[field] = kept
+    }
+    if (Object.keys(knowledge).length === 0) delete character['knowledge']
+  }
+}
+
+/**
+ * Completes what characters are aware of, because a missing edge means a character does not know the other exists: a character named in someone's relationships
+ * knows of that someone (a neutral acquaintance, added when the character has none), and knows the lore that is about them.
+ */
+export function completeAwareness(result: Pick<Extracted, 'characters' | 'lore' | 'notes'>): void {
+  const byId = new Map(result.characters.map(character => [String(character['id']), character]))
+  let added = 0
+  for (const character of result.characters) {
+    for (const relation of (character['relationships'] as Document[] | undefined) ?? []) {
+      const other = byId.get(String(relation['to']))
+      if (other === undefined || other === character) continue
+      const theirs = (other['relationships'] as Document[] | undefined) ?? []
+      if (theirs.some(entry => entry['to'] === character['id'])) continue
+      other['relationships'] = [...theirs, { to: character['id'], label: 'acquaintance' }]
+      added += 1
+    }
+  }
+  if (added > 0) result.notes.push(`${added} relationship(s) were added in the other direction as plain acquaintances, so that both characters know of each other`)
+  for (const entry of result.lore) {
+    for (const subject of (entry['subjects'] as Document[] | undefined) ?? []) {
+      const character = subject['kind'] === 'character' ? byId.get(String(subject['id'])) : undefined
+      if (character === undefined) continue
+      const knowledge = (character['knowledge'] ?? (character['knowledge'] = {})) as Document
+      const known = (knowledge['lore'] as string[] | undefined) ?? []
+      if (!known.includes(String(entry['id']))) knowledge['lore'] = [...known, String(entry['id'])]
+    }
+  }
+}
+
 /** Adds an entry unless the world already has it: the same title, or a body that an earlier entry already contains (a longer one replaces a shorter that it contains). */
 export function addLore(lore: Document[], entry: Document): void {
   const title = norm(String(entry['title']))
@@ -390,6 +448,8 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
   }
   placeAtScenario(result, items, classified, roster)
   pruneLoreSubjects(result)
+  pruneKnowledge(result)
+  completeAwareness(result)
   return result
 }
 
@@ -419,11 +479,15 @@ function styleProblem(id: string, value: string): string | undefined {
 
 /** Turns the instructions of a card into the prose prompts of the world. Only prose and behaviour are kept: the rules of the game stay the program's. */
 export async function extractStyle(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified): Promise<Pick<Extracted, 'prompts' | 'notes'>> {
-  const pieces = instructionPieces(card, items, classified)
+  return await extractStyleFrom(ctx, card.name, instructionPieces(card, items, classified))
+}
+
+/** The prose prompts that instruction texts become, and what was left out of them. */
+export async function extractStyleFrom(ctx: ImportContext, name: string, pieces: readonly string[]): Promise<Pick<Extracted, 'prompts' | 'notes'>> {
   if (pieces.length === 0) return { prompts: [], notes: [] }
   ctx.say('writing the style prompts')
   try {
-    const prompt = `Card: ${card.name}\n\nThe instructions of the card:\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
+    const prompt = `Card: ${name}\n\nThe instructions of the card:\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
     const answer = await ctx.run<{ narration: string; characters: string; left_out: string[] }>({
       persona: ctx.text('import/style', { rules: ctx.text('import/common-rules') }),
       prompt,

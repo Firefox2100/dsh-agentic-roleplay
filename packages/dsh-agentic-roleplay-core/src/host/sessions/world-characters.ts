@@ -14,7 +14,7 @@ export async function worldCharacters(worlds: Pick<WorldCatalog, 'find'>, worldI
   const { characters, problems } = await loadCharacters(world.directory)
   return {
     characters: characters.map(({ id, name, summary, role, tier, kind }) => ({ id, name, summary, role, tier, kind })),
-    openings: (world.alternateOpenings ?? []).map(opening => opening.title),
+    openings: (world.alternateOpenings ?? []).map(opening => ({ title: opening.title, ...(opening.character === undefined ? {} : { character: opening.character }) })),
     startingTime: world.clock?.startingTime === undefined ? '' : localInstant(world.clock.startingTime, world.clock.timeZone ?? 'UTC'),
     timeZone: world.clock?.timeZone ?? '',
     problems,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readCard } from '../../../src/host/import/card.ts'
-import { characterDocument, documentProblem, extractEntities, factionDocument, loreDocuments, placeDocument, sourcesFor, thingDocument, variableDocuments, variablesProblem } from '../../../src/host/import/extract.ts'
+import { characterDocument, completeAwareness, documentProblem, extractEntities, pruneKnowledge, factionDocument, loreDocuments, placeDocument, sourcesFor, thingDocument, variableDocuments, variablesProblem } from '../../../src/host/import/extract.ts'
 import type { SourceItem } from '../../../src/host/import/items.ts'
 import type { Classified, Roster } from '../../../src/host/import/survey.ts'
 import { v3Card } from '../../support/cards.ts'
@@ -53,6 +53,34 @@ describe('the documents of the world', () => {
     })
     expect(notes).toEqual(['Old Tam: the relationship with "Nobody At All" names nobody in the world'])
     expect(documentProblem('character', document)).toBeUndefined()
+  })
+
+  it('makes what a character knows of places and things into keys, and notes what is not in the world', () => {
+    const { document, notes } = characterDocument(roster[0]!, { tier: 'supporting', kind: 'person', summary: 's', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, knows: { places: ['The Cellar', 'cellar', 'Nowhere'], things: ['the ledger'] } }, roster)
+    expect(document['knowledge']).toEqual({ locations: ['cellar'], items: ['ledger'] })
+    expect(notes).toEqual(['Old Tam: "Nowhere" is not one of the world\'s places, so they do not know of it'])
+    expect(documentProblem('character', document)).toBeUndefined()
+  })
+
+  it('takes out of what characters know the places and things that were not written', () => {
+    const result = { characters: [{ id: 'tam', name: 'Old Tam', knowledge: { locations: ['cellar', 'gone'], items: ['ledger'] } }, { id: 'mira', name: 'Mira', knowledge: { items: ['ledger'] } }], locations: [{ id: 'cellar' }], items: [], notes: [] as string[] }
+    pruneKnowledge(result)
+    expect(result.characters.map(character => character['knowledge'])).toEqual([{ locations: ['cellar'] }, undefined])
+    expect(result.notes).toHaveLength(3)
+  })
+
+  it('makes the people a character names know of the character, and a character know the lore that is about them', () => {
+    const result = {
+      characters: [{ id: 'tam', name: 'Tam', relationships: [{ to: 'mira', label: 'ward' }, { to: 'gone', label: 'x' }] }, { id: 'mira', name: 'Mira' }, { id: 'visitor', name: 'Visitor', relationships: [{ to: 'tam', label: 'host' }] }] as Record<string, unknown>[],
+      lore: [{ id: 'the-wreck', subjects: [{ kind: 'character', id: 'tam' }, { kind: 'location', id: 'cellar' }] }, { id: 'tides', subjects: [] }] as Record<string, unknown>[],
+      notes: [] as string[],
+    }
+    completeAwareness(result)
+    expect(result.characters[1]!['relationships']).toEqual([{ to: 'tam', label: 'acquaintance' }])
+    expect(result.characters[0]!['relationships']).toEqual([{ to: 'mira', label: 'ward' }, { to: 'gone', label: 'x' }, { to: 'visitor', label: 'acquaintance' }])
+    expect(result.characters[0]!['knowledge']).toEqual({ lore: ['the-wreck'] })
+    expect(result.characters[1]!['knowledge']).toBeUndefined()
+    expect(result.notes).toHaveLength(1)
   })
 
   it('makes the character the player plays playable: a person, and not a background character', () => {

@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { isSessionId, sessionDatabase, type RoleplayState } from '@dsh-agentic-roleplay/state'
 import { chatSessionId } from '../../shared/chat.ts'
+import { doctorChatSessionId } from '../../shared/doctor-chat.ts'
 import { SessionNotFoundError } from './errors.ts'
 
 export interface DeleteSessionDeps {
@@ -19,6 +20,7 @@ export interface DeleteSessionDeps {
 export async function deleteSession(deps: DeleteSessionDeps, id: string): Promise<void> {
   const directory = deps.sessionsDir()
   if (!isSessionId(id) || !existsSync(sessionDatabase(directory, id))) throw new SessionNotFoundError(`no session "${id}"`)
+  await deps.purgeChat(doctorChatSessionId(id))
   await deps.purgeChat(chatSessionId(id))
   deps.state.deleteSession(directory, id)
 }

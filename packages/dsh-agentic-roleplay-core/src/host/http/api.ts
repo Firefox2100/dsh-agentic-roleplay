@@ -61,6 +61,7 @@ export interface ApiDeps {
     discard(id: string): Promise<void>
     start(id: string, choices: ImportChoices, language?: string): Promise<{ worldId: string; chatSessionId: string; started: boolean; failure?: string }>
     picture(id: string): Promise<{ file: string; size: number }>
+    uploadPreset(worldId: string, file: Buffer, name: string, language?: string): Promise<{ chatSessionId: string; preset: string; started: boolean; failure?: string }>
   }
   avatars: {
     create(name: string): Promise<string>
@@ -124,6 +125,7 @@ export interface ApiDeps {
     activityRun(id: string, run: string): RunDetail | undefined
     /** Starts the characters sorting what they took in into what they believe; it runs in the background. @throws {SessionNotFoundError} @throws {ReflectionRefusedError} */
     reflect(id: string): Promise<void>
+    doctor(id: string, title: string, language: string): Promise<{ chatSessionId: string }>
     /** Forgets the session's stored search vectors. */
     resetVectors(id: string): void
     world(id: string): WorldState
@@ -219,6 +221,16 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, tr
         const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'card'))
         try { sendJson(res, 200, await importer.upload(await readBinaryBody(req, importer.maxUploadBytes), name)) }
         catch (error) { return importFailure(res, error) }
+      },
+    },
+    '/worlds/import/preset': {
+      POST: async (req, res, url) => {
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'preset'))
+        try { sendJson(res, 200, await importer.uploadPreset(url.searchParams.get('id') ?? '', await readBinaryBody(req, importer.maxUploadBytes), name, languageField(url.searchParams.get('language') ?? undefined))) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          return importFailure(res, error)
+        }
       },
     },
     '/worlds/import': {
@@ -720,6 +732,18 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, tr
         } catch (error) {
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof RangeError) return sendError(res, 400, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/doctor': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { title?: unknown; language?: unknown }
+        if (typeof body.title !== 'string' || body.title.trim() === '' || body.title.length > 300) return sendError(res, 400, 'the request needs a valid chat title')
+        try { sendJson(res, 200, await sessions.doctor(url.searchParams.get('id') ?? '', body.title.trim(), languageField(body.language) ?? 'en')) }
+        catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
           throw error
         }
       },

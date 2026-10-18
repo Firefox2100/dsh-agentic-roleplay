@@ -9,6 +9,8 @@ export const MAX_OPENING_CHARS = 20_000
 export interface AlternateOpeningText {
   title: string
   text: string
+  /** The id of the playable character it is for; empty or absent for any. */
+  character?: string
 }
 
 /** What a world says about itself, as the editor shows and changes it. */
@@ -64,9 +66,9 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
   if (input['alternateOpenings'] !== undefined) {
     const list = input['alternateOpenings']
     const entries = Array.isArray(list) ? list.map(entry => (typeof entry === 'object' && entry !== null ? entry as Record<string, unknown> : undefined)) : undefined
-    if (entries === undefined || entries.some(entry => entry === undefined || typeof entry['text'] !== 'string' || (entry['title'] !== undefined && typeof entry['title'] !== 'string'))) problems.push('alternateOpenings must be a list of { title, text }')
+    if (entries === undefined || entries.some(entry => entry === undefined || typeof entry['text'] !== 'string' || (entry['title'] !== undefined && typeof entry['title'] !== 'string') || (entry['character'] !== undefined && typeof entry['character'] !== 'string'))) problems.push('alternateOpenings must be a list of { title, text, character? }')
     else {
-      const kept = entries.map(entry => ({ title: String(entry!['title'] ?? '').trim(), text: String(entry!['text']).trim() })).filter(entry => entry.text !== '')
+      const kept = entries.map(entry => ({ title: String(entry!['title'] ?? '').trim(), text: String(entry!['text']).trim(), ...(String(entry!['character'] ?? '').trim() === '' ? {} : { character: String(entry!['character']).trim() }) })).filter(entry => entry.text !== '')
       if (kept.length > MAX_ALTERNATE_OPENINGS) problems.push(`there are more than ${MAX_ALTERNATE_OPENINGS} alternate openings`)
       if (kept.some(entry => entry.text.length > MAX_OPENING_CHARS)) problems.push(`an alternate opening is longer than ${MAX_OPENING_CHARS} characters`)
       edit['alternateOpenings'] = kept

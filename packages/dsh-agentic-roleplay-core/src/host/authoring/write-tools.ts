@@ -16,7 +16,7 @@ const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown,
 const kindParameter = { type: 'string' as const, required: true as const, enum: AUTHORED_ENTITY_KINDS }
 const keyParameter = { type: 'string' as const, required: true as const, description: 'Stable entity key.' }
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
+export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -123,6 +123,13 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
 export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false)): Promise<PreToolDecision> {
   if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return await next()
   const args = exec.arguments as Record<string, unknown>
+  if (exec.name === 'import_preset' && exec.agent !== undefined) {
+    return {
+      kind: 'ask',
+      reason: 'replace the authored world\'s narration and character-style prompts with ones made from the uploaded preset',
+      displayReason: { en: 'Replace the world\'s narration and character-style prompts with ones made from the uploaded preset?', zh: '用上传的预设生成的提示词，替换世界的叙述与角色风格提示词？' },
+    }
+  }
   const prompt = (PROMPT_MUTATION_TOOLS as readonly string[]).includes(exec.name)
   const pack = (PACK_MUTATION_TOOLS as readonly string[]).includes(exec.name)
   const importing = await reviewing(exec.agent.session.id)

@@ -1,3 +1,4 @@
+import { toolEnabled } from '../../shared/tools.ts'
 import type { Boundaries, CastMember, CharacterRequest, TurnStore } from './boundaries.ts'
 import type { CharacterFailure, CharacterReport } from './protocol.ts'
 import type { Attempt, TurnState } from './turn-state.ts'
@@ -39,7 +40,7 @@ export async function askCharacters(deps: AskDeps, owner: TurnOwner, number: 1 |
     const upcoming = store?.upcomingFor(member.character.id, owner.turn) ?? []
     const tracked = store?.trackedFor(member.character.id, (place === undefined ? cast : place.here).map(entry => entry.character.id))
     const request: CharacterRequest = {
-      member, cast, situation: state.situation, attempt: number, language: store?.settings().prompts.language ?? 'en', turn: owner.turn, ...(away ? { away: true as const } : {}), lookup: store?.settings().memory.lookup ?? false, text: (id, variables) => deps.storeOf(owner).text(id, variables),
+      member, cast, situation: state.situation, attempt: number, language: store?.settings().prompts.language ?? 'en', turn: owner.turn, ...(away ? { away: true as const } : {}), lookup: store === undefined ? false : store.settings().memory.lookup && toolEnabled(store.settings().tools, 'characters', 'recall_my_memories'), text: (id, variables) => deps.storeOf(owner).text(id, variables),
       ...(time === undefined ? {} : { time }),
       ...(agenda === undefined ? {} : { agenda }),
       ...(cues.length === 0 ? {} : { cues }),

@@ -107,6 +107,16 @@ const ZH: Readonly<Record<string, string>> = {
   '{where}: one passing moment is not yet a belief; rest it on things from at least two different turns, or on one event that turned the story': '{where}：一个转瞬即逝的瞬间还不是看法；请以至少两个不同回合的经历为依据，或以一件扭转了故事的事件为依据',
   '{where}: to be sure of something it must rest on things from at least two different turns': '{where}：要对某事确信，必须以至少两个不同回合的经历为依据',
   '{where}: "{name}" is not a character; name them as they are named': '{where}：“{name}”不是角色；请使用他们的名字',
+  'say in a sentence what the belief claims and what the things say, before the verdict': '先用一句话说明这个看法主张什么、这些内容说了什么，再给出判断',
+  'the verdict is consistent or contradicted': '判断是 consistent 或 contradicted',
+  'a belief that can be true together with all of them names none of them': '与它们全都可以同时成立的看法，不应列出其中任何一条',
+  'name the things that cannot be true together with the belief': '写出与这个看法不可能同时成立的内容',
+  'there is no thing listed numbered {id}': '列出的内容里没有编号为 {id} 的',
+  'thing {id} came before the belief was formed': '内容 {id} 出现在这个看法形成之前',
+  'A belief held by {name}: {text}': '{name} 持有的一个看法：{text}',
+  'What they took in since that bears on it:': '此后他们接收到的、与之有关的内容：',
+  'Can the belief and each of these be true together? Name the ones that cannot be.': '这个看法与其中每一件事能否同时成立？指出不能同时成立的。',
+  '{names} could not be sorted this time and will be tried again: {reason}': '{names} 这一次没能整理，下次会再试：{reason}',
   '{where}: belief {id} is already changed in this pass': '{where}：看法 {id} 在这一轮中已经修改过',
   '{where}: say what it took in since that bears on it': '{where}：请写出此后与之相关的经历',
   '{where}: thing {id} came before the belief was formed; cite what came after': '{where}：经历 {id} 发生在看法形成之前；请引用之后发生的事',
@@ -171,5 +181,6 @@ const ZH: Readonly<Record<string, string>> = {
   '{name} went to {place}.': '{name}去了{place}。',
   '## MCP resource servers\n\nUse {tools} with the server argument naming an MCP server.': '## MCP 资源服务器\n\n使用 {tools}，server 参数填 MCP 服务器的名称。',
   '## MCP resource servers\n\nUse {tools} with one of these names as the server argument: {servers}.': '## MCP 资源服务器\n\n使用 {tools}，server 参数填下列名称之一：{servers}。',
+  '{where}: the text is longer than {max} characters. A belief is not rewritten to hold what speaks against it: leave the text out and list the belief under doubt with the numbers of what speaks against it, and put what was learned as a new belief of its own': '{where}：文字超过 {max} 个字符。不要通过改写信念来容纳与之相悖的事：不要写文字，把这条信念列入 doubt 并给出与之相悖的编号；新了解到的内容另写成一条新信念',
 }
 export { ZH }

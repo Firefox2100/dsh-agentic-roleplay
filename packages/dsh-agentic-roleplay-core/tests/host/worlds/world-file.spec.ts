@@ -37,6 +37,7 @@ describe('parseWorldFile', () => {
     it('can offer alternate openings, titled by their first words when untitled, and refuses ones that are not text', () => {
       expect(parse(JSON.stringify({ name: 'W', alternate_openings: [{ title: ' Late ', text: ' You arrive. ' }, { text: 'Morning comes.' }] })).alternateOpenings).toEqual([{ title: 'Late', text: 'You arrive.' }, { title: 'Morning comes.', text: 'Morning comes.' }])
       expect(parse(JSON.stringify({ name: 'W' }))).not.toHaveProperty('alternateOpenings')
+      expect(parse(JSON.stringify({ name: 'W', alternate_openings: [{ text: 'You arrive.', character: ' mira ' }] })).alternateOpenings).toEqual([{ title: 'You arrive.', text: 'You arrive.', character: 'mira' }])
       expect(issues(JSON.stringify({ name: 'W', alternate_openings: 'x' }))).toEqual(['alternate_openings: must be a list'])
       expect(issues(JSON.stringify({ name: 'W', alternate_openings: [{ title: 'No words' }] }))).toEqual(['alternate_openings[0].text: is required'])
     })

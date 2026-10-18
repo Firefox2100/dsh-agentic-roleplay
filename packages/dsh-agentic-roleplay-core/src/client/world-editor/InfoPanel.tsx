@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import type { Translate } from './WorldEditor.tsx'
-import { loadInfo, saveInfo } from './world-files-api.ts'
+import { loadInfo, loadPlayable, saveInfo } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
-interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; alternates: { title: string; text: string }[] }
+interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; alternates: { title: string; text: string; character?: string }[] }
 
 const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, alternates: info.alternateOpenings })
 const lines = (value: string): string[] => value.split('\n').map(line => line.trim()).filter(line => line !== '')
@@ -17,7 +17,7 @@ function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
   if (JSON.stringify(words(draft.tags)) !== JSON.stringify(words(saved.tags))) edit['tags'] = words(draft.tags)
   if (JSON.stringify(lines(draft.rules)) !== JSON.stringify(lines(saved.rules))) edit['rules'] = lines(draft.rules)
-  const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), text: entry.text.trim() })).filter(entry => entry.text !== '')
+  const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), text: entry.text.trim(), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => entry.text !== '')
   if (JSON.stringify(cleaned(draft.alternates)) !== JSON.stringify(cleaned(saved.alternates))) edit['alternateOpenings'] = cleaned(draft.alternates)
   return edit as WorldInfoEdit
 }
@@ -28,6 +28,12 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
   const [saved, setSaved] = useState<Draft>()
   const [draft, setDraft] = useState<Draft>()
   const [status, setStatus] = useState<{ state: 'idle' | 'saving' | 'saved' | 'failed'; message?: string }>({ state: 'idle' })
+  const [playable, setPlayable] = useState<{ id: string; name: string }[]>([])
+  useEffect(() => {
+    const abort = new AbortController()
+    loadPlayable(worldId, abort.signal).then(setPlayable, () => undefined)
+    return () => { abort.abort() }
+  }, [worldId])
 
   useEffect(() => {
     const abort = new AbortController()
@@ -87,6 +93,14 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
                 <label className={`${css.field} ${css.wide}`}>
                   <span className={css.label}>{t('infoAlternateText')}</span>
                   <textarea className={css.area} rows={5} value={entry.text} onChange={(event) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { ...item, text: event.target.value } : item))) }} />
+                </label>
+                <label className={css.field}>
+                  <span className={css.label}>{t('infoAlternateFor')}</span>
+                  <select className={css.select} value={entry.character ?? ''} onChange={(event) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { ...item, character: event.target.value } : item))) }}>
+                    <option value="">{t('infoAlternateAny')}</option>
+                    {playable.map(character => <option key={character.id} value={character.id}>{character.name}</option>)}
+                    {entry.character !== undefined && entry.character !== '' && !playable.some(character => character.id === entry.character) && <option value={entry.character}>{entry.character}</option>}
+                  </select>
                 </label>
                 <Button variant="ghost" size="sm" onClick={() => { setAlternates(draft.alternates.filter((_, at) => at !== index)) }}>{t('infoAlternateRemove')}</Button>
               </div>

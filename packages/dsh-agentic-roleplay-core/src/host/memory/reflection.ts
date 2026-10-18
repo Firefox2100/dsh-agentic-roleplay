@@ -1,9 +1,10 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
-import { characterKey, type RecordsEdit, type Session } from '@dsh-agentic-roleplay/state'
+import { characterKey, tokens, type RecordsEdit, type Session } from '@dsh-agentic-roleplay/state'
 import { IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_CONFIDENCES, MEMORY_KINDS, languageOf, translator, type Character, type CharacterMemory, type Location, type MemoryConfidence, type MemoryKind, type PerceivedEvent, type Translate } from 'dsh-roleplay-model'
 import type { ReflectionOutcome, ReflectionReason, ReflectionStatus } from '../../shared/reflection.ts'
 import { wrongLanguage } from '../translate/language.ts'
+import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { describeWhen } from '../clock/story-clock.ts'
 import { promptFor } from '../prompts/access.ts'
@@ -285,7 +286,8 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
     const supports = cited(change.perceptions, where)
     const against = cited(change.contradicted_by, where)
     if (change.text === undefined && change.importance === undefined && change.confidence === undefined && against.length === 0) problems.push(tr('{where}: say what changes', { where }))
-    if (change.text !== undefined && (change.text.trim() === '' || change.text.trim().length > MAX_TEXT)) problems.push(tr('{where}: the text must be there and at most {max} characters; leave it out to keep the belief as it is', { where, max: MAX_TEXT }))
+    if (change.text !== undefined && change.text.trim().length > MAX_TEXT) problems.push(tr('{where}: the text is longer than {max} characters. A belief is not rewritten to hold what speaks against it: leave the text out and list the belief under doubt with the numbers of what speaks against it, and put what was learned as a new belief of its own', { where, max: MAX_TEXT }))
+    else if (change.text !== undefined && change.text.trim() === '') problems.push(tr('{where}: the text must be there and at most {max} characters; leave it out to keep the belief as it is', { where, max: MAX_TEXT }))
     if (change.text !== undefined && MIXED_IN.test(change.text)) problems.push(tr('{where}: the confidence, the importance and the numbers are fields of their own, not part of the text', { where }))
     if (change.importance !== undefined && (!Number.isInteger(change.importance) || change.importance < IMPORTANCE_MIN || change.importance > IMPORTANCE_MAX)) problems.push(tr('{where}: importance runs from {min} to {max}', { where, min: IMPORTANCE_MIN, max: IMPORTANCE_MAX }))
     fresh([...supports, ...against], belief, where)
@@ -326,6 +328,93 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
   return problems
 }
 
+/**
+ * The proposal with its mechanical mistakes mended instead of refused: things cited that were not shown, beliefs that do not exist, names that are
+ * not characters, confidence the evidence cannot carry, changes that name a belief twice, and new beliefs that rest on one passing moment. A model
+ * that is refused such a thing sends it again, five times, and the pass is lost; mended, the proposal is what the refusal would have asked for.
+ * What needs the model's judgment (the words of a belief, what it rests on when nothing valid is left) is still refused by `proposalProblems`.
+ */
+/** A text cut to the limit at the end of a sentence, or failing that at a word. */
+function shortened(text: string): string {
+  const trimmed = text.trim()
+  if (trimmed.length <= MAX_TEXT) return trimmed
+  const head = trimmed.slice(0, MAX_TEXT)
+  const sentence = Math.max(head.lastIndexOf('. '), head.lastIndexOf('! '), head.lastIndexOf('? '), head.lastIndexOf('。'), head.lastIndexOf('！'), head.lastIndexOf('？'))
+  if (sentence >= MAX_TEXT / 3) return head.slice(0, sentence + 1).trim()
+  const word = head.lastIndexOf(' ')
+  return (word >= MAX_TEXT / 2 ? head.slice(0, word) : head.slice(0, MAX_TEXT - 1)).trim() + '…'
+}
+
+/** What a rewrite of an existing belief keeps of its text: nothing when it is too long, because a belief is doubted for what speaks against it, not rewritten. */
+const keptText = (text: string | undefined): { text?: string } => (text === undefined || text.trim() === '' || text.trim().length > MAX_TEXT ? {} : { text })
+
+export function settleProposal(proposal: Proposal, shown: Shown, resolveName: (name: string) => string | undefined): Proposal {
+  const known = (ids: readonly number[] | undefined): number[] => [...new Set(ids ?? [])].filter(id => shown.perceptions.has(id))
+  const after = (ids: readonly number[] | undefined, belief: CharacterMemory): number[] => known(ids).filter(id => shown.perceptions.get(id)!.event.turn >= belief.turn)
+  const turnsOf = (ids: readonly number[], built: readonly CharacterMemory[]): Set<number> => new Set([...ids.map(id => shown.perceptions.get(id)!.event.turn), ...built.map(found => found.turn)])
+  const decisive = (ids: readonly number[]): boolean => ids.some(id => shown.perceptions.get(id)!.event.importance >= DECISIVE_IMPORTANCE)
+  const clamp = (importance: number): number => Math.min(IMPORTANCE_MAX, Math.max(IMPORTANCE_MIN, Math.round(importance)))
+  const add = (proposal.add ?? []).flatMap((belief): Proposal['add'] => {
+    if (typeof belief.text !== 'string' || belief.text.trim() === '') return []
+    const perceptions = known(belief.perceptions)
+    const built = [...new Set(belief.beliefs ?? [])].flatMap(id => shown.beliefs.get(id) ?? [])
+    const turns = turnsOf(perceptions, built)
+    if (turns.size < 2 && !decisive(perceptions)) return []
+    const about = (belief.about ?? []).filter(name => resolveName(name) !== undefined)
+    const { confidence: _confidence, ...rest } = belief
+    const confidence = belief.confidence === 'sure' && turns.size < 2 ? 'likely' : belief.confidence
+    return [{ ...rest, text: shortened(belief.text), kind: MEMORY_KINDS.includes(belief.kind as MemoryKind) ? belief.kind : 'belief', importance: clamp(belief.importance), perceptions, beliefs: built.map(found => found.id), about, ...(confidence === undefined ? {} : { confidence }) }]
+  }).slice(0, MAX_ADDED)
+  const taken = new Set<number>()
+  const fresh = <T extends { id: number }>(changes: readonly T[] | undefined, mend: (change: T, belief: CharacterMemory) => T | undefined): T[] => (changes ?? []).flatMap((change) => {
+    const belief = shown.beliefs.get(change.id)
+    if (belief === undefined || taken.has(change.id)) return []
+    const mended = mend(change, belief)
+    if (mended !== undefined) taken.add(change.id)
+    return mended === undefined ? [] : [mended]
+  })
+  const doubt = fresh(proposal.doubt, (change, belief) => {
+    const against = after(change.contradicted_by, belief)
+    const { text: _text, ...rest } = change
+    return against.length === 0 ? undefined : { ...rest, ...keptText(change.text), contradicted_by: against }
+  })
+  const revise = fresh(proposal.revise, (change, belief) => {
+    const supports = after(change.perceptions, belief)
+    const against = after(change.contradicted_by, belief)
+    const { confidence, text: _text, ...rest } = change
+    let mended = confidence
+    if (confidence !== undefined && !MEMORY_CONFIDENCES.includes(confidence)) mended = undefined
+    else if (confidence !== undefined && against.length > 0 && rankOf(confidence) >= rankOf(belief.confidence)) mended = lowered(belief.confidence)
+    else if (confidence !== undefined && against.length === 0 && rankOf(confidence) < rankOf(belief.confidence)) mended = undefined
+    else if (confidence === 'sure' && belief.confidence !== 'sure' && new Set([...(shown.supportTurns?.get(belief.id) ?? []), ...supports.map(id => shown.perceptions.get(id)!.event.turn)]).size < 2) mended = undefined
+    const result = { ...rest, ...keptText(change.text), perceptions: supports, contradicted_by: against, ...(mended === undefined ? {} : { confidence: mended }), ...(change.importance === undefined ? {} : { importance: clamp(change.importance) }) }
+    return result.text === undefined && result.importance === undefined && result.confidence === undefined && against.length === 0 ? undefined : result
+  })
+  const drop = fresh(proposal.drop, (change, belief) => {
+    if (change.merged_into !== undefined && change.merged_into !== change.id && shown.beliefs.has(change.merged_into) && !(proposal.drop ?? []).some(other => other.id === change.merged_into)) return { id: change.id, merged_into: change.merged_into }
+    const settled = after(change.perceptions, belief)
+    return settled.length === 0 ? undefined : { id: change.id, perceptions: settled }
+  })
+  const room = Math.max(0, MAX_CHANGES - add.length)
+  const changes = [...revise.map(change => ['revise', change] as const), ...doubt.map(change => ['doubt', change] as const), ...drop.map(change => ['drop', change] as const)].slice(0, room)
+  const only = <K extends 'revise' | 'doubt' | 'drop'>(kind: K) => changes.filter(entry => entry[0] === kind).map(entry => entry[1])
+  return { add, revise: only('revise') as Proposal['revise'], doubt: only('doubt') as NonNullable<Proposal['doubt']>, drop: only('drop') as Proposal['drop'] }
+}
+
+/** A belief that something taken in since cannot be true together with, as the check of it found. */
+export interface Contradiction { belief: number; things: number[] }
+
+/**
+ * The proposal with every contradiction the checks found doubted. What the proposal itself does to such a belief (revise, doubt or drop it) is replaced by
+ * the doubt: a belief that something contradicts is not rewritten or let go in the same pass, and what was learned stays in the new beliefs it adds.
+ */
+export function withDoubts(proposal: Proposal, found: readonly Contradiction[]): Proposal {
+  if (found.length === 0) return proposal
+  const doubted = new Set(found.map(entry => entry.belief))
+  const kept = <T extends { id: number }>(changes: readonly T[] | undefined): T[] => (changes ?? []).filter(change => !doubted.has(change.id))
+  return { ...proposal, revise: kept(proposal.revise), drop: kept(proposal.drop), doubt: [...kept(proposal.doubt), ...found.map(entry => ({ id: entry.belief, contradicted_by: entry.things }))] }
+}
+
 const keysOf = (names: readonly string[] | undefined, resolveName: (name: string) => string | undefined): string[] => (names ?? []).flatMap((name) => { const key = resolveName(name); return key === undefined ? [] : [key] })
 
 /** The edit that writes a proposal that passed. */
@@ -339,13 +428,79 @@ export function editOf(turn: number, character: Character, proposal: Proposal, r
   }
 }
 
-function brief(session: ReflectionSession, material: Material, now: number, zone: string, time: (turn: number, round: number) => number | undefined, tr: Translate): string {
+/** The most things a belief is pointed at: the model checks a few against it, not everything. */
+const MAX_BEARING = 4
+
+/** How many words, besides these, a belief and a thing taken in must share for one to be pointed at the other. */
+const SHARED_WORDS = 2
+const FUNCTION_WORDS = new Set('the and that with have has had from which they them their this these those were was been being are for not but you your our his her its who whom what when where why how into onto about after before over under then than there here would could should will just also only some any all out too very can may might must did does done doing got get'.split(' '))
+
+/**
+ * What the character took in since that bears on a belief, which is where a contradiction is found: a model told only to look for one rationalises, but
+ * one pointed at the few things about the same subject compares them. A thing bears on a belief when its event involves the people the belief is about,
+ * or when it shares words with the belief (beliefs are often about a subject and no one in particular).
+ */
+export function bearingOn(belief: CharacterMemory, fresh: readonly PerceivedEvent[]): number[] {
+  const people = fresh.filter(entry => belief.about.length > 0 && entry.event.involves.some(id => belief.about.includes(id))).slice(-MAX_BEARING)
+  const own = [...tokens(belief.text)].filter(token => !FUNCTION_WORDS.has(token))
+  const chosen = new Set(people.map(entry => entry.perception.id))
+  const alike = fresh
+    .map((entry) => { const words = tokens(entry.perception.content); return { id: entry.perception.id, shared: own.filter(token => words.has(token)).length } })
+    .filter(entry => entry.shared >= SHARED_WORDS && !chosen.has(entry.id))
+    .sort((a, b) => b.shared - a.shared || b.id - a.id)
+    .slice(0, MAX_BEARING - chosen.size)
+  return [...chosen, ...alike.map(entry => entry.id)].sort((x, y) => x - y)
+}
+
+/** The most beliefs of one character checked against what bears on them in one pass: each is a request of its own. */
+const MAX_CHECKS = 6
+/** The fewest things taken in that a failed sorting is tried again with half of. */
+const MIN_TO_HALVE = 8
+
+const CHECK_RESULT: ObjectJsonSchema = {
+  type: 'object',
+  properties: {
+    reason: { type: 'string', description: 'One short sentence, written first, without quotation marks: what the belief claims and what the things say, side by side, and whether they can all be true together.' },
+    things: { ...idList, description: 'The numbers of the things that cannot be true together with the belief; none when they all can be.' },
+    verdict: { type: 'string', enum: ['consistent', 'contradicted'], description: 'consistent: the belief and every one of the things can be true together; contradicted: at least one thing cannot be true if the belief is.' },
+  },
+  required: ['reason', 'things', 'verdict'],
+  additionalProperties: false,
+}
+
+export interface CheckAnswer { reason: string; things: number[]; verdict: 'consistent' | 'contradicted' }
+
+/** Why an answer to the check of one belief cannot be taken, or nothing when it can. */
+export function checkProblem(answer: CheckAnswer, belief: CharacterMemory, shown: Shown, near: ReadonlySet<number>, tr: Translate = translator('en')): string | undefined {
+  if ((answer.reason ?? '').trim() === '') return tr('say in a sentence what the belief claims and what the things say, before the verdict')
+  if (answer.verdict !== 'consistent' && answer.verdict !== 'contradicted') return tr('the verdict is consistent or contradicted')
+  const things = answer.things ?? []
+  if (answer.verdict === 'consistent') return things.length === 0 ? undefined : tr('a belief that can be true together with all of them names none of them')
+  if (things.length === 0) return tr('name the things that cannot be true together with the belief')
+  for (const id of things) {
+    const entry = shown.perceptions.get(id)
+    if (!near.has(id) || entry === undefined) return tr('there is no thing listed numbered {id}', { id })
+    if (entry.event.turn < belief.turn) return tr('thing {id} came before the belief was formed', { id })
+  }
+  return undefined
+}
+
+function checkBrief(character: Character, belief: CharacterMemory, things: readonly PerceivedEvent[], now: number, zone: string, time: (turn: number, round: number) => number | undefined, tr: Translate): string {
+  return [
+    tr('A belief held by {name}: {text}', { name: referent(character), text: belief.text }),
+    tr('What they took in since that bears on it:'),
+    ...things.map((entry) => { const at = time(entry.event.turn, entry.event.round); return `- p${entry.perception.id}${at === undefined ? '' : ` (${describeWhen(at, now, zone)})`}: ${entry.perception.content}` }),
+    tr('Can the belief and each of these be true together? Name the ones that cannot be.'),
+  ].join('\n')
+}
+
+function brief(session: ReflectionSession, material: Material, doubted: ReadonlySet<number>, now: number, zone: string, time: (turn: number, round: number) => number | undefined, tr: Translate): string {
   const { character, fresh, beliefs } = material
   const named = (id: number): string => session.characters.get(id)?.name ?? String(id)
   const { disputed } = session.memories.evidenceIndex(character.id)
   const believed = beliefs.map((belief) => {
     const about = belief.about.length === 0 ? '' : tr(', about {names}', { names: belief.about.map(named).join(tr(' and ')) })
-    const dispute = disputed.has(belief.id) ? tr(', something taken in since speaks against it') : ''
+    const dispute = disputed.has(belief.id) || doubted.has(belief.id) ? tr(', something taken in since speaks against it') : ''
     return `- b${belief.id} (${tr('{kind}, importance {importance}, {confidence}{about}{dispute}', { kind: belief.kind, importance: belief.importance, confidence: tr(belief.confidence), about, dispute })}): ${belief.text}`
   })
   const taken = fresh.map((entry) => {
@@ -384,30 +539,70 @@ export function memoryReflector(deps: { agentOf: (chat: string) => Agent | undef
       }
       const tr = translator(languageOf(settings.prompts.language))
       const characters: ReflectionOutcome[] = []
-      for (const material of taken) {
+      const failures: string[] = []
+      const sort = async (material: Material): Promise<ReflectionOutcome> => {
         const shown = shownOf(session, material)
-        const proposal = await runChild<Proposal>({
-          parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records'), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection ${material.character.name}`),
+        const found: Contradiction[] = []
+        let checked = 0
+        for (const belief of material.beliefs) {
+          const near = bearingOn(belief, material.fresh)
+          if (near.length === 0 || checked >= MAX_CHECKS) continue
+          checked += 1
+          const things = near.flatMap(id => shown.perceptions.get(id) ?? [])
+          let verdict: CheckAnswer | undefined
+          try {
+            verdict = await runChild<CheckAnswer>({
+              parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([MAX_TEXT * 2, 100], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection check ${material.character.name} b${belief.id}`),
+              persona: promptFor(parent, 'roleplay/reflection-check', settings.prompts.language),
+              prompt: checkBrief(material.character, belief, things, now, zone, (turn, round) => session.clock.at(turn, round), tr),
+              result: CHECK_RESULT,
+              beforeSubmit: (value) => { const problem = checkProblem(value as CheckAnswer, belief, shown, new Set(near), tr); return problem === undefined ? undefined : tr('not acceptable: {problems}', { problems: problem }) },
+              maxCalls: 2,
+            })
+          } catch (error) {
+            if (signal.aborted) throw error
+          }
+          if (verdict?.verdict === 'contradicted') found.push({ belief: belief.id, things: verdict.things })
+        }
+        const doubted = new Set(found.map(entry => entry.belief))
+        const answered = await runChild<Proposal>({
+          parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer(Array.from({ length: MAX_ADDED + MAX_CHANGES }, () => MAX_TEXT), settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection ${material.character.name}`),
           persona: promptFor(parent, 'roleplay/reflection', settings.prompts.language),
-          prompt: brief(session, material, now, zone, (turn, round) => session.clock.at(turn, round), tr),
+          prompt: brief(session, material, doubted, now, zone, (turn, round) => session.clock.at(turn, round), tr),
           result: RESULT,
           beforeSubmit: (value) => {
-            const given = value as Proposal
+            const given = settleProposal(value as Proposal, shown, resolveName)
             const problems = [...proposalProblems(given, shown, resolveName, tr), ...[wrongLanguage(settings.prompts.language, { beliefs: [...(given.add ?? []), ...(given.revise ?? []), ...(given.doubt ?? [])].map(belief => belief.text ?? '').join(' ') })].flatMap(problem => (problem === undefined ? [] : [problem]))]
             return problems.length === 0 ? undefined : tr('not acceptable: {problems}', { problems: problems.join('; ') })
           },
           maxCalls: 3,
         })
+        const proposal = withDoubts(settleProposal(answered, shown, resolveName), found)
         const reached = Math.max(...material.fresh.map(entry => entry.perception.id))
         session.transaction(() => {
           session.edit(editOf(job.turn, material.character, proposal, resolveName, belief => shown.beliefs.get(belief)?.confidence))
           session.metadata.setValue(CURSOR_KEY, { ...readCursor(session), [characterKey(material.character)]: reached })
         })
-        characters.push({ name: material.character.name, added: proposal.add?.length ?? 0, revised: (proposal.revise?.length ?? 0) + (proposal.doubt?.length ?? 0), dropped: proposal.drop?.length ?? 0 })
+        return { name: material.character.name, added: proposal.add?.length ?? 0, revised: (proposal.revise?.length ?? 0) + (proposal.doubt?.length ?? 0), dropped: proposal.drop?.length ?? 0 }
       }
+      // A model that runs on over a long list does not over a shorter one: the older half is sorted now, and the rest follows in the next pass.
+      const sortWithRetry = async (material: Material): Promise<ReflectionOutcome> => {
+        try { return await sort(material) } catch (error) {
+          if (signal.aborted || material.fresh.length < MIN_TO_HALVE) throw error
+          return await sort({ ...material, fresh: material.fresh.slice(0, Math.ceil(material.fresh.length / 2)) })
+        }
+      }
+      for (const material of taken) {
+        try { characters.push(await sortWithRetry(material)) } catch (error) {
+          if (signal.aborted) throw error
+          failures.push(`${material.character.name}: ${error instanceof Error ? error.message : String(error)}`)
+        }
+      }
+      if (failures.length > 0 && characters.length === 0) throw new Error(failures.join('; '))
       session.metadata.setValue(LAST_KEY, { turn: job.turn, at: new Date().toISOString(), reason: job.reason, characters } satisfies Last)
       writeAnchor(session, playerPlace(store), now)
-      session.metadata.deleteValue(ERROR_KEY)
+      if (failures.length > 0) recordFailure(session, tr('{names} could not be sorted this time and will be tried again: {reason}', { names: failures.map(entry => entry.split(':')[0]).join(', '), reason: failures[0]!.slice(failures[0]!.indexOf(':') + 2) }))
+      else session.metadata.deleteValue(ERROR_KEY)
       return { characters }
     },
   }

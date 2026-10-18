@@ -48,6 +48,14 @@ export async function startReflection(id: string, signal: AbortSignal): Promise<
   }
 }
 
+/** Opens the session doctor chat of the story, made when it is first asked for. */
+export async function openDoctor(id: string, title: string, language: string, signal: AbortSignal): Promise<string> {
+  const response = await fetch(`${API_PREFIX}/sessions/doctor?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, language }), signal })
+  const body = await response.json().catch(() => undefined) as { message?: unknown; chatSessionId?: unknown } | undefined
+  if (!response.ok || typeof body?.chatSessionId !== 'string') throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
+  return body.chatSessionId
+}
+
 /** What a helper run was told and did; nothing when the run was not kept or has been dropped. */
 export async function loadRun(id: string, run: string, signal: AbortSignal): Promise<RunDetail | undefined> {
   const response = await fetch(`${API_PREFIX}/sessions/activity/run?id=${encodeURIComponent(id)}&run=${encodeURIComponent(run)}`, { credentials: 'same-origin', signal })

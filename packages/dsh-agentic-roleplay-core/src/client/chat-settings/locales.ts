@@ -10,6 +10,7 @@ export type ChatSettingsLocaleKey =
   | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed' | 'reflectTitle' | 'reflectNone' | 'reflectLast' | 'reflectTurns' | 'reflectScene' | 'reflectManual' | 'reflectOutcome' | 'reflectNothing' | 'reflectRunning' | 'reflectNow' | 'reflectHelp' | 'reflectFailed' | 'reflectError'
   | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed' | 'interventionWithdrawn'
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
+  | 'language' | 'doctorTitle' | 'doctorHelp' | 'doctorOpen' | 'doctorChat' | 'doctorFailed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
 const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwitchKey>> = {
@@ -87,6 +88,12 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     reflectNothing: 'No character had enough new to sort.',
     reflectRunning: 'The characters are sorting what they took in…',
     reflectNow: 'Reflect now',
+    language: 'en',
+    doctorTitle: 'Session doctor',
+    doctorHelp: 'A separate chat where an assistant reads this story\'s records, looks for what does not fit and proposes fixes. Each change is shown to you for approval before it is made.',
+    doctorOpen: 'Open the session doctor',
+    doctorChat: 'Session doctor',
+    doctorFailed: 'Could not open the session doctor: {message}',
     reflectHelp: 'Each character with something new sorts it into what it believes: beliefs are merged, firmed up or let go, each resting on events it took in. It runs in the background; you can keep playing.',
     reflectFailed: 'Could not start the reflection: {message}',
     reflectError: 'The last pass failed: {message}',
@@ -189,6 +196,12 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     reflectNothing: '没有角色积攒了足够多的新见闻。',
     reflectRunning: '角色们正在整理所见所闻……',
     reflectNow: '立即反思',
+    language: 'zh',
+    doctorTitle: '会话医生',
+    doctorHelp: '一个独立的对话：助手会阅读这个故事的记录，找出对不上的地方并提出修复。每一处修改在执行前都会交给你批准。',
+    doctorOpen: '打开会话医生',
+    doctorChat: '会话医生',
+    doctorFailed: '无法打开会话医生：{message}',
     reflectHelp: '每个有新见闻的角色会把它们整理成自己的信念：合并、巩固或放下，每一条都要依据它接收到的事件。反思在后台进行，你可以继续游玩。',
     reflectFailed: '无法开始反思：{message}',
     reflectError: '上一次反思失败：{message}',

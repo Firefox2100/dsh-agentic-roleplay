@@ -1616,6 +1616,11 @@ describe('a turn with the real agent loop', () => {
       return { session, adapter, agent }
     }
 
+    it('has the look-ups its switches leave on and always the two it cannot work without', async () => {
+      const { adapter } = await play('careful', { tools: { records: { search_events: false, list_items: false } } })
+      expect(toolNames(keeperRequests(adapter)[0]!).sort()).toEqual(['edit_records', 'get_agenda', 'get_faction', 'get_item', 'get_location', 'list_factions', 'list_locations', 'list_relationships', 'list_threads', 'list_variables', 'read_records', 'submit_result'])
+    })
+
     it('loops through its own tools: writes, reads the records back to check, and only then submits', async () => {
       const { session, adapter, agent } = await play('careful')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
@@ -1883,6 +1888,20 @@ describe('a turn with the real agent loop', () => {
       expect(characterRequests(adapter).every(request => toolNames(request).join() === 'submit_result')).toBe(true)
       expect(characterRequests(adapter).every(request => !systemOf(request).includes('recall_my_memories'))).toBe(true)
     })
+  })
+
+  it('gives a character only the look-ups its switches leave on, and says nothing of one it lacks', async () => {
+    const { id } = await addSession('Vault')
+    writeSettings(sessionFolder(join(root, 'sessions'), id), { tools: { characters: { recall_my_memories: false, recall_my_lore: false } } })
+    const adapter = new ScriptedAdapter(answerFor())
+    const agent = await chat(`session-${id}`, adapter)
+    agent.followup(say('I open the vault door.'))
+    await agent.whenIdle()
+    expect(characterRequests(adapter).length).toBeGreaterThan(0)
+    for (const request of characterRequests(adapter)) {
+      expect(toolNames(request)).toEqual(['recall_my_known_entities', 'submit_result'])
+      expect(systemOf(request)).not.toContain('recall_my_memories')
+    }
   })
 
   it('reminds a character by meaning when another plugin supplies a ranker, though no word of the moment matches', async () => {

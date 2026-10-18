@@ -7,6 +7,7 @@ import { FIELD_TOKENS, tokensOf } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { wrongLanguage } from '../translate/language.ts'
 import { externalGiven } from '../tools/external.ts'
+import { toolEnabled } from '../../shared/tools.ts'
 import { referent } from './referent.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
@@ -94,7 +95,8 @@ const RESULT: ObjectJsonSchema = {
 function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number }, progress: { edits: number; unchecked: boolean }): ToolDefinition[] {
   const turn = Math.max(...job.rounds.map(round => round.turn))
   const keys = job.store.story.characters.list().map(characterKey)
-  const wanted = new Set(['read_records', 'edit_records', 'search_events', 'list_threads', 'list_locations', 'get_location', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'get_agenda', 'list_variables'])
+  const { tools } = job.store.settings()
+  const wanted = new Set(['read_records', 'edit_records', 'list_locations', 'get_location', 'list_factions', 'get_faction', 'get_item', 'get_agenda', 'list_variables', ...['search_events', 'list_threads', 'list_relationships', 'list_items'].filter(name => toolEnabled(tools, 'records', name))])
   return createTools(() => ({ session: job.store.story, turn, policy: memory, queryVector: job.store.queryVector, timeZone: zoneOf(job.store.settings().clock) }), { write: true, characters: keys })
     .filter(tool => wanted.has(tool.name))
     .map((tool): ToolDefinition => {

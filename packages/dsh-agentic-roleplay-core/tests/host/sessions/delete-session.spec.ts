@@ -48,7 +48,7 @@ describe('deleteSession', () => {
   it('removes the chat from DSH\'s store first, with what it started', async () => {
     const { id } = state.createSession(sessionsDir(), { name: 'Night one', world }).metadata.get()
     await deleteSession(deps(), id)
-    expect(purged).toEqual([`session-${id}`])
+    expect(purged).toEqual([`doctor-${id}`, `session-${id}`])
   })
 
   it('keeps the session when its chat cannot be removed completely, so that deleting can be tried again', async () => {

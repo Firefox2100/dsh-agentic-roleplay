@@ -33,6 +33,8 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   // Who can be played: the world's own playable characters, then the avatars brought along. A choice is a world id or `avatar:<key>`.
   const players = [...playable.map(character => ({ value: character.id, name: character.name, summary: character.summary })), ...bringing.map(avatar => ({ value: `avatar:${avatar.key}`, name: avatar.name, summary: avatar.summary }))]
   const selected = players.find(player => player.value === choice)?.value ?? players[0]?.value
+  const chosenOpening = opening === '' ? undefined : dialog.openings[Number(opening)]
+  const openingValid = chosenOpening !== undefined && (chosenOpening.character === undefined || chosenOpening.character === selected)
   const base = { ...DEFAULT_SETTINGS, prompts: { language: t('language') } }
   const shown = { ...toDrafts(base, options), ...drafts }
   const written = useWorldLanguage(dialog.worldId)
@@ -61,7 +63,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(opening === '' ? {} : { opening: Number(opening) }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
+          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(!openingValid ? {} : { opening: Number(opening) }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
         }}
       >
         <label className={css.field}>
@@ -93,12 +95,12 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
           ))}
         </fieldset>
 
-        {dialog.status === 'ready' && dialog.openings.length > 0 && (
+        {dialog.status === 'ready' && dialog.openings.some(entry => entry.character === undefined || entry.character === selected) && (
           <label className={css.field}>
             <span className={css.label}>{t('startOpening')}</span>
-            <select value={opening} disabled={dialog.submitting} onChange={(event) => { setOpening(event.target.value) }}>
+            <select value={openingValid ? opening : ''} disabled={dialog.submitting} onChange={(event) => { setOpening(event.target.value) }}>
               <option value="">{t('startOpeningDefault')}</option>
-              {dialog.openings.map((title, index) => <option key={index} value={String(index)}>{title}</option>)}
+              {dialog.openings.flatMap((entry, index) => (entry.character === undefined || entry.character === selected ? [<option key={index} value={String(index)}>{entry.title}</option>] : []))}
             </select>
           </label>
         )}

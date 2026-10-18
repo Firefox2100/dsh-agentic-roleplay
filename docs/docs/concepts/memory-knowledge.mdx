@@ -42,6 +42,8 @@ Memory uses story time. Skipping a month can fade a recollection more than playi
 
 Beliefs do not appear by themselves. After a stretch of play, a **reflection** has each character sort what it has taken in since the last time into what it believes: it may add a belief, firm up or doubt an existing one, merge duplicates, or let one go. A reflection works from that character's own perceptions and beliefs only, so it cannot give a character something it never took in, and what it writes is the character's view, which may be wrong.
 
+Before the character sorts its memory, each belief is compared, in a small request of its own, with the few things the character took in since that bear on it (they involve the people the belief is about, or share words with it): can the belief and these all be true together? A contradiction found this way is recorded by the engine as a doubt: the belief's confidence goes down one step and what speaks against it stays linked to it. In the same pass the belief is not rewritten or let go, and what was learned goes into new beliefs. Mistakes of form in what the reflection proposes (evidence that was not shown, a belief that does not exist, an over-long text, a new belief resting on one passing moment) are mended or left out rather than refused, and if one character cannot be sorted the others still are and it is tried again next time.
+
 Each belief has a confidence of `doubtful`, `likely` or `sure`. A reflection names perceptions that support or contradict every change, and the engine checks those links before writing anything:
 
 - A new belief must rest on things from at least two different turns (or on one event of high importance that turned the story). One passing moment is not yet a belief.

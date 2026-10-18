@@ -43,12 +43,14 @@ export interface WorldFile {
 export interface AlternateOpening {
   title: string
   text: string
+  /** The id of the playable character this opening is for; any character may take it when this is absent. */
+  character?: string
 }
 
 import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, MAX_WORLD_VERSION } from '../../shared/world-info.ts'
 export { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS }
 
-/** `alternate_openings` is a list of `{ title, text }`: other first messages the player may start with. */
+/** `alternate_openings` is a list of `{ title, text, character? }`: other first messages the player may start with, each for any character or for one playable character. */
 function readAlternateOpenings(reader: Reader): AlternateOpening[] | undefined {
   const value = reader.raw('alternate_openings')
   if (value === undefined || value === null) return undefined
@@ -59,7 +61,8 @@ function readAlternateOpenings(reader: Reader): AlternateOpening[] | undefined {
     const text = entry.string('text', { required: true })?.trim()
     if (text === undefined || text === '') continue
     if (text.length > MAX_OPENING_CHARS) entry.fail('text', `is longer than ${MAX_OPENING_CHARS} characters`)
-    openings.push({ title: entry.string('title')?.trim() || text.slice(0, 40), text })
+    const character = entry.string('character')?.trim()
+    openings.push({ title: entry.string('title')?.trim() || text.slice(0, 40), text, ...(character === undefined || character === '' ? {} : { character }) })
   }
   return openings.length === 0 ? undefined : openings
 }

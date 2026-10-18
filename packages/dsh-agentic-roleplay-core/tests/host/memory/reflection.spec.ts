@@ -2,7 +2,7 @@ import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/sta
 import { DEFAULT_SETTINGS, type ChatSettings } from '../../../src/shared/settings.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { TurnStore } from '../../../src/host/orchestration/boundaries.ts'
-import { dueReflection, editOf, materialOf, proposalProblems, reflectionStatus, type Proposal, type Shown } from '../../../src/host/memory/reflection.ts'
+import { bearingOn, checkProblem, dueReflection, editOf, materialOf, proposalProblems, reflectionStatus, withDoubts, settleProposal, type CheckAnswer, type Proposal, type Shown } from '../../../src/host/memory/reflection.ts'
 
 const DAY = 24 * 60 * 60 * 1000
 let session: SessionStore
@@ -253,5 +253,134 @@ describe('what the settings tab is told', () => {
     session.metadata.setValue('reflection.last', { turn: 20, at: '2026-10-15T10:00:00.000Z', reason: 'turns', characters: [{ name: 'Clara', added: 1, revised: 0, dropped: 2 }] })
     session.metadata.setValue('reflection.error', { at: '2026-10-15T11:00:00.000Z', message: 'the model did not answer' })
     expect(reflectionStatus(session, true)).toEqual({ running: true, last: { turn: 20, at: '2026-10-15T10:00:00.000Z', reason: 'turns', characters: [{ name: 'Clara', added: 1, revised: 0, dropped: 2 }] }, error: { at: '2026-10-15T11:00:00.000Z', message: 'the model did not answer' } })
+  })
+})
+
+describe('what a belief is pointed at', () => {
+  const seen = (id: number, involves: number[], content = '') => ({ perception: { id, content }, event: { involves } }) as never
+  const belief = (about: number[], text = '') => ({ about, text }) as never
+
+  it('is the latest few things taken in that involve the people the belief is about', () => {
+    const fresh = [seen(1, [7]), seen(2, [8]), seen(3, [7, 9]), seen(4, [7]), seen(5, [7]), seen(6, [7])]
+    expect(bearingOn(belief([7]), fresh)).toEqual([3, 4, 5, 6])
+    expect(bearingOn(belief([9]), fresh)).toEqual([3])
+  })
+
+  it('points at nothing for a belief that is about nobody and shares nothing, or when nothing concerns it', () => {
+    expect(bearingOn(belief([]), [seen(1, [7])])).toEqual([])
+    expect(bearingOn(belief([5]), [seen(1, [7])])).toEqual([])
+  })
+
+  it('also points at what shares words with a belief that is about no one in particular, but not at words every sentence uses', () => {
+    const fresh = [
+      seen(1, [], 'Clara pours drinks for the regulars'),
+      seen(2, [], 'A fisherman says the ridge path has been washed out and the boat drifts empty'),
+      seen(3, [], 'Clara pours another round for the regulars'),
+    ]
+    expect(bearingOn(belief([], 'Harlan took the boat along the ridge path'), fresh)).toEqual([2])
+    expect(bearingOn(belief([], 'That is what they said about the regulars'), fresh)).toEqual([])
+  })
+
+  it('points at what shares words even when everything taken in is about the same subject', () => {
+    const fresh = [seen(1, [], 'the boat is tied at the dock'), seen(2, [], 'nobody took the boat out'), seen(3, [], 'the boat has dry oars')]
+    expect(bearingOn(belief([], 'Harlan took the boat out'), fresh)).toEqual([2])
+  })
+
+  it('points first at the people, then fills what is left with what shares words', () => {
+    const fresh = [seen(1, [3], 'a'), seen(2, [], 'the ridge path is washed out'), seen(3, [3], 'b')]
+    expect(bearingOn(belief([3], 'the ridge path is open'), fresh)).toEqual([1, 2, 3])
+  })
+})
+
+describe('the check of one belief', () => {
+  const shown = {
+    perceptions: new Map([[10, { perception: { id: 10 }, event: { turn: 5 } }], [11, { perception: { id: 11 }, event: { turn: 1 } }]]),
+    beliefs: new Map(),
+  } as unknown as Shown
+  const belief = { id: 1, turn: 2 } as never
+  const problem = (answer: Partial<CheckAnswer>) => checkProblem({ reason: 'they cannot both hold', things: [], verdict: 'consistent', ...answer }, belief, shown, new Set([10, 11]))
+
+  it('takes a reason and a verdict, and a consistent belief names no thing', () => {
+    expect(problem({})).toBeUndefined()
+    expect(problem({ reason: ' ' })).toContain('in a sentence')
+    expect(problem({ verdict: 'maybe' as never })).toContain('consistent or contradicted')
+    expect(problem({ things: [10] })).toContain('names none')
+  })
+
+  it('needs the things that contradict, from the ones listed and from after the belief was formed', () => {
+    expect(problem({ verdict: 'contradicted' })).toContain('name the things')
+    expect(problem({ verdict: 'contradicted', things: [99] })).toContain('numbered 99')
+    expect(problem({ verdict: 'contradicted', things: [11] })).toContain('before the belief')
+    expect(problem({ verdict: 'contradicted', things: [10] })).toBeUndefined()
+  })
+})
+
+describe('doubts found by the checks', () => {
+  const none = { add: [], revise: [], drop: [] }
+
+  it('doubts every contradiction found, in place of what the pass itself would do to that belief', () => {
+    const found = [{ belief: 1, things: [10] }]
+    const merged = withDoubts({ ...none, revise: [{ id: 1, importance: 3 }, { id: 3, importance: 2 }], drop: [{ id: 1, perceptions: [10] }, { id: 4, perceptions: [11] }], doubt: [{ id: 1, contradicted_by: [11] }, { id: 5, contradicted_by: [11] }] }, found)
+    expect(merged.revise).toEqual([{ id: 3, importance: 2 }])
+    expect(merged.drop).toEqual([{ id: 4, perceptions: [11] }])
+    expect(merged.doubt).toEqual([{ id: 5, contradicted_by: [11] }, { id: 1, contradicted_by: [10] }])
+  })
+
+  it('leaves a proposal as it is when nothing was found', () => {
+    const proposal = { ...none, drop: [{ id: 2, perceptions: [10] }] }
+    expect(withDoubts(proposal, [])).toBe(proposal)
+  })
+})
+
+describe('mending a proposal instead of refusing it', () => {
+  const perception = (id: number, turn: number, importance = 2) => [id, { perception: { id }, event: { turn, importance } }] as const
+  const shown = {
+    perceptions: new Map([perception(1, 3), perception(2, 3), perception(3, 4), perception(4, 3, 4), perception(5, 1)]),
+    beliefs: new Map([[7, { id: 7, turn: 3, confidence: 'likely', about: [] }], [8, { id: 8, turn: 3, confidence: 'sure', about: [] }]]),
+    supportTurns: new Map([[7, new Set([3])], [8, new Set([3, 4])]]),
+  } as unknown as Shown
+  const resolve = (name: string) => (name === 'Clara' ? 'clara' : undefined)
+  const belief = (perceptions: number[], extra: object = {}) => ({ kind: 'belief', text: 'x', importance: 3, perceptions, ...extra })
+  const settle = (proposal: Partial<Proposal>) => settleProposal({ add: [], revise: [], drop: [], ...proposal }, shown, resolve)
+
+  it('leaves out new beliefs that rest on one passing moment, keeping those on two turns or on one decisive event', () => {
+    expect(settle({ add: [belief([1, 2]), belief([1, 3]), belief([4])] }).add.map(entry => entry.perceptions)).toEqual([[1, 3], [4]])
+  })
+
+  it('takes out of a new belief what was not shown, names that are not characters, and sureness one turn cannot carry', () => {
+    const [added] = settle({ add: [belief([1, 3, 99], { about: ['Clara', 'Nobody'], confidence: 'sure', importance: 9, kind: 'rumour' })] }).add
+    expect(added).toMatchObject({ perceptions: [1, 3], about: ['Clara'], confidence: 'sure', importance: 5, kind: 'belief' })
+    expect(settle({ add: [belief([4], { confidence: 'sure' })] }).add[0]!.confidence).toBe('likely')
+  })
+
+  it('drops changes to beliefs that do not exist, and keeps the first change to a belief named twice', () => {
+    const settled = settle({ revise: [{ id: 99, importance: 2 }, { id: 7, importance: 2 }], drop: [{ id: 7, perceptions: [3] }, { id: 98, perceptions: [3] }] })
+    expect(settled.revise.map(change => change.id)).toEqual([7])
+    expect(settled.drop).toEqual([])
+  })
+
+  it('keeps only evidence from after the belief, and drops a doubt or a drop left with none', () => {
+    const settled = settle({ doubt: [{ id: 7, contradicted_by: [3, 5] }, { id: 8, contradicted_by: [5] }], drop: [{ id: 99, perceptions: [3] }] })
+    expect(settled.doubt).toEqual([{ id: 7, contradicted_by: [3] }])
+  })
+
+  it('mends a confidence that does not match the evidence: lowered for a contradiction, left alone for nothing against it', () => {
+    expect(settle({ revise: [{ id: 7, contradicted_by: [3], confidence: 'sure' }] }).revise[0]!.confidence).toBe('doubtful')
+    expect(settle({ revise: [{ id: 8, importance: 2, confidence: 'doubtful' }] }).revise[0]!.confidence).toBeUndefined()
+  })
+
+  it('shortens a new belief that is too long at the end of a sentence, and keeps an existing belief\'s words when its rewrite is too long', () => {
+    const long = `${'First sentence here. '.repeat(10)}${'x'.repeat(200)}`
+    const settled = settle({ add: [belief([1, 3], { text: long })], revise: [{ id: 7, importance: 4, text: long }], doubt: [{ id: 8, contradicted_by: [3], text: long }] })
+    expect(settled.add[0]!.text.length).toBeLessThanOrEqual(300)
+    expect(settled.add[0]!.text.endsWith('here.')).toBe(true)
+    expect(settled.revise[0]).not.toHaveProperty('text')
+    expect(settled.doubt?.[0]).not.toHaveProperty('text')
+  })
+
+  it('leaves a proposal that is sound as it is, and keeps within the limits of a pass', () => {
+    const many = Array.from({ length: 6 }, () => belief([1, 3]))
+    expect(settle({ add: many }).add).toHaveLength(4)
+    expect(proposalProblems(settle({ add: [belief([1, 3])], revise: [{ id: 7, importance: 4, perceptions: [3] }] }), shown, resolve)).toEqual([])
   })
 })

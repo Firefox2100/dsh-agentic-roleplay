@@ -61,3 +61,19 @@
             name: '@deepseek-ai/dsh-tool-fs'
           - id: authoring
             name: '@dsh-agentic-roleplay/core/authoring'
+    # The session doctor chat: a bystander that reads one session's records and
+    # proposes fixes through the records edit, each approved by the player. Its
+    # id must match DOCTOR_AGENT_PRESET in the core package.
+    - id: preset-session-doctor
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: session-doctor
+        name: Session Doctor
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: doctor
+            name: '@dsh-agentic-roleplay/core/doctor'

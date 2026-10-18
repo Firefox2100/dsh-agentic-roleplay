@@ -14,8 +14,8 @@ export interface CharacterSummary {
 
 export interface WorldCharactersPayload {
   characters: readonly CharacterSummary[]
-  /** The titles of the other openings the player may start with, in order; the world's own opening is always the first choice. */
-  openings: readonly string[]
+  /** The other openings the player may start with, in order (the request names one by its place here); the world's own opening is always the first choice. An opening with a character is for that character only. */
+  openings: readonly { title: string; character?: string }[]
   /** When the world's story begins, as local time in its zone (`2024-05-01T08:00:00`), or empty when it has no starting time. */
   startingTime: string
   /** The zone that time is in; empty when the world names none. */

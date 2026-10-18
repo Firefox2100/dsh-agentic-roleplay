@@ -4,7 +4,7 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import css from './ChatSettingsView.module.css'
-import { NotRoleplayError, loadSettings, resetVectors, saveSettings, startReflection } from './settings-api.ts'
+import { NotRoleplayError, loadSettings, openDoctor, resetVectors, saveSettings, startReflection } from './settings-api.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { InterfaceSection } from './InterfaceSection.tsx'
@@ -17,7 +17,11 @@ import { ActivityList } from './ActivityList.tsx'
 import { InterventionList } from './InterventionList.tsx'
 import { SettingsFields } from '../settings-form/SettingsFields.tsx'
 
-export type ChatSettingsViewProps = PropsRuntime<'conversation.view'> & PropsLocale<'roleplay.chatSettings'>
+export interface ChatSettingsInjected {
+  openChat: (chatSessionId: string) => void
+}
+
+export type ChatSettingsViewProps = PropsRuntime<'conversation.view'> & ChatSettingsInjected & PropsLocale<'roleplay.chatSettings'>
 
 type Load =
   | { status: 'loading' }
@@ -26,7 +30,7 @@ type Load =
   | { status: 'ready'; payload: SettingsPayload }
 
 /** The settings of one chat. Ordinary DSH chats have ids of the same shape, so the host decides whether this one is a roleplay session. */
-export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
+export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewProps) {
   const session = roleplaySessionOf(sessionId)
   const [load, setLoad] = useState<Load>(session === undefined ? { status: 'not-roleplay' } : { status: 'loading' })
   const [drafts, setDrafts] = useState<Drafts>({})
@@ -87,6 +91,15 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
     )
   }
 
+  const askDoctor = (): void => {
+    if (session === undefined) return
+    setError(undefined)
+    openDoctor(session, t('doctorChat'), t('language'), new AbortController().signal).then(
+      openChat,
+      (failure: unknown) => { setError(t('doctorFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
+    )
+  }
+
   const refreshActivity = (): void => {
     if (session === undefined) return
     loadSettings(session, new AbortController().signal).then(
@@ -126,6 +139,11 @@ export function ChatSettingsView({ t, sessionId }: ChatSettingsViewProps) {
       {session !== undefined && <InterfaceSection t={t} session={session} value={String(drafts['interface.pack'] ?? '')} onChange={(next) => { change('interface.pack', next) }} saved={payload.settings.interface.pack} disabled={saving} />}
       <ToolSwitches board={payload.settings.tools} onChange={setTools} disabled={saving} external={external} {...(toolsError === undefined ? {} : { error: toolsError })} t={t} />
       <ReflectionSection t={t} status={payload.reflection} disabled={saving} onStart={reflect} onRefresh={refreshActivity} />
+      <section className={css.activity} data-testid="roleplay-doctor">
+        <strong>{t('doctorTitle')}</strong>
+        <p className={css.description}>{t('doctorHelp')}</p>
+        <div><Button variant="ghost" size="sm" onClick={askDoctor}>{t('doctorOpen')}</Button></div>
+      </section>
       <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
       <InterventionList t={t} entries={payload.interventions} />
       {session !== undefined && <ActivityList t={t} session={session} entries={payload.activity} onRefresh={refreshActivity} />}

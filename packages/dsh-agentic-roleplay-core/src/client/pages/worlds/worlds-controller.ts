@@ -13,8 +13,8 @@ export interface StartDialog {
   characters: readonly CharacterSummary[]
   /** The player avatars that can be brought along; none when they cannot be read. */
   avatars: readonly AvatarSummary[]
-  /** The titles of the world's alternate openings, in order. */
-  openings: readonly string[]
+  /** The world's alternate openings, in order. */
+  openings: WorldCharactersPayload['openings']
   /** When the world's story begins (local time in `timeZone`), or empty. */
   startingTime: string
   timeZone: string

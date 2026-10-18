@@ -39,11 +39,13 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
   const [offered, setOffered] = useState<readonly string[]>([])
   const [meanwhile, setMeanwhile] = useState<readonly string[]>([])
   const [unfinished, setUnfinished] = useState<readonly string[]>([])
+  const [unwritten, setUnwritten] = useState(0)
 
   useEffect(() => {
     setOffered([])
     setMeanwhile([])
     setUnfinished([])
+    setUnwritten(0)
     if (latest === undefined) return undefined
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -54,18 +56,21 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
         setMeanwhile(previous => (previous.join('\n') === away.join('\n') ? previous : away))
         const world = found.find(note => note.kind === 'world')?.lines ?? []
         setUnfinished(previous => (previous.join('\n') === world.join('\n') ? previous : world))
+        const waiting = found.find(note => note.kind === 'unwritten')?.count ?? 0
+        setUnwritten(waiting)
         const lines = found.find(note => note.kind === 'suggestions')?.lines
         if (lines !== undefined && lines.length > 0) setOffered(lines)
-        else if (attempt < GIVE_UP_AFTER) timer = setTimeout(() => { look(attempt + 1) }, POLL_MS)
+        if ((lines === undefined || lines.length === 0 || waiting > 0) && attempt < GIVE_UP_AFTER) timer = setTimeout(() => { look(attempt + 1) }, POLL_MS)
       }).catch((error: unknown) => { console.warn('roleplay: the notes could not be read', error) })
     }
     look(0)
     return () => { stopped = true; if (timer !== undefined) clearTimeout(timer) }
   }, [latest, notes])
 
-  if (running || (offered.length === 0 && meanwhile.length === 0 && unfinished.length === 0)) return null
+  if (running || (offered.length === 0 && meanwhile.length === 0 && unfinished.length === 0 && unwritten === 0)) return null
   return (
     <div className={css.dock} data-testid="roleplay-suggestions" data-rp="suggestions">
+      {unwritten > 0 && <span className={css.label} data-testid="roleplay-unwritten">{t('unwritten', { count: unwritten })}</span>}
       {unfinished.length > 0 && (
         <div className={css.card} data-testid="roleplay-world-findings">
           <span className={css.label}>{t('worldFindings')}</span>

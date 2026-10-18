@@ -27,7 +27,7 @@ worlds/<world folder>/
 | `name` | string | 必填。 |
 | `description` | string | 世界卡片的提示说明。 |
 | `opening_message` | string 或列表 | 可选开场。纯文本视为一段旁白；列表按阅读顺序包含 `{ "type": "narration", "text": "..." }` 或 `{ "type": "utterance", "character": "<character id>", "text": "..." }`。省略 `type` 表示旁白。角色必须存在。会话在玩家输入前直接写入该内容，不调用模型。 |
-| `alternate_openings` | 列表 | 其他可选开场，每项为 `{title, text}`。开始会话时选择，写为首个完成回合。 |
+| `alternate_openings` | 列表 | 其他可选开场，每项为 `{title, text, character?}`；`character` 是某个可扮演角色的 id，带它的开场只提供给扮演该角色的玩家。开始会话时选择，写为首个完成回合。 |
 | `starting_time` | ISO 8601 字符串 | 模拟故事起点。无偏移或 `Z` 时按 `time_zone` 的墙上时间解释，只有日期时为当天午夜。缺失则从创建会话的时刻开始。 |
 | `rules` | 字符串或字符串列表 | 世界禁止事项，最多 30 条，每条最多 300 字符。开始会话时复制，主持人每回合都能看到；违反规则的玩家行动在故事内失败，违反规则的 OOC 命令被拒绝。 |
 | `time_zone` | string | IANA 时区，默认 `UTC`。现实模式未在设置中指定时区时使用计算机时区。 |

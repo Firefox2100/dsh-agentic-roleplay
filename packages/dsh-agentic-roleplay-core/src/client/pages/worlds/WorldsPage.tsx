@@ -15,7 +15,7 @@ import { CreateWorldDialog } from './CreateWorldDialog.tsx'
 import { StarterWorlds } from './StarterWorlds.tsx'
 import { ImportCardPage } from './ImportCardPage.tsx'
 import { TranslateBanner } from './TranslateBanner.tsx'
-import { uploadCard } from './import-api.ts'
+import { uploadCard, uploadPreset } from './import-api.ts'
 import type { ImportPreview } from '../../../shared/import-card.ts'
 import type { WorldsFace } from './worlds-controller.ts'
 import css from './WorldsPage.module.css'
@@ -39,6 +39,9 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const [uploading, setUploading] = useState(false)
   const [importNotice, setImportNotice] = useState<string>()
   const picker = useRef<HTMLInputElement>(null)
+  const presetPicker = useRef<HTMLInputElement>(null)
+  const [presetBusy, setPresetBusy] = useState(false)
+  const [presetNotice, setPresetNotice] = useState<string>()
   const source = useMemo(() => (editing === undefined ? undefined : worldSource(editing.id)), [editing])
 
   useEffect(() => { load() }, [load])
@@ -63,6 +66,16 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
     )
   }
 
+  const choosePreset = (world: string, file: File | undefined): void => {
+    if (file === undefined) return
+    setPresetBusy(true)
+    setPresetNotice(undefined)
+    uploadPreset(world, file, t('language')).then(
+      (opened) => { setPresetBusy(false); if (!opened.started) setPresetNotice(t('presetNotStarted', { message: opened.failure ?? '' })); openChat(opened.chatSessionId) },
+      (failure: unknown) => { setPresetBusy(false); setPresetNotice(t('presetFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
+    )
+  }
+
   if (importing !== undefined) {
     return (
       <div className={css.page} data-testid="roleplay-world-import">
@@ -82,12 +95,15 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         <div className={css.editHeader}>
           <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
           <span className={css.editTitle}>{editing.name}</span>
-          <Button className={css.authorButton} variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
+          <input ref={presetPicker} type="file" accept=".json,application/json" hidden data-testid="roleplay-preset-input" onChange={(event) => { choosePreset(editing.id, event.target.files?.[0]); event.target.value = '' }} />
+          <Button className={css.authorButton} variant="outline" size="sm" disabled={presetBusy} onClick={() => { presetPicker.current?.click() }}>{presetBusy ? t('presetOpening') : t('importPreset')}</Button>
+          <Button variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
           <Button variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name })) }}>
             {state.authoring?.worldId === editing.id && state.authoring.error === undefined ? t('openingAuthor') : t('authorWorld')}
           </Button>
         </div>
         {state.authoring?.worldId === editing.id && state.authoring.error !== undefined && <p className={css.notice} role="alert">{t('authorWorldFailed', { message: state.authoring.error })}</p>}
+        {presetNotice !== undefined && <p className={css.notice} role="alert">{presetNotice}</p>}
         <TranslateBanner t={t} worldId={editing.id} worldName={editing.name} openChat={openChat} />
         {addingAvatars && <AddAvatarsDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setAddingAvatars(false) }} onAdded={() => { setAddingAvatars(false); setEditorVersion(version => version + 1) }} />}
         <div className={css.editBody}>

@@ -17,6 +17,13 @@ export const OPTIONAL_TOOLS: readonly OptionalTool[] = [
   { id: 'roll_check', agent: 'gameMaster', default: true },
   { id: 'roll_dice', agent: 'gameMaster', default: true },
   { id: 'list_checks', agent: 'gameMaster', default: true },
+  { id: 'recall_my_memories', agent: 'characters', default: true },
+  { id: 'recall_my_known_entities', agent: 'characters', default: true },
+  { id: 'recall_my_lore', agent: 'characters', default: true },
+  { id: 'search_events', agent: 'records', default: true },
+  { id: 'list_threads', agent: 'records', default: true },
+  { id: 'list_relationships', agent: 'records', default: true },
+  { id: 'list_items', agent: 'records', default: true },
 ]
 
 /** Whether an agent of this kind has a tool, by what the switches say and, failing that, by default. A tool this version does not offer is never on. */

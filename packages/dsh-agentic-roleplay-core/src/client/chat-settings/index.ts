@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { ConversationViewDefinition } from '@deepseek-ai/dsh-client-ui-conversation/client'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import { createChatOpener } from '../chat/open-chat.ts'
 import { ChatSettingsView } from './ChatSettingsView.tsx'
 import { dictionaries, type ChatSettingsLocaleKey } from './locales.ts'
 
@@ -33,6 +34,7 @@ export function registerChatSettings(ctx: Context): void {
       order: 20,
       label: () => t('tab'),
       locale: NAMESPACE,
+      inject: () => ({ openChat: createChatOpener(ctx) }),
     }, ChatSettingsView))
   })
 }
