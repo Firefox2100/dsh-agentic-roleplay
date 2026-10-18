@@ -1,6 +1,9 @@
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import { outputBudget } from './budget.ts'
 import { randomUUID } from 'node:crypto'
+import { currentTurn } from '../orchestration/current-turn.ts'
+import { tokensOf } from './usage.ts'
+import { NO_TOKENS, type TokenCount } from '../../shared/usage.ts'
 import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type RunCall, type RunDetail } from '../../shared/activity.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, ReasoningEffortId, type ImageBlock } from '@deepseek-ai/dsh-llm'
@@ -26,6 +29,8 @@ const MAX_REMINDERS = 2
 const OVERRUN = 5
 /** Steps a child gets to submit once its other tools are withdrawn: a model that keeps calling tools that are gone is stopped. */
 const STEPS_AFTER_RETIRE = 3
+/** The most model steps a child may take past its call budget in all (calls the harness refuses before they run, such as a result that does not fit its schema, are not counted as calls). */
+const STEPS_PAST_BUDGET = 20
 
 /** The same call, with the same arguments, that failed before is refused after this many repeats, and the child is stopped at twice that: the model is not reading the reasons it was given. */
 const REPEATS_TOLD = 1
@@ -81,6 +86,9 @@ export interface ChildRun {
   error?: string
   /** What the child was told and did. */
   detail: RunDetail
+  /** The turn the game master had begun when the run ended, and what the run used. */
+  turn: number
+  tokens: TokenCount
 }
 
 /** The controls of a child's model requests that the plugin decides; the service that serves the route applies them. */
@@ -110,7 +118,7 @@ export function childTrace(store: { settings(): { models: Record<ChildKind, stri
   return (run) => {
     const keep = store.settings().diagnostics.keepRuns
     const id = keep ? randomUUID() : undefined
-    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
+    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, turn: run.turn, tokens: run.tokens, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
   }
 }
 
@@ -164,10 +172,10 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     const detail = (): RunDetail => ({ persona: task.persona.slice(0, MAX_RUN_PROMPT), prompt: task.prompt.slice(0, MAX_RUN_PROMPT), calls: stats.record, ...(stats.result === undefined ? {} : { result: stats.result }) })
     try {
       const result = await execute<T>(task, stats)
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail() })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS })
       return result
     } catch (error) {
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail() })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS })
       if (attempt >= 2 || task.signal.aborted || !isUnfinishedCall(error)) throw error
     }
   }
@@ -187,7 +195,7 @@ export async function supportedEffort(task: Pick<ChildTask, 'parent' | 'signal' 
 }
 
 /** What one run counts and keeps for its trace. */
-interface RunStats { calls: number; record: RunCall[]; result?: string }
+interface RunStats { calls: number; record: RunCall[]; result?: string; tokens?: TokenCount }
 
 const cut = (value: unknown, limit = MAX_RUN_TEXT): string => {
   const text = typeof value === 'string' ? value : (JSON.stringify(value) ?? '')
@@ -286,8 +294,11 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
         for (const dispose of registered) dispose()
         if (stepsAfterRetire < 0) stepsAfterRetire = 0
       }
+      let steps = 0
       childCtx.on('agent/pre-step', async (_payload, next) => {
         const decision = await next()
+        steps += 1
+        if (steps > budget + STEPS_PAST_BUDGET && submitted === undefined) { overran = true; stopped?.() }
         if (stepsAfterRetire < 0) return decision
         stepsAfterRetire += 1
         if (stepsAfterRetire > STEPS_AFTER_RETIRE && submitted === undefined) { overran = true; stopped?.() }
@@ -310,6 +321,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     await handle.agent.whenIdle()
   } finally {
     signal.removeEventListener('abort', onAbort)
+    stats.tokens = tokensOf(handle.agent.session.snapshotEvents())
     samplings.delete(sessionId)
     await handle.dispose()
   }

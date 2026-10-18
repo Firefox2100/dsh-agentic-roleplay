@@ -83,7 +83,7 @@ const CHARACTER_SCHEMA = {
     start: { type: 'object', properties: { public_state: str(''), inner_state: str(''), activity: str(''), location: str('A name from the list of places.'), position: str('') }, additionalProperties: false },
     goals: { type: 'array', items: { type: 'object', properties: { name: str(''), description: str('') }, required: ['name'], additionalProperties: false } },
     relationships: { type: 'array', items: { type: 'object', properties: { with: str('A name from the list of characters.'), label: str(''), summary: str('') }, required: ['with', 'label'], additionalProperties: false } },
-    knows: { type: 'object', properties: { places: strs('Names from the list of places that they know of.'), things: strs('Names from the list of things that they know of.') }, additionalProperties: false },
+    knows: { type: 'object', properties: { places: strs('Names from the list of places that they know of.'), things: strs('Names from the list of things that they know of.'), ways: { type: 'array', items: { type: 'object', properties: { from: str('A name from the list of places.'), to: str('A name from the list of places.') }, required: ['from', 'to'], additionalProperties: false }, description: 'Ways between two places of the list that they know how to take (the way from one to the other).' } }, additionalProperties: false },
   },
   required: ['tier', 'kind', 'summary', 'personality', 'background', 'appearance', 'speech'],
   additionalProperties: false,
@@ -133,6 +133,17 @@ export function characterDocument(entity: Entity, answer: Document, roster: Rost
   const knowledge: Document = {}
   put(knowledge, 'locations', known(list(knows['places']), 'place'))
   put(knowledge, 'items', known(list(knows['things']), 'thing'))
+  const ways = new Set<string>()
+  const exits: Document[] = []
+  for (const way of objects(knows['ways'])) {
+    const from = findEntity(roster, text(way['from']), 'place')
+    const to = findEntity(roster, text(way['to']), 'place')
+    if (from === undefined || to === undefined || from.key === to.key) { notes.push(`${entity.name}: the way from "${text(way['from'])}" to "${text(way['to'])}" is not between two places of the world, so they do not know of it`); continue }
+    if (ways.has(`${from.key}>${to.key}`)) continue
+    ways.add(`${from.key}>${to.key}`)
+    exits.push({ from: from.key, to: to.key })
+  }
+  put(knowledge, 'exits', exits)
   put(document, 'knowledge', Object.keys(knowledge).length === 0 ? undefined : knowledge)
   return { document, notes }
 }
@@ -328,9 +339,17 @@ export function pruneLoreSubjects(result: Pick<Extracted, 'characters' | 'locati
 /** Takes out of what characters know the places and things that were not written (a thing that is nowhere and nobody's is not made). */
 export function pruneKnowledge(result: Pick<Extracted, 'characters' | 'locations' | 'items' | 'notes'>): void {
   const written = { locations: new Set(result.locations.map(entry => String(entry['id']))), items: new Set(result.items.map(entry => String(entry['id']))) }
+  const ways = new Set(result.locations.flatMap(place => objects(place['exits']).map(exit => `${String(place['id'])}>${String(exit['to'])}`)))
   for (const character of result.characters) {
     const knowledge = character['knowledge'] as Document | undefined
     if (knowledge === undefined) continue
+    const routes = objects(knowledge['exits'])
+    const open = routes.filter(route => ways.has(`${String(route['from'])}>${String(route['to'])}`))
+    if (open.length !== routes.length) {
+      result.notes.push(`${String(character['name'])}: ${routes.length - open.length} known way(s) left out because the world has no such way`)
+      if (open.length === 0) delete knowledge['exits']
+      else knowledge['exits'] = open
+    }
     for (const field of ['locations', 'items'] as const) {
       const keys = (knowledge[field] as string[] | undefined) ?? []
       const kept = keys.filter(key => written[field].has(key))
@@ -518,8 +537,8 @@ const VARIABLES_SCHEMA = {
           subject: { type: 'string', enum: ['character', 'item', 'location', 'world'] },
           visibility: { type: 'string', enum: ['public', 'private', 'hidden'] },
           only: { type: 'array', items: { type: 'string' }, description: 'Names from the lists of characters, places or things it is limited to; empty for all.' },
-          min: { type: ['number', 'null'], description: 'The lowest value the card allows, or null.' }, max: { type: ['number', 'null'], description: 'The highest value the card allows, or null.' }, integer: { type: 'boolean', description: 'True when it counts whole units.' },
-          default: { type: ['number', 'boolean', 'string', 'null'], description: 'Where it starts: a number, true or false, or one of the options; null when the card does not say.' },
+          min: { oneOf: [{ type: 'number' }, { type: 'null' }], description: 'The lowest value the card allows, or null.' }, max: { oneOf: [{ type: 'number' }, { type: 'null' }], description: 'The highest value the card allows, or null.' }, integer: { type: 'boolean', description: 'True when it counts whole units.' },
+          default: { oneOf: [{ type: 'number' }, { type: 'boolean' }, { type: 'string' }, { type: 'null' }], description: 'Where it starts: a number, true or false, or one of the options; null when the card does not say.' },
           options: { type: 'array', items: { type: 'string' } },
           bands: { type: 'array', items: { type: 'object', properties: { up_to: { type: 'number' }, label: { type: 'string' } }, required: ['up_to', 'label'], additionalProperties: false } },
         },

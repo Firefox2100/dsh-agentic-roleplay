@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ActivityEntry, RunDetail, RunRecall } from '../../shared/activity.ts'
+import { addTokens, totalTokens, type TokenCount, type TurnUsage } from '../../shared/usage.ts'
 import { loadRun } from './settings-api.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
 import css from './ChatSettingsView.module.css'
@@ -10,6 +11,39 @@ type Translate = (key: ChatSettingsLocaleKey, values?: Record<string, string | n
 const SHOWN = 20
 
 const seconds = (ms: number): string => `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`
+
+const count = (value: number): string => value.toLocaleString()
+/** Fresh input plus output, and what came from the service's cache beside it when there was any. */
+const tokenText = (t: Translate, tokens: TokenCount): string => `${count(tokens.input + tokens.output)}${tokens.cached > 0 ? ` (${t('usageCached', { count: count(tokens.cached) })})` : ''}`
+
+/** What each turn used, newest first: the game master, its helpers, and the sum. */
+export function UsageTable({ t, usage }: { t: Translate; usage: readonly TurnUsage[] }) {
+  const shown = usage.slice(-SHOWN).reverse()
+  return (
+    <details className={css.activity} data-testid="roleplay-usage">
+      <summary>{t('usageTitle')}</summary>
+      <p className={css.description}>{t('usageHelp')}</p>
+      {shown.length === 0
+        ? <p className={css.description}>{t('usageEmpty')}</p>
+        : (
+          <table className={css.table}>
+            <thead><tr><th>{t('usageTurn')}</th><th>{t('usageMaster')}</th><th>{t('usageHelpers')}</th><th>{t('usageRuns')}</th><th>{t('usageTotal')}</th></tr></thead>
+            <tbody>
+              {shown.map(entry => (
+                <tr key={entry.turn}>
+                  <td>{entry.turn}</td>
+                  <td>{tokenText(t, entry.master)}</td>
+                  <td>{tokenText(t, entry.helpers)}</td>
+                  <td>{entry.runs}</td>
+                  <td>{count(totalTokens(addTokens(entry.master, entry.helpers)))}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+    </details>
+  )
+}
 
 /** What the story's helper agents did lately and how long it took, newest first, to see where a slow turn went or why a helper gave up. */
 export function ActivityList({ t, session, entries, onRefresh }: { t: Translate; session: string; entries: readonly ActivityEntry[]; onRefresh: () => void }) {
@@ -34,7 +68,7 @@ export function ActivityList({ t, session, entries, onRefresh }: { t: Translate;
         ? <p className={css.description}>{t('activityEmpty')}</p>
         : (
           <table className={css.table}>
-            <thead><tr><th>{t('activityWhen')}</th><th>{t('activityHelper')}</th><th>{t('activityModel')}</th><th>{t('activityTook')}</th><th>{t('activityCalls')}</th><th>{t('activityResult')}</th><th /></tr></thead>
+            <thead><tr><th>{t('activityWhen')}</th><th>{t('activityHelper')}</th><th>{t('activityModel')}</th><th>{t('activityTook')}</th><th>{t('activityCalls')}</th><th>{t('activityTokens')}</th><th>{t('activityResult')}</th><th /></tr></thead>
             <tbody>
               {shown.flatMap(entry => [
                 <tr key={`${entry.at}-${entry.label}`}>
@@ -43,11 +77,12 @@ export function ActivityList({ t, session, entries, onRefresh }: { t: Translate;
                   <td>{entry.model === '' ? t('activityOwnModel') : entry.model}</td>
                   <td>{seconds(entry.ms)}</td>
                   <td>{entry.calls}</td>
+                  <td>{entry.tokens === undefined ? '' : tokenText(t, entry.tokens)}</td>
                   <td className={entry.error === undefined ? undefined : css.error} title={entry.error}>{entry.error === undefined ? t('activityDone') : t('activityFailed', { reason: entry.error })}</td>
                   <td>{entry.run === undefined ? null : <button type="button" className={css.link} onClick={() => { toggle(entry.run as string) }}>{open?.run === entry.run ? t('runHide') : t('runShow')}</button>}</td>
                 </tr>,
                 ...(entry.run !== undefined && open?.run === entry.run
-                  ? [<tr key={`${entry.at}-${entry.label}-run`}><td colSpan={7}><RunView t={t} detail={open.detail} /></td></tr>]
+                  ? [<tr key={`${entry.at}-${entry.label}-run`}><td colSpan={8}><RunView t={t} detail={open.detail} /></td></tr>]
                   : []),
               ])}
             </tbody>

@@ -1,9 +1,13 @@
 import { ENGAGEMENT_GRACE, MINUTE, agendaAt, nextOccurrence, occurrenceAt, type Session } from '@dsh-agentic-roleplay/state'
+import type { RoutineWindow } from 'dsh-roleplay-model'
 
-type AgendaSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'routines' | 'engagements' | 'intents' | 'metadata' | 'move' | 'transaction' | 'consolidation'>
+type AgendaSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'routines' | 'engagements' | 'intents' | 'metadata' | 'move' | 'planMove' | 'transaction' | 'consolidation'>
 
 const CURSOR = 'agenda.cursor'
 const ASKED = 'agenda.asked'
+/** Characters on their way to the place their day has them at, by character id: they get there when the way has taken as long as it takes. */
+const TRAVEL = 'agenda.travel'
+interface Journey { windowId: number; startsAt: number; arriveAt: number }
 /** At most this many characters are asked to be given a day at a time, so that it never floods the world author. */
 const MAX_ASKED = 3
 
@@ -48,6 +52,15 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
     const player = session.characters.list().find(character => character.control === 'player')
     const playerPlace = player === undefined ? undefined : session.placements.get('character', player.id)?.locationId
     const moves: RoutineMove[] = []
+    const stored = session.metadata.getValue(TRAVEL)
+    const journeys: Record<string, Journey> = typeof stored === 'object' && stored !== null && !Array.isArray(stored) ? { ...stored as unknown as Record<string, Journey> } : {}
+    const arrive = (character: { id: number; sourceId?: string; name: string }, target: RoutineWindow): void => {
+      if (target.locationId !== undefined) {
+        session.move(character.id, { to: target.locationId, ignoreExits: true, ...(target.position === undefined ? {} : { position: target.position }), ...(target.featureKey === undefined ? {} : { featureKey: target.featureKey }) })
+        moves.push({ character: keyOfCharacter(character), name: character.name, to: session.locations.get(target.locationId)?.name ?? String(target.locationId), activity: target.activity })
+      }
+      if (session.characterStates.get(character.id)?.activity !== target.activity) session.characterStates.update(character.id, { activity: target.activity })
+    }
     const alreadyAsked = new Set(Array.isArray(session.metadata.getValue(ASKED)) ? session.metadata.getValue(ASKED) as number[] : [])
     const asked: number[] = []
     for (const character of session.characters.list()) {
@@ -66,17 +79,34 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
       }
       if (!away) continue
       const current = occurrenceAt(window, now, zone)
+      const journey = journeys[characterId]
+      if (journey !== undefined) {
+        const same = current !== undefined && current.window.id === journey.windowId && current.startsAt === journey.startsAt
+        if (same && now < journey.arriveAt) continue
+        delete journeys[characterId]
+        if (same) { arrive(character, current.window); continue }
+      }
       if (current === undefined) continue
       const before = cursor === undefined ? undefined : occurrenceAt(window, cursor, zone)
       if (before !== undefined && before.window.id === current.window.id && before.startsAt === current.startsAt) continue
       const target = current.window
-      if (target.locationId !== undefined && (here?.locationId !== target.locationId || (target.position !== undefined && here.position !== target.position))) {
-        session.move(characterId, { to: target.locationId, ignoreExits: true, ...(target.position === undefined ? {} : { position: target.position }), ...(target.featureKey === undefined ? {} : { featureKey: target.featureKey }) })
-        moves.push({ character: keyOfCharacter(character), name: character.name, to: session.locations.get(target.locationId)?.name ?? String(target.locationId), activity: target.activity })
-      }
-      if (session.characterStates.get(characterId)?.activity !== target.activity) session.characterStates.update(characterId, { activity: target.activity })
+      const goesTo = target.locationId !== undefined && (here?.locationId !== target.locationId || (target.position !== undefined && here.position !== target.position))
+      if (goesTo) {
+        // Time to walk: a character whose window began less than the way takes ago is still on the way, by the ways that are open; with no timed way it arrives at once.
+        const way = here?.locationId === target.locationId ? undefined : session.planMove(characterId, { to: target.locationId! })
+        const seconds = way?.ok === true ? way.plan.travelSeconds : undefined
+        if (seconds !== undefined && current.startsAt + seconds * 1000 > now) {
+          journeys[characterId] = { windowId: target.id, startsAt: current.startsAt, arriveAt: current.startsAt + seconds * 1000 }
+          const destination = session.locations.get(target.locationId!)?.name ?? String(target.locationId)
+          const text = `on the way to ${destination}, for "${target.activity}"`
+          if (session.characterStates.get(characterId)?.activity !== text) session.characterStates.update(characterId, { activity: text })
+          continue
+        }
+        arrive(character, target)
+      } else if (session.characterStates.get(characterId)?.activity !== target.activity) session.characterStates.update(characterId, { activity: target.activity })
     }
     session.metadata.setValue(CURSOR, now)
+    session.metadata.setValue(TRAVEL, journeys as never)
     if (asked.length > 0) session.metadata.setValue(ASKED, [...alreadyAsked, ...asked])
     return moves
   })

@@ -13,7 +13,7 @@ import { VectorsSection } from './VectorsSection.tsx'
 import { ToolSwitches } from '../widgets/tool-switches/ToolSwitches.tsx'
 import { loadExternalTools } from '../widgets/tool-switches/tools-api.ts'
 import type { ExternalTool } from '../../shared/tools.ts'
-import { ActivityList } from './ActivityList.tsx'
+import { ActivityList, UsageTable } from './ActivityList.tsx'
 import { InterventionList } from './InterventionList.tsx'
 import { SettingsFields } from '../settings-form/SettingsFields.tsx'
 
@@ -103,7 +103,7 @@ export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewPro
   const refreshActivity = (): void => {
     if (session === undefined) return
     loadSettings(session, new AbortController().signal).then(
-      (next) => { setLoad({ status: 'ready', payload: { ...payload, activity: next.activity, interventions: next.interventions, vectors: next.vectors, reflection: next.reflection, pendingRecords: next.pendingRecords, pendingConsolidation: next.pendingConsolidation } }) },
+      (next) => { setLoad({ status: 'ready', payload: { ...payload, activity: next.activity, usage: next.usage, interventions: next.interventions, vectors: next.vectors, reflection: next.reflection, pendingRecords: next.pendingRecords, pendingConsolidation: next.pendingConsolidation } }) },
       (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) },
     )
   }
@@ -146,6 +146,7 @@ export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewPro
       </section>
       <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
       <InterventionList t={t} entries={payload.interventions} />
+      {session !== undefined && <UsageTable t={t} usage={payload.usage} />}
       {session !== undefined && <ActivityList t={t} session={session} entries={payload.activity} onRefresh={refreshActivity} />}
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}
       <div className={css.actions}>

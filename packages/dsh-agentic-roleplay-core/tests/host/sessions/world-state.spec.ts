@@ -6,7 +6,15 @@ import * as statePlugin from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { SessionNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
-import { editWorldCharacter, editWorldPlace, editWorldRelation, editWorldThing, readWorldState } from '../../../src/host/sessions/world-state.ts'
+import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
+import { editWorldCharacter, editWorldPlace, editWorldRelation, editWorldThing, generateSessionEntityImage, readWorldState, sessionEntityImageFile, uploadSessionEntityImage } from '../../../src/host/sessions/world-state.ts'
+
+const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
+class Images extends ImageGenerationService {
+  readonly provider = 'test'
+  readonly model = 'paint-1'
+  async generate(): Promise<ImageGenerationResult> { return { model: this.model, images: [{ data: new Blob([PNG], { type: 'image/png' }), mediaType: 'image/png' }] } }
+}
 
 let base: string
 let ctx: Context
@@ -45,6 +53,23 @@ describe('the world of a session', () => {
       place: { key: 'bar', name: 'The Bar', position: 'behind the counter' }, goals: [{ ref: String(goal.id), name: 'Find the ledger', description: 'It went missing', status: 'active', priority: 0.8 }],
     }])
     expect(readWorldState(deps(), id).places).toEqual([{ key: 'bar', name: 'The Bar', description: '', features: [] }])
+  })
+
+  it('has pictures of its places and things, made from the identity the session copied or brought by the player', async () => {
+    const session = state().createSession(sessionsDir(), { name: 'Night', world: { id: 'w', name: 'W' } })
+    const { id } = session.metadata.get()
+    const bar = session.locations.add({ sourceId: 'bar', name: 'The Bar', description: '', features: [] })
+    const ledger = session.items.add({ sourceId: 'ledger', name: 'Ledger', description: '', quantity: 1, unique: false, quality: '', notable: false, hidden: false }, { kind: 'location', locationId: bar.id })
+    await expect(generateSessionEntityImage(deps(), id, 'place', 'bar', new Images())).rejects.toThrow(/needs a visual identity/)
+    session.visualIdentities.set('location', bar.id, { description: 'A low room of dark oak.', tags: [], negativeTags: [] })
+    const placed = await generateSessionEntityImage(deps(), id, 'place', 'bar', new Images())
+    expect(placed.places[0]?.image).toContain('/sessions/world/place/image/file?')
+    const held = await uploadSessionEntityImage(deps(), id, 'thing', 'ledger', new Uint8Array(PNG), 'ledger.png')
+    expect(held.things.find(entry => entry.key === 'ledger')?.image).toContain('/sessions/world/thing/image/file?')
+    expect((await sessionEntityImageFile(deps(), id, 'thing', 'ledger')).size).toBeGreaterThan(0)
+    await expect(uploadSessionEntityImage(deps(), id, 'thing', 'ledger', new Uint8Array([0xff, 0xd8]), 'x.jpg')).rejects.toThrow(/must be a PNG/)
+    await expect(sessionEntityImageFile(deps(), id, 'place', 'nowhere')).rejects.toThrow('there is no place "nowhere"')
+    expect(ledger.id).toBeGreaterThan(0)
   })
 
   it('is its triggers as they stand: what each waits for and does, whether and how often it fired, and where it came from', () => {

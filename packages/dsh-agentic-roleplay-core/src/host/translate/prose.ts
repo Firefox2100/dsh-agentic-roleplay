@@ -36,14 +36,14 @@ const FIELDS: Record<DocumentKind, ProseFields> = {
     text: [
       'age', 'gender', 'summary', 'personality', 'background', 'appearance', 'speech.style', 'speech.examples[]',
       'start.public_state', 'start.inner_state', 'start.activity', ...INTENT.map(path => `start.intents[]${path}`),
-      'relationships[].label', 'relationships[].summary', 'routine[].activity',
+      'relationships[].label', 'relationships[].summary', 'routine[].activity', 'visual_identity.description',
     ],
   },
   location: {
     names: ['name', 'features[].name'],
-    text: ['description', 'features[].description', 'exits[].description', 'exits[].note', 'exits[].back_description'],
+    text: ['description', 'features[].description', 'exits[].description', 'exits[].note', 'exits[].back_description', 'visual_identity.description'],
   },
-  item: { names: ['name'], text: ['description', 'quality'] },
+  item: { names: ['name'], text: ['description', 'quality', 'visual_identity.description'] },
   faction: {
     names: ['name', 'aliases[]'],
     text: [

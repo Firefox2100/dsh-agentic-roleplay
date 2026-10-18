@@ -46,6 +46,8 @@ export interface WorldPlace {
   description: string
   parent?: { key: string; name: string }
   features: { key: string; name: string; description: string }[]
+  /** The place's reference picture, when it has one. */
+  image?: string
   visualIdentity?: VisualIdentityInput
 }
 
@@ -62,6 +64,8 @@ export interface WorldThing {
   containerState?: 'open' | 'closed' | 'locked'
   owner?: { key: string; name: string }
   holder: string
+  /** The thing's reference picture, when it has one. */
+  image?: string
   visualIdentity?: VisualIdentityInput
 }
 

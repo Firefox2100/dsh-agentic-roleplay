@@ -1,5 +1,5 @@
 import type { RoutineDefinition } from 'dsh-roleplay-model'
-import type { PackPreview, WorldPackDetail } from '../../shared/interface-pack.ts'
+import type { PackPreview, PackProblem, WorldPackDetail } from '../../shared/interface-pack.ts'
 import type { DiceDocument } from '../../shared/world-dice.ts'
 import type { CalendarDocument, VariableDeclaration, WorldRoutines } from '../../shared/world-daily.ts'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
@@ -47,3 +47,9 @@ export async function loadPlayable(worldId: string, signal: AbortSignal): Promis
   const { characters } = await response.json() as { characters: { id: string; name: string; role: string }[] }
   return characters.filter(character => character.role === 'playable').map(({ id, name }) => ({ id, name }))
 }
+
+const packQuery = (world: string, pack: string, path?: string): string => `${query(world)}&pack=${encodeURIComponent(pack)}${path === undefined ? '' : `&path=${encodeURIComponent(path)}`}`
+export const loadPackFile = async (world: string, pack: string, path: string, signal: AbortSignal): Promise<string> => (await read<{ text: string }>(await fetch(`${API_PREFIX}/worlds/interface/file?${packQuery(world, pack, path)}`, init('GET', signal)))).text
+export const savePackFile = async (world: string, pack: string, path: string, text: string, signal: AbortSignal): Promise<PackProblem[]> => (await read<{ problems: PackProblem[] }>(await fetch(`${API_PREFIX}/worlds/interface/file?${packQuery(world, pack, path)}`, init('PUT', signal, { text })))).problems
+export const removePackFile = async (world: string, pack: string, path: string, signal: AbortSignal): Promise<PackProblem[]> => (await read<{ problems: PackProblem[] }>(await fetch(`${API_PREFIX}/worlds/interface/file?${packQuery(world, pack, path)}`, init('DELETE', signal)))).problems
+export const createPack = async (world: string, pack: string, name: string, signal: AbortSignal): Promise<PackProblem[]> => (await read<{ problems: PackProblem[] }>(await fetch(`${API_PREFIX}/worlds/interface/pack?${packQuery(world, pack)}`, init('POST', signal, { name })))).problems

@@ -126,7 +126,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
         {section === 'factions' && <FactionsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'lore' && <LorePanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'plots' && <PlotsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'triggers' && <TriggersPanel t={t} world={load.world} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'triggers' && <TriggersPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'relations' && <RelationsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
       </div>
     </div>

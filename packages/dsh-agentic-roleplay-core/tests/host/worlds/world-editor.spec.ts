@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
-import { editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, readWorldEditor, uploadWorldCharacterPortrait } from '../../../src/host/worlds/world-editor.ts'
+import { editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, generateWorldEntityImage, readWorldEditor, uploadWorldCharacterPortrait, uploadWorldEntityImage, worldEntityImageFile, readWorldTrigger, removeWorldTrigger, writeWorldTrigger } from '../../../src/host/worlds/world-editor.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
@@ -110,6 +110,32 @@ describe('a world in the editor', () => {
     expect(state.characters.find(character => character.key === 'clara')?.portrait).toBeTruthy()
     expect(await readFile(join(world.directory, 'images', 'characters', 'clara', 'reference.png'))).toBeTruthy()
     await expect(uploadWorldCharacterPortrait(world, 'clara', new Uint8Array([0xff, 0xd8, 0xff]), 'face.jpg')).rejects.toThrow(/must be a PNG/)
+  })
+
+  it('makes the reference picture of a place or a thing from its visual identity, takes one the author brought, and shows where it is', async () => {
+    await expect(generateWorldEntityImage(world, 'place', 'bar', new Images())).rejects.toThrow(/needs a visual identity/)
+    await editWorldPlace(world, 'bar', { visualIdentity: { description: 'A low room of dark oak.', tags: ['oak'], negativeTags: [] } })
+    const placed = await generateWorldEntityImage(world, 'place', 'bar', new Images())
+    expect(placed.places.find(entry => entry.key === 'bar')?.image).toContain('/worlds/state/place/image/file?')
+    expect(await readFile(join(world.directory, 'images', 'locations', 'bar', 'reference.png'))).toBeTruthy()
+    const held = await uploadWorldEntityImage(world, 'thing', 'ledger', new Uint8Array(PNG), 'ledger.png')
+    expect(held.things.find(entry => entry.key === 'ledger')?.image).toContain('/worlds/state/thing/image/file?')
+    expect((await worldEntityImageFile(world, 'thing', 'ledger')).size).toBeGreaterThan(0)
+    await expect(uploadWorldEntityImage(world, 'thing', 'ledger', new Uint8Array([0xff, 0xd8, 0xff]), 'ledger.jpg')).rejects.toThrow(/must be a PNG/)
+    await expect(worldEntityImageFile(world, 'place', 'nowhere')).rejects.toThrow('there is no place "nowhere"')
+  })
+
+  it('makes, reads, replaces and removes a trigger of the world file, refusing what the world cannot carry', async () => {
+    await editWorldPlace(world, 'bar', { features: [{ key: 'counter', name: 'Counter', description: '' }] })
+    const made = await writeWorldTrigger(world, 'knock', { name: 'Knock', when: { type: 'event', tag: 'door' }, effects: [{ type: 'beat', text: 'A knock at the door.' }] })
+    expect(made.triggers?.map(trigger => trigger.key)).toEqual(['knock'])
+    expect(await readWorldTrigger(world, 'knock')).toMatchObject({ key: 'knock', name: 'Knock' })
+    const changed = await writeWorldTrigger(world, 'knock', { name: 'Loud knock', repeat: true, when: { type: 'event', tag: 'door' }, effects: [{ type: 'beat', text: 'A loud knock.' }] })
+    expect(changed.triggers?.[0]).toMatchObject({ name: 'Loud knock', repeat: true })
+    await expect(writeWorldTrigger(world, 'bad', { name: 'Bad', colour: 'red', when: { type: 'event', tag: 'x' }, effects: [] })).rejects.toThrow(InvalidEditProblems)
+    await expect(readWorldTrigger(world, 'bad')).rejects.toThrow('there is no trigger "bad"')
+    expect((await removeWorldTrigger(world, 'knock')).triggers).toEqual([])
+    await expect(removeWorldTrigger(world, 'knock')).rejects.toThrow('there is no trigger "knock"')
   })
 
   it('edits places and things without changing their structural fields', async () => {

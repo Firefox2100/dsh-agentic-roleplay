@@ -7,7 +7,7 @@ import {
 } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import type {
-  BeliefEdit, CharacterMove, EngagementEditSpec, EventEdit, ExitChange, IntentEditSpec, ItemChange, NewEngagementSpec, NewIntentSpec, RoutineSet, RoutineWindowSpec, ItemEditSpec, NewBelief, NewCharacterSpec, NewEvent, NewExit, NewExitBetween, NewItemSpec, NewPlace,
+  BeliefEdit, CharacterMove, EngagementEditSpec, EventEdit, ExitChange, IntentEditSpec, ItemChange, NewEngagementSpec, NewIntentSpec, RoutineExceptionSpec, RoutineSet, RoutineWindowSpec, ItemEditSpec, NewBelief, NewCharacterSpec, NewEvent, NewExit, NewExitBetween, NewItemSpec, NewPlace,
   FactionMembershipSet, FactionRelationshipSet, FactionStateSet, KnowledgeRetraction, KnowledgeSet, NewFactionIntentSpec, PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
 } from './edit-types.ts'
 import { ITEM_ACTIONS, type ItemAction } from './items.ts'
@@ -200,6 +200,10 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       if ('problems' in parsed) { problems.push(...parsed.problems); return [] }
       return [parsed.definition]
     }),
+    routineExceptions: array('routine_exceptions').map((entry): RoutineExceptionSpec => defined<RoutineExceptionSpec>({
+      character: text(entry, 'character') ?? '', date: text(entry, 'date') ?? '', activity: text(entry, 'activity') ?? '', from: text(entry, 'from'), to: text(entry, 'to'),
+      location: text(entry, 'location'), feature: text(entry, 'feature'), position: text(entry, 'position'), interruptible: bool(entry, 'interruptible'),
+    })),
     routines: array('routines').map((entry): RoutineSet => ({
       character: text(entry, 'character') ?? '',
       windows: Array.isArray(entry['windows']) ? entry['windows'].filter(isObject).map((window): RoutineWindowSpec => defined<RoutineWindowSpec>({
@@ -498,6 +502,26 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
           note: { type: 'string' },
         },
         required: ['title', 'at', 'participants'],
+        additionalProperties: false,
+      },
+    },
+    routine_exceptions: {
+      type: 'array',
+      description: 'A day on which a character does something other than its routine says (ill in bed, away on an errand, a day off): the date (YYYY-MM-DD, story-local), what it does and where; it takes the place of the routine on that date only. Setting the same date again replaces it.',
+      items: {
+        type: 'object',
+        properties: {
+          character,
+          date: { type: 'string', description: 'YYYY-MM-DD.' },
+          activity: { type: 'string', description: 'What it does that day: "keeps to bed with a fever".' },
+          from: { type: 'string', description: 'HH:MM; leave out with to for the whole day.' },
+          to: { type: 'string', description: 'HH:MM.' },
+          location: placeKey,
+          feature: { type: 'string' },
+          position: { type: 'string' },
+          interruptible: { type: 'boolean' },
+        },
+        required: ['character', 'date', 'activity'],
         additionalProperties: false,
       },
     },

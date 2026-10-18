@@ -149,6 +149,16 @@ beforeEach(async () => {
       editNarrationVoice: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
+      readPackFile: async (_id: string, pack: string, path: string) => { if (path === 'gone.html') throw new InvalidEditProblems([`the pack "${pack}" has no file "gone.html"`]); return `<p>${pack}/${path}</p>` },
+      writePackFile: async (id: string, pack: string, path: string, text: string) => { if (path.endsWith('.png')) throw new InvalidEditProblems(['not a text file of a pack']); edited.push(`pack ${id} ${pack} ${path} ${text}`); return [{ file: 'pack.json', message: 'has no surfaces' }] },
+      deletePackFile: async (id: string, pack: string, path: string) => { edited.push(`delete pack file ${id} ${pack} ${path}`); return [] },
+      createPack: async (id: string, pack: string, name: string) => { edited.push(`new pack ${id} ${pack} ${name}`); return [] },
+      readTrigger: async (_id: string, key: string) => { if (key === 'gone') throw new InvalidEditProblems(['there is no trigger "gone"']); return { key, name: 'Knock' } },
+      writeTrigger: async (id: string, key: string, document: unknown) => { if ((document as { name?: unknown }).name === undefined) throw new InvalidEditProblems(['name is required']); edited.push(`trigger ${id} ${key} ${JSON.stringify(document)}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      removeTrigger: async (id: string, key: string) => { edited.push(`remove trigger ${id} ${key}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      generateEntityImage: async (id: string, kind: string, key: string) => { edited.push(`image ${id} ${kind} ${key}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      entityImageFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
+      uploadEntityImage: async (...args: unknown[]) => { if (args[3] instanceof Uint8Array && args[3][0] === 0xff) throw new InvalidEditProblems(['the picture must be a PNG picture: convert it first']); edited.push(`image ${String(args[0])} ${String(args[1])} ${String(args[2])} ${(args[3] as Uint8Array).length} ${String(args[4])}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       uploadPortrait: async (...args: unknown[]) => { if (args[2] instanceof Uint8Array && args[2][0] === 0xff) throw new InvalidEditProblems(['the portrait must be a PNG picture: convert it first']); edited.push(`portrait ${String(args[0])} ${String(args[1])} ${(args[2] as Uint8Array).length} ${String(args[3])}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
     },
     sessions: {
@@ -171,6 +181,9 @@ beforeEach(async () => {
       editNarrationVoice: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
+      generateEntityImage: async (id: string, kind: string, key: string) => { edited.push(`image ${id} ${kind} ${key}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      entityImageFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
+      uploadEntityImage: async (...args: unknown[]) => { if (args[3] instanceof Uint8Array && args[3].length === 0) throw new InvalidEditProblems(['the picture must be a PNG picture: convert it first']); edited.push(`image ${String(args[0])} ${String(args[1])} ${String(args[2])} ${(args[3] as Uint8Array).length} ${String(args[4])}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       uploadPortrait: async (...args: unknown[]) => { if (args[2] instanceof Uint8Array && args[2].length === 0) throw new InvalidEditProblems(['the portrait must be a PNG picture: convert it first']); edited.push(`portrait ${String(args[0])} ${String(args[1])} ${(args[2] as Uint8Array).length} ${String(args[3])}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       start: async (request) => {
         startedWith = request
@@ -185,12 +198,12 @@ beforeEach(async () => {
       send: (id, text) => { said.push(`${id}: ${text}`); return Promise.resolve() },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
-        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
+        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
       },
       writeSettings: (_id, value) => {
         if (settingsError !== undefined) throw settingsError
         writtenSettings = value
-        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
+        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
       },
       timeline: (id) => {
         if (timelineError !== undefined) throw timelineError
@@ -398,6 +411,50 @@ describe('roleplay API', () => {
       expect(edited).toEqual(['portrait w clara 3 clara face.png', 'portrait abc clara 2 clara face.png'])
       expect((await upload('/worlds/state/character/portrait/upload?id=w&key=clara', new Uint8Array([0xff]))).status).toBe(422)
       expect((await fetch(`${origin}/worlds/state/character/portrait/upload?id=w&key=clara`)).status).toBe(405)
+    })
+  })
+
+  describe('the interface packs of a world', () => {
+    const call = (method: string, query: string, body?: unknown) => fetch(`${origin}/worlds/interface/file?${query}`, { method, ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) })
+
+    it('have their text files read, written and removed, and a new pack made, with what is wrong with the pack answered', async () => {
+      expect(await (await call('GET', 'id=w&pack=atlas&path=hud.html')).json()).toEqual({ text: '<p>atlas/hud.html</p>' })
+      expect((await call('GET', 'id=w&pack=atlas&path=gone.html')).status).toBe(422)
+      const written = await call('PUT', 'id=w&pack=atlas&path=hud.html', { text: '<b>hi</b>' })
+      expect(await written.json()).toEqual({ problems: [{ file: 'pack.json', message: 'has no surfaces' }] })
+      expect((await call('PUT', 'id=w&pack=atlas&path=map.png', { text: 'x' })).status).toBe(422)
+      expect((await call('PUT', 'id=w&pack=atlas&path=hud.html', { text: 5 })).status).toBe(422)
+      expect((await call('DELETE', 'id=w&pack=atlas&path=hud.html')).status).toBe(200)
+      expect((await fetch(`${origin}/worlds/interface/pack?id=w&pack=atlas`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Atlas' }) })).status).toBe(201)
+      expect(edited).toEqual(['pack w atlas hud.html <b>hi</b>', 'delete pack file w atlas hud.html', 'new pack w atlas Atlas'])
+    })
+  })
+
+  describe('the triggers of a world', () => {
+    const send = (method: string, query: string, body?: unknown) => fetch(`${origin}/worlds/state/trigger?${query}`, { method, ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) })
+
+    it('are read, written and removed by key, and the reasons a document is refused are given', async () => {
+      expect(await (await send('GET', 'id=w&key=knock')).json()).toEqual({ key: 'knock', name: 'Knock' })
+      expect((await send('GET', 'id=w&key=gone')).status).toBe(422)
+      expect((await send('PUT', 'id=w&key=knock', { name: 'Knock', when: { type: 'event', tag: 'door' } })).status).toBe(200)
+      const refused = await send('PUT', 'id=w&key=knock', { when: {} })
+      expect(refused.status).toBe(422)
+      expect((await refused.json() as { problems: string[] }).problems).toEqual(['name is required'])
+      expect((await send('DELETE', 'id=w&key=knock')).status).toBe(200)
+      expect(edited).toEqual(['trigger w knock {"name":"Knock","when":{"type":"event","tag":"door"}}', 'remove trigger w knock'])
+    })
+  })
+
+  describe('the pictures of places and things', () => {
+    const upload = (path: string, body: Uint8Array) => fetch(`${origin}${path}`, { method: 'POST', headers: { 'x-file-name': encodeURIComponent('inn.png') }, body })
+
+    it('are made, brought and read for a world and for a session, by kind', async () => {
+      expect((await fetch(`${origin}/worlds/state/place/image?id=w&key=inn`, { method: 'POST' })).status).toBe(200)
+      expect((await fetch(`${origin}/sessions/world/thing/image?id=abc&key=lamp`, { method: 'POST' })).status).toBe(200)
+      expect((await upload('/worlds/state/thing/image/upload?id=w&key=lamp', new Uint8Array([1, 2, 3]))).status).toBe(200)
+      expect((await upload('/worlds/state/place/image/upload?id=w&key=inn', new Uint8Array([0xff]))).status).toBe(422)
+      expect(edited).toEqual(['image w place inn', 'image abc thing lamp', 'image w thing lamp 3 inn.png'])
+      expect((await fetch(`${origin}/worlds/state/place/image/upload?id=w&key=inn`)).status).toBe(405)
     })
   })
 
@@ -892,7 +949,7 @@ describe('roleplay API', () => {
     it('are read, with the bounds', async () => {
       const response = await fetch(url())
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } })
+      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } })
     })
 
     it('are replaced by the body', async () => {

@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import type { ClockMode } from 'dsh-roleplay-model'
 import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
 import type { ActivityEntry } from '../../shared/activity.ts'
+import type { TurnUsage } from '../../shared/usage.ts'
 import type { Intervention } from '../../shared/interventions.ts'
 import type { ReflectionStatus } from '../../shared/reflection.ts'
 import type { VectorStatus } from '../../shared/vectors.ts'
@@ -15,6 +16,7 @@ export interface ChatSettingsDeps {
   pendingRecords: (id: string) => number
   pendingConsolidation: (id: string) => number
   activity: (id: string) => ActivityEntry[]
+  usage: (id: string) => TurnUsage[]
   interventions: (id: string) => Intervention[]
   vectors: (id: string) => VectorStatus
   reflection: (id: string) => ReflectionStatus
@@ -53,5 +55,5 @@ export function writeChatSettings(deps: ChatSettingsDeps, id: string, value: unk
 
 function payloadOf(deps: ChatSettingsDeps, id: string, settings: SettingsPayload['settings']): SettingsPayload {
   const clockMode = deps.clockMode(id)
-  return { settings, bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id), activity: deps.activity(id), interventions: deps.interventions(id), vectors: deps.vectors(id), reflection: deps.reflection(id), ...(clockMode === undefined ? {} : { clockMode }) }
+  return { settings, bounds: SETTINGS_SPEC, pendingRecords: deps.pendingRecords(id), pendingConsolidation: deps.pendingConsolidation(id), activity: deps.activity(id), usage: deps.usage(id), interventions: deps.interventions(id), vectors: deps.vectors(id), reflection: deps.reflection(id), ...(clockMode === undefined ? {} : { clockMode }) }
 }

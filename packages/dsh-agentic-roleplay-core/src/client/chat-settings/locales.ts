@@ -6,7 +6,7 @@ export type ChatSettingsLocaleKey =
   | SettingsFormKey
   | ToolSwitchKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
-  | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
+  | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityTokens' | 'usageTitle' | 'usageHelp' | 'usageTurn' | 'usageMaster' | 'usageHelpers' | 'usageRuns' | 'usageTotal' | 'usageCached' | 'usageEmpty' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
   | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed' | 'reflectTitle' | 'reflectNone' | 'reflectLast' | 'reflectTurns' | 'reflectScene' | 'reflectManual' | 'reflectOutcome' | 'reflectNothing' | 'reflectRunning' | 'reflectNow' | 'reflectHelp' | 'reflectFailed' | 'reflectError'
   | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed' | 'interventionWithdrawn'
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
@@ -45,6 +45,16 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     activityModel: 'Model',
     activityTook: 'Took',
     activityCalls: 'Calls',
+    activityTokens: 'Tokens',
+    usageTitle: 'Tokens per turn',
+    usageHelp: 'What each turn used, as the model service reported it: the game master, and the helpers that worked for the turn (characters, record keeper, suggestions and the rest, including work done after the turn was delivered). Requests the service reported nothing for are not counted. "Cached" is what the service read from its cache, which usually costs less.',
+    usageTurn: 'Turn',
+    usageMaster: 'Game master',
+    usageHelpers: 'Helpers',
+    usageRuns: 'Helper runs',
+    usageTotal: 'Total',
+    usageCached: '{count} cached',
+    usageEmpty: 'No turn has been counted yet.',
     activityResult: 'Result',
     activityOwnModel: 'chat model',
     activityDone: 'done',
@@ -153,6 +163,16 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     activityModel: '模型',
     activityTook: '耗时',
     activityCalls: '调用',
+    activityTokens: '令牌',
+    usageTitle: '每回合令牌用量',
+    usageHelp: '每个回合用了多少，以模型服务报告的数字为准：游戏主持人，以及为这个回合工作的助手（角色、记录员、建议等，包括回合送出之后完成的工作）。服务没有报告用量的请求不计入。“缓存”是服务从缓存中读取的部分，通常花费更少。',
+    usageTurn: '回合',
+    usageMaster: '游戏主持人',
+    usageHelpers: '助手',
+    usageRuns: '助手运行次数',
+    usageTotal: '合计',
+    usageCached: '缓存 {count}',
+    usageEmpty: '还没有统计过任何回合。',
     activityResult: '结果',
     activityOwnModel: '对话模型',
     activityDone: '完成',

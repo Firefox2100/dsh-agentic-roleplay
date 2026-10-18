@@ -60,13 +60,13 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
   const itemName = (id: number): string => session.items.get(id)?.name ?? String(id)
   const places = session.locations.list().map(location => {
     const visual = session.visualIdentities.get('location', location.id)
-    return { key: location.sourceId ?? String(location.id), name: location.name, description: location.description, ...(location.parentId === undefined ? {} : { parent: { key: session.locations.get(location.parentId)?.sourceId ?? String(location.parentId), name: locationName(location.parentId) } }), features: location.features, ...(visual === undefined ? {} : { visualIdentity: { description: visual.description, tags: visual.tags, negativeTags: visual.negativeTags, ...(visual.globalId === undefined ? {} : { globalId: visual.globalId }) } }) }
+    return { key: location.sourceId ?? String(location.id), name: location.name, description: location.description, ...imageOf(session, sessionsDir, 'place', location), ...(location.parentId === undefined ? {} : { parent: { key: session.locations.get(location.parentId)?.sourceId ?? String(location.parentId), name: locationName(location.parentId) } }), features: location.features, ...(visual === undefined ? {} : { visualIdentity: { description: visual.description, tags: visual.tags, negativeTags: visual.negativeTags, ...(visual.globalId === undefined ? {} : { globalId: visual.globalId }) } }) }
   })
   const things = session.items.list().map(item => {
     const visual = session.visualIdentities.get('item', item.id)
     const holding = session.items.holding(item.id)?.holder
     const holder = holding === undefined ? '' : holding.kind === 'location' ? locationName(holding.locationId) : holding.kind === 'item' ? itemName(holding.itemId) : characterName(holding.characterId)
-    return { key: item.sourceId ?? String(item.id), name: item.name, description: item.description, quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearableSlot === undefined ? {} : { wearable: item.wearableSlot }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.ownerId === undefined ? {} : { owner: { key: session.characters.get(item.ownerId)?.sourceId ?? String(item.ownerId), name: characterName(item.ownerId) } }), holder, ...(visual === undefined ? {} : { visualIdentity: { description: visual.description, tags: visual.tags, negativeTags: visual.negativeTags, ...(visual.globalId === undefined ? {} : { globalId: visual.globalId }) } }) }
+    return { key: item.sourceId ?? String(item.id), name: item.name, description: item.description, ...imageOf(session, sessionsDir, 'thing', item), quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearableSlot === undefined ? {} : { wearable: item.wearableSlot }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.ownerId === undefined ? {} : { owner: { key: session.characters.get(item.ownerId)?.sourceId ?? String(item.ownerId), name: characterName(item.ownerId) } }), holder, ...(visual === undefined ? {} : { visualIdentity: { description: visual.description, tags: visual.tags, negativeTags: visual.negativeTags, ...(visual.globalId === undefined ? {} : { globalId: visual.globalId }) } }) }
   })
   const factions = session.factions.list().map(faction => {
     const state = session.factionStates.get(faction.id)
@@ -289,6 +289,55 @@ function characterOf(session: Session, key: string) {
   const character = session.characters.list().find(candidate => keyOf(candidate) === key)
   if (character === undefined) throw new InvalidEditProblems([`there is no character "${key}"`])
   return character
+}
+
+const IMAGE_SUBJECT = { place: 'location', thing: 'item' } as const
+export type EntityImageKind = keyof typeof IMAGE_SUBJECT
+
+interface Pictured { id: number; sourceId?: string; name: string }
+
+function addressOf(session: Session, kind: EntityImageKind, entity: Pictured) {
+  const identity = session.visualIdentities.get(IMAGE_SUBJECT[kind], entity.id)
+  return { kind: IMAGE_SUBJECT[kind], localId: entity.sourceId ?? entity.id, ...(identity?.globalId === undefined ? {} : { globalId: identity.globalId }) }
+}
+
+function imageOf(session: Session, sessionsDir: string, kind: EntityImageKind, entity: Pictured): { image?: string } {
+  const id = session.metadata.get().id
+  const file = referenceImagePath(sessionFolder(sessionsDir, id), addressOf(session, kind, entity))
+  return existsSync(file) ? { image: `/${API_PREFIX}/sessions/world/${kind}/image/file?id=${encodeURIComponent(id)}&key=${encodeURIComponent(entity.sourceId ?? String(entity.id))}&v=${statSync(file).mtimeMs}` } : {}
+}
+
+function entityOf(session: Session, kind: EntityImageKind, key: string): Pictured {
+  const found = (kind === 'place' ? session.locations.list() : session.items.list()).find(candidate => (candidate.sourceId ?? String(candidate.id)) === key)
+  if (found === undefined) throw new InvalidEditProblems([`there is no ${kind} "${key}"`])
+  return found
+}
+
+/** Generate or replace the reference picture of a session's place or thing from its copied identity. */
+export async function generateSessionEntityImage(deps: WorldStateDeps, id: string, kind: EntityImageKind, key: string, service: ImageGenerationService): Promise<WorldState> {
+  const session = sessionOf(deps, id)
+  const entity = entityOf(session, kind, key)
+  const identity = session.visualIdentities.get(IMAGE_SUBJECT[kind], entity.id)
+  if (identity === undefined) throw new InvalidEditProblems([`${entity.name} needs a visual identity before a picture can be generated`])
+  await generateReferenceImage(service, { root: sessionFolder(deps.sessionsDir(), id), subject: { ...addressOf(session, kind, entity), name: entity.name }, identity })
+  return worldOf(session, deps.sessionsDir())
+}
+
+/** The picture the player brought becomes the place's or thing's reference picture. */
+export async function uploadSessionEntityImage(deps: WorldStateDeps, id: string, kind: EntityImageKind, key: string, png: Uint8Array, originalName?: string): Promise<WorldState> {
+  const session = sessionOf(deps, id)
+  const entity = entityOf(session, kind, key)
+  try {
+    await uploadReferenceImage({ root: sessionFolder(deps.sessionsDir(), id), subject: { ...addressOf(session, kind, entity), name: entity.name }, png, ...(originalName === undefined ? {} : { originalName }) })
+  } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
+  return worldOf(session, deps.sessionsDir())
+}
+
+/** Resolve the picture through session state so request parameters cannot select arbitrary files. */
+export async function sessionEntityImageFile(deps: WorldStateDeps, id: string, kind: EntityImageKind, key: string): Promise<{ file: string; size: number }> {
+  const session = sessionOf(deps, id)
+  const file = referenceImagePath(sessionFolder(deps.sessionsDir(), id), addressOf(session, kind, entityOf(session, kind, key)))
+  return { file, size: (await stat(file)).size }
 }
 
 /** Generate or replace a session character's stable reference portrait from its copied identity. */

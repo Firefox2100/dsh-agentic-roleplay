@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
 import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
-import type { CharacterDefinition } from 'dsh-roleplay-model'
+import type { CharacterDefinition, VisualIdentityInput } from 'dsh-roleplay-model'
 import type { ImageGenerationService } from '@dsh-ai-providers/core'
 import { InvalidEditProblems, type WorldTrigger, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
@@ -24,6 +24,8 @@ import { generateReferenceImage, uploadReferenceImage } from '../images/generato
 import { loadCalendar } from '../calendar/load.ts'
 import { triggerProblemsOf } from '../triggers/check.ts'
 import { loadTriggers } from '../triggers/load.ts'
+import { deleteTriggerDocument, readTriggerDocuments, writeTriggerDocument } from '../triggers/files.ts'
+import { loadWorldParts } from '../triggers/parts.ts'
 import { loadVariables } from '../variables/load.ts'
 import { loadPlots, parsePlotsFile, plotReferenceProblems, PLOTS_FILE_NAME } from '../plots/load.ts'
 
@@ -109,8 +111,8 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
   return {
     ...(narrationVoice === undefined ? {} : { narrationVoice }),
     characters: characters.map(character => stateOf(world, character, names)),
-    places: locations.map(location => ({ key: location.id, name: location.name, description: location.description, ...(location.parent === undefined ? {} : { parent: { key: location.parent, name: names.get(location.parent) ?? location.parent } }), features: location.features, ...(location.visualIdentity === undefined ? {} : { visualIdentity: location.visualIdentity }) })),
-    things: items.map(item => ({ key: item.id, name: item.name, description: item.description, quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearable === undefined ? {} : { wearable: item.wearable }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.owner === undefined ? {} : { owner: { key: item.owner, name: characterNames.get(item.owner) ?? item.owner } }), holder: holder(item), ...(item.visualIdentity === undefined ? {} : { visualIdentity: item.visualIdentity }) })),
+    places: locations.map(location => ({ key: location.id, name: location.name, description: location.description, ...imageOf(world, 'place', location.id, location.visualIdentity?.globalId), ...(location.parent === undefined ? {} : { parent: { key: location.parent, name: names.get(location.parent) ?? location.parent } }), features: location.features, ...(location.visualIdentity === undefined ? {} : { visualIdentity: location.visualIdentity }) })),
+    things: items.map(item => ({ key: item.id, name: item.name, description: item.description, ...imageOf(world, 'thing', item.id, item.visualIdentity?.globalId), quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearable === undefined ? {} : { wearable: item.wearable }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.owner === undefined ? {} : { owner: { key: item.owner, name: characterNames.get(item.owner) ?? item.owner } }), holder: holder(item), ...(item.visualIdentity === undefined ? {} : { visualIdentity: item.visualIdentity }) })),
     factions: factions.map(faction => ({ key: faction.id, name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: faction.start.publicState, innerState: faction.start.innerState }, goals: faction.start.goals.map((goal, index) => ({ ref: String(index), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: faction.members.map(member => ({ ...member, name: characterNames.get(member.character) ?? member.character })), relationships: faction.relationships.map(relationship => ({ target: `${relationship.to.kind}:${relationship.to.id}`, label: relationship.label, summary: relationship.summary ?? '' })) })),
     lore: lore.map(entry => ({ key: entry.id, title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: subject.id, name: subject.kind === 'character' ? characterNames.get(subject.id) ?? subject.id : subject.kind === 'faction' ? factionNames.get(subject.id) ?? subject.id : subject.kind === 'location' ? names.get(subject.id) ?? subject.id : subject.kind === 'item' ? itemNames.get(subject.id) ?? subject.id : lore.find(candidate => candidate.id === subject.id)?.title ?? subject.id })), related: entry.related.map(key => ({ key, title: lore.find(candidate => candidate.id === key)?.title ?? key })), sources: entry.sources })),
     triggers,
@@ -449,6 +451,58 @@ async function characterOf(world: EditableWorld, key: string): Promise<Character
   return character
 }
 
+/** What kinds of things besides characters have a reference picture, and what the images call them. */
+const IMAGE_SUBJECT = { place: 'location', thing: 'item' } as const
+export type EntityImageKind = keyof typeof IMAGE_SUBJECT
+
+function imageOf(world: EditableWorld, kind: EntityImageKind, id: string, globalId?: string): { image?: string } {
+  const file = referenceImagePath(world.directory, { kind: IMAGE_SUBJECT[kind], localId: id, ...(globalId === undefined ? {} : { globalId }) })
+  return existsSync(file) ? { image: `/${API_PREFIX}/worlds/state/${kind}/image/file?id=${encodeURIComponent(world.id)}&key=${encodeURIComponent(id)}&v=${statSync(file).mtimeMs}` } : {}
+}
+
+async function imageSubjectOf(world: EditableWorld, kind: EntityImageKind, key: string): Promise<{ id: string; name: string; identity?: VisualIdentityInput }> {
+  if (kind === 'place') {
+    const { locations } = await loadLocations(world.directory)
+    const found = locations.find(candidate => candidate.id === key)
+    if (found === undefined) throw new InvalidEditProblems([`there is no place "${key}"`])
+    return { id: found.id, name: found.name, ...(found.visualIdentity === undefined ? {} : { identity: found.visualIdentity }) }
+  }
+  const { characters } = await loadCharacters(world.directory)
+  const { locations } = await loadLocations(world.directory)
+  const { items } = await loadItems(world.directory, { characters: characters.map(character => character.id), locations })
+  const found = items.find(candidate => candidate.id === key)
+  if (found === undefined) throw new InvalidEditProblems([`there is no thing "${key}"`])
+  return { id: found.id, name: found.name, ...(found.visualIdentity === undefined ? {} : { identity: found.visualIdentity }) }
+}
+
+/** Generate or replace the reference picture of an authored place or thing from its visual identity. */
+export async function generateWorldEntityImage(world: EditableWorld, kind: EntityImageKind, key: string, service: ImageGenerationService): Promise<WorldState> {
+  const subject = await imageSubjectOf(world, kind, key)
+  if (subject.identity === undefined) throw new InvalidEditProblems([`${subject.name} needs a visual identity before a picture can be generated`])
+  await generateReferenceImage(service, {
+    root: world.directory,
+    subject: { kind: IMAGE_SUBJECT[kind], localId: subject.id, name: subject.name, ...(subject.identity.globalId === undefined ? {} : { globalId: subject.identity.globalId }) },
+    identity: { ...subject.identity, subjectKind: IMAGE_SUBJECT[kind], subjectId: 0, version: 1, updatedAt: '' },
+  })
+  return await readWorldEditor(world)
+}
+
+/** The picture the author brought becomes the place's or thing's reference picture. */
+export async function uploadWorldEntityImage(world: EditableWorld, kind: EntityImageKind, key: string, png: Uint8Array, originalName?: string): Promise<WorldState> {
+  const subject = await imageSubjectOf(world, kind, key)
+  try {
+    await uploadReferenceImage({ root: world.directory, subject: { kind: IMAGE_SUBJECT[kind], localId: subject.id, name: subject.name, ...(subject.identity?.globalId === undefined ? {} : { globalId: subject.identity.globalId }) }, png, ...(originalName === undefined ? {} : { originalName }) })
+  } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
+  return await readWorldEditor(world)
+}
+
+/** Resolve the picture through authored data so request parameters cannot select arbitrary files. */
+export async function worldEntityImageFile(world: EditableWorld, kind: EntityImageKind, key: string): Promise<{ file: string; size: number }> {
+  const subject = await imageSubjectOf(world, kind, key)
+  const file = referenceImagePath(world.directory, { kind: IMAGE_SUBJECT[kind], localId: subject.id, ...(subject.identity?.globalId === undefined ? {} : { globalId: subject.identity.globalId }) })
+  return { file, size: (await stat(file)).size }
+}
+
 /** Generate or replace the authored character's stable reference portrait. */
 export async function generateWorldCharacterPortrait(world: EditableWorld, key: string, service: ImageGenerationService): Promise<WorldState> {
   const character = await characterOf(world, key)
@@ -476,4 +530,23 @@ export async function worldCharacterPortraitFile(world: EditableWorld, key: stri
   const character = await characterOf(world, key)
   const file = referenceImagePath(world.directory, { kind: 'character', localId: character.id, ...(character.visualIdentity?.globalId === undefined ? {} : { globalId: character.visualIdentity.globalId }) })
   return { file, size: (await stat(file)).size }
+}
+
+/** The document of one trigger as the world's file has it, for editing. */
+export async function readWorldTrigger(world: EditableWorld, key: string): Promise<Record<string, unknown>> {
+  const found = (await readTriggerDocuments(world.directory)).find(entry => entry['key'] === key)
+  if (found === undefined) throw new InvalidEditProblems([`there is no trigger "${key}"`])
+  return found
+}
+
+/** Makes or replaces one trigger from a complete document, checked as a story start checks it, and answers the world as it stands. */
+export async function writeWorldTrigger(world: EditableWorld, key: string, document: unknown): Promise<WorldState> {
+  await writeTriggerDocument(world.directory, await loadWorldParts(world.directory), key, document)
+  return await readWorldEditor(world)
+}
+
+/** Removes one trigger, keeping its document in the world's trash, and answers the world as it stands. */
+export async function removeWorldTrigger(world: EditableWorld, key: string): Promise<WorldState> {
+  await deleteTriggerDocument(world.directory, key)
+  return await readWorldEditor(world)
 }

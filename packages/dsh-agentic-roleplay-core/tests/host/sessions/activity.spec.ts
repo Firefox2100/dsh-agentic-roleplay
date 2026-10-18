@@ -36,9 +36,9 @@ describe('childTrace', () => {
   it('files a run under its label with the model of its kind, and the reason when it failed', () => {
     const filed: ActivityEntry[] = []
     const store = { settings: () => ({ ...DEFAULT_SETTINGS, models: { ...DEFAULT_SETTINGS.models, records: ' localai/small ' } }), recordActivity: (item: ActivityEntry) => { filed.push(item) } }
-    childTrace(store, 'records', 'record keeper')({ ms: 1200, calls: 4, detail })
-    childTrace(store, 'characters', 'Clara')({ ms: 50, calls: 1, error: 'x'.repeat(400), detail })
-    expect(filed[0]).toMatchObject({ label: 'record keeper', model: 'localai/small', ms: 1200, calls: 4 })
+    childTrace(store, 'records', 'record keeper')({ ms: 1200, calls: 4, detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
+    childTrace(store, 'characters', 'Clara')({ ms: 50, calls: 1, error: 'x'.repeat(400), detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
+    expect(filed[0]).toMatchObject({ label: 'record keeper', model: 'localai/small', ms: 1200, calls: 4, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
     expect(filed[0]).not.toHaveProperty('error')
     expect(filed[1]).toMatchObject({ label: 'Clara', model: '' })
     expect(filed[1]?.error).toHaveLength(300)
@@ -53,8 +53,8 @@ describe('the detail of a run', () => {
     const filed: { entry: ActivityEntry; detail?: RunDetail }[] = []
     const on = { settings: () => ({ ...DEFAULT_SETTINGS, diagnostics: { keepRuns: true } }), recordActivity: (entry: ActivityEntry, kept?: RunDetail) => { filed.push({ entry, ...(kept === undefined ? {} : { detail: kept }) }) } }
     const off = { ...on, settings: () => DEFAULT_SETTINGS, recordActivity: on.recordActivity }
-    childTrace(on, 'characters', 'Clara')({ ms: 1, calls: 1, detail })
-    childTrace(off, 'characters', 'Clara')({ ms: 1, calls: 1, detail })
+    childTrace(on, 'characters', 'Clara')({ ms: 1, calls: 1, detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
+    childTrace(off, 'characters', 'Clara')({ ms: 1, calls: 1, detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
     expect(filed[0]?.entry.run).toMatch(/^[0-9a-f-]{36}$/)
     expect(filed[0]?.detail).toEqual(detail)
     expect(filed[1]?.entry).not.toHaveProperty('run')
@@ -64,7 +64,7 @@ describe('the detail of a run', () => {
   it('carries what the character was reminded of beside the detail of the run', () => {
     const filed: RunDetail[] = []
     const reasons = { cues: { people: 3, words: 1, place: 0 }, relevance: 0.5, importance: 3, ageDays: 2, score: 7 }
-    childTrace({ settings: () => ({ ...DEFAULT_SETTINGS, diagnostics: { keepRuns: true } }), recordActivity: (_entry, kept) => { if (kept !== undefined) filed.push(kept) } }, 'characters', 'Clara', { recalled: [{ clarity: 'clear', turn: 1, text: 'It was sealed.', why: reasons }] })({ ms: 1, calls: 0, detail })
+    childTrace({ settings: () => ({ ...DEFAULT_SETTINGS, diagnostics: { keepRuns: true } }), recordActivity: (_entry, kept) => { if (kept !== undefined) filed.push(kept) } }, 'characters', 'Clara', { recalled: [{ clarity: 'clear', turn: 1, text: 'It was sealed.', why: reasons }] })({ ms: 1, calls: 0, detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
     expect(filed[0]?.recalled).toEqual([{ clarity: 'clear', turn: 1, text: 'It was sealed.', why: reasons }])
     expect(filed[0]?.prompt).toBe('what')
   })

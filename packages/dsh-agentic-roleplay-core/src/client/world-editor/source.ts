@@ -14,6 +14,10 @@ export interface WorldSource {
   /** Only a world's files can have entries added and removed; a session's story keeps the lore it started with. */
   addLore?(title: string, signal: AbortSignal): Promise<WorldState>
   removeLore?(key: string, signal: AbortSignal): Promise<WorldState>
+  /** Only a world's files have triggers to write: the document of one as the file has it, a complete document to make or replace one by key, and removing one. */
+  readTrigger?(key: string, signal: AbortSignal): Promise<Record<string, unknown>>
+  writeTrigger?(key: string, document: unknown, signal: AbortSignal): Promise<WorldState>
+  removeTrigger?(key: string, signal: AbortSignal): Promise<WorldState>
   savePlots(edit: PlotsEdit, signal: AbortSignal): Promise<WorldState>
   saveRelation(edit: RelationChange, signal: AbortSignal): Promise<WorldState>
   saveNarrationVoice(voice: string, signal: AbortSignal): Promise<WorldState>
@@ -22,6 +26,10 @@ export interface WorldSource {
   generatePortrait(key: string, signal: AbortSignal): Promise<WorldState>
   /** Use a PNG picture the author brought as the character's portrait and answer the refreshed world. */
   uploadPortrait(key: string, file: File, signal: AbortSignal): Promise<WorldState>
+  /** Generate or replace the reference picture of a place or a thing from its saved visual identity. */
+  generateImage(kind: 'place' | 'thing', key: string, signal: AbortSignal): Promise<WorldState>
+  /** Use a PNG picture as the reference picture of a place or a thing. */
+  uploadImage(kind: 'place' | 'thing', key: string, file: File, signal: AbortSignal): Promise<WorldState>
 }
 
 /** The chat or the world is not something that can be edited: it does not exist, or is not a roleplay session. */

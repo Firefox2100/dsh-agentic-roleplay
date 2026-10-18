@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { languageOf, translator } from 'dsh-roleplay-model'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import { tokensOf } from '../agents/usage.ts'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import type { TurnEngine, TurnOwner } from './turn-engine.ts'
@@ -126,6 +127,10 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   ctx.on('session/event', (session, event) => {
     if (event.type !== 'turn/end' || session.header.origin === 'subagent' || roleplaySessionOf(session.id) === undefined) return
     timelines.ended(session.id, session, event.seq as number)
+    const events = session.snapshotEvents()
+    const began = events.findLastIndex(entry => entry.type === 'turn/start')
+    const start = began === -1 ? undefined : events[began]
+    if (start?.type === 'turn/start') stores(session.id)?.recordUsage?.(start.data.turn, tokensOf(events.slice(began)))
   })
 
   // A chat DSH makes as a branch of a roleplay chat (its fork, from any button) gets a session of its own, made from the state where it was cut.

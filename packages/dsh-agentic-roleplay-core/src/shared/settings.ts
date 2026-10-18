@@ -1,5 +1,6 @@
 import { CLOCK_MODES, type ClockMode } from 'dsh-roleplay-model'
 import type { ActivityEntry } from './activity.ts'
+import type { TurnUsage } from './usage.ts'
 import type { Intervention } from './interventions.ts'
 import type { ReflectionStatus } from './reflection.ts'
 import type { VectorStatus } from './vectors.ts'
@@ -399,6 +400,8 @@ export interface SettingsPayload {
   pendingConsolidation: number
   /** How the latest runs of the story's helper agents went, oldest first. */
   activity: ActivityEntry[]
+  /** What each turn of the story used, in tokens, oldest first. */
+  usage: TurnUsage[]
   /** What the story's triggers delivered lately (beats for the game master, cues for characters) and what became of each. */
   interventions: Intervention[]
   /** The state of the session's search by meaning. */

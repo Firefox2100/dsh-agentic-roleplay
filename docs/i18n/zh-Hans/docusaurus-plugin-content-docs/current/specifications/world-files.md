@@ -192,7 +192,7 @@ worlds/<world folder>/
 | `exits` | 列表 | `[]` | 离开此地的有向通路。 |
 | `variables` | object | `{}` | 地点变量初值。 |
 
-出口的 `to` 必填。还可含 `description`、`one_way`、`back_description`、整数 `travel_time_seconds`、`state`、`note` 和 `opened_by`。`one_way` 默认 false，会自动生成反向通路。state 为 `open`、`locked` 或 `blocked`，默认 open。锁定出口的 `opened_by` 最多十个物品 ID，并作用于两个方向。角色通常只能沿开放出口移动；故事强制搬运可绕过。开始会话时地点复制到数据库，后续变化不修改世界文件。
+出口的 `to` 必填。还可含 `description`、`one_way`、`back_description`、整数 `travel_time_seconds`（按日程前往某处的角色，要等沿途开放通路所需的时间过去才算到达；玩家的行程决定一轮至少多长）、`state`、`note` 和 `opened_by`。`one_way` 默认 false，会自动生成反向通路。state 为 `open`、`locked` 或 `blocked`，默认 open。锁定出口的 `opened_by` 最多十个物品 ID，并作用于两个方向。角色通常只能沿开放出口移动；故事强制搬运可绕过。开始会话时地点复制到数据库，后续变化不修改世界文件。
 
 ## `items/<folder>/item.json`
 

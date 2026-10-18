@@ -17,5 +17,7 @@ export function sessionSource(session: string): WorldSource {
     listVoices: async signal => await listVoices(`${API_PREFIX}/speech/voices`, signal),
     generatePortrait: async (key, signal) => await post(`${API_PREFIX}/sessions/world/character/portrait?id=${id}&key=${encodeURIComponent(key)}`, signal),
     uploadPortrait: async (key, file, signal) => await postFile(`${API_PREFIX}/sessions/world/character/portrait/upload?id=${id}&key=${encodeURIComponent(key)}`, file, signal),
+    generateImage: async (kind, key, signal) => await post(`${API_PREFIX}/sessions/world/${kind}/image?id=${id}&key=${encodeURIComponent(key)}`, signal),
+    uploadImage: async (kind, key, file, signal) => await postFile(`${API_PREFIX}/sessions/world/${kind}/image/upload?id=${id}&key=${encodeURIComponent(key)}`, file, signal),
   }
 }

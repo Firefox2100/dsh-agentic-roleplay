@@ -1,6 +1,7 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
 import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from '@dsh-agentic-roleplay/state'
 import type { ActivityEntry, RunDetail } from '../../shared/activity.ts'
+import type { TokenCount } from '../../shared/usage.ts'
 import type { Note } from '../../shared/notes.ts'
 import type { ReflectionOutcome, ReflectionReason } from '../../shared/reflection.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
@@ -494,6 +495,8 @@ export interface TurnStore {
   addNote(kind: Note['kind'], turn: number, lines: readonly string[]): void
   /** Keeps how a helper's run went, for the settings tab. */
   recordActivity(entry: ActivityEntry, detail?: RunDetail): void
+  /** Adds the tokens the game master's own requests used to a turn's record. */
+  recordUsage?(turn: number, tokens: TokenCount): void
   /** The notes of the session as they stand. */
   notes(): Note[]
   /** Removes the notes: they belong to the turn that made them. */

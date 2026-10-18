@@ -17,7 +17,13 @@ export interface PreparedAgenda {
   engagements: { title: string; at: number; until?: number; location?: string; participants: CharacterId[]; note?: string }[]
   engagementEdits: { id: number; patch: { status?: (typeof ENGAGEMENT_STATUSES)[number]; title?: string; at?: number; until?: number; location?: string; participants?: CharacterId[]; note?: string } }[]
   routines: { character: CharacterId; windows: (Omit<RoutineWindow, 'locationId'> & { location?: string })[] }[]
+  /** One-day windows to put in front of a character's routine. */
+  exceptions: { character: CharacterId; window: Omit<RoutineWindow, 'locationId'> & { location?: string } }[]
 }
+
+const FULL_DATE = /^\d{4}-\d{2}-\d{2}$/
+const isExceptionOn = (on: readonly string[], date: string): boolean => on.length === 1 && on[0] === date
+const ALL_DAY = { from: '00:00', to: '23:59' }
 
 interface Context {
   idOf: (key: string, where: string) => CharacterId | undefined
@@ -157,7 +163,35 @@ export function prepareAgenda(target: RecordsTarget, edit: RecordsEdit, context:
     return character === undefined ? [] : [{ character, windows }]
   })
 
-  return { intents, intentEdits, engagements, engagementEdits, routines }
+  const exceptions = list(edit.routineExceptions).flatMap((spec, index) => {
+    const where = `routine_exceptions[${index}]`
+    const character = idOf(spec.character, where)
+    if (!FULL_DATE.test(spec.date)) problems.push(`${where}.date: "${spec.date}" is not a date (YYYY-MM-DD)`)
+    else problems.push(...dayTokenProblems([spec.date], `${where}.date`))
+    if (!present(spec.activity)) problems.push(`${where}: say what the character does that day`)
+    if ((spec.from === undefined) !== (spec.to === undefined)) problems.push(`${where}: give both from and to, or neither for the whole day`)
+    const start = parseTimeOfDay(spec.from ?? ALL_DAY.from)
+    const end = parseTimeOfDay(spec.to ?? ALL_DAY.to)
+    if (start === undefined) problems.push(`${where}.from: "${spec.from}" is not a time of day (HH:MM)`)
+    if (end === undefined) problems.push(`${where}.to: "${spec.to}" is not a time of day (HH:MM)`)
+    if (start !== undefined && start === end) problems.push(`${where}: it starts and ends at the same time`)
+    if (spec.location !== undefined) {
+      placeKnown(spec.location, `${where}.location`)
+      const place = context.places.get(spec.location)
+      if (spec.feature !== undefined && place !== undefined && !place.features.some(feature => feature.key === spec.feature)) problems.push(`${where}: ${place.name} has no feature "${spec.feature}"`)
+    } else if (spec.feature !== undefined) problems.push(`${where}: a feature needs a location`)
+    if (character === undefined || start === undefined || end === undefined) return []
+    return [{
+      character,
+      window: {
+        days: [], on: [spec.date], start, end, activity: spec.activity.trim(), interruptible: spec.interruptible ?? true,
+        ...(spec.location === undefined ? {} : { location: spec.location }), ...(spec.feature === undefined ? {} : { featureKey: spec.feature }),
+        ...(spec.position === undefined || spec.position.trim() === '' ? {} : { position: spec.position.trim() }),
+      },
+    }]
+  })
+
+  return { intents, intentEdits, engagements, engagementEdits, routines, exceptions }
 }
 
 /** Writes what {@link prepareAgenda} found acceptable; returns how many rows were written. */
@@ -180,6 +214,15 @@ export function writeAgenda(target: RecordsTarget, prepared: PreparedAgenda, tur
   }
   for (const set of prepared.routines) {
     target.routines.replace(set.character, set.windows.map(({ location, ...window }) => ({ ...window, ...(location === undefined ? {} : { locationId: placeId(location) }) })))
+    writes += 1
+  }
+  for (const { character, window } of prepared.exceptions) {
+    const date = window.on![0]!
+    const kept = target.routines.list(character).filter(existing => !isExceptionOn(existing.on, date))
+    if (kept.length + 1 > MAX_ROUTINE_WINDOWS) throw new InvalidEditError([`routine_exceptions: the character's day already has ${MAX_ROUTINE_WINDOWS} windows`])
+    const { location, ...rest } = window
+    // First in the list, because the first window that fits a day is the one that applies.
+    target.routines.replace(character, [{ ...rest, ...(location === undefined ? {} : { locationId: placeId(location) }) }, ...kept])
     writes += 1
   }
   return writes

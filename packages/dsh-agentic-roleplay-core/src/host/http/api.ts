@@ -6,6 +6,7 @@ import { createReadStream } from 'node:fs'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { pipeline } from 'node:stream/promises'
 import type { RunDetail } from '../../shared/activity.ts'
+import type { PackProblem } from '../../shared/interface-pack.ts'
 import type { Note } from '../../shared/notes.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import { languageOf } from '../prompts/library.ts'
@@ -98,12 +99,22 @@ export interface ApiDeps {
     editLore(worldId: string, key: string, edit: LoreEdit): Promise<WorldState>
     addLore(worldId: string, title: string): Promise<WorldState>
     removeLore(worldId: string, key: string): Promise<WorldState>
+    readPackFile(worldId: string, pack: string, path: string): Promise<string>
+    writePackFile(worldId: string, pack: string, path: string, text: string): Promise<PackProblem[]>
+    deletePackFile(worldId: string, pack: string, path: string): Promise<PackProblem[]>
+    createPack(worldId: string, pack: string, name: string): Promise<PackProblem[]>
+    readTrigger(worldId: string, key: string): Promise<Record<string, unknown>>
+    writeTrigger(worldId: string, key: string, document: unknown): Promise<WorldState>
+    removeTrigger(worldId: string, key: string): Promise<WorldState>
     editPlots(worldId: string, edit: PlotsEdit): Promise<WorldState>
     editRelation(worldId: string, edit: RelationChange): Promise<WorldState>
     editNarrationVoice(worldId: string, voice: string): Promise<WorldState>
     generatePortrait(worldId: string, key: string): Promise<WorldState>
     portraitFile(worldId: string, key: string): Promise<{ file: string; size: number }>
     uploadPortrait(worldId: string, key: string, png: Uint8Array, originalName?: string): Promise<WorldState>
+    generateEntityImage(worldId: string, kind: 'place' | 'thing', key: string): Promise<WorldState>
+    entityImageFile(worldId: string, kind: 'place' | 'thing', key: string): Promise<{ file: string; size: number }>
+    uploadEntityImage(worldId: string, kind: 'place' | 'thing', key: string, png: Uint8Array, originalName?: string): Promise<WorldState>
   }
   sessions: {
     list(): SessionsPayload
@@ -140,6 +151,9 @@ export interface ApiDeps {
     generatePortrait(id: string, key: string): Promise<WorldState>
     portraitFile(id: string, key: string): Promise<{ file: string; size: number }>
     uploadPortrait(id: string, key: string, png: Uint8Array, originalName?: string): Promise<WorldState>
+    generateEntityImage(id: string, kind: 'place' | 'thing', key: string): Promise<WorldState>
+    entityImageFile(id: string, kind: 'place' | 'thing', key: string): Promise<{ file: string; size: number }>
+    uploadEntityImage(id: string, kind: 'place' | 'thing', key: string, png: Uint8Array, originalName?: string): Promise<WorldState>
     readSettings(id: string): SettingsPayload
     writeSettings(id: string, value: unknown): SettingsPayload
     notes(id: string): Note[]
@@ -355,6 +369,19 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, tr
       },
       DELETE: async (_req, res, url) => { try { sendJson(res, 200, await worldEditor.removeLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
       PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/worlds/interface/file': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, { text: await worldEditor.readPackFile(url.searchParams.get('id') ?? '', url.searchParams.get('pack') ?? '', url.searchParams.get('path') ?? '') }) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
+      PUT: async (req, res, url) => { try { const body = await readJsonBody(req) as { text?: unknown } | null; if (typeof body?.text !== 'string') throw new InvalidEditProblems(['text must be text']); sendJson(res, 200, { problems: await worldEditor.writePackFile(url.searchParams.get('id') ?? '', url.searchParams.get('pack') ?? '', url.searchParams.get('path') ?? '', body.text) }) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
+      DELETE: async (_req, res, url) => { try { sendJson(res, 200, { problems: await worldEditor.deletePackFile(url.searchParams.get('id') ?? '', url.searchParams.get('pack') ?? '', url.searchParams.get('path') ?? '') }) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); return sendError(res, 422, error instanceof Error ? error.message : String(error)) } },
+    },
+    '/worlds/interface/pack': {
+      POST: async (req, res, url) => { try { const body = await readJsonBody(req) as { name?: unknown } | null; sendJson(res, 201, { problems: await worldEditor.createPack(url.searchParams.get('id') ?? '', url.searchParams.get('pack') ?? '', typeof body?.name === 'string' ? body.name : '') }) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
+    },
+    '/worlds/state/trigger': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldEditor.readTrigger(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
+      PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.writeTrigger(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', await readJsonBody(req))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
+      DELETE: async (_req, res, url) => { try { sendJson(res, 200, await worldEditor.removeTrigger(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } },
+    },
     '/worlds/state/plots': { PUT: async (req, res, url) => { try { const body = await readJsonBody(req) as { plots?: unknown }; if (!Array.isArray(body.plots)) return sendError(res, 400, 'plots must be a list'); sendJson(res, 200, await worldEditor.editPlots(url.searchParams.get('id') ?? '', { plots: body.plots as PlotsEdit['plots'] })) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/state/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, await worldEditor.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/worlds/routines': { GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.routines(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } } },
@@ -468,6 +495,56 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, tr
         catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
       },
     },
+    ...Object.fromEntries((['place', 'thing'] as const).flatMap(kind => [
+      [`/worlds/state/${kind}/image`, {
+        POST: async (_req, res, url) => {
+          try { sendJson(res, 200, await worldEditor.generateEntityImage(url.searchParams.get('id') ?? '', kind, url.searchParams.get('key') ?? '')) } catch (error) {
+            if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+            if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+            return sendError(res, 409, error instanceof Error ? error.message : String(error))
+          }
+        },
+      }],
+      [`/worlds/state/${kind}/image/upload`, {
+        POST: async (req, res, url) => {
+          const name = decodeURIComponent(String(req.headers['x-file-name'] ?? 'image.png'))
+          try { sendJson(res, 200, await worldEditor.uploadEntityImage(url.searchParams.get('id') ?? '', kind, url.searchParams.get('key') ?? '', await readBinaryBody(req, MAX_UPLOAD_BYTES), name)) } catch (error) {
+            if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+            if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+            throw error
+          }
+        },
+      }],
+      [`/worlds/state/${kind}/image/file`, {
+        GET: async (_req, res, url) => {
+          try { await sendImage(res, await worldEditor.entityImageFile(url.searchParams.get('id') ?? '', kind, url.searchParams.get('key') ?? '')) } catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+        },
+      }],
+      [`/sessions/world/${kind}/image`, {
+        POST: async (_req, res, url) => {
+          try { sendJson(res, 200, await sessions.generateEntityImage(url.searchParams.get('id') ?? '', kind, url.searchParams.get('key') ?? '')) } catch (error) {
+            if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+            if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+            return sendError(res, 409, error instanceof Error ? error.message : String(error))
+          }
+        },
+      }],
+      [`/sessions/world/${kind}/image/upload`, {
+        POST: async (req, res, url) => {
+          const name = decodeURIComponent(String(req.headers['x-file-name'] ?? 'image.png'))
+          try { sendJson(res, 200, await sessions.uploadEntityImage(url.searchParams.get('id') ?? '', kind, url.searchParams.get('key') ?? '', await readBinaryBody(req, MAX_UPLOAD_BYTES), name)) } catch (error) {
+            if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+            if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+            throw error
+          }
+        },
+      }],
+      [`/sessions/world/${kind}/image/file`, {
+        GET: async (_req, res, url) => {
+          try { await sendImage(res, await sessions.entityImageFile(url.searchParams.get('id') ?? '', kind, url.searchParams.get('key') ?? '')) } catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
+        },
+      }],
+    ])),
     '/worlds/characters': {
       GET: async (_req, res, url) => {
         try {

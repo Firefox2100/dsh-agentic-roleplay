@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { cp, readdir, stat, writeFile } from 'node:fs/promises'
+import { cp, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, sep } from 'node:path'
 import { InvalidWorldError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -32,6 +32,8 @@ export interface TranslationReport {
   names: number
   /** What the translated world's check found wrong; empty when it would start. */
   problems: string[]
+  /** The world's own prompt files that were written in the new language, as ids. */
+  prompts: string[]
   /** Parts of the world that were copied as they were, because they are not words of the story. */
   copiedAsIs: string[]
 }
@@ -63,7 +65,8 @@ const TEXTS_SCHEMA = {
   additionalProperties: false,
 } as const
 
-const braces = (text: string): string => (text.match(/\{[^{}]*\}/g) ?? []).sort().join('\u0000')
+const BRACED = /\$?\{[^{}]*\}/g
+const braces = (text: string): string => (text.match(BRACED) ?? []).sort().join('\u0000')
 const letters = (text: string): number => text.match(/\p{L}/gu)?.length ?? 0
 
 /** The language the world is written in, from the words of all its files; nothing when there are too few to tell. */
@@ -90,7 +93,7 @@ function problemWith(sources: readonly string[], from: StoryLanguage, translatio
   for (const [index, source] of sources.entries()) {
     const text = translations[index]!
     if (text.trim() === '') return `translation ${index + 1} is empty`
-    if (braces(source) !== braces(text)) return `translation ${index + 1} must keep the text in curly braces exactly as it is: ${(source.match(/\{[^{}]*\}/g) ?? []).join(' ')}`
+    if (braces(source) !== braces(text)) return `translation ${index + 1} must keep the text in curly braces exactly as it is: ${(source.match(BRACED) ?? []).join(' ')}`
     if (letters(source) >= CHECKED_LETTERS && textLanguage(source) === from && textLanguage(text) === from) return `translation ${index + 1} is still in the original language`
     for (const [term, rendering] of glossary) {
       if (term.length >= MIN_TERM && rendering !== term && !rendering.includes(term) && usesTerm(source, term) && usesTerm(text, term)) return `translation ${index + 1} still has "${term}": the glossary renders it "${rendering}"`
@@ -140,6 +143,19 @@ async function freeFolder(directory: string, suffix: string): Promise<string> {
   }
 }
 
+/** The ids of the Markdown prompt files under a world's prompt folder for one language (`roleplay/style`), or none when it has none. */
+async function promptIds(folder: string, prefix = ''): Promise<string[]> {
+  let entries
+  try { entries = await readdir(join(folder, prefix), { withFileTypes: true }) } catch (error) { if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []; throw error }
+  const ids: string[] = []
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    const id = prefix === '' ? entry.name : `${prefix}/${entry.name}`
+    if (entry.isDirectory()) ids.push(...await promptIds(folder, id))
+    else if (entry.isFile() && entry.name.endsWith('.md')) ids.push(id.slice(0, -'.md'.length))
+  }
+  return ids
+}
+
 async function listedIn(directory: string, names: readonly string[]): Promise<string[]> {
   const present = new Set(await readdir(directory))
   return names.filter(name => present.has(name))
@@ -184,12 +200,29 @@ export async function translateWorld(ctx: ImportContext, worlds: WorldCatalog, s
     if (original !== undefined && original !== document['name'] && !aliases.includes(original)) document['aliases'] = [...aliases, original]
   }
 
+  const own = await promptIds(join(source.directory, 'prompts', from))
+  const present = new Set(await promptIds(join(source.directory, 'prompts', to)))
+  const owed = own.filter(prompt => !present.has(prompt))
+  const written: { id: string; text: string }[] = []
+  if (owed.length > 0) {
+    ctx.say(`translating ${owed.length} prompt files`)
+    const sources = await Promise.all(owed.map(prompt => readFile(join(source.directory, 'prompts', from, `${prompt}.md`), 'utf8')))
+    const result = await translated(ctx, sources, glossary, from, vars)
+    for (const [index, prompt] of owed.entries()) written.push({ id: prompt, text: result[index]! })
+  }
+
   const id = randomUUID()
   const destination = await freeFolder(source.directory, to)
   await cp(source.directory, destination, { recursive: true, filter: path => !NOT_COPIED.has(relative(source.directory, path).split(sep)[0]!) })
   for (const entry of documents) {
     const document = entry.kind === 'world' ? (({ id: _old, ...rest }) => ({ id, ...rest }))(entry.document as Record<string, unknown>) : entry.document
     await writeFile(join(destination, entry.file), `${JSON.stringify(document, null, 2)}\n`)
+  }
+
+  for (const prompt of written) {
+    const file = join(destination, 'prompts', to, `${prompt.id}.md`)
+    await mkdir(dirname(file), { recursive: true })
+    await writeFile(file, prompt.text.endsWith('\n') ? prompt.text : `${prompt.text}\n`)
   }
 
   const payload = await worlds.list({ refresh: true })
@@ -204,7 +237,7 @@ export async function translateWorld(ctx: ImportContext, worlds: WorldCatalog, s
     }
   }
   return {
-    worldId: id, name: made.name, folder: basename(destination), documents: documents.length, texts, names: names.length + recurring.length, problems,
-    copiedAsIs: await listedIn(source.directory, ['prompts', 'ui', 'images', 'media']),
+    worldId: id, name: made.name, folder: basename(destination), documents: documents.length, texts, names: names.length + recurring.length, problems, prompts: written.map(prompt => prompt.id),
+    copiedAsIs: await listedIn(source.directory, ['ui', 'images', 'media']),
   }
 }

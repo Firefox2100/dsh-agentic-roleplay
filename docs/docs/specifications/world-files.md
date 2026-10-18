@@ -238,7 +238,7 @@ as before: everyone is together.
 
 Each exit: `to` (the `id` of the place it leads to, required), `description` (what it looks like from here),
 `one_way` (default false: the way back is made too, with `back_description` or the same description),
-`travel_time_seconds` (whole seconds; authored data, nothing enforces it yet), `state` (`open`, `locked` or
+`travel_time_seconds` (whole seconds; a character going where its daily routine says is on the way until the open ways between took this long, and the player's journey sets the least a round takes), `state` (`open`, `locked` or
 `blocked`; default `open`), `note` (why it is locked or blocked) and `opened_by` (the ids of the items that open it when it is
 locked; applies to both directions of the way). Characters go from place
 to place only over open exits (through other places if the way is longer); the game master can carry a

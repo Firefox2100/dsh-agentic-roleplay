@@ -26,15 +26,15 @@ An authored world also has parts that belong to the world as a whole and are not
 The parts of the cast and the story are:
 
 - **Characters:** identity, role, personality, speech, initial state, emotion, intents, routines, voice and visual identity.
-- **Places:** descriptions, containment, features and exits.
-- **Things:** descriptions, quantity, condition, ownership, placement and equipment properties.
+- **Places:** descriptions, containment, features, exits, visual identity and a reference picture (generated from the identity, or a PNG you upload).
+- **Things:** descriptions, quantity, condition, ownership, placement, equipment properties, visual identity and a reference picture.
 - **Factions:** values, structure, members, goals and faction relationships.
 - **Relations:** directional character relationships and explicit entity knowledge.
 - **Lore:** canonical entries, subjects, related entries and sources. In an authored world entries can be added by title and removed (moved to `.trash`); an entry that other lore or a plot still names cannot be removed until those references are gone.
 - **Plots:** plot definitions and, in a session, current progress.
 - **Variables:** authored deterministic state.
-- **Interface:** the interface packs of an authored world: what each holds and asks for, every problem with its file, and a preview of each surface as a story of the world would start (see [interface packs](./interface-packs)).
-- **Triggers:** what the world does by itself, read-only, in sentences: what each waits for and does, in a story whether and how often it fired, and what it names that the world does not have. Triggers are made and changed through the authoring assistant, or by editing `triggers.json`.
+- **Interface:** the interface packs of an authored world: what each holds and asks for, every problem with its file, and a preview of each surface as a story of the world would start (see [interface packs](./interface-packs)). You can make a pack, and edit, add or delete its text files (html, css, js, json, txt, svg) here; the pack is checked again after each save, and what is wrong with it is listed even when the file was kept. Pictures and fonts are put in the folder by hand.
+- **Triggers:** what the world does by itself, in sentences: what each waits for and does, in a story whether and how often it fired, and what it names that the world does not have. In a world's own editor each trigger can be edited as its document, added, or removed (the removed document is kept in the world's `.trash`); a document is checked as a story start checks it, and refused with every problem when it names something the world does not have. A story's triggers are shown only. The authoring assistant and the file `triggers.json` work too.
 
 Each panel validates before saving. Keep IDs stable after other records refer to them. Names may change without breaking links; IDs are the links.
 
@@ -56,7 +56,7 @@ A world is played in the language it is written in: the names, descriptions and 
 
 - Names (people, places, things, groups, holidays) are translated first, once, so that every file calls each of them the same way. A character's or faction's original name is kept as an alias, so a player can still type it.
 - The words of every file are then translated file by file: names, descriptions, speech, goals, relationships, lore, plots, rules, openings, routine activities, what triggers say and what tracked values are called.
-- What is not words is kept exactly: ids, references, times, day rules, tokens such as `{character:key}`, numbers and the settings of variables. Image prompts (visual identities), prompt files the world carries and interface packs are copied as they were; adapt them by hand if they matter.
+- What is not words is kept exactly: ids, references, times, day rules, tokens such as `{character:key}`, numbers and the settings of variables. What a visual identity says about how someone looks is translated (its tags are kept), and the world's own prompt files are written in the new language beside the old ones, with their `${...}` variables kept; a prompt file the new language already has is left alone. Interface packs and images are copied as they are: a pack reads the interface language from `rp.theme()` and carries its own texts.
 - Every translation is checked before it is accepted: one for each text, the tokens in braces unchanged, and not left in the original language. A text that fails is asked again once; if it still fails the translation stops and the chat says why.
 - The copy is then checked as a story start checks a world. Any problem is listed in the chat.
 

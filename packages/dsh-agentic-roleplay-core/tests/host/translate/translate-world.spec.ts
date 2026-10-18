@@ -1,4 +1,4 @@
-import { cp, mkdtemp, readFile, readdir, rm, stat } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -34,7 +34,7 @@ function fakeContext(options: { wrongCount?: boolean } = {}): ImportContext & { 
     const given = JSON.parse(job.prompt) as { names?: string[]; texts?: { text: string }[] }
     const result = given.names !== undefined
       ? { terms: given.names.map(source => ({ source, target: `${CHINESE}${source.length}` })) }
-      : { translations: given.texts!.map(({ text }) => `${(text.match(/\{[^{}]*\}/g) ?? []).join('')}${CHINESE.repeat(text.length)}`) }
+      : { translations: given.texts!.map(({ text }) => `${(text.match(/\$?\{[^{}]*\}/g) ?? []).join('')}${CHINESE.repeat(text.length)}`) }
     if (options.wrongCount && 'translations' in result) result.translations.pop()
     const problem = job.check?.(result as T)
     if (problem !== undefined) throw new Error(problem)
@@ -86,6 +86,25 @@ describe('translating a world', () => {
     expect(clara['aliases']).toContain(before['name'])
     expect((clara['start'] as { location: string }).location).toBe((before['start'] as { location: string }).location)
     expect((await readdir(join(copy, 'locations'))).sort()).toEqual((await readdir(join(source, 'locations'))).sort())
+  })
+
+  it('writes the world\'s own prompt files in the new language with their variables kept, and leaves one that exists', async () => {
+    await mkdir(join(source, 'prompts', 'en', 'roleplay'), { recursive: true })
+    await mkdir(join(source, 'prompts', 'zh', 'roleplay'), { recursive: true })
+    await writeFile(join(source, 'prompts', 'en', 'roleplay', 'style.md'), 'Write in ${language}, short and plain, in the voice of a ship\'s log.\n')
+    await writeFile(join(source, 'prompts', 'en', 'roleplay', 'persona.md'), 'You tell the story of a harbor town at night.\n')
+    await writeFile(join(source, 'prompts', 'zh', 'roleplay', 'persona.md'), '你讲述一个夜晚港口小镇的故事。\n')
+    const report = await translateWorld(fakeContext(), catalog, { directory: source }, 'zh', 'en')
+    expect(report.prompts).toEqual(['roleplay/style'])
+    const copy = join(base, 'worlds', report.folder)
+    expect(await readFile(join(copy, 'prompts', 'zh', 'roleplay', 'style.md'), 'utf8')).toContain('${language}')
+    expect(await readFile(join(copy, 'prompts', 'zh', 'roleplay', 'persona.md'), 'utf8')).toBe('你讲述一个夜晚港口小镇的故事。\n')
+    expect(report.copiedAsIs).not.toContain('prompts')
+  })
+
+  it('translates what a visual identity says and leaves its tags', () => {
+    const leaves = leavesOf('character', { name: 'Clara', visual_identity: { description: 'A tall woman in a grey coat.', tags: ['coat'], negative_tags: ['blur'] } })
+    expect(leaves.map(leaf => leaf.path.join('.'))).toEqual(['name', 'visual_identity.description'])
   })
 
   it('refuses a world that is already in the language, and a world that cannot be read', async () => {

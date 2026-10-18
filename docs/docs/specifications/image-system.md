@@ -24,7 +24,7 @@ Characters, locations and items may have a `visual_identity`. It contains only s
 
 At session creation authored identities are copied into the `visual_identities` table. An identity made or edited during play is session state and therefore follows snapshots and branches. Its version advances on every replacement or update. Generated images are not database rows.
 
-The character editor exposes the same identity in both contexts. In the Worlds page it edits `visual_identity` in the character's JSON and generates the world's canonical portrait. In a live chat it edits the copied database identity and generates the session's portrait. Starting a session also hard-links (or copies across filesystems) the world's canonical entity references into the session, so the session is self-contained and later changes do not alter its source world.
+Places and things have the same controls in their sheets: a picture generated from the saved visual identity, or a PNG brought without one (`/worlds/state/<place|thing>/image` and `/sessions/world/<place|thing>/image`, stored as the entity's reference image). The character editor exposes the same identity in both contexts. In the Worlds page it edits `visual_identity` in the character's JSON and generates the world's canonical portrait. In a live chat it edits the copied database identity and generates the session's portrait. Starting a session also hard-links (or copies across filesystems) the world's canonical entity references into the session, so the session is self-contained and later changes do not alter its source world.
 
 ## Files
 

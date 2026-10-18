@@ -62,6 +62,17 @@ describe('the documents of the world', () => {
     expect(documentProblem('character', document)).toBeUndefined()
   })
 
+  it('makes the ways a character knows into pairs of places, and keeps only ways the world has', () => {
+    const { document, notes } = characterDocument(roster[0]!, { tier: 'supporting', kind: 'person', summary: 's', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, knows: { ways: [{ from: 'The Cellar', to: 'The Light' }, { from: 'cellar', to: 'light' }, { from: 'Nowhere', to: 'light' }] } }, roster)
+    const exits = (document['knowledge'] as { exits: { from: string; to: string }[] }).exits
+    expect(exits).toHaveLength(1)
+    expect(notes).toHaveLength(1)
+    const result = { characters: [{ id: 'tam', name: 'Tam', knowledge: { exits: [exits[0]!, { from: 'light', to: 'cellar' }] } }], locations: [{ id: 'cellar', exits: [{ to: 'light' }] }, { id: 'light' }], items: [], notes: [] as string[] }
+    pruneKnowledge(result)
+    expect(result.characters[0]!['knowledge']).toEqual({ exits: [exits[0]] })
+    expect(result.notes).toHaveLength(1)
+  })
+
   it('takes out of what characters know the places and things that were not written', () => {
     const result = { characters: [{ id: 'tam', name: 'Old Tam', knowledge: { locations: ['cellar', 'gone'], items: ['ledger'] } }, { id: 'mira', name: 'Mira', knowledge: { items: ['ledger'] } }], locations: [{ id: 'cellar' }], items: [], notes: [] as string[] }
     pruneKnowledge(result)

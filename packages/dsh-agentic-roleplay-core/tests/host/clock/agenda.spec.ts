@@ -75,6 +75,31 @@ describe('catching the days up with the clock', () => {
     expect(skipAhead(session, config, 1, 2, wall, { byMinutes: 60, reason: 'x' }).moved).toEqual([])
   })
 
+  it('has a character on the way for as long as the way takes, and there when it is over', () => {
+    session.edit({ turn: 1, exits: [{ from: 'home', to: 'street', travelSeconds: 1200 }] })
+    startTurn(session, config, 1, wall)
+    expect(placeOf('marcus')).toBe('home')
+    skipAhead(session, config, 1, 1, wall, { untilTime: '08:10', reason: 'a night passes' })
+    expect(placeOf('marcus')).toBe('home')
+    expect(activityOf('marcus')).toBe('on the way to Street, for "repairs the street lamps"')
+    const moved = skipAhead(session, config, 1, 1, wall, { untilTime: '08:30', reason: 'time passes' })
+    expect(placeOf('marcus')).toBe('street')
+    expect(activityOf('marcus')).toBe('repairs the street lamps')
+    expect(moved.moved.map(move => move.character)).toEqual(['marcus'])
+  })
+
+  it('does not hold a character back when no way is timed, and drops a journey when the day moves on', () => {
+    session.edit({ turn: 1, exits: [{ from: 'home', to: 'street' }] })
+    startTurn(session, config, 1, wall)
+    skipAhead(session, config, 1, 1, wall, { untilTime: '08:05', reason: 'a night passes' })
+    expect(placeOf('marcus')).toBe('street')
+    session.edit({ turn: 1, exitChanges: [{ from: 'street', to: 'home', travelSeconds: 7200, oneWay: true }] })
+    skipAhead(session, config, 1, 1, wall, { untilTime: '18:30', reason: 'a day passes' })
+    expect(activityOf('marcus')).toContain('on the way to Home')
+    skipAhead(session, config, 1, 1, wall, { untilTime: '07:00', reason: 'a night passes' })
+    expect(placeOf('marcus')).toBe('home')
+  })
+
   it('takes up a window with no place by what it has the character doing, without moving it', () => {
     session.routines.replace(id('marcus'), [{ days: [], start: 0, end: 1439, activity: 'keeps watch', interruptible: true }])
     startTurn(session, config, 1, wall)

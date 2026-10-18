@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { isStrip, SURFACE_NAMES, type PackPreview, type SurfaceName, type WorldPackDetail } from '../../shared/interface-pack.ts'
 import { PackFrame, type FrameInput } from '../widgets/pack-frame/PackFrame.tsx'
 import type { FrameBackend } from '../widgets/pack-frame/frame-api.ts'
 import type { PacksLocaleKey } from './packs-locales.ts'
-import { loadPackPreview, loadWorldPacks } from './world-files-api.ts'
+import { createPack, loadPackFile, loadPackPreview, loadWorldPacks, removePackFile, savePackFile } from './world-files-api.ts'
 import type { Translate } from './WorldEditor.tsx'
 import css from './CharactersPanel.module.css'
 import own from './PacksPanel.module.css'
@@ -12,6 +12,9 @@ import own from './PacksPanel.module.css'
 const WIDTHS = { narrow: 360, medium: 720, wide: 1100 } as const
 type Width = keyof typeof WIDTHS
 const MAX_LOG = 8
+const TEXT_FILE = /\.(html|css|js|json|txt|svg)$/i
+
+type Editing = { path: string; text: string; state: 'loading' | 'ready' | 'saving'; error?: string; created?: boolean }
 
 /** A preview keeps nothing and has no turns played: what a surface asks to keep stays in memory until it is reloaded. */
 function previewBackend(): FrameBackend {
@@ -36,6 +39,10 @@ export function PacksPanel({ t, worldId, actions }: { t: Translate; worldId: str
   const [reload, setReload] = useState(0)
   const [preview, setPreview] = useState<PackPreview | { failed: string } | undefined>()
   const [log, setLog] = useState<string[]>([])
+  const [editing, setEditing] = useState<Editing>()
+  const [creating, setCreating] = useState<{ kind: 'pack' | 'file'; value: string }>()
+  const [removing, setRemoving] = useState<string>()
+  const [outcome, setOutcome] = useState<string>()
 
   useEffect(() => {
     const abort = new AbortController()
@@ -67,6 +74,44 @@ export function PacksPanel({ t, worldId, actions }: { t: Translate; worldId: str
   const [stripHeight, setStripHeight] = useState<number | undefined>()
   useEffect(() => { setStripHeight(undefined) }, [shown, preview, reload])
 
+  const signal = (): AbortSignal => new AbortController().signal
+  const failed = (error: unknown): string => (error instanceof Error ? error.message : String(error))
+  const openFile = (path: string): void => {
+    if (pack === undefined) return
+    setOutcome(undefined)
+    setEditing({ path, text: '', state: 'loading' })
+    loadPackFile(worldId, pack.id, path, signal()).then(
+      (text) => { setEditing(current => (current?.path === path ? { path, text, state: 'ready' } : current)) },
+      (error: unknown) => { setEditing({ path, text: '', state: 'ready', error: say('fileNotSaved', { message: failed(error) }) }) },
+    )
+  }
+  const saveFile = (): void => {
+    if (pack === undefined || editing === undefined) return
+    setEditing({ ...editing, state: 'saving' })
+    savePackFile(worldId, pack.id, editing.path, editing.text, signal()).then(
+      (problems) => { setEditing(undefined); setOutcome(problems.length === 0 ? say('savedClean') : say('savedWith', { count: problems.length })); setReload(count => count + 1) },
+      (error: unknown) => { setEditing({ ...editing, state: 'ready', error: say('fileNotSaved', { message: failed(error) }) }) },
+    )
+  }
+  const removeFile = (path: string): void => {
+    if (pack === undefined) return
+    setRemoving(undefined)
+    removePackFile(worldId, pack.id, path, signal()).then(
+      () => { setOutcome(undefined); setReload(count => count + 1) },
+      (error: unknown) => { setOutcome(say('fileNotSaved', { message: failed(error) })) },
+    )
+  }
+  const create = (): void => {
+    if (creating === undefined || creating.value.trim() === '') return
+    const value = creating.value.trim()
+    setCreating(undefined)
+    if (creating.kind === 'file') { setEditing({ path: value, text: '', state: 'ready', created: true }); return }
+    createPack(worldId, value, value, signal()).then(
+      () => { setChosen(value); setOutcome(undefined); setReload(count => count + 1) },
+      (error: unknown) => { setOutcome(say('fileNotSaved', { message: failed(error) })) },
+    )
+  }
+
   const refresh = (
     <Button variant="ghost" size="sm" onClick={() => { setReload(count => count + 1) }}>{say('reload')}</Button>
   )
@@ -80,6 +125,12 @@ export function PacksPanel({ t, worldId, actions }: { t: Translate; worldId: str
       <div className={css.body}>
         <article className={css.sheet}>
           <p>{say('help')}</p>
+          <div className={own.controls}>
+            {creating === undefined
+              ? <><Button variant="ghost" size="sm" onClick={() => { setCreating({ kind: 'pack', value: '' }) }}>{say('newPack')}</Button>{pack !== undefined && <Button variant="ghost" size="sm" onClick={() => { setCreating({ kind: 'file', value: '' }) }}>{say('newFile')}</Button>}</>
+              : <><Input value={creating.value} placeholder={say(creating.kind === 'pack' ? 'newPackId' : 'newFilePath')} aria-label={say(creating.kind === 'pack' ? 'newPackId' : 'newFilePath')} onChange={event => { setCreating({ ...creating, value: event.target.value }) }} /><Button size="sm" onClick={create}>{say('create')}</Button><Button variant="ghost" size="sm" onClick={() => { setCreating(undefined) }}>{say('cancelFile')}</Button></>}
+          </div>
+          {outcome !== undefined && <p className={own.note} role="status">{outcome}</p>}
           {packs === undefined && <p>{say('loading')}</p>}
           {packs !== undefined && !Array.isArray(packs) && <p className={css.error} role="alert">{say('loadFailed', { message: packs.failed })}</p>}
           {Array.isArray(packs) && list.length === 0 && <p>{say('none')}</p>}
@@ -90,7 +141,15 @@ export function PacksPanel({ t, worldId, actions }: { t: Translate; worldId: str
                 {pack.description !== '' && <p>{pack.description}</p>}
                 <p>{pack.actions.length === 0 ? say('noActions') : `${say('actions')}: ${pack.actions.join(', ')}`}{pack.skin === undefined ? '' : ` · ${say('skin', { file: pack.skin })}`}{pack.tokens === 0 ? '' : ` · ${say('tokens', { count: pack.tokens })}`}</p>
                 {surfaces.length > 0 && <p><span className={css.label}>{say('surfaces')}</span> {surfaces.map(name => <Tag key={name}>{say(name)}: {pack.surfaces[name]?.file}</Tag>)}</p>}
-                {pack.files.length > 0 && <details><summary>{say('files')} ({pack.files.length})</summary><ul className={own.files}>{pack.files.map(file => <li key={file.path}>{file.path} <span className={css.label}>{file.size} B</span></li>)}</ul></details>}
+                {pack.files.length > 0 && <details open={editing !== undefined}><summary>{say('files')} ({pack.files.length})</summary><ul className={own.files}>{pack.files.map(file => <li key={file.path}>{file.path} <span className={css.label}>{file.size} B</span>{' '}{TEXT_FILE.test(file.path) && <Button variant="ghost" size="sm" onClick={() => { openFile(file.path) }}>{say('editFile')}</Button>}{removing === file.path ? <><Button variant="primary" size="sm" onClick={() => { removeFile(file.path) }}>{say('deleteConfirm', { path: file.path })}</Button><Button variant="ghost" size="sm" onClick={() => { setRemoving(undefined) }}>{say('cancelFile')}</Button></> : <Button variant="ghost" size="sm" onClick={() => { setRemoving(file.path) }}>{say('deleteFile')}</Button>}</li>)}</ul><p className={own.note}>{say('textOnly')}</p></details>}
+                {editing !== undefined && (
+                  <div data-testid="roleplay-pack-editor">
+                    <p><span className={css.label}>{editing.path}</span> <span className={own.note}>{say('editHelp')}</span></p>
+                    <textarea className={css.area} rows={16} spellCheck={false} style={{ fontFamily: 'monospace' }} aria-label={editing.path} value={editing.state === 'loading' ? say('fileLoading') : editing.text} disabled={editing.state !== 'ready'} onChange={event => { setEditing({ ...editing, text: event.target.value }) }} />
+                    {editing.error !== undefined && <p className={css.error} role="alert">{editing.error}</p>}
+                    <p><Button size="sm" disabled={editing.state !== 'ready'} onClick={saveFile}>{editing.state === 'saving' ? say('fileSaving') : say('saveFile')}</Button> <Button variant="ghost" size="sm" onClick={() => { setEditing(undefined) }}>{say('cancelFile')}</Button></p>
+                  </div>
+                )}
                 {pack.problems.length > 0 && <div className={css.error} role="alert"><strong>{say('problems')}</strong><ul>{pack.problems.map((problem, index) => <li key={index}>{problem.file === '' ? problem.message : `${problem.file}: ${problem.message}`}</li>)}</ul></div>}
               </section>
               <section className={css.section}>

@@ -27,6 +27,27 @@ describe('a routine', () => {
     expect(store.routines.all().map(entry => entry.characterId)).toEqual([alice()])
   })
 
+  it('has an exception for one day that takes the routine\'s place on that date only, and is replaced by another for the same date', () => {
+    store.routines.replace(alice(), [window({ start: minute(9), end: minute(17), activity: 'minds the shop' })])
+    const windows = () => store.routines.list(alice())
+    store.edit({ turn: 1, routineExceptions: [{ character: 'alice', date: '1912-10-05', activity: 'keeps to bed with a fever', location: 'home' }] })
+    expect(windows().map(entry => entry.activity)).toEqual(['keeps to bed with a fever', 'minds the shop'])
+    expect(occurrenceAt(windows(), at(5, 10), 'UTC')?.window.activity).toBe('keeps to bed with a fever')
+    expect(occurrenceAt(windows(), at(5, 23, 30), 'UTC')?.window.activity).toBe('keeps to bed with a fever')
+    expect(occurrenceAt(windows(), at(6, 10), 'UTC')?.window.activity).toBe('minds the shop')
+    store.edit({ turn: 1, routineExceptions: [{ character: 'alice', date: '1912-10-05', activity: 'goes to the doctor', from: '10:00', to: '12:00' }] })
+    expect(windows().map(entry => entry.activity)).toEqual(['goes to the doctor', 'minds the shop'])
+    expect(occurrenceAt(windows(), at(5, 13), 'UTC')?.window.activity).toBe('minds the shop')
+  })
+
+  it('refuses an exception without a real date or with only one end of the day, leaving the routine', () => {
+    store.routines.replace(alice(), [window({ start: minute(9), end: minute(17), activity: 'minds the shop' })])
+    expect(() => store.edit({ turn: 1, routineExceptions: [{ character: 'alice', date: 'tomorrow', activity: 'rests' }] })).toThrow(InvalidEditError)
+    expect(() => store.edit({ turn: 1, routineExceptions: [{ character: 'alice', date: '1912-10-05', activity: 'rests', from: '10:00' }] })).toThrow(/both from and to/)
+    expect(() => store.edit({ turn: 1, routineExceptions: [{ character: 'alice', date: '1912-10-05', activity: 'rests', location: 'nowhere' }] })).toThrow(InvalidEditError)
+    expect(store.routines.list(alice())).toHaveLength(1)
+  })
+
   it('refuses a window that is not one, and a character that is not there, leaving what was', () => {
     store.routines.replace(alice(), [window({ start: 0, end: 60, activity: 'sleeps' })])
     for (const bad of [window({ start: 60, end: 60, activity: 'x' }), window({ start: -1, end: 60, activity: 'x' }), window({ start: 0, end: 1440, activity: 'x' }), window({ start: 0, end: 60, activity: ' ' }), window({ days: [7], start: 0, end: 60, activity: 'x' })]) {

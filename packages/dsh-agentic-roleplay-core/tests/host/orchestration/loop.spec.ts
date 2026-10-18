@@ -114,7 +114,7 @@ interface Script {
    */
   /** The game master introduces things itself: how many it brings in before delivering. */
   introduce?: number
-  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops' | 'repeats'; need?: string }
+  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops' | 'repeats' | 'unfitting'; need?: string }
   /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
   things?: 'take' | 'conflict' | 'unlock'
   /** How the game master deals with time: says a round took ten minutes; or skips to seven in the morning before it delivers. */
@@ -248,6 +248,7 @@ function authorAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
   const place = { location: 'street', position: 'by the bar door' }
   if (mode === 'repeats') return call(`a-rep-${edits}`, 'edit_world', { turn, items: [{ key: 'note', name: 'Folded note', wearable: '' }] })
   if (mode === 'loops') return call(`a-loop-${lints}`, 'world_lint', {})
+  if (mode === 'unfitting') return call(`a-unfit-${timesCalled(request, 'submit_result')}-${request.messages.length}`, 'submit_result', { summary: 'no outcome given, so the result does not fit its schema' })
   if (mode === 'declines') return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'The innkeeper already serves; no new person is needed.' })
   if (mode === 'pointless') {
     if (edits === 0 && !last?.isError) return submitCreated
@@ -541,6 +542,13 @@ describe('a turn with the real agent loop', () => {
       expect(authors(adapter).length).toBeLessThan(60)
       expect(session.characters.getBySourceId('mira')).toBeUndefined()
       expect(masterSaw(adapter)).toContain('went on past its 30 calls, or kept repeating a call that failed, without submitting a result and was stopped')
+    })
+
+    it('is stopped when every result it submits fails the result\'s own schema, which the harness refuses before the call runs, and the game master is told it could not be made', async () => {
+      const { adapter, session } = await playAuthored('unfitting')
+      expect(authors(adapter).length).toBeLessThan(60)
+      expect(session.characters.getBySourceId('mira')).toBeUndefined()
+      expect(masterSaw(adapter)).toContain('without submitting a result and was stopped')
     })
 
     it('is stopped early when it sends the call that just failed again and again, being told so first, and the game master is told it could not be made', async () => {

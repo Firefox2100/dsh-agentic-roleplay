@@ -171,6 +171,7 @@ describe('the wire format', () => {
       engagements: [],
       engagementEdits: [],
       routines: [],
+      routineExceptions: [],
       states: [{ character: 'alice', publicState: 'p', innerState: 'i', activity: 'a' }],
       events: [{ turn: 2, round: 1, text: 't', importance: 3, tags: ['k'], involves: ['bob'], perceivedBy: [{ character: 'alice', mode: 'heard', content: 'c', gist: 'g', accuracy: 'partial' }] }],
       eventEdits: [{ id: 1, text: 'x' }], eventRetractions: [2], beliefs: [{ character: 'bob', kind: 'belief', text: 'b', about: ['alice'], importance: 2 }],

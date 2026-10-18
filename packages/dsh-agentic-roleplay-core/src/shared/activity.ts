@@ -12,6 +12,10 @@ export interface ActivityEntry {
   calls: number
   /** Why it did not end with a result; absent when it did. */
   error?: string
+  /** The turn it worked for: the one the game master had begun when it ended. */
+  turn?: number
+  /** The tokens the model service reported for its requests, when it reported any. */
+  tokens?: { input: number; cached: number; output: number }
   /** Names the stored detail of the run, when the session keeps it (setting `diagnostics.keepRuns`). */
   run?: string
 }

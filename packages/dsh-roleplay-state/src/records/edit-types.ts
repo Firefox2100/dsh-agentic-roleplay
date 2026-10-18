@@ -355,6 +355,21 @@ export interface RoutineWindowSpec {
   interruptible?: boolean
 }
 
+/** One day on which a character does something other than its routine says: it takes the place of the routine's windows on that date and is dropped when the same date is set again. */
+export interface RoutineExceptionSpec {
+  character: string
+  /** The date, `YYYY-MM-DD`, in the story's time zone. */
+  date: string
+  activity: string
+  /** `HH:MM`; the whole day when left out. */
+  from?: string
+  to?: string
+  location?: string
+  feature?: string
+  position?: string
+  interruptible?: boolean
+}
+
 /** Sets the recurring day of a character, replacing what it had. */
 export interface RoutineSet {
   character: string
@@ -375,6 +390,7 @@ export interface RecordsEdit {
   engagements?: NewEngagementSpec[]
   engagementEdits?: EngagementEditSpec[]
   routines?: RoutineSet[]
+  routineExceptions?: RoutineExceptionSpec[]
   /** Things the world does when their conditions come true, only by the agent whose work that is. */
   triggers?: TriggerDefinition[]
   states?: StatePatch[]
