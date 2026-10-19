@@ -1,4 +1,5 @@
 import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { cataloguesField, type CatalogueRow } from './catalogues.ts'
 import {
   SettingsFormModel,
   settingsTextField,
@@ -10,10 +11,12 @@ import {
 
 export interface RoleplaySettings {
   rootPath?: string
+  catalogues?: CatalogueRow[]
 }
 
 export interface RoleplaySettingsState extends SettingsFormShell {
   rootPath: SettingsFieldState
+  catalogues: SettingsFieldState
 }
 
 export interface RoleplaySettingsFace extends SettingsFormActions {
@@ -29,10 +32,11 @@ export class RoleplaySettingsController {
   private readonly store: SnapshotStore<RoleplaySettingsState>
 
   constructor(scope: SettingsFormScope<RoleplaySettings>) {
-    this.form = new SettingsFormModel(scope, [settingsTextField('rootPath')])
+    this.form = new SettingsFormModel(scope, [settingsTextField('rootPath'), cataloguesField])
     this.store = this.form.bind(() => ({
       ...this.form.shell(),
       rootPath: this.form.field('rootPath'),
+      catalogues: this.form.field('catalogues'),
     }))
   }
 

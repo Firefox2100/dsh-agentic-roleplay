@@ -8,7 +8,7 @@ const sidebars: SidebarsConfig = {
       'getting-started/first-world', 'getting-started/first-session',
     ]},
     {type: 'category', label: 'Playing', items: [
-      'playing/interface', 'playing/sessions', 'playing/media', 'playing/settings',
+      'playing/interface', 'playing/sessions', 'playing/catalogue', 'playing/media', 'playing/settings',
     ]},
     {type: 'category', label: 'World authoring', items: [
       'authoring/overview', 'authoring/editor', 'authoring/assistant',

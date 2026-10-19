@@ -20,6 +20,7 @@ import { WorldFolderExistsError } from '../../../src/host/worlds/create-world.ts
 import { UnknownStarterError } from '../../../src/host/worlds/starter.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
+import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
 
 let base: string
 let server: Server
@@ -40,6 +41,17 @@ let archiveError: Error | undefined
 let importError: Error | undefined
 let importCalls: string[] = []
 const preview: ImportPreview = { id: 'i1', hasAvatar: false, choices: { name: 'Card', disabledEntries: [], opening: { kind: 'first' } }, card: { sourceSpec: 'chara_card_v3', name: 'Card', description: '', personality: '', scenario: '', firstMessage: 'Hello', alternateGreetings: [], messageExample: '', creatorNotes: '', systemPrompt: '', postHistoryInstructions: '', tags: [], creator: '', characterVersion: '', ignored: { scripts: 0, extensions: [] } } }
+let catalogueCalls: string[] = []
+let catalogueError: Error | undefined
+const catalogue = {
+  sources: () => [{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true }],
+  worlds: async (name: string, query: unknown) => { catalogueCalls.push(`worlds ${name} ${JSON.stringify(query)}`); if (catalogueError !== undefined) throw catalogueError; return { items: [], withKey: true } },
+  world: async (name: string, id: string) => { catalogueCalls.push(`world ${name} ${id}`); if (catalogueError !== undefined) throw catalogueError; return { id } },
+  cover: async (name: string, id: string) => { catalogueCalls.push(`cover ${name} ${id}`); if (catalogueError !== undefined) throw catalogueError; return { type: 'image/png', body: Buffer.from('png') } },
+  install: async (request: unknown) => { catalogueCalls.push(`install ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { world: { id: 'w' }, packs: [] } },
+  updates: async (name: string) => { catalogueCalls.push(`updates ${name}`); if (catalogueError !== undefined) throw catalogueError; return { updates: [], problems: [] } },
+  convert: async (request: unknown) => { catalogueCalls.push(`convert ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { worldId: 'w', chatSessionId: 'c', started: true } },
+}
 let editorError: Error | undefined
 let edited: string[] = []
 let archived: string[] = []
@@ -68,6 +80,8 @@ beforeEach(async () => {
   importError = undefined
   importCalls = []
   editorError = undefined
+  catalogueCalls = []
+  catalogueError = undefined
   edited = []
   archived = []
   writtenSettings = undefined
@@ -80,6 +94,7 @@ beforeEach(async () => {
 
   const worlds = new WorldCatalog(new Context(), { path: base } as RoleplayRoot)
   const handler = createApiHandler({
+    catalogue: catalogue as never,
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
     packs: { worldPacks: () => Promise.resolve([]), preview: () => Promise.reject(new Error('no preview here')), status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
     worlds,
@@ -455,6 +470,69 @@ describe('roleplay API', () => {
       expect((await upload('/worlds/state/place/image/upload?id=w&key=inn', new Uint8Array([0xff]))).status).toBe(422)
       expect(edited).toEqual(['image w place inn', 'image abc thing lamp', 'image w thing lamp 3 inn.png'])
       expect((await fetch(`${origin}/worlds/state/place/image/upload?id=w&key=inn`)).status).toBe(405)
+    })
+  })
+
+  describe('the catalogues', () => {
+    const post = (body: unknown) => fetch(`${origin}/catalogue/install`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('lists the configured catalogues without any key', async () => {
+      expect(await (await fetch(`${origin}/catalogue/sources`)).json()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true }])
+    })
+
+    it('browses and shows worlds, and serves a cover, for the named catalogue', async () => {
+      expect(await (await fetch(`${origin}/catalogue/worlds?source=Home&search=fog&offset=24&sort=popular`)).json()).toEqual({ items: [], withKey: true })
+      expect(await (await fetch(`${origin}/catalogue/world?source=Home&id=w1`)).json()).toEqual({ id: 'w1' })
+      const cover = await fetch(`${origin}/catalogue/cover?source=Home&id=w1`)
+      expect(cover.headers.get('content-type')).toBe('image/png')
+      expect(cover.headers.get('cache-control')).toBe('private, no-cache')
+      expect(Buffer.from(await cover.arrayBuffer()).toString()).toBe('png')
+      expect(catalogueCalls).toEqual(['worlds Home {"kind":"world","search":"fog","offset":24,"sort":"popular"}', 'world Home w1', 'cover Home w1'])
+    })
+
+    it('installs from an address, with the checksum when given', async () => {
+      const response = await post({ url: 'https://x.example/w.zip', sha256: 'ab' })
+      expect(response.status).toBe(201)
+      expect(await response.json()).toEqual({ world: { id: 'w' }, packs: [] })
+      expect(catalogueCalls).toEqual(['install {"url":"https://x.example/w.zip","sha256":"ab"}'])
+      expect((await post({ url: 3 })).status).toBe(400)
+      expect((await post({ url: 'x', sha256: 3 })).status).toBe(400)
+    })
+
+    it('passes how to treat a world the person has, and refuses anything else', async () => {
+      await post({ url: 'https://x.example/w.zip', mode: 'update', overwriteChanges: true })
+      expect(catalogueCalls).toEqual(['install {"url":"https://x.example/w.zip","mode":"update","overwriteChanges":true}'])
+      expect((await post({ url: 'x', mode: 'merge' })).status).toBe(400)
+      expect((await post({ url: 'x', overwriteChanges: 'yes' })).status).toBe(400)
+    })
+
+    it('says what the person can decide when a conflict has a reason', async () => {
+      catalogueError = new CatalogueError('you changed "Harbor" since you installed it', 'conflict', { reason: 'modified', changes: ['changed: notes.txt'] })
+      const response = await post({ url: 'https://x.example/w.zip', mode: 'update' })
+      expect(response.status).toBe(409)
+      expect(await response.json()).toEqual({ message: 'you changed "Harbor" since you installed it', reason: 'modified', changes: ['changed: notes.txt'] })
+    })
+
+    it('checks for updates and converts a card for the named catalogue', async () => {
+      expect(await (await fetch(`${origin}/catalogue/updates?source=Home`)).json()).toEqual({ updates: [], problems: [] })
+      const convert = (body: unknown) => fetch(`${origin}/catalogue/convert`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      const response = await convert({ source: 'Home', versionId: 'v1', language: 'zh' })
+      expect(response.status).toBe(201)
+      expect(await response.json()).toEqual({ worldId: 'w', chatSessionId: 'c', started: true })
+      expect(catalogueCalls).toEqual(['updates Home', 'convert {"source":"Home","versionId":"v1","language":"zh"}'])
+      expect((await convert({ source: 'Home' })).status).toBe(400)
+    })
+
+    it('answers with the status that says whose fault a failure is', async () => {
+      for (const [failure, status] of [['input', 400], ['unknown', 404], ['upstream', 502], ['invalid', 422], ['conflict', 409]] as const) {
+        catalogueError = new CatalogueError(`because ${failure}`, failure)
+        const response = await post({ url: 'https://x.example/w.zip' })
+        expect(response.status).toBe(status)
+        expect(await response.json()).toMatchObject({ message: `because ${failure}` })
+        expect((await fetch(`${origin}/catalogue/worlds?source=Home`)).status).toBe(status)
+      }
+      catalogueError = new Error('unrelated')
+      expect((await post({ url: 'https://x.example/w.zip' })).status).toBe(500)
     })
   })
 

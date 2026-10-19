@@ -1,0 +1,50 @@
+---
+title: Catalogue
+---
+
+The **Catalogue** page browses worlds held by a [Roleplay Catalogue](https://github.com/Firefox2100/roleplay-catalogue) and installs them as worlds of your own. You can add more than one catalogue, and you can also install a world from the address of its archive.
+
+## Set up a catalogue
+
+Open **Settings → Role Play → Catalogues** and choose **Add a catalogue**:
+
+- **Name**: what you call it. Names must be different from each other.
+- **API address**: the catalogue's API root, for example `https://catalogue.example/api`, or `http://localhost:9798` for a catalogue that serves its API without a prefix. It must be a web address with no user name, query or fragment.
+- **API key** (optional): a key created in the catalogue. With one, the page also shows the private worlds that key may read. Without one, only public worlds show.
+
+Saving writes the list to the profile's configuration. The key is stored there as plain text, and the settings form shows it masked but holds it in the browser while you edit. Use a key made for this purpose, with as little reach as the catalogue allows, and keep the profile's configuration file private.
+
+## Browse and install
+
+The page lists published worlds of the catalogue you pick, with search and a newest or popular order. A line under the toolbar says whether your key is in use. Saving a different key (or removing it) in Settings updates the page by itself, so private worlds appear or disappear without a reload.
+
+Select a world to see its description, tags and releases. **Install** downloads the chosen release, checks it against the checksum the catalogue published, and adds it to your worlds. You can then play it or edit it like any world; it is a copy, and the catalogue is not contacted again. If another world already uses the same folder name, the new one gets a numbered folder. A world installed from a release remembers which release it came from, so the page can tell you when a newer one exists.
+
+A world may come with interface packs. A pack runs its own scripts, inside the sandbox that holds every pack, when you play. The page tells you which packs came along; read them first if you do not know the author.
+
+## Update an installed world
+
+When a catalogue has a newer release of a world you installed from it, the page lists it above the grid. Select it and choose **Update**. The new release replaces the world in its own folder, so your sessions keep working, and your previous files are moved to `.trash/worlds/` in your roleplay root rather than deleted.
+
+If you changed the world since you installed it (any file added, edited or removed), the page says so, lists the differences and asks:
+
+- **Overwrite my version** replaces your version with the release. Your version is still kept in the trash folder.
+- **Keep both** installs the release as a separate world named "(copy)", with its own identity, and leaves yours alone. The copy is not tied to the catalogue, so it is not offered updates.
+
+A world with no record of its release (installed before releases were remembered, or copied by hand) gets the same question, because there is no telling whether you changed it. **Install as a separate copy** is also available any time you already have a world.
+
+## Character cards
+
+The **Character cards** tab lists SillyTavern character cards the catalogue holds. **Convert to a world** downloads the card with the catalogue's key and starts the usual [card import](../authoring/avatars-import): a new world is made and its authoring chat converts the card, then opens.
+
+A card never updates or replaces a world. The conversion is done by an agent that makes its own choices, so two conversions of the same card give different worlds, and overwriting an earlier one would not be meaningful. Converting a card again always makes a new world, and the page tells you when you converted that card before.
+
+## Import from an address
+
+**Import from address** installs a world from the address of its ZIP archive:
+
+- an address on a catalogue you added is asked for with that catalogue's key, so a private release works when the key may read it;
+- any other address is fetched as it is. It must be a public web address on a standard port, and the import fails with the reason if it needs a sign-in;
+- the key is only ever sent to the site it was configured for, also when a download redirects elsewhere.
+
+An archive must hold one top-level folder with a `world.json`. The world is written beside your worlds first and moved in only when whole, so a refused archive leaves nothing behind. Archives with links, unsafe or repeated paths, encryption, or more than the size limit `catalogueMaxBytes` (256 MiB unpacked) are refused.

@@ -79,7 +79,7 @@ export interface Reply { status: number; type: string; location: string | undefi
 export type Fetcher = (url: URL, method: 'HEAD' | 'GET', signal: AbortSignal) => Promise<Reply>
 
 /** Looks the name up and refuses it when any answer is not public, at the moment of connecting, so a name cannot change between the check and the use. */
-const guardedLookup: LookupFunction = (hostname, options, callback) => {
+export const guardedLookup: LookupFunction = (hostname, options, callback) => {
   resolve(hostname, { ...options, all: true }, (error, addresses) => {
     if (error !== null) { callback(error, '', 0); return }
     const bad = addresses.find(entry => !isPublicAddress(entry.address))

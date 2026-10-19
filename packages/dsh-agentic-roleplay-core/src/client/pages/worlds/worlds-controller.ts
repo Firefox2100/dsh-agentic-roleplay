@@ -116,8 +116,9 @@ export class WorldsController {
   }
 
   async load(): Promise<void> {
-    if (this.store.getSnapshot().status !== 'idle') return
-    this.store.update((draft) => { draft.status = 'loading' })
+    const { status, refreshing } = this.store.getSnapshot()
+    if (status === 'loading' || refreshing) return
+    if (status === 'idle') this.store.update((draft) => { draft.status = 'loading' })
     await this.run('/worlds', {})
   }
 

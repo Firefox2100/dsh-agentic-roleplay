@@ -62,6 +62,8 @@ import { SessionNotFoundError } from './host/sessions/errors.ts'
 import { AgentUnavailableError } from './host/sessions/errors.ts'
 import type { Timelines } from './host/timeline/service.ts'
 import { WorldCatalog } from './host/worlds/catalog.ts'
+import { Catalogue } from './host/catalogue/service.ts'
+import { Sources } from './host/catalogue/sources.ts'
 import { WorldNotFoundError } from './host/sessions/errors.ts'
 import { sceneImagePath } from './host/images/storage.ts'
 import { speakParts, voicesOf } from './host/speech/service.ts'
@@ -121,6 +123,13 @@ export function apply(ctx: Context, config: Config): void {
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), avatars: () => avatarsWorld(root.path) }
   registerApi(ctx, {
+    catalogue: new Catalogue({
+      sources: new Sources(() => config.catalogues.get()), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
+      importCard: async (file, name, language) => {
+        const preview = await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)
+        return await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, preview.id, preview.choices, language)
+      },
+    }),
     packs: new InterfaceService({ open: id => ctx.roleplayState.openSession(deps.sessionsDir(), id), root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, world: worldId => worlds.find(worldId) }),
     speech: {
       voices: async () => await voicesOf(textToSpeechOf(ctx)),

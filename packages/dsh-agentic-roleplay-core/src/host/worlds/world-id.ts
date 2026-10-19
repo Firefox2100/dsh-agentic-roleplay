@@ -3,7 +3,7 @@ import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 
 /** The indentation the file already uses, so adding the id does not reformat it. */
-function indentOf(text: string): string {
+export function indentOf(text: string): string {
   return /^([ \t]+)"/m.exec(text)?.[1] ?? '  '
 }
 

@@ -27,6 +27,8 @@ import type { ImageUpdate } from '../images/gallery.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WorldFolderExistsError } from '../worlds/create-world.ts'
 import { UnknownStarterError } from '../worlds/starter.ts'
+import type { Catalogue } from '../catalogue/service.ts'
+import { CatalogueError, type CatalogueFailure } from '../catalogue/errors.ts'
 import { readBinaryBody, readJsonBody } from './body.ts'
 import { ImportCardError } from '../import/card.ts'
 import { ImportNotFoundError, parseChoices } from '../import/store.ts'
@@ -40,6 +42,8 @@ export interface ApiConnection {
 }
 
 export interface ApiDeps {
+  /** Worlds held by the catalogues the person configured. */
+  catalogue: Catalogue
   /** The tools other plugins registered for everyone, which a story can give to an agent. */
   externalTools?(): ExternalTool[]
   worlds: WorldCatalog
@@ -192,6 +196,14 @@ async function sendImage(res: ServerResponse, image: { file: string; size: numbe
   await pipeline(createReadStream(image.file), res)
 }
 
+const CATALOGUE_STATUS: Record<CatalogueFailure, number> = { input: 400, unknown: 404, upstream: 502, invalid: 422, conflict: 409 }
+
+/** A catalogue failure with the status that says whose fault it is; anything else is not ours to describe. */
+function catalogueFailure(res: ServerResponse, error: unknown): void {
+  if (error instanceof CatalogueError) return error.detail === undefined ? sendError(res, CATALOGUE_STATUS[error.failure], error.message) : sendJson(res, CATALOGUE_STATUS[error.failure], { message: error.message, ...error.detail })
+  throw error
+}
+
 /** The status an import failure is shown with: what is wrong with the card or the choices is the person's to fix. */
 function importFailure(res: ServerResponse, error: unknown): void {
   if (error instanceof ImportCardError) return sendError(res, 422, error.message)
@@ -209,7 +221,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -217,6 +229,53 @@ export function createApiHandler({ worlds, createWorld, starter, authorWorld, tr
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
       POST: async (req, res) => { try { const body = await readJsonBody(req) as { folder?: unknown; name?: unknown }; if (typeof body.folder !== 'string' || typeof body.name !== 'string') return sendError(res, 400, 'folder and name must be text'); sendJson(res, 201, await createWorld({ folder: body.folder, name: body.name })) } catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message); throw error } },
+    },
+    '/catalogue/sources': { GET: async (_req, res) => { sendJson(res, 200, catalogue.sources()) } },
+    '/catalogue/worlds': {
+      GET: async (_req, res, url) => {
+        const offset = Number(url.searchParams.get('offset') ?? 0)
+        const sort = url.searchParams.get('sort') === 'popular' ? 'popular' : 'recent'
+        try { sendJson(res, 200, await catalogue.worlds(url.searchParams.get('source') ?? '', { kind: url.searchParams.get('kind') === 'card' ? 'card' : 'world', search: url.searchParams.get('search') ?? '', offset: Number.isFinite(offset) ? offset : 0, sort })) } catch (error) { return catalogueFailure(res, error) }
+      },
+    },
+    '/catalogue/world': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await catalogue.world(url.searchParams.get('source') ?? '', url.searchParams.get('id') ?? '')) } catch (error) { return catalogueFailure(res, error) } },
+    },
+    '/catalogue/cover': {
+      GET: async (_req, res, url) => {
+        try {
+          const cover = await catalogue.cover(url.searchParams.get('source') ?? '', url.searchParams.get('id') ?? '')
+          res.statusCode = 200
+          res.setHeader('content-type', cover.type)
+          res.setHeader('content-length', cover.body.length)
+          res.setHeader('x-content-type-options', 'nosniff')
+          res.setHeader('cache-control', 'private, no-cache')
+          res.end(cover.body)
+        } catch (error) { return catalogueFailure(res, error) }
+      },
+    },
+    '/catalogue/updates': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await catalogue.updates(url.searchParams.get('source') ?? '')) } catch (error) { return catalogueFailure(res, error) } },
+    },
+    '/catalogue/install': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { url?: unknown; sha256?: unknown; mode?: unknown; overwriteChanges?: unknown }
+        if (typeof body.url !== 'string') return sendError(res, 400, 'url must be text')
+        if (body.sha256 !== undefined && typeof body.sha256 !== 'string') return sendError(res, 400, 'sha256 must be text')
+        if (body.mode !== undefined && body.mode !== 'new' && body.mode !== 'update' && body.mode !== 'copy') return sendError(res, 400, 'mode must be new, update or copy')
+        if (body.overwriteChanges !== undefined && typeof body.overwriteChanges !== 'boolean') return sendError(res, 400, 'overwriteChanges must be true or false')
+        try { sendJson(res, 201, await catalogue.install({ url: body.url, ...(body.sha256 === undefined ? {} : { sha256: body.sha256 }), ...(body.mode === undefined ? {} : { mode: body.mode }), ...(body.overwriteChanges === undefined ? {} : { overwriteChanges: body.overwriteChanges }) })) } catch (error) { return catalogueFailure(res, error) }
+      },
+    },
+    '/catalogue/convert': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { source?: unknown; versionId?: unknown; language?: unknown }
+        if (typeof body.source !== 'string' || typeof body.versionId !== 'string') return sendError(res, 400, 'source and versionId must be text')
+        try {
+          const language = languageField(body.language)
+          sendJson(res, 201, await catalogue.convert({ source: body.source, versionId: body.versionId, ...(language === undefined ? {} : { language }) }))
+        } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
+      },
     },
     '/worlds/starter': {
       GET: async (_req, res) => { sendJson(res, 200, await starter.list()) },
