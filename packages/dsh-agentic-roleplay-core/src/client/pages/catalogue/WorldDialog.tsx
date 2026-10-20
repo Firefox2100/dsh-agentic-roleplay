@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Modal, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { CatalogueKind, CatalogueSourceStatus, CatalogueWorldDetail, ConvertResult, InstallMode } from '../../../shared/catalogue.ts'
-import { convert, convertPreset, downloadUrl, install, InstallConflict, loadWorld } from './catalogue-api.ts'
+import { convert, convertLorebook, convertPreset, downloadUrl, install, InstallConflict, loadWorld } from './catalogue-api.ts'
 import type { CatalogueLocaleKey } from './locales.ts'
 import css from './CataloguePage.module.css'
 
@@ -30,7 +30,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
   const [detail, setDetail] = useState<CatalogueWorldDetail>()
   const [error, setError] = useState<string>()
   const [versionId, setVersionId] = useState('')
-  const [busy, setBusy] = useState<InstallMode | 'convert' | 'preset'>()
+  const [busy, setBusy] = useState<InstallMode | 'convert' | 'preset' | 'lorebook'>()
   const [done, setDone] = useState<Done>()
   const [failure, setFailure] = useState<string>()
   const [conflict, setConflict] = useState<InstallConflict>()
@@ -93,8 +93,22 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
     )
   }
 
+  const runLorebook = (): void => {
+    if (version === undefined) return
+    setBusy('lorebook'); setFailure(undefined)
+    convertLorebook({ source: source.name, versionId: version.id, title: detail?.name ?? name, language: t('language') }).then(
+      (result) => {
+        setBusy(undefined)
+        try { openChat(result.chatSessionId); onClose() } catch (problem) { setFailure(t('importLorebookFailed', { message: messageOf(problem) })) }
+      },
+      (problem: unknown) => { setBusy(undefined); setFailure(t('importLorebookFailed', { message: messageOf(problem) })) },
+    )
+  }
+
   const idle = busy === undefined && done === undefined && started === undefined && conflict === undefined
-  const primary = kind === 'preset'
+  const primary = kind === 'lorebook'
+    ? <Button variant="primary" disabled={!idle || version === undefined} onClick={runLorebook}>{busy === 'lorebook' ? t('importingLorebook') : t('importLorebookAction')}</Button>
+    : kind === 'preset'
     ? <Button variant="primary" disabled={!idle || version === undefined} onClick={runPreset}>{busy === 'preset' ? t('importingPreset') : t('importPresetAction')}</Button>
     : kind === 'card'
     ? <Button variant="primary" disabled={!idle || version === undefined} onClick={runConvert}>{busy === 'convert' ? t('converting') : t('convert')}</Button>
@@ -128,6 +142,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
               )}
             {kind === 'card' && <p className={css.success}>{t('convertNote')}</p>}
             {kind === 'preset' && <p className={css.success}>{t('importPresetNote')}</p>}
+            {kind === 'lorebook' && <p className={css.success}>{t('importLorebookNote')}</p>}
             {kind === 'card' && detail.converted !== undefined && detail.converted.length > 0 && <p className={css.success}>{t('convertedBefore', { names: detail.converted.map(world => world.name).join(', ') })}</p>}
             {installed !== undefined && (
               <p className={css.success}>

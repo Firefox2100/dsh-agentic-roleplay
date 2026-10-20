@@ -45,7 +45,7 @@ preset.json                                  { "title": "...", "description": ".
 prompts/<语言>/roleplay/style.md             与世界提示词相同的结构
 ```
 
-预设只包含叙述类提示词（`roleplay/persona`、`roleplay/style`、`roleplay/character-style`），检查方式与世界的提示词相同（必须是程序自带的提示词、不能为空、只能使用其自身的 `${name}` 变量）。游戏规则仍属于世界。`sampling` 可以建议游戏主持人和角色的创作温度（0 到 2）；辅助智能体的低温度不由预设改变。预设只提供其拥有文件夹的语言的提示词：其他语言使用根目录的提示词，而不是英文。有问题的预设会连同问题一起列出，且不能使用。
+预设带有故事的提示词（`roleplay/…`），检查方式与世界的提示词相同（必须是程序自带的提示词、不能为空、只能使用其自身的 `${name}` 变量）。叙述类提示词是 `roleplay/persona`、`roleplay/style` 和 `roleplay/character-style`；其他 `roleplay/` 提示词是**规则类提示词**，列在摘要的 `rules` 中。带有规则类提示词的预设会显示警告（卡片、编辑器、批准），因为这些提示词涉及程序读取的工具和字段。由世界书的指令生成的预设（`createPresetFromGuidance`）保留每个内置提示词，并把指引追加在后面。`sampling` 可以建议游戏主持人和角色的创作温度（0 到 2）；辅助智能体的低温度不由预设改变。预设只提供其拥有文件夹的语言的提示词：其他语言使用根目录的提示词，而不是英文。有问题的预设会连同问题一起列出，且不能使用。
 
 预设在故事开始时被**复制**进故事，因此之后对资料库的修改不会影响进行中的故事，分支沿用所属故事的预设。文件按下面的顺序写入，后者覆盖前者：
 
@@ -60,7 +60,7 @@ prompts/<语言>/roleplay/style.md             与世界提示词相同的结构
 
 创建预设的方式：在**预设**页创建（以内置叙述类提示词的副本为起点来编辑）、导入 SillyTavern 预设，或使用世界编辑器“提示词”页的**存为预设**；也可以手工写文件夹，或保存世界的叙述类提示词（`POST /roleplay-api/presets`，带 `name` 和 `fromWorld`；不带 `fromWorld` 则以内置提示词为起点）。`GET /roleplay-api/presets` 列出预设；`GET`/`PUT`/`DELETE /roleplay-api/presets/item?name=` 读取、描述（`title`、`description`、`sampling`）和删除一个预设（删除会把它移到 `<根目录>/.trash/presets/`）；`PUT`/`DELETE /roleplay-api/presets/prompt?name=&language=&id=` 写入或移除一个提示词；`GET /roleplay-api/sessions/preset?id=` 是故事的状态，`POST /roleplay-api/sessions/preset?id=` 带 `name` 表示切换（不带则取消预设）。
 
-**创作聊天。**`POST /roleplay-api/presets/authoring?name=` 会创建或重新打开专属聊天 `preset-author-<编码后的名称>`，位于 `<根目录>/presets` 的“Preset Authoring”项目下，使用 `preset-authoring` 智能体预设（`@dsh-agentic-roleplay/core/preset-authoring`，由捆绑包声明）。它的工具只能触及聊天所对应的那个预设：`read_preset_info`、`list_preset_prompts`、`read_preset_prompt`（预设未带有的提示词读到的是内置文本）、`write_preset_prompt`、`delete_preset_prompt`、`write_preset_info` 和 `import_narration_preset`。每次写入都先征求用户同意；导入只在预设已带有提示词时才询问。提示词的写入采用世界提示词的检查，并限于三个叙述类提示词。
+**创作聊天。**`POST /roleplay-api/presets/authoring?name=` 会创建或重新打开专属聊天 `preset-author-<编码后的名称>`，位于 `<根目录>/presets` 的“Preset Authoring”项目下，使用 `preset-authoring` 智能体预设（`@dsh-agentic-roleplay/core/preset-authoring`，由捆绑包声明）。它的工具只能触及聊天所对应的那个预设：`read_preset_info`、`list_preset_prompts`、`read_preset_prompt`（预设未带有的提示词读到的是内置文本）、`write_preset_prompt`、`delete_preset_prompt`、`write_preset_info` 和 `import_narration_preset`。每次写入都先征求用户同意；导入只在预设已带有提示词时才询问。提示词的写入采用世界提示词的检查；写入或删除规则类提示词时，会带着明确的警告征求同意。
 
 **导入 SillyTavern 预设。**`POST /roleplay-api/presets/import?name=&language=`（请求体为文件）会预留一个空的资料库条目，把文件保存在其 `.import/preset.json`，打开创作聊天并让它调用 `import_narration_preset`；该工具运行与角色卡导入相同的 `import/style` 任务，并把叙述类提示词写入预设的每个内置语言文件夹。在此之前，该条目会以“预设没有提示词”的问题列出。类型为 `sillytavern/preset` 的目录条目走同一条路径（`POST /roleplay-api/catalogue/convert/preset`），以条目标题命名；导入永远不会替换已有的预设。
 

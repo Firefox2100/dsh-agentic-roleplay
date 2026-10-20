@@ -30,10 +30,12 @@ const transport: Transport = async (url, ask) => {
 }
 let converted: { file: Buffer; name: string; language: string | undefined }[]
 let presets: { file: Buffer; title: string; language: string | undefined }[]
+let lorebooks: { file: Buffer; title: string; language: string | undefined }[]
 const problems: string[] = []
 const make = (): Catalogue => new Catalogue({
   sources: new Sources(() => configured), worlds, maxBytes: () => 1024 * 1024, maxCardBytes: () => 1024 * 1024, trashDays: () => 30, problem: (message) => { problems.push(message) }, transport,
   importPreset: async (file, title, language) => { presets.push({ file, title, language }); return { name: 'imported', chatSessionId: 'chat-2', started: true } },
+  importLorebook: async (file, title, language) => { lorebooks.push({ file, title, language }); return { name: 'imported-book', chatSessionId: 'chat-3', started: true } },
   importCard: async (file, name, language) => {
     converted.push({ file, name, language })
     const made = await worlds.list({ refresh: true })
@@ -50,6 +52,7 @@ beforeEach(async () => {
   calls = []
   converted = []
   presets = []
+  lorebooks = []
   answers = {}
   configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKey: 'secret' }, { name: 'Open', baseUrl: 'https://open.example/api', apiKey: '' }]
 })
@@ -388,3 +391,26 @@ describe('importing a SillyTavern preset', () => {
     expect(calls.at(-1)?.url).toContain('resourceType=sillytavern%2Fpreset')
   })
 })
+
+describe('importing a SillyTavern lorebook', () => {
+  const BOOK = JSON.stringify({ entries: { 0: { comment: 'Tides', content: 'Twice a day.' } } })
+  const version = (extra: Record<string, unknown> = {}) => ({ id: 'bv1', resourceId: 'b1', resourceType: 'sillytavern/lorebook', version: '1', ...extra })
+
+  it('downloads it with the catalogue\'s key and hands it to the library under the entry\'s title', async () => {
+    answers['http://localhost:9798/versions/bv1'] = () => json(version({ artifactSha256: createHash('sha256').update(BOOK).digest('hex') }))
+    answers['http://localhost:9798/versions/bv1/download'] = () => ({ status: 200, type: 'application/json', body: Buffer.from(BOOK) })
+    expect(await make().convertLorebook({ source: 'Home', versionId: 'bv1', title: 'Harbor', language: 'en' })).toEqual({ name: 'imported-book', chatSessionId: 'chat-3', started: true })
+    expect(lorebooks).toEqual([{ file: Buffer.from(BOOK), title: 'Harbor', language: 'en' }])
+    expect(presets).toEqual([])
+  })
+
+  it('refuses a release that is not a lorebook, and lists the lorebooks of a catalogue as their own kind', async () => {
+    answers['http://localhost:9798/versions/bv1'] = () => json(version({ resourceType: 'sillytavern/preset' }))
+    await expect(make().convertLorebook({ source: 'Home', versionId: 'bv1' })).rejects.toMatchObject({ failure: 'invalid', message: 'that release is not a lorebook' })
+    answers['http://localhost:9798/resources'] = () => json({ items: [{ ...item('b1', 'Harbor'), resourceType: 'sillytavern/lorebook' }] })
+    const page = await make().worlds('Home', { kind: 'lorebook' })
+    expect(page.items[0]).toMatchObject({ kind: 'lorebook', name: 'Harbor' })
+    expect(calls.at(-1)?.url).toContain('resourceType=sillytavern%2Florebook')
+  })
+})
+

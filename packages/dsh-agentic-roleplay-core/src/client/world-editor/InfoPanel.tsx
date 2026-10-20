@@ -3,13 +3,15 @@ import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import type { Translate } from './WorldEditor.tsx'
 import type { PresetSummary } from '../../shared/presets.ts'
+import type { LorebookSummary } from '../../shared/lorebooks.ts'
+import { listLorebooks } from '../lorebooks-api.ts'
 import { listPresets } from '../presets-api.ts'
 import { loadInfo, loadPlayable, saveInfo } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
-interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; preset: string; alternates: { title: string; text: string; character?: string }[] }
+interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; preset: string; lorebooks: string[]; alternates: { title: string; text: string; character?: string }[] }
 
-const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, preset: info.preset, alternates: info.alternateOpenings })
+const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, preset: info.preset, lorebooks: info.lorebooks, alternates: info.alternateOpenings })
 const lines = (value: string): string[] => value.split('\n').map(line => line.trim()).filter(line => line !== '')
 const words = (value: string): string[] => value.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag !== '')
 
@@ -17,6 +19,7 @@ const words = (value: string): string[] => value.split(/[,，]/).map(tag => tag.
 function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   const edit: Record<string, unknown> = {}
   for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'preset'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
+  if (JSON.stringify(draft.lorebooks) !== JSON.stringify(saved.lorebooks)) edit['lorebooks'] = draft.lorebooks
   if (JSON.stringify(words(draft.tags)) !== JSON.stringify(words(saved.tags))) edit['tags'] = words(draft.tags)
   if (JSON.stringify(lines(draft.rules)) !== JSON.stringify(lines(saved.rules))) edit['rules'] = lines(draft.rules)
   const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), text: entry.text.trim(), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => entry.text !== '')
@@ -32,9 +35,11 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
   const [status, setStatus] = useState<{ state: 'idle' | 'saving' | 'saved' | 'failed'; message?: string }>({ state: 'idle' })
   const [playable, setPlayable] = useState<{ id: string; name: string }[]>([])
   const [presets, setPresets] = useState<PresetSummary[]>([])
+  const [books, setBooks] = useState<LorebookSummary[]>([])
   useEffect(() => {
     const abort = new AbortController()
     listPresets(abort.signal).then(setPresets, () => undefined)
+    listLorebooks(abort.signal).then(setBooks, () => undefined)
     return () => { abort.abort() }
   }, [])
   useEffect(() => {
@@ -53,13 +58,14 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
 
   const edit = changes(saved, draft)
   const dirty = Object.keys(edit).length > 0
-  const set = (key: Exclude<keyof Draft, 'alternates'>, value: string): void => { setDraft({ ...draft, [key]: value }); setStatus({ state: 'idle' }) }
+  const setBooksDraft = (lorebooks: string[]): void => { setDraft({ ...draft, lorebooks }); setStatus({ state: 'idle' }) }
+  const set = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks'>, value: string): void => { setDraft({ ...draft, [key]: value }); setStatus({ state: 'idle' }) }
   const setAlternates = (alternates: Draft['alternates']): void => { setDraft({ ...draft, alternates }); setStatus({ state: 'idle' }) }
   const save = (): void => {
     setStatus({ state: 'saving' })
     saveInfo(worldId, edit, new AbortController().signal).then((value) => { setInfo(value); setSaved(draftOf(value)); setDraft(draftOf(value)); setStatus({ state: 'saved' }); onSaved() }, (failure: unknown) => { setStatus({ state: 'failed', message: failure instanceof Error ? failure.message : String(failure) }) })
   }
-  const field = (key: Exclude<keyof Draft, 'alternates'>, label: Parameters<Translate>[0], help?: Parameters<Translate>[0], options: { rows?: number; wide?: boolean; placeholder?: string; disabled?: boolean } = {}) => (
+  const field = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks'>, label: Parameters<Translate>[0], help?: Parameters<Translate>[0], options: { rows?: number; wide?: boolean; placeholder?: string; disabled?: boolean } = {}) => (
     <label className={`${css.field} ${options.wide === true || options.rows !== undefined ? css.wide : ''}`}>
       <span className={css.label}>{t(label)}</span>
       {options.rows === undefined
@@ -132,6 +138,17 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
                 </select>
                 <span className={css.help}>{t('infoPresetHelp')}</span>
               </label>
+              <fieldset className={css.field} data-testid="roleplay-world-lorebooks">
+                <legend className={css.label}>{t('infoLorebooks')}</legend>
+                {books.map(entry => (
+                  <label key={entry.name}>
+                    <input type="checkbox" checked={draft.lorebooks.includes(entry.name)} disabled={entry.problems.length > 0} onChange={(event) => { setBooksDraft(event.target.checked ? [...draft.lorebooks, entry.name] : draft.lorebooks.filter(name => name !== entry.name)) }} />
+                    {' '}{entry.title}
+                  </label>
+                ))}
+                {draft.lorebooks.filter(name => !books.some(entry => entry.name === name)).map(name => <span key={name} className={css.help}>{t('infoLorebookMissing', { name })}</span>)}
+                <span className={css.help}>{t('infoLorebooksHelp')}</span>
+              </fieldset>
             </div>
           </section>
         </article>

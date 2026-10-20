@@ -31,9 +31,9 @@ describe('the preset chat identity', () => {
 describe('the tools of preset authoring', () => {
   it('start a new preset from the shipped prose prompts and list what it carries', async () => {
     const call = tools()
-    expect(await call('list_preset_prompts', { language: 'en' })).toEqual([
-      { id: 'roleplay/persona', carried: true }, { id: 'roleplay/style', carried: true }, { id: 'roleplay/character-style', carried: true },
-    ])
+    const listed = await call('list_preset_prompts', { language: 'en' }) as { id: string; kind: string; carried: boolean }[]
+    expect(listed.filter(entry => entry.carried).map(entry => entry.id).sort()).toEqual(['roleplay/character-style', 'roleplay/persona', 'roleplay/style'])
+    expect(listed.find(entry => entry.id === 'roleplay/game-master')).toMatchObject({ kind: 'rules', carried: false })
     expect(await call('read_preset_info', {})).toMatchObject({ name: 'noir', title: 'Noir', languages: ['en', 'zh'], problems: [] })
   })
 
@@ -46,11 +46,11 @@ describe('the tools of preset authoring', () => {
     expect(await call('read_preset_prompt', { id: 'roleplay/style', language: 'en' })).toMatchObject({ carried: false })
   })
 
-  it('refuse text a story start would refuse and prompts a preset does not carry', async () => {
+  it('refuse text a story start would refuse and prompts that are not the story\'s', async () => {
     const call = tools()
     await expect(call('write_preset_prompt', { id: 'roleplay/style', language: 'en', text: '  ' })).rejects.toThrow('empty')
     await expect(call('write_preset_prompt', { id: 'roleplay/style', language: 'en', text: 'Uses ${nothing}.' })).rejects.toThrow('${nothing}')
-    await expect(call('write_preset_prompt', { id: 'roleplay/game-master', language: 'en', text: 'x' })).rejects.toThrow()
+    await expect(call('write_preset_prompt', { id: 'world/author', language: 'en', text: 'x' })).rejects.toThrow('not a prompt of the story')
   })
 
   it('change the title, description and temperatures, and refuse what is not acceptable without writing', async () => {
@@ -85,6 +85,14 @@ describe('the approval gate of preset authoring', () => {
     expect(next).toHaveBeenCalledTimes(1)
   })
 
+  it('warns when the prompt is rules of the game, not prose', async () => {
+    const next = vi.fn()
+    const decision = await presetApproval(exec('write_preset_prompt', { language: 'en', id: 'roleplay/rules' }), next, () => true)
+    expect(decision).toMatchObject({ kind: 'ask', displayReason: { en: expect.stringContaining('WARNING') } })
+    await tools()('write_preset_prompt', { id: 'roleplay/rules', language: 'en', text: 'Stay in the scene.\n${rules}' })
+    expect(next).not.toHaveBeenCalled()
+  })
+
   it('asks before an import replaces prompts, and not when the preset has none yet', async () => {
     const next = vi.fn().mockResolvedValue({ kind: 'allow' })
     await expect(presetApproval(exec('import_narration_preset', {}), next, () => true)).resolves.toMatchObject({ kind: 'ask' })
@@ -103,5 +111,14 @@ describe('the prompts of the preset authoring chat', () => {
     expect(shippedText('preset/welcome', language, { preset: 'Noir' })).toContain('Noir')
     expect(shippedText('preset/persona', language)).not.toBe('')
     expect(shippedText('preset/procedure', language)).not.toBe('')
+  })
+})
+
+describe('the prompts of the lorebook authoring chat', () => {
+  it.each(['en', 'zh'])('render in %s with the one value they are given', (language) => {
+    expect(shippedText('lorebook/welcome', language, { lorebook: 'Harbor' })).toContain('Harbor')
+    expect(shippedText('lorebook/persona', language)).not.toBe('')
+    expect(shippedText('lorebook/procedure', language)).not.toBe('')
+    expect(shippedText('import/lorebook', language)).not.toBe('')
   })
 })

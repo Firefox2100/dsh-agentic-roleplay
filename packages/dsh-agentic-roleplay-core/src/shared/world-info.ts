@@ -34,6 +34,8 @@ export interface WorldInfo {
   version: string
   /** The library preset suggested for stories of this world, or empty. */
   preset: string
+  /** The library lorebooks suggested for stories of this world. */
+  lorebooks: string[]
   alternateOpenings: AlternateOpeningText[]
   /** The optional tools the world's agents have switched on or off, by kind of agent: only what was chosen, and names this version does not know. */
   tools: Switchboard
@@ -42,7 +44,7 @@ export interface WorldInfo {
 export type WorldInfoEdit = Partial<Omit<WorldInfo, 'openingParts'>>
 
 const TEXT_FIELDS = ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'preset'] as const
-const LIST_FIELDS = ['tags', 'rules'] as const
+const LIST_FIELDS = ['tags', 'rules', 'lorebooks'] as const
 export const MAX_WORLD_NAME = 200
 export const MAX_WORLD_VERSION = 40
 

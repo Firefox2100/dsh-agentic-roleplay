@@ -3,6 +3,7 @@ import type { VariableValue } from 'dsh-roleplay-model'
 import { readVariableValues } from '../variables/values.ts'
 import type { WorldAuthor } from '../../shared/worlds.ts'
 import { readIdentifier } from '../identifiers.ts'
+import { isLorebookName } from '../lorebooks/lorebooks.ts'
 import { isPresetName } from '../presets/presets.ts'
 import { parseSwitchboard, type Switchboard } from '../../shared/settings.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
@@ -41,6 +42,8 @@ export interface WorldFile {
   narrationVoice?: string
   /** The name of the preset in the person's library this world suggests; sessions use it when none is chosen. */
   preset?: string
+  /** The lorebooks of the person's library this world suggests; stories are started with them when none are chosen. */
+  lorebooks?: string[]
 }
 
 export interface AlternateOpening {
@@ -182,6 +185,8 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const narrationVoice = reader.string('narration_voice')?.trim() || undefined
   const preset = reader.string('preset')?.trim() || undefined
   if (preset !== undefined && !isPresetName(preset)) reader.fail('preset', 'must be the name of a preset: letters, digits, "-" and "_"')
+  const lorebooks = reader.strings('lorebooks').map(entry => entry.trim()).filter(entry => entry !== '')
+  for (const [index, entry] of lorebooks.entries()) if (!isLorebookName(entry)) reader.fail(`lorebooks[${index}]`, 'must be the name of a lorebook: letters, digits, "-" and "_"')
   if (name === undefined || issues.length > 0) return { ok: false, issues }
 
   return {
@@ -202,6 +207,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(alternateOpenings === undefined ? {} : { alternateOpenings }),
       ...(narrationVoice === undefined ? {} : { narrationVoice }),
       ...(preset === undefined ? {} : { preset }),
+      ...(lorebooks.length === 0 ? {} : { lorebooks: [...new Set(lorebooks)] }),
     },
   }
 }

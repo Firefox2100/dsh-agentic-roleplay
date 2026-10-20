@@ -20,6 +20,9 @@ title: Filesystem layout
   presets/<name>/
     preset.json
     prompts/<language>/roleplay/
+  lorebooks/<name>/
+    lorebook.json
+    lore/<entry>/lore.json
   avatars/
     world.json
     characters/<avatar>/character.json
@@ -38,6 +41,8 @@ The roleplay root is portable content. Base plugin configuration and credentials
 World folder names are not identities. `world.json.id` is the durable world reference stored by sessions. Entity IDs are local to a world and are remapped into session database IDs on import while retained as source IDs.
 
 A folder in `presets/` is a [preset](../authoring/presets): its `preset.json` (title, description, suggested temperatures) and the narration prompts it carries. A story gets a copy of the prompts when it starts, and keeps `preset.json` beside its database to remember where they came from.
+
+A folder in `lorebooks/` is a [lorebook](../authoring/lorebooks): its `lorebook.json` (title, description) and its entries, each in the format of a world's own [lore](../world-format/factions-lore#lore) with the scope always written. A story gets a copy of the entries when it starts and records which lorebooks they came from in its database.
 
 The `ui` folders hold [interface packs](../authoring/interface-packs.mdx): the world's own, your own in the root, and the copies a session plays with.
 

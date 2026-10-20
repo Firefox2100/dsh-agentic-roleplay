@@ -22,6 +22,7 @@ import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
 import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
 import type { PresetApi } from '../../../src/host/presets/routes.ts'
+import type { LorebookApi } from '../../../src/host/lorebooks/routes.ts'
 
 let base: string
 let server: Server
@@ -44,7 +45,7 @@ let importCalls: string[] = []
 const preview: ImportPreview = { id: 'i1', hasAvatar: false, choices: { name: 'Card', disabledEntries: [], opening: { kind: 'first' } }, card: { sourceSpec: 'chara_card_v3', name: 'Card', description: '', personality: '', scenario: '', firstMessage: 'Hello', alternateGreetings: [], messageExample: '', creatorNotes: '', systemPrompt: '', postHistoryInstructions: '', tags: [], creator: '', characterVersion: '', ignored: { scripts: 0, extensions: [] } } }
 let catalogueCalls: string[] = []
 let presetCalls: string[] = []
-const summary = { name: 'noir', title: 'Noir', description: '', languages: ['en'], prompts: ['roleplay/style'], sampling: {}, problems: [] }
+const summary = { name: 'noir', title: 'Noir', description: '', languages: ['en'], prompts: ['roleplay/style'], rules: [], sampling: {}, problems: [] }
 const presetApi: PresetApi = {
   list: () => [summary],
   read: (name) => { if (name !== 'noir') throw new Error(`there is no preset "${name}"`); return { summary, prompts: { 'en/roleplay/style': 'Terse.' } } },
@@ -58,6 +59,20 @@ const presetApi: PresetApi = {
   status: (id) => { if (id !== 'sess') throw new SessionNotFoundError(`no session "${id}"`); return { available: [summary] } },
   apply: (id, name) => { presetCalls.push(`apply ${id} ${String(name)}`); return { files: [] } },
 }
+let lorebookCalls: string[] = []
+const bookSummary = { name: 'harbor', title: 'Harbor', description: '', entries: 1, common: 1, problems: [] }
+const lorebookApi: LorebookApi = {
+  list: () => Promise.resolve([bookSummary]),
+  read: (name) => { if (name !== 'harbor') return Promise.reject(new Error(`there is no lorebook "${name}"`)); return Promise.resolve({ summary: bookSummary, entries: [] }) },
+  create: (request) => { lorebookCalls.push(`create ${JSON.stringify(request)}`); return Promise.resolve(bookSummary) },
+  updateInfo: (name, change) => { lorebookCalls.push(`info ${name} ${JSON.stringify(change)}`); return Promise.resolve(bookSummary) },
+  writeEntry: (name, entry) => { lorebookCalls.push(`entry ${name} ${JSON.stringify(entry)}`); return Promise.resolve(bookSummary) },
+  removeEntry: (name, id) => { lorebookCalls.push(`remove entry ${name} ${id}`); return Promise.resolve(bookSummary) },
+  remove: (name) => { lorebookCalls.push(`remove ${name}`); return Promise.resolve() },
+  author: (name, language) => { lorebookCalls.push(`author ${name} ${language ?? '-'}`); return Promise.resolve({ chatSessionId: `lorebook-author-${name}` }) },
+  importFile: (name, file, language) => { lorebookCalls.push(`import ${name} ${file.length} ${language ?? '-'}`); return Promise.resolve({ name, chatSessionId: `lorebook-author-${name}`, started: true }) },
+  maxUploadBytes: 1024,
+}
 let catalogueError: Error | undefined
 const catalogue = {
   sources: () => [{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true }],
@@ -67,6 +82,7 @@ const catalogue = {
   install: async (request: unknown) => { catalogueCalls.push(`install ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { world: { id: 'w' }, packs: [] } },
   updates: async (name: string) => { catalogueCalls.push(`updates ${name}`); if (catalogueError !== undefined) throw catalogueError; return { updates: [], problems: [] } },
   convert: async (request: unknown) => { catalogueCalls.push(`convert ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { worldId: 'w', chatSessionId: 'c', started: true } },
+  convertLorebook: async (request: unknown) => { catalogueCalls.push(`lorebook ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { name: 'b', chatSessionId: 'c', started: true } },
   convertPreset: async (request: unknown) => { catalogueCalls.push(`preset ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { name: 'p', chatSessionId: 'c', started: true } },
 }
 let editorError: Error | undefined
@@ -115,6 +131,7 @@ beforeEach(async () => {
     catalogue: catalogue as never,
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
     presets: presetApi,
+    lorebooks: lorebookApi,
     packs: { worldPacks: () => Promise.resolve([]), preview: () => Promise.reject(new Error('no preview here')), status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
     worlds,
     avatars: { create: async () => 'new', remove: async () => undefined, addToWorld: async () => [] },
@@ -143,8 +160,8 @@ beforeEach(async () => {
       uploadPreset: (worldId, file, name, language) => { importCalls.push(`preset ${worldId} ${file.length} ${name} ${language ?? '-'}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
     },
     worldFiles: {
-      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', alternateOpenings: [], tools: {} }),
-      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', alternateOpenings: [], tools: {} }) },
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], tools: {} }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], tools: {} }) },
       dice: () => Promise.resolve({ checks: [] }),
       editDice: (_world, dice) => (dice.checks.some(check => check.key === '') ? Promise.reject(new InvalidEditProblems(['checks[0].key is required'])) : Promise.resolve(dice)),
       calendar: () => Promise.resolve({ hemisphere: 'north', holidays: [] }),
@@ -464,6 +481,38 @@ describe('roleplay API', () => {
     })
   })
 
+  describe('the lorebook library', () => {
+    const send = (method: string, path: string, body?: unknown) => fetch(`${origin}${path}`, { method, ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) })
+    beforeEach(() => { lorebookCalls = [] })
+
+    it('lists, reads, makes, changes and removes lorebooks', async () => {
+      expect(await (await send('GET', '/lorebooks')).json()).toEqual([bookSummary])
+      expect((await send('GET', '/lorebooks/item?name=gone')).status).toBe(422)
+      expect((await send('POST', '/lorebooks', { name: 'harbor', title: 'Harbor' })).status).toBe(201)
+      expect((await send('POST', '/lorebooks', { title: 'x' })).status).toBe(400)
+      expect((await send('PUT', '/lorebooks/item?name=harbor', { description: 'Town.' })).status).toBe(200)
+      expect((await send('PUT', '/lorebooks/item?name=harbor', { description: 5 })).status).toBe(400)
+      expect((await send('DELETE', '/lorebooks/item?name=harbor')).status).toBe(204)
+      expect(lorebookCalls).toEqual(['create {"name":"harbor","title":"Harbor"}', 'info harbor {"description":"Town."}', 'remove harbor'])
+    })
+
+    it('writes and removes an entry, and says what is wrong with one', async () => {
+      const entry = { title: 'Tides', kind: 'geography', scope: 'everyone', body: 'Twice a day.' }
+      expect((await send('PUT', '/lorebooks/entry?name=harbor&id=tides', entry)).status).toBe(200)
+      expect((await send('PUT', '/lorebooks/entry?name=harbor&id=tides', { ...entry, kind: 'nonsense' })).status).toBe(400)
+      expect((await send('PUT', '/lorebooks/entry?name=harbor&id=tides', { ...entry, scope: 'some' })).status).toBe(400)
+      expect((await send('PUT', '/lorebooks/entry?name=harbor&id=tides', { ...entry, knownBy: 'Ann' })).status).toBe(400)
+      expect((await send('DELETE', '/lorebooks/entry?name=harbor&id=tides')).status).toBe(200)
+      expect(lorebookCalls).toEqual(['entry harbor {"id":"tides","title":"Tides","kind":"geography","scope":"everyone","knownBy":[],"summary":"","body":"Twice a day.","related":[]}', 'remove entry harbor tides'])
+    })
+
+    it('opens the authoring chat and takes an uploaded lorebook', async () => {
+      expect(await (await send('POST', '/lorebooks/authoring?name=harbor', { language: 'zh' })).json()).toEqual({ chatSessionId: 'lorebook-author-harbor' })
+      expect((await fetch(`${origin}/lorebooks/import?name=harbor&language=en`, { method: 'POST', body: new Uint8Array([1, 2, 3]) })).status).toBe(200)
+      expect(lorebookCalls).toEqual(['author harbor zh', 'import harbor 3 en'])
+    })
+  })
+
   describe('the preset library', () => {
     const send = (method: string, path: string, body?: unknown) => fetch(`${origin}${path}`, { method, ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) })
 
@@ -581,6 +630,9 @@ describe('roleplay API', () => {
       expect(imported.status).toBe(201)
       expect(await imported.json()).toEqual({ name: 'p', chatSessionId: 'c', started: true })
       expect(catalogueCalls.at(-1)).toBe('preset {"source":"Home","versionId":"v2","title":"Noir"}')
+      const book = await fetch(`${origin}/catalogue/convert/lorebook`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v3', title: 'Harbor' }) })
+      expect(book.status).toBe(201)
+      expect(catalogueCalls.at(-1)).toBe('lorebook {"source":"Home","versionId":"v3","title":"Harbor"}')
     })
 
     it('answers with the status that says whose fault a failure is', async () => {
@@ -660,12 +712,20 @@ describe('roleplay API', () => {
       expect(startedWith).toEqual({ worldId: 'harbor', playerCharacterId: 'arthur', name: 'Night one' })
     })
 
+    it('passes on the preset and the lorebooks chosen, including none', async () => {
+      await post('{"worldId":"harbor","playerCharacterId":"arthur","preset":"noir","lorebooks":["harbor-notes"]}')
+      expect(startedWith).toEqual({ worldId: 'harbor', playerCharacterId: 'arthur', preset: 'noir', lorebooks: ['harbor-notes'] })
+      await post('{"worldId":"harbor","playerCharacterId":"arthur","lorebooks":[]}')
+      expect(startedWith).toEqual({ worldId: 'harbor', playerCharacterId: 'arthur', lorebooks: [] })
+    })
+
     it.each([
       ['a body without a world', '{"playerCharacterId":"a"}', 400, '"worldId" is required'],
       ['a blank world id', '{"worldId":"  ","playerCharacterId":"a"}', 400, '"worldId" is required'],
       ['a world id that is not text', '{"worldId":3,"playerCharacterId":"a"}', 400, '"worldId" is required'],
       ['a body without a character', '{"worldId":"harbor"}', 400, '"playerCharacterId" or "playerAvatar" is required'],
       ['a name that is not text', '{"worldId":"harbor","playerCharacterId":"a","name":3}', 400, '"name" must be a string'],
+      ['lorebooks that are not a list of names', '{"worldId":"harbor","playerCharacterId":"a","lorebooks":"x"}', 400, '"lorebooks" must be a list'],
       ['invalid JSON', '{', 400, 'not valid JSON'],
       ['a body that is not an object', '[]', 400, 'must be a JSON object'],
     ])('rejects %s', async (_label, body, status, message) => {

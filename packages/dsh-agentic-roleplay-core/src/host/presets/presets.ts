@@ -4,7 +4,7 @@ import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { PresetSampling, PresetSummary } from '../../shared/presets.ts'
 import { LANGUAGE_FOLDER, listFiles, promptProblem, PROMPTS_FOLDER, shippedLanguages, shippedPromptsDirectory } from '../prompts/library.ts'
-import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
+import { PROSE_PROMPTS, readWorldPrompt } from '../prompts/world-prompts.ts'
 
 export const PRESETS_FOLDER = 'presets'
 export const PRESET_FILE = 'preset.json'
@@ -79,7 +79,7 @@ export function readPreset(directory: string, name: string, shipped: string = sh
       for (const id of listFiles(join(base, entry.name))) {
         const path = `${entry.name}/${id}.md`
         const text = readFileSync(join(base, path), 'utf8')
-        const problem = !PROSE_PROMPTS.includes(id) ? `"${id}" is not a prose prompt (${PROSE_PROMPTS.join(', ')}); the rules of the game belong to the world` : promptProblem(entry.name, id, text, shipped)
+        const problem = id.startsWith('roleplay/') ? promptProblem(entry.name, id, text, shipped) : `"${id}" is not a prompt of the story`
         if (problem !== undefined) problems.push(`prompts/${path}: ${problem}`)
         else files.set(path, text)
       }
@@ -87,13 +87,15 @@ export function readPreset(directory: string, name: string, shipped: string = sh
   }
   if (files.size === 0 && problems.length === 0) problems.push('the preset carries no prompts')
   const paths = [...files.keys()]
+  const ids = [...new Set(paths.map(path => path.slice(path.indexOf('/') + 1, -3)))].sort()
   return {
     summary: {
       name,
       title: header.title ?? name,
       description: header.description ?? '',
       languages: [...new Set(paths.map(path => path.split('/')[0] as string))].sort(),
-      prompts: [...new Set(paths.map(path => path.slice(path.indexOf('/') + 1, -3)))].sort(),
+      prompts: ids,
+      rules: ids.filter(id => !PROSE_PROMPTS.includes(id)),
       sampling: header.sampling,
       problems,
     },
@@ -223,4 +225,38 @@ export async function reservePreset(root: string, name: string, title: string): 
   await mkdir(target, { recursive: true })
   await writeHeader(target, headerFile(title.trim().slice(0, MAX_TEXT) || undefined, undefined, {}))
   return target
+}
+
+/**
+ * Makes a preset that adds guidance to the shipped prompts, in every language the program ships: each prompt keeps its shipped text and the guidance follows it, so that
+ * the prompt keeps naming the tools and values it needs. The guidance is the importer's, in the language it was written in.
+ * @throws {Error} when the name is taken, there is no guidance, or a prompt would not be acceptable; nothing is made then.
+ */
+export async function createPresetFromGuidance(root: string, request: { name: string; title?: string; description?: string }, guidance: Readonly<Record<string, readonly string[]>>, shipped: string = shippedPromptsDirectory()): Promise<LoadedPreset> {
+  const target = presetDirectory(root, request.name)
+  if (existsSync(target)) throw new Error(`there is already a preset "${request.name}"`)
+  const ids = Object.keys(guidance).filter(id => (guidance[id]?.length ?? 0) > 0)
+  if (ids.length === 0) throw new Error('there is no guidance to make a preset of')
+  const problems: string[] = []
+  const header = parseHeader({ title: request.title?.trim(), description: request.description?.trim() }, problems)
+  if (problems.length > 0) throw new Error(problems.join('; '))
+  const staging = join(root, '.install', `preset-${request.name}-${Date.now()}`)
+  try {
+    for (const language of shippedLanguages(shipped)) {
+      for (const id of ids) {
+        const base = readWorldPrompt(join(staging, 'none'), language, id, shipped).text.trimEnd()
+        const to = join(staging, PROMPTS_FOLDER, language, `${id}.md`)
+        await mkdir(dirname(to), { recursive: true })
+        await writeFile(to, `${base}\n\n${(guidance[id] ?? []).join('\n')}\n`)
+      }
+    }
+    await writeHeader(staging, headerFile(header.title, header.description, {}))
+    const loaded = readPreset(staging, request.name)
+    if (loaded.summary.problems.length > 0) throw new Error(`the preset would have problems: ${loaded.summary.problems.join('; ')}`)
+    await mkdir(presetsDirectory(root), { recursive: true })
+    await rename(staging, target)
+    return readPreset(target, request.name)
+  } finally {
+    await rm(staging, { recursive: true, force: true })
+  }
 }

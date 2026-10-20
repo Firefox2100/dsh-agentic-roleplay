@@ -11,7 +11,7 @@ const sidebars: SidebarsConfig = {
       'playing/interface', 'playing/sessions', 'playing/catalogue', 'playing/media', 'playing/settings',
     ]},
     {type: 'category', label: 'World authoring', items: [
-      'authoring/overview', 'authoring/editor', 'authoring/assistant', 'authoring/presets',
+      'authoring/overview', 'authoring/editor', 'authoring/assistant', 'authoring/presets', 'authoring/lorebooks',
       'authoring/avatars-import', 'authoring/visual-identity', 'authoring/interface-packs',
     ]},
     {type: 'category', label: 'World format', items: [

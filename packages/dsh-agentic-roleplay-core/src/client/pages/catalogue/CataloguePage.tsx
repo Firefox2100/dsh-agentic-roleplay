@@ -87,7 +87,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
           </select>
         )}
         <form onSubmit={(event) => { event.preventDefault(); setApplied(search.trim()) }}>
-          <input className={css.search} type="search" value={search} placeholder={kind === 'card' ? t('searchCardsPlaceholder') : kind === 'preset' ? t('searchPresetsPlaceholder') : t('searchPlaceholder')} aria-label={t('search')} disabled={source === undefined} onChange={(event) => { setSearch(event.target.value) }} />
+          <input className={css.search} type="search" value={search} placeholder={kind === 'card' ? t('searchCardsPlaceholder') : kind === 'preset' ? t('searchPresetsPlaceholder') : kind === 'lorebook' ? t('searchLorebooksPlaceholder') : t('searchPlaceholder')} aria-label={t('search')} disabled={source === undefined} onChange={(event) => { setSearch(event.target.value) }} />
         </form>
         <select className={css.select} value={sort} aria-label={t('sortRecent')} disabled={source === undefined} onChange={(event) => { setSort(event.target.value === 'popular' ? 'popular' : 'recent') }}>
           <option value="recent">{t('sortRecent')}</option>
@@ -99,8 +99,8 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
       </div>
 
       <div className={css.kinds} role="tablist">
-        {(['world', 'card', 'preset'] as const).map(entry => (
-          <button key={entry} type="button" role="tab" className={css.kind} aria-selected={kind === entry} data-testid={`roleplay-catalogue-kind-${entry}`} onClick={() => { setKind(entry); setPage(undefined) }}>{entry === 'world' ? t('kindWorlds') : entry === 'card' ? t('kindCards') : t('kindPresets')}</button>
+        {(['world', 'card', 'preset', 'lorebook'] as const).map(entry => (
+          <button key={entry} type="button" role="tab" className={css.kind} aria-selected={kind === entry} data-testid={`roleplay-catalogue-kind-${entry}`} onClick={() => { setKind(entry); setPage(undefined) }}>{entry === 'world' ? t('kindWorlds') : entry === 'card' ? t('kindCards') : entry === 'preset' ? t('kindPresets') : t('kindLorebooks')}</button>
         ))}
       </div>
 
@@ -128,7 +128,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
                 : page === undefined
                   ? <p className={css.message}>{t('loading')}</p>
                   : page.items.length === 0
-                    ? <p className={css.message}>{applied === '' ? (kind === 'card' ? t('emptyCards') : kind === 'preset' ? t('emptyPresets') : t('empty')) : t('emptySearch', { search: applied })}</p>
+                    ? <p className={css.message}>{applied === '' ? (kind === 'card' ? t('emptyCards') : kind === 'preset' ? t('emptyPresets') : kind === 'lorebook' ? t('emptyLorebooks') : t('empty')) : t('emptySearch', { search: applied })}</p>
                     : (
                       <>
                         <ul className={css.grid}>

@@ -6,7 +6,7 @@ export type CatalogueLocaleKey =
   | 'empty' | 'emptySearch' | 'more' | 'loadingMore' | 'by' | 'private' | 'members' | 'close' | 'cancel'
   | 'detailFailed' | 'version' | 'released' | 'noRelease' | 'alreadyHave' | 'install' | 'installing' | 'installed' | 'installFailed' | 'packsNotice' | 'size'
   | 'importTitle' | 'importHelp' | 'importAddress' | 'importAddressPlaceholder' | 'importSubmit'
-  | 'language' | 'kindWorlds' | 'kindCards' | 'searchCardsPlaceholder' | 'emptyCards' | 'kindPresets' | 'searchPresetsPlaceholder' | 'emptyPresets' | 'importPresetAction' | 'importingPreset' | 'importPresetNote' | 'importPresetFailed'
+  | 'language' | 'kindWorlds' | 'kindCards' | 'searchCardsPlaceholder' | 'emptyCards' | 'kindPresets' | 'searchPresetsPlaceholder' | 'emptyPresets' | 'kindLorebooks' | 'searchLorebooksPlaceholder' | 'emptyLorebooks' | 'importLorebookAction' | 'importingLorebook' | 'importLorebookNote' | 'importLorebookFailed' | 'importPresetAction' | 'importingPreset' | 'importPresetNote' | 'importPresetFailed'
   | 'update' | 'updating' | 'updated' | 'backupNotice' | 'installCopy' | 'installedFrom' | 'installedUnknown' | 'installedModified' | 'installedCurrent' | 'untracked'
   | 'conflictModified' | 'conflictUnverified' | 'changesHeading' | 'overwrite' | 'keepBoth' | 'dismiss'
   | 'updatesAvailable' | 'updateItem' | 'updatesFailed' | 'updatesProblem'
@@ -61,6 +61,7 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     kindCards: 'Character cards',
     searchCardsPlaceholder: 'Search character cards',
     emptyCards: 'This catalogue has no published character cards for you.',
+    kindLorebooks: 'Lorebooks', searchLorebooksPlaceholder: 'Search SillyTavern lorebooks', emptyLorebooks: 'This catalogue has no published lorebooks for you.', importLorebookAction: 'Import as a lorebook', importingLorebook: 'Importing…', importLorebookNote: 'A SillyTavern lorebook is turned into a new lorebook in your library by the authoring assistant: facts become entries known to everyone unless an entry says otherwise, and instructions to the AI are kept aside, to become a preset only if you agree. Importing it again makes another lorebook.', importLorebookFailed: 'Could not import the lorebook: {message}',
     kindPresets: 'Presets', searchPresetsPlaceholder: 'Search SillyTavern presets', emptyPresets: 'This catalogue has no published presets for you.',
     importPresetAction: 'Import as a preset', importingPreset: 'Importing…', importPresetNote: 'A SillyTavern preset is turned into a new preset in your library by the authoring assistant, which keeps only what is about how to narrate (not rules, formats or scripts). Importing it again makes another preset.', importPresetFailed: 'Could not import the preset: {message}',
     update: 'Update',
@@ -139,6 +140,7 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     kindCards: '角色卡',
     searchCardsPlaceholder: '搜索角色卡',
     emptyCards: '这个目录里没有对你开放的已发布角色卡。',
+    kindLorebooks: '世界书', searchLorebooksPlaceholder: '搜索酒馆世界书', emptyLorebooks: '这个目录里没有对你开放的已发布世界书。', importLorebookAction: '导入为世界书', importingLorebook: '正在导入…', importLorebookNote: '酒馆世界书由创作助手转换为你的库中的一本新世界书：事实会变成人人皆知的条目（除非条目另有说明），给 AI 的指令会被单独保存，只有你同意才会变成预设。再次导入会生成另一本世界书。', importLorebookFailed: '无法导入世界书：{message}',
     kindPresets: '预设', searchPresetsPlaceholder: '搜索酒馆预设', emptyPresets: '这个目录里没有对你开放的已发布预设。',
     importPresetAction: '导入为预设', importingPreset: '正在导入…', importPresetNote: '酒馆预设由创作助手转换为你的库中的一个新预设，只保留关于叙述方式的部分（不含规则、格式或脚本）。再次导入会生成另一个预设。', importPresetFailed: '无法导入预设：{message}',
     update: '更新',

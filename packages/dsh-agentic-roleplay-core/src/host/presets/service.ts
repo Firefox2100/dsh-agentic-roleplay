@@ -7,7 +7,7 @@ import { SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import { presetStatus, switchPreset } from './apply.ts'
 import { IMPORT_FOLDER } from '../import/store.ts'
 import { readPreset as readStPreset } from '../import/preset.ts'
-import { deleteWorldPrompt, PROSE_PROMPTS, writeWorldPrompt } from '../prompts/world-prompts.ts'
+import { deleteWorldPrompt, writeWorldPrompt } from '../prompts/world-prompts.ts'
 import { createPresetFromShipped, deletePreset, listPresets, loadPreset, PRESET_FILE, presetDirectory, reservePreset, savePresetFromWorld, updatePresetInfo, type PresetInfoChange } from './presets.ts'
 
 export interface PresetDeps {
@@ -69,7 +69,7 @@ export class Presets {
   async writePrompt(name: string, language: string, id: string, text: string | undefined): Promise<PresetSummary> {
     const directory = presetDirectory(this.deps.root(), name)
     if (!existsSync(directory)) throw new Error(`there is no preset "${name}"`)
-    if (!PROSE_PROMPTS.includes(id)) throw new Error(`a preset carries only ${PROSE_PROMPTS.join(', ')}`)
+    if (!id.startsWith('roleplay/')) throw new Error(`"${id}" is not a prompt of the story`)
     if (text === undefined) await deleteWorldPrompt(directory, language, id)
     else await writeWorldPrompt(directory, language, id, text)
     return loadPreset(this.deps.root(), name).summary

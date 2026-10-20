@@ -23,6 +23,9 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const [opening, setOpening] = useState('')
   const [startTime, setStartTime] = useState('')
   const [preset, setPreset] = useState('')
+  // Untouched, the world's own suggestion stands; once the person changes it, what they chose is sent, even when that is nothing.
+  const [books, setBooks] = useState<ReadonlySet<string> | undefined>()
+  const chosenBooks = books ?? new Set(dialog.suggestedLorebooks)
   const [choice, setChoice] = useState<string | undefined>()
   const [brought, setBrought] = useState<ReadonlySet<string>>(new Set())
   const [showSettings, setShowSettings] = useState(false)
@@ -64,7 +67,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(!openingValid ? {} : { opening: Number(opening) }), ...(preset === '' ? {} : { preset }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
+          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(!openingValid ? {} : { opening: Number(opening) }), ...(preset === '' ? {} : { preset }), ...(books === undefined ? {} : { lorebooks: [...books] }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
         }}
       >
         <label className={css.field}>
@@ -116,6 +119,20 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
             </select>
             <span className={css.message}>{preset === '' || preset === 'none' ? t('startPresetHelp') : dialog.presets.find(entry => entry.name === preset)?.description ?? ''}</span>
           </label>
+        )}
+
+        {dialog.status === 'ready' && (dialog.lorebooks.length > 0 || dialog.suggestedLorebooks.length > 0) && (
+          <fieldset className={css.field} data-testid="roleplay-start-lorebooks">
+            <legend className={css.label}>{t('startLorebooks')}</legend>
+            {dialog.lorebooks.map(entry => (
+              <label key={entry.name}>
+                <input type="checkbox" checked={chosenBooks.has(entry.name)} disabled={dialog.submitting || entry.problems.length > 0} onChange={(event) => { const next = new Set(chosenBooks); if (event.target.checked) next.add(entry.name); else next.delete(entry.name); setBooks(next) }} />
+                {' '}{entry.problems.length > 0 ? t('startLorebookBroken', { name: entry.title }) : t('startLorebookEntry', { name: entry.title, count: entry.entries })}{dialog.suggestedLorebooks.includes(entry.name) ? ` · ${t('startLorebookSuggested')}` : ''}
+              </label>
+            ))}
+            {dialog.suggestedLorebooks.filter(name => !dialog.lorebooks.some(entry => entry.name === name)).map(name => <span key={name} className={css.message}>{t('startLorebookMissing', { name })}</span>)}
+            <span className={css.message}>{t('startLorebooksHelp')}</span>
+          </fieldset>
         )}
 
         {dialog.status === 'ready' && shown['clock.mode'] !== 'real' && (

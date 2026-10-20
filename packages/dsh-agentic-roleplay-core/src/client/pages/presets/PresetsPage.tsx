@@ -105,6 +105,7 @@ export function PresetsPage({ t, usePresets, load, refresh, create, remove, auth
                       {preset.problems.length > 0
                         ? <p className={css.error}>{t('broken', { problems: preset.problems.join('; ') })}</p>
                         : <span className={css.meta}>{[t('languages', { list: preset.languages.join(', ') }), t('promptsCount', { count: preset.prompts.length })].join(' · ')}</span>}
+                      {preset.rules.length > 0 && <p className={css.warning} role='note'>{t('rulesWarning', { list: preset.rules.join(', ') })}</p>}
                       <div className={css.cardActions}>
                         <Button variant="outline" size="sm" onClick={() => { setEditing(preset.name) }}>{t('edit')}</Button>
                         <Button variant="outline" size="sm" onClick={() => { open(preset.name) }}>{t('author')}</Button>

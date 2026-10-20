@@ -36,6 +36,8 @@ import type { ImportChoices, ImportPreview } from '../../shared/import-card.ts'
 import { HttpError, sendError, sendJson } from './respond.ts'
 import { presetRoutes } from '../presets/routes.ts'
 import type { PresetApi } from '../presets/routes.ts'
+import { lorebookRoutes } from '../lorebooks/routes.ts'
+import type { LorebookApi } from '../lorebooks/routes.ts'
 import { FRAME_FILES, PACK_FILES, interfaceRoutes, sendPackFile, type InterfaceApi } from '../interface/routes.ts'
 
 /** The slice of DSH's connection service this API relies on for browser authentication. */
@@ -173,6 +175,8 @@ export interface ApiDeps {
   packs: InterfaceApi
   /** The preset library and the presets of stories. */
   presets: PresetApi
+  /** The lorebook library. */
+  lorebooks: LorebookApi
   connection: ApiConnection
   speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio>; streaming(): boolean }
 }
@@ -225,7 +229,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, presets, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, presets, lorebooks, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -239,7 +243,7 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
       GET: async (_req, res, url) => {
         const offset = Number(url.searchParams.get('offset') ?? 0)
         const sort = url.searchParams.get('sort') === 'popular' ? 'popular' : 'recent'
-        try { sendJson(res, 200, await catalogue.worlds(url.searchParams.get('source') ?? '', { kind: (['card', 'preset'] as const).find(entry => entry === url.searchParams.get('kind')) ?? 'world', search: url.searchParams.get('search') ?? '', offset: Number.isFinite(offset) ? offset : 0, sort })) } catch (error) { return catalogueFailure(res, error) }
+        try { sendJson(res, 200, await catalogue.worlds(url.searchParams.get('source') ?? '', { kind: (['card', 'preset', 'lorebook'] as const).find(entry => entry === url.searchParams.get('kind')) ?? 'world', search: url.searchParams.get('search') ?? '', offset: Number.isFinite(offset) ? offset : 0, sort })) } catch (error) { return catalogueFailure(res, error) }
       },
     },
     '/catalogue/world': {
@@ -289,6 +293,17 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
         try {
           const language = languageField(body.language)
           sendJson(res, 201, await catalogue.convertPreset({ source: body.source, versionId: body.versionId, ...(body.title === undefined ? {} : { title: body.title }), ...(language === undefined ? {} : { language }) }))
+        } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
+      },
+    },
+    '/catalogue/convert/lorebook': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { source?: unknown; versionId?: unknown; language?: unknown; title?: unknown }
+        if (typeof body.source !== 'string' || typeof body.versionId !== 'string') return sendError(res, 400, 'source and versionId must be text')
+        if (body.title !== undefined && typeof body.title !== 'string') return sendError(res, 400, 'title must be text')
+        try {
+          const language = languageField(body.language)
+          sendJson(res, 201, await catalogue.convertLorebook({ source: body.source, versionId: body.versionId, ...(body.title === undefined ? {} : { title: body.title }), ...(language === undefined ? {} : { language }) }))
         } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
       },
     },
@@ -632,7 +647,7 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
     '/sessions': {
       GET: async (_req, res) => { sendJson(res, 200, sessions.list()) },
       POST: async (req, res) => {
-        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings, opening, startingTime, preset } = await readJsonBody(req)
+        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings, opening, startingTime, preset, lorebooks } = await readJsonBody(req)
         if (typeof worldId !== 'string' || worldId.trim() === '') return sendError(res, 400, '"worldId" is required')
         if (playerCharacterId === undefined && playerAvatar === undefined) return sendError(res, 400, '"playerCharacterId" or "playerAvatar" is required')
         if (playerCharacterId !== undefined && (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '')) return sendError(res, 400, '"playerCharacterId" must be text')
@@ -642,8 +657,9 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
         if (opening !== undefined && (typeof opening !== 'number' || !Number.isInteger(opening))) return sendError(res, 400, '"opening" must be a whole number')
         if (startingTime !== undefined && typeof startingTime !== 'string') return sendError(res, 400, '"startingTime" must be text')
         if (preset !== undefined && typeof preset !== 'string') return sendError(res, 400, '"preset" must be text')
+        if (lorebooks !== undefined && (!Array.isArray(lorebooks) || !lorebooks.every(entry => typeof entry === 'string'))) return sendError(res, 400, '"lorebooks" must be a list of lorebook names')
         try {
-          sendJson(res, 201, await sessions.start({ ...(preset === undefined || preset === '' ? {} : { preset }), ...(opening === undefined ? {} : { opening }), ...(startingTime === undefined ? {} : { startingTime }), worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
+          sendJson(res, 201, await sessions.start({ ...(preset === undefined || preset === '' ? {} : { preset }), ...(lorebooks === undefined ? {} : { lorebooks: lorebooks as string[] }), ...(opening === undefined ? {} : { opening }), ...(startingTime === undefined ? {} : { startingTime }), worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
         } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidStartError) return sendError(res, 422, error.message)
@@ -957,6 +973,7 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
     },
     ...interfaceRoutes(packs),
     ...presetRoutes(presets),
+    ...lorebookRoutes(lorebooks),
     '/worlds/cover': {
       GET: async (_req, res, url) => {
         const cover = await worlds.cover(url.searchParams.get('id') ?? '')

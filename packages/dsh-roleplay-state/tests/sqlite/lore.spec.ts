@@ -11,4 +11,12 @@ describe('lore repository', () => {
     store.knowledge.learn(character.id, 'lore', founding.id, 0)
     expect(store.knowledge.knows(character.id, 'lore', founding.id)).toBe(true)
   })
+
+  it('keeps an entry listed unless it is made common knowledge, and can change it', () => {
+    const store = memoryStore()
+    const entry = store.lore.add({ title: 'The tides', kind: 'geography', summary: '', body: 'Twice a day.', subjects: [], related: [], sources: [] })
+    expect(entry.scope).toBe('listed')
+    expect(store.lore.add({ title: 'The law', kind: 'politics', scope: 'everyone', summary: '', body: 'Stated.', subjects: [], related: [], sources: [] }).scope).toBe('everyone')
+    expect(store.lore.update(entry.id, { scope: 'everyone' }).scope).toBe('everyone')
+  })
 })

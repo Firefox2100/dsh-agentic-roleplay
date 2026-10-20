@@ -67,8 +67,11 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
       isConcurrencySafe: () => true,
       async execute(args) {
         const needle = args.about.trim().toLowerCase()
-        return link().session.knowledge.list(characterId, 'lore').flatMap(known => {
-          const lore = link().session.lore.get(known.subjectId)
+        const session = link().session
+        const known = new Set(session.knowledge.list(characterId, 'lore').map(entry => entry.subjectId))
+        for (const entry of session.lore.list()) if (entry.scope === 'everyone') known.add(entry.id)
+        return [...known].flatMap(id => {
+          const lore = session.lore.get(id)
           if (lore === undefined || !`${lore.title} ${lore.summary} ${lore.body}`.toLowerCase().includes(needle)) return []
           return [{ key: lore.sourceId ?? String(lore.id), title: lore.title, kind: lore.kind, text: lore.body || lore.summary }]
         })

@@ -18,6 +18,7 @@ import { inheritImages } from '../images/storage.ts'
 import { copyWorldPrompts } from '../prompts/library.ts'
 import { copyPreset, recordPreset } from '../presets/apply.ts'
 import { loadPreset, type LoadedPreset } from '../presets/presets.ts'
+import { LOREBOOKS_KEY, lorebookLore } from '../lorebooks/apply.ts'
 import { copyWorldPacks } from '../interface/packs.ts'
 import { broughtAvatars, copyPortrait } from '../avatars/avatars.ts'
 import { parseCharacterFile } from '../characters/character-file.ts'
@@ -96,6 +97,14 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   settings = { ...settings, clock: { ...settings.clock, timeZone }, tools }
 
   const { preset, unavailable } = presetFor(deps, request.preset, world.preset)
+  const asked = request.lorebooks !== undefined
+  const wanted = request.lorebooks ?? world.lorebooks ?? []
+  let books: Awaited<ReturnType<typeof lorebookLore>> = { definitions: [], applied: [], notes: [] }
+  if (wanted.length > 0) {
+    if (deps.root === undefined) throw new InvalidStartError('the lorebook library is not available')
+    try { books = await lorebookLore(deps.root(), wanted, asked, characters, new Set(authoredLore.lore.map(entry => entry.id))) } catch (error) { throw new InvalidStartError(error instanceof Error ? error.message : String(error)) }
+    unavailable.push(...books.notes)
+  }
   if (preset !== undefined) {
     // What the person chose is theirs; the preset's temperatures only fill what the request left unsaid.
     const given = ((request.settings as { sampling?: Record<string, unknown> } | undefined)?.sampling) ?? {}
@@ -124,7 +133,8 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateDice(session, checks)
       populateRoutines(session, characters)
       populateItems(session, items, slots, locations)
-      populateLore(session, authoredLore.lore)
+      populateLore(session, [...authoredLore.lore, ...books.definitions])
+      if (books.applied.length > 0) session.metadata.setValue(LOREBOOKS_KEY, books.applied)
       populateKnowledge(session, characters)
       populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
       populateTriggers(session, scripted.triggers)

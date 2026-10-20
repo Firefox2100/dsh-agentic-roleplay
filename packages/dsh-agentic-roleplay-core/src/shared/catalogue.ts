@@ -17,11 +17,12 @@ export interface CatalogueSourceStatus {
 
 export type CatalogueVisibility = 'public' | 'authenticated' | 'private'
 
-/** What a catalogue entry is: a roleplay world (installed as it is), a SillyTavern character card (converted into a new world) or a SillyTavern preset (converted into a library preset). */
-export type CatalogueKind = 'world' | 'card' | 'preset'
+/** What a catalogue entry is: a roleplay world (installed as it is), a SillyTavern character card (converted into a new world) a SillyTavern preset (converted into a library preset) or a SillyTavern lorebook (converted into a library lorebook, and a preset when it carries instructions). */
+export type CatalogueKind = 'world' | 'card' | 'preset' | 'lorebook'
 
 export const CATALOGUE_CARD_TYPE = 'sillytavern/character'
 export const CATALOGUE_PRESET_TYPE = 'sillytavern/preset'
+export const CATALOGUE_LOREBOOK_TYPE = 'sillytavern/lorebook'
 
 export interface CatalogueWorld {
   id: string

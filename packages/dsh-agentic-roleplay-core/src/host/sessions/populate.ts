@@ -47,18 +47,32 @@ export function knowledgeProblems(characters: readonly CharacterDefinition[], lo
   })
 }
 
+/** Whether a world's characters include the one a lore entry names by id, name or alias. */
+export function knowsCharacter(characters: readonly CharacterDefinition[], reference: string): boolean {
+  const key = reference.normalize('NFKC').toLowerCase()
+  return characters.some(character => character.id === reference || [character.name, ...character.aliases].some(name => name.normalize('NFKC').toLowerCase() === key))
+}
+
 export function loreProblems(lore: readonly LoreDefinition[], world: { characters: readonly CharacterDefinition[]; factions: readonly FactionDefinition[]; locations: readonly LocationDefinition[]; items: readonly ItemDefinition[] }): string[] {
   const ids = { character: new Set(world.characters.map(x => x.id)), faction: new Set(world.factions.map(x => x.id)), location: new Set(world.locations.map(x => x.id)), item: new Set(world.items.map(x => x.id)), lore: new Set(lore.map(x => x.id)) }
   return lore.flatMap(entry => [
     ...entry.subjects.flatMap(subject => ids[subject.kind].has(subject.id) ? [] : [`${entry.id}: subjects: "${subject.id}" is not a ${subject.kind} of this world`]),
+    ...entry.knownBy.flatMap(reference => knowsCharacter(world.characters, reference) ? [] : [`${entry.id}: known_by: "${reference}" is not a character of this world`]),
     ...entry.related.flatMap(id => id === entry.id ? [`${entry.id}: related: lore cannot relate to itself`] : ids.lore.has(id) ? [] : [`${entry.id}: related: "${id}" is not lore of this world`]),
   ])
 }
 
 export function populateLore(session: Session, definitions: readonly LoreDefinition[]): void {
-  for (const entry of definitions) session.lore.add({ sourceId: entry.id, title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: [], related: [], sources: entry.sources })
+  for (const entry of definitions) session.lore.add({ sourceId: entry.id, title: entry.title, kind: entry.kind, scope: entry.scope, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: [], related: [], sources: entry.sources })
   const subject = (wanted: LoreDefinition['subjects'][number]): LoreSubject => ({ kind: wanted.kind, id: wanted.kind === 'character' ? session.characters.getBySourceId(wanted.id)!.id : wanted.kind === 'faction' ? session.factions.getBySourceId(wanted.id)!.id : wanted.kind === 'location' ? session.locations.getBySourceId(wanted.id)!.id : wanted.kind === 'item' ? session.items.getBySourceId(wanted.id)!.id : session.lore.getBySourceId(wanted.id)!.id })
   for (const entry of definitions) session.lore.update(session.lore.getBySourceId(entry.id)!.id, { subjects: entry.subjects.map(subject), related: entry.related.map(id => session.lore.getBySourceId(id)!.id) })
+  for (const entry of definitions) {
+    const lore = session.lore.getBySourceId(entry.id)!
+    for (const reference of entry.knownBy) {
+      const knower = session.characters.getBySourceId(reference) ?? session.characters.findByName(reference)[0]
+      if (knower !== undefined) session.knowledge.learn(knower.id, 'lore', lore.id, 0)
+    }
+  }
 }
 
 /** What is wrong with where the characters start, found before anything is created. */

@@ -215,6 +215,16 @@ describe('the tools of one character', () => {
       { kind: 'route', key: 'bar -> street', name: 'The Bar to High Street' },
     ])
   })
+
+  it('recalls the lore a character has a knowledge edge to and the lore everyone knows, never the rest', async () => {
+    const alice = store.characters.getBySourceId('alice')!.id
+    const entry = (title: string, extra: object = {}) => store.lore.add({ title, kind: 'history', summary: '', body: `${title} text`, subjects: [], related: [], sources: [], ...extra })
+    const told = entry('Secret rite'); entry('Hidden vault'); entry('Common law', { scope: 'everyone' })
+    store.knowledge.learn(alice, 'lore', told.id, 1)
+    const tool = createCharacterTools(() => link!, alice).find(candidate => candidate.name === 'recall_my_lore')!
+    const titles = ((await tool.execute({ about: 'text' } as never, exec() as never)) as { title: string }[]).map(found => found.title).sort()
+    expect(titles).toEqual(['Common law', 'Secret rite'])
+  })
 })
 
 describe('the plugin', () => {

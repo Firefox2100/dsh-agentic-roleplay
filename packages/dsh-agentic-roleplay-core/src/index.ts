@@ -17,6 +17,9 @@ import { ImportStore } from './host/import/store.ts'
 import { uploadPreset } from './host/import/upload-preset.ts'
 import { AuthoringSessions } from './host/agent/authoring-sessions.ts'
 import { PresetAuthoringSessions } from './host/agent/preset-authoring-sessions.ts'
+import { LorebookAuthoringSessions } from './host/agent/lorebook-authoring-sessions.ts'
+import { lorebookImportMessage } from './host/authoring/lorebook-author-tools.ts'
+import { Lorebooks } from './host/lorebooks/service.ts'
 import { narrationImportMessage } from './host/authoring/preset-author-tools.ts'
 import { DoctorSessions } from './host/agent/doctor-sessions.ts'
 import { Config } from './host/config.ts'
@@ -110,6 +113,7 @@ export function apply(ctx: Context, config: Config): void {
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
   const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const presetAuthoring = new PresetAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
+  const lorebookAuthoring = new LorebookAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const doctors = new DoctorSessions(agentServicesOf(ctx), () => root.path, prompts)
   const imports = new ImportStore(() => root.path)
   new RoleplayImport(ctx, { maxUploadBytes: config.importMaxUploadBytes, concurrency: config.importConcurrency, reasoning: config.importReasoning, maxTokens: config.importMaxTokens, temperature: config.importTemperature })
@@ -127,10 +131,12 @@ export function apply(ctx: Context, config: Config): void {
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
   const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, maxUploadBytes: config.importMaxUploadBytes, playing: id => ctx.roleplayOrchestration.playing(chatSessionId(id)) })
+  const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, maxUploadBytes: config.importMaxUploadBytes })
   const catalogue = new Catalogue({
     sources: new Sources(() => config.catalogues.get()), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
     trashDays: () => config.catalogueTrashDays, problem: (message) => { ctx.logger.warn(message) },
     importPreset: async (file, title, language) => await presetLibrary.importTitled(title, file, language),
+    importLorebook: async (file, title, language) => await lorebookLibrary.importTitled(title, file, language),
     importCard: async (file, name, language) => {
       const preview = await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)
       return await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, preview.id, preview.choices, language)
@@ -140,6 +146,7 @@ export function apply(ctx: Context, config: Config): void {
   registerApi(ctx, {
     catalogue,
     presets: presetLibrary,
+    lorebooks: lorebookLibrary,
     packs: new InterfaceService({ open: id => ctx.roleplayState.openSession(deps.sessionsDir(), id), root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, world: worldId => worlds.find(worldId) }),
     speech: {
       voices: async () => await voicesOf(textToSpeechOf(ctx)),

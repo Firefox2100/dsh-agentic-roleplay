@@ -1,0 +1,33 @@
+.page { display: flex; flex: 1 1 0; flex-direction: column; gap: 8px; min-height: 0; }
+.toolbar { display: flex; flex: none; align-items: center; justify-content: space-between; gap: 12px; min-height: 28px; }
+.count { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.viewport { flex: 1 1 0; min-height: 0; padding: 4px; overflow-y: auto; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.card { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 12px; border: 0.5px solid var(--dsw-alias-settings-card-stroke); border-radius: var(--dsw-radius-xl); background: var(--dsw-alias-settings-card-fill); }
+.card:hover { border-color: var(--dsw-alias-border-l4); }
+.head { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.title { overflow: hidden; font-size: 13px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; color: var(--dsw-alias-label-primary); }
+.name { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.description { display: -webkit-box; overflow: hidden; margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.meta { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.cardActions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; }
+.message { margin: 0; padding: 40px 0; font-size: 13px; text-align: center; color: var(--dsw-alias-label-secondary); }
+.error { margin: 0; font-size: 12px; color: var(--dsw-alias-state-error-primary); }
+.warning { margin: 0; font-size: 12px; color: var(--dsw-alias-state-warning-primary, var(--dsw-alias-state-error-primary)); }
+.ok { margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.editHeader { display: flex; flex: 0 0 auto; gap: 8px; align-items: center; padding: 8px 16px; border-bottom: 0.5px solid var(--dsw-alias-border-l3); }
+.editTitle { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); }
+.editBody { display: flex; flex: 1 1 0; flex-direction: column; gap: 24px; min-height: 0; padding: 16px 24px; overflow-y: auto; }
+.section { display: flex; flex-direction: column; gap: 12px; max-width: 720px; }
+.sectionTitle { margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; color: var(--dsw-alias-label-primary); }
+.help { margin: 0; font-size: 13px; color: var(--dsw-alias-label-secondary); }
+.row { display: flex; flex-wrap: wrap; gap: 12px; }
+.form { display: flex; flex-direction: column; gap: 16px; min-width: min(420px, 100%); }
+.field { display: flex; flex-direction: column; flex: 1 1 200px; gap: 6px; min-width: 0; }
+.label { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.area { box-sizing: border-box; width: 100%; min-height: 280px; padding: 8px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px var(--dsw-font-mono, monospace); color: var(--dsw-alias-label-primary); resize: vertical; }
+.input { box-sizing: border-box; width: 100%; padding: 6px 8px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: inherit; font-size: 13px; color: var(--dsw-alias-label-primary); }
+@media (max-width: 640px) { .grid { grid-template-columns: 1fr; } .form { min-width: 0; } .editBody { padding: 16px; } }
+.select { box-sizing: border-box; max-width: 100%; padding: 4px 6px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: inherit; font-size: 13px; color: var(--dsw-alias-label-primary); }
+.entryArea { box-sizing: border-box; width: 100%; min-height: 200px; padding: 8px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px inherit; color: var(--dsw-alias-label-primary); resize: vertical; }

@@ -12,6 +12,8 @@ export interface PresetSummary {
   languages: string[]
   /** The prompts it carries, as `roleplay/style`. */
   prompts: string[]
+  /** The prompts it carries that are rules of the game rather than prose: they change how the models are told to work, not only how the story reads. */
+  rules: string[]
   sampling: PresetSampling
   problems: string[]
 }

@@ -18,6 +18,7 @@ export async function worldCharacters(worlds: Pick<WorldCatalog, 'find'>, worldI
     startingTime: world.clock?.startingTime === undefined ? '' : localInstant(world.clock.startingTime, world.clock.timeZone ?? 'UTC'),
     timeZone: world.clock?.timeZone ?? '',
     ...(world.preset === undefined ? {} : { preset: world.preset }),
+    ...(world.lorebooks === undefined ? {} : { lorebooks: world.lorebooks }),
     problems,
   }
 }

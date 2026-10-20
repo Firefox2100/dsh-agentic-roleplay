@@ -30,18 +30,23 @@ describe('reading the library', () => {
   it('lists presets with their languages, prompts and temperatures', async () => {
     await preset('noir', { 'en/roleplay/style.md': 'Terse.', 'zh/roleplay/style.md': '简短。' }, { title: 'Noir', description: 'Dry.', sampling: { characters: 0.9 } })
     const [entry] = listPresets(root)
-    expect(entry?.summary).toMatchObject({ name: 'noir', title: 'Noir', description: 'Dry.', languages: ['en', 'zh'], prompts: ['roleplay/style'], sampling: { characters: 0.9 }, problems: [] })
+    expect(entry?.summary).toMatchObject({ name: 'noir', title: 'Noir', description: 'Dry.', languages: ['en', 'zh'], prompts: ['roleplay/style'], rules: [], sampling: { characters: 0.9 }, problems: [] })
   })
 
-  it('reports rules prompts, unknown variables, other sampling keys and empty presets as problems', async () => {
-    await preset('bad', { 'en/roleplay/rules.md': 'x', 'en/roleplay/style.md': 'Uses ${nothing}.' }, { sampling: { records: 0.5, master: 5 } })
+  it('reports prompts that are not the story\'s, unknown variables, other sampling keys and empty presets as problems', async () => {
+    await preset('bad', { 'en/elsewhere/rules.md': 'x', 'en/roleplay/style.md': 'Uses ${nothing}.' }, { sampling: { records: 0.5, master: 5 } })
     await preset('empty', {})
     const problems = Object.fromEntries(listPresets(root).map(entry => [entry.summary.name, entry.summary.problems.join('\n')]))
-    expect(problems['bad']).toContain('not a prose prompt')
+    expect(problems['bad']).toContain('not a prompt of the story')
     expect(problems['bad']).toContain('${nothing}')
     expect(problems['bad']).toContain('sampling.records')
     expect(problems['bad']).toContain('sampling.master must be a number')
     expect(problems['empty']).toContain('carries no prompts')
+  })
+
+  it('carries rules prompts, and says which prompts they are', async () => {
+    await preset('house', { 'en/roleplay/style.md': 'Terse.', 'en/roleplay/rules.md': 'Never leave the scene.\n${rules}' })
+    expect(listPresets(root)[0]?.summary).toMatchObject({ prompts: ['roleplay/rules', 'roleplay/style'], rules: ['roleplay/rules'], problems: [] })
   })
 
   it('refuses a name that is not one, and a preset that is not there', () => {
@@ -123,7 +128,7 @@ describe('a preset in a story', () => {
 
   it('changes nothing when the preset to switch to has problems', async () => {
     await preset('a', { 'en/roleplay/style.md': 'A.' })
-    await preset('bad', { 'en/roleplay/rules.md': 'x' })
+    await preset('bad', { 'en/elsewhere/rules.md': 'x' })
     switchPreset(root, story, 'a')
     expect(() => switchPreset(root, story, 'bad')).toThrow('has problems')
     expect(await style(story)).toBe('A.')
@@ -179,7 +184,7 @@ describe('the preset service', () => {
     expect(presets.read('base').prompts['en/roleplay/style']).toBe('Terse.\n')
     await presets.writePrompt('base', 'en', 'roleplay/style', undefined)
     expect(presets.read('base').prompts['en/roleplay/style']).toBeUndefined()
-    await expect(presets.writePrompt('base', 'en', 'roleplay/game-master', 'x')).rejects.toThrow('carries only')
+    await expect(presets.writePrompt('base', 'en', 'world/author', 'x')).rejects.toThrow('not a prompt of the story')
     await expect(presets.writePrompt('gone', 'en', 'roleplay/style', 'x')).rejects.toThrow('no preset')
   })
 

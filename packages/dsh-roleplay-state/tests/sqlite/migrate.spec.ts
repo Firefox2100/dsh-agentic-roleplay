@@ -37,6 +37,7 @@ describe('migrate', () => {
       6: '50a6dbce0acfe194f2b11e09b58db626504f61681cb07ef26ac85f0ad5247cdf',
       7: '6f8bfc5b6c513dc9444ef65ba4a298df8243fe80fb47f2f148070d7f8817eda5',
       8: 'b911afaa49f5ecbf1f64f90a72fa39e69f0ba4db090b730d1357ff4e12fac255',
+      9: '29ed6d37cfde558af259e4ae2c9e97c057547e79e295552365e21db3c1ef11c9',
     }
     for (const [version, hash] of Object.entries(released)) {
       const migration = MIGRATIONS.find(candidate => candidate.version === Number(version))
@@ -115,6 +116,19 @@ describe('migrate', () => {
     db.run("INSERT INTO dice_checks (key, name, use_text, definition) VALUES ('skill', 'Skill', 'x', '{}')")
     expect(() => db.run("INSERT INTO dice_checks (key, name, use_text, definition) VALUES ('skill', 'Skill', 'x', '{}')")).toThrow()
     expect(() => db.run("INSERT INTO dice_rolls (turn, expression, faces, kept, modifier, total, value, reason, by, at) VALUES (1, '1d6', '[3]', '[3]', 0, 3, 3, 'r', 'nobody', 'now')")).toThrow()
+    db.close()
+  })
+
+  it('adds the scope of lore to a version 8 session: what it has stays listed', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 8)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 8')
+    db.run("INSERT INTO lore (title, kind, created_at) VALUES ('Old', 'history', 'now')")
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ scope: string }>('SELECT scope FROM lore')?.scope).toBe('listed')
+    expect(() => db.run("INSERT INTO lore (title, kind, scope, created_at) VALUES ('X', 'history', 'nobody', 'now')")).toThrow()
     db.close()
   })
 

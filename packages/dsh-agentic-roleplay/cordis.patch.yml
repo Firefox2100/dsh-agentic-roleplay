@@ -77,6 +77,22 @@
               suffix: ''
           - id: preset-authoring
             name: '@dsh-agentic-roleplay/core/preset-authoring'
+    # The lorebook authoring chat: reads and writes the entries of one library
+    # lorebook, each write approved by the person. Its id must match
+    # LOREBOOK_AUTHORING_PRESET in the core package.
+    - id: preset-lorebook-authoring
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: lorebook-authoring
+        name: Lorebook Authoring
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: lorebook-authoring
+            name: '@dsh-agentic-roleplay/core/lorebook-authoring'
     # The session doctor chat: a bystander that reads one session's records and
     # proposes fixes through the records edit, each approved by the player. Its
     # id must match DOCTOR_AGENT_PRESET in the core package.

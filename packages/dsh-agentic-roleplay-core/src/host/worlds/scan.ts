@@ -52,6 +52,7 @@ export interface WorldRecord {
   tools?: Switchboard
   narrationVoice?: string
   preset?: string
+  lorebooks?: string[]
 }
 
 export interface ScanResult {
@@ -134,6 +135,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.tools === undefined ? {} : { tools: world.tools }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
     ...(world.preset === undefined ? {} : { preset: world.preset }),
+    ...(world.lorebooks === undefined ? {} : { lorebooks: world.lorebooks }),
   }
   // The cover is optional; a world that names one it cannot supply is still listed, with the reason reported.
   if (world.coverMediaId !== undefined) {

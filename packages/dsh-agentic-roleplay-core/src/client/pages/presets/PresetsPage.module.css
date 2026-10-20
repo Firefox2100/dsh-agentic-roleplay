@@ -14,6 +14,7 @@
 .cardActions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; }
 .message { margin: 0; padding: 40px 0; font-size: 13px; text-align: center; color: var(--dsw-alias-label-secondary); }
 .error { margin: 0; font-size: 12px; color: var(--dsw-alias-state-error-primary); }
+.warning { margin: 0; font-size: 12px; color: var(--dsw-alias-state-warning-primary, var(--dsw-alias-state-error-primary)); }
 .ok { margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .editHeader { display: flex; flex: 0 0 auto; gap: 8px; align-items: center; padding: 8px 16px; border-bottom: 0.5px solid var(--dsw-alias-border-l3); }
 .editTitle { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); }

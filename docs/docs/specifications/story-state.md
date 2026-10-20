@@ -216,7 +216,7 @@ for erroneous records. The character brief lists the known subgraph and `recall_
 revealing current facts. Intended travel is planned by `planKnownMove`, over known destinations and exits only; forced
 story movement retains the omniscient authoritative planner.
 
-Lore differs from a physical-entity edge only in what lookup returns: `recall_my_lore` may return the canonical text of explicitly known entries. It never searches unknown lore. The game master's `search_lore` searches the full canonical lore repository.
+Lore differs from a physical-entity edge only in what lookup returns: `recall_my_lore` may return the canonical text of the entries the character knows, which are those it has a knowledge edge to and those whose `scope` is `everyone` (migration 9 adds `lore.scope`, `listed` by default). It never searches unknown lore. The game master's `search_lore` searches the full canonical lore repository.
 
 ## Growing the world
 

@@ -7,7 +7,7 @@ export type PresetsLocaleKey =
   | 'edit' | 'author' | 'authorFailed' | 'delete' | 'deleteTitle' | 'deleteHelp' | 'deleting' | 'deleteFailed'
   | 'broken' | 'languages' | 'promptsCount'
   | 'info' | 'infoSave' | 'infoSaving' | 'infoSaved' | 'infoFailed' | 'samplingMaster' | 'samplingCharacters' | 'samplingHelp'
-  | 'prompts' | 'promptsHelp' | 'promptsNone' | 'promptPick' | 'promptSave' | 'promptSaving' | 'promptSaved' | 'promptRemove' | 'promptFailed' | 'promptReset' | 'missing' | 'promptAdd' | 'promptAddButton'
+  | 'prompts' | 'promptsHelp' | 'promptsNone' | 'promptPick' | 'promptSave' | 'promptSaving' | 'promptSaved' | 'promptRemove' | 'promptFailed' | 'promptReset' | 'missing' | 'promptAdd' | 'promptAddButton' | 'rulesWarning'
   | 'prompt_roleplay/persona' | 'prompt_roleplay/style' | 'prompt_roleplay/character-style'
 
 export const dictionaries: Dictionaries<PresetsLocaleKey> = {
@@ -21,7 +21,7 @@ export const dictionaries: Dictionaries<PresetsLocaleKey> = {
     edit: 'Edit', author: 'Edit with assistant', authorFailed: 'Could not open the authoring chat: {message}', delete: 'Delete', deleteTitle: 'Delete preset', deleteHelp: 'Delete {name}? Stories that already use it keep their own copy. The preset is moved to the trash folder.', deleting: 'Deleting…', deleteFailed: 'Could not delete the preset: {message}',
     broken: 'Cannot be used: {problems}', languages: 'Languages: {list}', promptsCount: '{count} prompts',
     info: 'About', infoSave: 'Save', infoSaving: 'Saving…', infoSaved: 'Saved.', infoFailed: 'Could not save: {message}', samplingMaster: 'Narrator temperature', samplingCharacters: 'Characters temperature', samplingHelp: 'Suggested only: a story\'s own settings win. Leave empty to suggest nothing; 0 to 2.',
-    prompts: 'Prompts', promptsHelp: 'The text a story gets when it starts with this preset. ${name} marks a value the program fills in. A prompt or language the preset lacks can be added below; the assistant can also write it.', promptsNone: 'This preset carries no prompts yet.', promptPick: 'Prompt', promptSave: 'Save prompt', promptSaving: 'Saving…', promptSaved: 'Saved.', promptRemove: 'Remove this prompt', promptFailed: 'Could not save the prompt: {message}', promptReset: 'Discard changes', missing: 'This preset is no longer there.', promptAdd: 'Add a prompt…', promptAddButton: 'Add',
+    prompts: 'Prompts', promptsHelp: 'The text a story gets when it starts with this preset. ${name} marks a value the program fills in. A prompt or language the preset lacks can be added below; the assistant can also write it.', promptsNone: 'This preset carries no prompts yet.', promptPick: 'Prompt', promptSave: 'Save prompt', promptSaving: 'Saving…', promptSaved: 'Saved.', promptRemove: 'Remove this prompt', promptFailed: 'Could not save the prompt: {message}', promptReset: 'Discard changes', missing: 'This preset is no longer there.', promptAdd: 'Add a prompt…', promptAddButton: 'Add', rulesWarning: 'Warning: this preset carries prompts that hold rules of the game ({list}). They change how the models are told to run the story, not only how it reads, and a wrong change can break it.',
     'prompt_roleplay/persona': 'Persona', 'prompt_roleplay/style': 'Narration style', 'prompt_roleplay/character-style': 'Character style',
   },
   zh: {
@@ -34,7 +34,7 @@ export const dictionaries: Dictionaries<PresetsLocaleKey> = {
     edit: '编辑', author: '用助手编辑', authorFailed: '无法打开创作聊天：{message}', delete: '删除', deleteTitle: '删除预设', deleteHelp: '删除{name}？已经在使用它的故事会保留各自的副本。该预设会被移到回收文件夹。', deleting: '正在删除…', deleteFailed: '无法删除预设：{message}',
     broken: '无法使用：{problems}', languages: '语言：{list}', promptsCount: '{count} 个提示词',
     info: '概览', infoSave: '保存', infoSaving: '正在保存…', infoSaved: '已保存。', infoFailed: '无法保存：{message}', samplingMaster: '叙述者温度', samplingCharacters: '角色温度', samplingHelp: '仅作建议：故事自己的设置优先。留空表示不建议；范围 0 到 2。',
-    prompts: '提示词', promptsHelp: '以这个预设开始的故事会得到这些文字。${name} 表示由程序填入的值。预设缺少的提示词或语言可以在下面添加，也可以让助手来写。', promptsNone: '这个预设还没有提示词。', promptPick: '提示词', promptSave: '保存提示词', promptSaving: '正在保存…', promptSaved: '已保存。', promptRemove: '移除此提示词', promptFailed: '无法保存提示词：{message}', promptReset: '放弃修改', missing: '这个预设已不存在。', promptAdd: '添加提示词…', promptAddButton: '添加',
+    prompts: '提示词', promptsHelp: '以这个预设开始的故事会得到这些文字。${name} 表示由程序填入的值。预设缺少的提示词或语言可以在下面添加，也可以让助手来写。', promptsNone: '这个预设还没有提示词。', promptPick: '提示词', promptSave: '保存提示词', promptSaving: '正在保存…', promptSaved: '已保存。', promptRemove: '移除此提示词', promptFailed: '无法保存提示词：{message}', promptReset: '放弃修改', missing: '这个预设已不存在。', promptAdd: '添加提示词…', promptAddButton: '添加', rulesWarning: '警告：这个预设带有属于游戏规则的提示词（{list}）。它们改变的是模型如何主持故事，而不只是文风，改错可能会破坏故事的运行。',
     'prompt_roleplay/persona': '人设', 'prompt_roleplay/style': '叙述文风', 'prompt_roleplay/character-style': '角色风格',
   },
 }

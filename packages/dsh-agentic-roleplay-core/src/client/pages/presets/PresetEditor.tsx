@@ -77,7 +77,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
       (problem: unknown) => { setPromptStatus({ state: 'failed', message: messageOf(problem) }) },
     )
   }
-  const label = (key: string): string => { const { language, id } = promptKey(key); return `${language} · ${t(`prompt_${id}` as 'prompt_roleplay/style')}` }
+  const label = (key: string): string => { const { language, id } = promptKey(key); return `${language} · ${(PROMPT_IDS as readonly string[]).includes(id) ? t(`prompt_${id}` as 'prompt_roleplay/style') : id}` }
   const field = (key: keyof Info, caption: Parameters<PresetsPageProps['t']>[0], options: { rows?: number; number?: boolean } = {}) => (
     <label className={css.field}>
       <span className={css.label}>{t(caption)}</span>
@@ -111,6 +111,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
         <section className={css.section}>
           <h3 className={css.sectionTitle}>{t('prompts')}</h3>
           <p className={css.help}>{t('promptsHelp')}</p>
+          {loaded.summary.rules.length > 0 && <p className={css.warning} role='note'>{t('rulesWarning', { list: loaded.summary.rules.join(', ') })}</p>}
           {paths.length === 0 && <p className={css.message}>{t('promptsNone')}</p>}
           {paths.length > 0 && (
               <>

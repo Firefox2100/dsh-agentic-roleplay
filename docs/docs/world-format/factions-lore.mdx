@@ -28,6 +28,6 @@ Characters may belong to zero or more factions. Membership has its own role, ran
 
 Lore entries hold canonical setting facts that are not better represented as an entity or event. Each entry has a stable key, title, kind, summary, body, subjects, related entries and optional sources.
 
-Characters do not automatically know canonical lore. A `knowledge.lore` edge grants access to that entry. The GM may search all lore; character recall is restricted to explicitly known entries.
+Characters do not automatically know canonical lore, unless an entry says so. An entry's `scope` is `listed` (the default in a world's own files): a `knowledge.lore` edge, or a name in the entry's `known_by` (character ids, names or aliases of the world), grants access to it. An entry whose `scope` is `everyone` is common knowledge that every character can recall; `known_by` is then not allowed. The GM may search all lore; character recall is restricted to the entries a character knows. Entries brought in from a [lorebook](../authoring/lorebooks) are `everyone` unless they say otherwise.
 
 Use separate entries for facts that may be learned independently. Link their subjects to characters, locations, items or factions so retrieval can find relevant material.

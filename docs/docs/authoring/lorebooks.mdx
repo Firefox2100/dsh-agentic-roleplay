@@ -1,0 +1,57 @@
+---
+title: Lorebooks
+---
+
+A **lorebook** is a collection of background knowledge you keep in your library and start any story with: history, customs, places, institutions, legends, how things work. It belongs to no single world, so its entries do not name a particular character, place or item. A world's own [lore](../world-format/factions-lore#lore) stays in the world; a lorebook is the reusable kind.
+
+Each entry is one fact, written as plain reference prose that keeps every detail. It has a title, a kind (history, culture, religion, politics, geography, science, custom, legend or other), a one-sentence summary and a body, and may relate to other entries of the same book.
+
+## Who knows an entry
+
+Every entry has a **scope**:
+
+- **Everyone** (the default): common knowledge. Every character of the story can recall it, and so can the game master.
+- **Listed**: only the characters named in *known by* know it, matched by name or alias when a story starts. The game master always reads everything.
+
+A lorebook is read by a model that sees every entry, as in SillyTavern, which has no scope. So an imported entry is **everyone** unless it clearly says otherwise, for example a secret that only the wardens know. A name that matches nobody in the story is left out and the story's first card says so; an entry that nobody matches stays known to the game master only.
+
+## The Lorebooks page
+
+The **Lorebooks** page of the Role Play panel lists your library: each lorebook's title, description, how many entries it has and how many everyone knows.
+
+- **New lorebook** makes an empty one. Give it a name (letters, digits, `-` and `_`; worlds and stories refer to it by this name).
+- **Edit** opens it: its title and description, and its entries one at a time (title, kind, who knows it, summary, text, related entries). Saving checks an entry as a story start would.
+- **Edit with assistant** opens an authoring chat for the lorebook, like the one a world has. The assistant reads and writes entries and asks you before each write. If you decline, nothing changes.
+- **Import SillyTavern lorebook** takes the `.json` file SillyTavern exports (a lorebook, or a character card that carries one).
+- **Delete** moves the lorebook to the trash folder. Stories that already use it keep their own copy.
+
+The **Lorebooks** tab of the [catalogue](../playing/catalogue) lists SillyTavern lorebooks other people published and imports them the same way. Importing one again makes another lorebook.
+
+## Importing a SillyTavern lorebook
+
+The assistant sorts every entry of the file into one of three kinds:
+
+- **Knowledge**, a fact about the world. It is kept **word for word** as an entry, with a title, a kind and a summary; the keywords SillyTavern used to trigger it are added to the summary, because here the entry is found by search instead. It is known to everyone unless the entry says otherwise.
+- **Instructions to the AI**, how to write or run the story (tense, tone, what the narrator must or must not do). These are not facts of the world, so they are kept aside.
+- **Left out**: templates, status panels, scripts, empty or repeated entries. The assistant lists what it left out.
+
+Nothing is written until every entry is sorted. A lorebook import can therefore make **two** things in your library: the lorebook, and, if you agree, a preset.
+
+### Instructions to the AI
+
+Instructions go into the [prompt library](presets), as a new preset. The assistant tells you what the instructions say and asks before it makes the preset. Each prompt a preset changes keeps its shipped text, and the instructions are added after it.
+
+:::warning
+Most instructions belong to the prose prompts (the persona, the narration style, the character style). Some belong to prompts that hold the **rules of the game**, such as how the game master runs a turn. Those name tools and fields the program reads, and a wrong instruction can break how the story runs. When the preset would touch one, the approval you are asked for carries a clear warning, and the preset is marked with it afterwards.
+:::
+
+## Using a lorebook
+
+A story gets its lorebooks **copied in when it starts**: every entry becomes lore of the story, with its scope. Later changes to the library never alter a story in progress.
+
+- **In a world:** the **Suggested lorebooks** field on the editor's About page (`lorebooks` in `world.json`) names the lorebooks new stories of the world start with.
+- **When starting a story:** the start dialog lists your lorebooks as checkboxes, with the world's suggestions ticked. What you tick is what the story starts with; ticking none starts without any.
+
+A suggested lorebook that is not in your library is told to you on the story's first card, and the story starts without it. A lorebook you ticked that cannot be used refuses the start.
+
+Adding or removing a lorebook in a story that is already running, and lorebooks inside a character card, are not part of this version: a card's own lorebook still becomes part of the world it is imported into.

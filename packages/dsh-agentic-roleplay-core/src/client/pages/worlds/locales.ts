@@ -10,7 +10,7 @@ export type WorldsLocaleKey =
   | 'previousPage' | 'nextPage' | 'pageOf'
   | 'problems'
   | 'play' | 'openWorld' | 'chatNotOpened'
-  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startTime' | 'startTimeHelp' | 'startPreset' | 'startPresetDefault' | 'startPresetWorld' | 'startPresetNone' | 'startPresetBroken' | 'startPresetHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
+  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startTime' | 'startTimeHelp' | 'startLorebooks' | 'startLorebookEntry' | 'startLorebookBroken' | 'startLorebookSuggested' | 'startLorebookMissing' | 'startLorebooksHelp' | 'startPreset' | 'startPresetDefault' | 'startPresetWorld' | 'startPresetNone' | 'startPresetBroken' | 'startPresetHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
   | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed' | 'worldPreset' | 'worldPresetNone' | 'worldPresetHelp'
   | 'importPreset' | 'presetOpening' | 'presetFailed' | 'presetNotStarted'
@@ -50,6 +50,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startTitle: 'Start a new session',
     sessionName: 'Session name',
     playAs: 'Play as',
+    startLorebooks: 'Lorebooks', startLorebookEntry: '{name} ({count} entries)', startLorebookBroken: '{name} (has problems)', startLorebookSuggested: 'suggested by the world', startLorebookMissing: 'The world suggests the lorebook "{name}", which is not in your library.', startLorebooksHelp: 'The entries of the lorebooks you tick are copied into the story. Entries known to everyone are known to every character.',
     startPreset: 'Writing preset', startPresetDefault: 'Default style', startPresetWorld: 'The world\'s suggestion ({name})', startPresetNone: 'No preset', startPresetBroken: '{name} (has problems)', startPresetHelp: 'A preset sets how the story is written. Presets are kept in the presets folder of your roleplay folder.',
     startOpening: 'Opening', startOpeningDefault: 'The world\'s own opening', startTime: 'Story starts at', startTimeHelp: 'Local time in {zone}, like 1912-04-14T23:40:00. Leave empty for the world\'s own start. Not used when the story follows the real clock.',
     loadingCharacters: 'Loading characters…',
@@ -97,6 +98,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startTitle: '开始新存档',
     sessionName: '存档名称',
     playAs: '扮演角色',
+    startLorebooks: '世界书', startLorebookEntry: '{name}（{count} 个条目）', startLorebookBroken: '{name}（有问题）', startLorebookSuggested: '世界建议', startLorebookMissing: '世界建议使用世界书“{name}”，但你的资料库里没有。', startLorebooksHelp: '勾选的世界书的条目会复制进故事。人人皆知的条目，每个角色都知道。',
     startPreset: '写作预设', startPresetDefault: '默认风格', startPresetWorld: '世界的建议（{name}）', startPresetNone: '不使用预设', startPresetBroken: '{name}（有问题）', startPresetHelp: '预设决定故事的写法。预设保存在角色扮演文件夹的 presets 文件夹中。',
     startOpening: '开场', startOpeningDefault: '世界自带的开场', startTime: '故事开始于', startTimeHelp: '{zone} 的本地时间，例如 1912-04-14T23:40:00。留空则使用世界自带的开始时间。故事跟随真实时钟时不适用。',
     loadingCharacters: '正在加载角色…',

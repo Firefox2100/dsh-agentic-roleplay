@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { dirname } from 'node:path'
-import { CATALOGUE_CARD_TYPE, CATALOGUE_PRESET_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertPresetRequest, type ConvertPresetResult, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
+import { CATALOGUE_CARD_TYPE, CATALOGUE_LOREBOOK_TYPE, CATALOGUE_PRESET_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertPresetRequest, type ConvertPresetResult, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { CatalogueError } from './errors.ts'
 import { installWorld } from './install.ts'
@@ -32,6 +32,8 @@ export interface CatalogueDeps {
   importCard: (card: Buffer, name: string, language?: string) => Promise<ConvertResult>
   /** Makes a new library preset of a SillyTavern preset, named after `title`, and has its authoring chat convert it. */
   importPreset: (file: Buffer, title: string, language?: string) => Promise<ConvertPresetResult>
+  /** Makes a new library lorebook of a SillyTavern lorebook, named after `title`, and has its authoring chat convert it. */
+  importLorebook: (file: Buffer, title: string, language?: string) => Promise<ConvertPresetResult>
   transport?: Transport
 }
 
@@ -42,8 +44,8 @@ const object = (value: unknown, what: string): Json => { if (typeof value !== 'o
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
 const count = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) ? value : 0)
 
-const kindOf = (type: string): CatalogueWorld['kind'] => (type === CATALOGUE_CARD_TYPE ? 'card' : type === CATALOGUE_PRESET_TYPE ? 'preset' : 'world')
-const TYPES = { world: CATALOGUE_WORLD_TYPE, card: CATALOGUE_CARD_TYPE, preset: CATALOGUE_PRESET_TYPE } as const
+const kindOf = (type: string): CatalogueWorld['kind'] => (type === CATALOGUE_CARD_TYPE ? 'card' : type === CATALOGUE_PRESET_TYPE ? 'preset' : type === CATALOGUE_LOREBOOK_TYPE ? 'lorebook' : 'world')
+const TYPES = { world: CATALOGUE_WORLD_TYPE, card: CATALOGUE_CARD_TYPE, preset: CATALOGUE_PRESET_TYPE, lorebook: CATALOGUE_LOREBOOK_TYPE } as const
 
 function worldOf(value: unknown): CatalogueWorld {
   const item = object(value, 'a world entry')
@@ -203,6 +205,12 @@ export class Catalogue {
     if (record === undefined) throw new CatalogueError('the world was made but cannot be found', 'upstream')
     await writeOrigin(record.directory, { kind: 'card', root: source.root, resourceId: release.resourceId, versionId: release.versionId, version: release.version })
     return converted
+  }
+
+  /** Turns a SillyTavern lorebook of a catalogue into a new library lorebook, which its authoring chat fills with entries. Like a card it is never an update of an earlier one. */
+  async convertLorebook(request: ConvertPresetRequest): Promise<ConvertPresetResult> {
+    const release = await this.download(this.deps.sources.get(request.source), request.versionId, CATALOGUE_LOREBOOK_TYPE, 'a lorebook')
+    return await this.deps.importLorebook(release.body, request.title ?? '', request.language)
   }
 
   /** Turns a SillyTavern preset of a catalogue into a new library preset, which its authoring chat fills with prompts. Like a card it is never an update of an earlier one. */

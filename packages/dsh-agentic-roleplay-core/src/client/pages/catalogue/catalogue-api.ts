@@ -43,6 +43,10 @@ export async function convert(request: ConvertRequest): Promise<ConvertResult> {
   return await answer(await fetch(`${API_PREFIX}/catalogue/convert`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
 }
 
+export async function convertLorebook(request: ConvertPresetRequest): Promise<ConvertPresetResult> {
+  return await answer(await fetch(`${API_PREFIX}/catalogue/convert/lorebook`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
+}
+
 export async function convertPreset(request: ConvertPresetRequest): Promise<ConvertPresetResult> {
   return await answer(await fetch(`${API_PREFIX}/catalogue/convert/preset`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
 }

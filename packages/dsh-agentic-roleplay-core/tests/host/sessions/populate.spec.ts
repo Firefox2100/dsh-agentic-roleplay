@@ -4,8 +4,8 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from '@dsh-agentic-roleplay/state'
-import type { CharacterDefinition, FactionDefinition } from 'dsh-roleplay-model'
-import { factionProblems, knowledgeProblems, populateCharacters, populateFactions, populateItems, populateKnowledge, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
+import type { CharacterDefinition, FactionDefinition, LoreDefinition } from 'dsh-roleplay-model'
+import { factionProblems, knowledgeProblems, loreProblems, populateLore, populateCharacters, populateFactions, populateItems, populateKnowledge, populateLocations, populateRoutines, relationshipProblems, routineProblems, startingPlaceProblems } from '../../../src/host/sessions/populate.ts'
 import type { ItemDefinition, LocationDefinition } from 'dsh-roleplay-model'
 
 let dir: string
@@ -274,5 +274,25 @@ describe('the days of the characters of a world', () => {
     ])
     expect(windows[0]?.locationId).toBe(session.locations.getBySourceId('shop')!.id)
     expect(session.routines.list(session.characters.getBySourceId('clara')!.id)).toEqual([])
+  })
+})
+
+describe('lore and who knows it when a world starts', () => {
+  const entry = (overrides: Partial<LoreDefinition>): LoreDefinition => ({ id: 'rite', title: 'The rite', kind: 'custom', scope: 'listed', knownBy: [], summary: '', body: 'It is done at dusk.', subjects: [], related: [], sources: [], ...overrides })
+
+  it('keeps listed lore for the characters named, by id, name or alias, and common knowledge for nobody in particular', () => {
+    const eleanor = definition({ start: { publicState: '', innerState: '', activity: '', intents: [], place: { location: 'bar' } } })
+    populateLocations(session, places)
+    populateCharacters(session, [eleanor], 'eleanor-graves')
+    populateLore(session, [entry({ knownBy: ['the Mayor'] }), entry({ id: 'law', title: 'The law', scope: 'everyone' }), entry({ id: 'vault', title: 'The vault' })])
+    const mayor = session.characters.getBySourceId('eleanor-graves')!
+    expect(session.knowledge.list(mayor.id, 'lore').map(known => session.lore.get(known.subjectId)?.sourceId)).toEqual(['rite'])
+    expect(session.lore.getBySourceId('law')?.scope).toBe('everyone')
+    expect(session.lore.getBySourceId('vault')?.scope).toBe('listed')
+  })
+
+  it('reports a character a lore entry names that the world does not have', () => {
+    expect(loreProblems([entry({ knownBy: ['Nobody'] })], { characters: [definition()], factions: [], locations: [], items: [] })).toEqual(['rite: known_by: "Nobody" is not a character of this world'])
+    expect(loreProblems([entry({ knownBy: ['eleanor graves'] })], { characters: [definition()], factions: [], locations: [], items: [] })).toEqual([])
   })
 })

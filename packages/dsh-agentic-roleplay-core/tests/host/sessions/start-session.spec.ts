@@ -543,3 +543,41 @@ describe('starting with a preset', () => {
     expect(existsSync(join(sessionFolder(none.id), 'preset.json'))).toBe(false)
   })
 })
+
+describe('starting with lorebooks', () => {
+  const worldFile = join('worlds', 'blackwater folder', 'world.json')
+  const makeBook = async (name: string, entries: Record<string, unknown>) => {
+    await write(join(root, 'lorebooks', name, 'lorebook.json'), { title: name })
+    for (const [id, entry] of Object.entries(entries)) await write(join(root, 'lorebooks', name, 'lore', id, 'lore.json'), entry)
+  }
+  const loreOf = (id: string) => { const session = state.openSession(join(root, 'sessions'), id); return session.lore.list() }
+
+  it('copies the entries of the chosen books into the story, common knowledge for everyone and the rest for the characters named', async () => {
+    await makeBook('harbor', { law: { title: 'The law', kind: 'politics', scope: 'everyone', body: 'Written down.' }, rite: { title: 'The rite', kind: 'custom', scope: 'listed', known_by: ['Arthur Moore', 'Nobody'], body: 'At dusk.' } })
+    const started = await startSession(deps, { ...playAsArthur, lorebooks: ['harbor'] })
+    const entries = loreOf(started.id)
+    expect(entries.map(entry => [entry.sourceId, entry.scope])).toEqual(expect.arrayContaining([['harbor:law', 'everyone'], ['harbor:rite', 'listed']]))
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    const arthur = session.characters.getBySourceId('arthur')!
+    expect(session.knowledge.list(arthur.id, 'lore').map(known => session.lore.get(known.subjectId)?.sourceId)).toContain('harbor:rite')
+    expect(session.metadata.getValue('roleplay.lorebooks')).toEqual([{ name: 'harbor', entries: 2 }])
+    expect(readNotes(session).find(entry => entry.kind === 'world')?.lines.join(' ')).toContain('"Nobody", who is not in this story')
+  })
+
+  it('uses the books the world suggests unless the request names its own, and none when it names none', async () => {
+    await makeBook('harbor', { law: { title: 'The law', scope: 'everyone', body: 'x' } })
+    await write(join(root, worldFile), { id: 'blackwater', name: 'The Blackwater Observatory', lorebooks: ['harbor'] })
+    deps.worlds = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
+    expect(loreOf((await startSession(deps, playAsArthur)).id).some(entry => entry.sourceId === 'harbor:law')).toBe(true)
+    expect(loreOf((await startSession(deps, { ...playAsArthur, lorebooks: [] })).id).some(entry => entry.sourceId === 'harbor:law')).toBe(false)
+  })
+
+  it('refuses a chosen book that cannot be used, and tells the player of a suggested one that cannot', async () => {
+    await expect(startSession(deps, { ...playAsArthur, lorebooks: ['nothing'] })).rejects.toThrow(InvalidStartError)
+    await write(join(root, worldFile), { id: 'blackwater', name: 'The Blackwater Observatory', lorebooks: ['nothing'] })
+    deps.worlds = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
+    const started = await startSession(deps, playAsArthur)
+    expect(readNotes(state.openSession(join(root, 'sessions'), started.id)).find(entry => entry.kind === 'world')?.lines.join(' ')).toContain('suggests the lorebook "nothing"')
+  })
+})
+

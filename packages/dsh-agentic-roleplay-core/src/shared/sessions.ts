@@ -22,6 +22,8 @@ export interface WorldCharactersPayload {
   timeZone: string
   /** The preset the world suggests, when it names one. */
   preset?: string
+  /** The lorebooks the world suggests. */
+  lorebooks?: readonly string[]
   problems: readonly WorldProblem[]
 }
 
@@ -41,6 +43,8 @@ export interface StartSessionRequest {
   startingTime?: string
   /** A preset of the library whose prose prompts the story uses, over the world's own; the world's suggested preset is used when this is left out. */
   preset?: string
+  /** Lorebooks of the library whose entries the story starts with; the world's suggested lorebooks are used when this is left out, and none when it is empty. */
+  lorebooks?: string[]
   /** The settings of the chat from its first message; what is left out takes its default. They can be changed later. */
   settings?: unknown
 }

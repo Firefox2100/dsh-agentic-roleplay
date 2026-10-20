@@ -11,8 +11,8 @@ import { IMPORT_FOLDER } from '../import/store.ts'
 import { contextOf, type Prompting } from '../import/tools.ts'
 import type { TextOf } from '../import/run.ts'
 import { PRESET_FILE, presetDirectory, readPreset, updatePresetInfo } from '../presets/presets.ts'
-import { languageOf, PROMPTS_FOLDER, shippedLanguages, shippedPromptsDirectory } from '../prompts/library.ts'
-import { deleteWorldPrompt, PROSE_PROMPTS, readWorldPrompt, writeWorldPrompt } from '../prompts/world-prompts.ts'
+import { languageOf, shippedLanguages, shippedPromptsDirectory } from '../prompts/library.ts'
+import { deleteWorldPrompt, listWorldPrompts, PROSE_PROMPTS, readWorldPrompt, writeWorldPrompt } from '../prompts/world-prompts.ts'
 
 export const PRESET_MUTATION_TOOLS = ['write_preset_prompt', 'delete_preset_prompt', 'write_preset_info', 'import_narration_preset'] as const
 export const NARRATION_IMPORT_TOOL = 'import_narration_preset'
@@ -24,7 +24,10 @@ export const narrationImportMessage = (): string => `Turn the SillyTavern preset
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
 const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => output(value) }
 const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as never
-const idParameter = { type: 'string' as const, required: true as const, enum: [...PROSE_PROMPTS], description: 'The prompt: roleplay/persona, roleplay/style or roleplay/character-style.' }
+const idParameter = { type: 'string' as const, required: true as const, description: 'The prompt, such as roleplay/style. The prose prompts are roleplay/persona, roleplay/style and roleplay/character-style; every other roleplay/ prompt holds rules of the game (see list_preset_prompts).' }
+
+/** Whether a prompt holds rules of the game, which tell the models how to work and not only how the story reads. */
+export const isRulesPrompt = (id: unknown): boolean => typeof id === 'string' && !PROSE_PROMPTS.includes(id)
 const languageParameter = { type: 'string' as const, required: true as const, description: 'The language folder, such as en or zh.' }
 
 /** Resolves every call from its preset authoring chat, so a tool can only reach the preset the chat is about. */
@@ -59,14 +62,13 @@ export function presetAuthorTools(reader: PresetReader, settings: () => ImportSe
     }),
     defineTool({
       name: 'list_preset_prompts',
-      description: 'List the three prose prompts a preset can carry, in a language, and whether this preset carries its own version of each.',
+      description: 'List every prompt of the story, in a language, with its kind (prose, or rules of the game) and whether this preset carries its own version.',
       parameters: { language: languageParameter },
       output: jsonOutput,
       isConcurrencySafe: () => true,
       async execute(args, exec) {
         const { directory } = reader.directory(exec)
-        const tag = languageOf(args.language)
-        return json(PROSE_PROMPTS.map(id => ({ id, carried: existsSync(join(directory, PROMPTS_FOLDER, tag, `${id}.md`)) })))
+        return json(listWorldPrompts(directory, args.language, shipped))
       },
     }),
     defineTool({
@@ -82,12 +84,12 @@ export function presetAuthorTools(reader: PresetReader, settings: () => ImportSe
     }),
     defineTool({
       name: 'write_preset_prompt',
-      description: 'Create or replace the preset\'s version of a prompt in a language. It must not be empty and may use only the ${variables} the shipped prompt uses; tool names and field names in it must stay as they are. Read it first and change only what is needed. Requires user approval.',
+      description: 'Create or replace the preset\'s version of a prompt in a language. It must not be empty and may use only the ${variables} the shipped prompt uses; tool names and field names in it must stay as they are. Read it first and change only what is needed. Prompts other than the three prose ones hold rules of the game: change them only when the person asked for it, keep the shipped text and add to it rather than replacing it, and know that the person is shown a warning. Requires user approval.',
       parameters: { id: idParameter, language: languageParameter, text: { type: 'string', required: true, description: 'The complete prompt text.' } },
       output: jsonOutput,
       async execute(args, exec) {
         const { directory } = reader.directory(exec)
-        if (!PROSE_PROMPTS.includes(args.id)) throw new Error(`a preset carries only ${PROSE_PROMPTS.join(', ')}`)
+        if (!args.id.startsWith('roleplay/')) throw new Error(`"${args.id}" is not a prompt of the story`)
         await writeWorldPrompt(directory, args.language, args.id, args.text, shipped)
         return json({ action: 'written', id: args.id, language: languageOf(args.language) })
       },
@@ -158,5 +160,6 @@ export async function presetApproval(exec: ToolExecution, next: () => Promise<Pr
   if (exec.name === 'write_preset_info') return { kind: 'ask', reason: 'change the preset\'s title, description or suggested temperatures', displayReason: { en: 'Change the preset\'s title, description or temperatures?', zh: '修改预设的标题、描述或建议温度？' } }
   const target = `prompt “${String(args['language'])}/${String(args['id'])}”`
   const remove = exec.name.startsWith('delete')
+  if (isRulesPrompt(args['id'])) return { kind: 'ask', reason: `${remove ? 'delete' : 'write'} preset ${target}, a rules prompt`, displayReason: { en: `WARNING: ${target} holds rules of the game, not only prose. ${remove ? 'Delete' : 'Write'} it in the preset? A wrong change can break how the story runs.`, zh: `警告：${target}属于游戏规则，而不只是文风。${remove ? '删除' : '写入'}预设中的这条提示词？改错可能会影响故事的运行。` } }
   return { kind: 'ask', reason: `${remove ? 'delete' : 'write'} preset ${target}`, displayReason: { en: `${remove ? 'Delete' : 'Write'} ${target} in the preset?`, zh: `${remove ? '删除' : '写入'}预设中的${target}？` } }
 }

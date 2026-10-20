@@ -617,6 +617,12 @@ export const MIGRATIONS: readonly Migration[] = [
       CREATE INDEX dice_rolls_turn ON dice_rolls (turn, id);
     `,
   },
+  {
+    version: 9,
+    sql: `
+      ALTER TABLE lore ADD COLUMN scope TEXT NOT NULL DEFAULT 'listed' CHECK (scope IN ('everyone', 'listed'));
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

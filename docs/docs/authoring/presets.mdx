@@ -2,7 +2,7 @@
 title: Presets
 ---
 
-A **preset** is a set of writing instructions you keep in your library and put into any story: who the narrator is, how the narration reads, and how the characters speak and act. It holds only prose. The rules of the game, the tools and everything specific to one world stay with the world.
+A **preset** is a set of writing instructions you keep in your library and put into any story: who the narrator is, how the narration reads, and how the characters speak and act. It is mostly prose; the rules of the game and everything specific to one world stay with the world, with one exception described under [rules prompts](#rules-prompts).
 
 :::note
 This is not DSH's *agent preset*, which sets up the agent a chat runs under. Here a preset is only the narration prompts.
@@ -16,7 +16,11 @@ A preset has up to three prompts for each language:
 | `roleplay/style` | how the narration is written |
 | `roleplay/character-style` | how characters speak and behave |
 
-It may also suggest the creative temperatures of the narrator and the characters. Nothing else is part of a preset, so a preset cannot break the game.
+It may also suggest the creative temperatures of the narrator and the characters.
+
+### Rules prompts
+
+A preset can also carry the other prompts of the story, the ones that hold the rules of the game: how the game master runs a turn, what characters may know and do. These name tools and fields the program reads, so a wrong change can break how the story runs. They are never part of a preset unless someone put them there, and everywhere a preset is shown it is marked with a warning when it carries any: on its card, in its editor, and in the approval the assistant asks for. An assistant that edits a rules prompt keeps the shipped text and adds to it instead of replacing it. The editor can change the text of a rules prompt a preset already carries; adding one is done with the assistant or by [importing a lorebook](lorebooks#instructions-to-the-ai) that holds instructions.
 
 ## The Presets page
 
@@ -41,5 +45,7 @@ A story gets its preset **copied in when it starts**. Later changes to the libra
 - **In a running story:** the **Preset** section of Chat settings shows whether the story still matches the library (*current*, *changed* in the library, *edited* in the story or *missing* from the library), and can switch to another preset, apply the library's version again, or take the preset out. Replaced copies are kept in the story's `.trash/prompts/`.
 
 Switching a preset does not change the story's temperatures, and prompts a world carried that an earlier preset replaced are not brought back. The switch is refused while a turn is being played, so the prompts never change in the middle of one.
+
+A preset can also come out of a [lorebook](lorebooks) import: the instructions to the AI in a SillyTavern lorebook are kept aside and, with your approval, become a new preset.
 
 The full rules (the order the files are written in, what counts as a problem) are in the [prompt system](../specifications/prompt-system#presets) specification.
