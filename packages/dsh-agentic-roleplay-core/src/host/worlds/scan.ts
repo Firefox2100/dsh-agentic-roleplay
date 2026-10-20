@@ -51,6 +51,7 @@ export interface WorldRecord {
   /** The optional tools switched on or off for the world's agents. */
   tools?: Switchboard
   narrationVoice?: string
+  preset?: string
 }
 
 export interface ScanResult {
@@ -132,6 +133,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.rules === undefined ? {} : { rules: world.rules }),
     ...(world.tools === undefined ? {} : { tools: world.tools }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
+    ...(world.preset === undefined ? {} : { preset: world.preset }),
   }
   // The cover is optional; a world that names one it cannot supply is still listed, with the reason reported.
   if (world.coverMediaId !== undefined) {

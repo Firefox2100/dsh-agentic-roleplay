@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button, Modal, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { CatalogueKind, CatalogueSourceStatus, CatalogueWorldDetail, ConvertResult, InstallMode } from '../../../shared/catalogue.ts'
-import { convert, downloadUrl, install, InstallConflict, loadWorld } from './catalogue-api.ts'
+import { convert, convertPreset, downloadUrl, install, InstallConflict, loadWorld } from './catalogue-api.ts'
 import type { CatalogueLocaleKey } from './locales.ts'
 import css from './CataloguePage.module.css'
 
@@ -30,7 +30,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
   const [detail, setDetail] = useState<CatalogueWorldDetail>()
   const [error, setError] = useState<string>()
   const [versionId, setVersionId] = useState('')
-  const [busy, setBusy] = useState<InstallMode | 'convert'>()
+  const [busy, setBusy] = useState<InstallMode | 'convert' | 'preset'>()
   const [done, setDone] = useState<Done>()
   const [failure, setFailure] = useState<string>()
   const [conflict, setConflict] = useState<InstallConflict>()
@@ -81,8 +81,22 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
     )
   }
 
+  const runPreset = (): void => {
+    if (version === undefined) return
+    setBusy('preset'); setFailure(undefined)
+    convertPreset({ source: source.name, versionId: version.id, title: detail?.name ?? name, language: t('language') }).then(
+      (result) => {
+        setBusy(undefined)
+        try { openChat(result.chatSessionId); onClose() } catch (problem) { setFailure(t('importPresetFailed', { message: messageOf(problem) })) }
+      },
+      (problem: unknown) => { setBusy(undefined); setFailure(t('importPresetFailed', { message: messageOf(problem) })) },
+    )
+  }
+
   const idle = busy === undefined && done === undefined && started === undefined && conflict === undefined
-  const primary = kind === 'card'
+  const primary = kind === 'preset'
+    ? <Button variant="primary" disabled={!idle || version === undefined} onClick={runPreset}>{busy === 'preset' ? t('importingPreset') : t('importPresetAction')}</Button>
+    : kind === 'card'
     ? <Button variant="primary" disabled={!idle || version === undefined} onClick={runConvert}>{busy === 'convert' ? t('converting') : t('convert')}</Button>
     : installed === undefined
       ? <Button variant="primary" disabled={!idle || version === undefined} onClick={() => { run('new') }}>{busy === 'new' ? t('installing') : t('install')}</Button>
@@ -113,6 +127,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
                 </label>
               )}
             {kind === 'card' && <p className={css.success}>{t('convertNote')}</p>}
+            {kind === 'preset' && <p className={css.success}>{t('importPresetNote')}</p>}
             {kind === 'card' && detail.converted !== undefined && detail.converted.length > 0 && <p className={css.success}>{t('convertedBefore', { names: detail.converted.map(world => world.name).join(', ') })}</p>}
             {installed !== undefined && (
               <p className={css.success}>

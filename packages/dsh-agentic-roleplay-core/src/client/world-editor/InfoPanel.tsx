@@ -2,19 +2,21 @@ import { useEffect, useState } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import type { Translate } from './WorldEditor.tsx'
+import type { PresetSummary } from '../../shared/presets.ts'
+import { listPresets } from '../presets-api.ts'
 import { loadInfo, loadPlayable, saveInfo } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
-interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; alternates: { title: string; text: string; character?: string }[] }
+interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; preset: string; alternates: { title: string; text: string; character?: string }[] }
 
-const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, alternates: info.alternateOpenings })
+const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, preset: info.preset, alternates: info.alternateOpenings })
 const lines = (value: string): string[] => value.split('\n').map(line => line.trim()).filter(line => line !== '')
 const words = (value: string): string[] => value.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag !== '')
 
 /** The edit that turns the saved fields into the drafted ones: only what changed. */
 function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   const edit: Record<string, unknown> = {}
-  for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
+  for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'preset'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
   if (JSON.stringify(words(draft.tags)) !== JSON.stringify(words(saved.tags))) edit['tags'] = words(draft.tags)
   if (JSON.stringify(lines(draft.rules)) !== JSON.stringify(lines(saved.rules))) edit['rules'] = lines(draft.rules)
   const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), text: entry.text.trim(), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => entry.text !== '')
@@ -29,6 +31,12 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
   const [draft, setDraft] = useState<Draft>()
   const [status, setStatus] = useState<{ state: 'idle' | 'saving' | 'saved' | 'failed'; message?: string }>({ state: 'idle' })
   const [playable, setPlayable] = useState<{ id: string; name: string }[]>([])
+  const [presets, setPresets] = useState<PresetSummary[]>([])
+  useEffect(() => {
+    const abort = new AbortController()
+    listPresets(abort.signal).then(setPresets, () => undefined)
+    return () => { abort.abort() }
+  }, [])
   useEffect(() => {
     const abort = new AbortController()
     loadPlayable(worldId, abort.signal).then(setPlayable, () => undefined)
@@ -115,6 +123,15 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
               {field('authorUrl', 'infoAuthorUrl', undefined, { placeholder: 'https://' })}
               {field('timeZone', 'infoTimeZone', 'infoTimeZoneHelp', { placeholder: 'Europe/London' })}
               {field('startingTime', 'infoStartingTime', 'infoStartingTimeHelp', { placeholder: '1912-04-14T23:40:00' })}
+              <label className={css.field}>
+                <span className={css.label}>{t('infoPreset')}</span>
+                <select className={css.select} value={draft.preset} data-testid="roleplay-world-preset" onChange={(event) => { set('preset', event.target.value) }}>
+                  <option value="">{t('infoPresetNone')}</option>
+                  {presets.map(entry => <option key={entry.name} value={entry.name} disabled={entry.problems.length > 0}>{entry.title}</option>)}
+                  {draft.preset !== '' && !presets.some(entry => entry.name === draft.preset) && <option value={draft.preset}>{t('infoPresetMissing', { name: draft.preset })}</option>}
+                </select>
+                <span className={css.help}>{t('infoPresetHelp')}</span>
+              </label>
             </div>
           </section>
         </article>

@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto'
-import { CATALOGUE_CARD_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
+import { dirname } from 'node:path'
+import { CATALOGUE_CARD_TYPE, CATALOGUE_PRESET_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertPresetRequest, type ConvertPresetResult, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { CatalogueError } from './errors.ts'
 import { installWorld } from './install.ts'
+import { pruneTrash } from './trash.ts'
 import { isUnchanged, localChanges, readOrigin, writeOrigin, type Provenance, type WorldOrigin } from './origin.ts'
 import type { ResolvedSource, Sources } from './sources.ts'
 import { fetchAddress, type Transport } from './transport.ts'
@@ -23,7 +25,13 @@ export interface CatalogueDeps {
   /** The most a character card download may be. */
   maxCardBytes: () => number
   /** Makes a new world of a card and has the authoring chat convert it. */
+  /** Days replaced files stay in the trash; 0 for good. */
+  trashDays: () => number
+  /** Where a problem that does not stop the request is reported. */
+  problem: (message: string) => void
   importCard: (card: Buffer, name: string, language?: string) => Promise<ConvertResult>
+  /** Makes a new library preset of a SillyTavern preset, named after `title`, and has its authoring chat convert it. */
+  importPreset: (file: Buffer, title: string, language?: string) => Promise<ConvertPresetResult>
   transport?: Transport
 }
 
@@ -34,6 +42,9 @@ const object = (value: unknown, what: string): Json => { if (typeof value !== 'o
 const text = (value: unknown): string => (typeof value === 'string' ? value : '')
 const count = (value: unknown): number => (typeof value === 'number' && Number.isFinite(value) ? value : 0)
 
+const kindOf = (type: string): CatalogueWorld['kind'] => (type === CATALOGUE_CARD_TYPE ? 'card' : type === CATALOGUE_PRESET_TYPE ? 'preset' : 'world')
+const TYPES = { world: CATALOGUE_WORLD_TYPE, card: CATALOGUE_CARD_TYPE, preset: CATALOGUE_PRESET_TYPE } as const
+
 function worldOf(value: unknown): CatalogueWorld {
   const item = object(value, 'a world entry')
   const metadata = object(item['metadata'], 'a world entry without metadata')
@@ -41,7 +52,7 @@ function worldOf(value: unknown): CatalogueWorld {
   if (!ID.test(id)) throw unexpected('a world entry without an id')
   const visibility = text(metadata['visibility'])
   return {
-    id, kind: text(item['resourceType']) === CATALOGUE_CARD_TYPE ? 'card' : 'world', name: text(metadata['name']), description: text(metadata['description']),
+    id, kind: kindOf(text(item['resourceType'])), name: text(metadata['name']), description: text(metadata['description']),
     tags: Array.isArray(metadata['tags']) ? metadata['tags'].filter((tag): tag is string => typeof tag === 'string') : [],
     author: text(item['authorUsername']), visibility: (VISIBILITY.includes(visibility) ? visibility : 'private') as CatalogueVisibility,
     language: text(metadata['language']), views: count(item['viewCount']), downloads: count(item['downloadCount']),
@@ -75,7 +86,7 @@ export class Catalogue {
   async worlds(name: string, query: CatalogueQuery): Promise<CatalogueWorldPage> {
     const source = this.deps.sources.get(name)
     const offset = Math.max(0, Math.floor(query.offset ?? 0))
-    const params: Record<string, string> = { resourceType: query.kind === 'card' ? CATALOGUE_CARD_TYPE : CATALOGUE_WORLD_TYPE, publishedOnly: 'true', limit: String(PAGE_SIZE), offset: String(offset), sort: query.sort ?? 'recent' }
+    const params: Record<string, string> = { resourceType: TYPES[query.kind ?? 'world'], publishedOnly: 'true', limit: String(PAGE_SIZE), offset: String(offset), sort: query.sort ?? 'recent' }
     const search = query.search?.trim() ?? ''
     if (search !== '') params['search_string'] = search.slice(0, 200)
     const answer = object(await this.json(source, '/resources', params), 'the list of worlds')
@@ -163,7 +174,19 @@ export class Catalogue {
     if (reply.body.length < 4 || reply.body.readUInt32LE(0) !== 0x04034b50) throw new CatalogueError(`${url.href} did not answer with a ZIP archive${reply.type === '' ? '' : ` (it sent ${reply.type})`}`, 'invalid')
     if (request.sha256 !== undefined && createHash('sha256').update(reply.body).digest('hex') !== request.sha256.toLowerCase()) throw new CatalogueError('the download does not match the checksum the catalogue published for it', 'invalid')
     const provenance = await this.provenance(url)
-    return await installWorld(this.deps.worlds, reply.body, this.deps.maxBytes(), { mode: request.mode ?? 'new', overwriteChanges: request.overwriteChanges === true, ...(provenance === undefined ? {} : { provenance }) })
+    const installed = await installWorld(this.deps.worlds, reply.body, this.deps.maxBytes(), { mode: request.mode ?? 'new', overwriteChanges: request.overwriteChanges === true, ...(provenance === undefined ? {} : { provenance }) })
+    if (installed.backup !== undefined) await this.tidy()
+    return installed
+  }
+
+  /** Deletes what updates left in the trash past the configured time; a failure is reported and never fails the request that triggered it. */
+  async tidy(): Promise<void> {
+    try {
+      const { failures } = await pruneTrash(dirname(this.deps.worlds.directory), this.deps.trashDays())
+      for (const failure of failures) this.deps.problem(`could not remove old catalogue files: ${failure}`)
+    } catch (error) {
+      this.deps.problem(`could not clean the catalogue trash: ${error instanceof Error ? error.message : String(error)}`)
+    }
   }
 
   /**
@@ -173,20 +196,32 @@ export class Catalogue {
    */
   async convert(request: ConvertRequest): Promise<ConvertResult> {
     const source = this.deps.sources.get(request.source)
-    const versionId = this.identifier(request.versionId)
+    const release = await this.download(source, request.versionId, CATALOGUE_CARD_TYPE, 'a character card')
+    const png = release.body.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]))
+    const converted = await this.deps.importCard(release.body, `${release.versionId}${png ? '.png' : '.json'}`, request.language)
+    const record = await this.deps.worlds.find(converted.worldId)
+    if (record === undefined) throw new CatalogueError('the world was made but cannot be found', 'upstream')
+    await writeOrigin(record.directory, { kind: 'card', root: source.root, resourceId: release.resourceId, versionId: release.versionId, version: release.version })
+    return converted
+  }
+
+  /** Turns a SillyTavern preset of a catalogue into a new library preset, which its authoring chat fills with prompts. Like a card it is never an update of an earlier one. */
+  async convertPreset(request: ConvertPresetRequest): Promise<ConvertPresetResult> {
+    const release = await this.download(this.deps.sources.get(request.source), request.versionId, CATALOGUE_PRESET_TYPE, 'a preset')
+    return await this.deps.importPreset(release.body, request.title ?? '', request.language)
+  }
+
+  /** A release of the given type, downloaded with the catalogue's key and checked against the checksum it published. */
+  private async download(source: ResolvedSource, versionIdText: string, type: string, what: string): Promise<{ body: Buffer; versionId: string; resourceId: string; version: string }> {
+    const versionId = this.identifier(versionIdText)
     const version = object(await this.json(source, `/versions/${versionId}`), 'a version')
-    if (text(version['resourceType']) !== CATALOGUE_CARD_TYPE) throw new CatalogueError('that release is not a character card', 'invalid')
+    if (text(version['resourceType']) !== type) throw new CatalogueError(`that release is not ${what}`, 'invalid')
     const resourceId = text(version['resourceId'])
     if (!ID.test(resourceId)) throw unexpected('a version without a resource id')
     const reply = await fetchAddress(this.address(source, `/versions/${versionId}/download`), { sources: this.deps.sources, maxBytes: this.deps.maxCardBytes(), accept: '*/*', ...(this.deps.transport === undefined ? {} : { transport: this.deps.transport }) })
     const sha256 = text(version['artifactSha256'])
     if (sha256 !== '' && createHash('sha256').update(reply.body).digest('hex') !== sha256.toLowerCase()) throw new CatalogueError('the download does not match the checksum the catalogue published for it', 'invalid')
-    const png = reply.body.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]))
-    const converted = await this.deps.importCard(reply.body, `${versionId}${png ? '.png' : '.json'}`, request.language)
-    const record = await this.deps.worlds.find(converted.worldId)
-    if (record === undefined) throw new CatalogueError('the world was made but cannot be found', 'upstream')
-    await writeOrigin(record.directory, { kind: 'card', root: source.root, resourceId, versionId, version: text(version['version']) })
-    return converted
+    return { body: reply.body, versionId, resourceId, version: text(version['version']) }
   }
 
   /** The catalogue release an address names, when it is a release download on a configured catalogue. */

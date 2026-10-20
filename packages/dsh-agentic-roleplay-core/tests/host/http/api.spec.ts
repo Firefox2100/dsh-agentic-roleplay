@@ -21,6 +21,7 @@ import { UnknownStarterError } from '../../../src/host/worlds/starter.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
 import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
+import type { PresetApi } from '../../../src/host/presets/routes.ts'
 
 let base: string
 let server: Server
@@ -42,6 +43,21 @@ let importError: Error | undefined
 let importCalls: string[] = []
 const preview: ImportPreview = { id: 'i1', hasAvatar: false, choices: { name: 'Card', disabledEntries: [], opening: { kind: 'first' } }, card: { sourceSpec: 'chara_card_v3', name: 'Card', description: '', personality: '', scenario: '', firstMessage: 'Hello', alternateGreetings: [], messageExample: '', creatorNotes: '', systemPrompt: '', postHistoryInstructions: '', tags: [], creator: '', characterVersion: '', ignored: { scripts: 0, extensions: [] } } }
 let catalogueCalls: string[] = []
+let presetCalls: string[] = []
+const summary = { name: 'noir', title: 'Noir', description: '', languages: ['en'], prompts: ['roleplay/style'], sampling: {}, problems: [] }
+const presetApi: PresetApi = {
+  list: () => [summary],
+  read: (name) => { if (name !== 'noir') throw new Error(`there is no preset "${name}"`); return { summary, prompts: { 'en/roleplay/style': 'Terse.' } } },
+  create: (request) => { presetCalls.push(`create ${JSON.stringify(request)}`); return Promise.resolve(summary) },
+  updateInfo: (name, change) => { presetCalls.push(`info ${name} ${JSON.stringify(change)}`); return Promise.resolve(summary) },
+  writePrompt: (name, language, id, text) => { presetCalls.push(`prompt ${name} ${language} ${id} ${String(text)}`); return Promise.resolve(summary) },
+  author: (name, language) => { presetCalls.push(`author ${name} ${language ?? '-'}`); return Promise.resolve({ chatSessionId: `preset-author-${name}` }) },
+  importFile: (name, file, language) => { presetCalls.push(`import ${name} ${file.length} ${language ?? '-'}`); return Promise.resolve({ name, chatSessionId: `preset-author-${name}`, started: true }) },
+  maxUploadBytes: 1024,
+  remove: (name) => { presetCalls.push(`remove ${name}`); return Promise.resolve() },
+  status: (id) => { if (id !== 'sess') throw new SessionNotFoundError(`no session "${id}"`); return { available: [summary] } },
+  apply: (id, name) => { presetCalls.push(`apply ${id} ${String(name)}`); return { files: [] } },
+}
 let catalogueError: Error | undefined
 const catalogue = {
   sources: () => [{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true }],
@@ -51,6 +67,7 @@ const catalogue = {
   install: async (request: unknown) => { catalogueCalls.push(`install ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { world: { id: 'w' }, packs: [] } },
   updates: async (name: string) => { catalogueCalls.push(`updates ${name}`); if (catalogueError !== undefined) throw catalogueError; return { updates: [], problems: [] } },
   convert: async (request: unknown) => { catalogueCalls.push(`convert ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { worldId: 'w', chatSessionId: 'c', started: true } },
+  convertPreset: async (request: unknown) => { catalogueCalls.push(`preset ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { name: 'p', chatSessionId: 'c', started: true } },
 }
 let editorError: Error | undefined
 let edited: string[] = []
@@ -81,6 +98,7 @@ beforeEach(async () => {
   importCalls = []
   editorError = undefined
   catalogueCalls = []
+  presetCalls = []
   catalogueError = undefined
   edited = []
   archived = []
@@ -96,6 +114,7 @@ beforeEach(async () => {
   const handler = createApiHandler({
     catalogue: catalogue as never,
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
+    presets: presetApi,
     packs: { worldPacks: () => Promise.resolve([]), preview: () => Promise.reject(new Error('no preview here')), status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
     worlds,
     avatars: { create: async () => 'new', remove: async () => undefined, addToWorld: async () => [] },
@@ -124,8 +143,8 @@ beforeEach(async () => {
       uploadPreset: (worldId, file, name, language) => { importCalls.push(`preset ${worldId} ${file.length} ${name} ${language ?? '-'}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
     },
     worldFiles: {
-      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', alternateOpenings: [], tools: {} }),
-      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', alternateOpenings: [], tools: {} }) },
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', alternateOpenings: [], tools: {} }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', alternateOpenings: [], tools: {} }) },
       dice: () => Promise.resolve({ checks: [] }),
       editDice: (_world, dice) => (dice.checks.some(check => check.key === '') ? Promise.reject(new InvalidEditProblems(['checks[0].key is required'])) : Promise.resolve(dice)),
       calendar: () => Promise.resolve({ hemisphere: 'north', holidays: [] }),
@@ -445,6 +464,43 @@ describe('roleplay API', () => {
     })
   })
 
+  describe('the preset library', () => {
+    const send = (method: string, path: string, body?: unknown) => fetch(`${origin}${path}`, { method, ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) })
+
+    it('lists, reads, makes from a world, and removes presets', async () => {
+      expect(await (await send('GET', '/presets')).json()).toEqual([summary])
+      expect((await (await send('GET', '/presets/item?name=noir')).json() as { prompts: unknown }).prompts).toEqual({ 'en/roleplay/style': 'Terse.' })
+      expect((await send('GET', '/presets/item?name=gone')).status).toBe(422)
+      expect((await send('POST', '/presets', { name: 'noir', fromWorld: 'harbor', sampling: { master: 0.5 } })).status).toBe(201)
+      expect((await send('POST', '/presets', { name: 'plain' })).status).toBe(201)
+      expect((await send('POST', '/presets', { name: 'noir', fromWorld: 5 })).status).toBe(400)
+      expect((await send('POST', '/presets', { name: 'noir', fromWorld: 'harbor', sampling: { master: 'hot' } })).status).toBe(400)
+      expect((await send('DELETE', '/presets/item?name=noir')).status).toBe(204)
+      expect(presetCalls).toEqual(['create {"name":"noir","fromWorld":"harbor","sampling":{"master":0.5}}', 'create {"name":"plain","sampling":{}}', 'remove noir'])
+    })
+
+    it('changes what a preset says and the text of its prompts, opens its authoring chat and takes an upload', async () => {
+      expect((await send('PUT', '/presets/item?name=noir', { title: 'Noir', sampling: { master: 0.9 } })).status).toBe(200)
+      expect((await send('PUT', '/presets/item?name=noir', { title: 4 })).status).toBe(400)
+      expect((await send('PUT', '/presets/prompt?name=noir&language=en&id=roleplay/style', { text: 'Terse.' })).status).toBe(200)
+      expect((await send('PUT', '/presets/prompt?name=noir&language=en&id=roleplay/style', { text: ' ' })).status).toBe(400)
+      expect((await send('PUT', '/presets/prompt?name=noir&language=1&id=roleplay/style', { text: 'x' })).status).toBe(422)
+      expect((await send('DELETE', '/presets/prompt?name=noir&language=zh&id=roleplay/style')).status).toBe(200)
+      expect(await (await send('POST', '/presets/authoring?name=noir', { language: 'zh' })).json()).toEqual({ chatSessionId: 'preset-author-noir' })
+      expect((await fetch(`${origin}/presets/import?name=st&language=en`, { method: 'POST', body: new Uint8Array(10) })).status).toBe(200)
+      expect(presetCalls).toEqual(['info noir {"title":"Noir","sampling":{"master":0.9}}', 'prompt noir en roleplay/style Terse.', 'prompt noir zh roleplay/style undefined', 'author noir zh', 'import st 10 en'])
+    })
+
+    it('reports and changes the preset of a story, and answers an unknown story with 404', async () => {
+      expect(await (await send('GET', '/sessions/preset?id=sess')).json()).toEqual({ available: [summary] })
+      expect((await send('GET', '/sessions/preset?id=nope')).status).toBe(404)
+      expect((await send('POST', '/sessions/preset?id=sess', { name: 'noir' })).status).toBe(200)
+      expect((await send('POST', '/sessions/preset?id=sess', {})).status).toBe(200)
+      expect((await send('POST', '/sessions/preset?id=sess', { name: 5 })).status).toBe(400)
+      expect(presetCalls).toEqual(['apply sess noir', 'apply sess undefined'])
+    })
+  })
+
   describe('the triggers of a world', () => {
     const send = (method: string, query: string, body?: unknown) => fetch(`${origin}/worlds/state/trigger?${query}`, { method, ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }) })
 
@@ -521,6 +577,10 @@ describe('roleplay API', () => {
       expect(await response.json()).toEqual({ worldId: 'w', chatSessionId: 'c', started: true })
       expect(catalogueCalls).toEqual(['updates Home', 'convert {"source":"Home","versionId":"v1","language":"zh"}'])
       expect((await convert({ source: 'Home' })).status).toBe(400)
+      const imported = await fetch(`${origin}/catalogue/convert/preset`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v2', title: 'Noir' }) })
+      expect(imported.status).toBe(201)
+      expect(await imported.json()).toEqual({ name: 'p', chatSessionId: 'c', started: true })
+      expect(catalogueCalls.at(-1)).toBe('preset {"source":"Home","versionId":"v2","title":"Noir"}')
     })
 
     it('answers with the status that says whose fault a failure is', async () => {

@@ -16,6 +16,8 @@ import { startTranslation, worldLanguage } from './host/translate/service.ts'
 import { ImportStore } from './host/import/store.ts'
 import { uploadPreset } from './host/import/upload-preset.ts'
 import { AuthoringSessions } from './host/agent/authoring-sessions.ts'
+import { PresetAuthoringSessions } from './host/agent/preset-authoring-sessions.ts'
+import { narrationImportMessage } from './host/authoring/preset-author-tools.ts'
 import { DoctorSessions } from './host/agent/doctor-sessions.ts'
 import { Config } from './host/config.ts'
 import { RoleplayOrchestration } from './host/orchestration/service.ts'
@@ -46,6 +48,7 @@ import { createWorldPack, readWorldPackFile, writeWorldPackFile } from './host/a
 import { deleteWorldPackFile } from './host/interface/world-packs.ts'
 import { readInterventions } from './host/sessions/interventions.ts'
 import { InterfaceService } from './host/interface/service.ts'
+import { Presets } from './host/presets/service.ts'
 import { notesOfSession } from './host/sessions/notes.ts'
 import { openSession } from './host/sessions/open-session.ts'
 import { listSessions } from './host/sessions/list-sessions.ts'
@@ -106,6 +109,7 @@ export function apply(ctx: Context, config: Config): void {
   const languages = new AuthoringLanguages(ctx, () => join(root.path, 'worlds'))
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
   const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
+  const presetAuthoring = new PresetAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const doctors = new DoctorSessions(agentServicesOf(ctx), () => root.path, prompts)
   const imports = new ImportStore(() => root.path)
   new RoleplayImport(ctx, { maxUploadBytes: config.importMaxUploadBytes, concurrency: config.importConcurrency, reasoning: config.importReasoning, maxTokens: config.importMaxTokens, temperature: config.importTemperature })
@@ -121,15 +125,21 @@ export function apply(ctx: Context, config: Config): void {
     interventions: (id: string) => readInterventions(ctx.roleplayState.openSession(join(root.path, 'sessions'), id)),
   }
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
-  const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), avatars: () => avatarsWorld(root.path) }
+  const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
+  const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, maxUploadBytes: config.importMaxUploadBytes, playing: id => ctx.roleplayOrchestration.playing(chatSessionId(id)) })
+  const catalogue = new Catalogue({
+    sources: new Sources(() => config.catalogues.get()), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
+    trashDays: () => config.catalogueTrashDays, problem: (message) => { ctx.logger.warn(message) },
+    importPreset: async (file, title, language) => await presetLibrary.importTitled(title, file, language),
+    importCard: async (file, name, language) => {
+      const preview = await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)
+      return await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, preview.id, preview.choices, language)
+    },
+  })
+  void catalogue.tidy()
   registerApi(ctx, {
-    catalogue: new Catalogue({
-      sources: new Sources(() => config.catalogues.get()), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
-      importCard: async (file, name, language) => {
-        const preview = await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)
-        return await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, preview.id, preview.choices, language)
-      },
-    }),
+    catalogue,
+    presets: presetLibrary,
     packs: new InterfaceService({ open: id => ctx.roleplayState.openSession(deps.sessionsDir(), id), root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, world: worldId => worlds.find(worldId) }),
     speech: {
       voices: async () => await voicesOf(textToSpeechOf(ctx)),

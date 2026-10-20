@@ -8,6 +8,7 @@ import { NotRoleplayError, loadSettings, openDoctor, resetVectors, saveSettings,
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { InterfaceSection } from './InterfaceSection.tsx'
+import { PresetSection } from './PresetSection.tsx'
 import { ReflectionSection } from './ReflectionSection.tsx'
 import { VectorsSection } from './VectorsSection.tsx'
 import { ToolSwitches } from '../widgets/tool-switches/ToolSwitches.tsx'
@@ -137,6 +138,7 @@ export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewPro
       {payload.pendingRecords > 0 && <p className={css.notice} role="status">{t('pendingRecords', { count: payload.pendingRecords })}</p>}
       <SettingsFields t={t} drafts={drafts} onChange={change} onPreset={(changes) => { setDrafts({ ...drafts, ...changes }); setSaved(false) }} options={options} disabled={saving} hidden={['interface.pack']} locked={payload.clockMode === 'simulated' ? { 'clock.mode': { real: t('clockLocked') } } : {}} />
       {session !== undefined && <InterfaceSection t={t} session={session} value={String(drafts['interface.pack'] ?? '')} onChange={(next) => { change('interface.pack', next) }} saved={payload.settings.interface.pack} disabled={saving} />}
+      {session !== undefined && <PresetSection t={t} session={session} disabled={saving} />}
       <ToolSwitches board={payload.settings.tools} onChange={setTools} disabled={saving} external={external} {...(toolsError === undefined ? {} : { error: toolsError })} t={t} />
       <ReflectionSection t={t} status={payload.reflection} disabled={saving} onStart={reflect} onRefresh={refreshActivity} />
       <section className={css.activity} data-testid="roleplay-doctor">

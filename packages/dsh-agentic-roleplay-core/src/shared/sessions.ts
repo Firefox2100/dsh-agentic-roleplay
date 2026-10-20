@@ -20,6 +20,8 @@ export interface WorldCharactersPayload {
   startingTime: string
   /** The zone that time is in; empty when the world names none. */
   timeZone: string
+  /** The preset the world suggests, when it names one. */
+  preset?: string
   problems: readonly WorldProblem[]
 }
 
@@ -37,6 +39,8 @@ export interface StartSessionRequest {
   opening?: number
   /** Starts the story at this local time (`2024-05-01T08:00:00`, in the story's zone) instead of the world's starting time; refused when the chat's time follows the wall clock. */
   startingTime?: string
+  /** A preset of the library whose prose prompts the story uses, over the world's own; the world's suggested preset is used when this is left out. */
+  preset?: string
   /** The settings of the chat from its first message; what is left out takes its default. They can be changed later. */
   settings?: unknown
 }

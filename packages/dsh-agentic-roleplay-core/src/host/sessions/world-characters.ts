@@ -17,6 +17,7 @@ export async function worldCharacters(worlds: Pick<WorldCatalog, 'find'>, worldI
     openings: (world.alternateOpenings ?? []).map(opening => ({ title: opening.title, ...(opening.character === undefined ? {} : { character: opening.character }) })),
     startingTime: world.clock?.startingTime === undefined ? '' : localInstant(world.clock.startingTime, world.clock.timeZone ?? 'UTC'),
     timeZone: world.clock?.timeZone ?? '',
+    ...(world.preset === undefined ? {} : { preset: world.preset }),
     problems,
   }
 }

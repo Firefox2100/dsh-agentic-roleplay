@@ -10,6 +10,7 @@ title: Configuration reference
 | `sessionStorePath` | `~/.dsh/sessions` | DSH session persistence location |
 | `catalogues` | none | Catalogues to browse and install worlds from: a list of `name`, `baseUrl` (the API root) and `apiKey` (optional; stored as plain text in the profile's configuration). Edited under Settings, Role Play, Catalogues |
 | `catalogueMaxBytes` | 256 MiB | Most a downloaded world may be, compressed and again unpacked |
+| `catalogueTrashDays` | 30 | Days the files an update replaced stay in `.trash/worlds/` before they are deleted; 0 keeps them for good |
 | `importMaxUploadBytes` | 100 MiB | Character-card upload limit |
 | `importConcurrency` | 4 | Concurrent import model calls |
 | `importReasoning` | empty | Import-agent reasoning level |

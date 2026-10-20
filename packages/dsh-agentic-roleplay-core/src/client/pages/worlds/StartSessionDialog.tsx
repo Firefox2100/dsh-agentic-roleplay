@@ -22,6 +22,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const [name, setName] = useState(dialog.worldName)
   const [opening, setOpening] = useState('')
   const [startTime, setStartTime] = useState('')
+  const [preset, setPreset] = useState('')
   const [choice, setChoice] = useState<string | undefined>()
   const [brought, setBrought] = useState<ReadonlySet<string>>(new Set())
   const [showSettings, setShowSettings] = useState(false)
@@ -63,7 +64,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(!openingValid ? {} : { opening: Number(opening) }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
+          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(!openingValid ? {} : { opening: Number(opening) }), ...(preset === '' ? {} : { preset }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
         }}
       >
         <label className={css.field}>
@@ -102,6 +103,18 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
               <option value="">{t('startOpeningDefault')}</option>
               {dialog.openings.flatMap((entry, index) => (entry.character === undefined || entry.character === selected ? [<option key={index} value={String(index)}>{entry.title}</option>] : []))}
             </select>
+          </label>
+        )}
+
+        {dialog.status === 'ready' && (dialog.presets.length > 0 || dialog.suggestedPreset !== '') && (
+          <label className={css.field}>
+            <span className={css.label}>{t('startPreset')}</span>
+            <select value={preset} disabled={dialog.submitting} data-testid="roleplay-start-preset" onChange={(event) => { setPreset(event.target.value) }}>
+              <option value="">{dialog.suggestedPreset === '' ? t('startPresetDefault') : t('startPresetWorld', { name: dialog.suggestedPreset })}</option>
+              {dialog.suggestedPreset !== '' && <option value="none">{t('startPresetNone')}</option>}
+              {dialog.presets.map(entry => <option key={entry.name} value={entry.name} disabled={entry.problems.length > 0}>{entry.problems.length > 0 ? t('startPresetBroken', { name: entry.title }) : entry.title}</option>)}
+            </select>
+            <span className={css.message}>{preset === '' || preset === 'none' ? t('startPresetHelp') : dialog.presets.find(entry => entry.name === preset)?.description ?? ''}</span>
           </label>
         )}
 

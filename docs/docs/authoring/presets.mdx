@@ -1,0 +1,45 @@
+---
+title: Presets
+---
+
+A **preset** is a set of writing instructions you keep in your library and put into any story: who the narrator is, how the narration reads, and how the characters speak and act. It holds only prose. The rules of the game, the tools and everything specific to one world stay with the world.
+
+:::note
+This is not DSH's *agent preset*, which sets up the agent a chat runs under. Here a preset is only the narration prompts.
+:::
+
+A preset has up to three prompts for each language:
+
+| Prompt | What it sets |
+| --- | --- |
+| `roleplay/persona` | who the narrator is |
+| `roleplay/style` | how the narration is written |
+| `roleplay/character-style` | how characters speak and behave |
+
+It may also suggest the creative temperatures of the narrator and the characters. Nothing else is part of a preset, so a preset cannot break the game.
+
+## The Presets page
+
+The **Presets** page of the Role Play panel lists your library: each preset's title, description, the languages it has prompts in, and any problem that keeps it from being used.
+
+- **New preset** starts from the shipped narration prompts in every language. Give it a name (letters, digits, `-` and `_`; stories and worlds refer to it by this name), then rewrite the prompts.
+- **Edit** opens the preset: its title, description and suggested temperatures, and the text of each prompt it carries. A prompt or language the preset lacks can be added from the list under the prompt. Saving checks a prompt as a story start would, so the `${placeholders}` of the original must stay.
+- **Edit with assistant** opens an authoring chat for the preset, like the one a world has. The assistant reads the preset, proposes changes to its prompts, title, description and temperatures, and asks you before each write. If you decline, nothing changes. Use it for larger rewrites or to have a prompt written for you.
+- **Import SillyTavern preset** takes the `.json` file SillyTavern exports. The assistant keeps only what is about how to narrate (the narrator, the style, how characters speak) and writes it into a new preset. Rules of the game, formats and scripts are not carried over.
+- **Delete** moves the preset to the trash folder. Stories that already use it keep their own copy.
+
+The **Presets** tab of the [catalogue](../playing/catalogue) lists SillyTavern presets other people published. **Import as a preset** makes a new library preset of one, the same way as the file import. Importing it again makes another preset, because the assistant's conversion differs from run to run.
+
+A world's own prompts can become a preset too: on the world editor's **Prompts** page, **Save as preset** copies the prose prompts the world carries into a new preset.
+
+## Using a preset
+
+A story gets its preset **copied in when it starts**. Later changes to the library never alter a story in progress.
+
+- **In a world:** the **Suggested preset** field on the editor's About page, or in the dialog that creates a world, names the preset new stories of the world start with. The world's own prompts still outrank it.
+- **When starting a story:** the start dialog offers the library's presets, "no preset", and the world's suggestion. A choice made here outranks the world's own prompts.
+- **In a running story:** the **Preset** section of Chat settings shows whether the story still matches the library (*current*, *changed* in the library, *edited* in the story or *missing* from the library), and can switch to another preset, apply the library's version again, or take the preset out. Replaced copies are kept in the story's `.trash/prompts/`.
+
+Switching a preset does not change the story's temperatures, and prompts a world carried that an earlier preset replaced are not brought back. The switch is refused while a turn is being played, so the prompts never change in the middle of one.
+
+The full rules (the order the files are written in, what counts as a problem) are in the [prompt system](../specifications/prompt-system#presets) specification.

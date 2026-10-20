@@ -36,6 +36,34 @@ The world authoring chat edits a world's prompts with `list_world_prompts`, `rea
 
 Optional parts: the game master's prompt holds `${preview}` on a line of its own, which is the text of `roleplay/preview` when the chat's `preview.enabled` is on and nothing when it is off (a line that holds only a variable given as empty text is dropped). A chat that shows no preview also has no `preview_scene` tool. In the same way `${dice}` is the text of `roleplay/dice` (when to roll, how the result is read, that it stands, and the world's checks listed from the story) while the game master has a dice tool switched on, and nothing when it has none.
 
+## Presets
+
+A preset is a reusable set of writing instructions, kept in the library under `<roleplay root>/presets/<name>/`:
+
+```text
+preset.json                                  { "title": "...", "description": "...", "sampling": { "master": 0.8, "characters": 0.9 } }
+prompts/<language>/roleplay/style.md         the same layout as the prompts of a world
+```
+
+A preset carries only the prose prompts (`roleplay/persona`, `roleplay/style`, `roleplay/character-style`), checked as a world's prompts are (a prompt the package has, not empty, only its own `${name}` variables). The rules of the game stay with the world. `sampling` may suggest the creative temperatures of the game master and the characters (0 to 2); the helper agents' low temperatures are not a preset's to change. A preset has prompts only for the languages it has folders for: another language uses the root's prompts, not English. A preset with a problem is listed with it and cannot be used.
+
+A preset is **copied** into the story when it starts, so later edits to the library never change a story in progress, and a branch keeps its story's preset. The files are written in this order, later ones replacing earlier ones:
+
+1. the root's prompts (nothing is copied; this is the default);
+2. the preset the world suggests (`preset` in `world.json`);
+3. the world's own `prompts/`;
+4. the preset chosen in the start dialog (the request's `preset`; `none` means no preset even when the world suggests one).
+
+So a choice made at the start outranks the world's own prompts, and the world's suggestion is below them. Choosing a preset that cannot be used refuses the start. A suggested preset that cannot be used (the world comes from someone whose library differs) is told to the player on the story's first card and the story is told in the default style. The preset's temperatures fill only the settings the start request did not give.
+
+The story records which preset it came from and what each copied file held (`preset.json` beside the story's database). The chat settings show whether the story still matches the library: *current*, *changed* in the library, *edited* in the story, or *missing* from the library. The person can switch to another preset, re-apply the library's version, or take the preset out. The replaced copies are kept in the story's `.trash/prompts/`. Only the files that came from the preset are touched, and prompts the world carried that a preset replaced are not brought back. Switching does not change the story's temperatures.
+
+Presets are made on the **Presets** page (a copy of the shipped prose prompts to edit, an import of a SillyTavern preset, or the **Save as preset** control on a world editor's Prompts page), by writing the folder by hand, or by saving a world's prose prompts (`POST /roleplay-api/presets` with `name` and `fromWorld`; without `fromWorld` it starts from the shipped prompts). `GET /roleplay-api/presets` lists them; `GET`/`PUT`/`DELETE /roleplay-api/presets/item?name=` read, describe (`title`, `description`, `sampling`) and remove one (removal moves it to `<root>/.trash/presets/`); `PUT`/`DELETE /roleplay-api/presets/prompt?name=&language=&id=` write or remove one prompt; `GET /roleplay-api/sessions/preset?id=` is a story's status and `POST /roleplay-api/sessions/preset?id=` with a `name` switches (without one, takes the preset out).
+
+**Authoring chat.** `POST /roleplay-api/presets/authoring?name=` creates or reopens the dedicated chat `preset-author-<encoded name>` in a *Preset Authoring* project at `<root>/presets`, under the `preset-authoring` agent preset (`@dsh-agentic-roleplay/core/preset-authoring`, declared by the bundle). Its tools reach only the preset the chat is about: `read_preset_info`, `list_preset_prompts`, `read_preset_prompt` (a prompt the preset does not carry reads as the shipped text), `write_preset_prompt`, `delete_preset_prompt`, `write_preset_info` and `import_narration_preset`. Every write asks the person first; the import asks only when the preset already carries prompts. Prompts are written with the checks of a world's prompts and limited to the three prose prompts.
+
+**Importing a SillyTavern preset.** `POST /roleplay-api/presets/import?name=&language=` (body: the file) reserves an empty library entry, keeps the file in its `.import/preset.json`, opens the authoring chat and tells it to call `import_narration_preset`, which runs the same `import/style` job as a card import and writes the prose prompts into every shipped language folder of the preset. Until then the entry is listed with the problem "the preset carries no prompts". A catalogue entry of type `sillytavern/preset` goes through the same path (`POST /roleplay-api/catalogue/convert/preset`), named after the entry's title; an import never replaces an earlier preset.
+
 ## Variables
 
 A prompt may contain `${name}`. The code that uses a prompt gives it the values (for example `${name}` of a character, `${max}` for a limit, `${rules}` for a shared block). A variable that is not given a value is an error that names the prompt and the variable, so keep the ones that are in the original. `{{...}}` is not used: DSH's own prompt assembly reads it as one of its variables.

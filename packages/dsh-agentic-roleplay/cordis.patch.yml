@@ -61,6 +61,22 @@
             name: '@deepseek-ai/dsh-tool-fs'
           - id: authoring
             name: '@dsh-agentic-roleplay/core/authoring'
+    # The preset authoring chat: reads and writes the prose prompts of one library
+    # preset, each write approved by the person. Its id must match
+    # PRESET_AUTHORING_PRESET in the core package.
+    - id: preset-preset-authoring
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: preset-authoring
+        name: Preset Authoring
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: preset-authoring
+            name: '@dsh-agentic-roleplay/core/preset-authoring'
     # The session doctor chat: a bystander that reads one session's records and
     # proposes fixes through the records edit, each approved by the player. Its
     # id must match DOCTOR_AGENT_PRESET in the core package.

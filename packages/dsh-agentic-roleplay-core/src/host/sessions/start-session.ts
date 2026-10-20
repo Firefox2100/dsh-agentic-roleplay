@@ -16,6 +16,8 @@ import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './erro
 import { populateCalendar, populateCharacters, populateDice, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
 import { copyWorldPrompts } from '../prompts/library.ts'
+import { copyPreset, recordPreset } from '../presets/apply.ts'
+import { loadPreset, type LoadedPreset } from '../presets/presets.ts'
 import { copyWorldPacks } from '../interface/packs.ts'
 import { broughtAvatars, copyPortrait } from '../avatars/avatars.ts'
 import { parseCharacterFile } from '../characters/character-file.ts'
@@ -23,6 +25,9 @@ import type { EditableWorld } from '../worlds/world-editor.ts'
 import { loadValidatedWorld } from '../worlds/validated-world.ts'
 
 export const MAX_NAME_LENGTH = 200
+
+/** The request's `preset` that stands for none, even when the world suggests one. */
+export const NO_PRESET = 'none'
 
 export interface StartSessionDeps {
   worlds: Pick<WorldCatalog, 'find'>
@@ -32,6 +37,8 @@ export interface StartSessionDeps {
   avatars?: () => Promise<EditableWorld>
   /** Read for each session, because the roleplay root can move. */
   sessionsDir: () => string
+  /** The roleplay root, where the preset library is; without it no preset can be used. */
+  root?: () => string
   /** The wall clock, in UTC milliseconds. */
   now?: () => number
 }
@@ -88,6 +95,13 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const tools = Object.fromEntries([...new Set([...Object.keys(world.tools ?? {}), ...Object.keys(settings.tools)])].map(agent => [agent, { ...world.tools?.[agent], ...settings.tools[agent] }]))
   settings = { ...settings, clock: { ...settings.clock, timeZone }, tools }
 
+  const { preset, unavailable } = presetFor(deps, request.preset, world.preset)
+  if (preset !== undefined) {
+    // What the person chose is theirs; the preset's temperatures only fill what the request left unsaid.
+    const given = ((request.settings as { sampling?: Record<string, unknown> } | undefined)?.sampling) ?? {}
+    settings = { ...settings, sampling: { ...settings.sampling, ...Object.fromEntries(Object.entries(preset.summary.sampling).filter(([key]) => given[key] === undefined)) } }
+  }
+
   let startsAt = world.clock?.startingTime
   if (request.startingTime !== undefined && request.startingTime.trim() !== '') {
     if (settings.clock.mode === 'real') throw new InvalidStartError('the story\'s time follows the wall clock, so it has no starting time to choose')
@@ -121,12 +135,16 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     })
     await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])
     if (avatars !== undefined) for (const entry of brought) await copyPortrait(avatars, entry.from, entry.document, sessionFolder(sessionsDir, id), entry.id)
-    const promptProblems = copyWorldPrompts(world.directory, sessionFolder(sessionsDir, id))
+    const folder = sessionFolder(sessionsDir, id)
+    // A preset the person chose outranks the world's own prompts; the one the world suggests is below them.
+    if (preset !== undefined && request.preset === undefined) copyPreset(preset, folder)
+    const promptProblems = copyWorldPrompts(world.directory, folder)
     if (promptProblems.length > 0) throw new InvalidWorldError(`the prompts of "${world.summary.name}" have ${promptProblems.length} problem(s)`, promptProblems)
+    if (preset !== undefined) { if (request.preset !== undefined) copyPreset(preset, folder); recordPreset(folder, preset) }
     const packProblems = copyWorldPacks(world.directory, sessionFolder(sessionsDir, id))
     if (packProblems.length > 0) throw new InvalidWorldError(`the interface packs of "${world.summary.name}" have ${packProblems.length} problem(s)`, packProblems)
     writeSettings(sessionFolder(sessionsDir, id), settings)
-    addToNote(session, 'world', 1, worldFindings(session))
+    addToNote(session, 'world', 1, [...unavailable, ...worldFindings(session)])
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {
     deps.state.deleteSession(sessionsDir, id)
@@ -135,6 +153,26 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     throw error
   }
   return { id, chatSessionId, name, worldId: world.summary.id, worldName: world.summary.name, characterCount: characters.length }
+}
+
+/**
+ * The preset a story uses: the one asked for, else the one the world suggests. Asking for one that cannot be used refuses the start;
+ * a suggestion that cannot be followed is told to the player instead, because the world may come from someone whose library differs.
+ */
+function presetFor(deps: StartSessionDeps, asked: string | undefined, suggested: string | undefined): { preset?: LoadedPreset; unavailable: string[] } {
+  const name = asked ?? suggested
+  if (name === undefined || name === NO_PRESET) return { unavailable: [] }
+  const load = (): LoadedPreset => {
+    if (deps.root === undefined) throw new Error('the preset library is not available')
+    const loaded = loadPreset(deps.root(), name)
+    if (loaded.summary.problems.length > 0) throw new Error(`it has problems: ${loaded.summary.problems.join('; ')}`)
+    return loaded
+  }
+  try { return { preset: load(), unavailable: [] } } catch (error) {
+    const reason = error instanceof Error ? error.message : String(error)
+    if (asked !== undefined) throw new InvalidStartError(`the preset "${name}" cannot be used: ${reason}`)
+    return { unavailable: [`The world suggests the preset "${name}", which cannot be used here (${reason}), so the story is told in the default style.`] }
+  }
 }
 
 /** What a story opens with when its world gives no opening: a chat with nothing in it is DSH's start screen, which has none of the story's tabs. */

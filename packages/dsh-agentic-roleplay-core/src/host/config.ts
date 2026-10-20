@@ -25,6 +25,8 @@ export interface Config {
   catalogues: Volatile<CatalogueEntry[]>
   /** The most a downloaded world may be, in bytes, compressed and again unpacked. */
   catalogueMaxBytes: number
+  /** Days the files an update replaced are kept in the trash folder before they are deleted; 0 keeps them for good. */
+  catalogueTrashDays: number
   /** The most a character card upload may be, in bytes. Big cards with lorebooks and scripts reach tens of megabytes. */
   importMaxUploadBytes: number
   /** How many calls of an import run at once. A local model serves few at a time: raise it only with a server that can. */
@@ -44,6 +46,7 @@ export const Config = z.object({
   sessionStorePath: z.string().default(DEFAULT_STORE_PATH),
   catalogues: z.array(z.object({ name: z.string().required(), baseUrl: z.string().required(), apiKey: z.string().default('') })).default([]).volatile(),
   catalogueMaxBytes: z.number().min(1024).default(256 * 1024 * 1024),
+  catalogueTrashDays: z.number().min(0).default(30),
   importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024),
   importConcurrency: z.number().min(1).max(16).default(4),
   importReasoning: z.string().default(''),

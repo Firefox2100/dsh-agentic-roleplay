@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -50,6 +50,7 @@ beforeEach(async () => {
       retire: (id) => { retired.push(id); return Promise.resolve() },
     },
     sessionsDir: () => join(root, 'sessions'),
+    root: () => root,
   }
 })
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
@@ -501,5 +502,44 @@ describe('starting with player avatars', () => {
     await expect(startSession(deps, { worldId: 'blackwater', playerAvatar: 'mira', avatars: ['arthur'] })).rejects.toThrow(/not among the avatars/)
     expect(ensured).toEqual([])
     expect(await readdir(root)).not.toContain('sessions')
+  })
+})
+
+describe('starting with a preset', () => {
+  const sessionFolder = (id: string) => join(root, 'sessions', id)
+  const makePreset = async (name: string, text: string, header: unknown = {}) => {
+    await write(join(root, 'presets', name, 'preset.json'), header)
+    await write(join(root, 'presets', name, 'prompts', 'en', 'roleplay', 'style.md'), text)
+  }
+  const worldFile = join('worlds', 'blackwater folder', 'world.json')
+
+  it('copies the chosen preset into the story and lets its temperatures fill what the request left out', async () => {
+    await makePreset('noir', 'Terse.', { sampling: { characters: 0.9, master: 0.5 } })
+    const started = await startSession(deps, { ...playAsArthur, preset: 'noir', settings: { sampling: { master: 0.6 } } })
+    expect(await readFile(join(sessionFolder(started.id), 'prompts', 'en', 'roleplay', 'style.md'), 'utf8')).toBe('Terse.')
+    expect(await readFile(join(sessionFolder(started.id), 'preset.json'), 'utf8')).toContain('"name": "noir"')
+    expect(readSettings(sessionFolder(started.id)).sampling).toMatchObject({ characters: 0.9, master: 0.6 })
+  })
+
+  it('puts the preset the person chose over the world\'s own prompts, and the one the world suggests under them', async () => {
+    await makePreset('noir', 'Terse.')
+    await write(join(root, 'worlds', 'blackwater folder', 'prompts', 'en', 'roleplay', 'style.md'), 'The world\'s.')
+    const chosen = await startSession(deps, { ...playAsArthur, preset: 'noir' })
+    expect(await readFile(join(sessionFolder(chosen.id), 'prompts', 'en', 'roleplay', 'style.md'), 'utf8')).toBe('Terse.')
+    await write(join(root, worldFile), { id: 'blackwater', name: 'The Blackwater Observatory', preset: 'noir' })
+    deps.worlds = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
+    const suggested = await startSession(deps, playAsArthur)
+    expect(await readFile(join(sessionFolder(suggested.id), 'prompts', 'en', 'roleplay', 'style.md'), 'utf8')).toBe('The world\'s.')
+    expect(await readFile(join(sessionFolder(suggested.id), 'preset.json'), 'utf8')).toContain('"files": {}')
+  })
+
+  it('refuses a chosen preset that cannot be used, and tells the player of a suggested one that cannot', async () => {
+    await expect(startSession(deps, { ...playAsArthur, preset: 'nothing' })).rejects.toThrow(InvalidStartError)
+    await write(join(root, worldFile), { id: 'blackwater', name: 'The Blackwater Observatory', preset: 'nothing' })
+    deps.worlds = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
+    const started = await startSession(deps, playAsArthur)
+    expect(readNotes(state.openSession(join(root, 'sessions'), started.id)).find(entry => entry.kind === 'world')?.lines.join(' ')).toContain('suggests the preset "nothing"')
+    const none = await startSession(deps, { ...playAsArthur, preset: 'none' })
+    expect(existsSync(join(sessionFolder(none.id), 'preset.json'))).toBe(false)
   })
 })

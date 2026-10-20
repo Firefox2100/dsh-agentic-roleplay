@@ -511,14 +511,19 @@ export class TurnEngine {
   async reflect(chat: string): Promise<void> {
     const store = this.stores(chat)
     if (store === undefined) throw new Error(`no story for chat ${chat}`)
-    const turning = this.states.get(chat)
-    if (turning !== undefined && ['resolving', 'retrying', 'between'].includes(turning.phase)) throw new ReflectionRefusedError('a turn is being played; reflect when it is over')
+    if (this.playing(chat)) throw new ReflectionRefusedError('a turn is being played; reflect when it is over')
     const delivered = this.delivered.get(chat)
     if (delivered !== undefined && store.pendingCommits().length > 0) this.write({ chat, turn: delivered.turn }, delivered)
     await this.chains.get(chat)
     const cancel = new AbortController()
     this.reflectionCancels.set(chat, cancel)
     this.afterTurn.reflectNow({ chat, turn: store.story.metadata.get().turns }, cancel.signal)
+  }
+
+  /** Whether a turn is being played: characters are being asked or the game master is between rounds. */
+  playing(chat: string): boolean {
+    const turning = this.states.get(chat)
+    return turning !== undefined && ['resolving', 'retrying', 'between'].includes(turning.phase)
   }
 
   /** Whether a reflection is running for the chat. */

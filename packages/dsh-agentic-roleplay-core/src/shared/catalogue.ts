@@ -17,10 +17,11 @@ export interface CatalogueSourceStatus {
 
 export type CatalogueVisibility = 'public' | 'authenticated' | 'private'
 
-/** What a catalogue entry is: a roleplay world (installed as it is) or a SillyTavern character card (converted into a new world). */
-export type CatalogueKind = 'world' | 'card'
+/** What a catalogue entry is: a roleplay world (installed as it is), a SillyTavern character card (converted into a new world) or a SillyTavern preset (converted into a library preset). */
+export type CatalogueKind = 'world' | 'card' | 'preset'
 
 export const CATALOGUE_CARD_TYPE = 'sillytavern/character'
+export const CATALOGUE_PRESET_TYPE = 'sillytavern/preset'
 
 export interface CatalogueWorld {
   id: string
@@ -130,6 +131,19 @@ export interface ConvertRequest {
   source: string
   versionId: string
   language?: string
+}
+
+/** The answer to a request to convert a catalogue preset: the new library preset and the authoring chat that is converting it. */
+export interface ConvertPresetResult {
+  name: string
+  chatSessionId: string
+  started: boolean
+  failure?: string
+}
+
+export interface ConvertPresetRequest extends ConvertRequest {
+  /** What the entry is called, from which the preset's name is made. */
+  title?: string
 }
 
 /** Why a request was refused though the request itself was fine: what the person can decide. */

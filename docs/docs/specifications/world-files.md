@@ -36,6 +36,7 @@ Folders without the expected file, files, and symbolic links are skipped.
 | `author` | object | `name` (required string) and `url` (string). Embedded here instead of a separate `author.json`. |
 | `metadata.tags` | array of strings | |
 | `cover_media_id` | string | Optional. Looked up in `media/manifest.jsonl` (`id` and `file`); the file must be a png, jpg, jpeg, webp, gif or avif inside the world folder. Without a cover the card shows a placeholder. |
+| `preset` | string | Optional name of a preset in the person's library (letters, digits, `-`, `_`). Sessions of the world start with it unless the start request chooses another or `none`. A name the person's library lacks does not stop a start; the player is told. |
 | `narration_voice` | string | Optional provider voice id for narrated text. It is copied into a new session and can then be changed for that session. Voice ids may be entered manually when a provider cannot list them. |
 
 ## `characters/<folder>/character.json`

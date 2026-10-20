@@ -29,8 +29,11 @@ const transport: Transport = async (url, ask) => {
   return { status: 200, type: '', location: undefined, body: Buffer.alloc(0), ...reply }
 }
 let converted: { file: Buffer; name: string; language: string | undefined }[]
+let presets: { file: Buffer; title: string; language: string | undefined }[]
+const problems: string[] = []
 const make = (): Catalogue => new Catalogue({
-  sources: new Sources(() => configured), worlds, maxBytes: () => 1024 * 1024, maxCardBytes: () => 1024 * 1024, transport,
+  sources: new Sources(() => configured), worlds, maxBytes: () => 1024 * 1024, maxCardBytes: () => 1024 * 1024, trashDays: () => 30, problem: (message) => { problems.push(message) }, transport,
+  importPreset: async (file, title, language) => { presets.push({ file, title, language }); return { name: 'imported', chatSessionId: 'chat-2', started: true } },
   importCard: async (file, name, language) => {
     converted.push({ file, name, language })
     const made = await worlds.list({ refresh: true })
@@ -46,6 +49,7 @@ beforeEach(async () => {
   worlds = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
   calls = []
   converted = []
+  presets = []
   answers = {}
   configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKey: 'secret' }, { name: 'Open', baseUrl: 'https://open.example/api', apiKey: '' }]
 })
@@ -265,6 +269,16 @@ describe('updating an installed world', () => {
     expect(await make().world('Home', 'w1').then(detail => detail.installed)).toMatchObject({ versionId: 'v2', modified: false })
   })
 
+  it('deletes old replaced files past the limit when the next update is made', async () => {
+    await installFirst()
+    secondRelease()
+    const old = join(root, '.trash', 'worlds', 'ancient-2020-01-01T00-00-00-000Z')
+    await mkdirp(old, { recursive: true })
+    await make().install({ url: 'http://localhost:9798/versions/v2/download', mode: 'update' })
+    expect(await readdir(join(root, '.trash', 'worlds'))).toHaveLength(1)
+    expect(problems).toEqual([])
+  })
+
   it('refuses to replace a world the person changed unless they say to, and then still keeps what they had', async () => {
     await installFirst()
     secondRelease()
@@ -342,5 +356,35 @@ describe('converting a character card', () => {
     answers['http://localhost:9798/versions/cv1/download'] = () => ({ status: 200, type: 'application/json', body: Buffer.from(CARD) })
     await expect(make().convert({ source: 'Home', versionId: 'cv1' })).rejects.toThrow(/does not match the checksum/)
     expect(converted).toEqual([])
+  })
+})
+
+describe('importing a SillyTavern preset', () => {
+  const PRESET = JSON.stringify({ prompts: [{ identifier: 'main', content: 'Write.' }] })
+  const version = (extra: Record<string, unknown> = {}) => ({ id: 'pv1', resourceId: 'p1', resourceType: 'sillytavern/preset', version: '1', ...extra })
+
+  it('downloads it with the catalogue\'s key and hands it to the library under the entry\'s title', async () => {
+    answers['http://localhost:9798/versions/pv1'] = () => json(version({ artifactSha256: createHash('sha256').update(PRESET).digest('hex') }))
+    answers['http://localhost:9798/versions/pv1/download'] = () => ({ status: 200, type: 'application/json', body: Buffer.from(PRESET) })
+    const result = await make().convertPreset({ source: 'Home', versionId: 'pv1', title: 'Noir', language: 'en' })
+    expect(result).toEqual({ name: 'imported', chatSessionId: 'chat-2', started: true })
+    expect(presets).toEqual([{ file: Buffer.from(PRESET), title: 'Noir', language: 'en' }])
+    expect(calls.filter(call => call.url.endsWith('/download'))[0]).toMatchObject({ authorization: 'Bearer secret' })
+  })
+
+  it('refuses a release that is not a preset and a download that is not the published one', async () => {
+    answers['http://localhost:9798/versions/pv1'] = () => json(version({ resourceType: 'sillytavern/character' }))
+    await expect(make().convertPreset({ source: 'Home', versionId: 'pv1' })).rejects.toMatchObject({ failure: 'invalid', message: 'that release is not a preset' })
+    answers['http://localhost:9798/versions/pv1'] = () => json(version({ artifactSha256: '00' }))
+    answers['http://localhost:9798/versions/pv1/download'] = () => ({ status: 200, type: 'application/json', body: Buffer.from(PRESET) })
+    await expect(make().convertPreset({ source: 'Home', versionId: 'pv1' })).rejects.toThrow(/does not match the checksum/)
+    expect(presets).toEqual([])
+  })
+
+  it('lists the presets of a catalogue as their own kind', async () => {
+    answers['http://localhost:9798/resources'] = () => json({ items: [{ ...item('p1', 'Noir'), resourceType: 'sillytavern/preset' }] })
+    const page = await make().worlds('Home', { kind: 'preset' })
+    expect(page.items[0]).toMatchObject({ kind: 'preset', name: 'Noir' })
+    expect(calls.at(-1)?.url).toContain('resourceType=sillytavern%2Fpreset')
   })
 })

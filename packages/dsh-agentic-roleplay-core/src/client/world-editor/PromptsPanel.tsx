@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { Translate } from './WorldEditor.tsx'
+import { savePresetFromWorld } from '../presets-api.ts'
 import { loadPrompt, loadPrompts, removePrompt, savePrompt, type PromptEntry, type PromptText } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
@@ -26,6 +27,15 @@ export function PromptsPanel({ t, worldId, language, actions }: { t: Translate; 
     return () => { abort.abort() }
   }, [worldId, tag, open])
 
+  const [presetName, setPresetName] = useState('')
+  const [made, setMade] = useState<{ state: 'made' | 'failed'; message: string }>()
+  const makePreset = (): void => {
+    const name = presetName.trim()
+    savePresetFromWorld({ name, fromWorld: worldId }, new AbortController().signal).then(
+      () => { setMade({ state: 'made', message: t('presetMade', { name }) }); setPresetName('') },
+      (failure: unknown) => { setMade({ state: 'failed', message: t('presetSaveFailed', { message: messageOf(failure) }) }) },
+    )
+  }
   const dirty = prompt !== undefined && draft !== prompt.text
   const write = (action: Promise<void>, done: () => void): void => {
     setStatus({ state: 'saving' })
@@ -52,6 +62,13 @@ export function PromptsPanel({ t, worldId, language, actions }: { t: Translate; 
               </li>
             ))}
           </ul>
+          {(entries ?? []).some(entry => entry.kind === 'prose' && entry.carried) && (
+            <div className={css.row}>
+              <input className={css.select} value={presetName} placeholder={t('presetName')} aria-label={t('presetName')} onChange={(event) => { setPresetName(event.target.value); setMade(undefined) }} />
+              <Button variant="ghost" size="sm" disabled={presetName.trim() === ''} onClick={makePreset}>{t('presetMake')}</Button>
+              {made !== undefined && <span className={made.state === 'failed' ? css.error : css.barText} role={made.state === 'failed' ? 'alert' : 'status'}>{made.message}</span>}
+            </div>
+          )}
           {prompt !== undefined && open !== undefined && (
             <section className={css.section}>
               <h3 className={css.sectionTitle}>{open}</h3>

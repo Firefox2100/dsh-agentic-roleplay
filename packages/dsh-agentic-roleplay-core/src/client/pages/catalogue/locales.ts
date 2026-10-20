@@ -6,7 +6,7 @@ export type CatalogueLocaleKey =
   | 'empty' | 'emptySearch' | 'more' | 'loadingMore' | 'by' | 'private' | 'members' | 'close' | 'cancel'
   | 'detailFailed' | 'version' | 'released' | 'noRelease' | 'alreadyHave' | 'install' | 'installing' | 'installed' | 'installFailed' | 'packsNotice' | 'size'
   | 'importTitle' | 'importHelp' | 'importAddress' | 'importAddressPlaceholder' | 'importSubmit'
-  | 'language' | 'kindWorlds' | 'kindCards' | 'searchCardsPlaceholder' | 'emptyCards'
+  | 'language' | 'kindWorlds' | 'kindCards' | 'searchCardsPlaceholder' | 'emptyCards' | 'kindPresets' | 'searchPresetsPlaceholder' | 'emptyPresets' | 'importPresetAction' | 'importingPreset' | 'importPresetNote' | 'importPresetFailed'
   | 'update' | 'updating' | 'updated' | 'backupNotice' | 'installCopy' | 'installedFrom' | 'installedUnknown' | 'installedModified' | 'installedCurrent' | 'untracked'
   | 'conflictModified' | 'conflictUnverified' | 'changesHeading' | 'overwrite' | 'keepBoth' | 'dismiss'
   | 'updatesAvailable' | 'updateItem' | 'updatesFailed' | 'updatesProblem'
@@ -61,6 +61,8 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     kindCards: 'Character cards',
     searchCardsPlaceholder: 'Search character cards',
     emptyCards: 'This catalogue has no published character cards for you.',
+    kindPresets: 'Presets', searchPresetsPlaceholder: 'Search SillyTavern presets', emptyPresets: 'This catalogue has no published presets for you.',
+    importPresetAction: 'Import as a preset', importingPreset: 'Importing…', importPresetNote: 'A SillyTavern preset is turned into a new preset in your library by the authoring assistant, which keeps only what is about how to narrate (not rules, formats or scripts). Importing it again makes another preset.', importPresetFailed: 'Could not import the preset: {message}',
     update: 'Update',
     updating: 'Updating…',
     updated: 'Updated "{name}" to release {version}.',
@@ -137,6 +139,8 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     kindCards: '角色卡',
     searchCardsPlaceholder: '搜索角色卡',
     emptyCards: '这个目录里没有对你开放的已发布角色卡。',
+    kindPresets: '预设', searchPresetsPlaceholder: '搜索酒馆预设', emptyPresets: '这个目录里没有对你开放的已发布预设。',
+    importPresetAction: '导入为预设', importingPreset: '正在导入…', importPresetNote: '酒馆预设由创作助手转换为你的库中的一个新预设，只保留关于叙述方式的部分（不含规则、格式或脚本）。再次导入会生成另一个预设。', importPresetFailed: '无法导入预设：{message}',
     update: '更新',
     updating: '更新中…',
     updated: '已将“{name}”更新到版本 {version}。',

@@ -17,6 +17,16 @@ async function world(document: object): Promise<string> {
 }
 
 describe('the world\'s own fields', () => {
+  it('carry the preset the world suggests, set and cleared like any text field, and refuse a name that is no preset', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour' })
+    expect(await readWorldInfo(directory)).toMatchObject({ preset: '' })
+    expect(await editWorldInfo(directory, { preset: 'noir' })).toMatchObject({ preset: 'noir' })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).toMatchObject({ preset: 'noir' })
+    await expect(editWorldInfo(directory, { preset: 'not a name!' })).rejects.toThrow(/preset/)
+    expect(await editWorldInfo(directory, { preset: '' })).toMatchObject({ preset: '' })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('preset')
+  })
+
   it('carry the tools the world\'s agents have switched, with names this version does not know kept', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour', tools: { gameMaster: { roll_dice: false, future_tool: true } } })
     expect(await readWorldInfo(directory)).toMatchObject({ tools: { gameMaster: { roll_dice: false, future_tool: true } } })

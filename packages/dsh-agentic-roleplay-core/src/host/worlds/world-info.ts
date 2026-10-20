@@ -38,7 +38,7 @@ function infoOf(document: Json): WorldInfo {
     tags: Array.isArray(metadata['tags']) ? metadata['tags'].filter((tag): tag is string => typeof tag === 'string') : [],
     rules: typeof rules === 'string' ? [rules] : Array.isArray(rules) ? rules.filter((rule): rule is string => typeof rule === 'string') : [],
     opening: plain, openingParts: parts, authorName: textOf(author['name']), authorUrl: textOf(author['url']),
-    timeZone: textOf(document['time_zone']), startingTime: textOf(document['starting_time']), version: (typeof document['version'] === 'number' ? String(document['version']) : textOf(document['version'])),
+    timeZone: textOf(document['time_zone']), startingTime: textOf(document['starting_time']), preset: textOf(document['preset']), version: (typeof document['version'] === 'number' ? String(document['version']) : textOf(document['version'])),
     tools: toolsOf(document['tools']),
     alternateOpenings: Array.isArray(document['alternate_openings']) ? document['alternate_openings'].flatMap((entry): { title: string; text: string; character?: string }[] => (typeof entry === 'object' && entry !== null && typeof (entry as Json)['text'] === 'string' ? [{ title: textOf((entry as Json)['title']), text: (entry as Json)['text'] as string, ...(textOf((entry as Json)['character']) === '' ? {} : { character: textOf((entry as Json)['character']) }) }] : [])) : [],
   }
@@ -83,6 +83,7 @@ export async function editWorldInfo(directory: string, edit: WorldInfoEdit): Pro
   if (edit.timeZone !== undefined) setOrRemove(document, 'time_zone', edit.timeZone)
   if (edit.startingTime !== undefined) setOrRemove(document, 'starting_time', edit.startingTime)
   if (edit.version !== undefined) setOrRemove(document, 'version', edit.version)
+  if (edit.preset !== undefined) setOrRemove(document, 'preset', edit.preset)
   if (edit.alternateOpenings !== undefined) { if (edit.alternateOpenings.length === 0) delete document['alternate_openings']; else document['alternate_openings'] = edit.alternateOpenings.map(entry => ({ title: entry.title === '' ? entry.text.slice(0, 40) : entry.title, text: entry.text, ...(entry.character === undefined || entry.character === '' ? {} : { character: entry.character }) })) }
   if (edit.tools !== undefined) { if (Object.keys(edit.tools).length === 0) delete document['tools']; else document['tools'] = edit.tools }
   const next = JSON.stringify(document, null, /^([ \t]+)"/m.exec(text)?.[1] ?? '  ') + (text.endsWith('\n') ? '\n' : '')

@@ -31,6 +31,12 @@ describe('createWorld', () => {
     expect(document).toEqual({ id: expect.stringMatching(/^[0-9a-f-]{36}$/), name: 'A New World', description: '', metadata: { tags: [] } })
   })
 
+  it('records the preset it is given and refuses what is not a preset name', async () => {
+    await createWorld(catalog(), { folder: 'styled', name: 'Styled', preset: 'noir' })
+    expect(JSON.parse(await readFile(join(base, 'worlds', 'styled', 'world.json'), 'utf8'))).toMatchObject({ preset: 'noir' })
+    await expect(createWorld(catalog(), { folder: 'other', name: 'Other', preset: '../x' })).rejects.toBeInstanceOf(InvalidEditProblems)
+  })
+
   it.each(['../outside', 'nested/world', '.hidden', 'trailing.'])('rejects the unsafe folder name %s', async folder => {
     await expect(createWorld(catalog(), { folder, name: 'Unsafe' })).rejects.toBeInstanceOf(InvalidEditProblems)
   })

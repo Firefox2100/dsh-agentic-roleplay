@@ -1,4 +1,4 @@
-import type { CatalogueKind, CatalogueSourceStatus, CatalogueUpdates, CatalogueWorldDetail, CatalogueWorldPage, ConflictReason, ConvertRequest, ConvertResult, InstallRequest, InstallResult } from '../../../shared/catalogue.ts'
+import type { CatalogueKind, CatalogueSourceStatus, CatalogueUpdates, CatalogueWorldDetail, CatalogueWorldPage, ConflictReason, ConvertPresetRequest, ConvertPresetResult, ConvertRequest, ConvertResult, InstallRequest, InstallResult } from '../../../shared/catalogue.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
 
 /** The host refused to go on because of something the person can decide: a world they already have, or one they changed. */
@@ -41,6 +41,10 @@ export async function install(request: InstallRequest): Promise<InstallResult> {
 
 export async function convert(request: ConvertRequest): Promise<ConvertResult> {
   return await answer(await fetch(`${API_PREFIX}/catalogue/convert`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
+}
+
+export async function convertPreset(request: ConvertPresetRequest): Promise<ConvertPresetResult> {
+  return await answer(await fetch(`${API_PREFIX}/catalogue/convert/preset`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
 }
 
 /** The address a catalogue serves a release's archive from. */

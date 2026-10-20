@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { registerPanel } from './panel/index.ts'
 import { registerCataloguePage } from './pages/catalogue/index.ts'
 import { registerAvatarsPage } from './pages/avatars/index.ts'
+import { registerPresetsPage } from './pages/presets/index.ts'
 import { registerSessionsPage } from './pages/sessions/index.ts'
 import { registerWorldsPage } from './pages/worlds/index.ts'
 import { registerBranchNaming } from './branch/index.ts'
@@ -20,6 +21,7 @@ export function apply(ctx: Context): void {
   registerPanel(ctx)
   registerWorldsPage(ctx)
   registerAvatarsPage(ctx)
+  registerPresetsPage(ctx)
   registerCataloguePage(ctx)
   registerSessionsPage(ctx)
   registerTranscript(ctx)

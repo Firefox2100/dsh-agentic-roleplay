@@ -3,6 +3,7 @@ import type { VariableValue } from 'dsh-roleplay-model'
 import { readVariableValues } from '../variables/values.ts'
 import type { WorldAuthor } from '../../shared/worlds.ts'
 import { readIdentifier } from '../identifiers.ts'
+import { isPresetName } from '../presets/presets.ts'
 import { parseSwitchboard, type Switchboard } from '../../shared/settings.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
 
@@ -38,6 +39,8 @@ export interface WorldFile {
   tools?: Switchboard
   /** Provider voice id used for narration when a session starts. */
   narrationVoice?: string
+  /** The name of the preset in the person's library this world suggests; sessions use it when none is chosen. */
+  preset?: string
 }
 
 export interface AlternateOpening {
@@ -177,6 +180,8 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const tools = readTools(reader)
   const alternateOpenings = readAlternateOpenings(reader)
   const narrationVoice = reader.string('narration_voice')?.trim() || undefined
+  const preset = reader.string('preset')?.trim() || undefined
+  if (preset !== undefined && !isPresetName(preset)) reader.fail('preset', 'must be the name of a preset: letters, digits, "-" and "_"')
   if (name === undefined || issues.length > 0) return { ok: false, issues }
 
   return {
@@ -196,6 +201,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(tools === undefined ? {} : { tools }),
       ...(alternateOpenings === undefined ? {} : { alternateOpenings }),
       ...(narrationVoice === undefined ? {} : { narrationVoice }),
+      ...(preset === undefined ? {} : { preset }),
     },
   }
 }

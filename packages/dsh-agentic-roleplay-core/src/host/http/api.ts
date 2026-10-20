@@ -34,6 +34,8 @@ import { ImportCardError } from '../import/card.ts'
 import { ImportNotFoundError, parseChoices } from '../import/store.ts'
 import type { ImportChoices, ImportPreview } from '../../shared/import-card.ts'
 import { HttpError, sendError, sendJson } from './respond.ts'
+import { presetRoutes } from '../presets/routes.ts'
+import type { PresetApi } from '../presets/routes.ts'
 import { FRAME_FILES, PACK_FILES, interfaceRoutes, sendPackFile, type InterfaceApi } from '../interface/routes.ts'
 
 /** The slice of DSH's connection service this API relies on for browser authentication. */
@@ -47,7 +49,7 @@ export interface ApiDeps {
   /** The tools other plugins registered for everyone, which a story can give to an agent. */
   externalTools?(): ExternalTool[]
   worlds: WorldCatalog
-  createWorld(input: { folder: string; name: string }): Promise<import('../../shared/worlds.ts').WorldSummary>
+  createWorld(input: { folder: string; name: string; preset?: string }): Promise<import('../../shared/worlds.ts').WorldSummary>
   /** The worlds the package ships, and adding one to the person's worlds. */
   starter: { list(): Promise<import('../../shared/starter.ts').StarterWorld[]>; add(folder: string): Promise<import('../../shared/worlds.ts').WorldSummary> }
   authorWorld(worldId: string, title: string, language?: string): Promise<{ chatSessionId: string }>
@@ -169,6 +171,8 @@ export interface ApiDeps {
   }
   /** Interface packs: the pack a story uses, what it may be shown, and its files. */
   packs: InterfaceApi
+  /** The preset library and the presets of stories. */
+  presets: PresetApi
   connection: ApiConnection
   speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio>; streaming(): boolean }
 }
@@ -221,21 +225,21 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, presets, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
     '/speech/synthesize': { POST: async (req, res) => { const body = await readJsonBody(req) as { parts?: unknown }; if (!Array.isArray(body.parts)) return sendError(res, 400, 'parts must be a list'); const parts = body.parts.filter((part): part is SpeechPart => typeof part === 'object' && part !== null && typeof (part as SpeechPart).text === 'string'); if (parts.length !== body.parts.length) return sendError(res, 400, 'each speech part needs text'); const audio = await speech.speak(parts); res.statusCode = 200; res.setHeader('content-type', audio.mediaType); res.setHeader('content-length', audio.bytes.length); res.end(audio.bytes) } },
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
-      POST: async (req, res) => { try { const body = await readJsonBody(req) as { folder?: unknown; name?: unknown }; if (typeof body.folder !== 'string' || typeof body.name !== 'string') return sendError(res, 400, 'folder and name must be text'); sendJson(res, 201, await createWorld({ folder: body.folder, name: body.name })) } catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message); throw error } },
+      POST: async (req, res) => { try { const body = await readJsonBody(req) as { folder?: unknown; name?: unknown; preset?: unknown }; if (typeof body.folder !== 'string' || typeof body.name !== 'string') return sendError(res, 400, 'folder and name must be text'); if (body.preset !== undefined && typeof body.preset !== 'string') return sendError(res, 400, 'preset must be text'); sendJson(res, 201, await createWorld({ folder: body.folder, name: body.name, ...(body.preset === undefined ? {} : { preset: body.preset }) })) } catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message); throw error } },
     },
     '/catalogue/sources': { GET: async (_req, res) => { sendJson(res, 200, catalogue.sources()) } },
     '/catalogue/worlds': {
       GET: async (_req, res, url) => {
         const offset = Number(url.searchParams.get('offset') ?? 0)
         const sort = url.searchParams.get('sort') === 'popular' ? 'popular' : 'recent'
-        try { sendJson(res, 200, await catalogue.worlds(url.searchParams.get('source') ?? '', { kind: url.searchParams.get('kind') === 'card' ? 'card' : 'world', search: url.searchParams.get('search') ?? '', offset: Number.isFinite(offset) ? offset : 0, sort })) } catch (error) { return catalogueFailure(res, error) }
+        try { sendJson(res, 200, await catalogue.worlds(url.searchParams.get('source') ?? '', { kind: (['card', 'preset'] as const).find(entry => entry === url.searchParams.get('kind')) ?? 'world', search: url.searchParams.get('search') ?? '', offset: Number.isFinite(offset) ? offset : 0, sort })) } catch (error) { return catalogueFailure(res, error) }
       },
     },
     '/catalogue/world': {
@@ -274,6 +278,17 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
         try {
           const language = languageField(body.language)
           sendJson(res, 201, await catalogue.convert({ source: body.source, versionId: body.versionId, ...(language === undefined ? {} : { language }) }))
+        } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
+      },
+    },
+    '/catalogue/convert/preset': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { source?: unknown; versionId?: unknown; language?: unknown; title?: unknown }
+        if (typeof body.source !== 'string' || typeof body.versionId !== 'string') return sendError(res, 400, 'source and versionId must be text')
+        if (body.title !== undefined && typeof body.title !== 'string') return sendError(res, 400, 'title must be text')
+        try {
+          const language = languageField(body.language)
+          sendJson(res, 201, await catalogue.convertPreset({ source: body.source, versionId: body.versionId, ...(body.title === undefined ? {} : { title: body.title }), ...(language === undefined ? {} : { language }) }))
         } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
       },
     },
@@ -617,7 +632,7 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
     '/sessions': {
       GET: async (_req, res) => { sendJson(res, 200, sessions.list()) },
       POST: async (req, res) => {
-        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings, opening, startingTime } = await readJsonBody(req)
+        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings, opening, startingTime, preset } = await readJsonBody(req)
         if (typeof worldId !== 'string' || worldId.trim() === '') return sendError(res, 400, '"worldId" is required')
         if (playerCharacterId === undefined && playerAvatar === undefined) return sendError(res, 400, '"playerCharacterId" or "playerAvatar" is required')
         if (playerCharacterId !== undefined && (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '')) return sendError(res, 400, '"playerCharacterId" must be text')
@@ -626,8 +641,9 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
         if (name !== undefined && typeof name !== 'string') return sendError(res, 400, '"name" must be a string')
         if (opening !== undefined && (typeof opening !== 'number' || !Number.isInteger(opening))) return sendError(res, 400, '"opening" must be a whole number')
         if (startingTime !== undefined && typeof startingTime !== 'string') return sendError(res, 400, '"startingTime" must be text')
+        if (preset !== undefined && typeof preset !== 'string') return sendError(res, 400, '"preset" must be text')
         try {
-          sendJson(res, 201, await sessions.start({ ...(opening === undefined ? {} : { opening }), ...(startingTime === undefined ? {} : { startingTime }), worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
+          sendJson(res, 201, await sessions.start({ ...(preset === undefined || preset === '' ? {} : { preset }), ...(opening === undefined ? {} : { opening }), ...(startingTime === undefined ? {} : { startingTime }), worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
         } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidStartError) return sendError(res, 422, error.message)
@@ -940,6 +956,7 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
       },
     },
     ...interfaceRoutes(packs),
+    ...presetRoutes(presets),
     '/worlds/cover': {
       GET: async (_req, res, url) => {
         const cover = await worlds.cover(url.searchParams.get('id') ?? '')

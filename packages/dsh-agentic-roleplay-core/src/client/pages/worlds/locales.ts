@@ -10,9 +10,9 @@ export type WorldsLocaleKey =
   | 'previousPage' | 'nextPage' | 'pageOf'
   | 'problems'
   | 'play' | 'openWorld' | 'chatNotOpened'
-  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startTime' | 'startTimeHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
+  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startTime' | 'startTimeHelp' | 'startPreset' | 'startPresetDefault' | 'startPresetWorld' | 'startPresetNone' | 'startPresetBroken' | 'startPresetHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
-  | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed'
+  | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed' | 'worldPreset' | 'worldPresetNone' | 'worldPresetHelp'
   | 'importPreset' | 'presetOpening' | 'presetFailed' | 'presetNotStarted'
   | 'authorWorld' | 'openingAuthor' | 'authorWorldFailed' | 'authoringChatTitle'
   | 'translateWarning' | 'translateAction' | 'translateOpening' | 'translateChatTitle' | 'translateFailed' | 'translateNotStarted' | 'languageEnglish' | 'languageChinese' | 'startLanguageNote'
@@ -50,6 +50,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startTitle: 'Start a new session',
     sessionName: 'Session name',
     playAs: 'Play as',
+    startPreset: 'Writing preset', startPresetDefault: 'Default style', startPresetWorld: 'The world\'s suggestion ({name})', startPresetNone: 'No preset', startPresetBroken: '{name} (has problems)', startPresetHelp: 'A preset sets how the story is written. Presets are kept in the presets folder of your roleplay folder.',
     startOpening: 'Opening', startOpeningDefault: 'The world\'s own opening', startTime: 'Story starts at', startTimeHelp: 'Local time in {zone}, like 1912-04-14T23:40:00. Leave empty for the world\'s own start. Not used when the story follows the real clock.',
     loadingCharacters: 'Loading characters…',
     charactersFailed: 'Could not load the characters: {message}',
@@ -59,7 +60,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     cancel: 'Cancel',
     close: 'Close',
     startFailed: 'Could not start the session: {message}',
-    createWorld: 'Create world', creatingWorld: 'Creating…', createWorldTitle: 'Create a world', createWorldHelp: 'This creates a minimal world and opens it in the editor. Add characters, places and everything else there.', worldFolder: 'Folder name', worldFolderHelp: 'A new folder directly inside the roleplay worlds directory.', worldName: 'World name', createWorldFailed: 'Could not create the world: {message}',
+    createWorld: 'Create world', creatingWorld: 'Creating…', createWorldTitle: 'Create a world', createWorldHelp: 'This creates a minimal world and opens it in the editor. Add characters, places and everything else there.', worldFolder: 'Folder name', worldFolderHelp: 'A new folder directly inside the roleplay worlds directory.', worldName: 'World name', worldPreset: 'Suggested preset', worldPresetNone: 'None', worldPresetHelp: 'Writing instructions from your library for new stories of this world. It can be changed later in the editor.', createWorldFailed: 'Could not create the world: {message}',
     importPreset: 'Import narration preset', presetOpening: 'Opening…', presetFailed: 'Could not import the preset: {message}', presetNotStarted: 'The authoring chat opened but the preset was not applied: {message}. Ask it to apply the preset you uploaded.',
     authorWorld: 'Author with AI', openingAuthor: 'Opening…', authorWorldFailed: 'Could not open the authoring chat: {message}', authoringChatTitle: 'Authoring {name}',
     translateWarning: 'This world is written in {from}, but you use {to}. Names, descriptions and the characters\' speech may mix the two languages.', translateAction: 'Translate into {to}', translateOpening: 'Opening…', translateChatTitle: 'Translating {name}', translateFailed: 'Could not start the translation: {message}', translateNotStarted: 'The authoring chat opened but the translation did not start: {message}. Ask it to translate the world.', languageEnglish: 'English', languageChinese: 'Chinese', startLanguageNote: 'This world is written in {from}, but the story will be played in {to}: names and descriptions stay in {from}. A translated copy can be made from the world\'s editor.',
@@ -96,6 +97,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startTitle: '开始新存档',
     sessionName: '存档名称',
     playAs: '扮演角色',
+    startPreset: '写作预设', startPresetDefault: '默认风格', startPresetWorld: '世界的建议（{name}）', startPresetNone: '不使用预设', startPresetBroken: '{name}（有问题）', startPresetHelp: '预设决定故事的写法。预设保存在角色扮演文件夹的 presets 文件夹中。',
     startOpening: '开场', startOpeningDefault: '世界自带的开场', startTime: '故事开始于', startTimeHelp: '{zone} 的本地时间，例如 1912-04-14T23:40:00。留空则使用世界自带的开始时间。故事跟随真实时钟时不适用。',
     loadingCharacters: '正在加载角色…',
     charactersFailed: '无法加载角色：{message}',
@@ -105,7 +107,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     cancel: '取消',
     close: '关闭',
     startFailed: '无法开始存档：{message}',
-    createWorld: '创建世界', creatingWorld: '正在创建…', createWorldTitle: '创建世界', createWorldHelp: '系统会创建一个最小世界并直接在编辑器中打开；角色、地点等内容可随后添加。', worldFolder: '文件夹名称', worldFolderHelp: '将在角色扮演 worlds 目录下直接创建这个文件夹。', worldName: '世界名称', createWorldFailed: '无法创建世界：{message}',
+    createWorld: '创建世界', creatingWorld: '正在创建…', createWorldTitle: '创建世界', createWorldHelp: '系统会创建一个最小世界并直接在编辑器中打开；角色、地点等内容可随后添加。', worldFolder: '文件夹名称', worldFolderHelp: '将在角色扮演 worlds 目录下直接创建这个文件夹。', worldName: '世界名称', worldPreset: '建议的预设', worldPresetNone: '无', worldPresetHelp: '库中的写作指令，供这个世界的新故事使用；之后可在编辑器中修改。', createWorldFailed: '无法创建世界：{message}',
     importPreset: '导入叙述预设', presetOpening: '正在打开…', presetFailed: '无法导入预设：{message}', presetNotStarted: '世界编辑对话已打开，但预设没有应用：{message}。可以请它应用你上传的预设。',
     authorWorld: '使用 AI 编辑', openingAuthor: '正在打开…', authorWorldFailed: '无法打开世界编辑对话：{message}', authoringChatTitle: '编辑{name}',
     translateWarning: '这个世界是用{from}写的，而你使用的是{to}。名字、描述和角色的说话可能会两种语言混在一起。', translateAction: '翻译成{to}', translateOpening: '正在打开…', translateChatTitle: '翻译{name}', translateFailed: '无法开始翻译：{message}', translateNotStarted: '世界编辑对话已打开，但翻译没有开始：{message}。可以请它翻译这个世界。', languageEnglish: '英文', languageChinese: '中文', startLanguageNote: '这个世界是用{from}写的，而故事将用{to}进行：名字和描述仍是{from}。可以在世界编辑器里生成一个翻译后的副本。',

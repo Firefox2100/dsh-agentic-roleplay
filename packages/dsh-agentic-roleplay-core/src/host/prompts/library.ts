@@ -15,7 +15,8 @@ const SESSION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 export const FALLBACK_LANGUAGE = 'en'
 
 const ID = /^[a-z0-9-]+(\/[a-z0-9-]+)*$/
-const LANGUAGE = /^[a-z]{2,8}$/
+export const LANGUAGE_FOLDER = /^[a-z]{2,8}$/
+const LANGUAGE = LANGUAGE_FOLDER
 const VARIABLE = /\$\{([A-Za-z]+)\}/g
 
 export type PromptVariables = Readonly<Record<string, string | number>>

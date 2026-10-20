@@ -32,6 +32,7 @@ title: world.json
 | `opening_message` | Optional | Text or ordered narration/utterance parts |
 | `alternate_openings` | Optional list | Other first messages the player may choose when starting a session: `{title, text, character?}`, plain narration, at most 30 of at most 20,000 characters; a missing title is the first words of the text |
 | `narration_voice` | Optional | Initial TTS voice for narration |
+| `preset` | Optional | Name of a preset in the person's library that sessions of this world start with unless one is chosen; see the prompt system specification |
 | `variables` | Optional object | Initial values for world-scoped variables |
 | `tools` | Optional object | Optional tools switched on or off for the world's agents, by kind of agent: `{"gameMaster": {"roll_dice": false}}`. A story starts from it, and a choice made at the start is added on top. Names this version does not know are kept and have no effect |
 

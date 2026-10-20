@@ -24,7 +24,7 @@ A world may come with interface packs. A pack runs its own scripts, inside the s
 
 ## Update an installed world
 
-When a catalogue has a newer release of a world you installed from it, the page lists it above the grid. Select it and choose **Update**. The new release replaces the world in its own folder, so your sessions keep working, and your previous files are moved to `.trash/worlds/` in your roleplay root rather than deleted.
+When a catalogue has a newer release of a world you installed from it, the page lists it above the grid. Select it and choose **Update**. The new release replaces the world in its own folder, so your sessions keep working, and your previous files are moved to `.trash/worlds/` in your roleplay root rather than deleted right away. They are removed after `catalogueTrashDays` days (30 by default; 0 keeps them for good), checked at startup and after each update. To get something back sooner, copy the folder out of the trash into `worlds/`.
 
 If you changed the world since you installed it (any file added, edited or removed), the page says so, lists the differences and asks:
 
@@ -38,6 +38,10 @@ A world with no record of its release (installed before releases were remembered
 The **Character cards** tab lists SillyTavern character cards the catalogue holds. **Convert to a world** downloads the card with the catalogue's key and starts the usual [card import](../authoring/avatars-import): a new world is made and its authoring chat converts the card, then opens.
 
 A card never updates or replaces a world. The conversion is done by an agent that makes its own choices, so two conversions of the same card give different worlds, and overwriting an earlier one would not be meaningful. Converting a card again always makes a new world, and the page tells you when you converted that card before.
+
+## Presets
+
+The **Presets** tab lists SillyTavern presets the catalogue holds. **Import as a preset** downloads one with the catalogue's key and starts the [preset import](../authoring/presets): a new preset is made in your library and its authoring chat writes the narration prompts, then opens. Like a card, a preset is never updated in place; importing it again makes another preset.
 
 ## Import from an address
 

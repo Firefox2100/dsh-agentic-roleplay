@@ -27,7 +27,7 @@ function fileOf(directory: string, language: string, id: string, shipped: string
 /** Every prompt of the story, in a language, and whether the world carries its own version. */
 export function listWorldPrompts(directory: string, language: string, shipped: string = shippedPromptsDirectory()): WorldPromptEntry[] {
   const tag = languageOf(language)
-  const ids = readdirSync(join(shipped, 'en'), { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name !== 'import' && entry.name !== 'world').flatMap(entry => listFiles(join(shipped, 'en', entry.name), `${entry.name}/`))
+  const ids = readdirSync(join(shipped, 'en'), { withFileTypes: true }).filter(entry => entry.isDirectory() && !['import', 'world', 'preset'].includes(entry.name)).flatMap(entry => listFiles(join(shipped, 'en', entry.name), `${entry.name}/`))
   return ids.sort().map(id => ({ id, kind: PROSE_PROMPTS.includes(id) ? 'prose' as const : 'rules' as const, carried: existsSync(join(directory, PROMPTS_FOLDER, tag, `${id}.md`)) }))
 }
 
