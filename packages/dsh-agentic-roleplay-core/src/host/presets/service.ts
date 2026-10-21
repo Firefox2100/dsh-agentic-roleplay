@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { trimCharacters } from '../../shared/text.ts'
 import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
 import type { SelectionChoice } from '../../shared/import-selection.ts'
 import type { ImportStaging } from '../import/staging.ts'
@@ -102,7 +103,7 @@ export class Presets {
   }
 
   private freeName(title: string): string {
-    const base = title.normalize('NFKD').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '').slice(0, 56) || 'preset'
+    const base = trimCharacters(title.normalize('NFKD').replace(/[^A-Za-z0-9_-]+/g, '-'), '-_').slice(0, 56) || 'preset'
     const taken = new Set(listPresets(this.deps.root()).map(entry => entry.summary.name))
     let name = base
     for (let index = 2; taken.has(name); index += 1) name = `${base}-${index}`

@@ -21,8 +21,12 @@ export class RoleplayRoot extends Service {
   constructor(ctx: Context, private readonly source: Volatile<string>) {
     super(ctx, 'roleplayRoot')
     this.current = resolveRootPath(source.get())
-    void this.prepare(this.current)
     ctx.on('loader/volatile-update', () => this.refresh())
+  }
+
+  /** Prepare the configured root after construction. */
+  start(): void {
+    void this.prepare(this.current)
   }
 
   /** Absolute path of the active root. */

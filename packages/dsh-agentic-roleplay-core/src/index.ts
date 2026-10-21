@@ -109,6 +109,7 @@ export function apply(ctx: Context, config: Config) {
   })
   ctx.effect(() => useChildReasoning(config.childReasoning), 'roleplay: helper thinking level')
   const root = new RoleplayRoot(ctx, config.rootPath)
+  root.start()
   const orchestration = new RoleplayOrchestration(ctx)
   const worlds = new WorldCatalog(ctx, root)
   const prompts = new PromptLibrary(ctx, root)

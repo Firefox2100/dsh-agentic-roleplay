@@ -1,6 +1,7 @@
 import type { CatalogueKind, CatalogueSourceStatus, CatalogueUpdates, CatalogueWorldDetail, CatalogueWorldPage, ConflictReason, ConvertRequest, ConvertResult, InstallRequest, InstallResult } from '../../../shared/catalogue.ts'
 import type { ImportChoices, ImportPreview } from '../../../shared/import-card.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
+import { trimCharacters } from '../../../shared/text.ts'
 
 /** The host refused to go on because of something the person can decide: a world they already have, or one they changed. */
 export class InstallConflict extends Error {
@@ -61,5 +62,5 @@ export async function discardCard(id: string): Promise<void> {
 
 /** The address a catalogue serves a release's archive from. */
 export function downloadUrl(baseUrl: string, versionId: string): string {
-  return `${baseUrl.trim().replace(/\/+$/, '')}/versions/${encodeURIComponent(versionId)}/download`
+  return `${trimCharacters(baseUrl.trim(), '/', 'end')}/versions/${encodeURIComponent(versionId)}/download`
 }

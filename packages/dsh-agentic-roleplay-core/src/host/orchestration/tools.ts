@@ -4,6 +4,7 @@ import { describeTime, type SkipRequest } from '../clock/story-clock.ts'
 import type { Boundaries, CreateReport, TriggerReport, TurnStore } from './boundaries.ts'
 import { answerRunner, characterRunner } from './character-runner.ts'
 import { encodeOutput, encodePreview } from '../../shared/narration.ts'
+import { trimCharacters } from '../../shared/text.ts'
 import { AUTHORING_NEEDS } from './boundaries.ts'
 import { ITEM_ACTIONS, describeDuration, type ItemAction } from '@dsh-agentic-roleplay/state'
 import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utterance } from './protocol.ts'
@@ -98,7 +99,7 @@ function renderResolution(report: ResolveReport): string {
 }
 
 function renderExpansion(report: CreateReport): string {
-  if (report.created.length === 0) return `Nothing was made up: ${(report.declined ?? 'the world author found nothing the story needs').replace(/[.\s]+$/, '')}. Work with what exists.`
+  if (report.created.length === 0) return `Nothing was made up: ${trimCharacters((report.declined ?? 'the world author found nothing the story needs').trimEnd(), '.', 'end').trimEnd()}. Work with what exists.`
   const lines = report.created.map(entry => `- ${entry.kind} ${entry.key} (${entry.name})`)
   const characters = report.created.filter(entry => entry.kind === 'character')
   return [

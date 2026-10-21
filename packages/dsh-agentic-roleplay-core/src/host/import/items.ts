@@ -27,7 +27,7 @@ export function cleanText(text: string, cardName: string): string {
     .replace(/\{\{\s*\/\/[\s\S]*?\}\}/g, '')
     .replace(/\{\{\s*char\s*\}\}|<char>|<bot>/gi, cardName)
     .replace(/\{\{\s*user\s*\}\}|<user>/gi, PLAYER_MARKER)
-    .replace(/^\s*<START>\s*$/gim, '')
+    .split('\n').filter(line => line.trim().toUpperCase() !== '<START>').join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }

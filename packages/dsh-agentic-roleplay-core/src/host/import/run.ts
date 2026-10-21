@@ -1,4 +1,5 @@
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import { trimCharacters } from '../../shared/text.ts'
 
 /** One narrow job for one model call: who it is, what is asked, and the shape of the answer. A refused answer is tried again with the reason. */
 export interface ChildJob<T> {
@@ -46,7 +47,7 @@ export function norm(name: string): string {
 /** A file-safe key from a name: the letters and digits of any script joined by hyphens; `fallback` when nothing is left. */
 /** An id made of the letters and digits of a name, in whatever script it is written; a name with none gets the fallback. */
 export function slug(name: string, fallback: string): string {
-  const key = name.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 60).replace(/-+$/g, '')
+  const key = trimCharacters(trimCharacters(name.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-'), '-').slice(0, 60), '-', 'end')
   return key === '' ? fallback : key
 }
 

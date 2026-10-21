@@ -9,7 +9,7 @@ import { join } from 'node:path'
 const [id, count = '1', root = join(homedir(), '.dsh', 'sessions')] = process.argv.slice(2)
 if (id === undefined) { console.error('usage: turn-report.mjs <roleplay session uuid> [turns] [sessions dir]'); process.exit(2) }
 
-const readLog = (file) => execFileSync('zstd', ['-dc', file], { maxBuffer: 1 << 30 }).toString('utf8').split('\n').filter(Boolean).map(line => JSON.parse(line))
+const readLog = (file) => execFileSync('/usr/bin/zstd', ['-dc', file], { maxBuffer: 1 << 30 }).toString('utf8').split('\n').filter(Boolean).map(line => JSON.parse(line))
 const folders = readdirSync(root).map(name => join(root, name))
 const logs = folders.flatMap(folder => readdirSync(folder).filter(name => existsSync(join(folder, name, 'session.v4.jsonl.zstd'))).map(name => ({ name, file: join(folder, name, 'session.v4.jsonl.zstd') })))
 const chat = logs.find(log => log.name === `session-${id}`)

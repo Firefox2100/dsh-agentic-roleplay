@@ -6,6 +6,7 @@ import type {
 } from './boundaries.ts'
 import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from '@dsh-agentic-roleplay/state'
 import { answerLimits, type NarrationSegment, type Utterance } from './protocol.ts'
+import { trimCharacters } from '../../shared/text.ts'
 import { referent } from './referent.ts'
 import type { AgendaView, SceneAgenda } from '../clock/agenda.ts'
 import { describeTime, describeWhen, type StoryTime } from '../clock/story-clock.ts'
@@ -307,9 +308,8 @@ export const acceptsAnyInput: InputValidator = { validate: () => ({ ok: true }) 
 export const gameMasterNarrates: Narrator = { narrate: () => Promise.resolve(undefined) }
 
 /** Compares what was said, ignoring the quotes around it and the way whitespace is laid out. */
-const WRAPPING_QUOTES = /^["“”„«»'‘’]+|["“”„«»'‘’]+$/g
 export function sameWords(a: string, b: string): boolean {
-  const plain = (text: string): string => text.trim().replace(WRAPPING_QUOTES, '').replace(/\s+/g, ' ').trim()
+  const plain = (text: string): string => trimCharacters(text.trim(), '"“”„«»\'‘’').replace(/\s+/g, ' ').trim()
   return plain(a) === plain(b)
 }
 

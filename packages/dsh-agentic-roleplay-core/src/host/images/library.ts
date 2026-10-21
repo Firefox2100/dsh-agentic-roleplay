@@ -2,6 +2,7 @@ import { mkdir, rename, writeFile } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { trimCharacters, withoutExtension } from '../../shared/text.ts'
 import { LIBRARY_FOLDER } from '../../shared/gallery.ts'
 import { MEDIA_TYPES, writeImageFileMetadata } from './image-files.ts'
 import type { VisualImageMetadata } from './storage.ts'
@@ -20,7 +21,7 @@ export function imageExtensionOf(bytes: Uint8Array): string | undefined {
 
 /** A file name made of the letters and digits of the name it came with, in any script. */
 export function libraryName(original: string, extension: string, taken: (name: string) => boolean): string {
-  const stem = (original.replace(/\.[^.]*$/, '').normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-+|-+$/g, '').slice(0, 60)) || 'image'
+  const stem = trimCharacters(withoutExtension(original).normalize('NFKC').replace(/[^\p{L}\p{N}]+/gu, '-'), '-').slice(0, 60) || 'image'
   for (let n = 1; ; n += 1) {
     const name = `${stem}${n === 1 ? '' : `-${n}`}${extension}`
     if (!taken(name)) return name

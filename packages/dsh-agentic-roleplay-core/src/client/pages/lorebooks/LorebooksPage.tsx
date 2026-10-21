@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { trimCharacters, withoutExtension } from '../../../shared/text.ts'
 import { Button, IconRefreshOutlineRegular, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { LorebookSummary } from '../../../shared/lorebooks.ts'
@@ -16,7 +17,7 @@ export type LorebooksPageProps =
 
 const NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
-const nameFromFile = (file: string): string => file.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '').slice(0, 64)
+const nameFromFile = (file: string): string => trimCharacters(withoutExtension(file).replace(/[^A-Za-z0-9_-]+/g, '-'), '-_').slice(0, 64)
 
 function NameDialog({ t, submit, onClose }: { t: LorebooksPageProps['t']; submit: (name: string, title: string, description: string) => Promise<void>; onClose: () => void }) {
   const formId = useId()

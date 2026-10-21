@@ -1,10 +1,10 @@
-/** What the player writes to speak to the game master as the author of the story: a command (`/ooc`) or a question (`/ask`), a turn of its own, never mixed with an action of the character. */
-const OOC_COMMAND = /^\s*\/(ooc|ask)(?=\s|$)\s*([\s\S]*)$/i
-
 /** The command or question in a player's message, or nothing when the message is an ordinary action. The request may be empty. */
 export function parseOoc(text: string): { request: string; question: boolean } | undefined {
-  const match = OOC_COMMAND.exec(text)
-  return match === null ? undefined : { request: (match[2] ?? '').trim(), question: match[1]!.toLowerCase() === 'ask' }
+  const value = text.trimStart()
+  const boundary = value.search(/\s/u)
+  const command = value.slice(0, boundary < 0 ? value.length : boundary).toLowerCase()
+  if (command !== '/ooc' && command !== '/ask') return undefined
+  return { request: value.slice(command.length).trim(), question: command === '/ask' }
 }
 
 /**

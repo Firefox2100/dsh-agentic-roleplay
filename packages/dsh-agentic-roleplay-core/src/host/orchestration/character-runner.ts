@@ -58,14 +58,15 @@ const CLOSING_QUOTE: Readonly<Record<string, string>> = { '"': '"', '“': '”'
 function outsideQuotedSpeech(utterance: string): string[] {
   const parts: string[] = []
   let outside = 0
-  for (let cursor = 0; cursor < utterance.length; cursor += 1) {
+  let cursor = 0
+  while (cursor < utterance.length) {
     const closing = CLOSING_QUOTE[utterance[cursor]!]
-    if (closing === undefined) continue
+    if (closing === undefined) { cursor += 1; continue }
     const end = utterance.indexOf(closing, cursor + 1)
-    if (end < 0) continue
+    if (end < 0) { cursor += 1; continue }
     parts.push(utterance.slice(outside, cursor))
-    cursor = end
     outside = end + 1
+    cursor = outside
   }
   parts.push(utterance.slice(outside))
   return parts

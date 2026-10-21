@@ -1,5 +1,6 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { trimCharacters } from '../../shared/text.ts'
 import type { SelectionChoice } from '../../shared/import-selection.ts'
 import type { ImportStaging } from '../import/staging.ts'
 import type { LorebookEntry, LorebookStatus, LorebookSummary, LorebookText } from '../../shared/lorebooks.ts'
@@ -109,7 +110,7 @@ export class Lorebooks {
 
   /** A library name made from a title that no lorebook has yet. */
   private async freeName(title: string): Promise<string> {
-    const base = title.normalize('NFKD').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '').slice(0, 56) || 'lorebook'
+    const base = trimCharacters(title.normalize('NFKD').replace(/[^A-Za-z0-9_-]+/g, '-'), '-_').slice(0, 56) || 'lorebook'
     const taken = new Set((await listLorebooks(this.deps.root())).map(book => book.summary.name))
     let name = base
     for (let index = 2; taken.has(name); index += 1) name = `${base}-${index}`

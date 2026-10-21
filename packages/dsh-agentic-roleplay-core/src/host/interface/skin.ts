@@ -121,8 +121,11 @@ function declarationProblem(body: string, url: SkinUrl): { css: string; problem?
   if (forbidden !== undefined) return { css: body, problem: `"${forbidden}" is not allowed` }
   if (lower.includes('@import')) return { css: body, problem: '@import is not allowed' }
   let problem: string | undefined
-  const css = body.replace(/url\(\s*(?:"([^"]*)"|'([^']*)'|([^)\s]*))\s*\)/gi, (match, double: string | undefined, single: string | undefined, bare: string | undefined) => {
-    const path = (double ?? single ?? bare ?? '').trim()
+  const css = body.replace(/url\(([^)]*)\)/gi, (match, raw: string) => {
+    const value = raw.trim()
+    const quoted = (value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))
+    if (!quoted && /\s/u.test(value)) return match
+    const path = quoted ? value.slice(1, -1) : value
     if (path === '' || /^[a-z][a-z0-9+.-]*:/i.test(path) || path.startsWith('/') || path.startsWith('#')) { problem ??= `url(${path}) must be a path inside the pack`; return match }
     const address = url(path)
     if (address === undefined) { problem ??= `url(${path}): the pack has no such file`; return match }

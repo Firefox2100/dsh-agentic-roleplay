@@ -64,6 +64,10 @@ export const IMPORT_COMMAND = '/import-st'
 
 /** The command in a message, with the card it names, or nothing when the message is not the command. */
 export function parseImportCommand(text: string): { card: string; request: string } | undefined {
-  const match = /^\s*\/import-st(?=\s|$)\s*(\S*)\s*([\s\S]*)$/i.exec(text)
-  return match === null ? undefined : { card: match[1] ?? '', request: (match[2] ?? '').trim() }
+  const value = text.trimStart()
+  const command = '/import-st'
+  if (value.slice(0, command.length).toLowerCase() !== command || (value.length > command.length && !/\s/u.test(value[command.length]!))) return undefined
+  const body = value.slice(command.length).trimStart()
+  const boundary = body.search(/\s/u)
+  return boundary < 0 ? { card: body, request: '' } : { card: body.slice(0, boundary), request: body.slice(boundary).trim() }
 }

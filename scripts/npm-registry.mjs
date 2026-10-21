@@ -3,7 +3,9 @@ import { spawnSync } from 'node:child_process'
 const registry = 'https://registry.npmjs.org/'
 
 export function isPublished(name, version) {
-  const result = spawnSync('npm', ['view', `${name}@${version}`, 'version', '--json', `--registry=${registry}`], {
+  const npmCli = process.env.npm_execpath
+  if (npmCli === undefined) throw new Error('npm_execpath is not set; run this command through pnpm')
+  const result = spawnSync(process.execPath, [npmCli, 'view', `${name}@${version}`, 'version', '--json', `--registry=${registry}`], {
     encoding: 'utf8',
   })
 

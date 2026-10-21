@@ -1,4 +1,5 @@
 import { IMPORT_COMMAND, type ImportChoices } from '../../shared/import-card.ts'
+import { trimCharacters } from '../../shared/text.ts'
 import type { WorldSummary } from '../../shared/worlds.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { WorldNotFoundError } from '../sessions/errors.ts'
@@ -28,7 +29,11 @@ const FOLDER_CHARS = /[^\p{L}\p{N}._ -]+/gu
 
 /** A name that can be the folder of a world: letters, digits and a few marks, trimmed, not ending in a dot or space. */
 export function folderNameOf(name: string): string {
-  const folder = name.normalize('NFKC').replace(FOLDER_CHARS, ' ').replace(/\s+/g, ' ').trim().replace(/^[^\p{L}\p{N}]+/u, '').replace(/[. ]+$/, '').slice(0, 90).trim()
+  const normalized = name.normalize('NFKC').replace(FOLDER_CHARS, ' ').replace(/\s+/g, ' ').trim()
+  const characters = [...normalized]
+  const first = characters.findIndex(character => /[\p{L}\p{N}]/u.test(character))
+  const cleaned = first < 0 ? '' : characters.slice(first).join('')
+  const folder = trimCharacters(cleaned, '. ', 'end').slice(0, 90).trim()
   return folder === '' ? 'imported world' : folder
 }
 

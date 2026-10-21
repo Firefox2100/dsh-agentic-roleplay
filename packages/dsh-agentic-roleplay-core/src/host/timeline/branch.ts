@@ -37,7 +37,9 @@ export function branchTimeline(timeline: Timeline, boundary: number, snapshots: 
 
 /** The name of a branch: the story's name with its trailing number counted up, or a 2 added. */
 export function branchName(name: string): string {
-  const numbered = /^(.*?)(\d+)\s*$/.exec(name)
-  const next = numbered === null ? `${name} 2` : `${numbered[1]}${Number(numbered[2]) + 1}`
+  const trimmed = name.trimEnd()
+  let start = trimmed.length
+  while (start > 0 && trimmed.charCodeAt(start - 1) >= 48 && trimmed.charCodeAt(start - 1) <= 57) start -= 1
+  const next = start === trimmed.length ? `${name} 2` : `${trimmed.slice(0, start)}${Number(trimmed.slice(start)) + 1}`
   return next.length > 200 ? `${[...name].slice(0, 190).join('').trimEnd()} 2` : next
 }

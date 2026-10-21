@@ -1,5 +1,6 @@
 import { CREDENTIAL_REF, catalogueKeyRef, type CatalogueKeyStatus, type CatalogueSource, type CatalogueSourceStatus } from '../../shared/catalogue.ts'
 import { CatalogueError } from './errors.ts'
+import { trimCharacters } from '../../shared/text.ts'
 
 /** A configured catalogue that can be used: its address is a web address and its name is unique. */
 export interface ResolvedSource {
@@ -48,7 +49,7 @@ export class Sources {
       seen.add(name)
       const base = parseBase(source.baseUrl)
       if (typeof base === 'string') return { source, problem: `address ${base}` }
-      const prefix = base.pathname.replace(/\/+$/, '')
+      const prefix = trimCharacters(base.pathname, '/', 'end')
       const keyRef = source.apiKeyRef.trim() === '' ? catalogueKeyRef(name) : source.apiKeyRef.trim()
       if (!CREDENTIAL_REF.test(keyRef)) return { source, problem: `has a key name "${keyRef}" that is not a credential name (letters, digits and "_", not starting with a digit)` }
       return { source, resolved: { name, root: `${base.origin}${prefix}`, origin: base.origin, prefix, keyRef, legacyKey: source.apiKey.trim() === '' ? undefined : source.apiKey.trim() } }

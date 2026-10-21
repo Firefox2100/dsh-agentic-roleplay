@@ -1,5 +1,6 @@
 import { inflateSync } from 'node:zlib'
 import type { CardEntry, NormalizedCard } from '../../shared/import-card.ts'
+import { trimCharacters } from '../../shared/text.ts'
 
 /** The file is not a character card this importer reads. The message says why, for the person who uploaded it. */
 export class ImportCardError extends Error {}
@@ -82,7 +83,7 @@ export function urlsOf(value: unknown): string[] {
     if (depth > 32) return
     if (typeof node === 'string') {
       for (const match of node.matchAll(URL_PATTERN)) {
-        const url = match[0].replace(/[.,;:!?*_~]+$/, '')
+        const url = trimCharacters(match[0], '.,;:!?*_~', 'end')
         if (!url.includes('$') && url.length <= 2000) found.add(url)
       }
     } else if (Array.isArray(node)) for (const entry of node) visit(entry, depth + 1)

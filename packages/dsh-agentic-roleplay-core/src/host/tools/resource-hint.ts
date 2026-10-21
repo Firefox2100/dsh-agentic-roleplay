@@ -4,7 +4,11 @@ import type { Translate } from 'dsh-roleplay-model'
 export const RESOURCE_HINT_SECTION = 'mcp-resource-servers'
 
 const RESOURCE_TOOLS = ['list_mcp_resources', 'list_mcp_resource_templates', 'read_mcp_resource']
-const NAMESPACED = /^mcp__(.+?)__.+$/
+function serverOf(name: string): string[] {
+  if (!name.startsWith('mcp__')) return []
+  const end = name.indexOf('__', 5)
+  return end <= 5 || end + 2 >= name.length ? [] : [name.slice(5, end)]
+}
 
 /**
  * What an agent is told about MCP resources: nothing unless it can see a resource tool, since the plugin's own paragraph names the tools
@@ -14,7 +18,7 @@ const NAMESPACED = /^mcp__(.+?)__.+$/
 export function resourceHint(visible: readonly string[], registered: readonly string[], tr: Translate): string {
   const tools = RESOURCE_TOOLS.filter(name => visible.includes(name))
   if (tools.length === 0) return ''
-  const servers = [...new Set(registered.flatMap(name => NAMESPACED.exec(name)?.[1] ?? []))].sort((a, b) => a.localeCompare(b))
+  const servers = [...new Set(registered.flatMap(serverOf))].sort((a, b) => a.localeCompare(b))
   return servers.length === 0
     ? tr('## MCP resource servers\n\nUse {tools} with the server argument naming an MCP server.', { tools: tools.join(', ') })
     : tr('## MCP resource servers\n\nUse {tools} with one of these names as the server argument: {servers}.', { tools: tools.join(', '), servers: JSON.stringify(servers) })

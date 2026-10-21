@@ -222,8 +222,39 @@ function shownOf(session: ReflectionSession, material: Material): Shown {
 
 const rankOf = (confidence: MemoryConfidence): number => MEMORY_CONFIDENCES.indexOf(confidence)
 
+function perceptionCitation(text: string, bracketRequired: boolean): boolean {
+  const lower = text.toLowerCase()
+  let from = 0
+  while (from < lower.length) {
+    const at = lower.indexOf('perception', from)
+    if (at < 0) return false
+    let end = at + 'perception'.length
+    if (lower[end] === 's') end += 1
+    while (/\s/u.test(lower[end] ?? '')) end += 1
+    const bracket = lower[end] === '['
+    if (bracket) end += 1
+    if ((!bracketRequired || bracket) && /\d/u.test(lower[end] ?? '')) return true
+    from = at + 1
+  }
+  return false
+}
+
 /** What a model writes into a belief's text when it has not put it in the fields: its confidence, importance or the numbers it rests on. */
-const MIXED_IN = /\((?:[^)]*\b(?:doubtful|likely|sure|importance)\b[^)]*|[^)]*\bperceptions?\s*\[?\d[^)]*)\)|\bperceptions?\s*\[\d/i
+function mixedIntoText(text: string): boolean {
+  if (perceptionCitation(text, true)) return true
+  let from = 0
+  while (from < text.length) {
+    const open = text.indexOf('(', from)
+    if (open < 0) return false
+    const close = text.indexOf(')', open + 1)
+    if (close < 0) return false
+    const inside = text.slice(open + 1, close)
+    const words = inside.toLowerCase().split(/[^a-z]+/).filter(Boolean)
+    if (words.some(word => ['doubtful', 'likely', 'sure', 'importance'].includes(word)) || perceptionCitation(inside, false)) return true
+    from = close + 1
+  }
+  return false
+}
 
 /** One step less sure, and no less than doubtful. */
 const lowered = (confidence: MemoryConfidence): MemoryConfidence => MEMORY_CONFIDENCES[Math.max(0, rankOf(confidence) - 1)]!
@@ -288,7 +319,7 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
     if (change.text === undefined && change.importance === undefined && change.confidence === undefined && against.length === 0) problems.push(tr('{where}: say what changes', { where }))
     if (change.text !== undefined && change.text.trim().length > MAX_TEXT) problems.push(tr('{where}: the text is longer than {max} characters. A belief is not rewritten to hold what speaks against it: leave the text out and list the belief under doubt with the numbers of what speaks against it, and put what was learned as a new belief of its own', { where, max: MAX_TEXT }))
     else if (change.text !== undefined && change.text.trim() === '') problems.push(tr('{where}: the text must be there and at most {max} characters; leave it out to keep the belief as it is', { where, max: MAX_TEXT }))
-    if (change.text !== undefined && MIXED_IN.test(change.text)) problems.push(tr('{where}: the confidence, the importance and the numbers are fields of their own, not part of the text', { where }))
+    if (change.text !== undefined && mixedIntoText(change.text)) problems.push(tr('{where}: the confidence, the importance and the numbers are fields of their own, not part of the text', { where }))
     if (change.importance !== undefined && (!Number.isInteger(change.importance) || change.importance < IMPORTANCE_MIN || change.importance > IMPORTANCE_MAX)) problems.push(tr('{where}: importance runs from {min} to {max}', { where, min: IMPORTANCE_MIN, max: IMPORTANCE_MAX }))
     fresh([...supports, ...against], belief, where)
     if (!known(change.confidence, where) || change.confidence === undefined) {
@@ -311,7 +342,7 @@ export function proposalProblems(proposal: Proposal, shown: Shown, resolveName: 
     if (against.length === 0) problems.push(tr('{where}: name what speaks against the belief in contradicted_by', { where }))
     fresh(against, belief, where)
     if (change.text !== undefined && (change.text.trim() === '' || change.text.trim().length > MAX_TEXT)) problems.push(tr('{where}: the text must be there and at most {max} characters; leave it out to keep the belief as it is', { where, max: MAX_TEXT }))
-    if (change.text !== undefined && MIXED_IN.test(change.text)) problems.push(tr('{where}: the confidence, the importance and the numbers are fields of their own, not part of the text', { where }))
+    if (change.text !== undefined && mixedIntoText(change.text)) problems.push(tr('{where}: the confidence, the importance and the numbers are fields of their own, not part of the text', { where }))
   })
   const dropped = new Set(drop.map(entry => entry.id))
   drop.forEach((change, index) => {

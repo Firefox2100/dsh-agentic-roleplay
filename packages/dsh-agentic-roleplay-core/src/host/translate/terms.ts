@@ -7,7 +7,17 @@ const capitalised = (word: string): boolean => /^\p{Lu}[\p{L}'’-]{2,}$/u.test(
 
 /** The parts of a name written "Place - Room": each part is a name of its own, and so is the whole. */
 export function partsOfName(name: string): string[] {
-  return name.split(/\s+[-–—]\s+/).map(part => part.trim()).filter(part => part !== '')
+  const parts: string[] = []
+  let start = 0
+  for (let at = 1; at < name.length - 1; at += 1) {
+    if (!'-–—'.includes(name[at]!) || !/\s/u.test(name[at - 1]!) || !/\s/u.test(name[at + 1]!)) continue
+    const part = name.slice(start, at).trim()
+    if (part !== '') parts.push(part)
+    start = at + 1
+  }
+  const last = name.slice(start).trim()
+  if (last !== '') parts.push(last)
+  return parts
 }
 
 /**
