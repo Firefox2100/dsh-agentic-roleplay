@@ -1,21 +1,11 @@
-import { spawnSync } from 'node:child_process'
-
 const registry = 'https://registry.npmjs.org/'
 
-export function isPublished(name, version) {
-  const npmCli = process.env.npm_execpath
-  if (npmCli === undefined) throw new Error('npm_execpath is not set; run this command through pnpm')
-  const result = spawnSync(process.execPath, [npmCli, 'view', `${name}@${version}`, 'version', '--json', `--registry=${registry}`], {
-    encoding: 'utf8',
+export async function isPublished(name, version, request = fetch) {
+  const response = await request(new URL(encodeURIComponent(name), registry), {
+    headers: { accept: 'application/vnd.npm.install-v1+json' },
   })
-
-  if (result.status === 0) {
-    const published = JSON.parse(result.stdout)
-    const versions = Array.isArray(published) ? published : [published]
-    return versions.includes(version)
-  }
-
-  const failure = `${result.stdout}\n${result.stderr}`
-  if (failure.includes('E404')) return false
-  throw new Error(`Could not query ${name}@${version}:\n${failure.trim()}`)
+  if (response.status === 404) return false
+  if (!response.ok) throw new Error(`Could not query ${name}@${version}: npm registry returned ${response.status} ${response.statusText}`)
+  const metadata = await response.json()
+  return Object.hasOwn(metadata.versions ?? {}, version)
 }

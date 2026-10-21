@@ -22,7 +22,7 @@ function run(command, args, options = {}) {
 try {
   for (const entry of packages) {
     const manifest = JSON.parse(await readFile(resolve(root, 'packages', entry.folder, 'package.json'), 'utf8'))
-    if (isPublished(entry.name, manifest.version)) {
+    if (await isPublished(entry.name, manifest.version)) {
       console.log(`Skipping ${entry.name}@${manifest.version}: already published.`)
       continue
     }
