@@ -2,13 +2,17 @@ import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { isSessionId, sessionDatabase, sessionFolder } from '@dsh-agentic-roleplay/state'
+import type { SelectionChoice } from '../../shared/import-selection.ts'
+import type { ImportStaging } from '../import/staging.ts'
 import type { PresetChange, PresetStatus, PresetSummary, SavePresetRequest } from '../../shared/presets.ts'
 import { SessionNotFoundError, WorldNotFoundError } from '../sessions/errors.ts'
 import { presetStatus, switchPreset } from './apply.ts'
 import { IMPORT_FOLDER } from '../import/store.ts'
 import { readPreset as readStPreset } from '../import/preset.ts'
-import { deleteWorldPrompt, writeWorldPrompt } from '../prompts/world-prompts.ts'
-import { createPresetFromShipped, deletePreset, listPresets, loadPreset, PRESET_FILE, presetDirectory, reservePreset, savePresetFromWorld, updatePresetInfo, type PresetInfoChange } from './presets.ts'
+import { deleteWorldPrompt, listWorldPrompts, readWorldPrompt, writeWorldPrompt } from '../prompts/world-prompts.ts'
+import { shippedLanguages } from '../prompts/library.ts'
+import { verbatimStyle } from './verbatim.ts'
+import { createPresetFromShipped, deletePreset, isPresetName, listPresets, loadPreset, PRESET_FILE, presetDirectory, reservePreset, savePresetFromWorld, updatePresetInfo, type PresetInfoChange } from './presets.ts'
 
 export interface PresetDeps {
   /** Read for each call, because the roleplay root can move. */
@@ -19,6 +23,8 @@ export interface PresetDeps {
   /** The message that has the chat turn the uploaded preset into prompts. */
   importMessage: () => string
   maxUploadBytes: number
+  /** Files waiting for the person to choose what of them is imported. */
+  staging: ImportStaging
   /** Whether a turn of the story is being played, when its prompts must not change. */
   playing: (session: string) => boolean
 }
@@ -67,21 +73,62 @@ export class Presets {
 
   /** Writes the person's own text of a prompt; `undefined` takes the preset's version out. */
   async writePrompt(name: string, language: string, id: string, text: string | undefined): Promise<PresetSummary> {
-    const directory = presetDirectory(this.deps.root(), name)
-    if (!existsSync(directory)) throw new Error(`there is no preset "${name}"`)
+    const directory = this.existing(name)
     if (!id.startsWith('roleplay/')) throw new Error(`"${id}" is not a prompt of the story`)
     if (text === undefined) await deleteWorldPrompt(directory, language, id)
     else await writeWorldPrompt(directory, language, id, text)
     return loadPreset(this.deps.root(), name).summary
   }
 
+  /** The prompts holding the rules of the game that the preset does not carry yet, which it may take over from the shipped ones. */
+  rulesPrompts(name: string, language: string): string[] {
+    return listWorldPrompts(this.existing(name), language).filter(entry => entry.kind === 'rules' && !entry.carried).map(entry => entry.id)
+  }
+
+  /** The text of a prompt as a story with this preset gets it: the preset's own, else the shipped one. */
+  promptText(name: string, language: string, id: string): string {
+    return readWorldPrompt(this.existing(name), language, id).text
+  }
+
+  private existing(name: string): string {
+    const directory = presetDirectory(this.deps.root(), name)
+    if (!existsSync(directory)) throw new Error(`there is no preset "${name}"`)
+    return directory
+  }
+
   /** Like `importFile`, under a name made from the title that is not yet taken. */
   async importTitled(title: string, file: Buffer, language?: string): Promise<PresetAuthoringOpened & { name: string }> {
+    return await this.importFile(this.freeName(title), file, language, title.trim() === '' ? undefined : title.trim().slice(0, 300))
+  }
+
+  private freeName(title: string): string {
     const base = title.normalize('NFKD').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '').slice(0, 56) || 'preset'
     const taken = new Set(listPresets(this.deps.root()).map(entry => entry.summary.name))
     let name = base
     for (let index = 2; taken.has(name); index += 1) name = `${base}-${index}`
-    return await this.importFile(name, file, language, title.trim() === '' ? undefined : title.trim().slice(0, 300))
+    return name
+  }
+
+  /**
+   * Imports the chosen prompts of a staged preset as they are, with no assistant: a new library preset is made and holds them as its narration style in every language the program ships, and nothing else happens.
+   * @throws {ImportNotFoundError} when the file is no longer staged. @throws {ImportCardError} when the choice cannot be used.
+   */
+  async importVerbatim(request: SelectionChoice & { name?: string; title?: string }): Promise<{ name: string }> {
+    const { file, name: fileName } = this.deps.staging.choose('preset', request)
+    const made = verbatimStyle(file, fileName)
+    const title = request.title ?? made.name
+    const name = request.name ?? this.freeName(title)
+    if (!isPresetName(name)) throw new Error(`"${name}" is not a usable preset name (letters, digits, "-" and "_", up to 64)`)
+    const root = this.deps.root()
+    const directory = await reservePreset(root, name, title, made.sampling)
+    try {
+      for (const language of shippedLanguages()) await writeWorldPrompt(directory, language, 'roleplay/style', made.text)
+    } catch (error) {
+      await deletePreset(root, name)
+      throw error
+    }
+    this.deps.staging.discard(request.id)
+    return { name }
   }
 
   /** Opens the authoring chat of a preset. */
@@ -94,7 +141,7 @@ export class Presets {
   async importFile(name: string, file: Buffer, language?: string, title?: string): Promise<PresetAuthoringOpened & { name: string }> {
     const uploaded = readStPreset(file, name)
     const root = this.deps.root()
-    const directory = await reservePreset(root, name, title ?? uploaded.name)
+    const directory = await reservePreset(root, name, title ?? uploaded.name, uploaded.sampling)
     try {
       await mkdir(join(directory, IMPORT_FOLDER), { recursive: true })
       await writeFile(join(directory, IMPORT_FOLDER, PRESET_FILE), file)
@@ -106,6 +153,16 @@ export class Presets {
     let failure: string | undefined
     try { await this.deps.authoring.send(chatSessionId, this.deps.importMessage()) } catch (problem) { failure = problem instanceof Error ? problem.message : String(problem) }
     return { name, chatSessionId, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }
+  }
+
+  /** Imports a staged preset with only the prompts the person chose; a name is the library name they gave it, else one is made from the title. @throws {ImportNotFoundError} when the file is no longer staged. */
+  async importStaged(request: SelectionChoice & { name?: string; title?: string; language?: string }): Promise<PresetAuthoringOpened & { name: string }> {
+    const { file, name: fileName } = this.deps.staging.choose('preset', request)
+    const opened = request.name === undefined
+      ? await this.importTitled(request.title ?? readStPreset(file, fileName).name, file, request.language)
+      : await this.importFile(request.name, file, request.language, request.title)
+    this.deps.staging.discard(request.id)
+    return opened
   }
 
   async remove(name: string): Promise<void> {

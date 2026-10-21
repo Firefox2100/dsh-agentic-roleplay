@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { SessionNotFoundError } from '../../../src/host/sessions/errors.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
-import { editWorldCharacter, editWorldPlace, editWorldRelation, editWorldThing, generateSessionEntityImage, readWorldState, sessionEntityImageFile, uploadSessionEntityImage } from '../../../src/host/sessions/world-state.ts'
+import { editWorldLore, editWorldCharacter, editWorldPlace, editWorldRelation, editWorldThing, generateSessionEntityImage, readWorldState, sessionEntityImageFile, uploadSessionEntityImage } from '../../../src/host/sessions/world-state.ts'
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
 class Images extends ImageGenerationService {
@@ -177,5 +177,32 @@ describe('editing places and things of a session', () => {
     expect(editWorldThing(deps(), id, 'ledger', { owner: 'clara' }).things[0]?.owner).toEqual({ key: 'clara', name: 'Clara' })
     expect(() => editWorldThing(deps(), id, 'ledger', { owner: 'ghost' })).toThrow(/no character "ghost"/)
     expect(editWorldThing(deps(), id, 'ledger', { owner: null }).things[0]).not.toHaveProperty('owner')
+  })
+})
+
+describe('who knows a lore entry of a session', () => {
+  const setup = () => {
+    const session = state().createSession(sessionsDir(), { name: 'Night', world: { id: 'w', name: 'W' } })
+    const clara = session.characters.add({ sourceId: 'clara', name: 'Clara', aliases: ['Clar'], kind: 'person', tier: 'principal', role: 'npc', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] } })
+    const arthur = session.characters.add({ sourceId: 'arthur', name: 'Arthur', aliases: [], kind: 'person', tier: 'principal', role: 'playable', control: 'player', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] } })
+    session.lore.add({ sourceId: 'rite', title: 'The rite', kind: 'custom', scope: 'listed', summary: '', body: '', subjects: [], related: [], sources: [] })
+    return { session, id: session.metadata.get().id, clara, arthur }
+  }
+
+  it('lists the characters with an edge to it, and changes the edges with the scope', () => {
+    const { session, id, clara, arthur } = setup()
+    expect(editWorldLore(deps(), id, 'rite', { knownBy: ['Clar'] }).lore?.[0]).toMatchObject({ scope: 'listed', knownBy: ['Clara'] })
+    expect(session.knowledge.knows(clara.id, 'lore', session.lore.getBySourceId('rite')!.id)).toBe(true)
+    expect(editWorldLore(deps(), id, 'rite', { knownBy: ['arthur'] }).lore?.[0]?.knownBy).toEqual(['Arthur'])
+    expect(session.knowledge.knows(clara.id, 'lore', session.lore.getBySourceId('rite')!.id)).toBe(false)
+    expect(session.knowledge.knows(arthur.id, 'lore', session.lore.getBySourceId('rite')!.id)).toBe(true)
+    expect(editWorldLore(deps(), id, 'rite', { scope: 'everyone', knownBy: [] }).lore?.[0]).toMatchObject({ scope: 'everyone', knownBy: [] })
+  })
+
+  it('changes nothing when a name is not a character of the story or the entry is for everyone', () => {
+    const { session, id } = setup()
+    expect(() => editWorldLore(deps(), id, 'rite', { knownBy: ['Nobody'] })).toThrow(InvalidEditProblems)
+    expect(() => editWorldLore(deps(), id, 'rite', { scope: 'everyone', knownBy: ['Clara'] })).toThrow(InvalidEditProblems)
+    expect(session.lore.getBySourceId('rite')!.scope).toBe('listed')
   })
 })

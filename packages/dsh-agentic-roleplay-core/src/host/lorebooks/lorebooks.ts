@@ -175,6 +175,26 @@ export function entryProblem(entry: LorebookEntry): string | undefined {
   return parsed.ok ? undefined : parsed.issues.map(issue => `${issue.path}: ${issue.message}`).join('; ')
 }
 
+/**
+ * Creates several new entries of a lorebook at once, each checked as `writeLorebookEntry` checks one; none is written when any is not acceptable.
+ * @throws {Error} when the lorebook does not exist, an id is taken or an entry is not acceptable, or the book would have more entries than a world may.
+ */
+export async function addLorebookEntries(root: string, name: string, entries: readonly LorebookEntry[]): Promise<LoadedLorebook> {
+  const directory = lorebookDirectory(root, name)
+  if (!existsSync(directory)) throw new Error(`there is no lorebook "${name}"`)
+  const book = await readLorebook(directory, name)
+  if (book.entries.length + entries.length > MAX_LORE) throw new Error(`a lorebook has at most ${MAX_LORE} entries`)
+  const ids = new Set(book.entries.map(entry => entry.id))
+  for (const entry of entries) {
+    const problem = entryProblem(entry)
+    if (problem !== undefined) throw new Error(`entry "${entry.title}": ${problem}`)
+    if (ids.has(entry.id)) throw new Error(`there is already an entry "${entry.id}"`)
+    ids.add(entry.id)
+  }
+  for (const entry of entries) await writeAtomic(join(directory, LORE_DIR, entry.id, LORE_FILE_NAME), entryFile({ ...entry, title: entry.title.trim() }))
+  return await readLorebook(directory, name)
+}
+
 /** Creates or replaces one entry. @throws {Error} when the lorebook does not exist, the entry is not acceptable or the book would have more entries than a world may. */
 export async function writeLorebookEntry(root: string, name: string, entry: LorebookEntry): Promise<LoadedLorebook> {
   const directory = lorebookDirectory(root, name)

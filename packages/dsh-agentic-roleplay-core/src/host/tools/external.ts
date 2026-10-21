@@ -1,7 +1,7 @@
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { createTools as stateTools, createDiceTools } from '@dsh-agentic-roleplay/state'
 import { createTools as masterTools } from '../orchestration/tools.ts'
-import { externalEnabled, type AgentKind, type ExternalTool } from '../../shared/tools.ts'
+import { externalEnabled, type ExternalTool, type SwitchKind } from '../../shared/tools.ts'
 import type { Switchboard } from '../../shared/settings.ts'
 
 /** The part of DSH's tool registry this needs: what is registered for everyone. */
@@ -31,11 +31,11 @@ export function externalTools(registry: ToolRegistry): ExternalTool[] {
 }
 
 /** The external tools that are registered now and that an agent of this kind has been given. */
-export function externalGiven(registry: ToolRegistry, board: Switchboard, agent: AgentKind): string[] {
+export function externalGiven(registry: ToolRegistry, board: Switchboard, agent: SwitchKind): string[] {
   return externalTools(registry).map(tool => tool.name).filter(name => externalEnabled(board, agent, name))
 }
 
 /** The external tools that are registered now and that an agent of this kind has not been given: they are taken away from it. */
-export function externalWithheld(registry: ToolRegistry, board: Switchboard, agent: AgentKind): string[] {
+export function externalWithheld(registry: ToolRegistry, board: Switchboard, agent: SwitchKind): string[] {
   return externalTools(registry).map(tool => tool.name).filter(name => !externalEnabled(board, agent, name))
 }

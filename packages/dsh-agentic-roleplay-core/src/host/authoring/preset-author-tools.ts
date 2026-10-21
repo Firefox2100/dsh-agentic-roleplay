@@ -107,11 +107,11 @@ export function presetAuthorTools(reader: PresetReader, settings: () => ImportSe
     }),
     defineTool({
       name: 'write_preset_info',
-      description: 'Change the preset\'s title, description (up to 300 characters each) and suggested temperatures. Give only what changes; sampling replaces the suggested temperatures as a whole ({} suggests none) and has only master (the narrator) and characters, each from 0 to 2. Requires user approval.',
+      description: 'Change the preset\'s title, description (up to 300 characters each) and suggested sampling. Give only what changes; sampling replaces the suggested values as a whole ({} suggests none): master and characters are temperatures from 0 to 2; topP and minP 0 to 1, topK 0 to 1000, frequencyPenalty and presencePenalty -2 to 2, repetitionPenalty 0 to 2 apply to both. Requires user approval.',
       parameters: {
         title: { type: 'string', description: 'A short name to show; empty to clear.' },
         description: { type: 'string', description: 'What the preset is for; empty to clear.' },
-        sampling: { type: 'json', description: 'For example {"master": 0.9, "characters": 0.85}.' },
+        sampling: { type: 'json', description: 'For example {"master": 0.9, "characters": 0.85, "topP": 0.95}.' },
       },
       output: jsonOutput,
       async execute(args, exec) {

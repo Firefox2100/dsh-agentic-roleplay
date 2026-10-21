@@ -13,6 +13,7 @@ import {
   resolveChildAgentOptions, resolveChildDepth,
 } from '@deepseek-ai/dsh-subagent'
 import { ToolArgsError, validateJsonSchemaValue, type ObjectJsonSchema, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { sharedSamplingOf, type SharedSamplingKey } from '../../shared/sampling.ts'
 
 /** The tool every child ends with: its arguments are the child's result. */
 export const SUBMIT_TOOL = 'submit_result'
@@ -92,7 +93,7 @@ export interface ChildRun {
 }
 
 /** The controls of a child's model requests that the plugin decides; the service that serves the route applies them. */
-export interface ChildSampling {
+export interface ChildSampling extends Partial<Record<SharedSamplingKey, number>> {
   temperature?: number
   toolChoice?: 'auto' | 'required'
   /** The most tokens one request may produce; used when the task sets none of its own. */
@@ -107,9 +108,9 @@ export type ChildKind = 'characters' | 'suggestions' | 'authoring' | 'records'
  * What the settings of a chat say about how a kind of helper is asked: prose is free, the keepers of records exact. A helper whose answer has a declared size (its `estimate`, in tokens)
  * is let produce that with room to spare, no more than the chat's ceiling for its kind.
  */
-export function childSampling(settings: { sampling: Record<ChildKind, number> & { tools: 'auto' | 'required'; maxTokens: number; shortMaxTokens: number; headroom: number } }, kind: ChildKind, estimate?: number): ChildSampling {
+export function childSampling(settings: { sampling: Record<ChildKind, number> & Record<SharedSamplingKey, number> & { tools: 'auto' | 'required'; maxTokens: number; shortMaxTokens: number; headroom: number } }, kind: ChildKind, estimate?: number): ChildSampling {
   const ceiling = kind === 'characters' || kind === 'suggestions' ? settings.sampling.shortMaxTokens : settings.sampling.maxTokens
-  return { temperature: settings.sampling[kind], toolChoice: settings.sampling.tools, maxTokens: estimate === undefined ? ceiling : Math.min(ceiling, outputBudget(estimate, settings.sampling.headroom)), priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
+  return { temperature: settings.sampling[kind], ...(kind === 'characters' ? sharedSamplingOf(settings.sampling) : {}), toolChoice: settings.sampling.tools, maxTokens: estimate === undefined ? ceiling : Math.min(ceiling, outputBudget(estimate, settings.sampling.headroom)), priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
 }
 
 /** What a caller passes as `trace`: files each run of a kind of helper under a label in the store's record of activity, with its detail when the chat keeps it. */

@@ -29,7 +29,7 @@ const answers = (job: { prompt: string; persona: string }): unknown => {
     if (prompt.includes('Piece: scenario')) return { roles: ['scenario'], targets: [] }
     return { roles: ['irrelevant'], targets: [] }
   }
-  if (job.persona.startsWith('You turn the instructions')) return { narration: 'Write short answers, in a dry voice.', characters: 'Stay in character as ${name}.', left_out: ['a status panel'] }
+  if (job.persona.startsWith('You turn the instructions')) return { narration: 'Write short answers, in a dry voice.', characters: 'Stay in character as ${name}.', left_out: ['a status panel'], persona_names: [] }
   if (job.persona.startsWith('You find what a character card keeps track of')) return { variables: [{ key: 'Trust Meter', name: 'Trust', kind: 'number', subject: 'character', only: ['Old Tam'], min: 0, max: 100, integer: true, default: 50, bands: [{ up_to: 40, label: 'Wary' }, { up_to: 100, label: 'Easy' }] }], left_out: ['an output format'] }
   if (job.persona.startsWith('You make the final list')) return { characters: [{ name: 'Old Tam', aliases: ['Tam'] }], places: [{ name: 'The Lighthouse', aliases: [] }], factions: [], things: [] }
   if (prompt.includes('Make the character')) return { tier: 'principal', kind: 'person', summary: 'Keeps the light.', personality: 'Gruff.', background: '', appearance: '', speech: { style: '', examples: [] }, start: { location: 'The Lighthouse' } }
@@ -87,7 +87,7 @@ describe('the steps of an import', () => {
 
   it('does not carry instructions that use a placeholder the prompt is not given, and says so', async () => {
     await survey(fakeContext(answers), world)
-    const built = await build(fakeContext(job => (job.persona.startsWith('You turn the instructions') ? { narration: 'Hello ${who}.', characters: '', left_out: [] } : answers(job))), world)
+    const built = await build(fakeContext(job => (job.persona.startsWith('You turn the instructions') ? { narration: 'Hello ${who}.', characters: '', left_out: [], persona_names: [] } : answers(job))), world)
     expect(built.prompts).toEqual([])
     expect(built.notes.join(' ')).toContain('not carried over')
   })

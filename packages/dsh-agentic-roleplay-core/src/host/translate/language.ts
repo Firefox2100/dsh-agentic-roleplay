@@ -24,12 +24,26 @@ export const LANGUAGE_NAMES: Record<StoryLanguage, Record<StoryLanguage, string>
   zh: { en: 'Chinese', zh: '中文' },
 }
 
+const FOREIGN_WORD = /(?<![\p{L}\p{N}_-])\p{Ll}[\p{Ll}'’]{2,}(?![\p{L}\p{N}_-])/gu
+const LATIN_WORD = /^\p{Script=Latin}+['’]?\p{Script=Latin}*$/u
+
+/**
+ * Ordinary English words left in a Chinese text. Names and acronyms keep their capitals and are left alone, so only lowercase words count;
+ * the script test above cannot see them because Han letters outnumber them.
+ */
+export function strayWords(text: string): string[] {
+  if (!/\p{Script=Han}/u.test(text)) return []
+  return [...new Set((text.match(FOREIGN_WORD) ?? []).filter(word => LATIN_WORD.test(word)))]
+}
+
 /** What is wrong with texts that should be in the chat's language but are written in the other one; nothing when they are right, too short to tell, or the language is not one we can read. */
-export function wrongLanguage(wanted: string, texts: Readonly<Record<string, string | undefined>>): string | undefined {
+export function wrongLanguage(wanted: string, texts: Readonly<Record<string, string | undefined>>, options: { strays?: boolean } = {}): string | undefined {
   if (!isStoryLanguage(wanted)) return undefined
   const wrong = Object.entries(texts).flatMap(([name, text]) => {
     const found = text === undefined ? undefined : textLanguage(text)
-    return found === undefined || found === wanted ? [] : [`${name} is written in ${LANGUAGE_NAMES[found].en}`]
+    if (found !== undefined && found !== wanted) return [`${name} is written in ${LANGUAGE_NAMES[found].en}`]
+    const strays = options.strays === true && wanted === 'zh' && text !== undefined ? strayWords(text).slice(0, 4) : []
+    return strays.length === 0 ? [] : [`${name} leaves English words in (${strays.map(word => `"${word}"`).join(', ')})`]
   })
   return wrong.length === 0 ? undefined : `${wrong.join(' and ')}: write it in ${LANGUAGE_NAMES[wanted].en} (${LANGUAGE_NAMES[wanted][wanted]})`
 }

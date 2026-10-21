@@ -1,4 +1,5 @@
-import type { CatalogueKind, CatalogueSourceStatus, CatalogueUpdates, CatalogueWorldDetail, CatalogueWorldPage, ConflictReason, ConvertPresetRequest, ConvertPresetResult, ConvertRequest, ConvertResult, InstallRequest, InstallResult } from '../../../shared/catalogue.ts'
+import type { CatalogueKind, CatalogueSourceStatus, CatalogueUpdates, CatalogueWorldDetail, CatalogueWorldPage, ConflictReason, ConvertRequest, ConvertResult, InstallRequest, InstallResult } from '../../../shared/catalogue.ts'
+import type { ImportChoices, ImportPreview } from '../../../shared/import-card.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
 
 /** The host refused to go on because of something the person can decide: a world they already have, or one they changed. */
@@ -43,12 +44,19 @@ export async function convert(request: ConvertRequest): Promise<ConvertResult> {
   return await answer(await fetch(`${API_PREFIX}/catalogue/convert`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
 }
 
-export async function convertLorebook(request: ConvertPresetRequest): Promise<ConvertPresetResult> {
-  return await answer(await fetch(`${API_PREFIX}/catalogue/convert/lorebook`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
+/** Downloads a card of a catalogue and has the host read it, so that the person can look through it before a world is made. */
+export async function stageCard(source: string, versionId: string): Promise<ImportPreview> {
+  return await answer(await fetch(`${API_PREFIX}/catalogue/stage/card`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source, versionId }) }))
 }
 
-export async function convertPreset(request: ConvertPresetRequest): Promise<ConvertPresetResult> {
-  return await answer(await fetch(`${API_PREFIX}/catalogue/convert/preset`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
+/** Makes the world of a card that was staged, with the choices the person made. */
+export async function convertStaged(request: ConvertRequest & { id: string; choices: ImportChoices }): Promise<ConvertResult> {
+  return await answer(await fetch(`${API_PREFIX}/catalogue/convert/staged`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
+}
+
+/** Lets the host forget a card that was staged and not used. */
+export async function discardCard(id: string): Promise<void> {
+  await fetch(`${API_PREFIX}/worlds/import?id=${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'same-origin' })
 }
 
 /** The address a catalogue serves a release's archive from. */

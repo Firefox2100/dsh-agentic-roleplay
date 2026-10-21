@@ -27,6 +27,16 @@ describe('the world\'s own fields', () => {
     expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('preset')
   })
 
+  it('carry the sampling the world suggests, set, replaced and cleared as a whole, and refuse values out of range or unknown', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', sampling: { master: 0.6, topP: 0.9 } })
+    expect(await readWorldInfo(directory)).toMatchObject({ sampling: { master: 0.6, topP: 0.9 } })
+    expect(await editWorldInfo(directory, { sampling: { characters: 1.1 } })).toMatchObject({ sampling: { characters: 1.1 } })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).toMatchObject({ sampling: { characters: 1.1 } })
+    expect(() => parseWorldInfoEdit({ sampling: { master: 9, records: 1 } })).toThrow(/records is not something.*master must be a number from 0 to 2/s)
+    expect(await editWorldInfo(directory, { sampling: {} })).toMatchObject({ sampling: {} })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('sampling')
+  })
+
   it('carry the tools the world\'s agents have switched, with names this version does not know kept', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour', tools: { gameMaster: { roll_dice: false, future_tool: true } } })
     expect(await readWorldInfo(directory)).toMatchObject({ tools: { gameMaster: { roll_dice: false, future_tool: true } } })

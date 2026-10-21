@@ -1,18 +1,22 @@
-import type { Dictionaries } from '../../i18n.ts'
+import { withDictionaries, type Dictionaries } from '../../i18n.ts'
+import { dictionaries as importCardDictionaries, type ImportCardKey } from '../../widgets/import-card/locales.ts'
+import { dictionaries as selectionDictionaries, type ImportSelectionKey } from '../../widgets/import-selection/locales.ts'
 
-export type CatalogueLocaleKey =
+type OwnKey =
   | 'nav' | 'loading' | 'loadFailed' | 'noSources' | 'noSourcesHint' | 'sourceProblem' | 'source' | 'search' | 'searchPlaceholder'
   | 'sortRecent' | 'sortPopular' | 'refresh' | 'refreshing' | 'importUrl' | 'withKey' | 'withoutKey' | 'withoutKeyHint'
   | 'empty' | 'emptySearch' | 'more' | 'loadingMore' | 'by' | 'private' | 'members' | 'close' | 'cancel'
   | 'detailFailed' | 'version' | 'released' | 'noRelease' | 'alreadyHave' | 'install' | 'installing' | 'installed' | 'installFailed' | 'packsNotice' | 'size'
   | 'importTitle' | 'importHelp' | 'importAddress' | 'importAddressPlaceholder' | 'importSubmit'
-  | 'language' | 'kindWorlds' | 'kindCards' | 'searchCardsPlaceholder' | 'emptyCards' | 'kindPresets' | 'searchPresetsPlaceholder' | 'emptyPresets' | 'kindLorebooks' | 'searchLorebooksPlaceholder' | 'emptyLorebooks' | 'importLorebookAction' | 'importingLorebook' | 'importLorebookNote' | 'importLorebookFailed' | 'importPresetAction' | 'importingPreset' | 'importPresetNote' | 'importPresetFailed'
+  | 'language' | 'kindWorlds' | 'kindCards' | 'searchCardsPlaceholder' | 'emptyCards' | 'kindPresets' | 'searchPresetsPlaceholder' | 'emptyPresets' | 'kindLorebooks' | 'searchLorebooksPlaceholder' | 'emptyLorebooks' | 'importLorebookAction' | 'importingLorebook' | 'importLorebookNote' | 'importLorebookFailed' | 'importedVerbatim' | 'importedVerbatimPreset' | 'importPresetAction' | 'importingPreset' | 'importPresetNote' | 'importPresetFailed'
   | 'update' | 'updating' | 'updated' | 'backupNotice' | 'installCopy' | 'installedFrom' | 'installedUnknown' | 'installedModified' | 'installedCurrent' | 'untracked'
   | 'conflictModified' | 'conflictUnverified' | 'changesHeading' | 'overwrite' | 'keepBoth' | 'dismiss'
   | 'updatesAvailable' | 'updateItem' | 'updatesFailed' | 'updatesProblem'
-  | 'convert' | 'converting' | 'convertNote' | 'convertedBefore' | 'convertFailed' | 'convertNotStarted' | 'openChat'
+  | 'convert' | 'converting' | 'convertNote' | 'convertedBefore' | 'convertFailed' | 'convertNotStarted' | 'convertNotStartedShort' | 'openChat'
 
-export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
+export type CatalogueLocaleKey = OwnKey | ImportSelectionKey | ImportCardKey
+
+const own: Dictionaries<OwnKey> = {
   en: {
     nav: 'Catalogue',
     loading: 'Loading worlds…',
@@ -61,9 +65,9 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     kindCards: 'Character cards',
     searchCardsPlaceholder: 'Search character cards',
     emptyCards: 'This catalogue has no published character cards for you.',
-    kindLorebooks: 'Lorebooks', searchLorebooksPlaceholder: 'Search SillyTavern lorebooks', emptyLorebooks: 'This catalogue has no published lorebooks for you.', importLorebookAction: 'Import as a lorebook', importingLorebook: 'Importing…', importLorebookNote: 'A SillyTavern lorebook is turned into a new lorebook in your library by the authoring assistant: facts become entries known to everyone unless an entry says otherwise, and instructions to the AI are kept aside, to become a preset only if you agree. Importing it again makes another lorebook.', importLorebookFailed: 'Could not import the lorebook: {message}',
+    kindLorebooks: 'Lorebooks', searchLorebooksPlaceholder: 'Search SillyTavern lorebooks', emptyLorebooks: 'This catalogue has no published lorebooks for you.', importLorebookAction: 'Import as a lorebook', importingLorebook: 'Reading…', importLorebookNote: 'A SillyTavern lorebook is turned into a new lorebook in your library by the authoring assistant, once you have chosen which entries to bring: facts become entries known to everyone unless an entry says otherwise, and instructions to the AI are kept aside, to become a preset only if you agree. Importing it again makes another lorebook.', importLorebookFailed: 'Could not import the lorebook: {message}', importedVerbatim: 'Imported {count} entries into the new lorebook "{name}", word for word. Open the Lorebooks page to check who knows what.', importedVerbatimPreset: 'Imported the chosen prompts into the new preset \"{name}\", word for word, as its narration style. Open the Presets page to check the result.',
     kindPresets: 'Presets', searchPresetsPlaceholder: 'Search SillyTavern presets', emptyPresets: 'This catalogue has no published presets for you.',
-    importPresetAction: 'Import as a preset', importingPreset: 'Importing…', importPresetNote: 'A SillyTavern preset is turned into a new preset in your library by the authoring assistant, which keeps only what is about how to narrate (not rules, formats or scripts). Importing it again makes another preset.', importPresetFailed: 'Could not import the preset: {message}',
+    importPresetAction: 'Import as a preset', importingPreset: 'Reading…', importPresetNote: 'A SillyTavern preset is turned into a new preset in your library by the authoring assistant, which keeps only what is about how to narrate, from the prompts you choose (not rules, formats or scripts). Importing it again makes another preset.', importPresetFailed: 'Could not import the preset: {message}',
     update: 'Update',
     updating: 'Updating…',
     updated: 'Updated "{name}" to release {version}.',
@@ -84,11 +88,12 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     updateItem: '{name}: {from} to {to}',
     updatesFailed: 'Could not check for updates: {message}',
     updatesProblem: 'Could not check "{name}" for updates: {message}',
-    convert: 'Convert to a world',
+    convert: 'Review and convert',
     converting: 'Converting…',
     convertNote: 'A character card is turned into a new world by the authoring agent, which makes its own choices along the way, so converting the same card twice gives two different worlds. A card therefore never updates or replaces a world: converting it again always makes a new one.',
     convertedBefore: 'You converted this card before ({names}). Converting again makes another new world and does not touch those.',
     convertFailed: 'Could not convert: {message}',
+    convertNotStartedShort: 'The world was made, but the conversion has not started: open its authoring chat and send the import message yourself.',
     convertNotStarted: 'The world "{name}" was made, but the conversion did not start: {failure}. Open its authoring chat to send the import message yourself.',
     openChat: 'Open the chat',
   },
@@ -140,9 +145,9 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     kindCards: '角色卡',
     searchCardsPlaceholder: '搜索角色卡',
     emptyCards: '这个目录里没有对你开放的已发布角色卡。',
-    kindLorebooks: '世界书', searchLorebooksPlaceholder: '搜索酒馆世界书', emptyLorebooks: '这个目录里没有对你开放的已发布世界书。', importLorebookAction: '导入为世界书', importingLorebook: '正在导入…', importLorebookNote: '酒馆世界书由创作助手转换为你的库中的一本新世界书：事实会变成人人皆知的条目（除非条目另有说明），给 AI 的指令会被单独保存，只有你同意才会变成预设。再次导入会生成另一本世界书。', importLorebookFailed: '无法导入世界书：{message}',
+    kindLorebooks: '世界书', searchLorebooksPlaceholder: '搜索酒馆世界书', emptyLorebooks: '这个目录里没有对你开放的已发布世界书。', importLorebookAction: '导入为世界书', importingLorebook: '正在读取…', importLorebookNote: '酒馆世界书在你选定要带入的条目后，由创作助手转换为你的库中的一本新世界书：事实会变成人人皆知的条目（除非条目另有说明），给 AI 的指令会被单独保存，只有你同意才会变成预设。再次导入会生成另一本世界书。', importLorebookFailed: '无法导入世界书：{message}', importedVerbatim: '已将 {count} 个条目原文导入新世界书“{name}”。请在世界书页检查谁知道什么。', importedVerbatimPreset: '已将所选提示原文导入新预设“{name}”，作为它的叙述风格。请打开预设页检查结果。',
     kindPresets: '预设', searchPresetsPlaceholder: '搜索酒馆预设', emptyPresets: '这个目录里没有对你开放的已发布预设。',
-    importPresetAction: '导入为预设', importingPreset: '正在导入…', importPresetNote: '酒馆预设由创作助手转换为你的库中的一个新预设，只保留关于叙述方式的部分（不含规则、格式或脚本）。再次导入会生成另一个预设。', importPresetFailed: '无法导入预设：{message}',
+    importPresetAction: '导入为预设', importingPreset: '正在读取…', importPresetNote: '酒馆预设由创作助手转换为你的库中的一个新预设，只从你选定的提示词中保留关于叙述方式的部分（不含规则、格式或脚本）。再次导入会生成另一个预设。', importPresetFailed: '无法导入预设：{message}',
     update: '更新',
     updating: '更新中…',
     updated: '已将“{name}”更新到版本 {version}。',
@@ -163,12 +168,15 @@ export const dictionaries: Dictionaries<CatalogueLocaleKey> = {
     updateItem: '{name}：{from} → {to}',
     updatesFailed: '无法检查更新：{message}',
     updatesProblem: '无法检查“{name}”的更新：{message}',
-    convert: '转换为世界',
+    convert: '查看并转换',
     converting: '转换中…',
     convertNote: '角色卡由创作助手转换为一个新世界，转换过程中它会自行做出选择，所以同一张卡转换两次会得到两个不同的世界。因此角色卡不会更新或替换已有的世界：再次转换总是生成一个新世界。',
     convertedBefore: '你以前转换过这张卡（{names}）。再次转换会生成另一个新世界，不会改动那些世界。',
     convertFailed: '无法转换：{message}',
+    convertNotStartedShort: '世界已创建，但转换没有开始：请打开它的创作对话，自己发送导入消息。',
     convertNotStarted: '世界“{name}”已创建，但转换没有开始：{failure}。请打开它的创作对话，自己发送导入消息。',
     openChat: '打开对话',
   },
 }
+
+export const dictionaries: Dictionaries<CatalogueLocaleKey> = withDictionaries(withDictionaries(own, selectionDictionaries), importCardDictionaries)

@@ -37,6 +37,7 @@ Folders without the expected file, files, and symbolic links are skipped.
 | `metadata.tags` | array of strings | |
 | `cover_media_id` | string | Optional. Looked up in `media/manifest.jsonl` (`id` and `file`); the file must be a png, jpg, jpeg, webp, gif or avif inside the world folder. Without a cover the card shows a placeholder. |
 | `lorebooks` | string[] | Optional names of lorebooks in the person's library (letters, digits, `-`, `_`). Sessions of the world start with them unless the start request names its own list (an empty list means none). A name the library lacks does not stop a start; the player is told. |
+| `sampling` | object | Optional sampling the world suggests for its stories: `master` and `characters` (temperatures, 0 to 2), `topP`, `topK`, `minP`, `frequencyPenalty`, `presencePenalty`, `repetitionPenalty`. Copied into the settings of a story when it starts, under a preset's own values and the start request's choices; the helpers that must be exact never take it. |
 | `preset` | string | Optional name of a preset in the person's library (letters, digits, `-`, `_`). Sessions of the world start with it unless the start request chooses another or `none`. A name the person's library lacks does not stop a start; the player is told. |
 | `narration_voice` | string | Optional provider voice id for narrated text. It is copied into a new session and can then be changed for that session. Voice ids may be entered manually when a provider cannot list them. |
 

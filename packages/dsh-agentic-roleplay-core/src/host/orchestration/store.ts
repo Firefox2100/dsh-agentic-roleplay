@@ -100,7 +100,9 @@ function knowledgeOf(session: Session, characterId: number, turn: number, visibl
   })
   const characters = session.relationships.from(characterId).flatMap(relation => { const character = session.characters.get(relation.toId); return character === undefined ? [] : [character.name] })
   const factions = session.factionRelationships.from('character', characterId).filter(relation => relation.toKind === 'faction').flatMap(relation => { const faction = session.factions.get(relation.toId); return faction === undefined ? [] : [faction.name] })
-  return { characters, factions, locations, items, routes }
+  const own = new Set(session.knowledge.list(characterId, 'lore').map(entry => entry.subjectId))
+  const lore = session.lore.list().filter(entry => own.has(entry.id) || entry.scope === 'everyone').map(entry => entry.title)
+  return { characters, factions, locations, items, routes, lore }
 }
 
 function affiliationsOf(session: Session, characterId: number): FactionAffiliationView[] {

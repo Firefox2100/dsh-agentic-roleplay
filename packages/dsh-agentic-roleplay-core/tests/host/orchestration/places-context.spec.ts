@@ -85,13 +85,14 @@ describe('what a character is told', () => {
   })
 
   it('gives a character its known entity graph without implying current state', () => {
-    const prompt = sharedContext.brief(request({ knowledge: { characters: ['Bob (bob)'], factions: ['Harbour Watch (watch)'], locations: ['Station (station)'], items: ['Brass key (key)'], routes: ['The Bar -> Station'] } })).prompt
+    const prompt = sharedContext.brief(request({ knowledge: { characters: ['Bob (bob)'], factions: ['Harbour Watch (watch)'], locations: ['Station (station)'], items: ['Brass key (key)'], routes: ['The Bar -> Station'], lore: ['The founding'] } })).prompt
     expect(prompt).toContain('What you know exists (this does not tell you where it is now or what state it is in):')
     expect(prompt).toContain('People: Bob (bob)')
     expect(prompt).toContain('Factions: Harbour Watch (watch)')
     expect(prompt).toContain('Places: Station (station)')
     expect(prompt).toContain('Routes: The Bar -> Station')
     expect(prompt).toContain('Things: Brass key (key)')
+    expect(prompt).toContain('Background you know, to read with recall_my_lore when it bears on the moment: The founding')
   })
 
   it('presents faction goals as pressures rather than commands', () => {

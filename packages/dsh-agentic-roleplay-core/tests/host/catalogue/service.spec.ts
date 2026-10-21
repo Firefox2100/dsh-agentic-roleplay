@@ -31,9 +31,19 @@ const transport: Transport = async (url, ask) => {
 let converted: { file: Buffer; name: string; language: string | undefined }[]
 let presets: { file: Buffer; title: string; language: string | undefined }[]
 let lorebooks: { file: Buffer; title: string; language: string | undefined }[]
+let staged: { kind: string; file: Buffer; name: string }[]
+let cardsStaged: { file: Buffer; name: string }[]
+let cardsStarted: { id: string; choices: unknown; language: string | undefined }[]
 const problems: string[] = []
 const make = (): Catalogue => new Catalogue({
   sources: new Sources(() => configured), worlds, maxBytes: () => 1024 * 1024, maxCardBytes: () => 1024 * 1024, trashDays: () => 30, problem: (message) => { problems.push(message) }, transport,
+  stage: (kind, file, name) => { staged.push({ kind, file, name }); return { id: 'st-1', kind, name, items: [] } },
+  previewCard: async (file, name) => { cardsStaged.push({ file, name }); return { id: 'card-1', hasAvatar: false, choices: { name: 'Ann', disabledEntries: [], opening: { kind: 'first' } }, card: {} as never } },
+  startCard: async (id, choices, language) => {
+    cardsStarted.push({ id, choices, language })
+    const made = await worlds.list({ refresh: true })
+    return { worldId: made.worlds[0]?.id ?? '', chatSessionId: 'chat-4', started: true }
+  },
   importPreset: async (file, title, language) => { presets.push({ file, title, language }); return { name: 'imported', chatSessionId: 'chat-2', started: true } },
   importLorebook: async (file, title, language) => { lorebooks.push({ file, title, language }); return { name: 'imported-book', chatSessionId: 'chat-3', started: true } },
   importCard: async (file, name, language) => {
@@ -51,10 +61,13 @@ beforeEach(async () => {
   worlds = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
   calls = []
   converted = []
+  cardsStaged = []
+  cardsStarted = []
   presets = []
+  staged = []
   lorebooks = []
   answers = {}
-  configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKey: 'secret' }, { name: 'Open', baseUrl: 'https://open.example/api', apiKey: '' }]
+  configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKeyRef: '', apiKey: 'secret' }, { name: 'Open', baseUrl: 'https://open.example/api', apiKeyRef: '', apiKey: '' }]
 })
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
 
@@ -76,9 +89,9 @@ describe('browsing a catalogue', () => {
     answers['http://localhost:9798/resources'] = ask => json({ items: ask.headers['authorization'] === undefined ? [] : [item('w2', 'Hidden', 'private')] })
     const catalogue = make()
     expect((await catalogue.worlds('Home', {})).items).toHaveLength(1)
-    configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKey: '' }]
+    configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKeyRef: '', apiKey: '' }]
     expect(await catalogue.worlds('Home', {})).toMatchObject({ withKey: false, items: [] })
-    expect(catalogue.sources()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: false }])
+    expect(await catalogue.sources()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: false, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY' }])
   })
 
   it('says what is wrong when the catalogue refuses, is not reachable, or is not a catalogue', async () => {
@@ -360,6 +373,28 @@ describe('converting a character card', () => {
     await expect(make().convert({ source: 'Home', versionId: 'cv1' })).rejects.toThrow(/does not match the checksum/)
     expect(converted).toEqual([])
   })
+
+  it('offers a downloaded card for choosing and makes the world with the choices, noting where it came from, without a second download', async () => {
+    answers['http://localhost:9798/versions/cv1'] = () => json(version({ artifactSha256: createHash('sha256').update(CARD).digest('hex') }))
+    answers['http://localhost:9798/versions/cv1/download'] = () => ({ status: 200, type: 'application/json', body: Buffer.from(CARD) })
+    expect(await make().stageCard({ source: 'Home', versionId: 'cv1' })).toMatchObject({ id: 'card-1' })
+    expect(cardsStaged).toEqual([{ file: Buffer.from(CARD), name: 'cv1.json' }])
+    expect(converted).toEqual([])
+    await mkdirp(join(root, 'worlds', 'made'), { recursive: true })
+    await writeFile(join(root, 'worlds', 'made', 'world.json'), JSON.stringify({ id: 'made-id', name: 'Ann' }))
+    const choices = { name: 'Ann (mine)', disabledEntries: ['2'], opening: { kind: 'none' as const } }
+    expect(await make().convertStaged({ source: 'Home', versionId: 'cv1', id: 'card-1', choices, language: 'zh' })).toEqual({ worldId: 'made-id', chatSessionId: 'chat-4', started: true })
+    expect(cardsStarted).toEqual([{ id: 'card-1', choices, language: 'zh' }])
+    expect(calls.filter(call => call.url.endsWith('/download'))).toHaveLength(1)
+    expect(JSON.parse(await readFile(join(root, 'worlds', 'made', '.catalogue.json'), 'utf8'))).toEqual({ kind: 'card', root: 'http://localhost:9798', resourceId: 'c1', versionId: 'cv1', version: '3' })
+  })
+
+  it('makes nothing when the release is not a card', async () => {
+    answers['http://localhost:9798/versions/cv1'] = () => json(version({ resourceType: 'dsh-agentic-roleplay/world' }))
+    await expect(make().stageCard({ source: 'Home', versionId: 'cv1' })).rejects.toMatchObject({ failure: 'invalid' })
+    await expect(make().convertStaged({ source: 'Home', versionId: 'cv1', id: 'card-1', choices: { name: 'x', disabledEntries: [], opening: { kind: 'first' } } })).rejects.toMatchObject({ failure: 'invalid' })
+    expect(cardsStarted).toEqual([])
+  })
 })
 
 describe('importing a SillyTavern preset', () => {
@@ -373,6 +408,15 @@ describe('importing a SillyTavern preset', () => {
     expect(result).toEqual({ name: 'imported', chatSessionId: 'chat-2', started: true })
     expect(presets).toEqual([{ file: Buffer.from(PRESET), title: 'Noir', language: 'en' }])
     expect(calls.filter(call => call.url.endsWith('/download'))[0]).toMatchObject({ authorization: 'Bearer secret' })
+  })
+
+  it('downloads a preset or a lorebook to be staged, so the person can choose before anything is imported, and checks its kind', async () => {
+    answers['http://localhost:9798/versions/pv1'] = () => json(version({ artifactSha256: createHash('sha256').update(PRESET).digest('hex') }))
+    answers['http://localhost:9798/versions/pv1/download'] = () => ({ status: 200, type: 'application/json', body: Buffer.from(PRESET) })
+    expect(await make().stage({ source: 'Home', versionId: 'pv1', kind: 'preset' })).toMatchObject({ id: 'st-1', kind: 'preset' })
+    expect(staged).toEqual([{ kind: 'preset', file: Buffer.from(PRESET), name: 'preset' }])
+    expect(presets).toEqual([])
+    await expect(make().stage({ source: 'Home', versionId: 'pv1', kind: 'lorebook' })).rejects.toMatchObject({ failure: 'invalid', message: 'that release is not a lorebook' })
   })
 
   it('refuses a release that is not a preset and a download that is not the published one', async () => {
@@ -411,6 +455,4 @@ describe('importing a SillyTavern lorebook', () => {
     const page = await make().worlds('Home', { kind: 'lorebook' })
     expect(page.items[0]).toMatchObject({ kind: 'lorebook', name: 'Harbor' })
     expect(calls.at(-1)?.url).toContain('resourceType=sillytavern%2Florebook')
-  })
-})
-
+  })})

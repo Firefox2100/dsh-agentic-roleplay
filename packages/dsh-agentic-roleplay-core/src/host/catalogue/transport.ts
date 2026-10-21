@@ -58,7 +58,7 @@ export async function fetchAddress(address: string, options: Fetching): Promise<
       const vetted = vetUrl(url.href)
       if (typeof vetted === 'string') throw new CatalogueError(`${url.href} ${vetted}`, 'input')
     }
-    const key = source?.apiKey
+    const key = source === undefined ? undefined : await options.sources.key(source)
     let reply: Reply
     try {
       reply = await transport(url, { headers: { accept: options.accept, ...(key === undefined ? {} : { authorization: `Bearer ${key}` }) }, guarded: source === undefined, maxBytes: options.maxBytes, signal })

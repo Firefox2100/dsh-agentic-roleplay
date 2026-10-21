@@ -40,6 +40,8 @@ export interface WorldFile {
   tools?: Switchboard
   /** Provider voice id used for narration when a session starts. */
   narrationVoice?: string
+  /** How the world's stories ask their models; a preset's own values and the person's choices at the start come before it. */
+  sampling?: StorySampling
   /** The name of the preset in the person's library this world suggests; sessions use it when none is chosen. */
   preset?: string
   /** The lorebooks of the person's library this world suggests; stories are started with them when none are chosen. */
@@ -53,6 +55,7 @@ export interface AlternateOpening {
   character?: string
 }
 
+import { parseSampling, type StorySampling } from '../../shared/sampling.ts'
 import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, MAX_WORLD_VERSION } from '../../shared/world-info.ts'
 export { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS }
 
@@ -84,6 +87,14 @@ function readTools(reader: Reader): Switchboard | undefined {
   const board = parseSwitchboard(value, 'tools')
   if (typeof board === 'string') { reader.fail('tools', board.replace(/^"tools"\s*/, '')); return undefined }
   return Object.keys(board).length === 0 ? undefined : board
+}
+
+/** `sampling` is an object of the controls a story's requests may carry (see `StorySampling`). */
+function readSampling(reader: Reader): StorySampling | undefined {
+  const problems: string[] = []
+  const sampling = parseSampling(reader.raw('sampling'), 'sampling', problems)
+  for (const problem of problems) reader.fail('sampling', problem.replace(/^sampling\.?/, ''))
+  return Object.keys(sampling).length === 0 ? undefined : sampling
 }
 
 /** `rules` is one rule as text, or a list of them; blank ones are left out. */
@@ -183,6 +194,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const tools = readTools(reader)
   const alternateOpenings = readAlternateOpenings(reader)
   const narrationVoice = reader.string('narration_voice')?.trim() || undefined
+  const sampling = readSampling(reader)
   const preset = reader.string('preset')?.trim() || undefined
   if (preset !== undefined && !isPresetName(preset)) reader.fail('preset', 'must be the name of a preset: letters, digits, "-" and "_"')
   const lorebooks = reader.strings('lorebooks').map(entry => entry.trim()).filter(entry => entry !== '')
@@ -206,6 +218,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(tools === undefined ? {} : { tools }),
       ...(alternateOpenings === undefined ? {} : { alternateOpenings }),
       ...(narrationVoice === undefined ? {} : { narrationVoice }),
+      ...(sampling === undefined ? {} : { sampling }),
       ...(preset === undefined ? {} : { preset }),
       ...(lorebooks.length === 0 ? {} : { lorebooks: [...new Set(lorebooks)] }),
     },

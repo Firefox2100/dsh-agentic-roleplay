@@ -14,6 +14,14 @@ function issues(text: string): string[] {
 }
 
 describe('parseWorldFile', () => {
+  describe('the sampling', () => {
+    it('is read when set and left out when empty, and every unknown or out-of-range control is reported with its path', () => {
+      expect(parse(JSON.stringify({ name: 'W', sampling: { master: 0.6, topP: 0.9 } })).sampling).toEqual({ master: 0.6, topP: 0.9 })
+      expect(parse(JSON.stringify({ name: 'W', sampling: {} })).sampling).toBeUndefined()
+      expect(issues(JSON.stringify({ name: 'W', sampling: { master: 9, records: 0.1 } })).join('\n')).toMatch(/records is not something[\s\S]*master must be a number from 0 to 2/)
+    })
+  })
+
   describe('the opening', () => {
     it('is plain text read as one narration, trimmed, and left out when there is none', () => {
       expect(parse(JSON.stringify({ name: 'W', opening_message: '  The lanterns sway.\n\nYou arrive.  ' })).opening).toEqual([{ type: 'narration', text: 'The lanterns sway.\n\nYou arrive.' }])

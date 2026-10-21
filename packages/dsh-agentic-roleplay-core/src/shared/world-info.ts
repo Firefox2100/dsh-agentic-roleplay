@@ -1,3 +1,4 @@
+import { parseSampling, type StorySampling } from './sampling.ts'
 import { parseSwitchboard, type Switchboard } from './settings.ts'
 import { InvalidEditProblems } from './world-state.ts'
 
@@ -32,6 +33,8 @@ export interface WorldInfo {
   startingTime: string
   /** The author's own version label, or empty. */
   version: string
+  /** How this world's stories ask their models; only what the file sets. */
+  sampling: StorySampling
   /** The library preset suggested for stories of this world, or empty. */
   preset: string
   /** The library lorebooks suggested for stories of this world. */
@@ -55,7 +58,7 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
   if (input === undefined) throw new InvalidEditProblems(['the changes must be an object'])
   const edit: Record<string, unknown> = {}
   for (const key of Object.keys(input)) {
-    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings' && key !== 'tools') problems.push(`there is no field "${key}"`)
+    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings' && key !== 'tools' && key !== 'sampling') problems.push(`there is no field "${key}"`)
   }
   for (const key of TEXT_FIELDS) {
     if (input[key] === undefined) continue
@@ -83,6 +86,7 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
     if (typeof board === 'string') problems.push(board)
     else edit['tools'] = board
   }
+  if (input['sampling'] !== undefined) edit['sampling'] = parseSampling(input['sampling'], 'sampling', problems)
   if (typeof edit['version'] === 'string' && edit['version'].length > MAX_WORLD_VERSION) problems.push(`the version is longer than ${MAX_WORLD_VERSION} characters`)
   if (edit['name'] === '') problems.push('the world needs a name')
   if (typeof edit['name'] === 'string' && edit['name'].length > MAX_WORLD_NAME) problems.push(`the name is longer than ${MAX_WORLD_NAME} characters`)

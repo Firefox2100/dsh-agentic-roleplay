@@ -15,7 +15,7 @@ The browser resolves `uiWorkspace` when an action is used. Do not add it to the 
 
 ## Services and ownership
 
-Use `sessionController` for create/adopt/rename, `workspaceRegistry` for the roleplay workspace and archive operations, `sessionPersistence` for stored opening events, agent/subagent services for model execution, tool registries for validated calls, and the user-approval service for authoring mutations. Resolve optional services lazily through the context.
+Use `sessionController` for create/adopt/rename, `workspaceRegistry` for the roleplay workspace and archive operations, `sessionPersistence` for stored opening events, agent/subagent services for model execution, tool registries for validated calls, and the user-approval service for authoring mutations. Resolve optional services lazily through the context. Secrets follow DSH's credential seam: configuration holds a reference (`apiKeyRef`, a POSIX-style name), `ctx.credentials` holds the value and is resolved for each request, and the host writes through `set`/`unset` because `ctx.remote.credentials` is not available to out-of-tree plugins. The seam is typed locally and the service is looked up on use, so a profile without it still loads.
 
 Every listener, HTTP route, timer, client slot, and service must be registered on `ctx`; use `ctx.effect` when an API returns a manual disposer. A reload must leave no duplicate route, tool, timer, or listener.
 

@@ -8,7 +8,8 @@ title: Configuration reference
 | --- | --- | --- |
 | `rootPath` | `~/dsh-roleplay` | Worlds, avatars, sessions and media |
 | `sessionStorePath` | `~/.dsh/sessions` | DSH session persistence location |
-| `catalogues` | none | Catalogues to browse and install worlds from: a list of `name`, `baseUrl` (the API root) and `apiKey` (optional; stored as plain text in the profile's configuration). Edited under Settings, Role Play, Catalogues |
+| `authoringTools` | none | The tools other plugins registered for everyone (a web search, MCP servers) that each authoring assistant may use: `worldAuthoring`, `presetAuthoring`, `lorebookAuthoring` and `worldAuthor` (the helper that invents things while a story is played), each a list of tool names set to `true`. An assistant has none that is not listed; the session doctor never has any. Edited under Settings, Role Play, Tools for the authoring assistants |
+| `catalogues` | none | Catalogues to browse and install worlds from: a list of `name`, `baseUrl` (the API root) and `apiKeyRef` (optional; the credential in DSH's credential store that holds the API key, by default made from the name). A key written as `apiKey` text by 0.3 is still read when the store has none, and removed when the settings are saved. Edited under Settings, Role Play, Catalogues |
 | `catalogueMaxBytes` | 256 MiB | Most a downloaded world may be, compressed and again unpacked |
 | `catalogueTrashDays` | 30 | Days the files an update replaced stay in `.trash/worlds/` before they are deleted; 0 keeps them for good |
 | `importMaxUploadBytes` | 100 MiB | Character-card upload limit |
@@ -55,6 +56,7 @@ title: Configuration reference
 | `offstage.perCharacter` | 1 | Times one character is asked per turn |
 | `offstage.summary` | `true` | Off-stage characters also say in a line what happened (same request), shown as the *Meanwhile* card |
 | `models.characters`, `models.background`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own (`background` is for background-tier characters and falls back to `characters`) |
+| `sampling.topP`, `sampling.topK`, `sampling.minP`, `sampling.frequencyPenalty`, `sampling.presencePenalty`, `sampling.repetitionPenalty` | 1, 0, 0, 0, 0, 1 | Controls beyond temperature for the game master's and the characters' requests; the default of each leaves the choice to the model's server and is not sent. A world or preset can suggest them for one story |
 | `sampling.maxTokens`, `sampling.shortMaxTokens`, `sampling.headroom` | 8000, 2000, 2 | Ceilings on what one helper request may produce; the short one is for characters and suggestions, whose answers have declared sizes: they may produce `headroom` times the estimate of their answer, never more than the ceiling (settings file only) |
 | `diagnostics.keepRuns` | `false` | Keep what each helper run was told and did (its instructions, what it was asked, its tool calls and result, and for a character what it was reminded of and why), for the latest 60 runs; shown in the activity list of Chat settings |
 | `interface.pack` | empty | The interface pack to use: empty is the story's first, `none` is no pack, a name picks one |

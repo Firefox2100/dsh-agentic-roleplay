@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto'
 import { dirname } from 'node:path'
-import { CATALOGUE_CARD_TYPE, CATALOGUE_LOREBOOK_TYPE, CATALOGUE_PRESET_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertPresetRequest, type ConvertPresetResult, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
+import { CATALOGUE_CARD_TYPE, CATALOGUE_LOREBOOK_TYPE, CATALOGUE_PRESET_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueKeyStatus, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertPresetRequest, type ConvertPresetResult, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
+import type { ImportChoices, ImportPreview } from '../../shared/import-card.ts'
+import type { SelectionKind, SelectionPreview } from '../../shared/import-selection.ts'
+import { isPng } from '../import/card.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { CatalogueError } from './errors.ts'
 import { installWorld } from './install.ts'
@@ -34,6 +37,12 @@ export interface CatalogueDeps {
   importPreset: (file: Buffer, title: string, language?: string) => Promise<ConvertPresetResult>
   /** Makes a new library lorebook of a SillyTavern lorebook, named after `title`, and has its authoring chat convert it. */
   importLorebook: (file: Buffer, title: string, language?: string) => Promise<ConvertPresetResult>
+  /** Reads a downloaded card and keeps it while the person decides what becomes of it. */
+  previewCard: (card: Buffer, name: string) => Promise<ImportPreview>
+  /** Makes a new world of a card kept by `previewCard`, with the choices made, and has the authoring chat convert it. */
+  startCard: (id: string, choices: ImportChoices, language?: string) => Promise<ConvertResult>
+  /** Keeps a downloaded preset or lorebook while the person chooses what of it is imported. */
+  stage: (kind: SelectionKind, file: Buffer, name: string) => SelectionPreview
   transport?: Transport
 }
 
@@ -81,8 +90,18 @@ function versionOf(value: unknown): { version: CatalogueVersion; number: number 
 export class Catalogue {
   constructor(private readonly deps: CatalogueDeps) {}
 
-  sources(): CatalogueSourceStatus[] {
-    return this.deps.sources.status()
+  async sources(): Promise<CatalogueSourceStatus[]> {
+    return await this.deps.sources.status()
+  }
+
+  /** What the credential store says about a key's reference, never the key. */
+  async describeKey(ref: string): Promise<CatalogueKeyStatus> {
+    return await this.deps.sources.describe(ref)
+  }
+
+  /** Keeps a key in the credential store, or removes it when the value is empty. */
+  async keepKey(ref: string, value: string): Promise<CatalogueKeyStatus> {
+    return await this.deps.sources.keep(ref, value)
   }
 
   async worlds(name: string, query: CatalogueQuery): Promise<CatalogueWorldPage> {
@@ -94,7 +113,7 @@ export class Catalogue {
     const answer = object(await this.json(source, '/resources', params), 'the list of worlds')
     if (!Array.isArray(answer['items'])) throw unexpected('the list of worlds has no items')
     const next = answer['nextOffset']
-    return { items: answer['items'].map(worldOf), ...(typeof next === 'number' ? { nextOffset: next } : {}), withKey: source.apiKey !== undefined }
+    return { items: answer['items'].map(worldOf), ...(typeof next === 'number' ? { nextOffset: next } : {}), withKey: await this.deps.sources.key(source) !== undefined }
   }
 
   async world(name: string, id: string): Promise<CatalogueWorldDetail> {
@@ -199,11 +218,27 @@ export class Catalogue {
   async convert(request: ConvertRequest): Promise<ConvertResult> {
     const source = this.deps.sources.get(request.source)
     const release = await this.download(source, request.versionId, CATALOGUE_CARD_TYPE, 'a character card')
-    const png = release.body.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]))
-    const converted = await this.deps.importCard(release.body, `${release.versionId}${png ? '.png' : '.json'}`, request.language)
+    const converted = await this.deps.importCard(release.body, `${release.versionId}${isPng(release.body) ? '.png' : '.json'}`, request.language)
     const record = await this.deps.worlds.find(converted.worldId)
     if (record === undefined) throw new CatalogueError('the world was made but cannot be found', 'upstream')
     await writeOrigin(record.directory, { kind: 'card', root: source.root, resourceId: release.resourceId, versionId: release.versionId, version: release.version })
+    return converted
+  }
+
+  /** Downloads a card of a catalogue and offers what it holds for the person to look through, before any world is made. */
+  async stageCard(request: { source: string; versionId: string }): Promise<ImportPreview> {
+    const release = await this.download(this.deps.sources.get(request.source), request.versionId, CATALOGUE_CARD_TYPE, 'a character card')
+    return await this.deps.previewCard(release.body, `${release.versionId}${isPng(release.body) ? '.png' : '.json'}`)
+  }
+
+  /** Makes the world of a card that `stageCard` offered, with what the person chose. Like `convert`, it never replaces a world. */
+  async convertStaged(request: ConvertRequest & { id: string; choices: ImportChoices }): Promise<ConvertResult> {
+    const source = this.deps.sources.get(request.source)
+    const release = await this.describe(source, request.versionId, CATALOGUE_CARD_TYPE, 'a character card')
+    const converted = await this.deps.startCard(request.id, request.choices, request.language)
+    const record = await this.deps.worlds.find(converted.worldId)
+    if (record === undefined) throw new CatalogueError('the world was made but cannot be found', 'upstream')
+    await writeOrigin(record.directory, { kind: 'card', root: source.root, resourceId: release.resourceId, versionId: release.versionId, version: text(release.version['version']) })
     return converted
   }
 
@@ -221,15 +256,27 @@ export class Catalogue {
 
   /** A release of the given type, downloaded with the catalogue's key and checked against the checksum it published. */
   private async download(source: ResolvedSource, versionIdText: string, type: string, what: string): Promise<{ body: Buffer; versionId: string; resourceId: string; version: string }> {
+    const { version, versionId, resourceId } = await this.describe(source, versionIdText, type, what)
+    const reply = await fetchAddress(this.address(source, `/versions/${versionId}/download`), { sources: this.deps.sources, maxBytes: this.deps.maxCardBytes(), accept: '*/*', ...(this.deps.transport === undefined ? {} : { transport: this.deps.transport }) })
+    const sha256 = text(version['artifactSha256'])
+    if (sha256 !== '' && createHash('sha256').update(reply.body).digest('hex') !== sha256.toLowerCase()) throw new CatalogueError('the download does not match the checksum the catalogue published for it', 'invalid')
+    return { body: reply.body, versionId, resourceId, version: text(version['version']) }
+  }
+
+  /** What the catalogue says about a release, checked to be of the type wanted. */
+  private async describe(source: ResolvedSource, versionIdText: string, type: string, what: string): Promise<{ version: Json; versionId: string; resourceId: string }> {
     const versionId = this.identifier(versionIdText)
     const version = object(await this.json(source, `/versions/${versionId}`), 'a version')
     if (text(version['resourceType']) !== type) throw new CatalogueError(`that release is not ${what}`, 'invalid')
     const resourceId = text(version['resourceId'])
     if (!ID.test(resourceId)) throw unexpected('a version without a resource id')
-    const reply = await fetchAddress(this.address(source, `/versions/${versionId}/download`), { sources: this.deps.sources, maxBytes: this.deps.maxCardBytes(), accept: '*/*', ...(this.deps.transport === undefined ? {} : { transport: this.deps.transport }) })
-    const sha256 = text(version['artifactSha256'])
-    if (sha256 !== '' && createHash('sha256').update(reply.body).digest('hex') !== sha256.toLowerCase()) throw new CatalogueError('the download does not match the checksum the catalogue published for it', 'invalid')
-    return { body: reply.body, versionId, resourceId, version: text(version['version']) }
+    return { version, versionId, resourceId }
+  }
+
+  /** Downloads a preset or a lorebook of a catalogue and offers what it holds for the person to choose from, before anything is imported. */
+  async stage(request: { source: string; versionId: string; kind: SelectionKind }): Promise<SelectionPreview> {
+    const release = await this.download(this.deps.sources.get(request.source), request.versionId, request.kind === 'preset' ? CATALOGUE_PRESET_TYPE : CATALOGUE_LOREBOOK_TYPE, request.kind === 'preset' ? 'a preset' : 'a lorebook')
+    return this.deps.stage(request.kind, release.body, request.kind)
   }
 
   /** The catalogue release an address names, when it is a release download on a configured catalogue. */

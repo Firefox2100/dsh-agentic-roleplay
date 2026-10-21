@@ -41,7 +41,7 @@ const ZH: Readonly<Record<string, string>> = {
   'hidden': '隐蔽', ' holding {things}': '，里面有{things}', '; and {count} more': '；另有{count}项', 'at {feature}': '在{feature}',
   '; and {count} more you can recall if needed': '；另有{count}项，需要时你可以回想起来',
   'What you know exists (this does not tell you where it is now or what state it is in):': '你知道存在的事物（这并不说明它现在在哪里、处于什么状态）：',
-  'People: ': '人物：', 'Factions: ': '组织：', 'Places: ': '地点：', 'Routes: ': '路径：', 'Things: ': '物品：',
+  'People: ': '人物：', 'Factions: ': '组织：', 'Places: ': '地点：', 'Routes: ': '路径：', 'Things: ': '物品：', 'Background you know, to read with recall_my_lore when it bears on the moment: ': '你所知的背景（与当下相关时用 recall_my_lore 查阅）：',
 
   // a character's day
   'Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):': '你的日程与你想达成的事（只是计划，不是命令：依当下情形和你的性格，可以照做、推迟或放弃）：',

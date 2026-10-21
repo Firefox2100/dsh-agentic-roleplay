@@ -1,7 +1,9 @@
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { LorebookSummary } from '../../../shared/lorebooks.ts'
 import type { OpenChat } from '../../chat/open-chat.ts'
-import { authorLorebook, createLorebook, deleteLorebook, importLorebook, listLorebooks } from '../../lorebooks-api.ts'
+import type { SelectionChoice, SelectionPreview } from '../../../shared/import-selection.ts'
+import { importStagedLorebook, importVerbatimLorebook, stageFile } from '../../import-selection-api.ts'
+import { authorLorebook, createLorebook, deleteLorebook, listLorebooks } from '../../lorebooks-api.ts'
 
 export interface LorebooksState {
   status: 'idle' | 'loading' | 'ready' | 'failed'
@@ -22,8 +24,12 @@ export interface LorebooksFace {
   remove: (name: string) => Promise<void>
   /** Opens the lorebook's authoring chat in the main area. */
   author: (name: string) => Promise<void>
-  /** Uploads a SillyTavern lorebook into a new library lorebook and opens its authoring chat. */
-  importFile: (name: string, file: File) => Promise<ImportedLorebook>
+  /** Sends a SillyTavern lorebook to the host, which says what it holds for the person to choose from; rejects with the host's reason. */
+  stage: (file: File) => Promise<SelectionPreview>
+  /** Imports the chosen entries of a staged lorebook into a new library lorebook and opens its authoring chat. */
+  importStaged: (choice: SelectionChoice, name: string) => Promise<ImportedLorebook>
+  /** Imports the chosen entries of a staged lorebook as they are, with no assistant; resolves with how many entries the new lorebook has. */
+  importVerbatim: (choice: SelectionChoice, name: string, knownBy: 'everyone' | 'master') => Promise<number>
 }
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
@@ -39,8 +45,14 @@ export class LorebooksController {
     create: async (name, title, description) => { await createLorebook({ name, ...(title === '' ? {} : { title }), ...(description === '' ? {} : { description }) }, this.abort.signal); await this.read(true) },
     remove: async (name) => { await deleteLorebook(name, this.abort.signal); await this.read(true) },
     author: async (name) => { this.openChat((await authorLorebook(name, this.language(), this.abort.signal)).chatSessionId) },
-    importFile: async (name, file) => {
-      const opened = await importLorebook(name, file, this.language(), this.abort.signal)
+    stage: async file => await stageFile('lorebook', file, this.abort.signal),
+    importVerbatim: async (choice, name, knownBy) => {
+      const made = await importVerbatimLorebook(choice, { name, knownBy }, this.abort.signal)
+      await this.read(true)
+      return made.entries
+    },
+    importStaged: async (choice, name) => {
+      const opened = await importStagedLorebook(choice, { name, language: this.language() }, this.abort.signal)
       await this.read(true)
       this.openChat(opened.chatSessionId)
       return { started: opened.started, ...(opened.failure === undefined ? {} : { failure: opened.failure }) }

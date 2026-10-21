@@ -11,6 +11,7 @@ export type ChatSettingsLocaleKey =
   | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed' | 'interventionWithdrawn'
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
   | 'presetTitle' | 'presetHelp' | 'presetNone' | 'presetState_current' | 'presetState_changed' | 'presetState_edited' | 'presetState_missing' | 'presetChoose' | 'presetKeep' | 'presetRemove' | 'presetBroken' | 'presetConfirm' | 'presetTakeOut' | 'presetReapply' | 'presetSwitch' | 'presetApplied' | 'presetFailed' | 'presetLoadFailed'
+  | 'lorebookTitle' | 'lorebookHelp' | 'lorebookNone' | 'lorebookHeld' | 'lorebookRow' | 'lorebookRemove' | 'lorebookConfirmRemove' | 'lorebookChoose' | 'lorebookKeep' | 'lorebookBroken' | 'lorebookAdd' | 'lorebookAdded' | 'lorebookRemoved' | 'lorebookFailed' | 'lorebookLoadFailed'
   | 'language' | 'doctorTitle' | 'doctorHelp' | 'doctorOpen' | 'doctorChat' | 'doctorFailed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
@@ -126,6 +127,21 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     presetApplied: 'Done: {count} prompt(s) replaced.',
     presetFailed: 'Could not change the preset: {message}',
     presetLoadFailed: 'Could not read the preset: {message}',
+    lorebookTitle: 'Lorebooks',
+    lorebookHelp: 'Background knowledge copied into this story from the library. Adding one copies its entries now, and the characters it names learn them at the current turn; removing one takes its entries out, and what the characters learned from them. Neither can be done during a turn.',
+    lorebookNone: 'No lorebook is in use.',
+    lorebookHeld: 'In this story:',
+    lorebookRow: '{name}: {count} entries',
+    lorebookRemove: 'Take it out',
+    lorebookConfirmRemove: 'Remove its entries?',
+    lorebookChoose: 'Add a lorebook',
+    lorebookKeep: 'Choose one…',
+    lorebookBroken: '{name} (has problems)',
+    lorebookAdd: 'Add to the story',
+    lorebookAdded: 'Done: {count} entries added.',
+    lorebookRemoved: 'Done: {count} entries removed.',
+    lorebookFailed: 'Could not change the lorebooks: {message}',
+    lorebookLoadFailed: 'Could not read the lorebooks: {message}',
     packTitle: 'Interface pack',
     packHelp: 'A pack changes how this story looks and can add a status strip, buttons, an opening card, a backdrop or a tab. A world can carry packs; yours go in the ui folder of your roleplay folder.',
     packActive: 'In use: {name}',
@@ -262,6 +278,21 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     presetApplied: '完成：替换了 {count} 条提示词。',
     presetFailed: '无法更改预设：{message}',
     presetLoadFailed: '无法读取预设：{message}',
+    lorebookTitle: '世界书',
+    lorebookHelp: '从库中复制到这个故事里的背景知识。添加时立即复制其条目，条目点名的角色在当前回合得知；移除时删除其条目，以及角色由此得知的内容。回合进行中不能更改。',
+    lorebookNone: '未使用世界书。',
+    lorebookHeld: '本故事中：',
+    lorebookRow: '{name}：{count} 条',
+    lorebookRemove: '移除',
+    lorebookConfirmRemove: '删除它的条目？',
+    lorebookChoose: '添加世界书',
+    lorebookKeep: '选择一本…',
+    lorebookBroken: '{name}（有问题）',
+    lorebookAdd: '加入故事',
+    lorebookAdded: '完成：添加了 {count} 条。',
+    lorebookRemoved: '完成：删除了 {count} 条。',
+    lorebookFailed: '无法更改世界书：{message}',
+    lorebookLoadFailed: '无法读取世界书：{message}',
     packTitle: '界面包',
     packHelp: '界面包会改变此故事的外观，并可添加状态条、按钮、开场卡片、背景或标签页。世界可以自带界面包；你自己的放在角色扮演目录的 ui 文件夹中。',
     packActive: '使用中：{name}',

@@ -237,6 +237,7 @@ export const sharedContext: CharacterContextProvider = {
         knowledge.locations.length === 0 ? undefined : `${tr('Places: ')}${shown(knowledge.locations)}`,
         knowledge.routes.length === 0 ? undefined : `${tr('Routes: ')}${shown(knowledge.routes)}`,
         knowledge.items.length === 0 ? undefined : `${tr('Things: ')}${shown(knowledge.items)}`,
+        knowledge.lore.length === 0 ? undefined : `${tr('Background you know, to read with recall_my_lore when it bears on the moment: ')}${shown(knowledge.lore)}`,
       ].filter((line): line is string => line !== undefined)
       if (lines.length > 0) sections.push(`${tr('What you know exists (this does not tell you where it is now or what state it is in):')}\n${lines.join('\n')}`)
     }

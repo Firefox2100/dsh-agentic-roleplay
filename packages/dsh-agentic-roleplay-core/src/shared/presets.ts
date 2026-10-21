@@ -1,8 +1,7 @@
-/** The creative temperatures a preset may suggest; the helper agents' low temperatures are never a preset's to change. */
-export interface PresetSampling {
-  master?: number
-  characters?: number
-}
+import type { StorySampling } from './sampling.ts'
+
+/** How a preset suggests the story's models be asked; the helper agents' exact settings are never a preset's to change. */
+export type PresetSampling = StorySampling
 
 export interface PresetSummary {
   name: string

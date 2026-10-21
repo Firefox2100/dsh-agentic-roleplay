@@ -31,6 +31,8 @@ const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as nev
 interface Pending {
   source: string
   guidance: Record<string, string[]>
+  /** The entries each line of guidance replaced, by prompt, in the same order; absent in files an earlier version wrote. */
+  from?: Record<string, string[]>
 }
 
 /** The ids of the prompts waiting guidance would be written into, and whether any of them holds rules of the game. */
@@ -174,7 +176,8 @@ export function lorebookAuthorTools(reader: LorebookReader, settings: () => Impo
           await writeLorebookEntry(reader.library, name, { ...entry, id })
         }
         const guidance = Object.fromEntries(Object.entries(made.steering).map(([target, lines]) => [STEERING_TARGETS[target as SteeringTarget], lines]))
-        if (Object.keys(guidance).length > 0) await writeFile(join(directory, IMPORT_FOLDER, STEERING_FILE), JSON.stringify({ source: uploaded.name, guidance } satisfies Pending, null, 2))
+        const from = Object.fromEntries(Object.entries(made.steeringFrom).map(([target, titles]) => [STEERING_TARGETS[target as SteeringTarget], titles]))
+        if (Object.keys(guidance).length > 0) await writeFile(join(directory, IMPORT_FOLDER, STEERING_FILE), JSON.stringify({ source: uploaded.name, guidance, from } satisfies Pending, null, 2))
         await rm(join(directory, IMPORT_FOLDER, 'lorebook.json'), { force: true })
         const waiting = Object.keys(guidance)
         return json({

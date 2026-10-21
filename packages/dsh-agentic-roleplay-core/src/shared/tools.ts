@@ -4,6 +4,17 @@ import type { Switchboard } from './settings.ts'
 export const AGENT_KINDS = ['gameMaster', 'characters', 'records'] as const
 export type AgentKind = (typeof AGENT_KINDS)[number]
 
+/**
+ * The assistants a person talks to in a chat of their own to make a world, a preset or a lorebook, and the world author that invents things while a story
+ * is played (`worldAuthor`). They are chosen in the plugin's settings, for all of them, and not per story. The session doctor is not here: it edits a
+ * story's records and is never given tools.
+ */
+export const AUTHORING_KINDS = ['worldAuthoring', 'presetAuthoring', 'lorebookAuthoring', 'worldAuthor'] as const
+export type AuthoringKind = (typeof AUTHORING_KINDS)[number]
+
+/** Whatever has switches for other plugins' tools: an agent of a story or an assistant. */
+export type SwitchKind = AgentKind | AuthoringKind
+
 /** A tool the person may switch on or off for a kind of agent; the tool's own words (title, what it is for) are the interface's. */
 export interface OptionalTool {
   id: string
@@ -78,12 +89,12 @@ export interface ExternalTool {
  * Whether an agent of this kind has a tool that is not one of this plugin's own: only when it was switched on. Such tools are off by default, because
  * they reach beyond the story (files, a shell, the web), and a name that no plugin registers now has no effect.
  */
-export function externalEnabled(board: Switchboard, agent: AgentKind, name: string): boolean {
+export function externalEnabled(board: Switchboard, agent: SwitchKind, name: string): boolean {
   return board[agent]?.[name] === true
 }
 
 /** The switches after an external tool is switched: only what is on is kept, so that a settings file says only what was chosen. */
-export function withExternal(board: Switchboard, agent: AgentKind, name: string, enabled: boolean): Switchboard {
+export function withExternal(board: Switchboard, agent: SwitchKind, name: string, enabled: boolean): Switchboard {
   const mine = { ...board[agent] }
   if (enabled) mine[name] = true
   else delete mine[name]

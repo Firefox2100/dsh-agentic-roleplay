@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
-import { editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, generateWorldEntityImage, readWorldEditor, uploadWorldCharacterPortrait, uploadWorldEntityImage, worldEntityImageFile, readWorldTrigger, removeWorldTrigger, writeWorldTrigger } from '../../../src/host/worlds/world-editor.ts'
+import { editWorldLore, editWorldCharacter, editWorldFaction, editWorldNarrationVoice, editWorldPlace, editWorldRelation, editWorldThing, generateWorldCharacterPortrait, generateWorldEntityImage, readWorldEditor, uploadWorldCharacterPortrait, uploadWorldEntityImage, worldEntityImageFile, readWorldTrigger, removeWorldTrigger, writeWorldTrigger } from '../../../src/host/worlds/world-editor.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
@@ -210,5 +210,28 @@ describe('lore entries of a world', () => {
     await write(join(world.directory, 'lore', 'sequel', 'lore.json'), { title: 'Sequel', related: ['origin'] })
     await expect(removeWorldLore(world, 'origin')).rejects.toThrow(/Sequel/)
     expect((await removeWorldLore(world, 'sequel')).lore?.map(entry => entry.key)).toEqual(['origin'])
+  })
+})
+
+describe('who knows a lore entry of a world', () => {
+  const file = () => join(world.directory, 'lore', 'rite', 'lore.json')
+  const readLore = async () => JSON.parse(await readFile(file(), 'utf8')) as Record<string, unknown>
+
+  it('is set by scope and known_by, and a switch to everyone clears the list', async () => {
+    await write(file(), { title: 'The rite', summary: 's' })
+    const listed = await editWorldLore(world, 'rite', { scope: 'listed', knownBy: ['Clara', 'arthur'] })
+    expect(listed.lore?.[0]).toMatchObject({ scope: 'listed', knownBy: ['Clara', 'arthur'] })
+    expect(await readLore()).toMatchObject({ scope: 'listed', known_by: ['Clara', 'arthur'] })
+    const everyone = await editWorldLore(world, 'rite', { scope: 'everyone' })
+    expect(everyone.lore?.[0]).toMatchObject({ scope: 'everyone', knownBy: [] })
+    expect(await readLore()).not.toHaveProperty('known_by')
+  })
+
+  it('refuses a name no character answers to, and a list for an entry everyone knows', async () => {
+    await write(file(), { title: 'The rite', summary: 's' })
+    await expect(editWorldLore(world, 'rite', { knownBy: ['Nobody'] })).rejects.toThrow(/"Nobody" is not a character/)
+    await editWorldLore(world, 'rite', { scope: 'everyone' })
+    await expect(editWorldLore(world, 'rite', { knownBy: ['Clara'] })).rejects.toThrow()
+    expect(await readLore()).not.toHaveProperty('known_by')
   })
 })

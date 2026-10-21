@@ -1,16 +1,51 @@
 import type { WorldSummary } from './worlds.ts'
 
-/** A catalogue as the person configured it. The key is only read by the host; the browser is told whether there is one. */
+/** A catalogue as the person configured it. The key itself lives in DSH's credential store under `apiKeyRef`; the browser is only told whether there is one. */
 export interface CatalogueSource {
   name: string
   baseUrl: string
+  /** The credential the key is stored under; empty means the name derived from the catalogue's name (`catalogueKeyRef`). */
+  apiKeyRef: string
+  /** A key written in the profile's configuration by an earlier version. Still sent when the store has none for `apiKeyRef`, and removed when the settings are saved. */
   apiKey: string
+}
+
+/** What a credential reference is: letters, digits and `_`, not starting with a digit (DSH's grammar). */
+export const CREDENTIAL_REF = /^[A-Za-z_][A-Za-z0-9_]*$/
+
+/** The credential a catalogue's key is stored under when its entry names none. Names with other characters get a short checksum so that two of them never share a key. */
+export function catalogueKeyRef(name: string): string {
+  const trimmed = name.trim()
+  const slug = trimmed.normalize('NFKD').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').toUpperCase()
+  let checksum = 0x811c9dc5
+  for (const unit of trimmed) checksum = Math.imul(checksum ^ unit.codePointAt(0)!, 0x01000193) >>> 0
+  const plain = slug !== '' && /^[A-Za-z0-9 _.-]+$/.test(trimmed)
+  return `ROLEPLAY_CATALOGUE_${plain ? slug : `${slug === '' ? 'X' : slug}_${checksum.toString(16).toUpperCase()}`}_API_KEY`
+}
+
+/** The browser event settings fires after a key is stored or removed, so that the catalogue page reads its sources again. */
+export const CATALOGUE_KEYS_CHANGED = 'roleplay:catalogue-keys-changed'
+
+/** What the credential store says about one reference, never its value. */
+export interface CatalogueKeyStatus {
+  ref: string
+  configured: boolean
+  /** Whether a value can be stored for it from here: not while the launch environment supplies it. */
+  writable: boolean
+  /** Where the value comes from, as the store names it. */
+  source?: string
 }
 
 export interface CatalogueSourceStatus {
   name: string
   baseUrl: string
   hasKey: boolean
+  /** The credential the key is looked up under. */
+  keyRef: string
+  /** Where the key comes from, when there is one. */
+  keySource?: string
+  /** Whether the entry still holds a key in the profile's configuration. */
+  legacyKey?: boolean
   /** Why the entry cannot be used, when it cannot. */
   problem?: string
 }

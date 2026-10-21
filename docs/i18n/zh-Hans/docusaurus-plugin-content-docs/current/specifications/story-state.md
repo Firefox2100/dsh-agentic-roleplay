@@ -97,7 +97,7 @@ description: 记录、回忆、世界状态、时间、日程、变量、触发�
 
 `character.json` 可用 `knowledge.locations`、`knowledge.items`、`knowledge.exits` 和 `knowledge.lore` 提供初值。代码会记录普通观察到的当前地点、可见出口和目的地、可见或携带物品及在场角色。记录员在角色被告知、阅读或推断实体存在时增加知识；只有错误记录才撤回。角色简报列出已知子图，`recall_my_known_entities` 不泄露当前事实。主动规划移动使用 `planKnownMove`，只经过已知目的地和出口；故事强制移动使用权威规划器。
 
-`recall_my_lore` 只返回角色知道的设定正文——即它有知识边的条目，以及 `scope` 为 `everyone` 的条目（迁移 9 增加 `lore.scope`，默认为 `listed`）；不搜索未知设定。游戏主持人的 `search_lore` 可搜索完整规范设定库。
+`recall_my_lore` 只返回角色知道的设定正文——即它有知识边的条目，以及 `scope` 为 `everyone` 的条目（迁移 9 增加 `lore.scope`，默认为 `listed`）；不搜索未知设定。角色简报只列出这些设定的标题，不给正文；有此类设定的角色在首次提交回答时会被问一次：此刻是否涉及自己的背景，若涉及则自行查阅条目。游戏主持人的 `search_lore` 可搜索完整规范设定库。 进行中的故事可以添加或移除世界书（`GET`/`POST`/`DELETE /sessions/lorebooks`）：条目以 `<书名>:<id>` 为编号，在同一个事务中复制或删除，条目的知识边随之变化，元数据 `roleplay.lorebooks` 同步更新；回合进行中拒绝操作，移除时若其他设定或剧情仍引用这些条目也拒绝。
 
 ## 扩展世界
 

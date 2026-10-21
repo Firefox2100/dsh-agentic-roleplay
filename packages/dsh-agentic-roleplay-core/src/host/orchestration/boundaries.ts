@@ -59,6 +59,8 @@ export interface KnowledgeView {
   locations: string[]
   items: string[]
   routes: string[]
+  /** Titles of the background the character knows: what is its own to know and what everyone knows. */
+  lore: string[]
 }
 
 export interface FactionAffiliationView {

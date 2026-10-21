@@ -48,6 +48,16 @@ export async function updatePresetInfo(name: string, change: { title?: string; d
   return await reply(await fetch(`${API_PREFIX}/presets/item?name=${encodeURIComponent(name)}`, { ...json('PUT', change), signal }))
 }
 
+/** The prompts with rules of the game that the preset could take over from the shipped ones. */
+export async function listRulesPrompts(name: string, language: string, signal: AbortSignal): Promise<string[]> {
+  return await reply(await fetch(`${API_PREFIX}/presets/prompts?name=${encodeURIComponent(name)}&language=${encodeURIComponent(language)}`, { credentials: 'same-origin', signal }))
+}
+
+/** A prompt as a story with the preset gets it: the preset's own, else the shipped one. */
+export async function readPresetPrompt(name: string, language: string, id: string, signal: AbortSignal): Promise<string> {
+  return (await reply<{ text: string }>(await fetch(`${API_PREFIX}/presets/prompt?name=${encodeURIComponent(name)}&language=${encodeURIComponent(language)}&id=${encodeURIComponent(id)}`, { credentials: 'same-origin', signal }))).text
+}
+
 export async function writePresetPrompt(name: string, language: string, id: string, text: string, signal: AbortSignal): Promise<PresetSummary> {
   return await reply(await fetch(`${API_PREFIX}/presets/prompt?name=${encodeURIComponent(name)}&language=${encodeURIComponent(language)}&id=${encodeURIComponent(id)}`, { ...json('PUT', { text }), signal }))
 }
@@ -63,9 +73,4 @@ export async function deletePreset(name: string, signal: AbortSignal): Promise<v
 /** Opens the authoring chat of a preset. */
 export async function authorPreset(name: string, language: string, signal: AbortSignal): Promise<{ chatSessionId: string }> {
   return await reply(await fetch(`${API_PREFIX}/presets/authoring?name=${encodeURIComponent(name)}`, { ...json('POST', { language }), signal }))
-}
-
-/** Sends a SillyTavern preset to a new library preset, whose authoring chat turns it into prompts. */
-export async function importPreset(name: string, file: File, language: string, signal: AbortSignal): Promise<{ name: string; chatSessionId: string; started: boolean; failure?: string }> {
-  return await reply(await fetch(`${API_PREFIX}/presets/import?name=${encodeURIComponent(name)}&language=${encodeURIComponent(language)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: file, signal }))
 }

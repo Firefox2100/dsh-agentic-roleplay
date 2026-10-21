@@ -216,7 +216,7 @@ for erroneous records. The character brief lists the known subgraph and `recall_
 revealing current facts. Intended travel is planned by `planKnownMove`, over known destinations and exits only; forced
 story movement retains the omniscient authoritative planner.
 
-Lore differs from a physical-entity edge only in what lookup returns: `recall_my_lore` may return the canonical text of the entries the character knows, which are those it has a knowledge edge to and those whose `scope` is `everyone` (migration 9 adds `lore.scope`, `listed` by default). It never searches unknown lore. The game master's `search_lore` searches the full canonical lore repository.
+Lore differs from a physical-entity edge only in what lookup returns: `recall_my_lore` may return the canonical text of the entries the character knows, which are those it has a knowledge edge to and those whose `scope` is `everyone` (migration 9 adds `lore.scope`, `listed` by default). It never searches unknown lore. A character's brief lists only the titles of that lore, never its text, and a character that has such lore is asked once, when it first submits its answer, whether the moment touches its background; it reads the entries itself if so. The game master's `search_lore` searches the full canonical lore repository. A lorebook can be added to or removed from a story that is being played (`GET`/`POST`/`DELETE /sessions/lorebooks`): the entries are copied or deleted in one transaction with the ids `<book>:<id>`, the knowledge edges of the entries follow, the metadata `roleplay.lorebooks` is updated, and both are refused during a turn and, for removal, while other lore or a plot refers to one of the entries.
 
 ## Growing the world
 

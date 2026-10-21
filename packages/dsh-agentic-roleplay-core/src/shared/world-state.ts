@@ -1,4 +1,4 @@
-import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, LORE_KINDS, MEMBERSHIP_STATUSES, type LoreKind, type LoreSubjectKind, type PlotDefinition, type PlotProgress, type TriggerCondition, type TriggerEffect, type TriggerStatus, type VisualIdentityInput } from 'dsh-roleplay-model'
+import { CHARACTER_ROLES, CHARACTER_TIERS, CHARACTER_KINDS, EXIT_STATES, INTENT_STATUSES, LORE_KINDS, LORE_SCOPES, MEMBERSHIP_STATUSES, type LoreKind, type LoreScope, type LoreSubjectKind, type PlotDefinition, type PlotProgress, type TriggerCondition, type TriggerEffect, type TriggerStatus, type VisualIdentityInput } from 'dsh-roleplay-model'
 
 /** One thing a character wants, as the World editor shows it. */
 export interface WorldGoal {
@@ -110,6 +110,9 @@ export interface WorldLore {
   key: string
   title: string
   kind: LoreKind
+  scope: LoreScope
+  /** For a listed entry: the characters that know it, by name. */
+  knownBy: string[]
   summary: string
   body: string
   startsAt?: number
@@ -119,7 +122,7 @@ export interface WorldLore {
   sources: string[]
 }
 
-export interface LoreEdit { title?: string; kind?: LoreKind; summary?: string; body?: string; startsAt?: number | null; endsAt?: number | null; sources?: string[] }
+export interface LoreEdit { title?: string; kind?: LoreKind; scope?: LoreScope; knownBy?: string[]; summary?: string; body?: string; startsAt?: number | null; endsAt?: number | null; sources?: string[] }
 
 export interface RelationEntity {
   kind: 'character' | 'location' | 'item' | 'faction' | 'exit'
@@ -430,9 +433,12 @@ export function parseLoreEdit(value: unknown): LoreEdit {
   const problems: string[] = []
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new InvalidEditProblems(['the edit must be an object'])
   const input = value as Record<string, unknown>; const edit: LoreEdit = {}
-  for (const key of Object.keys(input)) if (!['title', 'kind', 'summary', 'body', 'startsAt', 'endsAt', 'sources'].includes(key)) problems.push(`${key} is not something that can be edited`)
+  for (const key of Object.keys(input)) if (!['title', 'kind', 'scope', 'knownBy', 'summary', 'body', 'startsAt', 'endsAt', 'sources'].includes(key)) problems.push(`${key} is not something that can be edited`)
   for (const key of ['title', 'summary', 'body'] as const) if (key in input) { const found = input[key]; if (typeof found !== 'string' || found.length > TEXT_LIMIT) problems.push(`${key} must be text`); else if (key === 'title' && found.trim() === '') problems.push('title cannot be blank'); else edit[key] = key === 'title' ? found.trim() : found }
   if ('kind' in input) { if (typeof input['kind'] !== 'string' || !LORE_KINDS.includes(input['kind'] as LoreKind)) problems.push(`kind must be one of: ${LORE_KINDS.join(', ')}`); else edit.kind = input['kind'] as LoreKind }
+  if ('scope' in input) { if (typeof input['scope'] !== 'string' || !LORE_SCOPES.includes(input['scope'] as LoreScope)) problems.push(`scope must be one of: ${LORE_SCOPES.join(', ')}`); else edit.scope = input['scope'] as LoreScope }
+  if ('knownBy' in input) { const found = input['knownBy']; if (!Array.isArray(found) || !found.every(entry => typeof entry === 'string' && entry.trim() !== '' && entry.length <= TEXT_LIMIT)) problems.push('knownBy must be a list of names'); else edit.knownBy = found.map(entry => (entry as string).trim()) }
+  if (edit.scope === 'everyone' && (edit.knownBy?.length ?? 0) > 0) problems.push('an entry everyone knows has no list of who knows it')
   for (const key of ['startsAt', 'endsAt'] as const) if (key in input) { const found = input[key]; if (found !== null && (typeof found !== 'number' || !Number.isFinite(found))) problems.push(`${key} must be a timestamp or null`); else edit[key] = found as number | null }
   if ('sources' in input) { const found = input['sources']; if (!Array.isArray(found) || !found.every(entry => typeof entry === 'string' && entry.length <= TEXT_LIMIT)) problems.push('sources must be a list of texts'); else edit.sources = found as string[] }
   const starts = edit.startsAt === null ? undefined : edit.startsAt; const ends = edit.endsAt === null ? undefined : edit.endsAt

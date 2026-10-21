@@ -1,6 +1,7 @@
 import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
+import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -14,7 +15,7 @@ import type {} from './host/storage/roleplay-root.ts'
 import type {} from './host/worlds/authoring-language.ts'
 
 export const name = '@dsh-agentic-roleplay/core/lorebook-authoring'
-export const inject = ['roleplayRoot', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'tools', 'systemPrompt']
+export const inject = ['roleplayRoot', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'roleplayAuthoringTools', 'tools', 'systemPrompt']
 
 /** The lorebook authoring chat: reads and writes the entries of one library lorebook, each write approved by the person. */
 export function apply(ctx: Context): void {
@@ -31,6 +32,7 @@ export function apply(ctx: Context): void {
     return directory !== undefined && existsSync(join(directory, 'lore')) && readdirSync(join(directory, 'lore')).length > 0
   }
   const waiting = (chat: string) => { const directory = directoryOf(chat); return directory === undefined ? { ids: [], rules: false } : pendingTargets(directory) }
+  limitAuthoringAgents(ctx, chat => (lorebookOfChat(chat) === undefined ? undefined : 'lorebookAuthoring'))
   ctx.on('tools/pre-execute', (exec, next) => lorebookApproval(exec, next, { carries, waiting }))
   const languageOf = (context: object): string => {
     const chat = (context as { agent?: Agent }).agent?.session.id

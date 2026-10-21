@@ -10,9 +10,14 @@ Open **Settings → Role Play → Catalogues** and choose **Add a catalogue**:
 
 - **Name**: what you call it. Names must be different from each other.
 - **API address**: the catalogue's API root, for example `https://catalogue.example/api`, or `http://localhost:9798` for a catalogue that serves its API without a prefix. It must be a web address with no user name, query or fragment.
+- **Key name** (optional): the credential the key is stored under, for example `ROLEPLAY_CATALOGUE_HOME_API_KEY`. Leave it empty to use a name made from the catalogue's name. A name has letters, digits and `_` and does not start with a digit.
 - **API key** (optional): a key created in the catalogue. With one, the page also shows the private worlds that key may read. Without one, only public worlds show.
 
-Saving writes the list to the profile's configuration. The key is stored there as plain text, and the settings form shows it masked but holds it in the browser while you edit. Use a key made for this purpose, with as little reach as the catalogue allows, and keep the profile's configuration file private.
+The key is not kept in the profile's configuration. It goes to DSH's credential store, the same one that holds your model keys, and the page only learns whether a key is set and where it comes from (the store's file, or the environment you launched DSH in), never the key. **Store key** and **Remove key** act at once; **Save** keeps the list and the key names in the profile's configuration. A key supplied by the environment (`ROLEPLAY_CATALOGUE_HOME_API_KEY=… dsh`) wins over the store and cannot be changed here. The store resolves the key for each request, so a replaced key is used by the next one without a restart, and a credential plugin that replaces the store, such as one backed by your system's keychain, protects these keys too. Use a key made for this purpose, with as little reach as the catalogue allows.
+
+:::note Upgrading from 0.3
+Version 0.4.0 moved the key out of the configuration. A key you saved earlier is still used until you move it: the row shows a notice with **Move it to the credential store**. Saving the settings afterwards removes the plain text from the configuration. A profile with no credential store keeps working with a key in the configuration, but cannot store new ones.
+:::
 
 ## Browse and install
 
@@ -35,17 +40,17 @@ A world with no record of its release (installed before releases were remembered
 
 ## Character cards
 
-The **Character cards** tab lists SillyTavern character cards the catalogue holds. **Convert to a world** downloads the card with the catalogue's key and starts the usual [card import](../authoring/avatars-import): a new world is made and its authoring chat converts the card, then opens.
+The **Character cards** tab lists SillyTavern character cards the catalogue holds. **Review and convert** downloads the card with the catalogue's key and shows what it holds, the same review as a [card import](../authoring/avatars-import) from a file: the world's name, which lorebook entries are read at all, and which greeting opens the story. **Import** then makes a new world with those choices, and its authoring chat converts the card and opens. Cancelling makes nothing.
 
 A card never updates or replaces a world. The conversion is done by an agent that makes its own choices, so two conversions of the same card give different worlds, and overwriting an earlier one would not be meaningful. Converting a card again always makes a new world, and the page tells you when you converted that card before.
 
 ## Presets
 
-The **Presets** tab lists SillyTavern presets the catalogue holds. **Import as a preset** downloads one with the catalogue's key and starts the [preset import](../authoring/presets): a new preset is made in your library and its authoring chat writes the narration prompts, then opens. Like a card, a preset is never updated in place; importing it again makes another preset.
+The **Presets** tab lists SillyTavern presets the catalogue holds. **Import as a preset** downloads one with the catalogue's key, asks which of its prompts to bring and whether to keep its sampling, then starts the [preset import](../authoring/presets): a new preset is made in your library and its authoring chat writes the narration prompts, then opens. Like a card, a preset is never updated in place; importing it again makes another preset.
 
 ## Lorebooks
 
-The **Lorebooks** tab lists SillyTavern lorebooks the catalogue holds (resource type `sillytavern/lorebook`). **Import as a lorebook** downloads one with the catalogue's key and starts the [lorebook import](../authoring/lorebooks): a new lorebook is made in your library and its authoring chat fills it with entries, then opens. Like a card, a lorebook is never updated in place; importing it again makes another one.
+The **Lorebooks** tab lists SillyTavern lorebooks the catalogue holds (resource type `sillytavern/lorebook`). **Import as a lorebook** downloads one with the catalogue's key, asks which of its entries to bring, then starts the [lorebook import](../authoring/lorebooks): a new lorebook is made in your library and its authoring chat fills it with entries, then opens. Like a card, a lorebook is never updated in place; importing it again makes another one.
 
 ## Import from an address
 

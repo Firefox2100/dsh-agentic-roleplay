@@ -1,4 +1,4 @@
-import type { LorebookEntry, LorebookSummary, LorebookText } from '../shared/lorebooks.ts'
+import type { LorebookEntry, LorebookStatus, LorebookSummary, LorebookText } from '../shared/lorebooks.ts'
 import { API_PREFIX } from '../shared/worlds.ts'
 
 async function reply<T>(response: Response): Promise<T> {
@@ -47,7 +47,15 @@ export async function authorLorebook(name: string, language: string, signal: Abo
   return await reply(await fetch(`${API_PREFIX}/lorebooks/authoring?${named(name)}`, { ...json('POST', { language }), signal }))
 }
 
-/** Sends a SillyTavern lorebook to a new library lorebook, whose authoring chat turns it into entries. */
-export async function importLorebook(name: string, file: File, language: string, signal: AbortSignal): Promise<{ name: string; chatSessionId: string; started: boolean; failure?: string }> {
-  return await reply(await fetch(`${API_PREFIX}/lorebooks/import?${named(name)}&language=${encodeURIComponent(language)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: file, signal }))
+export async function loadStoryLorebooks(session: string, signal: AbortSignal): Promise<LorebookStatus> {
+  return await reply(await fetch(`${API_PREFIX}/sessions/lorebooks?id=${encodeURIComponent(session)}`, { credentials: 'same-origin', signal }))
+}
+
+/** Copies a library lorebook into the chat's story; the notes say what could not be carried over. */
+export async function addStoryLorebook(session: string, name: string, signal: AbortSignal): Promise<{ entries: number; notes: string[] }> {
+  return await reply(await fetch(`${API_PREFIX}/sessions/lorebooks?id=${encodeURIComponent(session)}`, { ...json('POST', { name }), signal }))
+}
+
+export async function removeStoryLorebook(session: string, name: string, signal: AbortSignal): Promise<{ removed: number }> {
+  return await reply(await fetch(`${API_PREFIX}/sessions/lorebooks?id=${encodeURIComponent(session)}&${named(name)}`, { method: 'DELETE', credentials: 'same-origin', signal }))
 }

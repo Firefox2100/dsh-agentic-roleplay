@@ -1,10 +1,15 @@
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { LORE_KINDS, LORE_SCOPES } from 'dsh-roleplay-model'
-import type { LorebookEntry, LorebookSummary, LorebookText } from '../../shared/lorebooks.ts'
+import type { LorebookEntry, LorebookStatus, LorebookSummary, LorebookText } from '../../shared/lorebooks.ts'
+import type { SelectionChoice } from '../../shared/import-selection.ts'
+import { parseSelectionChoice } from '../import/staging.ts'
+import { ImportNotFoundError } from '../import/store.ts'
+import type { VerbatimKnownBy } from './verbatim.ts'
 import { readBinaryBody, readJsonBody } from '../http/body.ts'
 import { sendError, sendJson } from '../http/respond.ts'
 import { languageOf } from '../prompts/library.ts'
-import type { LorebookAuthoringOpened } from './service.ts'
+import { SessionNotFoundError } from '../sessions/errors.ts'
+import { LorebookBusyError, type LorebookAuthoringOpened } from './service.ts'
 import type { LorebookInfoChange } from './lorebooks.ts'
 
 /** What the routes need of the lorebook service. */
@@ -18,13 +23,21 @@ export interface LorebookApi {
   remove(name: string): Promise<void>
   author(name: string, language?: string): Promise<{ chatSessionId: string }>
   importFile(name: string, file: Buffer, language?: string): Promise<LorebookAuthoringOpened & { name: string }>
+  importVerbatim(request: SelectionChoice & { name?: string; title?: string; knownBy: VerbatimKnownBy }): Promise<{ name: string; entries: number }>
+  importStaged(request: SelectionChoice & { name?: string; title?: string; language?: string }): Promise<LorebookAuthoringOpened & { name: string }>
   readonly maxUploadBytes: number
+  status(session: string): Promise<LorebookStatus>
+  addToStory(session: string, name: string): Promise<{ entries: number; notes: string[] }>
+  removeFromStory(session: string, name: string): { removed: number }
 }
 
 type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<void>
 
-/** A request the library refuses is 422 with its reason; anything else is a fault. */
+/** Not found is 404, a story in the middle of a turn 409, and a request the library refuses 422 with its reason; anything else is a fault. */
 function failure(res: ServerResponse, error: unknown): void {
+  if (error instanceof ImportNotFoundError) return sendError(res, 404, error.message)
+  if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+  if (error instanceof LorebookBusyError) return sendError(res, 409, error.message)
   if (error instanceof Error) return sendError(res, 422, error.message)
   throw error
 }
@@ -45,6 +58,15 @@ function entryOf(id: string, body: Record<string, unknown>): LorebookEntry | str
 
 export function lorebookRoutes(api: LorebookApi): Record<string, Partial<Record<string, Route>>> {
   return {
+    '/sessions/lorebooks': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await api.status(url.searchParams.get('id') ?? '')) } catch (error) { failure(res, error) } },
+      POST: async (req, res, url) => {
+        const { name } = await readJsonBody(req)
+        if (typeof name !== 'string' || name === '') return sendError(res, 400, '"name" is required')
+        try { sendJson(res, 200, await api.addToStory(url.searchParams.get('id') ?? '', name)) } catch (error) { failure(res, error) }
+      },
+      DELETE: async (_req, res, url) => { try { sendJson(res, 200, api.removeFromStory(url.searchParams.get('id') ?? '', url.searchParams.get('name') ?? '')) } catch (error) { failure(res, error) } },
+    },
     '/lorebooks': {
       GET: async (_req, res) => { try { sendJson(res, 200, await api.list()) } catch (error) { failure(res, error) } },
       POST: async (req, res) => {
@@ -76,6 +98,27 @@ export function lorebookRoutes(api: LorebookApi): Record<string, Partial<Record<
         const { language } = await readJsonBody(req)
         if (language !== undefined && typeof language !== 'string') return sendError(res, 400, '"language" must be text')
         try { sendJson(res, 200, await api.author(url.searchParams.get('name') ?? '', language === undefined ? undefined : languageOf(language))) } catch (error) { failure(res, error) }
+      },
+    },
+    '/lorebooks/import/verbatim': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req)
+        const choice = parseSelectionChoice(body)
+        if (typeof choice === 'string') return sendError(res, 400, choice)
+        const { name, title, knownBy } = body as Record<string, unknown>
+        for (const [field, value] of [['name', name], ['title', title]] as const) if (value !== undefined && typeof value !== 'string') return sendError(res, 400, `"${field}" must be text`)
+        if (knownBy !== 'everyone' && knownBy !== 'master') return sendError(res, 400, '"knownBy" must be everyone or master')
+        try { sendJson(res, 200, await api.importVerbatim({ ...choice, knownBy, ...(name === undefined ? {} : { name: name as string }), ...(title === undefined ? {} : { title: title as string }) })) } catch (error) { failure(res, error) }
+      },
+    },
+    '/lorebooks/import/staged': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req)
+        const choice = parseSelectionChoice(body)
+        if (typeof choice === 'string') return sendError(res, 400, choice)
+        const { name, title, language } = body as Record<string, unknown>
+        for (const [field, value] of [['name', name], ['title', title], ['language', language]] as const) if (value !== undefined && typeof value !== 'string') return sendError(res, 400, `"${field}" must be text`)
+        try { sendJson(res, 200, await api.importStaged({ ...choice, ...(name === undefined ? {} : { name: name as string }), ...(title === undefined ? {} : { title: title as string }), ...(language === undefined ? {} : { language: languageOf(language as string) }) })) } catch (error) { failure(res, error) }
       },
     },
     '/lorebooks/import': {

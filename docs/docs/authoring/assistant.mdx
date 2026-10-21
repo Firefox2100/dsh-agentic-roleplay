@@ -10,6 +10,12 @@ It also reads and writes the world's **triggers** (what the world does by itself
 
 Use it for changes that benefit from synthesis across several parts of a world: adding a person who fits an existing faction, finding incomplete connections, turning a premise into a small set of optional beats, or checking whether private knowledge has been placed on the right characters. For precise field edits, the visual editor is usually faster.
 
+## Research tools
+
+The world, preset and lorebook assistants can use tools other plugins registered for everyone, such as a web search or an MCP server, so that "use the Honkai Star Rail setting" can be looked up instead of guessed. They have none by default. Tick the tools each assistant may use under **Settings → Role Play → Tools for the authoring assistants**; a change applies at the assistant's next step, also in a chat that is already open. An assistant sees only the tools ticked for it, so a tool you configured for something else never reaches it. A ticked tool runs without asking you each time, and acts with the permissions its plugin has, so tick only what you are comfortable letting the assistant use. The same list has a fourth entry, the **world author during play**: the helper that invents a place, a person or a thing a story needs, which can then look something up first (a real place a story visits, a creature from a franchise). It gets a few more calls to use what you ticked. The session doctor never receives any. The other helpers the program starts during play (the import steps, the helpers of the record keeper and the suggestions) have only their own tools, and the game master, the characters and the record keeper take theirs from the story's own Tools switches.
+
+A tool can also be given to one assistant alone by loading the MCP server inside that assistant's preset in the profile's configuration; it is then invisible to everything else.
+
 ## Approval
 
 Every mutation requires user approval through DSH's approval flow. A refusal leaves files unchanged. After approval, the tool validates the proposed document and writes it atomically; errors are returned to the chat for correction.

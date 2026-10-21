@@ -84,6 +84,13 @@ export interface ChatSettings {
     master: number
     /** The temperature of the characters' requests: they write prose, so it is the highest. */
     characters: number
+    /** The controls beyond temperature, for the game master's and the characters' requests. The neutral value (1 for topP, 0 for topK, minP and the penalties but repetition, 1 for that) leaves the choice to the model's server. */
+    topP: number
+    topK: number
+    minP: number
+    frequencyPenalty: number
+    presencePenalty: number
+    repetitionPenalty: number
     /** The temperature of the helper that writes the suggested actions for the player. */
     suggestions: number
     /** The temperature of the helpers that make things up (the world author, the plot author). */
@@ -257,7 +264,7 @@ export const SETTINGS_SPEC = {
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
   diagnostics: { keepRuns: flag(false) },
   offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), joint: flag(true), summary: flag(true) },
-  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000), headroom: ratio(1, 10, 2) },
+  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), topP: ratio(0, 1, 1), topK: integer(0, 1000, 0), minP: ratio(0, 1, 0), frequencyPenalty: ratio(-2, 2, 0), presencePenalty: ratio(-2, 2, 0), repetitionPenalty: ratio(0, 2, 1), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000), headroom: ratio(1, 10, 2) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },

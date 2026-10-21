@@ -2,6 +2,10 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { PresetBusyError, type PresetAuthoringOpened } from './service.ts'
 import type { PresetInfoChange } from './presets.ts'
 import type { PresetChange, PresetSampling, PresetStatus, PresetSummary, SavePresetRequest } from '../../shared/presets.ts'
+import { parseSampling } from '../../shared/sampling.ts'
+import type { SelectionChoice } from '../../shared/import-selection.ts'
+import { parseSelectionChoice } from '../import/staging.ts'
+import { ImportNotFoundError } from '../import/store.ts'
 import { readBinaryBody, readJsonBody } from '../http/body.ts'
 import { languageOf } from '../prompts/library.ts'
 import { sendError, sendJson } from '../http/respond.ts'
@@ -14,8 +18,12 @@ export interface PresetApi {
   create(request: Omit<SavePresetRequest, 'fromWorld'> & { fromWorld?: string }): Promise<PresetSummary>
   updateInfo(name: string, change: PresetInfoChange): Promise<PresetSummary>
   writePrompt(name: string, language: string, id: string, text: string | undefined): Promise<PresetSummary>
+  rulesPrompts(name: string, language: string): string[]
+  promptText(name: string, language: string, id: string): string
   author(name: string, language?: string): Promise<{ chatSessionId: string }>
   importFile(name: string, file: Buffer, language?: string): Promise<PresetAuthoringOpened & { name: string }>
+  importStaged(request: SelectionChoice & { name?: string; title?: string; language?: string }): Promise<PresetAuthoringOpened & { name: string }>
+  importVerbatim(request: SelectionChoice & { name?: string; title?: string }): Promise<{ name: string }>
   readonly maxUploadBytes: number
   remove(name: string): Promise<void>
   status(session: string): PresetStatus
@@ -26,6 +34,7 @@ type Route = (req: IncomingMessage, res: ServerResponse, url: URL) => Promise<vo
 
 /** Not found is 404 and a request the library refuses is 422 with its reason; anything else is a fault. */
 function failure(res: ServerResponse, error: unknown): void {
+  if (error instanceof ImportNotFoundError) return sendError(res, 404, error.message)
   if (error instanceof SessionNotFoundError || error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
   if (error instanceof PresetBusyError) return sendError(res, 409, error.message)
   if (error instanceof Error) return sendError(res, 422, error.message)
@@ -33,11 +42,9 @@ function failure(res: ServerResponse, error: unknown): void {
 }
 
 function samplingOf(value: unknown): PresetSampling | string {
-  if (value === undefined) return {}
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) return '"sampling" must be an object'
-  const { master, characters } = value as Record<string, unknown>
-  for (const number of [master, characters]) if (number !== undefined && typeof number !== 'number') return 'sampling values must be numbers'
-  return { ...(master === undefined ? {} : { master: master as number }), ...(characters === undefined ? {} : { characters: characters as number }) }
+  const problems: string[] = []
+  const sampling = parseSampling(value, 'sampling', problems)
+  return problems.length === 0 ? sampling : problems.join('; ')
 }
 
 export function presetRoutes(api: PresetApi): Record<string, Partial<Record<string, Route>>> {
@@ -65,7 +72,11 @@ export function presetRoutes(api: PresetApi): Record<string, Partial<Record<stri
       },
       DELETE: async (_req, res, url) => { try { await api.remove(url.searchParams.get('name') ?? ''); res.statusCode = 204; res.end() } catch (error) { failure(res, error) } },
     },
+    '/presets/prompts': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, api.rulesPrompts(url.searchParams.get('name') ?? '', languageOf(url.searchParams.get('language') ?? ''))) } catch (error) { failure(res, error) } },
+    },
     '/presets/prompt': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, { text: api.promptText(url.searchParams.get('name') ?? '', languageOf(url.searchParams.get('language') ?? ''), url.searchParams.get('id') ?? '') }) } catch (error) { failure(res, error) } },
       PUT: async (req, res, url) => {
         const { text } = await readJsonBody(req)
         if (typeof text !== 'string' || text.trim() === '') return sendError(res, 400, '"text" is required')
@@ -78,6 +89,26 @@ export function presetRoutes(api: PresetApi): Record<string, Partial<Record<stri
         const { language } = await readJsonBody(req)
         if (language !== undefined && typeof language !== 'string') return sendError(res, 400, '"language" must be text')
         try { sendJson(res, 200, await api.author(url.searchParams.get('name') ?? '', language === undefined ? undefined : languageOf(language))) } catch (error) { failure(res, error) }
+      },
+    },
+    '/presets/import/verbatim': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req)
+        const choice = parseSelectionChoice(body)
+        if (typeof choice === 'string') return sendError(res, 400, choice)
+        const { name, title } = body as Record<string, unknown>
+        for (const [field, value] of [['name', name], ['title', title]] as const) if (value !== undefined && typeof value !== 'string') return sendError(res, 400, `"${field}" must be text`)
+        try { sendJson(res, 200, await api.importVerbatim({ ...choice, ...(name === undefined ? {} : { name: name as string }), ...(title === undefined ? {} : { title: title as string }) })) } catch (error) { failure(res, error) }
+      },
+    },
+    '/presets/import/staged': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req)
+        const choice = parseSelectionChoice(body)
+        if (typeof choice === 'string') return sendError(res, 400, choice)
+        const { name, title, language } = body as Record<string, unknown>
+        for (const [field, value] of [['name', name], ['title', title], ['language', language]] as const) if (value !== undefined && typeof value !== 'string') return sendError(res, 400, `"${field}" must be text`)
+        try { sendJson(res, 200, await api.importStaged({ ...choice, ...(name === undefined ? {} : { name: name as string }), ...(title === undefined ? {} : { title: title as string }), ...(language === undefined ? {} : { language: languageOf(language as string) }) })) } catch (error) { failure(res, error) }
       },
     },
     '/presets/import': {

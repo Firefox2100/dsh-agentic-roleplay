@@ -39,3 +39,13 @@ pnpm --dir docs run build
 发布后不要修改旧 migration；新增有序迁移并测试升级。打开落后于最新架构的会话时，会先做完整性检查，并把升级前的数据库复制到数据库旁的 `migration-backups/schema-<版本>.sqlite`；若迁移损坏了数据，可把该副本放回为 `session.sqlite`。发布前检查构建产物没有私有包悬空导入，bundle 依赖及 patch 完整，包包含提示词/客户端/公开入口，中英文提示词模板及变量一致，可选 AI 能力逐项缺失时仍可运行，配置已纳入 Schemastery，并更新两种语言文档。
 
 只在专用开发 profile 和可丢弃的世界/会话中验证，不能修改用户的普通 DSH profile。
+
+## 质量门禁
+
+拉取请求和推送到 `main` 时依次运行类型检查、带覆盖率的测试、发布构建和发布检查，随后进行 SonarQube 分析，其质量门禁必须通过；发布要等两者都完成。在本地生成同样的覆盖率：
+
+```sh
+pnpm test:coverage
+```
+
+每个包写出 `packages/<name>/coverage/lcov.info`，`scripts/merge-coverage.mjs` 把它们合并为 `coverage/lcov.info`，路径相对仓库根目录，也就是 `sonar-project.properties` 读取的文件。包内每个源文件都会列出，没有测试加载的文件按未覆盖计算，而不是缺失。测试、构建产物、示例世界、自带界面包和配置文件不参与分析或覆盖率统计。扫描需要仓库机密 `SONAR_TOKEN`，来自复刻仓库的拉取请求不会运行。请修复门禁报告的问题，而不是排除文件；只有测试无法运行的代码才可以添加排除，并在拉取请求中说明原因。

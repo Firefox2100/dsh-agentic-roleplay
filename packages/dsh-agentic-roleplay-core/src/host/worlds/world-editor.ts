@@ -6,6 +6,7 @@ import type { CharacterDefinition, VisualIdentityInput } from 'dsh-roleplay-mode
 import type { ImageGenerationService } from '@dsh-ai-providers/core'
 import { InvalidEditProblems, type WorldTrigger, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
+import { knowsCharacter } from '../sessions/populate.ts'
 import { CHARACTER_FILE_NAME, parseCharacterFile } from '../characters/character-file.ts'
 import { subfolders } from '../folders.ts'
 import { loadLocations } from '../locations/load.ts'
@@ -114,7 +115,7 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
     places: locations.map(location => ({ key: location.id, name: location.name, description: location.description, ...imageOf(world, 'place', location.id, location.visualIdentity?.globalId), ...(location.parent === undefined ? {} : { parent: { key: location.parent, name: names.get(location.parent) ?? location.parent } }), features: location.features, ...(location.visualIdentity === undefined ? {} : { visualIdentity: location.visualIdentity }) })),
     things: items.map(item => ({ key: item.id, name: item.name, description: item.description, ...imageOf(world, 'thing', item.id, item.visualIdentity?.globalId), quantity: item.quantity, unique: item.unique, quality: item.quality, notable: item.notable, hidden: item.hidden, ...(item.wearable === undefined ? {} : { wearable: item.wearable }), ...(item.container === undefined ? {} : { containerState: item.container.state }), ...(item.owner === undefined ? {} : { owner: { key: item.owner, name: characterNames.get(item.owner) ?? item.owner } }), holder: holder(item), ...(item.visualIdentity === undefined ? {} : { visualIdentity: item.visualIdentity }) })),
     factions: factions.map(faction => ({ key: faction.id, name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: faction.start.publicState, innerState: faction.start.innerState }, goals: faction.start.goals.map((goal, index) => ({ ref: String(index), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: faction.members.map(member => ({ ...member, name: characterNames.get(member.character) ?? member.character })), relationships: faction.relationships.map(relationship => ({ target: `${relationship.to.kind}:${relationship.to.id}`, label: relationship.label, summary: relationship.summary ?? '' })) })),
-    lore: lore.map(entry => ({ key: entry.id, title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: subject.id, name: subject.kind === 'character' ? characterNames.get(subject.id) ?? subject.id : subject.kind === 'faction' ? factionNames.get(subject.id) ?? subject.id : subject.kind === 'location' ? names.get(subject.id) ?? subject.id : subject.kind === 'item' ? itemNames.get(subject.id) ?? subject.id : lore.find(candidate => candidate.id === subject.id)?.title ?? subject.id })), related: entry.related.map(key => ({ key, title: lore.find(candidate => candidate.id === key)?.title ?? key })), sources: entry.sources })),
+    lore: lore.map(entry => ({ key: entry.id, title: entry.title, kind: entry.kind, scope: entry.scope, knownBy: entry.knownBy, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: subject.id, name: subject.kind === 'character' ? characterNames.get(subject.id) ?? subject.id : subject.kind === 'faction' ? factionNames.get(subject.id) ?? subject.id : subject.kind === 'location' ? names.get(subject.id) ?? subject.id : subject.kind === 'item' ? itemNames.get(subject.id) ?? subject.id : lore.find(candidate => candidate.id === subject.id)?.title ?? subject.id })), related: entry.related.map(key => ({ key, title: lore.find(candidate => candidate.id === key)?.title ?? key })), sources: entry.sources })),
     triggers,
     ...(triggersProblem === undefined ? {} : { triggersProblem }),
     plots: plots.map(definition => ({ definition })),
@@ -134,9 +135,19 @@ export async function editWorldPlots(world: EditableWorld, edit: PlotsEdit): Pro
 }
 
 export async function editWorldLore(world: EditableWorld, key: string, edit: LoreEdit): Promise<WorldState> {
+  if (edit.knownBy !== undefined) {
+    const { characters } = await loadCharacters(world.directory)
+    const strangers = edit.knownBy.filter(name => !knowsCharacter(characters, name))
+    if (strangers.length > 0) throw new InvalidEditProblems(strangers.map(name => `"${name}" is not a character of this world`))
+  }
   return await editEntityFile(world, LORE_DIR, LORE_FILE_NAME, key, parseLoreFile, (document) => {
     if (edit.title !== undefined) document['title'] = edit.title
     if (edit.kind !== undefined) document['kind'] = edit.kind
+    if (edit.scope !== undefined) {
+      document['scope'] = edit.scope
+      if (edit.scope === 'everyone' && edit.knownBy === undefined) delete document['known_by']
+    }
+    if (edit.knownBy !== undefined) { if (edit.knownBy.length === 0) delete document['known_by']; else document['known_by'] = edit.knownBy }
     if (edit.summary !== undefined) setOptional(document, 'summary', edit.summary)
     if (edit.body !== undefined) setOptional(document, 'body', edit.body)
     if (edit.sources !== undefined) document['sources'] = edit.sources

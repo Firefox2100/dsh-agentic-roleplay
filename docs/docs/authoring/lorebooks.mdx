@@ -22,10 +22,10 @@ The **Lorebooks** page of the Role Play panel lists your library: each lorebook'
 - **New lorebook** makes an empty one. Give it a name (letters, digits, `-` and `_`; worlds and stories refer to it by this name).
 - **Edit** opens it: its title and description, and its entries one at a time (title, kind, who knows it, summary, text, related entries). Saving checks an entry as a story start would.
 - **Edit with assistant** opens an authoring chat for the lorebook, like the one a world has. The assistant reads and writes entries and asks you before each write. If you decline, nothing changes.
-- **Import SillyTavern lorebook** takes the `.json` file SillyTavern exports (a lorebook, or a character card that carries one).
+- **Import SillyTavern lorebook** takes the `.json` file SillyTavern exports (a lorebook, or a character card that carries one) and first shows its entries, ticked as the file has them switched on. Only the ticked entries are shown to the assistant; the others are treated as if the file never had them.
 - **Delete** moves the lorebook to the trash folder. Stories that already use it keep their own copy.
 
-The **Lorebooks** tab of the [catalogue](../playing/catalogue) lists SillyTavern lorebooks other people published and imports them the same way. Importing one again makes another lorebook.
+The **Lorebooks** tab of the [catalogue](../playing/catalogue) lists SillyTavern lorebooks other people published and imports them the same way, asking which entries to bring first. Importing one again makes another lorebook.
 
 ## Importing a SillyTavern lorebook
 
@@ -34,6 +34,10 @@ The assistant sorts every entry of the file into one of three kinds:
 - **Knowledge**, a fact about the world. It is kept **word for word** as an entry, with a title, a kind and a summary; the keywords SillyTavern used to trigger it are added to the summary, because here the entry is found by search instead. It is known to everyone unless the entry says otherwise.
 - **Instructions to the AI**, how to write or run the story (tense, tone, what the narrator must or must not do). These are not facts of the world, so they are kept aside.
 - **Left out**: templates, status panels, scripts, empty or repeated entries. The assistant lists what it left out.
+
+An entry that describes one person's own life and holds parts others must not know (a hidden identity, a secret) is made known to that person only, not to everyone, so that the secret does not reach every character. An entry that is long, or that describes a person, a place or history, is always kept as knowledge: the assistant cannot turn it into a short instruction and lose the rest. Each instruction kept aside is listed with the title of the entry it came from, so you can see what it replaced before you agree to make a preset of it.
+
+The dialog that shows the entries also lists what the file holds that is not carried over, and marks the entries SillyTavern keeps always on: here they are found when they bear on the scene, like any entry.
 
 Nothing is written until every entry is sorted. A lorebook import can therefore make **two** things in your library: the lorebook, and, if you agree, a preset.
 
@@ -45,6 +49,10 @@ Instructions go into the [prompt library](presets), as a new preset. The assista
 Most instructions belong to the prose prompts (the persona, the narration style, the character style). Some belong to prompts that hold the **rules of the game**, such as how the game master runs a turn. Those name tools and fields the program reads, and a wrong instruction can break how the story runs. When the preset would touch one, the approval you are asked for carries a clear warning, and the preset is marked with it afterwards.
 :::
 
+### Without the assistant
+
+Tick **Without the assistant** in the import dialog to skip the sorting. No model runs and nothing is rewritten: each ticked entry becomes an entry of a new lorebook at once, word for word, with its keywords in the summary, and the lorebook is ready to use. Choose who knows the entries: **only the game master** (the default, safe because nothing has read what they say) or everyone in the story. Instructions to the AI in the file stay entries too. Change who knows an entry, or its kind, in the lorebook's editor afterwards.
+
 ## Using a lorebook
 
 A story gets its lorebooks **copied in when it starts**: every entry becomes lore of the story, with its scope. Later changes to the library never alter a story in progress.
@@ -54,4 +62,9 @@ A story gets its lorebooks **copied in when it starts**: every entry becomes lor
 
 A suggested lorebook that is not in your library is told to you on the story's first card, and the story starts without it. A lorebook you ticked that cannot be used refuses the start.
 
-Adding or removing a lorebook in a story that is already running, and lorebooks inside a character card, are not part of this version: a card's own lorebook still becomes part of the world it is imported into.
+A story that is already running can change its lorebooks too. The **Lorebooks** section of Chat settings lists the ones the story holds and the rest of your library:
+
+- **Adding** copies the book's entries into the story now. The characters an entry names learn it at the story's current turn. Names that match nobody in the story are left out and told to you.
+- **Removing** takes the book's entries out, together with what the characters learned from them. It is refused while other lore of the story or a plot still refers to one of those entries.
+
+Neither can be done while a turn is being played. Lorebooks inside a character card are not routed through the library: a card's own lorebook becomes part of the world it is imported into.

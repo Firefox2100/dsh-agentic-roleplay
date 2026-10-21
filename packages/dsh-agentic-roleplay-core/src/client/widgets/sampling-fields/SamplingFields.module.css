@@ -1,0 +1,7 @@
+.root { display: flex; flex-direction: column; gap: 8px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.label { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.input { font: inherit; font-size: 13px; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: transparent; color: inherit; min-width: 0; }
+.input:disabled { opacity: 0.6; }
+.help { margin: 0; font-size: 12px; color: var(--dsw-alias-label-tertiary); }

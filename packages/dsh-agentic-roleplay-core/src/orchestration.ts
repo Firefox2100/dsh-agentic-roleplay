@@ -15,6 +15,7 @@ import { triggerJudge } from './host/triggers/judge.ts'
 import { factionStrategist } from './host/factions/strategist.ts'
 import { memoryReflector } from './host/memory/reflection.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
+import type {} from './host/tools/authoring-tools.ts'
 import { installHooks } from './host/orchestration/hooks.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { PERSONA_SECTION, PROTOCOL_SECTION } from './host/orchestration/prompt.ts'
@@ -70,7 +71,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: trigger judge')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: reflection')
-  ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: world author')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)), external: parent => ctx.get('roleplayAuthoringTools')?.given(parent.ctx.tools, 'worldAuthor') ?? [] }) }), 'roleplay: world author')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ suggester: suggestionWriter({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: suggestions')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
     const id = roleplaySessionOf(agentSessionId)

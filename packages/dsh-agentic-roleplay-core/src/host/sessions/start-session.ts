@@ -13,7 +13,7 @@ import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
-import { populateCalendar, populateCharacters, populateDice, populateClock, populateFactions, populateItems, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
+import { populateCalendar, populateCharacters, populateDice, populateClock, populateFactions, populateItems, knowsCharacter, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
 import { inheritImages } from '../images/storage.ts'
 import { copyWorldPrompts } from '../prompts/library.ts'
 import { copyPreset, recordPreset } from '../presets/apply.ts'
@@ -102,14 +102,13 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   let books: Awaited<ReturnType<typeof lorebookLore>> = { definitions: [], applied: [], notes: [] }
   if (wanted.length > 0) {
     if (deps.root === undefined) throw new InvalidStartError('the lorebook library is not available')
-    try { books = await lorebookLore(deps.root(), wanted, asked, characters, new Set(authoredLore.lore.map(entry => entry.id))) } catch (error) { throw new InvalidStartError(error instanceof Error ? error.message : String(error)) }
+    try { books = await lorebookLore(deps.root(), wanted, asked, reference => knowsCharacter(characters, reference), new Set(authoredLore.lore.map(entry => entry.id))) } catch (error) { throw new InvalidStartError(error instanceof Error ? error.message : String(error)) }
     unavailable.push(...books.notes)
   }
-  if (preset !== undefined) {
-    // What the person chose is theirs; the preset's temperatures only fill what the request left unsaid.
-    const given = ((request.settings as { sampling?: Record<string, unknown> } | undefined)?.sampling) ?? {}
-    settings = { ...settings, sampling: { ...settings.sampling, ...Object.fromEntries(Object.entries(preset.summary.sampling).filter(([key]) => given[key] === undefined)) } }
-  }
+  // What the person chose is theirs; then the preset's values, then the world's, which only fill what is left unsaid.
+  const given = ((request.settings as { sampling?: Record<string, unknown> } | undefined)?.sampling) ?? {}
+  const suggested = { ...world.sampling, ...preset?.summary.sampling }
+  if (Object.keys(suggested).length > 0) settings = { ...settings, sampling: { ...settings.sampling, ...Object.fromEntries(Object.entries(suggested).filter(([key]) => given[key] === undefined)) } }
 
   let startsAt = world.clock?.startingTime
   if (request.startingTime !== undefined && request.startingTime.trim() !== '') {

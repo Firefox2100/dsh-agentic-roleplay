@@ -478,8 +478,9 @@ const STYLE_SCHEMA = {
     narration: { type: 'string', description: 'How the narration is written: voice, tone, perspective, pacing, level of detail. Empty when the instructions say nothing about it.' },
     characters: { type: 'string', description: 'How every character speaks and behaves: staying in character, manner, and how it deals with what it is asked to do or refuses. Use ${name} for the character. Empty when the instructions say nothing about it.' },
     left_out: { type: 'array', items: { type: 'string' }, description: 'What the instructions contained that is not prose or behaviour guidance (rules of the game, formats, panels, scripts), one short phrase each.' },
+    persona_names: { type: 'array', items: { type: 'string' }, description: 'Every name the instructions give to the AI itself (a writer, narrator or assistant persona), exactly as written; empty when it has none. These names must not appear in narration or characters.' },
   },
-  required: ['narration', 'characters', 'left_out'],
+  required: ['narration', 'characters', 'left_out', 'persona_names'],
 } as const
 
 const MAX_STYLE_CHARS = 2000
@@ -491,7 +492,9 @@ export function instructionPieces(card: NormalizedCard, items: readonly SourceIt
   return [...fields, ...pieces]
 }
 
-function styleProblem(id: string, value: string): string | undefined {
+function styleProblem(id: string, value: string, personas: readonly string[] = []): string | undefined {
+  const named = personas.find(name => name.trim() !== '' && value.toLowerCase().includes(name.trim().toLowerCase()))
+  if (named !== undefined) return `${id} uses the persona name "${named}"; say "the character" or "the narrator" instead`
   if (value.length > MAX_STYLE_CHARS) return `${id} is ${value.length} characters long; keep it to ${MAX_STYLE_CHARS}`
   return value === '' ? undefined : promptProblem('en', id, value)
 }
@@ -507,11 +510,11 @@ export async function extractStyleFrom(ctx: ImportContext, name: string, pieces:
   ctx.say('writing the style prompts')
   try {
     const prompt = `Card: ${name}\n\nThe instructions of the card:\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
-    const answer = await ctx.run<{ narration: string; characters: string; left_out: string[] }>({
+    const answer = await ctx.run<{ narration: string; characters: string; left_out: string[]; persona_names: string[] }>({
       persona: ctx.text('import/style', { rules: ctx.text('import/common-rules') }),
       prompt,
       result: STYLE_SCHEMA as never,
-      check: value => styleProblem('roleplay/style', text(value.narration)) ?? styleProblem('roleplay/character-style', text(value.characters)),
+      check: value => styleProblem('roleplay/style', text(value.narration), list(value.persona_names)) ?? styleProblem('roleplay/character-style', text(value.characters), list(value.persona_names)),
     })
     const made = [['roleplay/style', text(answer.narration)], ['roleplay/character-style', text(answer.characters)]] as const
     const prompts = made.flatMap(([id, body]) => (body === '' ? [] : [{ id, text: body }]))

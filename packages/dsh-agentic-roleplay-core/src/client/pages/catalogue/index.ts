@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { createChatOpener } from '../../chat/open-chat.ts'
+import { CATALOGUE_KEYS_CHANGED } from '../../../shared/catalogue.ts'
 import { ENTRY_ID } from '../../../shared/ids.ts'
 import type {} from '../../panel/slot-contract.ts'
 import { CatalogueController } from './catalogue-controller.ts'
@@ -23,8 +24,13 @@ export function registerCataloguePage(ctx: Context): void {
 
   const catalogue = new CatalogueController(createChatOpener(ctx))
   ctx.effect(() => () => { catalogue.dispose() }, 'roleplay: catalogue requests')
-  // Saving the settings changes which catalogues exist and which have a key: the page follows.
+  // Saving the settings changes which catalogues exist; storing or removing a key changes which have one: the page follows both.
   ctx.effect(() => ctx.configForms.get(ENTRY_ID).subscribe(() => { void catalogue.read() }), 'roleplay: catalogue settings')
+  ctx.effect(() => {
+    const again = (): void => { void catalogue.read() }
+    window.addEventListener(CATALOGUE_KEYS_CHANGED, again)
+    return () => { window.removeEventListener(CATALOGUE_KEYS_CHANGED, again) }
+  }, 'roleplay: catalogue keys')
 
   ctx.slots.inject('roleplay.page', () => ctx.slots.register({
     name: 'roleplay.page',

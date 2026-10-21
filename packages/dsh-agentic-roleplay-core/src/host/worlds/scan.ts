@@ -4,6 +4,7 @@ import type { Switchboard } from '../../shared/settings.ts'
 import type { WorldProblem, WorldSummary } from '../../shared/worlds.ts'
 import { errorMessage } from '../errors.ts'
 import { subfolders } from '../folders.ts'
+import type { StorySampling } from '../../shared/sampling.ts'
 import { readDocument } from '../read-document.ts'
 import { assignWorldId } from './world-id.ts'
 import { parseWorldFile, WORLD_FILE_NAME, type AlternateOpening, type OpeningSegment, type WorldClock, type WorldFile } from './world-file.ts'
@@ -51,6 +52,7 @@ export interface WorldRecord {
   /** The optional tools switched on or off for the world's agents. */
   tools?: Switchboard
   narrationVoice?: string
+  sampling?: StorySampling
   preset?: string
   lorebooks?: string[]
 }
@@ -134,6 +136,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.rules === undefined ? {} : { rules: world.rules }),
     ...(world.tools === undefined ? {} : { tools: world.tools }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
+    ...(world.sampling === undefined ? {} : { sampling: world.sampling }),
     ...(world.preset === undefined ? {} : { preset: world.preset }),
     ...(world.lorebooks === undefined ? {} : { lorebooks: world.lorebooks }),
   }

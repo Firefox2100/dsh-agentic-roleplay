@@ -35,6 +35,7 @@ worlds/<world folder>/
 | `metadata.tags` | 字符串列表 | 目录标签。 |
 | `cover_media_id` | string | 在 `media/manifest.jsonl` 中按 `id` 查找 `file`。文件必须位于世界内，格式为 png、jpg、jpeg、webp、gif 或 avif。缺失时显示占位图。 |
 | `lorebooks` | string[] | 可选，资料库中世界书的名称（字母、数字、`-`、`_`）。除非开始请求给出自己的列表（空列表表示不带任何世界书），该世界的会话以它们开始。资料库中没有该名称不会阻止开始，但会告知玩家。 |
+| `sampling` | object | 可选，世界为其故事建议的采样设置：`master` 与 `characters`（温度，0 到 2）、`topP`、`topK`、`minP`、`frequencyPenalty`、`presencePenalty`、`repetitionPenalty`。故事开始时复制进它的设置，优先级低于预设自带的值和开始请求中的选择；需要精确的辅助者不会采用它。 |
 | `preset` | string | 可选，资料库中预设的名称（字母、数字、`-`、`_`）。除非开始请求选择其他预设或 `none`，该世界的会话以它开始。资料库中没有该名称不会阻止开始，但会告知玩家。 |
 | `narration_voice` | string | 旁白的提供方声音 ID。开始会话时复制，之后可按会话修改。 |
 | `variables` | object | 世界范围变量的初值，以变量键为属性。 |

@@ -1,4 +1,5 @@
 import type { Context } from '@deepseek-ai/cordis'
+import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
@@ -19,7 +20,7 @@ import { authoredWorldOf } from './shared/authoring-chat.ts'
 import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 
 export const name = '@dsh-agentic-roleplay/core/authoring'
-export const inject = ['roleplayWorlds', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'tools', 'systemPrompt']
+export const inject = ['roleplayWorlds', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'roleplayAuthoringTools', 'tools', 'systemPrompt']
 
 export function apply(ctx: Context): void {
   const prompting = { prompts: () => ctx.roleplayPrompts, languages: () => ctx.roleplayAuthoringLanguages }
@@ -47,6 +48,7 @@ export function apply(ctx: Context): void {
     return id === undefined ? undefined : (await ctx.roleplayWorlds.find(id))?.directory
   }
   registerPackJail(ctx, { worldDirectory, reviewing })
+  limitAuthoringAgents(ctx, chat => (authoredWorldOf(chat) === undefined ? undefined : 'worldAuthoring'))
   ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing))
   for (const [name, order, id] of [
     ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],

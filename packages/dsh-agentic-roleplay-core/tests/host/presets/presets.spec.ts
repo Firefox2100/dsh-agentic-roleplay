@@ -1,3 +1,4 @@
+import { ImportStaging } from '../../../src/host/import/staging.ts'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -174,7 +175,8 @@ describe('the preset service', () => {
     const sent: string[] = []
     return { sent, port: { ensure: (name: string, title: string, language?: string) => Promise.resolve(`chat-${name}-${title}-${language ?? '-'}`), send: (chat: string, text: string) => { sent.push(`${chat}: ${text}`); return Promise.resolve() } } }
   }
-  const service = (port: ReturnType<typeof authoring>['port']) => new Presets({ root: () => root, worldDirectory: () => Promise.resolve(undefined), authoring: port, importMessage: () => 'go', maxUploadBytes: 1000, playing: () => false })
+  const staging = new ImportStaging()
+  const service = (port: ReturnType<typeof authoring>['port']) => new Presets({ root: () => root, worldDirectory: () => Promise.resolve(undefined), authoring: port, importMessage: () => 'go', maxUploadBytes: 1000, staging, playing: () => false })
   const stPreset = Buffer.from(JSON.stringify({ prompts: [{ identifier: 'main', content: 'Write in the second person.' }], prompt_order: [] }))
 
   it('makes a preset from the shipped prompts when no world is given, and edits one prompt at a time', async () => {
@@ -186,6 +188,20 @@ describe('the preset service', () => {
     expect(presets.read('base').prompts['en/roleplay/style']).toBeUndefined()
     await expect(presets.writePrompt('base', 'en', 'world/author', 'x')).rejects.toThrow('not a prompt of the story')
     await expect(presets.writePrompt('gone', 'en', 'roleplay/style', 'x')).rejects.toThrow('no preset')
+  })
+
+  it('offers the rules prompts it does not carry with the shipped text, and one it takes over is no longer offered', async () => {
+    const presets = service(authoring().port)
+    await presets.create({ name: 'base' })
+    expect(presets.rulesPrompts('base', 'en')).toContain('roleplay/game-master')
+    expect(presets.rulesPrompts('base', 'en')).not.toContain('roleplay/style')
+    expect(presets.rulesPrompts('base', 'en').every(id => id.startsWith('roleplay/'))).toBe(true)
+    const shipped = presets.promptText('base', 'en', 'roleplay/game-master')
+    expect(shipped.length).toBeGreaterThan(100)
+    await presets.writePrompt('base', 'en', 'roleplay/game-master', shipped)
+    expect(presets.rulesPrompts('base', 'en')).not.toContain('roleplay/game-master')
+    expect(presets.read('base').summary.rules).toEqual(['roleplay/game-master'])
+    expect(() => presets.rulesPrompts('gone', 'en')).toThrow('no preset')
   })
 
   it('opens the authoring chat of a preset under its title', async () => {
@@ -203,6 +219,20 @@ describe('the preset service', () => {
     expect(loadPreset(root, 'st').summary.problems).toEqual(['the preset carries no prompts'])
   })
 
+  it('imports what the person chose of a staged preset, with its sampling in the new entry, under a name they gave or one made from the title', async () => {
+    const bank = Buffer.from(JSON.stringify({ name: 'Bank', temperature: 0.9, top_p: 0.95, prompts: [{ identifier: 'a', content: 'One.' }, { identifier: 'b', content: 'Two.' }], prompt_order: [{ character_id: 1, order: [{ identifier: 'a', enabled: true }, { identifier: 'b', enabled: false }] }] }))
+    const { port } = authoring()
+    const first = staging.stage('preset', bank, 'bank.json')
+    const named = await service(port).importStaged({ id: first.id, enabled: ['b'], sampling: true, name: 'mine', language: 'en' })
+    expect(named).toMatchObject({ name: 'mine', started: true })
+    expect(loadPreset(root, 'mine').summary.sampling).toEqual({ master: 0.9, characters: 0.9, topP: 0.95 })
+    expect(JSON.parse(await readFile(join(presetDirectory(root, 'mine'), '.import', 'preset.json'), 'utf8')).prompts).toHaveLength(1)
+    const second = staging.stage('preset', bank, 'bank.json')
+    expect(await service(port).importStaged({ id: second.id, enabled: ['a'], sampling: false, title: 'Noir Bank' })).toMatchObject({ name: 'Noir-Bank' })
+    expect(loadPreset(root, 'Noir-Bank').summary.sampling).toEqual({})
+    await expect(service(port).importStaged({ id: second.id, enabled: ['a'], sampling: true })).rejects.toThrow('upload it again')
+  })
+
   it('says so when the chat could not be told, and refuses a file that is not a preset or a taken name without leaving anything behind', async () => {
     const failing = { ensure: () => Promise.resolve('chat'), send: () => Promise.reject(new Error('busy')) }
     expect(await service(failing).importFile('st', stPreset)).toMatchObject({ started: false, failure: 'busy' })
@@ -216,11 +246,47 @@ describe('the preset service', () => {
     await mkdir(join(root, 'sessions', id), { recursive: true })
     await writeFile(join(root, 'sessions', id, 'session.sqlite'), '')
     let playing = true
-    const presets = new Presets({ root: () => root, worldDirectory: () => Promise.resolve(undefined), authoring: authoring().port, importMessage: () => 'go', maxUploadBytes: 1000, playing: () => playing })
+    const presets = new Presets({ root: () => root, worldDirectory: () => Promise.resolve(undefined), authoring: authoring().port, importMessage: () => 'go', maxUploadBytes: 1000, staging: new ImportStaging(), playing: () => playing })
     await presets.create({ name: 'base' })
     expect(() => presets.apply(id, 'base')).toThrow(PresetBusyError)
     playing = false
     expect(presets.apply(id, 'base').files).toEqual([])
     expect(existsSync(join(root, 'sessions', id, 'preset.json'))).toBe(true)
+  })
+
+  describe('importing a staged preset as it is', () => {
+    const PRESET = Buffer.from(JSON.stringify({ name: 'Noir Voice', temperature: 0.7, prompts: [
+      { identifier: 'a', name: 'Voice', role: 'system', content: 'Write in short, flat sentences.' },
+      { identifier: 'b', name: 'Off', role: 'system', content: 'Never used.' },
+      { identifier: 'c', name: 'Pace', role: 'system', content: 'Cost is ${cost} and {{unknown}} stays.' },
+    ] }))
+
+    it('puts the chosen prompts word for word into the narration style of a new preset, in every language, and runs no assistant', async () => {
+      const staging = new ImportStaging()
+      const chat = authoring()
+      const presets = new Presets({ root: () => root, worldDirectory: () => Promise.resolve(undefined), authoring: chat.port, importMessage: () => 'go', maxUploadBytes: 1000, staging, playing: () => false })
+      const staged = staging.stage('preset', PRESET, 'noir.json')
+      expect(await presets.importVerbatim({ id: staged.id, enabled: ['a', 'c'], sampling: true })).toEqual({ name: 'Noir-Voice' })
+      const made = presets.read('Noir-Voice')
+      expect(made.summary).toMatchObject({ title: 'Noir Voice', prompts: ['roleplay/style'], problems: [] })
+      expect(made.summary.sampling).toMatchObject({ master: 0.7 })
+      const style = made.prompts['en/roleplay/style']!
+      expect(style).toContain('[Voice]\nWrite in short, flat sentences.')
+      expect(style).not.toContain('Never used.')
+      expect(style).toContain('$ {cost}')
+      expect(Object.keys(made.prompts).filter(key => key.endsWith('roleplay/style')).sort()).toEqual(['en/roleplay/style', 'zh/roleplay/style'])
+      expect(chat.sent).toEqual([])
+      await expect(presets.importVerbatim({ id: staged.id, enabled: ['a'], sampling: true })).rejects.toThrow('upload it again')
+    })
+
+    it('keeps no sampling when told, takes the name it is given, and leaves nothing behind when the name is taken or unusable', async () => {
+      const staging = new ImportStaging()
+      const presets = new Presets({ root: () => root, worldDirectory: () => Promise.resolve(undefined), authoring: authoring().port, importMessage: () => 'go', maxUploadBytes: 1000, staging, playing: () => false })
+      await presets.importVerbatim({ id: staging.stage('preset', PRESET, 'noir.json').id, enabled: ['a'], sampling: false, name: 'mine' })
+      expect(presets.read('mine').summary.sampling).toEqual({})
+      await expect(presets.importVerbatim({ id: staging.stage('preset', PRESET, 'noir.json').id, enabled: ['a'], sampling: true, name: 'mine' })).rejects.toThrow('already a preset')
+      await expect(presets.importVerbatim({ id: staging.stage('preset', PRESET, 'noir.json').id, enabled: ['a'], sampling: true, name: '../x' })).rejects.toThrow('not a usable preset name')
+      expect(existsSync(presetDirectory(root, '../x'.replace('../', '')))).toBe(false)
+    })
   })
 })

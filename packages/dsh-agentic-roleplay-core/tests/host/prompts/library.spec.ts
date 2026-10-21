@@ -64,6 +64,34 @@ describe('the prompt library', () => {
   })
 })
 
+describe('checking the edited files in the root', () => {
+  it('finds nothing wrong with the files as shipped, nor with an edit that keeps to the variables', async () => {
+    const prompts = library()
+    prompts.bootstrap()
+    expect(prompts.problems()).toEqual([])
+    await writeFile(join(root, 'prompts', 'en', 'a', 'greet.md'), 'Good evening, ${name}, welcome.\n')
+    expect(prompts.problems()).toEqual([])
+  })
+
+  it('reports every file that is empty, uses a variable it is not given, or holds a variable of DSH, and leaves files nothing reads', async () => {
+    const prompts = library()
+    prompts.bootstrap()
+    await writeFile(join(root, 'prompts', 'en', 'a', 'greet.md'), 'Hello ${nobody}.\n')
+    await writeFile(join(root, 'prompts', 'zh', 'a', 'greet.md'), '你好，{{user}}。\n')
+    await writeFile(join(root, 'prompts', 'en', 'a', 'only-en.md'), '\n')
+    await writeFile(join(root, 'prompts', 'en', 'a', 'mine.md'), 'Not shipped ${anything}.\n')
+    const found = prompts.problems().map(problem => [problem.path.slice(root.length), problem.message])
+    expect(found).toHaveLength(3)
+    expect(found).toContainEqual(['/prompts/en/a/greet.md', expect.stringContaining('${nobody}')])
+    expect(found).toContainEqual(['/prompts/zh/a/greet.md', expect.stringContaining('{{')])
+    expect(found).toContainEqual(['/prompts/en/a/only-en.md', 'the prompt is empty'])
+  })
+
+  it('has nothing to check before the folder exists', () => {
+    expect(library().problems()).toEqual([])
+  })
+})
+
 describe('the prompts that ship', () => {
   const files = async (language: string, directory = join(shippedPromptsDirectory(), language), prefix = ''): Promise<string[]> => (await Promise.all((await readdir(directory, { withFileTypes: true })).map(async entry => (entry.isDirectory() ? await files(language, join(directory, entry.name), `${prefix}${entry.name}/`) : [`${prefix}${entry.name}`])))).flat().sort()
 

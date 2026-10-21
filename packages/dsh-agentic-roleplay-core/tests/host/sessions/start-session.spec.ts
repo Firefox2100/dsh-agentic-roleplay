@@ -1,3 +1,4 @@
+import { addLorebook, lorebooksOf, removeLorebook } from '../../../src/host/lorebooks/story.ts'
 import { existsSync, readFileSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
@@ -521,6 +522,15 @@ describe('starting with a preset', () => {
     expect(readSettings(sessionFolder(started.id)).sampling).toMatchObject({ characters: 0.9, master: 0.6 })
   })
 
+  it('layers sampling for that story only: the world\'s values, then the preset\'s, then what the request chose', async () => {
+    await write(join(root, worldFile), { id: 'blackwater', name: 'The Blackwater Observatory', sampling: { master: 0.3, characters: 0.4, topP: 0.9 } })
+    await makePreset('noir', 'Terse.', { sampling: { characters: 0.9, minP: 0.05 } })
+    const plain = await startSession(deps, { ...playAsArthur })
+    expect(readSettings(sessionFolder(plain.id)).sampling).toMatchObject({ master: 0.3, characters: 0.4, topP: 0.9, minP: 0 })
+    const chosen = await startSession(deps, { ...playAsArthur, preset: 'noir', settings: { sampling: { topP: 0.8 } } })
+    expect(readSettings(sessionFolder(chosen.id)).sampling).toMatchObject({ master: 0.3, characters: 0.9, topP: 0.8, minP: 0.05 })
+  })
+
   it('puts the preset the person chose over the world\'s own prompts, and the one the world suggests under them', async () => {
     await makePreset('noir', 'Terse.')
     await write(join(root, 'worlds', 'blackwater folder', 'prompts', 'en', 'roleplay', 'style.md'), 'The world\'s.')
@@ -581,3 +591,51 @@ describe('starting with lorebooks', () => {
   })
 })
 
+describe('changing the lorebooks of a story that is being played', () => {
+  const makeBook = async (name: string, entries: Record<string, unknown>) => {
+    await write(join(root, 'lorebooks', name, 'lorebook.json'), { title: name })
+    for (const [id, entry] of Object.entries(entries)) await write(join(root, 'lorebooks', name, 'lore', id, 'lore.json'), entry)
+  }
+  const bookEntries = { law: { title: 'The law', kind: 'politics', scope: 'everyone', body: 'Written down.' }, rite: { title: 'The rite', kind: 'custom', scope: 'listed', known_by: ['Arthur Moore', 'Nobody'], body: 'At dusk.', related: ['law'] } }
+
+  it('adds a book, tells the characters it names at the story\'s turn, and refuses it twice', async () => {
+    await makeBook('harbor', bookEntries)
+    const started = await startSession(deps, { ...playAsArthur, lorebooks: [] })
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    session.metadata.recordTurn()
+    const added = await addLorebook(root, session, 'harbor')
+    expect(added.applied).toEqual({ name: 'harbor', entries: 2 })
+    expect(added.notes.join(' ')).toContain('"Nobody", who is not in this story')
+    const arthur = session.characters.getBySourceId('arthur')!
+    const known = session.knowledge.list(arthur.id, 'lore').map(entry => session.lore.get(entry.subjectId)?.sourceId)
+    expect(known).toContain('harbor:rite')
+    expect(session.lore.getBySourceId('harbor:rite')!.related).toEqual([session.lore.getBySourceId('harbor:law')!.id])
+    expect(lorebooksOf(session)).toEqual([{ name: 'harbor', entries: 2 }])
+    await expect(addLorebook(root, session, 'harbor')).rejects.toThrow('already has')
+    await expect(addLorebook(root, session, 'missing')).rejects.toThrow('cannot be used')
+  })
+
+  it('takes a book out with what the characters learned from it, and nothing else', async () => {
+    await makeBook('harbor', bookEntries)
+    const started = await startSession(deps, { ...playAsArthur, lorebooks: ['harbor'] })
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    const before = session.lore.list().filter(entry => !entry.sourceId?.startsWith('harbor:')).length
+    expect(removeLorebook(session, 'harbor')).toBe(2)
+    expect(session.lore.list().filter(entry => entry.sourceId?.startsWith('harbor:'))).toEqual([])
+    expect(session.lore.list()).toHaveLength(before)
+    const arthur = session.characters.getBySourceId('arthur')!
+    expect(session.knowledge.list(arthur.id, 'lore').length).toBe(0)
+    expect(lorebooksOf(session)).toEqual([])
+    expect(() => removeLorebook(session, 'harbor')).toThrow('does not have')
+  })
+
+  it('refuses to take a book out while other lore of the story refers to one of its entries', async () => {
+    await makeBook('harbor', bookEntries)
+    const started = await startSession(deps, { ...playAsArthur, lorebooks: ['harbor'] })
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    const own = session.lore.add({ sourceId: 'mine', title: 'Mine', kind: 'other', scope: 'listed', summary: '', body: '', subjects: [], related: [session.lore.getBySourceId('harbor:law')!.id], sources: [] })
+    expect(() => removeLorebook(session, 'harbor')).toThrow('Mine')
+    session.lore.remove(own.id)
+    expect(removeLorebook(session, 'harbor')).toBe(2)
+  })
+})

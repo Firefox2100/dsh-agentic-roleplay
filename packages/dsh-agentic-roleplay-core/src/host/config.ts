@@ -12,7 +12,9 @@ export interface CatalogueEntry {
   name: string
   /** The catalogue's API root, for example `https://catalogue.example/api`. */
   baseUrl: string
-  /** Sent as a Bearer token to this catalogue's site only; empty for public worlds only. Kept in the profile's configuration. */
+  /** The credential in DSH's credential store that holds the API key, sent as a Bearer token to this catalogue's site only. Empty uses a name made from the catalogue's name. */
+  apiKeyRef: string
+  /** Deprecated: a key written here as text by an earlier version. It is still sent when the store holds no key for `apiKeyRef`, and settings removes it when saved. */
   apiKey: string
 }
 
@@ -23,6 +25,11 @@ export interface Config {
   sessionStorePath: string
   /** The catalogues worlds can be browsed and installed from. */
   catalogues: Volatile<CatalogueEntry[]>
+  /**
+   * The tools other plugins registered for everyone (a web search, MCP servers, files) that each assistant of authoring chats may use, as `{ worldAuthoring: { tool_name: true } }`
+   * (`presetAuthoring` and `lorebookAuthoring` likewise). An assistant has none that it is not given here, whatever else the profile registers; the session doctor never has any.
+   */
+  authoringTools: Volatile<Record<string, Record<string, boolean>>>
   /** The most a downloaded world may be, in bytes, compressed and again unpacked. */
   catalogueMaxBytes: number
   /** Days the files an update replaced are kept in the trash folder before they are deleted; 0 keeps them for good. */
@@ -44,7 +51,8 @@ export interface Config {
 export const Config = z.object({
   rootPath: z.string().default(DEFAULT_ROOT_PATH).volatile(),
   sessionStorePath: z.string().default(DEFAULT_STORE_PATH),
-  catalogues: z.array(z.object({ name: z.string().required(), baseUrl: z.string().required(), apiKey: z.string().default('') })).default([]).volatile(),
+  catalogues: z.array(z.object({ name: z.string().required(), baseUrl: z.string().required(), apiKeyRef: z.string().default(''), apiKey: z.string().default('') })).default([]).volatile(),
+  authoringTools: z.dict(z.dict(z.boolean())).default({}).volatile(),
   catalogueMaxBytes: z.number().min(1024).default(256 * 1024 * 1024),
   catalogueTrashDays: z.number().min(0).default(30),
   importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024),

@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
+import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -14,7 +15,7 @@ import type {} from './host/storage/roleplay-root.ts'
 import type {} from './host/worlds/authoring-language.ts'
 
 export const name = '@dsh-agentic-roleplay/core/preset-authoring'
-export const inject = ['roleplayRoot', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'tools', 'systemPrompt']
+export const inject = ['roleplayRoot', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'roleplayAuthoringTools', 'tools', 'systemPrompt']
 
 /** The preset authoring chat: reads and writes the prose prompts of one library preset, each write approved by the person. */
 export function apply(ctx: Context): void {
@@ -26,6 +27,7 @@ export function apply(ctx: Context): void {
     const preset = presetOfChat(chat)
     return preset !== undefined && existsSync(join(presetDirectory(library(), preset), PROMPTS_FOLDER))
   }
+  limitAuthoringAgents(ctx, chat => (presetOfChat(chat) === undefined ? undefined : 'presetAuthoring'))
   ctx.on('tools/pre-execute', (exec, next) => presetApproval(exec, next, carries))
   const languageOf = (context: object): string => {
     const chat = (context as { agent?: Agent }).agent?.session.id

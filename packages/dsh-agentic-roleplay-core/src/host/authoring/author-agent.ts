@@ -7,6 +7,9 @@ import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { Author, ConsolidateJob, ConsolidateReport, CreateJob, CreateReport, TurnStore } from '../orchestration/boundaries.ts'
 
+/** How many calls of the tools of other plugins the author may make on top of its own budget. */
+const EXTERNAL_CALLS = 10
+
 
 
 /** The tools of the world author, and what each does to the work. */
@@ -182,12 +185,13 @@ const CONSOLIDATE_RESULT: ObjectJsonSchema = {
  * of the world (ways between places, relationship profiles between characters) and may not finish before
  * everything waiting is resolved and the world shows no errors.
  */
-export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined }): Author {
+export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined; /** The tools of other plugins the person gave this author. */ external?: (parent: Agent) => readonly string[] }): Author {
   const parentOf = (chat: string): Agent => {
     const parent = deps.agentOf(chat)
     if (parent === undefined) throw new Error(`no agent for chat ${chat}`)
     return parent
   }
+  const given = (parent: Agent): readonly string[] => deps.external?.(parent) ?? []
   return {
     async create(job, signal): Promise<CreateReport> {
       const parent = parentOf(job.chat)
@@ -199,6 +203,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
         persona: promptFor(parent, 'world/author', job.store.settings().prompts.language),
         prompt: createPrompt(job, authoring.perTurn),
         tools: authorTools(job, work, 'create', authoring),
+        external: given(parent),
         result: CREATE_RESULT,
         beforeSubmit: (value) => {
           const { outcome } = value as { outcome: 'created' | 'declined' }
@@ -207,7 +212,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
           const errors = errorsAbout(job.store, work)
           return errors.length === 0 ? undefined : `what you made is not usable yet; fix it with edit_world:\n${describeFindings(errors).join('\n')}`
         },
-        maxCalls: 30,
+        maxCalls: 30 + (given(parent).length > 0 ? EXTERNAL_CALLS : 0),
       })
       const label = names(job.store)
       const created = work.created.map(entry => ({ kind: entry.kind, key: entry.key, name: (entry.kind === 'variable' ? job.store.story.variables.def(entry.key)?.name : entry.kind === 'trigger' ? job.store.story.triggers.getByKey(entry.key)?.name : (entry.kind === 'character' ? label.characters : entry.kind === 'item' ? label.items : label.places).get(entry.key)) ?? entry.key }))
@@ -226,6 +231,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
         persona: promptFor(parent, 'world/consolidate', job.store.settings().prompts.language),
         prompt: consolidationPrompt(job),
         tools: authorTools(job, work, 'consolidate', authoring),
+        external: given(parent),
         result: CONSOLIDATE_RESULT,
         beforeSubmit: (value) => {
           if (!(value as { complete: boolean }).complete) return undefined
@@ -234,7 +240,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
           const errors = lintWorld(job.store.story).filter(finding => finding.severity === 'error')
           return errors.length === 0 ? undefined : `the world still shows errors:\n${describeFindings(errors).join('\n')}`
         },
-        maxCalls: 60,
+        maxCalls: 60 + (given(parent).length > 0 ? EXTERNAL_CALLS : 0),
       })
       if (!result.complete) throw new Error(`not everything could be fitted in: ${result.notes}`)
       return { resolved: pending.filter(item => job.store.story.consolidation.get(item.id)?.resolvedTurn !== undefined).length, notes: result.notes }

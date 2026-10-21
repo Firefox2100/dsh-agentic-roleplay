@@ -20,7 +20,7 @@
 
 .row {
   display: grid;
-  grid-template-columns: minmax(80px, 1fr) minmax(160px, 2fr) minmax(120px, 1.5fr) auto;
+  grid-template-columns: minmax(80px, 1fr) minmax(160px, 2fr) auto;
   gap: 8px;
   align-items: end;
   padding-bottom: 8px;
@@ -56,4 +56,12 @@
 .actions {
   display: flex;
   gap: 8px;
+}
+
+.keyArea {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr) auto;
+  gap: 8px;
+  align-items: end;
 }

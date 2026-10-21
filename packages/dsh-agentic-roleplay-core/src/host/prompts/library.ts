@@ -88,6 +88,21 @@ export class PromptLibrary extends Service {
   }
 
   /**
+   * What is wrong with the files in the root that the person edited, each with its path: empty, using a variable the prompt is not given, or holding `{{...}}`, which
+   * DSH's prompt assembly reads as a variable of its own. A file of an id the package does not ship is not read by anything and is left alone.
+   */
+  problems(): { path: string; message: string }[] {
+    if (!existsSync(this.directory)) return []
+    return readdirSync(this.directory, { withFileTypes: true }).filter(entry => entry.isDirectory() && LANGUAGE.test(entry.name)).flatMap(entry =>
+      listFiles(join(this.directory, entry.name)).flatMap((id) => {
+        const path = join(this.directory, entry.name, `${id}.md`)
+        const text = readFileSync(path, 'utf8')
+        const message = !ID.test(id) || ![entry.name, FALLBACK_LANGUAGE].some(name => existsSync(join(this.shipped, name, `${id}.md`))) ? undefined : text.includes('{{') ? 'holds "{{", which DSH reads as a variable of its own' : promptProblem(entry.name, id, text, this.shipped)
+        return message === undefined ? [] : [{ path, message }]
+      }))
+  }
+
+  /**
    * The prompt `id` in the language (the primary subtag of a language tag), with `${name}` replaced by the variables.
    * A session may carry a file of its own under `prompts/<language>/` in its folder, which is used instead of the one in the root.
    */

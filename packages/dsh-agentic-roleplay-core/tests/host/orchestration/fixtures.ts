@@ -95,7 +95,7 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     },
     checkItemChanges: entries => (store.itemsRefused === undefined ? { ok: true, effects: entries.map(() => []) } : { ok: false, problems: store.itemsRefused }),
     carried: () => [],
-    knowledge: () => ({ characters: [], factions: [], locations: [], items: [], routes: [] }),
+    knowledge: () => ({ characters: [], factions: [], locations: [], items: [], routes: [], lore: [] }),
     affiliations: () => [],
     itemsAt: () => [],
     completeTurn: () => { store.completed += 1 },

@@ -62,7 +62,8 @@ export function loreProblems(lore: readonly LoreDefinition[], world: { character
   ])
 }
 
-export function populateLore(session: Session, definitions: readonly LoreDefinition[]): void {
+/** `turn` is when the characters that know an entry learned it: 0 at the start, the story's turn when a lorebook is added later. */
+export function populateLore(session: Session, definitions: readonly LoreDefinition[], turn = 0): void {
   for (const entry of definitions) session.lore.add({ sourceId: entry.id, title: entry.title, kind: entry.kind, scope: entry.scope, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: [], related: [], sources: entry.sources })
   const subject = (wanted: LoreDefinition['subjects'][number]): LoreSubject => ({ kind: wanted.kind, id: wanted.kind === 'character' ? session.characters.getBySourceId(wanted.id)!.id : wanted.kind === 'faction' ? session.factions.getBySourceId(wanted.id)!.id : wanted.kind === 'location' ? session.locations.getBySourceId(wanted.id)!.id : wanted.kind === 'item' ? session.items.getBySourceId(wanted.id)!.id : session.lore.getBySourceId(wanted.id)!.id })
   for (const entry of definitions) session.lore.update(session.lore.getBySourceId(entry.id)!.id, { subjects: entry.subjects.map(subject), related: entry.related.map(id => session.lore.getBySourceId(id)!.id) })
@@ -70,7 +71,7 @@ export function populateLore(session: Session, definitions: readonly LoreDefinit
     const lore = session.lore.getBySourceId(entry.id)!
     for (const reference of entry.knownBy) {
       const knower = session.characters.getBySourceId(reference) ?? session.characters.findByName(reference)[0]
-      if (knower !== undefined) session.knowledge.learn(knower.id, 'lore', lore.id, 0)
+      if (knower !== undefined) session.knowledge.learn(knower.id, 'lore', lore.id, turn)
     }
   }
 }

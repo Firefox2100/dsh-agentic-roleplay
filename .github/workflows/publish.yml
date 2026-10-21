@@ -1,43 +1,116 @@
-name: Publish stable packages
+name: Quality and publish stable packages
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
   workflow_dispatch:
 
 concurrency:
-  group: publish-stable-main
-  cancel-in-progress: false
-
-permissions:
-  contents: read
-  id-token: write
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  publish:
-    if: github.ref == 'refs/heads/main'
-    environment: npm
+  quality:
+    name: Build and test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Type-check
+        run: pnpm typecheck
+      - name: Test with coverage
+        run: pnpm test:coverage
+      - name: Upload coverage
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: coverage
+          path: coverage/lcov.info
+          if-no-files-found: error
+      - name: Build release packages
+        run: pnpm release:build
+      - name: Validate release packages
+        run: pnpm release:check
+
+  sonarqube:
+    name: SonarQube
+    needs: quality
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+      - name: Cache SonarQube packages
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Download coverage
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: coverage
+          path: coverage
+      - name: Read project version
+        id: project
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >-
+            -Dsonar.projectVersion=${{ steps.project.outputs.version }}
+            -Dsonar.qualitygate.wait=true
+
+  publish:
+    name: Publish stable packages
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
+    needs:
+      - quality
+      - sonarqube
+    environment: npm
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - name: Install pnpm
+        uses: pnpm/action-setup@f40ffcd9367d9f12939873eb1018b921a783ffaa # v4
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      - name: Validate
-        run: |
-          pnpm typecheck
-          pnpm test
-          pnpm release:build
-          pnpm release:check
+      - name: Build release packages
+        run: pnpm release:build
       - name: Check published versions
         id: published
         run: node scripts/check-published.mjs >> "$GITHUB_OUTPUT"

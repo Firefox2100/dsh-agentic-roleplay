@@ -23,6 +23,7 @@ import { API_PREFIX } from '../../../src/shared/worlds.ts'
 import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
 import type { PresetApi } from '../../../src/host/presets/routes.ts'
 import type { LorebookApi } from '../../../src/host/lorebooks/routes.ts'
+import { LorebookBusyError } from '../../../src/host/lorebooks/service.ts'
 
 let base: string
 let server: Server
@@ -52,8 +53,12 @@ const presetApi: PresetApi = {
   create: (request) => { presetCalls.push(`create ${JSON.stringify(request)}`); return Promise.resolve(summary) },
   updateInfo: (name, change) => { presetCalls.push(`info ${name} ${JSON.stringify(change)}`); return Promise.resolve(summary) },
   writePrompt: (name, language, id, text) => { presetCalls.push(`prompt ${name} ${language} ${id} ${String(text)}`); return Promise.resolve(summary) },
+  rulesPrompts: (name, language) => (name === 'gone' ? (() => { throw new Error('there is no preset "gone"') })() : [`${language}-game-master`]),
+  promptText: (name, language, id) => `${name} ${language} ${id}`,
   author: (name, language) => { presetCalls.push(`author ${name} ${language ?? '-'}`); return Promise.resolve({ chatSessionId: `preset-author-${name}` }) },
   importFile: (name, file, language) => { presetCalls.push(`import ${name} ${file.length} ${language ?? '-'}`); return Promise.resolve({ name, chatSessionId: `preset-author-${name}`, started: true }) },
+  importVerbatim: (request) => { presetCalls.push(`verbatim ${JSON.stringify(request)}`); return Promise.resolve({ name: request.name ?? 'made' }) },
+  importStaged: (request) => { presetCalls.push(`staged ${JSON.stringify(request)}`); return Promise.resolve({ name: request.name ?? 'made', chatSessionId: 'preset-author-made', started: true }) },
   maxUploadBytes: 1024,
   remove: (name) => { presetCalls.push(`remove ${name}`); return Promise.resolve() },
   status: (id) => { if (id !== 'sess') throw new SessionNotFoundError(`no session "${id}"`); return { available: [summary] } },
@@ -71,11 +76,18 @@ const lorebookApi: LorebookApi = {
   remove: (name) => { lorebookCalls.push(`remove ${name}`); return Promise.resolve() },
   author: (name, language) => { lorebookCalls.push(`author ${name} ${language ?? '-'}`); return Promise.resolve({ chatSessionId: `lorebook-author-${name}` }) },
   importFile: (name, file, language) => { lorebookCalls.push(`import ${name} ${file.length} ${language ?? '-'}`); return Promise.resolve({ name, chatSessionId: `lorebook-author-${name}`, started: true }) },
+  importVerbatim: (request) => { lorebookCalls.push(`verbatim ${JSON.stringify(request)}`); return Promise.resolve({ name: request.name ?? 'made', entries: request.enabled.length }) },
+  importStaged: (request) => { lorebookCalls.push(`staged ${JSON.stringify(request)}`); return Promise.resolve({ name: request.name ?? 'made', chatSessionId: 'lorebook-author-made', started: true }) },
   maxUploadBytes: 1024,
+  status: (id) => { if (id !== 'sess') throw new SessionNotFoundError(`no session "${id}"`); return Promise.resolve({ applied: [], available: [bookSummary] }) },
+  addToStory: (id, name) => { lorebookCalls.push(`story add ${id} ${name}`); if (id === 'busy') throw new LorebookBusyError('a turn is being played'); return Promise.resolve({ entries: 1, notes: [] }) },
+  removeFromStory: (id, name) => { lorebookCalls.push(`story remove ${id} ${name}`); return { removed: 1 } },
 }
 let catalogueError: Error | undefined
 const catalogue = {
-  sources: () => [{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true }],
+  sources: async () => [{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY', keySource: 'file' }],
+  describeKey: async (ref: string) => { catalogueCalls.push(`key ${ref}`); if (catalogueError !== undefined) throw catalogueError; return { ref, configured: true, writable: true, source: 'file' } },
+  keepKey: async (ref: string, value: string) => { catalogueCalls.push(`keep ${ref} ${value === '' ? '-' : 'value'}`); if (catalogueError !== undefined) throw catalogueError; return { ref, configured: value !== '', writable: true } },
   worlds: async (name: string, query: unknown) => { catalogueCalls.push(`worlds ${name} ${JSON.stringify(query)}`); if (catalogueError !== undefined) throw catalogueError; return { items: [], withKey: true } },
   world: async (name: string, id: string) => { catalogueCalls.push(`world ${name} ${id}`); if (catalogueError !== undefined) throw catalogueError; return { id } },
   cover: async (name: string, id: string) => { catalogueCalls.push(`cover ${name} ${id}`); if (catalogueError !== undefined) throw catalogueError; return { type: 'image/png', body: Buffer.from('png') } },
@@ -83,6 +95,9 @@ const catalogue = {
   updates: async (name: string) => { catalogueCalls.push(`updates ${name}`); if (catalogueError !== undefined) throw catalogueError; return { updates: [], problems: [] } },
   convert: async (request: unknown) => { catalogueCalls.push(`convert ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { worldId: 'w', chatSessionId: 'c', started: true } },
   convertLorebook: async (request: unknown) => { catalogueCalls.push(`lorebook ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { name: 'b', chatSessionId: 'c', started: true } },
+  stage: async (request: unknown) => { catalogueCalls.push(`stage ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { id: 'st', kind: 'preset', name: 'p', items: [] } },
+  stageCard: async (request: unknown) => { catalogueCalls.push(`card ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { id: 'cd1', hasAvatar: false, choices: { name: 'Ann', disabledEntries: [], opening: { kind: 'first' } }, card: {} } },
+  convertStaged: async (request: unknown) => { catalogueCalls.push(`staged ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { worldId: 'w', chatSessionId: 'c', started: true } },
   convertPreset: async (request: unknown) => { catalogueCalls.push(`preset ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { name: 'p', chatSessionId: 'c', started: true } },
 }
 let editorError: Error | undefined
@@ -157,11 +172,15 @@ beforeEach(async () => {
       discard: (id) => { importCalls.push(`discard ${id}`); return Promise.resolve() },
       start: (id, choices) => { importCalls.push(`start ${id} ${choices.name}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
       picture: () => Promise.reject(new Error('no picture')),
+      stage: (kind, file, name) => { importCalls.push(`stage ${kind} ${file.length} ${name}`); if (importError !== undefined) throw importError; return { id: 'st1', kind, name: 'N', items: [{ id: 'a', title: 'A', detail: '', text: 't', chars: 1, enabled: true, usable: true }] } },
+      discardStaged: (id) => { importCalls.push(`discard ${id}`) },
+      applyStagedVerbatim: (worldId, choice) => { importCalls.push(`verbatim ${worldId} ${JSON.stringify(choice)}`); return Promise.resolve({ preset: 'P', replaced: false }) },
+      uploadStaged: (worldId, choice, language) => { importCalls.push(`staged ${worldId} ${JSON.stringify(choice)} ${language ?? '-'}`); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
       uploadPreset: (worldId, file, name, language) => { importCalls.push(`preset ${worldId} ${file.length} ${name} ${language ?? '-'}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
     },
     worldFiles: {
-      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], tools: {} }),
-      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], tools: {} }) },
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], sampling: {}, tools: {} }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], sampling: {}, tools: {} }) },
       dice: () => Promise.resolve({ checks: [] }),
       editDice: (_world, dice) => (dice.checks.some(check => check.key === '') ? Promise.reject(new InvalidEditProblems(['checks[0].key is required'])) : Promise.resolve(dice)),
       calendar: () => Promise.resolve({ hemisphere: 'north', holidays: [] }),
@@ -506,6 +525,16 @@ describe('roleplay API', () => {
       expect(lorebookCalls).toEqual(['entry harbor {"id":"tides","title":"Tides","kind":"geography","scope":"everyone","knownBy":[],"summary":"","body":"Twice a day.","related":[]}', 'remove entry harbor tides'])
     })
 
+    it('shows, adds to and removes from the lorebooks of a story', async () => {
+      expect(await (await send('GET', '/sessions/lorebooks?id=sess')).json()).toEqual({ applied: [], available: [bookSummary] })
+      expect((await send('GET', '/sessions/lorebooks?id=gone')).status).toBe(404)
+      expect(await (await send('POST', '/sessions/lorebooks?id=sess', { name: 'harbor' })).json()).toEqual({ entries: 1, notes: [] })
+      expect((await send('POST', '/sessions/lorebooks?id=sess', {})).status).toBe(400)
+      expect((await send('POST', '/sessions/lorebooks?id=busy', { name: 'harbor' })).status).toBe(409)
+      expect(await (await send('DELETE', '/sessions/lorebooks?id=sess&name=harbor')).json()).toEqual({ removed: 1 })
+      expect(lorebookCalls).toEqual(['story add sess harbor', 'story add busy harbor', 'story remove sess harbor'])
+    })
+
     it('opens the authoring chat and takes an uploaded lorebook', async () => {
       expect(await (await send('POST', '/lorebooks/authoring?name=harbor', { language: 'zh' })).json()).toEqual({ chatSessionId: 'lorebook-author-harbor' })
       expect((await fetch(`${origin}/lorebooks/import?name=harbor&language=en`, { method: 'POST', body: new Uint8Array([1, 2, 3]) })).status).toBe(200)
@@ -531,6 +560,9 @@ describe('roleplay API', () => {
     it('changes what a preset says and the text of its prompts, opens its authoring chat and takes an upload', async () => {
       expect((await send('PUT', '/presets/item?name=noir', { title: 'Noir', sampling: { master: 0.9 } })).status).toBe(200)
       expect((await send('PUT', '/presets/item?name=noir', { title: 4 })).status).toBe(400)
+      expect(await (await send('GET', '/presets/prompts?name=noir&language=en')).json()).toEqual(['en-game-master'])
+      expect((await send('GET', '/presets/prompts?name=gone&language=en')).status).toBe(422)
+      expect(await (await send('GET', '/presets/prompt?name=noir&language=en&id=roleplay/game-master')).json()).toEqual({ text: 'noir en roleplay/game-master' })
       expect((await send('PUT', '/presets/prompt?name=noir&language=en&id=roleplay/style', { text: 'Terse.' })).status).toBe(200)
       expect((await send('PUT', '/presets/prompt?name=noir&language=en&id=roleplay/style', { text: ' ' })).status).toBe(400)
       expect((await send('PUT', '/presets/prompt?name=noir&language=1&id=roleplay/style', { text: 'x' })).status).toBe(422)
@@ -582,7 +614,19 @@ describe('roleplay API', () => {
     const post = (body: unknown) => fetch(`${origin}/catalogue/install`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
     it('lists the configured catalogues without any key', async () => {
-      expect(await (await fetch(`${origin}/catalogue/sources`)).json()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true }])
+      expect(await (await fetch(`${origin}/catalogue/sources`)).json()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY', keySource: 'file' }])
+    })
+
+    it('describes and keeps a key in the credential store, and never answers with it', async () => {
+      expect(await (await fetch(`${origin}/catalogue/key?ref=MY_KEY`)).json()).toEqual({ ref: 'MY_KEY', configured: true, writable: true, source: 'file' })
+      const put = (body: unknown) => fetch(`${origin}/catalogue/key`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      const kept = await put({ ref: 'MY_KEY', value: 'sk-secret' })
+      expect(await kept.json()).toEqual({ ref: 'MY_KEY', configured: true, writable: true })
+      expect(await (await put({ ref: 'MY_KEY', value: '' })).json()).toEqual({ ref: 'MY_KEY', configured: false, writable: true })
+      expect((await put({ ref: 'MY_KEY' })).status).toBe(400)
+      catalogueError = new CatalogueError('this profile has no credential store', 'unavailable')
+      expect((await put({ ref: 'MY_KEY', value: 'x' })).status).toBe(503)
+      expect(catalogueCalls.filter(call => call.startsWith('keep'))).toEqual(['keep MY_KEY value', 'keep MY_KEY -', 'keep MY_KEY value'])
     })
 
     it('browses and shows worlds, and serves a cover, for the named catalogue', async () => {
@@ -630,6 +674,19 @@ describe('roleplay API', () => {
       expect(imported.status).toBe(201)
       expect(await imported.json()).toEqual({ name: 'p', chatSessionId: 'c', started: true })
       expect(catalogueCalls.at(-1)).toBe('preset {"source":"Home","versionId":"v2","title":"Noir"}')
+      const stagedRelease = await fetch(`${origin}/catalogue/stage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v2', kind: 'preset' }) })
+      expect(stagedRelease.status).toBe(200)
+      expect(catalogueCalls.at(-1)).toBe('stage {"source":"Home","versionId":"v2","kind":"preset"}')
+      expect((await fetch(`${origin}/catalogue/stage`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v2', kind: 'card' }) })).status).toBe(400)
+      const card = await fetch(`${origin}/catalogue/stage/card`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v1' }) })
+      expect((await card.json() as { id: string }).id).toBe('cd1')
+      expect(catalogueCalls.at(-1)).toBe('card {"source":"Home","versionId":"v1"}')
+      expect((await fetch(`${origin}/catalogue/stage/card`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home' }) })).status).toBe(400)
+      const made = await fetch(`${origin}/catalogue/convert/staged`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v1', id: 'cd1', language: 'zh', choices: { name: 'Mine', disabledEntries: ['3'], opening: { kind: 'none' } } }) })
+      expect(made.status).toBe(201)
+      expect(await made.json()).toEqual({ worldId: 'w', chatSessionId: 'c', started: true })
+      expect(catalogueCalls.at(-1)).toBe('staged {"source":"Home","versionId":"v1","id":"cd1","choices":{"name":"Mine","disabledEntries":["3"],"opening":{"kind":"none"}},"language":"zh"}')
+      expect((await fetch(`${origin}/catalogue/convert/staged`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v1', id: 'cd1', choices: { name: '' } }) })).status).toBeGreaterThanOrEqual(400)
       const book = await fetch(`${origin}/catalogue/convert/lorebook`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v3', title: 'Harbor' }) })
       expect(book.status).toBe(201)
       expect(catalogueCalls.at(-1)).toBe('lorebook {"source":"Home","versionId":"v3","title":"Harbor"}')
@@ -963,6 +1020,35 @@ describe('roleplay API', () => {
       expect(importCalls).toEqual(['preset w1 2 narrator.json zh'])
       importError = new ImportCardError('the file is not a preset')
       expect((await post('/worlds/import/preset?id=w1', new Uint8Array([1]))).status).toBe(422)
+    })
+
+    it('stages a preset or a lorebook for choosing, and applies a choice to a world, a library preset or a library lorebook', async () => {
+      const staged = await post('/import/stage?kind=preset', new Uint8Array([1, 2, 3]), { 'x-file-name': encodeURIComponent('bank.json') })
+      expect(await staged.json()).toMatchObject({ id: 'st1', kind: 'preset', name: 'N' })
+      expect((await post('/import/stage?kind=card', new Uint8Array([1]))).status).toBe(400)
+      importError = new ImportCardError('the file is not a preset')
+      expect((await post('/import/stage?kind=lorebook', new Uint8Array([1]))).status).toBe(422)
+      importError = undefined
+      const json = (path: string, body: unknown) => fetch(`${origin}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      expect((await json('/worlds/import/preset/staged', { worldId: 'w1', id: 'st1', enabled: ['a'], language: 'zh' })).status).toBe(200)
+      expect((await json('/worlds/import/preset/staged', { id: 'st1', enabled: ['a'] })).status).toBe(400)
+      expect((await json('/worlds/import/preset/staged', { worldId: 'w1', id: 'st1', enabled: 'a' })).status).toBe(400)
+      expect(await (await json('/worlds/import/preset/verbatim', { worldId: 'w1', id: 'st1', enabled: ['a'] })).json()).toEqual({ preset: 'P', replaced: false })
+      expect((await json('/worlds/import/preset/verbatim', { id: 'st1', enabled: ['a'] })).status).toBe(400)
+      expect((await json('/presets/import/staged', { id: 'st1', enabled: ['a', 'b'], sampling: false, name: 'mine', language: 'en' })).status).toBe(200)
+      expect((await json('/presets/import/staged', { id: 'st1', enabled: [], title: 7 })).status).toBe(400)
+      expect(await (await json('/presets/import/verbatim', { id: 'st1', enabled: ['a'], name: 'raw' })).json()).toEqual({ name: 'raw' })
+      expect((await json('/presets/import/verbatim', { id: 'st1', enabled: ['a'], name: 3 })).status).toBe(400)
+      expect(presetCalls.at(-1)).toBe('verbatim {"id":"st1","enabled":["a"],"sampling":true,"name":"raw"}')
+      expect((await json('/lorebooks/import/staged', { id: 'st2', enabled: ['0'], title: 'Harbor' })).status).toBe(200)
+      const verbatim = await json('/lorebooks/import/verbatim', { id: 'st2', enabled: ['0', '1'], knownBy: 'master', name: 'raw' })
+      expect(await verbatim.json()).toEqual({ name: 'raw', entries: 2 })
+      expect((await json('/lorebooks/import/verbatim', { id: 'st2', enabled: ['0'], knownBy: 'nobody' })).status).toBe(400)
+      expect((await json('/lorebooks/import/verbatim', { id: 'st2', enabled: ['0'], knownBy: 'everyone', name: 3 })).status).toBe(400)
+      expect(importCalls).toEqual(['stage preset 3 bank.json', 'stage lorebook 1 lorebook', 'staged w1 {"id":"st1","enabled":["a"],"sampling":true} zh', 'verbatim w1 {"id":"st1","enabled":["a"],"sampling":true}'])
+      expect(presetCalls.at(-2)).toBe('staged {"id":"st1","enabled":["a","b"],"sampling":false,"name":"mine","language":"en"}')
+      expect(lorebookCalls.at(-1)).toBe('verbatim {"id":"st2","enabled":["0","1"],"sampling":true,"knownBy":"master","name":"raw"}')
+      expect(lorebookCalls.at(-2)).toBe('staged {"id":"st2","enabled":["0"],"sampling":true,"title":"Harbor"}')
     })
 
     it('refuses an upload that is too large without reading it, an empty one, and a file that is not a card, with the reason', async () => {

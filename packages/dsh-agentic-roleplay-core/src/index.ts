@@ -14,7 +14,8 @@ import { RoleplayImport } from './host/import/service.ts'
 import { startImport } from './host/import/start-import.ts'
 import { startTranslation, worldLanguage } from './host/translate/service.ts'
 import { ImportStore } from './host/import/store.ts'
-import { uploadPreset } from './host/import/upload-preset.ts'
+import { applyPresetVerbatim, uploadPreset } from './host/import/upload-preset.ts'
+import { ImportStaging } from './host/import/staging.ts'
 import { AuthoringSessions } from './host/agent/authoring-sessions.ts'
 import { PresetAuthoringSessions } from './host/agent/preset-authoring-sessions.ts'
 import { LorebookAuthoringSessions } from './host/agent/lorebook-authoring-sessions.ts'
@@ -27,6 +28,7 @@ import { RoleplayOrchestration } from './host/orchestration/service.ts'
 import { registerApi } from './host/http/index.ts'
 import { deleteSession } from './host/sessions/delete-session.ts'
 import { purgeOf } from './host/agent/purge-services.ts'
+import { AuthoringTools } from './host/tools/authoring-tools.ts'
 import { externalTools, type ToolRegistry } from './host/tools/external.ts'
 import { editCalendar, editDice, editRoutine, editVariables, readCalendarDocument, readDiceDocument, readRoutines, readVariables } from './host/worlds/daily-life.ts'
 import { addWorldLore, removeWorldLore } from './host/worlds/lore-entries.ts'
@@ -69,10 +71,11 @@ import { AgentUnavailableError } from './host/sessions/errors.ts'
 import type { Timelines } from './host/timeline/service.ts'
 import { WorldCatalog } from './host/worlds/catalog.ts'
 import { Catalogue } from './host/catalogue/service.ts'
-import { Sources } from './host/catalogue/sources.ts'
+import { Sources, type CredentialStore } from './host/catalogue/sources.ts'
 import { WorldNotFoundError } from './host/sessions/errors.ts'
 import { sceneImagePath } from './host/images/storage.ts'
 import { speakParts, voicesOf } from './host/speech/service.ts'
+import { sharedSamplingOf, type SharedSamplingKey } from './shared/sampling.ts'
 
 export { Config } from './host/config.ts'
 export type * from './host/orchestration/boundaries.ts'
@@ -85,7 +88,7 @@ export const inject = ['roleplayState']
 
 /** The slice of the AI providers plugin's registry that sets the controls of model requests. */
 interface RequestPolicies {
-  policy(policy: (request: { options: { sessionId?: unknown } }) => { temperature?: number; toolChoice?: 'auto' | 'required'; maxTokens?: number; priority?: 'foreground' | 'background' } | undefined): () => void
+  policy(policy: (request: { options: { sessionId?: unknown } }) => (Partial<Record<SharedSamplingKey, number>> & { temperature?: number; toolChoice?: 'auto' | 'required'; maxTokens?: number; priority?: 'foreground' | 'background' }) | undefined): () => void
 }
 
 export function apply(ctx: Context, config: Config): void {
@@ -99,7 +102,9 @@ export function apply(ctx: Context, config: Config): void {
       if (helper !== undefined) return helper
       const session = roleplaySessionOf(id)
       // The game master's own requests: the chat is its session.
-      return session === undefined ? undefined : { temperature: liveSettings(sessionFolder(join(root.path, 'sessions'), session)).sampling.master, priority: 'foreground' as const }
+      if (session === undefined) return undefined
+      const { sampling } = liveSettings(sessionFolder(join(root.path, 'sessions'), session))
+      return { temperature: sampling.master, ...sharedSamplingOf(sampling), priority: 'foreground' as const }
     }), 'roleplay: request controls')
   })
   ctx.effect(() => useChildReasoning(config.childReasoning), 'roleplay: helper thinking level')
@@ -108,8 +113,12 @@ export function apply(ctx: Context, config: Config): void {
   const worlds = new WorldCatalog(ctx, root)
   const prompts = new PromptLibrary(ctx, root)
   prompts.bootstrap()
+  // An old copy of a shipped prompt cannot be told from an edit, so one that no longer fits is reported at once but does not stop the plugin; using it still fails with the same reason.
+  const edited = prompts.problems()
+  if (edited.length > 0) ctx.logger.error(`these prompt files in ${prompts.directory} cannot be used (fix them, or delete a file to restore the original):\n${edited.map(problem => `${problem.path}: ${problem.message}`).join('\n')}`)
   installFirstPartyPacks(root.path)
   const languages = new AuthoringLanguages(ctx, () => join(root.path, 'worlds'))
+  new AuthoringTools(ctx, () => config.authoringTools.get())
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
   const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const presetAuthoring = new PresetAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
@@ -128,15 +137,19 @@ export function apply(ctx: Context, config: Config): void {
     usage: (id: string) => readUsage(ctx.roleplayState.openSession(join(root.path, 'sessions'), id)),
     interventions: (id: string) => readInterventions(ctx.roleplayState.openSession(join(root.path, 'sessions'), id)),
   }
+  const staging = new ImportStaging()
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
-  const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, maxUploadBytes: config.importMaxUploadBytes, playing: id => ctx.roleplayOrchestration.playing(chatSessionId(id)) })
-  const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, maxUploadBytes: config.importMaxUploadBytes })
+  const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, playing: id => ctx.roleplayOrchestration.playing(chatSessionId(id)) })
+  const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, session: id => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return ctx.roleplayState.openSession(sessions, id) }, playing: id => ctx.roleplayOrchestration.playing(chatSessionId(id)) })
   const catalogue = new Catalogue({
-    sources: new Sources(() => config.catalogues.get()), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
+    sources: new Sources(() => config.catalogues.get(), () => ctx.get('credentials') as CredentialStore | undefined), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
     trashDays: () => config.catalogueTrashDays, problem: (message) => { ctx.logger.warn(message) },
+    stage: (kind, file, name) => staging.stage(kind, file, name),
     importPreset: async (file, title, language) => await presetLibrary.importTitled(title, file, language),
     importLorebook: async (file, title, language) => await lorebookLibrary.importTitled(title, file, language),
+    previewCard: async (file, name) => await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined),
+    startCard: async (id, choices, language) => await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, id, choices, language),
     importCard: async (file, name, language) => {
       const preview = await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)
       return await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, preview.id, preview.choices, language)
@@ -174,6 +187,20 @@ export function apply(ctx: Context, config: Config): void {
       start: (id, choices, language) => startImport({ store: imports, worlds, authoring, chatTitle: name => `Authoring ${name}` }, id, choices, language),
       picture: id => imports.picture(id),
       uploadPreset: (worldId, file, name, language) => uploadPreset({ worlds, authoring }, worldId, file, name, language),
+      stage: (kind, file, name) => staging.stage(kind, file, name),
+      discardStaged: id => { staging.discard(id) },
+      applyStagedVerbatim: async (worldId, choice) => {
+        const { file, name } = staging.choose('preset', choice)
+        const applied = await applyPresetVerbatim({ worlds }, worldId, file, name)
+        staging.discard(choice.id)
+        return applied
+      },
+      uploadStaged: async (worldId, choice, language) => {
+        const { file, name } = staging.choose('preset', choice)
+        const uploaded = await uploadPreset({ worlds, authoring }, worldId, file, name, language)
+        staging.discard(choice.id)
+        return uploaded
+      },
     },
     worldCharacters: worldId => worldCharacters(worlds, worldId),
     avatars: {

@@ -25,10 +25,22 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
     const tools = settings.memory.lookup
       ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: settings.memory, queryVector: deps.store.queryVector }), request.member.character.id).filter(tool => toolEnabled(settings.tools, 'characters', tool.name))
       : []
+    const background = (request.knowledge?.lore.length ?? 0) > 0 && tools.some(tool => tool.name === 'recall_my_lore')
     const external = externalGiven(deps.parent.ctx.tools, settings.tools, 'characters')
     const named = request.member.character.tier === 'background' && settings.models.background.trim() !== '' ? settings.models.background : settings.models.characters
-    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: value => spokenIn(settings.prompts.language, value) })
+    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: submitGate(settings.prompts.language, background) })
     return parseCharacterAction(result)
+  }
+}
+
+export const BACKGROUND_CHECK = 'before you answer: does this moment touch your own past, skills, training, secrets or what you know of a person or place? If it does, read that background first with recall_my_lore (about: the subject) and answer from it; if it does not, submit the same answer again unchanged'
+
+/** The model decides whether the moment touches its background; asking once at the point of answering is what makes it decide. */
+export function submitGate(language: string, background: boolean): (value: unknown) => string | undefined {
+  let asked = !background
+  return value => {
+    if (!asked) { asked = true; return BACKGROUND_CHECK }
+    return spokenIn(language, value)
   }
 }
 
@@ -38,7 +50,19 @@ const EXTERNAL_CALLS = 5
 /** A character whose sheet is in another language than the chat's writes in the sheet's: the answer is refused until it is in the chat's. */
 function spokenIn(language: string, value: unknown): string | undefined {
   const given = value as { thought?: string; intent?: string; utterance?: string; account?: string }
-  return wrongLanguage(language, { thought: given.thought, intent: given.intent, utterance: given.utterance, account: given.account })
+  return wrongLanguage(language, { thought: given.thought, intent: given.intent, utterance: given.utterance, account: given.account }, { strays: true }) ?? narratedSpeech(given.utterance)
+}
+
+const QUOTED = /["“”「」『』]/
+
+/** Writing instructions that ask for prose from the character's own point of view lead it to put its actions between its lines; the utterance is only what is said aloud. */
+export function narratedSpeech(utterance: string | undefined): string | undefined {
+  if (utterance === undefined) return undefined
+  const parts = utterance.split(/"[^"]*"|“[^”]*”|「[^」]*」|『[^』]*』/)
+  const spans = parts.length - 1
+  if (spans < 2 || !QUOTED.test(utterance)) return undefined
+  const between = parts.slice(1, -1).some(part => part.replace(/[\s\p{P}]/gu, '').length >= 6)
+  return between ? 'the utterance holds more than the words said aloud: put what you do in intent and write in the utterance only what you say, with nothing between your lines' : undefined
 }
 
 /** What the character was reminded of and why, for the run's record, when the recall said why. */

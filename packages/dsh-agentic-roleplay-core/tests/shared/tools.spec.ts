@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS, parseSettings } from '../../src/shared/settings.ts'
-import { OPTIONAL_TOOLS, switchesOf, toolEnabled, withSwitch } from '../../src/shared/tools.ts'
+import { AUTHORING_KINDS, OPTIONAL_TOOLS, externalEnabled, switchesOf, toolEnabled, withExternal, withSwitch } from '../../src/shared/tools.ts'
 import { dictionaries } from '../../src/client/widgets/tool-switches/locales.ts'
 
 describe('the optional tools of the agents', () => {
@@ -64,5 +64,17 @@ describe('the tools other plugins registered', () => {
     for (const bad of ['', ' space', 'a'.repeat(81), '-leading', 'a/b']) {
       expect(parseSettings({ tools: { characters: { [bad]: true } } }).ok, bad).toBe(false)
     }
+  })
+})
+
+describe('the tools of other plugins for the authoring assistants', () => {
+  it('are off unless switched on, per assistant, and only what is on is kept', () => {
+    let board = withExternal({}, 'worldAuthoring', 'mcp__search__web', true)
+    expect(board).toEqual({ worldAuthoring: { mcp__search__web: true } })
+    expect(externalEnabled(board, 'worldAuthoring', 'mcp__search__web')).toBe(true)
+    expect(externalEnabled(board, 'lorebookAuthoring', 'mcp__search__web')).toBe(false)
+    board = withExternal(board, 'worldAuthoring', 'mcp__search__web', false)
+    expect(board).toEqual({})
+    expect([...AUTHORING_KINDS]).toEqual(['worldAuthoring', 'presetAuthoring', 'lorebookAuthoring', 'worldAuthor'])
   })
 })

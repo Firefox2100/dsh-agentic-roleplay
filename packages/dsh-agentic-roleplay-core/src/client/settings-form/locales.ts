@@ -1,7 +1,7 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsFormKey =
-  | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
+  | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingTopP' | 'samplingTopPHelp' | 'samplingTopK' | 'samplingTopKHelp' | 'samplingMinP' | 'samplingMinPHelp' | 'samplingFrequencyPenalty' | 'samplingFrequencyPenaltyHelp' | 'samplingPresencePenalty' | 'samplingPresencePenaltyHelp' | 'samplingRepetitionPenalty' | 'samplingRepetitionPenaltyHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
   | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp' | 'diversity' | 'diversityHelp' | 'foldedFade' | 'foldedFadeHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'interfacePack' | 'interfacePackHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
@@ -16,6 +16,18 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     samplingMasterHelp: 'How freely the game master decides and narrates (0 to 2). Lower keeps its calls and the world consistent.',
     samplingCharacters: 'Temperature: characters',
     samplingCharactersHelp: 'How freely the characters write (0 to 2). Higher is more varied, lower more predictable.',
+    samplingTopP: 'Top P: game master and characters',
+    samplingTopPHelp: 'Keeps only the most likely words that add up to this share (0 to 1). 1 leaves it to the model\'s server.',
+    samplingTopK: 'Top K: game master and characters',
+    samplingTopKHelp: 'Keeps only this many most likely words (0 to 1000). 0 leaves it to the model\'s server.',
+    samplingMinP: 'Min P: game master and characters',
+    samplingMinPHelp: 'Drops words less likely than this share of the best one (0 to 1). 0 leaves it to the model\'s server.',
+    samplingFrequencyPenalty: 'Frequency penalty: game master and characters',
+    samplingFrequencyPenaltyHelp: 'Discourages words in proportion to how often they were used (-2 to 2). 0 leaves it to the model\'s server.',
+    samplingPresencePenalty: 'Presence penalty: game master and characters',
+    samplingPresencePenaltyHelp: 'Discourages words that were used at all (-2 to 2). 0 leaves it to the model\'s server.',
+    samplingRepetitionPenalty: 'Repetition penalty: game master and characters',
+    samplingRepetitionPenaltyHelp: 'Discourages repeating what was written (0 to 2). 1 leaves it to the model\'s server.',
     samplingSuggestions: 'Temperature: suggested actions',
     samplingSuggestionsHelp: 'How freely the suggested actions for you are written (0 to 2).',
     samplingAuthoring: 'Temperature: world and plot authors',
@@ -164,6 +176,18 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     samplingMasterHelp: '主持人做决定和叙述的自由度（0 到 2）。越低，它的调用和世界越一致。',
     samplingCharacters: '温度：角色',
     samplingCharactersHelp: '角色写作的自由度（0 到 2）。越高越多变，越低越稳定。',
+    samplingTopP: 'Top P：主持人与角色',
+    samplingTopPHelp: '只保留累计概率达到该比例的最可能的词（0 到 1）。1 表示交给模型服务器的默认值。',
+    samplingTopK: 'Top K：主持人与角色',
+    samplingTopKHelp: '只保留最可能的这么多个词（0 到 1000）。0 表示交给模型服务器的默认值。',
+    samplingMinP: 'Min P：主持人与角色',
+    samplingMinPHelp: '丢弃概率低于最佳词该比例的词（0 到 1）。0 表示交给模型服务器的默认值。',
+    samplingFrequencyPenalty: '频率惩罚：主持人与角色',
+    samplingFrequencyPenaltyHelp: '按词出现的次数抑制它（-2 到 2）。0 表示交给模型服务器的默认值。',
+    samplingPresencePenalty: '存在惩罚：主持人与角色',
+    samplingPresencePenaltyHelp: '抑制已经出现过的词（-2 到 2）。0 表示交给模型服务器的默认值。',
+    samplingRepetitionPenalty: '重复惩罚：主持人与角色',
+    samplingRepetitionPenaltyHelp: '抑制重复已写内容（0 到 2）。1 表示交给模型服务器的默认值。',
     samplingSuggestions: '温度：行动建议',
     samplingSuggestionsHelp: '为你撰写行动建议的自由度（0 到 2）。',
     samplingAuthoring: '温度：世界与剧情作者',

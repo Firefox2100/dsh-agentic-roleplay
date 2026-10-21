@@ -1,3 +1,5 @@
+import { defineTool } from '@deepseek-ai/dsh-tools'
+import { AuthoringTools } from '../../../src/host/tools/authoring-tools.ts'
 import { outputBudget } from '../../../src/host/agents/budget.ts'
 import { keeperEstimate } from '../../../src/host/orchestration/committer.ts'
 import { PromptLibrary } from '../../../src/host/prompts/library.ts'
@@ -502,6 +504,33 @@ describe('a turn with the real agent loop', () => {
       expect(session.consolidation.pending()).toEqual([expect.objectContaining({ kind: 'character', subjectId: mira.id, createdTurn: 1 })])
       expect(masterSaw(adapter)).toContain('Made up and fitted into the world:\\n- character mira (Mira Voss)')
       expect(masterSaw(adapter)).toContain('now in the cast')
+    })
+
+    describe('and the tools of other plugins', () => {
+      let board: Record<string, Record<string, boolean>> = {}
+      let lift: () => void = () => undefined
+      beforeEach(() => {
+        lift = ctx.tools.register(defineTool({ name: 'mcp__search__web', description: 'Searches the web.', parameters: {}, output: { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] }, async execute() { return 'found' } }))
+        new AuthoringTools(ctx, () => board)
+      })
+      afterEach(() => { board = {}; lift() })
+
+      it('has none unless the settings tick them for it', async () => {
+        const { adapter } = await playAuthored('creates')
+        expect(toolNames(authors(adapter)[0]!)).not.toContain('mcp__search__web')
+      })
+
+      it('has the ones ticked for it, and a little more room to call them', async () => {
+        board = { worldAuthor: { mcp__search__web: true } }
+        const { adapter } = await playAuthored('creates')
+        expect(toolNames(authors(adapter)[0]!)).toContain('mcp__search__web')
+      })
+
+      it('has none that were ticked for the assistants of other chats or for the story\'s other agents', async () => {
+        board = { worldAuthoring: { mcp__search__web: true }, characters: { mcp__search__web: true } }
+        const { adapter } = await playAuthored('creates')
+        expect(toolNames(authors(adapter)[0]!)).not.toContain('mcp__search__web')
+      })
     })
 
     it('lets the game master introduce a thing itself, where the player is, with no author asked, and not more than the chat allows', async () => {

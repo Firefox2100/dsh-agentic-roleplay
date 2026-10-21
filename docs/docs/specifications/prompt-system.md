@@ -18,6 +18,12 @@ The package ships the originals in `prompts/<language>/` (English and Chinese). 
 | `roleplay/` | the game master's instructions (`game-master`, `persona`), the character's rules (`character-rules`, `character-lookup`, `character-decide`), the record keeper, the chronicler and its three tasks, the suggestion writer, the image author, the plot author, and the short notices added to a scene (`rules`, `plot-hint`, `ooc-command`, `ooc-empty`, `input-refused`) |
 | `world/` | the world authoring assistant (`persona`, `procedure`, `welcome`) and the world author that makes up and fits in characters, places and things (`author`, `consolidate`) |
 | `import/` | importing a character card: the classifier, the roster, one prompt per kind of thing written (`character`, `place`, `faction`, `thing`, `lore`) with their shared `common-rules`, the world's description and tags, and the texts that steer the authoring chat through the three steps |
+| `preset/` | the preset authoring assistant (`persona`, `procedure`, `welcome`) |
+| `lorebook/` | the lorebook authoring assistant (`persona`, `procedure`, `welcome`) |
+| `doctor/` | the session doctor (`persona`, `procedure`, `welcome`) |
+| `translate/` | translating a world (`glossary`, `document`, `notice`) |
+
+**The assistants and the import are global, so their prompts live only in the root.** The world, preset, lorebook and doctor assistants, the card, preset and lorebook imports, and the translation read `<root>/prompts/<language>/` on every use: edit a file there and the next chat, import or translation uses it, with no restart; delete it to get the original back. A file may use only the `${name}` variables its original is given, and one that uses another fails the run and names the variable. No assistant is shipped to write these prompts; edit them by hand or with an ordinary chat. What stays in the code are the tools' names, descriptions and schemas and the briefs built from data, because the program depends on them.
 
 ## Prompts of a session and of a world
 
@@ -41,7 +47,7 @@ Optional parts: the game master's prompt holds `${preview}` on a line of its own
 A preset is a reusable set of writing instructions, kept in the library under `<roleplay root>/presets/<name>/`:
 
 ```text
-preset.json                                  { "title": "...", "description": "...", "sampling": { "master": 0.8, "characters": 0.9 } }
+preset.json                                  { "title": "...", "description": "...", "sampling": { "master": 0.8, "characters": 0.9, "topP": 0.95 } }
 prompts/<language>/roleplay/style.md         the same layout as the prompts of a world
 ```
 
@@ -78,7 +84,9 @@ The language is a folder: `en`, `zh`. It is chosen where the work begins:
 - the authoring assistant and the card import of a world: the interface language at the moment the person opens the assistant or starts the import (kept per world in `worlds/.authoring/`);
 - a language that has no folder in the package falls back to English.
 
-Every prompt may use `${language}`, which is filled with the name of the folder's language (English, 中文). The prompts that tell a model what to write (narration, speech, summaries, beliefs, suggestions) name it, so a story is written in the chat's language even when the world's files are in another; the names and terms of the world stay as its files spell them. A world in another language can be translated (see the editor guide).
+Every prompt may use `${language}`, which is filled with the name of the folder's language (English, 中文). The prompts that tell a model what to write (narration, speech, summaries, beliefs, suggestions) name it, so a story is written in the chat's language even when the world's files are in another; the names and terms of the world stay as its files spell them. A world in another language can be translated (see the editor guide). Characters' words and thoughts and the narration are also refused when they are written in the other script, and, in a Chinese story, when they leave ordinary lowercase English words in (names and acronyms keep their capitals and pass); the model is told which words and writes again.
+
+**Edited files are checked when the plugin starts.** Every file in `<root>/prompts` that the package ships a prompt for must be non-empty, may use only the `${...}` variables that prompt is given, and must not hold `{{...}}` (DSH reads it as a variable of its own). If any does not, an error listing each file and the reason is logged at startup; fix the file or delete it to restore the shipped text. The plugin still loads, because an old copy of a shipped prompt cannot be told from an edit, but using such a file fails with the same reason. A file for a prompt the package does not ship is not read and is ignored.
 
 A prompt alone does not keep a model in that language when the character sheet and the scene are in another one. So a character's answer, the narration, the beliefs of a reflection pass and the events and perceptions the record keeper writes are also checked by the script they are written in: one in the other language is refused, naming the language, and the model writes it again. A text too short to tell, and a chat in a language other than English or Chinese, are not checked.
 

@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Button, Modal, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import type { CatalogueKind, CatalogueSourceStatus, CatalogueWorldDetail, ConvertResult, InstallMode } from '../../../shared/catalogue.ts'
-import { convert, convertLorebook, convertPreset, downloadUrl, install, InstallConflict, loadWorld } from './catalogue-api.ts'
+import type { ImportPreview } from '../../../shared/import-card.ts'
+import type { CatalogueKind, CatalogueSourceStatus, CatalogueWorldDetail, InstallMode } from '../../../shared/catalogue.ts'
+import { importStagedLorebook, importStagedPreset, importVerbatimLorebook, importVerbatimPreset, stageRelease } from '../../import-selection-api.ts'
+import { ImportSelectionDialog, type ImportOptions } from '../../widgets/import-selection/ImportSelection.tsx'
+import type { SelectionChoice, SelectionPreview } from '../../../shared/import-selection.ts'
+import { downloadUrl, install, InstallConflict, loadWorld, stageCard } from './catalogue-api.ts'
 import type { CatalogueLocaleKey } from './locales.ts'
 import css from './CataloguePage.module.css'
 
@@ -13,6 +17,9 @@ const messageOf = (problem: unknown): string => (problem instanceof Error ? prob
 
 interface Done { text: string; packs: string[]; backup?: string; untracked: boolean }
 
+/** A card the person is to look through before it becomes a world. */
+export interface CardReview { preview: ImportPreview; source: string; versionId: string }
+
 export interface WorldDialogProps {
   t: Translate
   source: CatalogueSourceStatus
@@ -23,10 +30,12 @@ export interface WorldDialogProps {
   /** A world was installed, updated or made: what depends on the person's worlds is read again. */
   onChanged: () => void
   openChat: (chatSessionId: string) => void
+  /** A card was downloaded and read: the page shows it for the person to choose what becomes of it. */
+  onReview: (review: CardReview) => void
 }
 
 /** One entry of a catalogue: what it says about itself, its releases, and installing, updating or converting one of them. */
-export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, openChat }: WorldDialogProps) {
+export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, openChat, onReview }: WorldDialogProps) {
   const [detail, setDetail] = useState<CatalogueWorldDetail>()
   const [error, setError] = useState<string>()
   const [versionId, setVersionId] = useState('')
@@ -34,7 +43,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
   const [done, setDone] = useState<Done>()
   const [failure, setFailure] = useState<string>()
   const [conflict, setConflict] = useState<InstallConflict>()
-  const [started, setStarted] = useState<ConvertResult & { name: string }>()
+  const [selecting, setSelecting] = useState<SelectionPreview>()
 
   useEffect(() => {
     const abort = new AbortController()
@@ -72,40 +81,39 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
   const runConvert = (): void => {
     if (version === undefined) return
     setBusy('convert'); setFailure(undefined)
-    convert({ source: source.name, versionId: version.id, language: t('language') }).then(
-      (result) => {
-        setBusy(undefined); onChanged()
-        if (result.started) { try { openChat(result.chatSessionId); onClose() } catch (problem) { setFailure(t('convertFailed', { message: messageOf(problem) })) } } else setStarted({ ...result, name: detail?.name ?? name })
-      },
+    stageCard(source.name, version.id).then(
+      (preview) => { setBusy(undefined); onReview({ preview, source: source.name, versionId: version.id }) },
       (problem: unknown) => { setBusy(undefined); setFailure(t('convertFailed', { message: messageOf(problem) })) },
     )
   }
 
-  const runPreset = (): void => {
+  const stage = (kind: 'preset' | 'lorebook'): void => {
     if (version === undefined) return
-    setBusy('preset'); setFailure(undefined)
-    convertPreset({ source: source.name, versionId: version.id, title: detail?.name ?? name, language: t('language') }).then(
-      (result) => {
-        setBusy(undefined)
-        try { openChat(result.chatSessionId); onClose() } catch (problem) { setFailure(t('importPresetFailed', { message: messageOf(problem) })) }
-      },
-      (problem: unknown) => { setBusy(undefined); setFailure(t('importPresetFailed', { message: messageOf(problem) })) },
+    setBusy(kind); setFailure(undefined)
+    stageRelease(kind, source.name, version.id).then(
+      (preview) => { setBusy(undefined); setSelecting(preview) },
+      (problem: unknown) => { setBusy(undefined); setFailure(t(kind === 'preset' ? 'importPresetFailed' : 'importLorebookFailed', { message: messageOf(problem) })) },
     )
   }
-
-  const runLorebook = (): void => {
-    if (version === undefined) return
-    setBusy('lorebook'); setFailure(undefined)
-    convertLorebook({ source: source.name, versionId: version.id, title: detail?.name ?? name, language: t('language') }).then(
-      (result) => {
-        setBusy(undefined)
-        try { openChat(result.chatSessionId); onClose() } catch (problem) { setFailure(t('importLorebookFailed', { message: messageOf(problem) })) }
-      },
-      (problem: unknown) => { setBusy(undefined); setFailure(t('importLorebookFailed', { message: messageOf(problem) })) },
-    )
+  const runPreset = (): void => { stage('preset') }
+  const runLorebook = (): void => { stage('lorebook') }
+  const importChosen = async (choice: SelectionChoice, options: ImportOptions): Promise<void> => {
+    if (options.verbatim && selecting?.kind === 'lorebook') {
+      const made = await importVerbatimLorebook(choice, { title: detail?.name ?? name, knownBy: options.knownBy })
+      setDone({ text: t('importedVerbatim', { count: String(made.entries), name: made.name }), packs: [], untracked: false })
+      return
+    }
+    if (options.verbatim && selecting?.kind === 'preset') {
+      const made = await importVerbatimPreset(choice, { title: detail?.name ?? name })
+      setDone({ text: t('importedVerbatimPreset', { name: made.name }), packs: [], untracked: false })
+      return
+    }
+    const opened = await (selecting?.kind === 'lorebook' ? importStagedLorebook : importStagedPreset)(choice, { title: detail?.name ?? name, language: t('language') })
+    openChat(opened.chatSessionId)
+    onClose()
   }
 
-  const idle = busy === undefined && done === undefined && started === undefined && conflict === undefined
+  const idle = busy === undefined && done === undefined && conflict === undefined
   const primary = kind === 'lorebook'
     ? <Button variant="primary" disabled={!idle || version === undefined} onClick={runLorebook}>{busy === 'lorebook' ? t('importingLorebook') : t('importLorebookAction')}</Button>
     : kind === 'preset'
@@ -122,6 +130,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
     : undefined
 
   return (
+    <>
     <Modal open onClose={onClose} title={detail?.name ?? name} closeLabel={t('close')} footer={<>{copy}<Button variant="ghost" disabled={busy !== undefined} onClick={onClose}>{t('close')}</Button>{primary}</>}>
       <div className={css.detail} data-testid="roleplay-catalogue-detail">
         {error !== undefined && <p className={css.notice} role="alert">{t('detailFailed', { message: error })}</p>}
@@ -165,12 +174,6 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
           </div>
         )}
         {failure !== undefined && <p className={css.notice} role="alert">{failure}</p>}
-        {started !== undefined && (
-          <div className={css.warning} role="alert">
-            <p>{t('convertNotStarted', { name: started.name, failure: started.failure ?? '' })}</p>
-            <div className={css.actions}><Button variant="outline" size="sm" onClick={() => { try { openChat(started.chatSessionId); onClose() } catch (problem) { setFailure(t('convertFailed', { message: messageOf(problem) })) } }}>{t('openChat')}</Button></div>
-          </div>
-        )}
         {done !== undefined && (
           <p className={css.success} role="status">
             {done.text}
@@ -181,5 +184,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
         )}
       </div>
     </Modal>
+    {selecting !== undefined && <ImportSelectionDialog preview={selecting} t={t} canVerbatim onClose={() => { setSelecting(undefined) }} onConfirm={importChosen} />}
+    </>
   )
 }

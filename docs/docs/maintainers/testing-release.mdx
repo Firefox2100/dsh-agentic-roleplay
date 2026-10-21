@@ -34,6 +34,16 @@ Two cross-cutting tests guard what no single feature test would notice. `tests/h
 
 Use deterministic fakes for agent-loop tests. Assert tool calls and state transitions, not model prose. Concurrency tests should force overlapping turns/jobs and verify serialization, cancellation, and cleanup. Failure tests must confirm that a partially completed operation either rolls back or remains explicitly resumable.
 
+## Quality gate
+
+Pull requests and pushes to `main` run type-checking, the tests with coverage, the release build and the release check, then a SonarQube analysis whose quality gate must pass. Publishing waits for both. Run the same coverage locally:
+
+```sh
+pnpm test:coverage
+```
+
+Each package writes `packages/<name>/coverage/lcov.info`; `scripts/merge-coverage.mjs` joins them into `coverage/lcov.info` with paths relative to the repository root, which is what `sonar-project.properties` reads. Every source file of a package is listed, so a file no test loads counts as uncovered rather than missing. Tests, built output, starter worlds, shipped packs and configuration files are left out of the analysis or the coverage figures. The scan needs the `SONAR_TOKEN` repository secret and does not run for pull requests from forks. Fix what the gate reports instead of excluding the file; add an exclusion only for code that cannot be run by a test, and say why in the pull request.
+
 ## Live evaluation
 
 Scripted-model tests cannot show what a real model does with the prompts. `eval/` plays scenarios (look around and talk, walk through an exit, try something the world's rules forbid, wait for hours, say something a character must remember) into a running dev DSH with the model you want to judge, then checks the story's database, the chat log and the helpers' record. Use a throwaway roleplay root, never your own:

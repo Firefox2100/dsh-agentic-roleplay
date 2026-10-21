@@ -8,6 +8,8 @@ pnpm test
 pnpm build
 ```
 
+CI also runs `pnpm test:coverage` and a SonarQube analysis; see the quality gate section of the maintainers' testing guide. Run `pnpm test:coverage` locally when you change anything the tests should cover.
+
 Development belongs on topic branches. Use `dev/<package>` for work confined to one package and `feat/<name>` for changes spanning packages. Merge reviewed, stable releases into `main`.
 
 ## Releasing

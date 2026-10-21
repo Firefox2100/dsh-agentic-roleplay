@@ -1,5 +1,6 @@
 import { SettingsForm, SettingsValueField } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import { AuthoringToolSettings } from './AuthoringToolSettings.tsx'
 import { CatalogueSettings } from './CatalogueSettings.tsx'
 import { formLabels } from './locales.ts'
 import type { RoleplaySettingsFace } from './settings-controller.ts'
@@ -31,6 +32,7 @@ export function RoleplaySection(props: RoleplaySectionProps) {
           onReset={() => { props.resetField('rootPath') }}
         />
         <CatalogueSettings t={t} text={state.catalogues.text} disabled={!state.writable} onEdit={(text) => { props.edit('catalogues', text) }} />
+        <AuthoringToolSettings t={t} text={state.authoringTools.text} disabled={!state.writable} onEdit={(text) => { props.edit('authoringTools', text) }} />
       </SettingsForm>
     </div>
   )

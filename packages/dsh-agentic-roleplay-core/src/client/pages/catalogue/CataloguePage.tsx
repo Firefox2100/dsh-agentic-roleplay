@@ -3,10 +3,11 @@ import { Button, IconRefreshOutlineRegular, Tag } from '@deepseek-ai/dsh-client-
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { CatalogueKind, CatalogueUpdate, CatalogueWorld, CatalogueWorldPage } from '../../../shared/catalogue.ts'
 import type {} from '../../panel/slot-contract.ts'
-import { coverUrl, loadUpdates, loadWorlds } from './catalogue-api.ts'
+import { ImportCard } from '../../widgets/import-card/ImportCard.tsx'
+import { convertStaged, coverUrl, discardCard, loadUpdates, loadWorlds } from './catalogue-api.ts'
 import type { CatalogueFace } from './catalogue-controller.ts'
 import { ImportUrlDialog } from './ImportUrlDialog.tsx'
-import { WorldDialog } from './WorldDialog.tsx'
+import { WorldDialog, type CardReview } from './WorldDialog.tsx'
 import css from './CataloguePage.module.css'
 
 export type CataloguePageProps =
@@ -36,6 +37,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
   const [updatesError, setUpdatesError] = useState<string>()
   const [changed, setChanged] = useState(0)
   const [importing, setImporting] = useState(false)
+  const [reviewing, setReviewing] = useState<CardReview>()
   const [notice, setNotice] = useState<string>()
   const request = useRef(0)
 
@@ -78,6 +80,21 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
   }
 
   const problems = state.sources.filter(entry => entry.problem !== undefined)
+  if (reviewing !== undefined) {
+    return (
+      <div className={css.page} data-testid="roleplay-catalogue-review">
+        <ImportCard
+          t={t}
+          preview={reviewing.preview}
+          start={choices => convertStaged({ source: reviewing.source, versionId: reviewing.versionId, id: reviewing.preview.id, choices, language: t('language') })}
+          discard={() => discardCard(reviewing.preview.id)}
+          onCancelled={() => { setReviewing(undefined) }}
+          onStarted={(chat, started) => { setReviewing(undefined); setChanged(count => count + 1); if (!started) setNotice(t('convertNotStartedShort')); openChat(chat) }}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className={css.page} data-testid="roleplay-catalogue-page">
       <div className={css.toolbar}>
@@ -157,7 +174,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
                     )}
       </div>
 
-      {opened !== undefined && source !== undefined && <WorldDialog t={t} source={source} id={opened.id} name={opened.name} kind={opened.kind} openChat={openChat} onClose={() => { setOpened(undefined) }} onChanged={() => { setNotice(undefined); setChanged(count => count + 1) }} />}
+      {opened !== undefined && source !== undefined && <WorldDialog t={t} source={source} id={opened.id} name={opened.name} kind={opened.kind} openChat={openChat} onReview={(review) => { setOpened(undefined); setReviewing(review) }} onClose={() => { setOpened(undefined) }} onChanged={() => { setNotice(undefined); setChanged(count => count + 1) }} />}
       {importing && <ImportUrlDialog t={t} onClose={() => { setImporting(false) }} onInstalled={(name, packs) => { setImporting(false); setNotice(`${t('installed', { name })}${packs.length > 0 ? ` ${t('packsNotice', { packs: packs.join(', ') })}` : ''}`) }} />}
     </div>
   )

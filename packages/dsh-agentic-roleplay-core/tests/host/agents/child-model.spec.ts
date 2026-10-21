@@ -35,6 +35,14 @@ describe('childSampling', () => {
     expect(childSampling(DEFAULT_SETTINGS, 'authoring').maxTokens).toBe(8000)
   })
 
+  it('gives the characters, and only them, the controls beyond temperature that are not neutral', () => {
+    const settings = { sampling: { ...DEFAULT_SETTINGS.sampling, topP: 0.9, repetitionPenalty: 1.1 } }
+    expect(childSampling(settings, 'characters')).toMatchObject({ temperature: 0.8, topP: 0.9, repetitionPenalty: 1.1 })
+    expect(childSampling(settings, 'characters')).not.toHaveProperty('topK')
+    expect(childSampling(settings, 'records')).not.toHaveProperty('topP')
+    expect(childSampling(DEFAULT_SETTINGS, 'characters')).not.toHaveProperty('topP')
+  })
+
   it('lets a helper with a declared answer size produce that with room to spare, and never more than the ceiling of its kind', () => {
     expect(childSampling(DEFAULT_SETTINGS, 'characters', 400).maxTokens).toBe(800)
     expect(childSampling(DEFAULT_SETTINGS, 'characters', 5000).maxTokens).toBe(2000)

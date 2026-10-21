@@ -33,6 +33,8 @@ import { readBinaryBody, readJsonBody } from './body.ts'
 import { ImportCardError } from '../import/card.ts'
 import { ImportNotFoundError, parseChoices } from '../import/store.ts'
 import type { ImportChoices, ImportPreview } from '../../shared/import-card.ts'
+import type { SelectionChoice, SelectionKind, SelectionPreview } from '../../shared/import-selection.ts'
+import { parseSelectionChoice } from '../import/staging.ts'
 import { HttpError, sendError, sendJson } from './respond.ts'
 import { presetRoutes } from '../presets/routes.ts'
 import type { PresetApi } from '../presets/routes.ts'
@@ -71,6 +73,11 @@ export interface ApiDeps {
     start(id: string, choices: ImportChoices, language?: string): Promise<{ worldId: string; chatSessionId: string; started: boolean; failure?: string }>
     picture(id: string): Promise<{ file: string; size: number }>
     uploadPreset(worldId: string, file: Buffer, name: string, language?: string): Promise<{ chatSessionId: string; preset: string; started: boolean; failure?: string }>
+    /** Keeps a preset or a lorebook while the person chooses what of it is imported. */
+    stage(kind: SelectionKind, file: Buffer, name: string): SelectionPreview
+    discardStaged(id: string): void
+    applyStagedVerbatim(worldId: string, choice: SelectionChoice): Promise<{ preset: string; replaced: boolean }>
+    uploadStaged(worldId: string, choice: SelectionChoice, language?: string): Promise<{ chatSessionId: string; preset: string; started: boolean; failure?: string }>
   }
   avatars: {
     create(name: string): Promise<string>
@@ -204,7 +211,7 @@ async function sendImage(res: ServerResponse, image: { file: string; size: numbe
   await pipeline(createReadStream(image.file), res)
 }
 
-const CATALOGUE_STATUS: Record<CatalogueFailure, number> = { input: 400, unknown: 404, upstream: 502, invalid: 422, conflict: 409 }
+const CATALOGUE_STATUS: Record<CatalogueFailure, number> = { input: 400, unknown: 404, upstream: 502, invalid: 422, conflict: 409, unavailable: 503 }
 
 /** A catalogue failure with the status that says whose fault it is; anything else is not ours to describe. */
 function catalogueFailure(res: ServerResponse, error: unknown): void {
@@ -238,7 +245,15 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
       POST: async (req, res) => { try { const body = await readJsonBody(req) as { folder?: unknown; name?: unknown; preset?: unknown }; if (typeof body.folder !== 'string' || typeof body.name !== 'string') return sendError(res, 400, 'folder and name must be text'); if (body.preset !== undefined && typeof body.preset !== 'string') return sendError(res, 400, 'preset must be text'); sendJson(res, 201, await createWorld({ folder: body.folder, name: body.name, ...(body.preset === undefined ? {} : { preset: body.preset }) })) } catch (error) { if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); if (error instanceof WorldFolderExistsError) return sendError(res, 409, error.message); throw error } },
     },
-    '/catalogue/sources': { GET: async (_req, res) => { sendJson(res, 200, catalogue.sources()) } },
+    '/catalogue/sources': { GET: async (_req, res) => { try { sendJson(res, 200, await catalogue.sources()) } catch (error) { return catalogueFailure(res, error) } } },
+    '/catalogue/key': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await catalogue.describeKey(url.searchParams.get('ref') ?? '')) } catch (error) { return catalogueFailure(res, error) } },
+      PUT: async (req, res) => {
+        const { ref, value } = await readJsonBody(req)
+        if (typeof ref !== 'string' || typeof value !== 'string') return sendError(res, 400, '"ref" and "value" must be text')
+        try { sendJson(res, 200, await catalogue.keepKey(ref, value)) } catch (error) { return catalogueFailure(res, error) }
+      },
+    },
     '/catalogue/worlds': {
       GET: async (_req, res, url) => {
         const offset = Number(url.searchParams.get('offset') ?? 0)
@@ -285,6 +300,24 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
         } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
       },
     },
+    '/catalogue/stage/card': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { source?: unknown; versionId?: unknown }
+        if (typeof body.source !== 'string' || typeof body.versionId !== 'string') return sendError(res, 400, 'source and versionId must be text')
+        try { sendJson(res, 200, await catalogue.stageCard({ source: body.source, versionId: body.versionId })) }
+        catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
+      },
+    },
+    '/catalogue/convert/staged': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { source?: unknown; versionId?: unknown; id?: unknown; choices?: unknown; language?: unknown }
+        if (typeof body.source !== 'string' || typeof body.versionId !== 'string' || typeof body.id !== 'string') return sendError(res, 400, 'source, versionId and id must be text')
+        try {
+          const language = languageField(body.language)
+          sendJson(res, 201, await catalogue.convertStaged({ source: body.source, versionId: body.versionId, id: body.id, choices: parseChoices(body.choices), ...(language === undefined ? {} : { language }) }))
+        } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
+      },
+    },
     '/catalogue/convert/preset': {
       POST: async (req, res) => {
         const body = await readJsonBody(req) as { source?: unknown; versionId?: unknown; language?: unknown; title?: unknown }
@@ -294,6 +327,15 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
           const language = languageField(body.language)
           sendJson(res, 201, await catalogue.convertPreset({ source: body.source, versionId: body.versionId, ...(body.title === undefined ? {} : { title: body.title }), ...(language === undefined ? {} : { language }) }))
         } catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
+      },
+    },
+    '/catalogue/stage': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req) as { source?: unknown; versionId?: unknown; kind?: unknown }
+        if (typeof body.source !== 'string' || typeof body.versionId !== 'string') return sendError(res, 400, 'source and versionId must be text')
+        if (body.kind !== 'preset' && body.kind !== 'lorebook') return sendError(res, 400, 'kind must be preset or lorebook')
+        try { sendJson(res, 200, await catalogue.stage({ source: body.source, versionId: body.versionId, kind: body.kind })) }
+        catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
       },
     },
     '/catalogue/convert/lorebook': {
@@ -330,6 +372,44 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
       POST: async (req, res, url) => {
         const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'preset'))
         try { sendJson(res, 200, await importer.uploadPreset(url.searchParams.get('id') ?? '', await readBinaryBody(req, importer.maxUploadBytes), name, languageField(url.searchParams.get('language') ?? undefined))) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          return importFailure(res, error)
+        }
+      },
+    },
+    '/import/stage': {
+      POST: async (req, res, url) => {
+        const kind = url.searchParams.get('kind')
+        if (kind !== 'preset' && kind !== 'lorebook') return sendError(res, 400, '"kind" must be preset or lorebook')
+        const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? kind))
+        try { sendJson(res, 200, importer.stage(kind, await readBinaryBody(req, importer.maxUploadBytes), name)) }
+        catch (error) { return importFailure(res, error) }
+      },
+      DELETE: async (_req, res, url) => { importer.discardStaged(url.searchParams.get('id') ?? ''); res.statusCode = 204; res.end() },
+    },
+    '/worlds/import/preset/verbatim': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req)
+        const choice = parseSelectionChoice(body)
+        if (typeof choice === 'string') return sendError(res, 400, choice)
+        const { worldId } = body as Record<string, unknown>
+        if (typeof worldId !== 'string') return sendError(res, 400, '"worldId" must be text')
+        try { sendJson(res, 200, await importer.applyStagedVerbatim(worldId, choice)) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          return importFailure(res, error)
+        }
+      },
+    },
+    '/worlds/import/preset/staged': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req)
+        const choice = parseSelectionChoice(body)
+        if (typeof choice === 'string') return sendError(res, 400, choice)
+        const { worldId, language } = body as Record<string, unknown>
+        if (typeof worldId !== 'string') return sendError(res, 400, '"worldId" must be text')
+        try { sendJson(res, 200, await importer.uploadStaged(worldId, choice, languageField(language))) }
         catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           return importFailure(res, error)

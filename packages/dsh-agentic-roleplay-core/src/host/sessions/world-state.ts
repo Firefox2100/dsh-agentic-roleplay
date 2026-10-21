@@ -72,7 +72,7 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
     const state = session.factionStates.get(faction.id)
     return { key: faction.sourceId ?? String(faction.id), name: faction.name, aliases: faction.aliases, summary: faction.summary, description: faction.description, values: faction.values, structure: faction.structure, state: { publicState: state?.publicState ?? '', innerState: state?.innerState ?? '' }, goals: session.factionIntents.list(faction.id).map(goal => ({ ref: String(goal.id), name: goal.name, description: goal.description, status: goal.status, priority: goal.priority })), members: session.factionMemberships.ofFaction(faction.id).map(member => { const character = session.characters.get(member.characterId); return { character: character?.sourceId ?? String(member.characterId), name: character?.name ?? String(member.characterId), role: member.role, rank: member.rank, status: member.status, public: member.public, commitment: member.commitment } }), relationships: session.factionRelationships.from('faction', faction.id).map(relationship => ({ target: `${relationship.toKind}:${relationship.toKind === 'faction' ? session.factions.get(relationship.toId)?.name ?? relationship.toId : session.characters.get(relationship.toId)?.name ?? relationship.toId}`, label: relationship.label, summary: relationship.summary })) }
   })
-  const lore = session.lore.list().map(entry => ({ key: entry.sourceId ?? String(entry.id), title: entry.title, kind: entry.kind, summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: String(subject.id), name: subjectName(session, subject.kind, subject.id) })), related: entry.related.flatMap(id => { const found = session.lore.get(id); return found === undefined ? [] : [{ key: found.sourceId ?? String(found.id), title: found.title }] }), sources: entry.sources }))
+  const lore = session.lore.list().map(entry => ({ key: entry.sourceId ?? String(entry.id), title: entry.title, kind: entry.kind, scope: entry.scope, knownBy: session.characters.list().filter(character => session.knowledge.knows(character.id, 'lore', entry.id)).map(character => character.name), summary: entry.summary, body: entry.body, ...(entry.startsAt === undefined ? {} : { startsAt: entry.startsAt }), ...(entry.endsAt === undefined ? {} : { endsAt: entry.endsAt }), subjects: entry.subjects.map(subject => ({ kind: subject.kind, key: String(subject.id), name: subjectName(session, subject.kind, subject.id) })), related: entry.related.flatMap(id => { const found = session.lore.get(id); return found === undefined ? [] : [{ key: found.sourceId ?? String(found.id), title: found.title }] }), sources: entry.sources }))
   const entity = (kind: RelationEntity['kind'], key: string, name: string): RelationEntity => ({ kind, key, name })
   const characterEntity = (id: number) => { const value = session.characters.get(id); return entity('character', value === undefined ? String(id) : keyOf(value), value?.name ?? String(id)) }
   const factionEntity = (id: number) => { const value = session.factions.get(id); return entity('faction', value?.sourceId ?? String(id), value?.name ?? String(id)) }
@@ -99,7 +99,20 @@ function subjectName(session: Session, kind: 'character' | 'faction' | 'location
 export function editWorldLore(deps: WorldStateDeps, id: string, key: string, edit: LoreEdit): WorldState {
   const session = sessionOf(deps, id); const entry = session.lore.list().find(candidate => (candidate.sourceId ?? String(candidate.id)) === key)
   if (entry === undefined) throw new InvalidEditProblems([`there is no lore "${key}"`])
-  session.lore.update(entry.id, edit)
+  const { knownBy, ...patch } = edit
+  if (knownBy !== undefined && knownBy.length > 0 && (edit.scope ?? entry.scope) === 'everyone') throw new InvalidEditProblems(['an entry everyone knows has no list of who knows it'])
+  const knowers = knownBy?.map(name => ({ name, character: session.characters.getBySourceId(name) ?? session.characters.findByName(name)[0] }))
+  const strangers = knowers?.filter(found => found.character === undefined) ?? []
+  if (strangers.length > 0) throw new InvalidEditProblems(strangers.map(found => `"${found.name}" is not a character of this story`))
+  session.transaction(() => {
+    session.lore.update(entry.id, patch)
+    if (knowers === undefined) return
+    const wanted = new Set(knowers.map(found => found.character!.id))
+    for (const character of session.characters.list()) {
+      if (wanted.has(character.id)) session.knowledge.learn(character.id, 'lore', entry.id, session.metadata.get().turns)
+      else session.knowledge.forget(character.id, 'lore', entry.id)
+    }
+  })
   return worldOf(session, deps.sessionsDir())
 }
 

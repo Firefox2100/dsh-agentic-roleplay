@@ -1,7 +1,9 @@
 import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import type { PresetSummary } from '../../../shared/presets.ts'
 import type { OpenChat } from '../../chat/open-chat.ts'
-import { authorPreset, createPreset, deletePreset, importPreset, listPresets } from '../../presets-api.ts'
+import type { SelectionChoice, SelectionPreview } from '../../../shared/import-selection.ts'
+import { importStagedPreset, importVerbatimPreset, stageFile } from '../../import-selection-api.ts'
+import { authorPreset, createPreset, deletePreset, listPresets } from '../../presets-api.ts'
 
 export interface PresetsState {
   status: 'idle' | 'loading' | 'ready' | 'failed'
@@ -22,8 +24,12 @@ export interface PresetsFace {
   remove: (name: string) => Promise<void>
   /** Opens the preset's authoring chat in the main area. */
   author: (name: string) => Promise<void>
-  /** Uploads a SillyTavern preset into a new library preset and opens its authoring chat. */
-  importFile: (name: string, file: File) => Promise<ImportedPreset>
+  /** Sends a SillyTavern preset to the host, which says what it holds for the person to choose from; rejects with the host's reason. */
+  stage: (file: File) => Promise<SelectionPreview>
+  /** Imports the chosen prompts of a staged preset into a new library preset and opens its authoring chat. */
+  importStaged: (choice: SelectionChoice, name: string) => Promise<ImportedPreset>
+  /** Imports the chosen prompts of a staged preset as they are, with no assistant, into a new library preset. */
+  importVerbatim: (choice: SelectionChoice, name: string) => Promise<void>
 }
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
@@ -39,8 +45,10 @@ export class PresetsController {
     create: async (name, title, description) => { await createPreset({ name, ...(title === '' ? {} : { title }), ...(description === '' ? {} : { description }) }, this.abort.signal); await this.read(true) },
     remove: async (name) => { await deletePreset(name, this.abort.signal); await this.read(true) },
     author: async (name) => { this.openChat((await authorPreset(name, this.language(), this.abort.signal)).chatSessionId) },
-    importFile: async (name, file) => {
-      const opened = await importPreset(name, file, this.language(), this.abort.signal)
+    stage: async file => await stageFile('preset', file, this.abort.signal),
+    importVerbatim: async (choice, name) => { await importVerbatimPreset(choice, { name }, this.abort.signal); await this.read(true) },
+    importStaged: async (choice, name) => {
+      const opened = await importStagedPreset(choice, { name, language: this.language() }, this.abort.signal)
       await this.read(true)
       this.openChat(opened.chatSessionId)
       return { started: opened.started, ...(opened.failure === undefined ? {} : { failure: opened.failure }) }

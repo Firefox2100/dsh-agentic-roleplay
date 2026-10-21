@@ -2,6 +2,8 @@ import { useEffect, useId, useRef, useState } from 'react'
 import { Button, IconRefreshOutlineRegular, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { LorebookSummary } from '../../../shared/lorebooks.ts'
+import type { SelectionPreview } from '../../../shared/import-selection.ts'
+import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSelection.tsx'
 import type {} from '../../panel/slot-contract.ts'
 import { LorebookEditor } from './LorebookEditor.tsx'
 import type { LorebooksFace } from './lorebooks-controller.ts'
@@ -16,9 +18,9 @@ const NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
 const nameFromFile = (file: string): string => file.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^[-_]+|[-_]+$/g, '').slice(0, 64)
 
-function NameDialog({ t, mode, file, submit, onClose }: { t: LorebooksPageProps['t']; mode: 'create' | 'import'; file?: string; submit: (name: string, title: string, description: string) => Promise<void>; onClose: () => void }) {
+function NameDialog({ t, submit, onClose }: { t: LorebooksPageProps['t']; submit: (name: string, title: string, description: string) => Promise<void>; onClose: () => void }) {
   const formId = useId()
-  const [name, setName] = useState(file === undefined ? '' : nameFromFile(file))
+  const [name, setName] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [busy, setBusy] = useState(false)
@@ -28,14 +30,13 @@ function NameDialog({ t, mode, file, submit, onClose }: { t: LorebooksPageProps[
     setBusy(true); setError(undefined)
     submit(name, title.trim(), description.trim()).then(onClose, (failure: unknown) => { setBusy(false); setError(messageOf(failure)) })
   }
-  const importing = mode === 'import'
   return (
-    <Modal open onClose={onClose} title={importing ? t('importTitle') : t('createTitle')} description={importing ? t('importHelp', { file: file ?? '' }) : t('createHelp')} closeLabel={t('close')} footer={<><Button variant="ghost" disabled={busy} onClick={onClose}>{t('cancel')}</Button><Button variant="primary" type="submit" form={formId} disabled={busy || !NAME.test(name)}>{importing ? (busy ? t('importing') : t('import')) : (busy ? t('creating') : t('create'))}</Button></>}>
+    <Modal open onClose={onClose} title={t('createTitle')} description={t('createHelp')} closeLabel={t('close')} footer={<><Button variant="ghost" disabled={busy} onClick={onClose}>{t('cancel')}</Button><Button variant="primary" type="submit" form={formId} disabled={busy || !NAME.test(name)}>{busy ? t('creating') : t('create')}</Button></>}>
       <form id={formId} className={css.form} onSubmit={(event) => { event.preventDefault(); go() }}>
         <label className={css.field}><span className={css.label}>{t('bookName')}</span><Input value={name} maxLength={64} data-modal-autofocus onChange={(event) => { setName(event.target.value) }} /><span className={css.help}>{t('bookNameHelp')}</span></label>
-        {!importing && <label className={css.field}><span className={css.label}>{t('bookTitle')}</span><Input value={title} maxLength={300} onChange={(event) => { setTitle(event.target.value) }} /></label>}
-        {!importing && <label className={css.field}><span className={css.label}>{t('bookDescription')}</span><Input value={description} maxLength={300} onChange={(event) => { setDescription(event.target.value) }} /></label>}
-        {error !== undefined && <p className={css.error} role="alert">{importing ? t('importFailed', { message: error }) : t('createFailed', { message: error })}</p>}
+        <label className={css.field}><span className={css.label}>{t('bookTitle')}</span><Input value={title} maxLength={300} onChange={(event) => { setTitle(event.target.value) }} /></label>
+        <label className={css.field}><span className={css.label}>{t('bookDescription')}</span><Input value={description} maxLength={300} onChange={(event) => { setDescription(event.target.value) }} /></label>
+        {error !== undefined && <p className={css.error} role="alert">{t('createFailed', { message: error })}</p>}
       </form>
     </Modal>
   )
@@ -56,12 +57,14 @@ function DeleteDialog({ t, book, remove, onClose }: { t: LorebooksPageProps['t']
 }
 
 /** The lorebook library: reusable background knowledge that a story copies when it starts. */
-export function LorebooksPage({ t, useLorebooks, load, refresh, create, remove, author, importFile }: LorebooksPageProps) {
+export function LorebooksPage({ t, useLorebooks, load, refresh, create, remove, author, stage, importStaged, importVerbatim }: LorebooksPageProps) {
   const state = useLorebooks(snapshot => snapshot)
   const [editing, setEditing] = useState<string>()
   const [creating, setCreating] = useState(false)
   const [deleting, setDeleting] = useState<LorebookSummary>()
-  const [uploaded, setUploaded] = useState<File>()
+  const [staged, setStaged] = useState<SelectionPreview>()
+  const [importName, setImportName] = useState('')
+  const [staging, setStaging] = useState(false)
   const [notice, setNotice] = useState<string>()
   const picker = useRef<HTMLInputElement>(null)
 
@@ -70,6 +73,16 @@ export function LorebooksPage({ t, useLorebooks, load, refresh, create, remove, 
   const open = (name: string): void => {
     setNotice(undefined)
     author(name).catch((failure: unknown) => { setNotice(t('authorFailed', { message: messageOf(failure) })) })
+  }
+
+  const choose = (file: File | undefined): void => {
+    if (file === undefined) return
+    setNotice(undefined)
+    setStaging(true)
+    stage(file).then(
+      (preview) => { setStaging(false); setImportName(nameFromFile(preview.name === '' ? file.name : preview.name) || nameFromFile(file.name)); setStaged(preview) },
+      (failure: unknown) => { setStaging(false); setNotice(t('importFailed', { message: messageOf(failure) })) },
+    )
   }
 
   if (editing !== undefined) return <LorebookEditor t={t} name={editing} onBack={() => { setEditing(undefined); refresh() }} author={() => { open(editing) }} />
@@ -81,8 +94,8 @@ export function LorebooksPage({ t, useLorebooks, load, refresh, create, remove, 
       <div className={css.toolbar}>
         <span className={css.count}>{state.books === undefined ? '' : t(books.length === 1 ? 'countOne' : 'countOther', { count: books.length })}</span>
         <div className={css.actions}>
-          <input ref={picker} type="file" accept=".json,application/json" hidden data-testid="roleplay-lorebook-file" onChange={(event) => { setUploaded(event.target.files?.[0]); event.target.value = '' }} />
-          <Button variant="outline" size="sm" onClick={() => { picker.current?.click() }}>{t('import')}</Button>
+          <input ref={picker} type="file" accept=".json,application/json" hidden data-testid="roleplay-lorebook-file" onChange={(event) => { choose(event.target.files?.[0]); event.target.value = '' }} />
+          <Button variant="outline" size="sm" disabled={staging} onClick={() => { picker.current?.click() }}>{staging ? t('importReading') : t('import')}</Button>
           <Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('create')}</Button>
           <Button variant="outline" size="sm" icon={<IconRefreshOutlineRegular />} disabled={state.refreshing || state.status === 'loading'} aria-busy={state.refreshing} onClick={refresh}>{state.refreshing ? t('refreshing') : t('refresh')}</Button>
         </div>
@@ -115,8 +128,12 @@ export function LorebooksPage({ t, useLorebooks, load, refresh, create, remove, 
                 </ul>
               )}
       </div>
-      {creating && <NameDialog t={t} mode="create" submit={create} onClose={() => { setCreating(false) }} />}
-      {uploaded !== undefined && <NameDialog t={t} mode="import" file={uploaded.name} submit={async (name) => { const file = uploaded; const result = await importFile(name, file); if (!result.started) setNotice(t('importNotStarted', { message: result.failure ?? '' })) }} onClose={() => { setUploaded(undefined) }} />}
+      {creating && <NameDialog t={t} submit={create} onClose={() => { setCreating(false) }} />}
+      {staged !== undefined && (
+        <ImportSelectionDialog preview={staged} t={t} canConfirm={NAME.test(importName)} onClose={() => { setStaged(undefined) }} onConfirm={async (choice, options) => { if (options.verbatim) { const count = await importVerbatim(choice, importName, options.knownBy); setNotice(t('importedVerbatim', { count: String(count), name: importName })); return } const result = await importStaged(choice, importName); if (!result.started) setNotice(t('importNotStarted', { message: result.failure ?? '' })) }}>
+          <label className={css.field}><span className={css.label}>{t('bookName')}</span><Input value={importName} maxLength={64} onChange={(event) => { setImportName(event.target.value) }} /><span className={css.help}>{t('bookNameHelp')}</span></label>
+        </ImportSelectionDialog>
+      )}
       {deleting !== undefined && <DeleteDialog t={t} book={deleting} remove={remove} onClose={() => { setDeleting(undefined) }} />}
     </div>
   )

@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { mkdir, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { PresetSampling, PresetSummary } from '../../shared/presets.ts'
+import { parseSampling } from '../../shared/sampling.ts'
 import { LANGUAGE_FOLDER, listFiles, promptProblem, PROMPTS_FOLDER, shippedLanguages, shippedPromptsDirectory } from '../prompts/library.ts'
 import { PROSE_PROMPTS, readWorldPrompt } from '../prompts/world-prompts.ts'
 
@@ -10,7 +11,6 @@ export const PRESETS_FOLDER = 'presets'
 export const PRESET_FILE = 'preset.json'
 const NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
 const MAX_TEXT = 300
-const SAMPLING_KEYS: readonly (keyof PresetSampling)[] = ['master', 'characters']
 
 export const isPresetName = (name: string): boolean => NAME.test(name)
 
@@ -39,20 +39,7 @@ function parseHeader(value: unknown, problems: string[]): Header {
     if (typeof field !== 'string' || field.length > MAX_TEXT) { problems.push(`${PRESET_FILE}: "${key}" must be text of at most ${MAX_TEXT} characters`); return undefined }
     return field.trim() || undefined
   }
-  const sampling: PresetSampling = {}
-  const given = value['sampling']
-  if (given !== undefined && given !== null) {
-    if (!isRecord(given)) problems.push(`${PRESET_FILE}: "sampling" must be an object`)
-    else {
-      for (const key of Object.keys(given)) if (!SAMPLING_KEYS.includes(key as keyof PresetSampling)) problems.push(`${PRESET_FILE}: sampling.${key} is not something a preset sets (${SAMPLING_KEYS.join(', ')})`)
-      for (const key of SAMPLING_KEYS) {
-        const number = given[key]
-        if (number === undefined) continue
-        if (typeof number !== 'number' || !Number.isFinite(number) || number < 0 || number > 2) problems.push(`${PRESET_FILE}: sampling.${key} must be a number from 0 to 2`)
-        else sampling[key] = number
-      }
-    }
-  }
+  const sampling = parseSampling(value['sampling'], `${PRESET_FILE}: sampling`, problems)
   const title = text('title')
   const description = text('description')
   return { ...(title === undefined ? {} : { title }), ...(description === undefined ? {} : { description }), sampling }
@@ -219,11 +206,11 @@ export async function createPresetFromShipped(root: string, request: { name: str
 }
 
 /** Makes an empty preset folder that the import is about to fill; it has no prompts yet, so it reads as having problems until it does. */
-export async function reservePreset(root: string, name: string, title: string): Promise<string> {
+export async function reservePreset(root: string, name: string, title: string, sampling: PresetSampling = {}): Promise<string> {
   const target = presetDirectory(root, name)
   if (existsSync(target)) throw new Error(`there is already a preset "${name}"`)
   await mkdir(target, { recursive: true })
-  await writeHeader(target, headerFile(title.trim().slice(0, MAX_TEXT) || undefined, undefined, {}))
+  await writeHeader(target, headerFile(title.trim().slice(0, MAX_TEXT) || undefined, undefined, sampling))
   return target
 }
 

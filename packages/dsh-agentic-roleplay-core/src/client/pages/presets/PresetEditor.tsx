@@ -1,18 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PresetSummary } from '../../../shared/presets.ts'
-import { readPreset, removePresetPrompt, updatePresetInfo, writePresetPrompt, type PresetText } from '../../presets-api.ts'
+import { listRulesPrompts, readPreset, readPresetPrompt, removePresetPrompt, updatePresetInfo, writePresetPrompt, type PresetText } from '../../presets-api.ts'
+import { SamplingFields, samplingOfTexts, samplingTexts, type SamplingTexts } from '../../widgets/sampling-fields/SamplingFields.tsx'
 import type { PresetsPageProps } from './PresetsPage.tsx'
 import css from './PresetsPage.module.css'
 
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
-const numberOf = (text: string): number | undefined => (text.trim() === '' ? undefined : Number(text))
 const PROMPT_IDS = ['roleplay/persona', 'roleplay/style', 'roleplay/character-style'] as const
 const PROMPT_LANGUAGES = ['en', 'zh'] as const
 const promptKey = (path: string): { language: string; id: string } => ({ language: path.slice(0, path.indexOf('/')), id: path.slice(path.indexOf('/') + 1) })
 
-interface Info { title: string; description: string; master: string; characters: string }
-const infoOf = (summary: PresetSummary): Info => ({ title: summary.title === summary.name ? '' : summary.title, description: summary.description, master: summary.sampling.master?.toString() ?? '', characters: summary.sampling.characters?.toString() ?? '' })
+interface Info { title: string; description: string; sampling: SamplingTexts }
+const infoOf = (summary: PresetSummary): Info => ({ title: summary.title === summary.name ? '' : summary.title, description: summary.description, sampling: samplingTexts(summary.sampling) })
 
 /** One library preset: what it says about itself and the text of each prompt it carries; the assistant does the larger rewrites. */
 export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps['t']; name: string; onBack: () => void; author: () => void }) {
@@ -24,6 +24,8 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
   const [text, setText] = useState('')
   const [draft, setDraft] = useState('')
   const [addition, setAddition] = useState('')
+  const [rulesOffered, setRulesOffered] = useState<string[]>([])
+  const [rulesChoice, setRulesChoice] = useState('')
   const [promptStatus, setPromptStatus] = useState<{ state: 'idle' | 'saving' | 'saved' | 'failed'; message?: string }>({ state: 'idle' })
 
   const accept = (value: PresetText, keep?: string): void => {
@@ -42,6 +44,15 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
     return () => { abort.abort() }
   }, [name])
 
+  useEffect(() => {
+    const abort = new AbortController()
+    Promise.all(PROMPT_LANGUAGES.map(async language => (await listRulesPrompts(name, language, abort.signal)).map(id => `${language}/${id}`))).then(
+      (lists) => { setRulesOffered(lists.flat()) },
+      (problem: unknown) => { if (!abort.signal.aborted) setFailure(messageOf(problem)) },
+    )
+    return () => { abort.abort() }
+  }, [name, loaded?.summary.rules.length, Object.keys(loaded?.prompts ?? {}).length])
+
   if (loaded === undefined || info === undefined) return <p className={css.message} role={failure === undefined ? undefined : 'alert'}>{failure === undefined ? t('loading') : t('loadFailed', { message: failure })}</p>
 
   const paths = [...Object.keys(loaded.prompts), ...(draft === '' ? [] : [draft])].sort()
@@ -51,8 +62,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
   const promptDirty = path !== '' && (path === draft || text !== loaded.prompts[path])
   const saveInfo = (): void => {
     setInfoStatus({ state: 'saving' })
-    const sampling = { ...(numberOf(info.master) === undefined ? {} : { master: numberOf(info.master) as number }), ...(numberOf(info.characters) === undefined ? {} : { characters: numberOf(info.characters) as number }) }
-    updatePresetInfo(name, { title: info.title, description: info.description, sampling }, new AbortController().signal).then(
+    updatePresetInfo(name, { title: info.title, description: info.description, sampling: samplingOfTexts(info.sampling) }, new AbortController().signal).then(
       (summary) => { setLoaded({ ...loaded, summary }); setInfo(infoOf(summary)); setInfoStatus({ state: 'saved' }) },
       (problem: unknown) => { setInfoStatus({ state: 'failed', message: messageOf(problem) }) },
     )
@@ -77,12 +87,13 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
       (problem: unknown) => { setPromptStatus({ state: 'failed', message: messageOf(problem) }) },
     )
   }
+  const isRules = (key: string): boolean => key !== '' && !(PROMPT_IDS as readonly string[]).includes(promptKey(key).id)
   const label = (key: string): string => { const { language, id } = promptKey(key); return `${language} · ${(PROMPT_IDS as readonly string[]).includes(id) ? t(`prompt_${id}` as 'prompt_roleplay/style') : id}` }
-  const field = (key: keyof Info, caption: Parameters<PresetsPageProps['t']>[0], options: { rows?: number; number?: boolean } = {}) => (
+  const field = (key: 'title' | 'description', caption: Parameters<PresetsPageProps['t']>[0], options: { rows?: number } = {}) => (
     <label className={css.field}>
       <span className={css.label}>{t(caption)}</span>
       {options.rows === undefined
-        ? <input className={css.input} value={info[key]} inputMode={options.number === true ? 'decimal' : undefined} onChange={(event) => { setInfo({ ...info, [key]: event.target.value }); setInfoStatus({ state: 'idle' }) }} />
+        ? <input className={css.input} value={info[key]} onChange={(event) => { setInfo({ ...info, [key]: event.target.value }); setInfoStatus({ state: 'idle' }) }} />
         : <textarea className={css.input} rows={options.rows} value={info[key]} onChange={(event) => { setInfo({ ...info, [key]: event.target.value }); setInfoStatus({ state: 'idle' }) }} />}
     </label>
   )
@@ -100,8 +111,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
           <h3 className={css.sectionTitle}>{t('info')}</h3>
           {field('title', 'presetTitle')}
           {field('description', 'presetDescription', { rows: 3 })}
-          <div className={css.row}>{field('master', 'samplingMaster', { number: true })}{field('characters', 'samplingCharacters', { number: true })}</div>
-          <p className={css.help}>{t('samplingHelp')}</p>
+          <SamplingFields texts={info.sampling} t={t} onChange={(sampling) => { setInfo({ ...info, sampling }); setInfoStatus({ state: 'idle' }) }} />
           <div className={css.actions}>
             <Button variant="primary" size="sm" disabled={!infoDirty || infoStatus.state === 'saving'} onClick={saveInfo}>{infoStatus.state === 'saving' ? t('infoSaving') : t('infoSave')}</Button>
             {infoStatus.state === 'saved' && <span className={css.ok} role="status">{t('infoSaved')}</span>}
@@ -131,6 +141,22 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
                 </div>
               </>
             )}
+          {rulesOffered.filter(key => !paths.includes(key)).length > 0 && (
+            <div className={css.actions}>
+              <select value={rulesChoice} aria-label={t('rulesAdd')} data-testid="roleplay-preset-rules-add" onChange={(event) => { setRulesChoice(event.target.value) }}>
+                <option value="">{t('rulesAdd')}</option>
+                {rulesOffered.filter(key => !paths.includes(key)).map(key => <option key={key} value={key}>{label(key)}</option>)}
+              </select>
+              <Button variant="ghost" size="sm" disabled={rulesChoice === ''} onClick={() => {
+                const { language, id } = promptKey(rulesChoice)
+                readPresetPrompt(name, language, id, new AbortController().signal).then(
+                  (shipped) => { setDraft(rulesChoice); setPath(rulesChoice); setText(shipped); setRulesChoice(''); setPromptStatus({ state: 'idle' }) },
+                  (problem: unknown) => { setPromptStatus({ state: 'failed', message: messageOf(problem) }) },
+                )
+              }}>{t('promptAddButton')}</Button>
+            </div>
+          )}
+          {isRules(path) && <p className={css.warning} role="note">{t('rulesWarning', { list: promptKey(path).id })}</p>}
           {missing.length > 0 && (
             <div className={css.actions}>
               <select value={addition} aria-label={t('promptAdd')} data-testid="roleplay-preset-prompt-add" onChange={(event) => { setAddition(event.target.value) }}>

@@ -16,7 +16,7 @@ export function checkedOutput(narrationChecker: NarrationChecker, language: stri
     ...segments.flatMap((segment, index) => (segment.type === 'utterance' && segment.character === '' ? [`segment ${index + 1}: an utterance needs the character who says it`] : [])),
     ...narrationChecker.check(segments, state.utterances),
   ]
-  const wording = wrongLanguage(language, { narration: segments.flatMap(segment => (segment.type === 'narration' ? [segment.text] : [])).join(' ') })
+  const wording = wrongLanguage(language, { narration: segments.flatMap(segment => (segment.type === 'narration' ? [segment.text] : [])).join(' ') }, { strays: true })
   if (problems.length === 0 && wording !== undefined && !silent && state.refused < MAX_REFUSALS) {
     state.refused += 1
     throw new Error(`the output is not acceptable: ${wording}. Deliver it again with the narration corrected; utterances may not be touched`)
