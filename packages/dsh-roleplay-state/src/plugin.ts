@@ -245,6 +245,6 @@ export class RoleplayState extends Service {
 
 export const name = '@dsh-agentic-roleplay/state'
 
-export function apply(ctx: Context, config: Config): void {
-  new RoleplayState(ctx, config)
+export function apply(ctx: Context, config: Config): RoleplayState {
+  return new RoleplayState(ctx, config)
 }

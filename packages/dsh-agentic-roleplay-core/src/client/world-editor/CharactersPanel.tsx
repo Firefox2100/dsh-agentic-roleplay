@@ -205,7 +205,7 @@ export function CharactersPanel({ t, world, source, onChanged, actions, initial 
 
   return (
     <div className={css.panel}>
-      <div className={css.tabs} role="tablist" aria-label={t('characters')} onKeyDown={navigateEditorTabs}>
+      <div className={css.tabs} role="tablist" aria-label={t('characters')} tabIndex={0} onKeyDown={navigateEditorTabs}>
         {world.characters.map(character => (
           <button
             key={character.key}
@@ -221,7 +221,7 @@ export function CharactersPanel({ t, world, source, onChanged, actions, initial 
         ))}
         <span className={css.tabsSpace} />
         <label className={css.voiceInline}>{t('narrationVoice')}<Input list="roleplay-tts-voices" value={narrationVoice} onChange={event => setNarrationVoice(event.target.value)} /></label>
-        {narrationVoice !== (world.narrationVoice ?? '') && <Button variant="primary" size="sm" onClick={() => { source.saveNarrationVoice(narrationVoice, new AbortController().signal).then(onChanged) }}>{t('save')}</Button>}
+        {narrationVoice !== (world.narrationVoice ?? '') && <Button variant="primary" size="sm" onClick={() => { void source.saveNarrationVoice(narrationVoice, new AbortController().signal).then(onChanged) }}>{t('save')}</Button>}
         {actions}
       </div>
       {(dirty || saving.status !== 'idle') && (

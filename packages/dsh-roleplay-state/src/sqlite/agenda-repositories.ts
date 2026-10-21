@@ -64,7 +64,7 @@ export class SqliteRoutineRepository implements RoutineRepository {
       windows.forEach((window, index) => {
         this.db.run(
           'INSERT INTO routine_windows (character_id, ordinal, days, filters, start_minute, end_minute, activity, location_id, feature_key, position, interruptible) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [characterId, index, toJson([...new Set(window.days)].sort()), toJson([...new Set(window.on ?? [])]), window.start, window.end, window.activity.trim(), window.locationId ?? null, window.featureKey ?? null, window.position ?? '', window.interruptible ? 1 : 0],
+          [characterId, index, toJson([...new Set(window.days)].sort((a, b) => a - b)), toJson([...new Set(window.on ?? [])]), window.start, window.end, window.activity.trim(), window.locationId ?? null, window.featureKey ?? null, window.position ?? '', window.interruptible ? 1 : 0],
         )
       })
       return this.list(characterId)

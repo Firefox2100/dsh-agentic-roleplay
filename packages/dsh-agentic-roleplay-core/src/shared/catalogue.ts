@@ -13,10 +13,18 @@ export interface CatalogueSource {
 /** What a credential reference is: letters, digits and `_`, not starting with a digit (DSH's grammar). */
 export const CREDENTIAL_REF = /^[A-Za-z_][A-Za-z0-9_]*$/
 
+function trimUnderscores(value: string): string {
+  let start = 0
+  let end = value.length
+  while (value[start] === '_') start += 1
+  while (value[end - 1] === '_') end -= 1
+  return value.slice(start, end)
+}
+
 /** The credential a catalogue's key is stored under when its entry names none. Names with other characters get a short checksum so that two of them never share a key. */
 export function catalogueKeyRef(name: string): string {
   const trimmed = name.trim()
-  const slug = trimmed.normalize('NFKD').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').toUpperCase()
+  const slug = trimUnderscores(trimmed.normalize('NFKD').replace(/[^A-Za-z0-9]+/g, '_')).toUpperCase()
   let checksum = 0x811c9dc5
   for (const unit of trimmed) checksum = Math.imul(checksum ^ unit.codePointAt(0)!, 0x01000193) >>> 0
   const plain = slug !== '' && /^[A-Za-z0-9 _.-]+$/.test(trimmed)

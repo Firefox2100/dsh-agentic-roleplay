@@ -14,7 +14,7 @@ const NAMESPACED = /^mcp__(.+?)__.+$/
 export function resourceHint(visible: readonly string[], registered: readonly string[], tr: Translate): string {
   const tools = RESOURCE_TOOLS.filter(name => visible.includes(name))
   if (tools.length === 0) return ''
-  const servers = [...new Set(registered.flatMap(name => NAMESPACED.exec(name)?.[1] ?? []))].sort()
+  const servers = [...new Set(registered.flatMap(name => NAMESPACED.exec(name)?.[1] ?? []))].sort((a, b) => a.localeCompare(b))
   return servers.length === 0
     ? tr('## MCP resource servers\n\nUse {tools} with the server argument naming an MCP server.', { tools: tools.join(', ') })
     : tr('## MCP resource servers\n\nUse {tools} with one of these names as the server argument: {servers}.', { tools: tools.join(', '), servers: JSON.stringify(servers) })

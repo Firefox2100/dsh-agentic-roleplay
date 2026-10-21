@@ -72,6 +72,9 @@ describe('session store', () => {
     db.exec('PRAGMA user_version = 1')
     db.close()
     openSessionStore(file).close()
+    const upgraded = nodeSqliteDriver.open(file)
+    expect(upgraded.get<{ user_version: number }>('PRAGMA user_version')?.user_version).toBe(SCHEMA_VERSION)
+    upgraded.close()
   })
 
   it('works in write-ahead mode too', async () => {

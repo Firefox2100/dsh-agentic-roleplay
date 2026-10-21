@@ -91,7 +91,7 @@ const EXTERNAL_LIMIT = Symbol.for('dsh-agentic-roleplay.external-limit')
  */
 export function externalToolLimit(agent: Agent, withheld: readonly string[]): void {
   const holder = agent as unknown as Record<symbol, { key: string; lift: () => void } | undefined>
-  const key = [...withheld].sort().join('\n')
+  const key = [...withheld].sort((a, b) => a.localeCompare(b)).join('\n')
   const current = holder[EXTERNAL_LIMIT]
   if (current?.key === key) return
   current?.lift()

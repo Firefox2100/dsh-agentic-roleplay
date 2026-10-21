@@ -104,7 +104,8 @@ export function populateVariables(session: Session, defs: readonly VariableDefin
 }
 
 /** What is wrong with the days characters are given, found before anything is created: places that are not in the world. */
-export function routineProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[], calendar: Calendar = { hemisphere: 'north', holidays: [] }): string[] {
+export function routineProblems(characters: readonly CharacterDefinition[], locations: readonly LocationDefinition[], calendar?: Calendar): string[] {
+  calendar ??= { hemisphere: 'north', holidays: [] }
   const byId = new Map(locations.map(location => [location.id, location]))
   const holidays = new Set(calendar.holidays.map(holiday => holiday.id))
   return characters.flatMap(character => (character.routine ?? []).flatMap((window, index) => {

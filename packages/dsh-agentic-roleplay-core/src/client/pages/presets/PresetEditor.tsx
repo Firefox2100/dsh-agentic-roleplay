@@ -32,7 +32,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
     setLoaded(value)
     setInfo(infoOf(value.summary))
     setDraft('')
-    const paths = Object.keys(value.prompts).sort()
+    const paths = Object.keys(value.prompts).sort((a, b) => a.localeCompare(b))
     const chosen = keep !== undefined && paths.includes(keep) ? keep : paths[0] ?? ''
     setPath(chosen)
     setText(value.prompts[chosen] ?? '')
@@ -55,7 +55,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
 
   if (loaded === undefined || info === undefined) return <p className={css.message} role={failure === undefined ? undefined : 'alert'}>{failure === undefined ? t('loading') : t('loadFailed', { message: failure })}</p>
 
-  const paths = [...Object.keys(loaded.prompts), ...(draft === '' ? [] : [draft])].sort()
+  const paths = [...Object.keys(loaded.prompts), ...(draft === '' ? [] : [draft])].sort((a, b) => a.localeCompare(b))
   const missing = PROMPT_LANGUAGES.flatMap(language => PROMPT_IDS.map(id => `${language}/${id}`)).filter(key => !paths.includes(key))
   const saved = infoOf(loaded.summary)
   const infoDirty = JSON.stringify(info) !== JSON.stringify(saved)
@@ -79,7 +79,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
     )
   }
   const removePrompt = (): void => {
-    if (path === draft) { setDraft(''); const rest = Object.keys(loaded.prompts).sort(); setPath(rest[0] ?? ''); setText(loaded.prompts[rest[0] ?? ''] ?? ''); setPromptStatus({ state: 'idle' }); return }
+    if (path === draft) { setDraft(''); const rest = Object.keys(loaded.prompts).sort((a, b) => a.localeCompare(b)); setPath(rest[0] ?? ''); setText(loaded.prompts[rest[0] ?? ''] ?? ''); setPromptStatus({ state: 'idle' }); return }
     const { language, id } = promptKey(path)
     setPromptStatus({ state: 'saving' })
     removePresetPrompt(name, language, id, new AbortController().signal).then(

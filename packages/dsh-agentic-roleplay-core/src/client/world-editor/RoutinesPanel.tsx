@@ -40,7 +40,7 @@ export function RoutinesPanel({ t, worldId, actions }: { t: Translate; worldId: 
 
   return (
     <div className={css.panel} data-testid="roleplay-routines">
-      <div className={css.tabs} role="tablist" aria-label={t('characters')} onKeyDown={navigateEditorTabs}>
+      <div className={css.tabs} role="tablist" aria-label={t('characters')} tabIndex={0} onKeyDown={navigateEditorTabs}>
         {world.characters.map(entry => <button key={entry.key} type="button" role="tab" aria-selected={entry.key === character.key} tabIndex={entry.key === character.key ? 0 : -1} className={`${css.tab} ${entry.key === character.key ? css.tabOn : ''}`} onClick={() => { setChosen(entry.key); setStatus({ state: 'idle' }) }}>{entry.name}</button>)}
         <span className={css.tabsSpace} />{actions}
       </div>

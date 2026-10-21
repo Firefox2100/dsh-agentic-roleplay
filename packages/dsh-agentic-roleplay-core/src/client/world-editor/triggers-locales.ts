@@ -1,7 +1,7 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export type TriggersLocaleKey =
-  | 'title' | 'help' | 'helpStory' | 'none' | 'fileProblem' | 'when' | 'then' | 'problems' | 'fired' | 'firedCount' | 'dormant' | 'failed' | 'expired' | 'fromStory' | 'repeats' | 'cooldown' | 'chance' | 'priority' | 'expires' | 'announced'
+  | 'title' | 'help' | 'helpStory' | 'none' | 'fileProblem' | 'when' | 'effects' | 'problems' | 'fired' | 'firedCount' | 'dormant' | 'failed' | 'expired' | 'fromStory' | 'repeats' | 'cooldown' | 'chance' | 'priority' | 'expires' | 'announced'
   | 'timeFrom' | 'timeTo' | 'timeWindow' | 'timeDays' | 'place' | 'placeAt' | 'variable' | 'variableOf' | 'opEq' | 'opNe' | 'opLt' | 'opLe' | 'opGt' | 'opGe' | 'heldBy' | 'lyingIn' | 'event' | 'firedTrigger' | 'judged' | 'all' | 'any' | 'not'
   | 'editTrigger' | 'saveTrigger' | 'cancelTrigger' | 'removeTrigger' | 'removeConfirm' | 'addTrigger' | 'newKey' | 'notJson' | 'saveFailed' | 'editHelp' | 'editing' | 'saving'
   | 'edit' | 'beat' | 'cue' | 'everyone' | 'whoeverIn' | 'only'
@@ -9,7 +9,7 @@ export type TriggersLocaleKey =
 export const dictionaries: Dictionaries<TriggersLocaleKey> = {
   en: {
     title: 'Triggers', help: 'What the world does by itself when something comes true. They are read from triggers.json; ask the authoring assistant to make or change them, or edit the file.', helpStory: 'What this story does by itself when something comes true, with how often each has fired. They come from the world, or were made in play by the world author.',
-    none: 'This world has no triggers.', fileProblem: 'triggers.json cannot be shown: {message}', when: 'When', then: 'Then', problems: 'Names something the world does not have', fired: 'Fired', firedCount: 'fired {count} time(s)', dormant: 'Waiting', failed: 'Failed', expired: 'Expired', fromStory: 'Made in play',
+    none: 'This world has no triggers.', fileProblem: 'triggers.json cannot be shown: {message}', when: 'When', effects: 'Then', problems: 'Names something the world does not have', fired: 'Fired', firedCount: 'fired {count} time(s)', dormant: 'Waiting', failed: 'Failed', expired: 'Expired', fromStory: 'Made in play',
     repeats: 'repeats', cooldown: 'at least {time} apart', chance: 'chance {percent}%', priority: 'priority {value}', expires: 'ends {at}', announced: 'announced beforehand',
     timeFrom: 'from {at}', timeTo: 'until {at}', timeWindow: 'between {from} and {to} each day', timeDays: 'on {days}', place: '{who} is in {where}', placeAt: '{who} is at {feature} in {where}', variable: '{name} {op} {value}', variableOf: '{name} of {subject} {op} {value}',
     opEq: 'is', opNe: 'is not', opLt: 'is below', opLe: 'is at most', opGt: 'is above', opGe: 'is at least', heldBy: '{item} is held by {who}', lyingIn: '{item} is in {where}', event: 'an event tagged “{tag}” was recorded', firedTrigger: '“{trigger}” has fired', judged: 'a model judges it true: “{text}”',
@@ -19,7 +19,7 @@ export const dictionaries: Dictionaries<TriggersLocaleKey> = {
   },
   zh: {
     title: '触发器', help: '世界在某件事成真时自行发生的事。它们读自 triggers.json；可以让创作助手来创建或修改，也可以直接编辑该文件。', helpStory: '这个故事在某件事成真时自行发生的事，以及各自触发过几次。它们来自世界，或是世界作者在游玩中创建的。',
-    none: '这个世界没有触发器。', fileProblem: '无法显示 triggers.json：{message}', when: '当', then: '就', problems: '提到了世界里没有的东西', fired: '已触发', firedCount: '已触发 {count} 次', dormant: '等待中', failed: '失败', expired: '已过期', fromStory: '游玩中创建',
+    none: '这个世界没有触发器。', fileProblem: '无法显示 triggers.json：{message}', when: '当', effects: '就', problems: '提到了世界里没有的东西', fired: '已触发', firedCount: '已触发 {count} 次', dormant: '等待中', failed: '失败', expired: '已过期', fromStory: '游玩中创建',
     repeats: '可重复', cooldown: '至少间隔 {time}', chance: '概率 {percent}%', priority: '优先级 {value}', expires: '{at} 结束', announced: '事先公布',
     timeFrom: '从 {at} 起', timeTo: '到 {at} 为止', timeWindow: '每天 {from} 到 {to}', timeDays: '在{days}', place: '{who}在{where}', placeAt: '{who}在{where}的{feature}', variable: '{name}{op}{value}', variableOf: '{subject}的{name}{op}{value}',
     opEq: '等于', opNe: '不等于', opLt: '低于', opLe: '不高于', opGt: '高于', opGe: '不低于', heldBy: '{who}持有{item}', lyingIn: '{item}在{where}', event: '记录了带有“{tag}”标签的事件', firedTrigger: '“{trigger}”已触发', judged: '模型判定为真：“{text}”',

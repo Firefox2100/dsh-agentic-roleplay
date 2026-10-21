@@ -74,13 +74,13 @@ export function readPreset(directory: string, name: string, shipped: string = sh
   }
   if (files.size === 0 && problems.length === 0) problems.push('the preset carries no prompts')
   const paths = [...files.keys()]
-  const ids = [...new Set(paths.map(path => path.slice(path.indexOf('/') + 1, -3)))].sort()
+  const ids = [...new Set(paths.map(path => path.slice(path.indexOf('/') + 1, -3)))].sort((a, b) => a.localeCompare(b))
   return {
     summary: {
       name,
       title: header.title ?? name,
       description: header.description ?? '',
-      languages: [...new Set(paths.map(path => path.split('/')[0] as string))].sort(),
+      languages: [...new Set(paths.map(path => path.split('/')[0] as string))].sort((a, b) => a.localeCompare(b)),
       prompts: ids,
       rules: ids.filter(id => !PROSE_PROMPTS.includes(id)),
       sampling: header.sampling,

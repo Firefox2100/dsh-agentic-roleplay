@@ -53,14 +53,30 @@ function spokenIn(language: string, value: unknown): string | undefined {
   return wrongLanguage(language, { thought: given.thought, intent: given.intent, utterance: given.utterance, account: given.account }, { strays: true }) ?? narratedSpeech(given.utterance)
 }
 
-const QUOTED = /["“”「」『』]/
+const CLOSING_QUOTE: Readonly<Record<string, string>> = { '"': '"', '“': '”', '「': '」', '『': '』' }
+
+function outsideQuotedSpeech(utterance: string): string[] {
+  const parts: string[] = []
+  let outside = 0
+  for (let cursor = 0; cursor < utterance.length; cursor += 1) {
+    const closing = CLOSING_QUOTE[utterance[cursor]!]
+    if (closing === undefined) continue
+    const end = utterance.indexOf(closing, cursor + 1)
+    if (end < 0) continue
+    parts.push(utterance.slice(outside, cursor))
+    cursor = end
+    outside = end + 1
+  }
+  parts.push(utterance.slice(outside))
+  return parts
+}
 
 /** Writing instructions that ask for prose from the character's own point of view lead it to put its actions between its lines; the utterance is only what is said aloud. */
 export function narratedSpeech(utterance: string | undefined): string | undefined {
   if (utterance === undefined) return undefined
-  const parts = utterance.split(/"[^"]*"|“[^”]*”|「[^」]*」|『[^』]*』/)
+  const parts = outsideQuotedSpeech(utterance)
   const spans = parts.length - 1
-  if (spans < 2 || !QUOTED.test(utterance)) return undefined
+  if (spans < 2) return undefined
   const between = parts.slice(1, -1).some(part => part.replace(/[\s\p{P}]/gu, '').length >= 6)
   return between ? 'the utterance holds more than the words said aloud: put what you do in intent and write in the utterance only what you say, with nothing between your lines' : undefined
 }

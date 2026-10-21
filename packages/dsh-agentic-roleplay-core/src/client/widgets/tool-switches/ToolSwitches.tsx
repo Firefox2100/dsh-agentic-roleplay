@@ -20,7 +20,7 @@ export function ToolSwitches({ board, onChange, disabled, error, external = [], 
           {entry.tools.length === 0 && <span className={css.hint}>{t('sw_none')}</span>}
           {entry.tools.map(tool => (
             <label className={css.tool} key={tool.id}>
-              <input type="checkbox" checked={tool.enabled} disabled={disabled} data-tool={tool.id} onChange={(event) => { onChange(withSwitch(board, entry.agent as AgentKind, tool.id, event.target.checked)) }} />
+              <input type="checkbox" aria-label={t(`sw_tool_${tool.id}` as ToolSwitchKey)} checked={tool.enabled} disabled={disabled} data-tool={tool.id} onChange={(event) => { onChange(withSwitch(board, entry.agent as AgentKind, tool.id, event.target.checked)) }} />
               <span className={css.toolText}>
                 <span>{t(`sw_tool_${tool.id}` as ToolSwitchKey)}{tool.default ? <span className={css.default}>{t('sw_default')}</span> : null}</span>
                 <span className={css.hint}>{t(`sw_tool_${tool.id}_hint` as ToolSwitchKey)}</span>
@@ -33,7 +33,7 @@ export function ToolSwitches({ board, onChange, disabled, error, external = [], 
               <span className={css.hint}>{t('sw_external_help')}</span>
               {external.map(tool => (
                 <label className={css.tool} key={tool.name} title={tool.description}>
-                  <input type="checkbox" checked={externalEnabled(board, entry.agent as AgentKind, tool.name)} disabled={disabled} data-external={tool.name} onChange={(event) => { onChange(withExternal(board, entry.agent as AgentKind, tool.name, event.target.checked)) }} />
+                  <input type="checkbox" aria-label={tool.name} checked={externalEnabled(board, entry.agent as AgentKind, tool.name)} disabled={disabled} data-external={tool.name} onChange={(event) => { onChange(withExternal(board, entry.agent as AgentKind, tool.name, event.target.checked)) }} />
                   <span className={css.toolText}>
                     <span>{tool.name}</span>
                     <span className={css.hint}>{tool.description.length > 140 ? `${tool.description.slice(0, 140)}…` : tool.description}</span>

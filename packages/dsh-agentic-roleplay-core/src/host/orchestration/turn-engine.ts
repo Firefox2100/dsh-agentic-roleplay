@@ -231,7 +231,7 @@ export class TurnEngine {
     const keys = this.boundaries().planner.plan({ cast, ...(input.characters === undefined ? {} : { requested: input.characters }) })
     if (keys.length === 0) throw new Error('there is no character to activate')
     if (keys.length > most) throw new Error(`${keys.length} characters were asked, which is more than one round allows (${most}): ask only those the moment actually reaches, and the others in a later round if the story comes to them`)
-    const signature = `${[...keys].sort().join(',')}|${situation.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()}`
+    const signature = `${[...keys].sort((a, b) => a.localeCompare(b)).join(',')}|${situation.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()}`
     if (repeatsEarlier(signature, state.asked)) throw new Error('the same characters were already asked about the same situation in this message, so nothing new would come of it: say what changed, ask others, or deliver the output with narrate')
     state.situation = situation
     state.cast = cast

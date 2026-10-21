@@ -10,6 +10,12 @@ describe('speech with actions between the lines', () => {
   it('lets plain speech through, quotes inside it included', () => {
     expect(narratedSpeech('Stay here, and do not say "no" to me.')).toBeUndefined()
     expect(narratedSpeech('“Stay here.” “Now.”')).toBeUndefined()
+    expect(narratedSpeech('“An unfinished quotation does not count.')).toBeUndefined()
     expect(narratedSpeech(undefined)).toBeUndefined()
+  })
+
+  it('recognises the other supported quotation marks', () => {
+    expect(narratedSpeech('「留下。」我慢慢挡住门口，不让任何人经过。「现在。」')).toContain('nothing between')
+    expect(narratedSpeech('『留下。』我慢慢挡住门口，不让任何人经过。『现在。』')).toContain('nothing between')
   })
 })

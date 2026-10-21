@@ -107,12 +107,12 @@ export function ImportCard({ t, preview, start: begin, discard, onCancelled, onS
           <p className={css.note}>{t('ic_openingHelp')}</p>
           {greetings.map(greeting => (
             <label key={greeting.label} className={css.choice}>
-              <input type="radio" name="opening" checked={same(opening, greeting.choice)} onChange={() => { setOpening(greeting.choice) }} />
+              <input type="radio" name="opening" aria-label={greeting.label} checked={same(opening, greeting.choice)} onChange={() => { setOpening(greeting.choice) }} />
               <span className={css.choiceText}><span className={css.fieldTitle}>{greeting.label}</span><span className={css.preview}>{greeting.text.trim().slice(0, 600)}</span></span>
             </label>
           ))}
           <label className={css.choice}>
-            <input type="radio" name="opening" checked={opening.kind === 'none'} onChange={() => { setOpening({ kind: 'none' }) }} />
+            <input type="radio" name="opening" aria-label={t('ic_openingNone')} checked={opening.kind === 'none'} onChange={() => { setOpening({ kind: 'none' }) }} />
             <span className={css.choiceText}><span className={css.fieldTitle}>{t('ic_openingNone')}</span></span>
           </label>
         </section>

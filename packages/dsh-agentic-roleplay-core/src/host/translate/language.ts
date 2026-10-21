@@ -25,7 +25,7 @@ export const LANGUAGE_NAMES: Record<StoryLanguage, Record<StoryLanguage, string>
 }
 
 const FOREIGN_WORD = /(?<![\p{L}\p{N}_-])\p{Ll}[\p{Ll}'’]{2,}(?![\p{L}\p{N}_-])/gu
-const LATIN_WORD = /^\p{Script=Latin}+['’]?\p{Script=Latin}*$/u
+const LATIN_WORD = /^\p{Script=Latin}+(?:['’]\p{Script=Latin}+)?$/u
 
 /**
  * Ordinary English words left in a Chinese text. Names and acronyms keep their capitals and are left alone, so only lowercase words count;

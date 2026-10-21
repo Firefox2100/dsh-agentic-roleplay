@@ -41,5 +41,5 @@ for (const text of messages) {
     await new Promise(resolve => setTimeout(resolve, 3000))
   }
   console.log(`\n> ${text}\n  turn ${before + 1} took ${Math.round((Date.now() - sent) / 1000)}s`)
-  console.log(execFileSync('node', [join(dirname(fileURLToPath(import.meta.url)), 'turn-report.mjs'), id, '1'], { encoding: 'utf8' }))
+  console.log(execFileSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), 'turn-report.mjs'), id, '1'], { encoding: 'utf8' }))
 }

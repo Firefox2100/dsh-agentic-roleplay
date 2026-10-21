@@ -13,7 +13,7 @@ const DENSE_LIMIT = 10
 
 interface VectorFile { model: string; dimensions: number; entries: Record<string, { hash: string; vector: number[] }> }
 
-const hashOf = (text: string): string => createHash('sha1').update(text).digest('hex')
+const hashOf = (text: string): string => createHash('sha256').update(text).digest('hex')
 
 function cosine(a: readonly number[], b: readonly number[]): number {
   let dot = 0

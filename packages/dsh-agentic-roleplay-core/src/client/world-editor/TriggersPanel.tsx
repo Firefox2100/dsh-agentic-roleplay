@@ -83,7 +83,7 @@ export function TriggersPanel({ t, world, source, onChanged, actions }: { t: Tra
             <section key={trigger.key} className={css.section} data-testid={`roleplay-trigger-${trigger.key}`}>
               <h3 className={css.sectionTitle}>{trigger.name} <Tag>{trigger.key}</Tag>{trigger.status !== undefined && <> <Tag>{say(STATUS[trigger.status])}</Tag>{trigger.fireCount !== undefined && trigger.fireCount > 0 && <span> {say('firedCount', { count: trigger.fireCount })}</span>}</>}{trigger.origin === 'story' && <> <Tag>{say('fromStory')}</Tag></>}</h3>
               <p><span className={css.label}>{say('when')}</span> {describeCondition(say, names, trigger.when)}</p>
-              <div><span className={css.label}>{say('then')}</span><ul>{trigger.effects.map((effect, index) => <li key={index}>{describeEffect(say, names, effect)}</li>)}</ul></div>
+              <div><span className={css.label}>{say('effects')}</span><ul>{trigger.effects.map((effect, index) => <li key={index}>{describeEffect(say, names, effect)}</li>)}</ul></div>
               {meta(trigger).length > 0 && <p>{meta(trigger).join(' · ')}</p>}
               {writable && editing?.key !== trigger.key && <p><Button variant="ghost" size="sm" onClick={() => { edit(trigger.key) }}>{t('trig_editTrigger')}</Button> {removing === trigger.key
                 ? <><Button variant="primary" size="sm" onClick={() => { remove(trigger.key) }}>{t('trig_removeConfirm', { key: trigger.key })}</Button> <Button variant="ghost" size="sm" onClick={() => { setRemoving(undefined) }}>{t('trig_cancelTrigger')}</Button></>

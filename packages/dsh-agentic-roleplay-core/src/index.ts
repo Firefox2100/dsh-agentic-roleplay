@@ -91,7 +91,7 @@ interface RequestPolicies {
   policy(policy: (request: { options: { sessionId?: unknown } }) => (Partial<Record<SharedSamplingKey, number>> & { temperature?: number; toolChoice?: 'auto' | 'required'; maxTokens?: number; priority?: 'foreground' | 'background' }) | undefined): () => void
 }
 
-export function apply(ctx: Context, config: Config): void {
+export function apply(ctx: Context, config: Config) {
   // The controls of the helper agents' requests are applied by the model service that serves them, when there is one.
   ctx.inject(['aiProviders' as never], (scope) => {
     const providers = Reflect.get(scope, 'aiProviders') as RequestPolicies
@@ -109,7 +109,7 @@ export function apply(ctx: Context, config: Config): void {
   })
   ctx.effect(() => useChildReasoning(config.childReasoning), 'roleplay: helper thinking level')
   const root = new RoleplayRoot(ctx, config.rootPath)
-  new RoleplayOrchestration(ctx)
+  const orchestration = new RoleplayOrchestration(ctx)
   const worlds = new WorldCatalog(ctx, root)
   const prompts = new PromptLibrary(ctx, root)
   prompts.bootstrap()
@@ -118,21 +118,21 @@ export function apply(ctx: Context, config: Config): void {
   if (edited.length > 0) ctx.logger.error(`these prompt files in ${prompts.directory} cannot be used (fix them, or delete a file to restore the original):\n${edited.map(problem => `${problem.path}: ${problem.message}`).join('\n')}`)
   installFirstPartyPacks(root.path)
   const languages = new AuthoringLanguages(ctx, () => join(root.path, 'worlds'))
-  new AuthoringTools(ctx, () => config.authoringTools.get())
+  const authoringTools = new AuthoringTools(ctx, () => config.authoringTools.get())
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
   const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const presetAuthoring = new PresetAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const lorebookAuthoring = new LorebookAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const doctors = new DoctorSessions(agentServicesOf(ctx), () => root.path, prompts)
   const imports = new ImportStore(() => root.path)
-  new RoleplayImport(ctx, { maxUploadBytes: config.importMaxUploadBytes, concurrency: config.importConcurrency, reasoning: config.importReasoning, maxTokens: config.importMaxTokens, temperature: config.importTemperature })
+  const roleplayImport = new RoleplayImport(ctx, { maxUploadBytes: config.importMaxUploadBytes, concurrency: config.importConcurrency, reasoning: config.importReasoning, maxTokens: config.importMaxTokens, temperature: config.importTemperature })
   const settingsDeps = {
     sessionsDir: () => join(root.path, 'sessions'),
     pendingRecords: (id: string) => ctx.roleplayState.openSession(join(root.path, 'sessions'), id).pendingCommits.list().length,
     clockMode: (id: string) => ctx.roleplayState.openSession(join(root.path, 'sessions'), id).clock.get()?.mode,
     pendingConsolidation: (id: string) => ctx.roleplayState.openSession(join(root.path, 'sessions'), id).consolidation.pending().length,
     vectors: (id: string) => vectorStatus(ctx.roleplayState.openSession(join(root.path, 'sessions'), id)),
-    reflection: (id: string) => reflectionStatus(ctx.roleplayState.openSession(join(root.path, 'sessions'), id), ctx.roleplayOrchestration.reflecting(chatSessionId(id))),
+    reflection: (id: string) => reflectionStatus(ctx.roleplayState.openSession(join(root.path, 'sessions'), id), orchestration.reflecting(chatSessionId(id))),
     activity: (id: string) => readActivity(ctx.roleplayState.openSession(join(root.path, 'sessions'), id)),
     usage: (id: string) => readUsage(ctx.roleplayState.openSession(join(root.path, 'sessions'), id)),
     interventions: (id: string) => readInterventions(ctx.roleplayState.openSession(join(root.path, 'sessions'), id)),
@@ -140,8 +140,8 @@ export function apply(ctx: Context, config: Config): void {
   const staging = new ImportStaging()
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
-  const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, playing: id => ctx.roleplayOrchestration.playing(chatSessionId(id)) })
-  const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, session: id => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return ctx.roleplayState.openSession(sessions, id) }, playing: id => ctx.roleplayOrchestration.playing(chatSessionId(id)) })
+  const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, playing: id => orchestration.playing(chatSessionId(id)) })
+  const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, session: id => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return ctx.roleplayState.openSession(sessions, id) }, playing: id => orchestration.playing(chatSessionId(id)) })
   const catalogue = new Catalogue({
     sources: new Sources(() => config.catalogues.get(), () => ctx.get('credentials') as CredentialStore | undefined), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
     trashDays: () => config.catalogueTrashDays, problem: (message) => { ctx.logger.warn(message) },
@@ -261,6 +261,7 @@ export function apply(ctx: Context, config: Config): void {
     },
     sessions: { generateEntityImage: (id, kind, key) => generateSessionEntityImage({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, kind, key, imageGenerationOf(ctx)), entityImageFile: (id, kind, key) => sessionEntityImageFile({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, kind, key), uploadEntityImage: (id, kind, key, png, name) => uploadSessionEntityImage({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, kind, key, png, name), list: () => listSessions(deps), start: request => startSession(deps, request), open: id => openSession(deps, id), send: (id, text) => agent.send(id, text), gallery: id => imagesOf(ctx, deps.sessionsDir, id).gallery(id), galleryFile: (id, path) => galleryFile(galleryFolder(deps.sessionsDir(), id), path), uploadImage: (id, name, bytes) => imagesOf(ctx, deps.sessionsDir, id).upload(id, name, bytes), updateImage: (id, path, update) => imagesOf(ctx, deps.sessionsDir, id).update(id, path, update), delete: id => deleteSession({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir, purgeChat }, id), archive: id => archiveSession({ agent, sessionsDir: deps.sessionsDir }, id), restore: id => restoreSession({ agent, sessionsDir: deps.sessionsDir }, id), editCharacter: (id, key, edit) => editSessionCharacter({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editPlace: (id, key, edit) => editSessionPlace({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editThing: (id, key, edit) => editSessionThing({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editFaction: (id, key, edit) => editSessionFaction({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editLore: (id, key, edit) => editSessionLore({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, edit), editPlots: (id, edit) => editSessionPlots({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, edit), editRelation: (id, edit) => editSessionRelation({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, edit), editNarrationVoice: (id, voice) => editSessionNarrationVoice({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, voice), generatePortrait: (id, key) => generateSessionCharacterPortrait({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, imageGenerationOf(ctx)), portraitFile: (id, key) => sessionCharacterPortraitFile({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key), uploadPortrait: (id, key, png, name) => uploadSessionCharacterPortrait({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id, key, png, name), world: id => readWorldState({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir }, id), rename: (id, name) => renameSession({ state: ctx.roleplayState, agent, sessionsDir: deps.sessionsDir }, id, name), readSettings: id => readChatSettings(settingsDeps, id), writeSettings: (id, value) => writeChatSettings(settingsDeps, id, value), timeline: id => timelinesOf(ctx, deps.sessionsDir, id).view(id), moveTimeline: (id, to) => timelinesOf(ctx, deps.sessionsDir, id).move(chatSessionId(id), to === 'start' ? null : to), activityRun: (id, run) => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return readRunDetail(sessionFolder(sessions, id), run) }, doctor: async (id, title, language) => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return { chatSessionId: await doctors.ensure({ id, name: ctx.roleplayState.openSession(sessions, id).metadata.get().name }, title, language) } }, reflect: async (id) => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); await agent.ensure(id, ctx.roleplayState.openSession(sessions, id).metadata.get().name); await ctx.roleplayOrchestration.reflect(chatSessionId(id)) }, resetVectors: id => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); resetVectors(ctx.roleplayState.openSession(sessions, id)) }, notes: id => notesOfSession({ sessionsDir: deps.sessionsDir, open: sessionId => ctx.roleplayState.openSession(deps.sessionsDir(), sessionId) }, id), imageStatus: (id, node) => imagesOf(ctx, deps.sessionsDir, id).status(id, node), generateImage: (id, node) => imagesOf(ctx, deps.sessionsDir, id).generate(id, node), imageFile: async (id, node, serial) => { const images = imagesOf(ctx, deps.sessionsDir, id); await images.status(id, node); const file = sceneImagePath(sessionFolder(deps.sessionsDir(), id), node, serial); return { file, size: (await stat(file)).size } } },
   })
+  return { orchestration, authoringTools, roleplayImport }
 }
 
 /** The folder of a session whose images are listed. @throws {SessionNotFoundError} when there is no such session. */

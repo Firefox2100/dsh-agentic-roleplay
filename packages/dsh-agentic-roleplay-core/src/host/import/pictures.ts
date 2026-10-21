@@ -37,8 +37,8 @@ export function isPublicAddress(address: string): boolean {
   if (family === 4) return !blocked.check(address, 'ipv4')
   const mapped = /^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(new URL(`http://[${address}]/`).hostname.replace(/^\[|\]$/g, ''))
   if (mapped !== null) {
-    const high = parseInt(mapped[1]!, 16)
-    const low = parseInt(mapped[2]!, 16)
+    const high = Number.parseInt(mapped[1]!, 16)
+    const low = Number.parseInt(mapped[2]!, 16)
     return isPublicAddress(`${high >> 8}.${high & 255}.${low >> 8}.${low & 255}`)
   }
   return !blocked.check(address, 'ipv6')
