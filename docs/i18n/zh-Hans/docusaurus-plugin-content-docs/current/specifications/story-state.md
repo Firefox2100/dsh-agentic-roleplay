@@ -38,7 +38,7 @@ description: 记录、回忆、世界状态、时间、日程、变量、触发�
 
 ## 游戏主持人读取的上下文
 
-对话在达到 `context.limitTokens` 前完整发送。该值为 0 时，默认以模型上下文窗口的 `context.limitRatio`，即 60%，作为限制，最低 4000 token。窗口取自提供方模型信息；既无明确限制又无已知窗口时直接报错。
+对话在达到 `context.limitTokens` 前完整发送。该值为 0 时，默认以模型上下文窗口的 `context.limitRatio`，即 60%，作为限制，但不超过 `context.workingTokens`（默认 0，即不设上限），最低 4000 token。窗口取自提供方模型信息；既无明确限制又无已知窗口时直接报错。
 
 达到限制后，预设中的 `RoleplayCompaction` 只覆盖 DSH 基础折叠引擎的摘要器，把最旧的完整回合移出，同时至少原样保留限制值的 `context.retainRatio`。表面替换、日志标记和工具调用配对由 DSH 处理。
 
@@ -64,6 +64,7 @@ description: 记录、回忆、世界状态、时间、日程、变量、触发�
 | `memory.verify` | true | 记录员完成前必须读回并核对 |
 | `context.limitTokens` | 0 | 开始折叠的大小，0 表示跟随模型 |
 | `context.limitRatio` | 0.6 | 无明确限制时使用的模型窗口比例 |
+| `context.workingTokens` | 0 | 无明确限制时对话长度的上限，无论模型窗口多大；0 表示不设上限 |
 | `context.retainRatio` | 0.5 | 折叠后原样保留的比例 |
 | `context.shortTermTokens` | 1500 | 短期记录目标大小 |
 | `context.longTermTokens` | 2500 | 长期记录目标大小 |

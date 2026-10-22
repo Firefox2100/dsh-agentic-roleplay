@@ -37,7 +37,7 @@ export interface ToolDeps {
 }
 
 /** The JSON value the tool records; the model reads the rendered text. */
-function record(value: unknown): never {
+export function record(value: unknown): never {
   return JSON.parse(JSON.stringify(value)) as never
 }
 

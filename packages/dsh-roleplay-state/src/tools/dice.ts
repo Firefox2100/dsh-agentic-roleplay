@@ -23,6 +23,38 @@ export function describeRoll(roll: DiceRoll, check?: DiceCheck): string {
   return lines.join(' ')
 }
 
+export interface CheckRolled {
+  roll: number
+  check: string
+  total: number
+  result: 'succeeded' | 'partial' | 'failed'
+  label: string
+  critical: boolean
+  text: string
+}
+
+/** Rolls one of the story's checks for a character and records it: the one place that decides what a check roll is, for the tool and for whatever rolls on an agent's behalf. */
+export function rollForCheck(link: DiceLink, args: { check: string; reason: string; character: string; target?: number; bonus?: number }, roller: Roller = systemRoller, by: 'agent' | 'player' = 'agent'): CheckRolled {
+  const { session, turn } = link
+  const check = session.dice.check(args.check)
+  if (check === undefined) throw new NotFoundError(`there is no check "${args.check}"; list_checks shows the story's checks`)
+  const who = session.characters.list().find(entry => characterKey(entry) === args.character)
+  if (who === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
+  let modifier: number | undefined
+  if (check.modifier !== undefined) {
+    const value = session.variables.value(check.modifier, 'character', who.id)
+    if (typeof value !== 'number') throw new NotFoundError(`the character's ${check.modifier} is not a number, so the check cannot add it`)
+    modifier = value
+  }
+  const bonus = Math.max(-10, Math.min(10, args.bonus ?? 0))
+  const made = rollCheck(check, { ...(modifier === undefined ? {} : { modifier }), bonus, ...(args.target === undefined ? {} : { target: args.target }) }, roller)
+  const roll = session.dice.record({
+    turn, check: check.key, expression: check.dice, faces: made.faces, kept: made.kept, modifier: made.modifier, ...(made.target === undefined ? {} : { target: made.target }),
+    total: made.total, value: made.value, readout: made.readout, reason: args.reason, character: args.character, by,
+  })
+  return { roll: roll.id, check: check.key, total: roll.total, result: made.readout.result, label: made.readout.label, critical: made.readout.critical, text: describeRoll(roll, check) }
+}
+
 const rolled = (_args: unknown, value: unknown) => [{ type: 'text' as const, text: (value as { text: string }).text }]
 
 /**
@@ -62,25 +94,7 @@ export function createDiceTools(resolve: (agentSessionId: string) => DiceLink | 
       output: { schema: { type: 'json' }, render: rolled },
       isConcurrencySafe: () => false,
       execute(args, exec) {
-        const { session, turn } = linkOf(exec.agent)
-        const check = session.dice.check(args.check)
-        if (check === undefined) throw new NotFoundError(`there is no check "${args.check}"; list_checks shows the story's checks`)
-        if (session.characters.list().every(entry => characterKey(entry) !== args.character)) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-        let modifier: number | undefined
-        if (check.modifier !== undefined) {
-          const who = session.characters.list().find(entry => characterKey(entry) === args.character)
-          if (who === undefined) throw new NotFoundError(`there is no character "${args.character}"; list_characters shows the keys`)
-          const value = session.variables.value(check.modifier, 'character', who.id)
-          if (typeof value !== 'number') throw new NotFoundError(`the character's ${check.modifier} is not a number, so the check cannot add it`)
-          modifier = value
-        }
-        const bonus = Math.max(-10, Math.min(10, args.bonus ?? 0))
-        const made = rollCheck(check, { ...(modifier === undefined ? {} : { modifier }), bonus, ...(args.target === undefined ? {} : { target: args.target }) }, roller)
-        const roll = session.dice.record({
-          turn, check: check.key, expression: check.dice, faces: made.faces, kept: made.kept, modifier: made.modifier, ...(made.target === undefined ? {} : { target: made.target }),
-          total: made.total, value: made.value, readout: made.readout, reason: args.reason, character: args.character, by: options.by ?? 'agent',
-        })
-        return Promise.resolve({ roll: roll.id, check: check.key, total: roll.total, result: made.readout.result, label: made.readout.label, critical: made.readout.critical, text: describeRoll(roll, check) } as never)
+        return Promise.resolve(rollForCheck(linkOf(exec.agent), args, roller, options.by) as never)
       },
     }),
     defineTool({

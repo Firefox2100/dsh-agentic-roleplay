@@ -44,6 +44,8 @@ title: Configuration reference
 | `reflection.minNew` | 4 | New perceptions a character needs to be taken up (a pass you start takes one) |
 | `context.limitTokens` | 0 | Explicit fold limit; zero follows model metadata |
 | `context.limitRatio` | 0.6 | Share of model context used as the limit |
+| `context.workingTokens` | 0 | Optional cap on the derived limit, for a smaller prompt than the window allows; zero sets no cap |
+| `background.concurrent` | false | Whether background work may run while the next turn is generated (see the turn engine) |
 | `context.retainRatio` | 0.5 | Verbatim share retained after folding |
 | `context.shortTermTokens` | 1500 | Short-term account target |
 | `context.longTermTokens` | 2500 | Long-term account target |
@@ -57,6 +59,7 @@ title: Configuration reference
 | `offstage.summary` | `true` | Off-stage characters also say in a line what happened (same request), shown as the *Meanwhile* card |
 | `models.characters`, `models.background`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own (`background` is for background-tier characters and falls back to `characters`) |
 | `sampling.topP`, `sampling.topK`, `sampling.minP`, `sampling.frequencyPenalty`, `sampling.presencePenalty`, `sampling.repetitionPenalty` | 1, 0, 0, 0, 0, 1 | Controls beyond temperature for the game master's and the characters' requests; the default of each leaves the choice to the model's server and is not sent. A world or preset can suggest them for one story |
+| `sampling.masterMaxTokens` | 12000 | The most one request of the game master may produce, its reasoning included; a model that loops in its reasoning is cut off and the turn is steered on (settings file only) |
 | `sampling.maxTokens`, `sampling.shortMaxTokens`, `sampling.headroom` | 8000, 2000, 2 | Ceilings on what one helper request may produce; the short one is for characters and suggestions, whose answers have declared sizes: they may produce `headroom` times the estimate of their answer, never more than the ceiling (settings file only) |
 | `diagnostics.keepRuns` | `false` | Keep what each helper run was told and did (its instructions, what it was asked, its tool calls and result, and for a character what it was reminded of and why), for the latest 60 runs; shown in the activity list of Chat settings |
 | `interface.pack` | empty | The interface pack to use: empty is the story's first, `none` is no pack, a name picks one |

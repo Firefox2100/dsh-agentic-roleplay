@@ -9,6 +9,10 @@ const ZH: Readonly<Record<string, string>> = {
   'today is {holidays}': '今天是{holidays}',
   'Summary': '概述', 'Personality': '性格', 'Background': '背景', 'Appearance': '外貌', 'How you speak': '说话方式',
 
+  // suggestions made from the story's data
+  'Talk to {name}.': '和{name}聊聊。', 'Go to {place}.': '前往{place}。', 'Take a closer look at {thing}.': '仔细看看{thing}。',
+  'Look around carefully.': '仔细观察四周。', 'Wait and see what happens.': '先等等，看看会发生什么。', 'Ask what is going on.': '问问这是怎么回事。', 'Think about what to do next.': '想想接下来该怎么办。',
+
   // the character's own description
   'You are {name}.': '你是{name}。',
   'You are also called {names}.': '你也被称作{names}。',

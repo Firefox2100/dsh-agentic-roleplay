@@ -37,6 +37,7 @@ const sidebars: SidebarsConfig = {
         'specifications/story-state', 'specifications/image-system',
         'specifications/dsh-api-contract', 'specifications/prompt-system',
         'specifications/import-pipeline', 'specifications/capability-integration',
+        'specifications/enforcement',
       ]},
     ]},
     {type: 'category', label: 'Reference', items: [

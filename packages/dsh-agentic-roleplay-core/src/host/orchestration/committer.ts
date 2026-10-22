@@ -8,9 +8,13 @@ import { childModel, childSampling, childTrace, runChild } from '../agents/child
 import { wrongLanguage } from '../translate/language.ts'
 import { externalGiven } from '../tools/external.ts'
 import { toolEnabled } from '../../shared/tools.ts'
+import { canonicalTags, tagUsage } from '../memory/tags.ts'
 import { referent } from './referent.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
+
+/** How many of the tags in use a brief lists. */
+const TAGS_LISTED = 60
 
 /** What the keeper reads back by default: the parts of the records its edits write. */
 const VERIFY_SECTIONS = ['characters', 'factions', 'faction_relationships', 'events', 'beliefs', 'open_threads', 'relationships', 'knowledge', 'variables', 'engagements'] as const
@@ -45,6 +49,7 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
   const records = job.store.story.records({ timeZone: zoneOf(job.store.settings().clock) })
   const own = job.store.story.records({ rounds }).events
   const known = new Map(job.store.cast().map(member => [member.key, referent(member.character)]))
+  const tags = [...tagUsage(job.store.story.events.list())].slice(0, TAGS_LISTED)
   const before = records.events.filter(event => event.turn < first.turn || (event.turn === first.turn && event.round < first.round)).slice(-6)
   return [
     memory.flaky
@@ -64,8 +69,11 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     '## Recorded before these rounds (do not repeat)',
     ...(before.length === 0 ? ['- nothing'] : before.map(event => `- [turn ${event.turn}] ${event.text}`)),
     '',
-    '## Already recorded for these rounds (an earlier attempt wrote them: continue from them, do not repeat them)',
+    '## Already recorded for these rounds (the actions and words of the round, written when it was decided, and anything an earlier attempt added: improve them with event_edits, do not repeat them)',
     ...(own.length === 0 ? ['- nothing'] : own.map(event => `- id ${event.id}, ${label(event)}: ${event.text}`)),
+    '',
+    '## Tags already in use (choose from these; a new tag only when none fits)',
+    ...(tags.length === 0 ? ['- none yet'] : [tags.map(([tag, count]) => `${tag} (${count})`).join(', ')]),
     '',
     '## Goals of the characters (ids for intent_edits)',
     ...(records.characters.flatMap(entry => entry.goals.map(goal => `- id ${goal.id}, ${entry.character}: ${goal.name} (${goal.type}, ${goal.status}${goal.deadline === null ? '' : `, deadline ${goal.deadline}`})${goal.plan.length === 0 ? '' : ` plan: ${goal.plan.join('; ')}`}`)).concat(records.characters.every(entry => entry.goals.length === 0) ? ['- none'] : [])),
@@ -119,7 +127,7 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
               ].join(' '),
             })
             if (wording !== undefined) throw new InvalidEditError([wording])
-            const result = await tool.execute(args, exec)
+            const result = await tool.execute(withKnownTags(args, tagUsage(job.store.story.events.list())), exec)
             progress.edits += 1
             progress.unchecked = true
             return result
@@ -133,6 +141,15 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
       }
       return tool
     })
+}
+
+type Tagged = { tags?: unknown }[] | undefined
+
+/** The edit with the tags of its new and edited events brought onto the tags already in use. */
+function withKnownTags(args: unknown, known: ReadonlyMap<string, number>): never {
+  const edit = args as { events?: Tagged; event_edits?: Tagged }
+  const mapped = (entries: Tagged): Tagged => entries?.map(entry => (Array.isArray(entry.tags) ? { ...entry, tags: canonicalTags(known, entry.tags as string[]) } : entry))
+  return { ...edit, ...(edit.events === undefined ? {} : { events: mapped(edit.events) }), ...(edit.event_edits === undefined ? {} : { event_edits: mapped(edit.event_edits) }) } as never
 }
 
 /** What one request of the keeper may carry: the events and what each witness took in, for every round it was given, and the shape of the call. */
@@ -166,7 +183,7 @@ export function recordKeeper(deps: { agentOf: (chat: string) => Agent | undefine
         external: externalGiven(parent.ctx.tools, job.store.settings().tools, 'records'),
         result: RESULT,
         beforeSubmit: () => {
-          if (progress.edits === 0 && !warned) {
+          if (progress.edits === 0 && !warned && job.store.story.records({ rounds: job.rounds.map(({ turn, round }) => ({ turn, round })) }).events.length === 0) {
             warned = true
             return 'you have written nothing: record the rounds with edit_records. If truly nothing happened, say so in notes and submit again.'
           }

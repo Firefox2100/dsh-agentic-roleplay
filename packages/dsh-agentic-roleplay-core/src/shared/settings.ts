@@ -38,6 +38,8 @@ export interface ChatSettings {
     limitTokens: number
     /** With no limit given, the share of the selected model's context window at which the conversation is folded. */
     limitRatio: number
+    /** With no limit given, the most the conversation may grow to however large the window is, so the prompt stays small and the server's cache is cheap to rebuild; 0 sets no cap. */
+    workingTokens: number
     /** The share of the limit that stays verbatim when the conversation is folded. */
     retainRatio: number
     /** The size of the short-term summary, in tokens, before its oldest part moves into the long-term one. */
@@ -69,6 +71,10 @@ export interface ChatSettings {
     /** Whether each helper run keeps what the helper was told and did (its instructions, what it was asked, its tool calls and its result), so that the chat settings can show why it said or wrote what it did. The latest 60 runs are kept. */
     keepRuns: boolean
   }
+  background: {
+    /** Whether what runs after a turn (writing the memory, making things up, characters away, suggestions, reflection) may run while the next turn is being generated; off, the next turn waits for it, which keeps one local model's cache for the game master. */
+    concurrent: boolean
+  }
   offstage: {
     /** The most characters, away from the player's character, that may be asked what they do about something that fell due (a commitment whose time came, a deadline that passed) after a turn. 0 turns it off. */
     perTurn: number
@@ -97,6 +103,8 @@ export interface ChatSettings {
     authoring: number
     /** The temperature of the helpers that must be exact (the record keeper, the image author): lower is more faithful to the rounds. */
     records: number
+    /** The most tokens one request of the game master may produce, its reasoning included: a model that loops in its reasoning is cut off, and the turn steered on, instead of waited for. */
+    masterMaxTokens: number
     /** The most tokens one request of a helper may produce; a helper that rambles is cut off instead of waited for. */
     maxTokens: number
     /** The same for the helpers whose answer is short (the characters and the suggestion writer): a run that does not stop costs minutes, so it is cut off much sooner. */
@@ -256,6 +264,7 @@ export const SETTINGS_SPEC = {
   context: {
     limitTokens: integer(0, 1_000_000, 0),
     limitRatio: ratio(0.1, 0.9, 0.6),
+    workingTokens: integer(0, 1_000_000, 0),
     retainRatio: ratio(0.1, 0.9, 0.5),
     shortTermTokens: integer(200, 20_000, 1500),
     longTermTokens: integer(200, 40_000, 2500),
@@ -263,8 +272,9 @@ export const SETTINGS_SPEC = {
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), thingsPerTurn: integer(0, 20, 4), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
   diagnostics: { keepRuns: flag(false) },
+  background: { concurrent: flag(false) },
   offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), joint: flag(true), summary: flag(true) },
-  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), topP: ratio(0, 1, 1), topK: integer(0, 1000, 0), minP: ratio(0, 1, 0), frequencyPenalty: ratio(-2, 2, 0), presencePenalty: ratio(-2, 2, 0), repetitionPenalty: ratio(0, 2, 1), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000), headroom: ratio(1, 10, 2) },
+  sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), topP: ratio(0, 1, 1), topK: integer(0, 1000, 0), minP: ratio(0, 1, 0), frequencyPenalty: ratio(-2, 2, 0), presencePenalty: ratio(-2, 2, 0), repetitionPenalty: ratio(0, 2, 1), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), masterMaxTokens: integer(1024, 64000, 12000), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000), headroom: ratio(1, 10, 2) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },

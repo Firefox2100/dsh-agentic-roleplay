@@ -92,7 +92,7 @@ inputs (importance, retention, recency) stay available to it.
 ## What the game master reads
 
 The conversation is sent whole until it reaches `context.limitTokens`, or, when that is 0 (the default), `context.limitRatio` (60%) of the selected
-model's context window (at least 4000 tokens; the window comes from the provider's model entry, and a chat that has no limit and a model with no known window
+model's context window, never more than `context.workingTokens` (0 by default: no cap), and at least 4000 tokens (the window comes from the provider's model entry, and a chat that has no limit and a model with no known window
 fails loudly). Then
 `RoleplayCompaction` (a subclass of DSH's basic compaction engine that overrides only
 the summarizer, mounted in the preset) folds the oldest **whole turns** out of the
@@ -142,6 +142,7 @@ settings stay in force, so a typo cannot stop a story in the middle.
 | `memory.verify` | true | the record keeper must read back what it wrote and compare it with the round before it finishes |
 | `context.limitTokens` | 0 | size at which the oldest turns are folded; 0 follows the model |
 | `context.limitRatio` | 0.6 | with no limit given, the share of the model's context window |
+| `context.workingTokens` | 0 | with no limit given, the most the conversation may grow to however large the window is; 0 sets no cap |
 | `context.retainRatio` | 0.5 | share of the limit kept as it is |
 | `context.shortTermTokens` | 1500 | size of the short-term account |
 | `context.longTermTokens` | 2500 | size of the long-term account |

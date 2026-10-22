@@ -3,7 +3,7 @@ import type { Dictionaries } from '../../i18n.ts'
 export type ToolSwitchKey =
   | 'sw_title' | 'sw_help' | 'sw_none' | 'sw_default' | 'sw_failed' | 'sw_external' | 'sw_external_help' | 'sw_external_none'
   | 'sw_agent_gameMaster' | 'sw_agent_gameMaster_hint' | 'sw_agent_characters' | 'sw_agent_characters_hint' | 'sw_agent_records' | 'sw_agent_records_hint'
-  | 'sw_tool_roll_check' | 'sw_tool_roll_check_hint' | 'sw_tool_roll_dice' | 'sw_tool_roll_dice_hint' | 'sw_tool_list_checks' | 'sw_tool_list_checks_hint'
+  | 'sw_tool_roll_check' | 'sw_tool_roll_check_hint' | 'sw_tool_roll_dice' | 'sw_tool_roll_dice_hint' | 'sw_tool_list_checks' | 'sw_tool_list_checks_hint' | 'sw_tool_roll_and_narrate' | 'sw_tool_roll_and_narrate_hint'
   | 'sw_tool_recall_my_memories' | 'sw_tool_recall_my_memories_hint' | 'sw_tool_recall_my_known_entities' | 'sw_tool_recall_my_known_entities_hint' | 'sw_tool_recall_my_lore' | 'sw_tool_recall_my_lore_hint' | 'sw_tool_search_events' | 'sw_tool_search_events_hint' | 'sw_tool_list_threads' | 'sw_tool_list_threads_hint' | 'sw_tool_list_relationships' | 'sw_tool_list_relationships_hint' | 'sw_tool_list_items' | 'sw_tool_list_items_hint'
 
 export const dictionaries: Dictionaries<ToolSwitchKey> = {
@@ -17,6 +17,7 @@ export const dictionaries: Dictionaries<ToolSwitchKey> = {
     sw_tool_roll_check: 'Roll a check', sw_tool_roll_check_hint: 'Rolls one of the world\'s checks for an uncertain attempt and reads the result with the world\'s own rules.',
     sw_tool_roll_dice: 'Roll dice', sw_tool_roll_dice_hint: 'Rolls plain dice (2d6+1, d100) for what has no check, so that no number is made up.',
     sw_tool_list_checks: 'List checks', sw_tool_list_checks_hint: 'Shows the world\'s checks and when each is used.',
+    sw_tool_roll_and_narrate: 'Roll and narrate in one step', sw_tool_roll_and_narrate_hint: 'For the player\'s own uncertain attempt: the game master writes what comes of each result, the dice choose, and the turn ends at once. Saves a round trip; the other branches are wasted and no character reacts to the result.',
     sw_tool_recall_my_memories: 'Recall memories', sw_tool_recall_my_memories_hint: 'Lets a character look up what it remembers when the scene names something its brief left out.',
     sw_tool_recall_my_known_entities: 'Recall known places and things', sw_tool_recall_my_known_entities_hint: 'Lets a character look up the places, things and people it knows of.',
     sw_tool_recall_my_lore: 'Recall lore', sw_tool_recall_my_lore_hint: 'Lets a character read the canon it explicitly knows.',
@@ -35,6 +36,7 @@ export const dictionaries: Dictionaries<ToolSwitchKey> = {
     sw_tool_roll_check: '进行检定', sw_tool_roll_check_hint: '为不确定的尝试掷出世界定义的检定，并按世界自己的规则解读结果。',
     sw_tool_roll_dice: '掷骰子', sw_tool_roll_dice_hint: '为没有检定的事掷普通骰子（2d6+1、d100），不让任何数字被编造。',
     sw_tool_list_checks: '列出检定', sw_tool_list_checks_hint: '显示世界的检定以及各自的使用场合。',
+    sw_tool_roll_and_narrate: '掷骰并一步叙述', sw_tool_roll_and_narrate_hint: '用于玩家自己的不确定尝试：主持人先写好每种结果的后续，由骰子选择，回合随即结束。省一次往返；未被选中的分支会浪费，也没有角色会对结果作出反应。',
     sw_tool_recall_my_memories: '回忆往事', sw_tool_recall_my_memories_hint: '当场景提到简报中没有的内容时，角色可以查阅自己记得的事。',
     sw_tool_recall_my_known_entities: '回忆所知的地点与事物', sw_tool_recall_my_known_entities_hint: '角色可以查阅自己知道的地点、物品和人物。',
     sw_tool_recall_my_lore: '回忆典故', sw_tool_recall_my_lore_hint: '角色可以阅读自己明确知道的设定。',

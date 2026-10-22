@@ -28,7 +28,8 @@ import { describeChecks } from './host/dice/describe.ts'
 import { createDiceTools, sessionFolder, type DiceLink } from '@dsh-agentic-roleplay/state'
 import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 import { currentTurn } from './host/orchestration/current-turn.ts'
-import { createTools, PREVIEW_TOOL } from './host/orchestration/tools.ts'
+import { createTools, PREVIEW_TOOL, type ToolDeps } from './host/orchestration/tools.ts'
+import { createCheckNarrateTool } from './host/orchestration/check-tool.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
 import { rerankMemories, type Reranker } from './host/memory/rerank-memories.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
@@ -126,7 +127,8 @@ export function apply(ctx: Context): void {
       return resourceHint(ctx.tools.schemas(context.scope).map(tool => tool.name), ctx.tools.schemas().map(tool => tool.name), translator(languageOf(chat?.settings.prompts.language ?? FALLBACK_LANGUAGE)))
     },
   })
-  const [previewTool, ...tools] = [...createTools({ engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } })].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
+  const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
+  const [previewTool, ...tools] = [...createTools(toolDeps)].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); ctx.roleplayOrchestration.playing = chat => engine.playing(chat); return () => { ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false; ctx.roleplayOrchestration.playing = () => false } }, 'roleplay: reflection control')
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.idle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
@@ -162,5 +164,5 @@ export function apply(ctx: Context): void {
     const agent = ctx.agents.get(SessionId(chat))
     return store === undefined || agent === undefined ? undefined : { session: store.story, turn: currentTurn(agent) }
   }
-  installHooks(ctx, { engine, boundaries, stores, timelines, previewTool: previewTool!, optionalTools: createDiceTools(diceLink) })
+  installHooks(ctx, { engine, boundaries, stores, timelines, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink), createCheckNarrateTool(toolDeps)] })
 }

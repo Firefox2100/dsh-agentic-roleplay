@@ -92,13 +92,14 @@ export class RoleplayCompaction extends BasicCompactionEngine {
    * The size at which the conversation is folded: the chat's own limit, or, when it gives none, a share of the selected model's context window.
    * @throws {Error} when the chat gives no limit and the model's window is not known.
    */
-  private async limitOf(agent: Agent, context: { limitTokens: number; limitRatio: number }, signal: AbortSignal): Promise<number> {
+  private async limitOf(agent: Agent, context: { limitTokens: number; limitRatio: number; workingTokens: number }, signal: AbortSignal): Promise<number> {
     if (context.limitTokens > 0) return context.limitTokens
     const config = agent.session.requestHeader()?.config
     if (config?.provider === undefined || config.model === undefined) throw new Error('the conversation limit follows the model, but this chat has none selected: set the limit in the chat settings')
     const window = (await this.ctx.llm.resolveModelInfo(config.provider, config.model, signal)).context?.contextWindow
     if (window === undefined) throw new Error(`the conversation limit follows the model, but the context window of ${config.provider}/${config.model} is not known: set the limit in the chat settings or the model's contextWindow in the provider`)
-    return Math.max(MIN_LIMIT, Math.round(window * context.limitRatio))
+    const share = Math.round(window * context.limitRatio)
+    return Math.max(MIN_LIMIT, context.workingTokens > 0 ? Math.min(share, context.workingTokens) : share)
   }
 
   protected override async summarize(input: { readonly messages: readonly Message[] }, agent: Agent, signal?: AbortSignal): Promise<{ summary: ContentBlock[]; provider: string; model: string }> {

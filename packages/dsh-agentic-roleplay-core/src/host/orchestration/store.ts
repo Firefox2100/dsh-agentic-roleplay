@@ -16,6 +16,7 @@ import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
 import { dueOffScene, markHandled } from '../clock/offscene.ts'
 import { describeShown } from '../variables/describe.ts'
 import { readTime, zoneOf } from '../clock/story-clock.ts'
+import { skeletonEvents } from './skeleton.ts'
 import type { CastMember, CastPlace, FactionAffiliationView, ItemView, KnowledgeView, MoveCheck, PlaceView, RoundRecord, TurnStore } from './boundaries.ts'
 
 export { roleplaySessionOf }
@@ -262,7 +263,12 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     affiliations: characterId => affiliationsOf(session, characterId),
     itemsAt: (locationId, withHidden = false) => itemsIn(session, locationId, withHidden),
     completeTurn: () => { session.metadata.recordTurn() },
-    queueCommit: record => { session.pendingCommits.enqueue(record.turn, record.round, JSON.parse(JSON.stringify(record)) as never) },
+    queueCommit: (record) => {
+      session.transaction(() => {
+        session.pendingCommits.enqueue(record.turn, record.round, JSON.parse(JSON.stringify(record)) as never)
+        session.edit({ turn: record.turn, events: skeletonEvents(record) })
+      })
+    },
     pendingCommits: () => session.pendingCommits.list().map(entry => entry.payload as unknown as RoundRecord),
     completeCommits: (rounds) => {
       session.transaction(() => {

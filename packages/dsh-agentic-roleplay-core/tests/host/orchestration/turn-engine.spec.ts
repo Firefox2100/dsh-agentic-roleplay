@@ -417,6 +417,7 @@ describe('writing the records', () => {
     problems = []
     written = []
     engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), (message) => { problems.push(message) }, (chat) => { written.push(chat) })
+    store.settings = () => ({ ...QUIET, background: { concurrent: true } })
   })
 
   /** One round of Alice, resolved. */
@@ -439,6 +440,34 @@ describe('writing the records', () => {
     expect(store.completed).toBe(1)
     expect(store.queue).toHaveLength(1)
     expect(written).toEqual([])
+  })
+
+  it('keeps the keeper off while the turn is generated unless background work may run concurrently, and starts it at delivery', async () => {
+    store.settings = () => ({ ...QUIET, background: { concurrent: false } })
+    const started: number[] = []
+    boundaries.committer = { commit: (job) => { started.push(job.rounds.length); return Promise.resolve({ writes: 1, notes: '' }) } }
+    await play()
+    expect(engine.record(owner)).toBe(1)
+    await Promise.resolve()
+    expect(started).toEqual([])
+    await engine.narrate(owner, hello)
+    await engine.quiesce(owner.chat)
+    expect(started).toEqual([1])
+  })
+
+  it('waits for the suggestions of the turn before the next one when asked to', async () => {
+    store.settings = () => ({ ...QUIET, suggestions: { count: 1 }, background: { concurrent: false } })
+    let release!: () => void
+    boundaries.suggester = { suggest: () => new Promise((done) => { release = () => { done([]) } }) }
+    await play()
+    await engine.narrate(owner, hello)
+    let quiet = false
+    const waiting = engine.quiesce(owner.chat).then(() => { quiet = true })
+    await Promise.resolve()
+    expect(quiet).toBe(false)
+    release()
+    await waiting
+    expect(quiet).toBe(true)
   })
 
   it('applies what the game master decided about each character at once, without the keeper', async () => {
@@ -699,11 +728,13 @@ describe('turns and objections', () => {
     expect(engine.missing({ chat: 'session-1', turn: 2 })).toMatch(/call activate_characters/)
   })
 
-  it('lets an agent be turned back only a few times per turn', () => {
-    expect([1, 2, 3, 4, 5].map(() => engine.object(owner))).toEqual([true, true, true, false, false])
-    expect(engine.object({ chat: 'session-1', turn: 2 })).toBe(true)
+  it('lets an agent be turned back only a few times in a row for the same thing, and starts the count again when the turn has moved on', () => {
+    expect([1, 2, 3, 4, 5].map(() => engine.object(owner, 'call activate_characters'))).toEqual([true, true, true, false, false])
+    expect(engine.object(owner, 'call resolve_round')).toBe(true)
+    expect([1, 2, 3, 4].map(() => engine.object(owner, 'call narrate'))).toEqual([true, true, true, false])
+    expect(engine.object({ chat: 'session-1', turn: 2 }, 'call activate_characters')).toBe(true)
     engine.forget('session-1')
-    expect(engine.object(owner)).toBe(true)
+    expect(engine.object(owner, 'call activate_characters')).toBe(true)
   })
 })
 
@@ -1318,18 +1349,21 @@ describe('what the player could do next', () => {
     expect(store.notes()).toEqual([])
   })
 
-  it('are reported, quietly, when they are not acceptable or the suggester fails, and the player simply has none', async () => {
+  it('are reported, quietly, when they are not acceptable or the suggester fails, and the tray is filled from the story instead', async () => {
+    const standbys = ['Look around carefully.', 'Wait and see what happens.', 'Ask what is going on.']
     boundaries.suggester = { suggest: () => Promise.resolve(['Same', 'same', 'Other']) }
     await deliver()
     await settled()
     expect(problems).toEqual([expect.stringMatching(/suggestions for turn 1 were not made: .*must differ/)])
-    expect(store.notes()).toEqual([])
+    expect(store.notes()).toEqual([{ kind: 'suggestions', turn: 1, lines: standbys }])
     engine.forget(owner.chat)
+    store.clearNotes()
     problems.length = 0
     boundaries.suggester = { suggest: () => Promise.reject(new Error('the model is down')) }
     await deliver()
     await settled()
     expect(problems).toEqual(['suggestions for turn 1 were not made: the model is down'])
+    expect(store.notes()).toEqual([{ kind: 'suggestions', turn: 1, lines: standbys }])
   })
 
   it('made too late for their turn are dropped: the next turn has started', async () => {

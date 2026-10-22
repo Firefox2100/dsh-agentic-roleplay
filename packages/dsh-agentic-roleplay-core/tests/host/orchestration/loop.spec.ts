@@ -1643,6 +1643,10 @@ describe('a turn with the real agent loop', () => {
       return last === undefined ? [] : [...JSON.stringify(last.messages).matchAll(/"type":"tool-call","id":"[^"]*","name":"(\w+)"/g)].map(match => match[1]!)
     }
 
+    const KEEPER_TEXT = 'The characters acted at the vault.'
+    /** What the keeper wrote, apart from the plain events every recorded round leaves by itself. */
+    const keptEvents = (session: Awaited<ReturnType<typeof addSession>>['session']) => session.events.list().filter(event => event.text === KEEPER_TEXT)
+
     async function play(keeper: NonNullable<Script['keeper']>, settings?: object) {
       const { session, id } = await addSession('Vault')
       if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
@@ -1665,7 +1669,8 @@ describe('a turn with the real agent loop', () => {
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
       expect(activityOf(session, 'dan')).toBe('Dan takes the lantern too')
       expect(publicStateOf(session, 'bob')).toBe('holding a brass key')
-      expect(session.events.list().map(event => event.text)).toEqual(['The characters acted at the vault.'])
+      expect(keptEvents(session)).toHaveLength(1)
+      expect(session.events.list().map(event => event.text)).toEqual(expect.arrayContaining(['Alice takes the lantern', 'Alice: "That is not something I expected."', 'Carol: "Oh, please."', 'Dan: "Give it here!"']))
       expect(session.metadata.get().turns).toBe(1)
       expect(outputsOf(agent)).toHaveLength(1)
       expect(session.pendingCommits.list()).toEqual([])
@@ -1699,7 +1704,7 @@ describe('a turn with the real agent loop', () => {
     it('finds a repeated event and a state that does not match when it reads back, and corrects them', async () => {
       const { session, adapter } = await play('duplicating')
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records', 'edit_records', 'read_records'])
-      expect(session.events.list().map(event => event.text)).toEqual(['The characters acted at the vault.'])
+      expect(keptEvents(session).map(event => event.text)).toEqual([KEEPER_TEXT])
       expect(activityOf(session, 'alice')).toBe('alice takes the lantern')
     })
 
@@ -1707,7 +1712,7 @@ describe('a turn with the real agent loop', () => {
       const { session, adapter } = await play('refused')
       expect(keeperRequests(adapter).length).toBeGreaterThan(2)
       expect(JSON.stringify(keeperRequests(adapter)[1]!.messages)).toContain('turn 99, round 1')
-      expect(session.events.list()).toHaveLength(1)
+      expect(keptEvents(session)).toHaveLength(1)
       expect(session.events.get(1)?.turn).toBe(1)
     })
 
@@ -1715,7 +1720,7 @@ describe('a turn with the real agent loop', () => {
       const { session, adapter } = await play('careful', { memory: { verify: false } })
       expect(keeperCalls(adapter)).toEqual(['edit_records'])
       expect(briefOf(keeperRequests(adapter)[0]!)).toContain('Verification is off')
-      expect(session.events.list()).toHaveLength(1)
+      expect(keptEvents(session)).toHaveLength(1)
     })
 
     it('that never submits does not lose the turn, and does not put a word of it in the output', async () => {
@@ -1735,6 +1740,7 @@ describe('a turn with the real agent loop', () => {
       agent.followup(say('I open the vault door.'))
       await agent.whenIdle()
       expect(session.pendingCommits.list()).toHaveLength(1)
+      expect(session.events.list().length).toBeGreaterThan(0)
       script.keeper = 'careful'
       agent.followup(say('I look around.'))
       await agent.whenIdle()
@@ -1742,13 +1748,13 @@ describe('a turn with the real agent loop', () => {
       const briefs = keeperRequests(adapter).map(request => briefOf(request))
       expect(briefs.some(brief => brief.includes('turn 1, round 1 is due for records'))).toBe(true)
       expect(briefs.at(-1)).toContain('turn 2, round 1 is due for records')
-      expect(session.events.list().map(event => event.turn)).toEqual([1, 2])
+      expect(keptEvents(session).map(event => event.turn)).toEqual([1, 2])
       expect(session.metadata.get().turns).toBe(2)
     })
 
     it('writes the events of the round with who took each in', async () => {
       const { session } = await play('careful')
-      const [event] = session.events.list()
+      const [event] = keptEvents(session)
       expect(event).toMatchObject({ turn: 1, round: 1, importance: 3, tags: ['vault'] })
       expect(event?.involves).toHaveLength(2)
       const perceptions = session.events.perceptionsOf(event!.id)
@@ -1764,7 +1770,8 @@ describe('a turn with the real agent loop', () => {
       agent.followup(say('I open the vault door.'))
       await agent.whenIdle()
       expect(keeperRequests(adapter)).toHaveLength(0)
-      expect(session.events.list()).toEqual([])
+      expect(keptEvents(session)).toEqual([])
+      expect(session.events.list().length).toBeGreaterThan(0)
       expect(session.pendingCommits.list()).toHaveLength(1)
       expect(session.metadata.get().turns).toBe(1)
       expect(activityOf(session, 'alice')).toBe('Alice takes the lantern')
@@ -1775,7 +1782,7 @@ describe('a turn with the real agent loop', () => {
       expect(brief).toContain('2 rounds are due for records')
       expect(brief).toContain('The game master says this is worth keeping: The key changed hands.')
       expect(session.pendingCommits.list()).toEqual([])
-      expect(session.events.list().map(event => event.turn)).toEqual([1, 2])
+      expect(keptEvents(session).map(event => event.turn)).toEqual([1, 2])
     })
 
     it('has the game master ask through record_memory, which no character or keeper has', async () => {
@@ -1801,7 +1808,7 @@ describe('a turn with the real agent loop', () => {
       await agent.whenIdle()
       expect(keeperCalls(adapter)).toEqual(['edit_records', 'read_records'])
       expect(session.pendingCommits.list()).toEqual([])
-      expect(session.events.list()).toHaveLength(1)
+      expect(keptEvents(session)).toHaveLength(1)
     })
 
     it('has the pool of memories a character is reminded of judged by the reranking service, when there is one', async () => {
@@ -1819,7 +1826,7 @@ describe('a turn with the real agent loop', () => {
       agent.followup(say('I open the vault door.'))
       await agent.whenIdle()
       expect(asked).toEqual([])
-      expect(session.events.list()).toHaveLength(1)
+      expect(keptEvents(session)).toHaveLength(1)
       agent.followup(say('I look at the vault door again.'))
       await agent.whenIdle()
       expect(asked.length).toBeGreaterThan(0)
@@ -1843,7 +1850,8 @@ describe('a turn with the real agent loop', () => {
       agent.followup(say('I open the vault door.'))
       await agent.whenIdle()
       await vi.waitFor(() => { expect(session.recallIndex.info()).toMatchObject({ model: 'fake', dimensions: 3, pending: 0 }) })
-      expect(session.recallIndex.info()?.embedded).toBe(5)
+      const everything = session.events.list()
+      expect(session.recallIndex.info()?.embedded).toBe(everything.length + everything.reduce((count, event) => count + session.events.perceptionsOf(event.id).length, 0))
       const documents = seen.filter(call => call.options?.['inputType'] === 'document')
       expect(documents.length).toBeGreaterThan(0)
       expect(documents[0]?.options).toMatchObject({ dimensions: 3 })

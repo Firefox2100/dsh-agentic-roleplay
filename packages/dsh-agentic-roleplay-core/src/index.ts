@@ -104,7 +104,7 @@ export function apply(ctx: Context, config: Config) {
       // The game master's own requests: the chat is its session.
       if (session === undefined) return undefined
       const { sampling } = liveSettings(sessionFolder(join(root.path, 'sessions'), session))
-      return { temperature: sampling.master, ...sharedSamplingOf(sampling), priority: 'foreground' as const }
+      return { temperature: sampling.master, ...sharedSamplingOf(sampling), maxTokens: sampling.masterMaxTokens, priority: 'foreground' as const }
     }), 'roleplay: request controls')
   })
   ctx.effect(() => useChildReasoning(config.childReasoning), 'roleplay: helper thinking level')

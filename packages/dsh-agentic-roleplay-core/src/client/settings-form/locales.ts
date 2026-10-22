@@ -5,7 +5,7 @@ export type SettingsFormKey =
   | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp' | 'diversity' | 'diversityHelp' | 'foldedFade' | 'foldedFadeHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
   | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'interfacePack' | 'interfacePackHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
-  | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
+  | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'backgroundConcurrent' | 'backgroundConcurrentHelp' | 'workingTokens' | 'workingTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
   | 'diceVisibility' | 'diceVisibilityHelp' | 'diceHidden' | 'diceCard'
   | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'reflectionAuto' | 'reflectionAutoHelp' | 'reflectionEveryTurns' | 'reflectionEveryTurnsHelp' | 'reflectionOnScene' | 'reflectionOnSceneHelp' | 'reflectionSceneDays' | 'reflectionSceneDaysHelp' | 'reflectionMinTurns' | 'reflectionMinTurnsHelp' | 'reflectionPerRun' | 'reflectionPerRunHelp' | 'reflectionMinNew' | 'reflectionMinNewHelp' | 'modelsCharacters' | 'modelsBackground' | 'modelsBackgroundHelp' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
@@ -139,6 +139,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imageReferencesText: 'Text only',
     imageReferencesPrefer: 'Prefer',
     imageReferencesRequire: 'Require',
+    backgroundConcurrent: 'Background work during the next turn',
+    backgroundConcurrentHelp: 'Off: after a message, the memory, made-up things, characters away and suggestions finish before the next turn is generated, so one local model serves one thing at a time and keeps its cache. On: they may run while the next turn is generated, which is faster when the model is a hosted service that takes requests in parallel.',
     offstagePerTurn: 'Characters acting off stage per turn',
     offstagePerCharacter: 'Times one character acts off stage per turn',
     offstagePerCharacterHelp: 'A character with several things due is asked about the first; the rest wait for your next turn. With the limit above, this caps what the world does without you: nothing runs while you are away from the chat, and each message you send lets at most this many characters act.',
@@ -159,6 +161,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     clockMaxSkipDays: 'Longest skip (days)',
     clockMaxSkipDaysHelp: 'The most the game master may skip ahead in the story\'s time in one go.',
     invalidZone: 'Enter a time zone name such as Europe/London or UTC.',
+    workingTokens: 'Working size cap (tokens)',
+    workingTokensHelp: 'Used when the conversation limit is 0: the limit never exceeds this, however large the model\'s window is. A smaller prompt is faster to prefill and cheaper to rebuild when the server\'s cache is lost. 0 sets no cap.',
     limitTokens: 'Conversation limit (tokens)',
     limitRatio: 'Limit as a share of the model\'s window (%)',
     limitRatioHelp: 'Used when the conversation limit is 0: the conversation is folded when it reaches this share of the selected model\'s context window.',
@@ -299,6 +303,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imageReferencesText: '纯文本',
     imageReferencesPrefer: '优先',
     imageReferencesRequire: '必须',
+    backgroundConcurrent: '下一轮期间的后台工作',
+    backgroundConcurrentHelp: '关闭：消息发出后，记忆、新编造的内容、台下角色和建议会先完成，再生成下一轮，所以一个本地模型一次只做一件事并保住缓存。开启：它们可以与下一轮的生成同时进行，托管服务可并行处理请求时更快。',
     offstagePerTurn: '每轮台下行动的角色数',
     offstagePerCharacter: '每个角色每轮台下行动次数',
     offstagePerCharacterHelp: '同一角色有多件事到期时，只询问第一件，其余等你的下一轮。配合上面的上限，这限制了世界在无人操作时的行动：你离开聊天时什么都不会运行，你每发一条消息最多让这么多次角色行动。',
@@ -321,6 +327,8 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     invalidZone: '请输入时区名称，例如 Europe/London 或 UTC。',
     limitRatio: '上限占模型窗口的比例（%）',
     limitRatioHelp: '对话长度上限为 0 时使用：对话达到所选模型上下文窗口的这一比例时折叠。',
+    workingTokens: '工作长度上限（token）',
+    workingTokensHelp: '对话长度上限为 0 时使用：无论模型窗口多大，限制都不会超过此值。提示越短，预填越快，服务器缓存丢失后重建也越省时间。0 表示不设上限。',
     limitTokens: '对话长度上限（token）',
     limitTokensHelp: '0 表示跟随模型：取其上下文窗口的下方比例。否则，在达到此长度之前，整段对话都会发送给模型。达到后，最早的几轮会折叠进长期和短期摘要，摘要由故事已记录的事件生成。',
     retainRatio: '折叠后保留比例（%）',

@@ -120,7 +120,10 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   ctx.on('agent/created', ({ agent }) => {
     const owner = ownerOf(agent, 0)
     const store = owner === undefined ? undefined : stores(owner.chat)
-    if (store !== undefined) applyTools(agent, store)
+    if (store === undefined) return
+    // The tools are in place before the first request: one registered afterwards changes the request's tool list and with it the start of the prompt, which is what a server's cache is keyed on.
+    showPreviewTool(agent, store.settings().preview.enabled)
+    applyTools(agent, store)
   })
 
   // The turn that ended is where the next one will have to be cut from.
@@ -148,7 +151,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     if (owner === undefined) return
     const missing = engine.missing(owner)
     if (missing === undefined) return
-    if (!engine.object(owner)) {
+    if (!engine.object(owner, missing)) {
       ctx.logger.warn(`roleplay: ${owner.chat} ended turn ${turn} without finishing it (${missing})`)
       return
     }
@@ -171,6 +174,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .filter(message => message.source.kind === 'user')
       .flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])))
       .join('\n')
+    if (!store.settings().background.concurrent) await engine.quiesce(owner.chat)
     await timelines.begin(owner.chat, payload.turn, text)
 
     const cast = store.cast()

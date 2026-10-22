@@ -275,6 +275,8 @@ export interface RoundRecord {
   situation: string
   /** Where the moment happened: the place of the player's character when the round began. */
   place?: PlaceRef
+  /** Where everyone who had a place stood when the round began (keys): who could see what happened. */
+  present?: { character: string; place: string }[]
   /** A round of characters away from the player's character, asked after the turn what they do about something that fell due: only they perceive it. */
   offstage?: true
   /** When the round began and ended in the story (UTC milliseconds), and the zone they are read in. */

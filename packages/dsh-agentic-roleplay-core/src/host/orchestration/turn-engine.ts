@@ -1,5 +1,6 @@
 import { MAX_OOC_ANSWER, MAX_OOC_NOTE, type OocRuling } from '../../shared/ooc.ts'
 import { suggestionProblems, tidySuggestions } from './suggestions.ts'
+import { fallbackSuggestions } from './suggestion-fallback.ts'
 import type { RoutineMove } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
 import { ClockError, type SkipRequest } from '../clock/story-clock.ts'
@@ -97,7 +98,7 @@ export class TurnEngine {
   /** How many runs of the keeper are waiting or running for each chat. */
   private readonly runs = new Map<string, number>()
   private readonly failedRuns = new Map<string, number>()
-  private readonly objections = new Map<string, number>()
+  private readonly objections = new Map<string, { missing: string; count: number }>()
   /** What runs in the background of each chat and writes to its story, other than the records: fitting in what was made up, and the characters away. */
   private readonly working = new Map<string, Set<Promise<unknown>>>()
   private readonly afterTurn: AfterTurnJobs
@@ -309,6 +310,18 @@ export class TurnEngine {
     })
     state.first = { reports, failures: [], outcomes: [...outcomes] }
     return recordRound(this.storeOf(owner), owner, state, round => this.fire(owner, round))
+  }
+
+  /** Why a lone check of the player's character cannot be rolled, recorded and narrated in one call, if it cannot: nothing is rolled until this is clear. */
+  soloCheckProblem(owner: TurnOwner, character: string): string | undefined {
+    const state = this.stateFor(owner)
+    const store = this.storeOf(owner)
+    if (state.ooc !== undefined) return 'this turn is an out-of-character one: use ooc_ruling or ooc_answer'
+    if (state.phase !== 'idle' || state.rounds > 0) return 'characters were already played in this turn: roll with roll_check, decide with resolve_round and deliver with narrate'
+    if (judgeDue(state) || previewDue(state)) return explainPhase(state, 'resolve_round')
+    if (state.judgement?.allowed === false) return `the action cannot work (${state.judgement.reason}): play it as a failed attempt with resolve_round, then narrate`
+    const player = store.cast().find(member => member.character.control === 'player')
+    return player?.key === character ? undefined : `this is only for the player's character${player === undefined ? '' : ` (${player.key})`}: anyone else's attempt goes through activate_characters`
   }
 
   /** The key of the player's character. */
@@ -541,11 +554,15 @@ export class TurnEngine {
     return this.stateFor(owner).utterances
   }
 
-  /** Whether the game master may still be turned back, counting this objection. */
-  object(owner: TurnOwner): boolean {
+  /**
+   * Whether the game master may still be turned back, counting this objection. Only objections that get nowhere count: a turn that has moved on since the
+   * last one (what is missing changed) starts the count again, because a turn cut short by a model's output limit has to be steered through every step.
+   */
+  object(owner: TurnOwner, missing: string): boolean {
     const key = `${owner.chat}#${owner.turn}`
-    const count = (this.objections.get(key) ?? 0) + 1
-    this.objections.set(key, count)
+    const last = this.objections.get(key)
+    const count = last?.missing === missing ? last.count + 1 : 1
+    this.objections.set(key, { missing, count })
     return count <= MAX_OBJECTIONS
   }
 
@@ -562,7 +579,7 @@ export class TurnEngine {
     this.reflectionCancels.get(chat)?.abort()
   }
 
-  /** Resolves when nothing of the chat writes to its story any more: the records, what was made up being fitted in, the characters away. */
+  /** Resolves when nothing of the chat writes to its story any more: the records, what was made up being fitted in, the characters away, the suggestions. */
   async quiesce(chat: string): Promise<void> {
     for (;;) {
       const jobs = [...(this.working.get(chat) ?? []), ...(this.chains.has(chat) ? [this.chains.get(chat)!] : [])]
@@ -612,7 +629,7 @@ export class TurnEngine {
     if (waiting === 0) throw new Error('nothing is waiting to be recorded: the rounds so far are already in the story\'s records')
     if (focus !== undefined && focus.trim() !== '') state.focus.push(focus.trim())
     state.requested = true
-    this.write(owner, state)
+    if (this.storeOf(owner).settings().background.concurrent) this.write(owner, state)
     return waiting
   }
 
@@ -655,7 +672,7 @@ export class TurnEngine {
     const store = this.stores(owner.chat)
     const count = store?.settings().suggestions.count ?? 0
     if (store === undefined || count === 0) return
-    void this.boundaries().suggester.suggest({ chat: owner.chat, turn: owner.turn, store, count, output }, state.cancel.signal)
+    this.track(owner.chat, this.boundaries().suggester.suggest({ chat: owner.chat, turn: owner.turn, store, count, output }, state.cancel.signal)
       .then((made) => {
         if (made.length === 0 || this.states.get(owner.chat) !== state) return
         const lines = tidySuggestions(made)
@@ -664,8 +681,16 @@ export class TurnEngine {
         store.putNote({ kind: 'suggestions', turn: owner.turn, lines })
       })
       .catch((error: unknown) => {
-        if (!state.cancel.signal.aborted) this.problem(`suggestions for turn ${owner.turn} were not made: ${error instanceof Error ? error.message : String(error)}`)
-      })
+        if (state.cancel.signal.aborted) return
+        this.problem(`suggestions for turn ${owner.turn} were not made: ${error instanceof Error ? error.message : String(error)}`)
+        if (this.states.get(owner.chat) !== state) return
+        try {
+          const lines = fallbackSuggestions(store, count)
+          if (lines.length > 0) store.putNote({ kind: 'suggestions', turn: owner.turn, lines })
+        } catch (failed) {
+          this.problem(`suggestions for turn ${owner.turn} could not be made from the story either: ${failed instanceof Error ? failed.message : String(failed)}`)
+        }
+      }))
   }
 
   /** After the output is delivered: start writing what is due, without waiting for it. */

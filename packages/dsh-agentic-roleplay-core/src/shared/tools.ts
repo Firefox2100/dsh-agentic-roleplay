@@ -28,6 +28,7 @@ export const OPTIONAL_TOOLS: readonly OptionalTool[] = [
   { id: 'roll_check', agent: 'gameMaster', default: true },
   { id: 'roll_dice', agent: 'gameMaster', default: true },
   { id: 'list_checks', agent: 'gameMaster', default: true },
+  { id: 'roll_and_narrate', agent: 'gameMaster', default: false },
   { id: 'recall_my_memories', agent: 'characters', default: true },
   { id: 'recall_my_known_entities', agent: 'characters', default: true },
   { id: 'recall_my_lore', agent: 'characters', default: true },
