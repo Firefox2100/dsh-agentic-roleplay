@@ -3,11 +3,11 @@ title: DSH contracts
 description: DSH services, chat persistence, scoped child tools, rendering, approval, and upgrade checks.
 ---
 
-The core package supports DSH `>=0.2.0-rc.2 <0.2.1`. Most integration uses public Cordis services and slots. One deliberate exception is child composition for per-agent scoped tools. Development dependencies and contract tests stay pinned to one exact tested DSH release; every DSH upgrade requires a fresh review before the supported range is widened.
+The core package supports DSH `>=0.2.1-rc.2 <0.2.2`; 0.2.0 is no longer supported, because 0.2.1 removed the sub-agent start options and the invariant packages this code used and changed how a stored chat is adopted. Most integration uses public Cordis services and slots. One deliberate exception is child composition for per-agent scoped tools. Development dependencies and contract tests stay pinned to one exact tested DSH release; every DSH upgrade requires a fresh review before the supported range is widened.
 
 ## Chat and workspace lifecycle
 
-All roleplay chats share one DSH workspace rooted at the roleplay data directory. A chat id is derived as `session-<roleplay-session-uuid>`; the roleplay database remains the source of truth. Opening a missing chat recreates it. Archiving or deleting a roleplay session stops and hides its DSH chat before touching the session directory.
+All roleplay chats share one DSH workspace rooted at the roleplay data directory. A chat id is derived as `session-<roleplay-session-uuid>`; the roleplay database remains the source of truth. Opening a missing chat recreates it. DSH reuses a stored chat in `create` only while it has no turn and otherwise makes a chat under another id, so a chat that already exists is never created again: a stored chat (it holds an opening) is attached to the project and only a chat that does not exist is created, and a chat made under another id than the one asked for is refused. Archiving or deleting a roleplay session stops and hides its DSH chat before touching the session directory.
 
 The opening message is persisted as a complete first turn before the live agent is created. Its stored header must contain the workspace's canonical path and the `roleplay` preset. Appending an opening to an already constructed live loop causes turn-number conflicts and is not supported.
 

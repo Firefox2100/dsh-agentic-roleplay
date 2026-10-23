@@ -109,3 +109,6 @@
               suffix: ''
           - id: doctor
             name: '@dsh-agentic-roleplay/core/doctor'
+# The Web bundle's row that tells every agent where the DSH checkout is and what "this page" is: nothing a story's game master or characters should hear.
+- id: harness-dev-context
+  disabled: true

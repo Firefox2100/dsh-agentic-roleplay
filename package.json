@@ -1,6 +1,6 @@
 {
   "name": "dsh-agentic-roleplay-workspace",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.3.4",
@@ -15,6 +15,7 @@
     "test:coverage": "node --test scripts/*.test.mjs && pnpm -r run test --coverage --coverage.reporter=text --coverage.reporter=lcov && node scripts/merge-coverage.mjs",
     "release:build": "pnpm --filter './packages/**' run build",
     "release:check": "node scripts/check-release.mjs",
+    "sync:dsh": "node scripts/sync-dsh-ranges.mjs",
     "release:publish": "node scripts/publish.mjs"
   },
   "devDependencies": {

@@ -17,7 +17,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 游戏主持人工具 | `ctx.tools.register(defineTool(...))` | `host/orchestration/tools.ts`、`@dsh-agentic-roleplay/state` |
 | 系统提示词 | `ctx.systemPrompt.section` | `orchestration.ts` |
 | 回合控制 | `agent/pre-step`、`agent/turn-stopping`、`agent.steer`、`exec.concludeTurn()`、`exec.agent`、`exec.signal` | `host/orchestration/hooks.ts`、`tools.ts` |
-| 无工具的编年史作者 | `ctx.subagents.start('spawn', ...)`、`SubagentRun.result/dispose` | `compaction/chronicler.ts` |
+| 无自有工具的编年史作者 | 带有自己的 `submit_result` 的 `runChild` 子智能体（见下） | `compaction/chronicler.ts` |
 | 有专属工具的角色与记录员 | 不使用公开子智能体 API，见下文 | `agents/child.ts` |
 | 消息来源 | 合并到 `MessageSourceMap` 的 `roleplay` | `hooks.ts` |
 | 查找智能体 | `ctx.agents.get` | `orchestration.ts` |
@@ -38,10 +38,10 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 这是为支持每个智能体的专属工具而有意接受的边界，并通过以下规则控制风险：
 
-- 软件包目前声明 DSH `>=0.2.0-rc.2 <0.2.1`。开发依赖与 `tests/support/dsh-contract.spec.ts` 均固定到经过测试的准确版本 `0.2.0-rc.2`。支持后续补丁版本前，必须先检查该准确版本的变更，移植所有受影响的集成，并在该版本上完成测试，然后才能扩大版本范围。
+- 软件包目前声明 DSH `>=0.2.1-rc.2 <0.2.2`。开发依赖与 `tests/support/dsh-contract.spec.ts` 均固定到经过测试的准确版本 `0.2.1-rc.2`，这些值都由 `scripts/dsh-compat.mjs` 这一份清单推导而来。支持后续补丁版本前，必须先检查该准确版本的变更，移植所有受影响的集成，并在该版本上完成测试，然后才能扩大版本范围。
 - 只有这一个文件在公开 API 下方创建智能体。DSH 正式支持每智能体工具后，只需替换 `runChild`。
-- 这类子智能体不写内部的子智能体描述符，所以不会出现在父智能体的子智能体列表中。除此之外，它仍是普通子会话，真实循环测试会验证 DSH 的不变量。
-- DSH 变化时，需要重新阅读 `docs/subsystems/subagent.md` 和 `packages/subagent/subagent-in-process-driver`，后者使用同样的组合方式，然后让 `runChild` 与新实现保持一致。
+- 这类子智能体不写内部的子智能体描述符，所以不会出现在父智能体的子智能体列表中。除此之外，它仍是普通子会话，真实循环测试会对其加以验证。
+- DSH 变化时，需要重新阅读 `docs/subsystems/subagent.md` 和 `packages/subagent/subagent-spawn-in-process`，后者使用同样的组合方式，然后让 `runChild` 与新实现保持一致。
 
 ## 回退、归档与删除
 

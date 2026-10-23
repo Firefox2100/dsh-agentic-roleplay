@@ -16,6 +16,7 @@ function fakes(known: string[] = [], stored: string[] = []) {
     persistence: {
       stat: (id) => { calls.push(['stat', id]); return Promise.resolve(stored.includes(id) ? {} : undefined) },
       create: (header) => {
+        stored.push(header.id)
         calls.push(['store', header.id, header.cwd, header.agentPreset])
         return Promise.resolve({
           append: (events) => { calls.push(['store-events', events.map(event => event.type).join(',')]); return Promise.resolve() },
@@ -25,7 +26,7 @@ function fakes(known: string[] = [], stored: string[] = []) {
       },
     },
     registry: {
-      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'project-1', path: `${path}/canonical`, sessionIds: known }) },
+      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'project-1', path: `${path}/canonical`, sessionIds: known, attachSession: (id) => { calls.push(['attach', id]); return Promise.resolve() } }) },
       archiveSession: (id, options) => { calls.push(['archive', id, options]); return Promise.resolve() },
       unarchiveSession: (id) => { calls.push(['unarchive', id]); return Promise.resolve() },
     },
@@ -67,7 +68,8 @@ describe('AuthoringSessions', () => {
       ['stat', 'world-author-harbor'],
       ['store', 'world-author-harbor', '/data/roleplay/worlds/canonical', AUTHORING_AGENT_PRESET],
       ['store-events', 'approval/policy,turn/start,step/start,system/message,assistant/message,step/end,turn/end'],
-      ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
+      ['stat', 'world-author-harbor'],
+      ['attach', 'world-author-harbor'],
       ['rename', { sessionId: 'world-author-harbor', title: 'Authoring Harbor' }],
     ])
   })
@@ -77,7 +79,6 @@ describe('AuthoringSessions', () => {
     await authoringSessions(services, '/data').ensure('harbor', 'New name')
     expect(calls).toEqual([
       ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
-      ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
       ['rename', { sessionId: 'world-author-harbor', title: 'Authoring New name' }],
     ])
   })
@@ -88,7 +89,8 @@ describe('AuthoringSessions', () => {
     expect(calls).toEqual([
       ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
       ['stat', 'world-author-harbor'],
-      ['session', { workspaceId: 'project-1', sessionId: 'world-author-harbor', agentPreset: AUTHORING_AGENT_PRESET }],
+      ['stat', 'world-author-harbor'],
+      ['attach', 'world-author-harbor'],
       ['rename', { sessionId: 'world-author-harbor', title: 'Authoring Harbor' }],
     ])
   })
@@ -107,6 +109,7 @@ describe('AgentSessions', () => {
     expect(await agent.ensure('abc', 'Night one')).toBe('session-abc')
     expect(calls).toEqual([
       ['project', '/data/roleplay', PROJECT_TITLE],
+      ['stat', 'session-abc'],
       ['session', { workspaceId: 'project-1', sessionId: 'session-abc', agentPreset: AGENT_PRESET }],
       ['rename', { sessionId: 'session-abc', title: 'Night one' }],
     ])
@@ -115,7 +118,7 @@ describe('AgentSessions', () => {
   it('stores the opening of a new chat before the chat is created, so the chat starts from it', async () => {
     const { calls, services } = fakes()
     await new AgentSessions(() => services, () => '/data/roleplay').ensure('abc', 'Night one', [{ type: 'narration', text: 'The lanterns sway.' }])
-    expect(calls.map(call => call[0])).toEqual(['project', 'stat', 'store', 'store-events', 'session', 'rename'])
+    expect(calls.map(call => call[0])).toEqual(['project', 'stat', 'store', 'store-events', 'stat', 'attach', 'rename'])
     expect(calls[2]).toEqual(['store', 'session-abc', '/data/roleplay/canonical', AGENT_PRESET])
     expect(calls[3]).toEqual(['store-events', 'turn/start,step/start,system/message,assistant/message,tool/call,tool/result,step/end,turn/end'])
   })
@@ -123,7 +126,19 @@ describe('AgentSessions', () => {
   it('leaves a chat that exists as it is, opening or not', async () => {
     const { calls, services } = fakes(['session-abc'])
     await new AgentSessions(() => services, () => '/data').ensure('abc', 'Night one', [{ type: 'narration', text: 'The lanterns sway.' }])
-    expect(calls.map(call => call[0])).toEqual(['project', 'session'])
+    expect(calls.map(call => call[0])).toEqual(['project'])
+  })
+
+  it('attaches a chat that is stored but not yet in the project, and never asks DSH to create it again', async () => {
+    const { calls, services } = fakes([], ['session-abc'])
+    await new AgentSessions(() => services, () => '/data').ensure('abc', 'Night one', [{ type: 'narration', text: 'The lanterns sway.' }])
+    expect(calls.map(call => call[0])).toEqual(['project', 'stat', 'stat', 'attach', 'rename'])
+  })
+
+  it('refuses a chat DSH made under another id, so that no chat is left that cannot be found', async () => {
+    const { services } = fakes()
+    services.controller.create = () => Promise.resolve({ sessionId: 'session-other' })
+    await expect(new AgentSessions(() => services, () => '/data').ensure('abc', 'x')).rejects.toThrow(/session-other/)
   })
 
   it('refuses an opening it cannot store, and does not need storage without one', async () => {
@@ -138,7 +153,7 @@ describe('AgentSessions', () => {
   it('names a chat that is new after the session, and leaves the name of one that exists', async () => {
     const existing = fakes(['session-abc'])
     await new AgentSessions(() => existing.services, () => '/data').ensure('abc', 'Night one')
-    expect(existing.calls.map(call => call[0])).toEqual(['project', 'session'])
+    expect(existing.calls.map(call => call[0])).toEqual(['project'])
   })
 
   it('follows a moved roleplay root', async () => {

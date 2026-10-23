@@ -13,7 +13,7 @@ import { roleplaySessionOf } from '../../shared/chat.ts'
 import { liveSettings } from '../sessions/settings.ts'
 import { composeSummary, foldSummaries, type Chronicler } from './chronicle.ts'
 import { promptFor } from '../prompts/access.ts'
-import { subagentChronicler } from './chronicler.ts'
+import { childChronicler } from './chronicler.ts'
 import { selectFoldRange } from './range.ts'
 
 /** What the next summary has to cover; set by the engine just before it asks DSH to fold a range. */
@@ -106,8 +106,9 @@ export class RoleplayCompaction extends BasicCompactionEngine {
     const fold = this.folds.get(agent.session.id)
     if (fold === undefined) return super.summarize(input as never, agent, signal)
     const story = this.ctx.roleplayState.openSession(this.sessionsDir(), fold.id)
-    const { context, prompts } = liveSettings(fold.folder)
-    const chronicler: Chronicler = subagentChronicler(this.ctx.subagents, agent, prompts.language)
+    const settings = liveSettings(fold.folder)
+    const { context, prompts } = settings
+    const chronicler: Chronicler = childChronicler(agent, settings)
     const { playerInputs, transcript } = readFolded(input.messages)
     await foldSummaries({ story, settings: context, uptoTurn: fold.uptoTurn, playerInputs, transcript, chronicler, text: (id, variables) => promptFor(agent, `roleplay/chronicle-${id}`, prompts.language, variables), signal: signal ?? new AbortController().signal })
     const config = agent.session.requestHeader()?.config

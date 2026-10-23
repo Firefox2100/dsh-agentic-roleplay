@@ -16,7 +16,7 @@ function fakes(known: string[] = []) {
       create: header => { calls.push(['store', header.id, header.cwd, header.agentPreset]); return Promise.resolve({ append: () => Promise.resolve(), flush: () => Promise.resolve(), close: () => Promise.resolve() }) },
     },
     registry: {
-      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'p', path: `${path}/canonical`, sessionIds: known }) },
+      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'p', path: `${path}/canonical`, sessionIds: known, attachSession: (id) => { calls.push(['attach', id]); return Promise.resolve() } }) },
       archiveSession: () => Promise.resolve(),
       unarchiveSession: () => Promise.resolve(),
     },
@@ -55,7 +55,7 @@ describe('the chat of a session doctor', () => {
   it('reopens a chat that exists without storing its opening again or renaming it', async () => {
     const { calls, services } = fakes([`doctor-${ID}`])
     await new DoctorSessions(() => services, () => '/root', prompts).ensure({ id: ID, name: 'Night one' }, 'Doctor', 'en')
-    expect(calls.map(call => call[0])).toEqual(['project', 'session'])
+    expect(calls.map(call => call[0])).toEqual(['project'])
   })
 })
 

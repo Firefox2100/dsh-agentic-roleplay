@@ -1,11 +1,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import * as AgentLoopInvariant from '@deepseek-ai/dsh-agent-loop/invariant'
-import * as AgentInvariant from '@deepseek-ai/dsh-agent/invariant'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
-import * as SessionInvariant from '@deepseek-ai/dsh-session/invariant'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { authoringOpeningEvents, openingEvents, storeOpening, type SessionPersistenceLike } from '../../../src/host/agent/opening.ts'
 import { decodeOutput, type NarrationSegment } from '../../../src/shared/narration.ts'
@@ -92,10 +88,6 @@ describe('an agent that starts from an opening', () => {
   beforeEach(async () => {
     ctx = new Context()
     await mountAgentServices(ctx)
-    await ctx.plugin(InvariantRegistry)
-    await ctx.plugin(SessionInvariant)
-    await ctx.plugin(AgentInvariant)
-    await ctx.plugin(AgentLoopInvariant)
     await ctx.plugin(AgentLoop, { agents: [] })
   })
   afterEach(async () => { await ctx.fiber.dispose() })

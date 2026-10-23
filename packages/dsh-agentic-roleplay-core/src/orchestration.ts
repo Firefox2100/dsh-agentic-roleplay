@@ -38,6 +38,8 @@ import { ImageJobs } from './host/images/jobs.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
 
+const WORKING_DIRECTORY_CONTEXT = 'working-directory:current'
+
 export const name = '@dsh-agentic-roleplay/core/orchestration'
 
 /**
@@ -127,6 +129,8 @@ export function apply(ctx: Context): void {
       return resourceHint(ctx.tools.schemas(context.scope).map(tool => tool.name), ctx.tools.schemas().map(tool => tool.name), translator(languageOf(chat?.settings.prompts.language ?? FALLBACK_LANGUAGE)))
     },
   })
+  // The story has no files, so a directory line only tells a character about the machine; a scoped entry of the same name shadows the required one.
+  ctx.systemPrompt.context({ name: WORKING_DIRECTORY_CONTEXT, order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
   const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
   const [previewTool, ...tools] = [...createTools(toolDeps)].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)

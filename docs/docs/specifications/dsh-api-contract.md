@@ -16,12 +16,12 @@ below so it can be checked when DSH moves.
 | Plugins, services | `Context`, `Service`, `ctx.inject`, `ctx.effect`, `ctx.provide` (cordis) | everywhere |
 | Configuration | Schemastery `Config`, volatile fields, `loader/volatile-update` | `index.ts`, `host/config.ts` |
 | Browser HTTP API | `ctx.webServer.register`, `ctx.connection.requestRejection` | `host/http/` |
-| The chat of a session | `ctx.sessionController.create/rename`, `ctx.workspaceRegistry.create/archiveSession`, `ctx.sessionPersistence` | `host/agent/` |
+| The chat of a session | `ctx.sessionController.create/rename`, `ctx.workspaceRegistry.create/archiveSession`, `workspace.attachSession`, `ctx.sessionPersistence` | `host/agent/` |
 | Agent presets | the `@deepseek-ai/dsh-agent-preset` row with `plugins` (persona, our two plugins, a `compaction` group) | the bundle's `cordis.patch.yml` |
 | Game master tools | `ctx.tools.register(defineTool(...))` | `host/orchestration/tools.ts`, `@dsh-agentic-roleplay/state` |
 | Prompt | `ctx.systemPrompt.section` | `orchestration.ts` |
 | Turn control | `agent/pre-step` (waterfall), `agent/turn-stopping`, `agent.steer`, `exec.concludeTurn()`, `exec.agent`, `exec.signal` | `host/orchestration/hooks.ts`, `tools.ts` |
-| Chronicler (no tools) | `ctx.subagents.start('spawn', { persona, toolFilter, outputSchema, prompt, parent, signal })`, `SubagentRun.result/dispose` | `compaction/chronicler.ts` |
+| Chronicler (no tools of its own) | a `runChild` child with a `submit_result` of its own (below) | `compaction/chronicler.ts` |
 | Characters and record keeper (tools of their own) | **not the public sub-agent API**: see below | `agents/child.ts` |
 | Message source | merge into `MessageSourceMap` (`roleplay`) | `hooks.ts` |
 | Looking up an agent | `ctx.agents.get` | `orchestration.ts` |
@@ -51,18 +51,19 @@ ends it with a `submit_result` tool whose arguments are the result.
 This is accepted on purpose, because per-agent tools are a core feature of the bundle. The
 consequences, and how they are contained:
 
-- **Exact tested release.** The packages currently declare DSH `>=0.2.0-rc.2 <0.2.1`
-  (`dsh.engines` and the peer dependency). Development dependencies and
-  `tests/support/dsh-contract.spec.ts` are pinned to the exact tested release, `0.2.0-rc.2`.
+- **Exact tested release.** The packages currently declare DSH `>=0.2.1-rc.2 <0.2.2`
+  (`engines.dsh` and the peer dependency). Development dependencies and
+  `tests/support/dsh-contract.spec.ts` are pinned to the exact tested release, `0.2.1-rc.2`;
+  `scripts/dsh-compat.mjs` is the one list these are derived from.
   Supporting a later patch tuple requires inspecting its changes, porting every affected integration,
   and testing against that exact release before widening the range.
 - **One file.** Nothing else builds an agent below the public API; when DSH offers per-agent tools
   properly, `runChild` is what is replaced.
 - **Not in the parent's catalog.** Such a child writes no sub-agent descriptor (that part of DSH is
   internal), so it does not show in the parent's list of sub-agents. It is an ordinary child session
-  otherwise (verified with DSH's invariants in the real-loop tests).
+  otherwise (verified by the real-loop tests).
 - **When DSH changes**, re-read `docs/subsystems/subagent.md` and the in-process driver
-  (`packages/subagent/subagent-in-process-driver`, which does the same composition) and port
+  (`packages/subagent/subagent-spawn-in-process`, which does the same composition) and port
   `runChild` to match.
 
 ## Taking the story back, putting sessions away, deleting them

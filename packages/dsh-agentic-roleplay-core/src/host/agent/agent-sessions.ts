@@ -22,8 +22,16 @@ export interface SessionControllerLike {
 }
 
 /** The slice of DSH's workspace registry used to group and hide chats. */
+export interface WorkspaceLike {
+  id: string
+  path: string
+  sessionIds: readonly string[]
+  /** Makes a stored chat part of the project; its stored working folder must be the project's. */
+  attachSession(sessionId: string): Promise<void>
+}
+
 export interface WorkspaceRegistryLike {
-  create(path: string, title?: string): Promise<{ id: string; path: string; sessionIds: readonly string[] }>
+  create(path: string, title?: string): Promise<WorkspaceLike>
   archiveSession(sessionId: string, options?: { stopActivity?: boolean }): Promise<void>
   unarchiveSession(sessionId: string): Promise<void>
 }
@@ -48,17 +56,27 @@ async function isStored(persistence: SessionPersistenceLike | undefined, session
   return persistence?.stat !== undefined && await persistence.stat(SessionId(sessionId)) !== undefined
 }
 
-/** Create or adopt one named preset chat and only name it on first creation. */
+/**
+ * Make sure one named preset chat belongs to its project, and only name it on first creation. DSH's `create` reuses a stored chat only while
+ * it has no turn and mints another id otherwise, so a chat that exists is never created again: one that is stored (it holds an opening) is
+ * attached to the project, and only a chat that does not exist is created.
+ */
 export async function ensureAgentChat(
   services: AgentServices,
   request: AgentChatRequest,
-  knownProject?: { id: string; path: string; sessionIds: readonly string[] },
+  knownProject?: WorkspaceLike,
 ): Promise<string> {
   const project = knownProject ?? await services.registry.create(request.projectPath, request.projectTitle)
   const existed = project.sessionIds.includes(request.sessionId)
-  const { sessionId } = await services.controller.create({ workspaceId: project.id, sessionId: request.sessionId, agentPreset: request.agentPreset })
-  if (!existed || request.renameExisting === true) await services.controller.rename({ sessionId, title: request.title })
-  return sessionId
+  if (!existed) {
+    if (await isStored(services.persistence, request.sessionId)) await project.attachSession(request.sessionId)
+    else {
+      const { sessionId } = await services.controller.create({ workspaceId: project.id, sessionId: request.sessionId, agentPreset: request.agentPreset })
+      if (sessionId !== request.sessionId) throw new Error(`DSH made the chat "${sessionId}" instead of "${request.sessionId}", so the chat cannot be found again`)
+    }
+  }
+  if (!existed || request.renameExisting === true) await services.controller.rename({ sessionId: request.sessionId, title: request.title })
+  return request.sessionId
 }
 
 /** Looks the services up on first use: profiles without the web app do not have them. */

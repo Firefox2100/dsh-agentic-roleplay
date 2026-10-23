@@ -1,7 +1,9 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { SubagentRuntime } from '@deepseek-ai/dsh-subagent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import { tokensOf, FIELD_TOKENS } from '../agents/budget.ts'
+import { childModel, childSampling, runChild } from '../agents/child.ts'
 import { promptFor } from '../prompts/access.ts'
+import type { ChatSettings } from '../../shared/settings.ts'
 import type { Chronicler } from './chronicle.ts'
 
 const SUMMARY_SCHEMA: ObjectJsonSchema = {
@@ -11,28 +13,21 @@ const SUMMARY_SCHEMA: ObjectJsonSchema = {
   additionalProperties: false,
 }
 
-/** Writes each passage with a one-shot sub-agent of the game master that has the chronicler's persona and no tools. */
-export function subagentChronicler(subagents: Pick<SubagentRuntime, 'start'>, parent: Agent, language: string): Chronicler {
+/** Writes each passage with a one-shot child of the game master that has the chronicler's persona and no tools of its own. */
+export function childChronicler(parent: Agent, settings: ChatSettings): Chronicler {
+  const language = settings.prompts.language
   return {
     async write({ task, material, words }, signal) {
-      const run = await subagents.start('spawn', {
-        parent,
-        signal,
-        label: 'Chronicler',
-        prompt: [{ type: 'text', text: `${task}\n\nWrite at most ${words} words.\n\n${material}` }],
+      const estimate = tokensOf(words * (language.toLowerCase().startsWith('zh') ? 1 : 6), language) + FIELD_TOKENS
+      const result = await runChild<{ summary: string }>({
+        parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimate), ...childModel(settings, 'records'),
         persona: promptFor(parent, 'roleplay/chronicler', language),
-        toolFilter: { allow: [] },
-        outputSchema: SUMMARY_SCHEMA,
+        prompt: `${task}\n\nWrite at most ${words} words.\n\n${material}`,
+        result: SUMMARY_SCHEMA,
+        beforeSubmit: value => ((value as { summary?: unknown }).summary as string | undefined)?.trim() === '' ? 'the passage is empty: write it' : undefined,
+        maxCalls: 3,
       })
-      try {
-        const result = await run.result
-        if (result.stopReason !== 'completed') throw new Error(`the chronicler did not finish (${result.stopReason})`)
-        const text = (result.structured as { summary?: unknown } | undefined)?.summary
-        if (typeof text !== 'string' || text.trim() === '') throw new Error('the chronicler wrote nothing')
-        return text
-      } finally {
-        await run.dispose()
-      }
+      return result.summary
     },
   }
 }

@@ -9,7 +9,6 @@ import { createUserMessage, ToolCallId, type GenerateOptions, type StreamChunk }
 import { SessionId, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
-import { STRUCTURED_OUTPUT_TOOL } from '@deepseek-ai/dsh-subagent-in-process-driver'
 import * as spawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import { randomUUID } from 'node:crypto'
 import { readdirSync } from 'node:fs'
@@ -301,7 +300,7 @@ function answerWithoutSuggestions(script: Script) {
       const away = asText(request).includes('nothing of this happens in front of anyone') ? { account: `${who} dealt with it out of sight.`, ...(who === 'Carol' ? { commitment: 'medium' } : {}) } : {}
       return call(`s-${who}`, 'submit_result', retry ? { intent: `${who} grabs the lantern instead`, utterance: 'Give it here!', commitment: 'medium' } : { ...intents[who]!, ...away })
     }
-    if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', STRUCTURED_OUTPUT_TOOL, { summary: 'The chronicler wrote this account of the earlier turns.' })
+    if (systemOf(request).includes('chronicler of an interactive story')) return call('c-summary', 'submit_result', { summary: 'The chronicler wrote this account of the earlier turns.' })
     if (!toolNames(request).includes('activate_characters')) return text('a title')
     if (script.ooc === 'question' && thisTurn(request).includes('OUT-OF-CHARACTER QUESTION')) {
       if (timesCalled(request, 'ooc_answer') === 0) return call('q-ans', 'ooc_answer', {})

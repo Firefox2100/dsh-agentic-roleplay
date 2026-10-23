@@ -1,5 +1,6 @@
 import { access, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { DSH_DEVELOPMENT, DSH_ENGINES } from './dsh-compat.mjs'
 import { releasePackages } from './release-packages.mjs'
 
 const root = resolve(import.meta.dirname, '..')
@@ -42,6 +43,15 @@ for (const { folder, name } of releasePackages) {
       if (dependency.startsWith('@deepseek-ai/')) throw new Error(`${name}: ${dependency} must be a peer dependency`)
     }
   }
+
+  for (const field of ['dependencies', 'devDependencies']) {
+    for (const [dependency, range] of Object.entries(manifest[field] ?? {})) {
+      if (dependency.startsWith('@deepseek-ai/dsh-') && range !== DSH_DEVELOPMENT) throw new Error(`${name}: ${field}.${dependency} must be ${DSH_DEVELOPMENT}`)
+    }
+  }
+  if (manifest.peerDependencies?.['@deepseek-ai/dsh'] !== undefined && manifest.peerDependencies['@deepseek-ai/dsh'] !== DSH_ENGINES) throw new Error(`${name}: the @deepseek-ai/dsh peer must be ${DSH_ENGINES}`)
+  if (folder !== 'dsh-roleplay-model' && manifest.engines?.dsh !== DSH_ENGINES) throw new Error(`${name}: engines.dsh must be ${DSH_ENGINES}`)
+  if (manifest.dsh?.engines !== undefined) throw new Error(`${name}: DSH reads engines.dsh, not dsh.engines`)
 
   if (manifest.main) await access(resolve(directory, manifest.main))
   if (manifest.types) await access(resolve(directory, manifest.types))
