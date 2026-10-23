@@ -13,7 +13,7 @@ Roleplay always needs a DSH language-model route. Other AI capabilities are opti
 | Text-to-speech | Narration and character voices | Play controls are unavailable or fail clearly |
 | Speech-to-text | Recorded or live player input | The user types normally |
 
-Install and configure providers through [DSH AI Providers](https://firefox2100.github.io/dsh-ai-providers/docs/intro). Select services under **Settings → AI Providers**, and configure language-model routes for DSH.
+Install and configure providers through [DSH AI Providers](https://firefox2100.github.io/dsh-ai-providers/docs/intro). Register each endpoint and credential reference once under **Settings → Providers**, then choose the provider, connection and model on the service pages (**Language models**, **Embedding**, **Reranking**, **Text-to-speech**, **Speech-to-text**, **Image generation**).
 
 When using DSH AI Providers for language models, follow its profile setup instructions: disable DSH's stock `@deepseek-ai/dsh-llm-pi-ai` adapter and `ui-settings-models` page, but keep the core `llm` service enabled. Provider coexistence is a profile-level choice and is not changed automatically by the roleplay bundle.
 

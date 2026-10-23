@@ -84,7 +84,7 @@
   },
   "dependencies": {
     "@dsh-agentic-roleplay/state": "workspace:0.5.0",
-    "@dsh-ai-providers/core": "^0.3.0"
+    "@dsh-ai-providers/core": "^0.4.0"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.5",

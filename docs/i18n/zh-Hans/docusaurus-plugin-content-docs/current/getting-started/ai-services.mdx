@@ -13,7 +13,7 @@ title: 配置 AI 服务
 | TTS | 旁白和角色语音 | 不提供播放或明确失败 |
 | STT | 录音与实时语音输入 | 正常使用文字输入 |
 
-通过 [DSH AI Providers](https://firefox2100.github.io/dsh-ai-providers/zh-Hans/docs/intro) 安装和配置服务。在**设置 → AI Providers**中选择各项服务，并为 DSH 配置语言模型路由。
+通过 [DSH AI Providers](https://firefox2100.github.io/dsh-ai-providers/zh-Hans/docs/intro) 安装和配置服务。在**设置 → Providers**中登记每个端点和凭据引用，然后在各服务页（**语言模型**、**Embedding**、**重排序**、**语音合成**、**语音识别**、**图像生成**）中选择提供方、连接和模型。
 
 通过 DSH AI Providers 使用语言模型时，请按照其配置档案说明操作：禁用 DSH 默认的 `@deepseek-ai/dsh-llm-pi-ai` 适配器和 `ui-settings-models` 页面，但保留核心 `llm` 服务。提供方是否共存属于配置档案层面的选择，角色扮演套件不会自动修改它。
 
