@@ -466,9 +466,10 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         : `Judged: it cannot work${(value as unknown as { elsewhere?: true }).elsewhere === true ? ` (${(value as unknown as { reason: string }).reason})` : ''}. Play the failed attempt: ${RESOLVE_TOOL} with one outcome for the player's character (result failed, one sentence: what it does, what comes of it, why not) and nothing else, then ${NARRATE_TOOL}. Narrate what a witness would see of the attempt, never the effect the player claimed.` }],
     },
     isConcurrencySafe: () => false,
-    execute(args, exec) {
+    async execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
-      return Promise.resolve(record(deps.engine.judge(owner, args.allowed, args.reason, args.at, args.uncertain)))
+      await deps.engine.checkRules(owner, args.allowed)
+      return record(deps.engine.judge(owner, args.allowed, args.reason, args.at, args.uncertain))
     },
   })
 

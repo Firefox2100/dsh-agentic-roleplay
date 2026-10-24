@@ -30,18 +30,16 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 客户端使用 `ctx.slots`，包括 `settings.section`、`sidebar.panellist`、主区域面板、`conversation.chat.node` 和 `conversation.view`；还使用 `ctx.locale`、`ctx.configForms`、`ctx.uiConversation`、`uiWorkspace.openSession`，以及 `Button`、`Input`、`Switch`、`Modal`、`Tag`、`Tooltip` 等外壳组件。客户端包格式由外壳模块加载器决定，并通过 `tsdown.config.ts` 检查。
 
-## 唯一低于公开 API 的位置
+## 辅助智能体
 
-角色和记录员是拥有各自工具的子智能体。公开子智能体 API 无法提供两项必要能力：只在某一个子智能体上注册工具，以及让子智能体循环读取、写入、检查和修正后，通过工具提交符合契约的最终结果。第一项确保围绕 Alice 记忆建立的工具不会把内容泄露给并行运行的 Bob。
+角色、记录员、世界作者、势力策略师及其他一次性辅助智能体都是拥有各自工具的子智能体：围绕 Alice 记忆建立的工具不能让并行运行的 Bob 得到任何内容，子智能体在循环之后通过 `submit_result` 工具结束（因此可以读取、写入、检查和修正）。`host/agents/child.ts` 中的 `runChild` 只用公开 API 做到这一点：
 
-因此，`host/agents/child.ts` 中的 `runChild` 通过 `parent.ctx.agents.create` 创建子智能体，并使用 DSH 为子智能体提供方导出的组合辅助函数：`applyChildComposition`、`childSessionMeta`、`resolveChildAgentOptions`、`resolveChildDepth`、`captureDelegatedPolicyOverrides`、`appendDelegatedPolicyOverrides`。这些函数来自 `@deepseek-ai/dsh-subagent`。参数验证使用 `@deepseek-ai/dsh-tools` 的 `validateJsonSchemaValue` 与 `ToolArgsError`。工具注册在子智能体自己的作用域，最终由 `submit_result` 工具接收结果参数并结束运行。
-
-这是为支持每个智能体的专属工具而有意接受的边界，并通过以下规则控制风险：
-
-- 软件包目前声明 DSH `>=0.2.1-rc.2 <0.2.2`。开发依赖与 `tests/support/dsh-contract.spec.ts` 均固定到经过测试的准确版本 `0.2.1-rc.2`，这些值都由 `scripts/dsh-compat.mjs` 这一份清单推导而来。支持后续补丁版本前，必须先检查该准确版本的变更，移植所有受影响的集成，并在该版本上完成测试，然后才能扩大版本范围。
-- 只有这一个文件在公开 API 下方创建智能体。DSH 正式支持每智能体工具后，只需替换 `runChild`。
-- 这类子智能体不写内部的子智能体描述符，所以不会出现在父智能体的子智能体列表中。除此之外，它仍是普通子会话，真实循环测试会对其加以验证。
-- DSH 变化时，需要重新阅读 `docs/subsystems/subagent.md` 和 `packages/subagent/subagent-spawn-in-process`，后者使用同样的组合方式，然后让 `runChild` 与新实现保持一致。
+- **启动。** `ctx.get('subagents').startActivation({ provider: 'spawn', childId, delivery: 'caller', request: { parent, agentPreset: 'roleplay-helper', agentOptions, prompt } })`。调用方先预留子智能体的会话 id（`childId`），要交给子智能体的内容在它出现之前就以该 id 登记。（没有在所属插件上声明 `inject` 时，`parent.ctx.subagents` 会抛错；`ctx.get('subagents')` 不会。）
+- **预设。** `roleplay-helper` 是 bundle 补丁里的一行 `@deepseek-ai/dsh-agent-preset`（所以单独安装 core 时没有辅助智能体）。它挂载 `core/helper` 插件：按会话 id 读取的系统提示段落给出角色设定，并在公开的 `agent/created` 事件里调用该子智能体的 `setup`。预设由所有使用它的智能体共享，所以每个子智能体自己的内容不放在插件里，而是按会话 id 查找。
+- **专属工具。** spawn 出来的子智能体会继承所有全局工具（故事读取工具、DSH 的 working directory），所以 `setup` 先调用 `agent.ctx.tools.restrict({ allow })`（`allow` 只含任务放行的外部工具），再把子智能体的工具注册到 `agent.ctx` 上，`restrict` 不会影响这些。`submit_result` 工具、调用预算、重复调用保护和提醒也是同样注册的。
+- **代价。** 每次运行都会在旁白主持人的日志里增加一条 `subagent/catalog` 事件（几百字节，回合结束后也可能出现，所以已结束回合的最后一个事件不一定是 `turn/end`）。DSH 同一父智能体最多同时容纳 `maxActiveSubagents` 个子智能体（默认 8），多的会被拒绝，因此 bundle 补丁把它提高到 32，以容纳一轮角色加上记录员、作者和建议。
+- **准确的测试版本。** 软件包声明 DSH `>=0.2.1-rc.2 <0.2.2`（`engines.dsh` 与 peer 依赖）。开发依赖与 `tests/support/dsh-contract.spec.ts` 固定到经过测试的准确版本，这些值都由 `scripts/dsh-compat.mjs` 这一份清单推导而来。支持后续补丁版本前，必须先检查该准确版本的变更，移植所有受影响的集成，并在该版本上完成测试，然后才能扩大版本范围。
+- **DSH 变化时**，重新阅读 `docs/subsystems/subagent.md`，让 `runChild` 与之保持一致；`tests/host/orchestration/loop.spec.ts` 中的真实循环测试通过一个替身 `agentPresets` 服务挂载该辅助插件。
 
 ## 回退、归档与删除
 

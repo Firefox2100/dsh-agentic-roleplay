@@ -44,6 +44,8 @@ export interface TurnState {
   reported: Set<number>
   /** How many times the game master delivered an output that was refused. */
   refused: number
+  /** What the player wrote this turn, for the checks of the output. */
+  input?: string
   /** The most rounds the chat's settings allowed when last asked. */
   limit?: number
   /** What the game master said is worth keeping, when it asked for the records to be written. */
@@ -71,6 +73,10 @@ export interface TurnState {
   judgement?: { allowed: boolean; reason: string }
   /** Whether the game master has to judge the player's action before anything else: the loop asks for it at the start of an ordinary turn. */
   judgeWanted?: true
+  /** The rules were checked for the action the game master judged allowed; it is put to it once. */
+  rulesChecked?: true
+  /** The output was sent back once for giving away hidden lore; the same revelation, delivered again, is the game master's choice. */
+  secretsFound?: true
   /** The judgement found the attempt uncertain and the game master has dice: it has to roll before anyone is asked to act. */
   rollWanted?: true
 }

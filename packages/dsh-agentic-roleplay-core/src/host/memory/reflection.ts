@@ -1,8 +1,11 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import type { DecisionService } from '@dsh-ai-providers/core'
 import { characterKey, tokens, type RecordsEdit, type Session } from '@dsh-agentic-roleplay/state'
 import { IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_CONFIDENCES, MEMORY_KINDS, languageOf, translator, type Character, type CharacterMemory, type Location, type MemoryConfidence, type MemoryKind, type PerceivedEvent, type Translate } from 'dsh-roleplay-model'
+import type { SiteReport } from '../../shared/decisions.ts'
 import type { ReflectionOutcome, ReflectionReason, ReflectionStatus } from '../../shared/reflection.ts'
+import { announceProblem, askYesNo, mergeReports, noAt, routeVerdicts, yesAt } from '../decisions/route.ts'
 import { wrongLanguage } from '../translate/language.ts'
 import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
@@ -553,7 +556,8 @@ function brief(session: ReflectionSession, material: Material, doubted: Readonly
  * against what the character was shown before it is written, and the writing of one character is all or nothing; a failure stops the pass
  * and leaves the characters not yet done as they were.
  */
-export function memoryReflector(deps: { agentOf: (chat: string) => Agent | undefined }): Reflector {
+export function memoryReflector(deps: { agentOf: (chat: string) => Agent | undefined; decisions?: () => DecisionService | undefined; problem?: (message: string) => void }): Reflector {
+  const seen = new Map<string, string>()
   return {
     async reflect(job, signal) {
       const parent = deps.agentOf(job.chat)
@@ -575,25 +579,52 @@ export function memoryReflector(deps: { agentOf: (chat: string) => Agent | undef
         const shown = shownOf(session, material)
         const found: Contradiction[] = []
         let checked = 0
+        const reports: SiteReport[] = []
         for (const belief of material.beliefs) {
           const near = bearingOn(belief, material.fresh)
           if (near.length === 0 || checked >= MAX_CHECKS) continue
           checked += 1
-          const things = near.flatMap(id => shown.perceptions.get(id) ?? [])
-          let verdict: CheckAnswer | undefined
-          try {
-            verdict = await runChild<CheckAnswer>({
-              parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([MAX_TEXT * 2, 100], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection check ${material.character.name} b${belief.id}`),
-              persona: promptFor(parent, 'roleplay/reflection-check', settings.prompts.language),
-              prompt: checkBrief(material.character, belief, things, now, zone, (turn, round) => session.clock.at(turn, round), tr),
-              result: CHECK_RESULT,
-              beforeSubmit: (value) => { const problem = checkProblem(value as CheckAnswer, belief, shown, new Set(near), tr); return problem === undefined ? undefined : tr('not acceptable: {problems}', { problems: problem }) },
-              maxCalls: 2,
-            })
-          } catch (error) {
-            if (signal.aborted) throw error
+          const askLanguageModel = async (ids: readonly number[]): Promise<Map<number, boolean>> => {
+            const things = ids.flatMap(id => shown.perceptions.get(id) ?? [])
+            let verdict: CheckAnswer | undefined
+            try {
+              verdict = await runChild<CheckAnswer>({
+                parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([MAX_TEXT * 2, 100], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection check ${material.character.name} b${belief.id}`),
+                persona: promptFor(parent, 'roleplay/reflection-check', settings.prompts.language),
+                prompt: checkBrief(material.character, belief, things, now, zone, (turn, round) => session.clock.at(turn, round), tr),
+                result: CHECK_RESULT,
+                beforeSubmit: (value) => { const problem = checkProblem(value as CheckAnswer, belief, shown, new Set(ids), tr); return problem === undefined ? undefined : tr('not acceptable: {problems}', { problems: problem }) },
+                maxCalls: 2,
+              })
+            } catch (error) {
+              if (signal.aborted) throw error
+            }
+            const named = new Set(verdict?.verdict === 'contradicted' ? verdict.things : [])
+            return new Map(ids.map(id => [id, named.has(id)]))
           }
-          if (verdict?.verdict === 'contradicted') found.push({ belief: belief.id, things: verdict.things })
+          // A thing that came before the belief was formed cannot contradict it, so the decision model is not asked about it.
+          const askDecisionModel = async (ids: readonly number[]): Promise<Map<number, number>> => {
+            const service = deps.decisions?.()
+            if (service === undefined) throw new Error('no decision service is selected, or the selected one is not loaded')
+            const askable = ids.filter(id => (shown.perceptions.get(id)?.event.turn ?? -1) >= belief.turn)
+            const answers = askable.length === 0 ? new Map<string, number>() : await askYesNo(service,
+              { held_by: referent(material.character), belief: belief.text, things: Object.fromEntries(askable.map(id => [`p${id}`, shown.perceptions.get(id)!.perception.content])) },
+              askable.map(id => ({ key: `p${id}`, instructions: store.text('roleplay/decide-reflection', { thing: `p${id}` }) })), signal)
+            return new Map(ids.map(id => [id, answers.get(`p${id}`) ?? 0]))
+          }
+          const routed = await routeVerdicts<number>({
+            mode: settings.decisions.reflection, yesAt: yesAt(settings.decisions.confidence), noAt: noAt(settings.decisions.confidence), turn: job.turn, keys: near,
+            what: id => `${belief.text} / ${shown.perceptions.get(id)?.perception.content ?? ''}`,
+            probabilities: askDecisionModel, llm: askLanguageModel,
+          }, signal)
+          reports.push(routed.report)
+          const contradicted = [...routed.verdicts].filter(([, yes]) => yes).map(([id]) => id)
+          if (contradicted.length > 0) found.push({ belief: belief.id, things: contradicted })
+        }
+        if (reports.length > 0) {
+          const merged = mergeReports(settings.decisions.reflection, reports)
+          announceProblem(seen, `${job.chat}:reflection`, merged, deps.problem)
+          store.recordDecisions?.('reflection', merged)
         }
         const doubted = new Set(found.map(entry => entry.belief))
         const answered = await runChild<Proposal>({

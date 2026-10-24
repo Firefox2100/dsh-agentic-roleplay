@@ -7,6 +7,7 @@ import css from './ChatSettingsView.module.css'
 import { NotRoleplayError, loadSettings, openDoctor, resetVectors, saveSettings, startReflection } from './settings-api.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
+import { DecisionsSection } from './DecisionsSection.tsx'
 import { InterfaceSection } from './InterfaceSection.tsx'
 import { LorebookSection } from './LorebookSection.tsx'
 import { PresetSection } from './PresetSection.tsx'
@@ -142,6 +143,7 @@ export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewPro
       {session !== undefined && <PresetSection t={t} session={session} disabled={saving} />}
       {session !== undefined && <LorebookSection t={t} session={session} disabled={saving} />}
       <ToolSwitches board={payload.settings.tools} onChange={setTools} disabled={saving} external={external} {...(toolsError === undefined ? {} : { error: toolsError })} t={t} />
+      {session !== undefined && <DecisionsSection t={t} session={session} modes={payload.settings.decisions} />}
       <ReflectionSection t={t} status={payload.reflection} disabled={saving} onStart={reflect} onRefresh={refreshActivity} />
       <section className={css.activity} data-testid="roleplay-doctor">
         <strong>{t('doctorTitle')}</strong>

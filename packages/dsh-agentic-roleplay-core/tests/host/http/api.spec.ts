@@ -1,3 +1,4 @@
+import { emptyStats } from '../../../src/shared/decisions.ts'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -39,6 +40,7 @@ let opened: string | undefined
 let openError: Error | undefined
 let settingsError: Error | undefined
 let notesError: Error | undefined
+let decisionsError: Error | undefined
 let timelineError: Error | undefined
 let archiveError: Error | undefined
 let importError: Error | undefined
@@ -283,6 +285,12 @@ beforeEach(async () => {
         if (timelineError !== undefined) return Promise.reject(timelineError)
         moved = [id, to]
         return Promise.resolve(to === 'start' ? { draft: 'the first message' } : {})
+      },
+      decisions: (id) => {
+        if (decisionsError !== undefined) throw decisionsError
+        const stats = emptyStats('then')
+        stats.sites.triggers = { ...stats.sites.triggers, runs: 1, items: 2, agreed: 2, decisionMs: 5, llmMs: 90 }
+        return { available: true, provider: 'typesafe', model: id, stats }
       },
       notes: (id) => {
         if (notesError !== undefined) throw notesError
@@ -1158,6 +1166,26 @@ describe('roleplay API', () => {
       expect((await fetch(`${url('/move')}&to=n1`)).status).toBe(405)
       allowed = false
       expect((await fetch(url())).status).toBe(401)
+    })
+  })
+
+  describe('the decisions of a session', () => {
+    const url = () => `${origin}/sessions/decisions?id=abc`
+
+    it('say whether a decision service is there and how the decision model has done in the story', async () => {
+      const response = await fetch(url())
+      expect(response.status).toBe(200)
+      expect(await response.json()).toMatchObject({ available: true, provider: 'typesafe', model: 'abc', stats: { sites: { triggers: { runs: 1, agreed: 2 } } } })
+    })
+
+    it('answer 404 for an unknown session, 401 without authentication and allow only GET', async () => {
+      decisionsError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(url())).status).toBe(404)
+      decisionsError = undefined
+      allowed = false
+      expect((await fetch(url())).status).toBe(401)
+      allowed = true
+      expect((await fetch(url(), { method: 'POST' })).status).toBe(405)
     })
   })
 

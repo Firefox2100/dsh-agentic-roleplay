@@ -12,6 +12,7 @@ export type ChatSettingsLocaleKey =
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
   | 'presetTitle' | 'presetHelp' | 'presetNone' | 'presetState_current' | 'presetState_changed' | 'presetState_edited' | 'presetState_missing' | 'presetChoose' | 'presetKeep' | 'presetRemove' | 'presetBroken' | 'presetConfirm' | 'presetTakeOut' | 'presetReapply' | 'presetSwitch' | 'presetApplied' | 'presetFailed' | 'presetLoadFailed'
   | 'lorebookTitle' | 'lorebookHelp' | 'lorebookNone' | 'lorebookHeld' | 'lorebookRow' | 'lorebookRemove' | 'lorebookConfirmRemove' | 'lorebookChoose' | 'lorebookKeep' | 'lorebookBroken' | 'lorebookAdd' | 'lorebookAdded' | 'lorebookRemoved' | 'lorebookFailed' | 'lorebookLoadFailed'
+  | 'decisionsTitle' | 'decisionsHelp' | 'decisionsAvailable' | 'decisionsUnavailable' | 'decisionsSite' | 'decisionsMode' | 'decisionsRuns' | 'decisionsItems' | 'decisionsDecided' | 'decisionsEscalated' | 'decisionsFallbacks' | 'decisionsAgreement' | 'decisionsDecisionTime' | 'decisionsLlmTime' | 'decisionsSiteTriggers' | 'decisionsSiteReflection' | 'decisionsSiteAgency' | 'decisionsSiteRefusal' | 'decisionsSiteRules' | 'decisionsSiteSecrets' | 'decisionsProblem' | 'decisionsSamples' | 'decisionsSample' | 'decisionsYes' | 'decisionsNo' | 'decisionsSince' | 'decisionsRefresh'
   | 'language' | 'doctorTitle' | 'doctorHelp' | 'doctorOpen' | 'doctorChat' | 'doctorFailed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
@@ -23,6 +24,18 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     loading: 'Loading settings…',
     loadFailed: 'Could not load the settings: {message}',
     notRoleplay: 'This chat is not a roleplay session, so it has no roleplay settings.',
+    decisionsTitle: 'Decision model',
+    decisionsHelp: 'How the sites that can use a decision model have done in this story. Judgements made by the decision model are counted under "decided"; "escalated" went to the language model because the decision model was not sure; "fell back" went to it because the decision model could not be used. In the comparing mode, agreement is how often the decision model, with the confidence set above, said what the language model said. The counts stay when the story is taken back.',
+    decisionsAvailable: 'Decision service: {provider}, model {model}.',
+    decisionsUnavailable: 'No decision service is selected, or the selected one is not loaded, so sites set to use a decision model use the language model.',
+    decisionsSite: 'Site', decisionsMode: 'Set to', decisionsRuns: 'Runs', decisionsItems: 'Judgements', decisionsDecided: 'Decided', decisionsEscalated: 'Escalated', decisionsFallbacks: 'Fell back', decisionsAgreement: 'Agreement', decisionsDecisionTime: 'Decision model per run', decisionsLlmTime: 'Language model per run',
+    decisionsSiteTriggers: 'Trigger statements', decisionsSiteReflection: 'Belief checks', decisionsSiteAgency: 'Narration speaking for you', decisionsSiteRefusal: 'Output out of the story', decisionsSiteRules: 'Actions against the rules', decisionsSiteSecrets: 'Output giving away secrets',
+    decisionsProblem: '{site}: the decision model could not be used the last time ({message}).',
+    decisionsSamples: '{site}: latest disagreements',
+    decisionsSample: 'Turn {turn}: {what} (decision model {probability}% yes, so {decision}; language model {llm})',
+    decisionsYes: 'yes', decisionsNo: 'no',
+    decisionsSince: 'Counted since {since}.',
+    decisionsRefresh: 'Refresh',
     pendingConsolidation: '{count} character(s), place(s) or thing(s) made up in play are waiting to be fitted into the world (connected to the rest, given relationships). It is done in the background.',
     pendingRecords: '{count} round(s) are waiting to be written into the story\'s memory. The game master records them when the story moves on, or once too many pile up.',
     interventionsTitle: 'What the world put in front of the story',
@@ -174,6 +187,18 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     loading: '正在加载设置…',
     loadFailed: '无法加载设置：{message}',
     notRoleplay: '此对话不是角色扮演存档，没有角色扮演设置。',
+    decisionsTitle: '决策模型',
+    decisionsHelp: '在本故事中，可以使用决策模型的各个环节表现如何。由决策模型做出的判断计入“已决策”；“已升级”表示决策模型没有把握而交给了语言模型；“已回退”表示决策模型无法使用而交给了语言模型。在对比模式下，一致率是指决策模型（按上方设置的把握程度）与语言模型给出相同答案的比例。故事回退时，这些计数不会改变。',
+    decisionsAvailable: '决策服务：{provider}，模型 {model}。',
+    decisionsUnavailable: '尚未选择决策服务，或所选服务未加载，因此设为使用决策模型的环节会改用语言模型。',
+    decisionsSite: '环节', decisionsMode: '设置为', decisionsRuns: '运行次数', decisionsItems: '判断数', decisionsDecided: '已决策', decisionsEscalated: '已升级', decisionsFallbacks: '已回退', decisionsAgreement: '一致率', decisionsDecisionTime: '决策模型每次', decisionsLlmTime: '语言模型每次',
+    decisionsSiteTriggers: '触发器陈述', decisionsSiteReflection: '信念检查', decisionsSiteAgency: '叙述替你说话', decisionsSiteRefusal: '输出跳出故事', decisionsSiteRules: '按规则检查行动', decisionsSiteSecrets: '输出泄露秘密',
+    decisionsProblem: '{site}：上一次无法使用决策模型（{message}）。',
+    decisionsSamples: '{site}：最近的分歧',
+    decisionsSample: '第 {turn} 回合：{what}（决策模型认为 {probability}% 为是，因此为{decision}；语言模型为{llm}）',
+    decisionsYes: '是', decisionsNo: '否',
+    decisionsSince: '统计自 {since} 起。',
+    decisionsRefresh: '刷新',
     pendingConsolidation: '有 {count} 个在故事中新建的角色、地点或物品等待融入世界（与其余部分建立连接和关系），将在后台完成。',
     pendingRecords: '有 {count} 个回合等待写入故事记忆。主持人会在故事推进时记录，积压过多时也会自动记录。',
     interventionsTitle: '世界摆到故事面前的东西',

@@ -181,7 +181,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const ooc = parseOoc(text)
     const verdict = ooc === undefined ? boundaries().inputValidator.validate({ text, turn: payload.turn, cast }) : { ok: true as const }
     if (ooc !== undefined && ooc.request !== '') engine.beginOoc(owner, ooc.request, ooc.question)
-    else if (ooc === undefined) engine.expectJudgement(owner)
+    else if (ooc === undefined) { engine.expectJudgement(owner); engine.noteInput(owner, text) }
     const queryVector = await store.queryVector(ooc?.request ?? text)
     store.clearNotes()
     store.lapseNotes(payload.turn)

@@ -11,11 +11,12 @@ import { askCharacters } from './character-attempt.ts'
 import { recordRound } from './round-record.ts'
 import { questionRequest } from './question-request.ts'
 import { expandWorld, introduceThing, type ThingInput } from './world-making.ts'
-import { checkedOutput } from './delivery.ts'
+import { MAX_REFUSALS, checkedOutput } from './delivery.ts'
 import { toolEnabled } from '../../shared/tools.ts'
 import { rollView } from '../dice/view.ts'
 import { runOffScene } from './off-stage.ts'
 import { whereabouts } from './whereabouts.ts'
+import { hiddenFrom } from '../decisions/extras.ts'
 import { foldSpeakerLabels, repeatsEarlier } from './turn-text.ts'
 import type { Attempt, RawSegment, TurnState } from './turn-state.ts'
 import { ROLL_FIRST, checkOutcomes, explainPhase, judgeDue, oocBlock, previewDue, rollDue } from './turn-rules.ts'
@@ -198,9 +199,30 @@ export class TurnEngine {
     return state.judgement
   }
 
+  /**
+   * When the chat has the rules checked, the action the game master judged allowed is put against every rule once more by the decision model; a rule it
+   * finds likely broken is told to the game master, which judges again (the second judgement stands, whatever it says).
+   * @throws {Error} with the rules found, once per turn.
+   */
+  async checkRules(owner: TurnOwner, allowed: boolean): Promise<void> {
+    const state = this.stateFor(owner)
+    if (!allowed || state.rulesChecked === true || state.ooc !== undefined || state.phase !== 'idle' || state.judgement !== undefined) return
+    const store = this.storeOf(owner)
+    if (store.settings().decisions.rules === 'off') return
+    state.rulesChecked = true
+    const player = store.cast().find(member => member.character.control === 'player')?.character.name ?? ''
+    const broken = await this.boundaries().ruleCheck.check({ chat: owner.chat, turn: owner.turn, store, input: state.input ?? '', player }, state.cancel.signal)
+    if (broken.length > 0) throw new Error(`a check of the rules found that this action may break: ${broken.map(rule => `"${rule}"`).join('; ')}. Judge it again: if it breaks a rule it is not allowed; if you are sure it does not, call judge_action again with the same answer and give in the reason why the rule does not apply`)
+  }
+
   /** The turn is an ordinary one: the game master judges the player's action before anything else. */
   expectJudgement(owner: TurnOwner): void {
     this.stateFor(owner).judgeWanted = true
+  }
+
+  /** Keeps what the player wrote this turn, for the checks of the output. */
+  noteInput(owner: TurnOwner, text: string): void {
+    this.stateFor(owner).input = text
   }
 
   /** Mark a turn as one that needs no round, for example because the player's input was refused. */
@@ -700,8 +722,28 @@ export class TurnEngine {
     if ((this.runs.get(owner.chat) ?? 0) === 0 && store !== undefined && waiting > 0 && (state.requested || waiting >= store.settings().memory.backlogRounds)) this.write(owner, state)
   }
 
+  /**
+   * Has the output checked for the faults the chat switched on, and sends it back to the game master when it has one, as often as a
+   * refusal may be made; past that, or for an output a narrator wrote or one that was corrected for the game master, it goes as it is.
+   */
+  private async gate(owner: TurnOwner, state: TurnState, output: TurnOutput, silent: boolean): Promise<void> {
+    if (silent || output.repaired || state.ooc !== undefined || state.refused >= MAX_REFUSALS) return
+    const store = this.storeOf(owner)
+    const narration = output.segments.flatMap(segment => (segment.type === 'narration' ? [segment.text] : [])).join('\n')
+    const passage = output.segments.map(segment => (segment.type === 'narration' ? segment.text : `${segment.name}: ${segment.text}`)).join('\n')
+    const playing = state.cast.find(member => member.character.control === 'player')?.character
+    const player = playing?.name ?? ''
+    const secrets = playing === undefined || state.secretsFound === true || store.settings().decisions.secrets === 'off' ? [] : hiddenFrom(store.story, playing.id, passage)
+    const findings = await this.boundaries().outputGate.check({ chat: owner.chat, turn: owner.turn, store, input: state.input ?? '', player, narration, passage, secrets }, state.cancel.signal)
+    if (findings.length === 0) return
+    if (findings.some(finding => finding.gate === 'secrets')) state.secretsFound = true
+    state.refused += 1
+    throw new Error(`the output is not acceptable: ${findings.map(finding => finding.message).join('; ')}. Deliver it again with this corrected; utterances may not be touched`)
+  }
+
   private async deliver(owner: TurnOwner, state: TurnState, segments: readonly NarrationSegment[], silent: boolean, run?: RunCharacter): Promise<TurnOutput> {
     let output = checkedOutput(this.boundaries().narrationChecker, this.storeOf(owner).settings().prompts.language, state, segments, silent)
+    await this.gate(owner, state, output, silent)
     if (state.ooc?.ruling !== undefined) output = { ...output, ooc: state.ooc.ruling }
     const store = this.storeOf(owner)
     const rolled = store.settings().dice.visibility === 'card' ? store.story.dice.rolls({ turn: owner.turn }) : []

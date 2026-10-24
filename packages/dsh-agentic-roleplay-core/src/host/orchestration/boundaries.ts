@@ -5,6 +5,7 @@ import type { TokenCount } from '../../shared/usage.ts'
 import type { Note } from '../../shared/notes.ts'
 import type { ReflectionOutcome, ReflectionReason } from '../../shared/reflection.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
+import type { DecisionSite, SiteReport } from '../../shared/decisions.ts'
 import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
 import type { SkipRequest, StoryTime } from '../clock/story-clock.ts'
@@ -420,6 +421,56 @@ export interface TriggerJudge {
   judge(job: JudgeJob, signal: AbortSignal): Promise<{ judged: number }>
 }
 
+/** What a check of the output needs to know about what the game master is about to deliver. */
+export interface GateJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  /** What the player wrote this turn. */
+  input: string
+  /** The name of the player's character. */
+  player: string
+  /** What the narration says, as one text. */
+  narration: string
+  /** All of the output as the player will read it: the narration and what the characters say. */
+  passage: string
+  /** The lore the player's character does not know, when the chat checks for giving it away; empty otherwise. */
+  secrets: readonly Secret[]
+}
+
+/** A hidden fact of the world: lore listed for others only. */
+export interface Secret {
+  title: string
+  text: string
+}
+
+/** A fault a check found, in words for the game master to correct it by. */
+export interface GateFinding {
+  gate: DecisionSite
+  message: string
+}
+
+/** Checks the output of a turn for faults no rule of the format can see; what it finds is sent back to the game master, a limited number of times. */
+export interface OutputGate {
+  check(job: GateJob, signal: AbortSignal): Promise<GateFinding[]>
+}
+
+/** What the player's action is checked against the rules for. */
+export interface RuleJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  /** What the player wrote this turn. */
+  input: string
+  /** The name of the player's character. */
+  player: string
+}
+
+/** Finds the rules of the world and of the player that an action the game master judged allowed is likely to break: the rules' own words, none when nothing is found. */
+export interface RuleCheck {
+  check(job: RuleJob, signal: AbortSignal): Promise<string[]>
+}
+
 export interface Boundaries {
   planner: ActivationPlanner
   characterContext: CharacterContextProvider
@@ -433,6 +484,8 @@ export interface Boundaries {
   strategist: Strategist
   reflector: Reflector
   judge: TriggerJudge
+  outputGate: OutputGate
+  ruleCheck: RuleCheck
   suggester: Suggester
   recaller: Recaller
   sceneContext: SceneContextProvider
@@ -499,6 +552,8 @@ export interface TurnStore {
   addNote(kind: Note['kind'], turn: number, lines: readonly string[]): void
   /** Keeps how a helper's run went, for the settings tab. */
   recordActivity(entry: ActivityEntry, detail?: RunDetail): void
+  /** Keeps how one run of a site that can be judged by a decision model went, for the settings tab. */
+  recordDecisions?(site: DecisionSite, report: SiteReport): void
   /** Adds the tokens the game master's own requests used to a turn's record. */
   recordUsage?(turn: number, tokens: TokenCount): void
   /** The notes of the session as they stand. */

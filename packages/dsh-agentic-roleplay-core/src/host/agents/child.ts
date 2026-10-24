@@ -8,10 +8,7 @@ import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type R
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, ReasoningEffortId, type ImageBlock } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
-import {
-  appendDelegatedPolicyOverrides, applyChildComposition, captureDelegatedPolicyOverrides, childSessionMeta,
-  resolveChildAgentOptions, resolveChildDepth,
-} from '@deepseek-ai/dsh-subagent'
+import type {} from '@deepseek-ai/dsh-subagent'
 import { ToolArgsError, validateJsonSchemaValue, type ObjectJsonSchema, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { sharedSamplingOf, type SharedSamplingKey } from '../../shared/sampling.ts'
 
@@ -131,23 +128,25 @@ export function childModel(settings: { models: Record<ChildKind, string> }, kind
   return { model: { provider: named.slice(0, slash), model: named.slice(slash + 1) } }
 }
 
-const samplings = new Map<string, ChildSampling>()
+export const samplings = new Map<string, ChildSampling>()
+
+/** The id of the agent preset every helper runs under; it must match the preset row in the bundle's patch. */
+export const HELPER_PRESET = 'roleplay-helper'
+
+/** What the helper preset's plugin does for a running child, found by the child's session id, which the caller reserves before the child exists. */
+export interface HelperEntry {
+  persona: string
+  /** Equips the child when it is created: its tools, its limits and its hooks, all on its own scope. */
+  setup(agent: Agent): void
+  agent?: Agent
+}
+
+export const helpers = new Map<string, HelperEntry>()
 
 /** The controls set for a running child, by its session id. */
 export const childSamplingOf = (sessionId: string): ChildSampling | undefined => samplings.get(sessionId)
 
-/**
- * Run a child agent to its result. Unlike a sub-agent started through `ctx.subagents`, it can
- * have tools of its own, so several can run side by side with different tools and different
- * results from the same tool.
- *
- * This is the one place the bundle builds an agent below DSH's sub-agent API: it uses the
- * composition helpers DSH exports for sub-agent providers (`applyChildComposition`,
- * `childSessionMeta`, ...). They are not a stable interface; `docs/dsh-api-usage.md` says why
- * this is accepted, which DSH version it is built against, and what to do when DSH changes.
- * @throws {Error} when the child is cancelled, stops without a result, or exceeds its calls.
- */
-function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens' | 'sampling' | 'model'>): AgentOptions | undefined {
+export function childOptions(task: Pick<ChildTask, 'reasoningEffort' | 'maxTokens' | 'sampling' | 'model'>): AgentOptions | undefined {
   const maxTokens = task.maxTokens ?? task.sampling?.maxTokens
   const options = {
     ...(task.reasoningEffort === undefined || task.reasoningEffort === '' ? {} : { reasoningEffort: ReasoningEffortId(task.reasoningEffort) }),
@@ -166,6 +165,11 @@ export function enforcedSchema(task: Pick<ChildTask, 'result' | 'unenforced'>): 
 /** A model that is cut off in the middle of its tool call leaves an unfinished argument no one can read; asking again usually gives a whole one. */
 export const isUnfinishedCall = (error: unknown): boolean => error instanceof Error && /parse tool call arguments|unfinished tool call/i.test(error.message)
 
+/**
+ * Run a child agent to its result through DSH's public sub-agent API: the child starts under the helper preset, whose plugin hands it its persona and
+ * lets {@link HelperEntry.setup} give it tools of its own. Several run side by side with different tools and different results from the same tool.
+ * @throws {Error} when the child is cancelled, stops without a result, or exceeds its calls.
+ */
 export async function runChild<T>(task: ChildTask): Promise<T> {
   for (let attempt = 1; ; attempt += 1) {
     const began = Date.now()
@@ -277,19 +281,15 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     },
   }
 
-  const depth = resolveChildDepth(parent, undefined)
-  const inherited = captureDelegatedPolicyOverrides(parent)
-  const sessionId = SessionId(randomUUID())
-  if (task.sampling !== undefined) samplings.set(sessionId, task.sampling)
-  const handle = await parent.ctx.agents.create({
-    sessionId,
-    parentAgent: parent,
-    meta: childSessionMeta(parent, depth, false),
-    agentOptions: resolveChildAgentOptions(parent, childOptions({ ...task, ...(reasoningEffort === undefined ? { reasoningEffort: '' } : { reasoningEffort }) }), depth),
-    signal,
-    setup: (childCtx, child) => {
-      appendDelegatedPolicyOverrides(child.session, inherited)
-      applyChildComposition(childCtx, parent, { persona: `${task.persona}\n\n${SUBMIT_RULE}`, toolFilter: { allow: [...(task.external ?? [])] } })
+  const childId = SessionId(randomUUID())
+  const entry: HelperEntry = {
+    persona: `${task.persona}\n\n${SUBMIT_RULE}`,
+    setup(child) {
+      entry.agent = child
+      stopped = () => { child.cancel({ kind: 'parent' }) }
+      const childCtx = child.ctx
+      // The tools every agent shares (the story's readers, a working directory) are not the child's: it has its own and what the task lets through.
+      childCtx.tools.restrict({ allow: [...(task.external ?? [])] })
       const registered = (task.tools ?? []).map(tool => childCtx.tools.register(counted(tool)))
       retire = () => {
         for (const dispose of registered) dispose()
@@ -313,23 +313,42 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
       })
       childCtx.tools.guard(exec => (submitted === undefined ? undefined : `the result is already submitted, so \`${exec.name}\` is not run`))
     },
-  })
-  stopped = () => { handle.agent.cancel({ kind: 'parent' }) }
-  const onAbort = (): void => { handle.agent.cancel({ kind: 'parent' }) }
-  signal.addEventListener('abort', onAbort, { once: true })
+  }
+  helpers.set(childId, entry)
+  if (task.sampling !== undefined) samplings.set(childId, task.sampling)
   try {
-    handle.agent.followup(createUserMessage({ content: [{ type: 'text', text: task.prompt }, ...(task.images ?? []).map((attachment): ImageBlock => ({ type: 'image', attachment }))], source: { kind: 'user' } }))
-    await handle.agent.whenIdle()
+    const subagents = parent.ctx.get('subagents')
+    if (subagents === undefined) throw new Error('the sub-agent service is not loaded')
+    const options = childOptions({ ...task, ...(reasoningEffort === undefined ? { reasoningEffort: '' } : { reasoningEffort }) })
+    const activation = await subagents.startActivation({
+      provider: 'spawn',
+      label: 'roleplay helper',
+      childId,
+      delivery: 'caller',
+      signal,
+      request: {
+        parent,
+        agentPreset: HELPER_PRESET,
+        ...(options === undefined ? {} : { agentOptions: options }),
+        prompt: [{ type: 'text', text: task.prompt }, ...(task.images ?? []).map((attachment): ImageBlock => ({ type: 'image', attachment }))],
+      },
+    })
+    try {
+      await activation.result
+    } catch (error) {
+      if (submitted === undefined && !overran && !signal.aborted) throw error
+    } finally {
+      if (entry.agent !== undefined) stats.tokens = tokensOf(entry.agent.session.snapshotEvents())
+      await activation.dispose()
+    }
   } finally {
-    signal.removeEventListener('abort', onAbort)
-    stats.tokens = tokensOf(handle.agent.session.snapshotEvents())
-    samplings.delete(sessionId)
-    await handle.dispose()
+    helpers.delete(childId)
+    samplings.delete(childId)
   }
   if (signal.aborted) throw new Error('cancelled')
   if (overran && submitted === undefined) throw new Error(refusals >= MAX_REFUSALS ? `the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}` : `the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
   if (submitted === undefined) {
-    const ended = handle.agent.session.snapshotEvents().findLast(event => event.type === 'turn/end')
+    const ended = entry.agent?.session.snapshotEvents().findLast(event => event.type === 'turn/end')
     const reason = ended?.type === 'turn/end' ? ended.data.reason : undefined
     if (reason?.kind === 'error') throw new Error(`the agent failed: ${reason.error.message}`)
     throw new Error(`the agent stopped without submitting a result (${stats.calls} call(s))`)

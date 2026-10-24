@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
-import * as subagent from '@deepseek-ai/dsh-subagent'
 import * as tools from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
 import { DSH_DEVELOPMENT } from '../../../../scripts/dsh-compat.mjs'
@@ -22,10 +21,7 @@ describe('the DSH this bundle is built against', () => {
     }
   })
 
-  it('still exports the helpers a child is composed from', () => {
-    for (const name of ['applyChildComposition', 'captureDelegatedPolicyOverrides', 'appendDelegatedPolicyOverrides', 'childSessionMeta', 'resolveChildAgentOptions', 'resolveChildDepth']) {
-      expect(typeof (subagent as Record<string, unknown>)[name], name).toBe('function')
-    }
+  it('still exports what a helper\'s result is checked with', () => {
     expect(typeof tools.validateJsonSchemaValue).toBe('function')
     expect(typeof tools.ToolArgsError).toBe('function')
   })

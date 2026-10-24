@@ -3,7 +3,7 @@ import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@dsh-agentic-roleplay/state'
-import type { ImageGenerationService } from '@dsh-ai-providers/core'
+import type { DecisionService, ImageGenerationService } from '@dsh-ai-providers/core'
 import { languageOf, translator } from 'dsh-roleplay-model'
 import { RESOURCE_HINT_SECTION, resourceHint } from './host/tools/resource-hint.ts'
 import { join } from 'node:path'
@@ -12,6 +12,8 @@ import { recordKeeper } from './host/orchestration/committer.ts'
 import { Timelines } from './host/timeline/service.ts'
 import { suggestionWriter } from './host/orchestration/suggester.ts'
 import { triggerJudge } from './host/triggers/judge.ts'
+import { outputGates } from './host/decisions/gates.ts'
+import { ruleChecks } from './host/decisions/extras.ts'
 import { factionStrategist } from './host/factions/strategist.ts'
 import { memoryReflector } from './host/memory/reflection.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
@@ -52,6 +54,8 @@ export function apply(ctx: Context): void {
   const boundaries = () => ctx.roleplayOrchestration.boundaries
   const problem = (message: string): void => { ctx.logger.warn(`roleplay: ${message}`) }
   const sessionsDir = () => join(ctx.roleplayRoot.path, 'sessions')
+  // The decision service is optional: a site set to use it falls back to the language model without it.
+  const decisions = (): DecisionService | undefined => (ctx as Context & { get(name: 'decisions'): DecisionService | undefined }).get('decisions')
   // The embedding plugin is optional: without it, or while it fails, memory is searched by words alone.
   const index = new EmbeddingIndex({
     embedder: () => (ctx as Context & { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'),
@@ -71,9 +75,11 @@ export function apply(ctx: Context): void {
     scope.effect(() => ctx.roleplayState.rankMemories(rerankMemories({ reranker: () => (scope as Context & { rerankers: Reranker }).rerankers, problem })), 'roleplay: rerank memories')
   })
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
-  ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: trigger judge')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: trigger judge')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ outputGate: outputGates({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: output gates')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ ruleCheck: ruleChecks({ decisions, problem }) }), 'roleplay: rule check')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
-  ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: reflection')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: reflection')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)), external: parent => ctx.get('roleplayAuthoringTools')?.given(parent.ctx.tools, 'worldAuthor') ?? [] }) }), 'roleplay: world author')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ suggester: suggestionWriter({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: suggestions')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {

@@ -16,6 +16,10 @@ class FixtureWorkingDirectory extends Service {
     return session.header.cwd ?? process.cwd()
   }
 
+  set(): Promise<void> {
+    return Promise.resolve()
+  }
+
   async ensure(agent: Agent): Promise<string> {
     return this.get(agent.session)
   }

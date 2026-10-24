@@ -1,4 +1,5 @@
 import type { RunDetail } from '../../shared/activity.ts'
+import type { DecisionsPayload } from '../../shared/decisions.ts'
 import type { InterfaceStatus, InterfaceSync } from '../../shared/interface-pack.ts'
 import type { ChatSettings, SettingsPayload } from '../../shared/settings.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
@@ -81,4 +82,14 @@ export async function loadInterfaceStatus(id: string, signal: AbortSignal): Prom
 /** Brings the world's interface packs into the chat's story. */
 export async function syncInterface(id: string, signal: AbortSignal): Promise<InterfaceSync> {
   return await interfaceReply(await fetch(`${API_PREFIX}/sessions/interface/sync?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', signal }))
+}
+
+/** Whether a decision service is there, which, and how the decision model has done in the chat's story. */
+export async function loadDecisions(id: string, signal: AbortSignal): Promise<DecisionsPayload> {
+  const response = await fetch(`${API_PREFIX}/sessions/decisions?id=${encodeURIComponent(id)}`, { credentials: 'same-origin', signal })
+  if (!response.ok) {
+    const body = await response.json().catch(() => undefined) as { message?: unknown } | undefined
+    throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
+  }
+  return await response.json() as DecisionsPayload
 }

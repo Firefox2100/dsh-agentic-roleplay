@@ -9,6 +9,8 @@ import { createUserMessage, ToolCallId, type GenerateOptions, type StreamChunk }
 import { SessionId, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
 import { buildForkSeed } from '@deepseek-ai/dsh-session/fork'
 import SubagentRuntime from '@deepseek-ai/dsh-subagent'
+import { HELPER_PRESET } from '../../../src/host/agents/child.ts'
+import * as helperPlugin from '../../../src/helper.ts'
 import * as spawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
 import { randomUUID } from 'node:crypto'
 import { readdirSync } from 'node:fs'
@@ -20,6 +22,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoleplayOrchestration } from '../../../src/host/orchestration/service.ts'
 import { readRunDetail } from '../../../src/host/sessions/activity.ts'
 import { writeSettings } from '../../../src/host/sessions/settings.ts'
+import { readDecisionStats } from '../../../src/host/decisions/stats.ts'
 import { decodeOutput } from '../../../src/shared/narration.ts'
 import { readTimeline, writeTimeline } from '../../../src/host/timeline/file.ts'
 import * as orchestrationPlugin from '../../../src/orchestration.ts'
@@ -123,6 +126,8 @@ interface Script {
   /** How the game master judges the player's action: allows it (the default), refuses it, or does not judge at all. */
   judge?: 'refuses' | 'skipped'
   /** The turn is an out-of-character command: the game master rules it legal and sends Bob down to the cellar by decree, spawns nothing, or rules it illegal. */
+  /** What the language model says when asked whether the output has a fault the checks look for. */
+  gate?: 'fault'
   ooc?: 'moves-bob' | 'illegal' | 'acts-before-ruling' | 'question'
   /** The player's character walks out to the street, and nobody else needs to react: the game master resolves a round with only its outcome. */
   player?: 'walks'
@@ -281,6 +286,7 @@ function answerFor(script: Script = {}) {
 function answerWithoutSuggestions(script: Script) {
   return (request: GenerateOptions): StreamChunk[] => {
     if (systemOf(request).includes('You suggest what the player could do next')) return script.suggester === 'forgets' && !asText(request).includes('You have not finished') ? text('1. Ask Alice about the key') : call('sg-submit', 'submit_result', { options: SUGGESTED })
+    if (systemOf(request).includes('You check one passage of narration') || systemOf(request).includes('You check one passage of an interactive story')) return call('t-gate', 'submit_result', { reason: 'It stays inside the story.', fault: script.gate === 'fault' })
     if (systemOf(request).includes('You judge statements about an interactive story')) return call('t-judge', 'submit_result', { verdicts: [{ number: 1, holds: true, reason: 'The records show Alice at the vault.' }] })
     if (systemOf(request).includes('You tidy the memory of one character')) {
       const taken = [...asText(request).matchAll(/- p(\d+)/g)].map(match => Number(match[1]))
@@ -315,7 +321,7 @@ function answerWithoutSuggestions(script: Script) {
       if (timesCalled(request, 'record_memory') === 0) return call('o-rec', 'record_memory', { focus: 'Bob was sent down to the cellar.' })
       return timesCalled(request, 'narrate') === 0 ? call('o-nar', 'narrate', { segments: [{ type: 'narration', text: 'Bob stands abruptly and hurries down the stair.' }] }) : text('')
     }
-    if (timesCalled(request, 'judge_action') === 0 && !thisTurn(request).includes('input is refused') && script.judge !== 'skipped') return call('j-judge', 'judge_action', script.judge === 'refuses' ? { rule_check: 'There is no magic: broken.', allowed: false, uncertain: false, reason: 'The world has no magic, so no fireball can come of a wave of the hand.' } : { rule_check: 'no rules listed', allowed: true, uncertain: false, reason: 'The character acts within what the world allows.' })
+    if (timesCalled(request, 'judge_action') - (thisTurn(request).includes('a check of the rules found') ? 1 : 0) === 0 && !thisTurn(request).includes('input is refused') && script.judge !== 'skipped') return call('j-judge', 'judge_action', script.judge === 'refuses' ? { rule_check: 'There is no magic: broken.', allowed: false, uncertain: false, reason: 'The world has no magic, so no fireball can come of a wave of the hand.' } : { rule_check: 'no rules listed', allowed: true, uncertain: false, reason: 'The character acts within what the world allows.' })
     if (script.judge === 'refuses' && timesCalled(request, 'judge_action') > 0) {
       if (timesCalled(request, 'resolve_round') === 0) return call('j-res', 'resolve_round', { outcomes: [{ character: 'arthur', result: 'failed', summary: 'Arthur waves a hand at the lamp; nothing comes of it' }] })
       return timesCalled(request, 'narrate') === 0 ? call('j-nar', 'narrate', { segments: [{ type: 'narration', text: 'You wave a hand at the lamp. Nothing happens.' }] }) : text('')
@@ -465,6 +471,14 @@ beforeEach(async () => {
   await ctx.plugin(TokenMeter)
   await ctx.plugin(SubagentRuntime)
   await ctx.plugin(spawn, { providerName: 'spawn' })
+  ctx.provide('agentPresets')
+  ctx.set('agentPresets', {
+    mount: async (childCtx: Context, id: string) => {
+      if (id === HELPER_PRESET) await childCtx.plugin(helperPlugin)
+    },
+    composeFrom: () => undefined,
+    composedPreset: () => undefined,
+  })
   orchestration = new RoleplayOrchestration(ctx)
   state = new RoleplayState(ctx, { journalMode: 'delete' })
   ctx.provide('roleplayRoot')
@@ -885,6 +899,182 @@ describe('a turn with the real agent loop', () => {
       await agent.whenIdle()
       expect(session.triggers.getByKey('trust')).toMatchObject({ status: 'fired', fireCount: 1 })
       expect(thisTurn(masterRequests(adapter).at(-1)!)).toContain('Alice keeps her distance from Bob.')
+    })
+
+    describe('the trigger judge with a decision model', () => {
+      const STATEMENT = 'Alice no longer trusts Bob.'
+      const judged = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('You judge statements about an interactive story'))
+      const sure = (probability: number) => {
+        const seen: { state: unknown; questions: Record<string, { instructions: string }> }[] = []
+        ctx.provide('decisions')
+        ctx.set('decisions', { provider: 'fake', model: 'decide-1', decide: (state: unknown, questions: Record<string, { instructions: string }>) => { seen.push({ state, questions }); return Promise.resolve({ answers: Object.fromEntries(Object.keys(questions).map(key => [key, { type: 'noul', probability }])), model: 'decide-1' }) } })
+        return seen
+      }
+      const play = async (mode: string) => {
+        const { session, id } = await addSession('Vault', true)
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { triggers: mode } })
+        session.triggers.add({ key: 'trust', name: 'Trust broken', condition: { type: 'judged', text: STATEMENT }, effects: [{ type: 'beat', text: 'Alice keeps her distance from Bob.' }], repeat: false, priority: 0 }, 'world', 0)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        await vi.waitFor(() => { expect(session.metadata.getValue('triggers.judged')).toEqual({ [STATEMENT]: { holds: true, turn: 1 } }) }, { timeout: 5000 })
+        await vi.waitFor(() => { expect(readDecisionStats(sessionFolder(join(root, 'sessions'), id)).sites.triggers.runs).toBe(1) }, { timeout: 5000 })
+        return { adapter, stats: readDecisionStats(sessionFolder(join(root, 'sessions'), id)).sites.triggers }
+      }
+
+      it('has the decision model judge the statement, without a request to the language model, when the chat is set to use it', async () => {
+        const seen = sure(0.97)
+        const { adapter, stats } = await play('decision')
+        expect(judged(adapter)).toHaveLength(0)
+        expect(seen).toHaveLength(1)
+        expect(Object.values(seen[0]!.questions)[0]!.instructions).toContain(STATEMENT)
+        expect(JSON.stringify(seen[0]!.state)).toContain('recorded_events')
+        expect(stats).toMatchObject({ runs: 1, items: 1, decided: 1, escalated: 0, fallbacks: 0 })
+      })
+
+      it('has the language model judge it and records whether the decision model agreed, in the comparing mode', async () => {
+        sure(0.97)
+        const { adapter, stats } = await play('shadow')
+        expect(judged(adapter)).toHaveLength(1)
+        expect(stats).toMatchObject({ runs: 1, items: 1, decided: 0, agreed: 1, disagreed: 0 })
+      })
+
+      it('goes on with the language model, and keeps why, when the chat is set to use a decision model that is not there', async () => {
+        const { adapter, stats } = await play('decision')
+        expect(judged(adapter)).toHaveLength(1)
+        expect(stats).toMatchObject({ decided: 0, fallbacks: 1 })
+        expect(stats.problem).toContain('no decision service')
+      })
+    })
+
+    describe('the checks of the output with a decision model', () => {
+      const told = (adapter: ScriptedAdapter, text: string) => masterRequests(adapter).filter(request => asText(request).includes(text)).length
+      /** A decision service that answers its questions with the given probabilities in turn, then with the last of them. */
+      const answering = (probabilities: number[]) => {
+        const seen: { state: Record<string, unknown>; questions: Record<string, { instructions: string }> }[] = []
+        ctx.provide('decisions')
+        ctx.set('decisions', { provider: 'fake', model: 'decide-1', decide: (state: Record<string, unknown>, questions: Record<string, { instructions: string }>) => { const probability = probabilities[Math.min(seen.length, probabilities.length - 1)]!; seen.push({ state, questions }); return Promise.resolve({ answers: Object.fromEntries(Object.keys(questions).map(key => [key, { type: 'noul', probability }])), model: 'decide-1' }) } })
+        return seen
+      }
+      const play = async (settings: object, message = 'I open the vault door.', script: Script = {}) => {
+        const { id } = await addSession('Vault')
+        writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...script }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say(message))
+        await agent.whenIdle()
+        return { adapter, agent, folder: sessionFolder(join(root, 'sessions'), id) }
+      }
+
+      it('sends the narration back once when the decision model is sure it speaks for the player, and delivers the corrected one', async () => {
+        const seen = answering([0.97, 0.05])
+        const { adapter, agent, folder } = await play({ decisions: { agency: 'decision' } })
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(outputsOf(agent)[0]).toMatchObject({ repaired: false })
+        expect(told(adapter, 'speaks, acts or thinks for')).toBe(1)
+        expect(seen).toHaveLength(2)
+        expect(seen[0]!.state['player_message']).toBe('I open the vault door.')
+        expect(String(seen[0]!.state['player_character'])).toContain('Arthur')
+        expect(readDecisionStats(folder).sites.agency).toMatchObject({ runs: 2, items: 2, decided: 2 })
+      })
+
+      it('lets a game master that will not change it go on after two refusals, so a check cannot trap the chat', async () => {
+        const seen = answering([0.99])
+        const { adapter, agent } = await play({ decisions: { agency: 'decision' } })
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(told(adapter, 'speaks, acts or thinks for')).toBe(2)
+        expect(seen).toHaveLength(2)
+      })
+
+      it('sends back an output that steps out of the story, from the whole passage with what the characters say', async () => {
+        const seen = answering([0.99, 0.01])
+        const { adapter, agent } = await play({ decisions: { refusal: 'decision' } })
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(told(adapter, 'steps out of the story')).toBe(1)
+        expect(String(seen[0]!.state['passage'])).toContain('Alice')
+      })
+
+      it('puts the action against the rules once more when the chat has the rule check on, and has the game master judge again with the rule it found, once', async () => {
+        const seen = answering([0.9])
+        const { adapter, agent, folder } = await play({ decisions: { rules: 'on' }, rules: { own: 'There is no magic.' } }, 'I cast a fireball at the lamp.')
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(JSON.stringify(masterRequests(adapter).at(-1)!.messages)).toContain('a check of the rules found that this action may break: \\"There is no magic.\\"')
+        expect(masterRequests(adapter).filter(request => timesCalled(request, 'judge_action') === 2).length).toBeGreaterThan(0)
+        expect(seen).toHaveLength(1)
+        expect(seen[0]!.state).toMatchObject({ player_message: 'I cast a fireball at the lamp.' })
+        expect(readDecisionStats(folder).sites.rules).toMatchObject({ runs: 1, items: 1, decided: 1 })
+      })
+
+      it('does not ask the decision model about the rules while the check is off, or when there are none', async () => {
+        const seen = answering([0.9])
+        await play({ rules: { own: 'There is no magic.' } })
+        expect(seen).toEqual([])
+      })
+
+      it('does not ask the decision model about the rules when there are none to check', async () => {
+        const seen = answering([0.9])
+        await play({ decisions: { rules: 'on' } })
+        expect(seen).toEqual([])
+      })
+
+      it('does not put an action the game master refuses itself against the rules', async () => {
+        const seen = answering([0.9])
+        await play({ decisions: { rules: 'on' }, rules: { own: 'There is no magic.' } }, 'I cast a fireball at the lamp.', { judge: 'refuses' })
+        expect(seen).toEqual([])
+      })
+
+      it('goes on with the turn, and says why, when the rule check is on and no decision service is there', async () => {
+        const { agent, folder } = await play({ decisions: { rules: 'on' }, rules: { own: 'There is no magic.' } })
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(readDecisionStats(folder).sites.rules.problem).toContain('no decision service')
+      })
+
+      it('sends the output back once for hidden lore the decision model finds given away, names it, and lets a revelation the game master repeats go through', async () => {
+        const { session, id } = await addSession('Vault', true)
+        session.lore.add({ sourceId: 'vault-secret', title: 'The vault key', kind: 'other', scope: 'listed', summary: 'The key to the vault is hidden under the third stone.', body: '', subjects: [], related: [], sources: [] })
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { secrets: 'on' } })
+        const seen = answering([0.9])
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(told(adapter, 'may give away what Arthur does not know yet (The vault key)')).toBe(1)
+        expect(seen).toHaveLength(1)
+        expect(Object.values(seen[0]!.questions)[0]!.instructions).toContain('The key to the vault is hidden under the third stone.')
+        expect(readDecisionStats(sessionFolder(join(root, 'sessions'), id)).sites.secrets).toMatchObject({ runs: 1, items: 1, decided: 1 })
+      })
+
+      it('does not check for secrets while the check is off, or when nothing is hidden from the player', async () => {
+        const seen = answering([0.9])
+        await play({})
+        await play({ decisions: { secrets: 'on' } })
+        expect(seen).toEqual([])
+      })
+
+      it('asks nobody while the checks are off, and does not check an out-of-character turn', async () => {
+        const seen = answering([0.99])
+        await play({})
+        expect(seen).toEqual([])
+        const { agent } = await play({ decisions: { agency: 'decision', refusal: 'decision' } }, '/ooc Bob now goes down to the cellar, something urgent came up')
+        expect(outputsOf(agent).length).toBeLessThanOrEqual(1)
+        expect(seen).toEqual([])
+      })
+
+      it('sends the narration back when the language model finds the fault, up to the same limit', async () => {
+        const { adapter, agent } = await play({ decisions: { agency: 'llm' } }, 'I open the vault door.', { gate: 'fault' })
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(told(adapter, 'speaks, acts or thinks for')).toBe(2)
+        expect(adapter.requests.filter(request => systemOf(request).includes('You check one passage of narration'))).toHaveLength(2)
+      })
+
+      it('asks the language model when the check is set to it, and delivers as before when it finds no fault', async () => {
+        const { adapter, agent } = await play({ decisions: { agency: 'llm' } })
+        expect(outputsOf(agent)).toHaveLength(1)
+        expect(adapter.requests.filter(request => systemOf(request).includes('You check one passage of narration'))).toHaveLength(1)
+        expect(told(adapter, 'speaks, acts or thinks for')).toBe(0)
+      })
     })
 
     it('has the world act by itself: what came true at the start of the turn is told to the game master with its beat, the character is made to notice its cue, and the beat is done once woven in', async () => {
@@ -1496,7 +1686,7 @@ describe('a turn with the real agent loop', () => {
     const after = events.filter(event => event.seq > (delivered[0]?.seq ?? Infinity))
     expect(after.filter(event => event.type === 'assistant/message' || event.type === 'step/start')).toEqual([])
     expect(events.filter(event => event.type === 'turn/end')).toHaveLength(1)
-    expect(events.at(-1)).toMatchObject({ type: 'turn/end', data: { reason: { kind: 'completed' } } })
+    expect(events.filter(event => event.type !== 'subagent/catalog').at(-1)).toMatchObject({ type: 'turn/end', data: { reason: { kind: 'completed' } } })
   })
 
   it('keeps the characters apart from the game master', async () => {

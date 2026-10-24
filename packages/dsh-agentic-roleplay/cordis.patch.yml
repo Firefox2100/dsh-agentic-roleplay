@@ -43,6 +43,22 @@
             config:
               - id: roleplay-compaction
                 name: '@dsh-agentic-roleplay/core/compaction'
+    # The preset every helper agent (characters, record keeper, author, chronicler, ...) runs under, started
+    # through DSH's sub-agent API. Its id must match HELPER_PRESET in the core package. It mounts no agent
+    # tools: each helper is given its own when it starts.
+    - id: preset-roleplay-helper
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: roleplay-helper
+        name: Role Play Helper
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: helper
+            name: '@dsh-agentic-roleplay/core/helper'
     # The authoring preset mounts its persona and its own tools, plus DSH's read,
     # write and edit for the interface packs only: the authoring plugin keeps them
     # on `<world>/ui/<pack>/` and asks before any change.
@@ -112,3 +128,7 @@
 # The Web bundle's row that tells every agent where the DSH checkout is and what "this page" is: nothing a story's game master or characters should hear.
 - id: harness-dev-context
   disabled: true
+# Helpers are children of the game master and DSH admits at most this many at once (it refuses the rest): a round of characters plus the keeper, the author and the suggestions run side by side.
+- id: subagent
+  config:
+    maxActiveSubagents: 32

@@ -8,7 +8,7 @@ export type SettingsFormKey =
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'backgroundConcurrent' | 'backgroundConcurrentHelp' | 'workingTokens' | 'workingTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
   | 'diceVisibility' | 'diceVisibilityHelp' | 'diceHidden' | 'diceCard'
-  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'reflectionAuto' | 'reflectionAutoHelp' | 'reflectionEveryTurns' | 'reflectionEveryTurnsHelp' | 'reflectionOnScene' | 'reflectionOnSceneHelp' | 'reflectionSceneDays' | 'reflectionSceneDaysHelp' | 'reflectionMinTurns' | 'reflectionMinTurnsHelp' | 'reflectionPerRun' | 'reflectionPerRunHelp' | 'reflectionMinNew' | 'reflectionMinNewHelp' | 'modelsCharacters' | 'modelsBackground' | 'modelsBackgroundHelp' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
+  | 'imagesMode' | 'imagesModeHelp' | 'imagesOff' | 'imagesManual' | 'imagesEveryTurn' | 'imageReferences' | 'imageReferencesHelp' | 'imageReferencesText' | 'imageReferencesPrefer' | 'imageReferencesRequire' | 'imagesReuse' | 'imagesReuseHelp' | 'imagesHighRes' | 'imagesHighResHelp' | 'imagesInterpret' | 'imagesInterpretHelp' | 'imagesInterpreterModel' | 'imagesInterpreterModelHelp' | 'imagesCaptioner' | 'imagesCaptionerHelp' | 'triggersJudged' | 'triggersJudgedHelp' | 'decisionsTriggers' | 'decisionsTriggersHelp' | 'decisionsReflection' | 'decisionsReflectionHelp' | 'decisionsConfidence' | 'decisionsConfidenceHelp' | 'decisionsAgency' | 'decisionsAgencyHelp' | 'decisionsRefusal' | 'decisionsRefusalHelp' | 'decisionsRules' | 'decisionsRulesHelp' | 'decisionsSecrets' | 'decisionsSecretsHelp' | 'decisionOn' | 'decisionsGateThreshold' | 'decisionsGateThresholdHelp' | 'decisionOff' | 'decisionLlm' | 'decisionDecision' | 'decisionHybrid' | 'decisionShadow' | 'factionsPerTurn' | 'factionsPerTurnHelp' | 'factionsEveryDays' | 'factionsEveryDaysHelp' | 'reflectionAuto' | 'reflectionAutoHelp' | 'reflectionEveryTurns' | 'reflectionEveryTurnsHelp' | 'reflectionOnScene' | 'reflectionOnSceneHelp' | 'reflectionSceneDays' | 'reflectionSceneDaysHelp' | 'reflectionMinTurns' | 'reflectionMinTurnsHelp' | 'reflectionPerRun' | 'reflectionPerRunHelp' | 'reflectionMinNew' | 'reflectionMinNewHelp' | 'modelsCharacters' | 'modelsBackground' | 'modelsBackgroundHelp' | 'modelsCharactersHelp' | 'modelsRecords' | 'modelsRecordsHelp' | 'modelsSuggestions' | 'modelsSuggestionsHelp' | 'modelsAuthoring' | 'modelsAuthoringHelp'
 
 export const dictionaries: Dictionaries<SettingsFormKey> = {
   en: {
@@ -100,6 +100,24 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imagesInterpreterModelHelp: 'As provider/model. Leave empty to use the chat\'s own model, which must be declared able to read images. Use this to describe images with a vision model while the story runs on another.',
     imagesCaptioner: 'Captioning model',
     imagesCaptionerHelp: 'As provider/model. A model that only writes a caption for a picture (it cannot call tools) looks at it, and the chat\'s model turns the caption into the description. Leave empty to have one vision model do both.',
+    decisionsTriggers: 'Judging trigger statements',
+    decisionsTriggersHelp: 'Who judges the statements that triggers wait on. The language model is the default. A decision model (from the Decisions provider of the AI providers plugin) answers the same questions much faster and beside the language model instead of queueing behind it. "Decision model" uses only it and counts an answer it is not sure of as no; "Both, decision model when sure" asks the language model for the rest; "Both, compare" always uses the language model and records how often the decision model agrees, shown below, so you can judge it on your own story. Without a decision service the language model is used.',
+    decisionsReflection: 'Checking beliefs against new evidence',
+    decisionsReflectionHelp: 'Who checks whether what a character took in since contradicts one of their beliefs, before the reflection pass. The same choices as for trigger statements. Doubts are raised only on answers the decision model is sure of.',
+    decisionsAgency: 'Checking the narration for speaking for you',
+    decisionsAgencyHelp: 'Checks each narration for words, actions, thoughts or feelings given to your character that your message did not state, and sends it back to the game master to rewrite (at most twice, then it is delivered as it is). Off by default: a check costs a request to the language model or a fast call to a decision model in every turn. The choices are the same as for trigger statements; the decision model counts a fault only when it is sure.',
+    decisionsRefusal: 'Checking the output for stepping out of the story',
+    decisionsRefusalHelp: 'Checks each output for a refusal to continue, an apology, a content warning, a disclaimer or a remark to you outside the story, which some hosted models add, and sends it back to the game master to write as the story (at most twice, then it is delivered as it is). Off by default. The same choices as for the check above.',
+    decisionsRules: 'Checking actions against the rules',
+    decisionsRulesHelp: 'When the game master judges your action allowed, a decision model also checks it against every rule of the world and your own rules in one fast pass. A rule it thinks is broken is put to the game master once, to judge again. Only a decision model does this: off by default, and off the story plays as it always did. Needs a decision service; without one nothing is checked.',
+    decisionsSecrets: 'Checking the output for giving away secrets',
+    decisionsSecretsHelp: 'A decision model checks each output for stating hidden lore that your character does not know (lore listed for other characters only) and sends it back to the game master to rewrite (at most twice, then it is delivered as it is). A revelation the story means to make can still go through the second time. Off by default, and off nothing changes. Needs a decision service; without one nothing is checked.',
+    decisionsGateThreshold: 'Probability that counts as a fault',
+    decisionsGateThresholdHelp: 'For the two checks above: the probability from which the decision model\'s answer counts as a fault, from 0.1 to 0.95; a little below it (0.15) the model is not sure, and the language model is asked in the mixed mode. Decision models give a rare fault a low probability even when they see it, so this is not the confidence below. Lower it if faults are missed, raise it if clean passages are sent back; the comparing mode shows the probabilities of the disagreements.',
+    decisionOff: 'Off',
+    decisionsConfidence: 'Confidence needed',
+    decisionsConfidenceHelp: 'How sure the decision model must be before its answer is used, from 0 to 1. At 0.7 a yes needs a probability of at least 0.85 and a no at most 0.15; in between, "both, decision model when sure" asks the language model and "decision model" counts it as no. A higher value uses it less and asks the language model more.',
+    decisionLlm: 'Language model', decisionDecision: 'Decision model', decisionHybrid: 'Both, decision model when sure', decisionShadow: 'Both, compare', decisionOn: 'On',
     triggersJudged: 'Statements judged after a turn',
     triggersJudgedHelp: 'The most statements that triggers wait on (such as "the mayor has lost the town\'s trust") that a model judges after one of your messages, in one background request. A trigger fires from the verdict at the next look. 0 turns it off, and such triggers never fire.',
     factionsPerTurn: 'Organisations acting on their own',
@@ -264,6 +282,24 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     imagesInterpreterModelHelp: '写成 提供方/模型。留空则使用对话自己的模型，它必须声明能读取图像。可用它让视觉模型描述图像，而故事用另一个模型运行。',
     imagesCaptioner: '图像说明模型',
     imagesCaptionerHelp: '写成 提供方/模型。只会给图片写说明文字的模型（不能调用工具）负责看图，再由对话的模型把说明整理成描述。留空则由一个视觉模型完成全部。',
+    decisionsTriggers: '评判触发器陈述',
+    decisionsTriggersHelp: '由谁来评判触发器所等待的陈述。默认由语言模型评判。决策模型（来自 AI 提供方插件的“决策”提供方）回答同样的问题要快得多，并且与语言模型并行，而不是排在它后面。“决策模型”只用它，并把它没有把握的答案视为否；“两者并用，有把握时用决策模型”会把其余的交给语言模型；“两者并用，对比”始终采用语言模型的答案，同时记录决策模型的一致程度，显示在下方，方便你在自己的故事里判断它。没有决策服务时使用语言模型。',
+    decisionsReflection: '用新证据检查信念',
+    decisionsReflectionHelp: '由谁在反思之前检查角色此后接收到的内容是否与其某个信念矛盾。选项与触发器陈述相同。只有决策模型有把握的答案才会引起怀疑。',
+    decisionsAgency: '检查叙述是否替你说话',
+    decisionsAgencyHelp: '检查每段叙述是否给了你的角色你的消息中没有写到的话语、动作、想法或感受，如有则退回给游戏主持人重写（最多两次，之后原样交付）。默认关闭：每个回合都要多一次语言模型请求，或一次决策模型的快速调用。选项与触发器陈述相同；决策模型只在有把握时才认定有问题。',
+    decisionsRefusal: '检查输出是否跳出了故事',
+    decisionsRefusalHelp: '检查每次输出里有没有拒绝继续、道歉、内容警告、免责声明或对你说的故事之外的话（有些托管模型会加上这些），如有则退回给游戏主持人按故事重写（最多两次，之后原样交付）。默认关闭。选项与上一项相同。',
+    decisionsRules: '按规则检查行动',
+    decisionsRulesHelp: '当游戏主持人判定你的行动可行时，决策模型会再一次快速地把它与世界的每条规则以及你自己的规则逐条对照。它认为被违反的规则会交给游戏主持人重新判断一次。只有决策模型能做这件事：默认关闭，关闭时故事与以往完全一样。需要决策服务；没有时不做任何检查。',
+    decisionsSecrets: '检查输出是否泄露秘密',
+    decisionsSecretsHelp: '决策模型检查每次输出有没有写出你的角色不知道的隐藏背景（只列给其他角色的背景），如有则退回给游戏主持人重写（最多两次，之后原样交付）。故事有意安排的揭示，第二次仍可通过。默认关闭，关闭时没有任何变化。需要决策服务；没有时不做任何检查。',
+    decisionsGateThreshold: '算作问题的概率',
+    decisionsGateThresholdHelp: '针对上面两项检查：决策模型的答案达到多大概率才算有问题，取值 0.1 到 0.95；略低于它（低 0.15 以内）时模型没有把握，混合模式下会交给语言模型。决策模型即使看出了罕见的问题，给出的概率也偏低，所以这不是下面的“所需把握”。漏掉问题就调低，把正常的文字退回去就调高；对比模式会显示分歧的概率。',
+    decisionOff: '关闭',
+    decisionsConfidence: '所需把握',
+    decisionsConfidenceHelp: '采用决策模型的答案前，它至少要有多大把握，取值 0 到 1。取 0.7 时，“是”需要至少 0.85 的概率，“否”至多 0.15；介于两者之间时，“两者并用，有把握时用决策模型”会交给语言模型，“决策模型”则视为否。数值越高，越少用它、越多问语言模型。',
+    decisionLlm: '语言模型', decisionDecision: '决策模型', decisionHybrid: '两者并用，有把握时用决策模型', decisionShadow: '两者并用，对比', decisionOn: '开启',
     triggersJudged: '每回合评判的陈述数',
     triggersJudgedHelp: '触发器所等待的陈述（例如“市长已失去全镇信任”）中，你发送一条消息后最多让模型评判多少条，合并为一次后台请求。触发器在下一次检查时根据结论触发。0 表示关闭，此类触发器永远不会触发。',
     factionsPerTurn: '组织自主行动',

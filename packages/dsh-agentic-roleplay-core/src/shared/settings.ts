@@ -3,6 +3,7 @@ import type { ActivityEntry } from './activity.ts'
 import type { TurnUsage } from './usage.ts'
 import type { Intervention } from './interventions.ts'
 import type { ReflectionStatus } from './reflection.ts'
+import { DECISION_MODES, EXTRA_MODES, GATE_MODES, type DecisionMode, type ExtraMode, type GateMode } from './decisions.ts'
 import type { VectorStatus } from './vectors.ts'
 import { MAX_OWN_RULES } from './rules.ts'
 
@@ -168,6 +169,24 @@ export interface ChatSettings {
     /** The most statements that triggers wait on ("the mayor has lost the town's trust") a model judges after one player message, in one request; 0 turns judging off, and such triggers never fire. */
     judgedPerTurn: number
   }
+  decisions: {
+    /** Who judges the statements that triggers wait on: the language model, the decision model, both with the decision model where it is confident, or both with only the language model's answer used (to see how often they agree). */
+    triggers: DecisionMode
+    /** Who checks a belief against what a character took in since. */
+    reflection: DecisionMode
+    /** Whether the narration is checked for speaking, acting or thinking for the player's character beyond what the player wrote, and by whom; off by default. A narration that fails is sent back to the game master (at most twice, then it is delivered as it is). */
+    agency: GateMode
+    /** Whether the output is checked for stepping out of the story (a refusal, a warning, a disclaimer, a remark to the player), and by whom; off by default. */
+    refusal: GateMode
+    /** Whether the player's action is also checked against every rule of the world and of the player in one pass of the decision model, when the game master judges it allowed; off by default. A rule it finds likely broken is put to the game master once, to judge again. Needs a decision model: without one nothing is checked. */
+    rules: ExtraMode
+    /** Whether the output is also checked, by the decision model, for giving away hidden lore the player's character does not know (lore listed for others only); off by default. A passage that fails is sent back to the game master like the other gates' (at most twice). Needs a decision model: without one nothing is checked. */
+    secrets: ExtraMode
+    /** The probability from which the decision model's answer to a gate's question counts as a fault, from 0.1 to 0.95; a little below it (0.15) is not sure. Decision models give a rare fault a low probability even when they see it, so this is not the confidence of the other sites. */
+    gateThreshold: number
+    /** How sure the decision model must be before its answer is used, from 0 (always) to 1 (only when certain). A yes needs at least this much; between the two, `hybrid` asks the language model and `decision` counts it as no. */
+    confidence: number
+  }
   interface: {
     /** The interface pack the story uses: empty is the first pack the story carries, `none` turns packs off, a name picks that pack of the story or of the roleplay root. */
     pack: string
@@ -281,6 +300,7 @@ export const SETTINGS_SPEC = {
   reflection: { auto: flag(true), everyTurns: integer(0, 500, 20), onSceneChange: flag(true), sceneDays: integer(0, 365, 1), minTurns: integer(1, 100, 5), perRun: integer(1, 6, 3), minNew: integer(1, 50, 4) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
+  decisions: { triggers: choice(DECISION_MODES, 'llm'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), confidence: ratio(0, 1, 0.7) },
   interface: { pack: text(60, '') },
   rewind: { keepSnapshots: integer(0, 500, 30) },
   rules: { own: text(MAX_OWN_RULES, '') },

@@ -42,6 +42,14 @@ title: Configuration reference
 | `reflection.minTurns` | 5 | Fewest turns between two automatic reflections |
 | `reflection.perRun` | 3 | Most characters one automatic reflection takes up |
 | `reflection.minNew` | 4 | New perceptions a character needs to be taken up (a pass you start takes one) |
+| `decisions.triggers` | `llm` | Who judges the statements that triggers wait on: `llm`, `decision`, `hybrid` or `shadow` (see [Optional capability integration](../specifications/capability-integration)) |
+| `decisions.reflection` | `llm` | Who checks a belief against what a character took in since; the same four choices |
+| `decisions.agency` | `off` | Checks each narration for words, actions, thoughts or feelings given to your character that your message did not state: `off`, `llm`, `decision`, `hybrid` or `shadow`. A fault sends the narration back to the game master (at most twice) |
+| `decisions.refusal` | `off` | Checks each output for stepping out of the story (a refusal, a warning, a disclaimer, a remark to the player); the same choices |
+| `decisions.rules` | `off` | `on` lets a decision model check the action the game master judged allowed against every rule of the world and of the player in one request; a rule it finds likely broken is put to the game master once, to judge again. Only a decision model does this; without a decision service nothing is checked |
+| `decisions.secrets` | `off` | `on` lets a decision model check each output for stating hidden lore the player's character does not know (lore listed for others only); a fault sends the output back like the other checks, once. Without a decision service nothing is checked |
+| `decisions.gateThreshold` | 0.5 | The probability from which a decision model's answer to a gate's question counts as a fault (0.1 to 0.95); a little below it (0.15) is not sure. Decision models give a rare fault a low probability even when they see it, so these checks do not use `decisions.confidence` |
+| `decisions.confidence` | 0.7 | How sure the decision model must be, from 0 to 1: a yes needs a probability of at least (1 + confidence) / 2 and a no at most (1 - confidence) / 2 |
 | `context.limitTokens` | 0 | Explicit fold limit; zero follows model metadata |
 | `context.limitRatio` | 0.6 | Share of model context used as the limit |
 | `context.workingTokens` | 0 | Optional cap on the derived limit, for a smaller prompt than the window allows; zero sets no cap |

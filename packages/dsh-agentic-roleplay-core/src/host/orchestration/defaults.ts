@@ -1,7 +1,7 @@
 import { languageOf, translator, type Character, type Language, type Translate } from 'dsh-roleplay-model'
 import type {
   ItemView, KnownRelationship, SceneItems,
-  ActivationPlanner, Author, Boundaries, Reflector, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  ActivationPlanner, Author, Boundaries, OutputGate, RuleCheck, Reflector, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
 import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from '@dsh-agentic-roleplay/state'
@@ -481,6 +481,12 @@ export const factionsStayPut: Strategist = { strategize: () => Promise.resolve({
 /** Reflects on nothing: without a reflector what characters believe changes only through what the story records. */
 export const reflectsOnNothing: Reflector = { reflect: () => Promise.resolve({ characters: [] }) }
 
+/** Finds no fault: without a gate the output is delivered as the game master wrote it. */
+export const passesEverything: OutputGate = { check: () => Promise.resolve([]) }
+
+/** Finds no broken rule: without a check the game master's judgement of an action stands as it is. */
+export const breaksNoRule: RuleCheck = { check: () => Promise.resolve([]) }
+
 /** Judges nothing: without a judge a trigger that waits on a statement never sees it hold. */
 export const judgesNothing: TriggerJudge = { judge: () => Promise.resolve({ judged: 0 }) }
 
@@ -501,6 +507,8 @@ export function defaultBoundaries(): Boundaries {
     strategist: factionsStayPut,
     reflector: reflectsOnNothing,
     judge: judgesNothing,
+    outputGate: passesEverything,
+    ruleCheck: breaksNoRule,
     suggester: offersNothing,
     recaller: recordsRecall,
     sceneContext: castSummary,

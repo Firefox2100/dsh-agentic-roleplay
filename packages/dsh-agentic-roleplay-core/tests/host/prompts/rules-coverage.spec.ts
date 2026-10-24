@@ -19,6 +19,7 @@ interface Rule {
 const FRAGMENT = 'a part of another prompt or a notice, not an agent of its own'
 const FRAGMENTS = ['ask-question', 'character-decide', 'character-lookup', 'character-style', 'dice', 'input-refused', 'ooc-command', 'ooc-empty', 'persona', 'plot-hint', 'preview', 'rules', 'style']
 const CHRONICLE = 'the instruction of the chronicler, which carries the rule in its own prompt'
+const ANSWERED = 'a question for the decision model, which answers with a probability: nothing is written'
 
 const exemptions = (...extra: [string, string][]): Record<string, string> => ({ ...Object.fromEntries(FRAGMENTS.map(id => [id, FRAGMENT])), ...Object.fromEntries(extra) })
 
@@ -29,14 +30,14 @@ const RULES: Rule[] = [
       en: /only what (you are|is|the text)|use only what|never use anything|supported by the material|work only from|never (add|a fact)|do not invent|never make up|do not add facts/i,
       zh: /只根据|只依据|只使用|只用|只知道所给|仅凭|只凭|绝不使用其他|绝不添加|不要添加|不要编造|绝不编造|凭空/,
     },
-    carriers: ['ask-answerer', 'character-rules', 'chronicler', 'faction-strategist', 'game-master', 'plot-author', 'record-keeper', 'reflection', 'reflection-check', 'suggester', 'trigger-judge'],
+    carriers: ['ask-answerer', 'character-rules', 'check-rule', 'chronicler', 'decide-reflection', 'decide-trigger', 'faction-strategist', 'gate-agency', 'gate-refusal', 'game-master', 'gate-secret', 'plot-author', 'record-keeper', 'reflection', 'reflection-check', 'suggester', 'trigger-judge'],
     exempt: exemptions(['chronicle-chapter', CHRONICLE], ['chronicle-condense', CHRONICLE], ['chronicle-digest', CHRONICLE], ['image-interpreter', 'an image prompt, covered in its own rule on what it sees'], ['image-presenter', 'an image prompt, covered in its own rule'], ['image-reuse', 'an image prompt, covered in its own rule']),
   },
   {
     name: 'writes in the language of the chat\'s prompts',
     says: { en: /\$\{language\}/, zh: /\$\{language\}/ },
     carriers: ['chronicler', 'character-rules', 'game-master', 'reflection', 'reflection-check', 'suggester'],
-    exempt: exemptions(['ask-answerer', 'answers in plain words; its language follows the chat'], ['faction-strategist', 'its text is a decision the engine records, written from what it is shown'], ['plot-author', 'its text is a scaffold the game master reads'], ['record-keeper', 'the records follow the language of the rounds it reads'], ['trigger-judge', 'a verdict with a short reason'], ['chronicle-chapter', CHRONICLE], ['chronicle-condense', CHRONICLE], ['chronicle-digest', CHRONICLE], ['image-interpreter', 'an image prompt'], ['image-presenter', 'an image prompt'], ['image-reuse', 'an image prompt']),
+    exempt: exemptions(['decide-trigger', ANSWERED], ['decide-reflection', ANSWERED], ['gate-agency', ANSWERED], ['gate-refusal', ANSWERED], ['gate-secret', ANSWERED], ['check-rule', ANSWERED], ['ask-answerer', 'answers in plain words; its language follows the chat'], ['faction-strategist', 'its text is a decision the engine records, written from what it is shown'], ['plot-author', 'its text is a scaffold the game master reads'], ['record-keeper', 'the records follow the language of the rounds it reads'], ['trigger-judge', 'a verdict with a short reason'], ['chronicle-chapter', CHRONICLE], ['chronicle-condense', CHRONICLE], ['chronicle-digest', CHRONICLE], ['image-interpreter', 'an image prompt'], ['image-presenter', 'an image prompt'], ['image-reuse', 'an image prompt']),
   },
 ]
 

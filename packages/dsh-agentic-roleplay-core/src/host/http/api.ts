@@ -8,6 +8,7 @@ import { pipeline } from 'node:stream/promises'
 import type { RunDetail } from '../../shared/activity.ts'
 import type { PackProblem } from '../../shared/interface-pack.ts'
 import type { Note } from '../../shared/notes.ts'
+import type { DecisionsPayload } from '../../shared/decisions.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import { languageOf } from '../prompts/library.ts'
 import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parseLoreEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type CharacterEdit, type FactionEdit, type LoreEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
@@ -172,6 +173,7 @@ export interface ApiDeps {
     readSettings(id: string): SettingsPayload
     writeSettings(id: string, value: unknown): SettingsPayload
     notes(id: string): Note[]
+    decisions(id: string): DecisionsPayload
     timeline(id: string): TimelineView
     moveTimeline(id: string, to: string): Promise<{ draft?: string }>
     imageStatus(id: string, node: string): Promise<SceneImageStatus>
@@ -796,6 +798,16 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
           if (error instanceof TimelineError) return sendError(res, 409, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/decisions': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.decisions(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           throw error
         }
       },

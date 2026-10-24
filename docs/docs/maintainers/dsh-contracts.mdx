@@ -3,7 +3,7 @@ title: DSH contracts
 description: DSH services, chat persistence, scoped child tools, rendering, approval, and upgrade checks.
 ---
 
-The core package supports DSH `>=0.2.1-rc.2 <0.2.2`; 0.2.0 is no longer supported, because 0.2.1 removed the sub-agent start options and the invariant packages this code used and changed how a stored chat is adopted. Most integration uses public Cordis services and slots. One deliberate exception is child composition for per-agent scoped tools. Development dependencies and contract tests stay pinned to one exact tested DSH release; every DSH upgrade requires a fresh review before the supported range is widened.
+The core package supports DSH `>=0.2.1-rc.2 <0.2.2`; 0.2.0 is no longer supported, because 0.2.1 removed the sub-agent start options and the invariant packages this code used and changed how a stored chat is adopted. Most integration uses public Cordis services and slots. Helper agents with tools of their own also use only public API: DSH's sub-agent activation under a bundle-provided preset. Development dependencies and contract tests stay pinned to one exact tested DSH release; every DSH upgrade requires a fresh review before the supported range is widened.
 
 ## Chat and workspace lifecycle
 
@@ -19,7 +19,7 @@ Use `sessionController` for create/adopt/rename, `workspaceRegistry` for the rol
 
 Every listener, HTTP route, timer, client slot, and service must be registered on `ctx`; use `ctx.effect` when an API returns a manual disposer. A reload must leave no duplicate route, tool, timer, or listener.
 
-`runChild` uses DSH composition helpers to attach a child to its parent while giving the child a private tool scope. Preset tools are filtered out; tools registered on the child remain available. If DSH changes these helpers, port this layer rather than weakening character isolation or exposing tools globally.
+`runChild` starts a child through `startActivation` under the `roleplay-helper` preset and, when the child is created, restricts its global tools and registers its own on its scope. If DSH changes this, port this layer rather than weakening character isolation or exposing tools globally.
 
 ## Rendering and approval
 

@@ -35,36 +35,29 @@ below so it can be checked when DSH moves.
 `uiWorkspace.openSession`, and the shell primitives (`Button`, `Input`, `Switch`, `Modal`, `Tag`,
 `Tooltip`). The client bundle format is the shell's module loader, checked by `tsdown.config.ts`.
 
-## The one place that goes below the public API
+## Helper agents
 
-Characters and the record keeper are *children with tools of their own*. That needs two things
-the sub-agent API cannot give: tools registered on one child alone (so a tool built around
-Alice's memory gives Bob's agent, running at the same time, nothing of it), and a result
-contract finished by a tool the child calls after looping (so it can read, write, check and fix).
-`host/agents/child.ts` (`runChild`) therefore creates the child itself with `parent.ctx.agents.create`
-and the composition helpers DSH exports for sub-agent *providers* (`applyChildComposition`,
-`childSessionMeta`, `resolveChildAgentOptions`, `resolveChildDepth`, `captureDelegatedPolicyOverrides`,
-`appendDelegatedPolicyOverrides` from `@deepseek-ai/dsh-subagent`; `validateJsonSchemaValue` and
-`ToolArgsError` from `@deepseek-ai/dsh-tools`), registers its tools on the child's own scope, and
-ends it with a `submit_result` tool whose arguments are the result.
+Characters, the record keeper, the world author, the faction strategist and the other one-shot helpers are *children with tools of their own*: a tool built around
+Alice's memory must give Bob's agent, running at the same time, nothing of it, and a child ends by calling a `submit_result` tool after looping (so it can read, write,
+check and fix). `host/agents/child.ts` (`runChild`) does this through public API only:
 
-This is accepted on purpose, because per-agent tools are a core feature of the bundle. The
-consequences, and how they are contained:
-
-- **Exact tested release.** The packages currently declare DSH `>=0.2.1-rc.2 <0.2.2`
-  (`engines.dsh` and the peer dependency). Development dependencies and
-  `tests/support/dsh-contract.spec.ts` are pinned to the exact tested release, `0.2.1-rc.2`;
-  `scripts/dsh-compat.mjs` is the one list these are derived from.
-  Supporting a later patch tuple requires inspecting its changes, porting every affected integration,
-  and testing against that exact release before widening the range.
-- **One file.** Nothing else builds an agent below the public API; when DSH offers per-agent tools
-  properly, `runChild` is what is replaced.
-- **Not in the parent's catalog.** Such a child writes no sub-agent descriptor (that part of DSH is
-  internal), so it does not show in the parent's list of sub-agents. It is an ordinary child session
-  otherwise (verified by the real-loop tests).
-- **When DSH changes**, re-read `docs/subsystems/subagent.md` and the in-process driver
-  (`packages/subagent/subagent-spawn-in-process`, which does the same composition) and port
-  `runChild` to match.
+- **Start.** `ctx.get('subagents').startActivation({ provider: 'spawn', childId, delivery: 'caller', request: { parent, agentPreset: 'roleplay-helper', agentOptions, prompt } })`.
+  The caller reserves the child's session id (`childId`) first, so what it needs to hand the child is registered under that id before the child exists. (`parent.ctx.subagents`
+  throws without an `inject` on the owning plugin; `ctx.get('subagents')` does not.)
+- **The preset.** `roleplay-helper` is a `@deepseek-ai/dsh-agent-preset` row in the bundle's patch (so a standalone core install has no helpers). It mounts the `core/helper`
+  plugin, which gives the child its persona (a system-prompt section read by session id) and, on the public `agent/created` event, calls the child's `setup`. A preset is shared by
+  every agent that uses it, so nothing per child lives in the plugin: it is looked up by the child's session id.
+- **Tools of its own.** A spawned child inherits every global tool (the story's readers, DSH's working directory), so `setup` first calls `agent.ctx.tools.restrict({ allow })`
+  (`allow` is only the external tools the task lets through), then registers the child's tools on `agent.ctx`, which `restrict` never touches. The `submit_result` tool, the call
+  budget, the repeated-call guard and the reminders are registered the same way.
+- **Costs.** Each run adds a `subagent/catalog` event to the game master's log (a few hundred bytes, also after the turn ended, so the last event of a finished turn is not always
+  `turn/end`). DSH admits at most `maxActiveSubagents` children of one parent at once (default 8) and refuses the rest, so the bundle patch raises it to 32 for a round of
+  characters plus the keeper, author and suggestions.
+- **Exact tested release.** The packages declare DSH `>=0.2.1-rc.2 <0.2.2` (`engines.dsh` and the peer dependency). Development dependencies and
+  `tests/support/dsh-contract.spec.ts` are pinned to the exact tested release; `scripts/dsh-compat.mjs` is the one list these are derived from. Supporting a later patch tuple
+  requires inspecting its changes, porting every affected integration, and testing against that exact release before widening the range.
+- **When DSH changes**, re-read `docs/subsystems/subagent.md` and port `runChild` to match; the real-loop tests in `tests/host/orchestration/loop.spec.ts` mount the helper
+  plugin through a stand-in `agentPresets` service.
 
 ## Taking the story back, putting sessions away, deleting them
 
