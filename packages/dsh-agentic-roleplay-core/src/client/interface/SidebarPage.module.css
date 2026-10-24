@@ -94,7 +94,7 @@
 
 .description {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--dsw-alias-label-tertiary);
   text-overflow: ellipsis;

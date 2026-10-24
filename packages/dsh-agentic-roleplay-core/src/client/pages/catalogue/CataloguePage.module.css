@@ -270,7 +270,7 @@
   margin: 0;
   padding-left: 16px;
   font-family: var(--dsw-font-mono, monospace);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dsw-alias-label-tertiary);
 }
 

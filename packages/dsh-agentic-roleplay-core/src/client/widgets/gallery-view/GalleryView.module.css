@@ -169,7 +169,7 @@
 .status,
 .statusError {
   padding: 0 8px 6px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   color: var(--dsw-alias-label-tertiary);
 }
@@ -183,7 +183,7 @@
   align-items: center;
   gap: 6px;
   padding: 0 8px 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dsw-alias-label-secondary);
   cursor: pointer;
 }
@@ -200,7 +200,7 @@
   border: 0;
   background: none;
   font: inherit;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dsw-alias-state-business-primary);
   cursor: pointer;
 }

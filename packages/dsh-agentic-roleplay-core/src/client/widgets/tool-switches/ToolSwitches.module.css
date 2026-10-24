@@ -54,13 +54,13 @@
 
 .default {
   margin-left: 6px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--dsw-alias-label-tertiary);
 }
 
 .error {
   font-size: 12px;
-  color: var(--dsw-alias-state-error-primary, #d33);
+  color: var(--dsw-alias-state-error-primary);
 }
 
 .external {

@@ -98,6 +98,13 @@
   color: var(--dsw-alias-label-primary);
 }
 
+.activityBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+}
+
 .link {
   align-self: flex-start;
   padding: 0;
@@ -111,13 +118,28 @@
 
 .table {
   width: 100%;
+  min-width: 920px;
   border-collapse: collapse;
   font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tableViewport {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 0.5px solid var(--dsw-alias-border-l3);
+  border-radius: var(--dsw-radius-lg);
+  background: var(--dsw-alias-bg-layer-1);
+}
+
+.tableViewport:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
 }
 
 .table th,
 .table td {
-  padding: 3px 8px 3px 0;
+  padding: 6px 10px;
   border-bottom: 0.5px solid var(--dsw-alias-border-l4);
   text-align: left;
   vertical-align: top;
@@ -127,6 +149,15 @@
 .table th {
   font-weight: 400;
   color: var(--dsw-alias-label-tertiary);
+}
+
+.table tbody th {
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary);
+}
+
+.table tbody tr:last-child > * {
+  border-bottom: 0;
 }
 
 .table th:nth-child(1),
@@ -195,8 +226,4 @@
     padding-inline: 16px;
   }
 
-  .table {
-    display: block;
-    overflow-x: auto;
-  }
 }

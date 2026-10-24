@@ -2,37 +2,123 @@
 title: 配置参考
 ---
 
-## 插件配置
+## 核心插件配置
 
-| 字段 | 默认值 |
-| --- | --- |
-| `rootPath` | `~/dsh-roleplay` |
-| `sessionStorePath` | `~/.dsh/sessions` |
-| `authoringTools` | 无 | 其他插件为所有人注册的工具（网络搜索、MCP 服务器）中，每个创作助手可以使用的：`worldAuthoring`、`presetAuthoring`、`lorebookAuthoring` 和 `worldAuthor`（游戏中补充内容的辅助智能体），各自是设为 `true` 的工具名列表。助手没有未列出的工具；会话医生永远没有任何工具。在“设置 → 角色扮演 → 创作助手的工具”中编辑 |
-| `catalogues` | 无（列表项含 `name`、`baseUrl` 即 API 根地址、可选的 `apiKeyRef`，即 DSH 凭据存储中保存 API 密钥的凭据名称，默认由名称生成；0.3 以 `apiKey` 文本保存的密钥在存储中没有密钥时仍会被读取，保存设置时被删除；在“设置 → 角色扮演 → 目录”中编辑） |
-| `catalogueMaxBytes` | 256 MiB（下载的世界压缩与解压后的大小上限） |
-| `catalogueTrashDays` | 30（更新所替换的文件在 `.trash/worlds/` 中保留的天数，之后删除；0 表示永久保留） |
-| `importMaxUploadBytes` | 100 MiB |
-| `importConcurrency` | 4 |
-| `importReasoning` | 空 |
-| `childReasoning` | 空 |
-| `importMaxTokens` | 16000 |
-| `importTemperature` | 0.2 |
+这些值为整个 DSH 配置档案设置插件。会话设置则只属于一个故事。
 
-## 主要会话默认值
+| 字段 | 默认值 | 用途 |
+| --- | --- | --- |
+| `rootPath` | `~/dsh-roleplay` | 存放世界、玩家角色、会话和媒体的文件夹 |
+| `sessionStorePath` | `~/.dsh/sessions` | 保存角色扮演会话所关联对话的 DSH 会话目录 |
+| `authoringTools` | 无 | 各创作助手可以使用的其他插件工具。分组为 `worldAuthoring`、`presetAuthoring`、`lorebookAuthoring` 和 `worldAuthor`。未列出的工具不可用；会话医生永远不会收到这些工具 |
+| `catalogues` | 无 | 可浏览的世界目录。每项包含 `name`、API `baseUrl` 和可选的 `apiKeyRef`。旧版 `apiKey` 只会在凭据存储中没有密钥时使用，并在下次保存时移除 |
+| `catalogueMaxBytes` | 256 MiB | 下载世界的大小上限，压缩包和解压结果分别检查 |
+| `catalogueTrashDays` | 30 | 目录更新替换的文件在 `.trash/worlds/` 中保留的天数；0 表示永久保留 |
+| `importMaxUploadBytes` | 100 MiB | 角色卡上传大小上限 |
+| `importConcurrency` | 4 | 可同时运行的导入模型请求数 |
+| `importReasoning` | 空 | 导入智能体的推理等级；留空使用模型自己的设置 |
+| `childReasoning` | 空 | 角色扮演辅助智能体的回退推理等级；留空跟随主持人 |
+| `importMaxTokens` | 16000 | 单次导入请求的最大输出令牌数 |
+| `importTemperature` | 0.2 | 导入智能体的采样温度 |
 
-`maxRounds` 为 3，`maxCharacters` 为 4；记忆回忆 12 条、候选倍率 4、积压 6 轮，`memory.diversity` 默认为 `0.3`，以减少近似重复的回忆；`memory.foldedFade` 默认为 `0.5`，让已被信念归纳的感知按原保留时间的一半淡化，设为 `1` 则不改变；上下文限制默认取模型窗口 60%，但不超过 `context.workingTokens`（默认 0，即不设上限），折叠后保留 50%；世界扩展每回合最多 2 个角色或地点；模拟时钟每轮默认 30 秒；回退保留 30 个快照；`interface.pack` 默认为空（使用故事自带的第一个界面包，`none` 表示不用）；提供 3 条建议行动；图片为手工模式，优先参考图、启用复用和上传图片理解。
+`rootPath`、目录和创作助手工具权限也可在**设置、角色扮演**中编辑。
 
-`models.characters`、`models.background`（背景层级角色，留空则同 `models.characters`）、`models.records`、`models.suggestions`、`models.authoring` 默认为空，即各类助手使用对话自己的模型；填写 `提供方/模型` 可为其单独指定。
+## 状态插件配置
 
-`sampling.topP`、`sampling.topK`、`sampling.minP`、`sampling.frequencyPenalty`、`sampling.presencePenalty`、`sampling.repetitionPenalty`（默认 1、0、0、0、0、1）是温度之外、用于主持人和角色请求的控制；每一项的默认值表示交给模型服务器自己的选择，不会发送。世界或预设可以为某一个故事建议它们。
+状态包可以单独安装。以下选项配置它的数据库和面向模型的工具。
 
-`background.concurrent` 默认为 `false`：下一轮生成前，上一轮的后台工作（记忆、整合、台下角色、建议）先完成；使用可并行处理请求的托管服务时可开启。
+| 字段 | 默认值 | 用途 |
+| --- | --- | --- |
+| `journalMode` | `delete` | SQLite 日志模式。`delete` 让会话保持为便于复制的单个文件；`wal` 允许写入期间继续读取 |
+| `writeTools` | `false` | 注册可修改记录的模型工具。读取工具始终注册 |
+| `diceTools` | `false` | 为所有角色扮演智能体注册骰子工具。完整套件改为按智能体类别授予 |
 
-`sampling.masterMaxTokens` 默认为 `12000`，是主持人单次请求（含推理）的生成上限：推理陷入循环的模型会被截断，回合随后被继续引导（仅设置文件）。
+## 会话默认值
 
-`sampling.maxTokens` 默认为 `8000`，`sampling.shortMaxTokens` 默认为 `2000`，分别作为一般辅助智能体及角色/建议作者单次请求的生成上限。对于已经声明回答大小的辅助智能体，实际预算按估算值乘以 `sampling.headroom`（默认 `2`）计算，但不会超过相应上限。
+这些默认值会写入新故事的 `settings.json`。世界或预设可以建议不同的初始值，玩家也可以为该故事修改。
 
-设置界面会给出当前数值边界。未知字段会被拒绝。提供方专属嵌入参数保存在 `embedding.options`。
+### 回合、记忆与上下文
 
-`dice.visibility` 为 `card`（默认）时在叙述下方用折叠卡片显示掷出的骰子，为 `hidden` 时什么都不显示。`tools` 按智能体类别（`gameMaster`、`characters`、`records`）和工具名给出 `true` 或 `false`；不认识的名字会被保留并忽略。状态插件另有配置项 `diceTools`（默认 `false`），为所有角色扮演会话的智能体注册骰子工具。
+| 设置 | 默认值 | 含义 |
+| --- | --- | --- |
+| `maxRounds` / `maxCharacters` | 3 / 4 | 每条玩家消息的角色轮数，以及每轮激活的角色数 |
+| `memory.flaky` | `true` | 启用不完美感知和随故事时间淡化 |
+| `memory.recall` / `memory.lookupCalls` | 12 / 5 | 每次激活提供的记忆数，以及单次角色决策的查询上限 |
+| `memory.lookup` / `memory.verify` | `true` / `true` | 允许角色查询记忆，并让记录员写入后复核 |
+| `memory.backlogRounds` | 6 | 尚未记录的回合达到此数时强制记录员追上 |
+| `memory.overRetrieve` / `memory.associate` | 4 / 2 | 最终筛选前的候选倍数，以及强匹配可带出的相关记忆数 |
+| `memory.diversity` | 0.3 | 同时召回近似重复记忆的惩罚，范围 0 到 1 |
+| `memory.foldedFade` | 0.5 | 感知被信念吸收后的保留倍率；1 表示不改变 |
+| `context.limitTokens` / `context.limitRatio` | 0 / 0.6 | 明确的折叠上限，或用于计算上限的模型上下文比例 |
+| `context.workingTokens` / `context.retainRatio` | 0 / 0.5 | 计算结果的可选上限，以及保留原文的比例 |
+| `context.shortTermTokens` / `context.longTermTokens` | 1500 / 2500 | 短期和长期摘要的目标大小 |
+
+### 世界活动与时间
+
+| 设置 | 默认值 | 含义 |
+| --- | --- | --- |
+| `authoring.enabled` | `true` | 允许主持人请世界作者补充缺失实体 |
+| `authoring.perTurn` / `authoring.thingsPerTurn` | 2 / 4 | 每回合创作的角色和地点数，以及主持人可直接引入的普通物品数 |
+| `authoring.consolidateAfter` | 3 | 待处理创作实体达到此数时整理 |
+| `clock.mode` / `clock.timeZone` | `simulated` / 空 | 故事时间模式（`simulated` 或 `real`）及其 IANA 时区。开始会话时，现实时间留空则使用主机时区；模拟时间留空则依次使用世界时区和 UTC |
+| `clock.roundSeconds` / `clock.maxSkipDays` | 30 / 30 | 模拟时间中一轮的默认秒数，以及一次时钟推进最多跨过的天数 |
+| `background.concurrent` | `false` | 允许后台工作与下一回合重叠，而不是先完成再开始 |
+| `offstage.perTurn` / `offstage.perCharacter` | 2 / 1 | 每回合处理的离场角色数，以及每个角色的行动上限 |
+| `offstage.joint` / `offstage.summary` | `true` / `true` | 一起处理重叠情境，并生成“与此同时”摘要 |
+| `factions.perTurn` / `factions.everyDays` | 1 / 3 | 每回合推进的派系数，以及默认故事时间间隔 |
+| `triggers.enabled` / `triggers.maxFires` | `true` / 3 | 是否运行触发器，以及每回合最多触发数 |
+| `triggers.beatTurns` / `triggers.cueTurns` | 3 / 2 | 主持人节拍和角色提示等待采用的回合数 |
+| `triggers.judgedPerTurn` | 2 | 每回合最多由模型判断的触发条件数 |
+
+### 反思与决策检查
+
+| 设置 | 默认值 | 含义 |
+| --- | --- | --- |
+| `reflection.auto` / `reflection.everyTurns` | `true` / 20 | 自动反思及其回合间隔；0 关闭定时反思 |
+| `reflection.onSceneChange` / `reflection.sceneDays` | `true` / 1 | 地点变化或经过这些故事天后也反思；0 关闭时间条件 |
+| `reflection.minTurns` / `reflection.perRun` | 5 / 3 | 两次反思的最少间隔，以及一次自动处理的角色数 |
+| `reflection.minNew` | 4 | 自动反思所需的新感知数；手动反思只需一条 |
+| `decisions.triggers` / `decisions.reflection` | `llm` / `llm` | 用 `llm`、`decision`、`hybrid` 或 `shadow` 判断触发条件和信念证据 |
+| `decisions.agency` / `decisions.refusal` | `off` / `off` | 可选的输出检查，除上述四种模式外也可关闭 |
+| `decisions.rules` / `decisions.secrets` | `off` / `off` | 仅由决策服务执行的规则复查和隐藏背景检查 |
+| `decisions.gateThreshold` | 0.5 | 决策答案从此概率起算作问题；低于它 0.15 以内视为不确定 |
+| `decisions.confidence` | 0.7 | 决策答案被采用而非交给语言模型所需的把握程度 |
+
+各模式及回退规则见[可选能力集成](../specifications/capability-integration)。
+
+### 模型、提示词与采样
+
+| 设置 | 默认值 | 含义 |
+| --- | --- | --- |
+| `models.characters`、`models.records`、`models.suggestions`、`models.authoring` | 空 | 对应助手使用的 `提供方/模型`；留空使用对话模型 |
+| `models.background` | 空 | 背景角色模型；留空回退到 `models.characters` |
+| `sampling.master` / `sampling.characters` | 0.7 / 0.8 | 主持人和角色的温度 |
+| `sampling.suggestions` / `sampling.authoring` / `sampling.records` | 0.2 / 0.4 / 0.1 | 建议、创作和记录的温度 |
+| `sampling.topP` / `sampling.topK` / `sampling.minP` | 1 / 0 / 0 | 其他采样参数；默认值不发送 |
+| `sampling.frequencyPenalty` / `sampling.presencePenalty` / `sampling.repetitionPenalty` | 0 / 0 / 1 | 惩罚参数；默认值不发送 |
+| `sampling.tools` | `required` | 必须提交结果的辅助请求所用的工具选择模式 |
+| `sampling.masterMaxTokens` | 12000 | 主持人单次请求的最大输出令牌数，含推理 |
+| `sampling.maxTokens` / `sampling.shortMaxTokens` | 8000 / 2000 | 一般和短辅助请求的输出上限 |
+| `sampling.headroom` | 2 | 在上限内按预计回答长度扩大的倍数 |
+| `prompts.language` | `en` | 内置提示词语言：`en` 或 `zh` |
+| `reasoning.children` | 空 | 辅助智能体的推理等级；留空使用插件级回退值 |
+
+### 界面、规则与媒体
+
+| 设置 | 默认值 | 含义 |
+| --- | --- | --- |
+| `interface.pack` | 空 | 留空使用世界中的第一个界面包，`none` 表示不用，填写名称则选中该包 |
+| `rewind.keepSnapshots` | 30 | 为回退故事保留的近期状态快照数 |
+| `rules.own` | 空 | 玩家为本故事补充的规则 |
+| `preview.enabled` | `true` | 完整回合仍在生成时先显示场景预览 |
+| `suggestions.count` | 3 | 回合结束后显示的行动建议数 |
+| `dice.visibility` | `card` | `card` 在折叠卡片中显示骰子，`hidden` 不显示 |
+| `tools` | 未选择 | 按智能体类别（`gameMaster`、`characters`、`records`）和名称设置的可选工具；未知名称会保留并忽略 |
+| `images.mode` | `manual` | `off`、`manual` 或 `every-turn` |
+| `images.references` | `prefer-reference` | `prefer-reference`、`require-reference` 或 `text-only` |
+| `images.reuse` / `images.highRes` | `true` / `false` | 复用已有图片，以及可选的第二次大图渲染 |
+| `images.interpret` | `true` | 为故事描述上传的图片 |
+| `images.interpreterModel` / `images.captioner` | 空 / 空 | 理解上传图片和为生成图片写说明的模型；留空使用对话模型 |
+| `diagnostics.keepRuns` | `false` | 在会话文件夹中保留最近 60 次辅助运行追踪，其中包含角色私密上下文 |
+
+界面会显示当前数值边界。未知字段会被拒绝。提供方专属的嵌入请求参数保存在 `embedding.options`。

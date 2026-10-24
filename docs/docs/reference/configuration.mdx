@@ -2,84 +2,123 @@
 title: Configuration reference
 ---
 
-## Plugin configuration
+## Core plugin configuration
+
+These values configure the plugin for the whole DSH profile. Session settings belong to one story instead.
 
 | Field | Default | Purpose |
 | --- | --- | --- |
-| `rootPath` | `~/dsh-roleplay` | Worlds, avatars, sessions and media |
-| `sessionStorePath` | `~/.dsh/sessions` | DSH session persistence location |
-| `authoringTools` | none | The tools other plugins registered for everyone (a web search, MCP servers) that each authoring assistant may use: `worldAuthoring`, `presetAuthoring`, `lorebookAuthoring` and `worldAuthor` (the helper that invents things while a story is played), each a list of tool names set to `true`. An assistant has none that is not listed; the session doctor never has any. Edited under Settings, Role Play, Tools for the authoring assistants |
-| `catalogues` | none | Catalogues to browse and install worlds from: a list of `name`, `baseUrl` (the API root) and `apiKeyRef` (optional; the credential in DSH's credential store that holds the API key, by default made from the name). A key written as `apiKey` text by 0.3 is still read when the store has none, and removed when the settings are saved. Edited under Settings, Role Play, Catalogues |
-| `catalogueMaxBytes` | 256 MiB | Most a downloaded world may be, compressed and again unpacked |
-| `catalogueTrashDays` | 30 | Days the files an update replaced stay in `.trash/worlds/` before they are deleted; 0 keeps them for good |
-| `importMaxUploadBytes` | 100 MiB | Character-card upload limit |
-| `importConcurrency` | 4 | Concurrent import model calls |
-| `importReasoning` | empty | Import-agent reasoning level |
-| `childReasoning` | empty | Default reasoning level for roleplay child agents |
-| `importMaxTokens` | 16000 | Import request output limit |
-| `importTemperature` | 0.2 | Import sampling temperature |
+| `rootPath` | `~/dsh-roleplay` | Folder for worlds, avatars, sessions and media |
+| `sessionStorePath` | `~/.dsh/sessions` | DSH session store used for the chats attached to roleplay sessions |
+| `authoringTools` | none | Tools from other plugins that each authoring assistant may use. Groups are `worldAuthoring`, `presetAuthoring`, `lorebookAuthoring` and `worldAuthor`. An unlisted tool is unavailable. The session doctor never receives these tools |
+| `catalogues` | none | World catalogues to browse. Each entry has `name`, API `baseUrl`, and optionally an `apiKeyRef` for DSH's credential store. The deprecated `apiKey` field is used only when the store has no key, then removed on the next save |
+| `catalogueMaxBytes` | 256 MiB | Maximum downloaded-world size, checked both compressed and unpacked |
+| `catalogueTrashDays` | 30 | Days to keep files replaced by a catalogue update in `.trash/worlds/`; 0 keeps them indefinitely |
+| `importMaxUploadBytes` | 100 MiB | Maximum character-card upload size |
+| `importConcurrency` | 4 | Import model calls that may run at once |
+| `importReasoning` | empty | Import-agent reasoning level; empty uses the model's setting |
+| `childReasoning` | empty | Fallback reasoning level for roleplay helpers; empty follows the game master |
+| `importMaxTokens` | 16000 | Maximum output tokens for one import request |
+| `importTemperature` | 0.2 | Import-agent temperature |
+
+`rootPath`, catalogues and authoring-tool access are also editable under **Settings, Role Play**.
+
+## State plugin configuration
+
+The state package can be installed on its own. These values configure its database and model-facing tools.
+
+| Field | Default | Purpose |
+| --- | --- | --- |
+| `journalMode` | `delete` | SQLite journal mode. `delete` keeps a session easy to copy as one file; `wal` permits readers during a write |
+| `writeTools` | `false` | Register model tools that change records. Reading tools are always registered |
+| `diceTools` | `false` | Register dice tools for every roleplay agent. The full bundle instead grants them by agent kind |
 
 ## Session defaults
 
+These defaults are copied into a new story's `settings.json`. A world or preset may suggest different starting values, and the player can change them for that story.
+
+### Turn, memory and context
+
 | Setting | Default | Meaning |
 | --- | --- | --- |
-| `maxRounds` | 3 | Character rounds per player message |
-| `maxCharacters` | 4 | Characters activated in one round |
-| `memory.flaky` | `true` | Imperfect perception and story-time fading |
-| `memory.recall` | 12 | Memories supplied per activation |
-| `memory.lookup` | `true` | Character recall tool |
-| `memory.lookupCalls` | 5 | Most memory look-ups per character decision |
-| `memory.verify` | `true` | Keeper reads edits back |
-| `memory.backlogRounds` | 6 | Forced keeper threshold |
-| `memory.overRetrieve` | 4 | Candidate multiplier before final choice |
-| `memory.diversity` | 0.3 | How much a repeat of an already recalled memory counts against it (0 to 1) |
-| `memory.associate` | 2 | Most extra memories that come to mind with a matched one (strong tie, enough importance) |
-| `memory.foldedFade` | 0.5 | Retention multiplier for a perception after a belief rests on it; 1 leaves retention unchanged |
-| `reflection.auto` | `true` | Characters sort what they took in into beliefs by themselves |
-| `reflection.everyTurns` | 20 | Reflect after this many turns since the last time; 0 turns it off |
-| `reflection.onSceneChange` | `true` | Also reflect when your character has gone elsewhere or `sceneDays` have passed |
-| `reflection.sceneDays` | 1 | Days of story time that count as a change of scene; 0 turns that off |
-| `reflection.minTurns` | 5 | Fewest turns between two automatic reflections |
-| `reflection.perRun` | 3 | Most characters one automatic reflection takes up |
-| `reflection.minNew` | 4 | New perceptions a character needs to be taken up (a pass you start takes one) |
-| `decisions.triggers` | `llm` | Who judges the statements that triggers wait on: `llm`, `decision`, `hybrid` or `shadow` (see [Optional capability integration](../specifications/capability-integration)) |
-| `decisions.reflection` | `llm` | Who checks a belief against what a character took in since; the same four choices |
-| `decisions.agency` | `off` | Checks each narration for words, actions, thoughts or feelings given to your character that your message did not state: `off`, `llm`, `decision`, `hybrid` or `shadow`. A fault sends the narration back to the game master (at most twice) |
-| `decisions.refusal` | `off` | Checks each output for stepping out of the story (a refusal, a warning, a disclaimer, a remark to the player); the same choices |
-| `decisions.rules` | `off` | `on` lets a decision model check the action the game master judged allowed against every rule of the world and of the player in one request; a rule it finds likely broken is put to the game master once, to judge again. Only a decision model does this; without a decision service nothing is checked |
-| `decisions.secrets` | `off` | `on` lets a decision model check each output for stating hidden lore the player's character does not know (lore listed for others only); a fault sends the output back like the other checks, once. Without a decision service nothing is checked |
-| `decisions.gateThreshold` | 0.5 | The probability from which a decision model's answer to a gate's question counts as a fault (0.1 to 0.95); a little below it (0.15) is not sure. Decision models give a rare fault a low probability even when they see it, so these checks do not use `decisions.confidence` |
-| `decisions.confidence` | 0.7 | How sure the decision model must be, from 0 to 1: a yes needs a probability of at least (1 + confidence) / 2 and a no at most (1 - confidence) / 2 |
-| `context.limitTokens` | 0 | Explicit fold limit; zero follows model metadata |
-| `context.limitRatio` | 0.6 | Share of model context used as the limit |
-| `context.workingTokens` | 0 | Optional cap on the derived limit, for a smaller prompt than the window allows; zero sets no cap |
-| `background.concurrent` | false | Whether background work may run while the next turn is generated (see the turn engine) |
-| `context.retainRatio` | 0.5 | Verbatim share retained after folding |
-| `context.shortTermTokens` | 1500 | Short-term account target |
-| `context.longTermTokens` | 2500 | Long-term account target |
-| `authoring.enabled` | `true` | Allow necessary world growth |
-| `authoring.perTurn` | 2 | New authored characters/places per turn |
-| `authoring.thingsPerTurn` | 4 | Things the GM may introduce directly |
-| `clock.mode` | `simulated` | Story-time mode |
-| `clock.roundSeconds` | 30 | Default round duration |
-| `offstage.perTurn` | 2 | Due off-stage characters processed per turn |
-| `offstage.perCharacter` | 1 | Times one character is asked per turn |
-| `offstage.summary` | `true` | Off-stage characters also say in a line what happened (same request), shown as the *Meanwhile* card |
-| `models.characters`, `models.background`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model of that kind of helper as `provider/model`; empty uses the chat's own (`background` is for background-tier characters and falls back to `characters`) |
-| `sampling.topP`, `sampling.topK`, `sampling.minP`, `sampling.frequencyPenalty`, `sampling.presencePenalty`, `sampling.repetitionPenalty` | 1, 0, 0, 0, 0, 1 | Controls beyond temperature for the game master's and the characters' requests; the default of each leaves the choice to the model's server and is not sent. A world or preset can suggest them for one story |
-| `sampling.masterMaxTokens` | 12000 | The most one request of the game master may produce, its reasoning included; a model that loops in its reasoning is cut off and the turn is steered on (settings file only) |
-| `sampling.maxTokens`, `sampling.shortMaxTokens`, `sampling.headroom` | 8000, 2000, 2 | Ceilings on what one helper request may produce; the short one is for characters and suggestions, whose answers have declared sizes: they may produce `headroom` times the estimate of their answer, never more than the ceiling (settings file only) |
-| `diagnostics.keepRuns` | `false` | Keep what each helper run was told and did (its instructions, what it was asked, its tool calls and result, and for a character what it was reminded of and why), for the latest 60 runs; shown in the activity list of Chat settings |
-| `interface.pack` | empty | The interface pack to use: empty is the story's first, `none` is no pack, a name picks one |
-| `rewind.keepSnapshots` | 30 | Recent state snapshots |
-| `preview.enabled` | `true` | Show an early scene preview |
-| `dice.visibility` | `card` | `card` shows what was rolled in a collapsed card under the narration, `hidden` shows nothing |
-| `tools` | none chosen | Optional tools by kind of agent (`gameMaster`, `characters`, `records`) and tool name, `true` or `false`; unknown names are kept and ignored |
-| `suggestions.count` | 3 | Suggested next actions |
-| `images.mode` | `manual` | `off`, `manual` or `every-turn` |
-| `images.references` | `prefer-reference` | Reference-image policy |
-| `images.highRes` | `false` | Render each picture again larger from its first result when the image service can |
-| `images.reuse` | `true` | Search existing pictures first |
-| `images.interpret` | `true` | Describe uploaded pictures |
+| `maxRounds` / `maxCharacters` | 3 / 4 | Character rounds per player message, and characters activated per round |
+| `memory.flaky` | `true` | Apply imperfect perception and story-time fading |
+| `memory.recall` / `memory.lookupCalls` | 12 / 5 | Memories supplied per activation, and maximum lookups in one character decision |
+| `memory.lookup` / `memory.verify` | `true` / `true` | Let characters query memory, and have the keeper read edits back |
+| `memory.backlogRounds` | 6 | Unrecorded rounds that force the keeper to catch up |
+| `memory.overRetrieve` / `memory.associate` | 4 / 2 | Candidate multiplier before selection, and related memories allowed with a strong match |
+| `memory.diversity` | 0.3 | Penalty, from 0 to 1, for recalling near-duplicates together |
+| `memory.foldedFade` | 0.5 | Retention multiplier after a belief incorporates a perception; 1 leaves it unchanged |
+| `context.limitTokens` / `context.limitRatio` | 0 / 0.6 | Explicit folding limit, or share of the model context used to derive it |
+| `context.workingTokens` / `context.retainRatio` | 0 / 0.5 | Optional cap on the derived limit, and its verbatim share |
+| `context.shortTermTokens` / `context.longTermTokens` | 1500 / 2500 | Short-term and long-term summary targets |
 
-The settings UI supplies current numeric bounds. Unknown fields are rejected. Provider-specific embedding options are stored under `embedding.options`.
+### World activity and time
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `authoring.enabled` | `true` | Let the game master ask the world author for missing entities |
+| `authoring.perTurn` / `authoring.thingsPerTurn` | 2 / 4 | Authored characters and places, and ordinary things the GM may introduce, per turn |
+| `authoring.consolidateAfter` | 3 | Pending authored entities that trigger consolidation |
+| `clock.mode` / `clock.timeZone` | `simulated` / empty | Story-time mode (`simulated` or `real`) and its IANA time zone. At session start, an empty zone uses the host zone for real time, or the world's zone and then UTC for simulated time |
+| `clock.roundSeconds` / `clock.maxSkipDays` | 30 / 30 | Default simulated round duration and maximum days in one clock advance |
+| `background.concurrent` | `false` | Let background work overlap the next turn instead of completing first |
+| `offstage.perTurn` / `offstage.perCharacter` | 2 / 1 | Due off-stage characters per turn, and actions allowed for each |
+| `offstage.joint` / `offstage.summary` | `true` / `true` | Process overlapping situations together, and produce the *Meanwhile* summary |
+| `factions.perTurn` / `factions.everyDays` | 1 / 3 | Due factions advanced per turn, and their default story-time interval |
+| `triggers.enabled` / `triggers.maxFires` | `true` / 3 | Whether triggers run, and how many may fire per turn |
+| `triggers.beatTurns` / `triggers.cueTurns` | 3 / 2 | Turns a game-master beat or character cue waits to be used |
+| `triggers.judgedPerTurn` | 2 | Trigger conditions that may require model judgement per turn |
+
+### Reflection and decision checks
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `reflection.auto` / `reflection.everyTurns` | `true` / 20 | Reflect automatically after this many turns; 0 disables the schedule |
+| `reflection.onSceneChange` / `reflection.sceneDays` | `true` / 1 | Also reflect after a place change or this many story days; 0 disables the time condition |
+| `reflection.minTurns` / `reflection.perRun` | 5 / 3 | Minimum gap between passes and characters processed per automatic pass |
+| `reflection.minNew` | 4 | New perceptions needed for an automatic pass; a manual pass needs one |
+| `decisions.triggers` / `decisions.reflection` | `llm` / `llm` | Judge trigger statements and belief evidence with `llm`, `decision`, `hybrid` or `shadow` |
+| `decisions.agency` / `decisions.refusal` | `off` / `off` | Optional output checks, using the same four modes plus `off` |
+| `decisions.rules` / `decisions.secrets` | `off` / `off` | Decision-service-only checks of allowed actions against rules, and outputs against hidden lore |
+| `decisions.gateThreshold` | 0.5 | Probability at which a decision answer counts as a fault; the 0.15 below it is uncertain |
+| `decisions.confidence` | 0.7 | Confidence required before a decision answer is accepted instead of handed to the language model |
+
+The modes and fallback rules are explained in [Optional capability integration](../specifications/capability-integration).
+
+### Models, prompts and sampling
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `models.characters`, `models.records`, `models.suggestions`, `models.authoring` | empty | Model for that helper as `provider/model`; empty uses the chat model |
+| `models.background` | empty | Background-character model; empty falls back to `models.characters` |
+| `sampling.master` / `sampling.characters` | 0.7 / 0.8 | Game-master and character temperatures |
+| `sampling.suggestions` / `sampling.authoring` / `sampling.records` | 0.2 / 0.4 / 0.1 | Temperatures for suggestions, authoring and records |
+| `sampling.topP` / `sampling.topK` / `sampling.minP` | 1 / 0 / 0 | Additional sampling controls; defaults are not sent |
+| `sampling.frequencyPenalty` / `sampling.presencePenalty` / `sampling.repetitionPenalty` | 0 / 0 / 1 | Penalty controls; defaults are not sent |
+| `sampling.tools` | `required` | Tool-choice mode for helpers that must submit a result |
+| `sampling.masterMaxTokens` | 12000 | Maximum output tokens for one game-master request, including reasoning |
+| `sampling.maxTokens` / `sampling.shortMaxTokens` | 8000 / 2000 | Output ceilings for general and short helper requests |
+| `sampling.headroom` | 2 | Multiplier applied to a helper's estimated answer size before its ceiling |
+| `prompts.language` | `en` | Shipped prompt language: `en` or `zh` |
+| `reasoning.children` | empty | Helper-agent reasoning level; empty uses the plugin fallback |
+
+### Interface, rules and media
+
+| Setting | Default | Meaning |
+| --- | --- | --- |
+| `interface.pack` | empty | Empty uses the world's first pack, `none` disables packs, and a name selects one |
+| `rewind.keepSnapshots` | 30 | Recent state snapshots retained for taking the story back |
+| `rules.own` | empty | Additional rules supplied by the player for this story |
+| `preview.enabled` | `true` | Show an early scene preview while the full turn runs |
+| `suggestions.count` | 3 | Suggested next actions shown after a turn |
+| `dice.visibility` | `card` | `card` shows rolls in a collapsed card; `hidden` shows no roll card |
+| `tools` | none chosen | Optional tools by agent kind (`gameMaster`, `characters`, `records`) and name; unknown names are retained and ignored |
+| `images.mode` | `manual` | `off`, `manual` or `every-turn` |
+| `images.references` | `prefer-reference` | `prefer-reference`, `require-reference` or `text-only` |
+| `images.reuse` / `images.highRes` | `true` / `false` | Reuse existing pictures, and optionally render a larger second result |
+| `images.interpret` | `true` | Describe uploaded pictures for the story |
+| `images.interpreterModel` / `images.captioner` | empty / empty | Models for uploaded-image interpretation and generated-image captions; empty uses the chat model |
+| `diagnostics.keepRuns` | `false` | Keep the latest 60 helper traces, including private character context, in the session folder |
+
+The UI shows current numeric bounds. Unknown fields are rejected. Provider-specific embedding request options are stored under `embedding.options`.
