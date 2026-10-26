@@ -123,6 +123,14 @@ describe('AgentSessions', () => {
     expect(calls[3]).toEqual(['store-events', 'turn/start,step/start,system/message,assistant/message,tool/call,tool/result,step/end,turn/end'])
   })
 
+  it('unloads a stale live chat before replacing its missing stored log', async () => {
+    const { calls, services } = fakes()
+    services.unload = (chat) => { calls.push(['unload', chat]); return Promise.resolve() }
+    await new AgentSessions(() => services, () => '/data').ensure('abc', 'Night one', [{ type: 'narration', text: 'Again.' }], [])
+    expect(calls.map(call => call[0])).toEqual(['project', 'stat', 'unload', 'store', 'store-events', 'stat', 'attach', 'rename'])
+    expect(calls[4]).toEqual(['store-events', ''])
+  })
+
   it('leaves a chat that exists as it is, opening or not', async () => {
     const { calls, services } = fakes(['session-abc'])
     await new AgentSessions(() => services, () => '/data').ensure('abc', 'Night one', [{ type: 'narration', text: 'The lanterns sway.' }])
@@ -166,6 +174,36 @@ describe('AgentSessions', () => {
     expect(calls.filter(call => call[0] === 'project').map(call => call[1])).toEqual(['/one', '/two'])
   })
 
+  it('finds chats already attached to the project or waiting in persistence', async () => {
+    const attached = fakes(['session-abc'])
+    await expect(new AgentSessions(() => attached.services, () => '/data').has('abc')).resolves.toBe(true)
+    const stored = fakes([], ['session-abc'])
+    await expect(new AgentSessions(() => stored.services, () => '/data').has('abc')).resolves.toBe(true)
+    const missing = fakes()
+    await expect(new AgentSessions(() => missing.services, () => '/data').has('abc')).resolves.toBe(false)
+  })
+
+  it('replaces a pulled session log after unloading and purging the old chat', async () => {
+    const { calls, services } = fakes()
+    services.unload = (chat) => { calls.push(['unload', chat]); return Promise.resolve() }
+    const purge = (chat: string) => { calls.push(['purge', chat]); return Promise.resolve() }
+    await new AgentSessions(() => services, () => '/data').replace('abc', 'From another device', [], purge)
+    expect(calls).toEqual([
+      ['project', '/data', PROJECT_TITLE],
+      ['unload', 'session-abc'],
+      ['purge', 'session-abc'],
+      ['store', 'session-abc', '/data/canonical', AGENT_PRESET],
+      ['store-events', ''],
+      ['rename', { sessionId: 'session-abc', title: 'From another device' }],
+    ])
+  })
+
+  it('refuses to replace a log when persistence is unavailable', async () => {
+    const { services } = fakes()
+    delete services.persistence
+    await expect(new AgentSessions(() => services, () => '/data').replace('abc', 'x', [], async () => undefined)).rejects.toThrow(AgentUnavailableError)
+  })
+
   it('archives the chat and stops its work when retiring', async () => {
     const { calls, services } = fakes()
     await new AgentSessions(() => services, () => '/data').retire('abc')
@@ -192,5 +230,37 @@ describe('AgentSessions', () => {
 describe('agentServicesOf', () => {
   it('reports a profile without the session services', () => {
     expect(() => agentServicesOf(new Context())()).toThrow(AgentUnavailableError)
+  })
+
+  it('unloads a live agent through its raw scope disposer and waits for deregistration', async () => {
+    const ctx = new Context()
+    ctx.provide('sessionController')
+    ctx.provide('workspaceRegistry')
+    ctx.provide('agents')
+    ctx.set('sessionController', {} as never)
+    ctx.set('workspaceRegistry', {} as never)
+    let reads = 0
+    const disposed: string[] = []
+    ctx.set('agents', {
+      get: (id: string) => {
+        reads += 1
+        if (reads > 2) return undefined
+        return { scope: { rawDispose: () => { disposed.push(id) }, dispose: () => undefined } }
+      },
+    } as never)
+    await agentServicesOf(ctx)().unload?.('session-abc')
+    expect(disposed).toEqual(['session-abc'])
+    expect(reads).toBe(3)
+  })
+
+  it('does nothing when the chat has no live agent', async () => {
+    const ctx = new Context()
+    ctx.provide('sessionController')
+    ctx.provide('workspaceRegistry')
+    ctx.provide('agents')
+    ctx.set('sessionController', {} as never)
+    ctx.set('workspaceRegistry', {} as never)
+    ctx.set('agents', { get: () => undefined } as never)
+    await expect(agentServicesOf(ctx)().unload?.('session-abc')).resolves.toBeUndefined()
   })
 })

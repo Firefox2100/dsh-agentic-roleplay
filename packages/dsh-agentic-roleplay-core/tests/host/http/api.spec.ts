@@ -22,7 +22,7 @@ import { UnknownStarterError } from '../../../src/host/worlds/starter.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
 import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
-import { RcloneError, SyncRefusedError } from '../../../src/host/sync/errors.ts'
+import { RcloneError, SyncRefusedError, UnitLockedError } from '../../../src/host/sync/errors.ts'
 import type { PresetApi } from '../../../src/host/presets/routes.ts'
 import type { LorebookApi } from '../../../src/host/lorebooks/routes.ts'
 import { LorebookBusyError } from '../../../src/host/lorebooks/service.ts'
@@ -37,6 +37,8 @@ let charactersError: Error | undefined
 let deleted: string | undefined
 let deletedEverywhere: boolean | undefined
 let lockedUnit: string | undefined
+let syncError: Error | undefined
+let syncCalls: string[]
 let deleteError: Error | undefined
 let said: string[]
 let opened: string | undefined
@@ -122,6 +124,8 @@ beforeEach(async () => {
   charactersError = undefined
   deleted = undefined
   lockedUnit = undefined
+  syncError = undefined
+  syncCalls = []
   deleteError = undefined
   opened = undefined
   said = []
@@ -151,7 +155,17 @@ beforeEach(async () => {
   const handler = createApiHandler({
     catalogue: catalogue as never,
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
-    sync: { status: async () => ({ running: false, units: [] }) } as never,
+    sync: {
+      status: async () => { if (syncError !== undefined) throw syncError; return { running: false, units: [] } },
+      run: async (units?: readonly string[]) => { if (syncError !== undefined) throw syncError; syncCalls.push(`run ${units?.join(',') ?? 'all'}`); return { units: [] } },
+      resolve: async (unit: string, side: string) => { if (syncError !== undefined) throw syncError; syncCalls.push(`resolve ${unit} ${side}`); return unit === 'gone' ? undefined : { id: unit, kind: 'world', state: 'synced' } },
+      forget: (unit: string) => { if (syncError !== undefined) throw syncError; syncCalls.push(`forget ${unit}`) },
+      restore: (unit: string) => { if (syncError !== undefined) throw syncError; syncCalls.push(`restore ${unit}`) },
+      password: {
+        describe: async (reference?: string) => { syncCalls.push(`describe ${reference ?? 'default'}`); return { configured: true, writable: true, ref: reference ?? 'ROLEPLAY_SYNC_RCLONE_PASSWORD' } },
+        keep: async (value: string, reference?: string) => { if (syncError !== undefined) throw syncError; syncCalls.push(`password ${reference ?? 'default'} ${value === '' ? 'clear' : 'set'}`); return { configured: value !== '', writable: true, ref: reference ?? 'ROLEPLAY_SYNC_RCLONE_PASSWORD' } },
+      },
+    } as never,
     anyLocked: () => lockedUnit !== undefined,
     locked: async url => (url.searchParams.get('id') === 'harbor' ? lockedUnit : undefined),
     presets: presetApi,
@@ -360,6 +374,63 @@ describe('roleplay API', () => {
     expect((await fetch(`${origin}/worlds/info?id=other`)).status).not.toBe(423)
     expect((await fetch(`${origin}/sync/status`)).status).toBe(200)
     lockedUnit = undefined
+  })
+
+  describe('sync operations', () => {
+    const json = (path: string, body: unknown): Promise<Response> => fetch(`${origin}${path}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body),
+    })
+
+    it('runs all or selected units and resolves a conflict choice', async () => {
+      expect((await json('/sync/run', {})).status).toBe(200)
+      expect((await json('/sync/run', { units: ['worlds/harbor', 'prompts'] })).status).toBe(200)
+      expect(await (await json('/sync/resolve', { unit: 'worlds/harbor', side: 'local' })).json()).toMatchObject({ id: 'worlds/harbor', state: 'synced' })
+      expect(await (await json('/sync/resolve', { unit: 'gone', side: 'remote' })).json()).toBeNull()
+      expect(syncCalls).toEqual(['run all', 'run worlds/harbor,prompts', 'resolve worlds/harbor local', 'resolve gone remote'])
+    })
+
+    it('validates run and conflict-choice bodies before touching sync state', async () => {
+      expect((await json('/sync/run', { units: 'worlds/harbor' })).status).toBe(400)
+      expect((await json('/sync/run', { units: ['worlds/harbor', 2] })).status).toBe(400)
+      expect((await json('/sync/resolve', { unit: 2, side: 'local' })).status).toBe(400)
+      expect((await json('/sync/resolve', { unit: 'worlds/harbor', side: 'either' })).status).toBe(400)
+      expect(syncCalls).toEqual([])
+    })
+
+    it('forgets and restores a locally removed unit', async () => {
+      expect((await json('/sync/forget', { unit: 'worlds/harbor' })).status).toBe(200)
+      expect((await json('/sync/restore', { unit: 'worlds/harbor' })).status).toBe(200)
+      expect((await json('/sync/forget', {})).status).toBe(400)
+      expect((await json('/sync/restore', { unit: 3 })).status).toBe(400)
+      expect(syncCalls).toEqual(['forget worlds/harbor', 'restore worlds/harbor'])
+    })
+
+    it('maps locked, refused, and rclone failures to their public status codes', async () => {
+      syncError = new UnitLockedError('worlds/harbor')
+      expect((await fetch(`${origin}/sync/status`)).status).toBe(423)
+      syncError = new SyncRefusedError('sync is off')
+      expect((await json('/sync/run', {})).status).toBe(409)
+      syncError = new RcloneError('remote unavailable', 1)
+      expect((await json('/sync/forget', { unit: 'worlds/harbor' })).status).toBe(502)
+    })
+
+    it('reads, stores, and clears the configured rclone password by credential reference', async () => {
+      expect(await (await fetch(`${origin}/sync/password`)).json()).toMatchObject({ configured: true, ref: 'ROLEPLAY_SYNC_RCLONE_PASSWORD' })
+      expect(await (await fetch(`${origin}/sync/password?ref=MY_SYNC_KEY`)).json()).toMatchObject({ ref: 'MY_SYNC_KEY' })
+      const put = (body: unknown) => fetch(`${origin}/sync/password`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      expect((await put({ ref: 'MY_SYNC_KEY', value: 'secret' })).status).toBe(200)
+      expect((await put({ value: '' })).status).toBe(200)
+      expect(syncCalls).toEqual(['describe default', 'describe MY_SYNC_KEY', 'password MY_SYNC_KEY set', 'password default clear'])
+    })
+
+    it('rejects invalid password requests and reports a credential store refusal', async () => {
+      expect((await fetch(`${origin}/sync/password?ref=9%20bad`)).status).toBe(400)
+      const put = (body: unknown) => fetch(`${origin}/sync/password`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      expect((await put({ value: 3 })).status).toBe(400)
+      expect((await put({ ref: '9 bad', value: 'secret' })).status).toBe(400)
+      syncError = new SyncRefusedError('the credential file is read-only')
+      expect((await put({ value: 'secret' })).status).toBe(409)
+    })
   })
 
   it('serves the files a sandboxed frame loads by the key in their address without a login, and everything else only with one', async () => {
