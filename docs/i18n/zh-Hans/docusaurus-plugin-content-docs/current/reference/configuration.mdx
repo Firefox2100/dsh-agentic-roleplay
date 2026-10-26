@@ -20,13 +20,17 @@ title: 配置参考
 | `catalogueMaxBytes` | 256 MiB | 下载世界的大小上限，压缩包和解压结果分别检查 |
 | `catalogueTrashDays` | 30 | 目录更新替换的文件在 `.trash/worlds/` 中保留的天数；0 表示永久保留 |
 | `importMaxUploadBytes` | 100 MiB | 角色卡上传大小上限 |
-| `importConcurrency` | 4 | 可同时运行的导入模型请求数 |
-| `importReasoning` | 空 | 导入智能体的推理等级；留空使用模型自己的设置 |
+| `importConcurrency` | 4 | 可同时运行的导入与创作辅助请求数 |
+| `importReasoning` | 空 | 导入与创作助手及创作对话的推理等级；留空依次使用 `childReasoning` 和对话设置 |
 | `childReasoning` | 空 | 角色扮演辅助智能体的回退推理等级；留空跟随主持人 |
-| `importMaxTokens` | 16000 | 单次导入请求的最大输出令牌数 |
-| `importTemperature` | 0.2 | 导入智能体的采样温度 |
+| `importModel` | 空 | 导入与创作助手使用的 `提供方/模型`；留空使用对话模型 |
+| `importMaxTokens` | 16000 | 单次导入或创作辅助请求的输出令牌上限；各任务可以使用更小的限制 |
+| `importTemperature` | 0.2 | 导入与创作助手的采样温度 |
+| `importTimeoutMinutes` | 15 | 导入或创作助手未给出结果前最多运行的分钟数；0 表示不限时 |
+| `importDecisions` | `llm` | `decision` 让已配置的决策服务先判断有把握的卡片片段；`llm` 把每个片段都交给语言模型 |
+| `importConfidence` | 0.7 | 采用决策模型分类所需的把握程度 |
 
-`rootPath`、目录、同步和创作助手工具权限也可在**设置、角色扮演**中编辑。让多台设备使用同一远端前，请先阅读[多设备同步](../playing/sync)。
+除需重启的 `sessionStorePath` 外，所有字段都可在**设置、角色扮演**中编辑，并立即生效。让多台设备使用同一远端前，请先阅读[多设备同步](../playing/sync)。
 
 ## 状态插件配置
 

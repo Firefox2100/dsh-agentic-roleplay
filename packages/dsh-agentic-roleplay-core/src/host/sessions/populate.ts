@@ -34,6 +34,8 @@ export function knowledgeProblems(characters: readonly CharacterDefinition[], lo
   const places = new Map(locations.map(location => [location.id, location]))
   const things = new Set(items.map(item => item.id))
   const loreIds = new Set(lore.map(entry => entry.id))
+  // a way is open both ways unless its file says one way, as a started session makes it
+  const wayExists = (from: string, to: string): boolean => places.get(from)?.exits.some(exit => exit.to === to) === true || places.get(to)?.exits.some(exit => exit.to === from && !exit.oneWay) === true
   return characters.flatMap(character => {
     const prefix = `${character.id}: knowledge`
     const knowledge = character.knowledge
@@ -41,7 +43,7 @@ export function knowledgeProblems(characters: readonly CharacterDefinition[], lo
     return [
       ...knowledge.locations.flatMap(key => places.has(key) ? [] : [`${prefix}.locations: "${key}" is not a place of this world`]),
       ...knowledge.items.flatMap(key => things.has(key) ? [] : [`${prefix}.items: "${key}" is not an item of this world`]),
-      ...knowledge.exits.flatMap(({ from, to }) => places.get(from)?.exits.some(exit => exit.to === to) === true ? [] : [`${prefix}.exits: there is no exit from "${from}" to "${to}"`]),
+      ...knowledge.exits.flatMap(({ from, to }) => wayExists(from, to) ? [] : [`${prefix}.exits: there is no exit from "${from}" to "${to}"`]),
       ...(knowledge.lore ?? []).flatMap(key => loreIds.has(key) ? [] : [`${prefix}.lore: "${key}" is not lore of this world`]),
     ]
   })

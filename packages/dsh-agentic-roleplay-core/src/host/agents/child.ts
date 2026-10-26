@@ -1,5 +1,6 @@
 import type { AgentOptions } from '@deepseek-ai/dsh-agent'
 import { outputBudget } from './budget.ts'
+import { cutOff } from './cut-off.ts'
 import { randomUUID } from 'node:crypto'
 import { currentTurn } from '../orchestration/current-turn.ts'
 import { tokensOf } from './usage.ts'
@@ -70,8 +71,17 @@ export interface ChildTask {
   maxTokens?: number
   /** How the model is asked: how freely it writes, and whether it must answer with a tool call. Applied by the language model service that serves the child. */
   sampling?: ChildSampling
+  /** Minutes the run may take before it is stopped with a {@link ChildTimeoutError}; none when absent or 0. A model that thinks without end never reaches a call budget. */
+  timeoutMinutes?: number
   /** Told how the run went when it ends, however it ends. */
   trace?: (run: ChildRun) => void
+}
+
+/** A child ran out of the time it was given; asking again would only spend it again. */
+export class ChildTimeoutError extends Error {
+  constructor(minutes: number) {
+    super(`the agent was stopped after ${minutes} minute${minutes === 1 ? '' : 's'} without a result (a model that keeps thinking never answers: lower its thinking level, or raise the limit in the settings)`)
+  }
 }
 
 /** How one run of a child went, for the record of what the helpers did. */
@@ -122,7 +132,12 @@ export function childTrace(store: { settings(): { models: Record<ChildKind, stri
 
 /** The `model` the settings give a kind of helper, to spread into its task; nothing when it runs on the chat's own model. */
 export function childModel(settings: { models: Record<ChildKind, string> }, kind: ChildKind, override?: string): Pick<ChildTask, 'model'> {
-  const named = (override ?? settings.models[kind]).trim()
+  return namedModel(override ?? settings.models[kind])
+}
+
+/** The `model` for a name written `provider/model`; nothing for an empty name. */
+export function namedModel(name: string): Pick<ChildTask, 'model'> {
+  const named = name.trim()
   if (named === '') return {}
   const slash = named.indexOf('/')
   return { model: { provider: named.slice(0, slash), model: named.slice(slash + 1) } }
@@ -175,13 +190,20 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     const began = Date.now()
     const stats: RunStats = { calls: 0, record: [] }
     const detail = (): RunDetail => ({ persona: task.persona.slice(0, MAX_RUN_PROMPT), prompt: task.prompt.slice(0, MAX_RUN_PROMPT), calls: stats.record, ...(stats.result === undefined ? {} : { result: stats.result }) })
+    const minutes = task.timeoutMinutes ?? 0
+    const clock = new AbortController()
+    const timer = minutes > 0 ? setTimeout(() => { clock.abort() }, minutes * 60_000) : undefined
+    const limited: ChildTask = minutes > 0 ? { ...task, signal: AbortSignal.any([task.signal, clock.signal]) } : task
     try {
-      const result = await execute<T>(task, stats)
+      const result = await execute<T>(limited, stats)
       task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS })
       return result
-    } catch (error) {
+    } catch (cause) {
+      const error = clock.signal.aborted && !task.signal.aborted ? new ChildTimeoutError(minutes) : cause
       task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS })
-      if (attempt >= 2 || task.signal.aborted || !isUnfinishedCall(error)) throw error
+      if (attempt >= 2 || task.signal.aborted || error instanceof ChildTimeoutError || !isUnfinishedCall(error)) throw error
+    } finally {
+      if (timer !== undefined) clearTimeout(timer)
     }
   }
 }
@@ -216,6 +238,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
   let retire: (() => void) | undefined
   let stepsAfterRetire = -1
   let overran = false
+  let rambled = false
   let refusals = 0
   let lastRefusal = ''
   let previous: { name: string; args: string; failed: boolean; repeats: number } | undefined
@@ -307,7 +330,10 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
       })
       childCtx.tools.register(submit)
       childCtx.on('agent/turn-stopping', () => {
-        if (submitted !== undefined || reminders >= MAX_REMINDERS) return
+        if (submitted !== undefined) return
+        // text that fills the whole request instead of the call: a reminder would be answered the same way at the same cost
+        if (cutOff(child)) { rambled = true; overran = true; stopped?.(); return }
+        if (reminders >= MAX_REMINDERS) return
         reminders += 1
         child.steer(createUserMessage({ content: [{ type: 'text', text: `You have not finished: call ${SUBMIT_TOOL} with your result, as the tool lists it.` }], source: { kind: 'roleplay' } }))
       })
@@ -346,6 +372,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     samplings.delete(childId)
   }
   if (signal.aborted) throw new Error('cancelled')
+  if (rambled && submitted === undefined) throw new Error(`the agent wrote text up to the limit of ${task.maxTokens ?? task.sampling?.maxTokens ?? 'its model'} tokens and never called ${SUBMIT_TOOL}, and was stopped`)
   if (overran && submitted === undefined) throw new Error(refusals >= MAX_REFUSALS ? `the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}` : `the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
   if (submitted === undefined) {
     const ended = entry.agent?.session.snapshotEvents().findLast(event => event.type === 'turn/end')

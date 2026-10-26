@@ -38,3 +38,21 @@ The **What the helpers did lately** list at the bottom of the tab shows the late
 When you need to know why a helper said or wrote what it did, turn on **Keep what the helpers were told** (`diagnostics.keepRuns`), play, and open a run with **Show**: you see its instructions, what it was asked, each tool call with what came back, and the result it submitted. For a character it also lists what it was reminded of and why each memory came back: the cues (names, shared words, place), the scores of the word and meaning searches and of the reranker when they ran, how much it mattered, how long ago it was and how much of it is still in mind. The latest 60 runs are kept in the session's folder. The texts include what characters know in private, so leave it off when you are not looking for a problem.
 
 An invalid external edit is logged and the last valid settings remain active. The complete defaults are listed in [Configuration reference](../reference/configuration).
+
+Settings with no form field used to be edited only in `settings.json`; the form now has them all: the game master's and the helpers' output caps and the output room, whether helpers must answer with a tool call (`sampling.tools`), the sizes of the short-term and long-term summaries and how long a cue stays pending. A model that thinks without end stops at the game master's cap (default 12000 tokens) instead of running for minutes.
+
+## Import and authoring assistants
+
+Importing a card, a preset or a lorebook, translating a world and the world author's own helpers run as small agents, and they are set once for the whole plugin, not per story: **Settings → Role Play → Imports and authoring assistants**. Changes take effect at once.
+
+- **Thinking level:** how hard they think, as a level the model offers (for example `off`). A model that thinks without end never gives an answer, so set `off` when an import stalls. It also applies to the authoring chats themselves (the world, preset and lorebook assistants you talk to), whose model must offer the level. Empty uses the level of the story helpers below it, then the chat's own.
+- **Thinking level of story helpers:** the level the characters, record keeper, authors and suggestion writer of a story get when the chat's own setting is empty.
+- **Model:** a `provider/model` for these helpers; empty uses the chat's model.
+- **Temperature**, **most tokens per request** and **helpers at once**: how freely they write (low by default, because they copy and sort), how long one answer may be, thinking included, and how many run side by side.
+- **Most tokens per request** is a ceiling: each job also has its own, smaller one for the answer it needs, and a helper that writes text up to its limit instead of giving its result is stopped at once rather than reminded. An authoring chat's reply that runs out of room is steered back to act or to sum up.
+- **Minutes before a helper is stopped:** a helper that has no result after this long (15 by default, 0 never) is stopped and the step says why, so a run-away helper cannot hold an import for hours. Stopping the chat's turn stops them too.
+- **Decision model for sorting a card:** with `decision`, and a decision model selected in the providers, the pieces of a card that are only instructions or notes are settled by the decision model when it is sure (**confidence**, 0.7 by default) and are not put to the language model; anything it is unsure of, or any failure, goes to the language model as usual. The survey reports how many pieces it settled.
+
+The instructions the helpers are given are the import prompts in the data folder's `prompts` and follow the language the world's authoring chat was opened in, as does the label of each piece they are shown and the chat's title.
+
+**Upload and download limits** sit in the section below it and apply at once: the largest upload of a card, preset or lorebook (100 MB by default), the largest catalogue download (256 MB) and how many days the files an update replaced stay in the trash folder (30; 0 keeps them).

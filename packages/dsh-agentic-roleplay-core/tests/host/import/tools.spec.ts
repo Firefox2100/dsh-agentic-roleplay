@@ -4,14 +4,14 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 import { markReady } from '../../../src/host/import/run-import.ts'
-import { importHooks, importNotice, importTools } from '../../../src/host/import/tools.ts'
+import { contextOf, importHooks, importNotice, importTools } from '../../../src/host/import/tools.ts'
 import { IMPORT_FOLDER } from '../../../src/host/import/store.ts'
 import { shippedText } from '../../../src/host/prompts/library.ts'
 import { importMessage } from '../../../src/host/import/start-import.ts'
 
 let directory: string
 const worlds = { find: (id: string) => Promise.resolve(id === 'w1' ? { summary: { id: 'w1' }, directory } : undefined) } as never
-const settings = () => ({ maxUploadBytes: 1, concurrency: 1, reasoning: '', maxTokens: 16000, temperature: 0.2 })
+const settings = () => ({ maxUploadBytes: 1, concurrency: 1, reasoning: '', model: '', maxTokens: 16000, temperature: 0.2, timeoutMinutes: 0, decisions: 'llm' as const, confidence: 0.7 })
 const chat = authoringChatSessionId('w1')
 const prompting = { prompts: () => ({ text: (id: string, language: string | undefined, variables?: Record<string, string | number>) => shippedText(id, language ?? 'en', variables) }), languages: () => ({ get: () => 'en' }) } as never
 const textOf = (id: string, variables?: Record<string, string | number>): string => shippedText(id, 'en', { survey: 'import_survey', build: 'import_build', finish: 'import_finish', ...variables })
@@ -40,7 +40,7 @@ describe('the tools of an import', () => {
 
   it('say when there is no card to import, and when a step is out of order', async () => {
     const [surveyTool, buildTool] = tools()
-    const exec = { agent: { session: { id: chat } }, signal: new AbortController().signal } as never
+    const exec = { agent: { session: { id: chat, snapshotEvents: () => [] } }, signal: new AbortController().signal } as never
     await expect(surveyTool!.execute({ card: ".import/card.json" } as never, exec)).rejects.toThrow(/no card is waiting/)
     await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'ready' }))
     await expect(buildTool!.execute({ card: ".import/card.json" } as never, exec)).rejects.toThrow(/the build cannot run now: the import is at "ready"/)
@@ -101,5 +101,47 @@ describe('the import turn', () => {
     expect((await step(chatAgent, importMessage())).messages[0]!.content[0]!.text).toMatch(/no card is waiting/)
     await stopping(chatAgent)
     expect(chatAgent.steer).not.toHaveBeenCalled()
+  })
+})
+
+describe('the context of an import step', () => {
+  const service = { decide: vi.fn(() => Promise.resolve({ answers: { a: { probability: 0.9 } } })) }
+  const exec = { signal: new AbortController().signal, agent: { ctx: { get: (name: string) => (name === 'decisions' ? service : undefined) } } } as never
+
+  it('carries the settings and the language, and a decision model only when the person chose one', () => {
+    const plain = contextOf(exec, settings(), () => '', 'zh')
+    expect(plain).toMatchObject({ concurrency: 1, language: 'zh' })
+    expect(plain.decide).toBeUndefined()
+    const decided = contextOf(exec, { ...settings(), decisions: 'decision', confidence: 0.8 }, () => '')
+    expect(decided.confidence).toBe(0.8)
+    expect(decided.decide).toBeDefined()
+  })
+
+  it('asks the decision model each question of a piece in one request and gives back the probabilities', async () => {
+    const decided = contextOf(exec, { ...settings(), decisions: 'decision' }, () => '')
+    const answers = await decided.decide!({ text: 'piece' }, [{ key: 'a', instructions: 'is it?' }])
+    expect([...answers]).toEqual([['a', 0.9]])
+    expect(service.decide).toHaveBeenCalledWith({ text: 'piece' }, { a: { type: 'noul', instructions: 'is it?' } }, expect.objectContaining({ priority: 'background' }))
+  })
+
+  it('fails the question, so that the survey says why, when none is loaded', async () => {
+    const bare = { signal: new AbortController().signal, agent: { ctx: { get: () => undefined } } } as never
+    await expect(contextOf(bare, { ...settings(), decisions: 'decision' }, () => '').decide!({}, [])).rejects.toThrow(/no decision service/)
+  })
+})
+
+describe('the build, which is slow', () => {
+  it('runs twice in a turn at most, then the agent is told to stop and report', async () => {
+    const turns = [{ type: 'turn/start', data: { turn: 3 } }]
+    const exec = { agent: { session: { id: chat, snapshotEvents: () => turns } }, signal: new AbortController().signal } as never
+    await markReady(directory)
+    await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'ready' }))
+    const build = importTools(worlds, settings, prompting).find(tool => tool.name === 'import_build')!
+    const attempt = () => build.execute({ card: '.import/card.json' } as never, exec)
+    await expect(attempt()).rejects.toThrow(/cannot run now/)
+    await expect(attempt()).rejects.toThrow(/cannot run now/)
+    await expect(attempt()).rejects.toThrow(/has already run 2 times in this turn/)
+    turns[0] = { type: 'turn/start', data: { turn: 4 } }
+    await expect(attempt()).rejects.toThrow(/cannot run now/)
   })
 })

@@ -2,6 +2,7 @@ import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
+import { guardAuthoringTurns } from './host/authoring/turn-guard.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -33,6 +34,7 @@ export function apply(ctx: Context): void {
   }
   const waiting = (chat: string) => { const directory = directoryOf(chat); return directory === undefined ? { ids: [], rules: false } : pendingTargets(directory) }
   limitAuthoringAgents(ctx, chat => (lorebookOfChat(chat) === undefined ? undefined : 'lorebookAuthoring'))
+  guardAuthoringTurns(ctx, () => ctx.roleplayPrompts, (chat) => { const book = lorebookOfChat(chat); return book === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(`lorebook:${book}`) }, () => ctx.roleplayImport.settings.reasoning)
   ctx.on('tools/pre-execute', (exec, next) => lorebookApproval(exec, next, { carries, waiting }))
   const languageOf = (context: object): string => {
     const chat = (context as { agent?: Agent }).agent?.session.id

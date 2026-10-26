@@ -1,1 +1,1 @@
-The world was not written, because of these problems. Say so to the person with the problems in plain words; run ${build} again only if you expect it to differ.
+The world was not written, because of these problems. Say so to the person with the problems in plain words, and stop. Do not edit the world's files to work around them. Run ${build} again at most once, and only if you expect the problems to differ.

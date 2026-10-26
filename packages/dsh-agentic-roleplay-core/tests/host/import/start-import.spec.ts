@@ -29,7 +29,6 @@ const deps = (worlds: WorldCatalog, store: ImportStore) => ({
     ensure: (id: string, name: string, title: string) => { created.push([id, name, title]); return Promise.resolve(`world-author-${id}`) },
     send: (chat: string, text: string) => { sent.push([chat, text]); return sendError === undefined ? Promise.resolve() : Promise.reject(sendError) },
   },
-  chatTitle: (name: string) => `Authoring ${name}`,
 })
 
 beforeEach(async () => {

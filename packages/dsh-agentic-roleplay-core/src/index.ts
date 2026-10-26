@@ -1,5 +1,8 @@
 import { join } from 'node:path'
 import { roleplaySessionOf } from './shared/chat.ts'
+import { authoredWorldOf } from './shared/authoring-chat.ts'
+import { lorebookOfChat } from './shared/lorebook-chat.ts'
+import { presetOfChat } from './shared/preset-chat.ts'
 import { liveSettings, useChildReasoning } from './host/sessions/settings.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import type { DecisionService, ImageGenerationService } from '@dsh-ai-providers/core'
@@ -102,6 +105,8 @@ export function apply(ctx: Context, config: Config) {
       const id = String(options.sessionId)
       const helper = childSamplingOf(id)
       if (helper !== undefined) return helper
+      // an authoring assistant that thinks without end would otherwise write until the model's own limit, minutes of it
+      if (authoredWorldOf(id) !== undefined || presetOfChat(id) !== undefined || lorebookOfChat(id) !== undefined) return { maxTokens: config.importMaxTokens.get(), priority: 'foreground' as const }
       const session = roleplaySessionOf(id)
       // The game master's own requests: the chat is its session.
       if (session === undefined) return undefined
@@ -109,7 +114,7 @@ export function apply(ctx: Context, config: Config) {
       return { temperature: sampling.master, ...sharedSamplingOf(sampling), maxTokens: sampling.masterMaxTokens, priority: 'foreground' as const }
     }), 'roleplay: request controls')
   })
-  ctx.effect(() => useChildReasoning(config.childReasoning), 'roleplay: helper thinking level')
+  ctx.effect(() => useChildReasoning(() => config.childReasoning.get()), 'roleplay: helper thinking level')
   const root = new RoleplayRoot(ctx, config.rootPath)
   root.start()
   const orchestration = new RoleplayOrchestration(ctx)
@@ -128,7 +133,11 @@ export function apply(ctx: Context, config: Config) {
   const lorebookAuthoring = new LorebookAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const doctors = new DoctorSessions(agentServicesOf(ctx), () => root.path, prompts)
   const imports = new ImportStore(() => root.path)
-  const roleplayImport = new RoleplayImport(ctx, { maxUploadBytes: config.importMaxUploadBytes, concurrency: config.importConcurrency, reasoning: config.importReasoning, maxTokens: config.importMaxTokens, temperature: config.importTemperature })
+  const roleplayImport = new RoleplayImport(ctx, () => ({
+    get maxUploadBytes() { return config.importMaxUploadBytes.get() }, concurrency: config.importConcurrency.get(), reasoning: config.importReasoning.get() || config.childReasoning.get(), model: config.importModel.get(),
+    maxTokens: config.importMaxTokens.get(), temperature: config.importTemperature.get(), timeoutMinutes: config.importTimeoutMinutes.get(),
+    decisions: config.importDecisions.get() === 'decision' ? 'decision' : 'llm', confidence: config.importConfidence.get(),
+  }))
   const settingsDeps = {
     sessionsDir: () => join(root.path, 'sessions'),
     pendingRecords: (id: string) => ctx.roleplayState.openSession(join(root.path, 'sessions'), id).pendingCommits.list().length,
@@ -143,19 +152,19 @@ export function apply(ctx: Context, config: Config) {
   const staging = new ImportStaging()
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
-  const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, playing: id => orchestration.playing(chatSessionId(id)) })
-  const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, maxUploadBytes: config.importMaxUploadBytes, staging, session: id => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return ctx.roleplayState.openSession(sessions, id) }, playing: id => orchestration.playing(chatSessionId(id)) })
+  const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, get maxUploadBytes() { return config.importMaxUploadBytes.get() }, staging, playing: id => orchestration.playing(chatSessionId(id)) })
+  const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, get maxUploadBytes() { return config.importMaxUploadBytes.get() }, staging, session: id => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return ctx.roleplayState.openSession(sessions, id) }, playing: id => orchestration.playing(chatSessionId(id)) })
   const catalogue = new Catalogue({
-    sources: new Sources(() => config.catalogues.get(), () => ctx.get('credentials') as CredentialStore | undefined), worlds, maxBytes: () => config.catalogueMaxBytes, maxCardBytes: () => config.importMaxUploadBytes,
-    trashDays: () => config.catalogueTrashDays, problem: (message) => { ctx.logger.warn(message) },
+    sources: new Sources(() => config.catalogues.get(), () => ctx.get('credentials') as CredentialStore | undefined), worlds, maxBytes: () => config.catalogueMaxBytes.get(), maxCardBytes: () => config.importMaxUploadBytes.get(),
+    trashDays: () => config.catalogueTrashDays.get(), problem: (message) => { ctx.logger.warn(message) },
     stage: (kind, file, name) => staging.stage(kind, file, name),
     importPreset: async (file, title, language) => await presetLibrary.importTitled(title, file, language),
     importLorebook: async (file, title, language) => await lorebookLibrary.importTitled(title, file, language),
     previewCard: async (file, name) => await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined),
-    startCard: async (id, choices, language) => await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, id, choices, language),
+    startCard: async (id, choices, language) => await startImport({ store: imports, worlds, authoring }, id, choices, language),
     importCard: async (file, name, language) => {
       const preview = await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)
-      return await startImport({ store: imports, worlds, authoring, chatTitle: title => `Authoring ${title}` }, preview.id, preview.choices, language)
+      return await startImport({ store: imports, worlds, authoring }, preview.id, preview.choices, language)
     },
   })
   void catalogue.tidy()
@@ -189,12 +198,12 @@ export function apply(ctx: Context, config: Config) {
       start: (id, to, title, language) => startTranslation({ worlds, authoring, text: (key, lang, variables) => prompts.text(key, lang, variables) }, id, to, title, language),
     },
     importer: {
-      maxUploadBytes: config.importMaxUploadBytes,
+      get maxUploadBytes() { return config.importMaxUploadBytes.get() },
       upload: async (file, name) => { const card = readCard(file, name); return await imports.create(card, isPng(file) ? pictureOf(file) : undefined) },
       read: id => imports.read(id),
       choose: (id, choices) => imports.choose(id, choices),
       discard: id => imports.discard(id),
-      start: (id, choices, language) => startImport({ store: imports, worlds, authoring, chatTitle: name => `Authoring ${name}` }, id, choices, language),
+      start: (id, choices, language) => startImport({ store: imports, worlds, authoring }, id, choices, language),
       picture: id => imports.picture(id),
       uploadPreset: (worldId, file, name, language) => uploadPreset({ worlds, authoring }, worldId, file, name, language),
       stage: (kind, file, name) => staging.stage(kind, file, name),

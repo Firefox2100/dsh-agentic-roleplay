@@ -63,7 +63,9 @@ ctx.roleplayState.rankMemories(async ({ situation, candidates, signal }) => {
 
 智能体使用的模型可由 AI providers 插件提供给 DSH。提供 `llm` 的提供方注册路由，再由一个适配器统一提供。角色扮演插件不依赖该方式，只会把辅助智能体的控制参数交给实际响应的服务。它在使用时查找 `ctx.aiProviders.policy`。使用 DSH 自带适配器时，适配器会忽略这些参数，插件其余部分无需改变。
 
-控制参数包括温度，以及辅助智能体是否必须通过工具调用作答。默认温度为：游戏主持人的 `sampling.master` 为 0.7，角色的 `sampling.characters` 为 0.8，建议作者的 `sampling.suggestions` 为 0.2，创作助手的 `sampling.authoring` 为 0.4，记录员和图片作者的 `sampling.records` 为 0.1。对话设置还包含 `sampling.tools`。除工具选择外，这些项目都显示在设置表单中。导入使用 `importTemperature`，输出长度和推理级别分别使用 `importMaxTokens` 与 `importReasoning`。
+控制参数包括温度，以及辅助智能体是否必须通过工具调用作答。默认温度为：游戏主持人的 `sampling.master` 为 0.7，角色的 `sampling.characters` 为 0.8，建议作者的 `sampling.suggestions` 为 0.2，创作助手的 `sampling.authoring` 为 0.4，记录员和图片作者的 `sampling.records` 为 0.1。对话设置还包含 `sampling.tools`。导入与创作助手使用 `importTemperature`；其输出长度、时限、模型和推理等级分别由 `importMaxTokens`、`importTimeoutMinutes`、`importModel` 与 `importReasoning` 控制。这些项目都显示在设置表单中。
+
+角色卡分类可以在语言模型之前选择使用决策能力。`importDecisions: decision` 会采用达到 `importConfidence` 的“指令/无关”判断；没有把握或调用失败时回退到语言模型。这只是优化，不是依赖：没有决策服务也能正常导入。
 
 ## 共享繁忙资源
 

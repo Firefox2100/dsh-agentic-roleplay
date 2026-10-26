@@ -115,8 +115,8 @@ export async function survey(ctx: ImportContext, world: string): Promise<SurveyS
   await need(world, ['ready', 'surveyed', 'built'], 'the survey')
   const { card, items } = await load(world)
   void ensurePictures(world, card.urls ?? [])
-  const { classified, failures } = await classifyItems(ctx, card, items)
-  if (items.length > 0 && failures.length === items.length) throw new Error(`no piece of the card could be read, so nothing was imported: ${failures[0]}`)
+  const { classified, failures, decided } = await classifyItems(ctx, card, items)
+  if (items.length > 0 && failures.length >= items.length && decided === 0) throw new Error(`no piece of the card could be read, so nothing was imported: ${failures[0]}`)
   const { roster, failure } = await buildRoster(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified)
   await writeJson(join(folder(world), CLASSIFICATION), classified)
   await writeJson(join(folder(world), ROSTER), roster)
@@ -131,7 +131,7 @@ export async function survey(ctx: ImportContext, world: string): Promise<SurveyS
     leftOut: items.filter(item => isLeftOut(classified[item.id]!)).length,
     roster: { characters: names('character'), places: names('place'), factions: names('faction'), things: names('thing') },
     playable: roster.find(entity => entity.player)?.name,
-    notes: [...failures, ...(failure === undefined ? [] : [failure])],
+    notes: [...failures, ...(decided === 0 ? [] : [`the decision model settled ${decided} of ${items.length} pieces as instructions or notes, without asking the language model`]), ...(failure === undefined ? [] : [failure])],
   }
 }
 

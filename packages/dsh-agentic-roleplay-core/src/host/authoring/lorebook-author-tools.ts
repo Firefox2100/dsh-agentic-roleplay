@@ -170,7 +170,7 @@ export function lorebookAuthorTools(reader: LorebookReader, settings: () => Impo
         const uploaded = readStLorebook(await readFile(join(directory, IMPORT_FOLDER, 'lorebook.json')).catch(() => { throw new Error('no lorebook was uploaded here') }), name)
         const language = prompting.languages().get(`lorebook:${name}`)
         const text: TextOf = (id, variables) => prompting.prompts().text(id, language, variables)
-        const made = await classifyEntries(contextOf(exec, settings(), text), uploaded)
+        const made = await classifyEntries(contextOf(exec, settings(), text, language), uploaded)
         const taken = new Set((await loadLorebook(reader.library, name)).entries.map(entry => entry.id))
         for (const entry of made.entries) {
           let id = entry.id

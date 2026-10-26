@@ -223,6 +223,15 @@ describe('what characters know when a world starts', () => {
   })
 })
 
+describe('the ways a character may know', () => {
+  it('are open both ways unless the file says one way, as a started session makes them', () => {
+    const both = definition({ knowledge: { locations: [], items: [], exits: [{ from: 'bar', to: 'cellar' }, { from: 'cellar', to: 'bar' }] } })
+    expect(knowledgeProblems([both], places, [])).toEqual([])
+    const back = definition({ knowledge: { locations: [], items: [], exits: [{ from: 'roof', to: 'street' }] } })
+    expect(knowledgeProblems([back], places, [])).toEqual(['eleanor-graves: knowledge.exits: there is no exit from "roof" to "street"'])
+  })
+})
+
 describe('the things of a world', () => {
   const thing = (id: string, start: ItemDefinition['start'], extra: Partial<ItemDefinition> = {}): ItemDefinition => ({ id, name: id.toUpperCase(), description: '', quantity: 1, unique: false, quality: '', notable: false, hidden: false, start, ...extra })
 

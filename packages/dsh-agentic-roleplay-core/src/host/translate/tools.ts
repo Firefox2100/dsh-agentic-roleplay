@@ -26,7 +26,7 @@ export function translateTools(worlds: WorldCatalog, settings: () => ImportSetti
         const world = await worldOf(worlds, exec)
         const told = prompting.languages().get(world.id)
         const text = (id: string, variables?: Record<string, string | number>): string => prompting.prompts().text(id, told, variables)
-        const report = await translateWorld(contextOf(exec, settings(), text), worlds, world, args.language, told.startsWith('zh') ? 'zh' : 'en')
+        const report = await translateWorld(contextOf(exec, settings(), text, told), worlds, world, args.language, told.startsWith('zh') ? 'zh' : 'en')
         return JSON.parse(JSON.stringify(report)) as never
       },
     }),

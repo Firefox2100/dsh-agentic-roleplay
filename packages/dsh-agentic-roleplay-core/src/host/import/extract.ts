@@ -1,4 +1,4 @@
-import { CHARACTER_KINDS, CHARACTER_TIERS, LORE_KINDS, MAX_VARIABLES, type LoreKind } from 'dsh-roleplay-model'
+import { CHARACTER_KINDS, CHARACTER_TIERS, LORE_KINDS, MAX_VARIABLES, type LoreKind, type Translate } from 'dsh-roleplay-model'
 import { formatIssue } from '../validation.ts'
 import { parseCharacterFile } from '../characters/character-file.ts'
 import { parseFactionFile } from '../factions/faction-file.ts'
@@ -10,7 +10,7 @@ import type { NormalizedCard } from '../../shared/import-card.ts'
 import { cleanText, MAX_ITEM_CHARS, type SourceItem } from './items.ts'
 import { promptProblem } from '../prompts/library.ts'
 import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
-import { mapLimit, norm, slug, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
+import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { findEntity, isLeftOut, type Classified, type Entity, type Kind, type Roster } from './survey.ts'
 
 type Document = Record<string, unknown>
@@ -57,16 +57,17 @@ export function sourcesFor(entity: Entity, items: readonly SourceItem[], classif
   return chosen
 }
 
-const rosterLines = (roster: Roster): string => (['character', 'place', 'faction', 'thing'] as const)
-  .map(kind => `${kind}s: ${roster.filter(entity => entity.kind === kind).map(entity => entity.name).join('; ') || '(none)'}`).join('\n')
+const rosterLines = (roster: Roster, tr: Translate): string => ([['character', tr('characters')], ['place', tr('places')], ['faction', tr('factions')], ['thing', tr('things')]] as const)
+  .map(([kind, label]) => `${label}: ${roster.filter(entity => entity.kind === kind).map(entity => entity.name).join('; ') || tr('(none)')}`).join('\n')
 
-function promptFor(entity: Entity, sources: readonly SourceItem[], roster: Roster, card: NormalizedCard): string {
+function promptFor(entity: Entity, sources: readonly SourceItem[], roster: Roster, card: NormalizedCard, tr: Translate): string {
   const pieces = sources.map(source => `[${source.label}]${source.title === '' ? '' : ` ${source.title}`}\n${source.text}`)
+  const made = entity.player ? tr('Make the {kind} that the player plays: {name}', { kind: entity.kind, name: entity.name }) : tr('Make the {kind}: {name}', { kind: entity.kind, name: entity.name })
   return [
-    `Card: ${card.name}`,
-    `Make the ${entity.kind}${entity.player ? ' that the player plays' : ''}: ${entity.name}${entity.aliases.length === 0 ? '' : ` (also called: ${entity.aliases.join(', ')})`}`,
-    `The others in this world, which are the only ones you may refer to:\n${rosterLines(roster)}`,
-    `Source pieces:\n${pieces.length === 0 ? '(none: write only what the name itself implies, and leave the rest empty)' : pieces.join('\n\n---\n\n')}`,
+    tr('Card: {name}', { name: card.name }),
+    `${made}${entity.aliases.length === 0 ? '' : ` ${tr('(also called: {names})', { names: entity.aliases.join(', ') })}`}`,
+    `${tr('The others in this world, which are the only ones you may refer to:')}\n${rosterLines(roster, tr)}`,
+    `${tr('Source pieces:')}\n${pieces.length === 0 ? tr('(none: write only what the name itself implies, and leave the rest empty)') : pieces.join('\n\n---\n\n')}`,
   ].join('\n\n')
 }
 
@@ -412,11 +413,12 @@ export function documentProblem(kind: 'character' | 'location' | 'faction' | 'it
 
 const GROUP_KINDS = { character: 'character', place: 'location', faction: 'faction', thing: 'item' } as const
 
-function jobFor(text: TextOf, entity: Entity, sources: readonly SourceItem[], roster: Roster, card: NormalizedCard): ChildJob<Document> {
-  const prompt = promptFor(entity, sources, roster, card)
+function jobFor(text: TextOf, tr: Translate, entity: Entity, sources: readonly SourceItem[], roster: Roster, card: NormalizedCard): ChildJob<Document> {
+  const prompt = promptFor(entity, sources, roster, card, tr)
   const make = { character: characterDocument, place: placeDocument, faction: factionDocument, thing: thingDocument }[entity.kind]
   return {
     persona: text(`import/${entity.kind}`, { rules: text('import/common-rules') }),
+    maxTokens: entity.kind === 'character' ? 6000 : 3000,
     prompt,
     result: { character: CHARACTER_SCHEMA, place: PLACE_SCHEMA, faction: FACTION_SCHEMA, thing: THING_SCHEMA }[entity.kind] as never,
     check: (answer) => {
@@ -434,7 +436,7 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     ctx.say(`writing ${entity.kind} ${index + 1}/${roster.length}: ${entity.name}`)
     const sources = sourcesFor(entity, items, classified)
     try {
-      const answer = await ctx.run(jobFor(ctx.text, entity, sources, roster, card))
+      const answer = await ctx.run(jobFor(ctx.text, trOf(ctx), entity, sources, roster, card))
       const built = { character: characterDocument, place: placeDocument, faction: factionDocument, thing: thingDocument }[entity.kind](entity, answer, roster)
       return { entity, built }
     } catch (error) {
@@ -453,8 +455,9 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
   const loreResults = await mapLimit(worldItems, ctx.concurrency, async (item, index) => {
     ctx.say(`writing background ${index + 1}/${worldItems.length}: ${item.label}`)
     try {
-      const prompt = `Card: ${card.name}\nPiece: ${item.label}${item.title === '' ? '' : `\nTitle: ${item.title}`}\n\nThe entities of this world, which are the only ones the entries may name as subjects:\n${rosterLines(roster)}\n\nSource piece:\n${item.text.slice(0, MAX_ITEM_CHARS + 500)}`
-      const answer = await ctx.run<Document>({ persona: ctx.text('import/lore', { rules: ctx.text('import/common-rules') }), prompt, result: LORE_SCHEMA as never, check: value => loreProblem(value, roster, item.text) })
+      const tr = trOf(ctx)
+      const prompt = `${tr('Card: {name}', { name: card.name })}\n${tr('Piece: {label}', { label: item.label })}${item.title === '' ? '' : `\n${tr('Title: {title}', { title: item.title })}`}\n\n${tr('The entities of this world, which are the only ones the entries may name as subjects:')}\n${rosterLines(roster, tr)}\n\n${tr('Source piece:')}\n${item.text.slice(0, MAX_ITEM_CHARS + 500)}`
+      const answer = await ctx.run<Document>({ persona: ctx.text('import/lore', { rules: ctx.text('import/common-rules') }), maxTokens: 1500 + item.text.length, prompt, result: LORE_SCHEMA as never, check: value => loreProblem(value, roster, item.text) })
       return { item, answer }
     } catch (error) {
       return { item, answer: asWritten(item), failure: `${item.label}: kept as the card wrote it, because the model could not rewrite it (${error instanceof Error ? error.message : String(error)})` }
@@ -509,9 +512,11 @@ export async function extractStyleFrom(ctx: ImportContext, name: string, pieces:
   if (pieces.length === 0) return { prompts: [], notes: [] }
   ctx.say('writing the style prompts')
   try {
-    const prompt = `Card: ${name}\n\nThe instructions of the card:\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
+    const tr = trOf(ctx)
+    const prompt = `${tr('Card: {name}', { name })}\n\n${tr('The instructions of the card:')}\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
     const answer = await ctx.run<{ narration: string; characters: string; left_out: string[]; persona_names: string[] }>({
       persona: ctx.text('import/style', { rules: ctx.text('import/common-rules') }),
+      maxTokens: 8000,
       prompt,
       result: STYLE_SCHEMA as never,
       check: value => styleProblem('roleplay/style', text(value.narration), list(value.persona_names)) ?? styleProblem('roleplay/character-style', text(value.characters), list(value.persona_names)),
@@ -596,9 +601,11 @@ export async function extractVariables(ctx: ImportContext, card: NormalizedCard,
   ctx.say('looking for what the card tracks')
   try {
     const names = (kind: string): string => roster.filter(entity => entity.kind === kind).map(entity => entity.name).join(', ')
-    const prompt = `Card: ${card.name}\n\nCharacters: ${names('character')}\nPlaces: ${names('place')}\nThings: ${names('thing')}\n\nThe pieces of the card that may describe what it tracks:\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
+    const tr = trOf(ctx)
+    const prompt = `${tr('Card: {name}', { name: card.name })}\n\n${tr('Characters:')} ${names('character')}\n${tr('Places:')} ${names('place')}\n${tr('Things:')} ${names('thing')}\n\n${tr('The pieces of the card that may describe what it tracks:')}\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
     const answer = await ctx.run<Document>({
       persona: ctx.text('import/variables', { rules: ctx.text('import/common-rules') }),
+      maxTokens: 6000,
       prompt,
       result: VARIABLES_SCHEMA as never,
       check: value => variablesProblem(variableDocuments(value, roster), roster),

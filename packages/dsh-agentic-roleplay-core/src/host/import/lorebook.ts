@@ -1,9 +1,9 @@
-import { LORE_KINDS, LORE_SCOPES, type LoreKind } from 'dsh-roleplay-model'
+import { LORE_KINDS, LORE_SCOPES, type LoreKind, type Translate } from 'dsh-roleplay-model'
 import type { LorebookEntry } from '../../shared/lorebooks.ts'
 import { MAX_PREVIEW_TEXT, type SelectionItem } from '../../shared/import-selection.ts'
 import { ImportCardError } from './card.ts'
 import { cleanText, partsOf, withPlayer } from './items.ts'
-import { mapLimit, slug, uniqueKey, type ImportContext } from './run.ts'
+import { mapLimit, slug, trOf, uniqueKey, type ImportContext } from './run.ts'
 
 /** One entry of a SillyTavern lorebook, as the importer reads it. */
 export interface StEntry {
@@ -191,7 +191,7 @@ function problemOf(answer: { entries?: Decision[] }, batch: readonly StEntry[]):
   return missing.length === 0 ? undefined : `decide every entry: ${missing.join(', ')} ${missing.length === 1 ? 'is' : 'are'} missing`
 }
 
-const describe = (entry: StEntry): string => `Entry ${entry.ref}${entry.title === '' ? '' : ` “${entry.title}”`}${entry.keys.length === 0 ? '' : ` (triggers: ${entry.keys.join(', ')})`}:\n${entry.text}`
+const describe = (entry: StEntry, tr: Translate): string => `${tr('Entry {ref}', { ref: entry.ref })}${entry.title === '' ? '' : ` “${entry.title}”`}${entry.keys.length === 0 ? '' : ` ${tr('(triggers: {keys})', { keys: entry.keys.join(', ') })}`}:\n${entry.text}`
 
 /**
  * Sorts the entries of a lorebook into what the world is (kept word for word as lorebook entries, common knowledge unless an entry clearly says otherwise)
@@ -199,11 +199,13 @@ const describe = (entry: StEntry): string => `Entry ${entry.ref}${entry.title ==
  */
 export async function classifyEntries(ctx: ImportContext, book: StLorebook): Promise<Classified> {
   const batches = batchesOf(book.entries)
+  const tr = trOf(ctx)
   ctx.say(`sorting ${book.entries.length} entries`)
   const answers = await mapLimit(batches, ctx.concurrency, async (batch) => {
     return await ctx.run<{ entries: Decision[] }>({
       persona: ctx.text('import/lorebook'),
-      prompt: `Lorebook: ${book.name}\n\n${batch.map(describe).join('\n\n---\n\n')}`,
+      maxTokens: 4000,
+      prompt: `${tr('Lorebook: {name}', { name: book.name })}\n\n${batch.map(entry => describe(entry, tr)).join('\n\n---\n\n')}`,
       result: DECISIONS_SCHEMA as never,
       check: value => problemOf(value, batch),
     })

@@ -139,7 +139,7 @@ export function presetAuthorTools(reader: PresetReader, settings: () => ImportSe
         const uploaded = readStPreset(await readFile(file).catch(() => { throw new Error('no preset was uploaded here') }), name)
         const language = prompting.languages().get(`preset:${name}`)
         const text: TextOf = (id, variables) => prompting.prompts().text(id, language, variables)
-        const made = await extractStyleFrom(contextOf(exec, settings(), text), uploaded.name, uploaded.pieces)
+        const made = await extractStyleFrom(contextOf(exec, settings(), text, language), uploaded.name, uploaded.pieces)
         for (const { id, text: body } of made.prompts) for (const tag of shippedLanguages(shipped)) await writeWorldPrompt(directory, tag, id, withPlayer(body), shipped)
         await rm(join(directory, IMPORT_FOLDER), { recursive: true, force: true })
         const written = made.prompts.map(entry => entry.id)

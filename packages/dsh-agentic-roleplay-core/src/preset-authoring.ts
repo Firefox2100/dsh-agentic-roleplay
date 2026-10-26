@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
+import { guardAuthoringTurns } from './host/authoring/turn-guard.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
@@ -28,6 +29,7 @@ export function apply(ctx: Context): void {
     return preset !== undefined && existsSync(join(presetDirectory(library(), preset), PROMPTS_FOLDER))
   }
   limitAuthoringAgents(ctx, chat => (presetOfChat(chat) === undefined ? undefined : 'presetAuthoring'))
+  guardAuthoringTurns(ctx, () => ctx.roleplayPrompts, (chat) => { const preset = presetOfChat(chat); return preset === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(`preset:${preset}`) }, () => ctx.roleplayImport.settings.reasoning)
   ctx.on('tools/pre-execute', (exec, next) => presetApproval(exec, next, carries))
   const languageOf = (context: object): string => {
     const chat = (context as { agent?: Agent }).agent?.session.id

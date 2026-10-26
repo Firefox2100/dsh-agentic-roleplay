@@ -6,12 +6,12 @@ export const SETTINGS_FILE = 'settings.json'
 
 const known = new Map<string, { modified: number; value: ChatSettings }>()
 
-let childReasoning = ''
+let childReasoning: () => string = () => ''
 
-/** The thinking level helpers get when a chat's own setting is empty (the profile's choice); returns the function that takes it back. */
-export function useChildReasoning(level: string): () => void {
+/** The thinking level helpers get when a chat's own setting is empty (the profile's choice, read at each use); returns the function that takes it back. */
+export function useChildReasoning(level: () => string): () => void {
   childReasoning = level
-  return () => { childReasoning = '' }
+  return () => { childReasoning = () => '' }
 }
 
 /** The settings are not acceptable; `problems` say what to fix. */
@@ -63,7 +63,8 @@ export function writeSettings(folder: string, value: unknown): ChatSettings {
  */
 export function liveSettings(folder: string, problem: (message: string) => void = () => undefined): ChatSettings {
   const value = loadedSettings(folder, problem)
-  return value.reasoning.children === '' && childReasoning !== '' ? { ...value, reasoning: { ...value.reasoning, children: childReasoning } } : value
+  const fallback = childReasoning()
+  return value.reasoning.children === '' && fallback !== '' ? { ...value, reasoning: { ...value.reasoning, children: fallback } } : value
 }
 
 function loadedSettings(folder: string, problem: (message: string) => void): ChatSettings {

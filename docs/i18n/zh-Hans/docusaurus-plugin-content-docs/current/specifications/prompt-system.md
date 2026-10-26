@@ -15,15 +15,17 @@ description: 提示词实体化、覆盖、变量、验证、语言和运行时�
 
 | 分组 | 内容 |
 |---|---|
-| `roleplay/` | 游戏主持人指令（`game-master`、`persona`）、角色规则（`character-rules`、`character-lookup`、`character-decide`）、记录员、编年史作者及其三个任务、建议作者、图片作者、剧情作者，以及加入场景的短提示（`rules`、`plot-hint`、`ooc-command`、`ooc-empty`、`input-refused`） |
+| `roleplay/` | 游戏主持人指令（`game-master`、`persona`）、角色规则（`character-rules`、`character-lookup`、`character-decide`）、记录员、编年史作者及其三个任务、建议作者、图片作者、剧情作者、预分类卡片片段所用的决策问题（`decide-instruction`、`decide-irrelevant`），以及加入场景的短提示（`rules`、`plot-hint`、`ooc-command`、`ooc-empty`、`input-refused`） |
 | `world/` | 世界创作助手（`persona`、`procedure`、`welcome`），以及创作和整合角色、地点、物品的世界作者（`author`、`consolidate`） |
-| `import/` | 角色卡导入：分类器、名册、每类输出文档的提示词（`character`、`place`、`faction`、`thing`、`lore`）及共用的 `common-rules`、世界描述与标签，以及引导创作对话完成三个步骤的文本 |
+| `import/` | 角色卡导入：分类器、名册、每类输出文档的提示词（`character`、`place`、`faction`、`thing`、`lore`）及共用的 `common-rules`、世界描述与标签，以及引导创作对话完成三个步骤或在截断后恢复的文本（`cut-off`） |
 | `preset/` | 预设创作助手（`persona`、`procedure`、`welcome`） |
 | `lorebook/` | 世界书创作助手（`persona`、`procedure`、`welcome`） |
 | `doctor/` | 会话医生（`persona`、`procedure`、`welcome`） |
 | `translate/` | 世界翻译（`glossary`、`document`、`notice`） |
 
 **创作助手和导入是全局的，所以它们的提示词只放在根目录。**世界、预设、世界书和会话医生助手，角色卡、预设和世界书的导入，以及翻译，每次使用都会读取 `<root>/prompts/<language>/`：改动那里的文件，下一次对话、导入或翻译就会使用，无需重启；删除文件即可恢复原件。文件只能使用其原件所提供的 `${name}` 变量，使用其他变量会使运行失败并指出变量名。系统不附带用来编写这些提示词的助手，请手工编辑，或用普通对话编辑。留在代码里的是工具的名称、说明和参数结构，以及由数据生成的简报，因为程序依赖它们。
+
+世界、预设和世界书创作对话使用插件的导入/创作模型、推理等级和请求上限。回复达到上限时，`import/cut-off` 会在同一回合中引导它完成待办动作或给出简短总结，而不是悄悄结束一段未完成的回答。
 
 ## 会话和世界的提示词
 

@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { authoringTitle } from '../agent/authoring-sessions.ts'
 import { WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { PRESET_FILE, presetMessage } from './preset-tools.ts'
@@ -33,7 +34,7 @@ export async function uploadPreset(deps: UploadPresetDeps, worldId: string, file
   const preset = readPreset(file, name)
   await mkdir(join(world.directory, IMPORT_FOLDER), { recursive: true })
   await writeFile(join(world.directory, IMPORT_FOLDER, PRESET_FILE), file)
-  const chatSessionId = await deps.authoring.ensure(world.summary.id, world.summary.name, `Authoring ${world.summary.name}`, language)
+  const chatSessionId = await deps.authoring.ensure(world.summary.id, world.summary.name, authoringTitle(world.summary.name, language), language)
   let failure: string | undefined
   try { await deps.authoring.send(chatSessionId, presetMessage(language)) } catch (error) { failure = error instanceof Error ? error.message : String(error) }
   return { chatSessionId, preset: preset.name, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }

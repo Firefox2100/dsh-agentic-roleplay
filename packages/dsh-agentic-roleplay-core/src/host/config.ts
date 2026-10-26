@@ -34,21 +34,29 @@ export interface Config {
   /** Syncing the root with other devices through rclone; off while `remote` is empty. */
   sync: Volatile<SyncConfig>
   /** The most a downloaded world may be, in bytes, compressed and again unpacked. */
-  catalogueMaxBytes: number
+  catalogueMaxBytes: Volatile<number>
   /** Days the files an update replaced are kept in the trash folder before they are deleted; 0 keeps them for good. */
-  catalogueTrashDays: number
+  catalogueTrashDays: Volatile<number>
   /** The most a character card upload may be, in bytes. Big cards with lorebooks and scripts reach tens of megabytes. */
-  importMaxUploadBytes: number
+  importMaxUploadBytes: Volatile<number>
   /** How many calls of an import run at once. A local model serves few at a time: raise it only with a server that can. */
-  importConcurrency: number
-  /** How hard the agents of an import think, as a level the model offers (for example `off`); empty is the model's own level. */
-  importReasoning: string
+  importConcurrency: Volatile<number>
+  /** How hard the helper agents of imports and authoring think, as a level the model offers (for example `off`); empty uses `childReasoning`, then the chat's own level. */
+  importReasoning: Volatile<string>
   /** The thinking level the helpers of a roleplay chat (characters, record keeper, authors, suggestions) get when the chat's own setting is empty, as a level the model offers (for example `off`); empty is the game master's own level. Thinking made them minutes slower and the record keeper gave up before answering. */
-  childReasoning: string
+  childReasoning: Volatile<string>
+  /** The model the helper agents of imports and authoring run on, as `provider/model`; empty is the chat's own model. */
+  importModel: Volatile<string>
   /** The most tokens one model request of an import may produce. */
-  importMaxTokens: number
+  importMaxTokens: Volatile<number>
   /** How freely the agents of an import write; low, because they copy and sort what the card says. */
-  importTemperature: number
+  importTemperature: Volatile<number>
+  /** Minutes one helper agent of an import or authoring job may work before it is stopped; 0 never stops it. */
+  importTimeoutMinutes: Volatile<number>
+  /** Who sorts the pieces of a card that are only instructions or notes: `llm` asks the language model about every piece, `decision` lets the decision model (when one is selected) settle the pieces it is sure of first. */
+  importDecisions: Volatile<string>
+  /** How sure the decision model must be for `importDecisions: decision` to take its answer, from 0 to 1. */
+  importConfidence: Volatile<number>
 }
 
 export const Config = z.object({
@@ -57,12 +65,16 @@ export const Config = z.object({
   catalogues: z.array(z.object({ name: z.string().required(), baseUrl: z.string().required(), apiKeyRef: z.string().default(''), apiKey: z.string().default('') })).default([]).volatile(),
   authoringTools: z.dict(z.dict(z.boolean())).default({}).volatile(),
   sync: z.object({ remote: z.string().default(''), rclone: z.string().default(''), configFile: z.string().default(''), passwordRef: z.string().default(''), intervalMinutes: z.number().min(0).default(0) }).default({ ...DEFAULT_SYNC }).volatile(),
-  catalogueMaxBytes: z.number().min(1024).default(256 * 1024 * 1024),
-  catalogueTrashDays: z.number().min(0).default(30),
-  importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024),
-  importConcurrency: z.number().min(1).max(16).default(4),
-  importReasoning: z.string().default(''),
-  childReasoning: z.string().default(''),
-  importMaxTokens: z.number().min(1000).max(200000).default(16000),
-  importTemperature: z.number().min(0).max(2).default(0.2),
+  catalogueMaxBytes: z.number().min(1024).default(256 * 1024 * 1024).volatile(),
+  catalogueTrashDays: z.number().min(0).default(30).volatile(),
+  importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024).volatile(),
+  importConcurrency: z.number().min(1).max(16).default(4).volatile(),
+  importReasoning: z.string().default('').volatile(),
+  childReasoning: z.string().default('').volatile(),
+  importModel: z.string().default('').volatile(),
+  importMaxTokens: z.number().min(1000).max(200000).default(16000).volatile(),
+  importTemperature: z.number().min(0).max(2).default(0.2).volatile(),
+  importTimeoutMinutes: z.number().min(0).max(240).default(15).volatile(),
+  importDecisions: z.union([z.const('llm'), z.const('decision')]).default('llm').volatile(),
+  importConfidence: z.number().min(0).max(1).default(0.7).volatile(),
 })

@@ -125,3 +125,50 @@ describe('the roster', () => {
     expect(findEntity(roster, '')).toBeUndefined()
   })
 })
+
+describe('pieces a decision model settles', () => {
+  const items = [item('entry:0', 'Tam keeps the light.', 'Tam'), item('entry:1', 'Write in the second person.', 'Style'), item('entry:2', 'Made by someone, v2.', 'Credits'), item('entry:3', 'Maybe a rule, maybe a place.', 'Odd')]
+  const probabilities: Record<string, [number, number]> = { Tam: [0.02, 0.01], Style: [0.97, 0.02], Credits: [0.1, 0.96], Odd: [0.6, 0.4] }
+  const decided = (state: Record<string, unknown>) => new Map<string, number>([['instruction', probabilities[String(state['title'])]![0]], ['irrelevant', probabilities[String(state['title'])]![1]]])
+
+  it('are not put to the language model when the decision model is sure they are only instructions or notes, and the rest are', async () => {
+    const ctx = fakeContext(() => ({ roles: ['character'], targets: [{ name: 'Tam', kind: 'character' }] }))
+    const asked: string[] = []
+    ctx.decide = (state, questions) => { asked.push(...questions.map(question => question.instructions)); return Promise.resolve(decided(state)) }
+    ctx.confidence = 0.7
+    const { classified, failures, decided: settled } = await classifyItems(ctx, card, items)
+    expect(classified['entry:1']).toEqual({ roles: ['instruction'], targets: [] })
+    expect(classified['entry:2']).toEqual({ roles: ['irrelevant'], targets: [] })
+    expect(classified['entry:0']!.roles).toEqual(['character'])
+    expect(classified['entry:3']!.roles).toEqual(['character'])
+    expect(settled).toBe(2)
+    expect(failures).toEqual([])
+    expect(ctx.asked.map(job => job.prompt.split('\n')[2])).toEqual(['Title: Tam', 'Title: Odd'])
+    expect(asked.every(text => text.length > 50)).toBe(true)
+  })
+
+  it('go to the language model when the decision model cannot be used, and the problem is reported', async () => {
+    const ctx = fakeContext(() => ({ roles: ['world'], targets: [] }))
+    ctx.decide = () => Promise.reject(new Error('no decision service is selected'))
+    const { classified, failures, decided: settled } = await classifyItems(ctx, card, items)
+    expect(settled).toBe(0)
+    expect(ctx.asked).toHaveLength(4)
+    expect(Object.values(classified).every(entry => entry.roles[0] === 'world')).toBe(true)
+    expect(failures).toEqual(['the decision model could not be used, the language model sorted those pieces: no decision service is selected'])
+  })
+
+  it('ask nothing of a decision model that is not in use', async () => {
+    const ctx = fakeContext(() => ({ roles: ['world'], targets: [] }))
+    expect((await classifyItems(ctx, card, items)).decided).toBe(0)
+    expect(ctx.asked).toHaveLength(4)
+  })
+})
+
+describe('the labels of what a job is shown', () => {
+  it('follow the language of the import', async () => {
+    const ctx = fakeContext(() => ({ roles: ['world'], targets: [] }))
+    ctx.language = 'zh-CN'
+    await classifyItems(ctx, card, [item('entry:0', 'Tam keeps the light.', 'Tam')])
+    expect(ctx.asked[0]!.prompt).toBe('卡片：Test Harbour\n片段：entry:0\n标题：Tam\n---\nTam keeps the light.')
+  })
+})

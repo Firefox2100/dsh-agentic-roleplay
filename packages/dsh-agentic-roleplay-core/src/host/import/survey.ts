@@ -1,6 +1,8 @@
 import type { NormalizedCard } from '../../shared/import-card.ts'
 import type { SourceItem } from './items.ts'
-import { mapLimit, norm, slug, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
+import type { Translate } from 'dsh-roleplay-model'
+import { yesAt } from '../decisions/route.ts'
+import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 
 export const ROLES = ['character', 'player', 'speech', 'place', 'faction', 'thing', 'world', 'scenario', 'instruction', 'template', 'irrelevant'] as const
 export type Role = typeof ROLES[number]
@@ -64,10 +66,11 @@ const CLASSIFY_SCHEMA = {
   additionalProperties: false,
 } as const
 
-function classifyJob(text: TextOf, card: NormalizedCard, item: SourceItem): ChildJob<Classification> {
-  const header = [`Card: ${card.name}`, `Piece: ${item.label}`, ...(item.title === '' ? [] : [`Title: ${item.title}`]), ...(item.keys.length === 0 ? [] : [`Keys: ${item.keys.join(', ')}`])]
+function classifyJob(text: TextOf, tr: Translate, card: NormalizedCard, item: SourceItem): ChildJob<Classification> {
+  const header = [tr('Card: {name}', { name: card.name }), tr('Piece: {label}', { label: item.label }), ...(item.title === '' ? [] : [tr('Title: {title}', { title: item.title })]), ...(item.keys.length === 0 ? [] : [tr('Keys: {keys}', { keys: item.keys.join(', ') })])]
   return {
     persona: text('import/classifier', { max: MAX_TARGETS }),
+    maxTokens: 2000,
     prompt: `${header.join('\n')}\n---\n${item.text.slice(0, SHOWN_CHARS)}`,
     result: CLASSIFY_SCHEMA as never,
     check: (value) => {
@@ -86,13 +89,37 @@ export function playerRoleKept(roles: readonly Role[], text: string): Role[] {
   return rest.length === 0 ? ['character'] : rest
 }
 
+/**
+ * The role of a piece the decision model is sure is only an instruction, or only notes for the reader: such a piece names nobody, so the language model is not asked.
+ * Anything it is not sure of, or any failure of it, is left to the language model; the decision model is never the only reader of a piece that may be about the story.
+ */
+async function settledByDecision(ctx: ImportContext, card: NormalizedCard, item: SourceItem, problems: Set<string>): Promise<Role | undefined> {
+  if (ctx.decide === undefined) return undefined
+  try {
+    const probabilities = await ctx.decide({ card: card.name, piece: item.label, ...(item.title === '' ? {} : { title: item.title }), text: item.text.slice(0, SHOWN_CHARS) }, [
+      { key: 'instruction', instructions: ctx.text('roleplay/decide-instruction') },
+      { key: 'irrelevant', instructions: ctx.text('roleplay/decide-irrelevant') },
+    ])
+    const sure = yesAt(ctx.confidence ?? 0.7)
+    if ((probabilities.get('instruction') ?? 0) >= sure) return 'instruction'
+    if ((probabilities.get('irrelevant') ?? 0) >= sure) return 'irrelevant'
+  } catch (error) {
+    problems.add(error instanceof Error ? error.message : String(error))
+  }
+  return undefined
+}
+
 /** Says what every piece is. A piece that cannot be classified is kept as world background, so that nothing is lost silently; the failures are returned. */
-export async function classifyItems(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[]): Promise<{ classified: Classified; failures: string[] }> {
+export async function classifyItems(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[]): Promise<{ classified: Classified; failures: string[]; decided: number }> {
   const failures: string[] = []
+  const problems = new Set<string>()
+  let decided = 0
   const answers = await mapLimit(items, ctx.concurrency, async (item, index) => {
     ctx.say(`classifying ${index + 1}/${items.length}: ${item.label}`)
+    const settled = await settledByDecision(ctx, card, item, problems)
+    if (settled !== undefined) { decided += 1; return { roles: [settled], targets: [] } satisfies Classification }
     try {
-      const value = await ctx.run(classifyJob(ctx.text, card, item))
+      const value = await ctx.run(classifyJob(ctx.text, trOf(ctx), card, item))
       const seen = new Set<string>()
       const targets = value.targets.map(target => ({ name: target.name.trim(), kind: target.kind })).filter(target => !isPlayerWord(target.name)).filter((target) => { const id = `${target.kind}:${norm(target.name)}`; if (seen.has(id)) return false; seen.add(id); return true })
       return { roles: playerRoleKept(value.roles, item.text), targets } satisfies Classification
@@ -101,7 +128,8 @@ export async function classifyItems(ctx: ImportContext, card: NormalizedCard, it
       return { roles: ['world'], targets: [] } satisfies Classification
     }
   })
-  return { classified: Object.fromEntries(items.map((item, index) => [item.id, answers[index]!])), failures }
+  failures.push(...[...problems].map(problem => `the decision model could not be used, the language model sorted those pieces: ${problem}`))
+  return { classified: Object.fromEntries(items.map((item, index) => [item.id, answers[index]!])), failures, decided }
 }
 
 export interface Candidate {
@@ -189,11 +217,12 @@ function rosterCheck(answer: RosterAnswer): string | undefined {
   return undefined
 }
 
-function rosterJob(text: TextOf, card: NormalizedCard, candidates: readonly Candidate[], titleIsBeing: string): ChildJob<RosterAnswer> {
-  const lines = candidates.map(candidate => `${candidate.kind}: ${candidate.name} (${candidate.pieces.length} piece${candidate.pieces.length === 1 ? '' : 's'}${candidate.player ? ', about the player\'s character' : ''}${candidate.titles.length === 0 ? '' : `; titles: ${candidate.titles.join(' / ')}`})`)
+function rosterJob(text: TextOf, tr: Translate, card: NormalizedCard, candidates: readonly Candidate[], titleIsBeing: string): ChildJob<RosterAnswer> {
+  const lines = candidates.map(candidate => `${candidate.kind}: ${candidate.name} (${tr('{count} pieces', { count: candidate.pieces.length })}${candidate.player ? `, ${tr('about the player\'s character')}` : ''}${candidate.titles.length === 0 ? '' : `; ${tr('titles: {titles}', { titles: candidate.titles.join(' / ') })}`})`)
   return {
     persona: text('import/roster'),
-    prompt: `Card title: ${card.name}\n${titleIsBeing}\n\nNames found:\n${lines.join('\n')}`,
+    maxTokens: 8000,
+    prompt: `${tr('Card title: {name}', { name: card.name })}\n${titleIsBeing}\n\n${tr('Names found:')}\n${lines.join('\n')}`,
     result: ROSTER_SCHEMA as never,
     check: rosterCheck,
   }
@@ -225,11 +254,12 @@ export function foldNamedAliases(answer: RosterAnswer, text: string): void {
  */
 export async function buildRoster(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified): Promise<{ roster: Roster; failure?: string }> {
   const candidates = candidatesOf(items, classified)
-  const titleIsBeing = candidates.some(candidate => candidate.kind === 'character' && norm(candidate.name) === norm(card.name)) ? 'The pieces name the card title as a character.' : 'The card title is not named as a character by any piece.'
+  const tr = trOf(ctx)
+  const titleIsBeing = candidates.some(candidate => candidate.kind === 'character' && norm(candidate.name) === norm(card.name)) ? tr('The pieces name the card title as a character.') : tr('The card title is not named as a character by any piece.')
   let answer: RosterAnswer
   let failure: string | undefined
   try {
-    answer = candidates.length === 0 ? { characters: [], places: [], factions: [], things: [] } : await ctx.run(rosterJob(ctx.text, card, candidates, titleIsBeing))
+    answer = candidates.length === 0 ? { characters: [], places: [], factions: [], things: [] } : await ctx.run(rosterJob(ctx.text, tr, card, candidates, titleIsBeing))
   } catch (error) {
     failure = `the list of names could not be merged: ${error instanceof Error ? error.message : String(error)}`
     const folded = foldContained(candidates.map(candidate => ({ ...candidate, pieces: [...candidate.pieces] })))

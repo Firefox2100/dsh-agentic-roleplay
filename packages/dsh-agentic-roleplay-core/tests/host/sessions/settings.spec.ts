@@ -40,7 +40,7 @@ describe('the settings file', () => {
 
 describe('the settings in force', () => {
   it('give the helpers the profile\'s thinking level when the chat names none, and keep the chat\'s own', () => {
-    const undo = useChildReasoning('off')
+    const undo = useChildReasoning(() => 'off')
     expect(liveSettings(root).reasoning.children).toBe('off')
     writeSettings(root, { reasoning: { children: 'low' } })
     expect(liveSettings(root).reasoning.children).toBe('low')

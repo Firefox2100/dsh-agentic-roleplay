@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { Translate } from 'dsh-roleplay-model'
 import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
@@ -21,7 +22,7 @@ import { loadValidatedWorld } from '../worlds/validated-world.ts'
 import { cleanText, withPlayer, type SourceItem } from './items.ts'
 import type { Extracted } from './extract.ts'
 import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
-import { norm, type ChildJob, type ImportContext, type TextOf } from './run.ts'
+import { norm, type ChildJob, type ImportContext, type TextOf, trOf } from './run.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, openingText } from './store.ts'
 import { isLeftOut, type Classified, type Roster } from './survey.ts'
 
@@ -166,12 +167,13 @@ interface WorldAnswer { description: string; tags: string[]; starting_time: stri
 
 const STARTING_TIME = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?)?$/
 
-function worldJob(text: TextOf, card: NormalizedCard, roster: Roster, scenario: string, opening: string): ChildJob<WorldAnswer> {
+function worldJob(text: TextOf, tr: Translate, card: NormalizedCard, roster: Roster, scenario: string, opening: string): ChildJob<WorldAnswer> {
   const names = (kind: string): string => roster.filter(entity => entity.kind === kind).slice(0, 15).map(entity => entity.name).join('; ')
   return {
     persona: text('import/world-summary'),
-    prompt: [`Card: ${card.name}`, ...(card.tags.length === 0 ? [] : [`Card tags: ${card.tags.join(', ')}`]), `Characters: ${names('character') || '(none)'}`, `Places: ${names('place') || '(none)'}`,
-      `Scenario:\n${scenario.slice(0, 1200) || '(none)'}`, `Opening:\n${opening.slice(0, 1200) || '(none)'}`, `Description:\n${cleanText(card.description, card.name).slice(0, 1200) || '(none)'}`, `Creator's notes:\n${cleanText(card.creatorNotes, card.name).slice(0, 600) || '(none)'}`].join('\n\n'),
+    maxTokens: 1500,
+    prompt: [tr('Card: {name}', { name: card.name }), ...(card.tags.length === 0 ? [] : [tr('Card tags: {tags}', { tags: card.tags.join(', ') })]), `${tr('Characters:')} ${names('character') || tr('(none)')}`, `${tr('Places:')} ${names('place') || tr('(none)')}`,
+      `${tr('Scenario:')}\n${scenario.slice(0, 1200) || tr('(none)')}`, `${tr('Opening:')}\n${opening.slice(0, 1200) || tr('(none)')}`, `${tr('Description:')}\n${cleanText(card.description, card.name).slice(0, 1200) || tr('(none)')}`, `${tr('Creator\'s notes:')}\n${cleanText(card.creatorNotes, card.name).slice(0, 600) || tr('(none)')}`].join('\n\n'),
     result: WORLD_SCHEMA as never,
     check: (value) => {
       if (value.description.trim() === '' || value.description.length > MAX_DESCRIPTION) return `the description must be written and at most ${MAX_DESCRIPTION} characters`
@@ -186,7 +188,7 @@ function worldJob(text: TextOf, card: NormalizedCard, roster: Roster, scenario: 
 export async function describeWorld(ctx: ImportContext, card: NormalizedCard, roster: Roster, items: readonly SourceItem[], opening: string): Promise<{ description: string; tags: string[]; startingTime?: string; note?: string }> {
   const scenario = items.filter(item => item.id.startsWith('field:scenario')).map(item => item.text).join('\n\n')
   try {
-    const answer = await ctx.run(worldJob(ctx.text, card, roster, scenario, opening))
+    const answer = await ctx.run(worldJob(ctx.text, trOf(ctx), card, roster, scenario, opening))
     return { description: answer.description.trim(), tags: [...new Set(answer.tags.map(tag => tag.trim()))], ...(answer.starting_time ?? '').trim() === '' ? {} : { startingTime: answer.starting_time.trim() } }
   } catch (error) {
     const fallback = (scenario || cleanText(card.description, card.name)).slice(0, MAX_DESCRIPTION).trim()

@@ -39,7 +39,7 @@ export function presetTools(worlds: WorldCatalog, settings: () => ImportSettings
       const preset = readPreset(await readFile(file).catch(() => { throw new Error('no preset was uploaded to this world') }), 'preset')
       const language = prompting.languages().get(world.id)
       const text: TextOf = (id, variables) => prompting.prompts().text(id, language, variables)
-      const made = await extractStyleFrom(contextOf(exec, settings(), text), preset.name, preset.pieces)
+      const made = await extractStyleFrom(contextOf(exec, settings(), text, language), preset.name, preset.pieces)
       for (const { id, text: body } of made.prompts) for (const tag of shippedLanguages()) await writeWorldPrompt(world.directory, tag, id, withPlayer(body))
       const carriesSampling = Object.keys(preset.sampling).length > 0
       if (carriesSampling) { await editWorldInfo(world.directory, { sampling: preset.sampling }); await worlds.list({ refresh: true }) }

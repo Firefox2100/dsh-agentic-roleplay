@@ -20,13 +20,17 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `catalogueMaxBytes` | 256 MiB | Maximum downloaded-world size, checked both compressed and unpacked |
 | `catalogueTrashDays` | 30 | Days to keep files replaced by a catalogue update in `.trash/worlds/`; 0 keeps them indefinitely |
 | `importMaxUploadBytes` | 100 MiB | Maximum character-card upload size |
-| `importConcurrency` | 4 | Import model calls that may run at once |
-| `importReasoning` | empty | Import-agent reasoning level; empty uses the model's setting |
+| `importConcurrency` | 4 | Import and authoring helper calls that may run at once |
+| `importReasoning` | empty | Reasoning level for import and authoring helpers and authoring chats; empty uses `childReasoning`, then the chat setting |
 | `childReasoning` | empty | Fallback reasoning level for roleplay helpers; empty follows the game master |
-| `importMaxTokens` | 16000 | Maximum output tokens for one import request |
-| `importTemperature` | 0.2 | Import-agent temperature |
+| `importModel` | empty | Model for import and authoring helpers as `provider/model`; empty uses the chat model |
+| `importMaxTokens` | 16000 | Ceiling on output tokens for one import or authoring-helper request; each job may use a smaller limit |
+| `importTemperature` | 0.2 | Import and authoring-helper temperature |
+| `importTimeoutMinutes` | 15 | Minutes before an import or authoring helper is stopped without a result; 0 disables the timeout |
+| `importDecisions` | `llm` | `decision` lets the configured decision service preclassify card pieces it can settle confidently; `llm` sends every piece to the language model |
+| `importConfidence` | 0.7 | Confidence required to accept a decision-model classification |
 
-`rootPath`, catalogues, sync and authoring-tool access are also editable under **Settings, Role Play**. See [Sync between devices](../playing/sync) before pointing more than one installation at the same remote.
+All fields except the restart-time `sessionStorePath` are editable under **Settings, Role Play** and take effect without restarting. See [Sync between devices](../playing/sync) before pointing more than one installation at the same remote.
 
 ## State plugin configuration
 

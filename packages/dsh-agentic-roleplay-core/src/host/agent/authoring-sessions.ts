@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { languageOf, translator } from 'dsh-roleplay-model'
 import { join } from 'node:path'
 import { authoringChatSessionId } from '../../shared/authoring-chat.ts'
 import { AgentUnavailableError } from '../sessions/errors.ts'
@@ -10,6 +11,12 @@ import { storeAuthoringOpening } from './opening.ts'
 export const AUTHORING_PROJECT_TITLE = 'World Authoring'
 export const AUTHORING_AGENT_PRESET = 'world-authoring'
 
+/** The title of a world's authoring chat, in the language of the person who opened it. */
+export function authoringTitle(worldName: string, language?: string): string {
+  const tr = translator(languageOf(language))
+  return tr('Authoring {name}', { name: worldName })
+}
+
 /** Creates or reopens the dedicated authoring chat of an authored world, and speaks in it for the person when asked to. */
 export class AuthoringSessions {
   constructor(
@@ -19,7 +26,8 @@ export class AuthoringSessions {
     private readonly languages: AuthoringLanguages,
   ) {}
 
-  async ensure(worldId: string, worldName: string, title = `Authoring ${worldName}`, language?: string): Promise<string> {
+  async ensure(worldId: string, worldName: string, title?: string, language?: string): Promise<string> {
+    const chatTitle = title ?? authoringTitle(worldName, language)
     this.languages.set(worldId, language)
     const services = this.services()
     const projectPath = join(this.roleplayRoot(), 'worlds')
@@ -36,7 +44,7 @@ export class AuthoringSessions {
       projectTitle: AUTHORING_PROJECT_TITLE,
       sessionId,
       agentPreset: AUTHORING_AGENT_PRESET,
-      title,
+      title: chatTitle,
       renameExisting: true,
     }, project)
   }

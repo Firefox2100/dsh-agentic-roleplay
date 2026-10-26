@@ -4,7 +4,10 @@ import { defineTool, type ToolDefinition, type ToolExecution } from '@deepseek-a
 import type { Context } from '@deepseek-ai/cordis'
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import { parseImportCommand } from '../../shared/import-card.ts'
-import { runChild } from '../agents/child.ts'
+import type { DecisionService } from '@dsh-ai-providers/core'
+import { currentTurn } from '../orchestration/current-turn.ts'
+import { ChildTimeoutError, namedModel, runChild } from '../agents/child.ts'
+import { askYesNo } from '../decisions/route.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
 import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -19,6 +22,8 @@ export const FINISH_TOOL = 'import_finish'
 
 /** How many times a turn that has not finished the import is sent back to it. */
 const MAX_OBJECTIONS = 3
+/** The build is the slow step (minutes, one agent per entity); a turn that needs it more often than this is not converging on a card that will finish. */
+const MAX_BUILDS_PER_TURN = 2
 /** A model call that fails is made once more before the piece it was for is given up. */
 const ATTEMPTS = 2
 
@@ -34,7 +39,7 @@ const output = (render: (value: never) => string) => ({ schema: { type: 'json' a
 const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as never
 
 /** The runner of an import: every job is a narrow agent below the chat's own, on the chat's model. */
-export function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf): ImportContext {
+export function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf, language?: string): ImportContext {
   const agent = exec.agent
   if (agent === undefined) throw new Error('the import tools can only be called by an agent')
   const run: RunJob = async (job) => {
@@ -43,16 +48,23 @@ export function contextOf(exec: ToolExecution, settings: ImportSettings, text: T
         return await runChild({
           parent: agent, signal: exec.signal, persona: job.persona, prompt: job.prompt, result: job.result as never,
           ...(job.check === undefined ? {} : { beforeSubmit: (value: unknown) => job.check?.(value as never) }),
-          maxTokens: settings.maxTokens,
+          maxTokens: Math.min(job.maxTokens ?? settings.maxTokens, settings.maxTokens), timeoutMinutes: settings.timeoutMinutes, ...namedModel(settings.model),
           sampling: { temperature: settings.temperature, toolChoice: 'required' },
           ...(settings.reasoning === '' ? {} : { reasoningEffort: settings.reasoning }),
         }) as never
       } catch (error) {
-        if (exec.signal.aborted || attempt >= ATTEMPTS) throw error
+        // a run that used up its time would use it up again
+        if (exec.signal.aborted || attempt >= ATTEMPTS || error instanceof ChildTimeoutError) throw error
       }
     }
   }
-  return { run, concurrency: settings.concurrency, text, say: () => undefined }
+  // chosen but missing, the service fails each question, so the survey says why every piece went to the language model
+  const decide: ImportContext['decide'] | undefined = settings.decisions === 'decision' ? (state, asks) => {
+    const service = (agent.ctx as unknown as { get(name: 'decisions'): DecisionService | undefined }).get('decisions')
+    if (service === undefined) return Promise.reject(new Error('no decision service is selected, or the selected one is not loaded'))
+    return askYesNo(service, state, asks, exec.signal)
+  } : undefined
+  return { run, concurrency: settings.concurrency, text, ...(language === undefined ? {} : { language }), say: () => undefined, ...(decide === undefined ? {} : { decide, confidence: settings.confidence }) }
 }
 
 export async function worldOf(worlds: WorldCatalog, exec: ToolExecution): Promise<{ id: string; directory: string }> {
@@ -71,12 +83,13 @@ const toolNames = { survey: SURVEY_TOOL, build: BUILD_TOOL, finish: FINISH_TOOL 
 
 /** The three steps of an import, as tools of the authoring chat. They do their work in agents of their own, one narrow job each. */
 export function importTools(worlds: WorldCatalog, settings: () => ImportSettings, prompting: Prompting): ToolDefinition[] {
+  const builds = new Map<string, { turn: number; count: number }>()
   /** Runs one step for the world of the calling chat; what the model should do next is told in the result, in the person's language. */
   const step = async (exec: ToolExecution, work: (ctx: ImportContext, directory: string) => Promise<object>, next: (text: TextOf, result: object) => string): Promise<never> => {
     const world = await worldOf(worlds, exec)
     const language = prompting.languages().get(world.id)
     const text: TextOf = (id, variables) => prompting.prompts().text(id, language, { ...toolNames, ...variables })
-    const result = await work(contextOf(exec, settings(), text), world.directory)
+    const result = await work(contextOf(exec, settings(), text, language), world.directory)
     return json({ ...result, next: next(text, result) })
   }
   return [
@@ -94,7 +107,16 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
       parameters: { card: cardParameter },
       output: output(value => JSON.stringify(value, null, 1)),
       isConcurrencySafe: () => false,
-      async execute(args, exec) { checkedCard(args); return await step(exec, build, text => text('import/next-build')) },
+      async execute(args, exec) {
+        checkedCard(args)
+        const chat = exec.agent?.session.id ?? ''
+        const turn = exec.agent === undefined ? 0 : currentTurn(exec.agent)
+        const seen = builds.get(chat)
+        const count = seen?.turn === turn ? seen.count + 1 : 1
+        if (count > MAX_BUILDS_PER_TURN) throw new Error(`the build has already run ${MAX_BUILDS_PER_TURN} times in this turn: do not run it again, tell the person what is wrong and stop`)
+        builds.set(chat, { turn, count })
+        return await step(exec, build, text => text('import/next-build'))
+      },
     }),
     defineTool({
       name: FINISH_TOOL,

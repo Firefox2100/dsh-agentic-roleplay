@@ -1,5 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
+import { guardAuthoringTurns } from './host/authoring/turn-guard.ts'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
@@ -49,6 +50,7 @@ export function apply(ctx: Context): void {
   }
   registerPackJail(ctx, { worldDirectory, reviewing })
   limitAuthoringAgents(ctx, chat => (authoredWorldOf(chat) === undefined ? undefined : 'worldAuthoring'))
+  guardAuthoringTurns(ctx, () => ctx.roleplayPrompts, (chat) => { const world = authoredWorldOf(chat); return world === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(world) }, () => ctx.roleplayImport.settings.reasoning)
   ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing))
   for (const [name, order, id] of [
     ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],

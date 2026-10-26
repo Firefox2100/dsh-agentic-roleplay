@@ -5,6 +5,7 @@ import type { WorldSummary } from '../../shared/worlds.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
+import { authoringTitle } from '../agent/authoring-sessions.ts'
 import { WorldFolderExistsError, createWorld } from '../worlds/create-world.ts'
 import { IMPORT_FOLDER, type ImportStore } from './store.ts'
 import { markReady } from './run-import.ts'
@@ -14,7 +15,6 @@ export interface StartImportDeps {
   worlds: WorldCatalog
   /** Creates or reopens the authoring chat of a world and says what the person sees in it. */
   authoring: { ensure(worldId: string, worldName: string, title: string, language?: string): Promise<string>; send(chat: string, text: string): Promise<void> }
-  chatTitle: (name: string) => string
 }
 
 export interface StartedImport {
@@ -64,7 +64,7 @@ export async function startImport(deps: StartImportDeps, id: string, choices: Im
   if (record === undefined) throw new WorldNotFoundError(`the world "${world.name}" was made but cannot be found`)
   await deps.store.adopt(id, record.directory)
   await markReady(record.directory)
-  const chatSessionId = await deps.authoring.ensure(world.id, world.name, deps.chatTitle(world.name), language)
+  const chatSessionId = await deps.authoring.ensure(world.id, world.name, authoringTitle(world.name, language), language)
   let failure: string | undefined
   try {
     await deps.authoring.send(chatSessionId, importMessage(language))

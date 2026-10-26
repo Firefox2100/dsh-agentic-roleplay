@@ -1,4 +1,5 @@
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import { languageOf, translator, type Translate } from 'dsh-roleplay-model'
 import { trimCharacters } from '../../shared/text.ts'
 
 /** One narrow job for one model call: who it is, what is asked, and the shape of the answer. A refused answer is tried again with the reason. */
@@ -6,6 +7,8 @@ export interface ChildJob<T> {
   persona: string
   prompt: string
   result: ObjectJsonSchema
+  /** The most the answer can need, in tokens; a model that writes on past it is cut off sooner than the settings' limit. */
+  maxTokens?: number
   /** Why the answer cannot be used, or nothing when it can. */
   check?: (value: T) => string | undefined
 }
@@ -21,8 +24,17 @@ export interface ImportContext {
   concurrency: number
   /** An instruction text of the import, in the language of the person who started it. */
   text: TextOf
+  /** The language of the person who started it, as the text of the prompts is chosen; the labels of what each job is shown are in it too. */
+  language?: string
   say: (message: string) => void
+  /** Asks the decision model, when the person chose to use one for imports, a yes-or-no question for each key about one piece; the answers are probabilities of yes. */
+  decide?: (state: Record<string, unknown>, asks: readonly { key: string; instructions: string }[]) => Promise<Map<string, number>>
+  /** How sure the decision model must be for its answer to be taken (0 to 1). */
+  confidence?: number
 }
+
+/** The labels of a job's prompt, in the language of the import. */
+export const trOf = (ctx: Pick<ImportContext, 'language'>): Translate => translator(languageOf(ctx.language))
 
 /** Runs `work` on every item, at most `limit` at a time, and returns the results in the order of the items. */
 export async function mapLimit<T, R>(items: readonly T[], limit: number, work: (item: T, index: number) => Promise<R>): Promise<R[]> {
