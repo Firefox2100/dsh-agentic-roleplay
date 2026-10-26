@@ -48,6 +48,6 @@ export async function describePassword(reference: string, signal: AbortSignal): 
 /** Stores the password of the rclone configuration file, or removes it when the value is empty; the value is never sent back. */
 export async function storePassword(reference: string, value: string, signal: AbortSignal): Promise<PasswordStatus> {
   const status = await reply<PasswordStatus>(await fetch(`${API_PREFIX}/sync/password`, { ...json('PUT', { ref: reference, value }), signal }))
-  window.dispatchEvent(new Event(SYNC_CHANGED))
+  ;(globalThis as unknown as { dispatchEvent: (event: Event) => boolean }).dispatchEvent(new Event(SYNC_CHANGED))
   return status
 }

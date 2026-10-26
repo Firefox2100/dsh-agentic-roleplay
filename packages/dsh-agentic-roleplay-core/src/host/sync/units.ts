@@ -49,7 +49,7 @@ export async function fingerprint(directory: string): Promise<string> {
     }
   }
   await walk('')
-  return createHash('sha256').update(lines.sort().join('\n')).digest('hex')
+  return createHash('sha256').update(lines.sort((left, right) => left.localeCompare(right)).join('\n')).digest('hex')
 }
 
 /** The files that two copies of one file left side by side (`name.conflict1` is this device's, `name.conflict2` the remote's). */
@@ -63,5 +63,5 @@ export async function conflictFiles(directory: string): Promise<string[]> {
     }
   }
   await walk('')
-  return found.sort()
+  return found.sort((left, right) => left.localeCompare(right))
 }

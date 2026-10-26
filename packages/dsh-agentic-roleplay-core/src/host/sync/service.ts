@@ -93,7 +93,7 @@ export class SyncService {
     const store = readStore(root)
     const ids = new Set([...(await localUnits(root)), ...Object.keys(store.units), ...store.ignored])
     const units: SyncUnitStatus[] = []
-    for (const id of [...ids].sort()) {
+    for (const id of [...ids].sort((left, right) => left.localeCompare(right))) {
       const kind = kindOf(id)
       if (kind === undefined) continue
       units.push(store.ignored.includes(id) ? { id, kind, state: 'ignored', message: 'deleted here and kept on the remote; it is not brought back' } : await this.describe(root, id, kind, store.units[id]))
@@ -142,7 +142,7 @@ export class SyncService {
       const deleted = new Set(await this.tombstones(rclone))
       const local = await localUnits(root)
       const wanted = (id: string): boolean => !store.ignored.includes(id) && (only === undefined || only.includes(id))
-      const ids = [...new Set([...local, ...remote, ...deleted])].filter(wanted).sort()
+      const ids = [...new Set([...local, ...remote, ...deleted])].filter(wanted).sort((left, right) => left.localeCompare(right))
       for (const id of ids) {
         if (deleted.has(id)) await this.syncDeleted(id, local.includes(id))
         else await this.syncUnit(rclone, id, local.includes(id), remote.includes(id))
