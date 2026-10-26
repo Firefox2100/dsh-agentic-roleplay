@@ -22,6 +22,7 @@ import { UnknownStarterError } from '../../../src/host/worlds/starter.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
 import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
+import { RcloneError, SyncRefusedError } from '../../../src/host/sync/errors.ts'
 import type { PresetApi } from '../../../src/host/presets/routes.ts'
 import type { LorebookApi } from '../../../src/host/lorebooks/routes.ts'
 import { LorebookBusyError } from '../../../src/host/lorebooks/service.ts'
@@ -34,6 +35,8 @@ let startedWith: StartSessionRequest | undefined
 let startError: Error | undefined
 let charactersError: Error | undefined
 let deleted: string | undefined
+let deletedEverywhere: boolean | undefined
+let lockedUnit: string | undefined
 let deleteError: Error | undefined
 let said: string[]
 let opened: string | undefined
@@ -118,6 +121,7 @@ beforeEach(async () => {
   startError = undefined
   charactersError = undefined
   deleted = undefined
+  lockedUnit = undefined
   deleteError = undefined
   opened = undefined
   said = []
@@ -147,6 +151,9 @@ beforeEach(async () => {
   const handler = createApiHandler({
     catalogue: catalogue as never,
     speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
+    sync: { status: async () => ({ running: false, units: [] }) } as never,
+    anyLocked: () => lockedUnit !== undefined,
+    locked: async url => (url.searchParams.get('id') === 'harbor' ? lockedUnit : undefined),
     presets: presetApi,
     lorebooks: lorebookApi,
     packs: { worldPacks: () => Promise.resolve([]), preview: () => Promise.reject(new Error('no preview here')), status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
@@ -326,9 +333,10 @@ beforeEach(async () => {
         archived.push(`restore ${id}`)
         return Promise.resolve()
       },
-      delete: (id) => {
+      delete: (id, everywhere) => {
         if (deleteError !== undefined) return Promise.reject(deleteError)
         deleted = id
+        deletedEverywhere = everywhere
         return Promise.resolve()
       },
     },
@@ -345,6 +353,15 @@ afterEach(async () => {
 })
 
 describe('roleplay API', () => {
+  it('refuses to touch a unit while it is being synced, and still answers about the sync itself', async () => {
+    lockedUnit = 'worlds/harbor'
+    const refused = await fetch(`${origin}/worlds/info?id=harbor`)
+    expect(refused.status).toBe(423)
+    expect((await fetch(`${origin}/worlds/info?id=other`)).status).not.toBe(423)
+    expect((await fetch(`${origin}/sync/status`)).status).toBe(200)
+    lockedUnit = undefined
+  })
+
   it('serves the files a sandboxed frame loads by the key in their address without a login, and everything else only with one', async () => {
     allowed = false
     expect((await fetch(`${origin}/sessions/interface/frame/good/hud.html`)).status).toBe(200)
@@ -862,6 +879,20 @@ describe('roleplay API', () => {
       const response = await remove('session-id')
       expect(response.status).toBe(204)
       expect(deleted).toBe('session-id')
+    })
+
+    it('deletes from the sync remote as well only when asked to', async () => {
+      await remove('session-id')
+      expect(deletedEverywhere).toBe(false)
+      await fetch(`${origin}/sessions/item?id=session-id&everywhere=true`, { method: 'DELETE' })
+      expect(deletedEverywhere).toBe(true)
+    })
+
+    it('says why the remote could not be reached: 409 when sync refuses, 502 when rclone fails', async () => {
+      deleteError = new SyncRefusedError('a sync is running')
+      expect((await remove('session-id')).status).toBe(409)
+      deleteError = new RcloneError('no route to the remote', 1)
+      expect((await remove('session-id')).status).toBe(502)
     })
 
     it('answers 404 for a session that does not exist', async () => {

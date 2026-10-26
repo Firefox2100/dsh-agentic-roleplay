@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { readFile, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { defineTool, type PreToolDecision, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
-import { LORE_KINDS, LORE_SCOPES } from 'dsh-roleplay-model'
+import { LORE_KINDS, LORE_SCOPES, languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
 import { lorebookOfChat } from '../../shared/lorebook-chat.ts'
 import type { LorebookEntry } from '../../shared/lorebooks.ts'
 import { classifyEntries, isRulesTarget, readLorebook as readStLorebook, STEERING_TARGETS, type SteeringTarget } from '../import/lorebook.ts'
@@ -21,7 +21,10 @@ export const LOREBOOK_UPLOAD = `${IMPORT_FOLDER}/lorebook.json`
 const STEERING_FILE = 'steering.json'
 
 /** The command that has a lorebook's authoring chat turn an uploaded SillyTavern lorebook into entries. */
-export const lorebookImportMessage = (): string => `Turn the SillyTavern lorebook I uploaded into this lorebook: call ${LOREBOOK_IMPORT_TOOL} with file ${LOREBOOK_UPLOAD}.`
+export function lorebookImportMessage(language?: string): string {
+  const tr = translator(storyLanguageOf(language))
+  return tr('Turn the SillyTavern lorebook I uploaded into this lorebook: call {tool} with file {file}.', { tool: LOREBOOK_IMPORT_TOOL, file: LOREBOOK_UPLOAD })
+}
 
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
 const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => output(value) }

@@ -24,7 +24,7 @@
   gap: 8px;
   align-items: end;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--dsw-alias-border-l3);
+  border-bottom: 0.5px solid var(--dsw-alias-border-l3);
 }
 
 .field {
@@ -55,6 +55,7 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -64,4 +65,16 @@
   grid-template-columns: minmax(120px, 1fr) minmax(160px, 2fr) auto;
   gap: 8px;
   align-items: end;
+}
+
+@media (max-width: 720px) {
+  .row,
+  .keyArea {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
 }

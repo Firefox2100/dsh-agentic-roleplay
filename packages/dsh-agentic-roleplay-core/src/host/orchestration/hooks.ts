@@ -175,6 +175,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])))
       .join('\n')
     if (!store.settings().background.concurrent) await engine.quiesce(owner.chat)
+    await ctx.roleplayOrchestration.unitFree(owner.chat)
     await timelines.begin(owner.chat, payload.turn, text)
 
     const cast = store.cast()

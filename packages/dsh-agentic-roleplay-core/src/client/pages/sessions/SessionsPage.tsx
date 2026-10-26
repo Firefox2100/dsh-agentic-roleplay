@@ -16,7 +16,7 @@ export type SessionsPageProps =
   & InjectFace<SessionsFace>
 
 /** The sessions as a table, one page at a time, the most recently played first. */
-export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, archive, restore, askRemoval, cancelRemoval, confirmRemoval }: SessionsPageProps) {
+export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, archive, restore, askRemoval, cancelRemoval, confirmRemoval, setEverywhere }: SessionsPageProps) {
   const state = useRoleplaySessions(snapshot => snapshot)
   const viewport = useRef<HTMLDivElement>(null)
   const { pageSize, scrolls } = pagingFor(useRowFit(viewport))
@@ -146,7 +146,7 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
       )}
 
       {state.removal !== undefined && (
-        <DeleteSessionDialog key={state.removal.id} t={t} removal={state.removal} onConfirm={confirmRemoval} onCancel={cancelRemoval} />
+        <DeleteSessionDialog key={state.removal.id} t={t} removal={state.removal} onConfirm={confirmRemoval} onCancel={cancelRemoval} onEverywhere={setEverywhere} />
       )}
     </div>
   )

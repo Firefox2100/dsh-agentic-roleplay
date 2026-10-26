@@ -30,13 +30,17 @@ title: Filesystem layout
   sessions/<uuid>/
     session.sqlite
     settings.json
+    opening.json
+    timeline.json
     ui/<pack>/
     images/
+  .sync/
+    state.json
 ```
 
 `calendar.json` is optional. It defines named holidays and the hemisphere used by date-aware routines and triggers. `dice.json` is optional too: it defines the [dice checks](../world-format/dice) the game master rolls, and is copied into the story when it starts.
 
-The roleplay root is portable content. Base plugin configuration and credentials remain in the DSH profile.
+The roleplay root is portable content. Base plugin configuration and credentials remain in the DSH profile. `.sync/` is device-local bookkeeping for [cross-device sync](../playing/sync); it is deliberately never copied to the remote.
 
 World folder names are not identities. `world.json.id` is the durable world reference stored by sessions. Entity IDs are local to a world and are remapped into session database IDs on import while retained as source IDs.
 
@@ -46,6 +50,6 @@ A folder in `lorebooks/` is a [lorebook](../authoring/lorebooks): its `lorebook.
 
 The `ui` folders hold [interface packs](../authoring/interface-packs.mdx): the world's own, your own in the root, and the copies a session plays with.
 
-Every session directory is named by a UUID. Its DSH chat ID is derived as `session-<uuid>` and is not stored separately. `session.sqlite` is the authoritative evolving state; `settings.json` is live configuration.
+Every session directory is named by a UUID. Its DSH chat ID is derived as `session-<uuid>` and is not stored separately. `session.sqlite` is the authoritative evolving state; `settings.json` is live configuration. `opening.json` and `timeline.json` keep enough presentation history to reconstruct the local DSH chat after a story arrives from another device.
 
 Reference images have stable names; scene images use timeline node and serial. Metadata and sidecars make the image library readable without the session database.

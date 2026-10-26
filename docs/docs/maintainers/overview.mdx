@@ -14,6 +14,7 @@ This section is for people and coding agents changing the bundle itself. [Plugin
 - Text delivery must not wait for record keeping, world consolidation, suggestions, off-stage action, or image generation.
 - Story time, not turn count or wall time, determines memory age.
 - Generated media is filesystem-first. Stable paths and embedded or sidecar metadata are the index of record.
+- A sync unit is never read or written while its files are being transferred; unresolved divergence requires an explicit user choice.
 - Services, listeners, slots, routes, and timers must be registered through the Cordis context so hot reload disposes them.
 
 ## Package ownership
@@ -45,4 +46,4 @@ A story-model feature is not complete until all affected layers agree:
 
 Preserve unrelated working-tree changes. Use existing parsers and repository APIs rather than editing JSON or SQLite ad hoc. Read current source before relying on this guide: defaults and exact validation bounds are deliberately centralised in code. Avoid copying third-party plugin code; compatible behaviour may be studied and independently implemented.
 
-Continue with [Orchestration](./orchestration) for the turn protocol or [Testing and release](./testing-release) for the completion checklist.
+Continue with [Orchestration](./orchestration) for the turn protocol, [Cross-device sync](./sync) for filesystem coordination, or [Testing and release](./testing-release) for the completion checklist.

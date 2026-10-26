@@ -1,0 +1,31 @@
+---
+title: Cross-device sync
+---
+
+Cross-device sync belongs to the core plugin. It coordinates filesystem content, active roleplay sessions, DSH chats and an external rclone process; it does not add a storage backend to the state package.
+
+## Boundaries
+
+`host/sync/units.ts` defines the only paths that may become sync units: one unit per world and session, plus `prompts`, `presets`, `lorebooks`, `avatars` and `ui`. Dot folders are excluded. `kindOf()` is the validation boundary for unit names; never pass an unchecked request path directly to rclone.
+
+Sessions use whole-folder transfer because the database, timeline, snapshots and media describe one state. Other units use `rclone bisync --conflict-resolve none`, which can preserve two changed versions as `.conflict1` and `.conflict2`. The UI requires the user to choose rather than guessing which copy is newer.
+
+## Local and remote state
+
+`<root>/.sync/state.json` records the device ID, last remote revision, local fingerprint, ignored units and unresolved state. It stays local. The remote keeps upload revisions below `.revisions/` and deletion markers below `.tombstones/`. A session revision is incomplete until its upload finishes, so another device never downloads a partial folder.
+
+`SyncService` owns comparison, transfer, conflict resolution and deletion propagation. `UnitGate` owns the in-process lock. HTTP routes reject reads or writes to a locked unit; a roleplay turn waits for its session unit. Before replacing a session, the service stops and unloads its agent work, closes its state, then reconstructs the DSH chat from `opening.json` and `timeline.json` after the files arrive.
+
+The rclone configuration password is resolved through DSH's credential store and passed as `RCLONE_CONFIG_PASS`, not as a command-line argument. The configuration file must be an absolute path outside the roleplay root. rclone errors are shortened for the UI without treating a failed command as success.
+
+## Changes and tests
+
+Keep the following in agreement when changing sync:
+
+- `shared/sync.ts` and the browser API/controller;
+- `host/sync/`, the HTTP gate and session lifecycle hooks;
+- deletion choices in the Sessions page;
+- the user-facing [sync guide](../playing/sync), configuration reference and filesystem reference;
+- unit tests under `tests/host/sync`, plus route and session reconstruction tests.
+
+Run the normal suite, then exercise two independent DSH homes and roleplay roots against an rclone local remote. Test initial upload and download, changes on both devices, a pulled session, local-only deletion, deletion everywhere, and recovery from an interrupted transfer.

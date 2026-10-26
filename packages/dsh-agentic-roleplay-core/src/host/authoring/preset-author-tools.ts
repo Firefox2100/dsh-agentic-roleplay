@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
 import { defineTool, type PreToolDecision, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
 import { presetOfChat } from '../../shared/preset-chat.ts'
 import { extractStyleFrom } from '../import/extract.ts'
@@ -19,7 +20,10 @@ export const NARRATION_IMPORT_TOOL = 'import_narration_preset'
 const UPLOAD_PATH = `${IMPORT_FOLDER}/${PRESET_FILE}`
 
 /** The command that has a preset's authoring chat turn an uploaded SillyTavern preset into prompts. */
-export const narrationImportMessage = (): string => `Turn the SillyTavern preset I uploaded into this preset's prompts: call ${NARRATION_IMPORT_TOOL} with file ${UPLOAD_PATH}.`
+export function narrationImportMessage(language?: string): string {
+  const tr = translator(storyLanguageOf(language))
+  return tr('Turn the SillyTavern preset I uploaded into this preset\'s prompts: call {tool} with file {file}.', { tool: NARRATION_IMPORT_TOOL, file: UPLOAD_PATH })
+}
 
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
 const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => output(value) }

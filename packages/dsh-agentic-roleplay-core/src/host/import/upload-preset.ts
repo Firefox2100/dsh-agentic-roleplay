@@ -35,7 +35,7 @@ export async function uploadPreset(deps: UploadPresetDeps, worldId: string, file
   await writeFile(join(world.directory, IMPORT_FOLDER, PRESET_FILE), file)
   const chatSessionId = await deps.authoring.ensure(world.summary.id, world.summary.name, `Authoring ${world.summary.name}`, language)
   let failure: string | undefined
-  try { await deps.authoring.send(chatSessionId, presetMessage()) } catch (error) { failure = error instanceof Error ? error.message : String(error) }
+  try { await deps.authoring.send(chatSessionId, presetMessage(language)) } catch (error) { failure = error instanceof Error ? error.message : String(error) }
   return { chatSessionId, preset: preset.name, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }
 }
 

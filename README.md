@@ -9,6 +9,7 @@ Instead of treating roleplay as one long prompt, the bundle separates the game m
 - **Characters have their own point of view.** They act from their goals, relationships, knowledge, memories, and current situation—not from everything stored in the world.
 - **The world changes without becoming a script.** Plots can provide direction and pressure, while player choices and autonomous character actions determine what actually happens.
 - **Stories remain editable and durable.** Worlds are filesystem-first, sessions use SQLite, and branching or taking back does not require rebuilding the setting.
+- **Your library can follow you between devices.** Optional rclone-based sync moves worlds, stories, prompts and other shared content while detecting conflicts instead of silently overwriting either copy.
 - **Creation happens inside DSH.** Build worlds in the editor, ask an approval-gated authoring agent for help, import character cards, and generate portraits or scene illustrations when providers are available.
 - **Media is optional.** Text play works without image, speech, embedding, or reranking services; add them when you want portraits, voiced scenes, voice input, or richer recall.
 
@@ -22,6 +23,7 @@ This project is independently maintained by [Firefox2100](https://github.com/Fir
 - [简体中文文档](https://firefox2100.github.io/dsh-agentic-roleplay/zh-Hans/docs/intro)
 - [Installation](https://firefox2100.github.io/dsh-agentic-roleplay/docs/getting-started/installation)
 - [World authoring](https://firefox2100.github.io/dsh-agentic-roleplay/docs/authoring/overview)
+- [Sync between devices](https://firefox2100.github.io/dsh-agentic-roleplay/docs/playing/sync)
 - [World format](https://firefox2100.github.io/dsh-agentic-roleplay/docs/world-format/overview)
 - [Plugin development](https://firefox2100.github.io/dsh-agentic-roleplay/docs/developers/architecture)
 - [Maintainer guide](https://firefox2100.github.io/dsh-agentic-roleplay/docs/maintainers/overview)

@@ -186,5 +186,9 @@ const ZH: Readonly<Record<string, string>> = {
   '## MCP resource servers\n\nUse {tools} with the server argument naming an MCP server.': '## MCP 资源服务器\n\n使用 {tools}，server 参数填 MCP 服务器的名称。',
   '## MCP resource servers\n\nUse {tools} with one of these names as the server argument: {servers}.': '## MCP 资源服务器\n\n使用 {tools}，server 参数填下列名称之一：{servers}。',
   '{where}: the text is longer than {max} characters. A belief is not rewritten to hold what speaks against it: leave the text out and list the belief under doubt with the numbers of what speaks against it, and put what was learned as a new belief of its own': '{where}：文字超过 {max} 个字符。不要通过改写信念来容纳与之相悖的事：不要写文字，把这条信念列入 doubt 并给出与之相悖的编号；新了解到的内容另写成一条新信念',
+  'Import this card into this newly created world.': '把这张卡片导入这个新建的世界。',
+  'Turn the SillyTavern lorebook I uploaded into this lorebook: call {tool} with file {file}.': '把我上传的 SillyTavern 世界书转成这本世界书：调用 {tool}，文件为 {file}。',
+  "Turn the SillyTavern preset I uploaded into this preset's prompts: call {tool} with file {file}.": '把我上传的 SillyTavern 预设转成这个预设的提示词：调用 {tool}，文件为 {file}。',
+  'Apply the narration preset I uploaded to this world: call {tool} with file {file}.': '把我上传的叙述预设应用到这个世界：调用 {tool}，文件为 {file}。',
 }
 export { ZH }

@@ -1,3 +1,4 @@
+import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
 import { IMPORT_COMMAND, type ImportChoices } from '../../shared/import-card.ts'
 import { trimCharacters } from '../../shared/text.ts'
 import type { WorldSummary } from '../../shared/worlds.ts'
@@ -38,7 +39,10 @@ export function folderNameOf(name: string): string {
 }
 
 /** The command that starts the import, for a card kept in the world's import folder. */
-export const importMessage = (): string => `${IMPORT_COMMAND} ${IMPORT_FOLDER}/card.json Import this card into this newly created world.`
+export function importMessage(language?: string): string {
+  const tr = translator(storyLanguageOf(language))
+  return `${IMPORT_COMMAND} ${IMPORT_FOLDER}/card.json ${tr('Import this card into this newly created world.')}`
+}
 
 /**
  * Turns an uploaded card into a new empty world with its authoring chat, and has the chat start importing it on the person's behalf.
@@ -63,7 +67,7 @@ export async function startImport(deps: StartImportDeps, id: string, choices: Im
   const chatSessionId = await deps.authoring.ensure(world.id, world.name, deps.chatTitle(world.name), language)
   let failure: string | undefined
   try {
-    await deps.authoring.send(chatSessionId, importMessage())
+    await deps.authoring.send(chatSessionId, importMessage(language))
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }

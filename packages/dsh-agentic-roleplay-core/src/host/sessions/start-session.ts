@@ -7,6 +7,7 @@ import type { NarrationSegment } from '../../shared/narration.ts'
 import { addToNote } from './notes.ts'
 import { populatePlots } from '../pacing/director.ts'
 import type { AgentSessions } from '../agent/agent-sessions.ts'
+import { DEFAULT_OPENING, writeOpening } from '../agent/history.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
@@ -154,6 +155,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     if (packProblems.length > 0) throw new InvalidWorldError(`the interface packs of "${world.summary.name}" have ${packProblems.length} problem(s)`, packProblems)
     writeSettings(sessionFolder(sessionsDir, id), settings)
     addToNote(session, 'world', 1, [...unavailable, ...worldFindings(session)])
+    if (opening !== undefined) writeOpening(folder, opening)
     chatSessionId = await deps.agent.ensure(id, name, opening)
   } catch (error) {
     deps.state.deleteSession(sessionsDir, id)
@@ -183,9 +185,6 @@ function presetFor(deps: StartSessionDeps, asked: string | undefined, suggested:
     return { unavailable: [`The world suggests the preset "${name}", which cannot be used here (${reason}), so the story is told in the default style.`] }
   }
 }
-
-/** What a story opens with when its world gives no opening: a chat with nothing in it is DSH's start screen, which has none of the story's tabs. */
-const DEFAULT_OPENING = 'The story begins.'
 
 /** The opening of the world with each speaker's name, or the reason it cannot be used. */
 function openingOf(world: { directory: string; summary: { name: string }; opening?: readonly OpeningSegment[] }, characters: readonly { id: string; name: string }[]): NarrationSegment[] | undefined {

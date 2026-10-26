@@ -89,7 +89,7 @@ describe('startSession', () => {
     expect(isSessionId(started.id)).toBe(true)
     expect(started).toEqual({ id: started.id, chatSessionId: `session-${started.id}`, name: 'The Blackwater Observatory', worldId: 'blackwater', worldName: 'The Blackwater Observatory', characterCount: 3 })
     expect(await readdir(join(root, 'sessions'))).toEqual([started.id])
-    expect((await readdir(join(root, 'sessions', started.id))).sort()).toEqual(['session.sqlite', 'settings.json'])
+    expect((await readdir(join(root, 'sessions', started.id))).sort()).toEqual(['opening.json', 'session.sqlite', 'settings.json'])
 
     const session = state.openSession(join(root, 'sessions'), started.id)
     expect(session.metadata.get()).toMatchObject({

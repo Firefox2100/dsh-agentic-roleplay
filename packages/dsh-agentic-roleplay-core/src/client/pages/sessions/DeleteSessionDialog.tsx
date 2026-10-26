@@ -4,11 +4,12 @@ import type { Removal } from './sessions-controller.ts'
 import css from './DeleteSessionDialog.module.css'
 
 /** Asks for confirmation before a session and everything saved with it is removed. */
-export function DeleteSessionDialog({ t, removal, onConfirm, onCancel }: {
+export function DeleteSessionDialog({ t, removal, onConfirm, onCancel, onEverywhere }: {
   t: TranslateNS<'roleplay.sessions'>
   removal: Removal
   onConfirm: () => void
   onCancel: () => void
+  onEverywhere: (everywhere: boolean) => void
 }) {
   return (
     <Modal
@@ -28,6 +29,13 @@ export function DeleteSessionDialog({ t, removal, onConfirm, onCancel }: {
       <div className={css.body}>
         <p className={css.question}>{t('deleteQuestion', { name: removal.name })}</p>
         <p className={css.warning}>{t('deleteWarning')}</p>
+        {removal.sync === true && (
+          <fieldset className={css.choice} disabled={removal.deleting}>
+            <legend>{t('deleteScope')}</legend>
+            <label><input type="radio" name="roleplay-delete-scope" checked={removal.everywhere !== true} onChange={() => { onEverywhere(false) }} /> {t('deleteHere')}</label>
+            <label><input type="radio" name="roleplay-delete-scope" checked={removal.everywhere === true} onChange={() => { onEverywhere(true) }} /> {t('deleteEverywhere')}</label>
+          </fieldset>
+        )}
         {removal.error !== undefined && <p className={css.error} role="alert">{t('deleteFailed', { message: removal.error })}</p>}
       </div>
     </Modal>

@@ -22,7 +22,7 @@ export interface PresetDeps {
   /** Opens the authoring chat of a preset and says something in it for the person. */
   authoring: { ensure(name: string, title: string, language?: string): Promise<string>; send(chat: string, text: string): Promise<void> }
   /** The message that has the chat turn the uploaded preset into prompts. */
-  importMessage: () => string
+  importMessage: (language?: string) => string
   maxUploadBytes: number
   /** Files waiting for the person to choose what of them is imported. */
   staging: ImportStaging
@@ -152,7 +152,7 @@ export class Presets {
     }
     const chatSessionId = await this.deps.authoring.ensure(name, title ?? uploaded.name, language)
     let failure: string | undefined
-    try { await this.deps.authoring.send(chatSessionId, this.deps.importMessage()) } catch (problem) { failure = problem instanceof Error ? problem.message : String(problem) }
+    try { await this.deps.authoring.send(chatSessionId, this.deps.importMessage(language)) } catch (problem) { failure = problem instanceof Error ? problem.message : String(problem) }
     return { name, chatSessionId, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }
   }
 

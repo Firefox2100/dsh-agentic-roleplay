@@ -5,6 +5,7 @@ import { registerAvatarsPage } from './pages/avatars/index.ts'
 import { registerLorebooksPage } from './pages/lorebooks/index.ts'
 import { registerPresetsPage } from './pages/presets/index.ts'
 import { registerSessionsPage } from './pages/sessions/index.ts'
+import { registerSyncPage } from './pages/sync/index.ts'
 import { registerWorldsPage } from './pages/worlds/index.ts'
 import { registerBranchNaming } from './branch/index.ts'
 import { registerGallery } from './gallery/index.ts'
@@ -26,6 +27,7 @@ export function apply(ctx: Context): void {
   registerLorebooksPage(ctx)
   registerCataloguePage(ctx)
   registerSessionsPage(ctx)
+  registerSyncPage(ctx)
   registerTranscript(ctx)
   registerChatSettings(ctx)
   registerWorld(ctx)

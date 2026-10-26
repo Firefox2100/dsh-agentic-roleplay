@@ -1,5 +1,5 @@
 /** The DSH releases the packages are tested against, oldest first: the one list every constraint is derived from. */
-export const DSH_RELEASES = ['0.2.1-rc.2']
+export const DSH_RELEASES = ['0.2.1-rc.2', '0.2.1-rc.3']
 /** The release the workspace is developed against: DSH dependencies, which a bundle also installs, pin it exactly. */
 export const DSH_DEVELOPMENT = DSH_RELEASES.at(-1)
 

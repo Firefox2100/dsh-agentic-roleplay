@@ -9,7 +9,7 @@ export type SessionsLocaleKey =
   | 'columnName' | 'columnWorld' | 'columnCreated' | 'columnLastPlayed' | 'columnTurns'
   | 'columnActions' | 'neverPlayed' | 'dateLocale'
   | 'open' | 'openFailed' | 'archive' | 'restore' | 'archived' | 'moveFailed'
-  | 'delete' | 'deleteTitle' | 'deleteQuestion' | 'deleteWarning' | 'deleteConfirm' | 'deleting' | 'deleteFailed' | 'cancel' | 'close'
+  | 'delete' | 'deleteTitle' | 'deleteQuestion' | 'deleteWarning' | 'deleteConfirm' | 'deleteScope' | 'deleteHere' | 'deleteEverywhere' | 'deleting' | 'deleteFailed' | 'cancel' | 'close'
 
 export const dictionaries: Dictionaries<SessionsLocaleKey> = {
   en: {
@@ -42,6 +42,9 @@ export const dictionaries: Dictionaries<SessionsLocaleKey> = {
     deleteQuestion: 'Delete the session "{name}"?',
     deleteWarning: 'Its characters, state and everything else saved with it are removed permanently.',
     deleteConfirm: 'Delete',
+    deleteScope: 'Where to delete it',
+    deleteHere: 'Delete it on this device only. It stays on the remote and is not synced back until you restore it on the Sync page.',
+    deleteEverywhere: 'Delete it on the remote too. Every device that syncs deletes its copy.',
     deleting: 'Deleting…',
     deleteFailed: 'Could not delete the session: {message}',
     cancel: 'Cancel',
@@ -79,6 +82,9 @@ export const dictionaries: Dictionaries<SessionsLocaleKey> = {
     deleteQuestion: '删除存档“{name}”？',
     deleteWarning: '存档中的角色、状态及所有已保存的内容将被永久删除。',
     deleteConfirm: '删除',
+    deleteScope: '删除范围',
+    deleteHere: '只在本机删除。远端仍保留，在“同步”页恢复之前不会同步回来。',
+    deleteEverywhere: '同时从远端删除。其他设备下次同步时也会删除它们的副本。',
     deleting: '正在删除…',
     deleteFailed: '无法删除存档：{message}',
     cancel: '取消',

@@ -12,6 +12,11 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `sessionStorePath` | `~/.dsh/sessions` | DSH session store used for the chats attached to roleplay sessions |
 | `authoringTools` | none | Tools from other plugins that each authoring assistant may use. Groups are `worldAuthoring`, `presetAuthoring`, `lorebookAuthoring` and `worldAuthor`. An unlisted tool is unavailable. The session doctor never receives these tools |
 | `catalogues` | none | World catalogues to browse. Each entry has `name`, API `baseUrl`, and optionally an `apiKeyRef` for DSH's credential store. The deprecated `apiKey` field is used only when the store has no key, then removed on the next save |
+| `sync.remote` | empty | rclone remote and folder, such as `mydrive:dsh-roleplay`; empty disables sync |
+| `sync.rclone` | empty | rclone executable; empty finds `rclone` on `PATH` |
+| `sync.configFile` | empty | Absolute path to the rclone configuration file, which must be outside `rootPath` |
+| `sync.passwordRef` | empty | DSH credential-store reference for an encrypted rclone configuration; empty uses `ROLEPLAY_SYNC_RCLONE_CONFIG_PASS` |
+| `sync.intervalMinutes` | `0` | Automatic-sync interval; 0 permits manual runs only |
 | `catalogueMaxBytes` | 256 MiB | Maximum downloaded-world size, checked both compressed and unpacked |
 | `catalogueTrashDays` | 30 | Days to keep files replaced by a catalogue update in `.trash/worlds/`; 0 keeps them indefinitely |
 | `importMaxUploadBytes` | 100 MiB | Maximum character-card upload size |
@@ -21,7 +26,7 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `importMaxTokens` | 16000 | Maximum output tokens for one import request |
 | `importTemperature` | 0.2 | Import-agent temperature |
 
-`rootPath`, catalogues and authoring-tool access are also editable under **Settings, Role Play**.
+`rootPath`, catalogues, sync and authoring-tool access are also editable under **Settings, Role Play**. See [Sync between devices](../playing/sync) before pointing more than one installation at the same remote.
 
 ## State plugin configuration
 

@@ -73,6 +73,9 @@ export class PromptLibrary extends Service {
     super(ctx, 'roleplayPrompts')
   }
 
+  /** True while the prompts folder is being synced: files that are missing are then read from the package and not written, so the sync never sees a file appear. */
+  frozen: () => boolean = () => false
+
   get directory(): string {
     return join(this.root.path, PROMPTS_FOLDER)
   }
@@ -127,6 +130,7 @@ export class PromptLibrary extends Service {
     if (source === undefined) throw new Error(`there is no prompt ${id} in ${language} or ${FALLBACK_LANGUAGE}`)
     const target = source.startsWith(join(this.shipped, language)) ? found : join(this.directory, FALLBACK_LANGUAGE, `${id}.md`)
     if (!this.usable(target, id)) {
+      if (this.frozen()) return source
       mkdirSync(dirname(target), { recursive: true })
       copyFileSync(source, target)
     }

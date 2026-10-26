@@ -12,6 +12,11 @@ title: 配置参考
 | `sessionStorePath` | `~/.dsh/sessions` | 保存角色扮演会话所关联对话的 DSH 会话目录 |
 | `authoringTools` | 无 | 各创作助手可以使用的其他插件工具。分组为 `worldAuthoring`、`presetAuthoring`、`lorebookAuthoring` 和 `worldAuthor`。未列出的工具不可用；会话医生永远不会收到这些工具 |
 | `catalogues` | 无 | 可浏览的世界目录。每项包含 `name`、API `baseUrl` 和可选的 `apiKeyRef`。旧版 `apiKey` 只会在凭据存储中没有密钥时使用，并在下次保存时移除 |
+| `sync.remote` | 空 | rclone 远端与文件夹，例如 `mydrive:dsh-roleplay`；留空则关闭同步 |
+| `sync.rclone` | 空 | rclone 可执行文件；留空则从 `PATH` 查找 `rclone` |
+| `sync.configFile` | 空 | rclone 配置文件的绝对路径，必须位于 `rootPath` 之外 |
+| `sync.passwordRef` | 空 | 加密 rclone 配置所用的 DSH 凭据引用；留空使用 `ROLEPLAY_SYNC_RCLONE_CONFIG_PASS` |
+| `sync.intervalMinutes` | `0` | 自动同步间隔；0 表示只允许手动同步 |
 | `catalogueMaxBytes` | 256 MiB | 下载世界的大小上限，压缩包和解压结果分别检查 |
 | `catalogueTrashDays` | 30 | 目录更新替换的文件在 `.trash/worlds/` 中保留的天数；0 表示永久保留 |
 | `importMaxUploadBytes` | 100 MiB | 角色卡上传大小上限 |
@@ -21,7 +26,7 @@ title: 配置参考
 | `importMaxTokens` | 16000 | 单次导入请求的最大输出令牌数 |
 | `importTemperature` | 0.2 | 导入智能体的采样温度 |
 
-`rootPath`、目录和创作助手工具权限也可在**设置、角色扮演**中编辑。
+`rootPath`、目录、同步和创作助手工具权限也可在**设置、角色扮演**中编辑。让多台设备使用同一远端前，请先阅读[多设备同步](../playing/sync)。
 
 ## 状态插件配置
 

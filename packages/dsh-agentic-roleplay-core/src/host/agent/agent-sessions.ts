@@ -4,7 +4,8 @@ import { SessionId } from '@deepseek-ai/dsh-session'
 import { chatSessionId } from '../../shared/chat.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
 import { AgentUnavailableError } from '../sessions/errors.ts'
-import { storeOpening, type SessionPersistenceLike } from './opening.ts'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { storeInitialEvents, storeOpening, type SessionPersistenceLike } from './opening.ts'
 
 /** Title of the DSH project that groups every roleplay chat. */
 export const PROJECT_TITLE = 'Roleplay'
@@ -41,6 +42,8 @@ export interface AgentServices {
   registry: WorkspaceRegistryLike
   /** Needed only to start a chat with an opening message. */
   persistence?: SessionPersistenceLike
+  /** Stops the chat's live agent and lets go of its log, so the log can be written again; a chat nobody has loaded here is not affected. */
+  unload?: (chat: string) => Promise<void>
 }
 
 export interface AgentChatRequest {
@@ -88,7 +91,25 @@ export function agentServicesOf(ctx: Context): () => AgentServices {
       throw new AgentUnavailableError('this DSH profile has no session services, so a roleplay chat cannot be opened')
     }
     const persistence = ctx.get('sessionPersistence') as SessionPersistenceLike | undefined
-    return { controller, registry, ...(persistence === undefined ? {} : { persistence }) }
+    const agents = ctx.get('agents') as { get(id: string): LiveAgent | undefined } | undefined
+    return { controller, registry, ...(persistence === undefined ? {} : { persistence }), ...(agents === undefined ? {} : { unload: unloader(agents) }) }
+  }
+}
+
+interface LiveAgent {
+  scope: { rawDispose?: () => Promise<unknown> | void; dispose(): Promise<unknown> | void }
+}
+
+/** DSH has no call to unload an agent; disposing its scope is what its own teardown (a closed log, a released registration) hangs from. */
+function unloader(agents: { get(id: string): LiveAgent | undefined }): (chat: string) => Promise<void> {
+  return async (chat) => {
+    const live = agents.get(chat)
+    if (live === undefined) return
+    await (live.scope.rawDispose ?? live.scope.dispose.bind(live.scope))()
+    for (let waited = 0; agents.get(chat) !== undefined; waited += 50) {
+      if (waited >= 5000) throw new Error(`the chat ${chat} is still loaded and cannot be replaced`)
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
   }
 }
 
@@ -107,9 +128,10 @@ export class AgentSessions {
    * Create the chat of a roleplay session unless it exists; returns its DSH session id.
    * @param title - the name to give a chat that is new; one that exists keeps its own.
    * @param opening - what a chat that is new opens with: narration and lines of its characters, shown before the player says anything.
+   * @param events - the whole log a chat that is new starts from, when it is made again from a session that was played (the opening is its first turn).
    * @throws {AgentUnavailableError} when there is an opening and no way to store it.
    */
-  async ensure(sessionId: string, title: string, opening?: readonly NarrationSegment[]): Promise<string> {
+  async ensure(sessionId: string, title: string, opening?: readonly NarrationSegment[], events?: readonly SessionEvent[]): Promise<string> {
     const services = this.services()
     const { registry, persistence } = services
     const project = await registry.create(this.projectPath(), PROJECT_TITLE)
@@ -118,9 +140,34 @@ export class AgentSessions {
     const stored = opening !== undefined && !existed && await isStored(persistence, wanted)
     if (opening !== undefined && !existed && !stored) {
       if (persistence === undefined) throw new AgentUnavailableError('this DSH profile cannot store a chat with an opening message')
-      await storeOpening(persistence, { id: wanted, cwd: project.path, agentPreset: AGENT_PRESET }, opening)
+      // A live agent that outlived its log (the chat was removed under it) still holds the log's name.
+      await services.unload?.(wanted)
+      await storeOpening(persistence, { id: wanted, cwd: project.path, agentPreset: AGENT_PRESET }, opening, events)
     }
     return await ensureAgentChat(services, { projectPath: project.path, projectTitle: PROJECT_TITLE, sessionId: wanted, agentPreset: AGENT_PRESET, title }, project)
+  }
+
+  /** Whether the chat of a session exists on this installation: in the project, or stored and waiting to be attached. */
+  async has(sessionId: string): Promise<boolean> {
+    const { registry, persistence } = this.services()
+    const project = await registry.create(this.projectPath(), PROJECT_TITLE)
+    const wanted = chatSessionId(sessionId)
+    return project.sessionIds.includes(wanted) || await isStored(persistence, wanted)
+  }
+
+  /**
+   * Put a log made again in the place of the chat's own, for a session whose folder came from another installation after the chat was
+   * made. The old log is deleted first, and with it the chat's title, which is given again; DSH keeps the chat in its project, so the same id is stored again and `ensure` is not needed.
+   */
+  async replace(sessionId: string, title: string, events: readonly SessionEvent[], purge: (chat: string) => Promise<unknown>): Promise<void> {
+    const { controller, registry, persistence, unload } = this.services()
+    if (persistence === undefined) throw new AgentUnavailableError('this DSH profile cannot store a chat')
+    const project = await registry.create(this.projectPath(), PROJECT_TITLE)
+    const chat = chatSessionId(sessionId)
+    await unload?.(chat)
+    await purge(chat)
+    await storeInitialEvents(persistence, { id: chat, cwd: project.path, agentPreset: AGENT_PRESET }, events)
+    await controller.rename({ sessionId: chat, title })
   }
 
   /** Says something in the chat of a session as the player would; it is queued behind what the chat is doing. The chat must exist (`ensure`). */

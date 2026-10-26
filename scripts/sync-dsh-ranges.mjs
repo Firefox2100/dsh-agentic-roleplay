@@ -16,3 +16,10 @@ for (const folder of await readdir(resolve(root, 'packages'))) {
   JSON.parse(text)
   if (text !== before) await writeFile(file, text)
 }
+
+// A peer dependency resolves to the lowest release of its range, so the workspace names the development release.
+const workspaceFile = resolve(root, 'pnpm-workspace.yaml')
+const workspace = await readFile(workspaceFile, 'utf8')
+const override = `  '@deepseek-ai/dsh': ${DSH_DEVELOPMENT}`
+const pinned = /^  '@deepseek-ai\/dsh': .*$/m.test(workspace) ? workspace.replace(/^  '@deepseek-ai\/dsh': .*$/m, override) : workspace.replace('overrides:\n', `overrides:\n${override}\n`)
+if (pinned !== workspace) await writeFile(workspaceFile, pinned)

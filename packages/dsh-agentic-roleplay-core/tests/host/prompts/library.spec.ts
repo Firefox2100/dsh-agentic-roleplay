@@ -29,6 +29,16 @@ describe('the prompt library', () => {
     expect(await readFile(join(root, 'prompts', 'zh', 'a', 'greet.md'), 'utf8')).toBe('你好，${name}。\n')
   })
 
+  it('writes nothing while the folder is frozen for a sync, and reads the package copy instead', async () => {
+    const prompts = library()
+    prompts.frozen = () => true
+    expect(prompts.text('a/greet', 'en', { name: 'Ana' })).toBe('Hello Ana.')
+    expect(await readdir(root)).toEqual([])
+    prompts.frozen = () => false
+    prompts.text('a/greet', 'en', { name: 'Ana' })
+    expect(await readFile(join(root, 'prompts', 'en', 'a', 'greet.md'), 'utf8')).toBe('Hello ${name}.\n')
+  })
+
   it('uses the file in the root once it is there, so that the person can edit it, and copies it again when it is deleted', async () => {
     const prompts = library()
     prompts.text('a/greet', 'en', { name: 'x' })

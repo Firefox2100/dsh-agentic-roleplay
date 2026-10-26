@@ -1,0 +1,57 @@
+---
+title: Sync between devices
+---
+
+Role Play can keep its data folder in step with a folder on a remote, through [rclone](https://rclone.org). rclone speaks to most cloud drives, SFTP, WebDAV and plain folders, so Role Play does not handle connections itself.
+
+## Set it up
+
+1. Install rclone, and create a configuration file for your remote with `rclone config --config <file>`. The file must be **outside the data folder**, or it would be synced too. An encrypted configuration file works: give its password in the settings.
+2. Open **Settings → Role Play → Sync with other devices** and fill in:
+   - **Remote and folder**: an rclone remote and folder such as `mydrive:dsh-roleplay`. Leave it empty to keep sync off.
+   - **rclone configuration file**: the absolute path of the file from step 1.
+   - **rclone program**: empty looks for `rclone` on the PATH; give a path to use another copy.
+   - **Minutes between automatic syncs**: `0` syncs only when you press **Sync now** on the **Sync** page.
+   - **Configuration password**: only for an encrypted configuration file. It is kept in DSH's credential store, never in the profile's configuration, and is passed to rclone in its environment.
+
+Use the same remote on every device.
+
+## What is synced
+
+The data folder is split into units, and each unit is synced on its own:
+
+| Unit | What it holds |
+| --- | --- |
+| `worlds/<folder>` | one world |
+| `sessions/<id>` | one story: its database, turns, saved states and pictures |
+| `prompts`, `presets`, `lorebooks`, `avatars`, `ui` | the shared folders |
+
+While a unit syncs it is locked: nothing writes to it, and requests that read it are refused until it is done. A turn that starts meanwhile waits. A story that is being played, or whose characters are still reflecting, is skipped and tried again on the next run; one that is only finishing its records is waited for.
+
+A world or a shared folder is synced file by file with rclone's bisync, so changes to different files on two devices both survive. A story is different: its files belong together, so it moves **whole**. A story that exists on only one side is copied to the other.
+
+## When both sides changed
+
+Role Play does not merge. The **Sync** page shows the unit as **Needs a choice**:
+
+- For a story, or for a world that was never synced on this device but exists on both sides, choose **Keep this device's** or **Keep the remote's**. The other copy is replaced.
+- For a world with files that both sides changed, both copies of each file are kept side by side (`name.conflict1` is this device's, `name.conflict2` the remote's). Choose which to keep; the other is removed.
+
+When a story is pulled from another device, its chat is made again from what the story's folder keeps, so the chat on this device shows every turn played elsewhere. Turns of a branch you rewound away from are not in the chat's log; swapping to them works from the saved state.
+
+## Deleting
+
+When sync is set up, deleting a story on the Sessions page asks where:
+
+- **This device only.** The remote keeps its copy and no later run brings the story back here. The Sync page lists it as **Kept on the remote**; **Sync it again** takes that back and the next run downloads the story.
+- **Everywhere.** A deletion mark is written on the remote and the remote's copy is removed. Every other device that syncs afterwards deletes its own copy too. A story that device changed since it last synced, or never synced, is not deleted without asking: the Sync page offers **Keep this copy** (which removes the mark and uploads it again) or **Delete it here too**. A world is moved to the data folder's trash instead of being erased.
+
+A world folder you remove by hand is never deleted for you. The next run shows it as **Needs a choice**: **Delete everywhere**, **Keep on the remote** (stop syncing it here) or **Get it back**.
+
+If the remote cannot be reached, nothing is deleted.
+
+## Limits
+
+- A story started before the opening was kept has no opening to rebuild its chat from: its chat is made again from its turns, under the opening "The story begins."
+- World authoring, preset, lorebook and session doctor chats are not synced; they belong to the device.
+- rclone keeps records per pair of paths in `.sync` inside the data folder, which is never synced. A very long data folder path or remote path is refused with a message.

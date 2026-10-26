@@ -40,6 +40,8 @@ import { HttpError, sendError, sendJson } from './respond.ts'
 import { presetRoutes } from '../presets/routes.ts'
 import type { PresetApi } from '../presets/routes.ts'
 import { lorebookRoutes } from '../lorebooks/routes.ts'
+import { RcloneError, SyncRefusedError } from '../sync/errors.ts'
+import { failure as syncFailure, syncRoutes, type SyncApi } from '../sync/routes.ts'
 import type { LorebookApi } from '../lorebooks/routes.ts'
 import { FRAME_FILES, PACK_FILES, interfaceRoutes, sendPackFile, type InterfaceApi } from '../interface/routes.ts'
 
@@ -135,7 +137,7 @@ export interface ApiDeps {
   sessions: {
     list(): SessionsPayload
     start(request: StartSessionRequest): Promise<StartedSession>
-    open(id: string): Promise<OpenedSession>
+    open(id: string, rebuild?: boolean): Promise<OpenedSession>
     /** Says something in a session's chat as the player would; scripts use it to play. */
     send(id: string, text: string): Promise<void>
     /** The images of a session with what their files say. */
@@ -144,7 +146,8 @@ export interface ApiDeps {
     /** Adds a picture the person brought to the session's library; it is described in the background. @returns its path. */
     uploadImage(id: string, name: string, bytes: Uint8Array): Promise<string>
     updateImage(id: string, path: string, update: ImageUpdate): Promise<GalleryImage>
-    delete(id: string): Promise<void>
+    /** `everywhere` also deletes the session from the sync remote, for every device. */
+    delete(id: string, everywhere?: boolean): Promise<void>
     archive(id: string): Promise<void>
     restore(id: string): Promise<void>
     rename(id: string, name: string): Promise<void>
@@ -186,6 +189,12 @@ export interface ApiDeps {
   presets: PresetApi
   /** The lorebook library. */
   lorebooks: LorebookApi
+  /** Syncing with other devices. */
+  sync: SyncApi
+  /** The unit a request touches while it is being synced, or nothing; only asked while some unit is locked. */
+  locked?(url: URL): Promise<string | undefined>
+  /** Whether any unit is locked. */
+  anyLocked?(): boolean
   connection: ApiConnection
   speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio>; streaming(): boolean }
 }
@@ -238,7 +247,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, presets, lorebooks, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, presets, lorebooks, sync, locked, anyLocked, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -770,7 +779,7 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
     '/sessions/open': {
       POST: async (_req, res, url) => {
         try {
-          sendJson(res, 200, await sessions.open(url.searchParams.get('id') ?? ''))
+          sendJson(res, 200, await sessions.open(url.searchParams.get('id') ?? '', url.searchParams.get('rebuild') === '1'))
         } catch (error) {
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof SessionArchivedError) return sendError(res, 409, error.message)
@@ -1053,8 +1062,9 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
     '/sessions/item': {
       DELETE: async (_req, res, url) => {
         try {
-          await sessions.delete(url.searchParams.get('id') ?? '')
+          await sessions.delete(url.searchParams.get('id') ?? '', url.searchParams.get('everywhere') === 'true')
         } catch (error) {
+          if (error instanceof SyncRefusedError || error instanceof RcloneError) return syncFailure(res, error)
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
           throw error
@@ -1066,6 +1076,7 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
     ...interfaceRoutes(packs),
     ...presetRoutes(presets),
     ...lorebookRoutes(lorebooks),
+    ...syncRoutes(sync),
     '/worlds/cover': {
       GET: async (_req, res, url) => {
         const cover = await worlds.cover(url.searchParams.get('id') ?? '')
@@ -1105,6 +1116,10 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
     }
     const methods = routes[path]
     if (methods === undefined) return sendError(res, 404, 'not found')
+    if (anyLocked?.() === true && !path.startsWith('/sync/')) {
+      const unit = await locked?.(url)
+      if (unit !== undefined) return sendError(res, 423, `"${unit}" is being synced; try again when it is done`)
+    }
     const route = methods[req.method ?? '']
     if (route === undefined) {
       res.setHeader('allow', Object.keys(methods).join(', '))

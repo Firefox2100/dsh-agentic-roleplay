@@ -165,7 +165,8 @@ export function apply(ctx: Context): void {
   imageJobs = images
   ctx.effect(() => {
     ctx.roleplayOrchestration.halt = async (chat) => { images.cancel(chat); engine.stop(chat); await engine.quiesce(chat); engine.forget(chat) }
-    return () => { ctx.roleplayOrchestration.halt = () => Promise.resolve() }
+    ctx.roleplayOrchestration.quiesce = chat => engine.quiesce(chat)
+    return () => { ctx.roleplayOrchestration.halt = () => Promise.resolve(); ctx.roleplayOrchestration.quiesce = () => Promise.resolve() }
   }, 'roleplay: halt')
   ctx.effect(() => { ctx.roleplayOrchestration.timelines = timelines; return () => { ctx.roleplayOrchestration.timelines = undefined } }, 'roleplay: timelines')
   ctx.effect(() => { ctx.roleplayOrchestration.images = images; return () => { ctx.roleplayOrchestration.images = undefined } }, 'roleplay: images')

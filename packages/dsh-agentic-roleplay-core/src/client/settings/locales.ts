@@ -8,6 +8,7 @@ export type SettingsLocaleKey =
   | 'catalogueProblemName' | 'catalogueProblemAddress' | 'catalogueProblemDuplicate' | 'catalogueProblemKeyName'
   | 'catalogueKeyName' | 'catalogueKeyChecking' | 'catalogueKeySet' | 'catalogueKeyUnset' | 'catalogueKeyReadOnly' | 'catalogueKeyStore' | 'catalogueKeyClear' | 'catalogueKeyLegacy' | 'catalogueKeyMove'
   | 'authoringTools' | 'authoringToolsHint' | 'authoringToolsNone' | 'authoringKind_worldAuthoring' | 'authoringKind_presetAuthoring' | 'authoringKind_lorebookAuthoring' | 'authoringKind_worldAuthor'
+  | 'sync' | 'syncHint' | 'syncRemote' | 'syncConfigFile' | 'syncRclone' | 'syncInterval' | 'syncPassword' | 'syncDetails' | 'syncProblemRemote' | 'syncProblemConfig' | 'syncProblemInterval'
   | 'overridden' | 'reset' | 'invalid'
   | 'readOnly' | 'unavailable' | 'save' | 'saving' | 'saveFailed'
 
@@ -47,6 +48,17 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     authoringKind_presetAuthoring: 'Preset authoring assistant',
     authoringKind_lorebookAuthoring: 'Lorebook authoring assistant',
     authoringKind_worldAuthor: 'World author during play (invents places, people and things the story needs)',
+    sync: 'Sync with other devices',
+    syncHint: 'Keeps the data folder in step with a folder on a remote, through rclone: each world, each session and each shared folder is synced as one unit and is left alone while it syncs. Leave the remote empty to keep sync off. The sync page lists the units.',
+    syncRemote: 'Remote and folder',
+    syncConfigFile: 'rclone configuration file',
+    syncRclone: 'rclone program',
+    syncInterval: 'Minutes between automatic syncs',
+    syncPassword: 'Configuration password',
+    syncDetails: 'The remote is an rclone remote and folder such as mydrive:dsh-roleplay. The configuration file must be outside the data folder (create it with rclone config --config <file>). The program is looked up on the PATH when left empty. 0 minutes syncs only when you ask. A password is only needed when the configuration file is encrypted; it is kept in the credential store under the key name shown, and you can give another name here.',
+    syncProblemRemote: 'The remote must be written without spaces, like mydrive:dsh-roleplay.',
+    syncProblemConfig: 'Give the absolute path of the rclone configuration file.',
+    syncProblemInterval: 'Minutes are a whole number, 0 or more.',
     overridden: 'Overridden',
     reset: 'Reset to default',
     invalid: 'Enter a folder path.',
@@ -91,6 +103,17 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     authoringKind_presetAuthoring: '预设创作助手',
     authoringKind_lorebookAuthoring: '世界书创作助手',
     authoringKind_worldAuthor: '游戏中的世界作者（为故事补充所需的地点、人物和物品）',
+    sync: '与其他设备同步',
+    syncHint: '通过 rclone 让数据文件夹与远端的一个文件夹保持一致：每个世界、每个会话和每个共享文件夹各自作为一个单元同步，同步期间不会被改动。远端留空即关闭同步。“同步”页面会列出各个单元。',
+    syncRemote: '远端和文件夹',
+    syncConfigFile: 'rclone 配置文件',
+    syncRclone: 'rclone 程序',
+    syncInterval: '自动同步的间隔（分钟）',
+    syncPassword: '配置文件密码',
+    syncDetails: '远端是 rclone 的远端名和文件夹，例如 mydrive:dsh-roleplay。配置文件必须放在数据文件夹之外（可用 rclone config --config <文件> 创建）。程序留空时在 PATH 中查找。间隔为 0 分钟表示只在你手动同步时才同步。只有配置文件已加密时才需要密码；密码保存在凭据存储中，名称见上方，也可以在这里改用别的名称。',
+    syncProblemRemote: '远端不能含空格，例如 mydrive:dsh-roleplay。',
+    syncProblemConfig: '请填写 rclone 配置文件的绝对路径。',
+    syncProblemInterval: '分钟数必须是不小于 0 的整数。',
     overridden: '已覆盖',
     reset: '恢复默认',
     invalid: '请填写文件夹路径。',

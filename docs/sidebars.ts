@@ -8,7 +8,7 @@ const sidebars: SidebarsConfig = {
       'getting-started/first-world', 'getting-started/first-session',
     ]},
     {type: 'category', label: 'Playing', items: [
-      'playing/interface', 'playing/sessions', 'playing/catalogue', 'playing/media', 'playing/settings',
+      'playing/interface', 'playing/sessions', 'playing/catalogue', 'playing/sync', 'playing/media', 'playing/settings',
     ]},
     {type: 'category', label: 'World authoring', items: [
       'authoring/overview', 'authoring/editor', 'authoring/assistant', 'authoring/presets', 'authoring/lorebooks',
@@ -31,6 +31,7 @@ const sidebars: SidebarsConfig = {
       'maintainers/overview', 'maintainers/orchestration',
       'maintainers/state-memory', 'maintainers/world-prompts-import',
       'maintainers/images-capabilities', 'maintainers/interface-packs', 'maintainers/dsh-contracts',
+      'maintainers/sync',
       'maintainers/testing-release',
       {type: 'category', label: 'Detailed specifications', items: [
         'specifications/world-files', 'specifications/turn-engine',

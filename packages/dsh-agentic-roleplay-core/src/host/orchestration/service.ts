@@ -20,6 +20,12 @@ export class RoleplayOrchestration extends Service {
   /** Resolves once the records of a chat's recorded rounds are written (or have failed): the writing goes on behind the story, so what needs them waits here. */
   settle: (chat: string) => Promise<void> = () => Promise.resolve()
 
+  /** Resolves once the chat's story is free: a turn waits here while the story is being synced. */
+  unitFree: (chat: string) => Promise<void> = () => Promise.resolve()
+
+  /** Resolves once nothing of the chat writes to its story in the background (the records, the made-up things, the characters away, the suggestions); there while the orchestration is. */
+  quiesce: (chat: string) => Promise<void> = () => Promise.resolve()
+
   /** Stops everything a chat has in flight in the background and waits for it; there while the orchestration is. */
   halt: (chat: string) => Promise<void> = () => Promise.resolve()
 

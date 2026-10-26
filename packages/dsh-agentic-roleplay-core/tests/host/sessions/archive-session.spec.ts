@@ -57,7 +57,7 @@ describe('putting a session away', () => {
 
   it('cannot be played until it is brought back; bringing it back shows its chat again and clears the mark', async () => {
     const id = make()
-    const open = () => openSession({ state, agent: { ensure: (session: string) => Promise.resolve(`session-${session}`) }, sessionsDir }, id)
+    const open = () => openSession({ state, agent: { ensure: (session: string) => Promise.resolve(`session-${session}`), has: () => Promise.resolve(true) }, sessionsDir }, id)
     await archiveSession(deps(), id)
     await expect(open()).rejects.toBeInstanceOf(SessionArchivedError)
     await restoreSession(deps(), id)

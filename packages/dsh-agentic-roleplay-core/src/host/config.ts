@@ -1,5 +1,6 @@
 import type { Volatile } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { DEFAULT_SYNC, type SyncConfig } from '../shared/sync.ts'
 
 /** Root used when the profile configures none. */
 export const DEFAULT_ROOT_PATH = '~/dsh-roleplay'
@@ -30,6 +31,8 @@ export interface Config {
    * (`presetAuthoring` and `lorebookAuthoring` likewise). An assistant has none that it is not given here, whatever else the profile registers; the session doctor never has any.
    */
   authoringTools: Volatile<Record<string, Record<string, boolean>>>
+  /** Syncing the root with other devices through rclone; off while `remote` is empty. */
+  sync: Volatile<SyncConfig>
   /** The most a downloaded world may be, in bytes, compressed and again unpacked. */
   catalogueMaxBytes: number
   /** Days the files an update replaced are kept in the trash folder before they are deleted; 0 keeps them for good. */
@@ -53,6 +56,7 @@ export const Config = z.object({
   sessionStorePath: z.string().default(DEFAULT_STORE_PATH),
   catalogues: z.array(z.object({ name: z.string().required(), baseUrl: z.string().required(), apiKeyRef: z.string().default(''), apiKey: z.string().default('') })).default([]).volatile(),
   authoringTools: z.dict(z.dict(z.boolean())).default({}).volatile(),
+  sync: z.object({ remote: z.string().default(''), rclone: z.string().default(''), configFile: z.string().default(''), passwordRef: z.string().default(''), intervalMinutes: z.number().min(0).default(0) }).default({ ...DEFAULT_SYNC }).volatile(),
   catalogueMaxBytes: z.number().min(1024).default(256 * 1024 * 1024),
   catalogueTrashDays: z.number().min(0).default(30),
   importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024),

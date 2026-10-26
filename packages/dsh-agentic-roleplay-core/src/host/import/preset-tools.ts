@@ -1,5 +1,6 @@
 import { readFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
+import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
 import { writeWorldPrompt } from '../prompts/world-prompts.ts'
@@ -18,7 +19,10 @@ export const PRESET_FILE = 'preset.json'
 const PRESET_PATH = `${IMPORT_FOLDER}/${PRESET_FILE}`
 
 /** The command that has the authoring chat apply a preset that was uploaded to the world. */
-export const presetMessage = (): string => `Apply the narration preset I uploaded to this world: call ${PRESET_TOOL} with file ${PRESET_PATH}.`
+export function presetMessage(language?: string): string {
+  const tr = translator(storyLanguageOf(language))
+  return tr('Apply the narration preset I uploaded to this world: call {tool} with file {file}.', { tool: PRESET_TOOL, file: PRESET_PATH })
+}
 
 /** The tool that turns an uploaded narration preset into the world's prose prompts; every call asks the person first. */
 export function presetTools(worlds: WorldCatalog, settings: () => ImportSettings, prompting: Prompting): ToolDefinition[] {

@@ -22,6 +22,25 @@
   color: var(--dsw-alias-label-secondary);
 }
 
+.choice {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 0;
+  padding: 0;
+  border: 0;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--dsw-alias-label-primary);
+}
+
+.choice legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 12px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
 .error {
   font-size: 12px;
   color: var(--dsw-alias-state-error-primary);

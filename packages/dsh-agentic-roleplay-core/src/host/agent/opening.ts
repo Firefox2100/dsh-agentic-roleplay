@@ -1,7 +1,7 @@
 import { createMessage, createSystemMessage, createToolResultMessage, ToolCallId } from '@deepseek-ai/dsh-llm'
 import { Session, SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
 import { setApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
-import { encodeOutput, type NarrationSegment } from '../../shared/narration.ts'
+import { encodeOutput, type NarrationSegment, type TurnOutput } from '../../shared/narration.ts'
 
 /** What the opening is reported to come from, where a chat shows the source of a message. */
 export const OPENING_SOURCE = { provider: 'roleplay', model: 'opening' } as const
@@ -29,26 +29,26 @@ function reservePromptHead(session: Session, turn: number, step: number): void {
   session.append('system/message', { turn, step, message: createSystemMessage('') }, { surfaceOp: 'append' })
 }
 
+/** What a narrated turn leaves in the log: the events of one finished turn, and where they stand. */
+export interface TurnSeqs { startSeq: number; userSeq?: number; endSeq: number }
+
 /**
- * The log of a chat that opens with a story: a finished first turn in which the
- * output was delivered the way every later turn delivers it (a `narrate` call and
- * its result), so it renders the same and the model reads a history that looks like
- * the one it will write. The player's message starts the second turn. Nothing is
- * asked of a model.
+ * One finished turn in which the output was delivered the way every turn delivers it (a `narrate` call and its result), so it renders
+ * the same and the model reads a history that looks like the one it will write. A turn with a player starts with the player's message.
  */
-export function openingEvents(segments: readonly NarrationSegment[]): readonly SessionEvent[] {
-  const session = Session.create(SessionId('opening'))
-  const turn = 1
+export function appendNarratedTurn(session: Session, turn: number, output: TurnOutput, player?: string): TurnSeqs {
   const step = 1
-  const callId = ToolCallId('opening-narrate')
-  const sent = segments.map(segment => (segment.type === 'utterance'
+  const callId = ToolCallId(player === undefined ? 'opening-narrate' : `narrate-${turn}`)
+  const sent = output.segments.map(segment => (segment.type === 'utterance'
     ? { type: 'utterance', character: segment.character, text: segment.text }
     : { type: 'narration', text: segment.text }))
   const args = JSON.stringify({ segments: sent })
 
-  session.append('turn/start', { turn })
+  const started = session.append('turn/start', { turn })
   session.append('step/start', { turn, step })
-  reservePromptHead(session, turn, step)
+  let asked: number | undefined
+  if (player === undefined) reservePromptHead(session, turn, step)
+  else asked = session.append('user/message', createMessage({ role: 'user', content: [{ type: 'text', text: player }], source: { kind: 'user' } }), { surfaceOp: 'append' }).seq
   session.append('assistant/message', {
     stream: [],
     turn,
@@ -65,12 +65,27 @@ export function openingEvents(segments: readonly NarrationSegment[]): readonly S
     step,
     message: createToolResultMessage({
       callId,
-      content: [{ type: 'text', text: `The output has been delivered to the player. The turn ends here.\n${encodeOutput({ segments: [...segments], repaired: false })}` }],
+      content: [{ type: 'text', text: `The output has been delivered to the player. The turn ends here.\n${encodeOutput(output)}` }],
       isError: false,
     }),
   }, { surfaceOp: 'append', sourceEventSeqs: [call.seq] })
   session.append('step/end', { turn, step })
+  const ended = session.append('turn/end', { turn, reason: { kind: 'completed' } })
+  return { startSeq: started.seq, ...(asked === undefined ? {} : { userSeq: asked }), endSeq: ended.seq }
+}
+
+/** A turn in which nothing was said and nothing was delivered, to keep the log's turns consecutive. */
+export function appendEmptyTurn(session: Session, turn: number): void {
+  session.append('turn/start', { turn })
   session.append('turn/end', { turn, reason: { kind: 'completed' } })
+}
+
+/**
+ * The log of a chat that opens with a story: a finished first turn. The player's message starts the second turn. Nothing is asked of a model.
+ */
+export function openingEvents(segments: readonly NarrationSegment[]): readonly SessionEvent[] {
+  const session = Session.create(SessionId('opening'))
+  appendNarratedTurn(session, 1, { segments: [...segments], repaired: false })
   return session.snapshotEvents()
 }
 
@@ -107,8 +122,9 @@ export async function storeOpening(
   persistence: SessionPersistenceLike,
   chat: { id: string; cwd: string; agentPreset: string },
   segments: readonly NarrationSegment[],
+  events: readonly SessionEvent[] = openingEvents(segments),
 ): Promise<void> {
-  await storeInitialEvents(persistence, chat, openingEvents(segments))
+  await storeInitialEvents(persistence, chat, events)
 }
 
 export async function storeAuthoringOpening(
@@ -127,7 +143,7 @@ export async function storeDoctorOpening(
   await storeInitialEvents(persistence, chat, authoringOpeningEvents(welcome, DOCTOR_OPENING_SOURCE))
 }
 
-async function storeInitialEvents(
+export async function storeInitialEvents(
   persistence: SessionPersistenceLike,
   chat: { id: string; cwd: string; agentPreset: string },
   events: readonly SessionEvent[],
