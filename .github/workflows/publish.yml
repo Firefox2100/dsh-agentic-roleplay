@@ -37,8 +37,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Install rclone
         run: |
-          sudo apt-get update
-          sudo apt-get install --yes rclone
+          curl --fail --location --output /tmp/rclone.deb https://downloads.rclone.org/v1.74.3/rclone-v1.74.3-linux-amd64.deb
+          echo "408cde598307dedc26b7108553cb2147a8d2d12853100447e802f47454582ecc  /tmp/rclone.deb" | sha256sum --check --strict
+          sudo dpkg --install /tmp/rclone.deb
+          rclone version
       - name: Type-check
         run: pnpm typecheck
       - name: Test with coverage
