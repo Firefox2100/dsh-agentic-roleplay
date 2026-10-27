@@ -29,6 +29,7 @@ title: 配置参考
 | `importTimeoutMinutes` | 15 | 导入或创作助手未给出结果前最多运行的分钟数；0 表示不限时 |
 | `importDecisions` | `llm` | `decision` 让已配置的决策服务先判断有把握的卡片片段；`llm` 把每个片段都交给语言模型 |
 | `importConfidence` | 0.7 | 采用决策模型分类所需的把握程度 |
+| `authoringApproval` | `ask` | `ask` 要求逐项批准世界创作对话的修改；`auto` 立即写入，并把被替换或删除的文件保存在世界的 `.trash` 文件夹中 |
 
 除需重启的 `sessionStorePath` 外，所有字段都可在**设置、角色扮演**中编辑，并立即生效。让多台设备使用同一远端前，请先阅读[多设备同步](../playing/sync)。
 

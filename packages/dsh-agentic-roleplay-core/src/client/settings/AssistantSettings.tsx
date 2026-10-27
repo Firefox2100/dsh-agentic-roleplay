@@ -29,8 +29,7 @@ function ChoiceField({ t, spec, state, disabled, onEdit, onReset }: {
       </div>
       <select id={id} className={css.select} value={state.text} disabled={disabled} aria-invalid={state.invalid || undefined} aria-describedby={messageId} onChange={(event) => { onEdit(event.target.value) }}>
         {!known && <option value={state.text}>{state.text}</option>}
-        <option value="llm">{t('importDecisionLlm')}</option>
-        <option value="decision">{t('importDecisionModel')}</option>
+        {spec.choices.map((choice, index) => <option key={choice} value={choice}>{t(spec.labels[index]!)}</option>)}
       </select>
       <p id={messageId} className={state.invalid ? css.invalid : css.fieldHint}>{state.invalid ? t('assistantInvalidChoice') : t(`${spec.field}Hint`)}</p>
     </div>

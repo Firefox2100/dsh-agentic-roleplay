@@ -9,7 +9,7 @@ export type SettingsLocaleKey =
   | 'catalogueKeyName' | 'catalogueKeyChecking' | 'catalogueKeySet' | 'catalogueKeyUnset' | 'catalogueKeyReadOnly' | 'catalogueKeyStore' | 'catalogueKeyClear' | 'catalogueKeyLegacy' | 'catalogueKeyMove'
   | 'authoringTools' | 'authoringToolsHint' | 'authoringToolsNone' | 'authoringKind_worldAuthoring' | 'authoringKind_presetAuthoring' | 'authoringKind_lorebookAuthoring' | 'authoringKind_worldAuthor'
   | 'sync' | 'syncHint' | 'syncRemote' | 'syncConfigFile' | 'syncRclone' | 'syncInterval' | 'syncPassword' | 'syncDetails' | 'syncProblemRemote' | 'syncProblemConfig' | 'syncProblemInterval'
-  | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
+  | 'redundantLayers' | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'authoringApprovalLabel' | 'authoringApprovalHint' | 'authoringApprovalAsk' | 'authoringApprovalAuto' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
   | 'overridden' | 'reset' | 'invalid'
   | 'readOnly' | 'unavailable' | 'save' | 'saving' | 'saveFailed'
 
@@ -69,10 +69,15 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     importDecisionsHint: 'Use the language model for every piece of a card, or let the selected decision model settle pieces that are only instructions or notes first. Anything it is unsure about still goes to the language model. The language model is the default.',
     importConfidenceLabel: 'Decision model confidence',
     importConfidenceHint: 'How sure the decision model must be before its answer is taken, from 0 to 1. Default 0.7.',
+    authoringApprovalLabel: 'Changes by the world authoring chat',
+    authoringApprovalHint: 'Ask shows each change to the world and waits for your answer. Automatic makes the changes at once; anything it replaces or deletes is kept in the world\'s .trash folder. Imports always make their own changes without asking. Ask is the default.',
+    authoringApprovalAsk: 'Ask for each change',
+    authoringApprovalAuto: 'Make changes automatically',
     importDecisionLlm: 'Language model',
     importDecisionModel: 'Decision model first',
     assistantInvalidRange: 'Enter a number from {min} to {max}.',
     assistantInvalidChoice: 'Choose one of the available options.',
+    redundantLayers: 'The profile selects the bundle layer of a single Role Play package next to the "all" bundle, so a Role Play plugin row exists twice and DSH refuses to save these settings. Deselect the other Role Play layers in your plugin manager (keep the packages installed), leave only @dsh-agentic-roleplay/all, and restart.',
     limits: 'Upload and download limits',
     limitsHint: 'Size limits for what the plugin accepts, and how long it keeps what an update replaced. They apply at once.',
     importMaxUploadBytesLabel: 'Largest upload (bytes)',
@@ -156,10 +161,15 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     importDecisionsHint: '可以让语言模型判断卡片的每个片段，也可以先由所选的决策模型处理仅包含指令或说明的片段；它没把握的内容仍交给语言模型。默认使用语言模型。',
     importConfidenceLabel: '决策模型的把握程度',
     importConfidenceHint: '决策模型要有多大把握才采纳它的回答，0 到 1。默认 0.7。',
+    authoringApprovalLabel: '世界创作对话的修改',
+    authoringApprovalHint: '“逐项询问”会展示每一处对世界的修改并等待你回答；“自动修改”则直接修改，被替换或删除的内容保存在世界的 .trash 文件夹中。导入始终无需询问就自行修改。默认逐项询问。',
+    authoringApprovalAsk: '逐项询问',
+    authoringApprovalAuto: '自动修改',
     importDecisionLlm: '语言模型',
     importDecisionModel: '优先使用决策模型',
     assistantInvalidRange: '请输入 {min} 到 {max} 之间的数字。',
     assistantInvalidChoice: '请选择一个可用选项。',
+    redundantLayers: '配置档案在选中「all」套件的同时，还选中了某个角色扮演单包的套件层，导致角色扮演的插件行出现两次，DSH 因此拒绝保存这些设置。请在插件管理器中取消选中其他角色扮演层（包保持安装），只留下 @dsh-agentic-roleplay/all，然后重启。',
     limits: '上传与下载限制',
     limitsHint: '插件接收内容的大小限制，以及更新后被替换的文件保留多久。立即生效。',
     importMaxUploadBytesLabel: '上传大小上限（字节）',

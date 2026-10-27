@@ -3,6 +3,7 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 import { AuthoringToolSettings } from './AuthoringToolSettings.tsx'
 import { AssistantSettings } from './AssistantSettings.tsx'
 import { CatalogueSettings } from './CatalogueSettings.tsx'
+import { SetupNotice } from './SetupNotice.tsx'
 import { SyncSettings } from './SyncSettings.tsx'
 import { formLabels } from './locales.ts'
 import type { RoleplaySettingsFace } from './settings-controller.ts'
@@ -19,6 +20,7 @@ export function RoleplaySection(props: RoleplaySectionProps) {
     <div>
       <h2>{t('title')}</h2>
       <p>{t('description')}</p>
+      <SetupNotice t={t} />
       <SettingsForm labels={formLabels(t)} state={state} onSave={props.save} onDiscard={props.discard}>
         <SettingsValueField
           id="roleplay-root-path"

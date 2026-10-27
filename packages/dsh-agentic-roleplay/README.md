@@ -4,7 +4,7 @@ The complete persistent, agent-driven roleplay experience for DeepSeek Harness (
 
 Create editable worlds and play stories coordinated by a game master while autonomous character agents act from their own goals, relationships, knowledge, and memories. The bundle preserves locations, items, time, factions, plots, perceptions, and consequences as structured session state rather than relying on one ever-growing chat prompt.
 
-It installs the roleplay UI and orchestration plugin, the persistent state service, and the DSH voice-input components used by the interface. It also provides an approval-gated world-authoring assistant, reusable avatars, branching and take-back, optional speech, portraits, and scene illustrations. AI models and media services are configured separately through [DSH AI Providers](https://firefox2100.github.io/dsh-ai-providers/docs/intro).
+It installs the roleplay UI and orchestration plugin, the persistent state service, and the DSH voice-input components used by the interface. It also provides a world-authoring assistant that asks before changing files by default, reusable avatars, branching and take-back, optional speech, portraits, and scene illustrations. AI models and media services are configured separately through [DSH AI Providers](https://firefox2100.github.io/dsh-ai-providers/docs/intro).
 
 ## Install
 

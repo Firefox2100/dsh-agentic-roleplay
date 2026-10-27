@@ -81,6 +81,26 @@ describe.skipIf(!hasRclone)('SyncService with rclone', () => {
     expect(a.service.problem()).toBeUndefined()
   })
 
+  it('brings each device what only the other has, worlds and stories alike, in the same pair of runs', async () => {
+    const a = await device('a')
+    const b = await device('b')
+    const OTHER = '9a8b7c6d-1e2f-4a3b-8c4d-5e6f7a8b9c0d'
+    await write(a.root, 'worlds/harbor/world.json', '{"name":"Harbor"}')
+    await write(a.root, `sessions/${SESSION}/session.sqlite`, 'from a')
+    await write(b.root, 'worlds/lighthouse/world.json', '{"name":"Lighthouse"}')
+    await write(b.root, `sessions/${OTHER}/session.sqlite`, 'from b')
+    await a.service.run()
+    await b.service.run()
+    await a.service.run()
+    for (const device of [a, b]) {
+      expect(await read(device.root, 'worlds/harbor/world.json')).toBe('{"name":"Harbor"}')
+      expect(await read(device.root, 'worlds/lighthouse/world.json')).toBe('{"name":"Lighthouse"}')
+      expect(await read(device.root, `sessions/${SESSION}/session.sqlite`)).toBe('from a')
+      expect(await read(device.root, `sessions/${OTHER}/session.sqlite`)).toBe('from b')
+      expect((await device.service.status()).units.map(entry => entry.state)).toEqual(['synced', 'synced', 'synced', 'synced'])
+    }
+  })
+
   it('moves a session whole to another device and back, and tells a change on both sides', async () => {
     const a = await device('a')
     const b = await device('b')

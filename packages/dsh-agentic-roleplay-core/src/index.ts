@@ -33,6 +33,7 @@ import { deleteSession } from './host/sessions/delete-session.ts'
 import { purgeOf } from './host/agent/purge-services.ts'
 import { AuthoringTools } from './host/tools/authoring-tools.ts'
 import { externalTools, type ToolRegistry } from './host/tools/external.ts'
+import { redundantLayers, redundantLayersMessage, selectedBundles } from './host/setup/rows.ts'
 import { editCalendar, editDice, editRoutine, editVariables, readCalendarDocument, readDiceDocument, readRoutines, readVariables } from './host/worlds/daily-life.ts'
 import { addWorldLore, removeWorldLore } from './host/worlds/lore-entries.ts'
 import { editSessionNarrationVoice, editWorldCharacter as editSessionCharacter, editWorldFaction as editSessionFaction, editWorldLore as editSessionLore, editWorldPlots as editSessionPlots, editWorldPlace as editSessionPlace, editWorldRelation as editSessionRelation, editWorldThing as editSessionThing, generateSessionCharacterPortrait, generateSessionEntityImage, readWorldState, sessionCharacterPortraitFile, sessionEntityImageFile, uploadSessionCharacterPortrait, uploadSessionEntityImage } from './host/sessions/world-state.ts'
@@ -97,6 +98,9 @@ interface RequestPolicies {
 }
 
 export function apply(ctx: Context, config: Config) {
+  const layers = (): string[] => redundantLayers(selectedBundles((ctx as unknown as { get(name: 'profileContext'): { dir: string } | undefined }).get('profileContext')?.dir))
+  const repeated = layers()
+  if (repeated.length > 0) ctx.logger.error(redundantLayersMessage(repeated))
   // The controls of the helper agents' requests are applied by the model service that serves them, when there is one.
   ctx.inject(['aiProviders' as never], (scope) => {
     const providers = Reflect.get(scope, 'aiProviders') as RequestPolicies
@@ -137,6 +141,7 @@ export function apply(ctx: Context, config: Config) {
     get maxUploadBytes() { return config.importMaxUploadBytes.get() }, concurrency: config.importConcurrency.get(), reasoning: config.importReasoning.get() || config.childReasoning.get(), model: config.importModel.get(),
     maxTokens: config.importMaxTokens.get(), temperature: config.importTemperature.get(), timeoutMinutes: config.importTimeoutMinutes.get(),
     decisions: config.importDecisions.get() === 'decision' ? 'decision' : 'llm', confidence: config.importConfidence.get(),
+    approval: config.authoringApproval.get() === 'auto' ? 'auto' : 'ask',
   }))
   const settingsDeps = {
     sessionsDir: () => join(root.path, 'sessions'),
@@ -231,6 +236,7 @@ export function apply(ctx: Context, config: Config) {
         return await addAvatarsToWorld(await avatarsWorld(root.path), world, keys, locations)
       },
     },
+    redundantLayers: layers,
     externalTools: () => { const registry = (ctx as unknown as { get(name: 'tools'): ToolRegistry | undefined }).get('tools'); return registry === undefined ? [] : externalTools(registry) },
     worldFiles: {
       info: async worldId => await readWorldInfo((await editableWorld(worlds, worldId, root.path)).directory),

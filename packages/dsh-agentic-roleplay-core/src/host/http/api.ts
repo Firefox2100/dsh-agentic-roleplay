@@ -55,6 +55,8 @@ export interface ApiDeps {
   catalogue: Catalogue
   /** The tools other plugins registered for everyone, which a story can give to an agent. */
   externalTools?(): ExternalTool[]
+  /** The bundle layers of single packages selected beside the `all` layer. */
+  redundantLayers?(): string[]
   worlds: WorldCatalog
   createWorld(input: { folder: string; name: string; preset?: string }): Promise<import('../../shared/worlds.ts').WorldSummary>
   /** The worlds the package ships, and adding one to the person's worlds. */
@@ -247,7 +249,7 @@ function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
-export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, presets, lorebooks, sync, locked, anyLocked, connection, speech, externalTools }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
+export function createApiHandler({ catalogue, worlds, createWorld, starter, authorWorld, translation, worldCharacters, importer, avatars, worldFiles, worldEditor, sessions, packs, presets, lorebooks, sync, locked, anyLocked, connection, speech, externalTools, redundantLayers }: ApiDeps): (req: IncomingMessage, res: ServerResponse) => Promise<void> {
   const routes: Record<string, Partial<Record<string, Route>>> = {
     '/speech/capabilities': { GET: async (_req, res) => { sendJson(res, 200, { streaming: speech.streaming() }) } },
     '/speech/voices': { GET: async (_req, res) => { sendJson(res, 200, await speech.voices()) } },
@@ -876,6 +878,9 @@ export function createApiHandler({ catalogue, worlds, createWorld, starter, auth
         catch (error) { return sendError(res, 404, error instanceof Error ? error.message : String(error)) }
         await sendImage(res, image)
       },
+    },
+    '/setup': {
+      GET: async (_req, res) => { sendJson(res, 200, { redundantLayers: redundantLayers?.() ?? [] }) },
     },
     '/tools': {
       GET: async (_req, res) => { sendJson(res, 200, { tools: externalTools?.() ?? [] }) },

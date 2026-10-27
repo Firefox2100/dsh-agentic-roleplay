@@ -5,11 +5,13 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
-import { authoredWorldWriteTools, authoringApproval } from './host/authoring/write-tools.ts'
+import { authoredWorldWriteTools, authoringApproval, readAuthoredEntityDocument } from './host/authoring/write-tools.ts'
+import type { AuthoredEntityKind } from './host/authoring/documents.ts'
 import { registerPackJail } from './host/authoring/pack-jail.ts'
 import { worldPackTools } from './host/authoring/pack-tools.ts'
 import { worldPromptTools } from './host/authoring/prompt-tools.ts'
 import { importHooks, importTools } from './host/import/tools.ts'
+import { cardTools } from './host/import/card-tools.ts'
 import { presetTools } from './host/import/preset-tools.ts'
 import { isReviewing } from './host/import/run-import.ts'
 import { translateTools } from './host/translate/tools.ts'
@@ -36,6 +38,7 @@ export function apply(ctx: Context): void {
   for (const tool of worldPromptTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPackTools(reader)) ctx.tools.register(tool)
   for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
+  for (const tool of cardTools(ctx.roleplayWorlds)) ctx.tools.register(tool)
   for (const tool of presetTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of translateTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   importHooks(ctx, ctx.roleplayWorlds, prompting)
@@ -51,7 +54,12 @@ export function apply(ctx: Context): void {
   registerPackJail(ctx, { worldDirectory, reviewing })
   limitAuthoringAgents(ctx, chat => (authoredWorldOf(chat) === undefined ? undefined : 'worldAuthoring'))
   guardAuthoringTurns(ctx, () => ctx.roleplayPrompts, (chat) => { const world = authoredWorldOf(chat); return world === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(world) }, () => ctx.roleplayImport.settings.reasoning)
-  ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing))
+  const current = async (chat: string, kind: AuthoredEntityKind, key: string): Promise<unknown> => {
+    const id = authoredWorldOf(chat)
+    const record = id === undefined ? undefined : await ctx.roleplayWorlds.find(id)
+    return record === undefined ? undefined : await readAuthoredEntityDocument({ id: record.summary.id, directory: record.directory }, kind, key)
+  }
+  ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing, { auto: () => ctx.roleplayImport.settings.approval === 'auto', current }))
   for (const [name, order, id] of [
     ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],
     ['WORLD_AUTHORING_PROCEDURE', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'world/procedure'],

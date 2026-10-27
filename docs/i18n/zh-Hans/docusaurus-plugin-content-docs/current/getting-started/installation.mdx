@@ -19,6 +19,8 @@ dsh plugin --profile <profile> add @dsh-agentic-roleplay/all
 
 套件会安装角色扮演核心和 `@dsh-agentic-roleplay/state`。重启该配置档案后，从 DSH 侧栏打开**角色扮演**。
 
+只保留 `all` 套件这一层。核心包和状态包也各自带有一层补丁，用于不通过套件单独安装，而这些层会加入相同的插件行。两者同时选中时，配置档案里会有两个 `roleplay` 行，DSH 会拒绝保存**设置 → 角色扮演**（提示「本部署没有接受这些值」）。若使用插件管理器，请取消选中 `@dsh-agentic-roleplay/core` 和 `@dsh-agentic-roleplay/state` 这两层（包仍保持安装），然后重启。检测到这种情况时，角色扮演设置页会显示警告，日志中也会记录一条错误。
+
 ## 首次运行清单
 
 1. 在**设置 → 角色扮演**中设置存储根目录。

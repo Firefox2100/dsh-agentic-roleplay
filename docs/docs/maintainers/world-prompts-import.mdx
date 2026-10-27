@@ -15,7 +15,7 @@ Packaged originals live in `prompts/<language>` and are copied to the roleplay r
 
 Templates use `${name}`. Missing variables, unknown templates, unknown variables, empty content, and invalid language paths are errors. Do not translate tool names, field names, enum values, or protocol markers. Keep the same template set and variable set in every shipped language; tests enforce this.
 
-The world-authoring agent exposes read and mutation tools over the same parsers used by the manual editor. Mutations require DSH user approval and use recoverable deletion. The agent must read current data before editing and receive validation results after writing.
+The world-authoring agent exposes read and mutation tools over the same parsers used by the manual editor. Mutations use recoverable deletion and require DSH user approval unless the profile explicitly selects automatic world-authoring changes. The agent must read current data before editing and receive validation results after writing.
 
 ## Import pipeline
 

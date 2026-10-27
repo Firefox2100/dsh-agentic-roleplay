@@ -40,7 +40,7 @@ description: 提示词实体化、覆盖、变量、验证、语言和运行时�
 
 `roleplay/persona`、`roleplay/style` 和 `roleplay/character-style` 决定模型身份和故事写法。游戏主持人的 persona 包含 `${style}`，每个角色的 persona 也携带自己的风格。其余提示词保存游戏规则或工具契约。
 
-世界创作对话可通过 `list_world_prompts`、`read_world_prompt`、`write_world_prompt` 和 `delete_world_prompt` 编辑世界提示词。删除操作把文件移到 `.trash/prompts/`。写入和删除与其他世界文件修改一样需要用户批准，写入内容也要通过会话开始时使用的验证。角色卡导入完成后的同一回合无需逐项批准，但只允许写入叙事类提示词，规则类提示词会被直接拒绝。
+世界创作对话可通过 `list_world_prompts`、`read_world_prompt`、`write_world_prompt` 和 `delete_world_prompt` 编辑世界提示词。删除操作把文件移到 `.trash/prompts/`。写入和删除默认与其他世界文件修改一样需要用户批准；明确启用自动模式后会跳过询问。写入内容始终要通过会话开始时使用的验证。角色卡导入完成后的同一回合无需逐项批准，但只允许写入叙事类提示词，规则类提示词会被直接拒绝。
 
 游戏主持人提示词可在独立一行包含 `${preview}`。开启 `preview.enabled` 时，该变量替换为 `roleplay/preview` 的内容；关闭时替换为空，并删除只包含空变量的整行。关闭预览的对话也不会获得 `preview_scene` 工具。同样，`${dice}` 在主持人开启了骰子工具时是 `roleplay/dice` 的内容（何时掷骰、如何读取结果、结果不可更改，以及从故事中列出的世界的检定），没有骰子工具时为空。
 

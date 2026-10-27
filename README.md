@@ -10,7 +10,7 @@ Instead of treating roleplay as one long prompt, the bundle separates the game m
 - **The world changes without becoming a script.** Plots can provide direction and pressure, while player choices and autonomous character actions determine what actually happens.
 - **Stories remain editable and durable.** Worlds are filesystem-first, sessions use SQLite, and branching or taking back does not require rebuilding the setting.
 - **Your library can follow you between devices.** Optional rclone-based sync moves worlds, stories, prompts and other shared content while detecting conflicts instead of silently overwriting either copy.
-- **Creation happens inside DSH.** Build worlds in the editor, ask an approval-gated authoring agent for help, import character cards, and generate portraits or scene illustrations when providers are available.
+- **Creation happens inside DSH.** Build worlds in the editor, ask an authoring agent for help with approval by default, import character cards, and generate portraits or scene illustrations when providers are available.
 - **Media is optional.** Text play works without image, speech, embedding, or reranking services; add them when you want portraits, voiced scenes, voice input, or richer recall.
 
 The bundle includes a complete roleplay interface, a bounded game-master loop, autonomous character and faction activity, story-time memory, relationships and knowledge, locations and items, plots and triggers, reusable avatars, world authoring, speech, and image workflows.

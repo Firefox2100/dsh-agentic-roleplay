@@ -10,7 +10,7 @@ This section is for people and coding agents changing the bundle itself. [Plugin
 - World files are authored definitions. Mutable story state belongs to a session's SQLite database.
 - Events are immutable facts after sealing. A character's perceptions and beliefs may change without rewriting the event.
 - Knowledge is closed-world: absent relationship or entity-knowledge edges mean that the character does not know the entity.
-- Every state mutation performed by an agent crosses a validated tool boundary. World-authoring mutations require user approval.
+- Every state mutation performed by an agent crosses a validated tool boundary. World-authoring mutations require approval by default; explicit automatic mode keeps the same validation and recoverable file writes.
 - Text delivery must not wait for record keeping, world consolidation, suggestions, off-stage action, or image generation.
 - Story time, not turn count or wall time, determines memory age.
 - Generated media is filesystem-first. Stable paths and embedded or sidecar metadata are the index of record.

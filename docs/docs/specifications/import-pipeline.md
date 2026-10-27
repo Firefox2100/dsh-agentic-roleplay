@@ -35,6 +35,7 @@ The narrow jobs use the plugin-wide **Imports and authoring assistants** setting
 - Ids are made from names in any script. Folder names, ids and image paths accept the letters and digits of every language, never separators or dot segments.
 - Several characters in one card are supported: the roster decides who they are.
 - Cards are the property of their authors: tests use invented cards (`tests/support/cards.ts`), never content of a real one.
+- **The card stays.** `.import/` is not removed after an import, and the authoring chat of the world has read-only tools over it: `card_overview` (every field, greeting and lorebook entry with its size, what the survey took it to be and which entities it was made into, the roster and the report's notes), `card_search` (phrase, then word, matches in any script, snippets), `card_read` (one piece word for word, 6000 characters a turn) and `card_origin` (the pieces an entity was built from, recomputed with the same `sourcesFor` the build used; for a name the import made nothing of, the pieces that mention it). They exist while `.import/card.json` does, so deleting the folder turns them off. The procedure prompt tells the assistant to look the card up, to treat the world's files as canon and the card as evidence, and to check the import's records against the text. The card is not shared by anything the plugin exports or translates (translation skips `.import`; there is no other export); sync carries it with the world. Play never reaches it.
 
 ## Prompts
 

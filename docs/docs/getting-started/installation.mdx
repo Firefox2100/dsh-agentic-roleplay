@@ -21,6 +21,8 @@ dsh plugin --profile <profile> add @dsh-agentic-roleplay/all
 
 The bundle installs the roleplay core and `@dsh-agentic-roleplay/state`. Restart the profile after installation, then open **Role Play** in the DSH sidebar.
 
+Keep only the `all` bundle layer selected. The core and state packages also ship layers of their own for installing them without the bundle, and those layers add the same plugin rows. With both selected the profile holds two `roleplay` rows, and DSH refuses to save **Settings → Role Play** ("this deployment did not accept these values"). If you manage plugins with a plugin manager, deselect the `@dsh-agentic-roleplay/core` and `@dsh-agentic-roleplay/state` layers and keep the packages installed, then restart. The Role Play settings page shows a warning, and the log an error, when it finds this.
+
 ## First-run checklist
 
 1. Set the storage root under **Settings → Role Play**.

@@ -20,6 +20,8 @@ export interface ImportSettings {
   /** `decision` lets a decision model settle the pieces it is sure of before the language model is asked. */
   decisions: 'llm' | 'decision'
   confidence: number
+  /** `auto` lets the world authoring chat change the world without asking; `ask` (the default when absent) puts every change to the person. */
+  approval?: 'ask' | 'auto'
 }
 
 /** What an import is configured to do, for the parts of the plugin that run in other scopes (the authoring chat's tools). */

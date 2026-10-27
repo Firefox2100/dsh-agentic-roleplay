@@ -57,6 +57,8 @@ export interface Config {
   importDecisions: Volatile<string>
   /** How sure the decision model must be for `importDecisions: decision` to take its answer, from 0 to 1. */
   importConfidence: Volatile<number>
+  /** Whether the world authoring chat asks before each change to the world: `ask` shows each change and waits, `auto` makes them at once (the files it replaces are kept in the world's `.trash`). */
+  authoringApproval: Volatile<string>
 }
 
 export const Config = z.object({
@@ -77,4 +79,5 @@ export const Config = z.object({
   importTimeoutMinutes: z.number().min(0).max(240).default(15).volatile(),
   importDecisions: z.union([z.const('llm'), z.const('decision')]).default('llm').volatile(),
   importConfidence: z.number().min(0).max(1).default(0.7).volatile(),
+  authoringApproval: z.union([z.const('ask'), z.const('auto')]).default('ask').volatile(),
 })

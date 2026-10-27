@@ -29,6 +29,7 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `importTimeoutMinutes` | 15 | Minutes before an import or authoring helper is stopped without a result; 0 disables the timeout |
 | `importDecisions` | `llm` | `decision` lets the configured decision service preclassify card pieces it can settle confidently; `llm` sends every piece to the language model |
 | `importConfidence` | 0.7 | Confidence required to accept a decision-model classification |
+| `authoringApproval` | `ask` | `ask` requests approval for every world-authoring-chat change; `auto` writes immediately while retaining replaced or deleted files in the world's `.trash` folder |
 
 All fields except the restart-time `sessionStorePath` are editable under **Settings, Role Play** and take effect without restarting. See [Sync between devices](../playing/sync) before pointing more than one installation at the same remote.
 

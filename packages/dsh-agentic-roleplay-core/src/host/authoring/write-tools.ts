@@ -10,6 +10,7 @@ import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, read
 import type { AuthoredWorldReader } from './read-tools.ts'
 import { PACK_MUTATION_TOOLS } from './pack-tools.ts'
 import { PROMPT_MUTATION_TOOLS, PROSE_PROMPTS } from './prompt-tools.ts'
+import { changedFields, createdFields, plain, sizeOf, type Summary } from './approval-summary.ts'
 
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
 const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => output(value) }
@@ -119,11 +120,13 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
 /**
  * Every change to the world files is put to the person, except in the turn that has just imported a card into the world: it reviews and corrects what it made.
  * @param reviewing - whether the authoring chat is in such a turn.
+ * @param options - `auto` is whether the person chose to have changes made without asking; `current` reads the document a replacement is about to replace, so the question can show what changes.
  */
-export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false)): Promise<PreToolDecision> {
+export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false), options: { auto?: () => boolean; current?: (chat: string, kind: AuthoredEntityKind, key: string) => Promise<unknown> } = {}): Promise<PreToolDecision> {
   if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return await next()
   const args = exec.arguments as Record<string, unknown>
-  if (exec.name === 'import_preset' && exec.agent !== undefined) {
+  const auto = options.auto?.() === true
+  if (exec.name === 'import_preset' && exec.agent !== undefined && !auto) {
     return {
       kind: 'ask',
       reason: 'replace the authored world\'s narration and character-style prompts with ones made from the uploaded preset',
@@ -136,7 +139,7 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
   if (importing && pack) return { kind: 'deny', reason: 'an import does not write interface packs; they are left to the person' }
   // The import may set the prose and the persona; the rules of the game are the person's to change.
   if (importing && prompt && !PROSE_PROMPTS.includes(String(args['id']))) return { kind: 'deny', reason: `an import may change only the prose prompts (${PROSE_PROMPTS.join(', ')}); "${String(args['id'])}" holds rules of the game and is left to the person` }
-  if (importing) return await next()
+  if (importing || auto) return await next()
   if (pack) {
     const target = `file “${String(args['path'])}” of interface pack “${String(args['pack'])}”`
     const remove = exec.name.startsWith('delete')
@@ -152,17 +155,38 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
     return {
       kind: 'ask',
       reason: `${remove ? 'delete' : 'write'} authored world ${target}`,
-      displayReason: { en: `${remove ? 'Delete' : 'Write'} ${target} in the world files?`, zh: `${remove ? '删除' : '写入'}世界文件中的${target}？` },
+      displayReason: withDetail({ en: `${remove ? 'Delete' : 'Write'} ${target} in the world files`, zh: `${remove ? '删除' : '写入'}世界文件中的${target}` }, remove ? undefined : sizeOf(args['text'])),
     }
   }
   const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : exec.name.endsWith('trigger') ? 'trigger' : 'plots'
   const key = typeof args['key'] === 'string' ? args['key'] : ''
   const target = key === '' ? kind : `${kind} “${key}”`
   const action = exec.name.startsWith('create') ? 'Create' : exec.name.startsWith('delete') ? 'Delete' : exec.name === 'write_world_trigger' ? 'Write' : 'Edit'
+  const detail = await detailOf(exec, kind, key, options.current).catch(() => undefined)
   return {
     kind: 'ask',
     reason: `${action.toLowerCase()} authored world ${target}`,
-    displayReason: { en: `${action} ${target} in the world files?`, zh: `${action === 'Create' ? '创建' : action === 'Delete' ? '删除' : action === 'Write' ? '写入' : '编辑'}世界文件中的${target}？` },
+    displayReason: withDetail({ en: `${action} ${target} in the world files`, zh: `${action === 'Create' ? '创建' : action === 'Delete' ? '删除' : action === 'Write' ? '写入' : '编辑'}世界文件中的${target}` }, detail),
+  }
+}
+
+function withDetail(headline: Summary, detail: Summary | undefined): Summary {
+  return detail === undefined || detail.en === '' ? { en: `${headline.en}?`, zh: `${headline.zh}？` } : { en: `${headline.en}: ${detail.en}`, zh: `${headline.zh}：${detail.zh}` }
+}
+
+/** What the change is, in a line the approval shows: the question is only useful if it says what is being decided. */
+async function detailOf(exec: ToolExecution, kind: string, key: string, current: ((chat: string, kind: AuthoredEntityKind, key: string) => Promise<unknown>) | undefined): Promise<Summary | undefined> {
+  const args = exec.arguments as Record<string, unknown>
+  switch (exec.name) {
+    case 'create_world_element': return createdFields(args['document'])
+    case 'replace_world_element': {
+      const before = exec.agent === undefined ? undefined : await current?.(exec.agent.session.id, kind as AuthoredEntityKind, key)
+      return before === undefined ? createdFields(args['document']) : changedFields(before, args['document'])
+    }
+    case 'edit_world_relationship': return plain(args['change'])
+    case 'replace_world_plots': return Array.isArray(args['plots']) ? { en: `${args['plots'].length} plots`, zh: `${args['plots'].length} 条剧情` } : undefined
+    case 'write_world_trigger': return createdFields(args['document'])
+    default: return undefined
   }
 }
 
