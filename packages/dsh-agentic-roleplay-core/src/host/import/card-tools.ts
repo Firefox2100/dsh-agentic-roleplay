@@ -118,7 +118,7 @@ export function searchPieces(pieces: readonly CardPiece[], query: string, limit:
     if (whole.n > 0) return { matches: whole.n, score: whole.n * 4 + 100, at: whole.first, length: phrase.length }
     const found = words.map(word => ({ word, ...count(lowered, word) })).filter(entry => entry.n > 0)
     if (found.length === 0) return undefined
-    const best = found.reduce((a, b) => (a.first <= b.first ? a : b))
+    const best = found.reduce((a, b) => (a.first <= b.first ? a : b), found[0]!)
     return { matches: found.reduce((sum, entry) => sum + entry.n, 0), score: found.length * 10 + found.reduce((sum, entry) => sum + entry.n, 0), at: best.first, length: best.word.length }
   }
   const scored = pieces.flatMap((piece): (Hit & { score: number })[] => {
