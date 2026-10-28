@@ -1,6 +1,6 @@
 {
   "name": "@dsh-agentic-roleplay/all",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Agentic roleplay bundle for DeepSeek Harness. Install this one package to get every roleplay plugin.",
   "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
   "type": "module",
@@ -31,7 +31,7 @@
     "@deepseek-ai/dsh-experimental-speech-to-text-sensevoice": "0.2.1-rc.3",
     "@deepseek-ai/dsh-experimental-api-speech-to-text": "0.2.1-rc.3",
     "@deepseek-ai/dsh-experimental-client-ui-voice-input": "0.2.1-rc.3",
-    "@dsh-agentic-roleplay/core": "workspace:0.7.2",
-    "@dsh-agentic-roleplay/state": "workspace:0.7.2"
+    "@dsh-agentic-roleplay/core": "workspace:0.7.3",
+    "@dsh-agentic-roleplay/state": "workspace:0.7.3"
   }
 }

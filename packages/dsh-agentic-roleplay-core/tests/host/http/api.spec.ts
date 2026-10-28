@@ -193,8 +193,10 @@ beforeEach(async () => {
       read: (id) => { importCalls.push(`read ${id}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
       choose: (id, choices) => { importCalls.push(`choose ${id} ${JSON.stringify(choices)}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
       discard: (id) => { importCalls.push(`discard ${id}`); return Promise.resolve() },
-      start: (id, choices) => { importCalls.push(`start ${id} ${choices.name}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
+      start: (id, choices, _language, update) => { importCalls.push(`start ${id} ${choices.name}${update === undefined ? '' : ` update ${update}`}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
       picture: () => Promise.reject(new Error('no picture')),
+      updateStatus: (worldId) => (worldId === 'missing' ? Promise.reject(new WorldNotFoundError('missing world')) : Promise.resolve({ fromCard: true, revertible: true, waiting: false })),
+      revertUpdate: (worldId) => { importCalls.push(`revert ${worldId}`); return importError === undefined ? Promise.resolve({ keptIn: '.trash/update-1' }) : Promise.reject(importError) },
       stage: (kind, file, name) => { importCalls.push(`stage ${kind} ${file.length} ${name}`); if (importError !== undefined) throw importError; return { id: 'st1', kind, name: 'N', items: [{ id: 'a', title: 'A', detail: '', text: 't', chars: 1, enabled: true, usable: true }] } },
       discardStaged: (id) => { importCalls.push(`discard ${id}`) },
       applyStagedVerbatim: (worldId, choice) => { importCalls.push(`verbatim ${worldId} ${JSON.stringify(choice)}`); return Promise.resolve({ preset: 'P', replaced: false }) },
@@ -782,6 +784,8 @@ describe('roleplay API', () => {
       expect(made.status).toBe(201)
       expect(await made.json()).toEqual({ worldId: 'w', chatSessionId: 'c', started: true })
       expect(catalogueCalls.at(-1)).toBe('staged {"source":"Home","versionId":"v1","id":"cd1","choices":{"name":"Mine","disabledEntries":["3"],"opening":{"kind":"none"}},"language":"zh"}')
+      await fetch(`${origin}/catalogue/convert/staged`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v1', id: 'cd1', update: 'w1', choices: { name: 'Mine', disabledEntries: [], opening: { kind: 'none' } } }) })
+      expect(catalogueCalls.at(-1)).toBe('staged {"source":"Home","versionId":"v1","id":"cd1","choices":{"name":"Mine","disabledEntries":[],"opening":{"kind":"none"}},"update":"w1"}')
       expect((await fetch(`${origin}/catalogue/convert/staged`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v1', id: 'cd1', choices: { name: '' } }) })).status).toBeGreaterThanOrEqual(400)
       const book = await fetch(`${origin}/catalogue/convert/lorebook`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ source: 'Home', versionId: 'v3', title: 'Harbor' }) })
       expect(book.status).toBe(201)
@@ -1168,6 +1172,23 @@ describe('roleplay API', () => {
       const refused = await post('/worlds/import/card', new Uint8Array([1]))
       expect(refused.status).toBe(422)
       expect(await refused.json()).toEqual({ message: 'x.png is a PNG picture with no character card in it' })
+    })
+
+    it('starts the update of a named world instead of a new one', async () => {
+      const choices = { name: 'New world', disabledEntries: [], opening: { kind: 'none' } }
+      await post('/worlds/import/start?id=i2', JSON.stringify({ ...choices, update: 'w9' }), { 'content-type': 'application/json' })
+      await post('/worlds/import/start?id=i3', JSON.stringify({ ...choices, update: '  ' }), { 'content-type': 'application/json' })
+      expect(importCalls).toEqual(['start i2 New world update w9', 'start i3 New world'])
+    })
+
+    it('says whether a world can be updated from a card and undoes the last update, with 404 for a world that is gone and 422 when there is nothing to undo', async () => {
+      expect(await (await fetch(`${origin}/worlds/import/update?id=w1`)).json()).toEqual({ fromCard: true, revertible: true, waiting: false })
+      expect((await fetch(`${origin}/worlds/import/update?id=missing`)).status).toBe(404)
+      const undone = await fetch(`${origin}/worlds/import/update?id=w1`, { method: 'DELETE' })
+      expect(await undone.json()).toEqual({ keptIn: '.trash/update-1' })
+      expect(importCalls).toEqual(['revert w1'])
+      importError = new InvalidEditProblems(['there is no card update to undo in this world'])
+      expect((await fetch(`${origin}/worlds/import/update?id=w1`, { method: 'DELETE' })).status).toBe(422)
     })
 
     it('reads, chooses, starts and discards an import by its id, and says 404 for one that is gone and 422 for choices that cannot be used', async () => {

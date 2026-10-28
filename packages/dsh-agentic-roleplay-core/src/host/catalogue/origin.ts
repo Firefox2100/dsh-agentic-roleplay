@@ -61,14 +61,14 @@ export async function writeOrigin(directory: string, origin: WorldOrigin): Promi
 }
 
 /** SHA-256 of every file in a world folder; entries whose names start with a dot (this record, the trash, import state) are not the world's own. */
-export async function hashWorld(directory: string): Promise<Record<string, string>> {
+export async function hashWorld(directory: string, skip: (path: string) => boolean = () => false): Promise<Record<string, string>> {
   const hashes: Record<string, string> = {}
   const walk = async (relative: string): Promise<void> => {
     for (const entry of await readdir(join(directory, relative), { withFileTypes: true })) {
       if (relative === '' && entry.name.startsWith('.')) continue
       const path = relative === '' ? entry.name : `${relative}/${entry.name}`
       if (entry.isDirectory()) await walk(path)
-      else if (entry.isFile()) hashes[path] = createHash('sha256').update(await readFile(join(directory, path))).digest('hex')
+      else if (entry.isFile() && !skip(path)) hashes[path] = createHash('sha256').update(await readFile(join(directory, path))).digest('hex')
     }
   }
   await walk('')

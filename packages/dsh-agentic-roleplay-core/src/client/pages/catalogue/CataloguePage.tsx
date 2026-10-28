@@ -86,7 +86,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
         <ImportCard
           t={t}
           preview={reviewing.preview}
-          start={choices => convertStaged({ source: reviewing.source, versionId: reviewing.versionId, id: reviewing.preview.id, choices, language: t('language') })}
+          start={(choices, update) => convertStaged({ source: reviewing.source, versionId: reviewing.versionId, id: reviewing.preview.id, choices, language: t('language'), ...(update === undefined ? {} : { update }) })}
           discard={() => discardCard(reviewing.preview.id)}
           onCancelled={() => { setReviewing(undefined) }}
           onStarted={(chat, started) => { setReviewing(undefined); setChanged(count => count + 1); if (!started) setNotice(t('convertNotStartedShort')); openChat(chat) }}

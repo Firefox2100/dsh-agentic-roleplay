@@ -33,7 +33,13 @@ export interface CardPiece {
   enabled?: boolean
 }
 
-const baseId = (id: string): string => id.replace(/#\d+$/, '')
+export const baseId = (id: string): string => id.replace(/#\d+$/, '')
+
+/** The folder inside `.import` where a newer version of the card waits to be applied to the world. */
+export const UPDATE_FOLDER = 'update'
+
+/** Which version of the card a tool reads: the one the world was made from, or the newer one that is waiting to update it. */
+export type CardVersion = 'current' | 'new'
 
 /** Everything the card holds, in the order the card has it. */
 export function cardPieces(card: NormalizedCard, choices: ImportChoices): CardPiece[] {
@@ -56,7 +62,7 @@ export function cardPieces(card: NormalizedCard, choices: ImportChoices): CardPi
 }
 
 /** What the importer worked out, when it got that far; each part is absent when its file is. */
-interface Records {
+export interface Records {
   classified?: Classified | undefined
   roster?: Roster | undefined
   report?: ImportReport | undefined
@@ -69,7 +75,7 @@ async function optional<T>(file: string): Promise<T | undefined> {
   }
 }
 
-interface Source {
+export interface Source {
   card: NormalizedCard
   choices: ImportChoices
   pieces: CardPiece[]
@@ -77,18 +83,18 @@ interface Source {
 }
 
 /** The card kept in a world's import folder, and what the import made of it. The tools exist as long as the card does. */
-async function readSource(directory: string, withRecords: boolean): Promise<Source> {
+export async function readSource(directory: string, withRecords: boolean, version: CardVersion = 'current'): Promise<Source> {
   const folder = join(directory, IMPORT_FOLDER)
   let read: Awaited<ReturnType<typeof readImportFolder>>
-  try { read = await readImportFolder(folder) } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new Error('this world has no source card: it was not imported from one, or its .import folder was removed')
+  try { read = await readImportFolder(version === 'new' ? join(folder, UPDATE_FOLDER) : folder) } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new Error(version === 'new' ? 'no newer version of the card is waiting to update this world' : 'this world has no source card: it was not imported from one, or its .import folder was removed')
     throw error
   }
-  const records: Records = withRecords ? { classified: await optional<Classified>(join(folder, 'classification.json')), roster: await optional<Roster>(join(folder, 'roster.json')), report: await optional<ImportReport>(join(folder, 'report.json')) } : {}
+  const records: Records = withRecords && version === 'current' ? { classified: await optional<Classified>(join(folder, 'classification.json')), roster: await optional<Roster>(join(folder, 'roster.json')), report: await optional<ImportReport>(join(folder, 'report.json')) } : {}
   return { card: read.card, choices: read.choices, pieces: cardPieces(read.card, read.choices), records }
 }
 
-const rolesOf = (classified: Classified | undefined, id: string): string[] => {
+export const rolesOf = (classified: Classified | undefined, id: string): string[] => {
   if (classified === undefined) return []
   return [...new Set(Object.entries(classified).filter(([key]) => baseId(key) === id).flatMap(([, entry]) => entry.roles))]
 }
@@ -131,6 +137,8 @@ export function searchPieces(pieces: readonly CardPiece[], query: string, limit:
   return scored.sort((a, b) => b.score - a.score).slice(0, limit).map(({ piece, matches, in: where, snippet: text }) => ({ piece, matches, in: where, snippet: text }))
 }
 
+const versionParameter = { type: 'string' as const, enum: ['current', 'new'], description: 'current (the default) is the card the world was made from; new is the newer version waiting to update it, when card_diff says there is one. Piece ids are those of that version.' }
+
 const output = { schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 1) }] }
 const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as never
 const idOf = (exec: AgentExec): string => {
@@ -146,11 +154,16 @@ const idOf = (exec: AgentExec): string => {
  */
 export function cardTools(worlds: WorldCatalog, options: { records?: boolean } = {}): ToolDefinition[] {
   const withRecords = options.records !== false
-  const source = async (exec: AgentExec): Promise<Source> => {
+  const source = async (exec: AgentExec, version: CardVersion = 'current'): Promise<Source> => {
     const id = idOf(exec)
     const record = await worlds.find(id)
     if (record === undefined) throw new Error(`the authored world "${id}" no longer exists`)
-    return await readSource(record.directory, withRecords)
+    return await readSource(record.directory, withRecords, version)
+  }
+  const versionOf = (value: unknown): CardVersion => {
+    if (value === undefined || value === 'current') return 'current'
+    if (value === 'new') return 'new'
+    throw new Error('version must be current or new')
   }
   const find = (pieces: readonly CardPiece[], id: string): CardPiece => {
     const found = pieces.find(piece => piece.id === id)
@@ -166,8 +179,7 @@ export function cardTools(worlds: WorldCatalog, options: { records?: boolean } =
       isConcurrencySafe: () => true,
       async execute(_args, exec) {
         const { card, choices, pieces, records } = await source(exec)
-        const madeFrom = new Map<string, string[]>()
-        for (const entity of records.roster ?? []) for (const entry of originOf(card, choices, pieces, records, entity.name)) madeFrom.set(entry.piece, [...(madeFrom.get(entry.piece) ?? []), entity.name])
+        const madeFrom = entitiesByPiece({ card, choices, pieces, records })
         const made = (id: string): string[] => madeFrom.get(id) ?? []
         return json({
           card: { name: card.name, creator: card.creator, version: card.characterVersion, tags: card.tags, format: card.sourceSpec, ignoredScripts: card.ignored.scripts },
@@ -185,11 +197,11 @@ export function cardTools(worlds: WorldCatalog, options: { records?: boolean } =
     defineTool({
       name: 'card_search',
       description: 'Searches everything the card says (fields, greetings, lorebook entries and their keys) for a name or phrase and returns the pieces that contain it, best first, each with a short snippet and whether it was found in the text or only in the title or keys of an entry. A hit is a pointer, not evidence: read the piece with card_read before you answer from it.',
-      parameters: { query: { type: 'string', required: true, description: 'A name or phrase to look for, in the card\'s own language.' }, limit: { type: 'number', description: `How many pieces to return, at most ${MAX_HITS} (default ${DEFAULT_HITS}).` } },
+      parameters: { query: { type: 'string', required: true, description: 'A name or phrase to look for, in the card\'s own language.' }, version: versionParameter, limit: { type: 'number', description: `How many pieces to return, at most ${MAX_HITS} (default ${DEFAULT_HITS}).` } },
       output,
       isConcurrencySafe: () => true,
       async execute(args, exec) {
-        const { pieces } = await source(exec)
+        const { pieces } = await source(exec, versionOf(args.version))
         const limit = Math.min(MAX_HITS, Math.max(1, Math.floor(typeof args.limit === 'number' && Number.isFinite(args.limit) ? args.limit : DEFAULT_HITS)))
         const hits = searchPieces(pieces, args.query, limit)
         return json({ query: args.query, found: hits.length, hits: hits.map(({ piece, matches, in: where, snippet: text }) => ({ piece: piece.id, label: piece.label, matches, foundIn: where, snippet: text })) })
@@ -198,11 +210,11 @@ export function cardTools(worlds: WorldCatalog, options: { records?: boolean } =
     defineTool({
       name: 'card_read',
       description: `The text of one piece of the card, word for word as the card has it (the card's own placeholders such as {{user}} included). A long piece is read in turns of ${READ_CHARS} characters: when "next" is given, call again with that offset.`,
-      parameters: { piece: { type: 'string', required: true, description: 'A piece id from card_overview or card_search, such as field:description or entry:3.' }, offset: { type: 'number', description: 'Where to start reading, in characters (default 0).' } },
+      parameters: { piece: { type: 'string', required: true, description: 'A piece id from card_overview, card_search or card_diff, such as field:description or entry:3.' }, version: versionParameter, offset: { type: 'number', description: 'Where to start reading, in characters (default 0).' } },
       output,
       isConcurrencySafe: () => true,
       async execute(args, exec) {
-        const { pieces } = await source(exec)
+        const { pieces } = await source(exec, versionOf(args.version))
         const piece = find(pieces, args.piece)
         const from = Math.min(piece.text.length, Math.max(0, Math.floor(typeof args.offset === 'number' && Number.isFinite(args.offset) ? args.offset : 0)))
         const to = Math.min(piece.text.length, from + READ_CHARS)
@@ -227,8 +239,15 @@ export function cardTools(worlds: WorldCatalog, options: { records?: boolean } =
   ]
 }
 
+/** For each piece of the card, the names of the characters, places and things the import made from it. */
+export function entitiesByPiece(source: Source): Map<string, string[]> {
+  const made = new Map<string, string[]>()
+  for (const entity of source.records.roster ?? []) for (const entry of originOf(source.card, source.choices, source.pieces, source.records, entity.name)) made.set(entry.piece, [...(made.get(entry.piece) ?? []), entity.name])
+  return made
+}
+
 /** The pieces an entity was made from, as the build chose them: the ones the survey said are about it, then those that name it. */
-function originOf(card: NormalizedCard, choices: ImportChoices, pieces: readonly CardPiece[], records: Records, name: string): { piece: string; label: string; how: 'about it' | 'mentions it' }[] {
+export function originOf(card: NormalizedCard, choices: ImportChoices, pieces: readonly CardPiece[], records: Records, name: string): { piece: string; label: string; how: 'about it' | 'mentions it' }[] {
   if (records.roster === undefined || records.classified === undefined) return []
   const entity = findEntity(records.roster, name)
   if (entity === undefined) return []

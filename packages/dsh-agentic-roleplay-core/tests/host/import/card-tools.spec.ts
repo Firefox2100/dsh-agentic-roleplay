@@ -102,6 +102,7 @@ describe('the card tools', () => {
     expect(rest['text']).toHaveLength(500)
     expect(rest['next']).toBeUndefined()
     await expect(run('card_read', { piece: 'entry:9' })).rejects.toThrow(/no piece "entry:9"/)
+    await expect(run('card_search', { query: 'Mara', version: 'later' })).rejects.toThrow(/version.*current.*new/)
   })
 
   it('say which pieces a character was made from, the ones about it first, and what a name the import did not make is mentioned in', async () => {

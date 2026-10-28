@@ -74,12 +74,12 @@ export function alternateOpenings(card: NormalizedCard, chosen: ImportChoices['o
 }
 
 /** The character the card's picture shows: the one that carries the card's name, or the only one there is. */
-function cardCharacter(characters: readonly Document[], cardName: string): Document | undefined {
+export function cardCharacter(characters: readonly Document[], cardName: string): Document | undefined {
   return characters.find(document => norm(String(document['name'])) === norm(cardName)) ?? (characters.length === 1 ? characters[0] : undefined)
 }
 
 /** Makes the card's picture the canonical reference portrait of its character, as an image the person brought. */
-async function writePortrait(directory: string, picture: Buffer, characters: readonly Document[], cardName: string): Promise<boolean> {
+export async function writePortrait(directory: string, picture: Buffer, characters: readonly Document[], cardName: string): Promise<boolean> {
   const character = cardCharacter(characters, cardName)
   if (character === undefined) return false
   const id = String(character['id'])

@@ -53,7 +53,7 @@ describe('authored world read tools', () => {
 
   it('provides the complete read-only catalogue', () => {
     expect(tools().map(tool => tool.name)).toEqual([
-      'get_world_overview', 'list_characters', 'get_character', 'list_locations', 'get_location', 'list_items', 'get_item',
+      'get_world_overview', 'get_world_info', 'list_characters', 'get_character', 'list_locations', 'get_location', 'list_items', 'get_item',
       'list_factions', 'get_faction', 'list_lore', 'get_lore', 'get_world_element_source', 'list_plots', 'get_plot', 'list_world_triggers', 'get_world_trigger', 'list_relationships',
     ])
   })

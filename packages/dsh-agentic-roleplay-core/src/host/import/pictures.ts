@@ -1,10 +1,9 @@
-import { createHash } from 'node:crypto'
 import { lookup as resolve } from 'node:dns'
 import { request as httpRequest, type IncomingMessage } from 'node:http'
 import { request as httpsRequest } from 'node:https'
 import { BlockList, isIP, type LookupFunction } from 'node:net'
 import { MEDIA_TYPES } from '../images/image-files.ts'
-import { addToLibrary, imageExtensionOf } from '../images/library.ts'
+import { addToLibrary, imageExtensionOf, libraryHashes, pictureHash } from '../images/library.ts'
 import { mapLimit } from './run.ts'
 
 /** The address is not one a picture may be fetched from: it names this machine or a private network. */
@@ -158,7 +157,8 @@ export interface PicturesReport {
   found: number
   /** Where each picture went, under `images/`. */
   added: { url: string; path: string }[]
-  skipped: { url: string; reason: string }[]
+  /** `of`: for a copy, the library picture it is a copy of. */
+  skipped: { url: string; reason: string; of?: string }[]
 }
 
 export interface PictureDeps { fetcher?: Fetcher; signal?: AbortSignal; concurrency?: number }
@@ -169,9 +169,10 @@ export interface PictureDeps { fetcher?: Fetcher; signal?: AbortSignal; concurre
  */
 export async function fetchPictures(world: string, urls: readonly string[], deps: PictureDeps = {}): Promise<PicturesReport> {
   const fetcher = deps.fetcher ?? requestOnce
-  const { candidates, skipped } = candidateUrls(urls)
+  const { candidates, skipped: refused } = candidateUrls(urls)
+  const skipped: PicturesReport['skipped'] = [...refused]
   const added: { url: string; path: string }[] = []
-  const hashes = new Set<string>()
+  const hashes = await libraryHashes(world)
   await mapLimit(candidates, deps.concurrency ?? CONCURRENCY, async (address) => {
     const signal = AbortSignal.any([AbortSignal.timeout(TIMEOUT_MS * 2), ...(deps.signal === undefined ? [] : [deps.signal])])
     const url = new URL(address)
@@ -182,13 +183,49 @@ export async function fetchPictures(world: string, urls: readonly string[], deps
       if (reply.status < 200 || reply.status >= 300) { skipped.push({ url: address, reason: `answered ${reply.status}` }); return }
       if (imageExtensionOf(reply.body) === undefined) { skipped.push({ url: address, reason: 'not an image' }); return }
       if (reply.body.length < MIN_BYTES) { skipped.push({ url: address, reason: 'too small' }); return }
-      const hash = createHash('sha256').update(reply.body).digest('hex')
-      if (hashes.has(hash)) { skipped.push({ url: address, reason: 'a copy of another picture' }); return }
-      hashes.add(hash)
-      added.push({ url: address, path: await addToLibrary(world, reply.body, fileNameOf(url)) })
+      const hash = pictureHash(reply.body)
+      const copyOf = hashes.get(hash)
+      if (copyOf !== undefined) { skipped.push({ url: address, reason: 'a copy of another picture', of: copyOf }); return }
+      const path = await addToLibrary(world, reply.body, fileNameOf(url))
+      hashes.set(hash, path)
+      added.push({ url: address, path })
     } catch (error) {
       skipped.push({ url: address, reason: error instanceof Error ? error.message : String(error) })
     }
   })
   return { found: candidates.length, added, skipped }
+}
+
+/** The key an address is known by: the way `candidateUrls` reads it, without a fragment. */
+export function addressKey(raw: string): string {
+  try { const url = new URL(raw); url.hash = ''; return url.href } catch { return raw }
+}
+
+const FINAL = [/^not an? /, /^format not supported/, /^gone$/, /^too small$/, /^too large$/, /^a copy of /, /^has credentials/, /^uses an unusual port/, /^is a private address/, /^a redirect /, /is not a public address$/, /^answered (4(?!08|29)\d\d)$/]
+
+/** Whether asking again could give another answer: a picture that is not one, is gone or may not be fetched stays settled; a timeout, a server error or a refusal to wait does not. */
+export const worthAskingAgain = (reason: string): boolean => !FINAL.some(pattern => pattern.test(reason))
+
+/**
+ * The addresses of a newer card to ask for: those the earlier card did not have, and those it had that were not settled (the record says a request failed). With no record
+ * of that fetch every address of the earlier card counts as settled, so what the person removed from the library is not brought back.
+ */
+export function addressesToFetch(earlier: readonly string[], later: readonly string[], record: PicturesReport | undefined): string[] {
+  const settled = new Set(earlier.map(addressKey))
+  if (record !== undefined) {
+    const unsettled = new Set(record.skipped.filter(entry => worthAskingAgain(entry.reason)).map(entry => addressKey(entry.url)))
+    const fetched = new Set(record.added.map(entry => addressKey(entry.url)))
+    for (const key of [...settled]) if (unsettled.has(key) && !fetched.has(key)) settled.delete(key)
+  }
+  return later.filter(url => !settled.has(addressKey(url)))
+}
+
+/** The record after a second fetch: what was added stays, an address asked again takes its new answer. */
+export function mergeReports(earlier: PicturesReport | undefined, later: PicturesReport, found: number): PicturesReport {
+  const asked = new Set([...later.added.map(entry => entry.url), ...later.skipped.map(entry => entry.url)].map(addressKey))
+  return {
+    found,
+    added: [...(earlier?.added ?? []), ...later.added],
+    skipped: [...(earlier?.skipped ?? []).filter(entry => !asked.has(addressKey(entry.url))), ...later.skipped],
+  }
 }

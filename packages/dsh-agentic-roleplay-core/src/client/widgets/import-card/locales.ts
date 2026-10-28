@@ -1,11 +1,23 @@
 import type { Dictionaries } from '../../i18n.ts'
 
 export type ImportCardKey =
-  | 'ic_cancel' | 'ic_constant' | 'ic_creator' | 'ic_disableAll' | 'ic_empty' | 'ic_enableAll' | 'ic_entryCount' | 'ic_fieldDescription' | 'ic_fieldExamples' | 'ic_fieldInstructions' | 'ic_fieldNotes' | 'ic_fieldPersonality' | 'ic_fields' | 'ic_fieldScenario' | 'ic_keys' | 'ic_lorebook' | 'ic_lorebookHelp' | 'ic_noKeys' | 'ic_noPicture' | 'ic_notCarried' | 'ic_opening' | 'ic_openingAlternate' | 'ic_openingFirst' | 'ic_openingHelp' | 'ic_openingNone' | 'ic_scripts' | 'ic_source' | 'ic_start' | 'ic_startFailed' | 'ic_starting' | 'ic_title' | 'ic_worldName'
+  | 'ic_cancel' | 'ic_constant' | 'ic_creator' | 'ic_disableAll' | 'ic_empty' | 'ic_enableAll' | 'ic_entryCount' | 'ic_fieldDescription' | 'ic_fieldExamples' | 'ic_fieldInstructions' | 'ic_fieldNotes' | 'ic_fieldPersonality' | 'ic_fields' | 'ic_fieldScenario' | 'ic_keys' | 'ic_lorebook' | 'ic_lorebookHelp' | 'ic_noKeys' | 'ic_noPicture' | 'ic_notCarried' | 'ic_opening' | 'ic_openingAlternate' | 'ic_openingFirst' | 'ic_openingHelp' | 'ic_openingNone' | 'ic_scripts' | 'ic_source' | 'ic_start' | 'ic_startFailed' | 'ic_starting' | 'ic_title' | 'ic_worldName' | 'ic_target' | 'ic_targetHelp' | 'ic_targetNew' | 'ic_targetUpdate' | 'ic_targetClean' | 'ic_targetEdited' | 'ic_targetUnknown' | 'ic_update' | 'ic_updateTitle' | 'ic_targetOther' | 'ic_targetOtherChoose' | 'ic_targetKeepsName'
 
 export const dictionaries: Dictionaries<ImportCardKey> = {
   en: {
     ic_title: 'Import a character card',
+    ic_updateTitle: 'Update a world from a newer card',
+    ic_target: 'Update a world, or import a new one',
+    ic_targetHelp: 'A world that was imported from a card can be brought up to date with this version by the assistant, instead of importing everything again. Every change it makes asks for your approval unless you turned that off.',
+    ic_targetOther: 'Update another world',
+    ic_targetOtherChoose: 'Which world',
+    ic_targetKeepsName: 'The world keeps its own name.',
+    ic_targetUpdate: 'Update “{name}” from this card',
+    ic_targetNew: 'Import as a new world',
+    ic_targetClean: 'Not changed since the import: the assistant edits it, and you approve each change.',
+    ic_targetEdited: 'You changed it since the import ({files}). A copy is safer; an update keeps those edits where it can.',
+    ic_targetUnknown: 'Imported before changes were recorded, so it cannot be told whether you edited it. A copy is safer.',
+    ic_update: 'Update',
     ic_source: 'A {spec} card{converted}.',
     ic_worldName: 'Name of the new world',
     ic_noPicture: 'No picture',
@@ -40,6 +52,18 @@ export const dictionaries: Dictionaries<ImportCardKey> = {
   },
   zh: {
     ic_title: '导入角色卡',
+    ic_updateTitle: '用新版角色卡更新世界',
+    ic_target: '更新已有世界，或导入为新世界',
+    ic_targetHelp: '由角色卡导入的世界，可以让助手按这个版本更新到最新，而不必重新导入全部内容。除非你关闭了确认，助手的每项改动都需要你批准。',
+    ic_targetOther: '更新另一个世界',
+    ic_targetOtherChoose: '选择世界',
+    ic_targetKeepsName: '世界保留它自己的名字。',
+    ic_targetUpdate: '用这张卡更新“{name}”',
+    ic_targetNew: '作为新世界导入',
+    ic_targetClean: '导入后没有被修改过：由助手修改，每项改动都需要你批准。',
+    ic_targetEdited: '导入后你修改过它（{files}）。建议另存为副本；更新会尽量保留这些修改。',
+    ic_targetUnknown: '导入时尚未记录文件状态，无法判断你是否修改过。建议另存为副本。',
+    ic_update: '更新',
     ic_source: '{spec} 角色卡{converted}。',
     ic_worldName: '新世界的名称',
     ic_noPicture: '没有图片',

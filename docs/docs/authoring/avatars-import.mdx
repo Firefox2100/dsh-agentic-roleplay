@@ -33,7 +33,30 @@ During review, pay particular attention to:
 - goals and starting activity, which give the character something to do when play begins;
 - imported names or IDs that conflict with the existing cast.
 
-An import is a draft, not a live compatibility layer. After conversion, the native character files and copied images are authoritative; changing the original card does not update them.
+An import is a draft, not a live compatibility layer. After conversion, the native character files and copied images are authoritative; changing the original card does not update them by itself.
+
+### A newer version of a card
+
+A world that was imported from a card can be brought up to date with a newer version of that card, without running the import again. There are two ways in:
+
+- **Import the card as usual** (the **Import card** button on the Worlds page, or a card from the [catalogue](../playing/catalogue)). If you have a world with the card's name that was itself imported from a card, the review page offers **Update “name” from this card** next to **Import as a new world**. A card that was renamed can update any world made from a card: choose **Update another world** and pick it from the list.
+- **From the world.** Open a world that was made from a card; its header has **Update from card**. Choose the card file (a PNG or a JSON file) and the review page opens with that world already selected. This is the way to update a world from a card you have on disk, with no catalogue involved.
+
+An update does not run the import again. Before anything changes, the plugin keeps a copy of the world as it is. The new card is kept in the world's `.import/update` folder, the world's authoring chat opens, and the assistant is told to bring the world up to date:
+
+1. `card_diff` shows what changed between the two cards, worked out by the plugin: for each changed piece (field, greeting or lorebook entry) the sentences that differ, plus pieces that were added or dropped. Each changed piece lists the characters, places and things the import made from it, and a dropped piece lists which of them it alone made. It also lists what the card changed about the world itself.
+2. The assistant reads the pieces it needs with `card_read` (`version` `current` is the old card, `new` the new one) and changes only what the new card changed, with its ordinary editing tools. A character, place or thing is edited like any other; what the world says about itself (description, tags, the opening and the other openings) is edited with `edit_world_info`. Each edit goes through the [approval](./assistant#approval) like any other, with the change shown. What was made only from a dropped piece is removed (the folder goes to the world's `.trash`) unless you edited it since the import.
+3. `card_update_finish` makes the new card the world's source (the old one stays in `.import/previous`), notes the world's files as the new starting point for telling edits apart, replaces the world's portrait if it is still the picture that came with the old card and the new card has another, and fetches the picture addresses the world does not have yet. That includes addresses that failed last time for a reason that may have passed (a timeout, a server error); a picture the library already holds is recognised by the picture itself, not the file, so a mirror address does not add a second copy. Pictures from addresses the new card dropped stay in the library, and the assistant tells you which.
+
+Only changed pieces cost anything, so a small card update costs a fraction of an import. The default depends on whether you have edited the world since its import (the plugin keeps a fingerprint of the world's files when the import's review ends; pictures do not count):
+
+- **Not edited:** **Update** is preselected, when the world has the card's name.
+- **Edited:** **Import as a new world** is preselected. You can still choose to update; the assistant is shown the files you changed and told to keep your edits.
+- **Imported before fingerprints were kept:** the plugin cannot tell, so it preselects a new world as well. Choosing to update works the same way; the assistant looks at the world before it changes anything.
+
+An update keeps the world's name, and sessions already started from the world keep their own copy of it, so an update never changes them: start a new session to play the updated world.
+
+If the result is not what you wanted, **Undo card update** in the world's header returns the world to what it was before the update, and restores the card it was made from. What the world held at that moment is moved to its `.trash` folder, so edits made after the update are still there to find. Pictures are not part of this.
 
 Import limits, concurrency, reasoning effort, token budget and temperature are configured on the core plugin. Network images are fetched only after their addresses and response types pass validation.
 

@@ -49,12 +49,36 @@ export interface ImportChoices {
   opening: OpeningChoice
 }
 
+/** A world of the person's that an uploaded card could update: one that was itself imported from a card. */
+export interface UpdateTarget {
+  worldId: string
+  name: string
+  /** Whether the world has the card's name, which is what makes updating it the natural thing to do; any other world is offered too, for a card that was renamed. */
+  sameName: boolean
+  /** Whether the world's files still are what the import left: `no` when nobody changed them, `unknown` for a world imported before the import kept a record. */
+  edited: 'no' | 'yes' | 'unknown'
+  /** The files that differ from what the import left, a few of them. */
+  changes: string[]
+}
+
+/** What the world editor needs to know to offer a card update. */
+export interface UpdateStatus {
+  /** The world was made from a card whose import is over, so a newer card can update it. */
+  fromCard: boolean
+  /** The world was kept as it was before its last update, which can be undone. */
+  revertible: boolean
+  /** A newer card is waiting, because an update was started and has not been finished. */
+  waiting: boolean
+}
+
 /** What the import page shows of an uploaded card. */
 export interface ImportPreview {
   id: string
   card: NormalizedCard
   choices: ImportChoices
   hasAvatar: boolean
+  /** The worlds this card could update instead of becoming a new one, those with its name first. */
+  targets?: UpdateTarget[]
 }
 
 export const MAX_IMPORT_NAME = 200

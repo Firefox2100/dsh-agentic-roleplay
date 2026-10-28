@@ -1,10 +1,11 @@
-import { mkdir, rename, writeFile } from 'node:fs/promises'
-import { randomUUID } from 'node:crypto'
+import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { join } from 'node:path'
+import { extname, join } from 'node:path'
 import { trimCharacters, withoutExtension } from '../../shared/text.ts'
 import { LIBRARY_FOLDER } from '../../shared/gallery.ts'
 import { MEDIA_TYPES, writeImageFileMetadata } from './image-files.ts'
+import { pngPictureBytes } from './png-metadata.ts'
 import type { VisualImageMetadata } from './storage.ts'
 
 const MAGIC: readonly { type: string; test: (bytes: Uint8Array) => boolean }[] = [
@@ -17,6 +18,25 @@ const MAGIC: readonly { type: string; test: (bytes: Uint8Array) => boolean }[] =
 /** The format the bytes are, by what they start with: a name or a declared type is not believed. */
 export function imageExtensionOf(bytes: Uint8Array): string | undefined {
   return MAGIC.find(format => format.test(bytes))?.type
+}
+
+/** A hash of the picture itself: a PNG's metadata (ours is written into it after the file is saved) is left out, so the same picture hashes the same wherever it came from. */
+export function pictureHash(bytes: Uint8Array): string {
+  let picture: Uint8Array = bytes
+  if (imageExtensionOf(bytes) === '.png') try { picture = pngPictureBytes(bytes) } catch { picture = bytes }
+  return createHash('sha256').update(picture).digest('hex')
+}
+
+/** The pictures already in the library, by the hash of the picture: its path under `images/`. */
+export async function libraryHashes(sessionFolder: string): Promise<Map<string, string>> {
+  const directory = join(sessionFolder, 'images', LIBRARY_FOLDER)
+  const found = new Map<string, string>()
+  for (const name of await readdir(directory).catch((): string[] => [])) {
+    if (MEDIA_TYPES[extname(name).toLowerCase()] === undefined) continue
+    const bytes = await readFile(join(directory, name)).catch((): undefined => undefined)
+    if (bytes !== undefined && imageExtensionOf(bytes) !== undefined) found.set(pictureHash(bytes), `${LIBRARY_FOLDER}/${name}`)
+  }
+  return found
 }
 
 /** A file name made of the letters and digits of the name it came with, in any script. */

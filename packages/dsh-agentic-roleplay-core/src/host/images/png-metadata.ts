@@ -47,6 +47,14 @@ function isOurText(entry: PngChunk): boolean {
   return entry.type === 'iTXt' && entry.data.subarray(0, KEYWORD.length).toString('latin1') === KEYWORD && entry.data[KEYWORD.length] === 0
 }
 
+/** Chunks that describe a picture instead of being it: text, time and EXIF. */
+const DESCRIPTIVE_CHUNKS = new Set(['iTXt', 'tEXt', 'zTXt', 'tIME', 'eXIf'])
+
+/** The PNG without what only describes it, so the same picture gives the same bytes before and after metadata is written into it. */
+export function pngPictureBytes(png: Uint8Array): Buffer {
+  return Buffer.concat([SIGNATURE, ...chunks(Buffer.from(png)).filter(entry => !DESCRIPTIVE_CHUNKS.has(entry.type)).map(entry => entry.bytes)])
+}
+
 /** Put self-describing UTF-8 JSON in a PNG iTXt chunk, replacing older roleplay metadata. */
 export function withPngMetadata(png: Uint8Array, metadata: unknown): Buffer {
   const source = Buffer.from(png)

@@ -2,6 +2,8 @@ import { defineTool, type PreToolDecision, type ToolDefinition, type ToolExecuti
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import { InvalidEditProblems, parseRelationEdit } from '../../shared/world-state.ts'
 import { editWorldPlots, editWorldRelation, readWorldEditor } from '../worlds/world-editor.ts'
+import { editWorldInfo } from '../worlds/world-info.ts'
+import { parseWorldInfoEdit, type WorldInfo } from '../../shared/world-info.ts'
 import { parsePlotsFile } from '../plots/load.ts'
 import { deleteTriggerDocument, writeTriggerDocument } from '../triggers/files.ts'
 import { loadWorldParts } from '../triggers/parts.ts'
@@ -17,7 +19,10 @@ const jsonOutput = { schema: { type: 'json' as const }, render: (_args: unknown,
 const kindParameter = { type: 'string' as const, required: true as const, enum: AUTHORED_ENTITY_KINDS }
 const keyParameter = { type: 'string' as const, required: true as const, description: 'Stable entity key.' }
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
+/** The fields of `world.json` the assistant changes: what the world says about itself. The name, the preset, the lorebooks, the sampling and the tool switches are the person's choices and stay theirs. */
+export const WORLD_INFO_FIELDS = ['description', 'tags', 'rules', 'opening', 'alternateOpenings', 'startingTime', 'timeZone', 'version', 'authorName', 'authorUrl'] as const
+
+export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -65,6 +70,21 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
         const world = { id: record.summary.id, directory: record.directory }
         const recoveredFrom = await deleteAuthoredEntity(world, args.kind as AuthoredEntityKind, args.key)
         return result('deleted', args.kind, args.key, await readWorldEditor(world), { recoverable: true, trashPath: recoveredFrom }) as never
+      },
+    }),
+    defineTool({
+      name: 'edit_world_info',
+      description: `Change what the world says about itself in world.json: ${WORLD_INFO_FIELDS.join(', ')}. Give only the fields to change, as {"description": "...", "tags": ["..."], "opening": "...", "alternateOpenings": [{"title": "...", "text": "..."}]}: a list replaces the whole list, so read get_world_info first. The description is a short summary (a few sentences). An opening with lines spoken by characters cannot be edited as text. The name, preset, lorebooks, sampling and tool switches are the person's and cannot be changed here. Requires user approval.`,
+      parameters: { changes: { type: 'json', required: true, description: 'The fields to change, with their new values.' } },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        const edit = parseWorldInfoEdit(args.changes)
+        const refused = Object.keys(edit).filter(key => !(WORLD_INFO_FIELDS as readonly string[]).includes(key))
+        if (refused.length > 0) throw new InvalidEditProblems([`${refused.join(', ')} cannot be changed here: ${WORLD_INFO_FIELDS.join(', ')} can`])
+        const info = await editWorldInfo(record.directory, edit)
+        await reader.refresh()
+        return { action: 'edited', kind: 'world info', changed: Object.keys(edit), info } as never
       },
     }),
     defineTool({
@@ -122,7 +142,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
  * @param reviewing - whether the authoring chat is in such a turn.
  * @param options - `auto` is whether the person chose to have changes made without asking; `current` reads the document a replacement is about to replace, so the question can show what changes.
  */
-export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false), options: { auto?: () => boolean; current?: (chat: string, kind: AuthoredEntityKind, key: string) => Promise<unknown> } = {}): Promise<PreToolDecision> {
+export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false), options: { auto?: () => boolean; current?: (chat: string, kind: AuthoredEntityKind, key: string) => Promise<unknown>; info?: (chat: string) => Promise<WorldInfo | undefined> } = {}): Promise<PreToolDecision> {
   if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return await next()
   const args = exec.arguments as Record<string, unknown>
   const auto = options.auto?.() === true
@@ -158,6 +178,10 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
       displayReason: withDetail({ en: `${remove ? 'Delete' : 'Write'} ${target} in the world files`, zh: `${remove ? '删除' : '写入'}世界文件中的${target}` }, remove ? undefined : sizeOf(args['text'])),
     }
   }
+  if (exec.name === 'edit_world_info') {
+    const detail = await infoDetail(args['changes'], await options.info?.(exec.agent.session.id).catch(() => undefined))
+    return { kind: 'ask', reason: 'edit the authored world\'s description, tags, opening or other world.json fields', displayReason: withDetail({ en: 'Edit what the world says about itself', zh: '编辑世界对自身的描述' }, detail) }
+  }
   const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : exec.name.endsWith('trigger') ? 'trigger' : 'plots'
   const key = typeof args['key'] === 'string' ? args['key'] : ''
   const target = key === '' ? kind : `${kind} “${key}”`
@@ -168,6 +192,13 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
     reason: `${action.toLowerCase()} authored world ${target}`,
     displayReason: withDetail({ en: `${action} ${target} in the world files`, zh: `${action === 'Create' ? '创建' : action === 'Delete' ? '删除' : action === 'Write' ? '写入' : '编辑'}世界文件中的${target}` }, detail),
   }
+}
+
+/** The fields of world.json the edit changes, each from what it is now to what it becomes. */
+async function infoDetail(changes: unknown, before: WorldInfo | undefined): Promise<Summary | undefined> {
+  let edit: Record<string, unknown>
+  try { edit = parseWorldInfoEdit(changes) as Record<string, unknown> } catch { return plain(changes) }
+  return before === undefined ? plain(edit) : changedFields(before, { ...before, ...edit })
 }
 
 function withDetail(headline: Summary, detail: Summary | undefined): Summary {

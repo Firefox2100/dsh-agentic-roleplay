@@ -33,14 +33,14 @@ let presets: { file: Buffer; title: string; language: string | undefined }[]
 let lorebooks: { file: Buffer; title: string; language: string | undefined }[]
 let staged: { kind: string; file: Buffer; name: string }[]
 let cardsStaged: { file: Buffer; name: string }[]
-let cardsStarted: { id: string; choices: unknown; language: string | undefined }[]
+let cardsStarted: { id: string; choices: unknown; language: string | undefined; update?: string | undefined }[]
 const problems: string[] = []
 const make = (): Catalogue => new Catalogue({
   sources: new Sources(() => configured), worlds, maxBytes: () => 1024 * 1024, maxCardBytes: () => 1024 * 1024, trashDays: () => 30, problem: (message) => { problems.push(message) }, transport,
   stage: (kind, file, name) => { staged.push({ kind, file, name }); return { id: 'st-1', kind, name, items: [] } },
   previewCard: async (file, name) => { cardsStaged.push({ file, name }); return { id: 'card-1', hasAvatar: false, choices: { name: 'Ann', disabledEntries: [], opening: { kind: 'first' } }, card: {} as never } },
-  startCard: async (id, choices, language) => {
-    cardsStarted.push({ id, choices, language })
+  startCard: async (id, choices, language, update) => {
+    cardsStarted.push({ id, choices, language, ...(update === undefined ? {} : { update }) })
     const made = await worlds.list({ refresh: true })
     return { worldId: made.worlds[0]?.id ?? '', chatSessionId: 'chat-4', started: true }
   },
@@ -387,6 +387,16 @@ describe('converting a character card', () => {
     expect(cardsStarted).toEqual([{ id: 'card-1', choices, language: 'zh' }])
     expect(calls.filter(call => call.url.endsWith('/download'))).toHaveLength(1)
     expect(JSON.parse(await readFile(join(root, 'worlds', 'made', '.catalogue.json'), 'utf8'))).toEqual({ kind: 'card', root: 'http://localhost:9798', resourceId: 'c1', versionId: 'cv1', version: '3' })
+  })
+
+  it('passes the world a staged card is to update and records the new release as its origin', async () => {
+    answers['http://localhost:9798/versions/cv1'] = () => json(version({ artifactSha256: createHash('sha256').update(CARD).digest('hex') }))
+    await mkdirp(join(root, 'worlds', 'made'), { recursive: true })
+    await writeFile(join(root, 'worlds', 'made', 'world.json'), JSON.stringify({ id: 'made-id', name: 'Ann' }))
+    const choices = { name: 'Ann', disabledEntries: [], opening: { kind: 'none' as const } }
+    await make().convertStaged({ source: 'Home', versionId: 'cv1', id: 'card-1', choices, update: 'made-id' })
+    expect(cardsStarted).toEqual([{ id: 'card-1', choices, language: undefined, update: 'made-id' }])
+    expect(JSON.parse(await readFile(join(root, 'worlds', 'made', '.catalogue.json'), 'utf8'))).toMatchObject({ kind: 'card', versionId: 'cv1' })
   })
 
   it('makes nothing when the release is not a card', async () => {

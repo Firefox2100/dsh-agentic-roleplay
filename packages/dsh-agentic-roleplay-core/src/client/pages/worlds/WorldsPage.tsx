@@ -18,8 +18,9 @@ import { TranslateBanner } from './TranslateBanner.tsx'
 import { importStagedToWorld, importVerbatimToWorld, stageFile } from '../../import-selection-api.ts'
 import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSelection.tsx'
 import type { SelectionPreview } from '../../../shared/import-selection.ts'
-import { discardImport, startImport, uploadCard } from './import-api.ts'
-import type { ImportPreview } from '../../../shared/import-card.ts'
+import { discardImport, revertUpdate, startImport, updateStatus, uploadCard } from './import-api.ts'
+import type { ImportPreview, UpdateStatus } from '../../../shared/import-card.ts'
+import { RevertUpdateDialog } from './RevertUpdateDialog.tsx'
 import type { WorldsFace } from './worlds-controller.ts'
 import css from './WorldsPage.module.css'
 
@@ -39,6 +40,11 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const [addingAvatars, setAddingAvatars] = useState(false)
   const [editorVersion, setEditorVersion] = useState(0)
   const [importing, setImporting] = useState<ImportPreview | undefined>()
+  const [updating, setUpdating] = useState<string>()
+  const [cardStatus, setCardStatus] = useState<UpdateStatus>()
+  const [reverting, setReverting] = useState(false)
+  const updatePicker = useRef<HTMLInputElement>(null)
+  const [updateBusy, setUpdateBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [importNotice, setImportNotice] = useState<string>()
   const picker = useRef<HTMLInputElement>(null)
@@ -49,6 +55,14 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const source = useMemo(() => (editing === undefined ? undefined : worldSource(editing.id)), [editing])
 
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    setCardStatus(undefined)
+    if (editing === undefined) return
+    let current = true
+    updateStatus(editing.id).then((status) => { if (current) setCardStatus(status) }, () => undefined)
+    return () => { current = false }
+  }, [editing?.id, editorVersion, importing === undefined])
 
   const worlds = state.payload?.worlds ?? []
   const start = pageStart(requestedStart, worlds.length, pageSize)
@@ -70,6 +84,21 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
     )
   }
 
+  const chooseUpdateCard = (world: string, file: File | undefined): void => {
+    if (file === undefined) return
+    setUpdateBusy(true)
+    setPresetNotice(undefined)
+    uploadCard(file).then(
+      (preview) => {
+        setUpdateBusy(false)
+        if (preview.targets?.some(target => target.worldId === world) !== true) { void discardImport(preview.id); setPresetNotice(t('updateNotFromCard')); return }
+        setUpdating(world)
+        setImporting(preview)
+      },
+      (failure: unknown) => { setUpdateBusy(false); setPresetNotice(t('importUploadFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
+    )
+  }
+
   const choosePreset = (world: string, file: File | undefined): void => {
     if (file === undefined) return
     setPresetBusy(true)
@@ -86,10 +115,11 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         <ImportCard
           t={t}
           preview={importing}
-          start={choices => startImport(importing.id, choices, t('language'))}
+          {...(updating === undefined ? {} : { initialUpdate: updating })}
+          start={(choices, update) => startImport(importing.id, choices, t('language'), update)}
           discard={() => discardImport(importing.id)}
-          onCancelled={() => { setImporting(undefined) }}
-          onStarted={(chat, started) => { setImporting(undefined); refresh(); if (!started) setImportNotice(t('importNotStarted')); openChat(chat) }}
+          onCancelled={() => { setImporting(undefined); setUpdating(undefined) }}
+          onStarted={(chat, started) => { setImporting(undefined); setUpdating(undefined); refresh(); if (!started) setImportNotice(t('importNotStarted')); openChat(chat) }}
         />
       </div>
     )
@@ -101,6 +131,9 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         <div className={css.editHeader}>
           <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
           <span className={css.editTitle}>{editing.name}</span>
+          <input ref={updatePicker} type="file" accept=".png,.json,image/png,application/json" hidden data-testid="roleplay-update-input" onChange={(event) => { chooseUpdateCard(editing.id, event.target.files?.[0]); event.target.value = '' }} />
+          {cardStatus?.fromCard === true && <Button variant="outline" size="sm" disabled={updateBusy} onClick={() => { updatePicker.current?.click() }}>{updateBusy ? t('updateReading') : t('updateFromCard')}</Button>}
+          {cardStatus?.revertible === true && <Button variant="outline" size="sm" onClick={() => { setReverting(true) }}>{t('revertUpdate')}</Button>}
           <input ref={presetPicker} type="file" accept=".json,application/json" hidden data-testid="roleplay-preset-input" onChange={(event) => { choosePreset(editing.id, event.target.files?.[0]); event.target.value = '' }} />
           <Button className={css.authorButton} variant="outline" size="sm" disabled={presetBusy} onClick={() => { presetPicker.current?.click() }}>{presetBusy ? t('presetReading') : t('importPreset')}</Button>
           <Button variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
@@ -114,6 +147,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
           <ImportSelectionDialog preview={presetStaged.preview} t={t} canVerbatim onClose={() => { setPresetStaged(undefined) }} onConfirm={async (choice, options) => { if (options.verbatim) { const made = await importVerbatimToWorld(presetStaged.world, choice); setPresetNotice(t(made.replaced ? 'presetVerbatimReplaced' : 'presetVerbatim', { name: made.preset })); return } const opened = await importStagedToWorld(presetStaged.world, choice, t('language')); if (!opened.started) setPresetNotice(t('presetNotStarted', { message: opened.failure ?? '' })); openChat(opened.chatSessionId) }} />
         )}
         <TranslateBanner t={t} worldId={editing.id} worldName={editing.name} openChat={openChat} />
+        {reverting && <RevertUpdateDialog t={t} onClose={() => { setReverting(false) }} revert={() => revertUpdate(editing.id)} onDone={(keptIn) => { setReverting(false); setPresetNotice(t('revertDone', { folder: keptIn })); setEditorVersion(version => version + 1); refresh() }} />}
         {addingAvatars && <AddAvatarsDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setAddingAvatars(false) }} onAdded={() => { setAddingAvatars(false); setEditorVersion(version => version + 1) }} />}
         <div className={css.editBody}>
           <WorldEditor key={editorVersion} t={t} source={source} notEditable={t('worldMissing')} />

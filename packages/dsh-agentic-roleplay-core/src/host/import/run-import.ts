@@ -8,6 +8,7 @@ import { itemise, type SourceItem } from './items.ts'
 import type { ImportContext } from './run.ts'
 import { fetchPictures, type PicturesReport } from './pictures.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, readImportFolder } from './store.ts'
+import { writeSnapshot } from './snapshot.ts'
 import { buildRoster, classifyItems, isLeftOut, ROLES, type Classified, type Role, type Roster } from './survey.ts'
 
 /** The import in a world is not in the state the step needs, or there is none. The message says what to do. */
@@ -79,9 +80,11 @@ export async function isReviewing(world: string): Promise<boolean> {
   }
 }
 
-/** The import turn is over: the world is edited like any other from now on. */
+/** The import turn is over: the world is edited like any other from now on, and what it holds now is what a later edit is measured against. */
 export async function endReview(world: string): Promise<void> {
-  if (await isReviewing(world)) await writeJson(join(folder(world), STATE), { phase: 'done' })
+  if (!await isReviewing(world)) return
+  await writeJson(join(folder(world), STATE), { phase: 'done' })
+  await writeSnapshot(world)
 }
 
 /** Marks a folder that was just moved into a world as an import that is ready to run. */

@@ -6,6 +6,7 @@ import type { WorldState } from '../../shared/world-state.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { readWorldEditor } from '../worlds/world-editor.ts'
 import { readTriggerDocuments } from '../triggers/files.ts'
+import { readWorldInfo } from '../worlds/world-info.ts'
 import { AUTHORED_ENTITY_KINDS, readAuthoredEntityDocument, type AuthoredEntityKind } from './documents.ts'
 
 type AgentExec = { agent?: { session: { id: string } } }
@@ -32,6 +33,11 @@ export class AuthoredWorldReader {
     const record = await this.worlds.find(worldId)
     if (record === undefined) throw new Error(`the authored world "${worldId}" no longer exists`)
     return { record, state: await readWorldEditor({ id: record.summary.id, directory: record.directory }) }
+  }
+
+  /** Lists the worlds again: the summaries (description, tags) come from `world.json`. */
+  async refresh(): Promise<void> {
+    await this.worlds.list({ refresh: true })
   }
 }
 
@@ -85,6 +91,16 @@ export function authoredWorldReadTools(reader: AuthoredWorldReader): ToolDefinit
           opening_message: document['opening_message'],
           counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length },
         })
+      },
+    }),
+    defineTool({
+      name: 'get_world_info',
+      description: 'Read what the world says about itself in world.json: name, description, tags, rules, the opening message and the alternate openings, author, version, time settings, and the preset, lorebooks, sampling and tool switches the person chose. edit_world_info changes the fields a card or an author is responsible for.',
+      parameters: {},
+      output: jsonOutput,
+      isConcurrencySafe: () => true,
+      async execute(_args, exec) {
+        return json(await readWorldInfo((await reader.read(exec)).record.directory))
       },
     }),
     listTool(reader, 'list_characters', 'List authored characters with stable keys and concise identifying information.', world => world.characters, entry => ({ key: entry.key, name: entry.name, aliases: entry.aliases, role: entry.role, tier: entry.tier, kind: entry.kind, summary: entry.summary, place: entry.place })),

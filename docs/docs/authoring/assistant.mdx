@@ -6,6 +6,8 @@ Select **Author world** from the world editor. DSH opens a chat named after the 
 
 The assistant can list and read world elements, inspect links and relationships, and propose creating, updating or deleting authored data. Mutation tools write the same files used by the manual editor.
 
+It also reads and changes what the world says about itself in `world.json`: `get_world_info` reads it and `edit_world_info` changes the description, tags, rules, the opening, the other openings, the starting time and time zone, the version and the author. The world's name, its suggested preset and lorebooks, its sampling and its tool switches are yours and the assistant cannot change them. Like every other edit, a change shows each field with its old and new value for approval.
+
 It also reads and writes the world's **triggers** (what the world does by itself): `list_world_triggers` and `get_world_trigger` read them, and `write_world_trigger` and `delete_world_trigger` create, replace and remove one by its key. A trigger is read as a story start reads it and refused, with every problem at once, when it is malformed or names a character, place, item, variable or trigger the world does not have; a removed trigger's document is kept in the world's `.trash/triggers`, and one that other triggers wait for cannot be removed.
 
 Use it for changes that benefit from synthesis across several parts of a world: adding a person who fits an existing faction, finding incomplete connections, turning a premise into a small set of optional beats, or checking whether private knowledge has been placed on the right characters. For precise field edits, the visual editor is usually faster.
@@ -16,7 +18,7 @@ A world made by importing a character card keeps that card in its `.import` fold
 
 The world's own files remain the canon: the card is evidence of where they came from. When the two differ the assistant says so and does not change the world unless you ask. What the import's records say it did is its own judgement and can be wrong, so the assistant is told to check it against the card's text.
 
-The tools exist while the card does. Delete the world's `.import` folder and they report that the world has no source card. The card is licensed content: it stays in the world folder and travels with it when you sync your devices, but nothing the plugin exports or translates carries it.
+The tools exist while the card does. `card_diff` and `card_update_finish` serve [updating a world from a newer version of its card](./avatars-import#a-newer-version-of-a-card); while an update is waiting, `card_read` and `card_search` also take `version: new` to read the newer card. Delete the world's `.import` folder and they report that the world has no source card. The card is licensed content: it stays in the world folder and travels with it when you sync your devices, but nothing the plugin exports or translates carries it.
 
 ## Research tools
 

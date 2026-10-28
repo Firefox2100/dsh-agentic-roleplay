@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { roleplaySessionOf } from './shared/chat.ts'
 import { authoredWorldOf } from './shared/authoring-chat.ts'
 import { lorebookOfChat } from './shared/lorebook-chat.ts'
@@ -14,7 +14,9 @@ import { childSamplingOf } from './host/agents/child.ts'
 import { PromptLibrary } from './host/prompts/library.ts'
 import { AuthoringLanguages } from './host/worlds/authoring-language.ts'
 import { RoleplayImport } from './host/import/service.ts'
+import type { ImportChoices, ImportPreview } from './shared/import-card.ts'
 import { startImport } from './host/import/start-import.ts'
+import { findTargets, revertUpdate, startUpdate, updateStatus } from './host/import/update.ts'
 import { startTranslation, worldLanguage } from './host/translate/service.ts'
 import { ImportStore } from './host/import/store.ts'
 import { applyPresetVerbatim, uploadPreset } from './host/import/upload-preset.ts'
@@ -159,14 +161,19 @@ export function apply(ctx: Context, config: Config) {
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
   const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, get maxUploadBytes() { return config.importMaxUploadBytes.get() }, staging, playing: id => orchestration.playing(chatSessionId(id)) })
   const lorebookLibrary = new Lorebooks({ root: () => root.path, authoring: lorebookAuthoring, importMessage: lorebookImportMessage, get maxUploadBytes() { return config.importMaxUploadBytes.get() }, staging, session: id => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return ctx.roleplayState.openSession(sessions, id) }, playing: id => orchestration.playing(chatSessionId(id)) })
+  const withTargets = async (preview: ImportPreview): Promise<ImportPreview> => {
+    const targets = await findTargets(worlds, preview.choices.name)
+    return targets.length === 0 ? preview : { ...preview, targets }
+  }
+  const begin = async (id: string, choices: ImportChoices, language?: string, update?: string) => update === undefined ? await startImport({ store: imports, worlds, authoring }, id, choices, language) : await startUpdate({ store: imports, worlds, authoring }, id, choices, update, language)
   const catalogue = new Catalogue({
     sources: new Sources(() => config.catalogues.get(), () => ctx.get('credentials') as CredentialStore | undefined), worlds, maxBytes: () => config.catalogueMaxBytes.get(), maxCardBytes: () => config.importMaxUploadBytes.get(),
     trashDays: () => config.catalogueTrashDays.get(), problem: (message) => { ctx.logger.warn(message) },
     stage: (kind, file, name) => staging.stage(kind, file, name),
     importPreset: async (file, title, language) => await presetLibrary.importTitled(title, file, language),
     importLorebook: async (file, title, language) => await lorebookLibrary.importTitled(title, file, language),
-    previewCard: async (file, name) => await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined),
-    startCard: async (id, choices, language) => await startImport({ store: imports, worlds, authoring }, id, choices, language),
+    previewCard: async (file, name) => await withTargets(await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)),
+    startCard: begin,
     importCard: async (file, name, language) => {
       const preview = await imports.create(readCard(file, name), isPng(file) ? pictureOf(file) : undefined)
       return await startImport({ store: imports, worlds, authoring }, preview.id, preview.choices, language)
@@ -204,12 +211,19 @@ export function apply(ctx: Context, config: Config) {
     },
     importer: {
       get maxUploadBytes() { return config.importMaxUploadBytes.get() },
-      upload: async (file, name) => { const card = readCard(file, name); return await imports.create(card, isPng(file) ? pictureOf(file) : undefined) },
-      read: id => imports.read(id),
+      upload: async (file, name) => { const card = readCard(file, name); return await withTargets(await imports.create(card, isPng(file) ? pictureOf(file) : undefined)) },
+      read: async id => await withTargets(await imports.read(id)),
       choose: (id, choices) => imports.choose(id, choices),
       discard: id => imports.discard(id),
-      start: (id, choices, language) => startImport({ store: imports, worlds, authoring }, id, choices, language),
+      start: begin,
       picture: id => imports.picture(id),
+      updateStatus: async worldId => await updateStatus((await editableWorld(worlds, worldId, root.path)).directory),
+      revertUpdate: async worldId => {
+        const directory = (await editableWorld(worlds, worldId, root.path)).directory
+        const { keptIn } = await revertUpdate(directory)
+        await worlds.list({ refresh: true })
+        return { keptIn: relative(directory, keptIn) }
+      },
       uploadPreset: (worldId, file, name, language) => uploadPreset({ worlds, authoring }, worldId, file, name, language),
       stage: (kind, file, name) => staging.stage(kind, file, name),
       discardStaged: id => { staging.discard(id) },

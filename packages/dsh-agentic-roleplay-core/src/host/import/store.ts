@@ -134,10 +134,11 @@ export class ImportStore {
     await rm(this.folder(id), { recursive: true, force: true })
   }
 
-  /** Moves the folder into the world it became, as `.import/`. */
-  async adopt(id: string, worldDirectory: string): Promise<void> {
+  /** Moves the folder into the world it became, as `.import/`, or into the given place of the world (a card that updates it waits there). */
+  async adopt(id: string, worldDirectory: string, into: string = IMPORT_FOLDER): Promise<void> {
     const from = this.folder(id)
-    const to = join(worldDirectory, IMPORT_FOLDER)
+    const to = join(worldDirectory, into)
+    await mkdir(join(to, '..'), { recursive: true })
     try {
       await rename(from, to)
     } catch (error) {

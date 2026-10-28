@@ -40,7 +40,7 @@ export interface CatalogueDeps {
   /** Reads a downloaded card and keeps it while the person decides what becomes of it. */
   previewCard: (card: Buffer, name: string) => Promise<ImportPreview>
   /** Makes a new world of a card kept by `previewCard`, with the choices made, and has the authoring chat convert it. */
-  startCard: (id: string, choices: ImportChoices, language?: string) => Promise<ConvertResult>
+  startCard: (id: string, choices: ImportChoices, language?: string, update?: string) => Promise<ConvertResult>
   /** Keeps a downloaded preset or lorebook while the person chooses what of it is imported. */
   stage: (kind: SelectionKind, file: Buffer, name: string) => SelectionPreview
   transport?: Transport
@@ -231,11 +231,11 @@ export class Catalogue {
     return await this.deps.previewCard(release.body, `${release.versionId}${isPng(release.body) ? '.png' : '.json'}`)
   }
 
-  /** Makes the world of a card that `stageCard` offered, with what the person chose. Like `convert`, it never replaces a world. */
-  async convertStaged(request: ConvertRequest & { id: string; choices: ImportChoices }): Promise<ConvertResult> {
+  /** Makes the world of a card that `stageCard` offered, with what the person chose, or has the authoring chat bring the world named in `update` up to date with it. Like `convert`, it never replaces a world's files by itself. */
+  async convertStaged(request: ConvertRequest & { id: string; choices: ImportChoices; update?: string }): Promise<ConvertResult> {
     const source = this.deps.sources.get(request.source)
     const release = await this.describe(source, request.versionId, CATALOGUE_CARD_TYPE, 'a character card')
-    const converted = await this.deps.startCard(request.id, request.choices, request.language)
+    const converted = await this.deps.startCard(request.id, request.choices, request.language, request.update)
     const record = await this.deps.worlds.find(converted.worldId)
     if (record === undefined) throw new CatalogueError('the world was made but cannot be found', 'upstream')
     await writeOrigin(record.directory, { kind: 'card', root: source.root, resourceId: release.resourceId, versionId: release.versionId, version: text(release.version['version']) })

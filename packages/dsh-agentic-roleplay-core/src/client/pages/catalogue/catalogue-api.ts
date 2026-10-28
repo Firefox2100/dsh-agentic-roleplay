@@ -51,7 +51,7 @@ export async function stageCard(source: string, versionId: string): Promise<Impo
 }
 
 /** Makes the world of a card that was staged, with the choices the person made. */
-export async function convertStaged(request: ConvertRequest & { id: string; choices: ImportChoices }): Promise<ConvertResult> {
+export async function convertStaged(request: ConvertRequest & { id: string; choices: ImportChoices; update?: string }): Promise<ConvertResult> {
   return await answer(await fetch(`${API_PREFIX}/catalogue/convert/staged`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))
 }
 

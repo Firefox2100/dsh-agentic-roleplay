@@ -23,6 +23,18 @@ describe('the question put to the person', () => {
     expect(unreadable).toMatchObject({ kind: 'ask' })
   })
 
+  it('shows what a change to the world\'s own fields turns each into, and still asks when the old values cannot be read', async () => {
+    const info = vi.fn(() => Promise.resolve({ name: 'Harbor', description: 'A port.', tags: ['sea'], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], sampling: {}, tools: {} }))
+    const decision = await authoringApproval(exec('edit_world_info', { changes: { description: 'A port in the rain.', tags: ['sea', 'rain'] } }), allow, undefined, { info })
+    expect(decision).toMatchObject({ kind: 'ask', reason: expect.stringContaining('world.json') })
+    const text = (decision as unknown as { displayReason: { en: string; zh: string } }).displayReason
+    expect(text.en).toBe('Edit what the world says about itself: description “A port.” → “A port in the rain.”; tags ["sea"] → ["sea","rain"]')
+    expect(text.zh).toContain('编辑世界对自身的描述')
+    const unreadable = await authoringApproval(exec('edit_world_info', { changes: { description: 'x' } }), allow, undefined, { info: () => Promise.reject(new Error('gone')) })
+    expect(unreadable).toMatchObject({ kind: 'ask' })
+    expect(await authoringApproval(exec('edit_world_info', { changes: { description: 'x' } }), allow, undefined, { auto: () => true, info })).toEqual({ kind: 'allow' })
+  })
+
   it('caps a long list of changes and a long value', () => {
     const before = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`f${i}`, 'a']))
     const after = Object.fromEntries(Array.from({ length: 8 }, (_, i) => [`f${i}`, 'b'.repeat(200)]))

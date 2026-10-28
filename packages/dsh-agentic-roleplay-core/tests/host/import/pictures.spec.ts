@@ -3,10 +3,13 @@ import { createServer, type Server } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { pictureHash } from '../../../src/host/images/library.ts'
+import { withPngMetadata } from '../../../src/host/images/png-metadata.ts'
 import { urlsOf } from '../../../src/host/import/card.ts'
-import { candidateUrls, fetchPictures, isPublicAddress, requestOnce, vetUrl, type Fetcher, type Reply } from '../../../src/host/import/pictures.ts'
+import { addressesToFetch, candidateUrls, fetchPictures, isPublicAddress, mergeReports, requestOnce, vetUrl, type Fetcher, type Reply } from '../../../src/host/import/pictures.ts'
 
 const PNG = Buffer.concat([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'), Buffer.alloc(2000)])
+const OTHER = Buffer.concat([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64'), Buffer.alloc(2000)])
 const roots: string[] = []
 const servers: Server[] = []
 afterEach(async () => {
@@ -64,7 +67,7 @@ describe('fetching the pictures of a card', () => {
       if (url.pathname === '/page') return reply({ type: 'text/html' })
       if (url.pathname === '/gone.png') return reply({ status: 404 })
       if (url.pathname === '/liar.png') return method === 'HEAD' ? reply({ type: 'image/png' }) : reply({ type: 'image/png', body: Buffer.from('<html>'.repeat(400)) })
-      if (url.pathname === '/nohead') return method === 'HEAD' ? reply({ status: 405 }) : reply({ type: 'binary/octet-stream', body: Buffer.concat([PNG, Buffer.from('x')]) })
+      if (url.pathname === '/nohead') return method === 'HEAD' ? reply({ status: 405 }) : reply({ type: 'binary/octet-stream', body: OTHER })
       if (url.pathname === '/moved.png') return reply({ status: 302, location: 'http://10.0.0.5/inner.png' })
       return method === 'HEAD' ? reply({ type: 'image/png' }) : reply({ type: 'image/png', body: PNG })
     }
@@ -75,5 +78,44 @@ describe('fetching the pictures of a card', () => {
     })
     expect(asked).not.toContain('GET /page')
     expect(await readdir(join(directory, 'images', 'library'))).toHaveLength(2)
+  })
+
+  it('does not save a picture the library already holds, though the saved file carries our metadata', async () => {
+    const directory = await world()
+    const fetcher: Fetcher = async (_url, method) => method === 'HEAD' ? reply({ type: 'image/png' }) : reply({ type: 'image/png', body: PNG })
+    const first = await fetchPictures(directory, ['https://a.example/one.png'], { fetcher })
+    expect(first.added).toHaveLength(1)
+    const again = await fetchPictures(directory, ['https://mirror.example/other-name.png'], { fetcher })
+    expect(again.added).toEqual([])
+    expect(again.skipped).toEqual([{ url: 'https://mirror.example/other-name.png', reason: 'a copy of another picture', of: first.added[0]!.path }])
+    expect(await readdir(join(directory, 'images', 'library'))).toHaveLength(1)
+  })
+})
+
+describe('what a newer card asks for again', () => {
+  it('hashes a PNG by its picture: metadata chunks do not change it, other pictures do', () => {
+    const tagged = withPngMetadata(PNG, { schema: 'x', note: 'written after saving' })
+    expect(tagged.equals(PNG)).toBe(false)
+    expect(pictureHash(tagged)).toBe(pictureHash(PNG))
+    expect(pictureHash(OTHER)).not.toBe(pictureHash(PNG))
+    expect(pictureHash(Buffer.from('\xff\xd8\xffnot really', 'latin1'))).toHaveLength(64)
+  })
+
+  const record = { found: 3, added: [{ url: 'https://a.example/ok.png', path: 'library/ok.png' }], skipped: [{ url: 'https://a.example/down.png', reason: 'timed out' }, { url: 'https://a.example/page', reason: 'not an image (text/html)' }, { url: 'https://a.example/err.png', reason: 'answered 503' }, { url: 'https://a.example/no.png', reason: 'answered 403' }] }
+  const all = [...record.added.map(entry => entry.url), ...record.skipped.map(entry => entry.url)]
+
+  it('is the new addresses and the ones that failed for a reason that may pass', () => {
+    expect(addressesToFetch(all, [...all, 'https://b.example/new.png'], record)).toEqual(['https://a.example/down.png', 'https://a.example/err.png', 'https://b.example/new.png'])
+  })
+
+  it('is only the new addresses when there is no record, so what the person removed stays removed', () => {
+    expect(addressesToFetch(all, [...all, 'https://b.example/new.png'], undefined)).toEqual(['https://b.example/new.png'])
+  })
+
+  it('replaces the answer of an address asked again and keeps the rest', () => {
+    const merged = mergeReports(record, { found: 2, added: [{ url: 'https://a.example/down.png', path: 'library/down.png' }], skipped: [{ url: 'https://a.example/err.png', reason: 'answered 503' }] }, 5)
+    expect(merged.found).toBe(5)
+    expect(merged.added.map(entry => entry.url)).toEqual(['https://a.example/ok.png', 'https://a.example/down.png'])
+    expect(merged.skipped.map(entry => entry.url)).toEqual(['https://a.example/page', 'https://a.example/no.png', 'https://a.example/err.png'])
   })
 })

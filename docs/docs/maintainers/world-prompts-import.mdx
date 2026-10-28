@@ -26,3 +26,9 @@ Only prose style guidance may become prompt overrides. Scripts, rules, hidden in
 Remote image retrieval permits only HTTP(S), ports 80/443, no credentials, no private or loopback destination after every DNS lookup and redirect, at most four redirects, strict time and 20 MB size limits, and byte-level image validation. Failures are reported without invalidating otherwise usable imported content. Preserve these checks if the downloader changes.
 
 Exact contracts: [world files](../specifications/world-files), [prompts](../specifications/prompt-system), and [character-card import](../specifications/import-pipeline).
+
+## Updating an imported world
+
+A newer character card is staged in `.import/update`; it is not run through the original import pipeline again. Before the authoring agent edits anything, the plugin copies the current authored files and import records to `.import/before-update`. The agent receives a structural diff between the current and newer cards, the import provenance for affected pieces, and the list of files changed since the last completed import or update. Its ordinary mutation tools still use the configured authoring approval policy.
+
+Finishing promotes the newer card, archives the prior source in `.import/previous`, carries provenance records across matched card pieces, refreshes only card-owned portraits, retrieves newly referenced remote pictures through the same network boundary, and writes a fresh file snapshot. Undo restores the kept authored files and provenance while moving the post-update version to the world's `.trash`; images are deliberately outside that rollback. Preserve this lifecycle when changing import storage or authoring tools, and keep old imports without a snapshot readable—their edit status is `unknown`, not unchanged.
