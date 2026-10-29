@@ -74,7 +74,19 @@ export function matchPieces(before: readonly CardPiece[], after: readonly CardPi
 
 /** The sentences and lines of a text, each with the whitespace that follows it, so that joining them gives the text back. */
 function segments(text: string): string[] {
-  return text.match(/[^.!?。！？\n]*(?:[.!?。！？]+|\n)+\s*|[^.!?。！？\n]+$/gu) ?? (text === '' ? [] : [text])
+  const parts: string[] = []
+  const endings = '.!?。！？\n'
+  let start = 0
+  let at = 0
+  while (at < text.length) {
+    if (!endings.includes(text[at]!)) { at += 1; continue }
+    while (at < text.length && endings.includes(text[at]!)) at += 1
+    while (at < text.length && /\s/u.test(text[at]!)) at += 1
+    parts.push(text.slice(start, at))
+    start = at
+  }
+  if (start < text.length) parts.push(text.slice(start))
+  return parts
 }
 
 const shorten = (text: string): string => {
