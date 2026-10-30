@@ -16,7 +16,7 @@ const CASTING_SCHEMA = {
       items: {
         type: 'object',
         properties: {
-          name: { type: 'string' }, command: { type: 'string' }, happens: { type: 'string' }, need: { type: 'string' }, text: { type: 'string' },
+          name: { type: 'string' }, command: { type: 'string' }, happens: { type: 'string' }, need: { type: 'string', enum: ['arrival', 'introduction'] }, text: { type: 'string' },
           options: { type: 'array', items: { type: 'string' } },
         },
         // every field is required (empty when the card says nothing): models leave optional fields out
@@ -71,10 +71,10 @@ export function castingDocuments(answer: Document, passages: readonly string[] =
     const name = str(mechanism['name'])
     const command = usable.find(entry => entry.word === str(mechanism['command']).toLowerCase())
     const happens = str(mechanism['happens']) || (command === undefined && str(mechanism['command']) !== '' ? str(mechanism['name']) : '')
-    const need = str(mechanism['need'])
+    const need = mechanism['need'] === 'introduction' ? 'introduction' : 'arrival'
     const options = Array.isArray(mechanism['options']) ? (mechanism['options'] as unknown[]).map(str).filter(option => option !== '') : []
-    let words = str(mechanism['text']) || need
-    if (name === '' || need === '' || (command === undefined && happens === '')) { notes.push(`casting not carried: "${name || 'unnamed'}" has no reason to start it`); continue }
+    let words = str(mechanism['text']) || name
+    if (name === '' || (command === undefined && happens === '')) { notes.push(`casting not carried: "${name || 'unnamed'}" has no reason to start it`); continue }
     if (options.length > 0 && !words.includes('[draw]')) words = `${words} [draw]`
     if (options.length === 0) words = words.replaceAll('[draw]', '').trim()
     const when = command === undefined ? { type: 'judged', text: happens } : { type: 'variable', variable: commandFlagKey(command), op: COMPARISONS[0], value: true }

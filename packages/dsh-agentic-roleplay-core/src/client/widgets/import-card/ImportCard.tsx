@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button, Input, Switch, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, Input, Switch, Tag, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ImportChoices, ImportPreview, OpeningChoice, UpdateTarget } from '../../../shared/import-card.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
 import type { ImportCardKey } from './locales.ts'
@@ -34,13 +34,16 @@ function Text({ label, text, t, note }: { label: string; text: string; t: T; not
  * What a card holds, for the person to look through and decide what becomes of it: which lorebook entries are read at all, and which greeting opens the story.
  * The caller says what starting and cancelling do, because a card comes from a file or from a catalogue.
  */
-export function ImportCard({ t, preview, initialUpdate, start: begin, discard, onCancelled, onStarted }: {
+export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain, discard, onCancelled, onStarted, onImportedPlain }: {
   t: T
   preview: ImportPreview
   /** The world the person chose to update before the card was read, which then starts out selected. */
   initialUpdate?: string
   /** Makes the world with the choices, or updates the world named by `update`; rejects with the reason when it cannot. */
   start: (choices: ImportChoices, update?: string) => Promise<{ chatSessionId: string; started: boolean }>
+  /** Imports the card into a new world without a model; when it is not given, the choice is not offered. Rejects with the reason when it cannot. */
+  startPlain?: (choices: ImportChoices) => Promise<{ worldId: string; draft: boolean }>
+  onImportedPlain?: (worldId: string, draft: boolean) => void
   /** Lets the host forget the card; called before `onCancelled`. */
   discard: () => Promise<void>
   onCancelled: () => void
@@ -74,6 +77,15 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, discard, o
       (failure: unknown) => { setStarting(false); setError(failure instanceof Error ? failure.message : String(failure)) },
     )
   }
+  const startWithoutModel = (): void => {
+    if (name.trim() === '' || starting || startPlain === undefined) return
+    setStarting(true)
+    setError(undefined)
+    startPlain(choices()).then(
+      (done) => { onImportedPlain?.(done.worldId, done.draft) },
+      (failure: unknown) => { setStarting(false); setError(failure instanceof Error ? failure.message : String(failure)) },
+    )
+  }
   const cancel = (): void => { void discard().finally(onCancelled) }
   const on = entries.length - off.size
 
@@ -83,6 +95,7 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, discard, o
         <span className={css.title}>{update === undefined ? t('ic_title') : t('ic_updateTitle')}</span>
         <span className={css.space} />
         <Button variant="ghost" size="sm" disabled={starting} onClick={cancel}>{t('ic_cancel')}</Button>
+        {startPlain !== undefined && update === undefined && <Tooltip label={t('ic_startPlainHelp')} portal><Button variant="ghost" size="sm" disabled={name.trim() === '' || starting} onClick={startWithoutModel}>{t('ic_startPlain')}</Button></Tooltip>}
         <Button variant="primary" size="sm" disabled={name.trim() === '' || starting} onClick={start}>{starting ? t('ic_starting') : update === undefined ? t('ic_start') : t('ic_update')}</Button>
       </div>
       {error !== undefined && <p className={css.error} role="alert">{t('ic_startFailed', { message: error })}</p>}

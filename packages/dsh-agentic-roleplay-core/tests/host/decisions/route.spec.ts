@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { DecisionService } from '@dsh-ai-providers/core'
 import type { DecisionMode } from '../../../src/shared/decisions.ts'
 import { MAX_SAMPLES } from '../../../src/shared/decisions.ts'
-import { announceProblem, askYesNo, mergeReports, noAt, routeVerdicts, yesAt, type Route } from '../../../src/host/decisions/route.ts'
+import { announceProblem, askYesNo, mergeReports, modeFor, noAt, routeVerdicts, yesAt, type Route } from '../../../src/host/decisions/route.ts'
 
 const signal = new AbortController().signal
 
@@ -126,5 +126,11 @@ describe('merging reports', () => {
     expect(merged).toMatchObject({ mode: 'shadow', items: 3, agreed: 2, disagreed: 1, decisionMs: 15, llmMs: 150, problem: 'late' })
     expect(merged.samples).toHaveLength(MAX_SAMPLES)
     expect(merged.samples.at(-1)?.turn).toBe(99)
+  })
+})
+
+describe('the default mode of a site when no decision model is set up', () => {
+  it('is the language model alone for hybrid, and every other mode is kept as it was chosen', () => {
+    expect([modeFor('hybrid', undefined), modeFor('hybrid', {}), modeFor('decision', undefined), modeFor('shadow', undefined), modeFor('llm', {})]).toEqual(['llm', 'hybrid', 'decision', 'shadow', 'llm'])
   })
 })

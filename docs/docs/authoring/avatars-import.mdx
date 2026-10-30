@@ -22,6 +22,8 @@ The importer accepts a supported character card, extracts its text and pictures,
 
 The importer also carries what a character knows of the world's places, things and the ways between places, gives the characters a card names in someone's relationships a plain acquaintance back, and lets each character know the lore that is about them.
 
+Use **Import without a model** when no model is configured or when you want a direct conversion. It copies the card's character, lorebook, instructions and chosen opening without asking an assistant to interpret them. The lorebook remains visible only to the game master, and the instructions become the narration style. This route does not identify places, factions or other people. It finishes the world immediately, or keeps it as a draft when it cannot start. You can fill in the missing parts yourself or ask an assistant later.
+
 If the finished import would not yet start a story (for example a character refers to a place that was not written), the world is still written, as a **draft**: its card shows a *Draft* tag, it cannot be played, and the assistant repairs it in the same turn, checking with `world_check` and reading the original card to restore what a reference was meant to point at. If it cannot, the world's editor shows what is wrong and three choices: **Ask the assistant to repair it** again, **Keep as it is** (an ordinary world that has to be mended by hand), or **Discard** (the folder moves to the trash folder of the roleplay root). A draft you or the assistant have mended turns into an ordinary world by itself. An import that stopped (a server restart, a chat that ended early) can carry on from where it was.
 
 Some cards have no cast of their own: a narrator-only card, an open world, a scene. Their characters are made up while the story is played, from templates, tables or a mechanism the card describes. The importer keeps that guidance as game-master lore in the card's own words, so the game master and the world author read it when someone new is needed (they follow its pools of kinds and the fields it asks a profile to have). Such a world has no playable character of its own: bring one of your avatars when you start a session.
@@ -45,8 +47,8 @@ An import is a draft, not a live compatibility layer. After conversion, the nati
 
 A world that was imported from a card can be brought up to date with a newer version of that card, without running the import again. There are two ways in:
 
-- **Import the card as usual** (the **Import card** button on the Worlds page, or a card from the [catalogue](../playing/catalogue)). If you have a world with the card's name that was itself imported from a card, the review page offers **Update “name” from this card** next to **Import as a new world**. A card that was renamed can update any world made from a card: choose **Update another world** and pick it from the list.
-- **From the world.** Open a world that was made from a card; its header has **Update from card**. Choose the card file (a PNG or a JSON file) and the review page opens with that world already selected. This is the way to update a world from a card you have on disk, with no catalogue involved.
+- Import the card as usual with **Import card** on the Worlds page, or choose one from the [catalogue](../playing/catalogue). If a card-imported world has the same name, the review page offers **Update "name" from this card** beside **Import as a new world**. A renamed card can update any card-imported world: choose **Update another world**, then select it from the list.
+- You can also open a card-imported world and choose **Update from card** in its header. Select a PNG or JSON card, and the review opens with that world selected. This route is useful for a card stored on disk and does not involve the catalogue.
 
 An update does not run the import again. Before anything changes, the plugin keeps a copy of the world as it is. The new card is kept in the world's `.import/update` folder, the world's authoring chat opens, and the assistant is told to bring the world up to date:
 
@@ -56,9 +58,9 @@ An update does not run the import again. Before anything changes, the plugin kee
 
 Only changed pieces cost anything, so a small card update costs a fraction of an import. The default depends on whether you have edited the world since its import (the plugin keeps a fingerprint of the world's files when the import's review ends; pictures do not count):
 
-- **Not edited:** **Update** is preselected, when the world has the card's name.
-- **Edited:** **Import as a new world** is preselected. You can still choose to update; the assistant is shown the files you changed and told to keep your edits.
-- **Imported before fingerprints were kept:** the plugin cannot tell, so it preselects a new world as well. Choosing to update works the same way; the assistant looks at the world before it changes anything.
+- If the world has the card's name and has not been edited, **Update** is preselected.
+- If the world has been edited, **Import as a new world** is preselected. You can still update it. The assistant sees which files changed and is told to preserve those edits.
+- For a world imported before fingerprints were recorded, the plugin cannot tell whether it changed and preselects a new world. You can still choose the update route, which asks the assistant to inspect the world before editing it.
 
 An update keeps the world's name, and sessions already started from the world keep their own copy of it, so an update never changes them: start a new session to play the updated world.
 

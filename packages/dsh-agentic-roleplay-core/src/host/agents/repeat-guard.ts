@@ -1,9 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
+import { REFUSALS_BEFORE_STOP } from './limits.ts'
 import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
-
-/** Refused repeats after which the turn is ended instead of being refused again. */
-const REFUSALS_BEFORE_STOP = 5
 
 /**
  * Keeps an agent that is stuck from making the same call again and again (found live: an assistant made one create-and-list pair 47 times in a review, a game master repeated one

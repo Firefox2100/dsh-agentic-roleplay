@@ -6,7 +6,7 @@ mechanisms: each time the card says that someone new is to be made, give one ent
 - name: a short name.
 - command: the word above that starts it, or empty.
 - happens: when the card names no command, one sentence that says what must happen in the story for it to start, written as an event in the past tense ("The player's character brings a new follower into the cult"), never as a state ("there are few followers"). Empty when a command starts it.
-- need: the reason the world author is asked to make someone: what kind of person, in a sentence, as the card says.
+- need: arrival when the new person comes into the scene from outside, introduction when someone who is already around is brought into play.
 - text: the instruction the world author gets, in your own words from the card's: what the new person must be like. Write [draw] where one drawn option goes, when the card gives a list of kinds or situations to choose from; otherwise leave it out.
 - options: the list of kinds or situations to choose one from, each as the card writes it; empty when the card gives none.
 

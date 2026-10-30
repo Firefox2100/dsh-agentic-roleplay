@@ -1,14 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { cutOff, finishOf } from '../agents/cut-off.ts'
+import { AUTHORING_NUDGES, AUTHORING_SAME_CALL } from '../agents/limits.ts'
 import { guardRepeatedCalls } from '../agents/repeat-guard.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
-
-/** Times one turn is steered back after a reply was cut off: a model that rambles again after being told not to will not stop because it is told once more. */
-const MAX_NUDGES = 6
-
-/** How often one turn may make exactly the same call: an assistant that repeats a call past this is looping (found live: one create-and-list pair 47 times in one review), not working. */
-const MAX_SAME_CALL = 3
 
 /**
  * What keeps an authoring assistant (a chat that edits a world, a preset or a lorebook) from running away, besides the limit on what one request may write.
@@ -19,7 +14,7 @@ const MAX_SAME_CALL = 3
  */
 export function guardAuthoringTurns(ctx: Context, prompts: () => PromptLibrary, languageOf: (chat: string) => string | undefined, reasoning: () => string = () => ''): void {
   const nudged = new Map<string, number>()
-  guardRepeatedCalls(ctx, exec => (exec.agent === undefined ? undefined : languageOf(exec.agent.session.id)), MAX_SAME_CALL)
+  guardRepeatedCalls(ctx, exec => (exec.agent === undefined ? undefined : languageOf(exec.agent.session.id)), AUTHORING_SAME_CALL)
 
   ctx.on('agent/request', async (payload, next) => {
     const config = await next()
@@ -41,7 +36,7 @@ export function guardAuthoringTurns(ctx: Context, prompts: () => PromptLibrary, 
     // after a cut-off the turn ends at every stop unless it is steered; the assistant's own last word (`stop`) ends it for good
     const goOn = cutOff(agent) || (told > 0 && finishOf(agent) !== 'stop')
     if (!goOn) { nudged.delete(key); return }
-    if (told >= MAX_NUDGES) return
+    if (told >= AUTHORING_NUDGES) return
     nudged.set(key, told + 1)
     agent.steer(createUserMessage({ content: [{ type: 'text', text: prompts().text('import/cut-off', language) }], source: { kind: 'roleplay' } }))
   })

@@ -5,7 +5,7 @@ import { dictionaries as selection, type ImportSelectionKey } from '../../widget
 import { dictionaries as editor, type WorldLocaleKey } from '../../world-editor/locales.ts'
 
 export type WorldsLocaleKey =
-  | SettingsFormKey | WorldLocaleKey | ImportSelectionKey | ImportCardKey | 'advanced' | 'advancedHelp' | 'worldMissing' | 'importCard' | 'importUploading' | 'importUploadFailed' | 'importTags' | 'importNotStarted'
+  | SettingsFormKey | WorldLocaleKey | ImportSelectionKey | ImportCardKey | 'advanced' | 'advancedHelp' | 'worldMissing' | 'importPlainDone' | 'importPlainDraft' | 'importCard' | 'importUploading' | 'importUploadFailed' | 'importTags' | 'importNotStarted'
   | 'nav' | 'loading' | 'loadFailed' | 'empty' | 'starterAdd' | 'starterAdding' | 'starterFailed'
   | 'countOne' | 'countOther'
   | 'refresh' | 'refreshing'
@@ -42,6 +42,8 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     worldMissing: 'This world is no longer there.',
     importCard: 'Import card', importUploading: 'Reading the card…', importUploadFailed: 'Could not read the card: {message}',
     importTags: 'Tags',
+    importPlainDone: 'The card was imported without a model: its character, its lorebook and its instructions are in the new world. Open it to add places and other people yourself, or have an assistant do it.',
+    importPlainDraft: 'The card was imported without a model, but the world would not start yet: open it to see what is missing.',
     importNotStarted: 'The world was made, but the import has not started: open its authoring chat and send the /import-st command yourself.',
     chatNotOpened: 'Started the session "{name}", but could not open its chat: {message}',
     advanced: 'Advanced settings',
@@ -88,6 +90,8 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     worldMissing: '这个世界已经不存在了。',
     importCard: '导入角色卡', importUploading: '正在读取角色卡…', importUploadFailed: '无法读取角色卡：{message}',
     importTags: '标签',
+    importPlainDone: '卡片已在不使用模型的情况下导入：它的角色、世界书和指令都已在新世界中。可以打开它自己补充地点和其他人物，或请助手来做。',
+    importPlainDraft: '卡片已在不使用模型的情况下导入，但世界还无法开始：打开它查看缺少什么。',
     importNotStarted: '世界已创建，但导入尚未开始：请打开它的编辑对话，并自行发送 /import-st 指令。',
     chatNotOpened: '已开始存档“{name}”，但无法打开对话：{message}',
     advanced: '高级设置',

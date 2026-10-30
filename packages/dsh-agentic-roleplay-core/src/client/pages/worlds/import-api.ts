@@ -19,6 +19,10 @@ export async function startImport(id: string, choices: ImportChoices, language: 
   return await answer(await fetch(`${API_PREFIX}/worlds/import/start?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...choices, language, ...(update === undefined ? {} : { update }) }) }))
 }
 
+export async function importWithoutModel(id: string, choices: ImportChoices, language: string): Promise<{ worldId: string; draft: boolean }> {
+  return await answer(await fetch(`${API_PREFIX}/worlds/import/structure?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...choices, language }) }))
+}
+
 export async function discardImport(id: string): Promise<void> {
   await fetch(`${API_PREFIX}/worlds/import?id=${encodeURIComponent(id)}`, { method: 'DELETE', credentials: 'same-origin' })
 }

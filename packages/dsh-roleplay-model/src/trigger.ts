@@ -2,6 +2,10 @@ import type { VariableValue } from './variable.ts'
 
 export type TriggerId = number
 
+/** The reasons the world author is asked to make something up in play; a trigger that has the author make a person names one of them. */
+export const AUTHORING_NEEDS = ['scene_change', 'arrival', 'introduction', 'object', 'variable', 'trigger'] as const
+export type AuthoringNeed = (typeof AUTHORING_NEEDS)[number]
+
 /** A trigger key: ASCII, so that it can be told in a condition and a log. */
 export const TRIGGER_KEY = /^[a-z0-9][a-z0-9_-]{0,63}$/
 

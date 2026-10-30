@@ -8,7 +8,8 @@ import type { WorldCatalog } from '../worlds/catalog.ts'
 import { authoringTitle } from '../agent/authoring-sessions.ts'
 import { WorldFolderExistsError, createWorld } from '../worlds/create-world.ts'
 import { IMPORT_FOLDER, type ImportStore } from './store.ts'
-import { importPhase, markReady } from './run-import.ts'
+import { importPhase, markReady, structureImport } from './run-import.ts'
+import type { ImportReport } from './finish.ts'
 
 export interface StartImportDeps {
   store: ImportStore
@@ -60,11 +61,8 @@ export async function resumeImport(deps: Pick<StartImportDeps, 'worlds' | 'autho
   return { worldId: record.summary.id, chatSessionId, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }
 }
 
-/**
- * Turns an uploaded card into a new empty world with its authoring chat, and has the chat start importing it on the person's behalf.
- * @throws {InvalidEditProblems} when the choices cannot be used. @throws {ImportNotFoundError} when the upload is gone.
- */
-export async function startImport(deps: StartImportDeps, id: string, choices: ImportChoices, language?: string): Promise<StartedImport> {
+/** Makes the new world a card is imported into, in a folder named after the world, and moves the staged upload into it. */
+async function createImportedWorld(deps: Pick<StartImportDeps, 'store' | 'worlds'>, id: string, choices: ImportChoices): Promise<{ world: WorldSummary; directory: string }> {
   await deps.store.choose(id, choices)
   let world: WorldSummary | undefined
   const base = folderNameOf(choices.name)
@@ -80,6 +78,15 @@ export async function startImport(deps: StartImportDeps, id: string, choices: Im
   if (record === undefined) throw new WorldNotFoundError(`the world "${world.name}" was made but cannot be found`)
   await deps.store.adopt(id, record.directory)
   await markReady(record.directory)
+  return { world, directory: record.directory }
+}
+
+/**
+ * Turns an uploaded card into a new empty world with its authoring chat, and has the chat start importing it on the person's behalf.
+ * @throws {InvalidEditProblems} when the choices cannot be used. @throws {ImportNotFoundError} when the upload is gone.
+ */
+export async function startImport(deps: StartImportDeps, id: string, choices: ImportChoices, language?: string): Promise<StartedImport> {
+  const { world } = await createImportedWorld(deps, id, choices)
   const chatSessionId = await deps.authoring.ensure(world.id, world.name, authoringTitle(world.name, language), language)
   let failure: string | undefined
   try {
@@ -88,4 +95,14 @@ export async function startImport(deps: StartImportDeps, id: string, choices: Im
     failure = error instanceof Error ? error.message : String(error)
   }
   return { worldId: world.id, chatSessionId, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }
+}
+
+/**
+ * Imports an uploaded card into a new world without a model: its own character, its lorebook and its instructions are carried over as they are written, and nothing is read for places, factions or other people.
+ * @throws {InvalidEditProblems} when the choices cannot be used. @throws {ImportNotFoundError} when the upload is gone.
+ */
+export async function importWithoutModel(deps: Pick<StartImportDeps, 'store' | 'worlds'>, id: string, choices: ImportChoices, language?: string): Promise<{ worldId: string; report: ImportReport; draft: boolean }> {
+  const { world, directory } = await createImportedWorld(deps, id, choices)
+  const done = await structureImport(directory, language)
+  return { worldId: world.id, report: done.report, draft: done.draft !== undefined }
 }

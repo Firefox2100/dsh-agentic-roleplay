@@ -24,7 +24,7 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `importReasoning` | empty | Reasoning level for import and authoring helpers and authoring chats; empty uses `childReasoning`, then the chat setting |
 | `childReasoning` | empty | Fallback reasoning level for roleplay helpers; empty follows the game master |
 | `importModel` | empty | Model for import and authoring helpers as `provider/model`; empty uses the chat model |
-| `importStructuredOutput` | `tool` | `schema` asks import and authoring helpers with no tools of their own for their result as a JSON reply the endpoint constrains to the result's shape (`response_format`), instead of a `submit_result` call; needs an OpenAI-compatible endpoint that takes a JSON schema (LocalAI, vLLM, OpenAI) |
+| `importStructuredOutput` | `schema` | How import and authoring helpers return structured results. `schema` asks a compatible endpoint to constrain a JSON reply with `response_format`; LocalAI, vLLM and OpenAI support this form. If an endpoint rejects the schema, that model uses a tool call from then on. `tool` uses tool calls for every model |
 | `importMaxTokens` | 0 | Ceiling on output tokens for one import or authoring-helper request; 0 is a tenth of the model's context window (at least 16000); each job may use a smaller limit |
 | `importVariablesPerRequest` | 25 | How many tracked values one import request is asked to declare; a card that tracks more is asked again for the rest |
 | `importTemperature` | 0.2 | Import and authoring-helper temperature |
@@ -90,7 +90,7 @@ These defaults are copied into a new story's `settings.json`. A world or preset 
 | `reflection.onSceneChange` / `reflection.sceneDays` | `true` / 1 | Also reflect after a place change or this many story days; 0 disables the time condition |
 | `reflection.minTurns` / `reflection.perRun` | 5 / 3 | Minimum gap between passes and characters processed per automatic pass |
 | `reflection.minNew` | 4 | New perceptions needed for an automatic pass; a manual pass needs one |
-| `decisions.triggers` / `decisions.reflection` | `llm` / `llm` | Judge trigger statements and belief evidence with `llm`, `decision`, `hybrid` or `shadow` |
+| `decisions.triggers` / `decisions.reflection` | `hybrid` / `llm` | Judge trigger statements and belief evidence with `llm`, `decision`, `hybrid` or `shadow`. `hybrid` accepts confident decision-model answers and sends the rest to the language model. Without a configured decision model, it quietly uses the language model alone |
 | `decisions.agency` / `decisions.refusal` | `off` / `off` | Optional output checks, using the same four modes plus `off` |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | Decision-service-only checks of allowed actions against rules, and outputs against hidden lore |
 | `decisions.gateThreshold` | 0.5 | Probability at which a decision answer counts as a fault; the 0.15 below it is uncertain |

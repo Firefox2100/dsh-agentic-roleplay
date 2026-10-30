@@ -76,7 +76,7 @@ export const Config = z.object({
   importReasoning: z.string().default('').volatile(),
   childReasoning: z.string().default('').volatile(),
   importModel: z.string().default('').volatile(),
-  importStructuredOutput: z.union(['tool', 'schema'] as const).default('tool').volatile(),
+  importStructuredOutput: z.union(['tool', 'schema'] as const).default('schema').volatile(),
   importMaxTokens: z.number().min(0).max(1000000).default(0).volatile(),
   importVariablesPerRequest: z.number().min(5).max(500).default(25).volatile(),
   importTemperature: z.number().min(0).max(2).default(0.2).volatile(),

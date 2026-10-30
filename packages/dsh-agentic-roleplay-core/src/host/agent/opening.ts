@@ -131,16 +131,9 @@ export async function storeAuthoringOpening(
   persistence: SessionPersistenceLike,
   chat: { id: string; cwd: string; agentPreset: string },
   welcome: string,
+  source?: { provider: string; model: string },
 ): Promise<void> {
-  await storeInitialEvents(persistence, chat, authoringOpeningEvents(welcome))
-}
-
-export async function storeDoctorOpening(
-  persistence: SessionPersistenceLike,
-  chat: { id: string; cwd: string; agentPreset: string },
-  welcome: string,
-): Promise<void> {
-  await storeInitialEvents(persistence, chat, authoringOpeningEvents(welcome, DOCTOR_OPENING_SOURCE))
+  await storeInitialEvents(persistence, chat, authoringOpeningEvents(welcome, source))
 }
 
 export async function storeInitialEvents(

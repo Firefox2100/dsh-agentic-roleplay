@@ -1,12 +1,12 @@
-import { join } from 'node:path'
 import { doctorChatSessionId } from '../../shared/doctor-chat.ts'
-import { AgentUnavailableError } from '../sessions/errors.ts'
-import { ensureAgentChat, isStored, type AgentServices } from './agent-sessions.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
-import { storeDoctorOpening } from './opening.ts'
+import type { AgentServices } from './agent-sessions.ts'
+import { ensureAuthoringChat, type AuthoringKind } from './ensure-authoring-chat.ts'
+import { DOCTOR_OPENING_SOURCE } from './opening.ts'
 
 export const DOCTOR_PROJECT_TITLE = 'Session Doctor'
 export const DOCTOR_AGENT_PRESET = 'session-doctor'
+const KIND: AuthoringKind = { folder: 'sessions', projectTitle: DOCTOR_PROJECT_TITLE, agentPreset: DOCTOR_AGENT_PRESET, welcome: 'doctor/welcome', openingSource: DOCTOR_OPENING_SOURCE }
 
 /** Creates or reopens the chat in which a bystander reads one session's records and proposes fixes. */
 export class DoctorSessions {
@@ -17,14 +17,8 @@ export class DoctorSessions {
   ) {}
 
   async ensure(session: { id: string; name: string }, title: string, language: string): Promise<string> {
-    const services = this.services()
-    const projectPath = join(this.roleplayRoot(), 'sessions')
-    const project = await services.registry.create(projectPath, DOCTOR_PROJECT_TITLE)
-    const sessionId = doctorChatSessionId(session.id)
-    if (!project.sessionIds.includes(sessionId) && !await isStored(services.persistence, sessionId)) {
-      if (services.persistence === undefined) throw new AgentUnavailableError('this DSH profile cannot store the opening of a session doctor chat')
-      await storeDoctorOpening(services.persistence, { id: sessionId, cwd: project.path, agentPreset: DOCTOR_AGENT_PRESET }, this.prompts.text('doctor/welcome', language, { session: session.name }))
-    }
-    return await ensureAgentChat(services, { projectPath, projectTitle: DOCTOR_PROJECT_TITLE, sessionId, agentPreset: DOCTOR_AGENT_PRESET, title }, project)
+    return await ensureAuthoringChat(this.services(), this.roleplayRoot(), this.prompts, undefined, KIND, {
+      chatId: doctorChatSessionId(session.id), title, language, welcome: { session: session.name }, renameExisting: false,
+    })
   }
 }

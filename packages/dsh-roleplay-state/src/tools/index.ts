@@ -25,6 +25,8 @@ export interface AgentLink {
    * there is none, and the search then goes by words alone.
    */
   queryVector?: (text: string, signal?: AbortSignal) => Promise<readonly number[] | undefined>
+  /** The keys of variables the engine itself raises and lowers (a world's command flags): they are not listed to an agent, which would try to change them. */
+  engineVariables?: () => readonly string[]
 }
 
 /** The vector of a text for a search, or nothing when the agent has no way to make one. */
@@ -381,7 +383,9 @@ export function createTools(resolve: AgentResolver, options: {
       output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: str, name: str, description: str, kind: str, subject: str, only: strs, min: { type: 'json', required: true }, max: { type: 'json', required: true }, options: strs, default: { type: 'json', required: true }, visibility: str, baseline: { type: 'boolean', required: true } } } }, render: pretty },
       isConcurrencySafe: () => true,
       async execute(_args, exec) {
-        return link(resolve, exec.agent).session.records().variable_defs
+        const agent = link(resolve, exec.agent)
+        const engine = new Set(agent.engineVariables?.() ?? [])
+        return agent.session.records().variable_defs.filter(def => !engine.has(def.key))
       },
     }),
     defineTool({

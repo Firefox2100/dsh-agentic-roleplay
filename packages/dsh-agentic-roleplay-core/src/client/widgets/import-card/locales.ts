@@ -1,7 +1,7 @@
 import type { Dictionaries } from '../../i18n.ts'
 
 export type ImportCardKey =
-  | 'ic_cancel' | 'ic_constant' | 'ic_creator' | 'ic_disableAll' | 'ic_empty' | 'ic_enableAll' | 'ic_entryCount' | 'ic_fieldDescription' | 'ic_fieldExamples' | 'ic_fieldInstructions' | 'ic_fieldNotes' | 'ic_fieldPersonality' | 'ic_fields' | 'ic_fieldScenario' | 'ic_keys' | 'ic_lorebook' | 'ic_lorebookHelp' | 'ic_noKeys' | 'ic_noPicture' | 'ic_notCarried' | 'ic_opening' | 'ic_openingAlternate' | 'ic_openingFirst' | 'ic_openingHelp' | 'ic_openingNone' | 'ic_scripts' | 'ic_source' | 'ic_start' | 'ic_startFailed' | 'ic_starting' | 'ic_title' | 'ic_worldName' | 'ic_target' | 'ic_targetHelp' | 'ic_targetNew' | 'ic_targetUpdate' | 'ic_targetClean' | 'ic_targetEdited' | 'ic_targetUnknown' | 'ic_update' | 'ic_updateTitle' | 'ic_targetOther' | 'ic_targetOtherChoose' | 'ic_targetKeepsName'
+  | 'ic_startPlain' | 'ic_startPlainHelp' | 'ic_cancel' | 'ic_constant' | 'ic_creator' | 'ic_disableAll' | 'ic_empty' | 'ic_enableAll' | 'ic_entryCount' | 'ic_fieldDescription' | 'ic_fieldExamples' | 'ic_fieldInstructions' | 'ic_fieldNotes' | 'ic_fieldPersonality' | 'ic_fields' | 'ic_fieldScenario' | 'ic_keys' | 'ic_lorebook' | 'ic_lorebookHelp' | 'ic_noKeys' | 'ic_noPicture' | 'ic_notCarried' | 'ic_opening' | 'ic_openingAlternate' | 'ic_openingFirst' | 'ic_openingHelp' | 'ic_openingNone' | 'ic_scripts' | 'ic_source' | 'ic_start' | 'ic_startFailed' | 'ic_starting' | 'ic_title' | 'ic_worldName' | 'ic_target' | 'ic_targetHelp' | 'ic_targetNew' | 'ic_targetUpdate' | 'ic_targetClean' | 'ic_targetEdited' | 'ic_targetUnknown' | 'ic_update' | 'ic_updateTitle' | 'ic_targetOther' | 'ic_targetOtherChoose' | 'ic_targetKeepsName'
 
 export const dictionaries: Dictionaries<ImportCardKey> = {
   en: {
@@ -45,6 +45,8 @@ export const dictionaries: Dictionaries<ImportCardKey> = {
     ic_noKeys: 'No keys',
     ic_scripts: '{count} scripts and settings of the tool that made the card are not imported.',
     ic_start: 'Import',
+    ic_startPlain: 'Import without a model',
+    ic_startPlainHelp: 'Carries over the card\'s own character, its lorebook (for the game master only) and its instructions as they are written, with no model: places, factions and other people are not read out of it.',
     ic_starting: 'Starting…',
     ic_startFailed: 'Could not start the import: {message}',
     ic_cancel: 'Cancel',
@@ -91,6 +93,8 @@ export const dictionaries: Dictionaries<ImportCardKey> = {
     ic_noKeys: '无关键词',
     ic_scripts: '制作角色卡的工具的 {count} 个脚本和设置不会导入。',
     ic_start: '导入',
+    ic_startPlain: '不使用模型导入',
+    ic_startPlainHelp: '不使用模型，原样带入卡片自己的角色、世界书（仅游戏主持人可读）和指令；不会从中识别地点、势力或其他人物。',
     ic_starting: '正在开始…',
     ic_startFailed: '无法开始导入：{message}',
     ic_cancel: '取消',

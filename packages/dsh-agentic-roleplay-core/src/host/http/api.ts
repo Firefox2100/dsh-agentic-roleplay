@@ -71,6 +71,8 @@ export interface ApiDeps {
     choose(id: string, choices: ImportChoices): Promise<ImportPreview>
     discard(id: string): Promise<void>
     start(id: string, choices: ImportChoices, language?: string, update?: string): Promise<{ worldId: string; chatSessionId: string; started: boolean; failure?: string }>
+    /** Imports the card without a model: its own character, lorebook and instructions as written, in a new world. */
+    importStructure(id: string, choices: ImportChoices, language?: string): Promise<{ worldId: string; draft: boolean }>
     picture(id: string): Promise<{ file: string; size: number }>
     /** Whether the world is a draft (an import written but not yet able to start) and what is wrong with it. */
     draftStatus(worldId: string): Promise<DraftStatus>

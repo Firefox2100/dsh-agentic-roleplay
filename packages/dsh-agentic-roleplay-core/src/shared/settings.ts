@@ -300,7 +300,7 @@ export const SETTINGS_SPEC = {
   reflection: { auto: flag(true), everyTurns: integer(0, 500, 20), onSceneChange: flag(true), sceneDays: integer(0, 365, 1), minTurns: integer(1, 100, 5), perRun: integer(1, 6, 3), minNew: integer(1, 50, 4) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
-  decisions: { triggers: choice(DECISION_MODES, 'llm'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), confidence: ratio(0, 1, 0.7) },
+  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), confidence: ratio(0, 1, 0.7) },
   interface: { pack: text(60, '') },
   rewind: { keepSnapshots: integer(0, 500, 30) },
   rules: { own: text(MAX_OWN_RULES, '') },

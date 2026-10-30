@@ -1,15 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import { languageOf, translator } from 'dsh-roleplay-model'
-import { join } from 'node:path'
 import { authoringChatSessionId } from '../../shared/authoring-chat.ts'
-import { AgentUnavailableError } from '../sessions/errors.ts'
-import { ensureAgentChat, isStored, type AgentServices } from './agent-sessions.ts'
+import type { AgentServices } from './agent-sessions.ts'
+import { ensureAuthoringChat, type AuthoringKind } from './ensure-authoring-chat.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
 import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
-import { storeAuthoringOpening } from './opening.ts'
 
 export const AUTHORING_PROJECT_TITLE = 'World Authoring'
 export const AUTHORING_AGENT_PRESET = 'world-authoring'
+const KIND: AuthoringKind = { folder: 'worlds', projectTitle: AUTHORING_PROJECT_TITLE, agentPreset: AUTHORING_AGENT_PRESET, welcome: 'world/welcome' }
 
 /** The title of a world's authoring chat, in the language of the person who opened it. */
 export function authoringTitle(worldName: string, language?: string): string {
@@ -27,26 +26,9 @@ export class AuthoringSessions {
   ) {}
 
   async ensure(worldId: string, worldName: string, title?: string, language?: string): Promise<string> {
-    const chatTitle = title ?? authoringTitle(worldName, language)
-    this.languages.set(worldId, language)
-    const services = this.services()
-    const projectPath = join(this.roleplayRoot(), 'worlds')
-    const project = await services.registry.create(projectPath, AUTHORING_PROJECT_TITLE)
-    const sessionId = authoringChatSessionId(worldId)
-    const existed = project.sessionIds.includes(sessionId)
-    const stored = !existed && await isStored(services.persistence, sessionId)
-    if (!existed && !stored) {
-      if (services.persistence === undefined) throw new AgentUnavailableError('this DSH profile cannot store the opening of an authoring chat')
-      await storeAuthoringOpening(services.persistence, { id: sessionId, cwd: project.path, agentPreset: AUTHORING_AGENT_PRESET }, this.prompts.text('world/welcome', this.languages.get(worldId), { world: worldName }))
-    }
-    return await ensureAgentChat(services, {
-      projectPath,
-      projectTitle: AUTHORING_PROJECT_TITLE,
-      sessionId,
-      agentPreset: AUTHORING_AGENT_PRESET,
-      title: chatTitle,
-      renameExisting: true,
-    }, project)
+    return await ensureAuthoringChat(this.services(), this.roleplayRoot(), this.prompts, this.languages, KIND, {
+      chatId: authoringChatSessionId(worldId), languageKey: worldId, title: title ?? authoringTitle(worldName, language), language, welcome: { world: worldName }, renameExisting: true,
+    })
   }
 
   /** Sends a message into a chat as if the person had written it. */

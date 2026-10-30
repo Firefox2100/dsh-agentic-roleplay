@@ -94,3 +94,16 @@ describe('a reply that was cut off in the middle of a list', () => {
     expect(repairedJson('{"a": "unterminated')).toBeUndefined()
   })
 })
+
+describe('a reply cut off inside the last entry of a long list', () => {
+  const listSchema = { type: 'object', properties: { left_out: { type: 'array', items: { type: 'string' } }, variables: { type: 'array', items: { type: 'object', properties: { key: { type: 'string' }, only: { type: 'array', items: { type: 'string' } }, options: { type: 'array', items: { type: 'string' } } }, required: ['key', 'only', 'options'] } } }, required: ['left_out', 'variables'] } as never
+
+  it('is closed after the last entry that is whole, not after a list inside the half-written one', () => {
+    const text = '{"left_out":["a"],"variables":[{"key":"x","only":[],"options":[]},{"key":"y","only":[],"options":[]},{"key":"z","only":[],"op'
+    const child = { session: { snapshotEvents: () => [reply(text)] } } as never
+    const mended = structuredReply(child, listSchema, true)
+    expect(mended).toEqual({ value: { left_out: ['a'], variables: [{ key: 'x', only: [], options: [] }, { key: 'y', only: [], options: [] }] } })
+    const halfWithEmptyList = '{"left_out":[],"variables":[{"key":"x","only":[],"options":[]},{"key":"y","only":[],'
+    expect(structuredReply({ session: { snapshotEvents: () => [reply(halfWithEmptyList)] } } as never, listSchema, true)).toEqual({ value: { left_out: [], variables: [{ key: 'x', only: [], options: [] }] } })
+  })
+})

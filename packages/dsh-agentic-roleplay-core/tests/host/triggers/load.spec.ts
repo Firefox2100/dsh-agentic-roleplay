@@ -7,6 +7,18 @@ import { loadTriggers, parseTriggersFile } from '../../../src/host/triggers/load
 const storm = { key: 'storm', name: 'The storm', when: { type: 'time', from: '1912-10-05T21:00' }, effects: [{ type: 'beat', text: 'Thunder rolls over the ridge.' }] }
 
 describe('triggers.json', () => {
+  it('keeps a beat for the author whose reason is a sentence (older worlds wrote it so): the sentence goes first in the text and the reason is the usual one', () => {
+    const beat = (need: unknown) => ({ ...storm, effects: [{ type: 'beat', dispatch: 'author', need, text: 'A newcomer joins the cult.' }] })
+    const parsed = parseTriggersFile(JSON.stringify([beat('arrival'), { ...beat(undefined), key: 'other' }, { ...beat('a person who wants to join'), key: 'older' }]))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.value.map(trigger => trigger.effects[0])).toEqual([
+      { type: 'beat', dispatch: 'author', need: 'arrival', text: 'A newcomer joins the cult.' },
+      { type: 'beat', dispatch: 'author', text: 'A newcomer joins the cult.' },
+      { type: 'beat', dispatch: 'author', text: 'a person who wants to join. A newcomer joins the cult.' },
+    ])
+  })
+
   it('refuses a key that is not lowercase ASCII when the file is read, not only when a story starts', () => {
     const parsed = parseTriggersFile(JSON.stringify([{ ...storm, key: '旅途偶遇' }, { ...storm, key: 'Storm' }]))
     expect(parsed.ok).toBe(false)

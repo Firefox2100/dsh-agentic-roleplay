@@ -45,24 +45,40 @@ function checkedCard(args: { card: string }): void {
 const output = (render: (value: never) => string) => ({ schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: render(value as never) }] })
 const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as never
 
+/** What an endpoint says when it will not take `response_format` with a JSON schema. */
+const SCHEMA_REFUSED = /response_format|json_schema|Extra inputs are not permitted|unknown (?:field|parameter)/i
+/** The models (`provider/model`) found not to take a JSON schema: they are asked for their result by a tool call. */
+const refusesSchema = new Set<string>()
+
+/** The model a helper runs on, as `provider/model`: the one named in the settings, else the chat's own. */
+function modelKeyOf(agent: ToolExecution['agent'], named: { provider: string; model: string } | undefined): string {
+  const config = agent?.session.requestHeader()?.config
+  const model = named ?? (config?.provider === undefined || config.model === undefined ? undefined : { provider: config.provider, model: config.model })
+  return model === undefined ? '' : `${model.provider}/${model.model}`
+}
+
 /** The runner of an import: every job is a narrow agent below the chat's own, on the chat's model. */
 export function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf, language?: string): ImportContext {
   const agent = exec.agent
   if (agent === undefined) throw new Error('the import tools can only be called by an agent')
   const run: RunJob = async (job) => {
     for (let attempt = 1; ; attempt += 1) {
+      const named = namedModel(settings.model)
+      const model = modelKeyOf(agent, named.model)
+      const structured = settings.structured === 'schema' && !refusesSchema.has(model)
       try {
-        const named = namedModel(settings.model)
         const ceiling = await outputCeiling(settings.maxTokens, agent, named.model, exec.signal)
         return await runChild({
           parent: agent, signal: exec.signal, persona: job.persona, prompt: job.prompt, result: job.result as never,
           ...(job.check === undefined ? {} : { beforeSubmit: (value: unknown) => job.check?.(value as never) }),
           maxTokens: Math.min((job.maxTokens ?? ceiling) + ANALYSIS_TOKENS, ceiling), timeoutMinutes: settings.timeoutMinutes, ...named,
-          ...(settings.structured === 'schema' ? { structured: true } : {}),
+          ...(structured ? { structured: true } : {}),
           sampling: { temperature: settings.temperature, toolChoice: 'required' },
           ...(settings.reasoning === '' ? {} : { reasoningEffort: settings.reasoning }),
         }) as never
       } catch (error) {
+        // an endpoint that does not take a JSON schema is asked the old way from now on, and the run is not counted as an attempt
+        if (structured && !exec.signal.aborted && SCHEMA_REFUSED.test(error instanceof Error ? error.message : '')) { refusesSchema.add(model); attempt -= 1; continue }
         // a run that used up its time would use it up again
         if (exec.signal.aborted || attempt >= ATTEMPTS || error instanceof ChildTimeoutError) throw error
       }

@@ -11,6 +11,7 @@ import { createUserMessage, ReasoningEffortId, type ImageBlock } from '@deepseek
 import { SessionId } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-subagent'
 import { ToolArgsError, validateJsonSchemaValue, type ObjectJsonSchema, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { DEFAULT_MAX_CALLS, MAX_REMINDERS, MAX_OVERRUN, STEPS_AFTER_RETIRE, STEPS_PAST_BUDGET, REPEATS_TOLD, REPEATS_STOPPED, MAX_RESULT_REFUSALS, STOP_GRACE_MS } from './limits.ts'
 import { sharedSamplingOf, type SharedSamplingKey } from '../../shared/sampling.ts'
 
 /** The tool every child ends with: its arguments are the child's result. */
@@ -19,29 +20,6 @@ export const SUBMIT_TOOL = 'submit_result'
 /** Said to every child once, after its persona, so it is the same for all of them and the start of every request stays the same. */
 const SUBMIT_RULE = `When you are done, call ${SUBMIT_TOOL} with your result. It is the only way to finish: text you write instead is lost.`
 const STRUCTURED_RULE = 'Your whole reply is the result, as one JSON object of the shape you were given: write nothing before or after it.'
-
-/** Calls a child may make before it is given up; a child that keeps going is not converging. */
-const DEFAULT_MAX_CALLS = 40
-
-/** A child that stops without a result is told to submit this many times before it is given up. */
-const MAX_REMINDERS = 2
-/** A child that goes on calling tools this many times past its budget, in spite of being told to submit, is stopped: it would otherwise loop for as long as the model keeps at it. */
-const OVERRUN = 5
-/** Steps a child gets to submit once its other tools are withdrawn: a model that keeps calling tools that are gone is stopped. */
-const STEPS_AFTER_RETIRE = 3
-/** The most model steps a child may take past its call budget in all (calls the harness refuses before they run, such as a result that does not fit its schema, are not counted as calls). */
-const STEPS_PAST_BUDGET = 20
-
-/** The same call, with the same arguments, that failed before is refused after this many repeats, and the child is stopped at twice that: the model is not reading the reasons it was given. */
-const REPEATS_TOLD = 1
-const REPEATS_STOPPED = 4
-/** A result that is refused this many times is not going to be fixed by asking again: the child is stopped and the caller decides what to do without it. */
-const MAX_REFUSALS = 5
-/**
- * How long a child that was stopped has to wind down. Found live twice: a stopped child's activation never settled and the caller waited for ever (an import stood still for
- * minutes, a game master's turn never ended), so what the stop decided is not waited on past this.
- */
-const STOP_GRACE_MS = 15_000
 
 /** A one-shot agent of the game master, with tools of its own. */
 export interface ChildTask {
@@ -237,7 +215,7 @@ export async function supportedEffort(task: Pick<ChildTask, 'parent' | 'signal' 
 /**
  * A JSON text that was cut off, closed after the last whole entry it holds: what a reply that ran into its limit in the middle of a long list still says. Nothing when no such cut makes it JSON.
  */
-export function repairedJson(text: string): string | undefined {
+export function repairedJson(text: string, accepts: (value: unknown) => boolean = () => true): string | undefined {
   const cuts: number[] = []
   // after a closed entry first, and only then before a comma, which may leave an entry half written
   for (const marks of ['}]', ',']) for (let at = text.length - 1, found = 0; at >= 0 && found < 300; at -= 1) if (marks.includes(text[at]!)) { cuts.push(at); found += 1 }
@@ -256,7 +234,7 @@ export function repairedJson(text: string): string | undefined {
     }
     if (inString) continue
     const closed = head + stack.reverse().join('')
-    try { JSON.parse(closed); return closed } catch { continue }
+    try { if (accepts(JSON.parse(closed))) return closed } catch { continue }
   }
   return undefined
 }
@@ -269,7 +247,8 @@ export function structuredReply(child: Agent, schema: ObjectJsonSchema, cut = fa
   if (text === '') return { problem: 'the reply is empty' }
   let value: unknown
   try { value = JSON.parse(text) } catch (error) {
-    const mended = cut ? repairedJson(text) : undefined
+    // the cut that keeps the most is the one after the last whole entry: a cut inside a half-written entry makes JSON that does not fit the schema
+    const mended = cut ? repairedJson(text, candidate => validateJsonSchemaValue(schema, candidate).length === 0) : undefined
     if (mended === undefined) return { problem: `the reply is not valid JSON (${error instanceof Error ? error.message : String(error)})` }
     value = JSON.parse(mended)
   }
@@ -306,7 +285,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     execute: async (args, exec) => {
       stats.calls += 1
       const note = (outcome: unknown, failed: boolean): void => { if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: tool.name, args: cut(args), outcome: cut(outcome), failed }) }
-      if (stats.calls > budget + OVERRUN) {
+      if (stats.calls > budget + MAX_OVERRUN) {
         overran = true
         stopped?.()
       }
@@ -351,7 +330,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
         if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: SUBMIT_TOOL, args: cut(args), outcome: cut(refusal), failed: true })
         refusals += 1
         lastRefusal = refusal
-        if (refusals >= MAX_REFUSALS) { overran = true; stopped?.() }
+        if (refusals >= MAX_RESULT_REFUSALS) { overran = true; stopped?.() }
         throw new Error(refusal)
       }
       submitted = { value: args }
@@ -407,7 +386,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
           refusals += 1
           lastRefusal = refusal ?? ''
           if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: 'reply', args: '', outcome: cut(lastRefusal), failed: true })
-          if (refusals >= MAX_REFUSALS) { overran = true; stopped?.(); return }
+          if (refusals >= MAX_RESULT_REFUSALS) { overran = true; stopped?.(); return }
           child.steer(createUserMessage({ content: [{ type: 'text', text: `That reply cannot be used: ${lastRefusal}\nReply again with the whole result as one JSON object.` }], source: { kind: 'roleplay' } }))
           return
         }
@@ -456,7 +435,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
   }
   if (signal.aborted) throw new Error('cancelled')
   if (rambled && submitted === undefined) throw new Error(`the agent wrote text up to the limit of ${task.maxTokens ?? task.sampling?.maxTokens ?? 'its model'} tokens and never called ${SUBMIT_TOOL}, and was stopped`)
-  if (overran && submitted === undefined) throw new Error(refusals >= MAX_REFUSALS ? `the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}` : `the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
+  if (overran && submitted === undefined) throw new Error(refusals >= MAX_RESULT_REFUSALS ? `the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}` : `the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
   if (submitted === undefined) {
     const ended = entry.agent?.session.snapshotEvents().findLast(event => event.type === 'turn/end')
     const reason = ended?.type === 'turn/end' ? ended.data.reason : undefined

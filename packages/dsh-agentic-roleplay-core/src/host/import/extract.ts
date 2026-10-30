@@ -90,13 +90,16 @@ const CHARACTER_SCHEMA = {
     start: { type: 'object', properties: { public_state: str(''), inner_state: str(''), activity: str(''), location: str('A name from the list of places.'), position: str('') }, additionalProperties: false },
     goals: { type: 'array', items: { type: 'object', properties: { name: str(''), description: str('') }, required: ['name'], additionalProperties: false } },
     relationships: { type: 'array', items: { type: 'object', properties: { with: str('A name from the list of characters.'), label: str(''), summary: str('') }, required: ['with', 'label'], additionalProperties: false } },
+    carries: strs('Things they have on them at the start (a weapon, a tool, a document, a keepsake), by the name the text gives them. Not things they only know of.'),
     knows: { type: 'object', properties: { places: strs('Names from the list of places that they know of.'), things: strs('Names from the list of things that they know of.'), ways: { type: 'array', items: { type: 'object', properties: { from: str('A name from the list of places.'), to: str('A name from the list of places.') }, required: ['from', 'to'], additionalProperties: false }, description: 'Ways between two places of the list that they know how to take (the way from one to the other).' } }, additionalProperties: false },
   },
   required: ['tier', 'kind', 'summary', 'personality', 'background', 'appearance', 'speech'],
   additionalProperties: false,
 } as const
 
-type Built = { document: Document; notes: string[] }
+type Built = { document: Document; notes: string[]; /** The things a character has on them at the start, by name, as the model wrote them. */ carried?: string[] }
+/** The most things one character is given from what the text says it carries. */
+const MAX_CARRIED = 12
 
 /** The document of a character file from what the call answered; names of places and characters become the keys they have in the roster. */
 export function characterDocument(entity: Entity, answer: Document, roster: Roster): Built {
@@ -152,7 +155,8 @@ export function characterDocument(entity: Entity, answer: Document, roster: Rost
   }
   put(knowledge, 'exits', exits)
   put(document, 'knowledge', Object.keys(knowledge).length === 0 ? undefined : knowledge)
-  return { document, notes }
+  const carried = [...new Set(list(answer['carries']))].slice(0, MAX_CARRIED)
+  return { document, notes, ...(carried.length === 0 ? {} : { carried }) }
 }
 
 const PLACE_SCHEMA = {
@@ -278,7 +282,7 @@ export function guidanceEntry(passages: readonly string[], title: string): Docum
 }
 
 /** What a prompt file cannot hold is changed so that `${` and `{{` in a card's text are not read as variables. */
-const inert = (text: string): string => text.replace(/\$\{/g, '$ {').replace(/\{\{/g, '{ {')
+export const inert = (text: string): string => text.replace(/\$\{/g, '$ {').replace(/\{\{/g, '{ {')
 
 const LORE_SCHEMA = {
   type: 'object',
@@ -542,6 +546,15 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     if (entity.kind === 'thing' && built.document['held_by'] === undefined && built.document['location'] === undefined) continue
     const group = { character: 'characters', place: 'locations', faction: 'factions', thing: 'items' } as const
     result[group[entity.kind]].push(built.document)
+  }
+  // what a character has on it is a thing of its own, held by it, unless the roster has that thing already (its own job says who holds it)
+  const itemIds = new Set(result.items.map(entry => String(entry['id'])))
+  for (const { entity, built } of entityResults) {
+    if (entity.kind !== 'character') continue
+    for (const name of built?.carried ?? []) {
+      if (findEntity(roster, name, 'thing') !== undefined || result.items.some(entry => norm(String(entry['name'])) === norm(name) && entry['held_by'] === entity.key)) continue
+      result.items.push({ id: uniqueKey(slug(name, 'thing'), itemIds), name, held_by: entity.key })
+    }
   }
   const worldItems = items.filter(item => statesWorldFacts(classified[item.id] ?? { roles: [] }))
   const taken = new Set<string>()

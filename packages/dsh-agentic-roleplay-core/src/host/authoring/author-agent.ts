@@ -26,6 +26,13 @@ const FIT_TEXT_CHARS = 200
 
 const editEstimate = (things: number, texts: number, chars: number, language: string): number => estimateAnswer(Array.from({ length: Math.max(1, things) * texts }, () => chars), language)
 
+/** The keys of the people, places and things an edit makes that this run made already: made once, they are connected, not made again. */
+export function madeAgain(args: Record<string, unknown>, work: { created: readonly { key: string }[] }): string[] {
+  const made = new Set(work.created.map(entry => entry.key))
+  const keys = ['characters', 'places', 'items'].flatMap(field => (Array.isArray(args[field]) ? args[field] as unknown[] : []).flatMap(entry => (typeof entry === 'object' && entry !== null && typeof (entry as { key?: unknown }).key === 'string' ? [(entry as { key: string }).key] : [])))
+  return [...new Set(keys.filter(key => made.has(key)))]
+}
+
 /** A person made up without a place joins the scene: the place of the player's character, which is where the author is told to put them. */
 export function placedWhereThePlayerIs(args: Record<string, unknown>, store: Pick<TurnStore, 'cast'>): Record<string, unknown> {
   if (!Array.isArray(args['characters'])) return args
@@ -60,6 +67,8 @@ function authorTools(job: { chat: string; store: TurnStore; turn: number }, work
               throw new Error(`this edit makes ${now} new ${noun}${now === 1 ? '' : 's'} and ${already} ${already === 1 ? 'was' : 'were'} already made this turn, which would pass the ${limits.perTurn} this chat allows per turn for each kind: make fewer, or none`)
             }
           }
+          const again = madeAgain(args as Record<string, unknown>, work)
+          if (again.length > 0) throw new Error(`${again.join(', ')} ${again.length === 1 ? 'is' : 'are'} already made in this run: do not make ${again.length === 1 ? 'it' : 'them'} again. A later edit_world call leaves ${again.length === 1 ? 'it' : 'them'} out and only adds what is still missing (relationships, ways, moves); when nothing is missing, call submit_result with outcome created.`)
           const result = await tool.execute(placedWhereThePlayerIs(args as Record<string, unknown>, job.store), exec) as { character_keys?: string[]; place_keys?: string[]; item_keys?: string[]; variable_keys?: string[]; trigger_keys?: string[] }
           for (const key of result.character_keys ?? []) work.created.push({ kind: 'character', key })
           for (const key of result.place_keys ?? []) work.created.push({ kind: 'place', key })

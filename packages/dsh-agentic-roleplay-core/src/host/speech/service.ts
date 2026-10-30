@@ -8,10 +8,14 @@ export async function voicesOf(service: TtsService): Promise<TtsVoice[]> { retur
 /** Synthesize independently so every speaker keeps its voice, then join the audio in story order. */
 export async function speakParts(service: TtsService, parts: readonly SpeechPart[]): Promise<SpeechAudio> {
   if (parts.length === 0 || parts.some(part => part.text.trim() === '')) throw new RangeError('speech needs non-empty text')
-  const results = await Promise.all(parts.map(async part => await service.synthesize(part.text, part.voice === undefined || part.voice.trim() === '' ? {} : { voice: part.voice.trim() })))
+  // each part's audio is read as soon as it arrives: a provider limit may hold a slot until the stream is consumed, and a part waiting for that slot would never start
+  const results = await Promise.all(parts.map(async (part) => {
+    const result = await service.synthesize(part.text, part.voice === undefined || part.voice.trim() === '' ? {} : { voice: part.voice.trim() })
+    return { mediaType: result.mediaType, bytes: new Uint8Array(await new Response(result.audio).arrayBuffer()) }
+  }))
   const mediaType = results[0]!.mediaType
   if (results.some(result => result.mediaType !== mediaType)) throw new Error('the speech provider returned incompatible audio formats')
-  const buffers = await Promise.all(results.map(async result => new Uint8Array(await new Response(result.audio).arrayBuffer())))
+  const buffers = results.map(result => result.bytes)
   if (mediaType === 'audio/wav' || mediaType === 'audio/x-wav') return { bytes: mergeWav(buffers), mediaType }
   const bytes = new Uint8Array(buffers.reduce((sum, value) => sum + value.length, 0)); let offset = 0
   for (const buffer of buffers) { bytes.set(buffer, offset); offset += buffer.length }

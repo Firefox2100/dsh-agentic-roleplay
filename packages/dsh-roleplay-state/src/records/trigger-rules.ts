@@ -1,4 +1,4 @@
-import { COMPARISONS, SELF, TRIGGER_KEY, WEEKDAY_NAMES, type Comparison, type Trigger, type TriggerAnnouncement, type TriggerAudience, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type VariableValue } from 'dsh-roleplay-model'
+import { AUTHORING_NEEDS, COMPARISONS, SELF, TRIGGER_KEY, WEEKDAY_NAMES, type Comparison, type Trigger, type TriggerAnnouncement, type TriggerAudience, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type VariableValue } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
 import { itemKey } from './items.ts'
@@ -135,7 +135,11 @@ function parseEffect(value: unknown, path: string, problems: string[], checkEdit
     return { type: 'edit', edit: value['edit'] }
   }
   if (value['type'] !== 'beat' && value['type'] !== 'cue') { problems.push(`${path}.type: one of edit, beat, cue`); return undefined }
-  const words = text(value, 'text')
+  const given = text(value, 'text')
+  // a beat for the author written before its reason was one of a few words (the importer wrote a sentence) keeps that sentence in its text, and the reason is the usual one
+  const reason = text(value, 'need')
+  const sentence = value['type'] === 'beat' && value['dispatch'] === 'author' && reason !== undefined && !(AUTHORING_NEEDS as readonly string[]).includes(reason)
+  const words = sentence && given !== undefined ? `${reason}. ${given}` : given
   if (words === undefined || words.length > MAX_TEXT) { problems.push(`${path}.text: required text of at most ${MAX_TEXT} characters`); return undefined }
   const template = placeholdersOf(words)
   for (const problem of template.problems) problems.push(`${path}.text: ${problem}`)
@@ -149,7 +153,7 @@ function parseEffect(value: unknown, path: string, problems: string[], checkEdit
     else if (draw !== undefined && !words.includes('[draw]')) problems.push(`${path}.text: must say where the drawn option goes, as [draw]`)
     const dispatch = value['dispatch']
     if (dispatch !== undefined && dispatch !== 'author') problems.push(`${path}.dispatch: only "author"`)
-    const need = text(value, 'need')
+    const need = sentence ? undefined : reason
     if (need !== undefined && dispatch !== 'author') problems.push(`${path}.need: only a beat that has the author make something names a reason`)
     return template.problems.length > 0 || (draw !== undefined && (!Array.isArray(draw) || !words.includes('[draw]'))) || (dispatch !== undefined && dispatch !== 'author') || (need !== undefined && dispatch !== 'author') ? undefined : { type: 'beat', text: words, ...(waiting === undefined ? {} : { while: waiting }), ...(draw === undefined ? {} : { draw: draw as string[] }), ...(dispatch === 'author' ? { dispatch: 'author' as const } : {}), ...(need === undefined ? {} : { need }) }
   }

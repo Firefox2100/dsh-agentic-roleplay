@@ -192,6 +192,7 @@ function worldJob(text: TextOf, tr: Translate, card: NormalizedCard, roster: Ros
 /** The description and tags of the world: asked of one call, and from the card's own fields when that fails. */
 export async function describeWorld(ctx: ImportContext, card: NormalizedCard, roster: Roster, items: readonly SourceItem[], opening: string): Promise<{ description: string; tags: string[]; startingTime?: string; note?: string }> {
   const scenario = items.filter(item => item.id.startsWith('field:scenario')).map(item => item.text).join('\n\n')
+  if (ctx.noModel === true) return { description: (scenario || cleanText(card.description, card.name)).slice(0, MAX_DESCRIPTION).trim(), tags: card.tags.filter(tag => tag.trim() !== '' && tag.length <= MAX_TAG).slice(0, MAX_TAGS) }
   try {
     const answer = await ctx.run(worldJob(ctx.text, trOf(ctx), card, roster, scenario, opening))
     return { description: answer.description.trim(), tags: [...new Set(answer.tags.map(tag => tag.trim()))], ...(answer.starting_time ?? '').trim() === '' ? {} : { startingTime: answer.starting_time.trim() } }

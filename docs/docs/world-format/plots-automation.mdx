@@ -27,8 +27,8 @@ Do not turn prose state into variables merely because it can be counted. Relatio
 
 A cue or beat is told when its audience next acts or the game master next looks, which can be a turn or two after the trigger fired. Two optional parts make it say what is true then, not what was true at the time of firing:
 
-- **`while`** is a condition, in the same form as `when`, that must still hold at that moment; if it does not, the cue or beat is withdrawn instead of being told, and the chat settings list it as withdrawn with the reason. In a cue, `"@self"` stands for the character it is said to, so `{"type": "place", "character": "@self", "location": "cellar"}` keeps a cue from reaching someone who has left.
-- **Names in the words:** `text` may name things as `{character:key}`, `{place:key}`, `{item:key}`, `{where:character}` (where someone is), `{holder:item}` (who has it, or where it lies), `{value:variable}` or `{value:variable:subject}` (a variable in words) and `{time}`. They are filled in from the story when the cue or beat is told, and a cue or beat that names something that is not there is withdrawn instead of being told with a guess.
+- A `while` condition uses the same form as `when` and must still hold when the cue or beat is delivered. Otherwise, the cue or beat is withdrawn, and the chat settings record the reason. In a cue, `"@self"` means the character receiving it. For example, `{"type": "place", "character": "@self", "location": "cellar"}` prevents a cue from reaching someone who has left.
+- Within `text`, names can use `{character:key}`, `{place:key}`, `{item:key}`, `{where:character}`, `{holder:item}`, `{value:variable}`, `{value:variable:subject}` and `{time}`. The last four forms insert a character's location, an item's holder or location, a value in words, or the current time. They are resolved when the cue or beat is delivered. If a referenced thing no longer exists, the cue or beat is withdrawn instead of guessing.
 
 ```json
 { "type": "cue", "characters": ["clara-whitlock", "arthur-moore"],
@@ -40,9 +40,21 @@ A `time` condition may use an absolute `from` or `to`, a daily `window`, weekday
 
 Validate all referenced entity and variable IDs. Trigger effects run against session state, never the authored world files.
 
+### Beats that have the world author make a person
+
+A beat can ask the world author to create a person instead of sending text to the game master. Set `"dispatch": "author"`, then give the beat a `need` and `text`. The `need` explains why the author is being called: `arrival` for someone entering the scene, `introduction` for someone already nearby, or one of `scene_change`, `object`, `variable` and `trigger`. The `text` describes the new person.
+
+To pick a type in code, add a `draw` list and place `[draw]` in the text. The author runs after the trigger's turn, so the new person enters the scene on the next turn. The game master is not asked to create them. Every beat in a trigger dispatched to the author must use this form. Older files that put a sentence in `need` still work: the sentence moves to the start of `text`, and `need` becomes `arrival`.
+
+```json
+{ "key": "follower", "name": "A follower comes",
+  "when": { "type": "variable", "variable": "command_recruit", "op": "eq", "value": true }, "repeat": true,
+  "effects": [{ "type": "beat", "dispatch": "author", "need": "arrival", "text": "A newcomer: [draw]", "draw": ["a lost traveller", "a rival spy"] }] }
+```
+
 ## Slash commands
 
-`commands.json` lets a world give the player words to type after a slash, such as `/recruit`. Each command has a `word` (letters, digits or underscores; `ooc` and `roll` belong to the game), a `description` (the game master is told it when the command is used) and, for a word that is not plain lowercase ASCII, a `key` for its flag.
+`commands.json` defines words the player can type after a slash, such as `/recruit`. Each command has a `word` made from letters, digits or underscores, plus a `description` shown to the game master when the command is used. The game reserves `ooc` and `roll`. A word outside lowercase ASCII also needs a `key` for its flag.
 
 ```json
 { "commands": [

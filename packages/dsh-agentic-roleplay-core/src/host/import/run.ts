@@ -22,6 +22,8 @@ export type TextOf = (id: string, variables?: Record<string, string | number>) =
 export interface ImportContext {
   run: RunJob
   concurrency: number
+  /** There is no model: the stages that only a model can do are skipped without a note. */
+  noModel?: boolean
   /** How many tracked values one request is asked to declare. */
   variablesPerRequest?: number
   /** An instruction text of the import, in the language of the person who started it. */

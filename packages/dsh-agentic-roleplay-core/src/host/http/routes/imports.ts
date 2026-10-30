@@ -88,6 +88,9 @@ export function importsRoutes({ importer }: ApiDeps): Routes {
     '/worlds/import/start': {
       POST: async (req, res, url) => { try { const body = await readJsonBody(req); sendJson(res, 200, await importer.start(url.searchParams.get('id') ?? '', parseChoices(body), languageField((body as { language?: unknown }).language), updateField(body))) } catch (error) { return importFailure(res, error) } },
     },
+    '/worlds/import/structure': {
+      POST: async (req, res, url) => { try { const body = await readJsonBody(req); sendJson(res, 200, await importer.importStructure(url.searchParams.get('id') ?? '', parseChoices(body), languageField((body as { language?: unknown }).language))) } catch (error) { return importFailure(res, error) } },
+    },
     '/worlds/import/draft': {
       GET: async (_req, res, url) => { try { sendJson(res, 200, await importer.draftStatus(url.searchParams.get('id') ?? '')) } catch (error) { return importFailure(res, error) } },
       POST: async (req, res, url) => {

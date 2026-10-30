@@ -109,6 +109,9 @@ export async function routeVerdicts<Key>(route: Route<Key>, signal: AbortSignal)
   return { verdicts, report }
 }
 
+/** `hybrid` is a default that only does something where a decision model is set up: with none it is the language model alone, and nothing is said, because nothing is wrong. */
+export const modeFor = (mode: DecisionMode, service: unknown): DecisionMode => (mode === 'hybrid' && service === undefined ? 'llm' : mode)
+
 /** Asks the decision model one yes-or-no question for each key about one state, in a single request; the answers are probabilities of yes. */
 export async function askYesNo(service: DecisionService, state: Record<string, unknown>, asks: readonly { key: string; instructions: string }[], signal: AbortSignal): Promise<Map<string, number>> {
   const questions = Object.fromEntries(asks.map(({ key, instructions }) => [key, { type: 'noul' as const, instructions }]))

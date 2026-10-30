@@ -10,6 +10,8 @@ import { parseOoc } from '../../shared/ooc.ts'
 import { parseRoll } from '../../shared/roll.ts'
 import { rollPlain } from '@dsh-agentic-roleplay/state'
 import type { Timelines } from '../timeline/service.ts'
+import { MASTER_SAME_CALL } from '../agents/limits.ts'
+import { commandFlagKey, type StoryCommand } from '../../shared/commands.ts'
 import { guardRepeatedCalls } from '../agents/repeat-guard.ts'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { toolEnabled } from '../../shared/tools.ts'
@@ -105,8 +107,11 @@ export function externalToolLimit(agent: Agent, withheld: readonly string[]): vo
  * that uses the preset and also hear the agents that chat spawns, so each one
  * first checks that it is looking at the game master of a roleplay chat.
  */
-/** Identical calls the game master may make in one turn: a refused resolution is mended and sent again, so a few repeats are work, many are a loop. */
-const MASTER_SAME_CALL = 4
+/** Whether a trigger that has the world author make a person waits on the flag of a command: then the world, not the game master, brings the person in. */
+export function commandBringsPeopleIn(store: Pick<TurnStore, 'story'>, command: StoryCommand): boolean {
+  const flag = commandFlagKey(command)
+  return store.story.triggers.list().some(trigger => JSON.stringify(trigger.condition).includes(`"${flag}"`) && trigger.effects.some(effect => effect.type === 'beat' && effect.dispatch === 'author'))
+}
 
 export function installHooks(ctx: Context, deps: HookDeps): void {
   const { engine, boundaries, stores, timelines, previewTool } = deps
@@ -206,7 +211,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const tracked = store.tracked()
     const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, language: store.settings().prompts.language, ...(queryVector === undefined ? {} : { queryVector }) })]
     const pacing = ooc === undefined ? pacingAdvice(store, payload.turn) : undefined
-    if (used !== undefined) lines.push(tr('The player used the world\'s command /{word}: {description}', { word: used.word, description: used.description }))
+    if (used !== undefined) lines.push([tr('The player used the world\'s command /{word}: {description} It is part of the story, not an out-of-character command: play it in the story. The world raises and lowers the command\'s own flag itself: never change it.', { word: used.word, description: used.description }), ...(commandBringsPeopleIn(store, used) ? [tr('The world itself brings in anyone this command calls for, after this turn: do not make them up yourself with expand_world.')] : [])].join(' '))
     if (pacing !== undefined) lines.push(describePacingAdvice(pacing))
     else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) lines.push(store.text('roleplay/plot-hint'))
     const rules = store.rules()

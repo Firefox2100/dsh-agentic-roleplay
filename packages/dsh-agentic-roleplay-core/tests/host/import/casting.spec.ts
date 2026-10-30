@@ -3,14 +3,14 @@ import { castingDocuments, namedAsCommand } from '../../../src/host/import/casti
 import { parseCommandsFile } from '../../../src/host/commands/load.ts'
 import { parseTriggersFile } from '../../../src/host/triggers/load.ts'
 
-const mechanism = (over: Record<string, unknown> = {}) => ({ name: 'New follower', command: 'recruit', happens: '', need: 'a newcomer who wants to join the order', text: 'A new follower: [draw]', options: ['a lost traveller', 'a rival spy'], ...over })
+const mechanism = (over: Record<string, unknown> = {}) => ({ name: 'New follower', command: 'recruit', happens: '', need: 'arrival', text: 'A new follower: [draw]', options: ['a lost traveller', 'a rival spy'], ...over })
 
 describe('what a card says about making people up', () => {
   it('becomes a command, the flag its trigger waits on, and a beat for the world author with the drawn options', () => {
     const made = castingDocuments({ commands: [{ word: 'Recruit', description: 'Bring someone in.' }], mechanisms: [mechanism()] }, ['Type /recruit to bring a follower in.'])
     expect(made.notes).toEqual([])
     expect(made.commands).toEqual([{ word: 'recruit', key: 'recruit', description: 'Bring someone in.' }])
-    expect(made.triggers[0]).toMatchObject({ key: 'new_follower', repeat: true, when: { type: 'variable', variable: 'command_recruit', op: 'eq', value: true }, effects: [{ type: 'beat', dispatch: 'author', need: 'a newcomer who wants to join the order', draw: ['a lost traveller', 'a rival spy'] }] })
+    expect(made.triggers[0]).toMatchObject({ key: 'new_follower', repeat: true, when: { type: 'variable', variable: 'command_recruit', op: 'eq', value: true }, effects: [{ type: 'beat', dispatch: 'author', need: 'arrival', draw: ['a lost traveller', 'a rival spy'] }] })
     expect(parseTriggersFile(JSON.stringify(made.triggers)).ok).toBe(true)
     expect(parseCommandsFile(JSON.stringify({ commands: made.commands })).ok).toBe(true)
   })
@@ -18,7 +18,7 @@ describe('what a card says about making people up', () => {
   it('waits on a judged happening when the card names no command, and puts [draw] where the options go, or takes it out when there are none', () => {
     const made = castingDocuments({ commands: [], mechanisms: [mechanism({ command: '', happens: 'The player\'s character brings a stranger in', text: 'A stranger', options: ['a thief'] }), mechanism({ name: 'Plain', command: '', happens: 'A guest arrives', text: 'A guest [draw]', options: [] })] }, [])
     expect(made.triggers[0]).toMatchObject({ when: { type: 'judged', text: 'The player\'s character brings a stranger in' }, effects: [{ text: 'A stranger [draw]', draw: ['a thief'] }] })
-    expect(made.triggers[1]!['effects']).toEqual([{ type: 'beat', dispatch: 'author', need: 'a newcomer who wants to join the order', text: 'A guest' }])
+    expect(made.triggers[1]!['effects']).toEqual([{ type: 'beat', dispatch: 'author', need: 'arrival', text: 'A guest' }])
   })
 
   it('leaves out a mechanism with nothing to start it, keeps the commands only a trigger uses, and keys a command in another script', () => {

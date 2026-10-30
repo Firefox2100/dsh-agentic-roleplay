@@ -6,7 +6,7 @@ export const ASSISTANT_FIELDS = [
   { field: 'childReasoning', group: 'assistants', kind: 'text', placeholder: 'off' },
   { field: 'importModel', group: 'assistants', kind: 'text', placeholder: 'provider/model' },
   { field: 'importTemperature', group: 'assistants', kind: 'number', min: 0, max: 2, placeholder: '0.2' },
-  { field: 'importStructuredOutput', group: 'assistants', kind: 'choice', choices: ['tool', 'schema'], labels: ['importStructuredTool', 'importStructuredSchema'], placeholder: 'tool' },
+  { field: 'importStructuredOutput', group: 'assistants', kind: 'choice', choices: ['tool', 'schema'], labels: ['importStructuredTool', 'importStructuredSchema'], placeholder: 'schema' },
   { field: 'importMaxTokens', group: 'assistants', kind: 'integer', min: 0, max: 1000000, placeholder: '0' },
   { field: 'importVariablesPerRequest', group: 'assistants', kind: 'integer', min: 5, max: 500, placeholder: '25' },
   { field: 'importTimeoutMinutes', group: 'assistants', kind: 'integer', min: 0, max: 240, placeholder: '15' },

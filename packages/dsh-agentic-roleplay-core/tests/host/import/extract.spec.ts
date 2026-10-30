@@ -173,6 +173,21 @@ describe('extracting a whole roster', () => {
   })
 })
 
+describe('what a character has on it', () => {
+  const lamp = { ...item('entry:0', 'Tam keeps the light and always has a brass lantern and a worn logbook on him.', 'Tam'), keys: [] as string[] }
+  const classified: Classified = { 'entry:0': { roles: ['character'], targets: [{ name: 'Old Tam', kind: 'character' }] } }
+  const roster: Roster = [{ kind: 'character', key: 'tam', name: 'Old Tam', aliases: [], player: false }, { kind: 'thing', key: 'logbook', name: 'worn logbook', aliases: [], player: false }]
+
+  it('becomes things of the world held by it, except those the roster has already, and a name is not made twice', async () => {
+    const ctx = fakeContext(job => (job.prompt.includes('Make the character') ? { tier: 'principal', kind: 'person', summary: 'Keeps the light.', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, carries: ['brass lantern', 'Brass Lantern', 'worn logbook'] } : { description: 'A book.', held_by: 'Old Tam' }))
+    const made = await extractEntities(ctx, card, [lamp], classified, roster)
+    expect(made.items.find(entry => entry['name'] === 'brass lantern')).toEqual({ id: 'brass-lantern', name: 'brass lantern', held_by: 'tam' })
+    expect(made.items.filter(entry => String(entry['name']).toLowerCase() === 'brass lantern')).toHaveLength(1)
+    expect(made.items.filter(entry => entry['id'] === 'logbook')).toHaveLength(1)
+    expect(made.items).toHaveLength(2)
+  })
+})
+
 describe('guidance on making people up while the story is played', () => {
   const pieces = [item('entry:0', 'Template 1: a hitchhiker at a gas station. Template 2: a rich stranger. Every new person gets a name, an age, a job and six lines of speech.', 'Who turns up'), item('entry:1', 'The harbour is old. Visitors arrive by boat. Tam keeps the light.', 'Harbour')]
   const classified: Classified = {

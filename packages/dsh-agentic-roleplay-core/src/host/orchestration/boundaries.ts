@@ -331,8 +331,8 @@ export interface SceneItems {
 }
 
 /** Why the game master may ask for something to be made up: the story genuinely needs it. */
-export const AUTHORING_NEEDS = ['scene_change', 'arrival', 'introduction', 'object', 'variable', 'trigger'] as const
-export type AuthoringNeed = (typeof AUTHORING_NEEDS)[number]
+import type { AuthoringNeed } from 'dsh-roleplay-model'
+export { AUTHORING_NEEDS, type AuthoringNeed } from 'dsh-roleplay-model'
 
 export interface CreateJob {
   chat: string
@@ -508,7 +508,7 @@ export interface TriggerReport {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers' | 'dice' | 'transaction'>
+  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'triggers' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers' | 'dice' | 'transaction'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings

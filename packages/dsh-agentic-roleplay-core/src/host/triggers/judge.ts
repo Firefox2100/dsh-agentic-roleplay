@@ -6,7 +6,7 @@ import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { promptFor } from '../prompts/access.ts'
 import type { JudgeJob, TriggerJudge } from '../orchestration/boundaries.ts'
-import { announceProblem, askYesNo, noAt, routeVerdicts, yesAt } from '../decisions/route.ts'
+import { announceProblem, askYesNo, modeFor, noAt, routeVerdicts, yesAt } from '../decisions/route.ts'
 import { readVerdicts, writeVerdicts } from './judged.ts'
 
 const RESULT: ObjectJsonSchema = {
@@ -96,7 +96,7 @@ export function triggerJudge(deps: { agentOf: (chat: string) => Agent | undefine
       }
 
       const routed = await routeVerdicts<number>({
-        mode: settings.decisions.triggers, yesAt: yesAt(settings.decisions.confidence), noAt: noAt(settings.decisions.confidence), turn: job.turn,
+        mode: modeFor(settings.decisions.triggers, deps.decisions?.()), yesAt: yesAt(settings.decisions.confidence), noAt: noAt(settings.decisions.confidence), turn: job.turn,
         keys: statements.map((_, index) => index + 1), what: statementOf, probabilities: askDecisionModel, llm: askLanguageModel,
       }, signal)
       announceProblem(seen, `${job.chat}:triggers`, routed.report, deps.problem)

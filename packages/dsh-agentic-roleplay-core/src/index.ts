@@ -17,7 +17,7 @@ import { RoleplayImport } from './host/import/service.ts'
 import { knownOutputCeiling } from './host/import/output-ceiling.ts'
 import type { ImportChoices, ImportPreview } from './shared/import-card.ts'
 import { actOnDraft, draftStatus } from './host/import/draft.ts'
-import { resumeImport, startImport } from './host/import/start-import.ts'
+import { importWithoutModel, resumeImport, startImport } from './host/import/start-import.ts'
 import { findTargets, revertUpdate, startUpdate, updateStatus } from './host/import/update.ts'
 import { startTranslation, worldLanguage } from './host/translate/service.ts'
 import { ImportStore } from './host/import/store.ts'
@@ -218,6 +218,7 @@ export function apply(ctx: Context, config: Config) {
       choose: (id, choices) => imports.choose(id, choices),
       discard: id => imports.discard(id),
       start: begin,
+      importStructure: async (id, choices, language) => { const done = await importWithoutModel({ store: imports, worlds }, id, choices, language); await worlds.list({ refresh: true }); return { worldId: done.worldId, draft: done.draft } },
       picture: id => imports.picture(id),
       resume: (worldId, language) => resumeImport({ worlds, authoring }, worldId, language),
       draftStatus: worldId => draftStatus(worlds, worldId),

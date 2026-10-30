@@ -142,6 +142,17 @@ describe('the writing tools', () => {
     await expect(run('update_character_state', { character: 'nobody', activity: 'x' })).rejects.toThrow(/there is no character "nobody"/)
   })
 
+  it('does not list to an agent the variables the engine itself raises and lowers', async () => {
+    store.variables.define({ key: 'command_recruit', name: '/recruit', kind: 'flag', subject: 'world', visibility: 'hidden' })
+    store.variables.define({ key: 'trust', name: 'Trust', kind: 'number', subject: 'character', min: 0, max: 10 })
+    const keys = async (): Promise<string[]> => ((await run('list_variables', {})).value as { key: string }[]).map(entry => entry.key)
+    expect(await keys()).toContain('command_recruit')
+    link = { ...link!, engineVariables: () => ['command_recruit'] }
+    const hidden = await keys()
+    expect(hidden).not.toContain('command_recruit')
+    expect(hidden).toContain('trust')
+  })
+
   it('are not there unless the plugin is configured for them', () => {
     expect(Object.keys(tools(false))).toEqual(['search_lore', 'list_characters', 'get_character', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads'])
     expect(Object.keys(tools(true))).toContain('record_event')

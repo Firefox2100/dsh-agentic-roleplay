@@ -29,6 +29,7 @@ import { toolEnabled } from './shared/tools.ts'
 import { describeChecks } from './host/dice/describe.ts'
 import { createDiceTools, sessionFolder, type DiceLink } from '@dsh-agentic-roleplay/state'
 import { FALLBACK_LANGUAGE, shippedText } from './host/prompts/library.ts'
+import { COMMANDS_KEY, commandFlagKey, commandsOf } from './shared/commands.ts'
 import { STANDING_PROMPT } from './host/import/extract.ts'
 import { currentTurn } from './host/orchestration/current-turn.ts'
 import { createTools, PREVIEW_TOOL, type ToolDeps } from './host/orchestration/tools.ts'
@@ -87,11 +88,13 @@ export function apply(ctx: Context): void {
     const id = roleplaySessionOf(agentSessionId)
     const agent = ctx.agents.get(SessionId(agentSessionId))
     if (id === undefined || agent === undefined) return undefined
+    const session = ctx.roleplayState.openSession(sessionsDir(), id)
     return {
-      session: ctx.roleplayState.openSession(sessionsDir(), id),
+      session,
       turn: currentTurn(agent),
       policy: liveSettings(sessionFolder(sessionsDir(), id)).memory,
       queryVector: (text, signal) => index.queryVector(agentSessionId, text, signal),
+      engineVariables: () => commandsOf(session.metadata.getValue(COMMANDS_KEY)).map(commandFlagKey),
     }
   }), 'roleplay: state tools')
   const settingsOf = (context: object): { session: string; settings: ChatSettings } | undefined => {

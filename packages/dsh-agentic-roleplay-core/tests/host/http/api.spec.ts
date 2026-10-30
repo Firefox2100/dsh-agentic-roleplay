@@ -195,6 +195,7 @@ beforeEach(async () => {
       discard: (id) => { importCalls.push(`discard ${id}`); return Promise.resolve() },
       draftStatus: (worldId) => Promise.resolve(worldId === 'w1' ? { draft: true, check: { ok: false, problems: [{ where: 'characters/tam/character.json', message: 'start: nowhere' }], more: 0 } } : { draft: false }),
       actOnDraft: (worldId, action) => { importCalls.push(`draft ${worldId} ${action}`); return Promise.resolve({ action }) },
+      importStructure: (id, choices, language) => { importCalls.push(`structure ${id} ${choices.name} ${language ?? ''}`); return Promise.resolve({ worldId: 'w9', draft: false }) },
       resume: (worldId) => { importCalls.push(`resume ${worldId}`); return Promise.resolve({ worldId, chatSessionId: `world-author-${worldId}`, started: true }) },
       start: (id, choices, _language, update) => { importCalls.push(`start ${id} ${choices.name}${update === undefined ? '' : ` update ${update}`}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
       picture: () => Promise.reject(new Error('no picture')),
@@ -1256,6 +1257,12 @@ describe('roleplay API', () => {
       for (const action of ['ask', 'keep', 'discard']) await post('/worlds/import/draft?id=w1', JSON.stringify({ action }), { 'content-type': 'application/json' })
       expect(importCalls).toEqual(['draft w1 ask', 'draft w1 keep', 'draft w1 discard'])
       expect((await post('/worlds/import/draft?id=w1', JSON.stringify({ action: 'burn' }), { 'content-type': 'application/json' })).status).toBe(400)
+    })
+
+    it('imports a card without a model into a new world', async () => {
+      const done = await post('/worlds/import/structure?id=up1', JSON.stringify({ name: 'Plain', disabledEntries: [], opening: { kind: 'first' }, language: 'zh' }), { 'content-type': 'application/json' })
+      expect(await done.json()).toEqual({ worldId: 'w9', draft: false })
+      expect(importCalls).toEqual(['structure up1 Plain zh'])
     })
 
     it('has an import that stopped carry on, and reports 422 when nothing is waiting', async () => {

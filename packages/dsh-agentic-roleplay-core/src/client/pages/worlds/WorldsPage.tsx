@@ -19,7 +19,7 @@ import { TranslateBanner } from './TranslateBanner.tsx'
 import { importStagedToWorld, importVerbatimToWorld, stageFile } from '../../import-selection-api.ts'
 import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSelection.tsx'
 import type { SelectionPreview } from '../../../shared/import-selection.ts'
-import { discardImport, revertUpdate, startImport, updateStatus, uploadCard } from './import-api.ts'
+import { discardImport, importWithoutModel, revertUpdate, startImport, updateStatus, uploadCard } from './import-api.ts'
 import type { ImportPreview, UpdateStatus } from '../../../shared/import-card.ts'
 import { RevertUpdateDialog } from './RevertUpdateDialog.tsx'
 import type { WorldsFace } from './worlds-controller.ts'
@@ -48,6 +48,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const [updateBusy, setUpdateBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [importNotice, setImportNotice] = useState<string>()
+  const [importDone, setImportDone] = useState<string>()
   const picker = useRef<HTMLInputElement>(null)
   const presetPicker = useRef<HTMLInputElement>(null)
   const [presetBusy, setPresetBusy] = useState(false)
@@ -79,6 +80,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
     if (file === undefined) return
     setUploading(true)
     setImportNotice(undefined)
+    setImportDone(undefined)
     uploadCard(file).then(
       (preview) => { setUploading(false); setImporting(preview) },
       (failure: unknown) => { setUploading(false); setImportNotice(t('importUploadFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
@@ -118,6 +120,8 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
           preview={importing}
           {...(updating === undefined ? {} : { initialUpdate: updating })}
           start={(choices, update) => startImport(importing.id, choices, t('language'), update)}
+          startPlain={choices => importWithoutModel(importing.id, choices, t('language'))}
+          onImportedPlain={(_world, draft) => { setImporting(undefined); setUpdating(undefined); refresh(); if (draft) setImportNotice(t('importPlainDraft')); else setImportDone(t('importPlainDone')) }}
           discard={() => discardImport(importing.id)}
           onCancelled={() => { setImporting(undefined); setUpdating(undefined) }}
           onStarted={(chat, started) => { setImporting(undefined); setUpdating(undefined); refresh(); if (!started) setImportNotice(t('importNotStarted')); openChat(chat) }}
@@ -177,6 +181,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
       </div>
 
       {importNotice !== undefined && <p className={css.notice} role="alert">{importNotice}</p>}
+      {importDone !== undefined && <p className={css.info} role="status">{importDone}</p>}
       {state.error !== undefined && !failedWithoutData && (
         <p className={css.notice} role="alert">{t('loadFailed', { message: state.error })}</p>
       )}

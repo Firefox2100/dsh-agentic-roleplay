@@ -37,4 +37,20 @@ describe('roleplay speech', () => {
     expect(view.getUint32(40, true)).toBe(4)
     expect(new TextDecoder().decode(answer.bytes.subarray(44))).toBe('abcd')
   })
+
+  it('does not hold up a part behind a provider that keeps its one slot until the audio is read', async () => {
+    class OneSlot extends Speech {
+      private busy = false
+      private readonly waiting: (() => void)[] = []
+      override async synthesize(text: string): Promise<TtsResult> {
+        while (this.busy) await new Promise<void>(resolve => this.waiting.push(resolve))
+        this.busy = true
+        const release = () => { this.busy = false; this.waiting.shift()?.() }
+        const stream = new Blob([text]).stream().pipeThrough(new TransformStream({ flush: release }))
+        return { audio: stream, mediaType: 'audio/mpeg', model: this.model }
+      }
+    }
+    const answer = await Promise.race([speakParts(new OneSlot(), [{ text: 'one ' }, { text: 'two' }]), new Promise<never>((_, reject) => setTimeout(() => reject(new Error('the second part never started')), 2000))])
+    expect(new TextDecoder().decode(answer.bytes)).toBe('one two')
+  })
 })

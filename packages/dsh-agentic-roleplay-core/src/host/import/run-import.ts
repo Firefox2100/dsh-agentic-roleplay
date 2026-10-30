@@ -3,6 +3,8 @@ import { join } from 'node:path'
 
 import type { NormalizedCard } from '../../shared/import-card.ts'
 import { extractCasting } from './casting.ts'
+import { structureOnly } from './structure.ts'
+import { shippedText } from '../prompts/library.ts'
 import { emptyExtracted, extractEntities, extractStyle, extractVariables, type Extracted } from './extract.ts'
 import { finishImport, type ImportReport } from './finish.ts'
 import { itemise, type SourceItem } from './items.ts'
@@ -236,4 +238,25 @@ export async function lastReport(world: string): Promise<ImportReport | undefine
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
     throw error
   }
+}
+
+/**
+ * Imports the card waiting in a world without a model: what {@link structureOnly} lays out is written as the world, with no review after it. A world that would not start yet is left a draft, which the person
+ * can keep, discard or have an assistant repair.
+ */
+export async function structureImport(world: string, language?: string): Promise<{ report: ImportReport; draft?: WorldCheck }> {
+  await need(world, ['ready'], 'the import without a model')
+  const { card, choices, items, picture } = await load(world)
+  const { classified, roster, extracted } = structureOnly(card, items, choices)
+  const pictures = await ensurePictures(world, card.urls ?? [])
+  const ctx: ImportContext = { noModel: true, run: () => Promise.reject(new Error('this import has no model')), concurrency: 1, text: (id, variables) => shippedText(id, language ?? 'en', variables), say: () => undefined, ...(language === undefined ? {} : { language }) }
+  const result = await finishImport(ctx, {
+    directory: world, card, choices, roster, items, classified, extracted,
+    ...(picture ? { picture: await readFile(join(folder(world), PICTURE_FILE)) } : {}), notes: [], pictures: { found: pictures.found, added: pictures.added.length },
+  })
+  if (!result.ok) throw new ImportStateError(`the card could not be written as a world: ${result.problems.join('; ')}`)
+  if (result.draft === undefined) await finishedImport(world)
+  else await writeJson(join(folder(world), STATE), { phase: 'repair' })
+  await recordProvenance(world, { kind: 'import', card: { name: card.name }, language: language ?? '', counts: result.report.counts, notes: result.report.notes.length }, await readFile(join(folder(world), 'card.json'), 'utf8'))
+  return { report: result.report, ...(result.draft === undefined ? {} : { draft: result.draft }) }
 }
