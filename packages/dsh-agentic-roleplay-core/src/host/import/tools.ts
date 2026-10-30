@@ -13,8 +13,10 @@ import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { IMPORT_FOLDER } from './store.ts'
 import type { ImportContext, RunJob, TextOf } from './run.ts'
-import { build, endReview, finish, importPhase, survey, type Phase } from './run-import.ts'
+import { build, endReview, finish, importPhase, isReviewing, settleDraft, startRepair, survey, type Phase } from './run-import.ts'
+import { checkWorld } from '../worlds/world-check.ts'
 import type { ImportSettings } from './service.ts'
+import { outputCeiling } from './output-ceiling.ts'
 
 export const SURVEY_TOOL = 'import_survey'
 export const BUILD_TOOL = 'import_build'
@@ -22,10 +24,15 @@ export const FINISH_TOOL = 'import_finish'
 
 /** How many times a turn that has not finished the import is sent back to it. */
 const MAX_OBJECTIONS = 3
+/** How often a turn that left the world unable to start is sent back to mend it: each round can show a part of the world that was hidden behind the last one. */
+const MAX_REPAIRS = 5
 /** The build is the slow step (minutes, one agent per entity); a turn that needs it more often than this is not converging on a card that will finish. */
 const MAX_BUILDS_PER_TURN = 2
 /** A model call that fails is made once more before the piece it was for is given up. */
 const ATTEMPTS = 2
+
+/** Room added to every job's own budget: the model often writes out its analysis before the answer, and a budget that fits the answer alone is used up before the answer is given (found live: a job of 4000 tokens failed three of four times, and none at 12000). The setting stays the ceiling. */
+const ANALYSIS_TOKENS = 6000
 
 const CARD = `${IMPORT_FOLDER}/card.json`
 const cardParameter = { type: 'string' as const, required: true as const, description: `The card to import: the path that follows /import-st in the person's message (${CARD}).` }
@@ -45,10 +52,13 @@ export function contextOf(exec: ToolExecution, settings: ImportSettings, text: T
   const run: RunJob = async (job) => {
     for (let attempt = 1; ; attempt += 1) {
       try {
+        const named = namedModel(settings.model)
+        const ceiling = await outputCeiling(settings.maxTokens, agent, named.model, exec.signal)
         return await runChild({
           parent: agent, signal: exec.signal, persona: job.persona, prompt: job.prompt, result: job.result as never,
           ...(job.check === undefined ? {} : { beforeSubmit: (value: unknown) => job.check?.(value as never) }),
-          maxTokens: Math.min(job.maxTokens ?? settings.maxTokens, settings.maxTokens), timeoutMinutes: settings.timeoutMinutes, ...namedModel(settings.model),
+          maxTokens: Math.min((job.maxTokens ?? ceiling) + ANALYSIS_TOKENS, ceiling), timeoutMinutes: settings.timeoutMinutes, ...named,
+          ...(settings.structured === 'schema' ? { structured: true } : {}),
           sampling: { temperature: settings.temperature, toolChoice: 'required' },
           ...(settings.reasoning === '' ? {} : { reasoningEffort: settings.reasoning }),
         }) as never
@@ -64,7 +74,7 @@ export function contextOf(exec: ToolExecution, settings: ImportSettings, text: T
     if (service === undefined) return Promise.reject(new Error('no decision service is selected, or the selected one is not loaded'))
     return askYesNo(service, state, asks, exec.signal)
   } : undefined
-  return { run, concurrency: settings.concurrency, text, ...(language === undefined ? {} : { language }), say: () => undefined, ...(decide === undefined ? {} : { decide, confidence: settings.confidence }) }
+  return { run, cancelled: () => exec.signal.aborted, concurrency: settings.concurrency, variablesPerRequest: settings.variablesPerRequest, text, ...(language === undefined ? {} : { language }), say: () => undefined, ...(decide === undefined ? {} : { decide, confidence: settings.confidence }) }
 }
 
 export async function worldOf(worlds: WorldCatalog, exec: ToolExecution): Promise<{ id: string; directory: string }> {
@@ -120,11 +130,11 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
     }),
     defineTool({
       name: FINISH_TOOL,
-      description: 'Step 3 of importing a character card: check that the whole world would start, write it into the world together with its description, tags, opening and cover, and report what was imported. Nothing is written when the world would not start; the problems are returned. Run after the build.',
+      description: 'Step 3 of importing a character card: write the world together with its description, tags, opening and cover, check whether a story can start from it, and report what was imported. A world that still has problems is kept as a repairable draft. Run after the build.',
       parameters: { card: cardParameter },
       output: output(value => JSON.stringify(value, null, 1)),
       isConcurrencySafe: () => false,
-      async execute(args, exec) { checkedCard(args); return await step(exec, finish, (text, result) => text((result as { ok: boolean }).ok ? 'import/finish-ok' : 'import/finish-failed')) },
+      async execute(args, exec) { checkedCard(args); return await step(exec, finish, (text, result) => text((result as { ok: boolean; draft?: unknown }).ok ? ((result as { draft?: unknown }).draft === undefined ? 'import/finish-ok' : 'import/finish-draft') : 'import/finish-failed')) },
     }),
   ]
 }
@@ -132,6 +142,7 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
 /** The procedure of an import turn, told to the chat in place of what it does for any other message. */
 export function importNotice(phase: Phase | undefined, text: TextOf): string {
   if (phase === undefined) return text('import/notice-missing')
+  if (phase === 'repair') return text('import/notice-repair')
   return text('import/notice', { card: CARD, phase, done: phase === 'done' ? text('import/notice-done') : '' })
 }
 
@@ -140,6 +151,7 @@ export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Promp
   const textFor = (worldId: string | undefined): TextOf => (id, variables) => prompting.prompts().text(id, worldId === undefined ? undefined : prompting.languages().get(worldId), { ...toolNames, ...variables })
   const imports = new Map<string, number>()
   const objections = new Map<string, number>()
+  const repairs = new Map<string, number>()
   const authoring = (agent: Agent): string | undefined => (agent.session.header.origin === 'subagent' || authoredWorldOf(agent.session.id) === undefined ? undefined : agent.session.id)
 
   ctx.on('agent/pre-step', async (payload, next) => {
@@ -151,7 +163,8 @@ export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Promp
     const worldId = authoredWorldOf(chat)
     const record = worldId === undefined ? undefined : await worlds.find(worldId)
     const phase = record === undefined ? undefined : await importPhase(record.directory)
-    if (phase !== undefined && phase !== 'done') { imports.set(chat, payload.turn); objections.delete(chat) }
+    if (phase !== undefined && phase !== 'done') { imports.set(chat, payload.turn); objections.delete(chat); repairs.delete(chat) }
+    if (phase === 'repair' && record !== undefined) await startRepair(record.directory)
     return { ...decision, messages: [...decision.messages, createUserMessage({ content: [{ type: 'text', text: importNotice(phase, textFor(worldId)) }], source: { kind: 'roleplay' } })] }
   })
 
@@ -160,7 +173,9 @@ export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Promp
     if (event.type !== 'turn/end' || session.header.origin === 'subagent') return
     const worldId = authoredWorldOf(session.id)
     const record = worldId === undefined ? undefined : await worlds.find(worldId)
-    if (record !== undefined) await endReview(record.directory)
+    if (record === undefined) return
+    await endReview(record.directory)
+    await settleDraft(record.directory)
   })
 
   ctx.on('agent/turn-stopping', async ({ agent, turn }) => {
@@ -169,6 +184,15 @@ export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Promp
     const worldId = authoredWorldOf(chat)
     const record = worldId === undefined ? undefined : await worlds.find(worldId)
     const phase = record === undefined ? undefined : await importPhase(record.directory)
+    if (record !== undefined && (phase === 'repair' || (phase === 'done' && await isReviewing(record.directory)))) {
+      // the import is written; what the turn changed after it must still leave a world a story can start from, or the assistant is sent back to mend it
+      const check = await checkWorld({ directory: record.directory, summary: { name: record.summary.name } as never })
+      const mended = repairs.get(chat) ?? 0
+      if (check.ok || mended >= MAX_REPAIRS) { imports.delete(chat); repairs.delete(chat); return }
+      repairs.set(chat, mended + 1)
+      agent.steer(createUserMessage({ content: [{ type: 'text', text: textFor(worldId)('import/repair-again', { problems: check.problems.map(problem => `- ${problem.where}: ${problem.message}`).join('\n') + (check.more > 0 ? `\n(and ${check.more} more)` : '') }) }], source: { kind: 'roleplay' } }))
+      return
+    }
     if (phase === undefined || phase === 'done') { imports.delete(chat); return }
     const told = objections.get(chat) ?? 0
     if (told >= MAX_OBJECTIONS) { imports.delete(chat); return }

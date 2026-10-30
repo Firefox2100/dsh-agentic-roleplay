@@ -1,4 +1,4 @@
-import { EMOTION_VARIABLES, MAX_VARIABLES, VARIABLE_KEY, VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES, type StoredVariable, type VariableBand, type VariableDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue } from 'dsh-roleplay-model'
+import { EMOTION_VARIABLES, VARIABLE_KEY, VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES, type StoredVariable, type VariableBand, type VariableDefinition, type VariableDefinitionInput, type VariableSubject, type VariableValue } from 'dsh-roleplay-model'
 import type { SqlDatabase } from '../driver/types.ts'
 import { ConflictError, CorruptDataError, InvalidValueError, NotFoundError } from '../errors.ts'
 import type { VariableRepository } from '../repositories.ts'
@@ -103,7 +103,6 @@ export class SqliteVariableRepository implements VariableRepository {
       const kept: VariableDefinition = { ...existing, name: input.name, description: input.description ?? existing.description, only: input.only ?? existing.only, visibility: input.visibility ?? existing.visibility, bands: input.bands ?? existing.bands, always: input.always ?? existing.always }
       return this.write(this.checked(kept))
     }
-    if (existing === undefined && this.defs().length >= MAX_VARIABLES) throw new InvalidValueError(`a story tracks at most ${MAX_VARIABLES} variables`)
     return this.write(this.checked({
       key: input.key, name: input.name, description: input.description ?? '', kind: input.kind, subject: input.subject, only: input.only ?? [],
       ...(input.min === undefined ? {} : { min: input.min }), ...(input.max === undefined ? {} : { max: input.max }),

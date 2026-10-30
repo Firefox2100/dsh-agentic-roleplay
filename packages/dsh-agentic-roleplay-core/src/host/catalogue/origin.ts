@@ -1,7 +1,8 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { readFile, readdir, rename, writeFile } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { readFile, readdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import { CatalogueError } from './errors.ts'
+import { atomicWriteJson } from '../atomic-write.ts'
 
 export const ORIGIN_FILE = '.catalogue.json'
 const MAX_LISTED_CHANGES = 12
@@ -55,9 +56,7 @@ export async function readOrigin(directory: string): Promise<WorldOrigin | undef
 
 export async function writeOrigin(directory: string, origin: WorldOrigin): Promise<void> {
   const file = join(directory, ORIGIN_FILE)
-  const temporary = `${file}.${randomUUID()}.tmp`
-  await writeFile(temporary, JSON.stringify(origin, null, 2))
-  await rename(temporary, file)
+  await atomicWriteJson(file, origin, { indent: 2 })
 }
 
 /** SHA-256 of every file in a world folder; entries whose names start with a dot (this record, the trash, import state) are not the world's own. */

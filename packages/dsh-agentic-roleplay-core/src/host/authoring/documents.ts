@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import type { ParseResult } from '../validation.ts'
 import { formatIssue } from '../validation.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
@@ -16,6 +16,7 @@ import { FACTION_FILE_NAME, parseFactionFile } from '../factions/faction-file.ts
 import { LORE_DIR } from '../lore/load.ts'
 import { LORE_FILE_NAME, parseLoreFile } from '../lore/lore-file.ts'
 import type { EditableWorld } from '../worlds/world-editor.ts'
+import { atomicWrite } from '../atomic-write.ts'
 
 export const AUTHORED_ENTITY_KINDS = ['character', 'location', 'item', 'faction', 'lore'] as const
 export type AuthoredEntityKind = typeof AUTHORED_ENTITY_KINDS[number]
@@ -62,17 +63,6 @@ function serializeDocument(kind: AuthoredEntityKind, key: string, value: unknown
   return text
 }
 
-async function replaceFile(file: string, text: string): Promise<void> {
-  const temporary = join(dirname(file), `.${basename(file)}.${process.pid}.${randomUUID()}.tmp`)
-  try {
-    const mode = await stat(file).then(value => value.mode)
-    await writeFile(temporary, text, { mode })
-    await rename(temporary, file)
-  } catch (error) {
-    await rm(temporary, { force: true })
-    throw error
-  }
-}
 
 export async function readAuthoredEntityDocument(world: EditableWorld, kind: AuthoredEntityKind, key: string): Promise<unknown> {
   const found = await find(world, kind, key)
@@ -100,7 +90,7 @@ export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredE
 export async function replaceAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown): Promise<void> {
   const found = await find(world, kind, key)
   if (found === undefined) throw new InvalidEditProblems([`there is no ${kind} "${key}"`])
-  await replaceFile(found.file, serializeDocument(kind, key, document))
+  await atomicWrite(found.file, serializeDocument(kind, key, document))
 }
 
 /** Deletions remain recoverable without making the trash visible to the world loaders. */

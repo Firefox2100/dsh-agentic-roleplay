@@ -1,7 +1,7 @@
-import { randomUUID } from 'node:crypto'
+
 import type { Translate } from 'dsh-roleplay-model'
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readdir, rename, rm, stat } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
 import { CHARACTER_FILE_NAME } from '../characters/character-file.ts'
 import { CHARACTERS_DIR } from '../characters/load.ts'
@@ -16,15 +16,20 @@ import { LORE_DIR } from '../lore/load.ts'
 import { writeImageFileMetadata } from '../images/image-files.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { VARIABLES_FILE_NAME } from '../variables/load.ts'
-import { InvalidWorldError } from '../sessions/errors.ts'
-import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, WORLD_FILE_NAME } from '../worlds/world-file.ts'
-import { loadValidatedWorld } from '../worlds/validated-world.ts'
+import { COMMANDS_FILE_NAME } from '../commands/load.ts'
+import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
+
+import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS } from '../worlds/world-file.ts'
+
 import { cleanText, withPlayer, type SourceItem } from './items.ts'
-import type { Extracted } from './extract.ts'
+import { pruneKnowledge, pruneLinks, pruneLoreSubjects, pruneMembers, pruneRelationships, type Extracted } from './extract.ts'
 import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
 import { norm, type ChildJob, type ImportContext, type TextOf, trOf } from './run.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, openingText } from './store.ts'
 import { isLeftOut, type Classified, type Roster } from './survey.ts'
+import { atomicWrite } from '../atomic-write.ts'
+import { updateWorldFile } from '../worlds/world-file-io.ts'
+import { checkWorld, type WorldCheck } from '../worlds/world-check.ts'
 
 type Document = Record<string, unknown>
 
@@ -207,12 +212,7 @@ async function hasEntities(world: string): Promise<boolean> {
   return false
 }
 
-async function writeAtomically(file: string, text: string | Buffer): Promise<void> {
-  const temporary = `${file}.${randomUUID()}.tmp`
-  await mkdir(dirname(file), { recursive: true })
-  await writeFile(temporary, text)
-  await rename(temporary, file)
-}
+const writeAtomically = (file: string, text: string | Buffer): Promise<void> => atomicWrite(file, text, { createDirectory: true })
 
 export interface FinishInput {
   /** The folder of the world the card is imported into. */
@@ -230,7 +230,7 @@ export interface FinishInput {
 }
 
 /** The world as it is after the import: every document written into it, or nothing changed and the problems found. */
-export type FinishResult = { ok: true; report: ImportReport } | { ok: false; problems: string[] }
+export type FinishResult = { ok: true; report: ImportReport; /** Present when the world was written but would not start yet: what is wrong with it. */ draft?: WorldCheck } | { ok: false; problems: string[] }
 
 /**
  * Writes what was extracted into the world, all at once. The documents are first written to a staging folder and read back as the world will
@@ -241,27 +241,28 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   if (await hasEntities(directory)) return { ok: false, problems: ['the world already has characters, places, factions, things or lore: an import only fills an empty world'] }
   const playing = extracted.characters.find(document => document['role'] === 'playable')
   const playerName = playing === undefined ? undefined : String(playing['name'])
-  for (const key of ['characters', 'locations', 'factions', 'items', 'lore'] as const) replacePlayer(extracted[key], playerName)
+  for (const key of ['characters', 'locations', 'factions', 'items', 'lore', 'commands', 'triggers', 'variables'] as const) replacePlayer(extracted[key], playerName)
   const notes = [...input.notes, ...extracted.notes, ...breakParentCircles(extracted.locations)]
   shareThePlaces(extracted.characters, extracted.locations)
   const stage = join(directory, IMPORT_FOLDER, STAGE)
   await rm(stage, { recursive: true, force: true })
+  const mend = (): void => { const view = { ...extracted, notes }; pruneLoreSubjects(view); pruneMembers(view); pruneLinks(view); pruneKnowledge(view); pruneRelationships(view) }
+  mend()
   try {
     if (extracted.variables.length > 0) await writeAtomically(join(stage, VARIABLES_FILE_NAME), `${JSON.stringify(extracted.variables, null, 2)}\n`)
+    if (extracted.commands.length > 0) await writeAtomically(join(stage, COMMANDS_FILE_NAME), `${JSON.stringify({ commands: extracted.commands }, null, 2)}\n`)
+    if (extracted.triggers.length > 0) await writeAtomically(join(stage, TRIGGERS_FILE_NAME), `${JSON.stringify(extracted.triggers, null, 2)}\n`)
     for (const { key, directory: folder, file } of FOLDERS) {
       for (const document of extracted[key]) await writeAtomically(join(stage, folder, String(document['id']), file), `${JSON.stringify(document, null, 2)}\n`)
-    }
-    try {
-      await loadValidatedWorld({ directory: stage, summary: { name: choices.name } as never })
-    } catch (error) {
-      if (error instanceof InvalidWorldError) return { ok: false, problems: error.problems.map(problem => `${problem.path.replace(stage, '')}: ${problem.message}`.replace(/^: /, '')).concat(error.problems.length === 0 ? [error.message] : []) }
-      throw error
     }
     for (const { id, text } of extracted.prompts) {
       const problem = promptProblem('en', id, text)
       if (problem !== undefined) return { ok: false, problems: [`prompt ${id}: ${problem}`] }
     }
+    // what the mends could not settle is not a reason to throw the extraction away: the world is written as a draft and repaired with the card at hand
     if (extracted.variables.length > 0) await rename(join(stage, VARIABLES_FILE_NAME), join(directory, VARIABLES_FILE_NAME))
+    if (extracted.commands.length > 0) await rename(join(stage, COMMANDS_FILE_NAME), join(directory, COMMANDS_FILE_NAME))
+    if (extracted.triggers.length > 0) await rename(join(stage, TRIGGERS_FILE_NAME), join(directory, TRIGGERS_FILE_NAME))
     for (const { directory: folder } of FOLDERS) {
       const from = join(stage, folder)
       if (await stat(from).then(() => true, () => false)) await rename(from, join(directory, folder))
@@ -269,6 +270,8 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   } finally {
     await rm(stage, { recursive: true, force: true })
   }
+  const check = await checkWorld({ directory, summary: { name: choices.name } as never })
+  if (!check.ok) notes.push(`the world was written as a draft: it would not start yet (${check.problems.length + check.more} problem(s) in ${check.summary ?? 'the world'})`)
 
   const player = extracted.characters.find(document => document['role'] === 'playable')
   for (const { id, text } of extracted.prompts) {
@@ -278,23 +281,22 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   const described = await describeWorld(ctx, card, roster, items, opening ?? '')
   if (described.note !== undefined) notes.push(described.note)
   described.description = withPlayer(described.description, player === undefined ? undefined : String(player['name']))
-  const file = join(directory, WORLD_FILE_NAME)
-  const world = JSON.parse((await readFile(file, 'utf8')).replace(/^﻿/, '')) as Document
-  world['description'] = described.description
-  if (described.startingTime !== undefined && world['starting_time'] === undefined) world['starting_time'] = described.startingTime
-  world['metadata'] = { ...(typeof world['metadata'] === 'object' && world['metadata'] !== null ? world['metadata'] as Document : {}), tags: described.tags }
-  if (opening !== undefined) world['opening_message'] = openingMessage(opening, card.name, player === undefined ? undefined : String(player['name']))
-  const alternates = alternateOpenings(card, choices.opening, player === undefined ? undefined : String(player['name']))
-  if (alternates.length > 0) world['alternate_openings'] = alternates
-  if (card.creator.trim() !== '' && world['author'] === undefined) world['author'] = { name: card.creator.trim() }
   let cover = false
   if (input.picture !== undefined) {
     await writeAtomically(join(directory, 'media', 'files', 'cover.png'), input.picture)
     await writeAtomically(join(directory, 'media', 'manifest.jsonl'), `${JSON.stringify({ id: 'cover', file: 'media/files/cover.png' })}\n`)
-    world['cover_media_id'] = 'cover'
     cover = true
   }
-  await writeAtomically(file, `${JSON.stringify(world, null, 2)}\n`)
+  const alternates = alternateOpenings(card, choices.opening, player === undefined ? undefined : String(player['name']))
+  await updateWorldFile(directory, (world) => {
+    world['description'] = described.description
+    if (described.startingTime !== undefined && world['starting_time'] === undefined) world['starting_time'] = described.startingTime
+    world['metadata'] = { ...(typeof world['metadata'] === 'object' && world['metadata'] !== null ? world['metadata'] as Document : {}), tags: described.tags }
+    if (opening !== undefined) world['opening_message'] = openingMessage(opening, card.name, player === undefined ? undefined : String(player['name']))
+    if (alternates.length > 0) world['alternate_openings'] = alternates
+    if (card.creator.trim() !== '' && world['author'] === undefined) world['author'] = { name: card.creator.trim() }
+    if (cover) world['cover_media_id'] = 'cover'
+  })
   let portrait = false
   if (input.picture !== undefined) {
     try { portrait = await writePortrait(directory, input.picture, extracted.characters, card.name) } catch (error) { notes.push(`the card's picture could not be used as a portrait: ${error instanceof Error ? error.message : String(error)}`) }
@@ -315,7 +317,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     notes,
   }
   await writeAtomically(join(directory, IMPORT_FOLDER, 'report.json'), JSON.stringify(report, null, 2))
-  return { ok: true, report }
+  return { ok: true, report, ...(check.ok ? {} : { draft: check }) }
 }
 
 export { PICTURE_FILE }

@@ -11,12 +11,14 @@ function hueOf(name: string): number {
 }
 
 /** A world as a card. It fills the grid cell it is placed in. */
-export function WorldCard({ world, playLabel, openLabel, onPlay, onOpen }: {
+export function WorldCard({ world, playLabel, openLabel, draftLabel, onPlay, onOpen }: {
   world: WorldSummary
   /** Accessible name of the play button; the button is shown only with `onPlay`. */
   playLabel?: string
   /** Accessible name of the control that opens the world editor. */
   openLabel?: string
+  /** Marks the card as an import written as a draft; shown as a tag beside the name. */
+  draftLabel?: string
   onPlay?: (world: WorldSummary) => void
   /** Opens the world; clicking anywhere on the card does, the play button excepted. */
   onOpen?: (world: WorldSummary) => void
@@ -50,7 +52,7 @@ export function WorldCard({ world, playLabel, openLabel, onPlay, onOpen }: {
           )}
         </div>
         <div className={css.info}>
-          <div className={css.name}>{world.name}</div>
+          <div className={css.name}>{world.name}{draftLabel !== undefined && <Tag tone="warning" className={css.tag} data-testid="world-draft">{draftLabel}</Tag>}</div>
           {world.tags.length > 0 && (
             <div className={css.tags}>
               {world.tags.map(tag => <Tag key={tag} tone="neutral" className={css.tag}>{tag}</Tag>)}

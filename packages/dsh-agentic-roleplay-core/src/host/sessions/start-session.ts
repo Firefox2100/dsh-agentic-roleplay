@@ -11,6 +11,7 @@ import { DEFAULT_OPENING, writeOpening } from '../agent/history.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
+import { COMMANDS_KEY } from '../../shared/commands.ts'
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
@@ -63,7 +64,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const world = await deps.worlds.find(request.worldId)
   if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${request.worldId}"`)
 
-  const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar, checks } = await loadValidatedWorld(world)
+  const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar, checks, commands } = await loadValidatedWorld(world)
 
 
   if (request.opening !== undefined && (!Number.isInteger(request.opening) || request.opening < 0 || request.opening >= (world.alternateOpenings?.length ?? 0))) throw new InvalidStartError(`the world has no alternate opening ${String(request.opening)}`)
@@ -140,6 +141,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateTriggers(session, scripted.triggers)
       populatePlots(session.metadata, authoredPlots.plots)
       populateClock(session, settings.clock, startsAt === undefined ? undefined : { startingTime: startsAt }, (deps.now ?? Date.now)())
+      if (commands.length > 0) session.metadata.setValue(COMMANDS_KEY, commands.map(command => ({ ...command })))
       if (world.rules !== undefined) session.metadata.setValue(WORLD_RULES_KEY, world.rules)
       if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)
     })

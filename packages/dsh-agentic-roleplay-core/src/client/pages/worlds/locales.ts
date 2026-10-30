@@ -9,6 +9,7 @@ export type WorldsLocaleKey =
   | 'nav' | 'loading' | 'loadFailed' | 'empty' | 'starterAdd' | 'starterAdding' | 'starterFailed'
   | 'countOne' | 'countOther'
   | 'refresh' | 'refreshing'
+  | 'draftBadge' | 'draftWarning' | 'draftAsk' | 'draftKeep' | 'draftDiscard' | 'draftDiscardConfirm' | 'draftBusy' | 'draftFailed' | 'draftMore'
   | 'previousPage' | 'nextPage' | 'pageOf'
   | 'problems'
   | 'play' | 'openWorld' | 'chatNotOpened'
@@ -53,7 +54,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startOpening: 'Opening', startOpeningDefault: 'The world\'s own opening', startTime: 'Story starts at', startTimeHelp: 'Local time in {zone}, like 1912-04-14T23:40:00. Leave empty for the world\'s own start. Not used when the story follows the real clock.',
     loadingCharacters: 'Loading characters…',
     charactersFailed: 'Could not load the characters: {message}',
-    noPlayable: 'This world has no playable characters, so a session cannot be started.',
+    noPlayable: 'This world has no playable character of its own. Bring one of your avatars to play it; make one on the Avatars tab first if you have none.',
     start: 'Start',
     starting: 'Starting…',
     cancel: 'Cancel',
@@ -61,6 +62,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startFailed: 'Could not start the session: {message}',
     createWorld: 'Create world', creatingWorld: 'Creating…', createWorldTitle: 'Create a world', createWorldHelp: 'This creates a minimal world and opens it in the editor. Add characters, places and everything else there.', worldFolder: 'Folder name', worldFolderHelp: 'A new folder directly inside the roleplay worlds directory.', worldName: 'World name', worldPreset: 'Suggested preset', worldPresetNone: 'None', worldPresetHelp: 'Writing instructions from your library for new stories of this world. It can be changed later in the editor.', createWorldFailed: 'Could not create the world: {message}',
     updateFromCard: 'Update from card', updateReading: 'Reading the card…', updateNotFromCard: 'This world was not made from a character card, so a card cannot update it.',
+    draftBadge: 'Draft', draftWarning: 'This import was written as a draft because the world would not start yet. Its problems:', draftAsk: 'Ask the assistant to repair it', draftKeep: 'Keep as it is', draftDiscard: 'Discard', draftDiscardConfirm: 'Discard this world? It goes to the trash folder of the roleplay root.', draftBusy: 'Working…', draftFailed: 'Could not do that: {message}', draftMore: 'and {count} more',
     revertUpdate: 'Undo card update', revertTitle: 'Undo the last card update?', revertHelp: 'The world goes back to how it was before the update, including the card it was made from. What it holds now is kept in the world\'s .trash folder, so changes you made since can still be found. Pictures are not part of this.', revertConfirm: 'Undo the update', reverting: 'Undoing…', revertFailed: 'Could not undo the update: {message}', revertDone: 'The world is back to how it was before the update. What it held is in {folder}.',
     importPreset: 'Import narration preset', presetVerbatim: 'Put the chosen prompts of "{name}" into the world as its narration style, word for word. Check them in the Prompts section.', presetVerbatimReplaced: 'Put the chosen prompts of "{name}" into the world as its narration style, word for word. The style it had before is in the world\'s trash folder. Check the new one in the Prompts section.', presetReading: 'Reading…', presetFailed: 'Could not import the preset: {message}', presetNotStarted: 'The authoring chat opened but the preset was not applied: {message}. Ask it to apply the preset you uploaded.',
     authorWorld: 'Author with AI', openingAuthor: 'Opening…', authorWorldFailed: 'Could not open the authoring chat: {message}', authoringChatTitle: 'Authoring {name}',
@@ -98,7 +100,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startOpening: '开场', startOpeningDefault: '世界自带的开场', startTime: '故事开始于', startTimeHelp: '{zone} 的本地时间，例如 1912-04-14T23:40:00。留空则使用世界自带的开始时间。故事跟随真实时钟时不适用。',
     loadingCharacters: '正在加载角色…',
     charactersFailed: '无法加载角色：{message}',
-    noPlayable: '这张世界卡没有可扮演的角色，无法开始存档。',
+    noPlayable: '这个世界自己没有可扮演的角色。请带上你的一个角色形象来扮演；如果还没有，先到“角色形象”标签页做一个。',
     start: '开始',
     starting: '正在开始…',
     cancel: '取消',
@@ -106,6 +108,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     startFailed: '无法开始存档：{message}',
     createWorld: '创建世界', creatingWorld: '正在创建…', createWorldTitle: '创建世界', createWorldHelp: '系统会创建一个最小世界并直接在编辑器中打开；角色、地点等内容可随后添加。', worldFolder: '文件夹名称', worldFolderHelp: '将在角色扮演 worlds 目录下直接创建这个文件夹。', worldName: '世界名称', worldPreset: '建议的预设', worldPresetNone: '无', worldPresetHelp: '库中的写作指令，供这个世界的新故事使用；之后可在编辑器中修改。', createWorldFailed: '无法创建世界：{message}',
     updateFromCard: '用角色卡更新', updateReading: '正在读取角色卡…', updateNotFromCard: '这个世界不是由角色卡导入的，无法用角色卡更新。',
+    draftBadge: '草稿', draftWarning: '这次导入作为草稿写入，因为这个世界目前还无法开始。它的问题：', draftAsk: '请助手修复', draftKeep: '保持现状', draftDiscard: '丢弃', draftDiscardConfirm: '丢弃这个世界吗？它会被移到角色扮演根目录的回收文件夹。', draftBusy: '处理中…', draftFailed: '无法完成：{message}', draftMore: '还有 {count} 个',
     revertUpdate: '撤销卡片更新', revertTitle: '撤销上一次卡片更新？', revertHelp: '世界会回到更新之前的样子，包括它所依据的角色卡。现在的内容会保存在世界的 .trash 文件夹里，之后做的修改仍然可以找回。图片不在撤销范围内。', revertConfirm: '撤销更新', reverting: '正在撤销…', revertFailed: '无法撤销更新：{message}', revertDone: '世界已回到更新之前的样子。原来的内容保存在 {folder}。',
     importPreset: '导入叙述预设', presetVerbatim: '已将“{name}”所选提示原文放入世界，作为它的叙述风格。请在“提示词”部分检查。', presetVerbatimReplaced: '已将“{name}”所选提示原文放入世界，作为它的叙述风格。原来的风格保存在世界的回收文件夹里。请在“提示词”部分检查新的风格。', presetReading: '正在读取…', presetFailed: '无法导入预设：{message}', presetNotStarted: '世界编辑对话已打开，但预设没有应用：{message}。可以请它应用你上传的预设。',
     authorWorld: '使用 AI 编辑', openingAuthor: '正在打开…', authorWorldFailed: '无法打开世界编辑对话：{message}', authoringChatTitle: '编辑{name}',

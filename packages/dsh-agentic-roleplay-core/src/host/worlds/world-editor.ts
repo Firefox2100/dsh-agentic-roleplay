@@ -1,7 +1,6 @@
-import { randomUUID } from 'node:crypto'
 import { existsSync, statSync } from 'node:fs'
-import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { readFile, stat } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { CharacterDefinition, VisualIdentityInput } from 'dsh-roleplay-model'
 import type { ImageGenerationService } from '@dsh-ai-providers/core'
 import { InvalidEditProblems, type WorldTrigger, type CharacterEdit, type FactionEdit, type LoreEdit, type NewRelationEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type RelationEntity, type ThingEdit, type WorldCharacter, type WorldRelation, type WorldState } from '../../shared/world-state.ts'
@@ -29,6 +28,7 @@ import { deleteTriggerDocument, readTriggerDocuments, writeTriggerDocument } fro
 import { loadWorldParts } from '../triggers/parts.ts'
 import { loadVariables } from '../variables/load.ts'
 import { loadPlots, parsePlotsFile, plotReferenceProblems, PLOTS_FILE_NAME } from '../plots/load.ts'
+import { atomicWrite } from '../atomic-write.ts'
 
 /** What of a world the editor needs: the folder it is in. */
 export interface EditableWorld {
@@ -234,18 +234,7 @@ function apply(document: Json, edit: CharacterEdit, problems: string[]): void {
 }
 
 /** Written in one step, so an interruption cannot leave a character file half written. */
-export async function replaceFile(file: string, text: string): Promise<void> {
-  const temporary = join(dirname(file), `.${basename(file)}.${process.pid}.${randomUUID()}.tmp`)
-  try {
-    const mode = await stat(file).then(value => value.mode, (error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return 0o644; throw error })
-    await writeFile(temporary, text, { mode })
-    await chmod(temporary, mode)
-    await rename(temporary, file)
-  } catch (error) {
-    await rm(temporary, { force: true })
-    throw error
-  }
-}
+export const replaceFile = atomicWrite
 
 /**
  * Change a character in a world's files: the file is read, changed and checked as a whole (it has to read as a valid character, and the place has to be a place of

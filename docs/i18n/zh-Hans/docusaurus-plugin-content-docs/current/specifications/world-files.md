@@ -163,7 +163,7 @@ worlds/<world folder>/
 | `bands` | `{up_to, label}` 列表 | | 按上限从低到高定义数字范围名称。 |
 | `always` | boolean | false | 即使等于默认值也显示。 |
 
-可在此重写内建变量的名称、描述、分段和可见性，但不能改变其本质。最多 60 个变量。初值写在 `character.json`、`item.json`、`location.json` 或 `world.json` 的 `variables` 对象中。角色的 `start.emotion` 设置三个情绪变量的基线和当前值。
+可在此重写内建变量的名称、描述、分段和可见性，但不能改变其本质。初值写在 `character.json`、`item.json`、`location.json` 或 `world.json` 的 `variables` 对象中。角色的 `start.emotion` 设置三个情绪变量的基线和当前值。
 
 ### `routine`
 

@@ -49,3 +49,10 @@ describe('the pieces of a card', () => {
     expect(parts.map(item => [item.id, item.title, item.keys])).toEqual([['entry:0#1', 'Long', ['k']], ['entry:0#2', 'Long', ['k']]])
   })
 })
+
+describe('cleaning the text of a card that picks its text with code', () => {
+  it('takes the EJS control code out and keeps the text of its branches', () => {
+    expect(cleanText('Team: <%_ if (typeof x === "undefined") var x = getvar("a"); _%>\n<%_ if (x > 1) { _%>Ace<%_ } _%> and Bo<%= name %>.', 'Card')).toBe('Team: \nAce and Bo.')
+    expect(cleanText('Plain <%# a comment %>text', 'Card')).toBe('Plain text')
+  })
+})

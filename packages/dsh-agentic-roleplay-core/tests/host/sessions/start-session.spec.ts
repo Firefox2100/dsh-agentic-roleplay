@@ -406,6 +406,27 @@ describe('the dice checks of the world', () => {
   })
 })
 
+describe('the commands of the world', () => {
+  it('are kept with the story, each with a hidden flag the triggers can wait on, and a world whose commands clash with its variables does not start', async () => {
+    const commands = join(root, 'worlds', 'blackwater folder', 'commands.json')
+    await write(commands, { commands: [{ word: 'Recruit', description: 'Bring a new follower in.' }, { word: '招募', key: 'zhaomu', description: 'Same, in Chinese.' }] })
+    const started = await startSession(deps, playAsArthur)
+    const session = state.openSession(join(root, 'sessions'), started.id)
+    expect(session.metadata.getValue('roleplay.commands')).toEqual([{ word: 'recruit', key: 'recruit', description: 'Bring a new follower in.' }, { word: '招募', key: 'zhaomu', description: 'Same, in Chinese.' }])
+    expect(session.variables.def('command_zhaomu')).toMatchObject({ kind: 'flag', subject: 'world', visibility: 'hidden' })
+    await write(join(root, 'worlds', 'blackwater folder', 'variables.json'), [{ key: 'command_recruit', name: 'x', kind: 'flag', subject: 'world' }])
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/commands of .* have 1 problem/)
+  })
+
+  it('must be written so that the game can use them', async () => {
+    const commands = join(root, 'worlds', 'blackwater folder', 'commands.json')
+    for (const bad of [{ word: 'ooc', description: 'x' }, { word: '招募', description: 'no key for a non-ASCII word' }, { word: 'a b', description: 'x' }]) {
+      await write(commands, { commands: [bad] })
+      await expect(startSession(deps, playAsArthur)).rejects.toThrow(/commands of .* have/)
+    }
+  })
+})
+
 describe('starting the clock', () => {
   const wall = Date.UTC(2026, 6, 1, 9, 17, 42)
   const world = () => join(root, 'worlds', 'blackwater folder', 'world.json')

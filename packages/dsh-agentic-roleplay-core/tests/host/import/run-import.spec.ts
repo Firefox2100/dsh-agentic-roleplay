@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readCard } from '../../../src/host/import/card.ts'
-import { ImportStateError, build, endReview, finish, importPhase, isReviewing, markReady, survey } from '../../../src/host/import/run-import.ts'
+import { ImportStateError, build, endReview, finish, importPhase, isDraft, isReviewing, keepDraft, markReady, settleDraft, survey } from '../../../src/host/import/run-import.ts'
 import { ImportStore } from '../../../src/host/import/store.ts'
 import { v3Card } from '../../support/cards.ts'
 import { fakeContext } from '../../support/jobs.ts'
@@ -117,16 +117,49 @@ describe('the steps of an import', () => {
     expect(await readdir(join(world, '.import'))).not.toContain('extracted.json')
   })
 
-  it('does not finish when the world would not start with what was built, and says why', async () => {
+  it('keeps the extraction a build replaces beside the new one, and keeps nothing of a build that was stopped', async () => {
+    await survey(fakeContext(answers), world)
+    await build(fakeContext(answers), world)
+    const first = await readFile(join(world, '.import', 'extracted.json'), 'utf8')
+    await build(fakeContext(answers), world)
+    expect(await readFile(join(world, '.import', 'extracted.previous.json'), 'utf8')).toBe(first)
+    await expect(build({ ...fakeContext(answers), cancelled: () => true }, world)).rejects.toThrow(/stopped before it was done/)
+    expect(await readFile(join(world, '.import', 'extracted.json'), 'utf8')).toBe(first)
+  })
+
+  it('writes a draft when the world would not start with what was built: the import is in repair, the files are in the world, and repairing them settles it', async () => {
     await survey(fakeContext(answers), world)
     await build(fakeContext(answers), world)
     const file = join(world, '.import', 'extracted.json')
     const extracted = JSON.parse(await readFile(file, 'utf8'))
-    extracted.characters[0].start.location = 'nowhere'
+    for (const character of extracted.characters) character.tier = 'bogus'
     await writeFile(file, JSON.stringify(extracted))
     const result = await finish(fakeContext(answers), world)
-    expect(result.ok).toBe(false)
-    expect(await importPhase(world)).toBe('built')
-    expect(await readdir(world)).not.toContain('characters')
+    expect(result.ok && result.draft?.ok).toBe(false)
+    expect(await importPhase(world)).toBe('repair')
+    expect(await isDraft(world)).toBe(true)
+    expect(await readdir(world)).toContain('characters')
+    await endReview(world)
+    expect(await importPhase(world)).toBe('repair')
+    expect(await settleDraft(world)).toBe(false)
+    for (const name of await readdir(join(world, 'characters'))) {
+      const sheet = join(world, 'characters', name, 'character.json')
+      await writeFile(sheet, JSON.stringify({ ...JSON.parse(await readFile(sheet, 'utf8')), tier: 'principal' }))
+    }
+    expect(await settleDraft(world)).toBe(true)
+    expect(await importPhase(world)).toBe('done')
+  })
+
+  it('lets the person keep a draft as it is, which makes it an ordinary world; a world that is not a draft cannot be kept', async () => {
+    await survey(fakeContext(answers), world)
+    await build(fakeContext(answers), world)
+    const file = join(world, '.import', 'extracted.json')
+    const extracted = JSON.parse(await readFile(file, 'utf8'))
+    for (const character of extracted.characters) character.tier = 'bogus'
+    await writeFile(file, JSON.stringify(extracted))
+    await finish(fakeContext(answers), world)
+    await keepDraft(world)
+    expect(await importPhase(world)).toBe('done')
+    await expect(keepDraft(world)).rejects.toThrow(/not a draft/)
   })
 })

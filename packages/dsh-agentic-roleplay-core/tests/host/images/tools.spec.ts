@@ -12,6 +12,9 @@ import { addToLibrary } from '../../../src/host/images/library.ts'
 import { updateImage } from '../../../src/host/images/gallery.ts'
 import { presentedFor } from '../../../src/host/images/presented.ts'
 
+/** Pictures that differ, because the library keeps one of two equal ones. */
+const RED = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGM4IScHAAK2AQU0pnWqAAAAAElFTkSuQmCC', 'base64')
+const GREEN = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGOQOyEHAAIMAQUtuDZBAAAAAElFTkSuQmCC', 'base64')
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
 const roots: string[] = []
 afterEach(async () => { await Promise.all(roots.splice(0).map(root => rm(root, { recursive: true, force: true }))) })
@@ -80,7 +83,7 @@ describe('the tools that look in the library', () => {
     const { root, story, service, generated } = await fixture()
     const tools = imageTools({ root, story, service, turn: 4, timelineNode: 'n7', generated, library: true })
     const dock = await addToLibrary(root, PNG, 'dock.png')
-    const pending = await addToLibrary(root, PNG, 'later.png')
+    const pending = await addToLibrary(root, RED, 'later.png')
     await updateImage(root, dock, { description: 'Mira waits on the foggy dock at dawn.', tags: ['fog', 'dawn'], subjects: [{ kind: 'character', name: 'Mira' }] })
     const found = await call(tools, 'search_images', { text: 'Mira in the fog', subjects: ['Mira'] }) as { matches: { path: string }[]; pictures: unknown[] }
     expect(found.matches.map(entry => entry.path)).toEqual([dock])
@@ -114,7 +117,7 @@ describe('the tools that look in the library', () => {
   it('also find by meaning when there is an embedding service, and keep the vectors', async () => {
     const { root, story, service, generated } = await fixture()
     const harbour = await addToLibrary(root, PNG, 'harbour.png')
-    const forest = await addToLibrary(root, PNG, 'forest.png')
+    const forest = await addToLibrary(root, GREEN, 'forest.png')
     await updateImage(root, harbour, { description: 'Ships rest in the harbour.' })
     await updateImage(root, forest, { description: 'Trees in a quiet wood.' })
     const embed = vi.fn(async (texts: readonly string[], _options?: Record<string, unknown>) => ({ model: 'm', dimensions: 2, vectors: texts.map(text => (/ship|harbour|boat/i.test(text) ? [1, 0] : [0, 1])) }))

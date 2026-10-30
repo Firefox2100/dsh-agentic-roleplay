@@ -68,12 +68,6 @@ describe('declaring a variable', () => {
     expect(bad({ visibility: 'secret' })).toMatch(/unknown visibility/)
   })
 
-  it('is at most sixty in a story', () => {
-    for (let index = 0; index < 57; index += 1) store.variables.define({ key: `v${index}`, name: 'V', kind: 'flag', subject: 'world' })
-    expect(() => store.variables.define({ key: 'one_too_many', name: 'X', kind: 'flag', subject: 'world' })).toThrow(/at most 60/)
-    expect(store.variables.define({ key: 'v0', name: 'Renamed', kind: 'flag', subject: 'world' }).name).toBe('Renamed')
-  })
-
   it('goes with its values when removed', () => {
     store.variables.define({ key: 'alarm', name: 'Alarm', kind: 'flag', subject: 'world' })
     store.variables.set('alarm', 'world', 0, { value: true }, 2)

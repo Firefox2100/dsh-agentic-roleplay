@@ -2,6 +2,9 @@ import type { VariableValue } from './variable.ts'
 
 export type TriggerId = number
 
+/** A trigger key: ASCII, so that it can be told in a condition and a log. */
+export const TRIGGER_KEY = /^[a-z0-9][a-z0-9_-]{0,63}$/
+
 export const COMPARISONS = ['eq', 'ne', 'lt', 'le', 'gt', 'ge'] as const
 export type Comparison = (typeof COMPARISONS)[number]
 
@@ -58,7 +61,7 @@ export type TriggerEffect =
    * the trigger fired: `text` may name things the story has by `{kind:key}` and so is said as the story stands then (see `TEMPLATE_KINDS`), and
    * `while` is a condition that must still hold then, or the beat is withdrawn instead.
    */
-  | { type: 'beat'; text: string; while?: TriggerCondition }
+  | { type: 'beat'; text: string; while?: TriggerCondition; /** Options of which the code draws one when the trigger fires; it stands where the text says `[draw]`. */ draw?: string[]; /** `author`: the beat is not told to the game master but makes the world author run once the turn is delivered, with `need` as the reason (default `arrival`) and the beat's words as what is needed. */ dispatch?: 'author'; need?: string }
   /** Something the audience notices, said to each of them the next time they act; written, and withdrawn, as a beat is, for each of them (`SELF` is the one it is said to). */
   | { type: 'cue'; audience: TriggerAudience; text: string; while?: TriggerCondition }
 

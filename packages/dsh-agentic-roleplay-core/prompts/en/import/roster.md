@@ -4,6 +4,7 @@ For each kind (characters, places, factions, things):
 - Merge the names that are the same one into a single entry with its main name, and put the other names it goes by in aliases.
 - Leave out what is not an individual entity: a generic noun, a role without a name that belongs to nobody in particular, a whole country or era that is only a setting, the player ([PLAYER]) and the title of the card itself when it names a work or a setting instead of a being. A card whose own title is the name of the character it is about does list that character.
 - The place where the story starts is a place even when the text only describes it ("her bedroom studio"): list it under a plain name. A place the pieces only mention in passing is left out.
+- A bracketed placeholder that the person using the card is meant to fill in ("[custom start]", "[destination]") is not a place or any other entity: leave it out.
 - A place may be inside another place of the list (a room in a building, a district in a city): give its parent by the parent's main name.
 - An event, incident, case, era or idea is none of these: leave it out (it is background, not an entity).
 - A role without a name (an unnamed merchant, a guard, a crowd) is not a character: leave it out. Ordinary equipment, surroundings and media (a camera, a stream, a window) are not things: only objects that play a part in the story are.

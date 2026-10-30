@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import type { TriggerCondition, TriggerDefinition } from 'dsh-roleplay-model'
 import { readTriggerDefinition } from '@dsh-agentic-roleplay/state'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { triggerProblemsOf, type WorldParts } from './check.ts'
 import { TRIGGERS_FILE_NAME } from './load.ts'
+import { atomicWriteJson } from '../atomic-write.ts'
 
 /** The fields of a trigger in the file; any other is a mistake that would otherwise be dropped without a word. */
 const FIELDS = new Set(['key', 'name', 'when', 'effects', 'repeat', 'cooldown_seconds', 'chance', 'priority', 'expires', 'announce'])
@@ -27,16 +28,7 @@ export async function readTriggerDocuments(directory: string): Promise<Document[
 }
 
 async function writeDocuments(directory: string, documents: readonly Document[]): Promise<void> {
-  const file = join(directory, TRIGGERS_FILE_NAME)
-  const temporary = join(dirname(file), `.${basename(file)}.${process.pid}.${randomUUID()}.tmp`)
-  try {
-    const mode = await stat(file).then(value => value.mode, () => undefined)
-    await writeFile(temporary, `${JSON.stringify(documents, null, 2)}\n`, mode === undefined ? {} : { mode })
-    await rename(temporary, file)
-  } catch (error) {
-    await rm(temporary, { force: true })
-    throw error
-  }
+  await atomicWriteJson(join(directory, TRIGGERS_FILE_NAME), documents, { indent: 2 })
 }
 
 /** The keys of the triggers a condition waits for. */

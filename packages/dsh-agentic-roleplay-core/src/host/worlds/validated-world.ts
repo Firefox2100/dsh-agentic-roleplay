@@ -1,6 +1,7 @@
 import type { WorldRecord } from './scan.ts'
 import { loadCharacters } from '../characters/load.ts'
 import { loadCalendar } from '../calendar/load.ts'
+import { commandFlag, commandVariable, loadCommands } from '../commands/load.ts'
 import { loadDice } from '../dice/load.ts'
 import { loadFactions } from '../factions/load.ts'
 import { loadItems } from '../items/load.ts'
@@ -50,6 +51,12 @@ export async function loadValidatedWorld(world: Pick<WorldRecord, 'directory' | 
 
   const declared = await loadVariables(world.directory)
   if (declared.problems.length > 0) throw new InvalidWorldError(`the variables of "${world.summary.name}" have ${declared.problems.length} problem(s)`, declared.problems)
+  const commandFile = await loadCommands(world.directory)
+  if (commandFile.problems.length > 0) throw new InvalidWorldError(`the commands of "${world.summary.name}" have ${commandFile.problems.length} problem(s)`, commandFile.problems)
+  const own = new Set(declared.defs.map(def => def.key))
+  const clashing = commandFile.commands.filter(command => own.has(commandVariable(command)))
+  if (clashing.length > 0) throw new InvalidWorldError(`the commands of "${world.summary.name}" have ${clashing.length} problem(s)`, clashing.map(command => ({ path: world.directory, message: `/${command.word} raises the flag ${commandVariable(command)}, which variables.json declares too: remove one` })))
+  declared.defs = [...declared.defs, ...commandFile.commands.map(commandFlag)]
   const tracking = variableProblems({ defs: declared.defs, characters, items, locations, values: world.variables })
   if (tracking.length > 0) throw new InvalidWorldError(`what "${world.summary.name}" tracks has ${tracking.length} problem(s)`, tracking.map(message => ({ path: world.directory, message })))
 
@@ -62,5 +69,5 @@ export async function loadValidatedWorld(world: Pick<WorldRecord, 'directory' | 
 
   const related = relationshipProblems(characters)
   if (related.length > 0) throw new InvalidWorldError(`the relationships of "${world.summary.name}" have ${related.length} problem(s)`, related.map(message => ({ path: world.directory, message })))
-  return { characters, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar, checks: dice.checks }
+  return { characters, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar, checks: dice.checks, commands: commandFile.commands }
 }

@@ -2,6 +2,7 @@ import { languageOf } from 'dsh-roleplay-model'
 import { shippedText } from '../prompts/library.ts'
 import { changeVariable, planVariableChange, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from '@dsh-agentic-roleplay/state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
+import { COMMANDS_KEY, commandFlagKey, commandsOf } from '../../shared/commands.ts'
 import { WORLD_RULES_KEY, rulesOf } from '../../shared/rules.ts'
 import type { MoveRequest } from './protocol.ts'
 import type { ItemChangeSpec } from '@dsh-agentic-roleplay/state'
@@ -248,6 +249,15 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
       if (entry.turn !== undefined && entry.tokens !== undefined) addUsage(session, entry.turn, 'helper', entry.tokens)
     },
     recordDecisions: (site, report) => { recordDecisions(folder, site, report) },
+    raiseCommand: (word, turn) => {
+      const commands = commandsOf(session.metadata.getValue(COMMANDS_KEY))
+      const used = word === undefined ? undefined : commands.find(command => command.word === word.toLowerCase())
+      // a flag is up only in the turn its command was typed, so that the same command can rise again
+      session.transaction(() => {
+        for (const command of commands) session.variables.set(commandFlagKey(command), 'world', 0, { value: command === used }, turn)
+      })
+      return used
+    },
     recordUsage: (turn, tokens) => { addUsage(session, turn, 'master', tokens) },
     notes: () => readNotes(session),
     clearNotes: () => { clearNotes(session) },

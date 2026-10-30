@@ -185,10 +185,10 @@ importers:
         specifier: 0.2.1-rc.3
         version: 0.2.1-rc.3(@deepseek-ai/cordis-plugin-loader@1.0.6)(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-settings@0.2.1-rc.3(f742328a455345acd0f422a382129751))(@deepseek-ai/dsh-subprocess@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-http-proxy@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5)))(@deepseek-ai/dsh-typert-protocol@0.2.1-rc.3(@deepseek-ai/cordis@4.0.5))
       '@dsh-agentic-roleplay/core':
-        specifier: workspace:0.7.3
+        specifier: workspace:0.8.0
         version: link:../dsh-agentic-roleplay-core
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.7.3
+        specifier: workspace:0.8.0
         version: link:../dsh-roleplay-state
 
   packages/dsh-agentic-roleplay-core:
@@ -197,7 +197,7 @@ importers:
         specifier: 0.2.1-rc.3
         version: 0.2.1-rc.3(88d3955e445d6eeefba35eb61c62f910)
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.7.3
+        specifier: workspace:0.8.0
         version: link:../dsh-roleplay-state
       '@dsh-ai-providers/core':
         specifier: ^0.5.0

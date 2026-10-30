@@ -11,6 +11,8 @@ export interface SourceItem {
   title: string
   keys: string[]
   text: string
+  /** A lorebook entry the card always sends: its rules apply on every turn. */
+  constant?: boolean
 }
 
 /** The longest a piece goes into one call. Longer entries are cut into parts at the end of a paragraph. */
@@ -24,6 +26,8 @@ export function cleanText(text: string, cardName: string): string {
   return text
     .replace(/\r\n?/g, '\n')
     .replace(/<!--[\s\S]*?-->/g, '')
+    // EJS control code of cards whose entries pick their text by the game's variables: the branches stay as plain text, the code goes
+    .replace(/<%[=_\-#]?[\s\S]*?[_\-]?%>/g, '')
     .replace(/\{\{\s*\/\/[\s\S]*?\}\}/g, '')
     .replace(/\{\{\s*char\s*\}\}|<char>|<bot>/gi, cardName)
     .replace(/\{\{\s*user\s*\}\}|<user>/gi, PLAYER_MARKER)
@@ -47,11 +51,11 @@ export function partsOf(text: string, max: number = MAX_ITEM_CHARS): string[] {
   return parts
 }
 
-function itemsOf(id: string, label: string, title: string, keys: string[], raw: string, cardName: string): SourceItem[] {
+function itemsOf(id: string, label: string, title: string, keys: string[], raw: string, cardName: string, constant = false): SourceItem[] {
   const text = cleanText(raw, cardName)
   if (text === '') return []
   const parts = partsOf(text)
-  return parts.map((part, index) => ({ id: parts.length === 1 ? id : `${id}#${index + 1}`, label: parts.length === 1 ? label : `${label} (part ${index + 1})`, title, keys, text: part }))
+  return parts.map((part, index) => ({ id: parts.length === 1 ? id : `${id}#${index + 1}`, label: parts.length === 1 ? label : `${label} (part ${index + 1})`, title, keys, text: part, ...(constant ? { constant: true } : {}) }))
 }
 
 /**
@@ -68,7 +72,7 @@ export function itemise(card: NormalizedCard, choices: ImportChoices): SourceIte
     ...itemsOf('field:scenario', 'scenario', '', [], card.scenario, name),
     ...itemsOf('field:example', 'example messages', '', [], card.messageExample, name),
     ...(opening === undefined ? [] : itemsOf('field:opening', 'opening', '', [], opening, name)),
-    ...(card.book?.entries ?? []).filter(entry => !off.has(entry.id)).flatMap(entry => itemsOf(entry.id, entry.title === '' ? entry.id : `entry “${entry.title}”`, entry.title, entry.keys, entry.content, name)),
+    ...(card.book?.entries ?? []).filter(entry => !off.has(entry.id)).flatMap(entry => itemsOf(entry.id, entry.title === '' ? entry.id : `entry “${entry.title}”`, entry.title, entry.keys, entry.content, name, entry.constant)),
   ]
 }
 

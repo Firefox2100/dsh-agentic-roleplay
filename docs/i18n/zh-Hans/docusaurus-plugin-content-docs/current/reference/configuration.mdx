@@ -24,7 +24,9 @@ title: 配置参考
 | `importReasoning` | 空 | 导入与创作助手及创作对话的推理等级；留空依次使用 `childReasoning` 和对话设置 |
 | `childReasoning` | 空 | 角色扮演辅助智能体的回退推理等级；留空跟随主持人 |
 | `importModel` | 空 | 导入与创作助手使用的 `提供方/模型`；留空使用对话模型 |
-| `importMaxTokens` | 16000 | 单次导入或创作辅助请求的输出令牌上限；各任务可以使用更小的限制 |
+| `importStructuredOutput` | `tool` | `schema` 让没有自带工具的导入和创作助手以 JSON 回复给出结果，端点按结果的结构约束该回复（`response_format`），而不是调用 `submit_result`；需要支持 JSON schema 的 OpenAI 兼容端点（LocalAI、vLLM、OpenAI） |
+| `importMaxTokens` | 0 | 单次导入或创作辅助请求的输出令牌上限；0 表示模型上下文窗口的十分之一（至少 16000）；各任务可以用更小的限制 |
+| `importVariablesPerRequest` | 25 | 一次导入请求要求声明的追踪数值数量；追踪更多的卡片会再次询问其余的 |
 | `importTemperature` | 0.2 | 导入与创作助手的采样温度 |
 | `importTimeoutMinutes` | 15 | 导入或创作助手未给出结果前最多运行的分钟数；0 表示不限时 |
 | `importDecisions` | `llm` | `decision` 让已配置的决策服务先判断有把握的卡片片段；`llm` 把每个片段都交给语言模型 |

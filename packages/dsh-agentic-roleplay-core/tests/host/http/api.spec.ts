@@ -193,6 +193,9 @@ beforeEach(async () => {
       read: (id) => { importCalls.push(`read ${id}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
       choose: (id, choices) => { importCalls.push(`choose ${id} ${JSON.stringify(choices)}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
       discard: (id) => { importCalls.push(`discard ${id}`); return Promise.resolve() },
+      draftStatus: (worldId) => Promise.resolve(worldId === 'w1' ? { draft: true, check: { ok: false, problems: [{ where: 'characters/tam/character.json', message: 'start: nowhere' }], more: 0 } } : { draft: false }),
+      actOnDraft: (worldId, action) => { importCalls.push(`draft ${worldId} ${action}`); return Promise.resolve({ action }) },
+      resume: (worldId) => { importCalls.push(`resume ${worldId}`); return Promise.resolve({ worldId, chatSessionId: `world-author-${worldId}`, started: true }) },
       start: (id, choices, _language, update) => { importCalls.push(`start ${id} ${choices.name}${update === undefined ? '' : ` update ${update}`}`); return Promise.resolve({ worldId: 'w', chatSessionId: 'world-author-w', started: true }) },
       picture: () => Promise.reject(new Error('no picture')),
       updateStatus: (worldId) => (worldId === 'missing' ? Promise.reject(new WorldNotFoundError('missing world')) : Promise.resolve({ fromCard: true, revertible: true, waiting: false })),
@@ -1179,6 +1182,23 @@ describe('roleplay API', () => {
       await post('/worlds/import/start?id=i2', JSON.stringify({ ...choices, update: 'w9' }), { 'content-type': 'application/json' })
       await post('/worlds/import/start?id=i3', JSON.stringify({ ...choices, update: '  ' }), { 'content-type': 'application/json' })
       expect(importCalls).toEqual(['start i2 New world update w9', 'start i3 New world'])
+    })
+
+    it('says whether a world is a draft and what is wrong with it, and takes what the person decides about it', async () => {
+      const status = await (await fetch(`${origin}/worlds/import/draft?id=w1`)).json() as { draft: boolean; check: { problems: unknown[] } }
+      expect(status.draft).toBe(true)
+      expect(status.check.problems).toHaveLength(1)
+      expect(await (await fetch(`${origin}/worlds/import/draft?id=other`)).json()).toEqual({ draft: false })
+      for (const action of ['ask', 'keep', 'discard']) await post('/worlds/import/draft?id=w1', JSON.stringify({ action }), { 'content-type': 'application/json' })
+      expect(importCalls).toEqual(['draft w1 ask', 'draft w1 keep', 'draft w1 discard'])
+      expect((await post('/worlds/import/draft?id=w1', JSON.stringify({ action: 'burn' }), { 'content-type': 'application/json' })).status).toBe(400)
+    })
+
+    it('has an import that stopped carry on, and reports 422 when nothing is waiting', async () => {
+      const resumed = await post('/worlds/import/resume?id=w1', JSON.stringify({ language: 'zh' }), { 'content-type': 'application/json' })
+      expect(await resumed.json()).toEqual({ worldId: 'w1', chatSessionId: 'world-author-w1', started: true })
+      expect(importCalls).toEqual(['resume w1'])
+      importError = new InvalidEditProblems(['no import is waiting in this world'])
     })
 
     it('says whether a world can be updated from a card and undoes the last update, with 404 for a world that is gone and 422 when there is nothing to undo', async () => {

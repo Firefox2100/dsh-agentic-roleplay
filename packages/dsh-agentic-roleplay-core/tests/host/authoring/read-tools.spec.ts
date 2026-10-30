@@ -53,9 +53,18 @@ describe('authored world read tools', () => {
 
   it('provides the complete read-only catalogue', () => {
     expect(tools().map(tool => tool.name)).toEqual([
-      'get_world_overview', 'get_world_info', 'list_characters', 'get_character', 'list_locations', 'get_location', 'list_items', 'get_item',
+      'get_world_overview', 'get_world_info', 'world_check', 'list_characters', 'get_character', 'list_locations', 'get_location', 'list_items', 'get_item',
       'list_factions', 'get_faction', 'list_lore', 'get_lore', 'get_world_element_source', 'list_plots', 'get_plot', 'list_world_triggers', 'get_world_trigger', 'list_relationships',
     ])
+  })
+
+  it('checks the world as a story would start from it: ok when it holds, the problems with where they are when it does not', async () => {
+    expect(await call('world_check')).toEqual({ ok: true, problems: [], more: 0 })
+    await write(join(directory, 'characters', 'tam', 'character.json'), { name: 'Tam', role: 'npc', summary: 'Fisher.', start: { location: 'nowhere' } })
+    const broken = await call('world_check') as { ok: boolean; problems: { where: string; message: string }[] }
+    expect(broken.ok).toBe(false)
+    expect(broken.problems.map(problem => problem.message).join('\n')).toMatch(/nowhere/)
+    expect(broken.problems.every(problem => !problem.where.startsWith('/'))).toBe(true)
   })
 
   it('reads overview, concise lists and complete entities from the files', async () => {

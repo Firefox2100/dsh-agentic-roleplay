@@ -118,7 +118,7 @@ interface Script {
    */
   /** The game master introduces things itself: how many it brings in before delivering. */
   introduce?: number
-  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops' | 'repeats' | 'unfitting'; need?: string }
+  expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops' | 'repeats' | 'unfitting' | 'refused'; need?: string }
   /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
   things?: 'take' | 'conflict' | 'unlock'
   /** How the game master deals with time: says a round took ten minutes; or skips to seven in the morning before it delivers. */
@@ -253,6 +253,7 @@ function authorAnswer(request: GenerateOptions, script: Script): StreamChunk[] {
   const submitCreated = call('a-submit', 'submit_result', { outcome: 'created', summary: 'Made Mira Voss and connected her.' })
   const place = { location: 'street', position: 'by the bar door' }
   if (mode === 'repeats') return call(`a-rep-${edits}`, 'edit_world', { turn, items: [{ key: 'note', name: 'Folded note', wearable: '' }] })
+  if (mode === 'refused') return call(`a-refused-${request.messages.length}`, 'submit_result', { outcome: 'created', summary: 'Made Mira Voss, though nothing was made, so the harness refuses it.' })
   if (mode === 'loops') return call(`a-loop-${lints}`, 'world_lint', {})
   if (mode === 'unfitting') return call(`a-unfit-${timesCalled(request, 'submit_result')}-${request.messages.length}`, 'submit_result', { summary: 'no outcome given, so the result does not fit its schema' })
   if (mode === 'declines') return call('a-decline', 'submit_result', { outcome: 'declined', summary: 'The innkeeper already serves; no new person is needed.' })
@@ -565,17 +566,18 @@ describe('a turn with the real agent loop', () => {
       const brief = briefOf(authors(adapter)[0]!)
       expect(brief).toContain('Reason given: arrival.')
       expect(brief).toContain('A ferry pilot named Mira Voss has just come up the lane')
-      expect(brief).toContain('At most 2 new things may be made in a turn, and 0 already were this turn.')
+      expect(brief).toContain('At most 2 new characters and 2 new places may be made in a turn (each kind has its own allowance); already made this turn: 0 character(s), 0 place(s).')
       expect(brief).toContain('## Characters that exist\n- arthur: Arthur in The Bar [the player]')
       expect(brief).toContain('## Places that exist\n- bar: The Bar')
       expect(systemOf(authors(adapter)[0]!)).toContain('Something is made up only when ALL of this holds')
     })
 
-    it('does not finish until what it made is usable: a character in no place is an error it must fix', async () => {
+    it('puts a person made up without a place where the player\'s character is, so that they can act at once', async () => {
       const { session, adapter } = await playAuthored('incomplete')
-      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toContain('what you made is not usable yet')
-      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toContain('character-unplaced')
-      expect(session.placements.get('character', session.characters.getBySourceId('mira')!.id)?.locationId).toBe(session.locations.getBySourceId('street')!.id)
+      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).not.toContain('character-unplaced')
+      const placeOf = (key: string) => session.placements.get('character', session.characters.getBySourceId(key)!.id)?.locationId
+      expect(placeOf('mira')).toBeDefined()
+      expect(placeOf('mira')).toBe(placeOf('arthur'))
       expect(masterSaw(adapter)).toContain('character mira (Mira Voss)')
     })
 
@@ -591,6 +593,13 @@ describe('a turn with the real agent loop', () => {
       expect(authors(adapter).length).toBeLessThan(60)
       expect(session.characters.getBySourceId('mira')).toBeUndefined()
       expect(masterSaw(adapter)).toContain('without submitting a result and was stopped')
+    })
+
+    it('is stopped when every result it submits is refused by the checks of the world author, and the game master is told it could not be made', async () => {
+      const { adapter, session } = await playAuthored('refused')
+      expect(authors(adapter).length).toBeLessThan(30)
+      expect(session.characters.getBySourceId('mira')).toBeUndefined()
+      expect(masterSaw(adapter)).toContain('the result was refused 5 times and the agent was stopped')
     })
 
     it('is stopped early when it sends the call that just failed again and again, being told so first, and the game master is told it could not be made', async () => {
@@ -618,7 +627,7 @@ describe('a turn with the real agent loop', () => {
 
     it('may not make more in a turn than the chat allows, and an edit that would is refused whole', async () => {
       const { session, adapter } = await playAuthored('greedy', { authoring: { perTurn: 2 } })
-      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toMatch(/makes 3 new things.*pass the 2 this chat allows per turn/)
+      expect(JSON.stringify(authors(adapter).at(-1)!.messages)).toMatch(/makes 3 new characters.*pass the 2 this chat allows per turn for each kind/)
       expect(session.characters.getBySourceId('mira')).toBeUndefined()
       expect(session.characters.getBySourceId('tom')).toBeUndefined()
     })

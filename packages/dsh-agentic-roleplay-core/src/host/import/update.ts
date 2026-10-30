@@ -16,6 +16,7 @@ import { cardCharacter, writePortrait } from './finish.ts'
 import { addressesToFetch, addressKey, candidateUrls, fetchPictures, mergeReports, type PicturesReport } from './pictures.ts'
 import { importPhase } from './run-import.ts'
 import { editsSince, writeSnapshot } from './snapshot.ts'
+import { recordProvenance } from './provenance.ts'
 import type { StartedImport, StartImportDeps } from './start-import.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, readImportFolder, writeChoices } from './store.ts'
 import type { Classified } from './survey.ts'
@@ -165,6 +166,7 @@ export async function finishUpdate(directory: string, options: { signal?: AbortS
   await rm(waiting, { recursive: true, force: true })
   const pictures = await updatePictures(directory, current.card.urls ?? [], next.card.urls ?? [], options)
   const portrait = newPicture === undefined ? 'none' : oldPicture !== undefined && oldPicture.equals(newPicture) ? 'kept' : await refreshPortrait(directory, newPicture, next.card.name)
+  await recordProvenance(directory, { kind: 'update', card: { name: next.card.name }, language: '' }, await readFile(join(folder, 'card.json'), 'utf8'))
   await writeSnapshot(directory)
   return { forgotten, pictures, aboutTheWorld: worldFieldChanges(current, next).map(change => `${change.field}: ${change.because}`), portrait }
 }

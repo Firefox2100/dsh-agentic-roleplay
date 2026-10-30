@@ -8,6 +8,7 @@ import { readWorldEditor } from '../worlds/world-editor.ts'
 import { readTriggerDocuments } from '../triggers/files.ts'
 import { readWorldInfo } from '../worlds/world-info.ts'
 import { AUTHORED_ENTITY_KINDS, readAuthoredEntityDocument, type AuthoredEntityKind } from './documents.ts'
+import { checkWorld } from '../worlds/world-check.ts'
 
 type AgentExec = { agent?: { session: { id: string } } }
 type Entity = { key: string; name?: string; title?: string }
@@ -101,6 +102,16 @@ export function authoredWorldReadTools(reader: AuthoredWorldReader): ToolDefinit
       isConcurrencySafe: () => true,
       async execute(_args, exec) {
         return json(await readWorldInfo((await reader.read(exec)).record.directory))
+      },
+    }),
+    defineTool({
+      name: 'world_check',
+      description: 'Check the world as starting a story from it would: every file reads and everything that refers to something refers to something that is there. It names the problems of the first part of the world that has any (characters, factions, places, calendar, dice, items, lore, tracked values, triggers, plots), so run it again after fixing them to see whether another part has some. Run it before you say a world is done.',
+      parameters: {},
+      output: jsonOutput,
+      isConcurrencySafe: () => true,
+      async execute(_args, exec) {
+        return json(await checkWorld((await reader.read(exec)).record))
       },
     }),
     listTool(reader, 'list_characters', 'List authored characters with stable keys and concise identifying information.', world => world.characters, entry => ({ key: entry.key, name: entry.name, aliases: entry.aliases, role: entry.role, tier: entry.tier, kind: entry.kind, summary: entry.summary, place: entry.place })),

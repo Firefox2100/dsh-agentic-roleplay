@@ -21,7 +21,7 @@ worlds/<folder>/
   images/
 ```
 
-Only `world.json` is required. `calendar.json` is optional and defines named holidays and the hemisphere used for seasons. `dice.json` is optional and defines the [dice checks](./dice) that settle uncertain attempts.
+Only `world.json` is required. `calendar.json` is optional and defines named holidays and the hemisphere used for seasons. `dice.json` is optional and defines the [dice checks](./dice) that settle uncertain attempts. `commands.json` is optional and defines [slash commands](./plots-automation#slash-commands).
 
 Only implemented files are read; unknown fields are ignored unless a document's validation says otherwise. JSON field names use `snake_case`. Canonical TypeScript models and the session database use their own representations.
 

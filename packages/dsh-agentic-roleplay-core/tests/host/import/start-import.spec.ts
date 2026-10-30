@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readdir, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -8,7 +8,7 @@ import { importPhase } from '../../../src/host/import/run-import.ts'
 import { lorebookImportMessage } from '../../../src/host/authoring/lorebook-author-tools.ts'
 import { narrationImportMessage } from '../../../src/host/authoring/preset-author-tools.ts'
 import { presetMessage } from '../../../src/host/import/preset-tools.ts'
-import { folderNameOf, importMessage, startImport } from '../../../src/host/import/start-import.ts'
+import { folderNameOf, importMessage, resumeImport, startImport } from '../../../src/host/import/start-import.ts'
 import { ImportStore } from '../../../src/host/import/store.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
@@ -100,5 +100,22 @@ describe('starting an import', () => {
     await expect(startImport(deps(worlds, store), made.id, { name: ' ', disabledEntries: [], opening: { kind: 'first' } })).rejects.toThrow(InvalidEditProblems)
     expect(await readdir(join(root.path, 'worlds'))).toEqual([])
     expect(sent).toEqual([])
+  })
+})
+
+describe('carrying on an import that stopped', () => {
+  it('sends the import command to the chat of the world again while an import is waiting in it, and refuses a world with none, a finished one and a missing one', async () => {
+    const worlds = new WorldCatalog(new Context(), root as RoleplayRoot)
+    const store = new ImportStore(() => root.path)
+    const started = await startImport(deps(worlds, store), (await store.create(card())).id, { name: 'Test Harbour', disabledEntries: [], opening: { kind: 'first' } })
+    sent = []
+    const resumed = await resumeImport(deps(worlds, store), started.worldId)
+    expect(resumed).toMatchObject({ worldId: started.worldId, started: true })
+    expect(sent).toHaveLength(1)
+    expect(parseImportCommand(sent[0]![1])).toBeDefined()
+    const record = (await worlds.find(started.worldId))!
+    await writeFile(join(record.directory, '.import', 'state.json'), JSON.stringify({ phase: 'done' }))
+    await expect(resumeImport(deps(worlds, store), started.worldId)).rejects.toBeInstanceOf(InvalidEditProblems)
+    await expect(resumeImport(deps(worlds, store), 'nobody')).rejects.toThrow(/no world/)
   })
 })

@@ -7,6 +7,7 @@ import { parseWorldInfoEdit, type WorldInfo } from '../../shared/world-info.ts'
 import { parsePlotsFile } from '../plots/load.ts'
 import { deleteTriggerDocument, writeTriggerDocument } from '../triggers/files.ts'
 import { loadWorldParts } from '../triggers/parts.ts'
+import { checkWorld } from '../worlds/world-check.ts'
 import { formatIssue } from '../validation.ts'
 import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, readAuthoredEntityDocument, replaceAuthoredEntity, type AuthoredEntityKind } from './documents.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
@@ -32,6 +33,29 @@ function plotDocument(value: unknown) {
   const parsed = parsePlotsFile(JSON.stringify([value]))
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
   return parsed.value[0]!
+}
+
+/** The most problems a write reports back; `world_check` lists the rest. */
+const REPORTED_PROBLEMS = 8
+
+/**
+ * A write is allowed to leave the world unfinished (a character first, its place next), so the check is advice, not a refusal: the assistant sees at once what its edit
+ * left open instead of finding out when a story is started.
+ */
+export function withWorldCheck(reader: AuthoredWorldReader, tool: ToolDefinition): ToolDefinition {
+  const run = tool.execute as (args: unknown, exec: ToolExecution) => Promise<unknown>
+  return {
+    ...tool,
+    async execute(args: never, exec: ToolExecution) {
+      const done = await run(args, exec)
+      if (done === null || typeof done !== 'object') return done as never
+      const { record } = await reader.read(exec)
+      const check = await checkWorld(record)
+      if (check.ok) return { ...done, world_check: 'ok: a story could start from this world' } as never
+      const shown = check.problems.slice(0, REPORTED_PROBLEMS).map(problem => `${problem.where}: ${problem.message}`)
+      return { ...done, world_check: { ok: false, still_open: shown, more: check.problems.length - shown.length + check.more, note: 'Not an error of this edit; fix what the world still needs before the end of the turn (world_check lists all).' } } as never
+    },
+  } as ToolDefinition
 }
 
 export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefinition[] {
@@ -134,7 +158,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
         return result('deleted', 'trigger', args.key, await readWorldEditor({ id: record.summary.id, directory: record.directory }), { recoverable: true, trashPath: kept }) as never
       },
     }),
-  ]
+  ].map(tool => withWorldCheck(reader, tool))
 }
 
 /**

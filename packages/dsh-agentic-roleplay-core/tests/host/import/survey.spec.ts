@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { SourceItem } from '../../../src/host/import/items.ts'
-import { buildRoster, candidatesOf, classifyItems, findEntity, foldContained, isLeftOut, type Classified } from '../../../src/host/import/survey.ts'
+import { buildRoster, candidatesOf, classifyItems, findEntity, foldContained, isGeneratorOnly, isLeftOut, type Classified } from '../../../src/host/import/survey.ts'
 import { mapLimit, norm, slug, uniqueKey } from '../../../src/host/import/run.ts'
 import { readCard } from '../../../src/host/import/card.ts'
 import { v3Card } from '../../support/cards.ts'
@@ -46,14 +46,23 @@ describe('classifying the pieces of a card', () => {
     const ctx = fakeContext(job => (job.prompt.includes('Broken') ? { roles: [], targets: [] } : { roles: ['world'], targets: [{ name: '{{user}}', kind: 'character' }] }))
     const { classified, failures } = await classifyItems(ctx, card, items.slice(1))
     expect(classified['entry:1']).toEqual({ roles: ['world'], targets: [] })
-    expect(classified['entry:2']).toEqual({ roles: ['world'], targets: [] })
-    expect(failures).toHaveLength(2)
-    expect(failures[0]).toMatch(/refused: every name must be a real name/)
+    expect(failures).toHaveLength(1)
+    expect(failures[0]).toMatch(/refused: give one to three different roles/)
+  })
+
+  it('takes a name that holds the player\'s marker as that name with the player\'s word instead of refusing the answer, and shows every piece the outline of the card', async () => {
+    const ctx = fakeContext(() => ({ roles: ['faction'], targets: [{ name: 'Cult of {{user}}', kind: 'faction' }, { name: '{{user}}', kind: 'character' }] }))
+    const { classified, failures } = await classifyItems(ctx, card, items.slice(0, 3))
+    expect(failures).toEqual([])
+    expect(classified['entry:0']!.targets).toEqual([{ name: 'Cult of the player', kind: 'faction' }])
+    expect(ctx.asked[0]!.persona).toContain('All the pieces of this card, in order:')
+    expect(ctx.asked[0]!.persona).toContain(`- ${items[1]!.title || items[1]!.label}`)
+    expect(new Set(ctx.asked.map(asked => asked.persona)).size).toBe(1)
   })
 })
 
 describe('names that are part of longer names', () => {
-  const candidate = (kind: 'character' | 'place', name: string, pieces: string[], player = false) => ({ kind, name, player, pieces, titles: [] })
+  const candidate = (kind: 'character' | 'place', name: string, pieces: string[], player = false) => ({ kind, name, player, pieces, titles: [], primary: true })
 
   it('are folded into the one longer name that holds them, as aliases, with their pieces; a name in two longer ones stays, and so does one of another kind', () => {
     const folded = foldContained([candidate('character', 'Tam', ['a']), candidate('character', 'Old Tam', ['b']), candidate('character', 'Tamsin Vale', ['c']), candidate('character', 'Vale', ['d', 'e'], true), candidate('place', 'Tam', ['f'])])
@@ -78,6 +87,26 @@ describe('the roster', () => {
     expect(found.map(candidate => [candidate.kind, candidate.name, candidate.pieces, candidate.player])).toEqual([
       ['character', 'Old Tam', ['entry:0', 'entry:1'], false], ['place', 'The Lighthouse', ['entry:0', 'entry:2'], false], ['character', 'Visitor', ['entry:3'], true],
     ])
+  })
+
+  it('takes no names from a piece that is only guidance on making people up, and keeps its pieces from being left out', () => {
+    const generator = { roles: ['generator' as const], targets: [{ name: 'The Hitchhiker', kind: 'character' as const }] }
+    expect(isGeneratorOnly(generator)).toBe(true)
+    expect(isGeneratorOnly({ roles: ['generator', 'instruction'], targets: [] })).toBe(true)
+    expect(isGeneratorOnly({ roles: ['faction', 'generator'], targets: [] })).toBe(false)
+    expect(isLeftOut(generator)).toBe(false)
+    expect(candidatesOf([item('entry:0', 'Templates')], { 'entry:0': generator })).toEqual([])
+    expect(candidatesOf([item('entry:0', 'The cult and its templates')], { 'entry:0': { roles: ['faction', 'generator'], targets: [{ name: 'The Cult', kind: 'faction' }] } }).map(candidate => candidate.name)).toEqual(['The Cult'])
+  })
+
+  it('leaves out a name that only turns up once inside a piece about something else, and keeps one that a piece is about, one a place\'s own piece names, the player and one mentioned in two pieces', () => {
+    const classified: Classified = {
+      'entry:0': { roles: ['character'], targets: [{ name: 'Old Tam', kind: 'character' }, { name: 'Passing Pat', kind: 'character' }, { name: 'The Cellar', kind: 'place' }] },
+      'entry:1': { roles: ['place'], targets: [{ name: 'The Lighthouse', kind: 'place' }, { name: 'Keeper Kay', kind: 'character' }] },
+      'entry:2': { roles: ['world'], targets: [{ name: 'The Guild', kind: 'faction' }, { name: 'Keeper Kay', kind: 'character' }] },
+    }
+    const found = candidatesOf(['entry:0', 'entry:1', 'entry:2'].map(id => item(id, id)), classified)
+    expect(found.map(candidate => candidate.name)).toEqual(['Old Tam', 'The Lighthouse', 'Keeper Kay', 'The Guild'])
   })
 
   it('is what the merging call answers, keyed for the files, with aliases that repeat the name left out, and the player marked', async () => {

@@ -3,15 +3,15 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
-import { markReady } from '../../../src/host/import/run-import.ts'
+import { isReviewing, markReady } from '../../../src/host/import/run-import.ts'
 import { contextOf, importHooks, importNotice, importTools } from '../../../src/host/import/tools.ts'
 import { IMPORT_FOLDER } from '../../../src/host/import/store.ts'
 import { shippedText } from '../../../src/host/prompts/library.ts'
 import { importMessage } from '../../../src/host/import/start-import.ts'
 
 let directory: string
-const worlds = { find: (id: string) => Promise.resolve(id === 'w1' ? { summary: { id: 'w1' }, directory } : undefined) } as never
-const settings = () => ({ maxUploadBytes: 1, concurrency: 1, reasoning: '', model: '', maxTokens: 16000, temperature: 0.2, timeoutMinutes: 0, decisions: 'llm' as const, confidence: 0.7 })
+const worlds = { find: (id: string) => Promise.resolve(id === 'w1' ? { summary: { id: 'w1', name: 'W' }, directory } : undefined) } as never
+const settings = () => ({ maxUploadBytes: 1, concurrency: 1, reasoning: '', model: '', maxTokens: 16000, variablesPerRequest: 25, structured: 'tool' as const, temperature: 0.2, timeoutMinutes: 0, decisions: 'llm' as const, confidence: 0.7 })
 const chat = authoringChatSessionId('w1')
 const prompting = { prompts: () => ({ text: (id: string, language: string | undefined, variables?: Record<string, string | number>) => shippedText(id, language ?? 'en', variables) }), languages: () => ({ get: () => 'en' }) } as never
 const textOf = (id: string, variables?: Record<string, string | number>): string => shippedText(id, 'en', { survey: 'import_survey', build: 'import_build', finish: 'import_finish', ...variables })
@@ -52,6 +52,7 @@ describe('the import turn', () => {
     expect(importNotice('ready', textOf)).toMatch(/import_survey, then import_build, then import_finish/)
     expect(importNotice('done', textOf)).toMatch(/already done/)
     expect(importNotice(undefined, textOf)).toMatch(/no card is waiting/)
+    expect(importNotice('repair', textOf)).toMatch(/world_check/)
   })
 
   function hooked() {
@@ -92,6 +93,28 @@ describe('the import turn', () => {
     expect(other.steer).not.toHaveBeenCalled()
     expect((await step(agent('session-abc'), importMessage())).messages).toEqual([])
     expect((await step(agent(chat, 'subagent'), importMessage())).messages).toEqual([])
+  })
+
+  it('sends a turn back to mend a world that would not start, up to five times, tells it what is wrong, and lets it end once the world starts', async () => {
+    const { agent, step, stopping } = hooked()
+    const chatAgent = agent(chat)
+    await writeFile(join(directory, 'world.json'), JSON.stringify({ id: 'w1', name: 'W' }))
+    await mkdir(join(directory, 'characters', 'tam'), { recursive: true })
+    await writeFile(join(directory, 'characters', 'tam', 'character.json'), JSON.stringify({ name: 'Tam', role: 'npc', summary: 'x', start: { location: 'nowhere' } }))
+    await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'repair', reviewing: true }))
+    await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'repair' }))
+    expect((await step(chatAgent, importMessage())).messages[0]!.content[0]!.text).toMatch(/world_check/)
+    expect(await isReviewing(directory)).toBe(true)
+    await stopping(chatAgent)
+    expect(chatAgent.steer).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(chatAgent.steer.mock.calls[0])).toMatch(/nowhere/)
+    for (let round = 0; round < 7; round += 1) await stopping(chatAgent)
+    expect(chatAgent.steer).toHaveBeenCalledTimes(5)
+    const mended = agent(chat)
+    await step(mended, importMessage())
+    await writeFile(join(directory, 'characters', 'tam', 'character.json'), JSON.stringify({ name: 'Tam', role: 'npc', summary: 'x' }))
+    await stopping(mended)
+    expect(mended.steer).not.toHaveBeenCalled()
   })
 
   it('says there is nothing to import when the world holds no card', async () => {

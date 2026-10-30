@@ -849,9 +849,12 @@ describe('making up what the story needs', () => {
     await expect(engine.expand(owner, { need: 'arrival', what: 'Mira' }, signal)).rejects.toThrow(/this world is closed/)
     store.settings = settingsWith({ perTurn: 2 })
     store.story.consolidation.enqueue({ kind: 'location', subjectId: 1, note: 'x', turn: 1 })
+    store.story.consolidation.enqueue({ kind: 'location', subjectId: 1, note: 'x', turn: 1 })
     await engine.expand(owner, { need: 'arrival', what: 'Mira' }, signal)
+    await expect(engine.expand(owner, { need: 'scene_change', what: 'A cellar' }, signal)).rejects.toThrow(/2 new places were already made up this turn, which is the most this chat allows/)
     store.story.consolidation.enqueue({ kind: 'character', subjectId: 1, note: 'x', turn: 1 })
-    await expect(engine.expand(owner, { need: 'arrival', what: 'Tom' }, signal)).rejects.toThrow(/2 new things were already made up this turn, which is the most this chat allows/)
+    store.story.consolidation.enqueue({ kind: 'character', subjectId: 1, note: 'x', turn: 1 })
+    await expect(engine.expand(owner, { need: 'arrival', what: 'Tom' }, signal)).rejects.toThrow(/2 new characters were already made up this turn, which is the most this chat allows.*do not ask again this turn/)
     await expect(engine.expand({ chat: 'session-1', turn: 2 }, { need: 'arrival', what: 'Tom' }, signal)).resolves.toBeDefined()
   })
 

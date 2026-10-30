@@ -17,7 +17,7 @@ interface Rule {
 }
 
 const FRAGMENT = 'a part of another prompt or a notice, not an agent of its own'
-const FRAGMENTS = ['ask-question', 'character-decide', 'character-lookup', 'character-style', 'dice', 'input-refused', 'ooc-command', 'ooc-empty', 'persona', 'plot-hint', 'preview', 'rules', 'style']
+const FRAGMENTS = ['ask-question', 'character-decide', 'character-lookup', 'character-style', 'dice', 'input-refused', 'ooc-command', 'ooc-empty', 'persona', 'plot-hint', 'preview', 'rules', 'standing', 'style']
 const CHRONICLE = 'the instruction of the chronicler, which carries the rule in its own prompt'
 const ANSWERED = 'a question for the decision model, which answers with a probability: nothing is written'
 

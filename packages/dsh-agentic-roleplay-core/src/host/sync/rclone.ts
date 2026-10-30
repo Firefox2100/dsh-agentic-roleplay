@@ -40,9 +40,20 @@ export function spawnRclone(setup: RcloneSetup): Rclone {
   }
 }
 
-/** What rclone said went wrong: its last error line, without the time and the colours, cut short. */
+const CHANGED_IN_TRANSIT = /corrupted on transfer: sizes? differ/
+
+/** The files rclone named as arriving a different size than the server listed, up to a few. */
+function changedFiles(lines: readonly string[]): string[] {
+  const names = lines.flatMap(line => { const found = /^ERROR\s*: (.+?): .*corrupted on transfer/.exec(line); return found === null ? [] : [found[1]!] })
+  return [...new Set(names)].slice(0, 3)
+}
+
+/** What rclone said went wrong: its last error line, without the time and the colours, cut short. A file that arrives a different size than the server listed says what usually causes it. */
 export function why(result: RcloneResult): string {
   const lines = (result.stderr || result.stdout).split('\n').map(line => line.replace(/\u001b\[[0-9;]*m/g, '').replace(/^\d{4}\/\d\d\/\d\d \d\d:\d\d:\d\d /, '').trim()).filter(line => line !== '')
   const line = lines.findLast(entry => /^(ERROR|NOTICE: Failed|CRITICAL)/.test(entry)) ?? lines.at(-1) ?? `rclone stopped with code ${result.code}`
-  return line.length > 300 ? `${line.slice(0, 300)}…` : line
+  const shown = line.length > 300 ? `${line.slice(0, 300)}…` : line
+  if (!CHANGED_IN_TRANSIT.test(line)) return shown
+  const files = changedFiles(lines)
+  return `${shown} — something between this device and the server changes files on the way${files.length === 0 ? '' : ` (${files.join(', ')})`}; a proxy or CDN that adds content to HTML pages is the usual cause: turn off its response rewriting for the server, or reach the server directly`
 }

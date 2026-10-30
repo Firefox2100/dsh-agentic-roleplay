@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { GalleryImage } from '../../../src/shared/gallery.ts'
 import { listGallery, updateImage, galleryFile } from '../../../src/host/images/gallery.ts'
 import { searchImages, tokensOf } from '../../../src/host/images/image-search.ts'
-import { addToLibrary, imageExtensionOf } from '../../../src/host/images/library.ts'
+import { addToLibrary, addToLibraryOnce, imageExtensionOf } from '../../../src/host/images/library.ts'
 import { present, presentedFor } from '../../../src/host/images/presented.ts'
 import { inheritImages } from '../../../src/host/images/storage.ts'
 import { withPngMetadata } from '../../../src/host/images/png-metadata.ts'
@@ -116,5 +116,19 @@ describe('showing an existing image', () => {
     expect(await presentedFor(branch, 'n1')).toHaveLength(1)
     expect(await presentedFor(branch, 'n2')).toEqual([])
     await rm(branch, { recursive: true, force: true })
+  })
+})
+
+describe('a picture the library holds already', () => {
+  it('is not added again, whatever it is called and whatever its metadata says, from any source', async () => {
+    const folder = await mkdtemp(join(tmpdir(), 'library-'))
+    try {
+      const first = await addToLibraryOnce(folder, PNG, 'first.png')
+      expect(first.added).toBe(true)
+      const again = await addToLibraryOnce(folder, withPngMetadata(PNG, { note: 'other metadata' }), 'second.png')
+      expect(again).toEqual({ path: first.path, added: false })
+      expect(await addToLibrary(folder, PNG, 'third.png')).toBe(first.path)
+      expect(await readdir(join(folder, 'images', 'library'))).toHaveLength(1)
+    } finally { await rm(folder, { recursive: true, force: true }) }
   })
 })

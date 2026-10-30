@@ -1,4 +1,4 @@
-import { COMPARISONS, SELF, WEEKDAY_NAMES, type Comparison, type Trigger, type TriggerAnnouncement, type TriggerAudience, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type VariableValue } from 'dsh-roleplay-model'
+import { COMPARISONS, SELF, TRIGGER_KEY, WEEKDAY_NAMES, type Comparison, type Trigger, type TriggerAnnouncement, type TriggerAudience, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type VariableValue } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
 import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
 import { itemKey } from './items.ts'
@@ -144,7 +144,14 @@ function parseEffect(value: unknown, path: string, problems: string[], checkEdit
   if (waiting !== undefined && judgedStatements(waiting).length > 0) problems.push(`${path}.while: a statement a model judges (judged) cannot be waited on when something is told; use what the story records`)
   if (value['type'] === 'beat') {
     if (usesSelf(words, waiting)) problems.push(`${path}: only a cue is said to someone, so only a cue can name ${SELF}`)
-    return template.problems.length > 0 ? undefined : { type: 'beat', text: words, ...(waiting === undefined ? {} : { while: waiting }) }
+    const draw = value['draw']
+    if (draw !== undefined && (!Array.isArray(draw) || draw.length === 0 || draw.length > 40 || draw.some(option => typeof option !== 'string' || option.trim() === '' || option.length > MAX_TEXT))) problems.push(`${path}.draw: one to 40 options, each text of at most ${MAX_TEXT} characters`)
+    else if (draw !== undefined && !words.includes('[draw]')) problems.push(`${path}.text: must say where the drawn option goes, as [draw]`)
+    const dispatch = value['dispatch']
+    if (dispatch !== undefined && dispatch !== 'author') problems.push(`${path}.dispatch: only "author"`)
+    const need = text(value, 'need')
+    if (need !== undefined && dispatch !== 'author') problems.push(`${path}.need: only a beat that has the author make something names a reason`)
+    return template.problems.length > 0 || (draw !== undefined && (!Array.isArray(draw) || !words.includes('[draw]'))) || (dispatch !== undefined && dispatch !== 'author') || (need !== undefined && dispatch !== 'author') ? undefined : { type: 'beat', text: words, ...(waiting === undefined ? {} : { while: waiting }), ...(draw === undefined ? {} : { draw: draw as string[] }), ...(dispatch === 'author' ? { dispatch: 'author' as const } : {}), ...(need === undefined ? {} : { need }) }
   }
   if (value['type'] === 'cue') {
     const audience = value['audience'] !== undefined ? parseAudience(value['audience'], `${path}.audience`, problems) : parseAudience({ characters: value['characters'] }, `${path}.characters`, problems)
@@ -163,11 +170,14 @@ export function parseTriggerDefinition(value: unknown, path: string, checkEdit: 
   if (!isObject(value)) return { problems: [`${path}: a trigger is an object`] }
   const key = text(value, 'key'); const name = text(value, 'name')
   if (key === undefined) problems.push(`${path}.key: required text`)
+  else if (!TRIGGER_KEY.test(key)) problems.push(`${path}.key: lowercase letters, digits, hyphens and underscores, at most 64`)
   if (name === undefined) problems.push(`${path}.name: required text`)
   const condition = parseCondition(value['when'], `${path}.when`, problems, { nodes: 0 })
   const rawEffects = value['effects']
   if (!Array.isArray(rawEffects) || rawEffects.length === 0 || rawEffects.length > MAX_EFFECTS) problems.push(`${path}.effects: a list of one to ${MAX_EFFECTS} effects`)
   const effects = Array.isArray(rawEffects) ? rawEffects.slice(0, MAX_EFFECTS).map((effect, index) => parseEffect(effect, `${path}.effects[${index}]`, problems, checkEdit)) : []
+  const beats = effects.filter((effect): effect is Extract<TriggerEffect, { type: 'beat' }> => effect?.type === 'beat')
+  if (beats.some(beat => beat.dispatch === 'author') && beats.some(beat => beat.dispatch !== 'author')) problems.push(`${path}.effects: when a beat has the world author make something, every beat of the trigger does (its beats go to the author, not to the game master)`)
   const number = (field: string): number | undefined => (typeof value[field] === 'number' ? value[field] : undefined)
   if (value['repeat'] !== undefined && typeof value['repeat'] !== 'boolean') problems.push(`${path}.repeat: yes or no`)
   for (const field of ['cooldown_seconds', 'chance', 'priority']) if (value[field] !== undefined && typeof value[field] !== 'number') problems.push(`${path}.${field}: a number`)

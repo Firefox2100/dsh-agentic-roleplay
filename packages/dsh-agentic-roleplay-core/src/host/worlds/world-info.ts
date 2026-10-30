@@ -1,27 +1,16 @@
-import { randomUUID } from 'node:crypto'
-import { chmod, readFile, rename, rm, stat, writeFile } from 'node:fs/promises'
-import { basename, dirname, join } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import { parseSwitchboard } from '../../shared/settings.ts'
 import { parseSampling } from '../../shared/sampling.ts'
 import { formatIssue } from '../validation.ts'
 import { parseWorldFile, WORLD_FILE_NAME } from './world-file.ts'
+import { atomicWrite } from '../atomic-write.ts'
+import { serialized } from './world-file-io.ts'
 
 type Json = Record<string, unknown>
 
-async function replaceFile(file: string, text: string): Promise<void> {
-  const temporary = join(dirname(file), `.${basename(file)}.${process.pid}.${randomUUID()}.tmp`)
-  try {
-    const { mode } = await stat(file)
-    await writeFile(temporary, text, { mode })
-    await chmod(temporary, mode)
-    await rename(temporary, file)
-  } catch (error) {
-    await rm(temporary, { force: true })
-    throw error
-  }
-}
 
 const textOf = (value: unknown): string => (typeof value === 'string' ? value : '')
 
@@ -65,7 +54,11 @@ function setOrRemove(document: Json, key: string, value: string): void {
  * back as the world will be read before it is written.
  * @throws {InvalidEditProblems} when the world would no longer be valid.
  */
-export async function editWorldInfo(directory: string, edit: WorldInfoEdit): Promise<WorldInfo> {
+export function editWorldInfo(directory: string, edit: WorldInfoEdit): Promise<WorldInfo> {
+  return serialized(directory, () => changeWorldInfo(directory, edit))
+}
+
+async function changeWorldInfo(directory: string, edit: WorldInfoEdit): Promise<WorldInfo> {
   const { text, document } = await readDocument(directory)
   const before = infoOf(document)
   if (edit.opening !== undefined && before.openingParts && edit.opening !== before.opening) throw new InvalidEditProblems(['the opening has lines spoken by characters: change it in the file, or ask the authoring assistant'])
@@ -93,6 +86,6 @@ export async function editWorldInfo(directory: string, edit: WorldInfoEdit): Pro
   const next = JSON.stringify(document, null, /^([ \t]+)"/m.exec(text)?.[1] ?? '  ') + (text.endsWith('\n') ? '\n' : '')
   const parsed = parseWorldFile(next)
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
-  await replaceFile(join(directory, WORLD_FILE_NAME), next)
+  await atomicWrite(join(directory, WORLD_FILE_NAME), next)
   return infoOf(document)
 }

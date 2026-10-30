@@ -14,8 +14,10 @@ import { childSamplingOf } from './host/agents/child.ts'
 import { PromptLibrary } from './host/prompts/library.ts'
 import { AuthoringLanguages } from './host/worlds/authoring-language.ts'
 import { RoleplayImport } from './host/import/service.ts'
+import { knownOutputCeiling } from './host/import/output-ceiling.ts'
 import type { ImportChoices, ImportPreview } from './shared/import-card.ts'
-import { startImport } from './host/import/start-import.ts'
+import { actOnDraft, draftStatus } from './host/import/draft.ts'
+import { resumeImport, startImport } from './host/import/start-import.ts'
 import { findTargets, revertUpdate, startUpdate, updateStatus } from './host/import/update.ts'
 import { startTranslation, worldLanguage } from './host/translate/service.ts'
 import { ImportStore } from './host/import/store.ts'
@@ -112,7 +114,7 @@ export function apply(ctx: Context, config: Config) {
       const helper = childSamplingOf(id)
       if (helper !== undefined) return helper
       // an authoring assistant that thinks without end would otherwise write until the model's own limit, minutes of it
-      if (authoredWorldOf(id) !== undefined || presetOfChat(id) !== undefined || lorebookOfChat(id) !== undefined) return { maxTokens: config.importMaxTokens.get(), priority: 'foreground' as const }
+      if (authoredWorldOf(id) !== undefined || presetOfChat(id) !== undefined || lorebookOfChat(id) !== undefined) return { maxTokens: knownOutputCeiling(config.importMaxTokens.get()), priority: 'foreground' as const }
       const session = roleplaySessionOf(id)
       // The game master's own requests: the chat is its session.
       if (session === undefined) return undefined
@@ -141,7 +143,7 @@ export function apply(ctx: Context, config: Config) {
   const imports = new ImportStore(() => root.path)
   const roleplayImport = new RoleplayImport(ctx, () => ({
     get maxUploadBytes() { return config.importMaxUploadBytes.get() }, concurrency: config.importConcurrency.get(), reasoning: config.importReasoning.get() || config.childReasoning.get(), model: config.importModel.get(),
-    maxTokens: config.importMaxTokens.get(), temperature: config.importTemperature.get(), timeoutMinutes: config.importTimeoutMinutes.get(),
+    maxTokens: config.importMaxTokens.get(), variablesPerRequest: config.importVariablesPerRequest.get(), structured: config.importStructuredOutput.get(), temperature: config.importTemperature.get(), timeoutMinutes: config.importTimeoutMinutes.get(),
     decisions: config.importDecisions.get() === 'decision' ? 'decision' : 'llm', confidence: config.importConfidence.get(),
     approval: config.authoringApproval.get() === 'auto' ? 'auto' : 'ask',
   }))
@@ -217,6 +219,9 @@ export function apply(ctx: Context, config: Config) {
       discard: id => imports.discard(id),
       start: begin,
       picture: id => imports.picture(id),
+      resume: (worldId, language) => resumeImport({ worlds, authoring }, worldId, language),
+      draftStatus: worldId => draftStatus(worlds, worldId),
+      actOnDraft: (worldId, action, language) => actOnDraft({ worlds, authoring, root: () => root.path }, worldId, action, language),
       updateStatus: async worldId => await updateStatus((await editableWorld(worlds, worldId, root.path)).directory),
       revertUpdate: async worldId => {
         const directory = (await editableWorld(worlds, worldId, root.path)).directory

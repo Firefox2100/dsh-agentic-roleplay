@@ -24,7 +24,9 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `importReasoning` | empty | Reasoning level for import and authoring helpers and authoring chats; empty uses `childReasoning`, then the chat setting |
 | `childReasoning` | empty | Fallback reasoning level for roleplay helpers; empty follows the game master |
 | `importModel` | empty | Model for import and authoring helpers as `provider/model`; empty uses the chat model |
-| `importMaxTokens` | 16000 | Ceiling on output tokens for one import or authoring-helper request; each job may use a smaller limit |
+| `importStructuredOutput` | `tool` | `schema` asks import and authoring helpers with no tools of their own for their result as a JSON reply the endpoint constrains to the result's shape (`response_format`), instead of a `submit_result` call; needs an OpenAI-compatible endpoint that takes a JSON schema (LocalAI, vLLM, OpenAI) |
+| `importMaxTokens` | 0 | Ceiling on output tokens for one import or authoring-helper request; 0 is a tenth of the model's context window (at least 16000); each job may use a smaller limit |
+| `importVariablesPerRequest` | 25 | How many tracked values one import request is asked to declare; a card that tracks more is asked again for the rest |
 | `importTemperature` | 0.2 | Import and authoring-helper temperature |
 | `importTimeoutMinutes` | 15 | Minutes before an import or authoring helper is stopped without a result; 0 disables the timeout |
 | `importDecisions` | `llm` | `decision` lets the configured decision service preclassify card pieces it can settle confidently; `llm` sends every piece to the language model |

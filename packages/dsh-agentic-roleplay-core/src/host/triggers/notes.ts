@@ -6,6 +6,15 @@ import type { TriggerReport, TurnStore } from '../orchestration/boundaries.ts'
 
 type TriggerSession = Pick<Session, 'metadata' | 'triggers' | 'characters' | 'locations' | 'placements' | 'runTriggers' | 'lapseNotes' | 'deliverNotes' | 'transaction'>
 
+/** The beat effect of a note's trigger that has the world author make something instead of telling the game master. */
+function authorEffect(session: TriggerSession, note: { triggerId: number; kind: string }): { need: string } | undefined {
+  if (note.kind !== 'beat') return undefined
+  for (const effect of session.triggers.list().find(trigger => trigger.id === note.triggerId)?.effects ?? []) {
+    if (effect.type === 'beat' && effect.dispatch === 'author') return { need: effect.need ?? 'arrival' }
+  }
+  return undefined
+}
+
 /** Fires the triggers whose conditions just came true, and says what each did in words. A trigger that could not be applied is reported and given up. */
 export function fireTriggers(session: TriggerSession, input: { settings: ChatSettings; turn: number; round: number; now: number; zone: string; problem: (message: string) => void }): TriggerReport {
   const { settings, turn, round, now, zone, problem } = input
@@ -14,7 +23,7 @@ export function fireTriggers(session: TriggerSession, input: { settings: ChatSet
   const run = session.runTriggers({ turn, round, now, zone, maxFires: settings.triggers.maxFires, judged: verdictReader(session) })
   for (const failure of run.failed) problem(`the trigger "${failure.trigger.key}" could not fire and is given up: ${failure.problem}`)
   const names = new Map(session.characters.list().map(character => [character.id, character.name]))
-  const fresh = session.triggers.notes({ status: 'pending' }).filter(note => note.id > before)
+  const fresh = session.triggers.notes({ status: 'pending' }).filter(note => note.id > before && authorEffect(session, note) === undefined)
   const told = new Map(deliverNow(session, fresh, { now, zone }).map(entry => [entry.id, entry.text]))
   return {
     fired: run.fired.map(fired => ({
@@ -43,7 +52,7 @@ function whoKnows(session: TriggerSession, announcement: Announcement): string {
 const MAX_UPCOMING_FOR_CHARACTER = 3
 
 /** The beats still to weave in, the cues of a character, and what is done with them. Each is written from the story as it stands when it is told, and one that no longer applies is withdrawn. */
-export function noteStore(session: TriggerSession, settings: () => ChatSettings, clock: (turn: number) => { now: number; zone: string }): Pick<TurnStore, 'pendingBeats' | 'resolveBeats' | 'cuesFor' | 'doneCues' | 'lapseNotes' | 'upcoming' | 'upcomingFor'> {
+export function noteStore(session: TriggerSession, settings: () => ChatSettings, clock: (turn: number) => { now: number; zone: string }): Pick<TurnStore, 'pendingBeats' | 'claimAuthorBeats' | 'resolveBeats' | 'cuesFor' | 'doneCues' | 'lapseNotes' | 'upcoming' | 'upcomingFor'> {
   return {
     upcoming: (turn) => {
       const now = clock(turn)
@@ -53,7 +62,17 @@ export function noteStore(session: TriggerSession, settings: () => ChatSettings,
       const now = clock(turn)
       return announcements(session, now).filter(entry => inAudience(session, entry.audience, characterId)).slice(0, MAX_UPCOMING_FOR_CHARACTER).map((entry) => { const when = whenText(entry.at, now); return { text: entry.text, ...(when === undefined ? {} : { when }) } })
     },
-    pendingBeats: () => deliverNow(session, session.triggers.notes({ status: 'pending', kind: 'beat' }), clock(session.metadata.get().turns + 1)),
+    pendingBeats: () => deliverNow(session, session.triggers.notes({ status: 'pending', kind: 'beat' }).filter(note => authorEffect(session, note) === undefined), clock(session.metadata.get().turns + 1)),
+    claimAuthorBeats: () => {
+      const claimed: { id: number; need: string; text: string }[] = []
+      for (const note of session.triggers.notes({ status: 'pending', kind: 'beat' })) {
+        const effect = authorEffect(session, note)
+        if (effect === undefined) continue
+        session.triggers.resolveNote(note.id, 'done')
+        claimed.push({ id: note.id, need: effect.need, text: note.text })
+      }
+      return claimed
+    },
     resolveBeats: (ids) => {
       const pending = new Set(session.triggers.notes({ status: 'pending', kind: 'beat' }).map(note => note.id))
       const unknown = ids.filter(id => !pending.has(id))

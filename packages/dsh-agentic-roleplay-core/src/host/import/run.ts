@@ -22,11 +22,15 @@ export type TextOf = (id: string, variables?: Record<string, string | number>) =
 export interface ImportContext {
   run: RunJob
   concurrency: number
+  /** How many tracked values one request is asked to declare. */
+  variablesPerRequest?: number
   /** An instruction text of the import, in the language of the person who started it. */
   text: TextOf
   /** The language of the person who started it, as the text of the prompts is chosen; the labels of what each job is shown are in it too. */
   language?: string
   say: (message: string) => void
+  /** Whether the run was stopped (the chat was cancelled or the server went down): what the jobs left behind is then not a result. */
+  cancelled?: () => boolean
   /** Asks the decision model, when the person chose to use one for imports, a yes-or-no question for each key about one piece; the answers are probabilities of yes. */
   decide?: (state: Record<string, unknown>, asks: readonly { key: string; instructions: string }[]) => Promise<Map<string, number>>
   /** How sure the decision model must be for its answer to be taken (0 to 1). */

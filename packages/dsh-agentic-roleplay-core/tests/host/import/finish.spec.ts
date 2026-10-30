@@ -99,6 +99,14 @@ describe('finishing an import', () => {
     expect(readPngMetadata(portrait)).toMatchObject({ purpose: 'reference', origin: 'uploaded', subjects: [{ kind: 'character', localId: 'tam', name: 'Old Tam' }] })
   })
 
+  it('writes the commands and the casting triggers, with the player marker replaced', async () => {
+    const withCasting = { ...extracted(), commands: [{ word: 'recruit', key: 'recruit', description: 'Bring someone into the cult of [PLAYER].' }], triggers: [{ key: 'follower', name: 'Follower', when: { type: 'variable', variable: 'command_recruit', op: 'eq', value: true }, repeat: true, effects: [{ type: 'beat', dispatch: 'author', need: 'a follower of [PLAYER]', text: 'A newcomer joins.' }] }] }
+    const result = await finishImport(fakeContext(() => ({ description: 'x', tags: [] })), input({ extracted: withCasting }))
+    expect(result).toMatchObject({ ok: true })
+    expect(await read('commands.json')).toEqual({ commands: [{ word: 'recruit', key: 'recruit', description: 'Bring someone into the cult of the player.' }] })
+    expect(JSON.stringify(await read('triggers.json'))).not.toContain('[PLAYER]')
+  })
+
   it('takes the description from the card when the call fails, and says so; no opening is written when none was chosen', async () => {
     const ctx = fakeContext(() => { throw new Error('no answer') })
     const result = await finishImport(ctx, input({ choices: { ...defaultChoices(card), opening: { kind: 'none' } } }))
@@ -108,15 +116,24 @@ describe('finishing an import', () => {
     expect(await read('world.json')).not.toHaveProperty('opening_message')
   })
 
-  it('writes nothing, and says what is wrong, when the world would not start with it', async () => {
-    const broken = extracted()
-    broken.characters[0]!.start = { location: 'nowhere' }
-    const result = await finishImport(fakeContext(() => ({ description: 'x', tags: [] })), input({ extracted: broken }))
-    expect(result.ok).toBe(false)
-    expect(!result.ok && result.problems.join('\n')).toMatch(/nowhere/)
-    expect((await readdir(directory)).sort()).toEqual(['.import', 'world.json'])
-    expect(await read('world.json')).toMatchObject({ description: '' })
-    expect(await readdir(join(directory, '.import'))).toEqual([])
+  it('writes the world as a draft when it would not start, and says what is wrong; the dangling members, ways and relationships are mended first', async () => {
+    const mixed = extracted() as ReturnType<typeof extracted> & { factions: Record<string, unknown>[] }
+    mixed.characters.push({ id: 'bad', name: 'Bad Tier', role: 'npc', kind: 'person', tier: 'bogus', summary: 'x' } as never)
+    mixed.locations.push({ id: 'cellar', name: 'The Cellar', description: 'Damp.', parent: 'nowhere-at-all', exits: [{ to: 'nowhere-either' }] } as never)
+    mixed.factions = [{ id: 'guild', name: 'Net Guild', summary: 'Fishers.', members: [{ character: 'tam' }, { character: 'ghost' }] }]
+    const result = await finishImport(fakeContext(() => ({ description: 'x', tags: [] })), input({ extracted: mixed }))
+    expect(result.ok).toBe(true)
+    expect(result.ok && result.draft?.ok).toBe(false)
+    expect(result.ok && result.draft?.problems.map(problem => problem.message).join('\n')).toMatch(/tier/)
+    expect(result.ok && result.report.notes).toEqual(expect.arrayContaining([expect.stringContaining('written as a draft'), 'The Cellar: its parent place is left out because the world has no such place', 'The Cellar: 1 way(s) left out because they lead to a place the world does not have', 'Net Guild: 1 member(s) left out because the world has no such character']))
+    expect((await readdir(join(directory, 'characters'))).sort()).toEqual(['bad', 'tam'])
+    expect(await read('factions/guild/faction.json')).toMatchObject({ members: [{ character: 'tam' }] })
+    expect(await readdir(join(directory, '.import'))).toEqual(['report.json'])
+  })
+
+  it('writes a world that would start as a world, with no draft', async () => {
+    const result = await finishImport(fakeContext(() => ({ description: 'x', tags: [] })), input())
+    expect(result.ok && result.draft).toBeUndefined()
   })
 
   it('refuses a world that already has something in it', async () => {

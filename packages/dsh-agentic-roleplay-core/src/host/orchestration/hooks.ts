@@ -10,6 +10,7 @@ import { parseOoc } from '../../shared/ooc.ts'
 import { parseRoll } from '../../shared/roll.ts'
 import { rollPlain } from '@dsh-agentic-roleplay/state'
 import type { Timelines } from '../timeline/service.ts'
+import { guardRepeatedCalls } from '../agents/repeat-guard.ts'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { toolEnabled } from '../../shared/tools.ts'
 import { externalWithheld } from '../tools/external.ts'
@@ -104,6 +105,9 @@ export function externalToolLimit(agent: Agent, withheld: readonly string[]): vo
  * that uses the preset and also hear the agents that chat spawns, so each one
  * first checks that it is looking at the game master of a roleplay chat.
  */
+/** Identical calls the game master may make in one turn: a refused resolution is mended and sent again, so a few repeats are work, many are a loop. */
+const MASTER_SAME_CALL = 4
+
 export function installHooks(ctx: Context, deps: HookDeps): void {
   const { engine, boundaries, stores, timelines, previewTool } = deps
 
@@ -115,6 +119,12 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     showOptionalTools(agent, tool => toolEnabled(tools, 'gameMaster', tool))
     externalToolLimit(agent, externalWithheld(agent.ctx.tools, tools, 'gameMaster'))
   }
+
+  // A game master that sends the same refused call over and over is told to move on, as an authoring assistant is.
+  guardRepeatedCalls(ctx, exec => {
+    const owner = exec.agent === undefined ? undefined : ownerOf(exec.agent, 0)
+    return owner === undefined ? undefined : stores(owner.chat)?.settings().prompts.language
+  }, MASTER_SAME_CALL)
 
   // Before its first request: a tool it was not given is never seen, not even on the first step.
   ctx.on('agent/created', ({ agent }) => {
@@ -180,6 +190,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
 
     const cast = store.cast()
     const ooc = parseOoc(text)
+    const command = ooc === undefined ? /^\/([\p{L}\p{N}_]+)/u.exec(text.trim())?.[1] : undefined
+    const used = store.raiseCommand?.(command, payload.turn)
     const verdict = ooc === undefined ? boundaries().inputValidator.validate({ text, turn: payload.turn, cast }) : { ok: true as const }
     if (ooc !== undefined && ooc.request !== '') engine.beginOoc(owner, ooc.request, ooc.question)
     else if (ooc === undefined) { engine.expectJudgement(owner); engine.noteInput(owner, text) }
@@ -194,6 +206,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const tracked = store.tracked()
     const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, language: store.settings().prompts.language, ...(queryVector === undefined ? {} : { queryVector }) })]
     const pacing = ooc === undefined ? pacingAdvice(store, payload.turn) : undefined
+    if (used !== undefined) lines.push(tr('The player used the world\'s command /{word}: {description}', { word: used.word, description: used.description }))
     if (pacing !== undefined) lines.push(describePacingAdvice(pacing))
     else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) lines.push(store.text('roleplay/plot-hint'))
     const rules = store.rules()

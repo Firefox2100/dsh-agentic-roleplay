@@ -55,3 +55,7 @@ If the remote cannot be reached, nothing is deleted.
 - A story started before the opening was kept has no opening to rebuild its chat from: its chat is made again from its turns, under the opening "The story begins."
 - World authoring, preset, lorebook and session doctor chats are not synced; they belong to the device.
 - rclone keeps records per pair of paths in `.sync` inside the data folder, which is never synced. A very long data folder path or remote path is refused with a message.
+
+## Troubleshooting
+
+**"corrupted on transfer: sizes differ"** means a file arrived with a different size than the server listed. Our files do not change on the way, so something between the device and the server rewrote the file. The usual cause is a proxy or CDN that adds a script to HTML pages (a bot-detection or analytics snippet), which hits the interface packs (`ui`) and anything else that contains HTML while text and image files sync fine. The error names the files. To confirm, run `rclone cat <remote>:<path to the file>` and look for content you did not write at the end. Then switch off response rewriting for the server (on Cloudflare: JavaScript Detections or Bot Fight Mode, or turn off the proxy for that hostname; on a reverse proxy: response body buffering and filters), reach the server directly, or wrap the remote in rclone `crypt` so the proxy sees only opaque names and bytes. The files on the server are intact; try the sync again once the proxy leaves them alone.

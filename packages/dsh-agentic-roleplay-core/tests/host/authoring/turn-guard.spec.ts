@@ -7,13 +7,15 @@ const finish = (kind: string) => ({ chunk: { type: 'finish', reason: { kind } } 
 /** An agent whose replies ended as `kinds` say, the last one last. */
 function agentOf(kinds: string[], origin = 'root', efforts: string[] = ['off', 'high']) {
   const steered: string[] = []
+  const cancelled: unknown[] = []
   const events = kinds.map(kind => ({ type: 'assistant/message', data: { stream: [{ chunk: { type: 'text' } }, finish(kind)] } }))
   const agent = {
     session: { id: 'chat', header: { origin }, snapshotEvents: () => events },
     steer: (message: { content: { text: string }[] }) => { steered.push(message.content[0]!.text) },
+    cancel: (reason: unknown) => { cancelled.push(reason) },
     ctx: { llm: { resolveModelInfo: () => Promise.resolve({ reasoning: { efforts: efforts.map(id => ({ id })) } }) } },
   }
-  return { steered, events, agent: agent as never }
+  return { steered, cancelled, events, agent: agent as never }
 }
 
 function installed(language: string | null = 'zh', level = '') {
@@ -21,6 +23,8 @@ function installed(language: string | null = 'zh', level = '') {
   const ctx = { on: (name: string, handler: (payload: never, next?: () => Promise<unknown>) => unknown) => { handlers[name] = handler } } as never
   guardAuthoringTurns(ctx, () => ({ text: (id: string, lang: string) => `${id}:${lang}` }) as never, () => language ?? undefined, () => level)
   return {
+    call: async (agent: never, name: string, args: object) => await handlers['tools/pre-execute']!({ agent, name, arguments: args } as never, () => Promise.resolve({ kind: 'allow' })) as { kind: string; reason?: string },
+    step: async (agent: never, step: number) => await handlers['agent/pre-step']!({ agent, step } as never, () => Promise.resolve({ kind: 'enter' })),
     stop: (agent: never, turn = 1) => { handlers['agent/turn-stopping']!({ agent, turn } as never) },
     request: async (agent: never, config: object) => await handlers['agent/request']!({ agent, signal: new AbortController().signal } as never, () => Promise.resolve(config)) as { reasoningEffort?: string },
   }
@@ -75,5 +79,39 @@ describe('the thinking level of an authoring assistant', () => {
     expect(await installed('en', 'off').request(agentOf([], 'root', ['high']).agent, config)).toBe(config)
     expect(await installed('en', 'off').request(agentOf([], 'subagent').agent, config)).toBe(config)
     expect(await installed(null, 'off').request(agentOf([]).agent, config)).toBe(config)
+  })
+})
+
+describe('a call made again and again', () => {
+  it('is let through three times in a turn and refused after that, with the language of the chat; a different call or a new turn starts again', async () => {
+    const { call, step } = installed('zh')
+    const { agent } = agentOf([])
+    const same = { change: { create: true, label: 'x' } }
+    for (let n = 0; n < 3; n += 1) expect((await call(agent, 'edit_world_relationship', same)).kind).toBe('allow')
+    const refused = await call(agent, 'edit_world_relationship', same)
+    expect(refused.kind).toBe('deny')
+    expect(refused.reason).toContain('3')
+    expect((await call(agent, 'edit_world_relationship', { change: { create: true, label: 'y' } })).kind).toBe('allow')
+    await step(agent, 2)
+    expect((await call(agent, 'edit_world_relationship', same)).kind).toBe('deny')
+    await step(agent, 1)
+    expect((await call(agent, 'edit_world_relationship', same)).kind).toBe('allow')
+  })
+
+  it('ends the turn when the assistant goes on after being refused five times', async () => {
+    const { agent, cancelled } = agentOf([])
+    const { call } = installed('en')
+    for (let n = 1; n <= 3 + 5; n += 1) await call(agent, 'create_world_element', { key: 'rv' })
+    expect(cancelled).toEqual([])
+    const refused = await call(agent, 'create_world_element', { key: 'rv' })
+    expect(refused.kind).toBe('deny')
+    expect(cancelled).toEqual([{ kind: 'user' }])
+  })
+
+  it('is left alone in a chat that is not an authoring chat, and in a helper', async () => {
+    const none = installed(null)
+    for (let n = 0; n < 6; n += 1) expect((await none.call(agentOf([]).agent, 'x', {})).kind).toBe('allow')
+    const helper = installed('zh')
+    for (let n = 0; n < 6; n += 1) expect((await helper.call(agentOf([], 'subagent').agent, 'x', {})).kind).toBe('allow')
   })
 })

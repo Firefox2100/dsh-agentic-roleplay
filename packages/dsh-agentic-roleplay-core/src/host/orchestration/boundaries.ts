@@ -8,6 +8,7 @@ import type { ChatSettings } from '../../shared/settings.ts'
 import type { DecisionSite, SiteReport } from '../../shared/decisions.ts'
 import type { AgendaView, RoutineMove, SceneAgenda } from '../clock/agenda.ts'
 import type { OffSceneItem } from '../clock/offscene.ts'
+import type { StoryCommand } from '../../shared/commands.ts'
 import type { SkipRequest, StoryTime } from '../clock/story-clock.ts'
 import type { CharacterAction, CharacterReport, MoveRequest, NarrationSegment, Outcome, TurnOutput, Utterance } from './protocol.ts'
 
@@ -539,6 +540,8 @@ export interface TurnStore {
   upcomingFor(characterId: Character['id'], turn: number): { text: string; when?: string }[]
   /** What the game master was told to weave in and has not yet. */
   pendingBeats(): { id: number; text: string }[]
+  /** The pending beats that have the world author make something (their trigger says so) and are never told to the game master: each is taken, so that it is made once. */
+  claimAuthorBeats?(): { id: number; need: string; text: string }[]
   /** The game master wove these in. @throws {Error} for an id that is not a pending beat. */
   resolveBeats(ids: readonly number[]): void
   /** What a character is to notice the next time it acts. */
@@ -554,6 +557,8 @@ export interface TurnStore {
   recordActivity(entry: ActivityEntry, detail?: RunDetail): void
   /** Keeps how one run of a site that can be judged by a decision model went, for the settings tab. */
   recordDecisions?(site: DecisionSite, report: SiteReport): void
+  /** A turn begins, the player having typed the command `word` (or none): lowers the flags of the world's commands and raises that command's, so that its triggers can act. Returns the command when the world defines it. */
+  raiseCommand?(word: string | undefined, turn: number): StoryCommand | undefined
   /** Adds the tokens the game master's own requests used to a turn's record. */
   recordUsage?(turn: number, tokens: TokenCount): void
   /** The notes of the session as they stand. */

@@ -7,6 +7,12 @@ import { loadTriggers, parseTriggersFile } from '../../../src/host/triggers/load
 const storm = { key: 'storm', name: 'The storm', when: { type: 'time', from: '1912-10-05T21:00' }, effects: [{ type: 'beat', text: 'Thunder rolls over the ridge.' }] }
 
 describe('triggers.json', () => {
+  it('refuses a key that is not lowercase ASCII when the file is read, not only when a story starts', () => {
+    const parsed = parseTriggersFile(JSON.stringify([{ ...storm, key: '旅途偶遇' }, { ...storm, key: 'Storm' }]))
+    expect(parsed.ok).toBe(false)
+    if (!parsed.ok) expect(parsed.issues.map(issue => issue.message).join()).toMatch(/lowercase letters, digits, hyphens and underscores/)
+  })
+
   it('is a list of what the world does when something comes true, with defaults for what is left out', () => {
     const parsed = parseTriggersFile(JSON.stringify([storm, { ...storm, key: 'bell', when: { type: 'event', tag: 'theft' }, repeat: true, cooldown_seconds: 60, chance: 0.5, priority: 2 }]))
     expect(parsed).toMatchObject({ ok: true, value: [{ key: 'storm', repeat: false, priority: 0 }, { key: 'bell', repeat: true, cooldownSeconds: 60, chance: 0.5, priority: 2 }] })

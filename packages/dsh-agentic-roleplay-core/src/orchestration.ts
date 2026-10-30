@@ -28,7 +28,8 @@ import { storesOf } from './host/orchestration/store.ts'
 import { toolEnabled } from './shared/tools.ts'
 import { describeChecks } from './host/dice/describe.ts'
 import { createDiceTools, sessionFolder, type DiceLink } from '@dsh-agentic-roleplay/state'
-import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
+import { FALLBACK_LANGUAGE, shippedText } from './host/prompts/library.ts'
+import { STANDING_PROMPT } from './host/import/extract.ts'
 import { currentTurn } from './host/orchestration/current-turn.ts'
 import { createTools, PREVIEW_TOOL, type ToolDeps } from './host/orchestration/tools.ts'
 import { createCheckNarrateTool } from './host/orchestration/check-tool.ts'
@@ -108,6 +109,12 @@ export function apply(ctx: Context): void {
     const checks = on.includes('roll_check') ? describeChecks(store.story.dice.checks(), translator(languageOf(language))) : ''
     return ctx.roleplayPrompts.text('roleplay/dice', language, { tools: on.join(', '), checks }, chat.session)
   }
+  /** What the world carries as standing rules (the card's always-on rules), with a line that says what they are; nothing for a world that has none. */
+  const standingSection = (text: string, language: string): string => {
+    if (text.trim() === shippedText(STANDING_PROMPT, language).trim()) return ''
+    const tr = translator(languageOf(language))
+    return `${tr('The standing rules of this world. Apply them on every turn:')}\n\n${text}`
+  }
   for (const [name, order, id] of [
     [PERSONA_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'roleplay/persona'],
     [PROTOCOL_SECTION, ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'roleplay/game-master'],
@@ -121,7 +128,7 @@ export function apply(ctx: Context): void {
         const language = chat?.settings.prompts.language ?? FALLBACK_LANGUAGE
         // A chat that shows no preview is not told about one.
         const part = (name: string): string => ctx.roleplayPrompts.text(name, language, {}, chat?.session)
-        const variables = id === 'roleplay/game-master' ? { preview: chat?.settings.preview.enabled === false ? '' : part('roleplay/preview'), dice: diceSection(context, chat, language) } : id === 'roleplay/persona' ? { style: part('roleplay/style') } : {}
+        const variables = id === 'roleplay/game-master' ? { preview: chat?.settings.preview.enabled === false ? '' : part('roleplay/preview'), dice: diceSection(context, chat, language), standing: standingSection(part(STANDING_PROMPT), language) } : id === 'roleplay/persona' ? { style: part('roleplay/style') } : {}
         return ctx.roleplayPrompts.text(id, language, variables, chat?.session)
       },
     })

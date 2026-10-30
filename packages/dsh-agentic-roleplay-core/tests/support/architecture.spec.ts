@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { areaOf, importsOf } from './imports.ts'
@@ -41,5 +43,26 @@ describe('how the bundle is layered', () => {
   it('uses DSH and the other packages only by what they export at the root', () => {
     const deep = edges.filter(edge => !edge.relative && /^@[^/]+\/[^/]+\/./.test(edge.specifier) && !/^@deepseek-ai\/dsh-client-[a-z-]+\/client$/.test(edge.specifier))
     expect(offenders(deep)).toEqual([])
+  })
+})
+
+describe('how files are replaced', () => {
+  const sources = (directory: string): string[] => readdirSync(directory).flatMap(name => (statSync(join(directory, name)).isDirectory() ? sources(join(directory, name)) : name.endsWith('.ts') ? [join(directory, name)] : []))
+
+  // files that still keep a hand-written temporary-file-and-rename (or rename a whole folder, as the trash moves in `authoring/documents.ts` do); the list only shrinks: a new writer uses `atomicWrite` (host/atomic-write.ts)
+  const STILL_HAND_WRITTEN = new Set([
+    'host/agent/agent-sessions.ts', 'host/authoring/documents.ts', 'host/catalogue/install.ts',
+    'host/images/gallery.ts', 'host/images/image-files.ts', 'host/images/image-vectors.ts', 'host/images/library.ts', 'host/images/presented.ts', 'host/images/storage.ts',
+    'host/import/store.ts', 'host/sync/service.ts', 'host/sync/state.ts',
+  ])
+
+  it('goes through atomicWrite in every file that is not on the list of those not moved yet', () => {
+    const found = sources(src).map(file => relative(src, file)).filter((file) => {
+      if (file === 'host/atomic-write.ts') return false
+      const text = readFileSync(join(src, file), 'utf8')
+      return /\brename(Sync)?\(/.test(text) && /randomUUID|process\.pid/.test(text)
+    })
+    expect(found.filter(file => !STILL_HAND_WRITTEN.has(file))).toEqual([])
+    expect([...STILL_HAND_WRITTEN].filter(file => !found.includes(file))).toEqual([])
   })
 })

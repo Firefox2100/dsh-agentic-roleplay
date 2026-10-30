@@ -33,3 +33,18 @@ export async function updateStatus(worldId: string): Promise<UpdateStatus> {
 export async function revertUpdate(worldId: string): Promise<{ keptIn: string }> {
   return await answer(await fetch(`${API_PREFIX}/worlds/import/update?id=${encodeURIComponent(worldId)}`, { method: 'DELETE', credentials: 'same-origin' }))
 }
+
+export interface DraftStatus {
+  draft: boolean
+  check?: { ok: boolean; problems: { where: string; message: string }[]; more: number }
+}
+
+/** Whether a world is a draft (an import written but not yet able to start), and what is wrong with it. */
+export async function draftStatus(worldId: string, signal?: AbortSignal): Promise<DraftStatus> {
+  return await answer(await fetch(`${API_PREFIX}/worlds/import/draft?id=${encodeURIComponent(worldId)}`, { credentials: 'same-origin', ...(signal === undefined ? {} : { signal }) }))
+}
+
+/** What the person decides about a draft: have the assistant try again, keep it as it is, or discard it. */
+export async function decideDraft(worldId: string, action: 'ask' | 'keep' | 'discard', language: string): Promise<{ action: string; started?: { chatSessionId: string; started: boolean; failure?: string } }> {
+  return await answer(await fetch(`${API_PREFIX}/worlds/import/draft?id=${encodeURIComponent(worldId)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ action, language }) }))
+}

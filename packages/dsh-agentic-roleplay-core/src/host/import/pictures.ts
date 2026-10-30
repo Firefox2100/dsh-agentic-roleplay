@@ -3,7 +3,7 @@ import { request as httpRequest, type IncomingMessage } from 'node:http'
 import { request as httpsRequest } from 'node:https'
 import { BlockList, isIP, type LookupFunction } from 'node:net'
 import { MEDIA_TYPES } from '../images/image-files.ts'
-import { addToLibrary, imageExtensionOf, libraryHashes, pictureHash } from '../images/library.ts'
+import { addToLibraryOnce, imageExtensionOf, libraryHashes } from '../images/library.ts'
 import { mapLimit } from './run.ts'
 
 /** The address is not one a picture may be fetched from: it names this machine or a private network. */
@@ -183,11 +183,8 @@ export async function fetchPictures(world: string, urls: readonly string[], deps
       if (reply.status < 200 || reply.status >= 300) { skipped.push({ url: address, reason: `answered ${reply.status}` }); return }
       if (imageExtensionOf(reply.body) === undefined) { skipped.push({ url: address, reason: 'not an image' }); return }
       if (reply.body.length < MIN_BYTES) { skipped.push({ url: address, reason: 'too small' }); return }
-      const hash = pictureHash(reply.body)
-      const copyOf = hashes.get(hash)
-      if (copyOf !== undefined) { skipped.push({ url: address, reason: 'a copy of another picture', of: copyOf }); return }
-      const path = await addToLibrary(world, reply.body, fileNameOf(url))
-      hashes.set(hash, path)
+      const { path, added: isNew } = await addToLibraryOnce(world, reply.body, fileNameOf(url), hashes)
+      if (!isNew) { skipped.push({ url: address, reason: 'a copy of another picture', of: path }); return }
       added.push({ url: address, path })
     } catch (error) {
       skipped.push({ url: address, reason: error instanceof Error ? error.message : String(error) })

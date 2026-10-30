@@ -66,8 +66,6 @@ export interface StoredVariable {
 }
 
 export const VARIABLE_KEY = /^[a-z][a-z0-9_]{0,39}$/
-/** At most this many variables in a story, so that what is tracked stays something a model can hold. */
-export const MAX_VARIABLES = 60
 
 /** The feelings every character has: built in, from -1 to 1, with a temperament beside the current value. */
 export const EMOTION_VARIABLES: readonly VariableDefinition[] = [

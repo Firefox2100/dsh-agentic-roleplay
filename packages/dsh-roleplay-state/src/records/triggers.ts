@@ -55,8 +55,10 @@ function applyEffects(target: RecordsTarget, trigger: Trigger, options: TriggerR
       target.events.seal(result.eventIds)
       fired.events.push(...(edit.events ?? []).map(event => event.text))
     } else if (effect.type === 'beat') {
-      target.triggers.addNote({ triggerId: trigger.id, kind: 'beat', text: effect.text, turn: options.turn })
-      fired.beats.push(effect.text)
+      const drawn = effect.draw === undefined ? undefined : effect.draw[Math.floor(seededRoll(`${trigger.key}:${trigger.fireCount}:${options.turn}`) * effect.draw.length)]
+      const words = drawn === undefined ? effect.text : effect.text.replaceAll('[draw]', drawn)
+      target.triggers.addNote({ triggerId: trigger.id, kind: 'beat', text: words, turn: options.turn })
+      fired.beats.push(words)
     } else {
       const heard = audienceIds(target, effect.audience)
       for (const id of heard) target.triggers.addNote({ triggerId: trigger.id, kind: 'cue', text: effect.text, characterIds: [id], turn: options.turn })

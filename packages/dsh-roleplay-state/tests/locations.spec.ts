@@ -104,6 +104,12 @@ describe('moving', () => {
     expect(store.planMove(idOf('bob'), { to: place('lane').id })).toMatchObject({ ok: true, plan: { via: [place('street').id, place('lane').id] } })
   })
 
+  it('places a character that is in no place without asking whether it knows the place: it is not travelling', () => {
+    const drifter = store.characters.add(newCharacter({ sourceId: 'drifter', name: 'Drifter', aliases: [] }))
+    expect(store.placements.get('character', drifter.id)).toBeUndefined()
+    expect(store.planKnownMove(drifter.id, { to: place('bar').id })).toMatchObject({ ok: true })
+  })
+
   it('plans a character\'s intended route only over places and directed exits it knows', () => {
     const alice = idOf('alice')
     const bar = place('bar')

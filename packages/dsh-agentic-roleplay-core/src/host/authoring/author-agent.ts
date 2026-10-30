@@ -26,6 +26,15 @@ const FIT_TEXT_CHARS = 200
 
 const editEstimate = (things: number, texts: number, chars: number, language: string): number => estimateAnswer(Array.from({ length: Math.max(1, things) * texts }, () => chars), language)
 
+/** A person made up without a place joins the scene: the place of the player's character, which is where the author is told to put them. */
+export function placedWhereThePlayerIs(args: Record<string, unknown>, store: Pick<TurnStore, 'cast'>): Record<string, unknown> {
+  if (!Array.isArray(args['characters'])) return args
+  const here = store.cast().find(member => member.character.control === 'player')?.place?.location
+  if (here === undefined) return args
+  const characters = args['characters'].map(entry => (typeof entry === 'object' && entry !== null && (entry as Record<string, unknown>)['place'] === undefined ? { ...entry, place: { location: locationKey(here) } } : entry))
+  return { ...args, characters }
+}
+
 function authorTools(job: { chat: string; store: TurnStore; turn: number }, work: Work, mode: 'create' | 'consolidate', limits: { perTurn: number }): ToolDefinition[] {
   const link = { session: job.store.story, turn: job.turn, policy: job.store.settings().memory, queryVector: job.store.queryVector, timeZone: zoneOf(job.store.settings().clock) }
   const keys = job.store.story.characters.list().map(characterKey)
@@ -40,11 +49,18 @@ function authorTools(job: { chat: string; store: TurnStore; turn: number }, work
           const edit = parseRecordsEdit(args)
           const makes = (edit.characters?.length ?? 0) + (edit.places?.length ?? 0) + (edit.items?.length ?? 0) + (edit.variables?.length ?? 0) + (edit.triggers?.length ?? 0)
           if (mode === 'consolidate' && makes > 0) throw new Error('fitting things in does not make up anything new: connect what exists')
-          const already = job.store.story.consolidation.createdIn(job.turn).length
-          if (makes > 0 && already + makes > limits.perTurn) {
-            throw new Error(`this edit makes ${makes} new thing${makes === 1 ? '' : 's'} and ${already} ${already === 1 ? 'was' : 'were'} already made this turn, which would pass the ${limits.perTurn} this chat allows per turn: make fewer, or none`)
+          const madeBefore = job.store.story.consolidation.createdIn(job.turn)
+          const allowed: [string, number, number][] = [
+            ['character', edit.characters?.length ?? 0, madeBefore.filter(entry => entry.kind === 'character').length],
+            ['place', edit.places?.length ?? 0, madeBefore.filter(entry => entry.kind === 'location').length],
+            ['other thing', (edit.items?.length ?? 0) + (edit.variables?.length ?? 0) + (edit.triggers?.length ?? 0), 0],
+          ]
+          for (const [noun, now, already] of allowed) {
+            if (now > 0 && already + now > limits.perTurn) {
+              throw new Error(`this edit makes ${now} new ${noun}${now === 1 ? '' : 's'} and ${already} ${already === 1 ? 'was' : 'were'} already made this turn, which would pass the ${limits.perTurn} this chat allows per turn for each kind: make fewer, or none`)
+            }
           }
-          const result = await tool.execute(args, exec) as { character_keys?: string[]; place_keys?: string[]; item_keys?: string[]; variable_keys?: string[]; trigger_keys?: string[] }
+          const result = await tool.execute(placedWhereThePlayerIs(args as Record<string, unknown>, job.store), exec) as { character_keys?: string[]; place_keys?: string[]; item_keys?: string[]; variable_keys?: string[]; trigger_keys?: string[] }
           for (const key of result.character_keys ?? []) work.created.push({ kind: 'character', key })
           for (const key of result.place_keys ?? []) work.created.push({ kind: 'place', key })
           for (const key of result.item_keys ?? []) work.created.push({ kind: 'item', key })
@@ -101,7 +117,7 @@ export function createPrompt(job: CreateJob, perTurn: number): string {
     `The game master asks for something to be made up. Reason given: ${job.need}.`,
     `What it says is needed: ${job.what}`,
     '',
-    `It is turn ${job.turn}. At most ${perTurn} new thing${perTurn === 1 ? '' : 's'} may be made in a turn, and ${store.story.consolidation.createdIn(job.turn).length} already ${store.story.consolidation.createdIn(job.turn).length === 1 ? 'was' : 'were'} this turn.`,
+    `It is turn ${job.turn}. At most ${perTurn} new character${perTurn === 1 ? '' : 's'} and ${perTurn} new place${perTurn === 1 ? '' : 's'} may be made in a turn (each kind has its own allowance); already made this turn: ${store.story.consolidation.createdIn(job.turn).filter(entry => entry.kind === 'character').length} character(s), ${store.story.consolidation.createdIn(job.turn).filter(entry => entry.kind === 'location').length} place(s).`,
     here === undefined ? 'The story is not in any place yet.' : `The story is in ${here.name} (${locationKey(here)}). With the player's character: ${present.filter(member => member.character.control !== 'player').map(member => `${member.character.name} (${member.key})`).join(', ') || 'no one else'}.`,
     '',
     '## What happened lately',
@@ -197,6 +213,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const parent = parentOf(job.chat)
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
+      // what the author made stays in the world whether or not it managed to report: a run that fails after creating is told as created, so that what it made is fitted in
       const result = await runChild<{ outcome: 'created' | 'declined'; summary: string }>({
         reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring', editEstimate(authoring.perTurn, THING_TEXTS, THING_TEXT_CHARS, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world author'),
         parent, signal,
@@ -213,6 +230,9 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
           return errors.length === 0 ? undefined : `what you made is not usable yet; fix it with edit_world:\n${describeFindings(errors).join('\n')}`
         },
         maxCalls: 30 + (given(parent).length > 0 ? EXTERNAL_CALLS : 0),
+      }).catch((error: unknown): { outcome: 'created'; summary: string } => {
+        if (work.created.length === 0 || signal.aborted) throw error
+        return { outcome: 'created', summary: `the author made it but did not finish its report (${error instanceof Error ? error.message : String(error)})` }
       })
       const label = names(job.store)
       const created = work.created.map(entry => ({ kind: entry.kind, key: entry.key, name: (entry.kind === 'variable' ? job.store.story.variables.def(entry.key)?.name : entry.kind === 'trigger' ? job.store.story.triggers.getByKey(entry.key)?.name : (entry.kind === 'character' ? label.characters : entry.kind === 'item' ? label.items : label.places).get(entry.key)) ?? entry.key }))

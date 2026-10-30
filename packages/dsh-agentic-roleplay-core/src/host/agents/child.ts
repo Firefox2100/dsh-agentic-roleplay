@@ -18,6 +18,7 @@ export const SUBMIT_TOOL = 'submit_result'
 
 /** Said to every child once, after its persona, so it is the same for all of them and the start of every request stays the same. */
 const SUBMIT_RULE = `When you are done, call ${SUBMIT_TOOL} with your result. It is the only way to finish: text you write instead is lost.`
+const STRUCTURED_RULE = 'Your whole reply is the result, as one JSON object of the shape you were given: write nothing before or after it.'
 
 /** Calls a child may make before it is given up; a child that keeps going is not converging. */
 const DEFAULT_MAX_CALLS = 40
@@ -36,6 +37,11 @@ const REPEATS_TOLD = 1
 const REPEATS_STOPPED = 4
 /** A result that is refused this many times is not going to be fixed by asking again: the child is stopped and the caller decides what to do without it. */
 const MAX_REFUSALS = 5
+/**
+ * How long a child that was stopped has to wind down. Found live twice: a stopped child's activation never settled and the caller waited for ever (an import stood still for
+ * minutes, a game master's turn never ended), so what the stop decided is not waited on past this.
+ */
+const STOP_GRACE_MS = 15_000
 
 /** A one-shot agent of the game master, with tools of its own. */
 export interface ChildTask {
@@ -73,6 +79,11 @@ export interface ChildTask {
   sampling?: ChildSampling
   /** Minutes the run may take before it is stopped with a {@link ChildTimeoutError}; none when absent or 0. A model that thinks without end never reaches a call budget. */
   timeoutMinutes?: number
+  /**
+   * Ask for the result as the model's whole reply, constrained to `result`'s schema by the endpoint (a JSON `response_format`), instead of a `submit_result` call. For a child that has no tools of its own:
+   * the model cannot write an analysis first, and nothing about calling a tool has to be followed. The reply is read, checked and refused like a call would be.
+   */
+  structured?: boolean
   /** Told how the run went when it ends, however it ends. */
   trace?: (run: ChildRun) => void
 }
@@ -105,6 +116,8 @@ export interface ChildSampling extends Partial<Record<SharedSamplingKey, number>
   toolChoice?: 'auto' | 'required'
   /** The most tokens one request may produce; used when the task sets none of its own. */
   maxTokens?: number
+  /** Further top-level fields of the request body, for what an endpoint accepts beyond the OpenAI API (the constrained reply of a structured child is one). */
+  body?: Record<string, unknown>
   /** Where the request stands when the model is busy: what the player waits for in the turn (the characters, a thing made up on the spot) goes first, the records and the suggestions after. */
   priority?: 'foreground' | 'background'
 }
@@ -221,6 +234,49 @@ export async function supportedEffort(task: Pick<ChildTask, 'parent' | 'signal' 
   } catch { return level }
 }
 
+/**
+ * A JSON text that was cut off, closed after the last whole entry it holds: what a reply that ran into its limit in the middle of a long list still says. Nothing when no such cut makes it JSON.
+ */
+export function repairedJson(text: string): string | undefined {
+  const cuts: number[] = []
+  // after a closed entry first, and only then before a comma, which may leave an entry half written
+  for (const marks of ['}]', ',']) for (let at = text.length - 1, found = 0; at >= 0 && found < 300; at -= 1) if (marks.includes(text[at]!)) { cuts.push(at); found += 1 }
+  for (const at of cuts) {
+    // a comma is cut off with what follows it; a bracket is kept
+    const head = text.slice(0, text[at] === ',' ? at : at + 1)
+    const stack: string[] = []
+    let inString = false
+    for (let index = 0; index < head.length; index += 1) {
+      const char = head[index]!
+      if (inString) { if (char === '\\') index += 1; else if (char === '"') inString = false; continue }
+      if (char === '"') inString = true
+      else if (char === '{') stack.push('}')
+      else if (char === '[') stack.push(']')
+      else if (char === '}' || char === ']') stack.pop()
+    }
+    if (inString) continue
+    const closed = head + stack.reverse().join('')
+    try { JSON.parse(closed); return closed } catch { continue }
+  }
+  return undefined
+}
+
+/** The result in the last reply of a structured child: its JSON, which must fit the schema; else what is wrong with it. */
+export function structuredReply(child: Agent, schema: ObjectJsonSchema, cut = false): { value: unknown } | { problem: string } {
+  const message = child.session.snapshotEvents().findLast(event => event.type === 'assistant/message')
+  const content = message?.type === 'assistant/message' ? message.data.message.content : []
+  const text = content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('').trim().replace(/^```(?:json)?\s*|\s*```$/g, '')
+  if (text === '') return { problem: 'the reply is empty' }
+  let value: unknown
+  try { value = JSON.parse(text) } catch (error) {
+    const mended = cut ? repairedJson(text) : undefined
+    if (mended === undefined) return { problem: `the reply is not valid JSON (${error instanceof Error ? error.message : String(error)})` }
+    value = JSON.parse(mended)
+  }
+  const violations = validateJsonSchemaValue(schema, value)
+  return violations.length > 0 ? { problem: violations.map(violation => String(violation)).join('; ') } : { value }
+}
+
 /** What one run counts and keeps for its trace. */
 interface RunStats { calls: number; record: RunCall[]; result?: string; tokens?: TokenCount }
 
@@ -235,6 +291,8 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
   let submitted: { value: unknown } | undefined
   let reminders = 0
   let stopped: (() => void) | undefined
+  let giveUp: (() => void) | undefined
+  const gaveUp = new Promise<void>((resolve) => { giveUp = resolve })
   let retire: (() => void) | undefined
   let stepsAfterRetire = -1
   let overran = false
@@ -306,10 +364,13 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
 
   const childId = SessionId(randomUUID())
   const entry: HelperEntry = {
-    persona: `${task.persona}\n\n${SUBMIT_RULE}`,
+    persona: `${task.persona}\n\n${task.structured === true ? STRUCTURED_RULE : SUBMIT_RULE}`,
     setup(child) {
       entry.agent = child
-      stopped = () => { child.cancel({ kind: 'parent' }) }
+      stopped = () => {
+        child.cancel({ kind: 'parent' })
+        setTimeout(() => { giveUp?.() }, STOP_GRACE_MS)
+      }
       const childCtx = child.ctx
       // The tools every agent shares (the story's readers, a working directory) are not the child's: it has its own and what the task lets through.
       childCtx.tools.restrict({ allow: [...(task.external ?? [])] })
@@ -328,9 +389,28 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
         if (stepsAfterRetire > STEPS_AFTER_RETIRE && submitted === undefined) { overran = true; stopped?.() }
         return decision
       })
-      childCtx.tools.register(submit)
+      if (task.structured !== true) childCtx.tools.register(submit)
       childCtx.on('agent/turn-stopping', () => {
         if (submitted !== undefined) return
+        if (task.structured === true) {
+          // the reply is the result: read it, check it, and send it back with the reasons when it will not do
+          const reply = structuredReply(child, enforcedSchema(task), cutOff(child))
+          // a reply that ran to the limit but is whole is a result; only one that was cut short is a ramble
+          if (cutOff(child) && !('value' in reply)) { rambled = true; overran = true; stopped?.(); return }
+          const refusal = 'value' in reply ? task.beforeSubmit?.(reply.value) : reply.problem
+          if ('value' in reply && refusal === undefined) {
+            submitted = { value: reply.value }
+            stats.result = cut(reply.value, MAX_RUN_PROMPT)
+            if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: 'reply', args: '', outcome: cut(reply.value), failed: false })
+            return
+          }
+          refusals += 1
+          lastRefusal = refusal ?? ''
+          if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: 'reply', args: '', outcome: cut(lastRefusal), failed: true })
+          if (refusals >= MAX_REFUSALS) { overran = true; stopped?.(); return }
+          child.steer(createUserMessage({ content: [{ type: 'text', text: `That reply cannot be used: ${lastRefusal}\nReply again with the whole result as one JSON object.` }], source: { kind: 'roleplay' } }))
+          return
+        }
         // text that fills the whole request instead of the call: a reminder would be answered the same way at the same cost
         if (cutOff(child)) { rambled = true; overran = true; stopped?.(); return }
         if (reminders >= MAX_REMINDERS) return
@@ -341,7 +421,10 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     },
   }
   helpers.set(childId, entry)
-  if (task.sampling !== undefined) samplings.set(childId, task.sampling)
+  if (task.structured === true) {
+    const { toolChoice: _unused, ...rest } = task.sampling ?? {}
+    samplings.set(childId, { ...rest, body: { ...rest.body, response_format: { type: 'json_schema', json_schema: { name: 'result', strict: true, schema: task.result } } } })
+  } else if (task.sampling !== undefined) samplings.set(childId, task.sampling)
   try {
     const subagents = parent.ctx.get('subagents')
     if (subagents === undefined) throw new Error('the sub-agent service is not loaded')
@@ -360,12 +443,12 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
       },
     })
     try {
-      await activation.result
+      await Promise.race([activation.result, gaveUp])
     } catch (error) {
       if (submitted === undefined && !overran && !signal.aborted) throw error
     } finally {
       if (entry.agent !== undefined) stats.tokens = tokensOf(entry.agent.session.snapshotEvents())
-      await activation.dispose()
+      await (overran ? Promise.race([activation.dispose(), new Promise<void>((resolve) => { setTimeout(resolve, STOP_GRACE_MS) })]) : activation.dispose())
     }
   } finally {
     helpers.delete(childId)

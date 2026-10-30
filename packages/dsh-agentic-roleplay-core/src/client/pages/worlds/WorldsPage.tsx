@@ -14,6 +14,7 @@ import { useGridFit } from './use-grid-fit.ts'
 import { CreateWorldDialog } from './CreateWorldDialog.tsx'
 import { StarterWorlds } from './StarterWorlds.tsx'
 import { ImportCard } from '../../widgets/import-card/ImportCard.tsx'
+import { DraftBanner } from './DraftBanner.tsx'
 import { TranslateBanner } from './TranslateBanner.tsx'
 import { importStagedToWorld, importVerbatimToWorld, stageFile } from '../../import-selection-api.ts'
 import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSelection.tsx'
@@ -146,6 +147,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         {presetStaged !== undefined && (
           <ImportSelectionDialog preview={presetStaged.preview} t={t} canVerbatim onClose={() => { setPresetStaged(undefined) }} onConfirm={async (choice, options) => { if (options.verbatim) { const made = await importVerbatimToWorld(presetStaged.world, choice); setPresetNotice(t(made.replaced ? 'presetVerbatimReplaced' : 'presetVerbatim', { name: made.preset })); return } const opened = await importStagedToWorld(presetStaged.world, choice, t('language')); if (!opened.started) setPresetNotice(t('presetNotStarted', { message: opened.failure ?? '' })); openChat(opened.chatSessionId) }} />
         )}
+        <DraftBanner t={t} worldId={editing.id} version={editorVersion} openChat={openChat} onChanged={() => { refresh(); setEditorVersion(version => version + 1) }} onDiscarded={() => { refresh(); setEditing(undefined) }} />
         <TranslateBanner t={t} worldId={editing.id} worldName={editing.name} openChat={openChat} />
         {reverting && <RevertUpdateDialog t={t} onClose={() => { setReverting(false) }} revert={() => revertUpdate(editing.id)} onDone={(keptIn) => { setReverting(false); setPresetNotice(t('revertDone', { folder: keptIn })); setEditorVersion(version => version + 1); refresh() }} />}
         {addingAvatars && <AddAvatarsDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setAddingAvatars(false) }} onAdded={() => { setAddingAvatars(false); setEditorVersion(version => version + 1) }} />}
@@ -193,7 +195,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
                         world={world}
                         playLabel={t('play')}
                         openLabel={t('openWorld', { name: world.name })}
-                        onPlay={() => { openStartDialog(world.id, world.name) }}
+                        {...(world.draft === true ? { draftLabel: t('draftBadge') } : { onPlay: () => { openStartDialog(world.id, world.name) } })}
                         onOpen={() => { setEditing({ id: world.id, name: world.name }) }}
                       />
                     </li>

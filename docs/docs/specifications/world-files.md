@@ -203,7 +203,7 @@ root; a world with none tracks only the built-in ones. Each entry:
 | `bands` | `[{ "up_to": n, "label": "..." }]` | | Words for ranges of a number, lowest first. |
 | `always` | boolean | false | Told always, not only once it differs from its default. |
 
-A built-in variable can be redescribed here (name, description, bands, visibility) but keeps what it is. At most 60 variables. Initial values go in a `variables`
+A built-in variable can be redescribed here (name, description, bands, visibility) but keeps what it is. Initial values go in a `variables`
 object by variable key: in `character.json`, `item.json`, `location.json` and `world.json` (for variables of the whole story); `start.emotion` in a character file sets the
 baseline and current value of the three feelings.
 

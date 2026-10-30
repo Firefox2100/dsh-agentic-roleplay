@@ -1,11 +1,11 @@
-import { randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { PACKS_FOLDER, PACK_API, type PackProblem } from '../../shared/interface-pack.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { isPackId, packPath, readPack } from '../interface/pack.ts'
 import { MAX_PACK_TEXT, packFileProblem } from './pack-jail.ts'
+import { atomicWrite } from '../atomic-write.ts'
 
 /** Where a text file of a pack is, once the pack name and the path are known to be allowed; otherwise why not. */
 function placeOf(directory: string, pack: string, path: string, tool: 'read' | 'write', text = ''): string {
@@ -41,15 +41,7 @@ export async function readWorldPackFile(directory: string, pack: string, path: s
 export async function writeWorldPackFile(directory: string, pack: string, path: string, text: string): Promise<PackProblem[]> {
   if (Buffer.byteLength(text) > MAX_PACK_TEXT) throw new InvalidEditProblems([`a file holds at most ${MAX_PACK_TEXT / 1024} KB of text`])
   const file = placeOf(directory, pack, path, 'write', text)
-  await mkdir(dirname(file), { recursive: true })
-  const temporary = join(dirname(file), `.${process.pid}.${randomUUID()}.tmp`)
-  try {
-    await writeFile(temporary, text)
-    await rename(temporary, file)
-  } catch (error) {
-    await rm(temporary, { force: true })
-    throw error
-  }
+  await atomicWrite(file, text, { createDirectory: true })
   return problemsOf(directory, pack)
 }
 

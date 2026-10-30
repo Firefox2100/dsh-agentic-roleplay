@@ -1,5 +1,5 @@
 import { dueReflection, recordFailure } from '../memory/reflection.ts'
-import type { Boundaries, TurnStore } from './boundaries.ts'
+import { AUTHORING_NEEDS, type Boundaries, type TurnStore } from './boundaries.ts'
 import type { ReflectionReason } from '../../shared/reflection.ts'
 import { ReflectionRefusedError } from '../sessions/errors.ts'
 
@@ -28,6 +28,7 @@ export class AfterTurnJobs {
   private readonly strategizing = new Set<string>()
   private readonly judging = new Set<string>()
   private readonly reflecting = new Set<string>()
+  private readonly casting = new Set<string>()
 
   constructor(private readonly deps: AfterTurnDeps) {}
 
@@ -35,6 +36,7 @@ export class AfterTurnJobs {
     this.consolidate(owner, cancel)
     this.strategize(owner, cancel)
     this.judge(owner, cancel)
+    this.cast(owner, cancel)
     const reason = this.reflectionDue(owner)
     if (reason !== undefined) this.reflect(owner, reason, cancel)
   }
@@ -95,6 +97,27 @@ export class AfterTurnJobs {
       .then((report) => { if (report.acted.length > 0) this.deps.written(owner.chat) })
       .catch((error: unknown) => { if (!cancel.aborted) this.deps.problem(`organisations were not asked what they do: ${messageOf(error)}`) })
       .finally(() => { this.strategizing.delete(owner.chat) }))
+  }
+
+  /** What a trigger asked the world author to make (a beat with `dispatch: author`) is made now, one request after the other: the game master is never asked, so it cannot ignore it. */
+  private cast(owner: { chat: string; turn: number }, cancel: AbortSignal): void {
+    const store = this.deps.stores(owner.chat)
+    if (store === undefined || this.casting.has(owner.chat) || store.claimAuthorBeats === undefined || !store.settings().authoring.enabled) return
+    const requests = store.claimAuthorBeats()
+    if (requests.length === 0) return
+    this.casting.add(owner.chat)
+    this.deps.track(owner.chat, (async () => {
+      for (const request of requests) {
+        const need = AUTHORING_NEEDS.find(candidate => candidate === request.need)
+        if (need === undefined) { this.deps.problem(`a trigger asked the world author for "${request.need}", which is not a reason to make something up`); continue }
+        try {
+          await this.deps.boundaries().author.create({ chat: owner.chat, turn: owner.turn, need, what: request.text, store }, cancel)
+          this.deps.written(owner.chat)
+        } catch (error) {
+          if (!cancel.aborted) this.deps.problem(`the world author could not make what a trigger asked for: ${messageOf(error)}`)
+        }
+      }
+    })().finally(() => { this.casting.delete(owner.chat) }))
   }
 
   /** The statements that triggers wait on are judged; a trigger fires from the verdict at the next look. */

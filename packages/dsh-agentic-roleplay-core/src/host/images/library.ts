@@ -49,14 +49,19 @@ export function libraryName(original: string, extension: string, taken: (name: s
 }
 
 /**
- * Puts an image the person brought into the session's library, with metadata that says where it came from and that it is reusable. What it
- * shows is not known yet: the interpreter fills that in.
+ * Puts a picture into the library unless the library already holds that picture (the same image, whatever metadata the file carries), whatever it came from: an upload, an address, a generation.
+ * Metadata says where it came from and that it is reusable; what it shows is not known yet, and the interpreter fills that in.
+ * @param known the hashes of the library when the caller has read them (kept up to date here), to avoid reading the library again for each picture.
  * @throws {Error} when the bytes are not a PNG, JPEG, WebP or GIF image.
- * @returns its path under `images/`.
+ * @returns its path under `images/`, and whether it was added or an equal picture was there.
  */
-export async function addToLibrary(sessionFolder: string, bytes: Uint8Array, originalName: string): Promise<string> {
+export async function addToLibraryOnce(sessionFolder: string, bytes: Uint8Array, originalName: string, known?: Map<string, string>): Promise<{ path: string; added: boolean }> {
   const extension = imageExtensionOf(bytes)
   if (extension === undefined || MEDIA_TYPES[extension] === undefined) throw new Error('only PNG, JPEG, WebP and GIF images can be added')
+  const hashes = known ?? await libraryHashes(sessionFolder)
+  const hash = pictureHash(bytes)
+  const present = hashes.get(hash)
+  if (present !== undefined) return { path: present, added: false }
   const directory = join(sessionFolder, 'images', LIBRARY_FOLDER)
   await mkdir(directory, { recursive: true })
   const name = libraryName(originalName, extension, candidate => existsSync(join(directory, candidate)))
@@ -69,5 +74,12 @@ export async function addToLibrary(sessionFolder: string, bytes: Uint8Array, ori
     originalName, subjects: [], tags: [],
   }
   await writeImageFileMetadata(file, metadata)
-  return `${LIBRARY_FOLDER}/${name}`
+  const path = `${LIBRARY_FOLDER}/${name}`
+  hashes.set(hash, path)
+  return { path, added: true }
+}
+
+/** {@link addToLibraryOnce} for a caller that only wants the path: a picture the library holds already is not added again. */
+export async function addToLibrary(sessionFolder: string, bytes: Uint8Array, originalName: string): Promise<string> {
+  return (await addToLibraryOnce(sessionFolder, bytes, originalName)).path
 }

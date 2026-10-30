@@ -8,6 +8,7 @@ import type { StorySampling } from '../../shared/sampling.ts'
 import { readDocument } from '../read-document.ts'
 import { assignWorldId } from './world-id.ts'
 import { parseWorldFile, WORLD_FILE_NAME, type AlternateOpening, type OpeningSegment, type WorldClock, type WorldFile } from './world-file.ts'
+import { isDraftWorld } from './draft.ts'
 
 type WorldFileVariables = NonNullable<WorldFile['variables']>
 
@@ -128,6 +129,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
       tags: world.tags,
       ...(world.author === undefined ? {} : { author: world.author }),
       ...(world.version === undefined ? {} : { version: world.version }),
+      ...(await isDraftWorld(dir) ? { draft: true as const } : {}),
     },
     ...(world.opening === undefined ? {} : { opening: world.opening }),
     ...(world.clock === undefined ? {} : { clock: world.clock }),

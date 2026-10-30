@@ -1,8 +1,8 @@
-import { randomUUID } from 'node:crypto'
-import { readFile, rename, writeFile } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { compare, describeChanges, hashWorld, isUnchanged } from '../catalogue/origin.ts'
 import { IMPORT_FOLDER } from './store.ts'
+import { atomicWriteJson } from '../atomic-write.ts'
 
 const SNAPSHOT = 'files.json'
 
@@ -12,9 +12,7 @@ const notTheCards = (path: string): boolean => path.startsWith('images/')
 /** What a world's files were when its import was over; "changed since" is measured against it. */
 export async function writeSnapshot(directory: string): Promise<void> {
   const file = join(directory, IMPORT_FOLDER, SNAPSHOT)
-  const temporary = `${file}.${randomUUID()}.tmp`
-  await writeFile(temporary, JSON.stringify(await hashWorld(directory, notTheCards)))
-  await rename(temporary, file)
+  await atomicWriteJson(file, await hashWorld(directory, notTheCards))
 }
 
 /** How a world compares with its snapshot: `no` for no change, `yes` with the files, and `unknown` when the import left no snapshot (an older import). */

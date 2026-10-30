@@ -17,6 +17,8 @@ export interface WorldSummary {
   version?: string
   /** Changes whenever the cover file does; absent when the world has no usable cover. */
   coverVersion?: string
+  /** An import that was written but would not start yet: it is repaired or discarded before it is played. */
+  draft?: true
 }
 
 export interface WorldProblem {

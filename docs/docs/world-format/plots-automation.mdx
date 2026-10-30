@@ -39,3 +39,16 @@ A cue or beat is told when its audience next acts or the game master next looks,
 A `time` condition may use an absolute `from` or `to`, a daily `window`, weekdays in `days`, and the shared calendar rules in `on`. The latter supports months, dates, spans, seasons, named holidays and exclusions. See [Calendar and day rules](./calendar). A time condition with both `days` and `on` must satisfy both.
 
 Validate all referenced entity and variable IDs. Trigger effects run against session state, never the authored world files.
+
+## Slash commands
+
+`commands.json` lets a world give the player words to type after a slash, such as `/recruit`. Each command has a `word` (letters, digits or underscores; `ooc` and `roll` belong to the game), a `description` (the game master is told it when the command is used) and, for a word that is not plain lowercase ASCII, a `key` for its flag.
+
+```json
+{ "commands": [
+  { "word": "recruit", "description": "Bring a new follower into the cult." },
+  { "word": "招募", "key": "recruit_zh", "description": "Same, written in Chinese." }
+] }
+```
+
+Every command declares a hidden flag variable `command_<key>`, which is up only in the turn the command was typed and down again at the start of the next one, so a trigger waiting on it fires every time the command is used. A trigger can then ask the world author for a person, set a variable or give the game master a beat. A variable of the same name in `variables.json` is refused.

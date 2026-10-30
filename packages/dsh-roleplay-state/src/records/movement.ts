@@ -62,7 +62,9 @@ export function planMove(context: MoveContext, characterId: number, move: Move):
 
 /** Plan only through places and directed ways this character knows; forced movement remains the authoritative planner's job. */
 export function planKnownMove(context: KnownMoveContext, characterId: number, move: Move): ReturnType<typeof planMove> {
-  if (move.ignoreExits !== true && !context.knowledge.knows(characterId, 'location', move.to)) return { ok: false, problems: [`the character does not know place ${move.to}`] }
+  // a character in no place yet is being placed, not travelling: there is nothing it could know the way from
+  const placed = context.placements.get('character', characterId) !== undefined
+  if (move.ignoreExits !== true && placed && !context.knowledge.knows(characterId, 'location', move.to)) return { ok: false, problems: [`the character does not know place ${move.to}`] }
   if (move.ignoreExits === true) return planMove(context, characterId, move)
   return planMove({
     placements: context.placements,

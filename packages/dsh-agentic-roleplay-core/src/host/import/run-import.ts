@@ -1,7 +1,8 @@
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
+import { readFile, rename, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { randomUUID } from 'node:crypto'
+
 import type { NormalizedCard } from '../../shared/import-card.ts'
+import { extractCasting } from './casting.ts'
 import { emptyExtracted, extractEntities, extractStyle, extractVariables, type Extracted } from './extract.ts'
 import { finishImport, type ImportReport } from './finish.ts'
 import { itemise, type SourceItem } from './items.ts'
@@ -9,18 +10,23 @@ import type { ImportContext } from './run.ts'
 import { fetchPictures, type PicturesReport } from './pictures.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, readImportFolder } from './store.ts'
 import { writeSnapshot } from './snapshot.ts'
+import { recordProvenance } from './provenance.ts'
 import { buildRoster, classifyItems, isLeftOut, ROLES, type Classified, type Role, type Roster } from './survey.ts'
+import { atomicWriteJson } from '../atomic-write.ts'
+import { checkWorld, type WorldCheck } from '../worlds/world-check.ts'
+import { isDraftWorld } from '../worlds/draft.ts'
 
 /** The import in a world is not in the state the step needs, or there is none. The message says what to do. */
 export class ImportStateError extends Error {}
 
-export const PHASES = ['ready', 'surveyed', 'built', 'done'] as const
+export const PHASES = ['ready', 'surveyed', 'built', 'repair', 'done'] as const
 export type Phase = typeof PHASES[number]
 
 const STATE = 'state.json'
 const CLASSIFICATION = 'classification.json'
 const ROSTER = 'roster.json'
 const EXTRACTED = 'extracted.json'
+const PREVIOUS_EXTRACTED = 'extracted.previous.json'
 const REPORT = 'report.json'
 const PICTURES = 'pictures.json'
 
@@ -30,12 +36,7 @@ async function readJson<T>(file: string): Promise<T> {
   return JSON.parse(await readFile(file, 'utf8')) as T
 }
 
-async function writeJson(file: string, value: unknown): Promise<void> {
-  const temporary = `${file}.${randomUUID()}.tmp`
-  await mkdir(join(file, '..'), { recursive: true })
-  await writeFile(temporary, JSON.stringify(value))
-  await rename(temporary, file)
-}
+const writeJson = (file: string, value: unknown): Promise<void> => atomicWriteJson(file, value, { createDirectory: true })
 
 const fetching = new Map<string, Promise<PicturesReport>>()
 
@@ -83,8 +84,38 @@ export async function isReviewing(world: string): Promise<boolean> {
 /** The import turn is over: the world is edited like any other from now on, and what it holds now is what a later edit is measured against. */
 export async function endReview(world: string): Promise<void> {
   if (!await isReviewing(world)) return
+  // a world that still would not start stays a draft (and is not yet measured against: its files are still being repaired)
+  if ((await checkWorld({ directory: world, summary: { name: 'the world' } as never })).ok) await finishedImport(world)
+  else await writeJson(join(folder(world), STATE), { phase: 'repair' })
+}
+
+async function finishedImport(world: string): Promise<void> {
   await writeJson(join(folder(world), STATE), { phase: 'done' })
   await writeSnapshot(world)
+}
+
+/** The person asked for a draft to be repaired: until the turn ends the assistant edits the world without asking, as it does in the review that follows an import. */
+export async function startRepair(world: string): Promise<void> {
+  if (await importPhase(world) === 'repair') await writeJson(join(folder(world), STATE), { phase: 'repair', reviewing: true })
+}
+
+/** A draft that has been repaired since (by the assistant or the person) becomes an ordinary world; one that still has problems stays as it is. @returns whether it is a world now. */
+export async function settleDraft(world: string): Promise<boolean> {
+  if (await importPhase(world) !== 'repair') return false
+  if (!(await checkWorld({ directory: world, summary: { name: 'the world' } as never })).ok) return false
+  await finishedImport(world)
+  return true
+}
+
+/** The person accepts the draft as it is, problems included: it is an ordinary world from now on, which cannot be played until it is mended. */
+export async function keepDraft(world: string): Promise<void> {
+  if (await importPhase(world) !== 'repair') throw new ImportStateError('this world is not a draft')
+  await finishedImport(world)
+}
+
+/** Whether the world is an import that was written but would not start yet. */
+export async function isDraft(world: string): Promise<boolean> {
+  return await isDraftWorld(world)
 }
 
 /** Marks a folder that was just moved into a world as an import that is ready to run. */
@@ -121,6 +152,7 @@ export async function survey(ctx: ImportContext, world: string): Promise<SurveyS
   const { classified, failures, decided } = await classifyItems(ctx, card, items)
   if (items.length > 0 && failures.length >= items.length && decided === 0) throw new Error(`no piece of the card could be read, so nothing was imported: ${failures[0]}`)
   const { roster, failure } = await buildRoster(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified)
+  if (ctx.cancelled?.() === true) throw new Error('the survey was stopped before it was done, so what it made is not kept')
   await writeJson(join(folder(world), CLASSIFICATION), classified)
   await writeJson(join(folder(world), ROSTER), roster)
   await rm(join(folder(world), EXTRACTED), { force: true })
@@ -165,13 +197,20 @@ export async function build(ctx: ImportContext, world: string): Promise<BuildSum
   const tracked = await extractVariables(ctx, card, items, classified, roster)
   extracted.variables.push(...tracked.variables)
   extracted.notes.push(...tracked.notes)
+  const cast = await extractCasting(ctx, card, extracted.casting)
+  extracted.commands.push(...cast.commands)
+  extracted.triggers.push(...cast.triggers)
+  extracted.notes.push(...cast.notes)
+  if (ctx.cancelled?.() === true) throw new Error('the build was stopped before it was done, so what it made is not kept')
+  // the extraction that was there is kept beside the new one: a run whose jobs mostly failed must not be the only copy of a good one
+  await rename(join(folder(world), EXTRACTED), join(folder(world), PREVIOUS_EXTRACTED)).catch((error: NodeJS.ErrnoException) => { if (error.code !== 'ENOENT') throw error })
   await writeJson(join(folder(world), EXTRACTED), extracted)
   await writeJson(join(folder(world), STATE), { phase: 'built' })
   return { characters: extracted.characters.length, places: extracted.locations.length, factions: extracted.factions.length, things: extracted.items.length, lore: extracted.lore.length, prompts: extracted.prompts.map(entry => entry.id), variables: extracted.variables.length, notes: extracted.notes }
 }
 
-/** Last step: check the world as a whole, write it, and fill in its own file. Nothing is written when the world would not start. */
-export async function finish(ctx: ImportContext, world: string): Promise<{ ok: true; report: ImportReport } | { ok: false; problems: string[] }> {
+/** Last step: write the staged world and check it as a whole; a world that cannot start yet is kept as a repairable draft. */
+export async function finish(ctx: ImportContext, world: string): Promise<{ ok: true; report: ImportReport; draft?: WorldCheck } | { ok: false; problems: string[] }> {
   await need(world, ['built'], 'the finish')
   const { card, choices, items, picture } = await load(world)
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
@@ -182,7 +221,10 @@ export async function finish(ctx: ImportContext, world: string): Promise<{ ok: t
     directory: world, card, choices, roster, items, classified, extracted,
     ...(picture ? { picture: await readFile(join(folder(world), PICTURE_FILE)) } : {}), notes: [], pictures: { found: pictures.found, added: pictures.added.length },
   })
-  if (result.ok) await writeJson(join(folder(world), STATE), { phase: 'done', reviewing: true })
+  if (result.ok) {
+    await writeJson(join(folder(world), STATE), { phase: result.draft === undefined ? 'done' : 'repair', reviewing: true })
+    await recordProvenance(world, { kind: 'import', card: { name: card.name }, language: ctx.language ?? '', counts: result.report.counts, notes: result.report.notes.length }, await readFile(join(folder(world), 'card.json'), 'utf8'))
+  }
   return result
 }
 

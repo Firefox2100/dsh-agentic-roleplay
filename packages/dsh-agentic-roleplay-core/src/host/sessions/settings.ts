@@ -1,6 +1,7 @@
-import { existsSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
+import { atomicWriteSync } from '../atomic-write.ts'
 
 export const SETTINGS_FILE = 'settings.json'
 
@@ -48,9 +49,7 @@ export function writeSettings(folder: string, value: unknown): ChatSettings {
   if (!parsed.ok) throw new InvalidSettingsError(parsed.problems)
   const file = join(folder, SETTINGS_FILE)
   // Written aside and renamed, so a reader never sees half a file.
-  const temporary = `${file}.${process.pid}.tmp`
-  writeFileSync(temporary, `${JSON.stringify(parsed.value, null, 2)}\n`)
-  renameSync(temporary, file)
+  atomicWriteSync(file, `${JSON.stringify(parsed.value, null, 2)}\n`)
   known.delete(folder)
   return parsed.value
 }

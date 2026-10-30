@@ -1,4 +1,4 @@
-import { CHARACTER_KINDS, CHARACTER_TIERS, LORE_KINDS, MAX_VARIABLES, type LoreKind, type Translate } from 'dsh-roleplay-model'
+import { CHARACTER_KINDS, CHARACTER_TIERS, LORE_KINDS, type LoreKind, type Translate } from 'dsh-roleplay-model'
 import { formatIssue } from '../validation.ts'
 import { parseCharacterFile } from '../characters/character-file.ts'
 import { parseFactionFile } from '../factions/faction-file.ts'
@@ -12,6 +12,7 @@ import { promptProblem } from '../prompts/library.ts'
 import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
 import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { findEntity, isLeftOut, type Classified, type Entity, type Kind, type Roster } from './survey.ts'
+import { mainRole, mayHoldGuidance, playsRole, statesWorldFacts } from './roles.ts'
 
 type Document = Record<string, unknown>
 
@@ -26,9 +27,14 @@ export interface Extracted {
   prompts: { id: string; text: string }[]
   /** What the card keeps track of, as the documents of `variables.json`. */
   variables: Document[]
+  /** The passages that say how people are made up in play, as the card wrote them: the casting job turns them into the world's commands and triggers. */
+  casting: string[]
+  /** The documents of `commands.json` and `triggers.json`. */
+  commands: Document[]
+  triggers: Document[]
   notes: string[]
 }
-export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], variables: [], notes: [] })
+export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], variables: [], casting: [], commands: [], triggers: [], notes: [] })
 
 const SOURCE_BUDGET_CHARS = 14_000
 const MAX_TAGGED = 8
@@ -237,6 +243,43 @@ export function thingDocument(entity: Entity, answer: Document, roster: Roster):
   return { document, notes }
 }
 
+const GUIDANCE_SCHEMA = {
+  type: 'object',
+  properties: {
+    casting: strs('Each passage that says how to make people, places or things up while the story is played, copied exactly.'),
+    rules: strs('Each passage that is a standing rule or mechanic the game master applies as the story is played, copied exactly.'),
+  },
+  required: ['casting', 'rules'],
+  additionalProperties: false,
+} as const
+/** Pieces shorter than this hold no guidance worth a request of its own. */
+const MIN_GUIDANCE_CHARS = 120
+/** The most characters of standing rules the game master carries on every turn; the rest of what the card always sends is found by search like any lore. */
+const STANDING_MAX_CHARS = 12_000
+export const STANDING_PROMPT = 'roleplay/standing'
+
+const squeezed = (text: string): string => text.replace(/\s+/g, ' ').trim()
+
+/** Why the passages cannot be used, or nothing when each is in the piece word for word: the guidance is the card's, and a rewrite would be the model's. */
+export function passageProblem(answer: Document, source: string): string | undefined {
+  const whole = squeezed(source)
+  for (const field of ['casting', 'rules'] as const) {
+    const passages = Array.isArray(answer[field]) ? answer[field] as unknown[] : []
+    const missing = passages.findIndex(passage => typeof passage !== 'string' || squeezed(passage) === '' || !whole.includes(squeezed(passage)))
+    if (missing >= 0) return `${field} passage ${missing + 1} is not in the piece word for word: copy it exactly as written, or leave it out`
+  }
+  return undefined
+}
+
+/** The lore entry for the guidance found in a piece, in the card's own words, for the game master and the world author only. */
+export function guidanceEntry(passages: readonly string[], title: string): Document {
+  const body = passages.map(passage => passage.trim()).join('\n\n')
+  return { title: title.slice(0, 100), kind: 'custom', scope: 'listed', summary: (/^[^\n。.!?！？]*[。.!?！？]?/u.exec(body)?.[0] ?? body).slice(0, 200), body }
+}
+
+/** What a prompt file cannot hold is changed so that `${` and `{{` in a card's text are not read as variables. */
+const inert = (text: string): string => text.replace(/\$\{/g, '$ {').replace(/\{\{/g, '{ {')
+
 const LORE_SCHEMA = {
   type: 'object',
   properties: {
@@ -308,7 +351,7 @@ export function loreProblem(answer: Document, roster: Roster, source: string): s
  * there is exactly one: the story begins there, so whoever it opens with is there.
  */
 export function placeAtScenario(result: Pick<Extracted, 'characters'>, items: readonly SourceItem[], classified: Classified, roster: Roster): void {
-  const scenes = items.filter(item => (classified[item.id]?.roles ?? []).includes('scenario'))
+  const scenes = items.filter(item => playsRole(classified[item.id] ?? { roles: [] }, 'scenario'))
   const places = new Set(scenes.flatMap(item => (classified[item.id]?.targets ?? []).filter(target => target.kind === 'place').flatMap((target) => { const found = findEntity(roster, target.name, 'place'); return found === undefined ? [] : [found.key] })))
   if (places.size !== 1) return
   const place = [...places][0]!
@@ -334,6 +377,56 @@ export function pruneLoreSubjects(result: Pick<Extracted, 'characters' | 'locati
     result.notes.push(`${String(entry['title'])}: ${subjects.length - kept.length} subject(s) left out because the world has no such ${subjects.length - kept.length === 1 ? 'entity' : 'entities'}`)
     if (kept.length === 0) delete entry['subjects']
     else entry['subjects'] = kept
+  }
+}
+
+/** Takes out of a faction the members whose character was not written (the job for it failed or it was left out): a faction that names no one is better than a world that cannot be written. */
+export function pruneMembers(result: Pick<Extracted, 'characters' | 'factions' | 'notes'>): void {
+  const written = new Set(result.characters.map(entry => String(entry['id'])))
+  for (const faction of result.factions) {
+    const members = objects(faction['members'])
+    const kept = members.filter(member => written.has(String(member['character'])))
+    if (kept.length === members.length) continue
+    result.notes.push(`${String(faction['name'])}: ${members.length - kept.length} member(s) left out because the world has no such character`)
+    if (kept.length === 0) delete faction['members']
+    else faction['members'] = kept
+  }
+}
+
+/** Takes out of a place the parent and the ways that lead to a place that was not written, and out of a character a starting place that was not: each is only a link, and the document stays. */
+export function pruneLinks(result: Pick<Extracted, 'characters' | 'locations' | 'notes'>): void {
+  const places = new Set(result.locations.map(entry => String(entry['id'])))
+  for (const place of result.locations) {
+    if (place['parent'] !== undefined && !places.has(String(place['parent']))) {
+      result.notes.push(`${String(place['name'])}: its parent place is left out because the world has no such place`)
+      delete place['parent']
+    }
+    const exits = objects(place['exits'])
+    const open = exits.filter(exit => places.has(String(exit['to'])))
+    if (open.length === exits.length) continue
+    result.notes.push(`${String(place['name'])}: ${exits.length - open.length} way(s) left out because they lead to a place the world does not have`)
+    if (open.length === 0) delete place['exits']
+    else place['exits'] = open
+  }
+  for (const character of result.characters) {
+    const start = character['start'] as Document | undefined
+    if (start === undefined || start['location'] === undefined || places.has(String(start['location']))) continue
+    result.notes.push(`${String(character['name'])}: its starting place is left out because the world has no such place`)
+    delete start['location']; delete start['position']; delete start['feature']
+    if (Object.keys(start).length === 0) delete character['start']
+  }
+}
+
+/** Takes out of a character's relationships those with a character that was not written. */
+export function pruneRelationships(result: Pick<Extracted, 'characters' | 'notes'>): void {
+  const written = new Set(result.characters.map(entry => String(entry['id'])))
+  for (const character of result.characters) {
+    const relations = objects(character['relationships'])
+    const kept = relations.filter(relation => written.has(String(relation['to'])))
+    if (kept.length === relations.length) continue
+    result.notes.push(`${String(character['name'])}: ${relations.length - kept.length} relationship(s) left out because the world has no such character`)
+    if (kept.length === 0) delete character['relationships']
+    else character['relationships'] = kept
   }
 }
 
@@ -450,7 +543,7 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     const group = { character: 'characters', place: 'locations', faction: 'factions', thing: 'items' } as const
     result[group[entity.kind]].push(built.document)
   }
-  const worldItems = items.filter((item) => { const roles = classified[item.id]?.roles ?? []; return roles.includes('world') && !roles.includes('instruction') })
+  const worldItems = items.filter(item => statesWorldFacts(classified[item.id] ?? { roles: [] }))
   const taken = new Set<string>()
   const loreResults = await mapLimit(worldItems, ctx.concurrency, async (item, index) => {
     ctx.say(`writing background ${index + 1}/${worldItems.length}: ${item.label}`)
@@ -468,8 +561,39 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     if (answer === undefined) { result.notes.push('a background piece produced nothing'); continue }
     for (const built of loreDocuments(answer, roster, taken)) { result.notes.push(...built.notes); addLore(result.lore, built.document) }
   }
+  for (const item of items.filter(item => playsRole(classified[item.id] ?? { roles: [] }, 'generator'))) {
+    for (const built of loreDocuments(asWritten(item), roster, taken)) addLore(result.lore, { ...built.document, kind: 'custom', scope: 'listed' })
+  }
+  const tr = trOf(ctx)
+  const searched = items.filter(item => item.text.length >= MIN_GUIDANCE_CHARS && mayHoldGuidance(classified[item.id] ?? { roles: ['world'] }))
+  const found = await mapLimit(searched, ctx.concurrency, async (item, index) => {
+    ctx.say(`looking for guidance on making things up and for standing rules ${index + 1}/${searched.length}: ${item.label}`)
+    try {
+      const prompt = `${tr('Card: {name}', { name: card.name })}\n${tr('Piece: {label}', { label: item.label })}\n\n${tr('Source piece:')}\n${item.text.slice(0, MAX_ITEM_CHARS + 500)}`
+      const answer = await ctx.run<Document>({ persona: ctx.text('import/generator', { rules: ctx.text('import/common-rules') }), maxTokens: 600 + item.text.length, prompt, result: GUIDANCE_SCHEMA as never, check: value => passageProblem(value, item.text) })
+      const passages = (field: 'casting' | 'rules'): string[] => (answer[field] as string[]).filter(passage => passage.trim() !== '')
+      return { item, casting: passages('casting'), rules: passages('rules') }
+    } catch (error) {
+      return { item, casting: [], rules: [], failure: `${item.label}: ${error instanceof Error ? error.message : String(error)}` }
+    }
+  })
+  let standing = ''
+  for (const { item, casting, rules, failure } of found) {
+    if (failure !== undefined) result.notes.push(failure)
+    const name = item.title === '' ? item.label : item.title
+    result.casting.push(...casting)
+    if (casting.length > 0) addLore(result.lore, { id: uniqueKey(slug(item.label, 'guidance'), taken), ...guidanceEntry(casting, tr('{label}: how people are made up', { label: name })) })
+    if (rules.length === 0) continue
+    // what the card always sends is carried on every turn, up to a limit; the rest is lore the game master finds by search
+    const block = `## ${name}\n${rules.map(passage => passage.trim()).join('\n\n')}`
+    if (item.constant === true && standing.length + block.length <= STANDING_MAX_CHARS) standing += `${standing === '' ? '' : '\n\n'}${block}`
+    else addLore(result.lore, { id: uniqueKey(slug(item.label, 'rules'), taken), ...guidanceEntry(rules, tr('{label}: rules and mechanics', { label: name })) })
+  }
+  if (standing !== '') result.prompts.push({ id: STANDING_PROMPT, text: inert(standing) })
   placeAtScenario(result, items, classified, roster)
   pruneLoreSubjects(result)
+  pruneMembers(result)
+  pruneLinks(result)
   pruneKnowledge(result)
   completeAwareness(result)
   return result
@@ -491,7 +615,7 @@ const MAX_STYLE_CHARS = 2000
 /** The instructions to the AI that a card carries: its own system and post-history fields, and the pieces judged to be instructions. */
 export function instructionPieces(card: NormalizedCard, items: readonly SourceItem[], classified: Classified): string[] {
   const fields = [card.systemPrompt, card.postHistoryInstructions].map(field => cleanText(field, card.name)).filter(field => field !== '')
-  const pieces = items.filter(item => classified[item.id]?.roles[0] === 'instruction').map(item => item.text)
+  const pieces = items.filter(item => mainRole(classified[item.id] ?? { roles: [] }) === 'instruction').map(item => item.text)
   return [...fields, ...pieces]
 }
 
@@ -561,8 +685,12 @@ const VARIABLES_SCHEMA = {
 } as const
 
 /** The pieces that may describe what a card tracks: its panels and formats, and its instructions. */
+/** What a card that keeps its game state in variables says of them: the tool that updates them names itself in the text, whatever role the piece was given. */
+const STATE_SPEC = /stat_data|\[mvu_|<UpdateVariable>|<initvar>|JSON ?Patch/i
+
 function trackingPieces(card: NormalizedCard, items: readonly SourceItem[], classified: Classified): string[] {
-  return [...items.filter(item => classified[item.id]?.roles[0] === 'template').map(item => item.text), ...instructionPieces(card, items, classified)]
+  const specs = items.filter(item => mainRole(classified[item.id] ?? { roles: [] }) !== 'irrelevant' && STATE_SPEC.test(item.text)).map(item => item.text)
+  return [...new Set([...items.filter(item => mainRole(classified[item.id] ?? { roles: [] }) === 'template').map(item => item.text), ...instructionPieces(card, items, classified), ...specs])]
 }
 
 /** The documents of `variables.json` an answer describes, with the roster's names turned into keys. */
@@ -586,7 +714,6 @@ export function variableDocuments(answer: Document, roster: Roster): Document[] 
 
 /** What is wrong with the declarations, as the world would find it; nothing when they can be used. */
 export function variablesProblem(documents: readonly Document[], roster: Roster): string | undefined {
-  if (documents.length > MAX_VARIABLES) return `${documents.length} variables is more than a world may track (${MAX_VARIABLES}): keep the ones that matter`
   const parsed = parseVariablesFile(JSON.stringify(documents))
   if (!parsed.ok) return parsed.issues.map(issue => `${issue.path} ${issue.message}`.trim()).join('; ')
   const ids = (kind: string): { id: string }[] => roster.filter(entity => entity.kind === kind).map(entity => ({ id: entity.key }))
@@ -594,24 +721,69 @@ export function variablesProblem(documents: readonly Document[], roster: Roster)
   return problems.length === 0 ? undefined : problems.join('; ')
 }
 
-/** Finds what the card keeps track of, such as status panels and meters, and writes it as the world's tracked variables. */
-export async function extractVariables(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Pick<Extracted, 'variables' | 'notes'>> {
-  const pieces = trackingPieces(card, items, classified)
-  if (pieces.length === 0) return { variables: [], notes: [] }
-  ctx.say('looking for what the card tracks')
-  try {
-    const names = (kind: string): string => roster.filter(entity => entity.kind === kind).map(entity => entity.name).join(', ')
-    const tr = trOf(ctx)
-    const prompt = `${tr('Card: {name}', { name: card.name })}\n\n${tr('Characters:')} ${names('character')}\n${tr('Places:')} ${names('place')}\n${tr('Things:')} ${names('thing')}\n\n${tr('The pieces of the card that may describe what it tracks:')}\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
-    const answer = await ctx.run<Document>({
-      persona: ctx.text('import/variables', { rules: ctx.text('import/common-rules') }),
-      maxTokens: 6000,
-      prompt,
-      result: VARIABLES_SCHEMA as never,
-      check: value => variablesProblem(variableDocuments(value, roster), roster),
-    })
-    return { variables: variableDocuments(answer, roster), notes: list(answer['left_out']).map(entry => `not tracked: ${entry}`) }
-  } catch (error) {
-    return { variables: [], notes: [`what the card tracks was not carried over: ${error instanceof Error ? error.message : String(error)}`] }
+/** The most of the card's tracking text one request reads: a request with all of it made the model write on until its limit without answering. */
+const TRACKING_GROUP_CHARS = 6000
+
+/** The pieces cut into groups that each fit one request, in order. */
+export function trackingGroups(pieces: readonly string[], max: number = TRACKING_GROUP_CHARS): string[][] {
+  const groups: string[][] = []
+  let size = 0
+  for (const piece of pieces) {
+    const text = piece.length > max ? piece.slice(0, max) : piece
+    if (groups.length === 0 || size + text.length > max) { groups.push([]); size = 0 }
+    groups.at(-1)!.push(text)
+    size += text.length
   }
+  return groups
+}
+
+/** How many tracked values one request is asked to declare when nothing says otherwise, and how many requests one group of the card's text may take: a card that tracks more is asked again for the rest. */
+const DEFAULT_VARIABLES_PER_REQUEST = 25
+const MAX_VARIABLE_ROUNDS = 12
+const TOKENS_PER_VARIABLE = 600
+
+/** Finds what the card keeps track of, such as status panels and meters, and writes it as the world's tracked variables. Each group of the card's tracking text is read on its own, a request declares at most `variablesPerRequest` values and is asked again, told what is declared already, while it fills its share; the first declaration of a key stands. */
+export async function extractVariables(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Pick<Extracted, 'variables' | 'notes'>> {
+  const groups = trackingGroups(trackingPieces(card, items, classified))
+  if (groups.length === 0) return { variables: [], notes: [] }
+  const perRequest = ctx.variablesPerRequest ?? DEFAULT_VARIABLES_PER_REQUEST
+  const names = (kind: string): string => roster.filter(entity => entity.kind === kind).map(entity => entity.name).join(', ')
+  const tr = trOf(ctx)
+  const found = await mapLimit(groups, ctx.concurrency, async (pieces, index) => {
+    const documents: Document[] = []
+    const notes: string[] = []
+    for (let round = 1; round <= MAX_VARIABLE_ROUNDS; round += 1) {
+      ctx.say(`looking for what the card tracks ${index + 1}/${groups.length}${round === 1 ? '' : `, round ${round}`}`)
+      try {
+        const declared = documents.length === 0 ? '' : `\n\n${tr('Already declared (do not declare them again):')} ${documents.map(document => text(document['key'])).join(', ')}`
+        const prompt = `${tr('Card: {name}', { name: card.name })}\n\n${tr('Characters:')} ${names('character')}\n${tr('Places:')} ${names('place')}\n${tr('Things:')} ${names('thing')}\n\n${tr('The pieces of the card that may describe what it tracks:')}\n\n${pieces.join('\n\n---\n\n')}${declared}`
+        const answer = await ctx.run<Document>({
+          persona: ctx.text('import/variables', { rules: ctx.text('import/common-rules'), max: perRequest }),
+          // a model asked for a share of the values still tends to write all it finds, about this much each
+          maxTokens: Math.max(6000, perRequest * TOKENS_PER_VARIABLE),
+          prompt,
+          result: VARIABLES_SCHEMA as never,
+        })
+        // one declaration that cannot be used is left out with its reason; it does not cost the rest of the answer
+        const proposed: Document[] = []
+        for (const document of variableDocuments(answer, roster)) {
+          const problem = variablesProblem([document], roster)
+          if (problem === undefined) proposed.push(document)
+          else notes.push(`not tracked: ${text(document['name'])}: ${problem}`)
+        }
+        const fresh = proposed.filter(document => !documents.some(kept => kept['key'] === document['key']))
+        documents.push(...fresh)
+        if (round === 1) notes.push(...list(answer['left_out']).map(entry => `not tracked: ${entry}`))
+        // an answer that did not fill its share has said all there is
+        if (proposed.length < perRequest || fresh.length === 0) break
+      } catch (error) {
+        notes.push(`what part ${index + 1} of the card tracks was not carried over${round === 1 ? '' : ` after round ${round - 1}`}: ${error instanceof Error ? error.message : String(error)}`)
+        break
+      }
+    }
+    return { documents, notes }
+  })
+  const variables: Document[] = []
+  for (const document of found.flatMap(entry => entry.documents)) if (!variables.some(kept => kept['key'] === document['key'])) variables.push(document)
+  return { variables, notes: found.flatMap(entry => entry.notes) }
 }

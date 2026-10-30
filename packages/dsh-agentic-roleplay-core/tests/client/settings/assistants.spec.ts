@@ -5,7 +5,7 @@ const field = (name: string) => assistantFields.find(spec => spec.field === name
 
 describe('the settings of the assistants', () => {
   it('cover the thinking level, the model, the limits and the decision model, each a field of the plugin configuration', () => {
-    expect(ASSISTANT_FIELDS.map(spec => spec.field)).toEqual(['importReasoning', 'childReasoning', 'importModel', 'importTemperature', 'importMaxTokens', 'importTimeoutMinutes', 'importConcurrency', 'importDecisions', 'importConfidence', 'authoringApproval', 'importMaxUploadBytes', 'catalogueMaxBytes', 'catalogueTrashDays'])
+    expect(ASSISTANT_FIELDS.map(spec => spec.field)).toEqual(['importReasoning', 'childReasoning', 'importModel', 'importTemperature', 'importStructuredOutput', 'importMaxTokens', 'importVariablesPerRequest', 'importTimeoutMinutes', 'importConcurrency', 'importDecisions', 'importConfidence', 'authoringApproval', 'importMaxUploadBytes', 'catalogueMaxBytes', 'catalogueTrashDays'])
   })
 
   it('go back to the default when emptied, keep a text as it is, and show a number as text', () => {

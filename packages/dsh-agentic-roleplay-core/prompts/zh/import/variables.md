@@ -3,3 +3,4 @@
 每个变量写：key（小写 ASCII 字母、数字和下划线，以字母开头，例如 trust_meter）、name、kind（number、flag 或 choice）、subject（character、item、location 或 world：它是关于谁或什么的）、visibility（public：所有人可见，private：只有拥有者可见，hidden：只有主持人可见）。数字在卡片给出范围时写 min 和 max，按整数计数时写 integer，卡片说明起点时写 default；卡片给出数值区间的名称时写 bands（up_to 和 label，例如“20 以下是敌对”）。选项写 options。只有当卡片把它限定给列表中的部分角色、地点或物品时才写 only。
 面板或指标显示的每个数值都要声明，一个数值一个变量。卡片对数值说过的话要写进它的字段，不要列入 left_out：起点是 default，范围是 min 和 max，整数计数写 integer: true，有名字的区间写 bands。属于玩家的数值（金钱、声望）subject 为 character；整个故事共有的数值（日期、天气）subject 为 world。
 不要保留，并列入 left_out：不属于被追踪数值的游戏规则、输出格式、关于叙述的指令、脚本，以及只属于故事某一刻而不属于世界的数值。卡片没有追踪任何东西时，不返回变量。
+一次回答最多声明 ${max} 个变量，先写故事最依赖的那些；卡片追踪的更多时，会再次询问其余的，并告诉你已经声明了哪些。

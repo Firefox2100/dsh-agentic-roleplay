@@ -1,11 +1,12 @@
 import type { NormalizedCard } from '../../shared/import-card.ts'
-import type { SourceItem } from './items.ts'
+import { withPlayer, type SourceItem } from './items.ts'
 import type { Translate } from 'dsh-roleplay-model'
 import { yesAt } from '../decisions/route.ts'
 import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 
-export const ROLES = ['character', 'player', 'speech', 'place', 'faction', 'thing', 'world', 'scenario', 'instruction', 'template', 'irrelevant'] as const
-export type Role = typeof ROLES[number]
+import { KINDS, ROLES, isGeneratorOnly, isLeftOut, kindOfRole, playsRole, type Kind, type Role } from './roles.ts'
+
+export { KINDS, ROLES, isGeneratorOnly, isLeftOut, kindOfRole, type Kind, type Role }
 
 /** Whom or what a piece is about, and what kind of thing that is; `other` is an event, an idea or anything that is not one of the four kinds. */
 export interface Target {
@@ -20,9 +21,6 @@ export interface Classification {
 }
 export type Classified = Record<string, Classification>
 
-export const KINDS = ['character', 'place', 'faction', 'thing'] as const
-export type Kind = typeof KINDS[number]
-
 export interface Entity {
   kind: Kind
   /** The file-safe id the entity gets in the world. */
@@ -35,14 +33,6 @@ export interface Entity {
   parent?: string
 }
 export type Roster = Entity[]
-
-/** The roles that tell what an entity is. The others are about the world, the story or the card itself. */
-const ENTITY_ROLES: Record<Role, Kind | undefined> = { character: 'character', player: 'character', speech: 'character', place: 'place', faction: 'faction', thing: 'thing', world: undefined, scenario: undefined, instruction: undefined, template: undefined, irrelevant: undefined }
-/** The roles of pieces that are not carried on: they say how to run a story, or nothing about this one. */
-const LEFT_OUT = new Set<Role>(['instruction', 'template', 'irrelevant'])
-
-export const kindOfRole = (role: Role): Kind | undefined => ENTITY_ROLES[role]
-export const isLeftOut = (classification: Classification): boolean => classification.roles.every(role => LEFT_OUT.has(role))
 
 const MAX_TARGETS = 10
 const MAX_NAME = 100
@@ -66,17 +56,23 @@ const CLASSIFY_SCHEMA = {
   additionalProperties: false,
 } as const
 
-function classifyJob(text: TextOf, tr: Translate, card: NormalizedCard, item: SourceItem): ChildJob<Classification> {
+/** The most pieces the outline names: a card with more gets its first ones, which is enough to show how it is built. */
+const OUTLINE_PIECES = 120
+/** Each line of the outline is the start of a title: the outline is read with every piece, so it is kept to a page. */
+const OUTLINE_LINE_CHARS = 36
+
+function classifyJob(text: TextOf, tr: Translate, card: NormalizedCard, item: SourceItem, outline: string): ChildJob<Classification> {
   const header = [tr('Card: {name}', { name: card.name }), tr('Piece: {label}', { label: item.label }), ...(item.title === '' ? [] : [tr('Title: {title}', { title: item.title })]), ...(item.keys.length === 0 ? [] : [tr('Keys: {keys}', { keys: item.keys.join(', ') })])]
   return {
-    persona: text('import/classifier', { max: MAX_TARGETS }),
+    // every piece is judged knowing how the whole card is built; the outline is the same for all of them, so it costs one prefill
+    persona: outline === '' ? text('import/classifier', { max: MAX_TARGETS }) : `${text('import/classifier', { max: MAX_TARGETS })}\n\n${tr('All the pieces of this card, in order:')}\n${outline}`,
     maxTokens: 2000,
     prompt: `${header.join('\n')}\n---\n${item.text.slice(0, SHOWN_CHARS)}`,
     result: CLASSIFY_SCHEMA as never,
     check: (value) => {
       if (value.roles.length === 0 || value.roles.length > 3 || new Set(value.roles).size !== value.roles.length) return 'give one to three different roles'
       if (value.targets.length > MAX_TARGETS) return `give at most ${MAX_TARGETS} names`
-      if (value.targets.some(target => target.name.trim() === '' || target.name.length > MAX_NAME || isPlayerWord(target.name) || /\[PLAYER\]|\{\{\s*user\s*\}\}/i.test(target.name))) return 'every name must be a real name of at most 100 characters, and never [PLAYER]'
+      if (value.targets.some(target => target.name.trim() === '' || target.name.length > MAX_NAME || isPlayerWord(target.name))) return 'every name must be a real name of at most 100 characters, and the player is never listed'
       return undefined
     },
   }
@@ -111,6 +107,7 @@ async function settledByDecision(ctx: ImportContext, card: NormalizedCard, item:
 
 /** Says what every piece is. A piece that cannot be classified is kept as world background, so that nothing is lost silently; the failures are returned. */
 export async function classifyItems(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[]): Promise<{ classified: Classified; failures: string[]; decided: number }> {
+  const outline = items.length < 2 ? '' : items.slice(0, OUTLINE_PIECES).map(piece => `- ${(piece.title === '' ? piece.label : piece.title).slice(0, OUTLINE_LINE_CHARS)}`).join('\n')
   const failures: string[] = []
   const problems = new Set<string>()
   let decided = 0
@@ -119,9 +116,10 @@ export async function classifyItems(ctx: ImportContext, card: NormalizedCard, it
     const settled = await settledByDecision(ctx, card, item, problems)
     if (settled !== undefined) { decided += 1; return { roles: [settled], targets: [] } satisfies Classification }
     try {
-      const value = await ctx.run(classifyJob(ctx.text, trOf(ctx), card, item))
+      const value = await ctx.run(classifyJob(ctx.text, trOf(ctx), card, item, outline))
       const seen = new Set<string>()
-      const targets = value.targets.map(target => ({ name: target.name.trim(), kind: target.kind })).filter(target => !isPlayerWord(target.name)).filter((target) => { const id = `${target.kind}:${norm(target.name)}`; if (seen.has(id)) return false; seen.add(id); return true })
+      // a name that holds the player's marker (a cult named after the player) is that name with the player's word, not a reason to refuse the answer
+      const targets = value.targets.map(target => ({ name: withPlayer(target.name.trim()), kind: target.kind })).filter(target => !isPlayerWord(target.name)).filter((target) => { const id = `${target.kind}:${norm(target.name)}`; if (seen.has(id)) return false; seen.add(id); return true })
       return { roles: playerRoleKept(value.roles, item.text), targets } satisfies Classification
     } catch (error) {
       failures.push(`${item.label}: ${error instanceof Error ? error.message : String(error)}`)
@@ -132,12 +130,17 @@ export async function classifyItems(ctx: ImportContext, card: NormalizedCard, it
   return { classified: Object.fromEntries(items.map((item, index) => [item.id, answers[index]!])), failures, decided }
 }
 
+/** A name that no piece is about becomes an entity only when this many pieces mention it. */
+const MIN_MENTIONS = 2
+
 export interface Candidate {
   kind: Kind
   name: string
   player: boolean
   pieces: string[]
   titles: string[]
+  /** Whether some piece is about it, not only passing it by. */
+  primary: boolean
 }
 
 /** A name that is only part of one longer name of the same kind (a given name, a short form) is that entity: it is folded into it as an alias. Several longer names make it ambiguous, so it stays. */
@@ -162,17 +165,20 @@ export function candidatesOf(items: readonly SourceItem[], classified: Classifie
   for (const item of items) {
     const classification = classified[item.id]
     if (classification === undefined) continue
-    if (isLeftOut(classification)) continue
-    for (const { name, kind } of classification.targets) {
-      if (kind === 'other' || norm(name) === '') continue
+    if (isLeftOut(classification) || isGeneratorOnly(classification)) continue
+    classification.targets.forEach(({ name, kind }, index) => {
+      if (kind === 'other' || norm(name) === '') return
       const id = `${kind}:${norm(name)}`
-      const candidate = found.get(id) ?? { kind, name, player: false, pieces: [], titles: [] }
-      candidate.player ||= kind === 'character' && classification.roles.includes('player')
+      const candidate = found.get(id) ?? { kind, name, player: false, pieces: [], titles: [], primary: false }
+      // what a piece is mostly about is its first name; the place a piece sets its scene in is about it too
+      candidate.primary ||= index === 0 || (kind === 'place' && (playsRole(classification, 'place') || playsRole(classification, 'scenario')))
+      candidate.player ||= kind === 'character' && playsRole(classification, 'player')
       if (!candidate.pieces.includes(item.id)) { candidate.pieces.push(item.id); if (item.title !== '' && candidate.titles.length < 2) candidate.titles.push(item.title) }
       found.set(id, candidate)
-    }
+    })
   }
-  return [...found.values()]
+  // a name that only turns up inside pieces about others, once, is background, not someone with a sheet to write
+  return [...found.values()].filter(candidate => candidate.primary || candidate.player || candidate.pieces.length >= MIN_MENTIONS)
 }
 
 const ENTRY = (extra: Record<string, unknown> = {}) => ({

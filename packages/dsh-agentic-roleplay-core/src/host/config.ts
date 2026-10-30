@@ -49,6 +49,8 @@ export interface Config {
   importModel: Volatile<string>
   /** The most tokens one model request of an import may produce. */
   importMaxTokens: Volatile<number>
+  importStructuredOutput: Volatile<'tool' | 'schema'>
+  importVariablesPerRequest: Volatile<number>
   /** How freely the agents of an import write; low, because they copy and sort what the card says. */
   importTemperature: Volatile<number>
   /** Minutes one helper agent of an import or authoring job may work before it is stopped; 0 never stops it. */
@@ -74,7 +76,9 @@ export const Config = z.object({
   importReasoning: z.string().default('').volatile(),
   childReasoning: z.string().default('').volatile(),
   importModel: z.string().default('').volatile(),
-  importMaxTokens: z.number().min(1000).max(200000).default(16000).volatile(),
+  importStructuredOutput: z.union(['tool', 'schema'] as const).default('tool').volatile(),
+  importMaxTokens: z.number().min(0).max(1000000).default(0).volatile(),
+  importVariablesPerRequest: z.number().min(5).max(500).default(25).volatile(),
   importTemperature: z.number().min(0).max(2).default(0.2).volatile(),
   importTimeoutMinutes: z.number().min(0).max(240).default(15).volatile(),
   importDecisions: z.union([z.const('llm'), z.const('decision')]).default('llm').volatile(),

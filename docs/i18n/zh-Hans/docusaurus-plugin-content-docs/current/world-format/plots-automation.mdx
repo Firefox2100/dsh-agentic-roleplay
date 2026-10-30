@@ -22,3 +22,16 @@ title: 剧情、变量与触发器
 ```
 
 `time` 条件可使用绝对的 `from` 或 `to`、每天重复的 `window`、`days` 中的星期，以及 `on` 中的共用日历规则。`on` 支持月份、日期、日期区间、季节、自定义节日和排除项，详见[日历与日期规则](./calendar)。同时提供 `days` 与 `on` 时，两者都必须满足。
+
+## 斜杠指令
+
+世界可以用 `commands.json` 给玩家一些在斜杠后输入的词，例如 `/recruit`。每个指令有 `word`（字母、数字或下划线；`ooc` 和 `roll` 归游戏本身所有）、`description`（指令被使用时会告诉游戏主持人），以及——当词不是纯小写 ASCII 时——为它的标记变量取名的 `key`。
+
+```json
+{ "commands": [
+  { "word": "recruit", "description": "Bring a new follower into the cult." },
+  { "word": "招募", "key": "recruit_zh", "description": "同上，用中文写。" }
+] }
+```
+
+每个指令都会声明一个隐藏的标记变量 `command_<key>`，它只在输入指令的那个回合为真，下一回合开始时恢复为假，所以等待它的触发器每次使用指令都会触发。触发器随后可以请世界作者造一个人物、设置变量，或给游戏主持人一个节拍。与 `variables.json` 中同名的变量会被拒绝。

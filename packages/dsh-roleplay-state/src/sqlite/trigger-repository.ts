@@ -1,4 +1,4 @@
-import { MAX_TRIGGERS, type NewTriggerNote, type Trigger, type TriggerAnnouncement, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type TriggerId, type TriggerNote, type TriggerNoteKind, type TriggerStatus } from 'dsh-roleplay-model'
+import { MAX_TRIGGERS, TRIGGER_KEY, type NewTriggerNote, type Trigger, type TriggerAnnouncement, type TriggerCondition, type TriggerDefinition, type TriggerEffect, type TriggerId, type TriggerNote, type TriggerNoteKind, type TriggerStatus } from 'dsh-roleplay-model'
 import type { SqlDatabase, SqlValue } from '../driver/types.ts'
 import { CorruptDataError, InvalidValueError, NotFoundError } from '../errors.ts'
 import type { TriggerRepository } from '../repositories.ts'
@@ -107,7 +107,7 @@ export class SqliteTriggerRepository implements TriggerRepository {
   }
 
   private check(definition: TriggerDefinition): void {
-    if (!/^[a-z0-9][a-z0-9_-]{0,63}$/.test(definition.key)) throw new InvalidValueError('a trigger key is lowercase letters, digits, hyphens and underscores, at most 64')
+    if (!TRIGGER_KEY.test(definition.key)) throw new InvalidValueError('a trigger key is lowercase letters, digits, hyphens and underscores, at most 64')
     if (definition.name.trim() === '' || definition.name.length > 200) throw new InvalidValueError('a trigger needs a name of at most 200 characters')
     if (definition.effects.length === 0) throw new InvalidValueError('a trigger needs at least one effect')
     if (definition.chance !== undefined && !(definition.chance >= 0 && definition.chance <= 1)) throw new InvalidValueError('a chance is from 0 to 1')

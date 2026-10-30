@@ -9,7 +9,7 @@ export type SettingsLocaleKey =
   | 'catalogueKeyName' | 'catalogueKeyChecking' | 'catalogueKeySet' | 'catalogueKeyUnset' | 'catalogueKeyReadOnly' | 'catalogueKeyStore' | 'catalogueKeyClear' | 'catalogueKeyLegacy' | 'catalogueKeyMove'
   | 'authoringTools' | 'authoringToolsHint' | 'authoringToolsNone' | 'authoringKind_worldAuthoring' | 'authoringKind_presetAuthoring' | 'authoringKind_lorebookAuthoring' | 'authoringKind_worldAuthor'
   | 'sync' | 'syncHint' | 'syncRemote' | 'syncConfigFile' | 'syncRclone' | 'syncInterval' | 'syncPassword' | 'syncDetails' | 'syncProblemRemote' | 'syncProblemConfig' | 'syncProblemInterval'
-  | 'redundantLayers' | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'authoringApprovalLabel' | 'authoringApprovalHint' | 'authoringApprovalAsk' | 'authoringApprovalAuto' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
+  | 'redundantLayers' | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importStructuredOutputLabel' | 'importStructuredOutputHint' | 'importStructuredTool' | 'importStructuredSchema' | 'importVariablesPerRequestLabel' | 'importVariablesPerRequestHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'authoringApprovalLabel' | 'authoringApprovalHint' | 'authoringApprovalAsk' | 'authoringApprovalAuto' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
   | 'overridden' | 'reset' | 'invalid'
   | 'readOnly' | 'unavailable' | 'save' | 'saving' | 'saveFailed'
 
@@ -60,7 +60,13 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     importTemperatureLabel: 'Temperature',
     importTemperatureHint: 'How freely they write, from 0 to 2. Low, because they copy and sort what a card says. Default 0.2.',
     importMaxTokensLabel: 'Most tokens per request',
-    importMaxTokensHint: 'The most one model request of a helper may produce, thinking included. Default 16000.',
+    importMaxTokensHint: 'The most one model request of a helper may produce, thinking included. 0 (the default) is a tenth of the model\'s context window, at least 16000.',
+    importStructuredOutputLabel: 'How helpers give their result',
+    importStructuredOutputHint: 'Call a tool (works with every model), or reply with JSON the endpoint constrains to the result\'s shape (the model cannot ramble first; needs an OpenAI-compatible endpoint that takes a JSON schema, such as LocalAI, vLLM or OpenAI). Default: call a tool.',
+    importStructuredTool: 'Call a tool',
+    importStructuredSchema: 'Constrained JSON reply',
+    importVariablesPerRequestLabel: 'Tracked values per request',
+    importVariablesPerRequestHint: 'How many tracked values (meters, stats, flags) one request is asked to declare, 5 to 500. A card that tracks more is asked again for the rest. Default 25.',
     importTimeoutMinutesLabel: 'Minutes before a helper is stopped',
     importTimeoutMinutesHint: 'A helper that has not given its result after this long is stopped and the step reports why, so a run-away helper never holds an import for hours. 0 never stops it. Default 15.',
     importConcurrencyLabel: 'Helpers at once',
@@ -152,7 +158,13 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     importTemperatureLabel: '温度',
     importTemperatureHint: '它们写作的自由度，0 到 2。取低值，因为它们是在抄写和整理卡片的内容。默认 0.2。',
     importMaxTokensLabel: '每次请求的最大 token 数',
-    importMaxTokensHint: '助手一次模型请求最多产生的 token 数，包括思考。默认 16000。',
+    importMaxTokensHint: '助手一次模型请求最多产生的 token 数，包括思考。0（默认）表示模型上下文窗口的十分之一，至少 16000。',
+    importStructuredOutputLabel: '助手如何给出结果',
+    importStructuredOutputHint: '调用工具（所有模型都可用），或用端点按结果结构约束的 JSON 回复（模型不会先写一大段分析；需要支持 JSON schema 的 OpenAI 兼容端点，如 LocalAI、vLLM 或 OpenAI）。默认：调用工具。',
+    importStructuredTool: '调用工具',
+    importStructuredSchema: '约束 JSON 回复',
+    importVariablesPerRequestLabel: '每次请求声明的追踪数值数',
+    importVariablesPerRequestHint: '一次请求最多要求声明多少个追踪数值（量表、属性、标记），5 到 500。追踪更多的卡片会再次询问其余的。默认 25。',
     importTimeoutMinutesLabel: '助手的时限（分钟）',
     importTimeoutMinutesHint: '助手超过这个时间仍没有给出结果就会被停止，该步骤会说明原因，因此失控的助手不会让导入卡上几个小时。0 表示不限制。默认 15。',
     importConcurrencyLabel: '同时运行的助手数',

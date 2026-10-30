@@ -13,7 +13,12 @@ export interface ImportSettings {
   reasoning: string
   /** `provider/model` the helpers run on; empty is the chat's own. */
   model: string
+  /** The most one request of a helper may write; 0 is a share of the model's context window. */
   maxTokens: number
+  /** How many tracked values one request is asked to declare; a card with more is asked again for the rest. */
+  variablesPerRequest: number
+  /** `schema` asks a helper for its result as a reply constrained to the result's JSON schema, `tool` (the default) as a call of a tool; an endpoint that does not take `response_format` needs `tool`. */
+  structured: 'tool' | 'schema'
   temperature: number
   /** Minutes a helper may work before it is stopped; 0 never stops it. */
   timeoutMinutes: number
