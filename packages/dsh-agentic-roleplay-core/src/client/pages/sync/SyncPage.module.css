@@ -3,13 +3,37 @@
 .meta { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .viewport { flex: 1 1 0; min-height: 0; overflow: auto; }
-.table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.table { width: 100%; min-width: 720px; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
+.unitColumn { width: 18%; }
+.kindColumn { width: 13%; }
+.stateColumn { width: 14%; }
+.syncedColumn { width: 16%; }
+.detailsColumn { width: 29%; }
+.actionsColumn { width: 10%; }
+.caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 .table th { position: sticky; top: 0; padding: 6px 8px; font-size: 12px; font-weight: 400; text-align: left; color: var(--dsw-alias-label-tertiary); background: var(--dsw-alias-bg-layer-1); border-bottom: 0.5px solid var(--dsw-alias-border-l3); }
+.table .actionHeading { text-align: right; }
 .table td { padding: 6px 8px; vertical-align: top; border-bottom: 0.5px solid var(--dsw-alias-border-l4); color: var(--dsw-alias-label-primary); }
+.table td:last-child { text-align: right; }
 .unit { font-family: var(--dsw-font-mono, monospace); font-size: 12px; word-break: break-all; }
 .conflict { color: var(--dsw-alias-state-warn-primary, var(--dsw-alias-state-error-primary)); }
-.failed { color: var(--dsw-alias-state-error-primary); }
+.failed {
+  display: block;
+  color: var(--dsw-alias-state-error-primary);
+  overflow-wrap: anywhere;
+}
 .detail { display: flex; flex-direction: column; gap: 6px; margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.detail > span:first-child { overflow-wrap: anywhere; }
 .choices { display: flex; flex-wrap: wrap; gap: 4px; }
 .message { margin: 0; padding: 40px 0; font-size: 13px; text-align: center; color: var(--dsw-alias-label-secondary); }
 .error { margin: 0; font-size: 12px; color: var(--dsw-alias-state-error-primary); }

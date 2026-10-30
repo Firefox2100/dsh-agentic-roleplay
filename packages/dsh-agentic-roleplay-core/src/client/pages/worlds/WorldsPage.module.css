@@ -103,13 +103,22 @@
 }
 
 .editTitle {
+  flex: 1 1 180px;
+  min-width: 0;
   font-size: 14px;
   font-weight: 500;
   color: var(--dsw-alias-label-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.authorButton {
-  margin-left: auto;
+.editActions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .editBody {
@@ -161,7 +170,8 @@
     white-space: nowrap;
   }
 
-  .authorButton {
-    margin-left: 0;
+  .editActions {
+    flex: 0 0 100%;
+    justify-content: flex-start;
   }
 }

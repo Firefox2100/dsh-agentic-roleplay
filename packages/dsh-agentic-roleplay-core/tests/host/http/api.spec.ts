@@ -236,14 +236,14 @@ beforeEach(async () => {
         edited.push(`${worldId} ${key} ${JSON.stringify(edit)}`)
         return Promise.resolve({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] })
       },
-      editPlace: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editThing: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editFaction: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editLore: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editPlace: async () => { if (editorError !== undefined) throw editorError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editThing: async () => { if (editorError !== undefined) throw editorError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editFaction: async () => { if (editorError !== undefined) throw editorError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editLore: async () => { if (editorError !== undefined) throw editorError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       addLore: async (_world, title) => { if (title.trim() === '') throw new InvalidEditProblems(['the entry needs a title']); edited.push(`add lore ${title}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       removeLore: async (_world, key) => { edited.push(`remove lore ${key}`); return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
-      editPlots: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editRelation: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editPlots: async () => { if (editorError !== undefined) throw editorError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editRelation: async () => { if (editorError !== undefined) throw editorError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       editNarrationVoice: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
@@ -270,12 +270,12 @@ beforeEach(async () => {
         edited.push(`${id} ${key} ${JSON.stringify(edit)}`)
         return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] }
       },
-      editPlace: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editThing: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editFaction: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editLore: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editPlots: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
-      editRelation: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
+      editPlace: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editThing: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editFaction: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editLore: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editPlots: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      editRelation: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       editNarrationVoice: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
@@ -1084,6 +1084,70 @@ describe('roleplay API', () => {
       expect((await put('/sessions/world/character?id=x&key=clara', { name: 'x' })).status).toBe(404)
       archiveError = undefined
       expect((await fetch(`${origin}/sessions/world/character?id=abc&key=clara`)).status).toBe(405)
+    })
+
+    it('edits every other part of a session world and validates the request at the route boundary', async () => {
+      expect((await put('/sessions/world/place?id=abc&key=bar', { name: 'The Bar', parent: null })).status).toBe(200)
+      expect((await put('/sessions/world/thing?id=abc&key=lamp', { quantity: 2, hidden: false })).status).toBe(200)
+      expect((await put('/sessions/world/faction?id=abc&key=watch', { name: 'Night Watch', values: ['duty'] })).status).toBe(200)
+      expect((await put('/sessions/world/lore?id=abc&key=tides', { title: 'The Tides', kind: 'history', scope: 'everyone' })).status).toBe(200)
+      expect((await put('/sessions/world/plots?id=abc', { plots: [] })).status).toBe(200)
+      expect((await put('/sessions/world/relation?id=abc', { create: true, kind: 'character', from: 'clara', to: 'arthur', label: 'friend' })).status).toBe(200)
+      expect((await put('/sessions/world/narration-voice?id=abc', { voice: 'clara' })).status).toBe(200)
+
+      expect((await put('/sessions/world/place?id=abc&key=bar', { parent: 3 })).status).toBe(422)
+      expect((await put('/sessions/world/thing?id=abc&key=lamp', { quantity: 0 })).status).toBe(422)
+      expect((await put('/sessions/world/faction?id=abc&key=watch', { name: ' ' })).status).toBe(422)
+      expect((await put('/sessions/world/lore?id=abc&key=tides', { kind: 'rumour' })).status).toBe(422)
+      expect((await put('/sessions/world/plots?id=abc', { plots: 'none' })).status).toBe(400)
+      expect((await put('/sessions/world/relation?id=abc', { kind: 'character' })).status).toBe(422)
+      expect((await put('/sessions/world/narration-voice?id=abc', { voice: 4 })).status).toBe(400)
+    })
+
+    it('distinguishes a missing session from an edit that would make its world invalid', async () => {
+      const edits: [string, unknown][] = [
+        ['/sessions/world/place?id=gone&key=bar', { name: 'Bar' }],
+        ['/sessions/world/thing?id=gone&key=lamp', { quantity: 2 }],
+        ['/sessions/world/faction?id=gone&key=watch', { name: 'Watch' }],
+        ['/sessions/world/lore?id=gone&key=tides', { title: 'Tides' }],
+        ['/sessions/world/plots?id=gone', { plots: [] }],
+        ['/sessions/world/relation?id=gone', { create: true, kind: 'character', from: 'a', to: 'b', label: 'friend' }],
+      ]
+      archiveError = new SessionNotFoundError('no session "gone"')
+      for (const [path, body] of edits) expect((await put(path, body)).status).toBe(404)
+      archiveError = new InvalidEditProblems(['the edit conflicts with the world'])
+      for (const [path, body] of edits) expect((await put(path, body)).status).toBe(422)
+      archiveError = undefined
+    })
+
+    it('edits every structured part of a stored world', async () => {
+      expect((await put('/worlds/state/place?id=harbor&key=bar', { description: 'A quiet room.' })).status).toBe(200)
+      expect((await put('/worlds/state/thing?id=harbor&key=lamp', { notable: true })).status).toBe(200)
+      expect((await put('/worlds/state/faction?id=harbor&key=watch', { summary: 'Keeps order.' })).status).toBe(200)
+      expect((await put('/worlds/state/lore?id=harbor&key=tides', { body: 'The water rises.' })).status).toBe(200)
+      expect((await put('/worlds/state/plots?id=harbor', { plots: [] })).status).toBe(200)
+      expect((await put('/worlds/state/relation?id=harbor', { create: true, kind: 'character', from: 'clara', to: 'arthur', label: 'friend' })).status).toBe(200)
+      expect((await put('/worlds/state/narration-voice?id=harbor', { voice: 'clara' })).status).toBe(200)
+
+      expect((await put('/worlds/state/place?id=harbor&key=bar', { unknown: true })).status).toBe(422)
+      expect((await put('/worlds/state/plots?id=harbor', {})).status).toBe(400)
+      expect((await put('/worlds/state/narration-voice?id=harbor', { voice: null })).status).toBe(400)
+    })
+
+    it('distinguishes a missing stored world from a structurally valid edit it cannot accept', async () => {
+      const edits: [string, unknown][] = [
+        ['/worlds/state/place?id=gone&key=bar', { name: 'Bar' }],
+        ['/worlds/state/thing?id=gone&key=lamp', { quantity: 2 }],
+        ['/worlds/state/faction?id=gone&key=watch', { name: 'Watch' }],
+        ['/worlds/state/lore?id=gone&key=tides', { title: 'Tides' }],
+        ['/worlds/state/plots?id=gone', { plots: [] }],
+        ['/worlds/state/relation?id=gone', { create: true, kind: 'character', from: 'a', to: 'b', label: 'friend' }],
+      ]
+      editorError = new WorldNotFoundError('no world "gone"')
+      for (const [path, body] of edits) expect((await put(path, body)).status).toBe(404)
+      editorError = new InvalidEditProblems(['the edit conflicts with the world'])
+      for (const [path, body] of edits) expect((await put(path, body)).status).toBe(422)
+      editorError = undefined
     })
 
     it('the days and variables of a world are read and replaced; shapes that are wrong and files that would not be valid are 422', async () => {

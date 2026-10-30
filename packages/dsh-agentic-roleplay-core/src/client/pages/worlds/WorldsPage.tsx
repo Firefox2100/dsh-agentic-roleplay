@@ -133,14 +133,16 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
           <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
           <span className={css.editTitle}>{editing.name}</span>
           <input ref={updatePicker} type="file" accept=".png,.json,image/png,application/json" hidden data-testid="roleplay-update-input" onChange={(event) => { chooseUpdateCard(editing.id, event.target.files?.[0]); event.target.value = '' }} />
-          {cardStatus?.fromCard === true && <Button variant="outline" size="sm" disabled={updateBusy} onClick={() => { updatePicker.current?.click() }}>{updateBusy ? t('updateReading') : t('updateFromCard')}</Button>}
-          {cardStatus?.revertible === true && <Button variant="outline" size="sm" onClick={() => { setReverting(true) }}>{t('revertUpdate')}</Button>}
           <input ref={presetPicker} type="file" accept=".json,application/json" hidden data-testid="roleplay-preset-input" onChange={(event) => { choosePreset(editing.id, event.target.files?.[0]); event.target.value = '' }} />
-          <Button className={css.authorButton} variant="outline" size="sm" disabled={presetBusy} onClick={() => { presetPicker.current?.click() }}>{presetBusy ? t('presetReading') : t('importPreset')}</Button>
-          <Button variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
-          <Button variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name })) }}>
-            {state.authoring?.worldId === editing.id && state.authoring.error === undefined ? t('openingAuthor') : t('authorWorld')}
-          </Button>
+          <div className={css.editActions}>
+            {cardStatus?.fromCard === true && <Button variant="outline" size="sm" disabled={updateBusy} onClick={() => { updatePicker.current?.click() }}>{updateBusy ? t('updateReading') : t('updateFromCard')}</Button>}
+            {cardStatus?.revertible === true && <Button variant="outline" size="sm" onClick={() => { setReverting(true) }}>{t('revertUpdate')}</Button>}
+            <Button variant="outline" size="sm" disabled={presetBusy} onClick={() => { presetPicker.current?.click() }}>{presetBusy ? t('presetReading') : t('importPreset')}</Button>
+            <Button variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
+            <Button variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name })) }}>
+              {state.authoring?.worldId === editing.id && state.authoring.error === undefined ? t('openingAuthor') : t('authorWorld')}
+            </Button>
+          </div>
         </div>
         {state.authoring?.worldId === editing.id && state.authoring.error !== undefined && <p className={css.notice} role="alert">{t('authorWorldFailed', { message: state.authoring.error })}</p>}
         {presetNotice !== undefined && <p className={css.notice} role="alert">{presetNotice}</p>}

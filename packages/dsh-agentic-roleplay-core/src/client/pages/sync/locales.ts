@@ -2,7 +2,7 @@ import type { Dictionaries } from '../../i18n.ts'
 
 export type SyncLocaleKey =
   | 'nav' | 'loading' | 'loadFailed' | 'refresh' | 'run' | 'running' | 'runOne' | 'never' | 'lastRun' | 'dateLocale' | 'empty' | 'problem' | 'failed'
-  | 'unit' | 'kind' | 'state' | 'synced' | 'details'
+  | 'unit' | 'kind' | 'state' | 'synced' | 'details' | 'actions' | 'tableCaption'
   | 'kind_world' | 'kind_session' | 'kind_shared'
   | 'state_synced' | 'state_changed' | 'state_new' | 'state_conflict' | 'state_busy' | 'state_failed' | 'state_ignored'
   | 'ignoredDetail' | 'restore' | 'removedDetail' | 'deleteEverywhere' | 'keepOnRemote' | 'getBack' | 'deletedDetail' | 'keepMine' | 'deleteHere'
@@ -16,7 +16,7 @@ export const dictionaries: Dictionaries<SyncLocaleKey> = {
     dateLocale: 'en-GB',
     empty: 'Nothing to sync yet. Worlds, sessions and the shared folders (prompts, presets, lorebooks, avatars, interface packs) appear here once there are some.',
     problem: 'Sync cannot run: {message}. Set it up in Settings, under Role Play.', failed: 'The last action failed: {message}',
-    unit: 'Unit', kind: 'Kind', state: 'State', synced: 'Last synced', details: 'Details',
+    unit: 'Unit', kind: 'Kind', state: 'State', synced: 'Last synced', details: 'Details', actions: 'Actions', tableCaption: 'Roleplay content sync status',
     kind_world: 'World', kind_session: 'Session', kind_shared: 'Shared folder',
     state_synced: 'In step', state_changed: 'Changed here', state_new: 'Not synced yet', state_conflict: 'Needs a choice', state_busy: 'Syncing', state_failed: 'Failed', state_ignored: 'Kept on the remote',
     conflictWhole: 'Both sides changed this. Keep one: the other is replaced.',
@@ -39,7 +39,7 @@ export const dictionaries: Dictionaries<SyncLocaleKey> = {
     dateLocale: 'zh-CN',
     empty: '还没有可同步的内容。世界、会话和共享文件夹（提示词、预设、世界书、头像、界面包）一旦有内容就会出现在这里。',
     problem: '无法同步：{message}。请在“设置”的“角色扮演”中配置。', failed: '上一次操作失败：{message}',
-    unit: '单元', kind: '类型', state: '状态', synced: '上次同步', details: '详情',
+    unit: '单元', kind: '类型', state: '状态', synced: '上次同步', details: '详情', actions: '操作', tableCaption: '角色扮演内容同步状态',
     kind_world: '世界', kind_session: '会话', kind_shared: '共享文件夹',
     state_synced: '已一致', state_changed: '本机已改动', state_new: '尚未同步', state_conflict: '需要选择', state_busy: '同步中', state_failed: '失败', state_ignored: '仅保留在远端',
     conflictWhole: '两边都改动了它。请保留其中一份，另一份会被替换。',

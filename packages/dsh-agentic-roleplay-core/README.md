@@ -2,7 +2,7 @@
 
 The UI, orchestration, world authoring, media, and filesystem integration plugin behind DSH Agentic Roleplay.
 
-It provides the bounded game-master loop, point-of-view character agents, world and session interfaces, authoring agents and tools that ask before changing files by default, character-card import and assisted card-version updates, story compaction, speech integration, and image-generation workflows. It turns the structured state supplied by [`@dsh-agentic-roleplay/state`](https://www.npmjs.com/package/@dsh-agentic-roleplay/state) into a playable and editable experience.
+It provides the bounded game-master loop, point-of-view character agents, world and session interfaces, authoring agents and tools that ask before changing files by default, resumable character-card import with draft repair, assisted card-version updates, world-defined commands, story compaction, speech integration, and image-generation workflows. It turns the structured state supplied by [`@dsh-agentic-roleplay/state`](https://www.npmjs.com/package/@dsh-agentic-roleplay/state) into a playable and editable experience.
 
 ## Install
 

@@ -84,7 +84,16 @@ export function SyncPage(props: SyncPageProps) {
         {status !== undefined && status.units.length === 0 && <p className={css.message}>{t('empty')}</p>}
         {status !== undefined && status.units.length > 0 && (
           <table className={css.table}>
-            <thead><tr><th>{t('unit')}</th><th>{t('kind')}</th><th>{t('state')}</th><th>{t('synced')}</th><th>{t('details')}</th><th /></tr></thead>
+            <caption className={css.caption}>{t('tableCaption')}</caption>
+            <colgroup>
+              <col className={css.unitColumn} />
+              <col className={css.kindColumn} />
+              <col className={css.stateColumn} />
+              <col className={css.syncedColumn} />
+              <col className={css.detailsColumn} />
+              <col className={css.actionsColumn} />
+            </colgroup>
+            <thead><tr><th scope="col">{t('unit')}</th><th scope="col">{t('kind')}</th><th scope="col">{t('state')}</th><th scope="col">{t('synced')}</th><th scope="col">{t('details')}</th><th scope="col" className={css.actionHeading}>{t('actions')}</th></tr></thead>
             <tbody>
               {status.units.map(unit => (
                 <tr key={unit.id}>

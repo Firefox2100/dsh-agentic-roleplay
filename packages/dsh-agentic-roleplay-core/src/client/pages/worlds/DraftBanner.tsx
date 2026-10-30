@@ -41,16 +41,18 @@ export function DraftBanner({ t, worldId, version, openChat, onChanged, onDiscar
   const problems = status.check?.problems ?? []
   return (
     <>
-      <div className={css.banner} role="status" data-testid="roleplay-draft-banner">
+      <div className={css.banner} role="note" data-testid="roleplay-draft-banner">
         <div className={css.text}>
           {t('draftWarning')}
           <ul>{problems.slice(0, SHOWN).map(problem => <li key={`${problem.where}:${problem.message}`}>{problem.where}: {problem.message}</li>)}</ul>
           {problems.length + (status.check?.more ?? 0) > SHOWN && <span>{t('draftMore', { count: problems.length + (status.check?.more ?? 0) - SHOWN })}</span>}
           {confirming && <div role="alert">{t('draftDiscardConfirm')}</div>}
         </div>
-        <Button variant="primary" size="sm" disabled={busy} onClick={() => { decide('ask') }}>{busy ? t('draftBusy') : t('draftAsk')}</Button>
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => { decide('keep') }}>{t('draftKeep')}</Button>
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => { if (confirming) decide('discard'); else setConfirming(true) }}>{t('draftDiscard')}</Button>
+        <div className={css.bannerActions}>
+          <Button variant="primary" size="sm" disabled={busy} onClick={() => { decide('ask') }}>{busy ? t('draftBusy') : t('draftAsk')}</Button>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => { decide('keep') }}>{t('draftKeep')}</Button>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => { if (confirming) decide('discard'); else setConfirming(true) }}>{t('draftDiscard')}</Button>
+        </div>
       </div>
       {failure !== undefined && <p className={css.error} role="alert">{failure}</p>}
     </>
