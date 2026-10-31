@@ -33,15 +33,20 @@ describe('the consistency kit', () => {
   it('finds nothing in a sound world', async () => {
     const report = await runChecks({ world: world() }, { kits: ['consistency'] })
     expect(report.findings).toEqual([])
-    expect(report.ran).toEqual(['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'world-prompts'])
-    expect(report.skipped).toEqual([])
+    expect(report.ran).toEqual(['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'world-prompts', 'unread-fields'])
+    expect(report.skipped.map(entry => entry.check)).toEqual(['duplicate-values-meaning', 'name-near', 'lore-conflict'])
+  })
+
+  it('names fields written under a name the format does not have', async () => {
+    await write(join(directory, 'characters', 'clara', 'character.json'), { name: 'Clara', role: 'playable', summary: 'Innkeeper.', start: { location: 'inn' }, starting_location: 'inn', notes: 'Keeps the keys.' })
+    expect(ofCheck(await runChecks({ world: world() }, { kits: ['consistency'] }), 'unread-fields')).toEqual([expect.objectContaining({ code: 'field-unread', where: 'characters/clara', message: expect.stringContaining('starting_location, notes'), hint: expect.stringContaining('summary') })])
   })
 
   it('names what a story start would refuse, and skips the checks that depend on a readable world', async () => {
     await write(join(directory, 'characters', 'tam', 'character.json'), { name: 'Tam', role: 'npc', summary: 'Fisher.', start: { location: 'nowhere' } })
     const report = await runChecks({ world: world() }, { kits: ['consistency'] })
     expect(ofCheck(report, 'world-valid')).toEqual([expect.objectContaining({ severity: 'error', code: 'invalid', message: expect.stringMatching(/nowhere/) })])
-    expect(report.skipped).toEqual([{ check: 'world-graph', reason: expect.stringMatching(/problems that come first/) }])
+    expect(report.skipped.filter(entry => entry.check === 'world-graph')).toEqual([{ check: 'world-graph', reason: expect.stringMatching(/problems that come first/) }])
   })
 
   it('reports a place nobody can leave', async () => {
@@ -111,7 +116,7 @@ describe('running and remembering', () => {
     await runChecks({ world: world() }, { kits: ['consistency'] })
     await runChecks({ world: world() }, { ids: ['world-valid'] })
     const stored = JSON.parse(await readFile(join(directory, CHECKS_FOLDER, 'results.json'), 'utf8')) as { checks: Record<string, unknown> }
-    expect(Object.keys(stored.checks).sort()).toEqual(CHECKS.filter(check => check.kit === 'consistency').map(check => check.id).sort())
+    expect(Object.keys(stored.checks).sort()).toEqual(CHECKS.filter(check => check.kit === 'consistency' && check.mode === 'code').map(check => check.id).sort())
   })
 
   it('presents counts and the worst findings first', () => {
@@ -126,15 +131,15 @@ describe('the tools', () => {
   const exec = { agent: { session: { id: authoringChatSessionId('harbor') } }, signal: new AbortController().signal } as never
 
   it('run the kit for the world of the chat', async () => {
-    expect(tools().map(tool => tool.name)).toEqual(['check_world', 'check_card', 'check_quality', 'check_list'])
+    expect(tools().map(tool => tool.name)).toEqual(['check_world', 'check_card', 'check_quality', 'check_play', 'check_list'])
     expect(await tools()[0]!.execute({} as never, exec)).toMatchObject({ ok: true, counts: { error: 0 } })
   })
 
   it('list the checks with their kit, mode and needs', async () => {
-    const listed = await tools()[3]!.execute({} as never, exec) as unknown as { id: string; kit: string; mode: string; needs: string[] }[]
+    const listed = await tools()[4]!.execute({} as never, exec) as unknown as { id: string; kit: string; mode: string; needs: string[] }[]
     expect(listed.map(check => check.id)).toEqual(CHECKS.map(check => check.id))
     expect(listed.filter(check => check.kit === 'fidelity').every(check => check.needs.includes('card'))).toBe(true)
-    expect(listed.filter(check => check.kit === 'consistency').every(check => check.mode === 'code' && check.needs.length === 0)).toBe(true)
+    expect(listed.filter(check => check.kit === 'consistency').every(check => (check.mode === 'code' && check.needs.length === 0) || (check.mode === 'decision' && check.needs.join() === 'model'))).toBe(true)
   })
 
   it('work only in a world authoring chat', async () => {

@@ -79,16 +79,18 @@ SillyTavern 角色卡可以是带有 `ccv3` 或 `chara` 数据块的 PNG，也�
 
 ## 检查套件
 
-`host/checks/` 把所有“世界对不对”的检查放进一个套件，按检查包组织（`shared/checks.ts`：`consistency`、`fidelity`、`quality`）。面向用户的说明见[检查世界](../authoring/checks)。
+`host/checks/` 把所有“世界对不对”的检查放进一个套件，按检查包组织（`shared/checks.ts`：`consistency`、`fidelity`、`quality`、`playability`）。面向用户的说明见[检查世界](../authoring/checks)。
 
-- **统一的约定。** 一项检查是 `{ id, kit, mode, needs, description, run(input) }`（`check.ts`），返回发现：`severity`（`error`、`warning`、`info`）、`code`、`where`、`message`，以及可选的 `hint`。`mode` 为 `code`（由程序判定）、`judged`（模型阅读程序收集的依据）或 `decision`（决策模型可以回答的是非题）。`needs` 是 `card` 和/或 `model`。无法在某个世界上运行的检查会抛出 `CheckSkipped`，报告里会连同原因把它列为跳过，而不是算作没问题。`runChecks`（`run.ts`）运行被要求的检查包；不是 `code` 的检查只在 `deep` 时运行，否则列为跳过。
-- **一致性**（`consistency.ts`）包装 `checkWorld`（开始故事时的校验）、对由世界文件生成的临时故事运行的 `lintWorld`（`worlds/scratch.ts`，与触发器检查共用）、对同样对象含义相同的追踪数值（`duplicateValues`，带一个小的同义词表）、别名和名称冲突，以及世界自带的提示词（把 `copyWorldPrompts` 复制到临时文件夹）。
+- **统一的约定。** 一项检查是 `{ id, kit, mode, needs, description, run(input) }`（`check.ts`），返回发现：`severity`（`error`、`warning`、`info`）、`code`、`where`、`message`，以及可选的 `hint`。`mode` 为 `code`（由程序判定）、`judged`（模型阅读程序收集的依据）或 `decision`（决策模型可以回答的是非题）。`needs` 是 `card` 和/或 `model`。无法在某个世界上运行的检查会抛出 `CheckSkipped`，报告里会连同原因把它列为跳过，而不是算作没问题。`runChecks`（`run.ts`）运行被要求的检查包；不是 `code` 的检查只在 `deep` 时运行（`deep: 'decision'` 还会运行 `decision` 类），否则列为跳过。一次运行把世界的每一部分只读一遍，供它所有的检查共用（`loaded.ts`，即该次运行输入里的 `memo`）。
+- **一致性**（`consistency.ts`）包装 `checkWorld`（开始故事时的校验）、对由世界文件生成的临时故事运行的 `lintWorld`（`worlds/scratch.ts`，与触发器检查共用）、对同样对象含义相同的追踪数值（`duplicateValues`，带一个小的同义词表）、别名和名称冲突，世界自带的提示词（把 `copyWorldPrompts` 复制到临时文件夹），以及没有解析器读取的字段（`unread-fields`：`Reader.unreadBy` 运行每种实体真正的解析器，返回它从未看过的键，因此不需要另外维护一份字段清单）。
 - **对照**（`fidelity.ts`、`card-evidence.ts`）基于 `CardEvidence`：世界所依据的角色卡，或者等待更新它的新卡，同时带上导入记录所对应的旧卡。`madeInto` 说明每个片段变成了世界的哪些部分：角色、地点等实体按导入的名册和分类（`originOf`）确定，背景条目和 `world.json` 按它们的词项在片段中所占比例确定（`terms.ts`；背景条目自己不记录来源）。代码检查包括：导入读取过的片段的覆盖情况、名字能否在卡里找到、数字是否保留，以及有新卡时世界尚未写到的改动（`matchPieces`、`diffText`）。由模型判断的 `card-fidelity` 对每份文档询问丢失和编造的事实，每条都附一段必须出现在其来源文本里的引文（`comparisonProblem`），至多 40 份文档，每份每类至多六条。
 - **质量**（`quality.ts`）有三个代码检查（角色阵容、地点、世界对自身的说明）、`sheet-playable`（决策：决策模型有把握时经 `verdictOf` 由导入的决策模型回答，否则由语言模型回答）和 `world-gaps`（对世界概要由模型判断；每个缺口必须指明概要里的某个 key 或世界）。
+- **可玩性**（`playability.ts`）看每个可扮演角色的第一场景：`first-scene`（代码：起始地点、出路、同伴或物品）和 `opening-playable`（决策：开场白与该场景，经 `verdictOf`）。
 - **判断复用导入的运行器。** 由模型判断的检查拿到的是调用它的工具的 `ImportContext`（`contextOf`），因此聊天所用的模型、`importReasoning`、`importTemperature`、token 上限、超时、并发数和 `importDecisions` 都照样生效，不需要新增任何配置。
+- **按含义查找**（`similar.ts`、`semantic.ts`）。`ImportContext.embed` 用所选的嵌入提供方做嵌入（没有提供方时以 `NoEmbeddingService` 拒绝）。`candidates` 返回检查自己的过滤条件允许的、最接近的配对，余弦阈值故意设得很低、至多 12 对，因为接近只用来挑出要问什么，不决定任何事。`duplicate-values-meaning`、`name-near`（也按嵌套名称）和 `lore-conflict`（日期不相交的条目不会配对）是基于这些配对的 `decision` 检查：先走 `verdictOf`；`lore-conflict` 之后再让语言模型给出结论，并要求引用两个条目各自的原文，引文必须能在条目里找到（`conflictProblem`）。`card-coverage` 仍是 `code` 检查，但运行带模型时，会先对每个未被覆盖的片段询问最接近的几份文档，再报告它。向量按文本哈希保存在 `<world>/.checks/vectors.json`（float32、base64，保留最新 4000 条），模型或维度变化时会丢弃。助手的 `create_world_element` 和 `replace_world_element` 传入 `refuseUnread`，用 `Reader.unreadBy` 拒绝没有任何解析器会读的字段。
 - **结果**按检查分别保存在 `<world>/.checks/results.json`（`results.ts`）；每次运行会对照这次运行的检查上次保存的结果，说明多少条是新的、哪些已经消失。与 `.import` 一样，点开头的文件夹从不属于已发布的世界或翻译。
-- **工具与命令。** `check_world`、`check_card`（带 `version`）、`check_quality`（都带 `deep`）和 `check_list` 是世界创作聊天的工具（`tools.ts`）。命令 `/check`、`/check-all`、`/check-world`、`/check-card` 和 `/check-quality` 由同一个解析器读取（`shared/authoring-commands.ts`，`/import-st` 也用它）；`hooks.ts` 在这个回合的第一步加入通知 `checks/notice`。
-- **在导入流程中。** `finish`、`structureImport` 和 `card_update_finish` 通过 `checkImported` 运行所有由程序判定的检查并保存结果；`import_finish` 和 `card_update_finish` 把发现作为 `checks` 返回。审阅提示词要求助手依据它们行动，并在卡片或发现需要时运行 deep 检查。更新消息要求助手在结束之前用 `version: new` 运行 `check_card`。
+- **工具与命令。** `check_world`、`check_card`（带 `version`）、`check_quality`、`check_play`（都带 `deep`）和 `check_list` 是世界创作聊天的工具（`tools.ts`）。命令 `/check`、`/check-all`、`/check-world`、`/check-card`、`/check-quality` 和 `/check-play` 由同一个解析器读取（`shared/authoring-commands.ts`，`/import-st` 也用它）；`hooks.ts` 在这个回合的第一步加入通知 `checks/notice`。
+- **在导入流程中。** `finish`、`structureImport` 和 `card_update_finish` 通过 `checkImported` 运行所有由程序判定的检查并保存结果（导入带有决策模型时，`decision` 类检查也会运行）；`import_finish` 和 `card_update_finish` 把发现作为 `checks` 返回。审阅提示词要求助手依据它们行动，并在卡片或发现需要时运行 deep 检查。更新消息要求助手在结束之前用 `version: new` 运行 `check_card`。
 
 ## 提示词
 

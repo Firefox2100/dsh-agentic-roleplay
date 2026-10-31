@@ -8,11 +8,12 @@ import type { DecisionService } from '@dsh-ai-providers/core'
 import { currentTurn } from '../orchestration/current-turn.ts'
 import { ChildTimeoutError, namedModel, runChild } from '../agents/child.ts'
 import { askYesNo } from '../decisions/route.ts'
+import type { Embedder } from '../memory/embedding-index.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
 import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { IMPORT_FOLDER } from './store.ts'
-import type { ImportContext, RunJob, TextOf } from './run.ts'
+import { NoEmbeddingService, type ImportContext, type RunJob, type TextOf } from './run.ts'
 import { build, endReview, finish, importPhase, isReviewing, settleDraft, startRepair, survey, type Phase } from './run-import.ts'
 import { checkWorld } from '../worlds/world-check.ts'
 import type { ImportSettings } from './service.ts'
@@ -90,7 +91,13 @@ export function contextOf(exec: ToolExecution, settings: ImportSettings, text: T
     if (service === undefined) return Promise.reject(new Error('no decision service is selected, or the selected one is not loaded'))
     return askYesNo(service, state, asks, exec.signal)
   } : undefined
-  return { run, cancelled: () => exec.signal.aborted, concurrency: settings.concurrency, variablesPerRequest: settings.variablesPerRequest, text, ...(language === undefined ? {} : { language }), say: () => undefined, ...(decide === undefined ? {} : { decide, confidence: settings.confidence }) }
+  const embed: ImportContext['embed'] = async (texts) => {
+    const service = (agent.ctx as unknown as { get(name: 'embeddings'): Embedder | undefined }).get('embeddings')
+    if (service === undefined) throw new NoEmbeddingService('no embedding provider is selected, or the selected one is not loaded')
+    const { vectors, model } = await service.embed(texts, { inputType: 'document', signal: exec.signal })
+    return { vectors, model }
+  }
+  return { run, embed, cancelled: () => exec.signal.aborted, concurrency: settings.concurrency, variablesPerRequest: settings.variablesPerRequest, text, ...(language === undefined ? {} : { language }), say: () => undefined, ...(decide === undefined ? {} : { decide, confidence: settings.confidence }) }
 }
 
 export async function worldOf(worlds: WorldCatalog, exec: ToolExecution): Promise<{ id: string; directory: string }> {

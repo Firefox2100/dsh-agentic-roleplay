@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 import { isReviewing, markReady } from '../../../src/host/import/run-import.ts'
+import { NoEmbeddingService } from '../../../src/host/import/run.ts'
 import { contextOf, importHooks, importNotice, importTools } from '../../../src/host/import/tools.ts'
 import { IMPORT_FOLDER } from '../../../src/host/import/store.ts'
 import { shippedText } from '../../../src/host/prompts/library.ts'
@@ -150,6 +151,15 @@ describe('the context of an import step', () => {
   it('fails the question, so that the survey says why, when none is loaded', async () => {
     const bare = { signal: new AbortController().signal, agent: { ctx: { get: () => undefined } } } as never
     await expect(contextOf(bare, { ...settings(), decisions: 'decision' }, () => '').decide!({}, [])).rejects.toThrow(/no decision service/)
+  })
+
+  it('embeds with the selected provider, and rejects as unavailable when none is loaded', async () => {
+    const embeddings = { embed: vi.fn(() => Promise.resolve({ vectors: [[1, 0]], model: 'm', dimensions: 2 })) }
+    const loaded = { signal: new AbortController().signal, agent: { ctx: { get: (name: string) => (name === 'embeddings' ? embeddings : undefined) } } } as never
+    expect(await contextOf(loaded, settings(), () => '').embed!(['a'])).toEqual({ vectors: [[1, 0]], model: 'm' })
+    expect(embeddings.embed).toHaveBeenCalledWith(['a'], expect.objectContaining({ inputType: 'document' }))
+    const bare = { signal: new AbortController().signal, agent: { ctx: { get: () => undefined } } } as never
+    await expect(contextOf(bare, settings(), () => '').embed!(['a'])).rejects.toBeInstanceOf(NoEmbeddingService)
   })
 })
 

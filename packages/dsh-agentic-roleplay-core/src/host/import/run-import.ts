@@ -227,7 +227,7 @@ export async function finish(ctx: ImportContext, world: string): Promise<{ ok: t
   if (result.ok) {
     await writeJson(join(folder(world), STATE), { phase: result.draft === undefined ? 'done' : 'repair', reviewing: true })
     await recordProvenance(world, { kind: 'import', card: { name: card.name }, language: ctx.language ?? '', counts: result.report.counts, notes: result.report.notes.length }, await readFile(join(folder(world), 'card.json'), 'utf8'))
-    return { ...result, checks: await checkImported(world, choices.name) }
+    return { ...result, checks: await checkImported(world, choices.name, ctx) }
   }
   return result
 }

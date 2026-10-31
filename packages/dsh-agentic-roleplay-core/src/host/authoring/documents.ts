@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import type { ParseResult } from '../validation.ts'
-import { formatIssue } from '../validation.ts'
+import { Reader, formatIssue } from '../validation.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { subfolders } from '../folders.ts'
 import { CHARACTERS_DIR } from '../characters/load.ts'
@@ -54,12 +54,26 @@ async function find(world: EditableWorld, kind: AuthoredEntityKind, key: string)
   return undefined
 }
 
-function serializeDocument(kind: AuthoredEntityKind, key: string, value: unknown): string {
+/** What a write may do with fields the format does not read: they never reach a story, so the assistant is told to put the words where they are read (`unread-fields` finds them in a world that has them). */
+export interface WriteOptions {
+  refuseUnread?: boolean
+}
+
+function unreadProblem(kind: AuthoredEntityKind, text: string, key: string): string | undefined {
+  let parsed = false
+  const { unread, read } = Reader.unreadBy(() => { parsed = formats[kind].parse(text, key).ok })
+  if (!parsed || unread.length === 0) return undefined
+  return `${unread.join(', ')} ${unread.length === 1 ? 'is' : 'are'} not read by anything, so a story would never see ${unread.length === 1 ? 'it' : 'them'}: put the words in the field that holds them. The fields a ${kind} reads: ${read.join(', ')}`
+}
+
+function serializeDocument(kind: AuthoredEntityKind, key: string, value: unknown, options: WriteOptions = {}): string {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) throw new InvalidEditProblems(['document must be a JSON object'])
   const document = { ...(value as Record<string, unknown>), id: key }
   const text = `${JSON.stringify(document, null, 2)}\n`
   const parsed = formats[kind].parse(text, key)
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
+  const unread = options.refuseUnread === true ? unreadProblem(kind, text, key) : undefined
+  if (unread !== undefined) throw new InvalidEditProblems([unread])
   return text
 }
 
@@ -70,13 +84,13 @@ export async function readAuthoredEntityDocument(world: EditableWorld, kind: Aut
   return JSON.parse((await readFile(found.file, 'utf8')).replace(/^﻿/, '')) as unknown
 }
 
-export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown): Promise<void> {
+export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown, options: WriteOptions = {}): Promise<void> {
   if (!validNewKey(key)) throw new InvalidEditProblems(['key must be letters (any script), digits, ".", "_" or "-", starting with a letter or digit, at most 100 characters (no brackets, spaces or slashes)'])
   if (await find(world, kind, key) !== undefined) throw new InvalidEditProblems([`the ${kind} "${key}" already exists`])
   const format = formats[kind]
   const root = join(world.directory, format.directory)
   const folder = join(root, key)
-  const text = serializeDocument(kind, key, document)
+  const text = serializeDocument(kind, key, document, options)
   await mkdir(root, { recursive: true })
   await mkdir(folder, { recursive: false })
   try {
@@ -87,10 +101,10 @@ export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredE
   }
 }
 
-export async function replaceAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown): Promise<void> {
+export async function replaceAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown, options: WriteOptions = {}): Promise<void> {
   const found = await find(world, kind, key)
   if (found === undefined) throw new InvalidEditProblems([`there is no ${kind} "${key}"`])
-  await atomicWrite(found.file, serializeDocument(kind, key, document))
+  await atomicWrite(found.file, serializeDocument(kind, key, document, options))
 }
 
 /** Deletions remain recoverable without making the trash visible to the world loaders. */

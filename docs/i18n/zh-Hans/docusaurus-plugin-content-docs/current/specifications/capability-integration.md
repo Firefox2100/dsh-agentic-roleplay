@@ -29,7 +29,7 @@ ctx.roleplayState.rankMemories(async ({ situation, candidates, signal }) => {
 - 文本转语音可朗读完整回复或单条角色发言。完整回复会拆成旁白和发言，按各自配置的声音并发生成，再按故事顺序合并。声音发现是可选能力。对于 LocalAI 等不枚举声音的 OpenAI 兼容服务器，手工填写的提供方声音 ID 仍然可用。
 - 语音转文本使用 DSH 的实验性语音转文本提供方契约处理完成的录音。实时转写使用另一个可选的 `streamingSpeechToText` 服务，角色扮演主机通过 `/roleplay-api/speech/capabilities` 检测它。DSH Voice Input 负责采集麦克风，并把完成的转写插入已有草稿，不会自动发送。
 
-两项服务都在使用时查找。本套件包含 DSH Voice Input 和 SenseVoice。启用 API STT 后，其提供方与 SenseVoice 并列注册；禁用 API STT 只撤回该提供方。
+两项服务都在使用时查找。DSH Voice Input 和 SenseVoice 需要与角色扮演套件分开安装，这样它们的精确版本可以与 DSH 保持一致。启用 API STT 后，其提供方与 SenseVoice 并列注册；禁用 API STT 只撤回该提供方。
 
 - 图片生成使用可选、与提供方无关的图片服务，生成规范肖像和临时场景图。支持参考图的 OpenAI 兼容驱动在有参考图时调用编辑接口，否则调用生成接口。身份、存储、任务和界面行为见图片系统规范。
 

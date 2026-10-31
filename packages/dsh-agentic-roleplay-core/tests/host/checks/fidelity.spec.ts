@@ -7,7 +7,7 @@ import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 import { loadCardEvidence } from '../../../src/host/checks/card-evidence.ts'
 import { numbersOf } from '../../../src/host/checks/fidelity.ts'
 import { runChecks } from '../../../src/host/checks/run.ts'
-import { judging } from '../../support/checks.ts'
+import { fakeModel, judging } from '../../support/checks.ts'
 import { checkTools } from '../../../src/host/checks/tools.ts'
 import { termsOf, shareOf } from '../../../src/host/checks/terms.ts'
 import { AuthoredWorldReader } from '../../../src/host/authoring/read-tools.ts'
@@ -73,6 +73,19 @@ describe('the fidelity kit', () => {
     expect(found(await run(), 'piece-uncovered')).toEqual([expect.objectContaining({ where: 'card:field:scenario', severity: 'warning' })])
     await write(join(directory, 'lore', 'quay', 'lore.json'), { title: 'The quay', kind: 'place', summary: 'Autumn fog.', body: 'Autumn on the quay: the fog never lifts and the ferry bell rings at dawn.' })
     expect(found(await run(), 'piece-uncovered')).toEqual([])
+  })
+
+  it('looks by meaning for a piece no part of the world shares words with, and keeps a piece nothing says', async () => {
+    await write(join(directory, 'lore', 'quay', 'lore.json'), { title: 'Harbour weather', kind: 'history', summary: 'Mist.', body: 'A permanent mist lies over the wharf, and the ferry sounds its bell at first light.' })
+    const topics = [/fog|mist/u, /ferry/u]
+    const embed = async (texts: readonly string[]) => ({ vectors: texts.map(text => topics.map(topic => (topic.test(text) ? 1 : 0))), model: 'fake' })
+    const withModel = async (covered: (prompt: string) => boolean) => {
+      const model = fakeModel(job => ({ reason: 'r', covered: covered(job.prompt) }), { embed })
+      return await runChecks({ world: { directory, summary } as never, card: (await loadCardEvidence(directory, 'current'))!, model }, { kits: ['fidelity'], ids: ['card-coverage'], deep: true })
+    }
+    expect(found(await run(), 'piece-uncovered')).toHaveLength(1)
+    expect(found(await withModel(prompt => prompt.includes('mist')), 'piece-uncovered')).toEqual([])
+    expect(found(await withModel(() => false), 'piece-uncovered')).toEqual([expect.objectContaining({ message: expect.stringContaining('by meaning') })])
   })
 
   it('finds a name the card never gives, and says so once when most names are missing', async () => {

@@ -46,13 +46,20 @@ const list = (value: unknown): string[] => (Array.isArray(value) ? value.flatMap
 const objects = (value: unknown): Document[] => (Array.isArray(value) ? value.filter((entry): entry is Document => typeof entry === 'object' && entry !== null && !Array.isArray(entry)) : [])
 const put = (document: Document, key: string, value: unknown): void => { if (value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0)) document[key] = value }
 
+const normalisedText = new WeakMap<SourceItem, string>()
+const normalised = (item: SourceItem): string => {
+  let folded = normalisedText.get(item)
+  if (folded === undefined) { folded = norm(item.text); normalisedText.set(item, folded) }
+  return folded
+}
+
 /** The pieces an entity is made from: the ones about it, then others that name it, within a budget of text. */
 export function sourcesFor(entity: Entity, items: readonly SourceItem[], classified: Classified): SourceItem[] {
   const names = [entity.name, ...entity.aliases].map(norm).filter(name => name.length >= MIN_MENTION_CHARS)
   const about = (item: SourceItem): boolean => (classified[item.id]?.targets ?? []).some(target => target.kind === entity.kind && names.includes(norm(target.name)))
   const tagged = items.filter(item => about(item) && !isLeftOut(classified[item.id] ?? { roles: [], targets: [] })).slice(0, MAX_TAGGED)
   const taken = new Set(tagged.map(item => item.id))
-  const mentions = items.filter(item => !taken.has(item.id) && !isLeftOut(classified[item.id] ?? { roles: ['world'], targets: [] }) && names.some(name => norm(item.text).includes(name))).slice(0, MAX_MENTIONS)
+  const mentions = items.filter(item => !taken.has(item.id) && !isLeftOut(classified[item.id] ?? { roles: ['world'], targets: [] }) && names.some(name => normalised(item).includes(name))).slice(0, MAX_MENTIONS)
   const chosen: SourceItem[] = []
   let used = 0
   for (const item of [...tagged, ...mentions]) {

@@ -26,3 +26,6 @@ export function shareOf(of: ReadonlySet<string>, within: ReadonlySet<string>): n
 
 /** A text as names are looked up in it: width- and case-folded. */
 export const folded = (text: string): string => text.normalize('NFKC').toLowerCase()
+
+/** A text as a quote of it is looked up: folded, with runs of white space as one space. */
+export const squashed = (text: string): string => folded(text).replace(/\s+/gu, ' ').trim()

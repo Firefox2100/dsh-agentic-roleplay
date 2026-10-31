@@ -5,18 +5,6 @@
       name: '@dsh-agentic-roleplay/state'
     - id: roleplay
       name: '@dsh-agentic-roleplay/core'
-    - id: speech-to-text
-      name: '@deepseek-ai/dsh-experimental-speech-to-text'
-      config:
-        defaultProvider: sensevoice-local
-    - id: speech-to-text-sensevoice
-      name: '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice'
-      config:
-        dataRoot: !!js dshHomePath('speech-to-text', 'sensevoice')
-    - id: api-speech-to-text
-      name: '@deepseek-ai/dsh-experimental-api-speech-to-text'
-    - id: ui-voice-input
-      name: '@deepseek-ai/dsh-experimental-client-ui-voice-input'
     # The agent preset roleplay chats run under; its id must match AGENT_PRESET
     # in the core package. It mounts no agent tools: the orchestration plugin
     # brings the game master's own tools, hooks and instructions.

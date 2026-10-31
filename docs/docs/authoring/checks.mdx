@@ -12,14 +12,15 @@ Type one in the authoring chat of a world:
 
 | Command | What it runs |
 |---|---|
-| `/check` or `/check-all` | all three kits |
+| `/check` or `/check-all` | all four kits |
 | `/check-world` | the consistency kit |
 | `/check-card` | the fidelity kit (needs the card the world was imported from) |
 | `/check-quality` | the quality kit |
+| `/check-play` | the playability kit |
 
 Anything you add after the command goes to the assistant. Add **deep** (`/check-quality deep`) to have a model take part. Without it, only the checks the program decides run; the assistant may also turn deep on by itself when the quick findings suggest the world is thin. The assistant runs the checks, reads the findings, fixes what is plainly wrong, asks about what needs a choice, and runs the same check again to confirm. Then it tells you what was found, what it changed and what is left.
 
-## The three kits
+## The four kits
 
 **Consistency** is decided by the program and always cheap:
 
@@ -27,11 +28,17 @@ Anything you add after the command goes to the assistant. Add **deep** (`/check-
 - `world-graph`: places nobody can reach or leave, ways with no way back, a lock whose key does not exist, characters, places or things with one name.
 - `duplicate-values`: tracked values that mean the same thing for the same subjects (`hp` and `health`). Which one to keep is a choice, so the finding names both and changes nothing.
 - `name-clashes`: an alias that is another character's name, two organisations or two background entries with one name.
+- `duplicate-values-meaning` (deep): tracked values that are one thing in other words or another language (`生命值` and `vigor`), which the table behind `duplicate-values` does not know.
+- `name-near` (deep): two characters, places, organisations or things that may be one written twice under different names (`The Mill` and `Old Mill`).
+- `lore-conflict` (deep): two background entries that say things that cannot both be true. Entries whose dates do not overlap are not compared, and a finding quotes the conflicting passage of each entry, so a quote that is not in its entry is refused.
 - `world-prompts`: the prompts the world carries must be prompts the product has, not empty, and use only the variables each is given.
+- `unread-fields`: a field in a character, place, organisation, thing or background file that nothing reads, such as `starting_location` where the format has `start.location`. Its words never reach a story, so the finding names the field and the assistant moves the words to the field that holds them. The assistant's own writes (`create_world_element`, `replace_world_element`) refuse such a field and list the fields the format reads, so it is not written in the first place.
+
+The three checks marked deep that look for the same thing under other words work in two steps. The embedding provider, when one is selected, finds the pairs closest in meaning (at most 12 per check), because closeness only says two texts are about the same subject: trust and affection are close, and they are not one value. A decision model then answers the yes-or-no for each pair; what it is unsure of goes to the language model. Without an embedding provider `duplicate-values-meaning` asks about the first pairs it can, `name-near` still compares by name, and `lore-conflict` is skipped. The vectors are kept by text in the world's `.checks` folder, so a second run embeds only what changed.
 
 **Fidelity** compares the world with the card it was imported from, kept in the world's `.import` folder, or with a newer card waiting to update it (`/check-card` and the `check_card` tool take `version: new`):
 
-- `card-coverage`: every piece the import read for the world went into something. A piece nothing comes from was lost or left out without a word.
+- `card-coverage`: every piece the import read for the world went into something. A piece nothing comes from was lost or left out without a word. When the run has a model and an embedding provider, a piece no part of the world shares words with (a card in another language, or a rewrite) is first looked for by meaning: the closest documents are asked whether they say what the piece says, and only a piece no document says is reported.
 - `card-names`: every character, place, organisation and thing is named somewhere in the card. If most names are missing, it says that once instead: the world is probably in another language than the card.
 - `card-numbers`: the numbers a piece gives (ages, years, amounts) are in what was made from it.
 - `card-update`: with a newer card waiting, what it changed or added that the world does not say yet, and what only a dropped piece made.
@@ -45,14 +52,19 @@ Anything you add after the command goes to the assistant. Add **deep** (`/check-
 - `sheet-playable` (deep): for each principal and supporting character, whether the sheet says who they are, how they talk and what they want. A [decision model](../playing/settings) can answer when the import settings use one and it is sure; what it is unsure of goes to the language model.
 - `world-gaps` (deep): a model reads a digest of the world and names what is missing for it to play well: a place with nothing to do, a conflict nobody carries. Each gap names the character, place or entry it concerns and what would fill it. It never fills a gap with something the source does not say.
 
+**Playability** looks at how a story begins, for each character the player may play:
+
+- `first-scene`: the character starts in a place of the world, the place has a way out, and there are other people, things or features to act on. A start with no way out is a warning; starting alone is mentioned.
+- `opening-playable` (deep): a model reads the opening and that first scene and says whether a player knows where they are and has something to do. A decision model can answer when it is sure, as for `sheet-playable`. It reads at most the first three playable characters.
+
 A finding has a severity (**error**, **warning** or **info**), a code, where it is, a message and, when the fix is clear, a hint. An error is something to fix; a warning is a pointer to look at; an info is worth a mention.
 
 ## What imports do
 
-A card import, an import without a model and an update from a newer card run every check the program decides, against the card the world now comes from, and keep the result. The assistant that reviews an import reads those findings. It decides whether the deep checks are worth running: for a long card, when many pieces were rewritten into lore, or when the quick findings show lost facts or a thin cast. When an update from a newer card is nearly done, the assistant runs `check_card` with `version: new` before `card_update_finish`.
+A card import, an import without a model and an update from a newer card run every check the program decides, against the card the world now comes from, and keep the result. When the import settings use a [decision model](../playing/settings), the yes-or-no checks (`sheet-playable`, `opening-playable`, `duplicate-values-meaning`, `name-near`, `lore-conflict`) run too, and `card-coverage` looks for lost pieces by meaning, because it answers them cheaply. The assistant that reviews an import reads those findings. It decides whether the deep checks are worth running: for a long card, when many pieces were rewritten into lore, or when the quick findings show lost facts or a thin cast. When an update from a newer card is nearly done, the assistant runs `check_card` with `version: new` before `card_update_finish`.
 
 ## Where results are kept
 
 Each check's last findings are stored in the world's `.checks/results.json`. The next run says how many findings are new and which ones are gone since then. Like `.import`, the folder is authoring state: a dot folder that is not part of the world you publish, and a translation does not copy it. Delete it any time; the next run starts afresh.
 
-The assistant's tools are `check_world`, `check_card`, `check_quality` and `check_list`, which lists every check with its kit, whether the program or a model decides it, and what it needs.
+The assistant's tools are `check_world`, `check_card`, `check_quality`, `check_play` and `check_list`, which lists every check with its kit, whether the program or a model decides it, and what it needs.

@@ -37,9 +37,3 @@ export async function recordResults(directory: string, at: string, results: Reco
   await atomicWrite(join(directory, CHECKS_FOLDER, FILE), JSON.stringify(stored, null, 2), { createDirectory: true })
   return known ? { added: now.filter(finding => !was.has(findingKey(finding))).length, resolved: before.filter(finding => !is.has(findingKey(finding))) } : undefined
 }
-
-/** The findings stored for the checks, without running anything. */
-export async function storedFindings(directory: string, ids?: readonly string[]): Promise<{ at: string; findings: Finding[] }[]> {
-  const stored = await read(directory)
-  return Object.entries(stored.checks).filter(([id]) => ids === undefined || ids.includes(id)).map(([, entry]) => entry)
-}

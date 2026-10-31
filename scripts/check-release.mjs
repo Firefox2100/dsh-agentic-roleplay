@@ -76,6 +76,20 @@ for (const [folder, name, id] of standaloneBundles) {
   if (await readFile(resolve(directory, 'cordis.patch.yml'), 'utf8') !== expected) throw new Error(`${name}: standalone bundle must insert only its own plugin row`)
 }
 
+const allDirectory = resolve(root, 'packages', 'dsh-agentic-roleplay')
+const allManifest = JSON.parse(await readFile(resolve(allDirectory, 'package.json'), 'utf8'))
+const allPatch = await readFile(resolve(allDirectory, 'cordis.patch.yml'), 'utf8')
+for (const name of [
+  '@deepseek-ai/dsh-experimental-voice-input-bundle',
+  '@deepseek-ai/dsh-experimental-speech-to-text',
+  '@deepseek-ai/dsh-experimental-speech-to-text-sensevoice',
+  '@deepseek-ai/dsh-experimental-api-speech-to-text',
+  '@deepseek-ai/dsh-experimental-client-ui-voice-input',
+]) {
+  if (allManifest.dependencies?.[name] !== undefined) throw new Error(`${allManifest.name}: DSH speech packages must be installed separately so they follow the runtime release`)
+  if (allPatch.includes(name)) throw new Error(`${allManifest.name}: bundle patch must not insert DSH speech package ${name}`)
+}
+
 const workspaceFile = await readFile(resolve(root, 'pnpm-workspace.yaml'), 'utf8')
 if (!workspaceFile.includes(`  '@deepseek-ai/dsh': ${DSH_DEVELOPMENT}\n`)) throw new Error(`pnpm-workspace.yaml must override @deepseek-ai/dsh to ${DSH_DEVELOPMENT} (run pnpm sync:dsh)`)
 const resolvedDsh = new Set([...(await readFile(resolve(root, 'pnpm-lock.yaml'), 'utf8')).matchAll(/^  '@deepseek-ai\/dsh[a-z-]*@([^':(]+)/gm)].map(match => match[1]))

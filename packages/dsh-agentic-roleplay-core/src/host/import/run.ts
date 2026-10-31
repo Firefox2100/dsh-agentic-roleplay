@@ -18,6 +18,9 @@ export type RunJob = <T>(job: ChildJob<T>) => Promise<T>
 
 export type TextOf = (id: string, variables?: Record<string, string | number>) => string
 
+/** What `ImportContext.embed` rejects with when no embedding provider is selected or loaded: the checks that would use it go without. */
+export class NoEmbeddingService extends Error {}
+
 /** What the stages of an import are given: a way to run jobs, how many may run at once, and where to say what is going on. */
 export interface ImportContext {
   run: RunJob
@@ -37,6 +40,8 @@ export interface ImportContext {
   decide?: (state: Record<string, unknown>, asks: readonly { key: string; instructions: string }[]) => Promise<Map<string, number>>
   /** How sure the decision model must be for its answer to be taken (0 to 1). */
   confidence?: number
+  /** Embeds texts with the selected embedding provider (rejects with `NoEmbeddingService` without one); the checks use it to find which things to ask a model about. */
+  embed?: (texts: readonly string[]) => Promise<{ vectors: number[][]; model: string }>
 }
 
 /** The labels of a job's prompt, in the language of the import. */

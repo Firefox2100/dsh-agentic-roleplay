@@ -6,7 +6,7 @@ import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import type { ImportReport } from './finish.ts'
 import { sourcesFor } from './extract.ts'
-import { itemise } from './items.ts'
+import { itemise, type SourceItem } from './items.ts'
 import { norm } from './run.ts'
 import { IMPORT_FOLDER, readImportFolder } from './store.ts'
 import type { Role } from './roles.ts'
@@ -248,12 +248,11 @@ export function entitiesByPiece(source: Source): Map<string, string[]> {
 }
 
 /** The pieces an entity was made from, as the build chose them: the ones the survey said are about it, then those that name it. */
-export function originOf(card: NormalizedCard, choices: ImportChoices, pieces: readonly CardPiece[], records: Records, name: string): { piece: string; label: string; how: 'about it' | 'mentions it' }[] {
+export function originOf(card: NormalizedCard, choices: ImportChoices, pieces: readonly CardPiece[], records: Records, name: string, items: readonly SourceItem[] = itemise(card, choices)): { piece: string; label: string; how: 'about it' | 'mentions it' }[] {
   if (records.roster === undefined || records.classified === undefined) return []
   const entity = findEntity(records.roster, name)
   if (entity === undefined) return []
   const names = [entity.name, ...entity.aliases].map(norm)
-  const items = itemise(card, choices)
   const chosen = sourcesFor(entity, items, records.classified)
   const about = (id: string): boolean => (records.classified?.[id]?.targets ?? []).some(target => target.kind === entity.kind && names.includes(norm(target.name)))
   const seen = new Set<string>()

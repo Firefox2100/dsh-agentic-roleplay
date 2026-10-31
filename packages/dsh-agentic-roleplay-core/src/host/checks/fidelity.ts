@@ -1,13 +1,20 @@
 import { diffText, matchPieces } from '../import/card-diff.ts'
 import { baseId, type CardPiece } from '../import/card-tools.ts'
-import { mapLimit, trOf } from '../import/run.ts'
+import { mapLimit, trOf, type ImportContext } from '../import/run.ts'
 import { CheckSkipped, foundBy, type Check, type CheckInput, type Found } from './check.ts'
-import { madeInto, usedPieces, type CardEvidence } from './card-evidence.ts'
-import { folded, shareOf, termsOf } from './terms.ts'
-import { readWorldText, type WorldText } from './world-text.ts'
+import { usedPieces, type CardEvidence } from './card-evidence.ts'
+import { folded, shareOf, squashed, termsOf } from './terms.ts'
+import { loaded } from './loaded.ts'
+import { verdictOf } from './judge.ts'
+import { cosine, vectorsOf } from './similar.ts'
+import type { WorldText } from './world-text.ts'
 
+/** The most uncovered pieces listed one by one: past that the import itself is the problem. */
+const PIECES_LISTED = 12
 /** The most numbers one finding lists. */
 const NUMBERS_LISTED = 8
+/** The most parts of the world a finding names as made from a piece. */
+const PARTS_LISTED = 3
 /** A changed passage of the new card is taken as reflected in the world when this much of its terms are in what was made from its piece. */
 const REFLECTED = 0.5
 const MIN_PASSAGE_TERMS = 3
@@ -33,27 +40,77 @@ const snippet = (text: string): string => `${text.replace(/\s+/gu, ' ').trim().s
 /** The pieces the import read for the world and the card the records are about. */
 const basis = (evidence: CardEvidence) => evidence.previous ?? evidence.source
 
+/** How many of the uncovered pieces are asked about by meaning, largest first. */
+const RESCUE_PIECES = 24
+/** How many documents of the world are asked about for one piece: the closest in meaning. */
+const RESCUE_DOCUMENTS = 3
+/** How close in meaning a document is to a piece before it is asked about; low on purpose, the question settles it. */
+const RESCUE_CLOSE = 0.5
+const RESCUE_CHARS = 1800
+
 const coverage: Check = {
   id: 'card-coverage',
   kit: 'fidelity',
   mode: 'code',
   needs: ['card'],
-  description: 'Every piece of the card the import read for the world is in it somewhere: made into a character, place, organisation or thing, or into lore. A piece nothing comes from was lost or left out without a word.',
+  description: 'Every piece of the card the import read for the world is in it somewhere: made into a character, place, organisation or thing, or into lore. A piece nothing comes from was lost or left out without a word. With an embedding provider and a model, a piece no part of the world shares words with (a card in another language, a rewrite) is also looked for by meaning before it is called lost.',
   async run(input) {
     const evidence = need(input)
     recordsNeeded(evidence)
     const source = basis(evidence)
-    const world = await readWorldText(input.world.directory)
-    const made = madeInto(source, world)
-    return foundBy('card-coverage', usedPieces(source).filter(piece => termsOf(piece.text).size >= MIN_PIECE_TERMS && !made.has(baseId(piece.id))).map((piece): Found => ({
+    const made = await loaded.made(input, evidence)
+    const missing = usedPieces(source).filter(piece => termsOf(piece.text).size >= MIN_PIECE_TERMS && !made.has(baseId(piece.id))).sort((a, b) => b.text.length - a.text.length)
+    const { saved, looked, problem } = await sayingByMeaning(input, missing)
+    const lost = missing.filter(piece => !saved.has(piece.id))
+    const found = lost.slice(0, PIECES_LISTED).map((piece): Found => ({
       severity: 'warning',
       code: 'piece-uncovered',
       where: `card:${piece.id}`,
-      message: `${piece.label} (${piece.text.length} characters) was read for the world, but nothing in the world seems to be made from it`,
+      message: `${piece.label} (${piece.text.length} characters) was read for the world, but nothing in the world seems to be made from it${looked ? ', by words or by meaning' : ''}`,
       hint: 'Read it with card_read. If it says something about the world, add that where it belongs; if it is not meant for the story, say so.',
-    })))
+    }))
+    if (lost.length > PIECES_LISTED) found.push({ severity: 'warning', code: 'pieces-uncovered-more', where: 'card', message: `${lost.length - PIECES_LISTED} more pieces of the card, smaller than these, have nothing in the world made from them`, hint: 'The import probably stopped early or read the card as something else: look at the import report before going through them one by one.' })
+    if (problem !== undefined) found.push({ severity: 'info', code: 'meaning-unavailable', where: 'card', message: `the pieces were not looked for by meaning: ${problem}` })
+    return foundBy('card-coverage', found)
   },
 }
+
+/** The ids of the pieces whose facts a document of the world says in other words (or another language): the closest documents by meaning, and a model's yes. */
+async function sayingByMeaning(input: CheckInput, pieces: readonly CardPiece[]): Promise<{ saved: Set<string>; looked: boolean; problem?: string }> {
+  const model = input.model
+  const saved = new Set<string>()
+  if (model?.embed === undefined || pieces.length === 0) return { saved, looked: false }
+  try {
+    return await lookedByMeaning(input, model, pieces, saved)
+  } catch (error) {
+    if (model.cancelled?.() === true) throw error
+    return { saved, looked: false, problem: error instanceof Error ? error.message : String(error) }
+  }
+}
+
+async function lookedByMeaning(input: CheckInput, model: ImportContext, pieces: readonly CardPiece[], saved: Set<string>): Promise<{ saved: Set<string>; looked: boolean }> {
+  const world = await loaded.text(input)
+  const documents = [...world.prose].filter(([, prose]) => prose.trim() !== '')
+  if (documents.length === 0) return { saved, looked: false }
+  const asked = pieces.slice(0, RESCUE_PIECES)
+  const vectors = await vectorsOf(model, input.world.directory, [...asked.map(piece => piece.text.slice(0, RESCUE_CHARS)), ...documents.map(([, prose]) => prose.slice(0, RESCUE_CHARS))])
+  if (vectors === undefined) return { saved, looked: false }
+  const instructions = model.text('checks/decide-covered')
+  await mapLimit(asked, model.concurrency, async (piece, at) => {
+    const near = documents.map(([where, prose], index) => ({ where, prose, score: cosine(vectors[at]!, vectors[asked.length + index]!) })).filter(entry => entry.score >= RESCUE_CLOSE).sort((a, b) => b.score - a.score).slice(0, RESCUE_DOCUMENTS)
+    for (const document of near) {
+      if (model.cancelled?.() === true) return
+      const verdict = await verdictOf(model, { passage: piece.text.slice(0, RESCUE_CHARS), document: document.prose.slice(0, RESCUE_CHARS) }, 'covered', instructions, async () => {
+        const answer = await model.run<{ reason: string; covered: boolean }>({ persona: instructions, prompt: `${piece.text.slice(0, RESCUE_CHARS)}\n\n${document.prose.slice(0, RESCUE_CHARS)}`, result: COVERED_SCHEMA as never, maxTokens: 500 })
+        return answer.covered
+      })
+      if (verdict.yes) { saved.add(piece.id); return }
+    }
+  })
+  return { saved, looked: true }
+}
+
+const COVERED_SCHEMA = { type: 'object', properties: { reason: { type: 'string' }, covered: { type: 'boolean' } }, required: ['reason', 'covered'], additionalProperties: false } as const
 
 const names: Check = {
   id: 'card-names',
@@ -64,7 +121,7 @@ const names: Check = {
   async run(input) {
     const evidence = need(input)
     const source = basis(evidence)
-    const world = await readWorldText(input.world.directory)
+    const world = await loaded.text(input)
     const text = folded([source.card.name, ...source.pieces.map(piece => piece.text)].join('\n'))
     const named = (candidate: string): boolean => {
       const plain = candidate.replace(/\s*[(（][^)）]*[)）]/gu, '').trim()
@@ -103,15 +160,15 @@ const facts: Check = {
     const evidence = need(input)
     recordsNeeded(evidence)
     const source = basis(evidence)
-    const world = await readWorldText(input.world.directory)
-    const made = madeInto(source, world)
+    const world = await loaded.text(input)
+    const made = await loaded.made(input, evidence)
     const found: Found[] = []
     for (const piece of usedPieces(source)) {
       const into = made.get(baseId(piece.id))
       if (into === undefined) continue
       const said = into.map(where => world.texts.get(where) ?? '').join('\n').normalize('NFKC')
       const lost = numbersOf(piece.text).filter(number => !said.includes(number))
-      if (lost.length > 0) found.push({ severity: 'info', code: 'number-lost', where: `card:${piece.id}`, message: `${piece.label} gives ${lost.slice(0, NUMBERS_LISTED).join(', ')}${lost.length > NUMBERS_LISTED ? ` and ${lost.length - NUMBERS_LISTED} more` : ''}, which ${into.join(', ')} do not have`, hint: 'Read the piece with card_read: a number that matters to the story belongs in the world as the card has it.' })
+      if (lost.length > 0) found.push({ severity: 'info', code: 'number-lost', where: `card:${piece.id}`, message: `${piece.label} gives ${lost.slice(0, NUMBERS_LISTED).join(', ')}${lost.length > NUMBERS_LISTED ? ` and ${lost.length - NUMBERS_LISTED} more` : ''}, which ${into.slice(0, PARTS_LISTED).join(', ')}${into.length > PARTS_LISTED ? ` and ${into.length - PARTS_LISTED} more` : ''} do not have`, hint: 'Read the piece with card_read: a number that matters to the story belongs in the world as the card has it.' })
     }
     return foundBy('card-numbers', found)
   },
@@ -135,8 +192,8 @@ const drift: Check = {
     const evidence = need(input)
     if (evidence.previous === undefined) throw new CheckSkipped('no newer card is waiting; ask for the card that is waiting with version new')
     recordsNeeded(evidence)
-    const world = await readWorldText(input.world.directory)
-    const made = madeInto(evidence.previous, world)
+    const world = await loaded.text(input)
+    const made = await loaded.made(input, evidence)
     const match = matchPieces(evidence.previous.pieces, evidence.source.pieces)
     const found: Found[] = []
     for (const { before, after } of match.pairs) {
@@ -177,7 +234,6 @@ const FIDELITY_SCHEMA = {
 } as const
 
 interface Reported { fact: string; quote: string }
-const squashed = (text: string): string => folded(text).replace(/\s+/gu, ' ').trim()
 
 /** Why the comparison cannot be used: a quote that is not in the text it is said to come from is a guess, not a finding. */
 export function comparisonProblem(value: { dropped: Reported[]; invented: Reported[] }, source: string, document: string): string | undefined {
@@ -200,8 +256,8 @@ const compared: Check = {
     const model = input.model!
     const tr = trOf(model)
     const source = basis(evidence)
-    const world = await readWorldText(input.world.directory)
-    const made = madeInto(source, world, 'about')
+    const world = await loaded.text(input)
+    const made = await loaded.made(input, evidence, 'about')
     const from = new Map<string, CardPiece[]>()
     for (const piece of usedPieces(source)) for (const where of made.get(baseId(piece.id)) ?? []) from.set(where, [...from.get(where) ?? [], piece])
     const ranked = [...from].map(([where, pieces]) => ({ where, pieces, size: pieces.reduce((sum, piece) => sum + piece.text.length, 0) })).sort((a, b) => b.size - a.size)

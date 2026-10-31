@@ -37,10 +37,10 @@ describe('the check commands in a chat', () => {
 
   it('tell the assistant which tools to run for the kits the command names, and pass on what the person added', async () => {
     const all = (await step(agent(chat), '/check deep please')).messages[0]!.content[0]!.text
-    expect(all).toMatch(/check_world, check_card, check_quality/)
+    expect(all).toMatch(/check_world, check_card, check_quality, check_play/)
     expect(all).toMatch(/deep please/)
-    expect((await step(agent(chat), '/check-card')).messages[0]!.content[0]!.text).toMatch(/with check_card and/)
-    expect((await step(agent(chat), '/check-quality')).messages[0]!.content[0]!.text).toMatch(/with check_quality and/)
+    expect((await step(agent(chat), '/check-card')).messages[0]!.content[0]!.text).toMatch(/check_card now/)
+    expect((await step(agent(chat), '/check-quality')).messages[0]!.content[0]!.text).toMatch(/check_quality now/)
   })
 
   it('leave other messages, later steps, other chats and children alone', async () => {

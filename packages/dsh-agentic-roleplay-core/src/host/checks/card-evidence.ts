@@ -1,11 +1,12 @@
 import { stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import { baseId, originOf, readSource, rolesOf, UPDATE_FOLDER, type CardPiece, type CardVersion, type Source } from '../import/card-tools.ts'
+import { itemise } from '../import/items.ts'
 import { isLeftOut } from '../import/roles.ts'
 import { IMPORT_FOLDER } from '../import/store.ts'
 import { ENTITY_FOLDERS } from '../worlds/entity-folders.ts'
 import { WORLD_FILE_NAME } from '../worlds/world-file.ts'
-import { shareOf, termsOf } from './terms.ts'
+import { termsOf } from './terms.ts'
 import type { WorldText } from './world-text.ts'
 
 /** The card to compare a world with: the one it was made from, or the newer one waiting to update it (then also the one it was made from, which the import's records are about). */
@@ -49,17 +50,24 @@ export function madeInto(source: Source, world: WorldText, only: 'any' | 'about'
   const made = new Map<string, string[]>()
   const add = (piece: string, where: string): void => { const list = made.get(piece) ?? []; if (!list.includes(where)) made.set(piece, [...list, where]) }
   const group = { character: 'characters', place: 'locations', faction: 'factions', thing: 'items' } as const
+  const items = itemise(source.card, source.choices)
   for (const entity of source.records.roster ?? []) {
     const where = `${group[entity.kind]}/${entity.key}`
     if (!world.texts.has(where)) continue
-    for (const entry of originOf(source.card, source.choices, source.pieces, source.records, entity.name)) if (only === 'any' || entry.how === 'about it') add(entry.piece, where)
+    for (const entry of originOf(source.card, source.choices, source.pieces, source.records, entity.name, items)) if (only === 'any' || entry.how === 'about it') add(entry.piece, where)
   }
   const pieces = usedPieces(source).map(piece => ({ id: baseId(piece.id), terms: termsOf(piece.text) }))
+  const holders = new Map<string, number[]>()
+  pieces.forEach((piece, at) => {
+    for (const term of piece.terms) { const list = holders.get(term); if (list === undefined) holders.set(term, [at]); else list.push(at) }
+  })
   for (const [where, text] of world.texts) {
     if (!where.startsWith(`${ENTITY_FOLDERS[4].directory}/`) && !where.startsWith(`${WORLD_FILE_NAME}#`)) continue
     const terms = termsOf(text)
     if (terms.size < MIN_TERMS) continue
-    for (const piece of pieces) if (shareOf(terms, piece.terms) >= MADE_FROM) add(piece.id, where)
+    const shared = new Map<number, number>()
+    for (const term of terms) for (const at of holders.get(term) ?? []) shared.set(at, (shared.get(at) ?? 0) + 1)
+    for (const [at, count] of shared) if (count / terms.size >= MADE_FROM) add(pieces[at]!.id, where)
   }
   return made
 }

@@ -20,6 +20,26 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * a file at once. A missing field, `null` and a blank string all mean "absent".
  */
 export class Reader {
+  private static watched: Reader[] | undefined
+  private readonly looked = new Set<string>()
+  private readonly inner: Reader[] = []
+
+  /**
+   * Runs a parse and returns what it never looked at: the fields of the document (and of the objects inside it) that nothing reads, as paths, and the top-level fields it did look at. A parser that gave up
+   * early has not looked at the rest, so only a parse that succeeded says anything.
+   */
+  static unreadBy(parse: () => void): { unread: string[]; read: string[] } {
+    const outer = Reader.watched
+    const roots: Reader[] = []
+    Reader.watched = roots
+    try { parse() } finally { Reader.watched = outer }
+    return { unread: roots.flatMap(root => root.unread()), read: roots.flatMap(root => [...root.looked]) }
+  }
+
+  private unread(): string[] {
+    return [...Object.keys(this.data).filter(key => !this.looked.has(key)).map(key => this.child(key)), ...this.inner.flatMap(reader => reader.unread())]
+  }
+
   private constructor(
     private readonly data: Record<string, unknown>,
     private readonly path: string,
@@ -39,7 +59,9 @@ export class Reader {
       issues.push({ path: '', message: 'expected a JSON object' })
       return undefined
     }
-    return new Reader(data, '', issues)
+    const reader = new Reader(data, '', issues)
+    Reader.watched?.push(reader)
+    return reader
   }
 
   fail(key: string, message: string): void {
@@ -48,6 +70,7 @@ export class Reader {
 
   /** The value as written, with `null` read as absent. */
   raw(key: string): unknown {
+    this.looked.add(key)
     const value = this.data[key]
     return value === null ? undefined : value
   }
@@ -119,7 +142,9 @@ export class Reader {
       this.fail(key, 'must be an object')
       return undefined
     }
-    return new Reader(value, this.child(key), this.issues)
+    const reader = new Reader(value, this.child(key), this.issues)
+    this.inner.push(reader)
+    return reader
   }
 
   objects(key: string): Reader[] {
@@ -130,7 +155,11 @@ export class Reader {
       return []
     }
     return value.flatMap((entry: unknown, index): Reader[] => {
-      if (isRecord(entry)) return [new Reader(entry, this.child(`${key}[${index}]`), this.issues)]
+      if (isRecord(entry)) {
+        const reader = new Reader(entry, this.child(`${key}[${index}]`), this.issues)
+        this.inner.push(reader)
+        return [reader]
+      }
       this.fail(`${key}[${index}]`, 'must be an object')
       return []
     })

@@ -68,7 +68,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
       async execute(args, exec) {
         const { record } = await reader.read(exec)
         const world = { id: record.summary.id, directory: record.directory }
-        await createAuthoredEntity(world, args.kind as AuthoredEntityKind, args.key, args.document)
+        await createAuthoredEntity(world, args.kind as AuthoredEntityKind, args.key, args.document, { refuseUnread: true })
         return result('created', args.kind, args.key, await readWorldEditor(world)) as never
       },
     }),
@@ -80,7 +80,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
       async execute(args, exec) {
         const { record } = await reader.read(exec)
         const world = { id: record.summary.id, directory: record.directory }
-        await replaceAuthoredEntity(world, args.kind as AuthoredEntityKind, args.key, args.document)
+        await replaceAuthoredEntity(world, args.kind as AuthoredEntityKind, args.key, args.document, { refuseUnread: true })
         return result('replaced', args.kind, args.key, await readWorldEditor(world)) as never
       },
     }),

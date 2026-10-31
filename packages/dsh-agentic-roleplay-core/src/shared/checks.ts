@@ -1,5 +1,5 @@
 /** A check suite is made of kits; a person asks for kits with a command and an assistant with a tool. */
-export const KITS = ['consistency', 'fidelity', 'quality'] as const
+export const KITS = ['consistency', 'fidelity', 'quality', 'playability'] as const
 export type KitId = (typeof KITS)[number]
 
 export const SEVERITIES = ['error', 'warning', 'info'] as const
@@ -47,11 +47,12 @@ export interface CheckReport {
 
 /** The commands of an authoring chat that start checks, and the kits each runs. */
 export const CHECK_COMMANDS: Readonly<Record<string, readonly KitId[]>> = {
-  check: ['consistency', 'fidelity', 'quality'],
-  'check-all': ['consistency', 'fidelity', 'quality'],
+  check: KITS,
+  'check-all': KITS,
   'check-world': ['consistency'],
   'check-card': ['fidelity'],
   'check-quality': ['quality'],
+  'check-play': ['playability'],
 }
 
 export const findingKey = (finding: Finding): string => `${finding.check}\n${finding.code}\n${finding.where}\n${finding.message}`

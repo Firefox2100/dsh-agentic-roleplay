@@ -9,6 +9,8 @@ export interface CheckInput {
   card?: CardEvidence
   /** What a judged check asks a model with: the import's own runner, so the chat's model, the import settings and the decision model apply. */
   model?: ImportContext
+  /** What the checks of one run have already read of the world, so the parts several checks look at are read and parsed once; `runChecks` sets it. */
+  memo?: Map<string, Promise<unknown>>
 }
 
 export interface Check {

@@ -1,12 +1,7 @@
-import { loadCharacters } from '../characters/load.ts'
-import { loadFactions } from '../factions/load.ts'
-import { loadLocations } from '../locations/load.ts'
-import { loadLore } from '../lore/load.ts'
-import { loadVariables } from '../variables/load.ts'
-import { readWorldInfo } from '../worlds/world-info.ts'
 import { mapLimit, norm } from '../import/run.ts'
 import { CheckSkipped, foundBy, type Check, type Found } from './check.ts'
 import { verdictOf } from './judge.ts'
+import { loaded } from './loaded.ts'
 
 /** A place described in fewer characters than this has nothing to play with. */
 const THIN_PLACE = 20
@@ -22,8 +17,8 @@ const cast: Check = {
   mode: 'code',
   needs: [],
   description: 'Whether the cast can be played: someone to play, sheets with more than a summary for the characters that matter, voices, and characters that are one description twice.',
-  async run({ world }) {
-    const { characters } = await loadCharacters(world.directory)
+  async run(input) {
+    const { characters } = await loaded.characters(input)
     if (characters.length === 0) throw new CheckSkipped('the world has no characters yet')
     const found: Found[] = []
     if (!characters.some(character => character.role === 'playable')) found.push({ severity: 'warning', code: 'no-playable', where: 'characters', message: 'no character can be played, so a story from this world needs an avatar brought along', hint: 'Make one character playable, or add one for the player.' })
@@ -50,8 +45,8 @@ const places: Check = {
   mode: 'code',
   needs: [],
   description: 'Places with no description, or one too short to play in.',
-  async run({ world }) {
-    const { locations } = await loadLocations(world.directory)
+  async run(input) {
+    const { locations } = await loaded.locations(input)
     return foundBy('quality-places', locations.flatMap((place): Found[] => {
       const length = text(place.description).length
       if (length === 0) return [{ severity: 'warning', code: 'place-undescribed', where: `locations/${place.id}`, message: `${place.name} has no description` }]
@@ -66,8 +61,8 @@ const about: Check = {
   mode: 'code',
   needs: [],
   description: 'What the world says about itself: a description, tags for the catalogue, an opening for the story.',
-  async run({ world }) {
-    const info = await readWorldInfo(world.directory)
+  async run(input) {
+    const info = await loaded.info(input)
     const found: Found[] = []
     if (text(info.description) === '') found.push({ severity: 'info', code: 'no-description', where: 'world.json', message: 'the world has no description, so the worlds list shows nothing about it' })
     if (info.tags.length === 0) found.push({ severity: 'info', code: 'no-tags', where: 'world.json', message: 'the world has no tags' })
@@ -84,8 +79,9 @@ const sheets: Check = {
   mode: 'decision',
   needs: ['model'],
   description: 'Whether each principal or supporting character\'s sheet is enough to play them (who they are, how they talk, what they want). A decision model may answer; what it is unsure of goes to the language model.',
-  async run({ world, model }) {
-    const { characters } = await loadCharacters(world.directory)
+  async run(input) {
+    const { model } = input
+    const { characters } = await loaded.characters(input)
     const asked = characters.filter(character => character.tier !== 'background' && character.kind === 'person')
     const found: Found[] = []
     await mapLimit(asked, model!.concurrency, async (character) => {
@@ -116,8 +112,9 @@ const gaps: Check = {
   mode: 'judged',
   needs: ['model'],
   description: 'What a model reading a digest of the world finds missing for it to play well: places with nothing to do, conflicts nobody carries, openings the world never sets up.',
-  async run({ world, model }) {
-    const [{ characters }, { locations }, { factions }, { lore }, { defs }] = await Promise.all([loadCharacters(world.directory), loadLocations(world.directory), loadFactions(world.directory), loadLore(world.directory), loadVariables(world.directory)])
+  async run(input) {
+    const { world, model } = input
+    const [{ characters }, { locations }, { factions }, { lore }, { defs }] = await Promise.all([loaded.characters(input), loaded.locations(input), loaded.factions(input), loaded.lore(input), loaded.variables(input)])
     const named = new Map<string, string>()
     for (const [kind, entries] of [['character', characters.map(entry => ({ id: entry.id, name: entry.name }))], ['place', locations.map(entry => ({ id: entry.id, name: entry.name }))], ['organisation', factions.map(entry => ({ id: entry.id, name: entry.name }))], ['background', lore.map(entry => ({ id: entry.id, name: entry.title }))]] as const) {
       for (const entry of entries) for (const label of [entry.id, entry.name, `${kind} ${entry.id}`, `${kind} ${entry.name}`]) named.set(norm(label), entry.id)
@@ -125,7 +122,7 @@ const gaps: Check = {
     /** What the model named, as the key of that thing; anything else is about the world as a whole. */
     const keyOf = (about: string): string => named.get(norm(about)) ?? '(the world)'
     const digest = [
-      `world: ${world.summary.name}: ${text((await readWorldInfo(world.directory)).description)}`,
+      `world: ${world.summary.name}: ${text((await loaded.info(input)).description)}`,
       ...characters.map(entry => `character ${entry.id} (${entry.role}, ${entry.tier}): ${entry.name}: ${entry.summary}`),
       ...locations.map(entry => `place ${entry.id}: ${entry.name}: ${text(entry.description).slice(0, 160)} (${entry.exits.length} ways out)`),
       ...factions.map(entry => `organisation ${entry.id}: ${entry.name}: ${entry.summary}`),

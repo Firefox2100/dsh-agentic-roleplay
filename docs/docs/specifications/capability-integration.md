@@ -49,8 +49,9 @@ in-flight window. Without the plugin everything works on cues and words.
   feature-detects it through `/roleplay-api/speech/capabilities`. DSH Voice Input owns microphone
   capture and inserts the completed transcript into the existing draft without sending it.
 
-Both are optional lookups. The bundle includes DSH Voice Input and SenseVoice; an enabled API STT
-provider registers alongside SenseVoice, while disabling API STT withdraws only that provider.
+Both are optional lookups. DSH Voice Input and SenseVoice are installed separately from the roleplay
+bundle, which keeps their exact package versions aligned with DSH. An enabled API STT provider registers
+alongside SenseVoice, while disabling API STT withdraws only that provider.
 
 - **Image generation.** Canonical portraits and transient scene images use the optional provider-neutral image service. Reference-aware OpenAI-compatible drivers use edits when references exist and generations otherwise. See `images.md` for identity, storage, jobs and UI behavior.
 
