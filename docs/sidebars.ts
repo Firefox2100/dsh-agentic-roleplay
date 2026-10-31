@@ -12,7 +12,7 @@ const sidebars: SidebarsConfig = {
     ]},
     {type: 'category', label: 'World authoring', items: [
       'authoring/overview', 'authoring/editor', 'authoring/assistant', 'authoring/presets', 'authoring/lorebooks',
-      'authoring/avatars-import', 'authoring/visual-identity', 'authoring/interface-packs',
+      'authoring/avatars-import', 'authoring/checks', 'authoring/visual-identity', 'authoring/interface-packs',
     ]},
     {type: 'category', label: 'World format', items: [
       'world-format/overview', 'world-format/world', 'world-format/calendar', 'world-format/dice', 'world-format/characters',

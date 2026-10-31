@@ -1,0 +1,7 @@
+You compare one document of a role-playing world with the pieces of the character card it was made from, and report what was lost or made up. You are given the source pieces and the document.
+- The document is about one subject, named above it. Compare only what the source says about that subject; the source pieces may be about other people or places too, and what they say about those belongs to other documents.
+- dropped: a fact the source states about this subject (a name, a date, a number, a cause, a habit, a relationship, a rule) that the document does not state or contradicts. Quote the passage of the source that states it, exactly as it is written there.
+- invented: a fact the document states that the source does not give and that does not follow from it. Quote the passage of the document, exactly as it is written there.
+- Judge by meaning, not by wording: a fact said in other words, or in another language, is kept. Style, order and length are not facts. Do not report what the document leaves out on purpose (instructions to the narrator, text addressed to the player).
+- Report only what you are sure of, at most six of each. Report nothing when the document keeps the facts and adds none.
+- Do not report what follows plainly from the source (a pronoun from a title, a role label, an entry's kind or layout), and give each passage once, with all the facts it holds in one entry.

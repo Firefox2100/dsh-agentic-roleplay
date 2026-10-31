@@ -35,7 +35,7 @@ function plotDocument(value: unknown) {
   return parsed.value[0]!
 }
 
-/** The most problems a write reports back; `world_check` lists the rest. */
+/** The most problems a write reports back; `check_world` lists the rest. */
 const REPORTED_PROBLEMS = 8
 
 /**
@@ -51,9 +51,9 @@ export function withWorldCheck(reader: AuthoredWorldReader, tool: ToolDefinition
       if (done === null || typeof done !== 'object') return done as never
       const { record } = await reader.read(exec)
       const check = await checkWorld(record)
-      if (check.ok) return { ...done, world_check: 'ok: a story could start from this world' } as never
+      if (check.ok) return { ...done, check_world: 'ok: a story could start from this world' } as never
       const shown = check.problems.slice(0, REPORTED_PROBLEMS).map(problem => `${problem.where}: ${problem.message}`)
-      return { ...done, world_check: { ok: false, still_open: shown, more: check.problems.length - shown.length + check.more, note: 'Not an error of this edit; fix what the world still needs before the end of the turn (world_check lists all).' } } as never
+      return { ...done, check_world: { ok: false, still_open: shown, more: check.problems.length - shown.length + check.more, note: 'Not an error of this edit; fix what the world still needs before the end of the turn (check_world lists all).' } } as never
     },
   } as ToolDefinition
 }

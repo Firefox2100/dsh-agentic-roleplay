@@ -1,0 +1,58 @@
+---
+title: Checking a world
+---
+
+A world can be well-formed and still have problems: a character sheet may be only one line, an import may have dropped a fact from the card, or two values may track the same thing. The **check suite** looks for these problems. Run it with a command in the world's authoring chat. The authoring assistant can also call it through tools, and every card import and update runs its quick checks automatically.
+
+Checks never edit authored content. They only save their latest findings in `.checks/results.json`. The assistant fixes what they find with its usual editing tools and asks before each edit, as it normally does.
+
+## Commands
+
+Type one in the authoring chat of a world:
+
+| Command | What it runs |
+|---|---|
+| `/check` or `/check-all` | all three kits |
+| `/check-world` | the consistency kit |
+| `/check-card` | the fidelity kit (needs the card the world was imported from) |
+| `/check-quality` | the quality kit |
+
+Anything you add after the command goes to the assistant. Add **deep** (`/check-quality deep`) to have a model take part. Without it, only the checks the program decides run; the assistant may also turn deep on by itself when the quick findings suggest the world is thin. The assistant runs the checks, reads the findings, fixes what is plainly wrong, asks about what needs a choice, and runs the same check again to confirm. Then it tells you what was found, what it changed and what is left.
+
+## The three kits
+
+**Consistency** is decided by the program and always cheap:
+
+- `world-valid`: every file reads and everything that points at something points at something that exists, exactly as a story start checks it. It names the problems of the first part of the world that has any, so fixing them can show the next part's.
+- `world-graph`: places nobody can reach or leave, ways with no way back, a lock whose key does not exist, characters, places or things with one name.
+- `duplicate-values`: tracked values that mean the same thing for the same subjects (`hp` and `health`). Which one to keep is a choice, so the finding names both and changes nothing.
+- `name-clashes`: an alias that is another character's name, two organisations or two background entries with one name.
+- `world-prompts`: the prompts the world carries must be prompts the product has, not empty, and use only the variables each is given.
+
+**Fidelity** compares the world with the card it was imported from, kept in the world's `.import` folder, or with a newer card waiting to update it (`/check-card` and the `check_card` tool take `version: new`):
+
+- `card-coverage`: every piece the import read for the world went into something. A piece nothing comes from was lost or left out without a word.
+- `card-names`: every character, place, organisation and thing is named somewhere in the card. If most names are missing, it says that once instead: the world is probably in another language than the card.
+- `card-numbers`: the numbers a piece gives (ages, years, amounts) are in what was made from it.
+- `card-update`: with a newer card waiting, what it changed or added that the world does not say yet, and what only a dropped piece made.
+- `card-fidelity` (deep): for each document made from the card, a model lists facts the card states that the document lost, and facts the document states that the card does not give. Each fact comes with a quoted passage, and a quote that is not in the text it is said to come from is refused. A run compares at most 40 documents, those with the most source first, and says how many it left.
+
+**Quality** asks whether the world is good enough to play, from what is there:
+
+- `quality-cast`: someone can be played, the characters that matter have more than a summary and a way of speaking, and no two characters share one summary.
+- `quality-places`: places with no description, or a one-line description and no features.
+- `quality-world`: a description, tags and an opening.
+- `sheet-playable` (deep): for each principal and supporting character, whether the sheet says who they are, how they talk and what they want. A [decision model](../playing/settings) can answer when the import settings use one and it is sure; what it is unsure of goes to the language model.
+- `world-gaps` (deep): a model reads a digest of the world and names what is missing for it to play well: a place with nothing to do, a conflict nobody carries. Each gap names the character, place or entry it concerns and what would fill it. It never fills a gap with something the source does not say.
+
+A finding has a severity (**error**, **warning** or **info**), a code, where it is, a message and, when the fix is clear, a hint. An error is something to fix; a warning is a pointer to look at; an info is worth a mention.
+
+## What imports do
+
+A card import, an import without a model and an update from a newer card run every check the program decides, against the card the world now comes from, and keep the result. The assistant that reviews an import reads those findings. It decides whether the deep checks are worth running: for a long card, when many pieces were rewritten into lore, or when the quick findings show lost facts or a thin cast. When an update from a newer card is nearly done, the assistant runs `check_card` with `version: new` before `card_update_finish`.
+
+## Where results are kept
+
+Each check's last findings are stored in the world's `.checks/results.json`. The next run says how many findings are new and which ones are gone since then. Like `.import`, the folder is authoring state: a dot folder that is not part of the world you publish, and a translation does not copy it. Delete it any time; the next run starts afresh.
+
+The assistant's tools are `check_world`, `check_card`, `check_quality` and `check_list`, which lists every check with its kit, whether the program or a model decides it, and what it needs.

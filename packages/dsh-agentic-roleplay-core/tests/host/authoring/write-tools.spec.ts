@@ -44,8 +44,8 @@ describe('what a write tells about the rest of the world', () => {
     const tool = withWorldCheck(reader, { name: 'x', execute: async () => ({ action: 'created' }) } as never) as unknown as { execute: (args: unknown, exec: unknown) => Promise<Record<string, unknown>> }
     const first = await tool.execute({}, {})
     expect(first['action']).toBe('created')
-    expect(first['world_check']).toMatchObject({ ok: false, still_open: ['characters/a: unknown place'], more: 3 })
-    expect((await tool.execute({}, {}))['world_check']).toMatch(/^ok/)
+    expect(first['check_world']).toMatchObject({ ok: false, still_open: ['characters/a: unknown place'], more: 3 })
+    expect((await tool.execute({}, {}))['check_world']).toMatch(/^ok/)
     vi.doUnmock('../../../src/host/worlds/world-check.ts')
   })
 })

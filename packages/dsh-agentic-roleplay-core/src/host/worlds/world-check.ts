@@ -1,7 +1,6 @@
 import { relative } from 'node:path'
 import { InvalidWorldError } from '../sessions/errors.ts'
-import type { WorldRecord } from './scan.ts'
-import { loadValidatedWorld } from './validated-world.ts'
+import { loadValidatedWorld, type CheckedWorld } from './validated-world.ts'
 
 export interface WorldProblem {
   /** The file (or part of the world) the problem is in, relative to the world's folder. */
@@ -26,9 +25,9 @@ const LISTED = 40
  * check; it names the problems of the first part of the world that has any (characters, factions, places, calendar, dice, items, lore, tracked values, triggers, plots), so
  * fixing those can show the next part's.
  */
-export async function checkWorld(world: Pick<WorldRecord, 'directory' | 'summary'> & Partial<Pick<WorldRecord, 'variables'>>): Promise<WorldCheck> {
+export async function checkWorld(world: CheckedWorld): Promise<WorldCheck> {
   try {
-    await loadValidatedWorld(world as Parameters<typeof loadValidatedWorld>[0])
+    await loadValidatedWorld(world)
     return { ok: true, problems: [], more: 0 }
   } catch (error) {
     if (!(error instanceof InvalidWorldError)) throw error

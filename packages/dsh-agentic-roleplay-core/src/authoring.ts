@@ -15,6 +15,8 @@ import { cardTools } from './host/import/card-tools.ts'
 import { updateHooks, updateTools } from './host/import/update-tools.ts'
 import { presetTools } from './host/import/preset-tools.ts'
 import { isReviewing } from './host/import/run-import.ts'
+import { checkTools } from './host/checks/tools.ts'
+import { checkHooks } from './host/checks/hooks.ts'
 import { translateTools } from './host/translate/tools.ts'
 import type {} from './host/import/service.ts'
 import type {} from './host/prompts/library.ts'
@@ -45,7 +47,9 @@ export function apply(ctx: Context): void {
   for (const tool of updateTools(ctx.roleplayWorlds)) ctx.tools.register(tool)
   for (const tool of presetTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of translateTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
+  for (const tool of checkTools(reader, { settings: () => ctx.roleplayImport.settings, prompting })) ctx.tools.register(tool)
   importHooks(ctx, ctx.roleplayWorlds, prompting)
+  checkHooks(ctx, prompting)
   updateHooks(ctx, ctx.roleplayWorlds, world => ctx.roleplayAuthoringLanguages.get(world))
   const reviewing = async (chat: string): Promise<boolean> => {
     const id = authoredWorldOf(chat)

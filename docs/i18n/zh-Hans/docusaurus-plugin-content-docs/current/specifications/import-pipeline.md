@@ -41,7 +41,7 @@ SillyTavern 角色卡可以是带有 `ccv3` 或 `chara` 数据块的 PNG，也�
   - 仍由同一个 `finishImport` 写入世界。世界的描述和标签取自卡片自己的字段（`ctx.noModel`）。
   - 导入以 `done` 结束；世界还无法开始时为 `repair`；并写入 `provenance.json`。没有对话，也没有审阅。
 - 创作检查和导入来源会随文件一起记录。
-  - 每次创作写入（元素、关系、剧情线、触发器、世界信息）都会在结果旁返回整个世界在能开始故事之前还缺什么：结果中的 `world_check` 是 `ok`，或最多八个未解决的问题及其余数量。这只是提示，不是拒绝，因为写到一半的世界是正常的中间状态。
+  - 每次创作写入（元素、关系、剧情线、触发器、世界信息）都会在结果旁返回整个世界在能开始故事之前还缺什么：结果中的 `check_world` 是 `ok`，或最多八个未解决的问题及其余数量。这只是提示，不是拒绝，因为写到一半的世界是正常的中间状态。
   - `.import/provenance.json`（`schema: dsh-roleplay-import/v1`）每次导入或更新记一行：时间、卡片名称、所读卡片的 SHA-256、语言，导入还记录数量和说明条数。其他 schema 的文件会被拒绝，不会被改写。
 - 常驻规则和生成指引来自 `extractEntities` 与提示词 `import/generator`。每个有实质内容的片段只问一个问题，返回两个列表。段落必须原样复制，并与来源核对。
   - *casting* 是游玩中如何凭空生成人物、地点或物品，成为只有游戏主持人可读的设定（“人物如何生成”）。
@@ -54,7 +54,7 @@ SillyTavern 角色卡可以是带有 `ccv3` 或 `chara` 数据块的 PNG，也�
 - 草稿修复由 `host/import/draft.ts`、`run-import.ts` 和 `worlds/world-check.ts` 实现。
   - `import_finish` 先修补代码能确定的问题：悬空的阵营成员、关系、已知地点、父地点、通路和起始地点会被丢弃，并各留下说明。
   - 随后即使 `checkWorld`（开始存档时运行的校验）仍发现问题，也会写入世界。导入状态变为 `repair`，结果带有 `draft`，`WorldSummary.draft` 标记卡片。
-  - 助手被要求用 `world_check` 和原始角色卡修复。当一个可能改动世界的回合要结束而世界仍然无法开始时，导入钩子会把它送回去（`import/repair-again`，最多 5 次）。
+  - 助手被要求用 `check_world` 和原始角色卡修复。当一个可能改动世界的回合要结束而世界仍然无法开始时，导入钩子会把它送回去（`import/repair-again`，最多 5 次）。
   - 问题仍在时 `endReview` 让状态停在 `repair`；`checkWorld` 通过后，`settleDraft` 把世界变回普通世界。
   - `GET /worlds/import/draft?id=` 返回状态和问题。`POST` 的 `action` 为 `ask`（再次发送导入指令，回合在解除审批的状态下运行，`startRepair`）、`keep`（`keepDraft`）或 `discard`（文件夹移到 `<root>/.trash/worlds`）。
   - 文件通过 `atomicWrite`（`host/atomic-write.ts`）写入，`world.json` 的改动通过 `updateWorldFile`，按世界串行执行。
@@ -76,6 +76,19 @@ SillyTavern 角色卡可以是带有 `ccv3` 或 `chara` 数据块的 PNG，也�
 - 卡片版权属于其作者。测试只使用 `tests/support/cards.ts` 中虚构的卡片，不使用真实卡片内容。
 - **卡会保留。** 导入之后 `.import/` 不会被删除，该世界的创作聊天拥有只读工具：`card_overview`（每个字段、问候语和世界书条目及其大小、勘察认定它是什么、由它生成了哪些实体，还有名册和报告中的说明）、`card_search`（先按短语、再按词匹配，任何文字都可以，返回片段）、`card_read`（原文返回一段，每次 6000 字符）和 `card_origin`（某个实体是由哪些段落生成的，用与构建相同的 `sourcesFor` 重新计算；对导入没有生成任何内容的名字，则列出提到它的段落）。它们与 `.import/card.json` 同在，所以删除该文件夹就会关闭它们。流程提示词要求助手去查卡、把世界文件当作设定而把卡当作依据，并对照原文核实导入记录。插件导出或翻译的内容都不会带上这张卡（翻译会跳过 `.import`，也没有其他导出）；同步会随世界一起带走它。游玩过程接触不到它。
 - **按新版角色卡更新世界**（`host/import/update.ts`、`update-tools.ts`、`card-diff.ts`、`snapshot.ts`）。查看角色卡时（`ImportPreview.targets`，来自 `findTargets`）会列出每个 `.import/card.json` 存在且导入已完成的世界，名称与卡相同的排在前面（`sameName`）；`edited` 把世界文件与 `.import/files.json` 比较，这个文件是导入回合结束时（`endReview`）写下的 SHA-256 快照（不含 `images/` 和顶层以点开头的条目），没有快照则为 `unknown`。世界自己的页面通过同一个查看页面提供更新（`GET /worlds/import/update?id=` 说明这个世界是否由角色卡导入、是否有更新在等待、上一次更新能否撤销）。`POST /worlds/import/start` 和 `/catalogue/convert/staged` 接受 `update: <世界 id>`；`startUpdate` 把世界的文件（不含 `images/` 和点开头的条目）与导入的记录保存到 `.import/before-update/`，把上传的卡移入 `.import/update/`，打开创作对话并发送 `updateMessage`——这只是一条普通请求，不是特殊回合，所以每项修改都像其他修改一样需要批准（`authoringApproval` 同样适用）；`updateHooks` 在更新回合停下而更新仍在等待时把它送回一次（实测有模型在一项找不到去处的改动上结束了回合），第二次停下则放行，这样向用户提问也能结束回合。`card_diff`（只读）对两张卡的片段配对（`matchPieces`：字段按 id；条目先按标题和关键词，再按文字，最后在编号相同且共有一半词时配对），按句子对比有变化的片段（`diffText`，最多 1500 句），并加上旧片段生成的实体（`entitiesByPiece`，来自导入的记录；被删去的片段还会给出只由它生成的实体，`madeOnlyFromIt`）、卡对世界本身的改动（`worldFieldChanges`：简介、标签、作者、开场、其他开场）和导入之后被修改的文件。助手用 `edit_world_info` 处理这些改动（它修改 `WORLD_INFO_FIELDS` 里的 `world.json` 字段，像其他修改一样需要批准，并拒绝名称、预设、世界书、采样和工具开关），并移除只由被删去的片段生成、且用户没有改过的内容。`card_read` 和 `card_search` 接受 `version: new`。`card_update_finish` 把旧卡、旧选择和旧图片保存到 `.import/previous`，写入新的，把 `classification.json` 转到新的片段 id 并忘记被删去的片段，获取旧卡没有的图片地址，以及已保存的 `pictures.json` 显示因可能已经消失的原因而失败的地址（`addressesToFetch`、`worthAskingAgain`；没有记录时，旧卡的地址一律视为已处理），把结果合并进 `pictures.json`（`mergeReports`），列出地址已被新卡删去但已获取的图片（`droppedFromTheCard`，仍留在图库），把仍是卡自带图片的头像（来源为 `uploaded`、原文件名为 `picture.png` 的参考图）换成新图片，并重新拍下快照。`DELETE /worlds/import/update?id=`（`revertUpdate`）把保存的文件和记录放回去，世界当前的内容移到 `.trash/update-<时间>`。编辑器的默认选项是：同名世界且 `edited: no` 时更新，否则新建世界；世界保留名称；目录中的发布版本会把新版本记为世界的来源。
+
+## 检查套件
+
+`host/checks/` 把所有“世界对不对”的检查放进一个套件，按检查包组织（`shared/checks.ts`：`consistency`、`fidelity`、`quality`）。面向用户的说明见[检查世界](../authoring/checks)。
+
+- **统一的约定。** 一项检查是 `{ id, kit, mode, needs, description, run(input) }`（`check.ts`），返回发现：`severity`（`error`、`warning`、`info`）、`code`、`where`、`message`，以及可选的 `hint`。`mode` 为 `code`（由程序判定）、`judged`（模型阅读程序收集的依据）或 `decision`（决策模型可以回答的是非题）。`needs` 是 `card` 和/或 `model`。无法在某个世界上运行的检查会抛出 `CheckSkipped`，报告里会连同原因把它列为跳过，而不是算作没问题。`runChecks`（`run.ts`）运行被要求的检查包；不是 `code` 的检查只在 `deep` 时运行，否则列为跳过。
+- **一致性**（`consistency.ts`）包装 `checkWorld`（开始故事时的校验）、对由世界文件生成的临时故事运行的 `lintWorld`（`worlds/scratch.ts`，与触发器检查共用）、对同样对象含义相同的追踪数值（`duplicateValues`，带一个小的同义词表）、别名和名称冲突，以及世界自带的提示词（把 `copyWorldPrompts` 复制到临时文件夹）。
+- **对照**（`fidelity.ts`、`card-evidence.ts`）基于 `CardEvidence`：世界所依据的角色卡，或者等待更新它的新卡，同时带上导入记录所对应的旧卡。`madeInto` 说明每个片段变成了世界的哪些部分：角色、地点等实体按导入的名册和分类（`originOf`）确定，背景条目和 `world.json` 按它们的词项在片段中所占比例确定（`terms.ts`；背景条目自己不记录来源）。代码检查包括：导入读取过的片段的覆盖情况、名字能否在卡里找到、数字是否保留，以及有新卡时世界尚未写到的改动（`matchPieces`、`diffText`）。由模型判断的 `card-fidelity` 对每份文档询问丢失和编造的事实，每条都附一段必须出现在其来源文本里的引文（`comparisonProblem`），至多 40 份文档，每份每类至多六条。
+- **质量**（`quality.ts`）有三个代码检查（角色阵容、地点、世界对自身的说明）、`sheet-playable`（决策：决策模型有把握时经 `verdictOf` 由导入的决策模型回答，否则由语言模型回答）和 `world-gaps`（对世界概要由模型判断；每个缺口必须指明概要里的某个 key 或世界）。
+- **判断复用导入的运行器。** 由模型判断的检查拿到的是调用它的工具的 `ImportContext`（`contextOf`），因此聊天所用的模型、`importReasoning`、`importTemperature`、token 上限、超时、并发数和 `importDecisions` 都照样生效，不需要新增任何配置。
+- **结果**按检查分别保存在 `<world>/.checks/results.json`（`results.ts`）；每次运行会对照这次运行的检查上次保存的结果，说明多少条是新的、哪些已经消失。与 `.import` 一样，点开头的文件夹从不属于已发布的世界或翻译。
+- **工具与命令。** `check_world`、`check_card`（带 `version`）、`check_quality`（都带 `deep`）和 `check_list` 是世界创作聊天的工具（`tools.ts`）。命令 `/check`、`/check-all`、`/check-world`、`/check-card` 和 `/check-quality` 由同一个解析器读取（`shared/authoring-commands.ts`，`/import-st` 也用它）；`hooks.ts` 在这个回合的第一步加入通知 `checks/notice`。
+- **在导入流程中。** `finish`、`structureImport` 和 `card_update_finish` 通过 `checkImported` 运行所有由程序判定的检查并保存结果；`import_finish` 和 `card_update_finish` 把发现作为 `checks` 返回。审阅提示词要求助手依据它们行动，并在卡片或发现需要时运行 deep 检查。更新消息要求助手在结束之前用 `version: new` 运行 `check_card`。
 
 ## 提示词
 

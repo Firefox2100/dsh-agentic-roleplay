@@ -64,6 +64,7 @@ describe('the steps of an import', () => {
     const done = await finish(fakeContext(answers), world)
     expect(done).toMatchObject({ ok: true, report: { counts: { characters: 1, places: 1, lore: 1 }, hasPlayableCharacter: false, cover: true, opening: 'imported', prompts: ['roleplay/style', 'roleplay/character-style'], variables: 1 } })
     expect(JSON.parse(await readFile(join(world, 'variables.json'), 'utf8'))).toEqual([{ key: 'trust_meter', name: 'Trust', kind: 'number', subject: 'character', only: ['old-tam'], min: 0, max: 100, integer: true, default: 50, bands: [{ up_to: 40, label: 'Wary' }, { up_to: 100, label: 'Easy' }] }])
+    expect(done).toMatchObject({ checks: { counts: { error: 0 }, findings: expect.any(Array), skipped: expect.any(Array) } })
     expect(await importPhase(world)).toBe('done')
     expect(await isReviewing(world)).toBe(true)
     await endReview(world)
@@ -71,7 +72,7 @@ describe('the steps of an import', () => {
     expect(await importPhase(world)).toBe('done')
     expect(JSON.parse(await readFile(join(world, 'characters', 'old-tam', 'character.json'), 'utf8'))).toMatchObject({ role: 'npc', start: { location: 'the-lighthouse' } })
     expect(JSON.parse(await readFile(join(world, 'world.json'), 'utf8'))).toMatchObject({ description: 'A harbour town.', opening_message: 'The fog lifts from the pier.', cover_media_id: 'cover' })
-    expect((await readdir(world)).sort()).toEqual(['.import', 'characters', 'images', 'lore', 'locations', 'media', 'prompts', 'variables.json', 'world.json'].sort())
+    expect((await readdir(world)).sort()).toEqual(['.checks', '.import', 'characters', 'images', 'lore', 'locations', 'media', 'prompts', 'variables.json', 'world.json'].sort())
   })
 
   it('carries the instructions of the card into the prose prompts of the world, in every language, and nothing else of them', async () => {

@@ -3,16 +3,6 @@ import type { Translate } from 'dsh-roleplay-model'
 import { readdir, rename, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
-import { CHARACTER_FILE_NAME } from '../characters/character-file.ts'
-import { CHARACTERS_DIR } from '../characters/load.ts'
-import { FACTION_FILE_NAME } from '../factions/faction-file.ts'
-import { FACTIONS_DIR } from '../factions/load.ts'
-import { ITEM_FILE_NAME } from '../items/item-file.ts'
-import { ITEMS_DIR } from '../items/load.ts'
-import { LOCATION_FILE_NAME } from '../locations/location-file.ts'
-import { LOCATIONS_DIR } from '../locations/load.ts'
-import { LORE_FILE_NAME } from '../lore/lore-file.ts'
-import { LORE_DIR } from '../lore/load.ts'
 import { writeImageFileMetadata } from '../images/image-files.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { VARIABLES_FILE_NAME } from '../variables/load.ts'
@@ -30,6 +20,7 @@ import { isLeftOut, type Classified, type Roster } from './survey.ts'
 import { atomicWrite } from '../atomic-write.ts'
 import { updateWorldFile } from '../worlds/world-file-io.ts'
 import { checkWorld, type WorldCheck } from '../worlds/world-check.ts'
+import { ENTITY_FOLDERS } from '../worlds/entity-folders.ts'
 
 type Document = Record<string, unknown>
 
@@ -38,13 +29,6 @@ const MAX_DESCRIPTION = 500
 const MAX_TAGS = 8
 const MAX_TAG = 30
 
-const FOLDERS = [
-  { key: 'characters', directory: CHARACTERS_DIR, file: CHARACTER_FILE_NAME },
-  { key: 'locations', directory: LOCATIONS_DIR, file: LOCATION_FILE_NAME },
-  { key: 'factions', directory: FACTIONS_DIR, file: FACTION_FILE_NAME },
-  { key: 'items', directory: ITEMS_DIR, file: ITEM_FILE_NAME },
-  { key: 'lore', directory: LORE_DIR, file: LORE_FILE_NAME },
-] as const
 
 /** What came of an import, for the person and for the chat that ran it. */
 export interface ImportReport {
@@ -203,7 +187,7 @@ export async function describeWorld(ctx: ImportContext, card: NormalizedCard, ro
 }
 
 async function hasEntities(world: string): Promise<boolean> {
-  for (const { directory } of FOLDERS) {
+  for (const { directory } of ENTITY_FOLDERS) {
     try {
       if ((await readdir(join(world, directory))).some(name => !name.startsWith('.'))) return true
     } catch (error) {
@@ -253,7 +237,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     if (extracted.variables.length > 0) await writeAtomically(join(stage, VARIABLES_FILE_NAME), `${JSON.stringify(extracted.variables, null, 2)}\n`)
     if (extracted.commands.length > 0) await writeAtomically(join(stage, COMMANDS_FILE_NAME), `${JSON.stringify({ commands: extracted.commands }, null, 2)}\n`)
     if (extracted.triggers.length > 0) await writeAtomically(join(stage, TRIGGERS_FILE_NAME), `${JSON.stringify(extracted.triggers, null, 2)}\n`)
-    for (const { key, directory: folder, file } of FOLDERS) {
+    for (const { key, directory: folder, file } of ENTITY_FOLDERS) {
       for (const document of extracted[key]) await writeAtomically(join(stage, folder, String(document['id']), file), `${JSON.stringify(document, null, 2)}\n`)
     }
     for (const { id, text } of extracted.prompts) {
@@ -264,7 +248,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     if (extracted.variables.length > 0) await rename(join(stage, VARIABLES_FILE_NAME), join(directory, VARIABLES_FILE_NAME))
     if (extracted.commands.length > 0) await rename(join(stage, COMMANDS_FILE_NAME), join(directory, COMMANDS_FILE_NAME))
     if (extracted.triggers.length > 0) await rename(join(stage, TRIGGERS_FILE_NAME), join(directory, TRIGGERS_FILE_NAME))
-    for (const { directory: folder } of FOLDERS) {
+    for (const { directory: folder } of ENTITY_FOLDERS) {
       const from = join(stage, folder)
       if (await stat(from).then(() => true, () => false)) await rename(from, join(directory, folder))
     }

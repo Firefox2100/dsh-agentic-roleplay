@@ -1,3 +1,5 @@
+import { parseAuthoringCommand } from './authoring-commands.ts'
+
 /** One lorebook entry of a character card, as the importer and its preview see it. */
 export interface CardEntry {
   /** `entry:<position in the book>`: stable for the card, so the player's choices can name it. */
@@ -88,10 +90,8 @@ export const IMPORT_COMMAND = '/import-st'
 
 /** The command in a message, with the card it names, or nothing when the message is not the command. */
 export function parseImportCommand(text: string): { card: string; request: string } | undefined {
-  const value = text.trimStart()
-  const command = '/import-st'
-  if (value.slice(0, command.length).toLowerCase() !== command || (value.length > command.length && !/\s/u.test(value[command.length]!))) return undefined
-  const body = value.slice(command.length).trimStart()
-  const boundary = body.search(/\s/u)
-  return boundary < 0 ? { card: body, request: '' } : { card: body.slice(0, boundary), request: body.slice(boundary).trim() }
+  const command = parseAuthoringCommand(text, [IMPORT_COMMAND.slice(1)])
+  if (command === undefined) return undefined
+  const boundary = command.rest.search(/\s/u)
+  return boundary < 0 ? { card: command.rest, request: '' } : { card: command.rest.slice(0, boundary), request: command.rest.slice(boundary).trim() }
 }

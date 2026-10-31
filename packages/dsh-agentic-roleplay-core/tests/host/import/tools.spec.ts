@@ -52,7 +52,7 @@ describe('the import turn', () => {
     expect(importNotice('ready', textOf)).toMatch(/import_survey, then import_build, then import_finish/)
     expect(importNotice('done', textOf)).toMatch(/already done/)
     expect(importNotice(undefined, textOf)).toMatch(/no card is waiting/)
-    expect(importNotice('repair', textOf)).toMatch(/world_check/)
+    expect(importNotice('repair', textOf)).toMatch(/check_world/)
   })
 
   function hooked() {
@@ -103,7 +103,7 @@ describe('the import turn', () => {
     await writeFile(join(directory, 'characters', 'tam', 'character.json'), JSON.stringify({ name: 'Tam', role: 'npc', summary: 'x', start: { location: 'nowhere' } }))
     await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'repair', reviewing: true }))
     await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'repair' }))
-    expect((await step(chatAgent, importMessage())).messages[0]!.content[0]!.text).toMatch(/world_check/)
+    expect((await step(chatAgent, importMessage())).messages[0]!.content[0]!.text).toMatch(/check_world/)
     expect(await isReviewing(directory)).toBe(true)
     await stopping(chatAgent)
     expect(chatAgent.steer).toHaveBeenCalledTimes(1)

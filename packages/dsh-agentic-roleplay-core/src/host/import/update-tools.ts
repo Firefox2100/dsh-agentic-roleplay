@@ -10,6 +10,8 @@ import type { WorldCatalog } from '../worlds/catalog.ts'
 import { cardChanges, diffText, matchPieces, worldFieldChanges } from './card-diff.ts'
 import { entitiesByPiece, readSource } from './card-tools.ts'
 import { editsSince } from './snapshot.ts'
+import { checkImported } from '../checks/imported.ts'
+import { readWorldInfo } from '../worlds/world-info.ts'
 import { IMPORT_FOLDER } from './store.ts'
 import { finishUpdate, pendingUpdate } from './update.ts'
 
@@ -101,7 +103,8 @@ export function updateTools(worlds: WorldCatalog): ToolDefinition[] {
       async execute(_args, exec) {
         const directory = await worldOf(exec)
         const outcome = await finishUpdate(directory, exec.signal === undefined ? {} : { signal: exec.signal })
-        return json({ done: true, card: `${IMPORT_FOLDER}/card.json`, previous: join(IMPORT_FOLDER, 'previous'), forgottenRecords: outcome.forgotten, pictures: outcome.pictures, ...(outcome.pictures.droppedFromTheCard.length === 0 ? {} : { picturesTheCardNoLongerPointsTo: 'These pictures in the image library came from addresses the newer card no longer has. They were left in the library; name them to the person in your report and do not delete them.' }), portrait: outcome.portrait, ...(outcome.aboutTheWorld.length === 0 ? {} : { worldInfoToCheck: outcome.aboutTheWorld, instruction: 'The card changed these things about the world itself. If you did not already carry each over with edit_world_info, do it now (or say in your report that you left it, and why). Report only what you actually changed.' }) })
+        const checks = await checkImported(directory, (await readWorldInfo(directory)).name)
+        return json({ done: true, checks, card: `${IMPORT_FOLDER}/card.json`, previous: join(IMPORT_FOLDER, 'previous'), forgottenRecords: outcome.forgotten, pictures: outcome.pictures, ...(outcome.pictures.droppedFromTheCard.length === 0 ? {} : { picturesTheCardNoLongerPointsTo: 'These pictures in the image library came from addresses the newer card no longer has. They were left in the library; name them to the person in your report and do not delete them.' }), portrait: outcome.portrait, ...(outcome.aboutTheWorld.length === 0 ? {} : { worldInfoToCheck: outcome.aboutTheWorld, instruction: 'The card changed these things about the world itself. If you did not already carry each over with edit_world_info, do it now (or say in your report that you left it, and why). Report only what you actually changed.' }) })
       },
     }),
   ]

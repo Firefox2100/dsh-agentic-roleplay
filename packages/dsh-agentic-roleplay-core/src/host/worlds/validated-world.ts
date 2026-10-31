@@ -1,4 +1,11 @@
 import type { WorldRecord } from './scan.ts'
+
+/** What validating a world needs of it: where it is, what to call it in a message, and what the world file starts its tracked values with. */
+export interface CheckedWorld {
+  directory: string
+  summary: { name: string }
+  variables?: WorldRecord['variables']
+}
 import { loadCharacters } from '../characters/load.ts'
 import { loadCalendar } from '../calendar/load.ts'
 import { commandFlag, commandVariable, loadCommands } from '../commands/load.ts'
@@ -17,7 +24,7 @@ import { factionProblems, knowledgeProblems, loreProblems, relationshipProblems,
  * Reads everything a world's files hold and checks it all as a session start does: every file reads, and what refers to something refers to something that is there.
  * @throws {InvalidWorldError} naming every problem of the first part of the world that has any.
  */
-export async function loadValidatedWorld(world: Pick<WorldRecord, 'directory' | 'summary' | 'variables'>) {
+export async function loadValidatedWorld(world: CheckedWorld) {
   const { characters, problems } = await loadCharacters(world.directory)
   if (problems.length > 0) throw new InvalidWorldError(`the characters of "${world.summary.name}" have ${problems.length} problem(s)`, problems)
 

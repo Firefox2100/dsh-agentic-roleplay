@@ -13,6 +13,7 @@ import { fetchPictures, type PicturesReport } from './pictures.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, readImportFolder } from './store.ts'
 import { writeSnapshot } from './snapshot.ts'
 import { recordProvenance } from './provenance.ts'
+import { checkImported } from '../checks/imported.ts'
 import { buildRoster, classifyItems, isLeftOut, ROLES, type Classified, type Role, type Roster } from './survey.ts'
 import { atomicWriteJson } from '../atomic-write.ts'
 import { checkWorld, type WorldCheck } from '../worlds/world-check.ts'
@@ -212,7 +213,7 @@ export async function build(ctx: ImportContext, world: string): Promise<BuildSum
 }
 
 /** Last step: write the staged world and check it as a whole; a world that cannot start yet is kept as a repairable draft. */
-export async function finish(ctx: ImportContext, world: string): Promise<{ ok: true; report: ImportReport; draft?: WorldCheck } | { ok: false; problems: string[] }> {
+export async function finish(ctx: ImportContext, world: string): Promise<{ ok: true; report: ImportReport; draft?: WorldCheck; checks: object } | { ok: false; problems: string[] }> {
   await need(world, ['built'], 'the finish')
   const { card, choices, items, picture } = await load(world)
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
@@ -226,6 +227,7 @@ export async function finish(ctx: ImportContext, world: string): Promise<{ ok: t
   if (result.ok) {
     await writeJson(join(folder(world), STATE), { phase: result.draft === undefined ? 'done' : 'repair', reviewing: true })
     await recordProvenance(world, { kind: 'import', card: { name: card.name }, language: ctx.language ?? '', counts: result.report.counts, notes: result.report.notes.length }, await readFile(join(folder(world), 'card.json'), 'utf8'))
+    return { ...result, checks: await checkImported(world, choices.name) }
   }
   return result
 }
@@ -258,5 +260,6 @@ export async function structureImport(world: string, language?: string): Promise
   if (result.draft === undefined) await finishedImport(world)
   else await writeJson(join(folder(world), STATE), { phase: 'repair' })
   await recordProvenance(world, { kind: 'import', card: { name: card.name }, language: language ?? '', counts: result.report.counts, notes: result.report.notes.length }, await readFile(join(folder(world), 'card.json'), 'utf8'))
+  await checkImported(world, choices.name)
   return { report: result.report, ...(result.draft === undefined ? {} : { draft: result.draft }) }
 }

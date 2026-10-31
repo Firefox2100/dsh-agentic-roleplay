@@ -9,6 +9,7 @@ import { sourcesFor } from './extract.ts'
 import { itemise } from './items.ts'
 import { norm } from './run.ts'
 import { IMPORT_FOLDER, readImportFolder } from './store.ts'
+import type { Role } from './roles.ts'
 import { findEntity, type Classified, type Roster } from './survey.ts'
 
 type AgentExec = { agent?: { session: { id: string } } }
@@ -94,7 +95,7 @@ export async function readSource(directory: string, withRecords: boolean, versio
   return { card: read.card, choices: read.choices, pieces: cardPieces(read.card, read.choices), records }
 }
 
-export const rolesOf = (classified: Classified | undefined, id: string): string[] => {
+export const rolesOf = (classified: Classified | undefined, id: string): Role[] => {
   if (classified === undefined) return []
   return [...new Set(Object.entries(classified).filter(([key]) => baseId(key) === id).flatMap(([, entry]) => entry.roles))]
 }

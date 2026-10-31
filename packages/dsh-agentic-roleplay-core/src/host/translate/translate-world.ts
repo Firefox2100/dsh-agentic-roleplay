@@ -10,7 +10,7 @@ import { recurringTerms, usesTerm } from './terms.ts'
 import { leavesOf, readWorldDocuments, setLeaf, type Leaf, type WorldDocument } from './prose.ts'
 
 /** What is not carried over to a translation: the removed things of the editor and the card import's working files. */
-const NOT_COPIED = new Set(['.trash', '.import'])
+const NOT_COPIED = new Set(['.trash', '.import', '.checks'])
 
 const TERMS_PER_JOB = 40
 const TEXTS_PER_JOB = 30
