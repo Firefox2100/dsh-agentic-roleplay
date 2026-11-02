@@ -2,7 +2,7 @@ import { mapLimit, norm } from '../import/run.ts'
 import type { ImportContext } from '../import/run.ts'
 import { CheckSkipped, foundBy, type Check, type CheckInput, type Found } from './check.ts'
 import { duplicateValues, overlapping } from './consistency.ts'
-import { verdictOf } from './judge.ts'
+import { verdictOf, worthReading } from './judge.ts'
 import { loaded } from './loaded.ts'
 import { candidates, type Near } from './similar.ts'
 import { squashed } from './terms.ts'
@@ -14,9 +14,9 @@ const VALUES_CLOSE = 0.55
 const THINGS_CLOSE = 0.6
 const LORE_CLOSE = 0.6
 const TEXT_CHARS = 1200
-const QUOTE_LISTED = 6
 
-const yesNo = (key: string) => ({ type: 'object', properties: { reason: { type: 'string' }, [key]: { type: 'boolean' } }, required: ['reason', key], additionalProperties: false }) as never
+// the flag says what true means: without it the model wrote reasons that said "not the same" and still set the flag
+const yesNo = (key: string, meaning: string) => ({ type: 'object', properties: { reason: { type: 'string' }, [key]: { type: 'boolean', description: meaning } }, required: ['reason', key], additionalProperties: false }) as never
 
 interface Pair {
   near: Near
@@ -25,13 +25,13 @@ interface Pair {
 }
 
 /** The pairs a model says yes to, each with the reason the language model gave (the decision model gives none). */
-async function asked(model: ImportContext, pairs: readonly Pair[], prompt: string, key: string, extra: Record<string, unknown> = {}): Promise<{ pair: Pair; reason: string }[]> {
+async function asked(model: ImportContext, pairs: readonly Pair[], prompt: string, key: string, meaning: string, extra: Record<string, unknown> = {}): Promise<{ pair: Pair; reason: string }[]> {
   const instructions = model.text(prompt)
   const said = await mapLimit(pairs, model.concurrency, async (pair) => {
     if (model.cancelled?.() === true) return undefined
     let reason = ''
     const verdict = await verdictOf(model, { ...extra, first: pair.first, second: pair.second }, key, instructions, async () => {
-      const answer = await model.run<Record<string, unknown> & { reason: string }>({ persona: instructions, prompt: `A:\n${pair.first}\n\nB:\n${pair.second}`, result: yesNo(key), maxTokens: 500 })
+      const answer = await model.run<Record<string, unknown> & { reason: string }>({ persona: instructions, prompt: `A:\n${pair.first}\n\nB:\n${pair.second}`, result: yesNo(key, meaning), maxTokens: 500 })
       reason = answer.reason
       return answer[key] === true
     })
@@ -56,7 +56,7 @@ const sameValue: Check = {
     const known = new Set(duplicateValues(defs).map(([a, b]) => `${a.key}\n${b.key}`))
     const allowed = (a: number, b: number): boolean => overlapping(defs[a]!, defs[b]!) && !known.has(`${defs[a]!.key}\n${defs[b]!.key}`)
     const near = (await candidates(model, input.world.directory, defs.map(valueText), allowed, VALUES_CLOSE, PAIRS_ASKED, 'first')) ?? []
-    const said = await asked(model, near.map(entry => ({ near: entry, first: valueText(defs[entry.a]!), second: valueText(defs[entry.b]!) })), 'checks/decide-same-value', 'same')
+    const said = await asked(model, near.map(entry => ({ near: entry, first: valueText(defs[entry.a]!), second: valueText(defs[entry.b]!) })), 'checks/decide-same-value', 'same', 'true only when A and B are one and the same value; false when they are different, or one is a kind, cause or part of the other')
     return foundBy('duplicate-values-meaning', said.map(({ pair, reason }): Found => {
       const a = defs[pair.near.a]!
       const b = defs[pair.near.b]!
@@ -90,10 +90,16 @@ const nearNames: Check = {
     const sameKind = (a: number, b: number): boolean => things[a]!.kind === things[b]!.kind && !things[a]!.names.some(name => things[b]!.names.includes(name))
     const byName: Near[] = []
     for (let a = 0; a < things.length; a++) for (let b = a + 1; b < things.length; b++) if (sameKind(a, b) && nested(things[a]!.names, things[b]!.names)) byName.push({ a, b, score: 1 })
-    const byMeaning = await candidates(model, input.world.directory, things.map(thing => thing.text), sameKind, THINGS_CLOSE, PAIRS_ASKED) ?? []
+    // each kind asks for its own closest pairs: one list for all of them lets the kind with the most crowded names take every place
+    const byMeaning: Near[] = []
+    for (const kind of new Set(things.map(thing => thing.kind))) {
+      const members = things.flatMap((thing, at) => (thing.kind === kind ? [at] : []))
+      const own = await candidates(model, input.world.directory, members.map(at => things[at]!.text), (a, b) => sameKind(members[a]!, members[b]!), THINGS_CLOSE, PAIRS_ASKED)
+      byMeaning.push(...(own ?? []).map(entry => ({ ...entry, a: members[entry.a]!, b: members[entry.b]! })))
+    }
     const seen = new Set(byName.map(entry => `${entry.a}:${entry.b}`))
-    const near = [...byName, ...byMeaning.filter(entry => !seen.has(`${entry.a}:${entry.b}`))].slice(0, PAIRS_ASKED)
-    const said = await asked(model, near.map(entry => ({ near: entry, first: `${things[entry.a]!.kind} ${things[entry.a]!.text}`, second: `${things[entry.b]!.kind} ${things[entry.b]!.text}` })), 'checks/decide-same-thing', 'same')
+    const near = [...byName, ...byMeaning.filter(entry => !seen.has(`${entry.a}:${entry.b}`))]
+    const said = await asked(model, near.map(entry => ({ near: entry, first: `${things[entry.a]!.kind} ${things[entry.a]!.text}`, second: `${things[entry.b]!.kind} ${things[entry.b]!.text}` })), 'checks/decide-same-thing', 'same', 'true only when A and B are one and the same entry written twice; false when they are different, or one is a part of the other')
     return foundBy('name-near', said.map(({ pair, reason }): Found => {
       const a = things[pair.near.a]!
       const b = things[pair.near.b]!
@@ -140,10 +146,12 @@ const conflicts: Check = {
     const near = await candidates(model, input.world.directory, lore.map(loreText), (a, b) => !apart(a, b), LORE_CLOSE, PAIRS_ASKED)
     if (near === undefined) throw new CheckSkipped('no embedding provider is selected to find which entries to compare')
     const pairs = near.map(entry => ({ near: entry, first: `entry ${lore[entry.a]!.id}:\n${loreText(lore[entry.a]!)}`, second: `entry ${lore[entry.b]!.id}:\n${loreText(lore[entry.b]!)}` }))
-    const screened = model.decide === undefined ? pairs : (await asked(model, pairs, 'checks/decide-conflict', 'conflict')).map(entry => entry.pair)
+    const screening = model.text('checks/decide-conflict')
+    const kept = await mapLimit(pairs, model.concurrency, async pair => (model.cancelled?.() === true ? false : worthReading(model, { first: pair.first, second: pair.second }, 'conflict', screening)))
+    const screened = pairs.filter((_, at) => kept[at])
     const instructions = model.text('checks/conflict')
     const found: Found[] = []
-    await mapLimit(screened.slice(0, QUOTE_LISTED * 2), model.concurrency, async (pair) => {
+    await mapLimit(screened, model.concurrency, async (pair) => {
       if (model.cancelled?.() === true) return
       const first = loreText(lore[pair.near.a]!)
       const second = loreText(lore[pair.near.b]!)

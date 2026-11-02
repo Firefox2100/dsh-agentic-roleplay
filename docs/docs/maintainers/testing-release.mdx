@@ -65,6 +65,16 @@ A finished story can also be audited afterwards, read-only: `node eval/audit.mjs
 
 A report is written to `eval/results/<label>.json`. With `--baseline` the run says which scenarios got more than twice as slow and which checks passed before and fail now, and exits non-zero. Scenarios are small files in `eval/scenarios/`; add one when a live session finds a bug.
 
+## The check benchmark
+
+The world checks have a labelled benchmark in `packages/dsh-agentic-roleplay-core/tests/benchmark/`. Its base is *Salt Harbor*, an invented harbor town written in English and in Chinese with the same structure, that uses every part of the world format: a cast with sheets, voices, feelings, goals, relationships, knowledge and routines; places with features and ways of every state, and a lock; things of every kind, hidden, locked, worn and in containers; organisations with members and goals; background of both scopes with dates and links; tracked values of every kind and subject; triggers of the main condition and effect types; dice, a plot, a calendar, rules, prompts and openings. Each case is the base with one defect planted (or none, or an ambiguous pair that is not a defect) and names the findings the checks must make and nothing else.
+
+- **Always run** (`pnpm test`): `coverage.spec.ts` starts a story from the base world in both languages and asserts that every part of it reached the story, by feature, so a part that stops arriving is named. `cases.spec.ts` runs the cases the program decides, the consistency, quality, first-scene and card-comparison checks, in both languages, with the exact findings expected.
+- **Live**, against the development machine's models, scored for precision, recall, false alarms, retries, fallbacks and time: `BENCH_LIVE=1 BENCH_LABEL=<name> BENCH_MODE=llm|decision|hybrid npx vitest run tests/benchmark/live.spec.ts` runs the cases a model judges (meaning-level duplicates of values and names, contradictory background, thin sheets, flat openings, gaps, and the comparison with the card, including a paraphrase and a translation that must not be flagged). The result is written to `eval/results/checks-<label>.json`. `BENCH_ONLY`, `BENCH_LANGS` and `BENCH_REPEAT` narrow or repeat it; run a case several times before trusting a difference, because a model's answer is chance per call.
+- **Reranker trial**: `BENCH_LIVE=1 npx vitest run tests/benchmark/rerank.spec.ts` ranks every pair of three labelled sets (values, things, background) by embedding closeness and by a reranker, and counts how many of the real pairs land among the twelve a check asks a model about.
+
+Do not tune a threshold from an unlabelled collection of worlds: add a case here first.
+
 ## Persisted compatibility
 
 Never edit an existing migration after release. Add a new ordered migration and keep row mapping tolerant only where the schema explicitly permits it. Opening a session that is behind the latest schema first checks its integrity and keeps a copy of it as it was in `migration-backups/schema-<version>.sqlite` beside the database; a migration that damages data can be undone by putting that copy back as `session.sqlite`. Keep world files human-editable and report all validation problems in one pass. Stable ids and media paths must not be silently rewritten.

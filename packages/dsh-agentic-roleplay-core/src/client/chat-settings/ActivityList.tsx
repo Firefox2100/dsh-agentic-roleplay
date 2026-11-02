@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import type { ActivityEntry, RunDetail, RunRecall } from '../../shared/activity.ts'
 import { addTokens, totalTokens, type TokenCount, type TurnUsage } from '../../shared/usage.ts'
+import type { RequestStat } from '../../shared/diagnostics.ts'
 import { loadRun } from './settings-api.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
+import { sizes } from './TraceList.tsx'
+import { PART_IDS } from './trace-locales.ts'
 import css from './ChatSettingsView.module.css'
 
 type Translate = (key: ChatSettingsLocaleKey, values?: Record<string, string | number>) => string
@@ -13,8 +16,31 @@ const SHOWN = 20
 const seconds = (ms: number): string => `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`
 
 const count = (value: number): string => value.toLocaleString()
-/** Fresh input plus output, and what came from the service's cache beside it when there was any. */
-const tokenText = (t: Translate, tokens: TokenCount): string => `${count(tokens.input + tokens.output)}${tokens.cached > 0 ? ` (${t('usageCached', { count: count(tokens.cached) })})` : ''}`
+/** Fresh input plus output, and beside it what came from the service's cache, or that the service does not say. */
+const tokenText = (t: Translate, tokens: TokenCount): string => {
+  const notes = [...tokens.cached > 0 ? [t('usageCached', { count: count(tokens.cached) })] : [], ...(tokens.unreported ?? 0) > 0 ? [t('usageUnreported')] : []]
+  return `${count(tokens.input + tokens.output)}${notes.length > 0 ? ` (${notes.join(', ')})` : ''}`
+}
+
+/** One request on one line: what its prompt held, whether the service said how much of it came from its cache, how long the model took to start, and a stop that was not the ordinary end. */
+const requestText = (t: Translate, request: RequestStat): string => [
+  ...request.prompt === undefined ? [] : [t('reqPrompt', { count: count(request.prompt) })],
+  ...request.parts === undefined ? [] : [`(${sizes(t, 'tracePart_', PART_IDS, [...request.parts].sort((a, b) => b.tokens - a.tokens))})`],
+  ...request.cached !== undefined ? [t('usageCached', { count: count(request.cached) })] : request.prompt === undefined ? [] : [t('usageUnreported')],
+  ...request.waitMs === undefined ? [] : [t('reqWait', { time: seconds(request.waitMs) })],
+  ...request.ms === undefined ? [] : [t('reqTook', { time: seconds(request.ms) })],
+  ...request.stop === 'max-tokens' ? [t('reqCutOff')] : request.stop === 'error' ? [t('reqError')] : [],
+].join(' · ')
+
+function RequestList({ t, requests }: { t: Translate; requests: readonly RequestStat[] | undefined }) {
+  if (requests === undefined || requests.length === 0) return null
+  return (
+    <details data-testid="roleplay-requests">
+      <summary>{t('reqCount', { count: requests.length })}</summary>
+      <ol className={css.reasons}>{requests.map((request, index) => <li key={index}>{`${request.step}: ${requestText(t, request)}`}</li>)}</ol>
+    </details>
+  )
+}
 
 /** What each turn used, newest first: the game master, its helpers, and the sum. */
 export function UsageTable({ t, usage }: { t: Translate; usage: readonly TurnUsage[] }) {
@@ -27,13 +53,14 @@ export function UsageTable({ t, usage }: { t: Translate; usage: readonly TurnUsa
         ? <p className={css.description}>{t('usageEmpty')}</p>
         : (
           <table className={css.table}>
-            <thead><tr><th>{t('usageTurn')}</th><th>{t('usageMaster')}</th><th>{t('usageHelpers')}</th><th>{t('usageRuns')}</th><th>{t('usageTotal')}</th></tr></thead>
+            <thead><tr><th>{t('usageTurn')}</th><th>{t('usageMaster')}</th><th>{t('usageHelpers')}</th><th>{t('usageMasterTime')}</th><th>{t('usageRuns')}</th><th>{t('usageTotal')}</th></tr></thead>
             <tbody>
               {shown.map(entry => (
                 <tr key={entry.turn}>
                   <td>{entry.turn}</td>
                   <td>{tokenText(t, entry.master)}</td>
                   <td>{tokenText(t, entry.helpers)}</td>
+                  <td>{entry.masterMs === undefined ? '' : seconds(entry.masterMs)}</td>
                   <td>{entry.runs}</td>
                   <td>{count(totalTokens(addTokens(entry.master, entry.helpers)))}</td>
                 </tr>
@@ -77,7 +104,7 @@ export function ActivityList({ t, session, entries, onRefresh }: { t: Translate;
                   <td>{entry.model === '' ? t('activityOwnModel') : entry.model}</td>
                   <td>{seconds(entry.ms)}</td>
                   <td>{entry.calls}</td>
-                  <td>{entry.tokens === undefined ? '' : tokenText(t, entry.tokens)}</td>
+                  <td>{entry.tokens === undefined ? '' : tokenText(t, entry.tokens)}<RequestList t={t} requests={entry.requests} /></td>
                   <td className={entry.error === undefined ? undefined : css.error} title={entry.error}>{entry.error === undefined ? t('activityDone') : t('activityFailed', { reason: entry.error })}</td>
                   <td>{entry.run === undefined ? null : <button type="button" className={css.link} onClick={() => { toggle(entry.run as string) }}>{open?.run === entry.run ? t('runHide') : t('runShow')}</button>}</td>
                 </tr>,

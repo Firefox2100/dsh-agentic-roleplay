@@ -3,8 +3,10 @@ import { CheckSkipped, foundBy, type Check, type Found } from './check.ts'
 import { verdictOf } from './judge.ts'
 import { loaded } from './loaded.ts'
 
-/** A place described in fewer characters than this has nothing to play with. */
+/** A place described in fewer letters than this has nothing to play with (a Chinese, Japanese or Korean character counts as three: it says as much as a short word). */
 const THIN_PLACE = 20
+const WIDE = /[\u3000-\u9fff\uac00-\ud7af\uff00-\uffef]/gu
+const lettersOf = (value: string): number => value.length + 2 * (value.match(WIDE)?.length ?? 0)
 const SHEET_CHARS = 3000
 const DIGEST_CHARS = 7000
 const GAPS_LISTED = 8
@@ -48,7 +50,7 @@ const places: Check = {
   async run(input) {
     const { locations } = await loaded.locations(input)
     return foundBy('quality-places', locations.flatMap((place): Found[] => {
-      const length = text(place.description).length
+      const length = lettersOf(text(place.description))
       if (length === 0) return [{ severity: 'warning', code: 'place-undescribed', where: `locations/${place.id}`, message: `${place.name} has no description` }]
       return length < THIN_PLACE && place.features.length === 0 ? [{ severity: 'info', code: 'place-thin', where: `locations/${place.id}`, message: `${place.name} has a one-line description and no features` }] : []
     }))

@@ -75,6 +75,16 @@ const coverage: Check = {
   },
 }
 
+/** Which documents of the world a model found to say a piece in other words, by the piece's id: they were made from it, though their words no longer show it. */
+const rescuedBy = new WeakMap<object, Map<string, string[]>>()
+function rescued(input: CheckInput, piece: string, where: string): void {
+  if (input.memo === undefined) return
+  const all = rescuedBy.get(input.memo) ?? new Map<string, string[]>()
+  all.set(piece, [...new Set([...all.get(piece) ?? [], where])])
+  rescuedBy.set(input.memo, all)
+}
+const rescuedFor = (input: CheckInput, piece: string): string[] => (input.memo === undefined ? [] : rescuedBy.get(input.memo)?.get(piece) ?? [])
+
 /** The ids of the pieces whose facts a document of the world says in other words (or another language): the closest documents by meaning, and a model's yes. */
 async function sayingByMeaning(input: CheckInput, pieces: readonly CardPiece[]): Promise<{ saved: Set<string>; looked: boolean; problem?: string }> {
   const model = input.model
@@ -104,7 +114,7 @@ async function lookedByMeaning(input: CheckInput, model: ImportContext, pieces: 
         const answer = await model.run<{ reason: string; covered: boolean }>({ persona: instructions, prompt: `${piece.text.slice(0, RESCUE_CHARS)}\n\n${document.prose.slice(0, RESCUE_CHARS)}`, result: COVERED_SCHEMA as never, maxTokens: 500 })
         return answer.covered
       })
-      if (verdict.yes) { saved.add(piece.id); return }
+      if (verdict.yes) { saved.add(piece.id); rescued(input, piece.id, document.where); return }
     }
   })
   return { saved, looked: true }
@@ -123,15 +133,22 @@ const names: Check = {
     const source = basis(evidence)
     const world = await loaded.text(input)
     const text = folded([source.card.name, ...source.pieces.map(piece => piece.text)].join('\n'))
+    const wide = /[\u3000-\u9fff\uac00-\ud7af]/u
+    const cardHasWide = wide.test(text)
+    const cardHasLatin = /[a-z]/u.test(text)
+    const comparable = (names: readonly string[]): boolean => names.every(name => (wide.test(name) ? cardHasWide : !/[a-z]/iu.test(name) || cardHasLatin))
     const named = (candidate: string): boolean => {
       const plain = candidate.replace(/\s*[(（][^)）]*[)）]/gu, '').trim()
       return [candidate, plain].some(name => folded(name).trim() !== '' && text.includes(folded(name).trim()))
     }
-    const checked = world.names.filter(thing => !thing.playable && thing.names.length > 0)
+    // a name in Chinese, Japanese or Korean cannot be found in a card that has none of those characters, nor a name in Latin letters in a card that has none: the world is in another language than the card, which is not a name made up
+    const checked = world.names.filter(thing => !thing.playable && thing.names.length > 0 && comparable(thing.names))
+    const elsewhere = world.names.filter(thing => !thing.playable && thing.names.length > 0 && !comparable(thing.names)).length
     const missing = checked.filter(thing => !thing.names.some(named))
     if (checked.length >= MIN_NAMES_FOR_PATTERN && missing.length / checked.length > MOSTLY_MISSING) {
       return foundBy('card-names', [{ severity: 'info', code: 'names-elsewhere', where: '(the world)', message: `${missing.length} of ${checked.length} names do not occur in the card: the world is probably in another language than the card, or was made from another card`, hint: 'Compare by meaning instead; the judged checks do.' }])
     }
+    if (elsewhere > 0 && missing.length === 0) return foundBy('card-names', [{ severity: 'info', code: 'names-elsewhere', where: '(the world)', message: `${elsewhere} names are in another script than the card, so they cannot be looked for in it: the world is in another language than the card`, hint: 'Compare by meaning instead; the judged checks do.' }])
     return foundBy('card-names', missing.map((thing): Found => ({
       severity: thing.kind === 'items' ? 'info' : 'warning',
       code: 'name-not-in-card',
@@ -259,7 +276,8 @@ const compared: Check = {
     const world = await loaded.text(input)
     const made = await loaded.made(input, evidence, 'about')
     const from = new Map<string, CardPiece[]>()
-    for (const piece of usedPieces(source)) for (const where of made.get(baseId(piece.id)) ?? []) from.set(where, [...from.get(where) ?? [], piece])
+    // a document that adds so much that its words no longer show where it came from is still the one a model found to say the piece: it is compared with it
+    for (const piece of usedPieces(source)) for (const where of new Set([...made.get(baseId(piece.id)) ?? [], ...rescuedFor(input, piece.id)])) from.set(where, [...from.get(where) ?? [], piece])
     const ranked = [...from].map(([where, pieces]) => ({ where, pieces, size: pieces.reduce((sum, piece) => sum + piece.text.length, 0) })).sort((a, b) => b.size - a.size)
     const chosen = ranked.slice(0, MAX_COMPARED)
     const found: Found[] = []

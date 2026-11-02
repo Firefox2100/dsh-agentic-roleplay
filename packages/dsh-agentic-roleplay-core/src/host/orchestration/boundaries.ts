@@ -1,6 +1,7 @@
 import type { Character, CharacterState, CharacterStatePatch, Exit, Location, LocationFeature, Move, MovePlan } from 'dsh-roleplay-model'
 import type { ItemChangeSpec, ItemEffect, MemoryPolicy, Recalled, Session, VariableChangeSpec, VariableEffect } from '@dsh-agentic-roleplay/state'
 import type { ActivityEntry, RunDetail } from '../../shared/activity.ts'
+import type { SceneSelection, TurnTrace } from '../../shared/trace.ts'
 import type { TokenCount } from '../../shared/usage.ts'
 import type { Note } from '../../shared/notes.ts'
 import type { ReflectionOutcome, ReflectionReason } from '../../shared/reflection.ts'
@@ -316,12 +317,18 @@ export interface Committer {
  * through `roleplayState.rankMemories`); replace it to recall in another way altogether.
  */
 export interface Recaller {
-  recall(query: { member: CastMember; situation: string; turn: number; policy: MemoryPolicy; /** The vector of the situation, when stored vectors exist to compare it with. */ queryVector?: readonly number[]; /** Whether to say why each thing came back (`Recalled.why`). */ explain?: boolean }, story: TurnStore['story'], signal: AbortSignal): Promise<Recalled[]>
+  recall(query: { member: CastMember; situation: string; turn: number; policy: MemoryPolicy; /** The vector of the situation, when stored vectors exist to compare it with. */ queryVector?: readonly number[]; /** Whether to say why each thing came back (`Recalled.why`). */ explain?: boolean; /** Look without counting what comes back as recalled. */ peek?: boolean }, story: TurnStore['story'], signal: AbortSignal): Promise<Recalled[]>
 }
 
 /** The state of the scene the game master is told at the start of a turn. */
 export interface SceneContextProvider {
-  scene(input: { /** What the story keeps track of, as lines. */ tracked?: readonly string[]; /** What time it is, and how long the story went on without the player when time follows the wall clock; and what the days of the characters say. */ time?: { now: StoryTime; away?: number; agenda?: SceneAgenda }; /** What the world did since the last turn, and what the game master has still to weave in; and what is known beforehand of what is coming. */ world?: { happened: string[]; beats: { id: number; text: string }[]; upcoming?: { text: string; who: string; when?: string }[] }; cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems; /** The language of the chat's instructions (English when left out). */ language?: string }): string
+  scene(input: { /** What the story keeps track of, as lines. */ tracked?: readonly string[]; /** What time it is, and how long the story went on without the player when time follows the wall clock; and what the days of the characters say. */ time?: { now: StoryTime; away?: number; agenda?: SceneAgenda }; /** What the world did since the last turn, and what the game master has still to weave in; and what is known beforehand of what is coming. */ world?: { happened: string[]; beats: { id: number; text: string }[]; upcoming?: { text: string; who: string; when?: string }[] }; cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems; /** The language of the chat's instructions (English when left out). */ language?: string; /** Told how the notice was made, for the turn's trace. */ report?: SceneReport }): string
+}
+
+/** What the scene provider says of how it made the notice: the sections it wrote and what it chose to remind the game master of. */
+export interface SceneReport {
+  section(id: string, text: string): void
+  selected(selection: SceneSelection): void
 }
 
 export interface SceneItems {
@@ -560,7 +567,9 @@ export interface TurnStore {
   /** A turn begins, the player having typed the command `word` (or none): lowers the flags of the world's commands and raises that command's, so that its triggers can act. Returns the command when the world defines it. */
   raiseCommand?(word: string | undefined, turn: number): StoryCommand | undefined
   /** Adds the tokens the game master's own requests used to a turn's record. */
-  recordUsage?(turn: number, tokens: TokenCount): void
+  recordUsage?(turn: number, tokens: TokenCount, ms?: number): void
+  /** Adds what one source knows of a turn to its trace; `merge` reads what is there to add to it. */
+  recordTrace?(turn: number, patch: Partial<Omit<TurnTrace, 'turn'>>, merge?: (current: TurnTrace) => Partial<Omit<TurnTrace, 'turn'>>): void
   /** The notes of the session as they stand. */
   notes(): Note[]
   /** Removes the notes: they belong to the turn that made them. */

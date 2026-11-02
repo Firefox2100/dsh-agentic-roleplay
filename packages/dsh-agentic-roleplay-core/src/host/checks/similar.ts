@@ -91,16 +91,37 @@ export interface Near {
   score: number
 }
 
-/** The pairs of vectors closest to each other that `allowed` accepts and that reach `threshold`, closest first, at most `limit`. */
+/** How many of its nearest neighbours set how crowded an entry's neighbourhood is. */
+const CROWD = 5
+/** The most pairs asked however large the world, and the share of its entries a world may ask about. */
+const MOST_ASKED = 30
+const ASKED_PER_ENTRY = 1 / 3
+
+/**
+ * The pairs of vectors that reach `threshold` and that `allowed` accepts, at most `limit`, best first. In a world of one theme everything is close to everything, so a double is
+ * not among the closest by cosine; a pair is ranked by how much closer it is than each of the two is to its own neighbours (cosine minus the mean of each side's nearest, doubled
+ * for the pair itself), which puts a copy of a crowded entry ahead of two crowded entries that merely share the theme.
+ */
 export function nearPairs(vectors: readonly (readonly number[])[], allowed: (a: number, b: number) => boolean, threshold: number, limit: number): Near[] {
-  const pairs: Near[] = []
+  const scored: Near[] = []
+  const around: number[][] = vectors.map(() => [])
   for (let a = 0; a < vectors.length; a++) for (let b = a + 1; b < vectors.length; b++) {
     if (!allowed(a, b)) continue
     const score = cosine(vectors[a]!, vectors[b]!)
-    if (score >= threshold) pairs.push({ a, b, score })
+    around[a]!.push(score)
+    around[b]!.push(score)
+    if (score >= threshold) scored.push({ a, b, score })
   }
-  return pairs.sort((x, y) => y.score - x.score).slice(0, limit)
+  const crowd = around.map((scores) => {
+    const nearest = scores.sort((x, y) => y - x).slice(0, CROWD)
+    return nearest.length === 0 ? 0 : nearest.reduce((sum, score) => sum + score, 0) / nearest.length
+  })
+  const rank = (pair: Near): number => 2 * pair.score - crowd[pair.a]! - crowd[pair.b]!
+  return scored.sort((x, y) => rank(y) - rank(x)).slice(0, limit)
 }
+
+/** What a world of `entries` asks about: the base number, more for a large world. */
+export const askedFor = (entries: number, base: number): number => Math.min(MOST_ASKED, Math.max(base, Math.ceil(entries * ASKED_PER_ENTRY)))
 
 /**
  * The pairs of texts worth asking a model about: the closest in meaning when there is an embedding provider, otherwise, when asked to, the first `limit` pairs `allowed` accepts (for a short list), else nothing. Closeness only
@@ -108,7 +129,7 @@ export function nearPairs(vectors: readonly (readonly number[])[], allowed: (a: 
  */
 export async function candidates(model: ImportContext, directory: string, texts: readonly string[], allowed: (a: number, b: number) => boolean, threshold: number, limit: number, withoutProvider: 'first' | 'none' = 'none'): Promise<Near[] | undefined> {
   const vectors = await vectorsOf(model, directory, texts)
-  if (vectors !== undefined) return nearPairs(vectors, allowed, threshold, limit)
+  if (vectors !== undefined) return nearPairs(vectors, allowed, threshold, askedFor(texts.length, limit))
   if (withoutProvider === 'none') return undefined
   const pairs: Near[] = []
   for (let a = 0; a < texts.length && pairs.length < limit; a++) for (let b = a + 1; b < texts.length && pairs.length < limit; b++) if (allowed(a, b)) pairs.push({ a, b, score: 0 })

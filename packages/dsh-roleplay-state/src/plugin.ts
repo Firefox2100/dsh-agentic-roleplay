@@ -43,7 +43,7 @@ export type Session = Omit<SessionStore, 'close' | 'snapshotTo'> & {
    * {@link SessionStore.recall}, with the over-retrieved pool reranked when a ranker is registered with
    * `roleplayState.rankMemories`. The one call for anything that reminds a character of something.
    */
-  recallRanked(query: Omit<RecallQuery, 'characters'>, signal?: AbortSignal, options?: { queryVector?: readonly number[] }): Promise<Recalled[]>
+  recallRanked(query: Omit<RecallQuery, 'characters'>, signal?: AbortSignal, options?: { queryVector?: readonly number[]; /** Look without counting what comes back as recalled. */ peek?: boolean }): Promise<Recalled[]>
 }
 
 /**
@@ -213,18 +213,19 @@ export class RoleplayState extends Service {
       recallCandidates: query => store.recallCandidates(query),
       storedEvidence: (query, queryVector) => store.storedEvidence(query, queryVector),
       recallPool: (query, evidence) => store.recallPool(query, evidence),
-      finishRecall: (pool, turn, rerank) => store.finishRecall(pool, turn, rerank),
+      finishRecall: (pool, turn, rerank, touch) => store.finishRecall(pool, turn, rerank, touch),
       recallRanked: async (query, signal, options = {}) => {
         const pool = store.recallPool(query, store.storedEvidence(query, options.queryVector))
         const ranker = this.rankers.at(-1)
-        if (ranker === undefined) return store.finishRecall(pool, query.turn)
+        const touch = options.peek !== true
+        if (ranker === undefined) return store.finishRecall(pool, query.turn, undefined, touch)
         try {
           const judged = await ranker({ situation: query.situation, candidates: poolCandidates(pool), ...(signal === undefined ? {} : { signal }) })
-          return store.finishRecall(pool, query.turn, judged)
+          return store.finishRecall(pool, query.turn, judged, touch)
         } catch (error) {
           if (signal?.aborted === true) throw error
           this.ctx.logger.warn(`roleplay-state: reranking memories failed, using retrieval alone: ${error instanceof Error ? error.message : String(error)}`)
-          return store.finishRecall(pool, query.turn)
+          return store.finishRecall(pool, query.turn, undefined, touch)
         }
       },
       edit: (edit, options) => store.edit(edit, options),

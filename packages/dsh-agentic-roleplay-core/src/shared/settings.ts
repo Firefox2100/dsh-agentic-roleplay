@@ -1,6 +1,7 @@
 import { CLOCK_MODES, type ClockMode } from 'dsh-roleplay-model'
 import type { ActivityEntry } from './activity.ts'
 import type { TurnUsage } from './usage.ts'
+import type { TurnTrace } from './trace.ts'
 import type { Intervention } from './interventions.ts'
 import type { ReflectionStatus } from './reflection.ts'
 import { DECISION_MODES, EXTRA_MODES, GATE_MODES, type DecisionMode, type ExtraMode, type GateMode } from './decisions.ts'
@@ -439,6 +440,8 @@ export interface SettingsPayload {
   activity: ActivityEntry[]
   /** What each turn of the story used, in tokens, oldest first. */
   usage: TurnUsage[]
+  /** Where each turn's time went and what its agents were given, oldest first. */
+  trace: TurnTrace[]
   /** What the story's triggers delivered lately (beats for the game master, cues for characters) and what became of each. */
   interventions: Intervention[]
   /** The state of the session's search by meaning. */

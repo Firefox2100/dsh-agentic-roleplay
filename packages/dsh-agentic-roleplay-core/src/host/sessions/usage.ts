@@ -19,11 +19,11 @@ export function readUsage(session: UsageSession): TurnUsage[] {
 }
 
 /** Adds tokens to a turn's record: the game master's own, or a helper's run. */
-export function addUsage(session: UsageSession, turn: number, who: 'master' | 'helper', tokens: TokenCount): void {
+export function addUsage(session: UsageSession, turn: number, who: 'master' | 'helper', tokens: TokenCount, masterMs?: number): void {
   const all = readUsage(session)
   const at = all.findIndex(entry => entry.turn === turn)
   const entry: TurnUsage = at === -1 ? { turn, master: NO_TOKENS, helpers: NO_TOKENS, runs: 0 } : all[at]!
-  const next: TurnUsage = who === 'master' ? { ...entry, master: addTokens(entry.master, tokens) } : { ...entry, helpers: addTokens(entry.helpers, tokens), runs: entry.runs + 1 }
+  const next: TurnUsage = who === 'master' ? { ...entry, master: addTokens(entry.master, tokens), ...masterMs === undefined ? {} : { masterMs: (entry.masterMs ?? 0) + masterMs } } : { ...entry, helpers: addTokens(entry.helpers, tokens), runs: entry.runs + 1 }
   if (at === -1) all.push(next)
   else all[at] = next
   all.sort((a, b) => a.turn - b.turn)

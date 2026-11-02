@@ -6,7 +6,10 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { RunDetail } from '../../shared/activity.ts'
 import type { PackProblem } from '../../shared/interface-pack.ts'
 import type { Note } from '../../shared/notes.ts'
+import type { Journal } from '../../shared/journal.ts'
+import type { ReferenceReply } from '../../shared/reference.ts'
 import type { DecisionsPayload } from '../../shared/decisions.ts'
+import type { RecallPreview, RecallPreviewRequest } from '../../shared/recall-preview.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import { type CharacterEdit, type FactionEdit, type LoreEdit, type PlaceEdit, type PlotsEdit, type RelationChange, type ThingEdit, type WorldState } from '../../shared/world-state.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
@@ -163,6 +166,7 @@ export interface ApiDeps {
     activityRun(id: string, run: string): RunDetail | undefined
     /** Starts the characters sorting what they took in into what they believe; it runs in the background. @throws {SessionNotFoundError} @throws {ReflectionRefusedError} */
     reflect(id: string): Promise<void>
+    recallPreview(id: string, request: RecallPreviewRequest, signal: AbortSignal): Promise<RecallPreview>
     doctor(id: string, title: string, language: string): Promise<{ chatSessionId: string }>
     /** Forgets the session's stored search vectors. */
     resetVectors(id: string): void
@@ -184,6 +188,9 @@ export interface ApiDeps {
     readSettings(id: string): SettingsPayload
     writeSettings(id: string, value: unknown): SettingsPayload
     notes(id: string): Note[]
+    reference(id: string, section: string, character?: string): ReferenceReply
+    readJournal(id: string): Promise<Journal>
+    writeJournal(id: string, body: unknown): Promise<Journal>
     decisions(id: string): DecisionsPayload
     timeline(id: string): TimelineView
     moveTimeline(id: string, to: string): Promise<{ draft?: string }>

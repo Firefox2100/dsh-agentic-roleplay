@@ -1,7 +1,6 @@
-import { randomUUID } from 'node:crypto'
-import { lstat, readFile, readdir, realpath, rename, stat, writeFile } from 'node:fs/promises'
+import { atomicWrite } from '../atomic-write.ts'
+import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { join, sep } from 'node:path'
-import { mkdir } from 'node:fs/promises'
 import { LIBRARY_FOLDER, type GalleryImage } from '../../shared/gallery.ts'
 import { mapLimit } from '../import/run.ts'
 import { mediaTypeOf, readImageFileMetadata, sidecarOf, writeImageFileMetadata } from './image-files.ts'
@@ -86,11 +85,7 @@ async function readCache(images: string): Promise<Cache> {
 }
 
 async function writeCache(images: string, cache: Cache): Promise<void> {
-  await mkdir(images, { recursive: true })
-  const file = join(images, CACHE_FILE)
-  const temporary = `${file}.${process.pid}.${randomUUID()}.writing`
-  await writeFile(temporary, JSON.stringify(cache))
-  await rename(temporary, file)
+  await atomicWrite(join(images, CACHE_FILE), JSON.stringify(cache), { createDirectory: true })
 }
 
 /**

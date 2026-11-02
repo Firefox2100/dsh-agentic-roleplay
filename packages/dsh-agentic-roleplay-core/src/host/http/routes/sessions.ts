@@ -1,7 +1,10 @@
 import { TimelineError } from '../../timeline/service.ts'
 import { InvalidSettingsError } from '../../sessions/settings.ts'
 import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../sessions/errors.ts'
+import { InvalidJournalError } from '../../reference/journal.ts'
+import { UnknownSectionError } from '../../reference/reference.ts'
 import { readBinaryBody, readJsonBody } from '../body.ts'
+import { MAX_SITUATION } from '../../../shared/recall-preview.ts'
 import { sendError, sendJson } from '../respond.ts'
 import { RcloneError, SyncRefusedError } from '../../sync/errors.ts'
 import { failure as syncFailure } from '../../sync/routes.ts'
@@ -103,6 +106,37 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
           sendJson(res, 200, sessions.notes(url.searchParams.get('id') ?? ''))
         } catch (error) {
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/reference': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.reference(url.searchParams.get('id') ?? '', url.searchParams.get('section') ?? '', url.searchParams.get('character') ?? undefined))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof UnknownSectionError) return sendError(res, 400, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/journal': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, await sessions.readJournal(url.searchParams.get('id') ?? ''))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+      PUT: async (req, res, url) => {
+        const body = await readJsonBody(req)
+        try {
+          sendJson(res, 200, await sessions.writeJournal(url.searchParams.get('id') ?? '', body))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidJournalError) return sendError(res, 422, error.message)
           throw error
         }
       },
@@ -242,6 +276,25 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
         }
         res.statusCode = 202
         res.end()
+      },
+    },
+    '/sessions/recall': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { situation?: unknown; character?: unknown }
+        if (typeof body.situation !== 'string' || body.situation.trim() === '') return sendError(res, 400, 'a situation is needed')
+        if (body.situation.length > MAX_SITUATION) return sendError(res, 413, `the situation is longer than ${MAX_SITUATION} characters`)
+        if (body.character !== undefined && typeof body.character !== 'string') return sendError(res, 400, 'character must be a key')
+        const abort = new AbortController()
+        req.on('aborted', () => { abort.abort() })
+        res.on('close', () => { if (!res.writableEnded) abort.abort() })
+        try {
+          sendJson(res, 200, await sessions.recallPreview(url.searchParams.get('id') ?? '', { situation: body.situation, ...(body.character === undefined ? {} : { character: body.character }) }, abort.signal))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          if (error instanceof Error && /^no character /.test(error.message)) return sendError(res, 422, error.message)
+          throw error
+        }
       },
     },
     '/sessions/vectors/reset': {

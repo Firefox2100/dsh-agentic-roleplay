@@ -1,0 +1,24 @@
+.message { margin: 0; padding: 24px 0; font-size: 13px; line-height: 20px; text-align: center; color: var(--dsw-alias-label-secondary); }
+.list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+.entry { padding: 10px 0; border-bottom: 0.5px solid var(--dsw-alias-border-l3); }
+.entry:last-child { border-bottom: none; }
+.head { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.name { font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); }
+.tag { font-size: 12px; color: var(--dsw-alias-state-business-primary); }
+.sub { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.text { margin: 4px 0 0; font-size: 13px; line-height: 20px; color: var(--dsw-alias-label-secondary); }
+.meta { margin: 4px 0 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-tertiary); }
+.block { margin-top: 16px; }
+.heading { margin: 0 0 4px; font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-tertiary); }
+.title { font-size: 16px; font-weight: 500; line-height: 24px; color: var(--dsw-alias-label-primary); }
+.link { padding: 0; font: inherit; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); background: none; border: none; cursor: pointer; }
+.link:hover { color: var(--dsw-alias-state-business-primary); }
+.opened { margin-top: 8px; padding: 4px 0 4px 12px; border-left: 0.5px solid var(--dsw-alias-border-l3); }
+.map { overflow-x: auto; padding: 8px 0; }
+.way { stroke: var(--dsw-alias-border-l4); stroke-width: 1; }
+.closedWay { stroke: var(--dsw-alias-border-l4); stroke-width: 1; stroke-dasharray: 3 3; }
+.place { fill: var(--dsw-alias-bg-layer-1); stroke: var(--dsw-alias-border-l4); stroke-width: 0.5; }
+.here { fill: var(--dsw-alias-bg-layer-1); stroke: var(--dsw-alias-state-business-primary); stroke-width: 1.5; }
+.placeName { font-size: 12px; fill: var(--dsw-alias-label-primary); }
+.journal { display: flex; flex-direction: column; gap: 6px; height: 100%; }
+.notes { box-sizing: border-box; width: 100%; min-height: 220px; flex: 0 0 auto; padding: 8px; font: inherit; font-size: 13px; line-height: 20px; resize: vertical; color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-1); border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); }

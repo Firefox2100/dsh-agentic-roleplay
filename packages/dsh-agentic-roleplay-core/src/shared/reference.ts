@@ -1,0 +1,102 @@
+/** The pages of the reference: what the player may look up about the story, never what only the story knows. */
+export const REFERENCE_SECTIONS = ['profile', 'people', 'places', 'things'] as const
+export type ReferenceSection = (typeof REFERENCE_SECTIONS)[number]
+
+export interface ReferencePerson {
+  key: string
+  name: string
+  /** What anyone present can see or infer. */
+  publicState: string
+  /** At the player's place now. */
+  here: boolean
+  /** What this person is to the player's character, when they have met. */
+  label?: string
+  summary?: string
+}
+
+export interface ReferencePlace {
+  key: string
+  name: string
+  here: boolean
+  parent?: string
+  /** Only for the place the player is in. */
+  description?: string
+  features: string[]
+  /** The ways out the player's character knows of. */
+  ways: { to: string; toKey: string; open: boolean }[]
+}
+
+export interface ReferenceThing {
+  name: string
+  quantity: number
+  where: 'carried' | 'worn' | 'here'
+}
+
+/** Who is looking: a profile shows a character to themselves in full, and to anyone else only what can be seen. */
+export type ReferenceAudience = 'self' | 'observer'
+
+export interface ReferenceRecollection {
+  /** What the character took in, in their own words. */
+  text: string
+  gist: string
+  mode: 'witnessed' | 'heard' | 'told' | 'inferred'
+  turn: number
+}
+
+export interface ReferenceBelief {
+  text: string
+  kind: 'belief' | 'relationship' | 'knowledge'
+  confidence: 'doubtful' | 'likely' | 'sure'
+  turn: number
+}
+
+export interface ReferenceGoal {
+  name: string
+  description: string
+  status: string
+  plan: string[]
+  deadline?: string
+}
+
+/**
+ * A character as one audience may see them. The blocks after `publicState` are present only for `self`: what a person
+ * knows of themselves and nobody else may read.
+ */
+export interface ReferenceProfile {
+  key: string
+  name: string
+  audience: ReferenceAudience
+  aliases: string[]
+  age?: string
+  gender?: string
+  pronouns?: string
+  appearance: string
+  publicState: string
+  /** What anyone could tell, as the story shows it: tracked values the story makes public (or all of them, for oneself). */
+  values: { name: string; value: string }[]
+  summary?: string
+  personality?: string
+  background?: string
+  speech?: { style: string; examples: string[] }
+  innerState?: string
+  activity?: string
+  goals?: ReferenceGoal[]
+  groups?: { name: string; role: string }[]
+  /** Newest first, at most `PROFILE_MEMORY_LIMIT` each; `totals` counts all. */
+  recollections?: ReferenceRecollection[]
+  beliefs?: ReferenceBelief[]
+  totals?: { recollections: number; beliefs: number }
+}
+
+export const PROFILE_MEMORY_LIMIT = 100
+
+export interface ReferenceReplies {
+  profile: ReferenceProfile[]
+  people: ReferencePerson[]
+  places: ReferencePlace[]
+  things: ReferenceThing[]
+}
+
+export type ReferenceReply<K extends ReferenceSection = ReferenceSection> = { section: K; entries: ReferenceReplies[K] }
+
+export const isReferenceSection = (value: string): value is ReferenceSection => (REFERENCE_SECTIONS as readonly string[]).includes(value)

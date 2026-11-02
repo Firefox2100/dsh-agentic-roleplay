@@ -1,3 +1,4 @@
+import { atomicWrite } from '../atomic-write.ts'
 import { randomUUID } from 'node:crypto'
 import { cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -69,8 +70,7 @@ export async function readImportFolder(directory: string): Promise<{ card: Norma
 
 export async function writeChoices(directory: string, choices: ImportChoices): Promise<void> {
   const file = join(directory, CHOICES_FILE)
-  await writeFile(`${file}.writing`, JSON.stringify(choices, null, 2))
-  await rename(`${file}.writing`, file)
+  await atomicWrite(file, JSON.stringify(choices, null, 2))
 }
 
 /** Uploaded cards waiting to become worlds: one folder each under `<root>/imports/`. */

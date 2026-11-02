@@ -489,7 +489,7 @@ describe('the triggers of a world', () => {
       'storm: when: there is no place "moon"', 'late: when: there is no trigger "ghost"', 'late: effects[0]: there is no character "zed"',
     ]))
     expect(ensured).toEqual([])
-    expect(await readdir(join(root, 'sessions'))).toEqual([])
+    expect(await readdir(join(root, 'sessions')).catch(() => [])).toEqual([])
   })
 
   it('refuse the start when the file has problems, reported with the file', async () => {

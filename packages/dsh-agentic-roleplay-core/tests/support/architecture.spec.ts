@@ -52,8 +52,7 @@ describe('how files are replaced', () => {
   // files that still keep a hand-written temporary-file-and-rename (or rename a whole folder, as the trash moves in `authoring/documents.ts` do); the list only shrinks: a new writer uses `atomicWrite` (host/atomic-write.ts)
   const STILL_HAND_WRITTEN = new Set([
     'host/agent/agent-sessions.ts', 'host/authoring/documents.ts', 'host/catalogue/install.ts',
-    'host/images/gallery.ts', 'host/images/image-files.ts', 'host/images/image-vectors.ts', 'host/images/library.ts', 'host/images/presented.ts', 'host/images/storage.ts',
-    'host/import/store.ts', 'host/sync/service.ts', 'host/sync/state.ts',
+    'host/images/storage.ts', 'host/import/store.ts', 'host/sync/service.ts',
   ])
 
   it('goes through atomicWrite in every file that is not on the list of those not moved yet', () => {

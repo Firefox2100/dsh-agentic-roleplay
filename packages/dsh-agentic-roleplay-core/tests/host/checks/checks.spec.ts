@@ -49,6 +49,19 @@ describe('the consistency kit', () => {
     expect(report.skipped.filter(entry => entry.check === 'world-graph')).toEqual([{ check: 'world-graph', reason: expect.stringMatching(/problems that come first/) }])
   })
 
+  it('names a trigger that waits for a place the world does not have, as the start would refuse it', async () => {
+    await write(join(directory, 'triggers.json'), [{ key: 'knock', name: 'Knock', when: { type: 'place', character: 'clara', location: 'moon' }, effects: [{ type: 'beat', text: 'Someone knocks.' }] }])
+    expect(ofCheck(await runChecks({ world: world() }, { kits: ['consistency'] }), 'world-valid')).toEqual([expect.objectContaining({ severity: 'error', code: 'invalid', message: expect.stringContaining('there is no place "moon"') })])
+  })
+
+  it('counts a Chinese description by what it says, not by its characters, when it asks for a place with nothing in it', async () => {
+    await write(join(directory, 'locations', 'well', 'location.json'), { name: '水井', description: '围墙小院里的一口石井，早已干涸。', exits: [{ to: 'inn', description: 'x' }] })
+    await write(join(directory, 'locations', 'shed', 'location.json'), { name: 'Shed', description: 'A shed.', exits: [{ to: 'inn', description: 'x' }] })
+    const found = (await runChecks({ world: world() }, { kits: ['quality'] })).findings.filter(finding => finding.check === 'quality-places').map(finding => finding.where)
+    expect(found).toContain('locations/shed')
+    expect(found).not.toContain('locations/well')
+  })
+
   it('reports a place nobody can leave', async () => {
     await write(join(directory, 'locations', 'cellar', 'location.json'), { name: 'Cellar' })
     const report = await runChecks({ world: world() }, { kits: ['consistency'] })

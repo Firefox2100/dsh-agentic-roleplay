@@ -88,6 +88,19 @@ describe('the fidelity kit', () => {
     expect(found(await withModel(() => false), 'piece-uncovered')).toEqual([expect.objectContaining({ message: expect.stringContaining('by meaning') })])
   })
 
+  it('compares with the card a document that adds so much that its words no longer show where it came from, once a model found it says the piece', async () => {
+    await write(join(directory, 'lore', 'quay', 'lore.json'), { title: 'Harbour weather', kind: 'history', summary: 'Mist.', body: 'Autumn on the quay: the fog never lifts and the ferry bell rings at dawn. A smuggler hid a chest of silver beneath the bell tower, guarded by two retired sailors and a blind harbour cat that nobody dared to disturb.' })
+    const topics = [/fog|mist/u, /ferry/u]
+    const embed = async (texts: readonly string[]) => ({ vectors: texts.map(text => topics.map(topic => (topic.test(text) ? 1 : 0))), model: 'fake' })
+    const model = fakeModel((job) => {
+      if ('covered' in (job.result as { properties: object }).properties) return { reason: 'r', covered: true }
+      return { dropped: [], invented: [{ fact: 'a hidden chest of silver', quote: 'A smuggler hid a chest of silver beneath the bell tower' }] }
+    }, { embed })
+    const report = await runChecks({ world: { directory, summary } as never, card: (await loadCardEvidence(directory, 'current'))!, model }, { kits: ['fidelity'], deep: true })
+    expect(found(report, 'piece-uncovered')).toEqual([])
+    expect(found(report, 'fact-invented')).toEqual([expect.objectContaining({ where: 'lore/quay' })])
+  })
+
   it('finds a name the card never gives, and says so once when most names are missing', async () => {
     await write(join(directory, 'characters', 'zed', 'character.json'), { name: 'Zed', role: 'npc', summary: 'Made up.' })
     expect(found(await run(), 'name-not-in-card')).toEqual([expect.objectContaining({ where: 'characters/zed' })])
@@ -95,6 +108,13 @@ describe('the fidelity kit', () => {
     const report = await run()
     expect(found(report, 'name-not-in-card')).toEqual([])
     expect(found(report, 'names-elsewhere')).toHaveLength(1)
+  })
+
+  it('does not call a name made up when it is in another script than the whole card', async () => {
+    await write(join(directory, 'characters', 'zed', 'character.json'), { name: '泽德', role: 'npc', summary: 'Made up.' })
+    const report = await run()
+    expect(found(report, 'name-not-in-card')).toEqual([])
+    expect(found(report, 'names-elsewhere')).toEqual([expect.objectContaining({ severity: 'info' })])
   })
 
   it('finds a number the card gives that the world lost', async () => {

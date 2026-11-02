@@ -1,5 +1,6 @@
-import { mkdir, readFile, readdir, rename, writeFile } from 'node:fs/promises'
-import { createHash, randomUUID } from 'node:crypto'
+import { atomicWrite } from '../atomic-write.ts'
+import { mkdir, readFile, readdir } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { trimCharacters, withoutExtension } from '../../shared/text.ts'
@@ -66,9 +67,7 @@ export async function addToLibraryOnce(sessionFolder: string, bytes: Uint8Array,
   await mkdir(directory, { recursive: true })
   const name = libraryName(originalName, extension, candidate => existsSync(join(directory, candidate)))
   const file = join(directory, name)
-  const temporary = `${file}.${process.pid}.${randomUUID()}.writing`
-  await writeFile(temporary, bytes)
-  await rename(temporary, file)
+  await atomicWrite(file, bytes)
   const metadata: VisualImageMetadata = {
     schema: 'dsh-roleplay-image/v3', purpose: 'uploaded', origin: 'uploaded', reusable: true, createdAt: new Date().toISOString(),
     originalName, subjects: [], tags: [],

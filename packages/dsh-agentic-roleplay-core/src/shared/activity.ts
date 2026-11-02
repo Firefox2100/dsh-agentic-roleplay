@@ -1,3 +1,5 @@
+import type { RequestStat } from './diagnostics.ts'
+
 /** One run of a helper agent, kept so that the player can see what the story's background work did and how long it took. */
 export interface ActivityEntry {
   /** When the run ended, in milliseconds since 1970. */
@@ -12,10 +14,14 @@ export interface ActivityEntry {
   calls: number
   /** Why it did not end with a result; absent when it did. */
   error?: string
+  /** How many of its tool calls were refused, by the tool or by the harness (a repeated call, a result that did not pass the checks). */
+  refused?: number
   /** The turn it worked for: the one the game master had begun when it ended. */
   turn?: number
   /** The tokens the model service reported for its requests, when it reported any. */
-  tokens?: { input: number; cached: number; output: number }
+  tokens?: { input: number; cached: number; output: number; unreported?: number }
+  /** Each request the run made: the size of its prompt, how long the model took to start answering and how it stopped. */
+  requests?: RequestStat[]
   /** Names the stored detail of the run, when the session keeps it (setting `diagnostics.keepRuns`). */
   run?: string
 }

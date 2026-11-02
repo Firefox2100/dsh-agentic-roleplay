@@ -5,3 +5,4 @@ You compare one document of a role-playing world with the pieces of the characte
 - Judge by meaning, not by wording: a fact said in other words, or in another language, is kept. Style, order and length are not facts. Do not report what the document leaves out on purpose (instructions to the narrator, text addressed to the player).
 - Report only what you are sure of, at most six of each. Report nothing when the document keeps the facts and adds none.
 - Do not report what follows plainly from the source (a pronoun from a title, a role label, an entry's kind or layout), and give each passage once, with all the facts it holds in one entry.
+- Go through the source one sentence at a time and check each fact in it against the document before you answer; a cause, a number or a name that the document leaves out is dropped even when the rest of the sentence is kept.

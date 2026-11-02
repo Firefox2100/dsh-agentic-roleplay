@@ -49,7 +49,7 @@ Writes go to a temporary sibling and are atomically renamed. Reference generatio
 
 ## Gallery
 
-Every roleplay chat has a **Gallery** tab beside Chat and World: the images of the session's `images/` folder in a grid (filter: all, scenes, references), newest first. Opening one shows it large with its description, prompt, the provider's revised prompt, subjects, tags, model and the turn. `GET /roleplay-api/sessions/gallery?id=` lists the images with what each file says (`host/images/gallery.ts`, which reads the embedded metadata; a file without readable metadata is listed by its place), and `.../gallery/file?id=&path=` serves one by the path the listing gives, which must be a PNG inside `images/` and not reached through a link.
+Every roleplay chat has a **Gallery** page in the right sidebar (open it from the sidebar's new-tab guide), so the pictures can be browsed beside the story: the images of the session's `images/` folder in a grid (filter: all, scenes, references), newest first. Opening one shows it large with its description, prompt, the provider's revised prompt, subjects, tags, model and the turn. `GET /roleplay-api/sessions/gallery?id=` lists the images with what each file says (`host/images/gallery.ts`, which reads the embedded metadata; a file without readable metadata is listed by its place), and `.../gallery/file?id=&path=` serves one by the path the listing gives, which must be a PNG inside `images/` and not reached through a link.
 
 ## Image presentation: reusing and bringing images
 

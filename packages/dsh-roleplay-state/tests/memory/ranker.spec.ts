@@ -71,6 +71,15 @@ describe('a ranker from another plugin', () => {
     expect((await ask()).map(entry => entry.text)).toEqual(['The band played a march.'])
   })
 
+  it('counts what it brings back as recalled, unless it only looks', async () => {
+    const recalls = () => session.events.list().flatMap(event => session.events.perceptionsOf(event.id)).map(perception => perception.recalls)
+    expect(recalls()).toEqual([0, 0])
+    await session.recallRanked({ characterId: 1, situation: 'where is the gold?', turn: 2, policy: { ...DEFAULT_MEMORY_POLICY, recall: 2 } }, undefined, { peek: true })
+    expect(recalls()).toEqual([0, 0])
+    await ask()
+    expect(recalls().reduce((sum, value) => sum + value, 0)).toBe(1)
+  })
+
   it('uses the latest ranker registered', async () => {
     const first = ctx.roleplayState.rankMemories(() => Promise.resolve(new Map([['p:2', 1]])))
     unrank = ctx.roleplayState.rankMemories(ranker)

@@ -3,7 +3,7 @@ import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStor
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { createPanelStore } from './panel-store.ts'
 import type { PageMetadata } from './pages-source.ts'
-import { PageTabs, type PageTab } from './PageTabs.tsx'
+import { PageTabs, type PageTab } from '../widgets/page-tabs/PageTabs.tsx'
 import css from './RoleplayPanel.module.css'
 import type {} from './slot-contract.ts'
 

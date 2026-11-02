@@ -18,7 +18,8 @@ import { loadTriggers } from '../triggers/load.ts'
 import { loadPlots, plotReferenceProblems } from '../plots/load.ts'
 import { loadVariables, variableProblems } from '../variables/load.ts'
 import { InvalidWorldError } from '../sessions/errors.ts'
-import { factionProblems, knowledgeProblems, loreProblems, relationshipProblems, routineProblems, startingPlaceProblems } from '../sessions/populate.ts'
+import { factionProblems, knowledgeProblems, loreProblems, populateTriggers, relationshipProblems, routineProblems, startingPlaceProblems } from '../sessions/populate.ts'
+import { withScratchStory } from './scratch.ts'
 
 /**
  * Reads everything a world's files hold and checks it all as a session start does: every file reads, and what refers to something refers to something that is there.
@@ -76,5 +77,7 @@ export async function loadValidatedWorld(world: CheckedWorld) {
 
   const related = relationshipProblems(characters)
   if (related.length > 0) throw new InvalidWorldError(`the relationships of "${world.summary.name}" have ${related.length} problem(s)`, related.map(message => ({ path: world.directory, message })))
+  // what a trigger names (places, characters, things, values) is checked against the world the way the start fills the story, which would refuse it; every other reference is right by now
+  withScratchStory({ characters, locations, items, slots, variables: declared.defs, calendar }, story => { populateTriggers(story, scripted.triggers) })
   return { characters, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar, checks: dice.checks, commands: commandFile.commands }
 }

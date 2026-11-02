@@ -21,6 +21,8 @@ import { foldSpeakerLabels, repeatsEarlier } from './turn-text.ts'
 import type { Attempt, RawSegment, TurnState } from './turn-state.ts'
 import { ROLL_FIRST, checkOutcomes, explainPhase, judgeDue, oocBlock, previewDue, rollDue } from './turn-rules.ts'
 import { ReflectionRefusedError } from '../sessions/errors.ts'
+import type { RunRecall } from '../../shared/activity.ts'
+import type { RecallPreview, RecallPreviewCharacter, RecallPreviewRequest } from '../../shared/recall-preview.ts'
 
 export type { RawSegment } from './turn-state.ts'
 
@@ -553,6 +555,36 @@ export class TurnEngine {
     const cancel = new AbortController()
     this.reflectionCancels.set(chat, cancel)
     this.afterTurn.reflectNow({ chat, turn: store.story.metadata.get().turns }, cancel.signal)
+  }
+
+  /**
+   * What a moment would bring back for the characters, as a turn would ask for it and without changing anything the story keeps: nothing is counted as recalled
+   * and no turn begins. @throws {Error} when the chat has no story, or names a character that is not in it.
+   */
+  async recallPreview(chat: string, request: RecallPreviewRequest, signal: AbortSignal): Promise<RecallPreview> {
+    const store = this.stores(chat)
+    if (store === undefined) throw new Error(`no story for chat ${chat}`)
+    const cast = store.cast()
+    const player = cast.find(member => member.character.control === 'player')
+    const members = request.character === undefined
+      ? cast.filter(member => member.character.control !== 'player' && (player?.place === undefined || member.place?.location.id === player.place.location.id))
+      : cast.filter(member => member.key === request.character)
+    if (request.character !== undefined && members.length === 0) throw new Error(`no character "${request.character}" in the story`)
+    const turn = store.story.metadata.get().turns + 1
+    const settings = store.settings()
+    const queryVector = await store.queryVector(request.situation, signal)
+    const characters = await Promise.all(members.map(async (member): Promise<RecallPreviewCharacter> => {
+      const memories = await this.boundaries().recaller.recall({ member, situation: request.situation, turn, policy: settings.memory, explain: true, peek: true, ...(queryVector === undefined ? {} : { queryVector }) }, store.story, signal)
+      const here = (member.place === undefined ? cast : cast.filter(other => other.place?.location.id === member.place?.location.id)).map(entry => entry.character.id)
+      const known = store.knowledge(member.character.id, turn, here)
+      return {
+        key: member.key, name: member.character.name, ...(member.place === undefined ? {} : { place: member.place.location.name }),
+        memories: memories.map(({ clarity, turn: from, text, why }): RunRecall => ({ clarity, turn: from, text, ...(why === undefined ? {} : { why }) })),
+        lore: known.lore,
+        known: { characters: known.characters.length, factions: known.factions.length, places: known.locations.length, things: known.items.length, routes: known.routes.length },
+      }
+    }))
+    return { turn, situation: request.situation, byMeaning: queryVector !== undefined, limit: settings.memory.recall, characters }
   }
 
   /** Whether a turn is being played: characters are being asked or the game master is between rounds. */

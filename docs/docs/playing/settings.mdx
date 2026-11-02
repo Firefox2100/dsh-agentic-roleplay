@@ -33,11 +33,31 @@ The **Reflection** section shows when the characters last sorted their memories,
 
 The **Session doctor** section opens a separate chat for this story (see [Sessions](sessions)): an assistant that reads what the story has recorded, looks for what does not fit, and proposes fixes that you approve one by one.
 
-The **What the helpers did lately** list at the bottom of the tab shows the latest runs of those helpers: which one, on which model, how long it took, how many tool calls it made, and why it failed when it did. Each run also shows the tokens it used. Above it, **Tokens per turn** adds them up for each turn: the game master, and the helpers that worked for the turn (including what they did after it was delivered), with what the model service read from its cache shown apart. The numbers are the ones the model service reports, so a service that reports none shows none; taking the story back drops the turns that no longer count. Money is not shown, because a model's price is not something DSH knows.
+**What the helpers did lately** lists each helper's model, duration, tool calls, tokens and failure reason. Open a run to see its requests, prompt size, time to first output and whether the output limit cut it off.
+
+**Tokens per turn** adds up the game master and every helper that worked for that turn, including background work completed after delivery. Cached input is shown separately when the provider reports it. A missing cache figure is labelled "cache not reported", not zero. DSH does not know the provider's prices, so this page does not estimate cost. Taking the story back removes usage for turns that no longer count.
+
+The chat's **Trajectory** tab holds the game master's requests, timing, usage and failed tool calls. A refused call includes its reason there.
+
+**Where each turn went** keeps diagnostics for the latest 30 turns. Open a turn to inspect:
+
+- time spent waiting, generating and calling tools, split between work before and after delivery;
+- the game master's largest prompt, divided into instructions, tools, scene context, current input, current steps and earlier conversation;
+- refused or repeated calls, steering messages and outputs cut off at their limit;
+- earlier events recalled for the player input, why they matched, and how many matches were left out;
+- what each character received, compared with information the story did not give that character.
+
+Prompt sizes are estimates from the text because the model service reports only the whole request. Turn on **Keep what the helpers were told** to include the names behind the character-access counts.
 
 When you need to know why a helper said or wrote what it did, turn on **Keep what the helpers were told** (`diagnostics.keepRuns`), play, and open a run with **Show**: you see its instructions, what it was asked, each tool call with what came back, and the result it submitted. For a character it also lists what it was reminded of and why each memory came back: the cues (names, shared words, place), the scores of the word and meaning searches and of the reranker when they ran, how much it mattered, how long ago it was and how much of it is still in mind. The latest 60 runs are kept in the session's folder. The texts include what characters know in private, so leave it off when you are not looking for a problem.
 
 An invalid external edit is logged and the last valid settings remain active. The complete defaults are listed in [Configuration reference](../reference/configuration).
+
+### Recall check
+
+Open **Recall check** from the right sidebar and describe a possible moment. Choose one character, or leave it on everyone with the player. The page shows the memories each character would receive, their clarity, and the factors behind their ranking. It also lists available background and counts of known people, places, things and routes.
+
+Meaning search requires stored vectors and an embedding service; word search still works without them. A recall check does not play a turn, call a language model, or make the returned memories last longer.
 
 Settings with no form field used to be edited only in `settings.json`; the form now has them all: the game master's and the helpers' output caps and the output room, whether helpers must answer with a tool call (`sampling.tools`), the sizes of the short-term and long-term summaries and how long a cue stays pending. A model that thinks without end stops at the game master's cap (default 12000 tokens) instead of running for minutes.
 

@@ -1,12 +1,14 @@
 import { withDictionaries, type Dictionaries } from '../i18n.ts'
 import { dictionaries as form, type SettingsFormKey } from '../settings-form/locales.ts'
+import { dictionaries as trace, type TraceKey } from './trace-locales.ts'
 import { dictionaries as toolSwitches, type ToolSwitchKey } from '../widgets/tool-switches/locales.ts'
 
 export type ChatSettingsLocaleKey =
   | SettingsFormKey
   | ToolSwitchKey
+  | TraceKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
-  | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityTokens' | 'usageTitle' | 'usageHelp' | 'usageTurn' | 'usageMaster' | 'usageHelpers' | 'usageRuns' | 'usageTotal' | 'usageCached' | 'usageEmpty' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
+  | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityTokens' | 'usageTitle' | 'usageHelp' | 'usageTurn' | 'usageMaster' | 'usageHelpers' | 'usageRuns' | 'usageTotal' | 'usageCached' | 'usageUnreported' | 'usageMasterTime' | 'reqPrompt' | 'reqWait' | 'reqTook' | 'reqCutOff' | 'reqError' | 'reqCount' | 'usageEmpty' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
   | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed' | 'reflectTitle' | 'reflectNone' | 'reflectLast' | 'reflectTurns' | 'reflectScene' | 'reflectManual' | 'reflectOutcome' | 'reflectNothing' | 'reflectRunning' | 'reflectNow' | 'reflectHelp' | 'reflectFailed' | 'reflectError'
   | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed' | 'interventionWithdrawn'
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
@@ -16,7 +18,7 @@ export type ChatSettingsLocaleKey =
   | 'language' | 'doctorTitle' | 'doctorHelp' | 'doctorOpen' | 'doctorChat' | 'doctorFailed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
-const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwitchKey>> = {
+const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwitchKey | TraceKey>> = {
   en: {
     tab: 'Chat settings',
     title: 'Chat settings',
@@ -72,6 +74,14 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     usageRuns: 'Helper runs',
     usageTotal: 'Total',
     usageCached: '{count} cached',
+    usageUnreported: 'cache not reported',
+    usageMasterTime: 'Game master time',
+    reqPrompt: 'prompt {count}',
+    reqWait: 'first answer after {time}',
+    reqTook: '{time} in all',
+    reqCutOff: 'cut off by the output limit',
+    reqError: 'failed',
+    reqCount: '{count} requests',
     usageEmpty: 'No turn has been counted yet.',
     activityResult: 'Result',
     activityOwnModel: 'chat model',
@@ -238,6 +248,14 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     usageRuns: '助手运行次数',
     usageTotal: '合计',
     usageCached: '缓存 {count}',
+    usageUnreported: '服务未报告缓存',
+    usageMasterTime: '游戏主持人用时',
+    reqPrompt: '提示 {count}',
+    reqWait: '{time} 后开始回答',
+    reqTook: '共 {time}',
+    reqCutOff: '被输出上限截断',
+    reqError: '失败',
+    reqCount: '{count} 次请求',
     usageEmpty: '还没有统计过任何回合。',
     activityResult: '结果',
     activityOwnModel: '对话模型',
@@ -351,4 +369,4 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
   },
 }
 
-export const dictionaries = withDictionaries(withDictionaries(own, form), toolSwitches)
+export const dictionaries = withDictionaries(withDictionaries(withDictionaries(own, form), toolSwitches), trace)

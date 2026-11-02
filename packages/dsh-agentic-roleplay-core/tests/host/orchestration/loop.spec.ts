@@ -1,3 +1,4 @@
+import { readTraces } from '../../../src/host/sessions/trace.ts'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { AuthoringTools } from '../../../src/host/tools/authoring-tools.ts'
 import { outputBudget } from '../../../src/host/agents/budget.ts'
@@ -1696,6 +1697,25 @@ describe('a turn with the real agent loop', () => {
     expect(after.filter(event => event.type === 'assistant/message' || event.type === 'step/start')).toEqual([])
     expect(events.filter(event => event.type === 'turn/end')).toHaveLength(1)
     expect(events.filter(event => event.type !== 'subagent/catalog').at(-1)).toMatchObject({ type: 'turn/end', data: { reason: { kind: 'completed' } } })
+  })
+
+  it('keeps a trace of the turn: the scene by section, the game master\'s calls and what each character was given', async () => {
+    const { session, id } = await addSession('Vault')
+    const adapter = new ScriptedAdapter(answerFor())
+    const agent = await chat(`session-${id}`, adapter)
+    agent.followup(say('I open the vault door.'))
+    await agent.whenIdle()
+
+    const [trace] = readTraces(session)
+    expect(trace).toMatchObject({ turn: 1 })
+    expect(trace?.endedAt).toBeGreaterThanOrEqual(trace?.startedAt ?? Infinity)
+    expect(trace?.scene?.map(part => part.id)).toContain('scene')
+    expect(trace?.scene?.every(part => part.tokens > 0)).toBe(true)
+    expect(trace?.calls?.map(call => call.tool)).toEqual(expect.arrayContaining(['activate_characters', 'narrate']))
+    expect(trace?.requests?.[0]?.parts?.map(part => part.id)).toEqual(expect.arrayContaining(['system', 'tools', 'notices']))
+    expect(trace?.access?.map(entry => entry.character)).toEqual(expect.arrayContaining(['Alice', 'Bob', 'Carol', 'Dan']))
+    expect(trace?.access?.find(entry => entry.character === 'Dan' && entry.attempt === 2)).toBeDefined()
+    expect(trace?.access?.[0]?.withheld).toEqual(expect.objectContaining({ people: expect.any(Number), events: expect.any(Number) }))
   })
 
   it('keeps the characters apart from the game master', async () => {

@@ -11,8 +11,13 @@ const answered = (usage?: { inputTokens: number; outputTokens: number; cacheRead
 describe('the tokens of a session', () => {
   it('are the sum of what the model service reported for the requests it answered', () => {
     const events = [{ type: 'turn/start' }, answered({ inputTokens: 100, outputTokens: 20, cacheReadTokens: 400 }), answered({ inputTokens: 50, outputTokens: 5 }), answered(), { type: 'turn/end' }]
-    expect(tokensOf(events)).toEqual({ input: 150, cached: 400, output: 25 })
+    expect(tokensOf(events)).toEqual({ input: 150, cached: 400, output: 25, unreported: 50 })
     expect(tokensOf([])).toEqual({ input: 0, cached: 0, output: 0 })
+  })
+
+  it('say when the service gave no cache figure, so a hit cannot pass for a miss, but not when it said zero', () => {
+    expect(tokensOf([answered({ inputTokens: 100, outputTokens: 5 }), answered({ inputTokens: 40, outputTokens: 5 })])).toEqual({ input: 140, cached: 0, output: 10, unreported: 140 })
+    expect(tokensOf([answered({ inputTokens: 100, outputTokens: 5, cacheReadTokens: 0 })])).toEqual({ input: 100, cached: 0, output: 5 })
   })
 })
 

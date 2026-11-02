@@ -98,7 +98,7 @@ export interface SessionStore {
   /** The first stage of {@link SessionStore.recall}: retrieve by the cues, the words and the meaning of the moment, fuse, and over-retrieve. */
   recallPool(query: Omit<RecallQuery, 'characters'>, evidence?: Omit<RecallEvidence, 'rerank'>): RecallPool
   /** The last stage: choose the best of a pool, by a reranker's judgement when there is one, and count what is recalled. */
-  finishRecall(pool: RecallPool, turn: number, rerank?: ReadonlyMap<string, number>): Recalled[]
+  finishRecall(pool: RecallPool, turn: number, rerank?: ReadonlyMap<string, number>, touch?: boolean): Recalled[]
   /**
    * What a character is reminded of, using the session's index as well as the cues: texts that match the
    * moment by words, and, when the vector of the moment is given (from the model that made the stored
@@ -230,8 +230,10 @@ class SqliteSessionStore implements SessionStore {
     return recallPool(this, { ...query, characters: this.characters.list() }, evidence)
   }
 
-  finishRecall(pool: RecallPool, turn: number, rerank?: ReadonlyMap<string, number>): Recalled[] {
+  /** `touch: false` looks without remembering: what was brought back is not counted as recalled, so a look changes nothing the story keeps. */
+  finishRecall(pool: RecallPool, turn: number, rerank?: ReadonlyMap<string, number>, touch = true): Recalled[] {
     const found = finishRecall(pool, rerank)
+    if (!touch) return found
     this.events.touchPerceptions(found.flatMap(entry => (entry.source.kind === 'perception' ? [entry.source.id] : [])), turn)
     this.memories.touch(found.flatMap(entry => (entry.source.kind === 'memory' ? [entry.source.id] : [])), turn)
     return found

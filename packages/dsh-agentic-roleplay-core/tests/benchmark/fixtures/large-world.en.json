@@ -1,0 +1,951 @@
+{
+ "language": "en",
+ "lore": [
+  {
+   "title": "The Founding of Oakhaven",
+   "summary": "The settlement began in 1204 as a seasonal camp for the Ironwood Merchant Guild.",
+   "body": "Originally established to harvest kelp before the discovery of viable salt deposits, the camp evolved into a permanent structure by 1210. The first stone pier was completed that year, allowing larger vessels to dock year-round despite the treacherous fog."
+  },
+  {
+   "title": "The Salt Treaty of 1215",
+   "summary": "Local chieftains signed a treaty granting the Guild exclusive rights to the salt pans.",
+   "body": "In exchange for a monthly tribute of five hundred pounds of refined salt, the native clans allowed the Guild to expand their operations. This agreement ended the frequent skirmishes over fishing rights and stabilized the town's economy."
+  },
+  {
+   "title": "Construction of the Sentinel Lighthouse",
+   "summary": "The lighthouse was erected in 1232 to guide ships through the treacherous headland rocks.",
+   "body": "Built from local grey granite, the tower stands sixty feet tall and has saved over two hundred vessels from wrecking. The first keeper, Elias Thorne, lived in the attached cottage for forty years until his death in 1272."
+  },
+  {
+   "title": "The Great Gale of 1248",
+   "summary": "A massive storm destroyed the original wooden market stalls and half the dock.",
+   "body": "The disaster forced the Guild to rebuild using stone and iron, creating the durable structures seen today. The event also led to the creation of the Storm Watch, a guild patrol that monitors weather patterns daily."
+  },
+  {
+   "title": "Establishment of the Magistrate's Court",
+   "summary": "The County Magistrate's office was formalized in 1260 to oversee legal disputes.",
+   "body": "Prior to this, the Guild Master acted as the primary judge, but rising population numbers required a separate judicial authority. The current Magistrate, Lord Valerius, resides in the manor built on the highest point of the headland."
+  },
+  {
+   "title": "The Expansion of the Salt Pans",
+   "summary": "The salt production area doubled in size during the renovation of 1275.",
+   "body": "New evaporation ponds were dug into the tidal flats, increasing annual output to ten thousand pounds. This expansion attracted a wave of new settlers, including the families of the current Old Guard."
+  },
+  {
+   "title": "The Dockmaster's Edict of 1252",
+   "summary": "The Salt Guild enacted strict regulations on crane usage and mooring fees to resolve disputes with merchant captains.",
+   "body": "Prior to this edict, collisions at the pier were common due to uncoordinated docking times. The law mandated that the Guild Master sign off on all heavy cargo lifts, shifting power from individual shipowners to the Guild."
+  },
+  {
+   "title": "The Magistrate's Tax on Brine",
+   "summary": "A controversial levy was introduced in 1260 charging ten copper pieces per barrel of refined salt exported.",
+   "body": "This tax funded the repair of the seawall after the Great Gale, but it sparked a brief strike by the pan workers. The old families argued it was necessary for coastal defense, while the merchants claimed it crippled their profits."
+  },
+  {
+   "title": "The Night Watch Ordinance",
+   "summary": "Established in 1275, this law required all harbor lights to remain lit from dusk until dawn.",
+   "body": "Before this, fog often obscured the harbor, leading to ships grounding on the rocks. The cost of oil was subsidized by the Guild, making it a collective responsibility for every docked vessel."
+  },
+  {
+   "title": "The Trial of Captain Vane",
+   "summary": "In 1282, the Magistrate sentenced Captain Silas Vane to three years of labor for smuggling unrefined salt.",
+   "body": "Vane had attempted to bypass the Guild's pricing structure by selling directly to inland traders. His conviction set a precedent that the Guild's monopoly on refined salt was enforceable by county law."
+  },
+  {
+   "title": "The Salt Pans' Boundary Dispute",
+   "summary": "A legal agreement in 1290 defined the exact limits of the private salt pan lands versus public tidal flats.",
+   "body": "This boundary was marked by iron stakes driven into the mud, visible only at low tide. The Magistrate ruled that the Guild owned the flats up to the high-water mark, granting them control over new pan construction."
+  },
+  {
+   "title": "The Guild's Right of Arrest",
+   "summary": "Granted in 1305, this charter allowed Guild officers to detain violators of dock regulations without the Magistrate's immediate presence.",
+   "body": "This expanded the Guild's judicial power, creating tension with the old families who preferred slower court processes. The first arrest under this rule involved a dockworker who damaged a mooring line, resulting in a fine paid to the Guild treasury."
+  },
+  {
+   "title": "The Brine Monopoly of 1260",
+   "summary": "The Salt Guild enforced a strict monopoly on all brine extraction within three miles of the harbor.",
+   "body": "Any merchant attempting to harvest salt from private plots without a guild charter faced a fine of fifty gold crowns. This decree stabilized prices but enraged the independent farmers of the lower panlands."
+  },
+  {
+   "title": "The Black Tide Incident",
+   "summary": "A spill of crude oil from a merchant vessel contaminated the eastern salt pans for six months.",
+   "body": "The resulting harvest of 1258 was deemed unfit for consumption, causing a temporary famine in the county. The Magistrate fined the shipping company, though the funds were largely absorbed by cleanup costs."
+  },
+  {
+   "title": "The Ironwood Export Route",
+   "summary": "Salt became the primary currency for trading ironwood logs from the northern forests.",
+   "body": "By 1262, every ship leaving Oak Harbor carried at least two tons of salt to barter for timber. This trade route made the town the second-largest exporter of preserved goods in the realm."
+  },
+  {
+   "title": "The Tasting of Master Halloway",
+   "summary": "Master Halloway introduced a standardized grading system for salt purity in 1255.",
+   "body": "His method involved dissolving samples in distilled water and measuring the refractive index against a gold standard. Merchants who failed to meet his 'Grade A' standard were banned from the main market for a year."
+  },
+  {
+   "title": "The Smuggler's Caverns",
+   "summary": "A network of sea caves beneath the headland was used to bypass the dockmaster's tolls.",
+   "body": "Between 1250 and 1254, an estimated twenty percent of the town's salt supply entered the market through these hidden entrances. The Guild eventually sealed the largest cave with a iron grate after a skirmish with the local militia."
+  },
+  {
+   "title": "The Royal Salt Tithe",
+   "summary": "The Crown imposed a ten percent tax on all salt exported from the harbor in 1261.",
+   "body": "This new levy was collected directly by the Magistrate's clerks at the pier gates. Local merchants protested, claiming the tax would make Oak Harbor's salt uncompetitive against inland producers."
+  },
+  {
+   "title": "The Rite of the White Crust",
+   "summary": "Every first frost, families scrape the initial salt crust from the pans to offer to the sea spirits.",
+   "body": "This ritual, known as the White Offering, dates back to the settlement's founding in 1190. The scraped salt is placed in stone bowls at the water's edge, believed to appease the damp entities that dwell in the fog."
+  },
+  {
+   "title": "Widow's Veil of Brine",
+   "summary": "Grieving spouses wear a necklace of crystallized salt for forty days after a partner's death.",
+   "body": "The salt necklace, called a 'brine heart,' is crafted by the Guild's artisans and blessed by the local priest. It is believed to preserve the memory of the deceased and protect the widow from the melancholy of the mist."
+  },
+  {
+   "title": "Festival of the Lanterns",
+   "summary": "On the winter solstice, every household floats a lantern on the harbor waters.",
+   "body": "This tradition began in 1205 to guide the lost souls of fishermen who never returned. The harbor master counts the lanterns each year, noting any that drift unusually far out, which are said to be carrying messages from the deep."
+  },
+  {
+   "title": "The Salt-Swearing Oath",
+   "summary": "Legal contracts in the county are sealed by licking a pinch of coarse salt.",
+   "body": "This custom ensures honesty, as the salt is said to burn the tongue of a liar. It has been the standard practice since the Magistrate's Court was established, replacing earlier ink-and-blood signatures."
+  },
+  {
+   "title": "Veneration of the Fog",
+   "summary": "The townspeople believe the fog is the breath of the ancient sea goddess, Elara.",
+   "body": "Prayers are offered at dawn when the mist is thickest, asking for safe passage and good harvests. The local shrine, built in 1210, features a statue of Elara with eyes closed, symbolizing the hidden nature of the divine."
+  },
+  {
+   "title": "The Drying of the Sails",
+   "summary": "Newlywed couples must dry their wedding sails in the sun before the first voyage.",
+   "body": "This ritual, instituted in 1230, symbolizes the couple's commitment to weathering the storms of life together. The sails are hung on the lighthouse gallery, where they are blessed by the keeper before being lowered for the journey."
+  },
+  {
+   "title": "The Whispering Cliffs",
+   "summary": "The jagged limestone cliffs surrounding Salt Harbor emit a low, constant hum when the tide recedes.",
+   "body": "This acoustic phenomenon, known locally as the 'Sea’s Breath,' has been documented since the arrival of the first panners in 1190. The sound is caused by wind passing through thousands of natural sea caves, creating a resonant frequency that aids in navigation during heavy fog."
+  },
+  {
+   "title": "The Sulfur Springs of 1205",
+   "summary": "A geothermal vent discovered beneath the northern salt pans releases warm, mineral-rich brine.",
+   "body": "The heat from this spring accelerates the evaporation process, allowing for year-round production despite the cold coastal climate. Local legends claim the water heals wounds, a property that has made the northern pans the most profitable section of the harbor."
+  },
+  {
+   "title": "The Gray Mist Cycle",
+   "summary": "A dense, persistent fog blankets the harbor for an average of 240 days per year.",
+   "body": "This meteorological pattern, established by climate records from 1180, dictates the town's architecture and daily routines. The fog rolls in from the ocean at dusk and lifts only by mid-morning, creating a narrow window for unassisted maritime travel."
+  },
+  {
+   "title": "The Basalt Shelf",
+   "summary": "A submerged volcanic shelf extends three miles east of the pier, protecting the harbor from open ocean swells.",
+   "body": "This natural barrier creates calm waters ideal for the delicate process of salt crystallization. The shelf is visible at low tide, revealing black, glassy rocks that have been polished smooth by centuries of tidal action."
+  },
+  {
+   "title": "The Frost Moon of 1233",
+   "summary": "An unusually harsh winter freeze solidified the salt pans for six weeks, preserving the harvest.",
+   "body": "This event allowed the town to stockpile enough salt to survive the famine of 1234. The ice was so thick that sleds were used to transport crystals from the pans to the market, a tradition that continues in the local winter folklore."
+  },
+  {
+   "title": "The Tidal Rhythm",
+   "summary": "The harbor experiences extreme tidal shifts of up to four meters, affecting the salt pans' depth.",
+   "body": "Panners must adjust the sluice gates twice daily to manage water levels and salinity. This rigorous schedule has shaped the town's timekeeping, with the 'High Bell' and 'Low Bell' marking the tidal peaks rather than the hours of the day."
+  },
+  {
+   "title": "The Ghost of Blackwood Pier",
+   "summary": "A spectral figure in a waterlogged coat is said to haunt the northernmost pilings of the pier every leap year.",
+   "body": "Fishermen report seeing the apparition checking the moorings before vanishing into the fog. The legend dates back to the drowning of Overseer Silas Blackwood in 1210, who was never found despite a three-day search."
+  },
+  {
+   "title": "The Whispering Crabs",
+   "summary": "Large fiddler crabs found in the lower pans are believed to mimic the voices of drowned sailors.",
+   "body": "Harvesters claim that if you listen closely during the high tide of 1245, the crabs will call out specific names. This phenomenon is used by the Guild to identify which plots have been claimed by old families for generations."
+  },
+  {
+   "title": "The Sunken Vault of 1222",
+   "summary": "A merchant ship carrying silver coins from the capital sank off the headland, leaving a trail of wealth on the seabed.",
+   "body": "Divers occasionally find single coins washed up on the market stones, dated 1222. Locals believe the vault remains intact, guarded by a sea serpent that only reveals itself when the fog is thickest."
+  },
+  {
+   "title": "The Magistrate's Lost Ring",
+   "summary": "The signet ring of Magistrate Thorne disappeared during the storm of 1233 and is rumored to be worn by a hermit crab.",
+   "body": "The crab, known as 'Thorne's Shadow,' is often seen near the edge of the salt pans. If the ring is found, it is said to bring good fortune to whoever claims it, provided they return it before the next new moon."
+  },
+  {
+   "title": "The Fog Dancers of 1255",
+   "summary": "A group of masked figures were seen dancing on the pier during a dense fog bank in 1255.",
+   "body": "Witnesses described the dancers moving in perfect sync with the waves, wearing masks made of dried kelp. No one could identify their faces, and they vanished as quickly as they appeared, leaving behind only salt crystals."
+  },
+  {
+   "title": "The Cursed Salt Pile",
+   "summary": "A specific mound of salt in the eastern pan refuses to dissolve, even in heavy rain.",
+   "body": "The pile, marked by a wooden stake driven in 1240, is said to contain the bones of a witch who cursed the harvest. Workers who try to move it report hearing soft weeping from beneath the crust."
+  },
+  {
+   "title": "The Oakhaven Shipwrights' Charter",
+   "summary": "In 1201, the guild of shipwrights secured exclusive rights to build vessels using the dense ironwood from the headland forests.",
+   "body": "This charter mandated that all harbor-bound ships must be reinforced with ironwood ribs to withstand the frequent gales. The guild master, Elara Vane, still enforces the strict timber quotas today."
+  },
+  {
+   "title": "The Salt-Stained Ledger of 1210",
+   "summary": "A surviving accounting book from 1210 details the precise weight of salt traded per barrel, establishing the standard measurement for the town.",
+   "body": "The ledger reveals that a 'standard barrel' held exactly 250 pounds of refined brine crystals. Merchants who deviated by more than five percent were fined by the Dockmaster's office."
+  },
+  {
+   "title": "Construction of the Tide-Saw Mill",
+   "summary": "Built in 1225, this water-powered mill was the first to automate the crushing of raw salt blocks for export.",
+   "body": "Located near the lower docks, the mill utilized the ebb and flow of the harbor to drive its massive stone wheels. It reduced processing time by half, making Oakhaven the premier salt supplier for the northern coast."
+  },
+  {
+   "title": "The Galleon 'Iron Claw' Incident",
+   "summary": "In 1238, the heavy galleon 'Iron Claw' ran aground on the Basalt Shelf due to a miscalculated tide chart.",
+   "body": "The wreck remains visible at low tide, its hull broken against the sharp rocks. Local divers claim the captain's ghost still walks the deck, guarding the lost cargo of silver ingots."
+  },
+  {
+   "title": "The Weaver's Knot Tradition",
+   "summary": "Since 1245, sailors have tied a specific complex knot in their rigging to honor the memory of lost crew members.",
+   "body": "The 'Oakhaven Knot' is taught to all apprentices as a rite of passage before their first voyage. It is said that the knot loosens slightly when fog is thick, warning the captain of hidden dangers."
+  },
+  {
+   "title": "The Brine-Proof Canvas Patent",
+   "summary": "In 1250, local dyers developed a salt-resistant treatment for ship sails, extending their lifespan significantly.",
+   "body": "The process involved soaking the canvas in a mixture of tar and crushed pearl shells. This innovation allowed Oakhaven ships to travel longer distances without needing frequent sail repairs."
+  },
+  {
+   "title": "The Vane Family Legacy",
+   "summary": "Descendants of the trial's acquitted captain, the Vanes control the northernmost salt pans.",
+   "body": "Elder Thomas Vane purchased the disputed land at the 1248 auction for a pittance. Their estate, Vane Hall, overlooks the harbor with a view of the lighthouse."
+  },
+  {
+   "title": "The Halloway Merchant Guild",
+   "summary": "Led by Master Elara Halloway, this faction monopolizes the brine trade since 1260.",
+   "body": "The guild enforces strict quality controls on all exported salt. Their headquarters, the Brine House, sits directly on the main pier."
+  },
+  {
+   "title": "The Salt-Panning Syndicate",
+   "summary": "A coalition of independent pan-workers who resist guild taxation.",
+   "body": "Founded in 1255, the syndicate holds weekly meetings in the fog-drenched market square. They are known for their distinctive blue aprons."
+  },
+  {
+   "title": "The Lighthouse Keepers",
+   "summary": "The isolated family of Silas Moon tends the Sentinel Lighthouse since 1220.",
+   "body": "Three generations of Moons have maintained the light through every storm. They are granted tax exemptions in exchange for their service."
+  },
+  {
+   "title": "The Magistrate's Council",
+   "summary": "Composed of five old families who advise County Magistrate Thorne.",
+   "body": "The council meets in the Court of Whispers every new moon. Their influence extends to the appointment of the Dockmaster."
+  },
+  {
+   "title": "The Night Watch Brotherhood",
+   "summary": "A paramilitary group enforcing the Night Watch Ordinance since 1240.",
+   "body": "Led by Captain Rourke, they patrol the docks and salt pans. Their headquarters is a fortified warehouse near the Ironwood Export Route."
+  }
+ ],
+ "variables": [
+  {
+   "name": "Hunger",
+   "description": "0 means starving and weak, 10 means fully satiated and energetic."
+  },
+  {
+   "name": "Thirst",
+   "description": "0 means dehydrated and dizzy, 10 means well-hydrated and clear-headed."
+  },
+  {
+   "name": "SaltCraving",
+   "description": "0 means salt-depleted and lethargic, 10 means salt-saturated and sharp."
+  },
+  {
+   "name": "FogVision",
+   "description": "0 means blinded by thick fog, 10 means clear visibility despite the mist."
+  },
+  {
+   "name": "DockStanding",
+   "description": "0 means an unknown drifter, 10 means a respected guild elder."
+  },
+  {
+   "name": "CountyFavor",
+   "description": "0 means despised by the magistrate, 10 means honored by the old families."
+  },
+  {
+   "name": "LighthouseLight",
+   "description": "0 means the beacon is out, 10 means the beacon is blazing."
+  },
+  {
+   "name": "Wetness",
+   "description": "0 means bone-dry and warm, 10 means soaking wet and shivering."
+  },
+  {
+   "name": "Debt",
+   "description": "0 means financially free, 10 means deeply in debt to the guild."
+  },
+  {
+   "name": "TidePower",
+   "description": "0 means the tide is still, 10 means the tide is rushing violently."
+  },
+  {
+   "name": "WhiskeyReserve",
+   "description": "0 means empty flask, 10 means full canteen of spiced rum."
+  },
+  {
+   "name": "Panic",
+   "description": "0 means calm and collected, 10 means terrified and trembling."
+  },
+  {
+   "name": "Sweat",
+   "description": "0 represents a dry, comfortable state, while 10 signifies drenched, salt-caked skin from labor in the pans."
+  },
+  {
+   "name": "Cough",
+   "description": "0 is a clear, silent throat, while 10 is a lung-rattling wheeze from inhaling salty mist."
+  },
+  {
+   "name": "Coin",
+   "description": "0 means empty pockets and poverty, while 10 indicates a purse heavy with silver and trade goods."
+  },
+  {
+   "name": "Shiver",
+   "description": "0 is a warm, stable body temperature, while 10 is uncontrollable trembling from the coastal chill."
+  },
+  {
+   "name": "Grit",
+   "description": "0 is a clean mouth and teeth, while 10 is a persistent, abrasive layer of salt crystals in the mouth."
+  },
+  {
+   "name": "Sleep",
+   "description": "0 is a fully rested and alert mind, while 10 is an exhausted, heavy-lidded state from long night watches."
+  },
+  {
+   "name": "Bruise",
+   "description": "0 is unblemished skin, while 10 is covered in purple marks from hauling nets and crates."
+  },
+  {
+   "name": "Whistle",
+   "description": "0 is a silent throat, while 10 is a hoarse, raspy voice from shouting over the wind and waves."
+  },
+  {
+   "name": "Tangle",
+   "description": "0 is a neatly coiled rope, while 10 is a knotted mess that takes hours to untie."
+  },
+  {
+   "name": "Gaze",
+   "description": "0 is a sharp, focused eye, while 10 is a blurry, watery vision obscured by stinging salt spray."
+  },
+  {
+   "name": "Stink",
+   "description": "0 is a fresh, clean scent, while 10 is a pungent odor of rotting fish and brine clinging to clothes."
+  },
+  {
+   "name": "Cramp",
+   "description": "0 is loose, flexible muscles, while 10 is tight, locking spasms in the legs and back."
+  }
+ ],
+ "things": [
+  {
+   "name": "Iron Rake",
+   "description": "This heavy tool features bent steel tines designed to scrape crystallized salt from the shallow evaporation ponds. Its handle is wrapped in worn leather to protect the hands of the laborers who work the pans daily."
+  },
+  {
+   "name": "Foghorn Bell",
+   "description": "A tarnished bronze bell hangs near the lighthouse base, struck automatically by the rising tide. Its deep, resonant tone cuts through the dense coastal mist to warn ships of the rocky headland."
+  },
+  {
+   "name": "Guild Ledger",
+   "description": "Bound in cracked black leather, this thick book records every ton of salt harvested and docked in the harbor. The pages are stained with brine and ink, detailing the debts owed to the dockmaster."
+  },
+  {
+   "name": "Sea Glass Shard",
+   "description": "A smooth, teal fragment of glass washed ashore by the winter storms, polished by years of tumbling in the surf. It is kept in a velvet pouch by a local child as a lucky charm against the fog."
+  },
+  {
+   "name": "Salt Crust Key",
+   "description": "An old iron key encrusted with thick white deposits from the humid air of the salt stores. It opens one of the heavy wooden doors to the magistrate’s private archive in the market district."
+  },
+  {
+   "name": "Dried Kelp Bundle",
+   "description": "Tied with twine, this bundle of brittle brown seaweed is sold in the market as fuel for small fires. Its pungent, oceanic scent lingers on the hands of those who handle it."
+  },
+  {
+   "name": "Lighthouse Lens",
+   "description": "A massive, multi-faceted glass prism that focuses the beam of the keeper’s lamp across the dark waters. Scratches on its surface tell the story of decades of salt spray and gale-force winds."
+  },
+  {
+   "name": "Dockworker’s Whistle",
+   "description": "A small brass instrument worn on a chain around the neck of the harbor master. It emits a sharp, piercing sound used to coordinate the loading and unloading of cargo ships."
+  },
+  {
+   "name": "Old Family Seal",
+   "description": "A heavy signet ring made of silver, stamped with the crest of the ruling magistrate’s house. It is used to wax-seal official decrees posted on the market notice board."
+  },
+  {
+   "name": "Salt Curing Jar",
+   "description": "A stoneware vessel with a tight-fitting lid, used by fishermen to preserve their catch with coarse salt. The jar is often etched with the name of the fisherman who produced the goods inside."
+  },
+  {
+   "name": "Brine Compass",
+   "description": "A navigational instrument featuring a needle suspended in concentrated saltwater rather than oil. It points toward the nearest fresh water spring, guiding travelers away from the salty marshes."
+  },
+  {
+   "name": "Tide-Chart Scroll",
+   "description": "A weathered parchment listing the lunar cycles and their effect on the harbor's depth for the coming decade. The ink is slightly faded, but the critical low-tide hours are circled in red ochre."
+  },
+  {
+   "name": "Wrought-Anchor",
+   "description": "A rusted iron anchor recovered from the seabed, mounted on a wooden stand in the magistrate's hall. It serves as a symbol of the town's enduring grip on the sea despite its treacherous currents."
+  },
+  {
+   "name": "Pearl Earring",
+   "description": "A lustrous, irregularly shaped pearl found inside a common oyster shell by a local child. It is kept in a velvet pouch, valued more for its story than its monetary worth."
+  },
+  {
+   "name": "Rope Splice",
+   "description": "A complex knot tying two frayed lengths of hemp rope together, created by a seasoned dockhand. The splice is tight enough to bear weight but loose enough to be undone quickly in an emergency."
+  },
+  {
+   "name": "Sea Urchin Shell",
+   "description": "A hollow, spiky shell used by children as a makeshift trumpet or by alchemists as a container for rare salts. Its interior is smooth and pearlescent, contrasting with its rugged exterior."
+  },
+  {
+   "name": "Dockhand's Knife",
+   "description": "A short, stout blade with a handle carved from driftwood, used for cutting nets and filleting fish. The edge is frequently sharpened, leaving the wood polished and dark from use."
+  },
+  {
+   "name": "Salt Sample Jar",
+   "description": "A small glass vial containing a distinctively colored grain of salt harvested from the northern pans. It is labeled with the date and the name of the panner who collected it."
+  },
+  {
+   "name": "Foghorn Whistle",
+   "description": "A brass instrument mounted on the lighthouse tower, used to signal passing ships through the dense mist. Its deep, resonant tone can be heard for miles across the harbor waters."
+  },
+  {
+   "name": "Tide Pool Map",
+   "description": "A hand-drawn chart showing the locations of safe tide pools for foraging crabs and seaweed. The map includes warnings about sudden high tides and slippery rocks near the headland."
+  },
+  {
+   "name": "Salt-Blind Spectacles",
+   "description": "These brass-rimmed glasses feature tinted glass to protect eyes from the intense glare reflecting off the white salt pans. The frames are slightly corroded by sea spray, giving them a distinct greenish patina."
+  },
+  {
+   "name": "Tide-Pool Net",
+   "description": "A small, hand-woven net used by children to catch crabs and small fish in the shallow pools near the shore. The mesh is coarse, designed to let water drain quickly while retaining slippery prey."
+  },
+  {
+   "name": "Brine Barrel Stave",
+   "description": "A single, curved piece of oak salvaged from a leaking salt barrel that has been polished smooth by years of handling. It serves as a makeshift paperweight for merchants calculating daily profits."
+  },
+  {
+   "name": "Lighthouse Keeper’s Lantern",
+   "description": "A heavy iron lantern with soot-stained glass, originally used to maintain the lighthouse fire before electric lights were installed. The handle is wrapped in frayed rope for a secure grip in high winds."
+  },
+  {
+   "name": "Salt Crystal Cluster",
+   "description": "A raw, jagged formation of pure white salt crystals mined directly from the evaporation ponds. It catches the light and sparkles like quartz, often kept as a decorative talisman by locals."
+  },
+  {
+   "name": "Dockworker’s Apron",
+   "description": "A thick canvas apron stained with brine and grease, featuring multiple pockets for holding tools and coins. The leather straps are worn thin from years of heavy use on the slippery docks."
+  },
+  {
+   "name": "Foghorn Whistle Cap",
+   "description": "A small brass cap that screws onto the end of the foghorn’s pneumatic pipe to prevent debris from entering. It is engraved with the year the lighthouse was renovated and bears the town crest."
+  },
+  {
+   "name": "Salt-Pan Rake Handle",
+   "description": "A wooden handle broken off an iron rake, smoothed by the sweat and grip of generations of salt workers. It is often used as a walking stick by the elderly navigating the uneven salt flats."
+  },
+  {
+   "name": "Guild Member’s Pin",
+   "description": "A silver pin shaped like an anchor, worn by members of the dockworkers' guild to signify their status. The enamel is chipped, revealing the metal beneath where it has been bumped against crates."
+  },
+  {
+   "name": "Brine-Stained Ledger Page",
+   "description": "A single page torn from an old accounting book, stained with salt crystals that have dissolved and reformed over time. The ink is slightly blurred, making some numbers difficult to decipher."
+  }
+ ],
+ "places": [
+  {
+   "name": "The Gilded Oar",
+   "description": "A bustling tavern where the air is thick with the scent of brine and spiced rum. Sailors and dockworkers gather here to trade tales of the sea while the Guild Masters negotiate contracts in the corner."
+  },
+  {
+   "name": "Whispering Pans",
+   "description": "Rows of crystalline salt flats stretch toward the horizon, shimmering under the perpetual gray fog. Local laborers move silently across the crust, harvesting the white gold that feeds the town's economy."
+  },
+  {
+   "name": "The Sentinel's Peak",
+   "description": "A rugged headland crowned by a towering lighthouse that cuts through the dense mist with a steady beam. The winding path up is lined with ancient sea stacks and the nests of storm-petrels."
+  },
+  {
+   "name": "Tide-Call Market",
+   "description": "A crowded square where stalls overflow with dried fish, woven nets, and jars of preserved kelp. Merchants shout over the sound of crashing waves to attract customers from every corner of the county."
+  },
+  {
+   "name": "The Saltwarden's Keep",
+   "description": "A fortified guild hall built from dark basalt and reinforced with iron bands. It serves as the administrative center for the dockmasters who control all shipping traffic in and out of the harbor."
+  },
+  {
+   "name": "Magistrate's Court",
+   "description": "An imposing stone building with arched windows overlooking the cobblestone streets. Here, the ruling magistrate settles disputes between old families and new arrivals with an iron fist and a heavy ledger."
+  },
+  {
+   "name": "The Rusty Anchor",
+   "description": "A weathered pier where fishing boats bob gently in the calm, foggy waters. The wood is slick with algae and the smell of low tide, providing a quiet spot for solitary contemplation."
+  },
+  {
+   "name": "Fog-Bound Alley",
+   "description": "A narrow, winding street between tall, leaning houses that seem to vanish into the mist. Shadows dance along the damp walls as lanterns flicker, guiding travelers toward the town center."
+  },
+  {
+   "name": "The Brine-Kiln",
+   "description": "A soot-stained industrial shed where raw salt is purified and crystallized for export. The air inside is thick with heat and the sharp, metallic scent of evaporating seawater."
+  },
+  {
+   "name": "Wharf 4",
+   "description": "The primary docking station for the Guild of Mariners, marked by rusted iron bollards and heavy chains. It buzzes with the activity of dockworkers loading crates of cured fish and timber."
+  },
+  {
+   "name": "The Salt-Crusted Shrine",
+   "description": "A small stone altar dedicated to the Sea Mother, located at the edge of the drying pans. Sailors leave offerings of polished driftwood and dried kelp to ensure safe passage."
+  },
+  {
+   "name": "Hollows Lane",
+   "description": "A narrow, winding path that cuts through the residential district of old fishing families. The houses here are built from weathered driftwood and reinforced with salt-cured timber."
+  },
+  {
+   "name": "The Drying Yards",
+   "description": "Vast, shallow pools where seawater is left to evaporate under the weak sun. Wooden rakes and shovels lean against the stone edges, waiting for the workers to harvest the white crystals."
+  },
+  {
+   "name": "Old Man Hallow's Shack",
+   "description": "A dilapidated hut perched on the cliffside, known for its collection of rare sea shells and strange artifacts. Hallow trades in fortune-telling and tales of ships lost to the fog."
+  },
+  {
+   "name": "The Guild Hall Annex",
+   "description": "A modest building attached to the main docks where ledger books and trade contracts are stored. Clerks with ink-stained fingers constantly update the records of incoming and outgoing vessels."
+  },
+  {
+   "name": "Mistwood Grove",
+   "description": "A small patch of twisted trees that grow surprisingly well in the salty soil near the town's edge. Locals believe the grove is haunted by the spirits of those who never made it back to shore."
+  },
+  {
+   "name": "The Brine-Slick Slipway",
+   "description": "A steep, algae-coated ramp where fishing skiffs are dragged ashore for repairs and cleaning. The constant scrape of wood against stone echoes through the morning mist, signaling the start of the day's labor."
+  },
+  {
+   "name": "Iron-Lung Foundry",
+   "description": "A soot-stained workshop dedicated to casting heavy anchors and chain links for the harbor's vessels. Thick plumes of grey smoke billow from its chimney, mixing with the natural fog to obscure the headland."
+  },
+  {
+   "name": "The Drowned Bell Tower",
+   "description": "A crumbling stone spire partially submerged in the tidal flats, visible only during low tide. Its cracked bell rings hollowly when the wind howls through the salt-encrusted arches."
+  },
+  {
+   "name": "Kelp-Weaver's Hut",
+   "description": "A thatched-roof cottage where dried seaweed is braided into ropes and mats for the local trade. The air inside smells earthy and sweet, contrasting sharply with the sharp tang of the sea outside."
+  },
+  {
+   "name": "The Silt-Bank Market",
+   "description": "An open-air stall area built on raised wooden platforms to protect vendors from rising tides. Here, merchants sell dried fish and harvested salt to passing sailors and locals alike."
+  },
+  {
+   "name": "Whispering Cave",
+   "description": "A sea cave accessible only at low tide, where the wind creates eerie, melodic hums through narrow fissures. Superstitious sailors leave small offerings of polished stones at its dark entrance."
+  },
+  {
+   "name": "The Gaffer's Ledger",
+   "description": "A cramped, dimly lit office above the docks where the guild master records every ton of salt and every vessel's entry. The scent of old parchment and ink lingers heavily in the air."
+  },
+  {
+   "name": "Salt-Scorched Fields",
+   "description": "Expansive, barren patches of land surrounding the town where vegetation struggles to grow due to high salinity. These fields serve as a natural boundary between the settlement and the wild, untamed coast."
+  }
+ ],
+ "people": [
+  {
+   "name": "Elara Vane",
+   "summary": "The stern Guildmistress who controls the harbor's tides and tariffs.",
+   "personality": "Calculating and precise, she views every interaction as a transaction.",
+   "background": "She inherited the docks from her father but expanded the guild's power through ruthless mergers.",
+   "speech": "Formal and clipped, often using nautical metaphors."
+  },
+  {
+   "name": "Silas Thorne",
+   "summary": "A weathered lighthouse keeper who watches for ships that never arrive.",
+   "personality": "Melancholic and superstitious, he talks to the fog as if it were alive.",
+   "background": "He lost his wife to the sea years ago and has lived in isolation since.",
+   "speech": "Whispering and slow, with long pauses between sentences."
+  },
+  {
+   "name": "Mira Saltwhistle",
+   "summary": "A sharp-tongued market vendor who sells pickled crabs and gossip.",
+   "personality": "Boisterous and unfiltered, she knows everyone's secrets.",
+   "background": "She grew up in the salt pans and learned to negotiate prices before she could read.",
+   "speech": "Loud and rapid, filled with local slang and laughter."
+  },
+  {
+   "name": "Magistrate Corbin Hale",
+   "summary": "The aging ruler of the county who clings to his family's fading glory.",
+   "personality": "Proud and slightly paranoid, he distrusts the Guild's growing influence.",
+   "background": "His ancestors built the town, but his fortune is tied to dwindling salt yields.",
+   "speech": "Archaic and dignified, often quoting old laws."
+  },
+  {
+   "name": "Jory 'Crust' Miller",
+   "summary": "A young, ambitious dockhand eager to climb the social ladder.",
+   "personality": "Energetic and opportunistic, always looking for a way to make a quick coin.",
+   "background": "He is the illegitimate son of a minor noble and a salt worker.",
+   "speech": "Casual and eager, mixing high-class words with dock slang."
+  },
+  {
+   "name": "Old Man Heston",
+   "summary": "A blind salt-pan worker who senses changes in the weather through his feet.",
+   "personality": "Grumpy but wise, he prefers the company of stones to people.",
+   "background": "He has worked the same patch of pans for forty years without pay.",
+   "speech": "Muttering and indirect, often answering questions with questions."
+  },
+  {
+   "name": "Seraphina Dusk",
+   "summary": "A mysterious herbalist who lives in a shack near the headland.",
+   "personality": "Ethereal and calm, she speaks in riddles about the moon.",
+   "background": "She arrived in town during a storm and has never left.",
+   "speech": "Soft and melodic, with a slight echo to her voice."
+  },
+  {
+   "name": "Kaelen Reed",
+   "summary": "A smuggler who uses the fog to hide his cargo from the Guild.",
+   "personality": "Charming and deceptive, he can sell ice to a fisherman.",
+   "background": "He was exiled from a neighboring port for stealing a captain's watch.",
+   "speech": "Smooth and persuasive, with a hint of a foreign accent."
+  },
+  {
+   "name": "Barnaby Grist",
+   "summary": "A burly dockhand with a permanent limp from a falling crate incident.",
+   "personality": "Gruff but surprisingly generous with his lunch.",
+   "background": "Lost his brother to the sea ten years ago.",
+   "speech": "Short, grunting phrases."
+  },
+  {
+   "name": "Lila Moss",
+   "summary": "The herbalist who trades remedies for fresh salt crystals.",
+   "personality": "Whimsical and slightly eccentric.",
+   "background": "Traveled the coast before settling in the fog.",
+   "speech": "Soft, melodic, and whispery."
+  },
+  {
+   "name": "Tobias Flint",
+   "summary": "A lighthouse keeper's apprentice who loves polishing the lens.",
+   "personality": "Obsessive about cleanliness and order.",
+   "background": "Orphaned during a storm surge.",
+   "speech": "Precise and technical."
+  },
+  {
+   "name": "Nora Kettle",
+   "summary": "A fishmonger known for her loud haggling at the market.",
+   "personality": "Boisterous and unapologetically sharp-tongued.",
+   "background": "Ran away from a strict farming family.",
+   "speech": "Loud, fast, and full of slang."
+  },
+  {
+   "name": "Elias Thorne",
+   "summary": "A young scholar cataloging the town's ancient salt pan maps.",
+   "personality": "Quiet, contemplative, and easily distracted.",
+   "background": "Sent from the capital to study coastal economics.",
+   "speech": "Formal and slightly archaic."
+  },
+  {
+   "name": "Maren Tide",
+   "summary": "A net-mender who sits by the pier all day.",
+   "personality": "Patient and observant of passing ships.",
+   "background": "Never left the harbor in her life.",
+   "speech": "Slow, rhythmic, and repetitive."
+  },
+  {
+   "name": "Jasper Coin",
+   "summary": "A gambling den owner who runs a back-alley tavern.",
+   "personality": "Charming with a calculating edge.",
+   "background": "Former sailor who lost his leg to a shark.",
+   "speech": "Smooth, persuasive, and flirtatious."
+  },
+  {
+   "name": "Wren Puddle",
+   "summary": "A street urchin who sells polished sea glass to tourists.",
+   "personality": "Clever, agile, and mischievous.",
+   "background": "Found wandering the dunes as a child.",
+   "speech": "Quick, high-pitched, and playful."
+  }
+ ],
+ "planted": {
+  "lore": [
+   {
+    "index": 3,
+    "mode": "same",
+    "item": {
+     "title": "The Stone Rebirth",
+     "summary": "The 1248 tempest leveled the timber market and shattered the eastern pier.",
+     "body": "In the aftermath, the Dock Guild abandoned wood for masonry and steel, forging the resilient buildings that stand now. This crisis also birthed the Storm Watch, a dedicated patrol tasked with daily atmospheric surveillance."
+    }
+   },
+   {
+    "index": 14,
+    "mode": "same",
+    "item": {
+     "title": "The Salt-Timber Barter",
+     "summary": "In the coastal settlement of Oak Harbor, crystallized sea salt served as the standard medium of exchange for purchasing heavy timber harvested from the northern woods.",
+     "body": "By the year 1262, outbound vessels from Oak Harbor were obligated to load a minimum of two tons of salt to facilitate trade for logs. This commercial arrangement established the town as the realm's second-largest exporter of cured and preserved commodities."
+    }
+   },
+   {
+    "index": 25,
+    "mode": "same",
+    "item": {
+     "title": "The Warmth Beneath the Northern Crystals",
+     "summary": "A hidden thermal source under the northern salt flats provides constant heat for evaporation.",
+     "body": "Even in the freezing coastal winters, the northern pans yield high profits because the earth itself warms the brine. Fishermen say the mineral water cures cuts and bruises, making this specific area the most valuable asset in Salt Harbor."
+    }
+   },
+   {
+    "index": 41,
+    "mode": "same",
+    "item": {
+     "title": "The Pearl-Tar Sail Preservative",
+     "summary": "Craftsmen in 1250 discovered that treating ship canvas with a specific blend of tar and powdered pearls protected the fabric from salt damage.",
+     "body": "By immersing the sails in this unique solution, local shipwrights ensured their vessels could endure extended voyages without the usual wear and tear caused by the sea, significantly reducing maintenance costs."
+    }
+   },
+   {
+    "index": 7,
+    "mode": "conflict",
+    "item": {
+     "title": "The Magistrate's Tax on Brine",
+     "summary": "A controversial levy was introduced in 1275 charging fifteen silver pieces per barrel of refined salt exported.",
+     "body": "This tax funded the construction of the new lighthouse on the headland, but it sparked a brief strike by the pan workers. The old families argued it was necessary for coastal defense, while the merchants claimed it crippled their profits."
+    }
+   },
+   {
+    "index": 19,
+    "mode": "conflict",
+    "item": {
+     "title": "Widow's Veil of Brine",
+     "summary": "Grieving spouses wear a necklace of crystallized salt for sixty days after a partner's death.",
+     "body": "The salt necklace, called a 'brine heart,' is crafted by the Guild's artisans and blessed by the local priest. It is believed to preserve the memory of the deceased and protect the widow from the melancholy of the mist."
+    }
+   },
+   {
+    "index": 36,
+    "mode": "conflict",
+    "item": {
+     "title": "The Salt Harbor Dockmasters' Accord",
+     "summary": "In 1245, the Guild of Docks secured exclusive rights to levy tolls on all vessels, mandating that cargo be weighed using brass scales rather than ironwood.",
+     "body": "This accord abolished the ironwood reinforcement requirement, allowing shipwrights to use lighter, local pine provided the vessel passed a buoyancy test. The guild master, Thorne Blackwood, still enforces the strict toll quotas today."
+    }
+   },
+   {
+    "index": 5,
+    "mode": "near",
+    "item": {
+     "title": "The Gull's Cry Incident",
+     "summary": "A dispute over territorial rights between the Lighthouse Keeper and the Dock Guild escalated into a brief blockade of the harbor entrance.",
+     "body": "When the Magistrate ordered the installation of a new foghorn on the headland, the Dock Guild claimed the sound disrupted the migratory patterns of the harbor gulls, which were essential for their fishing nets. For three days, guild skiffs blocked the channel until the Keeper agreed to mute the horn during the high tide cycle."
+    }
+   },
+   {
+    "index": 22,
+    "mode": "near",
+    "item": {
+     "title": "The Salt Tithe of House Vane",
+     "summary": "A hereditary obligation imposed by the ruling magistrate on all dock workers, requiring them to offer the first shovelful of harvested salt to the old family's private chapel.",
+     "body": "Established in 1402 by Magistrate Elias Vane, this ritual reinforces the social hierarchy between the laboring class and the landed elite. Workers must pause at the edge of the salt pans each morning, scoop a pinch of white crystals, and toss them into the iron urn at the chapel door. Failure to perform the tithe results in a deduction from weekly wages, ensuring the town's wealth flows steadily to the magistrate's coffers."
+    }
+   },
+   {
+    "index": 31,
+    "mode": "near",
+    "item": {
+     "title": "The Tide-Loggers' Knot",
+     "summary": "A complex braiding technique used by dockworkers to secure salt crates, rumored to hold the memory of the sea's current.",
+     "body": "When the Guild's magistrates inspect the lower piers, they do not just check the weight of the cargo but the tightness of the binding knots. It is said that a properly tied 'Tide-Logger's Knot' will remain damp for three days after the tide recedes, proving the salt was harvested during the new moon. Old families use this moisture as a quality seal, while the Guild uses it to track which families are adhering to the lunar harvesting schedule."
+    }
+   }
+  ],
+  "variables": [
+   {
+    "index": 2,
+    "mode": "same",
+    "item": {
+     "name": "TideSaturation",
+     "description": "A scale from 0 to 10, where 0 indicates a person is depleted and sluggish, and 10 indicates they are fully saturated and alert."
+    }
+   },
+   {
+    "index": 11,
+    "mode": "same",
+    "item": {
+     "name": "Composure",
+     "description": "A scale from 0 to 10, where 0 represents a state of utter terror and trembling, and 10 represents a state of complete calm and collectedness."
+    }
+   },
+   {
+    "index": 20,
+    "mode": "same",
+    "item": {
+     "name": "Knotwork",
+     "description": "A 0 indicates a single, orderly loop, while a 10 signifies a complex, hours-long tangle."
+    }
+   },
+   {
+    "index": 6,
+    "mode": "near",
+    "item": {
+     "name": "SaltPurityIndex",
+     "description": "A scale from 0 to 100 indicating the crystalline purity of the harvested salt, where 100 represents flawless, high-grade crystals ready for guild certification."
+    }
+   },
+   {
+    "index": 15,
+    "mode": "near",
+    "item": {
+     "name": "Brine-Burn",
+     "description": "0 is smooth, protected skin, while 10 is raw, weeping sores from prolonged exposure to salt spray and sun without protection."
+    }
+   },
+   {
+    "index": 23,
+    "mode": "near",
+    "item": {
+     "name": "Salt-Lung",
+     "description": "A respiratory condition caused by inhaling excessive sea mist; 0 is mild throat tickle, while 10 is crystalline deposits in the lungs causing sharp, rattling coughs and difficulty breathing."
+    }
+   }
+  ],
+  "things": [
+   {
+    "index": 4,
+    "mode": "same",
+    "item": {
+     "name": "Tide-Sealed Iron",
+     "description": "A heavy iron key caked in thick white salt deposits from the humid air of the storage rooms. It fits the lock of one of the stout wooden doors leading to the magistrate’s private archive in the market district."
+    }
+   },
+   {
+    "index": 13,
+    "mode": "same",
+    "item": {
+     "name": "The Child’s Tide Stone",
+     "description": "A lumpy, glowing nodule extracted from a standard mollusk by a local youth. It rests inside a soft bag, cherished for the tale of its discovery rather than its price tag."
+    }
+   },
+   {
+    "index": 26,
+    "mode": "same",
+    "item": {
+     "name": "Brass Lighthouse Snout Plug",
+     "description": "A compact, screw-top metal cap designed to seal the exterior opening of the fog signal’s air pipe, keeping out sand and debris. It features an engraving of the renovation date and displays the official emblem of the harbor town."
+    }
+   },
+   {
+    "index": 8,
+    "mode": "near",
+    "item": {
+     "name": "The Brine-Tide Key",
+     "description": "A jagged, rusted iron key forged from the first anchor chain laid by the Guild. It is kept in a glass case at the entrance of the salt pans and is used once a year during the Tide-Festival to unlock the sluice gates, allowing the sea to flood the evaporation ponds for the new harvest."
+    }
+   },
+   {
+    "index": 21,
+    "mode": "near",
+    "item": {
+     "name": "Brine-Sifter Basket",
+     "description": "A wide, shallow woven basket with a fine mesh bottom, used by salt-panning laborers to skim crystallized salt from the surface of the evaporation pools. The basket is treated with pitch to resist corrosion and features long wooden handles for standing upright in the shallow, muddy water."
+    }
+   }
+  ],
+  "places": [
+   {
+    "index": 3,
+    "mode": "same",
+    "item": {
+     "name": "Brine-Bough Bazaar",
+     "description": "A bustling open-air plaza where vendors display heaps of salt-cured mackerel, tangled fishing nets, and glass jars filled with pickled seaweed. The clamor of the merchants competes with the roar of the ocean to draw in buyers from across the county."
+    }
+   },
+   {
+    "index": 12,
+    "mode": "same",
+    "item": {
+     "name": "The Crystalline Troughs",
+     "description": "Expansive, shallow basins carved into the rock where the sea is trapped to dry under the pale light. Rusty iron spades and wooden forks rest against the mossy stone rims, poised for the laborers to gather the sparkling white salt."
+    }
+   },
+   {
+    "index": 19,
+    "mode": "same",
+    "item": {
+     "name": "The Tangled Strand Workshop",
+     "description": "A roofed structure where dried marine vegetation is twisted into cordage and woven flooring for local commerce. The interior carries a rich, terrestrial fragrance that stands in stark contrast to the briny scent of the ocean beyond."
+    }
+   },
+   {
+    "index": 7,
+    "mode": "near",
+    "item": {
+     "name": "The Salt-Keeper’s Crucible",
+     "description": "A sunken, stone-walled courtyard where the air tastes sharply of brine and sulfur. In the center stands a massive, iron-reinforced evaporating pan, still warm to the touch, surrounded by drying racks heavy with crystalline white shards. Old men in oilskin coats sit here, arguing over harvest yields while gulls circle overhead, waiting for scraps."
+    }
+   },
+   {
+    "index": 16,
+    "mode": "near",
+    "item": {
+     "name": "The Salt-Kiln's Breath",
+     "description": "A row of brick-lined ovens nestled against the windward cliff, where damp crystallized salt is roasted to remove impurities. Thick, white vapor hisses from the chimneys, carrying the sharp, dry scent of evaporated brine that clings to the wool coats of the guild's inspectors."
+    }
+   }
+  ],
+  "people": [
+   {
+    "index": 2,
+    "mode": "same",
+    "item": {
+     "name": "Mira 'Whist' Saltwhistle",
+     "summary": "A brisk market stallholder known for her pickled crabs and sharp observations of the town's residents.",
+     "personality": "Vocal and direct, with a knack for knowing who is doing what.",
+     "background": "Raised amidst the salt pans, she mastered the art of haggling long before she learned to read.",
+     "speech": "Fast-paced and loud, peppered with local idioms and frequent chuckles."
+    }
+   },
+   {
+    "index": 9,
+    "mode": "same",
+    "item": {
+     "name": "L. Moss",
+     "summary": "A herbalist who exchanges natural cures for crystallized salt.",
+     "personality": "Quirky and fanciful.",
+     "background": "Wandered the coastline before making her home in the mist.",
+     "speech": "Gentle, musical, and faint."
+    }
+   },
+   {
+    "index": 5,
+    "mode": "near",
+    "item": {
+     "name": "Captain Silas Thorne",
+     "summary": "The gruff, salt-crusted foreman of the Guild Dockworkers who controls the flow of goods through the harbor.",
+     "personality": "Authoritative and impatient, he values efficiency over tradition and has little patience for idle chatter.",
+     "background": "Once a smuggler himself, he rose to power by uncovering the Guild's corruption and renegotiating the contracts with the magistrate.",
+     "speech": "Direct and imperative, often barking orders or giving short, clipped responses."
+    }
+   },
+   {
+    "index": 12,
+    "mode": "near",
+    "item": {
+     "name": "Mara Vane",
+     "summary": "A gruff dockmaster who arbitrates disputes between salt merchants and fishermen.",
+     "personality": "Impatient, pragmatic, and fiercely protective of her crew.",
+     "background": "Born in Salt Harbor to a lineage of lighthouse keepers, she took over the guild's administrative post after her father's death.",
+     "speech": "Direct, punctuated with nautical slang, and often raised to cut through the fog."
+    }
+   }
+  ]
+ }
+}

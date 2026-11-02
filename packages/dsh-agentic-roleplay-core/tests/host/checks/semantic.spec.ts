@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createAuthoredEntity, replaceAuthoredEntity } from '../../../src/host/authoring/documents.ts'
 import { conflictProblem } from '../../../src/host/checks/semantic.ts'
-import { cosine, nearPairs, vectorsOf } from '../../../src/host/checks/similar.ts'
+import { askedFor, cosine, nearPairs, vectorsOf } from '../../../src/host/checks/similar.ts'
 import { CHECKS_FOLDER } from '../../../src/host/checks/results.ts'
 import { runChecks } from '../../../src/host/checks/run.ts'
 import { fakeModel } from '../../support/checks.ts'
@@ -34,6 +34,20 @@ describe('closeness', () => {
     const vectors = [[1, 0], [1, 0.1], [0, 1], [1, 0.5]]
     expect(nearPairs(vectors, () => true, 0.85, 5).map(pair => [pair.a, pair.b])).toEqual([[0, 1], [1, 3], [0, 3]])
     expect(nearPairs(vectors, (a, b) => !(a === 0 && b === 1), 0.85, 1).map(pair => [pair.a, pair.b])).toEqual([[1, 3]])
+  })
+
+  it('ranks a copy of a crowded entry ahead of crowded entries that share a theme, and asks about more pairs in a larger world', () => {
+    const theme = (tilt: number): number[] => [1, tilt, 0]
+    const crowd = [0.0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35].map(theme)
+    const copy = [1, 0.02, 0.05]
+    const vectors = [...crowd, copy]
+    const raw = vectors.flatMap((a, x) => vectors.slice(x + 1).map((b, y) => ({ a: x, b: x + 1 + y, score: cosine(a, b) }))).sort((p, q) => q.score - p.score)
+    const copyOf = (pairs: { a: number; b: number }[]): number => pairs.findIndex(pair => pair.a === 8 || pair.b === 8)
+    expect(copyOf(raw)).toBeGreaterThan(4)
+    expect(copyOf(nearPairs(vectors, () => true, 0.5, 40))).toBeLessThan(3)
+    expect(askedFor(10, 12)).toBe(12)
+    expect(askedFor(60, 12)).toBe(20)
+    expect(askedFor(500, 12)).toBe(30)
   })
 
   it('embeds what the world has not had embedded and keeps the rest in its dot folder', async () => {
@@ -117,6 +131,17 @@ describe('background entries that conflict', () => {
     const invented = fakeModel(() => ({ reason: 'x', conflict: true, first_quote: 'built of black stone', second_quote: 'founded in the year 1311' }), { embed: embedder() })
     const refused = await runChecks({ world: world(), model: invented }, { kits: ['consistency'], deep: true, ids: ['lore-conflict'] })
     expect(refused.findings).toEqual([])
+  })
+
+  it('lets the language model read a pair the decision model only doubts, and drops one it is sure about', async () => {
+    await write(join(directory, 'lore', 'a', 'lore.json'), { title: 'Lighthouse founding', kind: 'history', summary: 'founded', body: first })
+    await write(join(directory, 'lore', 'b', 'lore.json'), { title: 'Lighthouse guild', kind: 'history', summary: 'founded', body: second })
+    const answer = () => ({ reason: 'two founding years', conflict: true, first_quote: 'founded in the year 1204', second_quote: 'founded in the year 1311' })
+    const decides = (probability: number) => async (_: Record<string, unknown>, asks: readonly { key: string }[]) => new Map(asks.map(ask => [ask.key, probability]))
+    const doubtful = await runChecks({ world: world(), model: fakeModel(answer, { embed: embedder(), decide: decides(0.1) }) }, { kits: ['consistency'], deep: true, ids: ['lore-conflict'] })
+    expect(doubtful.findings).toHaveLength(1)
+    const sure = await runChecks({ world: world(), model: fakeModel(answer, { embed: embedder(), decide: decides(0.01) }) }, { kits: ['consistency'], deep: true, ids: ['lore-conflict'] })
+    expect(sure.findings).toEqual([])
   })
 
   it('asks no one about entries of different times, and checks quotes exactly', async () => {

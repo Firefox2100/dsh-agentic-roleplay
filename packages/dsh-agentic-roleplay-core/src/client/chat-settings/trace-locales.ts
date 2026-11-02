@@ -1,0 +1,97 @@
+import type { Dictionaries } from '../i18n.ts'
+
+export const PART_IDS = ['system', 'tools', 'notices', 'input', 'steps', 'earlier'] as const
+export const SECTION_IDS = ['time', 'agenda', 'scene', 'activation', 'carried', 'world', 'upcoming', 'beats', 'tracked', 'threads', 'events', 'command', 'pacing', 'rules', 'roll'] as const
+export const KIND_IDS = ['people', 'places', 'things', 'routes', 'factions', 'lore', 'relationships', 'present', 'carrying', 'cues', 'hidden', 'events'] as const
+
+export type TraceKey =
+  | 'traceTitle' | 'traceHelp' | 'traceEmpty' | 'traceSummary' | 'traceUnfinished'
+  | 'traceTimeTitle' | 'traceWaited' | 'traceModel' | 'traceToolTime' | 'traceHelperTime' | 'traceBackground'
+  | 'tracePromptTitle' | 'tracePromptSize' | 'traceSceneTitle'
+  | 'traceRefusalTitle' | 'traceNoRefusal' | 'traceRefusedCall' | 'traceSteered' | 'traceHelperRefused' | 'traceCutOff'
+  | 'traceRemindedTitle' | 'traceRemindedSearch' | 'traceRemindedCues' | 'traceLeftOut' | 'traceNothingFolded' | 'traceNoneReminded' | 'traceLookups' | 'traceLookupRow'
+  | 'traceCharactersTitle' | 'traceCharactersHelp' | 'traceGiven' | 'traceWithheld' | 'traceMemories' | 'traceRetry' | 'traceNames'
+  | `tracePart_${typeof PART_IDS[number]}` | `traceSection_${typeof SECTION_IDS[number]}` | `traceKind_${typeof KIND_IDS[number]}`
+
+export const dictionaries: Dictionaries<TraceKey> = {
+  en: {
+    traceTitle: 'Where each turn went',
+    traceHelp: 'For each turn: how long the player waited and for what, what the game master\'s prompt held, what the harness refused or repeated, what the game master was reminded of from the records, and what each character was given and not given. Sizes are estimated from the text; the service reports only the whole prompt. Open the activity list below for a helper\'s own requests.',
+    traceEmpty: 'No turn has been traced yet.',
+    traceSummary: 'Turn {turn}: {front} until delivered, {back} after in the background, {refused} refused',
+    traceUnfinished: 'Turn {turn}: not delivered yet',
+    traceTimeTitle: 'Time',
+    traceWaited: 'Waited before the first request: {time}',
+    traceModel: 'The game master\'s own requests: {time}',
+    traceToolTime: '{tool}: {time} ({count} calls)',
+    traceHelperTime: '{label}: {front} before delivery, {back} after ({runs} runs)',
+    traceBackground: 'The last background work ended {time} after delivery.',
+    tracePromptTitle: 'The game master\'s prompt, at its fullest',
+    tracePromptSize: 'Step {step}: {count} tokens counted by the service',
+    traceSceneTitle: 'The scene notice by section (estimated tokens)',
+    traceRefusalTitle: 'Refused and repeated',
+    traceNoRefusal: 'Nothing was refused, steered or cut off.',
+    traceRefusedCall: 'Refused {tool}: {reason}',
+    traceSteered: 'The harness told the game master: {text}',
+    traceHelperRefused: '{label}: {count} refused calls',
+    traceCutOff: 'A request was cut off at its output limit (step {step}).',
+    traceRemindedTitle: 'Reminded from the records',
+    traceRemindedSearch: 'found by search',
+    traceRemindedCues: 'found by names and words',
+    traceLeftOut: '{omitted} more matched and were left out. Turns up to {folded} are folded into summaries, and only those are searched; later ones are still in the conversation.',
+    traceNothingFolded: 'No turn has been folded into summaries yet, so the whole story is still in the conversation and nothing is searched.',
+    traceNoneReminded: 'Nothing from the folded turns bore on this move.',
+    traceLookups: 'Looked up by the game master',
+    traceLookupRow: '{tool}: {text}',
+    traceCharactersTitle: 'What each character was given',
+    traceCharactersHelp: 'Given is what went into the brief; withheld is what the story holds that the character has no knowledge of. Turn on "Keep what the helpers were told" to see the names behind the withheld counts.',
+    traceGiven: 'Given',
+    traceWithheld: 'Withheld',
+    traceMemories: 'memories: {clear} clear, {faded} faded, {vague} vague',
+    traceRetry: 'retry',
+    traceNames: 'Not given: {names}',
+    tracePart_system: 'Instructions', tracePart_tools: 'Tool list', tracePart_notices: 'Scene and notices', tracePart_input: 'What was asked', tracePart_steps: 'This turn\'s calls and results', tracePart_earlier: 'Earlier conversation',
+    traceSection_time: 'Time', traceSection_agenda: 'Days', traceSection_scene: 'Cast and places', traceSection_activation: 'Who could act', traceSection_carried: 'Carried things', traceSection_world: 'What the world did', traceSection_upcoming: 'Coming up', traceSection_beats: 'Beats to weave in', traceSection_tracked: 'Tracked values', traceSection_threads: 'Open threads', traceSection_events: 'Earlier events', traceSection_command: 'World command', traceSection_pacing: 'Pacing', traceSection_rules: 'Rules', traceSection_roll: 'Player\'s roll',
+    traceKind_people: 'people', traceKind_places: 'places', traceKind_things: 'things', traceKind_routes: 'ways', traceKind_factions: 'groups', traceKind_lore: 'background', traceKind_relationships: 'relationships', traceKind_present: 'present', traceKind_carrying: 'carried', traceKind_cues: 'cues', traceKind_hidden: 'hidden things here', traceKind_events: 'events it took no part in',
+  },
+  zh: {
+    traceTitle: '每回合的去向',
+    traceHelp: '每回合：玩家等了多久、等什么，游戏主持人的提示词里有什么，运行框架拒绝或重复了什么，主持人从记录中被提醒了什么，以及每个角色得到了什么、没有得到什么。大小按文本估算，服务只报告整个提示词的总数。助手自己的请求见下方的活动列表。',
+    traceEmpty: '还没有记录过任何回合。',
+    traceSummary: '第 {turn} 回合：送出前 {front}，之后后台 {back}，被拒绝 {refused} 次',
+    traceUnfinished: '第 {turn} 回合：尚未送出',
+    traceTimeTitle: '时间',
+    traceWaited: '第一次请求之前等待：{time}',
+    traceModel: '游戏主持人自己的请求：{time}',
+    traceToolTime: '{tool}：{time}（{count} 次调用）',
+    traceHelperTime: '{label}：送出前 {front}，送出后 {back}（{runs} 次运行）',
+    traceBackground: '最后一项后台工作在送出后 {time} 结束。',
+    tracePromptTitle: '游戏主持人最长的一次提示词',
+    tracePromptSize: '第 {step} 步：服务统计 {count} 个令牌',
+    traceSceneTitle: '场景通知按段落统计（估算令牌）',
+    traceRefusalTitle: '被拒绝与重复',
+    traceNoRefusal: '没有被拒绝、被引导或被截断的内容。',
+    traceRefusedCall: '{tool} 被拒绝：{reason}',
+    traceSteered: '运行框架对游戏主持人说：{text}',
+    traceHelperRefused: '{label}：{count} 次调用被拒绝',
+    traceCutOff: '有一次请求在输出上限处被截断（第 {step} 步）。',
+    traceRemindedTitle: '从记录中提醒的内容',
+    traceRemindedSearch: '按搜索找到',
+    traceRemindedCues: '按名字和词语找到',
+    traceLeftOut: '另有 {omitted} 条也匹配，但被省略。第 {folded} 回合之前的内容已折叠进摘要，只在这部分中搜索；之后的回合仍在对话中。',
+    traceNothingFolded: '还没有回合被折叠进摘要，整个故事仍在对话中，因此没有搜索。',
+    traceNoneReminded: '已折叠的回合中没有与这次行动相关的内容。',
+    traceLookups: '游戏主持人查阅的内容',
+    traceLookupRow: '{tool}：{text}',
+    traceCharactersTitle: '每个角色得到了什么',
+    traceCharactersHelp: '“得到”指进入简报的内容；“未给”指故事里有、但该角色并不知道的内容。打开“保留助手收到的内容”，可看到未给内容的名称。',
+    traceGiven: '得到',
+    traceWithheld: '未给',
+    traceMemories: '记忆：清晰 {clear}、模糊 {faded}、依稀 {vague}',
+    traceRetry: '重试',
+    traceNames: '未给：{names}',
+    tracePart_system: '指令', tracePart_tools: '工具列表', tracePart_notices: '场景与通知', tracePart_input: '被问的内容', tracePart_steps: '本回合的调用与结果', tracePart_earlier: '之前的对话',
+    traceSection_time: '时间', traceSection_agenda: '日程', traceSection_scene: '角色与地点', traceSection_activation: '谁可以行动', traceSection_carried: '携带的物品', traceSection_world: '世界的动作', traceSection_upcoming: '即将发生', traceSection_beats: '待织入的情节点', traceSection_tracked: '跟踪的数值', traceSection_threads: '未决线索', traceSection_events: '早先的事件', traceSection_command: '世界指令', traceSection_pacing: '节奏', traceSection_rules: '规则', traceSection_roll: '玩家的掷骰',
+    traceKind_people: '人物', traceKind_places: '地点', traceKind_things: '物品', traceKind_routes: '通路', traceKind_factions: '团体', traceKind_lore: '背景', traceKind_relationships: '关系', traceKind_present: '在场', traceKind_carrying: '携带', traceKind_cues: '提示', traceKind_hidden: '此处隐藏的物品', traceKind_events: '它未参与的事件',
+  },
+}

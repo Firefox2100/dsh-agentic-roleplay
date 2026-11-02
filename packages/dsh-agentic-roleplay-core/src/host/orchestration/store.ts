@@ -10,6 +10,7 @@ import type { ChatSettings } from '../../shared/settings.ts'
 import { liveSettings } from '../sessions/settings.ts'
 import { fireTriggers, noteStore } from '../triggers/notes.ts'
 import { observeAsPlayer, observeSurroundings } from './observation.ts'
+import { updateTrace } from '../sessions/trace.ts'
 import { forgetRunDetails, keepRunDetail, recordActivity } from '../sessions/activity.ts'
 import { recordDecisions } from '../decisions/stats.ts'
 import { addUsage } from '../sessions/usage.ts'
@@ -258,7 +259,8 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
       })
       return used
     },
-    recordUsage: (turn, tokens) => { addUsage(session, turn, 'master', tokens) },
+    recordUsage: (turn, tokens, ms) => { addUsage(session, turn, 'master', tokens, ms) },
+    recordTrace: (turn, patch, merge) => { updateTrace(session, turn, patch, merge) },
     notes: () => readNotes(session),
     clearNotes: () => { clearNotes(session) },
     agenda: (turn, characterId) => agendaFor(session, settings().clock, turn, wall, characterId),

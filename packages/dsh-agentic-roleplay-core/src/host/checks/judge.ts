@@ -24,3 +24,18 @@ export async function verdictOf(model: ImportContext, state: Record<string, unkn
   }
   return { yes: await ask(), by: 'language' }
 }
+
+/** A decision model's no only rules a pair out when it is this sure: the language model that follows must quote both sides, so passing on a doubtful pair costs a request, and dropping it loses a finding. */
+const RULED_OUT_CONFIDENCE = 0.95
+
+/** Whether a pair is worth the language model's reading: everything except what the decision model is very sure is nothing. */
+export async function worthReading(model: ImportContext, state: Record<string, unknown>, key: string, instructions: string): Promise<boolean> {
+  if (model.decide === undefined) return true
+  try {
+    const probability = (await model.decide(state, [{ key, instructions }])).get(key)
+    return probability === undefined || probability > noAt(RULED_OUT_CONFIDENCE)
+  } catch (error) {
+    if (model.cancelled?.() === true) throw error
+    return true
+  }
+}

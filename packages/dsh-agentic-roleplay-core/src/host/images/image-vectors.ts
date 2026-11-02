@@ -1,5 +1,6 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { readFile, rename, writeFile } from 'node:fs/promises'
+import { atomicWrite } from '../atomic-write.ts'
+import { createHash } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { GalleryImage } from '../../shared/gallery.ts'
 import type { Embedder } from '../memory/embedding-index.ts'
@@ -32,9 +33,7 @@ async function readVectors(images: string): Promise<VectorFile | undefined> {
 
 async function writeVectors(images: string, file: VectorFile): Promise<void> {
   const path = join(images, VECTORS_FILE)
-  const temporary = `${path}.${process.pid}.${randomUUID()}.writing`
-  await writeFile(temporary, JSON.stringify(file))
-  await rename(temporary, path)
+  await atomicWrite(path, JSON.stringify(file))
 }
 
 export interface HybridResult {

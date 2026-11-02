@@ -15,6 +15,8 @@ import { ImportNotFoundError } from '../../../src/host/import/store.ts'
 import type { ImportPreview } from '../../../src/shared/import-card.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
+import { InvalidJournalError } from '../../../src/host/reference/journal.ts'
+import { UnknownSectionError } from '../../../src/host/reference/reference.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
 import { WorldFolderExistsError } from '../../../src/host/worlds/create-world.ts'
@@ -297,12 +299,12 @@ beforeEach(async () => {
       send: (id, text) => { said.push(`${id}: ${text}`); return Promise.resolve() },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
-        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
+        return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], trace: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
       },
       writeSettings: (_id, value) => {
         if (settingsError !== undefined) throw settingsError
         writtenSettings = value
-        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
+        return { settings: { ...DEFAULT_SETTINGS, maxRounds: (value as { maxRounds: number }).maxRounds }, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], trace: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
       },
       timeline: (id) => {
         if (timelineError !== undefined) throw timelineError
@@ -323,6 +325,17 @@ beforeEach(async () => {
         if (notesError !== undefined) throw notesError
         return [{ kind: 'suggestions', turn: 2, lines: [`from ${id}`] }]
       },
+      reference: (id, section) => {
+        if (id !== 'abc') throw new SessionNotFoundError(`no session "${id}"`)
+        if (section !== 'people') throw new UnknownSectionError(`no reference section "${section}"`)
+        return { section: 'people', entries: [] }
+      },
+      readJournal: id => (id === 'abc' ? Promise.resolve({ text: 'notes' }) : Promise.reject(new SessionNotFoundError(`no session "${id}"`))),
+      writeJournal: (id, body) => {
+        if (id !== 'abc') return Promise.reject(new SessionNotFoundError(`no session "${id}"`))
+        if (typeof (body as { text?: unknown }).text !== 'string') return Promise.reject(new InvalidJournalError('the journal needs a text'))
+        return Promise.resolve({ text: (body as { text: string }).text, updatedAt: 'now' })
+      },
       activityRun: (id, run) => {
         if (id !== 'abc') throw new SessionNotFoundError(`no session "${id}"`)
         if (run === 'bad') throw new RangeError('"bad" is not a run')
@@ -336,6 +349,7 @@ beforeEach(async () => {
         return { characters: [{ key: id, name: 'Clara', aliases: [], role: 'npc', tier: 'principal', kind: 'person', control: 'agent', summary: '', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, state: { publicState: '', innerState: '', activity: '' }, goals: [] }], places: [], things: [], factions: [], relations: [], plots: [] }
       },
       doctor: (id, title, language) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`doctor ${id} ${title} ${language}`); return Promise.resolve({ chatSessionId: `doctor-${id}` }) },
+      recallPreview: (id, request) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`recall ${id} ${request.situation} ${request.character ?? ''}`); return Promise.resolve({ turn: 1, situation: request.situation, byMeaning: false, limit: 6, characters: [] }) },
       reflect: (id) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`reflect ${id}`); return Promise.resolve() },
       resetVectors: (id) => { if (archiveError !== undefined) throw archiveError; archived.push(`reset ${id}`) },
       rename: (id, name) => {
@@ -1297,6 +1311,24 @@ describe('roleplay API', () => {
     })
   })
 
+  describe('asking what a moment would bring back', () => {
+    const ask = (body: unknown, id = 'abc') => fetch(`${origin}/sessions/recall?id=${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('is a POST with a situation and, if wanted, one character; a missing story is 404', async () => {
+      const found = await ask({ situation: 'The bell rings.', character: 'clara' })
+      expect(found.status).toBe(200)
+      expect(await found.json()).toMatchObject({ turn: 1, situation: 'The bell rings.' })
+      expect(archived).toContain('recall abc The bell rings. clara')
+      expect((await ask({ situation: '  ' })).status).toBe(400)
+      expect((await ask({ situation: 'x'.repeat(4001) })).status).toBe(413)
+      expect((await ask({ situation: 'x', character: 3 })).status).toBe(400)
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await ask({ situation: 'x' }, 'x')).status).toBe(404)
+      archiveError = undefined
+      expect((await fetch(`${origin}/sessions/recall?id=abc`)).status).toBe(405)
+    })
+  })
+
   describe('asking the characters to reflect', () => {
     it('is a POST that is accepted and runs behind; an unknown session is 404, a refusal is 409', async () => {
       expect((await fetch(`${origin}/sessions/reflect?id=abc`, { method: 'POST' })).status).toBe(202)
@@ -1403,6 +1435,27 @@ describe('roleplay API', () => {
     })
   })
 
+  describe('the reference of a session', () => {
+    it('serves a page, 404s an unknown session and 400s an unknown page', async () => {
+      expect(await (await fetch(`${origin}/sessions/reference?id=abc&section=people`)).json()).toEqual({ section: 'people', entries: [] })
+      expect((await fetch(`${origin}/sessions/reference?id=nope&section=people`)).status).toBe(404)
+      expect((await fetch(`${origin}/sessions/reference?id=abc&section=lore`)).status).toBe(400)
+    })
+  })
+
+  describe('the journal of a session', () => {
+    const url = () => `${origin}/sessions/journal?id=abc`
+    const put = (body: unknown, id = 'abc') => fetch(`${origin}/sessions/journal?id=${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('is read, written, and refused when it is not text or the session is unknown', async () => {
+      expect(await (await fetch(url())).json()).toEqual({ text: 'notes' })
+      expect(await (await put({ text: 'more' })).json()).toEqual({ text: 'more', updatedAt: 'now' })
+      expect((await put({ text: 3 })).status).toBe(422)
+      expect((await put({ text: 'x' }, 'nope')).status).toBe(404)
+      expect((await fetch(`${origin}/sessions/journal?id=nope`)).status).toBe(404)
+    })
+  })
+
   describe('the notes of a session', () => {
     const url = () => `${origin}/sessions/notes?id=abc`
 
@@ -1475,7 +1528,7 @@ describe('roleplay API', () => {
     it('are read, with the bounds', async () => {
       const response = await fetch(url())
       expect(response.status).toBe(200)
-      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } })
+      expect(await response.json()).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], trace: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } })
     })
 
     it('are replaced by the body', async () => {

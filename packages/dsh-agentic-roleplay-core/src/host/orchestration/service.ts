@@ -3,6 +3,7 @@ import type { Boundaries } from './boundaries.ts'
 import { defaultBoundaries } from './defaults.ts'
 import type { Timelines } from '../timeline/service.ts'
 import type { ImageJobs } from '../images/jobs.ts'
+import type { RecallPreview, RecallPreviewRequest } from '../../shared/recall-preview.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -31,6 +32,9 @@ export class RoleplayOrchestration extends Service {
 
   /** Starts a reflection of a chat's characters on what they have taken in, in the background; there while the orchestration is. */
   reflect: (chat: string) => Promise<void> = () => Promise.reject(new Error('the orchestration is not running'))
+
+  /** What a moment would bring back for the chat's characters, without playing it or changing the story; there while the orchestration is. */
+  recallPreview: (chat: string, request: RecallPreviewRequest, signal: AbortSignal) => Promise<RecallPreview> = () => Promise.reject(new Error('the orchestration is not running'))
 
   /** Whether a turn of the chat is being played; there while the orchestration is. */
   playing: (chat: string) => boolean = () => false

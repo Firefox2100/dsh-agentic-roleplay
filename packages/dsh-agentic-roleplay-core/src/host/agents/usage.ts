@@ -10,7 +10,7 @@ export function tokensOf(events: readonly Logged[]): TokenCount {
     if (event.type !== 'assistant/message') continue
     const usage = lastAssistantStreamChunk((event.data as { stream: Parameters<typeof lastAssistantStreamChunk>[0] }).stream, 'usage')?.usage
     if (usage === undefined) continue
-    total = addTokens(total, { input: usage.inputTokens, cached: usage.cacheReadTokens ?? 0, output: usage.outputTokens })
+    total = addTokens(total, { input: usage.inputTokens, cached: usage.cacheReadTokens ?? 0, output: usage.outputTokens, ...usage.cacheReadTokens === undefined ? { unreported: usage.inputTokens } : {} })
   }
   return total
 }

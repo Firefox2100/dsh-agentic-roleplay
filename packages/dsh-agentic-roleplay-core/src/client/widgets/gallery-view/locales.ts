@@ -3,7 +3,7 @@ import type { Dictionaries } from '../../i18n.ts'
 export type GalleryLocaleKey =
   | 'tab' | 'notRoleplay' | 'loading' | 'loadFailed' | 'empty' | 'emptyWorld' | 'refresh' | 'refreshing'
   | 'countOne' | 'countOther' | 'all' | 'scenes' | 'references' | 'uploaded' | 'close' | 'dialog'
-  | 'description' | 'prompt' | 'subjects' | 'reusable' | 'reusableHint' | 'pending' | 'pendingWorld' | 'describeFailed' | 'upload' | 'uploading' | 'uploadFailed' | 'updateFailed' | 'edit' | 'editTitle' | 'editHelp' | 'tags' | 'tagsHelp' | 'save' | 'saving' | 'cancel'
+  | 'description' | 'prompt' | 'subjects' | 'reusable' | 'reusableHint' | 'pending' | 'pendingWorld' | 'describeFailed' | 'upload' | 'uploading' | 'uploadFailed' | 'updateFailed' | 'edit' | 'editTitle' | 'editHelp' | 'tags' | 'tagsHelp' | 'save' | 'saving' | 'cancel' | 'guideText' | 'back'
 
 export const dictionaries: Dictionaries<GalleryLocaleKey> = {
   en: {
@@ -13,6 +13,7 @@ export const dictionaries: Dictionaries<GalleryLocaleKey> = {
     description: 'Description', prompt: 'Prompt', subjects: 'Subjects', reusable: 'Reusable', reusableHint: 'May be shown again in a later scene. Images you add are always reusable.',
     pending: 'Waiting to be described…', pendingWorld: 'Not described yet: a session started from this world describes it, or describe it yourself.', describeFailed: 'Could not be described: {message}', upload: 'Add images', uploading: 'Adding…', uploadFailed: 'Could not add {name}: {message}', updateFailed: 'Could not change the image: {message}',
     edit: 'Edit', editTitle: 'Edit description', editHelp: 'What the picture shows, in words that stand on their own. It is how the image is found for a later scene, so correct it when it is wrong.', tags: 'Tags', tagsHelp: 'Separated by commas.', save: 'Save', saving: 'Saving…', cancel: 'Cancel',
+    guideText: 'Scene images, portraits and your own pictures, beside the chat', back: 'Back',
   },
   zh: {
     tab: '图库', notRoleplay: '此对话不是角色扮演存档，没有图库。', loading: '正在加载图片…', loadFailed: '无法加载图库：{message}',
@@ -21,5 +22,6 @@ export const dictionaries: Dictionaries<GalleryLocaleKey> = {
     description: '描述', prompt: '提示词', subjects: '对象', reusable: '可复用', reusableHint: '可在之后的场景里再次展示。你添加的图片总是可复用的。',
     pending: '等待描述…', pendingWorld: '尚未描述：由此世界开始的会话会描述它，你也可以自己填写。', describeFailed: '无法描述：{message}', upload: '添加图片', uploading: '正在添加…', uploadFailed: '无法添加 {name}：{message}', updateFailed: '无法修改图片：{message}',
     edit: '编辑', editTitle: '编辑描述', editHelp: '用能独立成立的话说明图片画的是什么。之后的场景就是靠它找到这张图的，所以不准确时请修正。', tags: '标签', tagsHelp: '用逗号分隔。', save: '保存', saving: '正在保存…', cancel: '取消',
+    guideText: '场景图、立绘和你自己的图片，与对话并排查看', back: '返回',
   },
 }

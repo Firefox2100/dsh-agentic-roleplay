@@ -1,6 +1,6 @@
 {
   "name": "dsh-agentic-roleplay-workspace",
-  "version": "0.9.1",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.3.4",
@@ -19,6 +19,6 @@
     "release:publish": "node scripts/publish.mjs"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "4.1.11"
+    "@vitest/coverage-v8": "4.1.12"
   }
 }

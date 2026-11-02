@@ -1883,3 +1883,29 @@ describe('what the keeper is told of the dice', () => {
     expect(store.queue[1]?.rolls).toBeUndefined()
   })
 })
+
+describe('looking at what a moment would bring back', () => {
+  const bar = location(1, 'Bar')
+  const cellar = location(2, 'Cellar')
+  const asked: { who: string; peek?: boolean; explain?: boolean }[] = []
+
+  beforeEach(() => {
+    asked.length = 0
+    boundaries = { ...defaultBoundaries(), recaller: { recall: ({ member: asking, peek, explain }) => { asked.push({ who: asking.key, ...(peek === undefined ? {} : { peek }), ...(explain === undefined ? {} : { explain }) }); return Promise.resolve([{ clarity: 'clear', text: `${asking.key} remembers`, turn: 1, source: { kind: 'perception', id: 1 } }]) } } }
+    store = fakeStore([placed(arthur, bar), placed(alice, bar), placed(bob, cellar)])
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined))
+  })
+
+  it('asks the characters with the player, and only looks: nothing is counted as recalled', async () => {
+    const preview = await engine.recallPreview('session-1', { situation: 'The bell rings.' }, signal)
+    expect(preview.characters.map(person => [person.key, person.place, person.memories.map(memory => memory.text)])).toEqual([['alice', 'Bar', ['alice remembers']]])
+    expect(asked).toEqual([{ who: 'alice', peek: true, explain: true }])
+    expect(preview).toMatchObject({ situation: 'The bell rings.', byMeaning: false })
+  })
+
+  it('asks one named character wherever it is, and refuses one that is not in the story', async () => {
+    expect((await engine.recallPreview('session-1', { situation: 'x', character: 'bob' }, signal)).characters.map(person => person.key)).toEqual(['bob'])
+    await expect(engine.recallPreview('session-1', { situation: 'x', character: 'nobody' }, signal)).rejects.toThrow(/no character "nobody"/)
+    await expect(engine.recallPreview('other', { situation: 'x' }, signal)).rejects.toThrow(/no story/)
+  })
+})

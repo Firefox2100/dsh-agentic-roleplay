@@ -10,6 +10,8 @@ import { registerWorldsPage } from './pages/worlds/index.ts'
 import { registerBranchNaming } from './branch/index.ts'
 import { registerGallery } from './gallery/index.ts'
 import { registerInterface } from './interface/index.ts'
+import { registerRecall } from './recall/index.ts'
+import { registerReference } from './reference/index.ts'
 import { registerWorld } from './world/index.ts'
 import { registerChatSettings } from './chat-settings/index.ts'
 import { registerSettings } from './settings/index.ts'
@@ -33,5 +35,7 @@ export function apply(ctx: Context): void {
   registerWorld(ctx)
   registerGallery(ctx)
   registerInterface(ctx)
+  registerRecall(ctx)
+  registerReference(ctx)
   registerBranchNaming(ctx)
 }

@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto'
-import { readFile, rename, writeFile } from 'node:fs/promises'
+import { atomicWrite } from '../atomic-write.ts'
+import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
 import { readPngMetadata, withPngMetadata } from './png-metadata.ts'
 import type { VisualImageMetadata } from './storage.ts'
@@ -19,14 +19,8 @@ export async function readImageFileMetadata(file: string): Promise<Partial<Visua
   try { return JSON.parse(await readFile(sidecarOf(file), 'utf8')) as Partial<VisualImageMetadata> } catch { return undefined }
 }
 
-async function replaceAtomically(file: string, data: Uint8Array | string): Promise<void> {
-  const temporary = `${file}.${process.pid}.${randomUUID()}.writing`
-  await writeFile(temporary, data)
-  await rename(temporary, file)
-}
-
 /** Writes the metadata where the format keeps it, replacing what was there. */
 export async function writeImageFileMetadata(file: string, metadata: VisualImageMetadata): Promise<void> {
-  if (extname(file).toLowerCase() === '.png') await replaceAtomically(file, withPngMetadata(await readFile(file), metadata))
-  else await replaceAtomically(sidecarOf(file), `${JSON.stringify(metadata, null, 2)}\n`)
+  if (extname(file).toLowerCase() === '.png') await atomicWrite(file, withPngMetadata(await readFile(file), metadata))
+  else await atomicWrite(sidecarOf(file), `${JSON.stringify(metadata, null, 2)}\n`)
 }

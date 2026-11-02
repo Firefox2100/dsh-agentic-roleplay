@@ -1,6 +1,6 @@
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
-import { randomUUID } from 'node:crypto'
-import { dirname, join } from 'node:path'
+import { atomicWrite } from '../atomic-write.ts'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 export const PRESENTED_FOLDER = 'presented'
 
@@ -28,8 +28,5 @@ export async function present(sessionFolder: string, node: string, image: Omit<P
   const current = await presentedFor(sessionFolder, node)
   if (current.some(entry => entry.path === image.path)) return
   const file = fileOf(sessionFolder, node)
-  await mkdir(dirname(file), { recursive: true })
-  const temporary = `${file}.${process.pid}.${randomUUID()}.writing`
-  await writeFile(temporary, JSON.stringify({ images: [...current, { ...image, at: new Date().toISOString() }] }, null, 2))
-  await rename(temporary, file)
+  await atomicWrite(file, JSON.stringify({ images: [...current, { ...image, at: new Date().toISOString() }] }, null, 2), { createDirectory: true })
 }

@@ -342,7 +342,7 @@ function placedScene(cast: readonly CastMember[], player: CastMember | undefined
 }
 
 export const castSummary: SceneContextProvider = {
-  scene({ tracked, time, world, cast, turn, input, queryVector, story, items, language: code }) {
+  scene({ tracked, time, world, cast, turn, input, queryVector, story, items, language: code, report }) {
     const language = languageOf(code)
     const tr = translator(language)
     const join = (entries: readonly string[]): string => entries.join(tr('; '))
@@ -356,39 +356,46 @@ export const castSummary: SceneContextProvider = {
     const player = cast.find(member => member.character.control === 'player')
     const days = time?.agenda === undefined ? '' : describeSceneAgenda(time.agenda, time.now.now, tr, language)
     const scene = cast.some(member => member.place !== undefined) ? placedScene(cast, player, story, describeMember, tr, items) : cast.map(describeMember).join('\n')
-    const parts = [...(time === undefined ? [] : [timeNotice(time, language, tr)]), ...(days === '' ? [] : [days]), `${tr('Scene before turn {turn}:', { turn })}\n${scene}`]
+    const parts: string[] = []
+    const add = (id: string, text: string): void => { parts.push(text); report?.section(id, text) }
+    if (time !== undefined) add('time', timeNotice(time, language, tr))
+    if (days !== '') add('agenda', days)
+    add('scene', `${tr('Scene before turn {turn}:', { turn })}\n${scene}`)
     const activation = describeActivationCandidates(cast, input, story, tr)
-    if (activation !== '') parts.push(activation)
+    if (activation !== '') add('activation', activation)
     if (items !== undefined) {
       const carried = cast.flatMap(member => { const mine = items.carried(member.character.id); return mine.length === 0 ? [] : [`- ${member.character.name} (${member.key}): ${describeItems(mine, { withKeys: true }, tr)}`] })
-      if (carried.length > 0) parts.push(`${tr('What characters have on them:')}\n${carried.join('\n')}`)
+      if (carried.length > 0) add('carried', `${tr('What characters have on them:')}\n${carried.join('\n')}`)
     }
-    if (world !== undefined && world.happened.length > 0) parts.push(`${tr('The world acted since the last turn, by itself:')}\n${world.happened.map(line => `- ${line}`).join('\n')}`)
-    if (world?.upcoming !== undefined && world.upcoming.length > 0) parts.push(`${tr('Known beforehand, still to come (who knows of it; it will happen by itself when its time comes):')}\n${world.upcoming.map(entry => `- ${entry.text}${entry.when === undefined ? '' : ` (${entry.when})`} ${tr('[known to {who}]', { who: entry.who })}`).join('\n')}`)
-    if (world !== undefined && world.beats.length > 0) parts.push(`${tr('Weave these into the story when it fits, then say you did with addressed in narrate (each stays for a few turns and is then let go):')}\n${world.beats.map(beat => `- [${beat.id}] ${beat.text}`).join('\n')}`)
-    if (tracked !== undefined && tracked.length > 0) parts.push(`${tr('What the story keeps track of (change it with variable_changes in an outcome when what happened calls for it):')}\n${tracked.map(line => `- ${line}`).join('\n')}`)
+    if (world !== undefined && world.happened.length > 0) add('world', `${tr('The world acted since the last turn, by itself:')}\n${world.happened.map(line => `- ${line}`).join('\n')}`)
+    if (world?.upcoming !== undefined && world.upcoming.length > 0) add('upcoming', `${tr('Known beforehand, still to come (who knows of it; it will happen by itself when its time comes):')}\n${world.upcoming.map(entry => `- ${entry.text}${entry.when === undefined ? '' : ` (${entry.when})`} ${tr('[known to {who}]', { who: entry.who })}`).join('\n')}`)
+    if (world !== undefined && world.beats.length > 0) add('beats', `${tr('Weave these into the story when it fits, then say you did with addressed in narrate (each stays for a few turns and is then let go):')}\n${world.beats.map(beat => `- [${beat.id}] ${beat.text}`).join('\n')}`)
+    if (tracked !== undefined && tracked.length > 0) add('tracked', `${tr('What the story keeps track of (change it with variable_changes in an outcome when what happened calls for it):')}\n${tracked.map(line => `- ${line}`).join('\n')}`)
     const threads = story.threads.list('open')
-    if (threads.length > 0) parts.push(`${tr('Still open in the story:')}\n${threads.map(thread => `- ${thread.text}`).join('\n')}`)
+    if (threads.length > 0) add('threads', `${tr('Still open in the story:')}\n${threads.map(thread => `- ${thread.text}`).join('\n')}`)
     const folded = story.summaries.list().reduce((latest, summary) => Math.max(latest, summary.toTurn), 0)
     if (folded > 0) {
       const mentionedIds = mentioned(input, cast.map(({ character }) => character))
       const cues = tokens(input)
       const names = new Map(cast.map(({ character }) => [character.id, character.name]))
-      const byMeaning = story.searchEvents({ text: input, ...(queryVector === undefined ? {} : { vector: queryVector }), toTurn: folded, limit: REMINDED_EVENTS })
+      const byMeaning = story.searchEvents({ text: input, ...(queryVector === undefined ? {} : { vector: queryVector }), toTurn: folded, limit: 2 * REMINDED_EVENTS })
       const byCues = story.events.list({ toTurn: folded })
         .filter(event => !byMeaning.some(found => found.id === event.id))
         .map(event => ({ event, score: 3 * event.involves.filter(id => mentionedIds.has(id)).length + overlap(cues, event.text, event.tags) }))
         .filter(({ score }) => score >= 2)
         .sort((a, b) => b.score + 0.5 * b.event.importance - a.score - 0.5 * a.event.importance || b.event.turn - a.event.turn)
         .map(({ event }) => event)
-      const relevant = [...byMeaning, ...byCues].slice(0, REMINDED_EVENTS).sort((a, b) => a.turn - b.turn).map(event => ({ event }))
+      const ranked = [...byMeaning.map(event => ({ event, how: 'search' as const })), ...byCues.map(event => ({ event, how: 'cues' as const }))]
+      const chosen = ranked.slice(0, REMINDED_EVENTS).sort((a, b) => a.event.turn - b.event.turn)
+      const relevant = chosen.map(({ event }) => ({ event }))
+      report?.selected({ events: chosen.map(({ event, how }) => ({ turn: event.turn, text: event.text, how })), omitted: ranked.length - chosen.length, folded })
       if (relevant.length > 0) {
-        parts.push(`${tr('Earlier events that bear on what the player just did (from the records of the story):')}\n${relevant.map(({ event }) => {
+        add('events', `${tr('Earlier events that bear on what the player just did (from the records of the story):')}\n${relevant.map(({ event }) => {
           const who = event.involves.map(id => names.get(id)).filter(name => name !== undefined).join(tr(', '))
           return `- (${tr('turn {turn}', { turn: event.turn })}) ${event.text}${who === '' ? '' : ` [${who}]`}`
         }).join('\n')}`)
       }
-    }
+    } else report?.selected({ events: [], omitted: 0, folded: 0 })
     return parts.join('\n\n')
   },
 }
@@ -457,8 +464,8 @@ export const exactUtterances: NarrationChecker = {
 
 /** What a character is reminded of is what the story's records bring back for it: by the cues of the moment, by its words, and by its meaning when vectors exist. */
 export const recordsRecall: Recaller = {
-  recall: ({ member, situation, turn, policy, queryVector, explain }, story, signal) =>
-    story.recallRanked({ characterId: member.character.id, situation, turn, policy, ...(explain === true ? { explain } : {}), ...(member.place === undefined ? {} : { locationId: member.place.location.id }) }, signal, queryVector === undefined ? {} : { queryVector }),
+  recall: ({ member, situation, turn, policy, queryVector, explain, peek }, story, signal) =>
+    story.recallRanked({ characterId: member.character.id, situation, turn, policy, ...(explain === true ? { explain } : {}), ...(member.place === undefined ? {} : { locationId: member.place.location.id }) }, signal, { ...(queryVector === undefined ? {} : { queryVector }), ...(peek === true ? { peek } : {}) }),
 }
 
 /**

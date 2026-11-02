@@ -1,3 +1,5 @@
+import { accessOf } from '../diagnostics/access.ts'
+import { MAX_TRACE_ACCESS } from '../../shared/trace.ts'
 import { toolEnabled } from '../../shared/tools.ts'
 import type { Boundaries, CastMember, CharacterRequest, TurnStore } from './boundaries.ts'
 import type { CharacterFailure, CharacterReport } from './protocol.ts'
@@ -55,6 +57,15 @@ export async function askCharacters(deps: AskDeps, owner: TurnOwner, number: 1 |
       ...(state.history.length === 0 ? {} : { earlier: [...state.history] }),
       ...(reaction === undefined ? {} : { reaction }),
       ...(previous === undefined ? {} : { previous: { intent: previous.intent, commitment: previous.commitment } }),
+    }
+    // the trace only describes the turn: when it cannot be made, the story goes on and the reason is reported
+    if (store !== undefined) {
+      try {
+        const access = accessOf(store.story, request, store.settings().diagnostics.keepRuns)
+        store.recordTrace?.(owner.turn, {}, current => ({ access: [...(current.access ?? []), access].slice(-MAX_TRACE_ACCESS) }))
+      } catch (error) {
+        deps.problem(`what ${member.character.name} was given could not be traced: ${error instanceof Error ? error.message : String(error)}`)
+      }
     }
     try {
       const action = await run(request, signal)

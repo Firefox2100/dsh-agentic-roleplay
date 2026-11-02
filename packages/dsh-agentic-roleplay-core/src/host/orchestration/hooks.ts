@@ -2,8 +2,11 @@ import type { Context } from '@deepseek-ai/cordis'
 import { languageOf, translator } from 'dsh-roleplay-model'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { tokensOf } from '../agents/usage.ts'
+import { masterTrace } from '../diagnostics/master-trace.ts'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import type { Boundaries, TurnStore } from './boundaries.ts'
+import type { Boundaries, SceneReport, TurnStore } from './boundaries.ts'
+import type { PromptPart, SceneSelection } from '../../shared/trace.ts'
+import { estimateTokens } from '../diagnostics/estimate.ts'
 import type { TurnEngine, TurnOwner } from './turn-engine.ts'
 import { roleplaySessionOf } from './store.ts'
 import { parseOoc } from '../../shared/ooc.ts'
@@ -148,7 +151,10 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const events = session.snapshotEvents()
     const began = events.findLastIndex(entry => entry.type === 'turn/start')
     const start = began === -1 ? undefined : events[began]
-    if (start?.type === 'turn/start') stores(session.id)?.recordUsage?.(start.data.turn, tokensOf(events.slice(began)))
+    if (start?.type !== 'turn/start') return
+    const store = stores(session.id)
+    store?.recordUsage?.(start.data.turn, tokensOf(events.slice(began)), Math.max(0, event.time - start.time))
+    try { store?.recordTrace?.(start.data.turn, { ...masterTrace(events.slice(began)), endedAt: event.time }) } catch (error) { ctx.logger.warn(`roleplay: the trace of turn ${start.data.turn} could not be kept: ${error instanceof Error ? error.message : String(error)}`) }
   })
 
   // A chat DSH makes as a branch of a roleplay chat (its fork, from any button) gets a session of its own, made from the state where it was cut.
@@ -209,19 +215,23 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const fired = engine.fireAtStart(owner)
     const world = { happened: fired.flatMap(entry => [...entry.events.map(text => `${entry.name}: ${text}`), ...entry.cues.map(cue => tr('{names} noticed: {text}', { names: cue.names.join(tr(' and ')), text: cue.text }))]), beats: store.pendingBeats(), upcoming: store.upcoming(payload.turn) }
     const tracked = store.tracked()
-    const lines = [boundaries().sceneContext.scene({ ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, language: store.settings().prompts.language, ...(queryVector === undefined ? {} : { queryVector }) })]
+    const sections: PromptPart[] = []
+    let selection: SceneSelection | undefined
+    const report: SceneReport = { section: (id, text) => { sections.push({ id, tokens: estimateTokens(text) }) }, selected: (found) => { selection = found } }
+    const lines = [boundaries().sceneContext.scene({ report, ...(tracked.length === 0 ? {} : { tracked }), time: { now: time, agenda, ...(away === undefined ? {} : { away }) }, ...(world.happened.length === 0 && world.beats.length === 0 && world.upcoming.length === 0 ? {} : { world }), cast, turn: payload.turn, input: text, story: store.story, items: { at: locationId => store.itemsAt(locationId, true), carried: characterId => store.carried(characterId) }, language: store.settings().prompts.language, ...(queryVector === undefined ? {} : { queryVector }) })]
     const pacing = ooc === undefined ? pacingAdvice(store, payload.turn) : undefined
-    if (used !== undefined) lines.push([tr('The player used the world\'s command /{word}: {description} It is part of the story, not an out-of-character command: play it in the story. The world raises and lowers the command\'s own flag itself: never change it.', { word: used.word, description: used.description }), ...(commandBringsPeopleIn(store, used) ? [tr('The world itself brings in anyone this command calls for, after this turn: do not make them up yourself with expand_world.')] : [])].join(' '))
-    if (pacing !== undefined) lines.push(describePacingAdvice(pacing))
-    else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) lines.push(store.text('roleplay/plot-hint'))
+    const addLine = (id: string, text: string): void => { lines.push(text); sections.push({ id, tokens: estimateTokens(text) }) }
+    if (used !== undefined) addLine('command', [tr('The player used the world\'s command /{word}: {description} It is part of the story, not an out-of-character command: play it in the story. The world raises and lowers the command\'s own flag itself: never change it.', { word: used.word, description: used.description }), ...(commandBringsPeopleIn(store, used) ? [tr('The world itself brings in anyone this command calls for, after this turn: do not make them up yourself with expand_world.')] : [])].join(' '))
+    if (pacing !== undefined) addLine('pacing', describePacingAdvice(pacing))
+    else if (ooc === undefined && plotAuthorNeeded(store, payload.turn)) addLine('pacing', store.text('roleplay/plot-hint'))
     const rules = store.rules()
-    if (rules.length > 0) lines.push(store.text('roleplay/rules', { rules: rules.map(rule => `- ${rule}`).join('\n') }))
+    if (rules.length > 0) addLine('rules', store.text('roleplay/rules', { rules: rules.map(rule => `- ${rule}`).join('\n') }))
     const wanted = ooc === undefined ? parseRoll(text) : undefined
     if (wanted !== undefined) {
       try {
         const made = rollPlain(wanted.expression)
         const roll = store.story.dice.record({ turn: payload.turn, expression: made.expression, faces: made.faces, kept: made.kept, modifier: made.modifier, total: made.total, value: made.total, reason: wanted.reason === '' ? tr('the player\'s roll') : wanted.reason, by: 'player' })
-        lines.push(tr('The player rolled {dice} ({reason}) and got {total}: dice {faces}. This is a fact, decided by the dice: take it into account when you judge the attempt and decide what happens.', { dice: roll.expression, reason: roll.reason, total: roll.total, faces: `[${roll.faces.join(', ')}]` }))
+        addLine('roll', tr('The player rolled {dice} ({reason}) and got {total}: dice {faces}. This is a fact, decided by the dice: take it into account when you judge the attempt and decide what happens.', { dice: roll.expression, reason: roll.reason, total: roll.total, faces: `[${roll.faces.join(', ')}]` }))
       } catch (error) {
         engine.skip(owner)
         lines.push(store.text('roleplay/input-refused', { reason: error instanceof Error ? error.message : String(error) }))
@@ -236,6 +246,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       engine.skip(owner)
       lines.push(store.text('roleplay/input-refused', { reason: verdict.reason }))
     }
+    store.recordTrace?.(payload.turn, { scene: sections, ...selection === undefined ? {} : { selected: selection } })
     return { ...decision, messages: [...decision.messages, notice(lines.join('\n\n'))] }
   })
 }

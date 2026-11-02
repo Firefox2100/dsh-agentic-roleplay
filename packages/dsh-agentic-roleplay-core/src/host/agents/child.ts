@@ -4,6 +4,8 @@ import { cutOff } from './cut-off.ts'
 import { randomUUID } from 'node:crypto'
 import { currentTurn } from '../orchestration/current-turn.ts'
 import { tokensOf } from './usage.ts'
+import { requestsOf } from './requests.ts'
+import type { RequestStat } from '../../shared/diagnostics.ts'
 import { NO_TOKENS, type TokenCount } from '../../shared/usage.ts'
 import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type RunCall, type RunDetail } from '../../shared/activity.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
@@ -86,6 +88,7 @@ export interface ChildRun {
   /** The turn the game master had begun when the run ended, and what the run used. */
   turn: number
   tokens: TokenCount
+  requests?: RequestStat[]
 }
 
 /** The controls of a child's model requests that the plugin decides; the service that serves the route applies them. */
@@ -117,7 +120,7 @@ export function childTrace(store: { settings(): { models: Record<ChildKind, stri
   return (run) => {
     const keep = store.settings().diagnostics.keepRuns
     const id = keep ? randomUUID() : undefined
-    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, turn: run.turn, tokens: run.tokens, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
+    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...run.detail.calls.some(call => call.failed) ? { refused: run.detail.calls.filter(call => call.failed).length } : {}, turn: run.turn, tokens: run.tokens, ...(run.requests ?? []).length === 0 ? {} : { requests: run.requests }, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
   }
 }
 
@@ -187,11 +190,11 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     const limited: ChildTask = minutes > 0 ? { ...task, signal: AbortSignal.any([task.signal, clock.signal]) } : task
     try {
       const result = await execute<T>(limited, stats)
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
       return result
     } catch (cause) {
       const error = clock.signal.aborted && !task.signal.aborted ? new ChildTimeoutError(minutes) : cause
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
       if (attempt >= 2 || task.signal.aborted || error instanceof ChildTimeoutError || !isUnfinishedCall(error)) throw error
     } finally {
       if (timer !== undefined) clearTimeout(timer)
@@ -257,7 +260,7 @@ export function structuredReply(child: Agent, schema: ObjectJsonSchema, cut = fa
 }
 
 /** What one run counts and keeps for its trace. */
-interface RunStats { calls: number; record: RunCall[]; result?: string; tokens?: TokenCount }
+interface RunStats { calls: number; record: RunCall[]; result?: string; tokens?: TokenCount; requests?: RequestStat[] }
 
 const cut = (value: unknown, limit = MAX_RUN_TEXT): string => {
   const text = typeof value === 'string' ? value : (JSON.stringify(value) ?? '')
@@ -426,7 +429,11 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     } catch (error) {
       if (submitted === undefined && !overran && !signal.aborted) throw error
     } finally {
-      if (entry.agent !== undefined) stats.tokens = tokensOf(entry.agent.session.snapshotEvents())
+      if (entry.agent !== undefined) {
+        const events = entry.agent.session.snapshotEvents()
+        stats.tokens = tokensOf(events)
+        stats.requests = requestsOf(events)
+      }
       await (overran ? Promise.race([activation.dispose(), new Promise<void>((resolve) => { setTimeout(resolve, STOP_GRACE_MS) })]) : activation.dispose())
     }
   } finally {

@@ -1,4 +1,5 @@
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { atomicWriteSync } from '../atomic-write.ts'
+import { mkdirSync, readFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { join } from 'node:path'
 
@@ -41,7 +42,5 @@ export function readStore(root: string): SyncStore {
 export function writeStore(root: string, store: SyncStore): void {
   const folder = syncFolder(root)
   mkdirSync(folder, { recursive: true })
-  const temporary = join(folder, `state.json.${process.pid}.tmp`)
-  writeFileSync(temporary, `${JSON.stringify(store, null, 2)}\n`)
-  renameSync(temporary, join(folder, 'state.json'))
+  atomicWriteSync(join(folder, 'state.json'), `${JSON.stringify(store, null, 2)}\n`)
 }
