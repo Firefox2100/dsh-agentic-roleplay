@@ -2,7 +2,7 @@ import { cp, mkdtemp, rm } from 'node:fs/promises'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { runChecks } from '../../src/host/checks/run.ts'
 import type { CheckedWorld } from '../../src/host/worlds/validated-world.ts'
 import { liveContext, newCounters, type DecisionMode, type LiveOptions } from './live.ts'
@@ -37,6 +37,7 @@ describe.skipIf(!live || worlds.length === 0)('the judged checks on worlds of th
         const began = Date.now()
         const world = { directory, summary: { id: basename(folder), name: basename(folder), description: '', tags: [] } } as unknown as CheckedWorld
         const report = await runChecks({ world, model: liveContext(options, language, counters) }, { deep: true })
+        expect(report).toMatchObject({ findings: expect.any(Array), skipped: expect.any(Array) })
         mkdirSync(out, { recursive: true })
         writeFileSync(join(out, `${env('BENCH_LABEL', 'world')}-${basename(folder)}.json`), `${JSON.stringify({ seconds: Math.round((Date.now() - began) / 1000), counters: { ...counters, jobs: [] }, skipped: report.skipped, findings: report.findings }, null, 1)}\n`)
       } finally { await rm(directory, { recursive: true, force: true }) }

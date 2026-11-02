@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { describe, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { cosine, nearPairs } from '../../src/host/checks/similar.ts'
 import { LANGUAGES } from './language.ts'
 import { loreSet, thingsSet, valuesSet, type PairSet } from './pairs.ts'
@@ -67,6 +67,7 @@ describe.skipIf(!live)('the reranker against the cut by closeness', () => {
   it('ranks the labelled pairs of values, things and background in both languages', async () => {
     const outcomes: Outcome[] = []
     for (const language of LANGUAGES) for (const make of [valuesSet, thingsSet, loreSet]) outcomes.push(await trial(make(language), language))
+    expect(outcomes).toHaveLength(LANGUAGES.length * 3)
     mkdirSync(out, { recursive: true })
     writeFileSync(join(out, `checks-rerank-${embedModel}.json`), `${JSON.stringify({ limit: LIMIT, pool: POOL, embedModel, rerankModel, outcomes }, null, 1)}\n`)
     console.log(JSON.stringify(outcomes.map(o => ({ set: o.set, language: o.language, pairs: o.pairs, positives: o.positives, production: `${o.found.production}/${o.positives} of ${o.productionCandidates}`, cosineTop12: `${o.found.cosineTop}/${o.positives}`, reranked12: `${o.found.reranked}/${o.positives}`, union: `${o.found.union}/${o.positives}`, cosineRanks: o.ranks.byCosine, rerankRanks: o.ranks.byReranker })), null, 1))

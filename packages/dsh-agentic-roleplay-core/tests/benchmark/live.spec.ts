@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { afterAll, describe, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { loadCardEvidence } from '../../src/host/checks/card-evidence.ts'
 import { runChecks } from '../../src/host/checks/run.ts'
 import type { BenchCase } from './cases.ts'
@@ -107,6 +107,7 @@ describe.skipIf(!live)(`the live benchmark (${label}, ${mode})`, () => {
               case: benchmark.id, kind: benchmark.kind, language, run, ms: Date.now() - began, scored: score(benchmark, report.findings),
               findings: report.findings.map(finding => ({ check: finding.check, code: finding.code, where: finding.where })), skipped: report.skipped, counters,
             })
+            expect(results.at(-1)?.case).toBe(benchmark.id)
           } finally { await world.remove() }
         }, 3_600_000)
       }

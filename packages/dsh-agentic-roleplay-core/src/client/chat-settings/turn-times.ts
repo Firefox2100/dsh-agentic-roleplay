@@ -59,7 +59,7 @@ export function turnTimes(trace: TurnTrace, activity: readonly ActivityEntry[]):
 export function fullestRequest(trace: TurnTrace): { prompt?: number; parts: PromptPart[]; step: number } | undefined {
   const sized = (trace.requests ?? []).filter(request => request.parts !== undefined)
   if (sized.length === 0) return undefined
-  const fullest = sized.reduce((best, request) => ((request.prompt ?? 0) > (best.prompt ?? 0) ? request : best))
+  const fullest = sized.slice(1).reduce((best, request) => ((request.prompt ?? 0) > (best.prompt ?? 0) ? request : best), sized[0]!)
   return { ...fullest.prompt === undefined ? {} : { prompt: fullest.prompt }, step: fullest.step, parts: [...fullest.parts ?? []].sort((a, b) => b.tokens - a.tokens) }
 }
 

@@ -28,6 +28,11 @@ describe('where a turn\'s time went', () => {
   it('has no foreground time for a turn that has not ended', () => {
     expect(turnTimes({ turn: 4, startedAt: 10_000 }, [run('Clara', 20_000, 5000)])).toMatchObject({ foregroundMs: 0, backgroundMs: 0, helpers: [expect.objectContaining({ foregroundMs: 5000, backgroundMs: 0 })] })
   })
+
+  it('uses zero for request and tool timings the trace did not record', () => {
+    const partial: TurnTrace = { turn: 1, startedAt: 100, endedAt: 90, requests: [{ step: 1, stop: 'stop', parts: [] }], calls: [{ tool: 'wait', failed: false, note: '' }] }
+    expect(turnTimes(partial, [])).toMatchObject({ foregroundMs: 0, beforeMs: 0, modelMs: 0, tools: [{ tool: 'wait', ms: 0, calls: 1 }] })
+  })
 })
 
 describe('what the harness refused', () => {
@@ -35,11 +40,19 @@ describe('what the harness refused', () => {
     const times = turnTimes(trace, [run('record keeper', 100_000, 60_000, { refused: 2 })])
     expect(refusalsOf(trace, times.helpers)).toEqual({ calls: [{ tool: 'narrate', note: 'The line is twice.' }], steered: ['You may not end the turn yet.'], helpers: [{ label: 'record keeper', refused: 2 }], cutOff: [2] })
   })
+
+  it('is empty when the trace recorded no calls, steering or requests', () => {
+    expect(refusalsOf({ turn: 1, startedAt: 0 }, [])).toEqual({ calls: [], steered: [], helpers: [], cutOff: [] })
+  })
 })
 
 describe('the fullest request', () => {
   it('is the one with the biggest prompt, its parts largest first', () => {
     expect(fullestRequest(trace)).toEqual({ prompt: 4000, step: 2, parts: [{ id: 'earlier', tokens: 2600 }, { id: 'steps', tokens: 900 }, { id: 'system', tokens: 500 }] })
     expect(fullestRequest({ turn: 1, startedAt: 0 })).toBeUndefined()
+  })
+
+  it('returns a sized request even when the total prompt size was not recorded', () => {
+    expect(fullestRequest({ turn: 1, startedAt: 0, requests: [{ step: 1, stop: 'stop' }, { step: 2, stop: 'stop', parts: [] }] })).toEqual({ step: 2, parts: [] })
   })
 })

@@ -18,7 +18,7 @@ export function layoutMap(places: readonly MapPlace[], routes: readonly MapRoute
   const links = new Map<string, { from: string; to: string; open: boolean }>()
   for (const route of routes) {
     if (!keys.has(route.from) || !keys.has(route.to) || route.from === route.to) continue
-    const id = [route.from, route.to].sort().join('\n')
+    const id = [route.from, route.to].sort((left, right) => left.localeCompare(right)).join('\n')
     const known = links.get(id)
     links.set(id, { from: route.from, to: route.to, open: route.open || known?.open === true })
   }

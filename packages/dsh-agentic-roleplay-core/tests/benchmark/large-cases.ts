@@ -74,17 +74,9 @@ function expecting(kind: Kind, check: string, code: string, mode: Planted['mode'
   })
 }
 
-/** Filler entries the development model wrote that repeat or contradict another (found by the checks, confirmed by reading both): a finding about them is right and is not counted against a check. */
-const REAL_IN_FILLER: Expect[] = [
-  ...['big-p20', 'big-p22', 'big-p00'].map(text => ({ check: 'name-near', code: 'possible-duplicate', text })),
-  ...['big_v22', 'big_v17'].map(text => ({ check: 'duplicate-values-meaning', code: 'duplicate-value', text })),
-  ...['big-l01', 'big-l16', 'big-l19', 'big-l23', 'big-l45', 'big-l17'].map(text => ({ check: 'lore-conflict', code: 'lore-conflict', text })),
-]
-
 function large(spec: { id: string; title: string; kind: BenchCase['kind']; checks: readonly string[]; world: readonly Kind[]; plant: boolean; of: Kind; check?: string; code?: string; mode?: Planted['mode'] }): BenchCase {
   return {
     id: spec.id, title: spec.title, kind: spec.kind, checks: spec.checks, judged: true,
-    allowed: REAL_IN_FILLER,
     expect: spec.check === undefined || spec.code === undefined || spec.mode === undefined ? [] : expecting(spec.of, spec.check, spec.code, spec.mode),
     build: language => grown(language, spec.world, spec.plant),
   }
