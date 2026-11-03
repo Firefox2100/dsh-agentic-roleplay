@@ -132,7 +132,9 @@ export function readCard(file: Buffer, name: string): NormalizedCard {
   const book = object(data['character_book'])
   const entries = Array.isArray(book?.['entries']) ? (book['entries'] as unknown[]).flatMap((entry, index) => entryOf(entry, index) ?? []) : []
   const extensions = object(data['extensions']) ?? {}
-  const scripts = [extensions['regex_scripts'], object(extensions['tavern_helper'])?.['scripts']].reduce<number>((count, list) => count + (Array.isArray(list) ? list.length : 0), 0)
+  const listed = (list: unknown): number => (Array.isArray(list) ? list.length : 0)
+  const regexScripts = listed(extensions['regex_scripts'])
+  const helperScripts = listed(object(extensions['tavern_helper'])?.['scripts'])
   return {
     sourceSpec: spec,
     name: cardName,
@@ -149,7 +151,7 @@ export function readCard(file: Buffer, name: string): NormalizedCard {
     creator: text(data['creator']),
     characterVersion: text(data['character_version']),
     ...(book === undefined ? {} : { book: { name: text(book['name']), description: text(book['description']), entries } }),
-    ignored: { scripts, extensions: Object.keys(extensions).filter(key => !['talkativeness', 'fav', 'world', 'depth_prompt'].includes(key)) },
+    ignored: { scripts: regexScripts + helperScripts, regexScripts, helperScripts, extensions: Object.keys(extensions).filter(key => !['talkativeness', 'fav', 'world', 'depth_prompt'].includes(key)) },
     urls: urlsOf(data),
   }
 }

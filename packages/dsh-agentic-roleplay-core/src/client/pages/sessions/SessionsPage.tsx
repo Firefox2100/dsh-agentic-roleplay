@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconArchiveOffOutlineRegular, IconArchiveOutlineRegular, IconPlayOutlineRegular, IconRefreshOutlineRegular, IconTrashOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconArchiveOffOutlineRegular, IconArchiveOutlineRegular, IconDownloadOutlineRegular, IconPlayOutlineRegular, IconRefreshOutlineRegular, IconTrashOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { pageCount, pageStart, pagingFor } from '../../paging/paging.ts'
 import type {} from '../../panel/slot-contract.ts'
 import { Pager } from '../../widgets/pager/Pager.tsx'
 import { ProblemList } from '../../widgets/problem-list/ProblemList.tsx'
 import { DeleteSessionDialog } from './DeleteSessionDialog.tsx'
-import type { SessionsFace } from './sessions-controller.ts'
+import { ExportSessionDialog } from './ExportSessionDialog.tsx'
+import { exportAddress, type ExportKind, type SessionsFace } from './sessions-controller.ts'
 import { useRowFit } from './use-row-fit.ts'
 import css from './SessionsPage.module.css'
 
@@ -16,9 +17,10 @@ export type SessionsPageProps =
   & InjectFace<SessionsFace>
 
 /** The sessions as a table, one page at a time, the most recently played first. */
-export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, archive, restore, askRemoval, cancelRemoval, confirmRemoval, setEverywhere }: SessionsPageProps) {
+export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, archive, restore, askExport, closeExport, importArchive, askRemoval, cancelRemoval, confirmRemoval, setEverywhere }: SessionsPageProps) {
   const state = useRoleplaySessions(snapshot => snapshot)
   const viewport = useRef<HTMLDivElement>(null)
+  const picker = useRef<HTMLInputElement>(null)
   const { pageSize, scrolls } = pagingFor(useRowFit(viewport))
   const [requestedStart, setRequestedStart] = useState(0)
   const dateLocale = t('dateLocale')
@@ -34,6 +36,16 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
 
   useEffect(() => { viewport.current?.scrollTo({ top: 0 }) }, [start])
 
+  /** The host sends the file as a download, which the browser keeps. */
+  const download = (kind: ExportKind): void => {
+    if (state.exporting === undefined) return
+    const link = document.createElement('a')
+    link.href = exportAddress(state.exporting.id, kind)
+    link.rel = 'noopener'
+    link.click()
+    closeExport()
+  }
+
   const count = t(sessions.length === 1 ? 'countOne' : 'countOther', { count: sessions.length })
   const failedWithoutData = state.status === 'failed' && state.payload === undefined
 
@@ -41,6 +53,10 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
     <div className={css.page} data-testid="roleplay-sessions-page">
       <div className={css.toolbar}>
         <span className={css.count}>{state.payload === undefined ? '' : count}</span>
+        <input ref={picker} type="file" accept=".zip,application/zip" hidden onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file !== undefined) importArchive(file) }} />
+        <Button variant="outline" size="sm" disabled={state.importing === true} aria-busy={state.importing === true} onClick={() => { picker.current?.click() }}>
+          {state.importing === true ? t('importing') : t('importStory')}
+        </Button>
         <Button
           variant="outline"
           size="sm"
@@ -57,6 +73,8 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
         <p className={css.notice} role="alert">{t('loadFailed', { message: state.error })}</p>
       )}
       {state.moveError !== undefined && <p className={css.notice} role="alert">{t('moveFailed', { message: state.moveError })}</p>}
+      {state.importError !== undefined && <p className={css.notice} role="alert">{t('importFailed', { message: state.importError })}</p>}
+      {state.imported !== undefined && <p className={css.notice} role="status">{t(state.imported.worldAdded ? 'importedWithWorld' : 'imported', { name: state.imported.name })}</p>}
       {state.openError !== undefined && <p className={css.notice} role="alert">{t('openFailed', { message: state.openError })}</p>}
       <ProblemList summary={t('problems', { count: state.payload?.problems.length ?? 0 })} problems={state.payload?.problems ?? []} />
 
@@ -110,6 +128,14 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
                           <Button
                             variant="ghost"
                             size="sm"
+                            icon={<IconDownloadOutlineRegular />}
+                            aria-label={t('export')}
+                            title={t('export')}
+                            onClick={() => { askExport(session.id, session.name) }}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             icon={session.archivedAt === undefined ? <IconArchiveOutlineRegular /> : <IconArchiveOffOutlineRegular />}
                             aria-label={session.archivedAt === undefined ? t('archive') : t('restore')}
                             title={session.archivedAt === undefined ? t('archive') : t('restore')}
@@ -144,6 +170,8 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
           onNext={() => { setRequestedStart(start + pageSize) }}
         />
       )}
+
+      {state.exporting !== undefined && <ExportSessionDialog key={state.exporting.id} t={t} name={state.exporting.name} onExport={download} onCancel={closeExport} />}
 
       {state.removal !== undefined && (
         <DeleteSessionDialog key={state.removal.id} t={t} removal={state.removal} onConfirm={confirmRemoval} onCancel={cancelRemoval} onEverywhere={setEverywhere} />

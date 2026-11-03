@@ -27,6 +27,7 @@ import type { ChatSettings } from './shared/settings.ts'
 import { storesOf } from './host/orchestration/store.ts'
 import { toolEnabled } from './shared/tools.ts'
 import { describeChecks } from './host/dice/describe.ts'
+import { RollReplay } from './host/dice/replay.ts'
 import { createDiceTools, sessionFolder, type DiceLink } from '@dsh-agentic-roleplay/state'
 import { FALLBACK_LANGUAGE, shippedText } from './host/prompts/library.ts'
 import { COMMANDS_KEY, commandFlagKey, commandsOf } from './shared/commands.ts'
@@ -147,7 +148,8 @@ export function apply(ctx: Context): void {
   })
   // The story has no files, so a directory line only tells a character about the machine; a scoped entry of the same name shadows the required one.
   ctx.systemPrompt.context({ name: WORKING_DIRECTORY_CONTEXT, order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
-  const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
+  const rolls = new RollReplay(chat => stores(chat)?.settings().rewind.rolls ?? 'reroll')
+  const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, roller: chat => rolls.roller(chat), delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
   const [previewTool, ...tools] = [...createTools(toolDeps)].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); ctx.roleplayOrchestration.playing = chat => engine.playing(chat); ctx.roleplayOrchestration.recallPreview = (chat, request, signal) => engine.recallPreview(chat, request, signal); return () => { ctx.roleplayOrchestration.recallPreview = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false; ctx.roleplayOrchestration.playing = () => false } }, 'roleplay: reflection control')
@@ -185,5 +187,5 @@ export function apply(ctx: Context): void {
     const agent = ctx.agents.get(SessionId(chat))
     return store === undefined || agent === undefined ? undefined : { session: store.story, turn: currentTurn(agent) }
   }
-  installHooks(ctx, { engine, boundaries, stores, timelines, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink), createCheckNarrateTool(toolDeps)] })
+  installHooks(ctx, { engine, boundaries, stores, timelines, rolls, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink, { rollerFor: chat => rolls.roller(chat) }), createCheckNarrateTool(toolDeps)] })
 }

@@ -51,6 +51,11 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain
 }) {
   const { card } = preview
   const entries = card.book?.entries ?? []
+  const dialect = preview.dialect
+  const dialectParts = dialect === undefined ? [] : [
+    ...dialect.macros.length > 0 ? [t('ic_dialectMacros', { names: dialect.macros.join(', ') })] : [],
+    ...dialect.tags.length > 0 ? [t('ic_dialectTags', { names: dialect.tags.join(', ') })] : [],
+  ]
   const [name, setName] = useState(preview.choices.name)
   const [off, setOff] = useState(() => new Set(preview.choices.disabledEntries))
   const [opening, setOpening] = useState<OpeningChoice>(preview.choices.opening)
@@ -112,6 +117,7 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain
             <p className={css.note}>{t('ic_source', { spec: card.sourceSpec === 'chara_card_v2' ? 'V2' : 'V3', converted: card.sourceSpec === 'chara_card_v2' ? ' (read as V3)' : '' })}{card.creator === '' ? '' : ` ${t('ic_creator')}: ${card.creator}.`}</p>
             {card.tags.length > 0 && <div className={css.tags}>{card.tags.map(tag => <Tag key={tag}>{tag}</Tag>)}</div>}
             {card.ignored.scripts > 0 && <p className={css.note}>{t('ic_scripts', { count: card.ignored.scripts })}</p>}
+            {dialectParts.length > 0 && <p className={css.note} data-testid="roleplay-import-dialect">{t('ic_dialect', { parts: dialectParts.join('; ') })}</p>}
           </div>
         </section>
 

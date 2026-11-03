@@ -21,6 +21,7 @@ import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSele
 import type { SelectionPreview } from '../../../shared/import-selection.ts'
 import { discardImport, importWithoutModel, revertUpdate, startImport, updateStatus, uploadCard } from './import-api.ts'
 import type { ImportPreview, UpdateStatus } from '../../../shared/import-card.ts'
+import { PlaytestDialog } from './PlaytestDialog.tsx'
 import { RevertUpdateDialog } from './RevertUpdateDialog.tsx'
 import type { WorldsFace } from './worlds-controller.ts'
 import css from './WorldsPage.module.css'
@@ -46,6 +47,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const [reverting, setReverting] = useState(false)
   const updatePicker = useRef<HTMLInputElement>(null)
   const [updateBusy, setUpdateBusy] = useState(false)
+  const [playtesting, setPlaytesting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [importNotice, setImportNotice] = useState<string>()
   const [importDone, setImportDone] = useState<string>()
@@ -142,6 +144,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
             {cardStatus?.fromCard === true && <Button variant="outline" size="sm" disabled={updateBusy} onClick={() => { updatePicker.current?.click() }}>{updateBusy ? t('updateReading') : t('updateFromCard')}</Button>}
             {cardStatus?.revertible === true && <Button variant="outline" size="sm" onClick={() => { setReverting(true) }}>{t('revertUpdate')}</Button>}
             <Button variant="outline" size="sm" disabled={presetBusy} onClick={() => { presetPicker.current?.click() }}>{presetBusy ? t('presetReading') : t('importPreset')}</Button>
+            <Button variant="outline" size="sm" onClick={() => { setPlaytesting(true) }}>{t('playtest')}</Button>
             <Button variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
             <Button variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name })) }}>
               {state.authoring?.worldId === editing.id && state.authoring.error === undefined ? t('openingAuthor') : t('authorWorld')}
@@ -156,6 +159,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         <DraftBanner t={t} worldId={editing.id} version={editorVersion} openChat={openChat} onChanged={() => { refresh(); setEditorVersion(version => version + 1) }} onDiscarded={() => { refresh(); setEditing(undefined) }} />
         <TranslateBanner t={t} worldId={editing.id} worldName={editing.name} openChat={openChat} />
         {reverting && <RevertUpdateDialog t={t} onClose={() => { setReverting(false) }} revert={() => revertUpdate(editing.id)} onDone={(keptIn) => { setReverting(false); setPresetNotice(t('revertDone', { folder: keptIn })); setEditorVersion(version => version + 1); refresh() }} />}
+        {playtesting && <PlaytestDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setPlaytesting(false) }} />}
         {addingAvatars && <AddAvatarsDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setAddingAvatars(false) }} onAdded={() => { setAddingAvatars(false); setEditorVersion(version => version + 1) }} />}
         <div className={css.editBody}>
           <WorldEditor key={editorVersion} t={t} source={source} notEditable={t('worldMissing')} />

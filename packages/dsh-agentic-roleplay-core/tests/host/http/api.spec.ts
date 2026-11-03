@@ -18,6 +18,8 @@ import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, In
 import { InvalidJournalError } from '../../../src/host/reference/journal.ts'
 import { UnknownSectionError } from '../../../src/host/reference/reference.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
+import { UnknownStateError } from '../../../src/host/sessions/compare-session.ts'
+import { InvalidArchiveError } from '../../../src/host/sessions/session-archive.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
 import { WorldFolderExistsError } from '../../../src/host/worlds/create-world.ts'
 import { UnknownStarterError } from '../../../src/host/worlds/starter.ts'
@@ -49,6 +51,8 @@ let settingsError: Error | undefined
 let notesError: Error | undefined
 let decisionsError: Error | undefined
 let timelineError: Error | undefined
+const playtested: string[] = []
+let marked: unknown[] | undefined
 let archiveError: Error | undefined
 let importError: Error | undefined
 let importCalls: string[] = []
@@ -168,6 +172,11 @@ beforeEach(async () => {
         keep: async (value: string, reference?: string) => { if (syncError !== undefined) throw syncError; syncCalls.push(`password ${reference ?? 'default'} ${value === '' ? 'clear' : 'set'}`); return { configured: value !== '', writable: true, ref: reference ?? 'ROLEPLAY_SYNC_RCLONE_PASSWORD' } },
       },
     } as never,
+    playtest: {
+      status: (id) => (id === 'harbor' ? { state: 'running', world: id, turns: 3, played: 1, step: 'playing', startedAt: 'now' } : undefined),
+      start: (request) => { if (request.turns > 10) throw new InvalidEditProblems(['turns must be a whole number from 1 to 10']); playtested.push(`${request.worldId} ${request.turns} ${request.playerCharacterId ?? ''} ${request.opening ?? ''} ${request.language ?? ''}`); return { state: 'running', world: request.worldId, turns: request.turns, played: 0, step: 'starting', startedAt: 'now' } },
+      stop: (id) => { playtested.push(`stop ${id}`); return Promise.resolve() },
+    },
     anyLocked: () => lockedUnit !== undefined,
     locked: async url => (url.searchParams.get('id') === 'harbor' ? lockedUnit : undefined),
     presets: presetApi,
@@ -315,6 +324,16 @@ beforeEach(async () => {
         moved = [id, to]
         return Promise.resolve(to === 'start' ? { draft: 'the first message' } : {})
       },
+      markCheckpoint: (id, turn, label, note) => { if (timelineError !== undefined) return Promise.reject(timelineError); marked = [id, turn, label, note]; return Promise.resolve() },
+      transcript: (id, format, scope, annotated) => {
+        if (timelineError !== undefined) throw timelineError
+        return { file: `Night ü.${format === 'json' ? 'json' : 'md'}`, mediaType: format === 'json' ? 'application/json; charset=utf-8' : 'text/markdown; charset=utf-8', text: `${id} ${scope} ${String(annotated)}` }
+      },
+      statistics: (id) => { if (timelineError !== undefined) throw timelineError; return { turns: 2, scenes: 1, id } as never },
+      compare: (id, a, b) => { if (timelineError !== undefined) throw timelineError; return { a, b, changes: [{ area: 'position', subject: id }] } },
+      exportArchive: (id) => { if (timelineError !== undefined) throw timelineError; return { file: 'Night.dsh-story.zip', bytes: Buffer.from(`zip of ${id}`) } },
+      importArchive: async (bytes) => { if (bytes.toString() === 'bad') throw new InvalidArchiveError('this is not a story archive'); return { id: 'new', name: 'Night (restored)', worldAdded: false } },
+      maxArchiveBytes: 100,
       decisions: (id) => {
         if (decisionsError !== undefined) throw decisionsError
         const stats = emptyStats('then')
@@ -1412,6 +1431,73 @@ describe('roleplay API', () => {
       expect((await fetch(`${url('/move')}&to=n1`)).status).toBe(405)
       allowed = false
       expect((await fetch(url())).status).toBe(401)
+    })
+  })
+
+  describe('checkpoints, exports and archives of a session', () => {
+    const post = (path: string, body: unknown) => fetch(`${origin}${path}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('name a turn with a note, and take the name off with an empty one', async () => {
+      expect((await post('/sessions/timeline/checkpoint?id=abc&turn=n1', { label: 'Arrival', note: 'before the storm' })).status).toBe(204)
+      expect(marked).toEqual(['abc', 'n1', 'Arrival', 'before the storm'])
+      expect((await post('/sessions/timeline/checkpoint?id=abc&turn=n1', {})).status).toBe(400)
+      expect((await post('/sessions/timeline/checkpoint?id=abc&turn=n1', { label: 'x', note: 3 })).status).toBe(400)
+      timelineError = new TimelineError('not kept')
+      expect((await post('/sessions/timeline/checkpoint?id=abc&turn=n1', { label: 'x' })).status).toBe(409)
+    })
+
+    it('send the story as a file: Markdown or JSON of the path or of every turn, or the whole archive', async () => {
+      const text = await fetch(`${origin}/sessions/export?id=abc&scope=all&annotated=1`)
+      expect(text.status).toBe(200)
+      expect(text.headers.get('content-type')).toBe('text/markdown; charset=utf-8')
+      expect(text.headers.get('content-disposition')).toBe("attachment; filename*=UTF-8''Night%20%C3%BC.md")
+      expect(await text.text()).toBe('abc all true')
+      expect(await (await fetch(`${origin}/sessions/export?id=abc&format=json`)).text()).toBe('abc path false')
+      const archive = await fetch(`${origin}/sessions/export?id=abc&format=archive`)
+      expect(archive.headers.get('content-type')).toBe('application/zip')
+      expect(await archive.text()).toBe('zip of abc')
+      expect((await fetch(`${origin}/sessions/export?id=abc&format=pdf`)).status).toBe(400)
+      expect((await fetch(`${origin}/sessions/export?id=abc&scope=some`)).status).toBe(400)
+      timelineError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/export?id=abc`)).status).toBe(404)
+    })
+
+    it('start, read and stop a bounded test play of a world', async () => {
+      expect(await (await fetch(`${origin}/worlds/playtest?id=nobody`)).json()).toEqual({ state: 'idle' })
+      expect(await (await fetch(`${origin}/worlds/playtest?id=harbor`)).json()).toMatchObject({ state: 'running', played: 1 })
+      const started = await post('/worlds/playtest?id=harbor', { turns: 3, playerCharacterId: 'ana', opening: 1, language: 'zh' })
+      expect(started.status).toBe(202)
+      expect(playtested).toContain('harbor 3 ana 1 zh')
+      expect((await post('/worlds/playtest?id=harbor', { turns: 'three' })).status).toBe(400)
+      expect((await post('/worlds/playtest?id=harbor', { turns: 11 })).status).toBe(422)
+      expect((await fetch(`${origin}/worlds/playtest?id=harbor`, { method: 'DELETE' })).status).toBe(200)
+      expect(playtested).toContain('stop harbor')
+    })
+
+    it('count the shape of the played story', async () => {
+      expect(await (await fetch(`${origin}/sessions/statistics?id=abc`)).json()).toMatchObject({ turns: 2, id: 'abc' })
+      timelineError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/statistics?id=abc`)).status).toBe(404)
+    })
+
+    it('compare two states of the story, and say when one is not kept', async () => {
+      expect(await (await fetch(`${origin}/sessions/compare?id=abc&a=n1&b=head`)).json()).toEqual({ a: 'n1', b: 'head', changes: [{ area: 'position', subject: 'abc' }] })
+      expect(await (await fetch(`${origin}/sessions/compare?id=abc`)).json()).toMatchObject({ a: 'head', b: 'head' })
+      timelineError = new UnknownStateError('not kept')
+      expect((await fetch(`${origin}/sessions/compare?id=abc&a=n1`)).status).toBe(409)
+      timelineError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/compare?id=abc`)).status).toBe(404)
+    })
+
+    it('put an archive back as a new session, refuse one that is not, and refuse an upload past the limit', async () => {
+      const put = (body: string) => fetch(`${origin}/sessions/import`, { method: 'POST', body })
+      expect(await (await put('good')).json()).toEqual({ id: 'new', name: 'Night (restored)', worldAdded: false })
+      const bad = await put('bad')
+      expect(bad.status).toBe(422)
+      expect(await bad.json()).toEqual({ message: 'this is not a story archive' })
+      expect((await put('x'.repeat(200))).status).toBe(413)
+      allowed = false
+      expect((await put('good')).status).toBe(401)
     })
   })
 

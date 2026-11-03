@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
+import type { StoryComparison } from '../../shared/compare.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
 import css from './TurnsDock.module.css'
 import { withdrawnKeys, type NodeLike } from './withdrawn.ts'
@@ -8,6 +9,10 @@ import { withdrawnKeys, type NodeLike } from './withdrawn.ts'
 export interface TurnsInjected {
   timeline: () => Promise<TimelineView | undefined>
   move: (to: string) => Promise<{ draft?: string }>
+  /** Names a turn as a checkpoint, or takes the name off with an empty one. */
+  mark: (turn: string, label: string, note?: string) => Promise<void>
+  /** What differs between the story as it stands and its state after a turn (or `start`). */
+  compare: (turn: string) => Promise<StoryComparison>
   fill: (text: string, send: boolean) => void
   /** Makes a new session from the story as it stands after the turn that ended at the seq, and shows it. */
   branch: (atSeq: number) => Promise<void>
@@ -25,12 +30,14 @@ const escapeAttribute = (value: string): string => value.replace(/["\\]/g, match
  * The turns of the story: swap the last one for another that was played from the same state, play it again, go back to before
  * any turn, or forward again. What belongs to the turns the story is not at is left out of the transcript (the log keeps it).
  */
-export function TurnsDock({ useChat, useSession, timeline, move, fill, branch, t }: TurnsDockProps) {
+export function TurnsDock({ useChat, useSession, timeline, move, mark, compare, fill, branch, t }: TurnsDockProps) {
   const running = useSession(session => session.running)
   const [view, setView] = useState<TimelineView | undefined>()
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | undefined>()
   const [refresh, setRefresh] = useState(0)
+  const [naming, setNaming] = useState<string | undefined>()
+  const [comparison, setComparison] = useState<StoryComparison | undefined>()
   const marks = useChat((chat) => {
     const nodes = [...(chat.nodes.values() as Iterable<NodeLike>)]
     return `${nodes.length}:${nodes.reduce((latest, node) => Math.max(latest, node.anchorSeq ?? 0), 0)}`
@@ -57,6 +64,14 @@ export function TurnsDock({ useChat, useSession, timeline, move, fill, branch, t
     move(to).then((moved) => { then?.(moved.draft); setRefresh(count => count + 1) }).catch((error: unknown) => { setProblem(error instanceof Error ? error.message : String(error)) }).finally(() => { setBusy(false) })
   }
   const off = running || busy
+  const checkpoints = view.path.filter(turn => turn.label !== undefined && turn.restorable)
+  const save = (): void => {
+    const label = naming?.trim() ?? ''
+    if (label === '') return
+    setBusy(true)
+    setProblem(undefined)
+    mark(last.id, label).then(() => { setNaming(undefined); setRefresh(count => count + 1) }).catch((error: unknown) => { setProblem(error instanceof Error ? error.message : String(error)) }).finally(() => { setBusy(false) })
+  }
   const label = (text: string): string => (text.length > LABEL_LENGTH ? `${text.slice(0, LABEL_LENGTH - 1)}…` : text)
 
   return (
@@ -72,12 +87,23 @@ export function TurnsDock({ useChat, useSession, timeline, move, fill, branch, t
       <button type="button" className={css.button} disabled={off || (parent !== START && !view.path.at(-2)?.restorable)} title={t('regenerateHint')} onClick={() => { act(parent, (draft) => { if (draft !== undefined) fill(draft, true) }) }}>{t('regenerate')}</button>
       <select className={css.select} disabled={off} value="" aria-label={t('rewind')} onChange={(event) => { if (event.target.value !== '') act(event.target.value, (draft) => { if (draft !== undefined) fill(draft, false) }) }}>
         <option value="">{t('rewind')}</option>
+        {checkpoints.map(turn => <option key={`checkpoint-${turn.id}`} value={turn.id} title={turn.note}>{`◆ ${turn.label!}`}</option>)}
         {[...view.path].reverse().map((turn, index, list) => {
           const before = list[index + 1]?.id ?? START
           const restorable = index === list.length - 1 || list[index + 1]!.restorable
           return <option key={turn.id} value={before} disabled={!restorable}>{`${t('before')} ${label(turn.player)}`}</option>
         })}
       </select>
+      {naming === undefined
+        ? <button type="button" className={css.button} disabled={off} title={last.label === undefined ? t('checkpointHint') : t('checkpointNamed', { name: last.label })} onClick={() => { setNaming(last.label ?? '') }}>{t('checkpoint')}</button>
+        : (
+          <span className={css.group}>
+            <input className={css.select} autoFocus maxLength={80} value={naming} placeholder={t('checkpointName')} aria-label={t('checkpointName')} onChange={(event) => { setNaming(event.target.value) }} onKeyDown={(event) => { if (event.key === 'Enter') save(); if (event.key === 'Escape') setNaming(undefined) }} />
+            <button type="button" className={css.button} disabled={off || naming.trim() === ''} onClick={save}>{t('checkpointSave')}</button>
+            {last.label !== undefined && <button type="button" className={css.button} disabled={off} onClick={() => { setBusy(true); mark(last.id, '').then(() => { setNaming(undefined); setRefresh(count => count + 1) }).catch((error: unknown) => { setProblem(error instanceof Error ? error.message : String(error)) }).finally(() => { setBusy(false) }) }}>{t('checkpointRemove')}</button>}
+            <button type="button" className={css.button} onClick={() => { setNaming(undefined) }}>{t('checkpointCancel')}</button>
+          </span>
+        )}
       <select
         className={css.select}
         disabled={off}
@@ -95,8 +121,42 @@ export function TurnsDock({ useChat, useSession, timeline, move, fill, branch, t
         <option value="">{t('branch')}</option>
         {[...view.path].reverse().map(turn => <option key={turn.id} value={turn.endSeq ?? ''} disabled={turn.endSeq === undefined}>{`${t('after')} ${label(turn.player)}`}</option>)}
       </select>
+      <select
+        className={css.select}
+        disabled={off}
+        value=""
+        title={t('compareHint')}
+        aria-label={t('compare')}
+        onChange={(event) => {
+          const turn = event.target.value
+          if (turn === '') return
+          setBusy(true)
+          setProblem(undefined)
+          compare(turn).then(setComparison).catch((error: unknown) => { setProblem(error instanceof Error ? error.message : String(error)) }).finally(() => { setBusy(false) })
+        }}
+      >
+        <option value="">{t('compare')}</option>
+        {checkpoints.map(turn => <option key={`compare-${turn.id}`} value={turn.id} disabled={!turn.restorable}>{`◆ ${turn.label!}`}</option>)}
+        <option value={START} disabled={!view.canStart}>{t('compareStart')}</option>
+        {[...view.path].reverse().map(turn => <option key={`compare-turn-${turn.id}`} value={turn.id} disabled={!turn.restorable}>{`${t('after')} ${label(turn.player)}`}</option>)}
+      </select>
       {view.forward.length > 0 && <button type="button" className={css.button} disabled={off || !view.forward.at(-1)!.restorable} title={t('redoHint')} onClick={() => { act(view.forward.at(-1)!.id, () => { fill('', false) }) }}>{t('redo')}</button>}
       {problem !== undefined && <span className={css.error}>{problem}</span>}
+      {comparison !== undefined && (
+        <div className={css.comparison} data-testid="roleplay-comparison">
+          <div className={css.comparisonHead}>
+            <span>{t('compareHeading', { a: comparison.a, b: comparison.b })}</span>
+            <button type="button" className={css.button} onClick={() => { setComparison(undefined) }}>{t('checkpointCancel')}</button>
+          </div>
+          {comparison.changes.length === 0
+            ? <p className={css.comparisonLine}>{t('compareSame')}</p>
+            : comparison.changes.map((change, index) => (
+              <p key={index} className={css.comparisonLine}>
+                <span className={css.comparisonSubject}>{change.subject}</span>: {change.a === undefined ? t('compareNone') : change.a} → {change.b === undefined ? t('compareNone') : change.b}
+              </p>
+            ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { currentTurn } from '../orchestration/current-turn.ts'
 import { tokensOf } from './usage.ts'
 import { requestsOf } from './requests.ts'
+import { briefSections, type BriefSection } from '../diagnostics/estimate.ts'
 import type { RequestStat } from '../../shared/diagnostics.ts'
 import { NO_TOKENS, type TokenCount } from '../../shared/usage.ts'
 import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type RunCall, type RunDetail } from '../../shared/activity.ts'
@@ -85,7 +86,7 @@ export interface ChildRun {
   error?: string
   /** What the child was told and did. */
   detail: RunDetail
-  /** The turn the game master had begun when the run ended, and what the run used. */
+  /** The turn the game master was in when the run began, and what the run used. */
   turn: number
   tokens: TokenCount
   requests?: RequestStat[]
@@ -114,13 +115,15 @@ export function childSampling(settings: { sampling: Record<ChildKind, number> & 
   return { temperature: settings.sampling[kind], ...(kind === 'characters' ? sharedSamplingOf(settings.sampling) : {}), toolChoice: settings.sampling.tools, maxTokens: estimate === undefined ? ceiling : Math.min(ceiling, outputBudget(estimate, settings.sampling.headroom)), priority: kind === 'characters' || kind === 'authoring' ? 'foreground' : 'background' }
 }
 
+const briefOf = (prompt: string): { brief?: BriefSection[] } => { const brief = briefSections(prompt); return brief.length > 1 ? { brief } : {} }
+
 /** What a caller passes as `trace`: files each run of a kind of helper under a label in the store's record of activity, with its detail when the chat keeps it. */
-export function childTrace(store: { settings(): { models: Record<ChildKind, string>; diagnostics: { keepRuns: boolean } }; recordActivity(entry: ActivityEntry, detail?: RunDetail): void }, kind: ChildKind, label: string, extra: Pick<RunDetail, 'recalled'> = {}, named?: string): NonNullable<ChildTask['trace']> {
+export function childTrace(store: { settings(): { models: Record<ChildKind, string>; diagnostics: { keepRuns: boolean } }; recordActivity(entry: ActivityEntry, detail?: RunDetail): void }, kind: ChildKind, label: string, extra: Pick<RunDetail, 'recalled'> = {}, named?: string, cause?: string): NonNullable<ChildTask['trace']> {
   const model = (named ?? store.settings().models[kind]).trim()
   return (run) => {
     const keep = store.settings().diagnostics.keepRuns
     const id = keep ? randomUUID() : undefined
-    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...run.detail.calls.some(call => call.failed) ? { refused: run.detail.calls.filter(call => call.failed).length } : {}, turn: run.turn, tokens: run.tokens, ...(run.requests ?? []).length === 0 ? {} : { requests: run.requests }, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
+    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...(cause === undefined ? {} : { cause }), ...briefOf(run.detail.prompt), ...run.detail.calls.some(call => call.failed) ? { refused: run.detail.calls.filter(call => call.failed).length } : {}, turn: run.turn, tokens: run.tokens, ...(run.requests ?? []).length === 0 ? {} : { requests: run.requests }, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
   }
 }
 
@@ -182,6 +185,8 @@ export const isUnfinishedCall = (error: unknown): boolean => error instanceof Er
 export async function runChild<T>(task: ChildTask): Promise<T> {
   for (let attempt = 1; ; attempt += 1) {
     const began = Date.now()
+    // the turn it works for is the one that was current when it began: a background run may end in the next turn
+    const turnAtStart = currentTurn(task.parent)
     const stats: RunStats = { calls: 0, record: [] }
     const detail = (): RunDetail => ({ persona: task.persona.slice(0, MAX_RUN_PROMPT), prompt: task.prompt.slice(0, MAX_RUN_PROMPT), calls: stats.record, ...(stats.result === undefined ? {} : { result: stats.result }) })
     const minutes = task.timeoutMinutes ?? 0
@@ -190,11 +195,11 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     const limited: ChildTask = minutes > 0 ? { ...task, signal: AbortSignal.any([task.signal, clock.signal]) } : task
     try {
       const result = await execute<T>(limited, stats)
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, detail: detail(), turn: turnAtStart, tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
       return result
     } catch (cause) {
       const error = clock.signal.aborted && !task.signal.aborted ? new ChildTimeoutError(minutes) : cause
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: currentTurn(task.parent), tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: turnAtStart, tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
       if (attempt >= 2 || task.signal.aborted || error instanceof ChildTimeoutError || !isUnfinishedCall(error)) throw error
     } finally {
       if (timer !== undefined) clearTimeout(timer)

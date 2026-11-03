@@ -161,3 +161,16 @@ export function worldFieldChanges(before: { card: NormalizedCard; choices: Impor
   if (JSON.stringify(alternateOpenings(before.card, before.choices.opening)) !== JSON.stringify(alternateOpenings(after.card, after.choices.opening))) changes.push({ field: 'alternateOpenings', because: 'the card\'s other greetings changed; suggested is the whole list as the import writes it', suggested: alternateOpenings(after.card, after.choices.opening) })
   return changes
 }
+
+/** What a newer card does to the card's own picture: the hashes of the two files, or nothing for a card with none. */
+export function pictureChange(before: string | undefined, after: string | undefined): 'unchanged' | 'changed' | 'added' | 'removed' | 'none' {
+  if (before === undefined) return after === undefined ? 'none' : 'added'
+  return after === undefined ? 'removed' : before === after ? 'unchanged' : 'changed'
+}
+
+/** The picture addresses a newer card points to that the older did not, and those it no longer points to. */
+export function addressChanges(before: NormalizedCard, after: NormalizedCard): { added: string[]; dropped: string[] } {
+  const was = new Set(before.urls ?? [])
+  const now = new Set(after.urls ?? [])
+  return { added: [...now].filter(url => !was.has(url)), dropped: [...was].filter(url => !now.has(url)) }
+}

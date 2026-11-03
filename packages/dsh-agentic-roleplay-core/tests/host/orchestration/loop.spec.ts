@@ -1316,6 +1316,28 @@ describe('a turn with the real agent loop', () => {
         })
       })
 
+      it('keeps the state of a named turn when older ones are let go, and lets it go again when the name is taken off', async () => {
+        const { id, session } = await addSession('Vault', true)
+        writeSettings(folderOf(id), { rewind: { keepSnapshots: 1 } })
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        const chatId = `session-${id}`
+        agent.followup(say('move one'))
+        await agent.whenIdle()
+        await orchestration.timelines!.mark(chatId, 'n1', '  Arrival ', 'before the storm')
+        expect(readTimeline(folderOf(id)).nodes[0]).toMatchObject({ label: 'Arrival', note: 'before the storm', snapshot: 'after-n1' })
+        for (const message of ['move two', 'move three', 'move four']) { agent.followup(say(message)); await agent.whenIdle() }
+        await vi.waitFor(() => { expect(readTimeline(folderOf(id)).nodes.at(-1)?.snapshot).toBeDefined() }, { timeout: 5000 })
+        expect(readTimeline(folderOf(id)).nodes.map(node => node.snapshot)).toEqual(['after-n1', undefined, 'after-n3', 'after-n4'])
+        expect(orchestration.timelines!.view(id).path[0]).toMatchObject({ label: 'Arrival', restorable: true })
+        await orchestration.timelines!.unmark(chatId, 'n1')
+        expect(readTimeline(folderOf(id)).nodes.map(node => node.snapshot)).toEqual([undefined, undefined, undefined, 'after-n4'])
+        await expect(orchestration.timelines!.mark(chatId, 'n2', 'Late')).rejects.toThrow(/was not kept/)
+        await expect(orchestration.timelines!.mark(chatId, 'n4', '   ')).rejects.toThrow(/name is 1 to/)
+        await expect(orchestration.timelines!.mark(chatId, 'n9', 'x')).rejects.toThrow(/no turn "n9"/)
+        expect(session.metadata.get().turns).toBe(4)
+      })
+
       it('keeps no state when the chat asks for none: nothing can be gone back to', async () => {
         const { id, session } = await addSession('Vault', true)
         writeSettings(folderOf(id), { rewind: { keepSnapshots: 0 } })
@@ -1489,6 +1511,18 @@ describe('a turn with the real agent loop', () => {
         const { adapter } = await playOoc('moves-bob', '/ooc')
         expect(characterRequests(adapter)).toEqual([])
         expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('The player sent an empty out-of-character message (/ooc)')
+      })
+
+      it('tells the game master how long the player lets time pass and to stop sooner for a decision, when the player waits with /wait', async () => {
+        const { adapter } = await playOoc('moves-bob', '/wait 2 hours until dawn')
+        const notice = JSON.stringify(masterRequests(adapter)[0]!.messages)
+        expect(notice).toContain('The player lets 120 minutes pass (until dawn)')
+        expect(notice).toContain('advance_time')
+      })
+
+      it('refuses a wait with no time, and the game master is told why', async () => {
+        const { adapter } = await playOoc('moves-bob', '/wait a while')
+        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('say how long, for example /wait 2 hours')
       })
     })
 

@@ -46,7 +46,7 @@ interface Result {
   run: number
   ms: number
   scored: Scored
-  findings: { check: string; code: string; where: string }[]
+  findings: { check: string; code: string; where: string; message: string }[]
   skipped: { check: string; reason: string }[]
   counters: ReturnType<typeof newCounters>
 }
@@ -105,7 +105,7 @@ describe.skipIf(!live)(`the live benchmark (${label}, ${mode})`, () => {
             const report = await runChecks({ world: world.world, ...card === undefined ? {} : { card }, ...model === undefined ? {} : { model } }, { ids: benchmark.checks, deep: true })
             results.push({
               case: benchmark.id, kind: benchmark.kind, language, run, ms: Date.now() - began, scored: score(benchmark, report.findings),
-              findings: report.findings.map(finding => ({ check: finding.check, code: finding.code, where: finding.where })), skipped: report.skipped, counters,
+              findings: report.findings.map(finding => ({ check: finding.check, code: finding.code, where: finding.where, message: finding.message })), skipped: report.skipped, counters,
             })
             expect(results.at(-1)?.case).toBe(benchmark.id)
           } finally { await world.remove() }

@@ -23,3 +23,25 @@ export function messageTokens(message: unknown): number {
   if (typeof content === 'string') return estimateTokens(content)
   return Array.isArray(content) ? content.reduce((sum: number, block) => sum + estimateTokens(blockText(block)), 0) : 0
 }
+
+/** One part of a helper's brief and what it costs. */
+export interface BriefSection { title: string; tokens: number }
+
+const MAX_SECTIONS = 24
+const MAX_TITLE = 80
+const HEADING = /^(.{1,200}?)[:：]\s*$/u
+
+/**
+ * The parts of a helper's brief, as the brief itself divides them: it is written in paragraphs, and a paragraph whose first line ends in a colon opens a new part with that line as its
+ * title. Text before the first heading is the part called with an empty title. Sizes are estimated.
+ */
+export function briefSections(prompt: string): BriefSection[] {
+  const parts: { title: string; text: string[] }[] = []
+  for (const block of prompt.split(/\n{2,}/)) {
+    if (block.trim() === '') continue
+    const heading = HEADING.exec(block.split('\n')[0]!)
+    if (heading !== null || parts.length === 0) parts.push({ title: heading === null ? '' : heading[1]!.trim().slice(0, MAX_TITLE), text: [block] })
+    else parts[parts.length - 1]!.text.push(block)
+  }
+  return parts.slice(0, MAX_SECTIONS).map(part => ({ title: part.title, tokens: estimateTokens(part.text.join('\n\n')) }))
+}

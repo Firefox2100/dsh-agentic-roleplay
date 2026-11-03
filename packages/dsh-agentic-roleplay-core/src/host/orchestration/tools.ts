@@ -1,3 +1,4 @@
+import type { Roller } from '@dsh-agentic-roleplay/state'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { describeTime, type SkipRequest } from '../clock/story-clock.ts'
@@ -34,6 +35,8 @@ export interface ToolDeps {
   turnOf: (agent: Agent) => number
   /** The output of a turn was delivered. */
   delivered?: (chat: string, output: TurnOutput) => string | undefined
+  /** The dice of a chat's turn, when they are not the system's own. */
+  roller?: (chat: string) => Roller
 }
 
 /** The JSON value the tool records; the model reads the rendered text. */

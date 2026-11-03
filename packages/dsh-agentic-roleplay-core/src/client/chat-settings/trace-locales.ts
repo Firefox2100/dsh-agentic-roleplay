@@ -1,7 +1,7 @@
 import type { Dictionaries } from '../i18n.ts'
 
 export const PART_IDS = ['system', 'tools', 'notices', 'input', 'steps', 'earlier'] as const
-export const SECTION_IDS = ['time', 'agenda', 'scene', 'activation', 'carried', 'world', 'upcoming', 'beats', 'tracked', 'threads', 'events', 'command', 'pacing', 'rules', 'roll'] as const
+export const SECTION_IDS = ['time', 'agenda', 'scene', 'activation', 'carried', 'world', 'upcoming', 'beats', 'tracked', 'threads', 'events', 'command', 'pacing', 'rules', 'roll', 'wait'] as const
 export const KIND_IDS = ['people', 'places', 'things', 'routes', 'factions', 'lore', 'relationships', 'present', 'carrying', 'cues', 'hidden', 'events'] as const
 
 export type TraceKey =
@@ -10,7 +10,7 @@ export type TraceKey =
   | 'tracePromptTitle' | 'tracePromptSize' | 'traceSceneTitle'
   | 'traceRefusalTitle' | 'traceNoRefusal' | 'traceRefusedCall' | 'traceSteered' | 'traceHelperRefused' | 'traceCutOff'
   | 'traceRemindedTitle' | 'traceRemindedSearch' | 'traceRemindedCues' | 'traceLeftOut' | 'traceNothingFolded' | 'traceNoneReminded' | 'traceLookups' | 'traceLookupRow'
-  | 'traceCharactersTitle' | 'traceCharactersHelp' | 'traceGiven' | 'traceWithheld' | 'traceMemories' | 'traceRetry' | 'traceNames'
+  | 'traceCharactersTitle' | 'traceCharactersHelp' | 'traceExact' | 'traceExactOff' | 'traceGiven' | 'traceWithheld' | 'traceMemories' | 'traceRetry' | 'traceNames'
   | `tracePart_${typeof PART_IDS[number]}` | `traceSection_${typeof SECTION_IDS[number]}` | `traceKind_${typeof KIND_IDS[number]}`
 
 export const dictionaries: Dictionaries<TraceKey> = {
@@ -45,13 +45,15 @@ export const dictionaries: Dictionaries<TraceKey> = {
     traceLookupRow: '{tool}: {text}',
     traceCharactersTitle: 'What each character was given',
     traceCharactersHelp: 'Given is what went into the brief; withheld is what the story holds that the character has no knowledge of. Turn on "Keep what the helpers were told" to see the names behind the withheld counts.',
+    traceExact: 'Exactly what it was told',
+    traceExactOff: 'not kept (turn on “Keep what helpers are told” in Diagnostics)',
     traceGiven: 'Given',
     traceWithheld: 'Withheld',
     traceMemories: 'memories: {clear} clear, {faded} faded, {vague} vague',
     traceRetry: 'retry',
     traceNames: 'Not given: {names}',
     tracePart_system: 'Instructions', tracePart_tools: 'Tool list', tracePart_notices: 'Scene and notices', tracePart_input: 'What was asked', tracePart_steps: 'This turn\'s calls and results', tracePart_earlier: 'Earlier conversation',
-    traceSection_time: 'Time', traceSection_agenda: 'Days', traceSection_scene: 'Cast and places', traceSection_activation: 'Who could act', traceSection_carried: 'Carried things', traceSection_world: 'What the world did', traceSection_upcoming: 'Coming up', traceSection_beats: 'Beats to weave in', traceSection_tracked: 'Tracked values', traceSection_threads: 'Open threads', traceSection_events: 'Earlier events', traceSection_command: 'World command', traceSection_pacing: 'Pacing', traceSection_rules: 'Rules', traceSection_roll: 'Player\'s roll',
+    traceSection_time: 'Time', traceSection_agenda: 'Days', traceSection_scene: 'Cast and places', traceSection_activation: 'Who could act', traceSection_carried: 'Carried things', traceSection_world: 'What the world did', traceSection_upcoming: 'Coming up', traceSection_beats: 'Beats to weave in', traceSection_tracked: 'Tracked values', traceSection_threads: 'Open threads', traceSection_events: 'Earlier events', traceSection_command: 'World command', traceSection_pacing: 'Pacing', traceSection_rules: 'Rules', traceSection_roll: 'Player\'s roll', traceSection_wait: 'Waiting',
     traceKind_people: 'people', traceKind_places: 'places', traceKind_things: 'things', traceKind_routes: 'ways', traceKind_factions: 'groups', traceKind_lore: 'background', traceKind_relationships: 'relationships', traceKind_present: 'present', traceKind_carrying: 'carried', traceKind_cues: 'cues', traceKind_hidden: 'hidden things here', traceKind_events: 'events it took no part in',
   },
   zh: {
@@ -85,13 +87,15 @@ export const dictionaries: Dictionaries<TraceKey> = {
     traceLookupRow: '{tool}：{text}',
     traceCharactersTitle: '每个角色得到了什么',
     traceCharactersHelp: '“得到”指进入简报的内容；“未给”指故事里有、但该角色并不知道的内容。打开“保留助手收到的内容”，可看到未给内容的名称。',
+    traceExact: '确切收到的内容',
+    traceExactOff: '未保存（在“诊断”中开启“保存辅助者收到的内容”）',
     traceGiven: '得到',
     traceWithheld: '未给',
     traceMemories: '记忆：清晰 {clear}、模糊 {faded}、依稀 {vague}',
     traceRetry: '重试',
     traceNames: '未给：{names}',
     tracePart_system: '指令', tracePart_tools: '工具列表', tracePart_notices: '场景与通知', tracePart_input: '被问的内容', tracePart_steps: '本回合的调用与结果', tracePart_earlier: '之前的对话',
-    traceSection_time: '时间', traceSection_agenda: '日程', traceSection_scene: '角色与地点', traceSection_activation: '谁可以行动', traceSection_carried: '携带的物品', traceSection_world: '世界的动作', traceSection_upcoming: '即将发生', traceSection_beats: '待织入的情节点', traceSection_tracked: '跟踪的数值', traceSection_threads: '未决线索', traceSection_events: '早先的事件', traceSection_command: '世界指令', traceSection_pacing: '节奏', traceSection_rules: '规则', traceSection_roll: '玩家的掷骰',
+    traceSection_time: '时间', traceSection_agenda: '日程', traceSection_scene: '角色与地点', traceSection_activation: '谁可以行动', traceSection_carried: '携带的物品', traceSection_world: '世界的动作', traceSection_upcoming: '即将发生', traceSection_beats: '待织入的情节点', traceSection_tracked: '跟踪的数值', traceSection_threads: '未决线索', traceSection_events: '早先的事件', traceSection_command: '世界指令', traceSection_pacing: '节奏', traceSection_rules: '规则', traceSection_roll: '玩家的掷骰', traceSection_wait: '等待',
     traceKind_people: '人物', traceKind_places: '地点', traceKind_things: '物品', traceKind_routes: '通路', traceKind_factions: '团体', traceKind_lore: '背景', traceKind_relationships: '关系', traceKind_present: '在场', traceKind_carrying: '携带', traceKind_cues: '提示', traceKind_hidden: '此处隐藏的物品', traceKind_events: '它未参与的事件',
   },
 }

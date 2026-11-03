@@ -2,7 +2,7 @@
 import type { Translate } from 'dsh-roleplay-model'
 import { readdir, rename, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
+import type { CardDialect, ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
 import { writeImageFileMetadata } from '../images/image-files.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { VARIABLES_FILE_NAME } from '../variables/load.ts'
@@ -11,6 +11,9 @@ import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
 
 import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS } from '../worlds/world-file.ts'
 
+import { dialectOf } from './dialect.ts'
+import { cardPieces, entitiesByPiece, type Source } from './card-tools.ts'
+import { outcomeCounts, pieceOutcomes, type Outcome } from './outcomes.ts'
 import { cleanText, withPlayer, type SourceItem } from './items.ts'
 import { pruneKnowledge, pruneLinks, pruneLoreSubjects, pruneMembers, pruneRelationships, type Extracted } from './extract.ts'
 import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
@@ -45,9 +48,11 @@ export interface ImportReport {
   /** Whether the card's picture became the portrait of the character it is of. */
   portrait: boolean
   /** What was read and not carried on, by what it was. */
-  leftOut: { instructions: number; templates: number; irrelevant: number; scripts: number }
+  leftOut: { instructions: number; templates: number; irrelevant: number; scripts: number; dialect?: CardDialect }
   /** The pictures the card pointed to: how many looked like pictures and how many were fetched into the world's image library. */
   pictures: { found: number; added: number }
+  /** How many pieces of the card were carried, converted, turned into guidance, only read, left out, or not looked at. */
+  pieces?: Record<Outcome, number>
   /** Things that could not be carried over, each with its reason. */
   notes: string[]
 }
@@ -288,6 +293,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   }
 
   const taken = (role: 'instruction' | 'template' | 'irrelevant'): number => items.filter(item => { const classification = classified[item.id]; return classification !== undefined && isLeftOut(classification) && classification.roles[0] === role }).length
+  const sourceOf: Source = { card, choices, pieces: cardPieces(card, choices), records: { classified, roster } }
   const report: ImportReport = {
     prompts: extracted.prompts.map(entry => entry.id),
     variables: extracted.variables.length,
@@ -297,8 +303,9 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     alternateOpenings: alternates.length,
     cover,
     portrait,
-    leftOut: { instructions: taken('instruction'), templates: taken('template'), irrelevant: taken('irrelevant'), scripts: card.ignored.scripts },
+    leftOut: { instructions: taken('instruction'), templates: taken('template'), irrelevant: taken('irrelevant'), scripts: card.ignored.scripts, dialect: dialectOf(card) },
     pictures: input.pictures ?? { found: 0, added: 0 },
+    pieces: outcomeCounts(pieceOutcomes(sourceOf, entitiesByPiece(sourceOf))),
     notes,
   }
   await writeAtomically(join(directory, IMPORT_FOLDER, 'report.json'), JSON.stringify(report, null, 2))

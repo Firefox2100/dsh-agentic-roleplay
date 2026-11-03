@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { MAX_IMPORT_NAME, type ImportChoices, type ImportPreview, type NormalizedCard, type OpeningChoice } from '../../shared/import-card.ts'
+import { dialectOf } from './dialect.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 
 export const IMPORT_FOLDER = '.import'
@@ -102,7 +103,7 @@ export class ImportStore {
     const directory = this.folder(id)
     try {
       const { card, choices, hasPicture } = await readImportFolder(directory)
-      return { id, card, choices, hasAvatar: hasPicture }
+      return { id, card, choices, hasAvatar: hasPicture, dialect: dialectOf(card) }
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new ImportNotFoundError(`there is no import "${id}"`)
       throw error

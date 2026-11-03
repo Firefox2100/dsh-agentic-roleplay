@@ -20,6 +20,7 @@ export type WorldsLocaleKey =
   | 'importPreset' | 'presetReading' | 'presetFailed' | 'presetNotStarted' | 'presetVerbatim' | 'presetVerbatimReplaced'
   | 'authorWorld' | 'openingAuthor' | 'authorWorldFailed' | 'authoringChatTitle'
   | 'translateWarning' | 'translateAction' | 'translateOpening' | 'translateChatTitle' | 'translateFailed' | 'translateNotStarted' | 'languageEnglish' | 'languageChinese' | 'startLanguageNote'
+  | 'playtest' | 'pt_title' | 'pt_help' | 'pt_noPlayer' | 'pt_turns' | 'pt_cost' | 'pt_turnsInvalid' | 'pt_start' | 'pt_stop' | 'pt_running' | 'pt_failed' | 'pt_again' | 'pt_summary' | 'pt_places' | 'pt_triggers' | 'pt_turn' | 'pt_changes' | 'pt_findings' | 'pt_none' | 'pt_nothing'
   | 'addAvatars' | 'addAvatarsTitle' | 'addAvatarsHelp' | 'addAvatarsNone' | 'addAvatarsAdding' | 'addAvatarsFailed' | 'addAvatarsLoadFailed' | 'startAvatars' | 'startAvatarsHelp'
 
 const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKey | ImportSelectionKey | ImportCardKey>> = {
@@ -67,6 +68,21 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     draftBadge: 'Draft', draftWarning: 'This import was written as a draft because the world would not start yet. Its problems:', draftAsk: 'Ask the assistant to repair it', draftKeep: 'Keep as it is', draftDiscard: 'Discard', draftDiscardConfirm: 'Discard this world? It goes to the trash folder of the roleplay root.', draftBusy: 'Working…', draftFailed: 'Could not do that: {message}', draftMore: 'and {count} more',
     revertUpdate: 'Undo card update', revertTitle: 'Undo the last card update?', revertHelp: 'The world goes back to how it was before the update, including the card it was made from. What it holds now is kept in the world\'s .trash folder, so changes you made since can still be found. Pictures are not part of this.', revertConfirm: 'Undo the update', reverting: 'Undoing…', revertFailed: 'Could not undo the update: {message}', revertDone: 'The world is back to how it was before the update. What it held is in {folder}.',
     importPreset: 'Import narration preset', presetVerbatim: 'Put the chosen prompts of "{name}" into the world as its narration style, word for word. Check them in the Prompts section.', presetVerbatimReplaced: 'Put the chosen prompts of "{name}" into the world as its narration style, word for word. The style it had before is in the world\'s trash folder. Check the new one in the Prompts section.', presetReading: 'Reading…', presetFailed: 'Could not import the preset: {message}', presetNotStarted: 'The authoring chat opened but the preset was not applied: {message}. Ask it to apply the preset you uploaded.',
+    playtest: 'Playtest',
+    pt_title: 'Playtest this world',
+    pt_help: 'Plays a few turns of a story made from this world to see where it goes, what it sets off and how long it takes. The test player takes what the story itself suggests. Up to {max} turns. The test story is removed afterwards; the world is only read, never changed.',
+    pt_noPlayer: 'This world has no character a player can play.',
+    pt_turns: 'Turns to play', pt_turnsInvalid: 'Turns must be a whole number from 1 to {max}.',
+    pt_cost: 'This plays {turns} full turn(s) with the models you have selected: the game master, the characters asked, the record keeper and the writer of the suggestions each time, one turn after another. It takes as long as the same turns would in play, and uses the same models and limits.',
+    pt_start: 'Start the test', pt_stop: 'Stop after this turn', pt_again: 'Test again',
+    pt_running: 'Turn {played} of {turns} done. {step}', pt_failed: 'The test play failed: {message}',
+    pt_summary: 'Played {played} of {asked} turns in {seconds} s.',
+    pt_places: 'Places visited: {visited}. Not visited: {unvisited}.',
+    pt_triggers: 'Triggers that fired: {fired}. Still waiting: {waiting}.',
+    pt_turn: '“{player}” took {seconds} s and ended in {place}',
+    pt_changes: '{count} things changed from the start to the end:',
+    pt_findings: 'The world\'s own checks found {count}:',
+    pt_none: 'none', pt_nothing: '(nothing)',
     authorWorld: 'Author with AI', openingAuthor: 'Opening…', authorWorldFailed: 'Could not open the authoring chat: {message}', authoringChatTitle: 'Authoring {name}',
     translateWarning: 'This world is written in {from}, but you use {to}. Names, descriptions and the characters\' speech may mix the two languages.', translateAction: 'Translate into {to}', translateOpening: 'Opening…', translateChatTitle: 'Translating {name}', translateFailed: 'Could not start the translation: {message}', translateNotStarted: 'The authoring chat opened but the translation did not start: {message}. Ask it to translate the world.', languageEnglish: 'English', languageChinese: 'Chinese', startLanguageNote: 'This world is written in {from}, but the story will be played in {to}: names and descriptions stay in {from}. A translated copy can be made from the world\'s editor.',
     addAvatars: 'Add avatars', addAvatarsTitle: 'Add avatars to the world', addAvatarsHelp: 'Each avatar you tick becomes a playable character of this world, with its own copy of everything. It starts where the world\'s playable characters start.', addAvatarsNone: 'There are no avatars yet. Make some on the Avatars tab.', addAvatarsAdding: 'Adding…', addAvatarsFailed: 'Could not add the avatars: {message}', addAvatarsLoadFailed: 'Could not load the avatars: {message}', startAvatars: 'Bring avatars', startAvatarsHelp: 'Tick the avatars to bring into this session as characters; you can play them too. The world itself is not changed.',
@@ -115,6 +131,21 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     draftBadge: '草稿', draftWarning: '这次导入作为草稿写入，因为这个世界目前还无法开始。它的问题：', draftAsk: '请助手修复', draftKeep: '保持现状', draftDiscard: '丢弃', draftDiscardConfirm: '丢弃这个世界吗？它会被移到角色扮演根目录的回收文件夹。', draftBusy: '处理中…', draftFailed: '无法完成：{message}', draftMore: '还有 {count} 个',
     revertUpdate: '撤销卡片更新', revertTitle: '撤销上一次卡片更新？', revertHelp: '世界会回到更新之前的样子，包括它所依据的角色卡。现在的内容会保存在世界的 .trash 文件夹里，之后做的修改仍然可以找回。图片不在撤销范围内。', revertConfirm: '撤销更新', reverting: '正在撤销…', revertFailed: '无法撤销更新：{message}', revertDone: '世界已回到更新之前的样子。原来的内容保存在 {folder}。',
     importPreset: '导入叙述预设', presetVerbatim: '已将“{name}”所选提示原文放入世界，作为它的叙述风格。请在“提示词”部分检查。', presetVerbatimReplaced: '已将“{name}”所选提示原文放入世界，作为它的叙述风格。原来的风格保存在世界的回收文件夹里。请在“提示词”部分检查新的风格。', presetReading: '正在读取…', presetFailed: '无法导入预设：{message}', presetNotStarted: '世界编辑对话已打开，但预设没有应用：{message}。可以请它应用你上传的预设。',
+    playtest: '试玩',
+    pt_title: '试玩这个世界',
+    pt_help: '用这个世界开一个存档，玩几个回合，看看会走向哪里、触发什么、要多久。试玩者会选取故事自己给出的建议。最多 {max} 个回合。试玩的存档之后会被删除；世界只会被读取，不会被修改。',
+    pt_noPlayer: '这个世界没有可供玩家扮演的角色。',
+    pt_turns: '试玩回合数', pt_turnsInvalid: '回合数必须是 1 到 {max} 的整数。',
+    pt_cost: '这将用你选择的模型完整地玩 {turns} 个回合：每个回合都有游戏主持人、被询问的角色、记录员和建议撰写者参与，并且一个接一个地进行。耗时与实际游玩同样的回合相同，使用相同的模型和限制。',
+    pt_start: '开始试玩', pt_stop: '本回合结束后停止', pt_again: '再试一次',
+    pt_running: '已完成第 {played}/{turns} 回合。{step}', pt_failed: '试玩失败：{message}',
+    pt_summary: '在 {seconds} 秒内玩了 {played}/{asked} 个回合。',
+    pt_places: '到过的地点：{visited}。未到过：{unvisited}。',
+    pt_triggers: '已触发的触发器：{fired}。仍在等待：{waiting}。',
+    pt_turn: '“{player}”用了 {seconds} 秒，结束于{place}',
+    pt_changes: '从开始到结束有 {count} 处变化：',
+    pt_findings: '世界自带的检查发现了 {count} 项：',
+    pt_none: '无', pt_nothing: '（无）',
     authorWorld: '使用 AI 编辑', openingAuthor: '正在打开…', authorWorldFailed: '无法打开世界编辑对话：{message}', authoringChatTitle: '编辑{name}',
     translateWarning: '这个世界是用{from}写的，而你使用的是{to}。名字、描述和角色的说话可能会两种语言混在一起。', translateAction: '翻译成{to}', translateOpening: '正在打开…', translateChatTitle: '翻译{name}', translateFailed: '无法开始翻译：{message}', translateNotStarted: '世界编辑对话已打开，但翻译没有开始：{message}。可以请它翻译这个世界。', languageEnglish: '英文', languageChinese: '中文', startLanguageNote: '这个世界是用{from}写的，而故事将用{to}进行：名字和描述仍是{from}。可以在世界编辑器里生成一个翻译后的副本。',
     addAvatars: '添加角色形象', addAvatarsTitle: '把角色形象加入世界', addAvatarsHelp: '勾选的每个角色形象都会成为这个世界的可扮演角色，并带有自己的一份副本。它们从世界中可扮演角色的起始位置出发。', addAvatarsNone: '还没有角色形象。请先到“角色形象”标签页创建。', addAvatarsAdding: '正在添加…', addAvatarsFailed: '无法添加角色形象：{message}', addAvatarsLoadFailed: '无法加载角色形象：{message}', startAvatars: '带上角色形象', startAvatarsHelp: '勾选要带进这个存档的角色形象，它们会成为存档中的角色，你也可以扮演它们。世界本身不会改变。',

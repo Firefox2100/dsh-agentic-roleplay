@@ -22,6 +22,10 @@ export interface ActivityEntry {
   tokens?: { input: number; cached: number; output: number; unreported?: number }
   /** Each request the run made: the size of its prompt, how long the model took to start answering and how it stopped. */
   requests?: RequestStat[]
+  /** The parts of the brief it was given, as the brief divides itself, with their estimated sizes. */
+  brief?: { title: string; tokens: number }[]
+  /** What set the run off when that is not the turn's ordinary work: `off stage`, a character acting while the player is elsewhere. */
+  cause?: string
   /** Names the stored detail of the run, when the session keeps it (setting `diagnostics.keepRuns`). */
   run?: string
 }

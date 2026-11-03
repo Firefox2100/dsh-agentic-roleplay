@@ -15,6 +15,16 @@ export interface CardEntry {
   position: string
 }
 
+/** What a card uses that belongs to the tool that made it. None of it is run; it is counted so the person knows what the import did not carry. */
+export interface CardDialect {
+  /** Names of `{{macro}}` calls other than the player's and the character's name, which the import reads as plain words. */
+  macros: string[]
+  /** Names of tag blocks (`<name>...</name>`) that carry state or formatting for the tool's own display, not prose. */
+  tags: string[]
+  regexScripts: number
+  helperScripts: number
+}
+
 /** A character card, with a V2 card carried over into the V3 shape. Scripts and other machinery of the tool that made it are counted, not kept. */
 export interface NormalizedCard {
   /** The version the file was, before it was carried over. */
@@ -34,7 +44,7 @@ export interface NormalizedCard {
   characterVersion: string
   book?: { name: string; description: string; entries: CardEntry[] }
   /** Parts of the card that were left out because they are code or settings of another tool. */
-  ignored: { scripts: number; extensions: string[] }
+  ignored: { scripts: number; extensions: string[]; regexScripts?: number; helperScripts?: number }
   /** Every web address found anywhere in the card, scripts included, in the order they appear. */
   urls?: string[]
 }
@@ -79,6 +89,8 @@ export interface ImportPreview {
   card: NormalizedCard
   choices: ImportChoices
   hasAvatar: boolean
+  /** The machinery of the source tool found in the card, which nothing here runs. */
+  dialect?: CardDialect
   /** The worlds this card could update instead of becoming a new one, those with its name first. */
   targets?: UpdateTarget[]
 }

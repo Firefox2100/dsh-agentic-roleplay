@@ -51,7 +51,7 @@ describe('how files are replaced', () => {
 
   // files that still keep a hand-written temporary-file-and-rename (or rename a whole folder, as the trash moves in `authoring/documents.ts` do); the list only shrinks: a new writer uses `atomicWrite` (host/atomic-write.ts)
   const STILL_HAND_WRITTEN = new Set([
-    'host/agent/agent-sessions.ts', 'host/authoring/documents.ts', 'host/catalogue/install.ts',
+    'host/authoring/documents.ts', 'host/catalogue/install.ts',
     'host/images/storage.ts', 'host/import/store.ts', 'host/sync/service.ts',
   ])
 
@@ -59,7 +59,9 @@ describe('how files are replaced', () => {
     const found = sources(src).map(file => relative(src, file)).filter((file) => {
       if (file === 'host/atomic-write.ts') return false
       const text = readFileSync(join(src, file), 'utf8')
-      return /\brename(Sync)?\(/.test(text) && /randomUUID|process\.pid/.test(text)
+      // the file system's rename (imported from node:fs), not a method that a DSH service happens to call rename
+      const fileRename = /import\s*(?:type\s*)?\{[^}]*\brename(?:Sync)?\b[^}]*\}\s*from\s*'node:fs(?:\/promises)?'/.test(text) && /(?<![.\w])rename(?:Sync)?\(/.test(text)
+      return fileRename && /randomUUID|process\.pid/.test(text)
     })
     expect(found.filter(file => !STILL_HAND_WRITTEN.has(file))).toEqual([])
     expect([...STILL_HAND_WRITTEN].filter(file => !found.includes(file))).toEqual([])

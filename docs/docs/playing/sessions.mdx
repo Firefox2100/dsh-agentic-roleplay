@@ -24,6 +24,20 @@ A branch is another continuation of the same earlier state. It receives its own 
 
 For example, take back to the moment before opening a sealed door, then send a different action. The original continuation remains part of the timeline history while the new message becomes the active branch. Branches share the same session folder and source world; they are not separate entries on the Sessions page.
 
+## Checkpoints
+
+Press **◆ Checkpoint** under the chat to name the story as it stands now, with a name of up to 80 characters. The turn keeps its saved state however many turns follow, whereas an unnamed turn's state is eventually let go (the setting *Turns that can be gone back to* decides how many). Named turns are listed at the top of the **Rewind to…** menu, and going back to one is an ordinary take-back. Naming the same turn again renames it, and **Remove** takes the name off, after which its state is kept or let go like any other.
+
+A checkpoint needs a saved state, so it can only be made on the turn the story stands at, or on a turn whose state is still kept.
+
+### Comparing two states
+
+**⇄ Compare with…** under the chat lists what differs between the story as it stands now and its state after a checkpoint, a turn, or the start: the story's time and turn count, where characters are and what they are doing, who holds what, tracked values, open threads, relationships and pending commitments. It compares saved states, so a turn whose state was let go cannot be chosen; name it as a checkpoint to keep it. To compare two branches, compare each with the same checkpoint.
+
+### Dice when a turn is played again
+
+By default a regenerated turn, or another turn played from the same place, rolls its dice afresh. The chat setting *Dice when a turn is played again* can be set to **Keep the dice**: a turn played again from the same place then meets the same dice in the same order, so what changes is your wording and the story, not the luck. The numbers follow the order of the rolls, not what each roll is for, so a turn that rolls different things gets the same sequence.
+
 ## Session doctor
 
 When a story has gone wrong (a character who contradicts something established, a belief that no longer fits, a thing in the wrong place), open the **Session doctor** from the story's Chat settings tab. It is a separate chat, one per session, run by an assistant that stands beside the story: it reads the records with the same read tools the other helpers use, says what it found, and proposes a fix.
@@ -36,10 +50,23 @@ The timeline covers story state committed by turns: objective events, perception
 
 Session settings are live configuration rather than story history. Changing a model route, memory limit or image policy affects later work and is not undone by moving the timeline pointer.
 
+## Export and import
+
+On the Sessions page, the download button of a story offers four exports:
+
+- *The story as it went* is readable Markdown: the opening, then your words in italics followed by the response for each turn on the active path.
+- *The story with every turn* is annotated Markdown. It shows discarded turns as alternatives and includes out-of-character rulings, dice rolls and checkpoints.
+- *The same as data* is JSON containing every turn and its parent, which lets another program rebuild any branch.
+- *The whole story* is a ZIP containing the current state, every played turn, retained snapshots, pictures, settings, prompts and a copy of the source world.
+
+**Import a story** on the same page restores that ZIP as a new session whose name ends with "(restored)". It leaves the original untouched and adds the archived world only when no world with the same id exists. The chat is rebuilt when you first open the restored session, using its opening and active timeline. Model tool traffic from the old chat log is not included.
+
+An archive cannot exceed *Largest upload* (Settings, Role Play), or four times that size after extraction. Export the whole story between turns; the plugin refuses that export while a turn is running.
+
 ## Archive and delete
 
 Archiving affects the DSH chat listing. Deleting from the Sessions page retires the chat and removes the roleplay session folder. The DSH persistence layer may retain an archived chat log because DSH does not expose permanent log deletion.
 
 Deletion is destructive; generated images and the session database are removed with the session folder. The source world and reusable avatars are not changed.
 
-Back up the session directory before deletion if you may want the story again. Copying only the visible chat is not enough: the database contains the durable state and the image directory contains the session's media.
+Export the whole story before deleting it if you may want it again. Copying only the visible chat is not enough: the database contains the durable state and the image directory contains the session's media.

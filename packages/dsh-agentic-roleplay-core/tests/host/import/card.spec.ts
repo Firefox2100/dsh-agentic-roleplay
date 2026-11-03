@@ -31,7 +31,7 @@ describe('reading a character card', () => {
       extensions: { regex_scripts: [{}, {}], tavern_helper: { scripts: [{}] }, talkativeness: '0.5', other_tool: { x: 1 } },
       character_book: { entries: [{ comment: '', name: 'By name', content: 'a', keys: [] }, { comment: 'By comment', name: 'ignored', content: 'b', keys: [], enabled: false, constant: true, position: 4 }, 'not an entry'] },
     }))), 'x.json')
-    expect(card.ignored).toEqual({ scripts: 3, extensions: ['regex_scripts', 'tavern_helper', 'other_tool'] })
+    expect(card.ignored).toEqual({ scripts: 3, regexScripts: 2, helperScripts: 1, extensions: ['regex_scripts', 'tavern_helper', 'other_tool'] })
     expect(card.book?.entries.map(entry => [entry.id, entry.title, entry.enabled, entry.constant, entry.position])).toEqual([['entry:0', 'By name', true, false, ''], ['entry:1', 'By comment', false, true, '4']])
   })
 

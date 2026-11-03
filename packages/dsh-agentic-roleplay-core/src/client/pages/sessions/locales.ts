@@ -9,6 +9,8 @@ export type SessionsLocaleKey =
   | 'columnName' | 'columnWorld' | 'columnCreated' | 'columnLastPlayed' | 'columnTurns'
   | 'columnActions' | 'neverPlayed' | 'dateLocale'
   | 'open' | 'openFailed' | 'archive' | 'restore' | 'archived' | 'moveFailed'
+  | 'export' | 'exportTitle' | 'exportQuestion' | 'exportConfirm' | 'export_story' | 'export_annotated' | 'export_data' | 'export_archive'
+  | 'importStory' | 'importing' | 'importFailed' | 'imported' | 'importedWithWorld'
   | 'delete' | 'deleteTitle' | 'deleteQuestion' | 'deleteWarning' | 'deleteConfirm' | 'deleteScope' | 'deleteHere' | 'deleteEverywhere' | 'deleting' | 'deleteFailed' | 'cancel' | 'close'
 
 export const dictionaries: Dictionaries<SessionsLocaleKey> = {
@@ -37,6 +39,19 @@ export const dictionaries: Dictionaries<SessionsLocaleKey> = {
     moveFailed: 'Could not put the session away or bring it back: {message}',
     open: 'Open the chat',
     openFailed: 'Could not open the chat: {message}',
+    export: 'Export the story',
+    exportTitle: 'Export the story',
+    exportQuestion: 'What should be exported of "{name}"?',
+    exportConfirm: 'Export',
+    export_story: 'The story as it went, to read (Markdown)',
+    export_annotated: 'The story with every turn, including those set aside, and notes on rulings, rolls and checkpoints (Markdown)',
+    export_data: 'The same as data (JSON)',
+    export_archive: 'The whole story, to put back on any machine: state, turns, pictures, settings and its world (ZIP)',
+    importStory: 'Import a story',
+    importing: 'Importing…',
+    importFailed: 'Could not import the story: {message}',
+    imported: 'Imported as "{name}".',
+    importedWithWorld: 'Imported as "{name}", with the world it carried.',
     delete: 'Delete session',
     deleteTitle: 'Delete session',
     deleteQuestion: 'Delete the session "{name}"?',
@@ -77,6 +92,19 @@ export const dictionaries: Dictionaries<SessionsLocaleKey> = {
     moveFailed: '无法归档或恢复该存档：{message}',
     open: '打开对话',
     openFailed: '无法打开对话：{message}',
+    export: '导出故事',
+    exportTitle: '导出故事',
+    exportQuestion: '要导出“{name}”的什么内容？',
+    exportConfirm: '导出',
+    export_story: '故事全文，便于阅读（Markdown）',
+    export_annotated: '包含每个回合（含被放弃的回合），并附上裁定、掷骰和检查点的注释（Markdown）',
+    export_data: '同样的内容，以数据形式（JSON）',
+    export_archive: '完整故事，可在任何设备上恢复：状态、回合、图片、设置及其世界（ZIP）',
+    importStory: '导入故事',
+    importing: '正在导入…',
+    importFailed: '无法导入故事：{message}',
+    imported: '已导入为“{name}”。',
+    importedWithWorld: '已导入为“{name}”，并带入了它的世界。',
     delete: '删除存档',
     deleteTitle: '删除存档',
     deleteQuestion: '删除存档“{name}”？',

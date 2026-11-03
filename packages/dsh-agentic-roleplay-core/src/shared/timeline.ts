@@ -23,6 +23,9 @@ export interface TimelineNode {
   snapshot?: string
   /** Where the turn stands on the model's conversation when it is told as a notice instead of by its own events. */
   noticeSeq?: number
+  /** A checkpoint the person named at this turn: its snapshot is kept until the checkpoint is removed. */
+  label?: string
+  note?: string
   createdAt: string
 }
 
@@ -68,6 +71,8 @@ export interface TimelineView {
 
 export interface TimelineTurn {
   id: string
+  label?: string
+  note?: string
   turn: number
   player: string
   output?: TurnOutput
@@ -82,7 +87,7 @@ export interface TimelineTurn {
 /** Builds what the client shows from the timeline. */
 export function viewOf(timeline: Timeline): TimelineView {
   const turn = (node: TimelineNode): TimelineTurn => ({
-    id: node.id, turn: node.turn, player: node.player, ...(node.endSeq === undefined ? {} : { endSeq: node.endSeq }), ...(node.output === undefined ? {} : { output: node.output }),
+    id: node.id, turn: node.turn, player: node.player, ...(node.label === undefined ? {} : { label: node.label }), ...(node.note === undefined ? {} : { note: node.note }), ...(node.endSeq === undefined ? {} : { endSeq: node.endSeq }), ...(node.output === undefined ? {} : { output: node.output }),
     restorable: node.snapshot !== undefined, alternatives: childrenOf(timeline, node.parent).map(sibling => sibling.id),
   })
   const on = new Set(pathTo(timeline, timeline.head).map(node => node.id))

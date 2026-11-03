@@ -172,6 +172,18 @@ describe('the tools of an update', () => {
     expect(diff['dropped']).toEqual([])
     expect(diff['unchanged']).toBe(cardPieces(card(), choices).length - 1)
     expect(diff['editedSinceTheImport']).toEqual(['changed: characters/tam/character.json'])
+    expect(diff['images']).toMatchObject({ cardPicture: 'none', added: [], dropped: [] })
+  })
+
+  it('card_diff says when the card\'s picture or the addresses it points to changed', async () => {
+    const worlds = new WorldCatalog(new Context(), root as RoleplayRoot)
+    const store = new ImportStore(() => root.path)
+    const world = await importedWorld(worlds, store)
+    await writeFile(join(world.directory, '.import', 'picture.png'), 'old')
+    await startUpdate(deps(worlds, store), (await store.create(newer(), Buffer.from('new'))).id, choices, world.id)
+    expect((await run(worlds, world.id, 'card_diff'))['images']).toMatchObject({ cardPicture: 'changed' })
+    await writeFile(join(world.directory, '.import', 'update', 'picture.png'), 'old')
+    expect((await run(worlds, world.id, 'card_diff'))['images']).toMatchObject({ cardPicture: 'unchanged' })
   })
 
   it('card_diff names what only a dropped piece made, and what the card changed about the world itself', async () => {

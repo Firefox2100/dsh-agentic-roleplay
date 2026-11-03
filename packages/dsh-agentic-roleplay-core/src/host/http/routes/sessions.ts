@@ -1,6 +1,8 @@
+import { UnknownStateError } from '../../sessions/compare-session.ts'
 import { TimelineError } from '../../timeline/service.ts'
 import { InvalidSettingsError } from '../../sessions/settings.ts'
 import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../sessions/errors.ts'
+import { InvalidArchiveError } from '../../sessions/session-archive.ts'
 import { InvalidJournalError } from '../../reference/journal.ts'
 import { UnknownSectionError } from '../../reference/reference.ts'
 import { readBinaryBody, readJsonBody } from '../body.ts'
@@ -86,6 +88,73 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
           if (error instanceof TimelineError) return sendError(res, 409, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/timeline/checkpoint': {
+      POST: async (req, res, url) => {
+        const { label, note } = await readJsonBody(req)
+        if (typeof label !== 'string') return sendError(res, 400, '"label" is required (empty takes the name off)')
+        if (note !== undefined && typeof note !== 'string') return sendError(res, 400, '"note" must be text')
+        try {
+          await sessions.markCheckpoint(url.searchParams.get('id') ?? '', url.searchParams.get('turn') ?? '', label, note)
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          if (error instanceof TimelineError) return sendError(res, 409, error.message)
+          throw error
+        }
+        res.statusCode = 204
+        res.end()
+      },
+    },
+    '/sessions/statistics': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, sessions.statistics(url.searchParams.get('id') ?? '')) } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/compare': {
+      GET: async (_req, res, url) => {
+        try {
+          sendJson(res, 200, sessions.compare(url.searchParams.get('id') ?? '', url.searchParams.get('a') ?? 'head', url.searchParams.get('b') ?? 'head'))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof UnknownStateError) return sendError(res, 409, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/export': {
+      GET: async (_req, res, url) => {
+        const id = url.searchParams.get('id') ?? ''
+        const format = url.searchParams.get('format') ?? 'markdown'
+        if (format !== 'markdown' && format !== 'json' && format !== 'archive') return sendError(res, 400, '"format" is markdown, json or archive')
+        const scope = url.searchParams.get('scope') ?? 'path'
+        if (scope !== 'path' && scope !== 'all') return sendError(res, 400, '"scope" is path or all')
+        try {
+          const file = format === 'archive' ? { ...sessions.exportArchive(id), mediaType: 'application/zip' } : (() => { const out = sessions.transcript(id, format, scope, url.searchParams.get('annotated') === '1'); return { file: out.file, mediaType: out.mediaType, bytes: Buffer.from(out.text, 'utf8') } })()
+          res.statusCode = 200
+          res.setHeader('content-type', file.mediaType)
+          res.setHeader('content-length', file.bytes.length)
+          res.setHeader('content-disposition', `attachment; filename*=UTF-8''${encodeURIComponent(file.file)}`)
+          res.setHeader('x-content-type-options', 'nosniff')
+          res.end(file.bytes)
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof TimelineError) return sendError(res, 409, error.message)
+          if (error instanceof RangeError) return sendError(res, 413, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/import': {
+      POST: async (req, res) => {
+        try { sendJson(res, 200, await sessions.importArchive(await readBinaryBody(req, sessions.maxArchiveBytes))) } catch (error) {
+          if (error instanceof InvalidArchiveError) return sendError(res, 422, error.message)
           throw error
         }
       },

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import { copyFileSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, renameSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { NewSession, SessionMetadata } from 'dsh-roleplay-model'
 import { ConflictError, NotFoundError } from './errors.ts'
@@ -209,4 +210,22 @@ function identityOf(database: string, storeOptions: StoreOptions): { id: string;
     const { id, name, createdAt } = store.metadata.get()
     return { id, name, createdAt }
   } finally { store.close() }
+}
+
+/**
+ * Read a snapshot of a session without touching it: the snapshot is copied aside and opened there, so nothing is migrated or written in the session's folder.
+ * @throws {NotFoundError} when there is no such snapshot.
+ */
+export function readSnapshot<T>(sessionsDir: string, id: string, name: string, read: (store: SessionStore) => T, storeOptions: StoreOptions = {}): T {
+  const source = snapshotPath(sessionsDir, id, name)
+  if (!existsSync(source)) throw new NotFoundError(`session ${id} has no snapshot "${name}"`)
+  const aside = mkdtempSync(join(tmpdir(), 'roleplay-snapshot-'))
+  try {
+    const copy = join(aside, 'snapshot.sqlite')
+    copyFileSync(source, copy)
+    const store = openSessionStore(copy, storeOptions)
+    try { return read(store) } finally { store.close() }
+  } finally {
+    rmSync(aside, { recursive: true, force: true })
+  }
 }

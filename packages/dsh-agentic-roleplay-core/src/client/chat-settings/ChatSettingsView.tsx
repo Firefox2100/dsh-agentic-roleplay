@@ -17,6 +17,7 @@ import { ToolSwitches } from '../widgets/tool-switches/ToolSwitches.tsx'
 import { loadExternalTools } from '../widgets/tool-switches/tools-api.ts'
 import type { ExternalTool } from '../../shared/tools.ts'
 import { ActivityList, UsageTable } from './ActivityList.tsx'
+import { StatisticsSection } from './StatisticsSection.tsx'
 import { TraceList } from './TraceList.tsx'
 import { InterventionList } from './InterventionList.tsx'
 import { SettingsFields } from '../settings-form/SettingsFields.tsx'
@@ -153,8 +154,9 @@ export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewPro
       </section>
       <VectorsSection t={t} status={payload.vectors} disabled={saving} onReset={reset} />
       <InterventionList t={t} entries={payload.interventions} />
+      {session !== undefined && <StatisticsSection t={t} session={session} />}
       {session !== undefined && <UsageTable t={t} usage={payload.usage} />}
-      {session !== undefined && <TraceList t={t} trace={payload.trace} activity={payload.activity} />}
+      {session !== undefined && <TraceList t={t} session={session} trace={payload.trace} activity={payload.activity} />}
       {session !== undefined && <ActivityList t={t} session={session} entries={payload.activity} onRefresh={refreshActivity} />}
       {error !== undefined && <p className={css.error} role="alert">{t('saveFailed', { message: error })}</p>}
       <div className={css.actions}>

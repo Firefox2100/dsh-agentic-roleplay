@@ -11,6 +11,8 @@ import type { TurnEngine, TurnOwner } from './turn-engine.ts'
 import { roleplaySessionOf } from './store.ts'
 import { parseOoc } from '../../shared/ooc.ts'
 import { parseRoll } from '../../shared/roll.ts'
+import { parseWait } from '../../shared/wait.ts'
+import type { RollReplay } from '../dice/replay.ts'
 import { rollPlain } from '@dsh-agentic-roleplay/state'
 import type { Timelines } from '../timeline/service.ts'
 import { MASTER_SAME_CALL } from '../agents/limits.ts'
@@ -32,6 +34,8 @@ export interface HookDeps {
   boundaries: () => Boundaries
   stores: (chat: string) => TurnStore | undefined
   timelines: Timelines
+  /** Dice that fall the same way when a turn is played again, when the story asks for it. */
+  rolls?: RollReplay
   /** Registered for each chat that shows a preview, not for all. */
   previewTool: ToolDefinition
   /** The game master's optional tools: each is registered on the agent of a chat that has it switched on, and withdrawn when it is switched off. */
@@ -197,7 +201,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .join('\n')
     if (!store.settings().background.concurrent) await engine.quiesce(owner.chat)
     await ctx.roleplayOrchestration.unitFree(owner.chat)
-    await timelines.begin(owner.chat, payload.turn, text)
+    const began = await timelines.begin(owner.chat, payload.turn, text)
+    deps.rolls?.begin(owner.chat, store.story.metadata.get().id, began.parent)
 
     const cast = store.cast()
     const ooc = parseOoc(text)
@@ -229,13 +234,20 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const wanted = ooc === undefined ? parseRoll(text) : undefined
     if (wanted !== undefined) {
       try {
-        const made = rollPlain(wanted.expression)
+        const made = rollPlain(wanted.expression, deps.rolls?.roller(owner.chat))
         const roll = store.story.dice.record({ turn: payload.turn, expression: made.expression, faces: made.faces, kept: made.kept, modifier: made.modifier, total: made.total, value: made.total, reason: wanted.reason === '' ? tr('the player\'s roll') : wanted.reason, by: 'player' })
         addLine('roll', tr('The player rolled {dice} ({reason}) and got {total}: dice {faces}. This is a fact, decided by the dice: take it into account when you judge the attempt and decide what happens.', { dice: roll.expression, reason: roll.reason, total: roll.total, faces: `[${roll.faces.join(', ')}]` }))
       } catch (error) {
         engine.skip(owner)
         lines.push(store.text('roleplay/input-refused', { reason: error instanceof Error ? error.message : String(error) }))
       }
+    }
+    const waiting = ooc === undefined && wanted === undefined ? parseWait(text) : undefined
+    if (waiting !== undefined) {
+      const clock = store.settings().clock
+      const refusal = clock.mode === 'real' ? tr('this chat follows the clock on the wall, so time cannot be skipped') : waiting.minutes === undefined ? tr('say how long, for example /wait 2 hours or /wait 30 minutes until the ferry') : waiting.minutes > clock.maxSkipDays * 1440 ? tr('that is more than the {days} days this chat allows in one skip', { days: clock.maxSkipDays }) : undefined
+      if (refusal !== undefined) { engine.skip(owner); lines.push(store.text('roleplay/input-refused', { reason: refusal })) }
+      else addLine('wait', tr('The player lets {minutes} minutes pass{reason}. Move the story\'s time on by that much with advance_time, and let the world move meanwhile as it would: characters keep to their days, and you ask only those the time reaches. Stop sooner, at the moment it happens, if something comes up that the player must decide or could not sleep through, say what, and let the player act. Then narrate what the player perceived in the time that passed. You may play at most {rounds} rounds for this.', { minutes: waiting.minutes!, reason: waiting.reason === '' ? '' : ` (${waiting.reason})`, rounds: store.settings().maxRounds }))
     }
     if (ooc !== undefined && ooc.request !== '') lines.push(store.text(ooc.question ? 'roleplay/ask-question' : 'roleplay/ooc-command', { request: ooc.request }))
     if (ooc !== undefined && ooc.request === '') {

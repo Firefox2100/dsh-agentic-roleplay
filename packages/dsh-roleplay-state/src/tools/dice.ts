@@ -60,10 +60,10 @@ const rolled = (_args: unknown, value: unknown) => [{ type: 'text' as const, tex
 /**
  * Tools that roll dice for an agent, so that numbers are not made up. `roll_check` rolls a check the story defines and reads
  * the result with the check's own bands; `roll_dice` rolls plain notation for what has no check. The roller is the system's
- * source of randomness unless one is given.
+ * source of randomness unless one is given (`rollerFor` is given the id of the agent that rolls).
  */
-export function createDiceTools(resolve: (agentSessionId: string) => DiceLink | undefined, options: { roller?: Roller; by?: 'agent' | 'player' } = {}): ToolDefinition[] {
-  const roller = options.roller ?? systemRoller
+export function createDiceTools(resolve: (agentSessionId: string) => DiceLink | undefined, options: { roller?: Roller; rollerFor?: (agentSessionId: string) => Roller; by?: 'agent' | 'player' } = {}): ToolDefinition[] {
+  const rollerOf = (agentSessionId: string): Roller => (options.rollerFor?.(agentSessionId) ?? options.roller ?? systemRoller)
   const linkOf = (agent: { session: { id: string } } | undefined): DiceLink => {
     const found = agent === undefined ? undefined : resolve(agent.session.id)
     if (found === undefined) throw new NotFoundError('this agent is not working in a roleplay session, so there are no dice to roll')
@@ -94,7 +94,7 @@ export function createDiceTools(resolve: (agentSessionId: string) => DiceLink | 
       output: { schema: { type: 'json' }, render: rolled },
       isConcurrencySafe: () => false,
       execute(args, exec) {
-        return Promise.resolve(rollForCheck(linkOf(exec.agent), args, roller, options.by) as never)
+        return Promise.resolve(rollForCheck(linkOf(exec.agent), args, rollerOf(exec.agent!.session.id), options.by) as never)
       },
     }),
     defineTool({
@@ -109,7 +109,7 @@ export function createDiceTools(resolve: (agentSessionId: string) => DiceLink | 
       isConcurrencySafe: () => false,
       execute(args, exec) {
         const { session, turn } = linkOf(exec.agent)
-        const made = rollPlain(args.expression, roller)
+        const made = rollPlain(args.expression, rollerOf(exec.agent!.session.id))
         const roll = session.dice.record({ turn, expression: made.expression, faces: made.faces, kept: made.kept, modifier: made.modifier, total: made.total, value: made.total, reason: args.reason, ...(args.character === undefined ? {} : { character: args.character }), by: options.by ?? 'agent' })
         return Promise.resolve({ roll: roll.id, total: roll.total, text: describeRoll(roll) } as never)
       },

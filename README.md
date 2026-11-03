@@ -6,12 +6,12 @@ Instead of treating roleplay as one long prompt, the bundle separates the game m
 
 ## What makes it different
 
-- **Characters have their own point of view.** They act from their goals, relationships, knowledge, memories, and current situation—not from everything stored in the world.
-- **The world changes without becoming a script.** Plots can provide direction and pressure, while player choices and autonomous character actions determine what actually happens.
-- **Stories remain editable and durable.** Worlds are filesystem-first, sessions use SQLite, and branching or taking back does not require rebuilding the setting.
-- **Your library can follow you between devices.** Optional rclone-based sync moves worlds, stories, prompts and other shared content while detecting conflicts instead of silently overwriting either copy.
-- **Creation happens inside DSH.** Build worlds in the editor, ask an authoring agent for help with approval by default, import and update character cards with recoverable draft repair, and generate portraits or scene illustrations when providers are available.
-- **Media is optional.** Text play works without image, speech, embedding, or reranking services; add them when you want portraits, voiced scenes, voice input, or richer recall.
+- Characters act from their own goals, relationships, knowledge, memories, and current situation rather than everything stored in the world.
+- Plots provide direction and pressure without fixing the outcome. Player choices and autonomous character actions determine what happens.
+- Worlds are filesystem-first and sessions use SQLite. Checkpoints, branching, readable transcripts, and restorable archives preserve the story without rebuilding its setting.
+- Optional rclone-based sync moves worlds, stories, prompts, and other shared content between devices. Conflicts are kept for review instead of silently overwriting either copy.
+- World creation stays inside DSH. The editor, approval-based authoring assistant, recoverable card import, card updates, and isolated playtests cover the path from source material to a playable world.
+- Media remains optional. Text play does not require image, speech, embedding, or reranking services; providers add portraits, voiced scenes, voice input, and richer recall.
 
 The bundle includes a complete roleplay interface, a bounded game-master loop, autonomous character and faction activity, story-time memory, relationships and knowledge, locations and items, plots, triggers and world-defined commands, reusable avatars, world authoring, speech, and image workflows.
 

@@ -21,6 +21,9 @@ const UNKNOWN_SEQ = -1
 
 export class TimelineError extends Error {}
 
+export const MAX_LABEL = 80
+export const MAX_NOTE = 500
+
 export interface TimelineDeps {
   state: Pick<RoleplayState, 'snapshot' | 'snapshots' | 'removeSnapshot' | 'restore' | 'fork' | 'openSession' | 'deleteSession'>
   sessionsDir: () => string
@@ -127,8 +130,8 @@ export class Timelines {
   }
 
   /** Keeps the state as it is under the name of the turn it follows from, when that is not done yet. */
-  private keep(id: string, timeline: Timeline, at: string | null): void {
-    if (this.deps.keepSnapshots(id) === 0) return
+  private keep(id: string, timeline: Timeline, at: string | null, force = false): void {
+    if (!force && this.deps.keepSnapshots(id) === 0) return
     const node = at === null ? undefined : timeline.nodes.find(candidate => candidate.id === at)
     const name = node === undefined ? START_SNAPSHOT : snapshotOf(node.id)
     if (node !== undefined && node.snapshot !== undefined) return
@@ -137,10 +140,50 @@ export class Timelines {
     if (node !== undefined) { node.snapshot = name; writeTimeline(this.folder(id), timeline) }
   }
 
+  /**
+   * Names a turn as a checkpoint, with a note: its state is kept (taken now when the story stands there and has not kept it) and no longer pruned.
+   * @throws {TimelineError} when there is no such turn, the name is empty or too long, or the turn's state is gone.
+   */
+  mark(chat: string, target: string, label: string, note?: string): Promise<void> {
+    return this.serial(chat, async () => {
+      const id = this.idOf(chat)
+      const name = label.trim()
+      if (name === '' || name.length > MAX_LABEL) throw new TimelineError(`a checkpoint's name is 1 to ${MAX_LABEL} characters`)
+      if (note !== undefined && note.length > MAX_NOTE) throw new TimelineError(`a checkpoint's note is at most ${MAX_NOTE} characters`)
+      const timeline = this.read(id)
+      const node = timeline.nodes.find(candidate => candidate.id === target)
+      if (node === undefined) throw new TimelineError(`there is no turn "${target}"`)
+      if (node.snapshot === undefined && timeline.head === node.id) {
+        await this.deps.engine.quiesce(chat)
+        this.keep(id, timeline, node.id, true)
+      }
+      if (node.snapshot === undefined) throw new TimelineError('the state of the story at that turn was not kept, so it cannot be a checkpoint')
+      node.label = name
+      if (note === undefined || note.trim() === '') delete node.note
+      else node.note = note.trim()
+      writeTimeline(this.folder(id), timeline)
+    })
+  }
+
+  /** Takes the name off a turn; its state is kept or let go like any other turn's. */
+  unmark(chat: string, target: string): Promise<void> {
+    return this.serial(chat, () => {
+      const id = this.idOf(chat)
+      const timeline = this.read(id)
+      const node = timeline.nodes.find(candidate => candidate.id === target)
+      if (node === undefined) throw new TimelineError(`there is no turn "${target}"`)
+      delete node.label
+      delete node.note
+      writeTimeline(this.folder(id), timeline)
+      this.prune(id, timeline)
+      return Promise.resolve()
+    })
+  }
+
   /** Lets the oldest snapshots go: only the turns most recently played keep theirs, and the one that holds the start stays. */
   private prune(id: string, timeline: Timeline): void {
     const keep = this.deps.keepSnapshots(id)
-    const kept = timeline.nodes.filter(node => node.snapshot !== undefined)
+    const kept = timeline.nodes.filter(node => node.snapshot !== undefined && node.label === undefined)
     const dropped = kept.slice(0, Math.max(0, kept.length - keep))
     if (dropped.length === 0) return
     for (const node of dropped) { this.deps.state.removeSnapshot(this.deps.sessionsDir(), id, node.snapshot!); delete node.snapshot }

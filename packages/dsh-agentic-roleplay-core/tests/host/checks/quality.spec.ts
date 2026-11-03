@@ -95,16 +95,18 @@ describe('the comparison with the card', () => {
     expect(comparisonProblem({ dropped: Array(7).fill({ fact: 'f', quote: 'Mara keeps' }), invented: [] }, source, document)).toMatch(/at most/)
   })
 
-  it('is run for each document made from the card, and reports what was dropped and invented', async () => {
+  it('is run for each document made from the card, reports what was dropped and invented, and drops a fact that a closed question finds stated', async () => {
     const card = { sourceSpec: 'chara_card_v3', name: 'Quay', description: 'Mara keeps the ferry. She is 34 years old.', personality: '', scenario: '', firstMessage: '', alternateGreetings: [], messageExample: '', creatorNotes: '', systemPrompt: '', postHistoryInstructions: '', tags: [], creator: 'x', characterVersion: '1', ignored: { scripts: 0, extensions: [] } }
     for (const [file, value] of Object.entries({ 'card.json': card, 'choices.json': { name: 'Quay', disabledEntries: [], opening: { kind: 'none' } }, 'classification.json': { 'field:description': { roles: ['character'], targets: [{ name: 'Mara', kind: 'character' }] } }, 'roster.json': [{ kind: 'character', key: 'mara', name: 'Mara', aliases: [], player: false }] })) await write(join(directory, IMPORT_FOLDER, file), value)
     await write(join(directory, 'characters', 'mara', 'character.json'), { name: 'Mara', role: 'npc', summary: 'Keeps the ferry. Thirty years old.' })
     const card2 = await loadCardEvidence(directory, 'current')
-    const model = fakeModel(job => {
+    const statedBy = (stated: boolean) => fakeModel(job => {
+      if ('stated' in (job.result as { properties: object }).properties) return { reason: 'r', stated }
       expect(job.prompt).toContain('She is 34 years old.')
       return { dropped: [{ fact: 'her age is 34', quote: 'She is 34 years old.' }], invented: [{ fact: 'she is thirty', quote: 'Thirty years old.' }] }
     })
-    const report = await runChecks({ world: { directory, summary } as never, card: card2!, model }, { kits: ['fidelity'], deep: true, ids: ['card-fidelity'] })
-    expect(report.findings.map(finding => `${finding.code} ${finding.where}`)).toEqual(['fact-dropped characters/mara', 'fact-invented characters/mara'])
+    const run = async (stated: boolean) => (await runChecks({ world: { directory, summary } as never, card: card2!, model: statedBy(stated) }, { kits: ['fidelity'], deep: true, ids: ['card-fidelity'] })).findings.map(finding => `${finding.code} ${finding.where}`)
+    expect(await run(false)).toEqual(['fact-dropped characters/mara', 'fact-invented characters/mara'])
+    expect(await run(true)).toEqual([])
   })
 })

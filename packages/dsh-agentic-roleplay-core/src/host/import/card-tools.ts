@@ -7,6 +7,7 @@ import type { WorldCatalog } from '../worlds/catalog.ts'
 import type { ImportReport } from './finish.ts'
 import { sourcesFor } from './extract.ts'
 import { itemise, type SourceItem } from './items.ts'
+import { outcomeCounts, pieceOutcomes } from './outcomes.ts'
 import { norm } from './run.ts'
 import { IMPORT_FOLDER, readImportFolder } from './store.ts'
 import type { Role } from './roles.ts'
@@ -182,10 +183,13 @@ export function cardTools(worlds: WorldCatalog, options: { records?: boolean } =
         const { card, choices, pieces, records } = await source(exec)
         const madeFrom = entitiesByPiece({ card, choices, pieces, records })
         const made = (id: string): string[] => madeFrom.get(id) ?? []
+        const outcomes = withRecords ? pieceOutcomes({ card, choices, pieces, records }, madeFrom) : []
         return json({
           card: { name: card.name, creator: card.creator, version: card.characterVersion, tags: card.tags, format: card.sourceSpec, ignoredScripts: card.ignored.scripts },
+          ...(withRecords ? { outcomes: outcomeCounts(outcomes) } : {}),
           pieces: pieces.map(piece => ({
             id: piece.id, label: piece.label, characters: piece.text.length, readByTheImport: piece.used,
+            ...(withRecords ? { outcome: outcomes.find(entry => entry.piece === piece.id)?.outcome, because: outcomes.find(entry => entry.piece === piece.id)?.because } : {}),
             ...(piece.enabled === undefined ? {} : { switchedOnInCard: piece.enabled }),
             ...(withRecords ? { takenToBe: rolesOf(records.classified, piece.id), madeInto: made(piece.id) } : {}),
           })),

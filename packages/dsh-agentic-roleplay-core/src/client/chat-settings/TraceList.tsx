@@ -1,6 +1,7 @@
 import type { ActivityEntry } from '../../shared/activity.ts'
 import type { CharacterAccess, PromptPart, TurnTrace } from '../../shared/trace.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
+import { RunToggle } from './ActivityList.tsx'
 import { KIND_IDS, PART_IDS, SECTION_IDS } from './trace-locales.ts'
 import { LOOKUP_TOOLS, fullestRequest, refusalsOf, turnTimes } from './turn-times.ts'
 import css from './ChatSettingsView.module.css'
@@ -28,7 +29,13 @@ function givenText(t: Translate, access: CharacterAccess): string {
 
 const withheldText = (t: Translate, access: CharacterAccess): string => nonzero(t, access.withheld).join(' · ')
 
-function TurnBody({ t, trace, activity }: { t: Translate; trace: TurnTrace; activity: readonly ActivityEntry[] }) {
+/** The stored run of a character's activation in a turn, when the chat kept it: the nth activation of that character in the turn is the nth attempt's run. */
+function runOf(activity: readonly ActivityEntry[], turn: number, access: CharacterAccess): string | undefined {
+  const runs = activity.filter(entry => entry.turn === turn && entry.label === access.character && entry.cause === undefined)
+  return runs[Math.min(access.attempt, runs.length) - 1]?.run
+}
+
+function TurnBody({ t, session, trace, activity }: { t: Translate; session: string; trace: TurnTrace; activity: readonly ActivityEntry[] }) {
   const times = turnTimes(trace, activity)
   const refusals = refusalsOf(trace, times.helpers)
   const fullest = fullestRequest(trace)
@@ -93,7 +100,7 @@ function TurnBody({ t, trace, activity }: { t: Translate; trace: TurnTrace; acti
           <p className={css.description}><strong>{t('traceCharactersTitle')}</strong></p>
           <p className={css.description}>{t('traceCharactersHelp')}</p>
           <table className={css.table} data-testid="roleplay-trace-access">
-            <thead><tr><th /><th>{t('traceGiven')}</th><th>{t('traceWithheld')}</th></tr></thead>
+            <thead><tr><th /><th>{t('traceGiven')}</th><th>{t('traceWithheld')}</th><th>{t('traceExact')}</th></tr></thead>
             <tbody>
               {trace.access.map((access, index) => (
                 <tr key={index}>
@@ -103,6 +110,7 @@ function TurnBody({ t, trace, activity }: { t: Translate; trace: TurnTrace; acti
                     {withheldText(t, access)}
                     {access.names !== undefined && <div className={css.description}>{t('traceNames', { names: Object.values(access.names).flat().join(', ') })}</div>}
                   </td>
+                  <td>{runOf(activity, trace.turn, access) === undefined ? <span className={css.description}>{t('traceExactOff')}</span> : <RunToggle t={t} session={session} run={runOf(activity, trace.turn, access)!} />}</td>
                 </tr>
               ))}
             </tbody>
@@ -114,7 +122,7 @@ function TurnBody({ t, trace, activity }: { t: Translate; trace: TurnTrace; acti
 }
 
 /** Where each of the latest turns went, newest first: the time before and after delivery, the game master's prompt by part, what was refused, what it was reminded of, and what each character was given. */
-export function TraceList({ t, trace, activity }: { t: Translate; trace: readonly TurnTrace[]; activity: readonly ActivityEntry[] }) {
+export function TraceList({ t, session, trace, activity }: { t: Translate; session: string; trace: readonly TurnTrace[]; activity: readonly ActivityEntry[] }) {
   const shown = trace.slice(-SHOWN).reverse()
   return (
     <details className={css.activity} data-testid="roleplay-trace">
@@ -129,7 +137,7 @@ export function TraceList({ t, trace, activity }: { t: Translate; trace: readonl
           return (
             <details key={entry.turn}>
               <summary>{entry.endedAt === undefined ? t('traceUnfinished', { turn: entry.turn }) : t('traceSummary', { turn: entry.turn, front: seconds(times.foregroundMs), back: seconds(times.backgroundMs), refused: total })}</summary>
-              <TurnBody t={t} trace={entry} activity={activity} />
+              <TurnBody t={t} session={session} trace={entry} activity={activity} />
             </details>
           )
         })}

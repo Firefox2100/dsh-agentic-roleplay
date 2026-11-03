@@ -10,7 +10,7 @@ import type { ApiDeps } from '../api.ts'
 import { type Routes, languageField } from './shared.ts'
 
 /** The routes of the API for worlds. */
-export function worldsRoutes({ worlds, createWorld, starter, authorWorld, translation, worldCharacters, avatars }: ApiDeps): Routes {
+export function worldsRoutes({ worlds, createWorld, starter, authorWorld, translation, worldCharacters, avatars, playtest }: ApiDeps): Routes {
   return {
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
@@ -65,6 +65,22 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, transl
           throw error
         }
       },
+    },
+    '/worlds/playtest': {
+      GET: (_req, res, url) => { sendJson(res, 200, playtest.status(url.searchParams.get('id') ?? '') ?? { state: 'idle' }); return Promise.resolve() },
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { turns?: unknown; playerCharacterId?: unknown; opening?: unknown; language?: unknown }
+        if (typeof body.turns !== 'number') return sendError(res, 400, 'turns must be a number')
+        if (body.playerCharacterId !== undefined && typeof body.playerCharacterId !== 'string') return sendError(res, 400, 'playerCharacterId must be text')
+        if (body.opening !== undefined && typeof body.opening !== 'number') return sendError(res, 400, 'opening must be a number')
+        try {
+          sendJson(res, 202, playtest.start({ worldId: url.searchParams.get('id') ?? '', turns: body.turns, ...body.playerCharacterId === undefined ? {} : { playerCharacterId: body.playerCharacterId }, ...body.opening === undefined ? {} : { opening: body.opening }, ...languageField(body.language) === undefined ? {} : { language: languageField(body.language)! } }))
+        } catch (error) {
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+      DELETE: async (_req, res, url) => { await playtest.stop(url.searchParams.get('id') ?? ''); sendJson(res, 200, playtest.status(url.searchParams.get('id') ?? '') ?? { state: 'idle' }) },
     },
     '/avatars': {
       POST: async (req, res) => {

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
@@ -7,12 +8,12 @@ import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
-import { cardChanges, diffText, matchPieces, worldFieldChanges } from './card-diff.ts'
-import { entitiesByPiece, readSource } from './card-tools.ts'
+import { addressChanges, cardChanges, diffText, pictureChange, matchPieces, worldFieldChanges } from './card-diff.ts'
+import { UPDATE_FOLDER, entitiesByPiece, readSource } from './card-tools.ts'
 import { editsSince } from './snapshot.ts'
 import { checkImported } from '../checks/imported.ts'
 import { readWorldInfo } from '../worlds/world-info.ts'
-import { IMPORT_FOLDER } from './store.ts'
+import { IMPORT_FOLDER, PICTURE_FILE } from './store.ts'
 import { finishUpdate, pendingUpdate } from './update.ts'
 
 type AgentExec = { agent?: { session: { id: string } }; signal?: AbortSignal }
@@ -32,6 +33,8 @@ async function loreTitles(directory: string): Promise<Map<string, string[]>> {
   }
   return titles
 }
+
+const hashOf = async (file: string): Promise<string | undefined> => await readFile(file).then(bytes => createHash('sha256').update(bytes).digest('hex'), (error: NodeJS.ErrnoException) => { if (error.code === 'ENOENT') return undefined; throw error })
 
 const output = { schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 1) }] }
 const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as never
@@ -82,8 +85,10 @@ export function updateTools(worlds: WorldCatalog): ToolDefinition[] {
           }]
         })
         const edits = await editsSince(directory)
+        const picture = pictureChange(await hashOf(join(directory, IMPORT_FOLDER, PICTURE_FILE)), await hashOf(join(directory, IMPORT_FOLDER, UPDATE_FOLDER, PICTURE_FILE)))
         return json({
           card: cardChanges(before.card, after.card),
+          images: { cardPicture: picture, ...addressChanges(before.card, after.card), effect: 'A changed card picture replaces the portrait that is still the card\'s picture when the update is finished; a portrait the person changed is kept. Pictures the card no longer points to stay in the image library.' },
           changed: changed.slice(0, MAX_PIECES),
           ...(changed.length > MAX_PIECES ? { moreChanged: changed.length - MAX_PIECES } : {}),
           added: match.added.slice(0, MAX_PIECES).map(piece => ({ piece: piece.id, version: 'new', label: piece.label, characters: piece.text.length, readByTheImport: piece.used, start: piece.text.slice(0, PREVIEW_CHARS) })),

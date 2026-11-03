@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { Service, type Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-tools'
 import z from '@deepseek-ai/schemastery'
-import { createSession, deleteSession, forkSession, type ForkOptions, type ForkSource, listSessions, openSession, removeSnapshot, restoreSnapshot, sessionDatabase, snapshotNames, takeSnapshot, type SessionInit, type SessionListing } from './sessions.ts'
+import { createSession, deleteSession, forkSession, type ForkOptions, type ForkSource, listSessions, openSession, readSnapshot, removeSnapshot, restoreSnapshot, sessionDatabase, snapshotNames, takeSnapshot, type SessionInit, type SessionListing } from './sessions.ts'
 import type { SessionStore, StoreOptions } from './store.ts'
 import type { RecallQuery, Recalled } from './memory/recall.ts'
 import type { SemanticRanker } from './memory/ranker.ts'
@@ -136,6 +136,11 @@ export class RoleplayState extends Service {
   /** The names of the snapshots a session has. */
   snapshots(sessionsDir: string, id: string): string[] {
     return snapshotNames(sessionsDir, id)
+  }
+
+  /** Read a snapshot of a session through `read`, on a copy: the session's folder is not touched. @throws {NotFoundError} when there is no such snapshot. */
+  readSnapshot<T>(sessionsDir: string, id: string, name: string, read: (store: Session) => T): T {
+    return readSnapshot(sessionsDir, id, name, read as never, this.options)
   }
 
   /** Delete a snapshot, if there is one. */

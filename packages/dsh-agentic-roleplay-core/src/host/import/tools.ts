@@ -17,6 +17,7 @@ import { NoEmbeddingService, type ImportContext, type RunJob, type TextOf } from
 import { build, endReview, finish, importPhase, isReviewing, settleDraft, startRepair, survey, type Phase } from './run-import.ts'
 import { checkWorld } from '../worlds/world-check.ts'
 import type { ImportSettings } from './service.ts'
+import { cachedJobs, forgetJobs } from './job-cache.ts'
 import { outputCeiling } from './output-ceiling.ts'
 
 export const SURVEY_TOOL = 'import_survey'
@@ -59,10 +60,10 @@ function modelKeyOf(agent: ToolExecution['agent'], named: { provider: string; mo
 }
 
 /** The runner of an import: every job is a narrow agent below the chat's own, on the chat's model. */
-export function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf, language?: string): ImportContext {
+export function contextOf(exec: ToolExecution, settings: ImportSettings, text: TextOf, language?: string, keepIn?: string): ImportContext {
   const agent = exec.agent
   if (agent === undefined) throw new Error('the import tools can only be called by an agent')
-  const run: RunJob = async (job) => {
+  const ask: RunJob = async (job) => {
     for (let attempt = 1; ; attempt += 1) {
       const named = namedModel(settings.model)
       const model = modelKeyOf(agent, named.model)
@@ -85,6 +86,7 @@ export function contextOf(exec: ToolExecution, settings: ImportSettings, text: T
       }
     }
   }
+  const run: RunJob = keepIn === undefined ? ask : cachedJobs(keepIn, ask)
   // chosen but missing, the service fails each question, so the survey says why every piece went to the language model
   const decide: ImportContext['decide'] | undefined = settings.decisions === 'decision' ? (state, asks) => {
     const service = (agent.ctx as unknown as { get(name: 'decisions'): DecisionService | undefined }).get('decisions')
@@ -118,11 +120,13 @@ const toolNames = { survey: SURVEY_TOOL, build: BUILD_TOOL, finish: FINISH_TOOL 
 export function importTools(worlds: WorldCatalog, settings: () => ImportSettings, prompting: Prompting): ToolDefinition[] {
   const builds = new Map<string, { turn: number; count: number }>()
   /** Runs one step for the world of the calling chat; what the model should do next is told in the result, in the person's language. */
-  const step = async (exec: ToolExecution, work: (ctx: ImportContext, directory: string) => Promise<object>, next: (text: TextOf, result: object) => string): Promise<never> => {
+  const step = async (exec: ToolExecution, work: (ctx: ImportContext, directory: string) => Promise<object>, next: (text: TextOf, result: object) => string, fresh = false): Promise<never> => {
     const world = await worldOf(worlds, exec)
+    if (fresh) await forgetJobs(world.directory)
     const language = prompting.languages().get(world.id)
     const text: TextOf = (id, variables) => prompting.prompts().text(id, language, { ...toolNames, ...variables })
-    const result = await work(contextOf(exec, settings(), text, language), world.directory)
+    const result = await work(contextOf(exec, settings(), text, language, world.directory), world.directory)
+    if ((result as { ok?: boolean }).ok === true) await forgetJobs(world.directory)
     return json({ ...result, next: next(text, result) })
   }
   return [
@@ -132,7 +136,7 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
       parameters: { card: cardParameter },
       output: output(value => JSON.stringify(value, null, 1)),
       isConcurrencySafe: () => false,
-      async execute(args, exec) { checkedCard(args); return await step(exec, survey, text => text('import/next-survey')) },
+      async execute(args, exec) { checkedCard(args); return await step(exec, survey, text => text('import/next-survey'), true) },
     }),
     defineTool({
       name: BUILD_TOOL,

@@ -8,7 +8,7 @@ export type ChatSettingsLocaleKey =
   | ToolSwitchKey
   | TraceKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
-  | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityTokens' | 'usageTitle' | 'usageHelp' | 'usageTurn' | 'usageMaster' | 'usageHelpers' | 'usageRuns' | 'usageTotal' | 'usageCached' | 'usageUnreported' | 'usageMasterTime' | 'reqPrompt' | 'reqWait' | 'reqTook' | 'reqCutOff' | 'reqError' | 'reqCount' | 'usageEmpty' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
+  | 'statsTitle' | 'statsHelp' | 'statsFailed' | 'statsTurns' | 'statsWaited' | 'statsStoryTime' | 'statsMinutes' | 'statsHours' | 'statsDays' | 'statsScenes' | 'statsNarration' | 'statsVoice' | 'statsThreads' | 'statsRelationships' | 'statsBranches' | 'statsUsage' | 'briefCount' | 'briefOpening' | 'briefTokens' | 'causeOffStage' | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityTokens' | 'usageTitle' | 'usageHelp' | 'usageTurn' | 'usageMaster' | 'usageHelpers' | 'usageRuns' | 'usageTotal' | 'usageCached' | 'usageUnreported' | 'usageMasterTime' | 'reqPrompt' | 'reqWait' | 'reqTook' | 'reqCutOff' | 'reqError' | 'reqCount' | 'usageEmpty' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
   | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed' | 'reflectTitle' | 'reflectNone' | 'reflectLast' | 'reflectTurns' | 'reflectScene' | 'reflectManual' | 'reflectOutcome' | 'reflectNothing' | 'reflectRunning' | 'reflectNow' | 'reflectHelp' | 'reflectFailed' | 'reflectError'
   | 'interventionsTitle' | 'interventionsHelp' | 'interventionsEmpty' | 'interventionTurn' | 'interventionKind' | 'interventionText' | 'interventionStatus' | 'interventionBeat' | 'interventionCue' | 'interventionWaiting' | 'interventionTaken' | 'interventionLapsed' | 'interventionWithdrawn'
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
@@ -82,6 +82,21 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     reqCutOff: 'cut off by the output limit',
     reqError: 'failed',
     reqCount: '{count} requests',
+    statsTitle: 'Story statistics',
+    statsHelp: 'Counted from what the story keeps; nothing here is a judgement. Shares are of the words delivered on the way the story went.',
+    statsFailed: 'Could not count the story: {message}',
+    statsTurns: '{count} turns on the way the story went',
+    statsWaited: 'You waited {time} for the game master in all (the helpers worked beside it)',
+    statsStoryTime: '{span} of story time have passed',
+    statsMinutes: '{count} minutes', statsHours: '{count} hours', statsDays: '{count} days',
+    statsScenes: '{count} scenes (stretches of events in one place)',
+    statsNarration: 'Narration: {passages} passages, {share}% of the words',
+    statsVoice: '{name}: {lines} lines, {share}% of the words',
+    statsThreads: 'Threads: {open} open, {resolved} closed',
+    statsRelationships: 'Relationships: {changed} of {total} have changed in play',
+    statsBranches: 'Branches: {points} turns were played more than once from the same state; {aside} turns were set aside',
+    statsUsage: 'Models: {runs} helper runs; {master} tokens for the game master, {helpers} for the helpers',
+    briefCount: 'brief in {count} parts', briefOpening: '(opening)', briefTokens: 'about {count} tokens', causeOffStage: 'off stage',
     usageEmpty: 'No turn has been counted yet.',
     activityResult: 'Result',
     activityOwnModel: 'chat model',
@@ -256,6 +271,21 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     reqCutOff: '被输出上限截断',
     reqError: '失败',
     reqCount: '{count} 次请求',
+    statsTitle: '故事统计',
+    statsHelp: '根据故事保存的内容统计，没有任何评判。占比是故事实际走过的回合中已交付文字的占比。',
+    statsFailed: '无法统计这个故事：{message}',
+    statsTurns: '故事实际走过 {count} 个回合',
+    statsWaited: '你一共等待游戏主持人 {time}（助手与它同时工作）',
+    statsStoryTime: '故事里已过去 {span}',
+    statsMinutes: '{count} 分钟', statsHours: '{count} 小时', statsDays: '{count} 天',
+    statsScenes: '{count} 个场景（同一地点连续发生的事件）',
+    statsNarration: '旁白：{passages} 段，占文字的 {share}%',
+    statsVoice: '{name}：{lines} 句，占文字的 {share}%',
+    statsThreads: '线索：{open} 条未完结，{resolved} 条已完结',
+    statsRelationships: '关系：{total} 条中有 {changed} 条在游玩中发生了变化',
+    statsBranches: '分支：有 {points} 个回合从同一状态被玩了不止一次；{aside} 个回合被搁置',
+    statsUsage: '模型：助手运行 {runs} 次；游戏主持人用了 {master} 个词元，助手用了 {helpers} 个',
+    briefCount: '简报分为 {count} 部分', briefOpening: '（开头）', briefTokens: '约 {count} 个词元', causeOffStage: '场外',
     usageEmpty: '还没有统计过任何回合。',
     activityResult: '结果',
     activityOwnModel: '对话模型',

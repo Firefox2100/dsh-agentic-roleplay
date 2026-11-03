@@ -54,6 +54,7 @@ export const FORM_FIELDS = [
   { path: ['triggers', 'beatTurns'], kind: 'integer', label: 'triggersBeatTurns', help: 'triggersBeatTurnsHelp' },
   { path: ['triggers', 'cueTurns'], kind: 'integer', label: 'triggersCueTurns', help: 'triggersCueTurnsHelp' },
   { path: ['rewind', 'keepSnapshots'], kind: 'integer', label: 'rewindKeep', help: 'rewindKeepHelp' },
+  { path: ['rewind', 'rolls'], kind: 'choice', label: 'rewindRolls', help: 'rewindRollsHelp', choices: [{ value: 'reroll', label: 'rewindRollsReroll' }, { value: 'keep', label: 'rewindRollsKeep' }] },
   { path: ['preview', 'enabled'], kind: 'flag', label: 'previewEnabled', help: 'previewEnabledHelp' },
   { path: ['suggestions', 'count'], kind: 'integer', label: 'suggestionsCount', help: 'suggestionsCountHelp' },
   { path: ['dice', 'visibility'], kind: 'choice', label: 'diceVisibility', help: 'diceVisibilityHelp', choices: [{ value: 'hidden', label: 'diceHidden' }, { value: 'card', label: 'diceCard' }] },

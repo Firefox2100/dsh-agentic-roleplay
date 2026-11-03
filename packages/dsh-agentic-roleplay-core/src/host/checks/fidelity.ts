@@ -261,6 +261,27 @@ export function comparisonProblem(value: { dropped: Reported[]; invented: Report
   return undefined
 }
 
+const STATED_SCHEMA = { type: 'object', properties: { reason: { type: 'string' }, stated: { type: 'boolean' } }, required: ['reason', 'stated'], additionalProperties: false } as const
+
+/**
+ * The reported facts that a second, closed question does not find in the text they are said to be missing from: the comparison reads two texts at once, and across two
+ * languages it calls a fact missing that the other text does say.
+ */
+async function unstated(model: ImportContext, facts: readonly Reported[], text: string, subject?: string): Promise<Reported[]> {
+  const instructions = model.text('checks/decide-stated')
+  const kept: Reported[] = []
+  for (const entry of facts) {
+    if (model.cancelled?.() === true) break
+    const state = { ...subject === undefined ? {} : { subject }, fact: entry.fact, text: text.slice(0, SOURCE_CHARS * 2) }
+    const verdict = await verdictOf(model, state, 'stated', instructions, async () => {
+      const answer = await model.run<{ reason: string; stated: boolean }>({ persona: instructions, prompt: `${subject === undefined ? '' : `${subject}\n\n`}${entry.fact}\n\n${state.text}`, result: STATED_SCHEMA as never, maxTokens: 500 })
+      return answer.stated
+    })
+    if (!verdict.yes) kept.push(entry)
+  }
+  return kept
+}
+
 const compared: Check = {
   id: 'card-fidelity',
   kit: 'fidelity',
@@ -293,8 +314,10 @@ const compared: Check = {
           check: value => comparisonProblem(value, text, document),
         })
         const once = (list: Reported[]): Reported[] => list.filter((entry, at) => list.findIndex(other => squashed(other.quote) === squashed(entry.quote)) === at)
-        for (const entry of once(answer.dropped)) found.push({ severity: 'warning', code: 'fact-dropped', where, message: `the card says “${snippet(entry.quote)}” (${entry.fact}), which ${where} does not say`, hint: 'Read the piece with card_read; if the fact matters to the story, add it to the document as the card has it.' })
-        for (const entry of once(answer.invented)) found.push({ severity: 'warning', code: 'fact-invented', where, message: `${where} says “${snippet(entry.quote)}” (${entry.fact}), which the card does not give`, hint: 'Remove it unless the person wants it; the world should not state what its source does not.' })
+        const dropped = await unstated(model, once(answer.dropped), document, subject)
+        const invented = await unstated(model, once(answer.invented), text)
+        for (const entry of dropped) found.push({ severity: 'warning', code: 'fact-dropped', where, message: `the card says “${snippet(entry.quote)}” (${entry.fact}), which ${where} does not say`, hint: 'Read the piece with card_read; if the fact matters to the story, add it to the document as the card has it.' })
+        for (const entry of invented) found.push({ severity: 'warning', code: 'fact-invented', where, message: `${where} says “${snippet(entry.quote)}” (${entry.fact}), which the card does not give`, hint: 'Remove it unless the person wants it; the world should not state what its source does not.' })
       } catch (error) {
         if (model.cancelled?.() === true) throw error
         found.push({ severity: 'info', code: 'not-compared', where, message: `${where} could not be compared: ${error instanceof Error ? error.message : String(error)}` })

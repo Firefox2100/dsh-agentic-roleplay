@@ -1,5 +1,6 @@
+import { join } from 'node:path'
 import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
-import { IMPORT_COMMAND, type ImportChoices } from '../../shared/import-card.ts'
+import { IMPORT_COMMAND, type ImportChoices, type NormalizedCard } from '../../shared/import-card.ts'
 import { trimCharacters } from '../../shared/text.ts'
 import type { WorldSummary } from '../../shared/worlds.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
@@ -7,7 +8,8 @@ import { WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { authoringTitle } from '../agent/authoring-sessions.ts'
 import { WorldFolderExistsError, createWorld } from '../worlds/create-world.ts'
-import { IMPORT_FOLDER, type ImportStore } from './store.ts'
+import { IMPORT_FOLDER, readImportFolder, type ImportStore } from './store.ts'
+import { sourceSummary } from './dialect.ts'
 import { importPhase, markReady, structureImport } from './run-import.ts'
 import type { ImportReport } from './finish.ts'
 
@@ -40,9 +42,15 @@ export function folderNameOf(name: string): string {
 }
 
 /** The command that starts the import, for a card kept in the world's import folder. */
-export function importMessage(language?: string): string {
+export function importMessage(language?: string, card?: NormalizedCard): string {
   const tr = translator(storyLanguageOf(language))
-  return `${IMPORT_COMMAND} ${IMPORT_FOLDER}/card.json ${tr('Import this card into this newly created world.')}`
+  const request = tr('Import this card into this newly created world.')
+  return `${IMPORT_COMMAND} ${IMPORT_FOLDER}/card.json ${card === undefined ? request : `${request} ${sourceSummary(card, language)}`}`
+}
+
+/** The card kept in a world's import folder, when it can be read; the message then carries a summary of it. */
+async function cardOf(directory: string): Promise<NormalizedCard | undefined> {
+  try { return (await readImportFolder(join(directory, IMPORT_FOLDER))).card } catch { return undefined }
 }
 
 /**
@@ -57,7 +65,7 @@ export async function resumeImport(deps: Pick<StartImportDeps, 'worlds' | 'autho
   if (phase === undefined || phase === 'done') throw new InvalidEditProblems(['no import is waiting in this world'])
   const chatSessionId = await deps.authoring.ensure(record.summary.id, record.summary.name, authoringTitle(record.summary.name, language), language)
   let failure: string | undefined
-  try { await deps.authoring.send(chatSessionId, importMessage(language)) } catch (error) { failure = error instanceof Error ? error.message : String(error) }
+  try { await deps.authoring.send(chatSessionId, importMessage(language, await cardOf(record.directory))) } catch (error) { failure = error instanceof Error ? error.message : String(error) }
   return { worldId: record.summary.id, chatSessionId, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }
 }
 
@@ -86,11 +94,11 @@ async function createImportedWorld(deps: Pick<StartImportDeps, 'store' | 'worlds
  * @throws {InvalidEditProblems} when the choices cannot be used. @throws {ImportNotFoundError} when the upload is gone.
  */
 export async function startImport(deps: StartImportDeps, id: string, choices: ImportChoices, language?: string): Promise<StartedImport> {
-  const { world } = await createImportedWorld(deps, id, choices)
+  const { world, directory } = await createImportedWorld(deps, id, choices)
   const chatSessionId = await deps.authoring.ensure(world.id, world.name, authoringTitle(world.name, language), language)
   let failure: string | undefined
   try {
-    await deps.authoring.send(chatSessionId, importMessage(language))
+    await deps.authoring.send(chatSessionId, importMessage(language, await cardOf(directory)))
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }

@@ -195,6 +195,8 @@ export interface ChatSettings {
   rewind: {
     /** How many of the turns most recently played keep a snapshot of the story's state, so that the story can be taken back to them; 0 keeps none and turns rewinding off. */
     keepSnapshots: number
+    /** What taking the story back does to the dice: `reroll` rolls them again when a turn is played again; `keep` lets a turn played again from the same place meet the same dice in the same order. */
+    rolls: 'reroll' | 'keep'
   }
   rules: {
     /** What is not allowed in this story besides what the world itself rules out, in your own words, one rule per line ("No one can fly"). The game master holds the player's actions and out-of-character commands to the world's rules and these. */
@@ -303,7 +305,7 @@ export const SETTINGS_SPEC = {
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
   decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), confidence: ratio(0, 1, 0.7) },
   interface: { pack: text(60, '') },
-  rewind: { keepSnapshots: integer(0, 500, 30) },
+  rewind: { keepSnapshots: integer(0, 500, 30), rolls: choice(['reroll', 'keep'], 'reroll') },
   rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },

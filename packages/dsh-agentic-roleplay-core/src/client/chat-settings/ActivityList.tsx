@@ -32,6 +32,16 @@ const requestText = (t: Translate, request: RequestStat): string => [
   ...request.stop === 'max-tokens' ? [t('reqCutOff')] : request.stop === 'error' ? [t('reqError')] : [],
 ].join(' · ')
 
+function BriefList({ t, brief }: { t: Translate; brief: ActivityEntry['brief'] }) {
+  if (brief === undefined || brief.length === 0) return null
+  return (
+    <details data-testid="roleplay-brief">
+      <summary>{t('briefCount', { count: brief.length })}</summary>
+      <ol className={css.reasons}>{[...brief].sort((a, b) => b.tokens - a.tokens).map((part, index) => <li key={index}>{`${part.title === '' ? t('briefOpening') : part.title}: ${t('briefTokens', { count: count(part.tokens) })}`}</li>)}</ol>
+    </details>
+  )
+}
+
 function RequestList({ t, requests }: { t: Translate; requests: readonly RequestStat[] | undefined }) {
   if (requests === undefined || requests.length === 0) return null
   return (
@@ -100,11 +110,11 @@ export function ActivityList({ t, session, entries, onRefresh }: { t: Translate;
               {shown.flatMap(entry => [
                 <tr key={`${entry.at}-${entry.label}`}>
                   <td>{new Date(entry.at).toLocaleTimeString()}</td>
-                  <td>{entry.label}</td>
+                  <td>{entry.label}{entry.cause === undefined ? null : ` (${entry.cause === 'off stage' ? t('causeOffStage') : entry.cause})`}</td>
                   <td>{entry.model === '' ? t('activityOwnModel') : entry.model}</td>
                   <td>{seconds(entry.ms)}</td>
                   <td>{entry.calls}</td>
-                  <td>{entry.tokens === undefined ? '' : tokenText(t, entry.tokens)}<RequestList t={t} requests={entry.requests} /></td>
+                  <td>{entry.tokens === undefined ? '' : tokenText(t, entry.tokens)}<RequestList t={t} requests={entry.requests} /><BriefList t={t} brief={entry.brief} /></td>
                   <td className={entry.error === undefined ? undefined : css.error} title={entry.error}>{entry.error === undefined ? t('activityDone') : t('activityFailed', { reason: entry.error })}</td>
                   <td>{entry.run === undefined ? null : <button type="button" className={css.link} onClick={() => { toggle(entry.run as string) }}>{open?.run === entry.run ? t('runHide') : t('runShow')}</button>}</td>
                 </tr>,
@@ -163,4 +173,23 @@ function whyText(t: Translate, why: RunRecall['why']): string {
     t('whyScore', { value: figure(why.score) }),
     ...(why.linked === undefined ? [] : [t('whyLinked', { people: why.linked.people, tags: why.linked.tags, place: why.linked.place ? t('whyLinkedPlace') : '' })]),
   ].join(' · ')
+}
+
+/** A link that shows exactly what a helper's run was told and did, when the chat kept it. */
+export function RunToggle({ t, session, run }: { t: Translate; session: string; run: string }) {
+  const [detail, setDetail] = useState<RunDetail | 'gone' | 'loading' | { error: string } | undefined>()
+  const toggle = (): void => {
+    if (detail !== undefined) { setDetail(undefined); return }
+    setDetail('loading')
+    loadRun(session, run, new AbortController().signal).then(
+      (found) => { setDetail(found ?? 'gone') },
+      (failure: unknown) => { setDetail({ error: failure instanceof Error ? failure.message : String(failure) }) },
+    )
+  }
+  return (
+    <>
+      <button type="button" className={css.link} onClick={toggle}>{detail === undefined ? t('runShow') : t('runHide')}</button>
+      {detail !== undefined && <RunView t={t} detail={detail} />}
+    </>
+  )
 }

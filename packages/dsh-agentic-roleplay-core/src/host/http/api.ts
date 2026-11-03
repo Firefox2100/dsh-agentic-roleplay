@@ -1,3 +1,6 @@
+import type { PlaytestRequest, PlaytestStatus } from '../../shared/playtest.ts'
+import type { StoryStatistics } from '../../shared/statistics.ts'
+import type { StoryComparison } from '../../shared/compare.ts'
 import type { ExternalTool } from '../../shared/tools.ts'
 import { type DiceDocument } from '../../shared/world-dice.ts'
 import { type CalendarDocument, type VariableDeclaration, type WorldRoutines } from '../../shared/world-daily.ts'
@@ -65,6 +68,12 @@ export interface ApiDeps {
     start(worldId: string, to: 'en' | 'zh', title: string, language: string): Promise<{ chatSessionId: string; started: boolean; failure?: string }>
   }
   worldCharacters(worldId: string): Promise<WorldCharactersPayload>
+  /** Bounded test plays of a world: a few turns on a story that is removed afterwards. */
+  playtest: {
+    status(worldId: string): PlaytestStatus | undefined
+    start(request: PlaytestRequest): PlaytestStatus
+    stop(worldId: string): Promise<void>
+  }
   /** The characters and places of a world's files, as the editor shows them. */
   /** Character cards uploaded to become worlds. */
   importer: {
@@ -194,6 +203,17 @@ export interface ApiDeps {
     decisions(id: string): DecisionsPayload
     timeline(id: string): TimelineView
     moveTimeline(id: string, to: string): Promise<{ draft?: string }>
+    /** Names a turn as a checkpoint with an optional note (its state is kept), or takes the name off when `label` is empty. */
+    markCheckpoint(id: string, turn: string, label: string, note?: string): Promise<void>
+    transcript(id: string, format: 'markdown' | 'json', scope: 'path' | 'all', annotated: boolean): { file: string; mediaType: string; text: string }
+    /** The shape of the played story, counted from what is kept. */
+    statistics(id: string): StoryStatistics
+    /** What differs between two states of a story: `head`, `start` or a turn. */
+    compare(id: string, a: string, b: string): StoryComparison
+    /** The whole story as one ZIP, to be put back with `importArchive`. */
+    exportArchive(id: string): { file: string; bytes: Buffer }
+    importArchive(bytes: Buffer): Promise<{ id: string; name: string; worldAdded: boolean }>
+    maxArchiveBytes: number
     imageStatus(id: string, node: string): Promise<SceneImageStatus>
     generateImage(id: string, node: string): Promise<SceneImageStatus>
     imageFile(id: string, node: string, serial: number): Promise<{ file: string; size: number }>

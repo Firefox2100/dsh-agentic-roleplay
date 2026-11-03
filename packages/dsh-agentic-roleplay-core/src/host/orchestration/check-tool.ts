@@ -57,7 +57,7 @@ export function createCheckNarrateTool(deps: ToolDeps): ToolDefinition {
       const missing = BRANCHES.filter(([result]) => check.bands.some(band => band.result === result) && given[result] === undefined).map(([, name]) => name)
       if (missing.length > 0) throw new Error(`the check "${check.key}" can give ${[...new Set(check.bands.map(band => band.result))].join(', ')}: give ${missing.join(' and ')} too; nothing was rolled`)
 
-      const rolled = rollForCheck({ session: store.story, turn: owner.turn }, { check: check.key, reason: args.reason, character: args.character, ...(args.target === undefined ? {} : { target: args.target }), ...(args.bonus === undefined ? {} : { bonus: args.bonus }) })
+      const rolled = rollForCheck({ session: store.story, turn: owner.turn }, { check: check.key, reason: args.reason, character: args.character, ...(args.target === undefined ? {} : { target: args.target }), ...(args.bonus === undefined ? {} : { bonus: args.bonus }) }, deps.roller?.(owner.chat))
       const branch = given[rolled.result]
       if (branch === undefined) throw new Error(`the roll gave ${rolled.result}, for which no branch was written`)
       const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store })

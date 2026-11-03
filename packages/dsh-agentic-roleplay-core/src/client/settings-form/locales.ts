@@ -4,7 +4,7 @@ export type SettingsFormKey =
   | 'samplingMaster' | 'samplingMasterHelp' | 'samplingCharacters' | 'samplingCharactersHelp' | 'samplingTopP' | 'samplingTopPHelp' | 'samplingTopK' | 'samplingTopKHelp' | 'samplingMinP' | 'samplingMinPHelp' | 'samplingFrequencyPenalty' | 'samplingFrequencyPenaltyHelp' | 'samplingPresencePenalty' | 'samplingPresencePenaltyHelp' | 'samplingRepetitionPenalty' | 'samplingRepetitionPenaltyHelp' | 'samplingSuggestions' | 'samplingSuggestionsHelp' | 'samplingAuthoring' | 'samplingAuthoringHelp' | 'samplingRecords' | 'samplingRecordsHelp'
   | 'maxRounds' | 'maxRoundsHelp' | 'maxCharacters' | 'maxCharactersHelp' | 'flaky' | 'flakyHelp' | 'recall' | 'recallHelp' | 'lookup' | 'lookupHelp' | 'lookupCalls' | 'lookupCallsHelp' | 'verify' | 'verifyHelp' | 'backlogRounds' | 'backlogRoundsHelp' | 'overRetrieve' | 'overRetrieveHelp' | 'associate' | 'associateHelp' | 'diversity' | 'diversityHelp' | 'foldedFade' | 'foldedFadeHelp'
   | 'authoringEnabled' | 'authoringEnabledHelp' | 'authoringThings' | 'authoringThingsHelp' | 'authoringPerTurn' | 'authoringPerTurnHelp' | 'consolidateAfter' | 'consolidateAfterHelp'
-  | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'interfacePack' | 'interfacePackHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
+  | 'rewindRolls' | 'rewindRollsHelp' | 'rewindRollsReroll' | 'rewindRollsKeep' | 'clockMode' | 'clockModeHelp' | 'clockSimulated' | 'clockReal' | 'clockLocked' | 'offstagePerTurn' | 'offstagePerTurnHelp' | 'offstagePerCharacter' | 'offstagePerCharacterHelp' | 'diagnosticsKeepRuns' | 'diagnosticsKeepRunsHelp' | 'interfacePack' | 'interfacePackHelp' | 'offstageJoint' | 'offstageJointHelp' | 'offstageSummary' | 'offstageSummaryHelp' | 'suggestionsCount' | 'suggestionsCountHelp' | 'promptsLanguage' | 'promptsLanguageHelp' | 'reasoningChildren' | 'reasoningChildrenHelp' | 'previewEnabled' | 'previewEnabledHelp' | 'rewindKeep' | 'rewindKeepHelp' | 'triggersEnabled' | 'triggersEnabledHelp' | 'triggersMaxFires' | 'triggersMaxFiresHelp' | 'triggersBeatTurns' | 'triggersBeatTurnsHelp' | 'clockTimeZone' | 'clockTimeZoneHelp' | 'clockRoundSeconds' | 'clockRoundSecondsHelp' | 'clockMaxSkipDays' | 'clockMaxSkipDaysHelp' | 'invalidZone'
   | 'limitTokens' | 'limitTokensHelp' | 'limitRatio' | 'limitRatioHelp' | 'backgroundConcurrent' | 'backgroundConcurrentHelp' | 'workingTokens' | 'workingTokensHelp' | 'retainRatio' | 'retainRatioHelp' | 'invalid'
   | 'triggersCueTurns' | 'triggersCueTurnsHelp' | 'samplingTools' | 'samplingToolsHelp' | 'toolsRequired' | 'toolsAuto' | 'samplingMasterMaxTokens' | 'samplingMasterMaxTokensHelp' | 'samplingMaxTokens' | 'samplingMaxTokensHelp' | 'samplingShortMaxTokens' | 'samplingShortMaxTokensHelp' | 'samplingHeadroom' | 'samplingHeadroomHelp' | 'shortTermTokens' | 'shortTermTokensHelp' | 'longTermTokens' | 'longTermTokensHelp'
   | 'rulesOwn' | 'rulesOwnHelp' | 'localeId' | 'presetFast' | 'presetFastHelp' | 'presetApply' | 'embeddingOptions' | 'embeddingOptionsHelp'
@@ -83,6 +83,10 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     triggersMaxFiresHelp: 'The most triggers that fire in one look, after a round or at the start of a turn. The rest wait for the next look.',
     triggersBeatTurns: 'Turns a beat stays pending',
     triggersBeatTurnsHelp: 'A beat is something the world makes happen that the game master is told to weave into the story. If it does not within this many turns, it is let go.',
+    rewindRolls: 'Dice when a turn is played again',
+    rewindRollsHelp: 'Reroll rolls the dice afresh when you regenerate a turn or play another from the same place. Keep lets a turn played again from the same place meet the same dice in the same order, so only your words and the story change, not the luck. The numbers follow the order of the rolls, not what they are for.',
+    rewindRollsReroll: 'Roll again',
+    rewindRollsKeep: 'Keep the dice',
     rewindKeep: 'Turns that can be gone back to',
     rewindKeepHelp: 'How many of the latest turns keep a copy of the story\'s state, so that you can rewind to them, regenerate, or swap a turn for another. Older turns cannot be returned to. 0 turns rewinding off. Each copy takes the size of the session\'s database.',
     previewEnabled: 'Preview of the scene',
@@ -283,6 +287,10 @@ export const dictionaries: Dictionaries<SettingsFormKey> = {
     triggersMaxFiresHelp: '每次检查（一轮之后或一回合开始时）最多触发的触发器数量，其余等待下一次检查。',
     triggersBeatTurns: '情节提示保留的回合数',
     triggersBeatTurnsHelp: '情节提示是世界促成、要求主持人写进故事的事。若在这么多回合内都没有写入，就会被放弃。',
+    rewindRolls: '重播回合时的骰子',
+    rewindRollsHelp: '“重掷”会在你重新生成回合、或从同一处另打一个回合时重新掷骰。“保留”让从同一处重播的回合按相同顺序遇到相同的骰点，变化的只有你的话和故事，不是运气。骰点按掷骰的先后顺序对应，与掷骰的用途无关。',
+    rewindRollsReroll: '重新掷骰',
+    rewindRollsKeep: '保留骰点',
     rewindKeep: '可回退的回合数',
     rewindKeepHelp: '最近的这么多个回合会保存一份故事状态的副本，因此可以回退到它们、重新生成，或把某一回合换成另一个。更早的回合无法回到。0 表示关闭回退。每份副本的大小等于会话数据库的大小。',
     previewEnabled: '场景预览',

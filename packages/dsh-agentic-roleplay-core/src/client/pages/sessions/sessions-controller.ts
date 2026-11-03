@@ -19,6 +19,21 @@ export interface SessionsState {
   moving?: string
   /** Why the last attempt to put a session away or bring it back failed. */
   moveError?: string
+  /** The session whose export the person is choosing. */
+  exporting?: { id: string; name: string }
+  importing?: boolean
+  importError?: string
+  /** What the last import made. */
+  imported?: { name: string; worldAdded: boolean }
+}
+
+/** What an export can be: the story as read, with its notes and every turn, as data, or the whole thing to put back. */
+export type ExportKind = 'story' | 'annotated' | 'data' | 'archive'
+
+/** The address that sends an export as a file. */
+export function exportAddress(id: string, kind: ExportKind): string {
+  const choice: Record<ExportKind, string> = { story: 'format=markdown&scope=path', annotated: 'format=markdown&scope=all&annotated=1', data: 'format=json&scope=all&annotated=1', archive: 'format=archive' }
+  return `${API_PREFIX}/sessions/export?id=${encodeURIComponent(id)}&${choice[kind]}`
 }
 
 /** A session the user is being asked to delete. */
@@ -45,6 +60,9 @@ export interface SessionsFace {
   open: (id: string) => void
   archive: (id: string) => void
   restore: (id: string) => void
+  askExport: (id: string, name: string) => void
+  closeExport: () => void
+  importArchive: (file: File) => void
   askRemoval: (id: string, name: string) => void
   cancelRemoval: () => void
   confirmRemoval: () => void
@@ -63,6 +81,9 @@ export class SessionsController {
     open: (id) => { void this.open(id) },
     archive: (id) => { void this.move(id, 'archive') },
     restore: (id) => { void this.move(id, 'restore') },
+    askExport: (id, name) => { this.store.update((draft) => { draft.exporting = { id, name } }) },
+    closeExport: () => { this.store.update((draft) => { delete draft.exporting }) },
+    importArchive: (file) => { void this.importArchive(file) },
     askRemoval: (id, name) => { this.store.update((draft) => { draft.removal = { id, name, deleting: false } }); void this.offerSync(id) },
     setEverywhere: (everywhere) => { this.store.update((draft) => { if (draft.removal !== undefined) draft.removal.everywhere = everywhere }) },
     cancelRemoval: () => { this.cancelRemoval() },
@@ -120,6 +141,27 @@ export class SessionsController {
       this.store.update((draft) => { draft.moveError = error instanceof Error ? error.message : String(error) })
     } finally {
       if (!this.abort.signal.aborted) this.store.update((draft) => { delete draft.moving })
+    }
+  }
+
+  /** Puts an archived story back as a new session; the list is read again. */
+  private async importArchive(file: File): Promise<void> {
+    if (this.store.getSnapshot().importing === true) return
+    this.store.update((draft) => { draft.importing = true; delete draft.importError; delete draft.imported })
+    try {
+      const response = await fetch(`${API_PREFIX}/sessions/import`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/zip' }, body: file, signal: this.abort.signal })
+      if (!response.ok) {
+        const body = await response.json().catch(() => undefined) as { message?: unknown } | undefined
+        throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
+      }
+      const made = await response.json() as { name: string; worldAdded: boolean }
+      this.store.update((draft) => { draft.imported = { name: made.name, worldAdded: made.worldAdded } })
+      await this.read(true)
+    } catch (error) {
+      if (this.abort.signal.aborted) return
+      this.store.update((draft) => { draft.importError = error instanceof Error ? error.message : String(error) })
+    } finally {
+      if (!this.abort.signal.aborted) this.store.update((draft) => { delete draft.importing })
     }
   }
 
