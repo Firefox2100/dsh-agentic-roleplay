@@ -11,7 +11,7 @@ export async function playtestStatus(worldId: string, signal?: AbortSignal): Pro
   return await answer(await fetch(address(worldId), { credentials: 'same-origin', ...(signal === undefined ? {} : { signal }) }))
 }
 
-export async function startPlaytest(worldId: string, body: { turns: number; playerCharacterId?: string; language: string }): Promise<PlaytestStatus> {
+export async function startPlaytest(worldId: string, body: { turns: number; playerCharacterId?: string; opening?: number; startingTime?: string; language: string }): Promise<PlaytestStatus> {
   return await answer(await fetch(address(worldId), { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }))
 }
 
@@ -19,7 +19,9 @@ export async function stopPlaytest(worldId: string): Promise<PlaytestReading> {
   return await answer(await fetch(address(worldId), { method: 'DELETE', credentials: 'same-origin' }))
 }
 
-export async function playableCharacters(worldId: string, signal?: AbortSignal): Promise<WorldCharactersPayload['characters']> {
+export interface PlaytestChoices { players: WorldCharactersPayload['characters']; openings: WorldCharactersPayload['openings']; startingTime: string; timeZone: string }
+
+export async function playtestChoices(worldId: string, signal?: AbortSignal): Promise<PlaytestChoices> {
   const payload = await answer<WorldCharactersPayload>(await fetch(`${API_PREFIX}/worlds/characters?id=${encodeURIComponent(worldId)}`, { credentials: 'same-origin', ...(signal === undefined ? {} : { signal }) }))
-  return payload.characters.filter(character => character.role === 'playable')
+  return { players: payload.characters.filter(character => character.role === 'playable'), openings: payload.openings, startingTime: payload.startingTime, timeZone: payload.timeZone }
 }

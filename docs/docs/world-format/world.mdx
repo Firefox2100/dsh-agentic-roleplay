@@ -31,6 +31,7 @@ title: world.json
 | `metadata.tags` | Optional list | Catalogue filtering and presentation |
 | `opening_message` | Optional | Text or ordered narration/utterance parts |
 | `alternate_openings` | Optional list | Other first messages the player may choose when starting a session: `{title, text, character?}`, plain narration, at most 30 of at most 20,000 characters; a missing title is the first words of the text |
+| `start_questions` | Optional list | Questions the start dialog asks before a story begins; see below |
 | `narration_voice` | Optional | Initial TTS voice for narration |
 | `preset` | Optional | Name of a preset in the person's library that sessions of this world start with unless one is chosen; see the prompt system specification |
 | `lorebooks` | Optional list | Names of lorebooks in the person's library that sessions of this world start with unless the start dialog chooses others; see [lorebooks](../authoring/lorebooks) |
@@ -38,6 +39,35 @@ title: world.json
 | `tools` | Optional object | Optional tools switched on or off for the world's agents, by kind of agent: `{"gameMaster": {"roll_dice": false}}`. A story starts from it, and a choice made at the start is added on top. Names this version does not know are kept and have no effect |
 
 The start dialog offers the alternate openings beside the world's own. An opening with a `character` (the id of a playable character) is offered only to a player who takes that character, and a start that names it for anyone else is refused; a `character` that is not a playable character of the world refuses the start with the problem. A session started from one stores it as its first finished turn like any other opening.
+
+## Start questions
+
+`start_questions` lets a world ask the player how the story should begin. Each question is `{id, text, options}` with 2 to 8 answers, each `{id, label, description?, effect}`. The player may leave a question unanswered, and then nothing changes.
+
+An `effect` can change only these things, and any other key makes the world file invalid:
+
+| Key | Effect |
+| --- | --- |
+| `rules` | Rules added to the story's own, up to the same limits as `rules` |
+| `opening` | The alternate opening to start with, by its position in `alternate_openings` |
+| `starting_time` | The local story time to start at |
+| `clock_mode` | `simulated` or `real` |
+| `tools` | Optional tool switches, as in `tools` |
+| `plots` | `dormant` or `available` as a plot's starting status, by plot id |
+
+```json
+"start_questions": [{
+  "id": "tone", "text": "How dark should it get?",
+  "options": [
+    {"id": "grim", "label": "Grim", "effect": {"rules": ["No one is spared by luck alone"], "plots": {"heist": "available"}}},
+    {"id": "light", "label": "Light", "effect": {"rules": ["Nobody dies unless the player chooses it"]}}
+  ]
+}]
+```
+
+What the person chose elsewhere in the dialog comes first: an opening or starting time they picked, and the clock mode in their settings, win over an answer. Two answers that set the same single value differently, or the same tool or plot differently, refuse the start with the reason. An answer that names a plot the world does not have refuses it too.
+
+In the world editor, the About page edits the questions: the id, text and answers, with fields for rules, opening, starting time and clock. Tool switches and plot states are kept as written in the file.
 
 An utterance's `character` must name a defined character. Invalid opening parts prevent session creation. The opening is stored as the first finished chat turn without a model call.
 

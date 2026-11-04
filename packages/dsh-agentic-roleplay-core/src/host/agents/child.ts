@@ -58,6 +58,8 @@ export interface ChildTask {
   maxTokens?: number
   /** How the model is asked: how freely it writes, and whether it must answer with a tool call. Applied by the language model service that serves the child. */
   sampling?: ChildSampling
+  /** The turn the run works for, when the caller knows it. Without it a run is filed under the turn that is current when it starts, which a background run that waits its turn gets wrong. */
+  turn?: number
   /** Minutes the run may take before it is stopped with a {@link ChildTimeoutError}; none when absent or 0. A model that thinks without end never reaches a call budget. */
   timeoutMinutes?: number
   /**
@@ -86,7 +88,7 @@ export interface ChildRun {
   error?: string
   /** What the child was told and did. */
   detail: RunDetail
-  /** The turn the game master was in when the run began, and what the run used. */
+  /** The turn the run works for (the one the caller named, else the one the game master was in when the run began), and what the run used. */
   turn: number
   tokens: TokenCount
   requests?: RequestStat[]
@@ -185,8 +187,7 @@ export const isUnfinishedCall = (error: unknown): boolean => error instanceof Er
 export async function runChild<T>(task: ChildTask): Promise<T> {
   for (let attempt = 1; ; attempt += 1) {
     const began = Date.now()
-    // the turn it works for is the one that was current when it began: a background run may end in the next turn
-    const turnAtStart = currentTurn(task.parent)
+    const turnAtStart = task.turn ?? currentTurn(task.parent)
     const stats: RunStats = { calls: 0, record: [] }
     const detail = (): RunDetail => ({ persona: task.persona.slice(0, MAX_RUN_PROMPT), prompt: task.prompt.slice(0, MAX_RUN_PROMPT), calls: stats.record, ...(stats.result === undefined ? {} : { result: stats.result }) })
     const minutes = task.timeoutMinutes ?? 0

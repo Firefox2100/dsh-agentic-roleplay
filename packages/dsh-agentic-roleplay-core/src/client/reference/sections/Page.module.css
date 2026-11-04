@@ -13,6 +13,7 @@
 .title { font-size: 16px; font-weight: 500; line-height: 24px; color: var(--dsw-alias-label-primary); }
 .link { padding: 0; font: inherit; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); background: none; border: none; cursor: pointer; }
 .link:hover { color: var(--dsw-alias-state-business-primary); }
+.link:focus-visible { border-radius: var(--dsw-radius-sm); outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 2px; }
 .opened { margin-top: 8px; padding: 4px 0 4px 12px; border-left: 0.5px solid var(--dsw-alias-border-l3); }
 .map { overflow-x: auto; padding: 8px 0; }
 .way { stroke: var(--dsw-alias-border-l4); stroke-width: 1; }

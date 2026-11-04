@@ -3,19 +3,19 @@ import { catalogueKeyRef } from '../../../src/shared/catalogue.ts'
 import { parseBase, Sources, type CredentialStore } from '../../../src/host/catalogue/sources.ts'
 
 const sources = new Sources(() => [
-  { name: 'Home', baseUrl: 'http://localhost:9798/', apiKeyRef: '', apiKey: 'home-key' },
-  { name: 'Site API', baseUrl: 'https://cat.example/api', apiKeyRef: '', apiKey: 'api-key' },
-  { name: 'Site', baseUrl: 'https://cat.example', apiKeyRef: '', apiKey: '' },
-  { name: 'Home', baseUrl: 'https://other.example', apiKeyRef: '', apiKey: '' },
-  { name: 'Broken', baseUrl: 'ftp://x', apiKeyRef: '', apiKey: '' },
-  { name: ' ', baseUrl: 'https://blank.example', apiKeyRef: '', apiKey: '' },
-])
+  { name: 'Home', baseUrl: 'http://localhost:9798/', apiKeyRef: '' },
+  { name: 'Site API', baseUrl: 'https://cat.example/api', apiKeyRef: '' },
+  { name: 'Site', baseUrl: 'https://cat.example', apiKeyRef: '' },
+  { name: 'Home', baseUrl: 'https://other.example', apiKeyRef: '' },
+  { name: 'Broken', baseUrl: 'ftp://x', apiKeyRef: '' },
+  { name: ' ', baseUrl: 'https://blank.example', apiKeyRef: '' },
+], () => memoryStore({ ROLEPLAY_CATALOGUE_HOME_API_KEY: 'home-key', ROLEPLAY_CATALOGUE_SITE_API_API_KEY: 'api-key' }))
 
 describe('the configured catalogues', () => {
   it('say which can be used, which have a key, and why the others cannot', async () => {
     expect(await sources.status()).toEqual([
-      { name: 'Home', baseUrl: 'http://localhost:9798/', hasKey: true, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY', keySource: 'configuration', legacyKey: true },
-      { name: 'Site API', baseUrl: 'https://cat.example/api', hasKey: true, keyRef: 'ROLEPLAY_CATALOGUE_SITE_API_API_KEY', keySource: 'configuration', legacyKey: true },
+      { name: 'Home', baseUrl: 'http://localhost:9798/', hasKey: true, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY', keySource: 'file' },
+      { name: 'Site API', baseUrl: 'https://cat.example/api', hasKey: true, keyRef: 'ROLEPLAY_CATALOGUE_SITE_API_API_KEY', keySource: 'file' },
       { name: 'Site', baseUrl: 'https://cat.example', hasKey: false, keyRef: 'ROLEPLAY_CATALOGUE_SITE_API_KEY' },
       { name: 'Home', baseUrl: 'https://other.example', hasKey: false, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY', problem: 'repeats the name of an earlier catalogue' },
       { name: 'Broken', baseUrl: 'ftp://x', hasKey: false, keyRef: 'ROLEPLAY_CATALOGUE_BROKEN_API_KEY', problem: 'address is not a web address' },
@@ -57,7 +57,7 @@ function memoryStore(values: Record<string, string> = {}, fromEnvironment: strin
 }
 
 describe('the key of a catalogue', () => {
-  const entry = (patch: Partial<{ apiKeyRef: string; apiKey: string }> = {}) => [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKeyRef: '', apiKey: '', ...patch }]
+  const entry = (patch: Partial<{ apiKeyRef: string }> = {}) => [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKeyRef: '', ...patch }]
 
   it('is read from the credential store on every use, so a changed key reaches the next request', async () => {
     const store = memoryStore()
@@ -69,13 +69,13 @@ describe('the key of a catalogue', () => {
     expect(await home.key(home.get('Home'))).toBe('two')
   })
 
-  it('is looked up under the name the entry gives, and the store outranks a key left in the configuration', async () => {
+  it('is looked up under the name the entry gives, and a key written in the configuration is not read', async () => {
     const store = memoryStore({ MY_KEY: 'stored' })
-    const home = new Sources(() => entry({ apiKeyRef: 'MY_KEY', apiKey: 'old' }), () => store)
+    const home = new Sources(() => [{ ...entry({ apiKeyRef: 'MY_KEY' })[0]!, apiKey: 'old' }], () => store)
     expect(await home.key(home.get('Home'))).toBe('stored')
     delete store.values['MY_KEY']
-    expect(await home.key(home.get('Home'))).toBe('old')
-    expect(await home.status()).toMatchObject([{ keyRef: 'MY_KEY', hasKey: true, keySource: 'configuration', legacyKey: true }])
+    expect(await home.key(home.get('Home'))).toBeUndefined()
+    expect(await home.status()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: false, keyRef: 'MY_KEY' }])
   })
 
   it('says where the key comes from without telling it, and is refused a name that is not a credential name', async () => {
@@ -96,10 +96,10 @@ describe('the key of a catalogue', () => {
     await expect(home.keep('not valid', 'v')).rejects.toThrow(/not a credential name/)
   })
 
-  it('cannot be kept in a profile that has no credential store, and a key in the configuration still works there', async () => {
-    const bare = new Sources(() => entry({ apiKey: 'old' }))
+  it('cannot be kept in a profile that has no credential store, where a catalogue is asked without one', async () => {
+    const bare = new Sources(() => entry())
     await expect(bare.keep('MY_KEY', 'v')).rejects.toThrow(/no credential store/)
-    expect(await bare.key(bare.get('Home'))).toBe('old')
+    expect(await bare.key(bare.get('Home'))).toBeUndefined()
   })
 
   it('has a derived name that cannot be shared by two catalogues', () => {

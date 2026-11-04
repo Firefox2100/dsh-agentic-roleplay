@@ -14,6 +14,25 @@ function issues(text: string): string[] {
 }
 
 describe('parseWorldFile', () => {
+  describe('the start questions', () => {
+    const question = (effect: unknown) => ({ id: 'tone', text: 'How dark?', options: [{ id: 'grim', label: 'Grim', effect }, { id: 'light', label: 'Light' }] })
+
+    it('are read with their allow-listed effects', () => {
+      const world = parse(JSON.stringify({ name: 'W', alternate_openings: [{ text: 'a' }], start_questions: [question({ rules: ['No mercy'], opening: 0, starting_time: '1912-04-14T23:40:00', clock_mode: 'simulated', plots: { heist: 'available' } })] }))
+      expect(world.startQuestions?.[0]?.options[0]?.effect).toEqual({ rules: ['No mercy'], opening: 0, startingTime: '1912-04-14T23:40:00', clockMode: 'simulated', plots: { heist: 'available' } })
+      expect(world.startQuestions?.[0]?.options[1]?.effect).toEqual({})
+    })
+
+    it('refuse an effect that reaches beyond the allow-list, a bad value, and too few answers', () => {
+      const found = issues(JSON.stringify({ name: 'W', start_questions: [question({ sampling: { master: 2 }, opening: 3, clock_mode: 'fast', plots: { a: 'resolved' } }), { id: 'x', text: 'Only one', options: [{ id: 'a', label: 'A' }] }] })).join('\n')
+      expect(found).toMatch(/effect\.sampling: is not something an answer can change/)
+      expect(found).toMatch(/effect\.opening: must be the position of one of the 0 alternate openings/)
+      expect(found).toMatch(/effect\.clock_mode/)
+      expect(found).toMatch(/effect\.plots\.a/)
+      expect(found).toMatch(/must list 2 to 8 answers/)
+    })
+  })
+
   describe('the sampling', () => {
     it('is read when set and left out when empty, and every unknown or out-of-range control is reported with its path', () => {
       expect(parse(JSON.stringify({ name: 'W', sampling: { master: 0.6, topP: 0.9 } })).sampling).toEqual({ master: 0.6, topP: 0.9 })

@@ -4,7 +4,7 @@ import { dictionaries as selectionDictionaries, type ImportSelectionKey } from '
 
 type OwnKey =
   | 'nav' | 'loading' | 'loadFailed' | 'noSources' | 'noSourcesHint' | 'sourceProblem' | 'source' | 'search' | 'searchPlaceholder'
-  | 'sortRecent' | 'sortPopular' | 'refresh' | 'refreshing' | 'importUrl' | 'withKey' | 'withoutKey' | 'withoutKeyHint'
+  | 'sortRecent' | 'sortPopular' | 'tagAny' | 'tagFilter' | 'emptyTag' | 'refresh' | 'refreshing' | 'importUrl' | 'withKey' | 'withoutKey' | 'withoutKeyHint'
   | 'empty' | 'emptySearch' | 'more' | 'loadingMore' | 'by' | 'private' | 'members' | 'close' | 'cancel'
   | 'detailFailed' | 'version' | 'released' | 'noRelease' | 'alreadyHave' | 'install' | 'installing' | 'installed' | 'installFailed' | 'packsNotice' | 'size'
   | 'importTitle' | 'importHelp' | 'importAddress' | 'importAddressPlaceholder' | 'importSubmit'
@@ -29,6 +29,7 @@ const own: Dictionaries<OwnKey> = {
     searchPlaceholder: 'Search worlds',
     sortRecent: 'Newest',
     sortPopular: 'Popular',
+    tagAny: 'Any tag', tagFilter: 'Tag', emptyTag: 'None of the {count} loaded entries has the tag “{tag}”: load more, or choose another tag.',
     refresh: 'Refresh',
     refreshing: 'Refreshing…',
     importUrl: 'Import from address',
@@ -56,7 +57,7 @@ const own: Dictionaries<OwnKey> = {
     packsNotice: 'It came with interface packs ({packs}). A pack runs its own scripts in a sandbox when you play; look at them first if you do not know the author.',
     size: '{size}',
     importTitle: 'Import a world from an address',
-    importHelp: 'Paste the address of a world archive (a ZIP). If it belongs to a catalogue you added, that catalogue\'s API key is used; otherwise it is fetched as it is, and it fails if the address needs a sign-in.',
+    importHelp: 'Paste the address of a world archive (a ZIP), or of a world, card, preset or lorebook page of a catalogue you added (the address you see in the browser). If it belongs to a catalogue you added, that catalogue\'s API key is used; otherwise it is fetched as it is, and it fails if the address needs a sign-in.',
     importAddress: 'Address',
     importAddressPlaceholder: 'https://catalogue.example/api/versions/…/download',
     importSubmit: 'Import',
@@ -109,6 +110,7 @@ const own: Dictionaries<OwnKey> = {
     searchPlaceholder: '搜索世界',
     sortRecent: '最新',
     sortPopular: '热门',
+    tagAny: '任意标签', tagFilter: '标签', emptyTag: '已加载的 {count} 项里没有带“{tag}”标签的：请加载更多，或换一个标签。',
     refresh: '刷新',
     refreshing: '刷新中…',
     importUrl: '从地址导入',
@@ -136,7 +138,7 @@ const own: Dictionaries<OwnKey> = {
     packsNotice: '它带有界面包（{packs}）。游玩时界面包会在沙盒中运行自己的脚本；如果你不了解作者，请先查看。',
     size: '{size}',
     importTitle: '从地址导入世界',
-    importHelp: '粘贴世界压缩包（ZIP）的地址。如果它属于你添加的目录，会使用该目录的 API 密钥；否则按原样获取，地址需要登录时会失败。',
+    importHelp: '粘贴世界压缩包（ZIP）的地址，或你添加的目录中某个世界、角色卡、预设或世界书页面的地址（浏览器里看到的那个）。如果它属于你添加的目录，会使用该目录的 API 密钥；否则按原样获取，地址需要登录时会失败。',
     importAddress: '地址',
     importAddressPlaceholder: 'https://catalogue.example/api/versions/…/download',
     importSubmit: '导入',

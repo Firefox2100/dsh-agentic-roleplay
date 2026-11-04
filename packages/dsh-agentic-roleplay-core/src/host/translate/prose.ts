@@ -19,7 +19,7 @@ const INTENT = ['.name', '.description', '.plan[]', '.open_threads[]', '.constra
 const FIELDS: Record<DocumentKind, ProseFields> = {
   world: {
     names: ['name'],
-    text: ['description', 'rules[]', 'metadata.tags[]', 'opening_message', 'opening_message[].text', 'alternate_openings[].title', 'alternate_openings[].text'],
+    text: ['description', 'rules[]', 'metadata.tags[]', 'opening_message', 'opening_message[].text', 'alternate_openings[].title', 'alternate_openings[].text', 'start_questions[].text', 'start_questions[].options[].label', 'start_questions[].options[].description', 'start_questions[].options[].effect.rules[]'],
   },
   calendar: { names: ['holidays[].name'], text: [] },
   variables: { names: [], text: rooted(['[]', 'variables[]'], ['.name', '.description', '.bands[].label']) },

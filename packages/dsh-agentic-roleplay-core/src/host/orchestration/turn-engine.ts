@@ -104,6 +104,7 @@ export class TurnEngine {
   private readonly objections = new Map<string, { missing: string; count: number }>()
   /** What runs in the background of each chat and writes to its story, other than the records: fitting in what was made up, and the characters away. */
   private readonly working = new Map<string, Set<Promise<unknown>>>()
+  private readonly optionalJobs = new WeakSet<Promise<unknown>>()
   private readonly afterTurn: AfterTurnJobs
   /** What a reflection the player asked for is cancelled with, as `stop` does for the turn. */
   private readonly reflectionCancels = new Map<string, AbortController>()
@@ -118,7 +119,7 @@ export class TurnEngine {
     /** Told when the records of a chat were written, so that what is new in them can be indexed. */
     private readonly written: (chat: string) => void = () => undefined,
   ) {
-    this.afterTurn = new AfterTurnJobs({ boundaries: () => this.boundaries(), stores: chat => this.stores(chat), track: (chat, job) => { this.track(chat, job) }, problem: message => { this.problem(message) }, written: chat => { this.written(chat) } })
+    this.afterTurn = new AfterTurnJobs({ boundaries: () => this.boundaries(), stores: chat => this.stores(chat), track: (chat, job, optional) => { this.track(chat, job, optional) }, problem: message => { this.problem(message) }, written: chat => { this.written(chat) } })
   }
 
   /**
@@ -620,10 +621,12 @@ export class TurnEngine {
     return count <= MAX_OBJECTIONS
   }
 
-  private track(chat: string, job: Promise<unknown>): void {
+  /** `optional` work (reflection) is waited for by anything that moves or ends the story, but not by the next turn: it only adds beliefs, and a pass can take minutes. */
+  private track(chat: string, job: Promise<unknown>, optional = false): void {
     const set = this.working.get(chat) ?? new Set<Promise<unknown>>()
     this.working.set(chat, set)
     set.add(job)
+    if (optional) this.optionalJobs.add(job)
     void job.finally(() => { set.delete(job) })
   }
 
@@ -634,10 +637,11 @@ export class TurnEngine {
   }
 
   /** Resolves when nothing of the chat writes to its story any more: the records, what was made up being fitted in, the characters away, the suggestions. */
-  async quiesce(chat: string): Promise<void> {
+  async quiesce(chat: string, options: { skipOptional?: boolean } = {}): Promise<void> {
     for (;;) {
-      const jobs = [...(this.working.get(chat) ?? []), ...(this.chains.has(chat) ? [this.chains.get(chat)!] : [])]
-      if (jobs.length === 0 || (this.runs.get(chat) ?? 0) === 0 && (this.working.get(chat)?.size ?? 0) === 0) return
+      const working = [...(this.working.get(chat) ?? [])].filter(job => options.skipOptional !== true || !this.optionalJobs.has(job))
+      const jobs = [...working, ...(this.chains.has(chat) ? [this.chains.get(chat)!] : [])]
+      if (jobs.length === 0 || (this.runs.get(chat) ?? 0) === 0 && working.length === 0) return
       await Promise.allSettled(jobs)
     }
   }

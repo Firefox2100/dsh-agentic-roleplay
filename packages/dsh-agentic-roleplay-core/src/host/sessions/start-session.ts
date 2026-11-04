@@ -13,6 +13,8 @@ import { WORLD_FILE_NAME, type OpeningSegment } from '../worlds/world-file.ts'
 import { DEFAULT_SETTINGS, parseSettings, type ChatSettings } from '../../shared/settings.ts'
 import { COMMANDS_KEY } from '../../shared/commands.ts'
 import { WORLD_RULES_KEY } from '../../shared/rules.ts'
+import { combineAnswers } from '../../shared/start-questions.ts'
+import { MAX_RULES } from '../worlds/world-file.ts'
 import { writeSettings } from './settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from './errors.ts'
 import { populateCalendar, populateCharacters, populateDice, populateClock, populateFactions, populateItems, knowsCharacter, populateKnowledge, populateLocations, populateLore, populateRoutines, populateTriggers, populateVariables } from './populate.ts'
@@ -67,8 +69,16 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const { characters: authored, factions, locations, items, slots, authoredLore, declared, scripted, authoredPlots, calendar, checks, commands } = await loadValidatedWorld(world)
 
 
-  if (request.opening !== undefined && (!Number.isInteger(request.opening) || request.opening < 0 || request.opening >= (world.alternateOpenings?.length ?? 0))) throw new InvalidStartError(`the world has no alternate opening ${String(request.opening)}`)
-  const opening = request.opening === undefined ? openingOf(world, authored) : [{ type: 'narration' as const, text: world.alternateOpenings![request.opening]!.text }]
+  const answered = combineAnswers(world.startQuestions ?? [], request.answers ?? {})
+  if (answered.problems.length > 0) throw new InvalidStartError(answered.problems.join('; '))
+  const answers = answered.effect
+  const unknownPlot = Object.keys(answers.plots ?? {}).find(id => !authoredPlots.plots.some(plot => plot.id === id))
+  if (unknownPlot !== undefined) throw new InvalidStartError(`an answer names the plot "${unknownPlot}", which the world does not have`)
+  // What the person chose in the dialog is theirs; an answer only fills what they left unsaid.
+  const openingIndex = request.opening ?? answers.opening
+  const startingTimeAsked = request.startingTime?.trim() || answers.startingTime
+  if (openingIndex !== undefined && (!Number.isInteger(openingIndex) || openingIndex < 0 || openingIndex >= (world.alternateOpenings?.length ?? 0))) throw new InvalidStartError(`the world has no alternate opening ${String(openingIndex)}`)
+  const opening = openingIndex === undefined ? openingOf(world, authored) : [{ type: 'narration' as const, text: world.alternateOpenings![openingIndex]!.text }]
   const keys = [...new Set(request.avatars ?? [])]
   if (keys.length > 0 && deps.avatars === undefined) throw new InvalidStartError('player avatars are not available')
   const avatars = keys.length === 0 ? undefined : await deps.avatars!()
@@ -81,7 +91,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   if (player.role !== 'playable') throw new InvalidStartError(`${player.name} cannot be played`)
   const openingProblems = (world.alternateOpenings ?? []).flatMap((entry, index) => (entry.character === undefined || authored.some(character => character.id === entry.character && character.role === 'playable') ? [] : [{ path: `alternate_openings[${index}].character`, message: `"${entry.character}" is not a playable character of this world` }]))
   if (openingProblems.length > 0) throw new InvalidWorldError(`the alternate openings of "${world.summary.name}" have ${openingProblems.length} problem(s)`, openingProblems)
-  const forCharacter = request.opening === undefined ? undefined : world.alternateOpenings![request.opening]!.character
+  const forCharacter = openingIndex === undefined ? undefined : world.alternateOpenings![openingIndex]!.character
   if (forCharacter !== undefined && forCharacter !== player.id) throw new InvalidStartError(`this opening is for ${authored.find(character => character.id === forCharacter)?.name ?? forCharacter}, not for ${player.name}`)
   const name = request.name?.trim() || world.summary.name
   if (name.length > MAX_NAME_LENGTH) throw new InvalidStartError(`the name must be at most ${MAX_NAME_LENGTH} characters`)
@@ -92,10 +102,12 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
     if (!parsed.ok) throw new InvalidStartError(`the settings are not acceptable: ${parsed.problems.join('; ')}`)
     settings = parsed.value
   }
+  const givenClock = ((request.settings as { clock?: { mode?: unknown } } | undefined)?.clock)?.mode
+  if (answers.clockMode !== undefined && givenClock === undefined) settings = { ...settings, clock: { ...settings.clock, mode: answers.clockMode } }
   // The zone a story is read in is chosen once, here: the zone of the computer when time follows the wall clock, otherwise the world's.
   const timeZone = settings.clock.timeZone !== '' ? settings.clock.timeZone : settings.clock.mode === 'real' ? systemTimeZone() : world.clock?.timeZone ?? 'UTC'
   // What the world says of its tools is where the story starts from; a choice made at the start is added on top, tool by tool.
-  const tools = Object.fromEntries([...new Set([...Object.keys(world.tools ?? {}), ...Object.keys(settings.tools)])].map(agent => [agent, { ...world.tools?.[agent], ...settings.tools[agent] }]))
+  const tools = Object.fromEntries([...new Set([...Object.keys(world.tools ?? {}), ...Object.keys(answers.tools ?? {}), ...Object.keys(settings.tools)])].map(agent => [agent, { ...world.tools?.[agent], ...answers.tools?.[agent], ...settings.tools[agent] }]))
   settings = { ...settings, clock: { ...settings.clock, timeZone }, tools }
 
   const { preset, unavailable } = presetFor(deps, request.preset, world.preset)
@@ -113,11 +125,13 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   if (Object.keys(suggested).length > 0) settings = { ...settings, sampling: { ...settings.sampling, ...Object.fromEntries(Object.entries(suggested).filter(([key]) => given[key] === undefined)) } }
 
   let startsAt = world.clock?.startingTime
-  if (request.startingTime !== undefined && request.startingTime.trim() !== '') {
+  if (startingTimeAsked !== undefined && startingTimeAsked.trim() !== '') {
     if (settings.clock.mode === 'real') throw new InvalidStartError('the story\'s time follows the wall clock, so it has no starting time to choose')
-    try { startsAt = parseInstant(request.startingTime.trim(), timeZone) } catch (error) { throw new InvalidStartError(`the starting time is not acceptable: ${error instanceof Error ? error.message : String(error)}`) }
+    try { startsAt = parseInstant(startingTimeAsked.trim(), timeZone) } catch (error) { throw new InvalidStartError(`the starting time is not acceptable: ${error instanceof Error ? error.message : String(error)}`) }
   }
 
+  const storyRules = [...world.rules ?? [], ...answers.rules ?? []]
+  if (storyRules.length > MAX_RULES) throw new InvalidStartError(`the world's rules and the answers' rules come to ${storyRules.length}, and a story holds at most ${MAX_RULES}`)
   const sessionsDir = deps.sessionsDir()
   const session = deps.state.createSession(sessionsDir, {
     name,
@@ -139,10 +153,10 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       populateKnowledge(session, characters)
       populateVariables(session, declared.defs, { characters, items, locations, values: world.variables })
       populateTriggers(session, scripted.triggers)
-      populatePlots(session.metadata, authoredPlots.plots)
+      populatePlots(session.metadata, authoredPlots.plots.map(plot => (answers.plots?.[plot.id] === undefined ? plot : { ...plot, start: answers.plots[plot.id]! })))
       populateClock(session, settings.clock, startsAt === undefined ? undefined : { startingTime: startsAt }, (deps.now ?? Date.now)())
       if (commands.length > 0) session.metadata.setValue(COMMANDS_KEY, commands.map(command => ({ ...command })))
-      if (world.rules !== undefined) session.metadata.setValue(WORLD_RULES_KEY, world.rules)
+      if (storyRules.length > 0) session.metadata.setValue(WORLD_RULES_KEY, storyRules)
       if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)
     })
     await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])

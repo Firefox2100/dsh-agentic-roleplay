@@ -21,6 +21,9 @@ export function apply(ctx: Context): void {
       return agent === undefined ? '' : helpers.get(agent.session.id)?.persona ?? ''
     },
   })
+  // A helper works on the story's words and has no files: DSH's runtime facts (the directory, the file policy, approvals, delegation), in English, led a model writing Chinese to run on until its output limit.
+  ctx.effect(() => ctx.systemPrompt.suppressRuntimeContext(), 'roleplay: helper runtime context')
+  ctx.systemPrompt.context({ name: 'working-directory:current', order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
   ctx.on('agent/created', ({ agent }) => {
     helpers.get(agent.session.id)?.setup(agent)
   })

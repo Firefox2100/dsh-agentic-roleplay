@@ -1,5 +1,5 @@
 /** The pages of the reference: what the player may look up about the story, never what only the story knows. */
-export const REFERENCE_SECTIONS = ['profile', 'people', 'places', 'things'] as const
+export const REFERENCE_SECTIONS = ['profile', 'people', 'places', 'things', 'quests'] as const
 export type ReferenceSection = (typeof REFERENCE_SECTIONS)[number]
 
 export interface ReferencePerson {
@@ -30,6 +30,26 @@ export interface ReferenceThing {
   name: string
   quantity: number
   where: 'carried' | 'worn' | 'here'
+}
+
+/**
+ * A matter the player's character knows of that is not settled, or was settled: a thread the story told them of (the story's other threads stay
+ * its own), or a promise or appointment they are part of.
+ */
+export interface ReferenceQuest {
+  kind: 'story' | 'commitment'
+  text: string
+  status: 'open' | 'resolved'
+  /** For a commitment: when it is due, and when it ends if that is stated, in the story's time zone. */
+  when?: string
+  until?: string
+  place?: string
+  /** The others a commitment is with. */
+  with?: string[]
+  note?: string
+  /** The turn the thread was opened, or the commitment made. */
+  turn: number
+  resolvedTurn?: number
 }
 
 /** Who is looking: a profile shows a character to themselves in full, and to anyone else only what can be seen. */
@@ -95,6 +115,7 @@ export interface ReferenceReplies {
   people: ReferencePerson[]
   places: ReferencePlace[]
   things: ReferenceThing[]
+  quests: ReferenceQuest[]
 }
 
 export type ReferenceReply<K extends ReferenceSection = ReferenceSection> = { section: K; entries: ReferenceReplies[K] }

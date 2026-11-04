@@ -15,13 +15,13 @@ Open **Settings → Role Play → Catalogues** and choose **Add a catalogue**:
 
 The key is not kept in the profile's configuration. It goes to DSH's credential store, the same one that holds your model keys, and the page only learns whether a key is set and where it comes from (the store's file, or the environment you launched DSH in), never the key. **Store key** and **Remove key** act at once; **Save** keeps the list and the key names in the profile's configuration. A key in the store wins over one supplied by the environment (`ROLEPLAY_CATALOGUE_HOME_API_KEY=… dsh`), which applies only while the store holds none; remove the stored key to fall back to it. If the credential plugin in use cannot write, the page says so and the key can only be changed there. The store resolves the key for each request, so a replaced key is used by the next one without a restart, and a credential plugin that replaces the store, such as one backed by your system's keychain, protects these keys too. Use a key made for this purpose, with as little reach as the catalogue allows.
 
-:::note Upgrading from 0.3
-Version 0.4.0 moved the key out of the configuration. A key you saved earlier is still used until you move it: the row shows a notice with **Move it to the credential store**. Saving the settings afterwards removes the plain text from the configuration. A profile with no credential store keeps working with a key in the configuration, but cannot store new ones.
+:::note Keys saved as text
+Earlier versions could keep a key as plain text in the configuration. That text is no longer read: a catalogue with no stored key is asked without one. Type the key into the key box and choose **Store key** once, then save the settings.
 :::
 
 ## Browse and install
 
-The page lists published worlds of the catalogue you pick, with search and a newest or popular order. A line under the toolbar says whether your key is in use. Saving a different key (or removing it) in Settings updates the page by itself, so private worlds appear or disappear without a reload.
+The page lists published worlds of the catalogue you pick, with search, a newest or popular order, and a tag filter. The catalogue searches by words only, so the tag filter narrows the entries already loaded; use "More" to load others. A line under the toolbar says whether your key is in use. Saving a different key (or removing it) in Settings updates the page by itself, so private worlds appear or disappear without a reload.
 
 Select a world to see its description, tags and releases. **Install** downloads the chosen release, checks it against the checksum the catalogue published, and adds it to your worlds. You can then play it or edit it like any world; it is a copy, and the catalogue is not contacted again. If another world already uses the same folder name, the new one gets a numbered folder. A world installed from a release remembers which release it came from, so the page can tell you when a newer one exists.
 
@@ -58,6 +58,7 @@ The **Lorebooks** tab lists SillyTavern lorebooks the catalogue holds (resource 
 
 - an address on a catalogue you added is asked for with that catalogue's key, so a private release works when the key may read it;
 - any other address is fetched as it is. It must be a public web address on a standard port, and the import fails with the reason if it needs a sign-in;
+- a page address of a catalogue you added works too, the address you see in the browser: `/agentic-worlds/<id>` for a world, `/characters/<id>` for a card, `/presets/<id>` for a preset and `/lorebooks/<id>` for a lorebook. The dialog finds the resource through the catalogue's API and opens it like a card of the list, with its releases; a world page installs the newest release;
 - the key is only ever sent to the site it was configured for, also when a download redirects elsewhere.
 
 An archive must hold one top-level folder with a `world.json`. The world is written beside your worlds first and moved in only when whole, so a refused archive leaves nothing behind. Archives with links, unsafe or repeated paths, encryption, or more than the size limit `catalogueMaxBytes` (256 MiB unpacked) are refused.

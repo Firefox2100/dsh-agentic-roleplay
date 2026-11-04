@@ -589,7 +589,7 @@ export function memoryReflector(deps: { agentOf: (chat: string) => Agent | undef
             let verdict: CheckAnswer | undefined
             try {
               verdict = await runChild<CheckAnswer>({
-                parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([MAX_TEXT * 2, 100], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection check ${material.character.name} b${belief.id}`),
+                parent, signal, turn: job.turn, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([MAX_TEXT * 2, 100], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection check ${material.character.name} b${belief.id}`),
                 persona: promptFor(parent, 'roleplay/reflection-check', settings.prompts.language),
                 prompt: checkBrief(material.character, belief, things, now, zone, (turn, round) => session.clock.at(turn, round), tr),
                 result: CHECK_RESULT,
@@ -628,7 +628,7 @@ export function memoryReflector(deps: { agentOf: (chat: string) => Agent | undef
         }
         const doubted = new Set(found.map(entry => entry.belief))
         const answered = await runChild<Proposal>({
-          parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer(Array.from({ length: MAX_ADDED + MAX_CHANGES }, () => MAX_TEXT), settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection ${material.character.name}`),
+          parent, signal, turn: job.turn, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer(Array.from({ length: MAX_ADDED + MAX_CHANGES }, () => MAX_TEXT), settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', `reflection ${material.character.name}`),
           persona: promptFor(parent, 'roleplay/reflection', settings.prompts.language),
           prompt: brief(session, material, doubted, now, zone, (turn, round) => session.clock.at(turn, round), tr),
           result: RESULT,

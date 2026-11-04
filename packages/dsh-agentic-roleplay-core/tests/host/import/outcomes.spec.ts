@@ -51,4 +51,17 @@ describe('what became of each piece of a card', () => {
     const none = source({ classified, roster, report: { counts: {} } } as never, { ...choices, opening: { kind: 'none' } })
     expect(pieceOutcomes(none, new Map()).find(entry => entry.piece === 'field:first-message')?.outcome).toBe('omitted')
   })
+
+  it('names the tracked values, prompts and rules a piece was turned into, and counts a template that fed them as converted', () => {
+    const derived = [
+      { kind: 'variable' as const, name: 'Health', pieces: ['entry:1'] },
+      { kind: 'rules' as const, name: 'Rule', pieces: ['entry:2'] },
+      { kind: 'prompt' as const, name: 'roleplay/style', pieces: ['field:system-prompt', 'entry:2'] },
+    ]
+    const found = Object.fromEntries(pieceOutcomes(finished, entitiesByPiece(finished), { derived }).map(entry => [entry.piece, entry]))
+    expect(found['entry:1']).toMatchObject({ outcome: 'converted', madeInto: ['variable: Health'] })
+    expect(found['entry:2']).toMatchObject({ outcome: 'converted', madeInto: ['rules: Rule', 'prompt: roleplay/style'] })
+    expect(found['field:system-prompt']).toMatchObject({ outcome: 'guidance', madeInto: ['prompt: roleplay/style'] })
+    expect(found['entry:0']).toMatchObject({ outcome: 'read', madeInto: [] })
+  })
 })

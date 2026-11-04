@@ -49,6 +49,18 @@ describe('a helper that answers with a constrained reply', () => {
     expect((seen.sampling as { toolChoice?: string }).toolChoice).toBeUndefined()
   })
 
+  it('is filed under the turn it works for when the caller names it, else under the turn that is current when it begins', async () => {
+    const inTurnFive = (): never => {
+      const parent = parentAnswering(['{"roles":["character"]}'], { steered: [], registered: [] }) as unknown as { session: { snapshotEvents: () => unknown[] } }
+      parent.session.snapshotEvents = () => [{ type: 'turn/start', data: { turn: 5 } }]
+      return parent as never
+    }
+    const filed: number[] = []
+    await runChild(task(inTurnFive(), { trace: (run: { turn: number }) => { filed.push(run.turn) } }))
+    await runChild(task(inTurnFive(), { turn: 3, trace: (run: { turn: number }) => { filed.push(run.turn) } }))
+    expect(filed).toEqual([5, 3])
+  })
+
   it('is sent back with the reason when the reply is not JSON, does not fit the schema, or is refused by the caller, and gives up after a few', async () => {
     const seen: Seen = { steered: [], registered: [] }
     const result = await runChild<{ roles: string[] }>(task(parentAnswering(['not json', '{"roles":"character"}', '```json\n{"roles":["place"]}\n```', '{"roles":["character"]}'], seen), { beforeSubmit: (value: { roles: string[] }) => (value.roles[0] === 'place' ? 'a place is not wanted' : undefined) }))

@@ -7,6 +7,7 @@ import { subfolders } from '../folders.ts'
 import type { StorySampling } from '../../shared/sampling.ts'
 import { readDocument } from '../read-document.ts'
 import { assignWorldId } from './world-id.ts'
+import type { StartQuestion } from '../../shared/start-questions.ts'
 import { parseWorldFile, WORLD_FILE_NAME, type AlternateOpening, type OpeningSegment, type WorldClock, type WorldFile } from './world-file.ts'
 import { isDraftWorld } from './draft.ts'
 
@@ -48,6 +49,8 @@ export interface WorldRecord {
   variables?: WorldFileVariables
   /** Other openings the player may choose at the start. */
   alternateOpenings?: AlternateOpening[]
+  /** Questions the start dialog asks. */
+  startQuestions?: StartQuestion[]
   /** What is not allowed in the world. */
   rules?: string[]
   /** The optional tools switched on or off for the world's agents. */
@@ -135,6 +138,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.clock === undefined ? {} : { clock: world.clock }),
     ...(world.variables === undefined ? {} : { variables: world.variables }),
     ...(world.alternateOpenings === undefined ? {} : { alternateOpenings: world.alternateOpenings }),
+    ...(world.startQuestions === undefined ? {} : { startQuestions: world.startQuestions }),
     ...(world.rules === undefined ? {} : { rules: world.rules }),
     ...(world.tools === undefined ? {} : { tools: world.tools }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),

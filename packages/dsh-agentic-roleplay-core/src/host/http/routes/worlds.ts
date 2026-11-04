@@ -69,12 +69,13 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, transl
     '/worlds/playtest': {
       GET: (_req, res, url) => { sendJson(res, 200, playtest.status(url.searchParams.get('id') ?? '') ?? { state: 'idle' }); return Promise.resolve() },
       POST: async (req, res, url) => {
-        const body = await readJsonBody(req) as { turns?: unknown; playerCharacterId?: unknown; opening?: unknown; language?: unknown }
+        const body = await readJsonBody(req) as { turns?: unknown; playerCharacterId?: unknown; opening?: unknown; startingTime?: unknown; language?: unknown }
         if (typeof body.turns !== 'number') return sendError(res, 400, 'turns must be a number')
         if (body.playerCharacterId !== undefined && typeof body.playerCharacterId !== 'string') return sendError(res, 400, 'playerCharacterId must be text')
         if (body.opening !== undefined && typeof body.opening !== 'number') return sendError(res, 400, 'opening must be a number')
+        if (body.startingTime !== undefined && typeof body.startingTime !== 'string') return sendError(res, 400, 'startingTime must be text')
         try {
-          sendJson(res, 202, playtest.start({ worldId: url.searchParams.get('id') ?? '', turns: body.turns, ...body.playerCharacterId === undefined ? {} : { playerCharacterId: body.playerCharacterId }, ...body.opening === undefined ? {} : { opening: body.opening }, ...languageField(body.language) === undefined ? {} : { language: languageField(body.language)! } }))
+          sendJson(res, 202, playtest.start({ worldId: url.searchParams.get('id') ?? '', turns: body.turns, ...body.playerCharacterId === undefined ? {} : { playerCharacterId: body.playerCharacterId }, ...body.opening === undefined ? {} : { opening: body.opening }, ...body.startingTime === undefined || body.startingTime.trim() === '' ? {} : { startingTime: body.startingTime.trim() }, ...languageField(body.language) === undefined ? {} : { language: languageField(body.language)! } }))
         } catch (error) {
           if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           throw error

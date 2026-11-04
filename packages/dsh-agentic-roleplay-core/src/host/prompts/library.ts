@@ -69,7 +69,7 @@ export function listFiles(directory: string, prefix = ''): string[] {
  * come from the package: one that is not there (never written, or deleted to restore it) is copied again when it is needed.
  */
 export class PromptLibrary extends Service {
-  constructor(ctx: Context, private readonly root: RoleplayRoot, private readonly shipped: string = shippedPromptsDirectory()) {
+  constructor(ctx: Context, private readonly root: RoleplayRoot, readonly shipped: string = shippedPromptsDirectory()) {
     super(ctx, 'roleplayPrompts')
   }
 

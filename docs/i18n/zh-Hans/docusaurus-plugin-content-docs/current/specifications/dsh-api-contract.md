@@ -16,6 +16,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 智能体预设 | `@deepseek-ai/dsh-agent-preset` 行及其 `plugins` | 套件的 `cordis.patch.yml` |
 | 游戏主持人工具 | `ctx.tools.register(defineTool(...))` | `host/orchestration/tools.ts`、`@dsh-agentic-roleplay/state` |
 | 系统提示词 | `ctx.systemPrompt.section` | `orchestration.ts` |
+| 系统提示词 | `ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context` | `helper.ts` |
 | 回合控制 | `agent/pre-step`、`agent/turn-stopping`、`agent.steer`、`exec.concludeTurn()`、`exec.agent`、`exec.signal` | `host/orchestration/hooks.ts`、`tools.ts` |
 | 无自有工具的编年史作者 | 带有自己的 `submit_result` 的 `runChild` 子智能体（见下） | `compaction/chronicler.ts` |
 | 有专属工具的角色与记录员 | 不使用公开子智能体 API，见下文 | `agents/child.ts` |
@@ -52,6 +53,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 ## 提示词、语言和代表用户发送的消息
 
 - `ctx.systemPrompt.section` 接收每次装配时求值的 `(context) => string`。通过 `dsh-agent` 合并的 `context.agent` 表示当前智能体，因此提示词段可跟随对话语言。预设中 `prefix: ''` 的 `dsh-persona` 行会遮蔽部署 persona，并在渲染时消失，把 persona 段留给本插件。除非设定 `interpolate: false`，段中的 `{{...}}` 会被 DSH 当作提示词变量；本项目的提示词文件无论如何都避免使用它。
+- **运行时上下文**（`ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context`）：DSH 会给每个智能体的请求加上一段英文的运行时事实（工作目录、文件策略、审批、委派）。辅助智能体的预设会屏蔽其中可选的部分，并用空内容覆盖必需的工作目录条目，因为辅助智能体只处理故事的文字，没有文件。带着这一段时，要求写中文的辅助智能体常常一直写到输出上限（把记录下的一次反思请求在关闭思考的 35B 上重放：带这一段时四次中只有一次完成，去掉后四次全部完成）。
 - `sessionController.prompt(request, signal)` 必须接收 `AbortSignal`，否则 DSH 内部会对 `undefined` 调用 `throwIfAborted`。插件通过它代表用户向对话发送消息，例如卡片导入的 `/import-st`。
 - 带开场内容的持久对话必须先以 `surfaceOp: 'append'` 追加一个空 `system/message`，再写其他表面节点。日志格式不允许系统提示词出现在其他节点之后。
 

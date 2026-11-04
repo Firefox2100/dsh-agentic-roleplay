@@ -139,6 +139,24 @@ describe('startSession', () => {
     expect(ensured).toEqual([[started.id, 'The Blackwater Observatory', [{ type: 'narration', text: 'The festival lanterns sway.' }]]])
   })
 
+  it('applies the answers to the world\'s start questions, lets the dialog\'s own choices come first, and refuses answers that disagree', async () => {
+    const questions = [
+      { id: 'tone', text: 'How dark?', options: [{ id: 'grim', label: 'Grim', effect: { rules: ['No one is spared'], opening: 1, starting_time: '2024-05-01T08:00:00' } }, { id: 'light', label: 'Light', effect: { rules: ['Nobody dies'] } }] },
+      { id: 'pace', text: 'How fast?', options: [{ id: 'slow', label: 'Slow', effect: { rules: ['Time passes slowly'], starting_time: '2024-06-01T08:00:00' } }, { id: 'fast', label: 'Fast' }] },
+    ]
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', rules: ['There is no magic'], alternate_openings: [{ text: 'You arrive after dark.' }, { text: 'It is already morning.' }], start_questions: questions })
+    const started = await startSession(deps, { ...playAsArthur, answers: { tone: 'grim', pace: 'fast' } })
+    expect(ensured.at(-1)).toEqual([started.id, 'The Blackwater Observatory', [{ type: 'narration', text: 'It is already morning.' }]])
+    const story = state.openSession(join(root, 'sessions'), started.id)
+    expect(story.metadata.getValue('rules')).toEqual(['There is no magic', 'No one is spared'])
+    const own = await startSession(deps, { ...playAsArthur, opening: 0, answers: { tone: 'grim' } })
+    expect(ensured.at(-1)?.[2]).toEqual([{ type: 'narration', text: 'You arrive after dark.' }])
+    expect(own.id).not.toBe(started.id)
+    await expect(startSession(deps, { ...playAsArthur, answers: { tone: 'grim', pace: 'slow' } })).rejects.toThrow(/disagree about the starting time/)
+    await expect(startSession(deps, { ...playAsArthur, answers: { tone: 'nope' } })).rejects.toThrow(/not an answer to "tone"/)
+    await expect(startSession(deps, { ...playAsArthur, answers: { mood: 'x' } })).rejects.toThrow(/asks no question "mood"/)
+  })
+
   it('starts with an alternate opening the player chose, and refuses one the world does not have', async () => {
     await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: 'The lanterns sway.', alternate_openings: [{ title: 'Arriving late', text: 'You arrive after dark.' }, { text: 'It is already morning.' }] })
     const started = await startSession(deps, { ...playAsArthur, opening: 1 })

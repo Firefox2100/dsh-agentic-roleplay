@@ -17,6 +17,8 @@ export interface StartDialog {
   avatars: readonly AvatarSummary[]
   /** The world's alternate openings, in order. */
   openings: WorldCharactersPayload['openings']
+  /** What the world asks before the story starts. */
+  questions: NonNullable<WorldCharactersPayload['questions']>
   /** When the world's story begins (local time in `timeZone`), or empty. */
   startingTime: string
   timeZone: string
@@ -61,6 +63,8 @@ export interface StartOptions {
   opening?: number
   /** Local time the story starts at, when the player chose one. */
   startingTime?: string
+  /** The answers given to the world's questions, by question id. */
+  answers?: Record<string, string>
   /** A preset of the library, `none` for no preset, or nothing for the world's own choice. */
   preset?: string
   /** The lorebooks the story starts with, when the person changed the world's suggestion (none is an empty list). */
@@ -158,15 +162,15 @@ export class WorldsController {
   /** Open the dialog for a world and load the characters it offers. */
   async openStartDialog(worldId: string, worldName: string): Promise<void> {
     const token = ++this.dialogs
-    this.store.update((draft) => { draft.dialog = { worldId, worldName, status: 'loading', characters: [], avatars: [], openings: [], startingTime: '', timeZone: '', presets: [], suggestedPreset: '', lorebooks: [], suggestedLorebooks: [], submitting: false } })
+    this.store.update((draft) => { draft.dialog = { worldId, worldName, status: 'loading', characters: [], avatars: [], openings: [], questions: [], startingTime: '', timeZone: '', presets: [], suggestedPreset: '', lorebooks: [], suggestedLorebooks: [], submitting: false } })
     try {
-      const [{ characters, openings, startingTime, timeZone, preset, lorebooks: suggested }, avatars, presets, books] = await Promise.all([
+      const [{ characters, openings, questions, startingTime, timeZone, preset, lorebooks: suggested }, avatars, presets, books] = await Promise.all([
         request<WorldCharactersPayload>(`/worlds/characters?id=${encodeURIComponent(worldId)}`, {}, this.abort.signal),
         listAvatars(this.abort.signal).catch((): AvatarSummary[] => []),
         request<PresetSummary[]>('/presets', {}, this.abort.signal).catch((): PresetSummary[] => []),
         request<LorebookSummary[]>('/lorebooks', {}, this.abort.signal).catch((): LorebookSummary[] => []),
       ])
-      this.updateDialog(token, (dialog) => { dialog.status = 'ready'; dialog.characters = characters; dialog.avatars = avatars; dialog.openings = openings; dialog.startingTime = startingTime; dialog.timeZone = timeZone; dialog.presets = presets; dialog.suggestedPreset = preset ?? ''; dialog.lorebooks = books; dialog.suggestedLorebooks = suggested ?? [] })
+      this.updateDialog(token, (dialog) => { dialog.status = 'ready'; dialog.characters = characters; dialog.avatars = avatars; dialog.openings = openings; dialog.questions = questions ?? []; dialog.startingTime = startingTime; dialog.timeZone = timeZone; dialog.presets = presets; dialog.suggestedPreset = preset ?? ''; dialog.lorebooks = books; dialog.suggestedLorebooks = suggested ?? [] })
     } catch (error) {
       if (this.abort.signal.aborted) return
       this.updateDialog(token, (dialog) => { dialog.status = 'failed'; dialog.error = messageOf(error) })
@@ -189,7 +193,7 @@ export class WorldsController {
       const started = await request<StartedSession>('/sessions', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, ...(options.playerCharacterId === undefined ? {} : { playerCharacterId: options.playerCharacterId }), ...(options.playerAvatar === undefined ? {} : { playerAvatar: options.playerAvatar }), ...(options.avatars.length === 0 ? {} : { avatars: options.avatars }), ...(options.opening === undefined ? {} : { opening: options.opening }), ...(options.startingTime === undefined ? {} : { startingTime: options.startingTime }), ...(options.preset === undefined ? {} : { preset: options.preset }), ...(options.lorebooks === undefined ? {} : { lorebooks: options.lorebooks }), ...(options.settings === undefined ? {} : { settings: options.settings }) }),
+        body: JSON.stringify({ worldId: dialog.worldId, name: options.name, ...(options.playerCharacterId === undefined ? {} : { playerCharacterId: options.playerCharacterId }), ...(options.playerAvatar === undefined ? {} : { playerAvatar: options.playerAvatar }), ...(options.avatars.length === 0 ? {} : { avatars: options.avatars }), ...(options.answers === undefined || Object.keys(options.answers).length === 0 ? {} : { answers: options.answers }), ...(options.opening === undefined ? {} : { opening: options.opening }), ...(options.startingTime === undefined ? {} : { startingTime: options.startingTime }), ...(options.preset === undefined ? {} : { preset: options.preset }), ...(options.lorebooks === undefined ? {} : { lorebooks: options.lorebooks }), ...(options.settings === undefined ? {} : { settings: options.settings }) }),
       }, this.abort.signal)
       this.dialogs++
       this.store.update((draft) => { delete draft.dialog })

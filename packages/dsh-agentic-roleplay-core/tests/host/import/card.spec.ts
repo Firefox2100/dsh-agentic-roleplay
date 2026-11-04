@@ -1,6 +1,6 @@
 import { deflateSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
-import { ImportCardError, isPng, pictureOf, readCard } from '../../../src/host/import/card.ts'
+import { ImportCardError, cardFormat, isPng, pictureOf, readCard } from '../../../src/host/import/card.ts'
 import { chunkOf, pngWithCard, v3Card } from '../../support/cards.ts'
 
 describe('reading a character card', () => {
@@ -45,6 +45,29 @@ describe('reading a character card', () => {
     expect(refusal(Buffer.from(JSON.stringify(v3Card({ name: '  ' }))))).toMatch(/no name/)
     expect(refusal(pngWithCard({ chara: v3Card() }).subarray(0, 60))).toMatch(/cut off/)
     expect(refusal(Buffer.concat([pngWithCard({}).subarray(0, 33), chunkOf('tEXt', Buffer.from('chara\0!!!not base64 json', 'latin1'))]))).toMatch(/not readable/)
+  })
+
+  it('tells a PNG from JSON by the first bytes, never by a name or a claimed type', () => {
+    expect(cardFormat(pngWithCard({ ccv3: v3Card() }))).toBe('png')
+    expect(cardFormat(Buffer.from(JSON.stringify(v3Card())))).toBe('json')
+    expect(cardFormat(Buffer.from(`\ufeff \r\n\t${JSON.stringify(v3Card())}`))).toBe('json')
+    expect(cardFormat(Buffer.from('[1]'))).toBeUndefined()
+    expect(cardFormat(Buffer.alloc(0))).toBeUndefined()
+  })
+
+  it('names what arrived when a file is neither, and refuses a PNG that does not start with its header', () => {
+    const refusal = (file: Buffer): string => { try { readCard(file, 'x'); return '' } catch (error) { if (error instanceof ImportCardError) return error.message; throw error } }
+    expect(refusal(Buffer.from('<!DOCTYPE html><html></html>'))).toMatch(/is a web page/)
+    expect(refusal(Buffer.from('  <html>'))).toMatch(/is a web page/)
+    expect(refusal(Buffer.from('PK\u0003\u0004rest', 'latin1'))).toMatch(/is a ZIP archive/)
+    expect(refusal(Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0, 0]))).toMatch(/is a JPEG picture/)
+    expect(refusal(Buffer.from('GIF89a'))).toMatch(/is a GIF picture/)
+    expect(refusal(Buffer.from('RIFF\0\0\0\0WEBPVP8 ', 'latin1'))).toMatch(/is a WebP picture/)
+    expect(refusal(Buffer.alloc(0))).toMatch(/is empty/)
+    expect(refusal(Buffer.from('[1, 2]'))).toMatch(/neither a PNG picture nor a JSON file/)
+    const headless = Buffer.from(pngWithCard({ ccv3: v3Card() }))
+    headless.write('XXXX', 12, 'latin1')
+    expect(refusal(headless)).toMatch(/picture header/)
   })
 
   it('keeps the picture of a PNG card without the card in it', () => {

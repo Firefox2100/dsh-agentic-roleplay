@@ -105,7 +105,7 @@ describe('the reading tools', () => {
 
   it('list what is still open', async () => {
     store.edit({ turn: 2, threadsOpened: ['Who has the key?'] })
-    expect((await run('list_threads', {})).value).toEqual([{ id: 1, text: 'Who has the key?', opened_turn: 2 }])
+    expect((await run('list_threads', {})).value).toEqual([{ id: 1, text: 'Who has the key?', opened_turn: 2, player_knows: false }])
   })
 
   it('say so when the agent works in no roleplay session', async () => {

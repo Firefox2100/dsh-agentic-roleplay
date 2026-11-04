@@ -1,5 +1,6 @@
 import { localInstant } from './local-time.ts'
 import type { WorldCharactersPayload } from '../../shared/sessions.ts'
+import { questionView } from '../../shared/start-questions.ts'
 import { loadCharacters } from '../characters/load.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { WorldNotFoundError } from './errors.ts'
@@ -17,6 +18,7 @@ export async function worldCharacters(worlds: Pick<WorldCatalog, 'find'>, worldI
     openings: (world.alternateOpenings ?? []).map(opening => ({ title: opening.title, ...(opening.character === undefined ? {} : { character: opening.character }) })),
     startingTime: world.clock?.startingTime === undefined ? '' : localInstant(world.clock.startingTime, world.clock.timeZone ?? 'UTC'),
     timeZone: world.clock?.timeZone ?? '',
+    ...(world.startQuestions === undefined ? {} : { questions: world.startQuestions.map(questionView) }),
     ...(world.preset === undefined ? {} : { preset: world.preset }),
     ...(world.lorebooks === undefined ? {} : { lorebooks: world.lorebooks }),
     problems,

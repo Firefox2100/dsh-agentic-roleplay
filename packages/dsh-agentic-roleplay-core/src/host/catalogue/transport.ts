@@ -5,7 +5,7 @@ import { CatalogueError } from './errors.ts'
 import type { Sources } from './sources.ts'
 
 export interface Reply { status: number; type: string; location: string | undefined; body: Buffer }
-export interface Ask { headers: Record<string, string>; guarded: boolean; maxBytes: number; signal: AbortSignal }
+export interface Ask { headers: Record<string, string>; guarded: boolean; maxBytes: number; signal: AbortSignal; method?: 'GET' | 'HEAD' }
 export type Transport = (url: URL, ask: Ask) => Promise<Reply>
 
 const TIMEOUT_MS = 60_000
@@ -14,7 +14,7 @@ const MAX_REDIRECTS = 5
 export const nodeTransport: Transport = (url, ask) => new Promise<Reply>((resolveReply, reject) => {
   const send = url.protocol === 'https:' ? httpsRequest : httpRequest
   const request = send(url, {
-    method: 'GET', signal: ask.signal, timeout: TIMEOUT_MS, agent: false,
+    method: ask.method ?? 'GET', signal: ask.signal, timeout: TIMEOUT_MS, agent: false,
     headers: { 'user-agent': 'dsh-agentic-roleplay', 'accept-encoding': 'identity', ...ask.headers },
     ...(ask.guarded ? { lookup: guardedLookup } : {}),
   }, (response) => {
@@ -38,7 +38,7 @@ export const nodeTransport: Transport = (url, ask) => new Promise<Reply>((resolv
   request.end()
 })
 
-export interface Fetching { sources: Sources; transport?: Transport; maxBytes: number; accept: string; signal?: AbortSignal }
+export interface Fetching { sources: Sources; transport?: Transport; maxBytes: number; accept: string; signal?: AbortSignal; method?: 'GET' | 'HEAD' }
 
 /**
  * Asks for an address. An address on a configured catalogue's site carries that catalogue's API key and may be a local address (the person
@@ -61,7 +61,7 @@ export async function fetchAddress(address: string, options: Fetching): Promise<
     const key = source === undefined ? undefined : await options.sources.key(source)
     let reply: Reply
     try {
-      reply = await transport(url, { headers: { accept: options.accept, ...(key === undefined ? {} : { authorization: `Bearer ${key}` }) }, guarded: source === undefined, maxBytes: options.maxBytes, signal })
+      reply = await transport(url, { headers: { accept: options.accept, ...(key === undefined ? {} : { authorization: `Bearer ${key}` }) }, guarded: source === undefined, maxBytes: options.maxBytes, signal, ...(options.method === undefined ? {} : { method: options.method }) })
     } catch (error) {
       if (error instanceof CatalogueError) throw error
       throw new CatalogueError(`could not reach ${url.origin}: ${error instanceof Error ? error.message : String(error)}`, 'upstream')

@@ -186,6 +186,10 @@ finishes. Everything that recalls or changes the story (`activate_characters`, `
 run in flight and, for a later turn, retries a failed run once. The state kept for rewind is taken when the turn begins, with the waiting rounds in it (`pending_commits` is in the database), so a restored state
 carries them. `reasoning.children` (chat setting) sets the thinking level of the characters, the keeper, the world author and the suggester.
 
+## When the game master's call cannot be read
+
+A model that is cut off or runs on inside a tool call leaves an argument the backend cannot parse, and DSH would end the turn with no output. The orchestration listens to `agent/request-error` and runs the step again (`MasterRecovery`), up to three times a turn. The first run is the same request, since a model does not answer the same way twice; the second and later leave the game master a smaller output (half, then a quarter of `sampling.masterMaxTokens`, never below 2048 or the setting itself when that is lower), so a call that runs on is cut sooner. Only when the failure goes on does the turn end as an error. Other failures (a refused connection, an unavailable model) are left to the provider's own retry policy. The count starts again with the next turn.
+
 ## Triggers in the loop
 
 `TurnStore.runTriggers(turn, round)` (`host/triggers/notes.ts` `fireTriggers`, over the state package's `runTriggers`) is called by the engine at three moments: the first step of a turn

@@ -421,6 +421,12 @@ export interface RecordsEdit {
   beliefEdits?: BeliefEdit[]
   beliefRetractions?: number[]
   threadsOpened?: string[]
+  /** Threads opened as they are, although they resemble one already open: the writer's explicit "this is new". */
+  threadsDistinct?: string[]
+  /** Threads opened that the player's character knows of already (they resemble-check like `threadsOpened`). */
+  threadsOpenedKnown?: string[]
+  /** Open threads the player's character has now learned of. */
+  threadsKnown?: number[]
   threadsResolved?: number[]
 }
 

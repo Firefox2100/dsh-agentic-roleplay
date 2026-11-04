@@ -32,7 +32,7 @@ export function CatalogueSettings({ t, text, disabled, onEdit }: { t: Translate;
         )
       })}
       <div className={css.actions}>
-        <Button variant="outline" size="sm" disabled={disabled} onClick={() => { change([...rows, { name: '', baseUrl: '', apiKeyRef: '', apiKey: '' }]) }}>{t('catalogueAdd')}</Button>
+        <Button variant="outline" size="sm" disabled={disabled} onClick={() => { change([...rows, { name: '', baseUrl: '', apiKeyRef: '' }]) }}>{t('catalogueAdd')}</Button>
       </div>
     </section>
   )

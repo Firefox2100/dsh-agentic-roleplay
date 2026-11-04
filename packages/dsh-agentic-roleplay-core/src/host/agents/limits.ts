@@ -37,3 +37,9 @@ export const AUTHORING_SAME_CALL = 3
 export const MASTER_SAME_CALL = 4
 /** Refused repeats after which the turn is ended instead of being refused again: the model is not reading the refusals (found live: one call 442 times in a review turn). */
 export const REFUSALS_BEFORE_STOP = 5
+/** Times one turn runs the game master's step again after its tool call could not be read (found live: one call of about 42 KB failed five times and the turn ended with no output). */
+export const MASTER_RECOVERIES = 3
+/** The share of its output cap each recovery after the first leaves the game master: a call that runs on is cut sooner, so the next try has to be shorter. */
+export const RECOVERY_SHRINK = 0.5
+/** The least output a recovery leaves the game master. */
+export const RECOVERY_FLOOR = 2048

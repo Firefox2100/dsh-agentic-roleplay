@@ -73,7 +73,7 @@ export function triggerJudge(deps: { agentOf: (chat: string) => Agent | undefine
       const askLanguageModel = async (keys: readonly number[]): Promise<Map<number, boolean>> => {
         const subset = keys.map(statementOf)
         const answer = await runChild<{ verdicts: { number: number; holds: boolean }[] }>({
-          parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer(subset.flatMap(() => [REASON_CHARS, 0, 0]), settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', 'trigger judge'),
+          parent, signal, turn: job.turn, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer(subset.flatMap(() => [REASON_CHARS, 0, 0]), settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(store, 'records', 'trigger judge'),
           persona: promptFor(parent, 'roleplay/trigger-judge', settings.prompts.language),
           prompt: brief(scene, subset),
           result: RESULT,

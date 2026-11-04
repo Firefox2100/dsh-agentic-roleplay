@@ -623,6 +623,12 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE lore ADD COLUMN scope TEXT NOT NULL DEFAULT 'listed' CHECK (scope IN ('everyone', 'listed'));
     `,
   },
+  {
+    version: 10,
+    sql: `
+      ALTER TABLE story_threads ADD COLUMN player_knows INTEGER NOT NULL DEFAULT 0 CHECK (player_knows IN (0, 1));
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

@@ -72,6 +72,37 @@ describe('the reference pages', () => {
     expect(referencePage(session, 'things').entries).toEqual([{ name: 'Coin', quantity: 3, where: 'carried' }, { name: 'Lamp', quantity: 1, where: 'here' }])
   })
 
+  it('lists the threads the player\'s character knows of and the promises they are part of, and keeps every other thread and engagement to the story', () => {
+    const arthur = session.characters.getBySourceId('arthur')!.id
+    const clara = session.characters.getBySourceId('clara')!.id
+    const dora = session.characters.getBySourceId('dora')!.id
+    session.threads.open('SECRET: the vault was emptied last night', 1)
+    session.threads.open('Find out who sealed the vault', 1, true)
+    const settled = session.threads.open('Return the lamp to the bar', 1, true)
+    session.threads.resolve(settled.id, 2)
+    const at = Date.UTC(1912, 9, 4, 21, 40)
+    session.engagements.add({ title: 'Meet Clara at the stage', at, until: at + 3_600_000, locationId: session.locations.getBySourceId('bar')!.id, participants: [arthur, clara], note: 'Bring the key.', turn: 1 })
+    session.engagements.add({ title: 'SECRET: Clara and Dora meet', at, participants: [clara, dora], turn: 1 })
+    session.engagements.add({ title: 'Kept already', at, participants: [arthur], turn: 1 })
+    session.engagements.update(3, { status: 'kept', turn: 2 })
+    const entries = referencePage(session, 'quests', { zone: 'Europe/London', language: 'en' }).entries
+    expect(entries).toEqual([
+      { kind: 'commitment', text: 'Meet Clara at the stage', status: 'open', when: 'Friday 4 October 1912, 21:40', until: 'Friday 4 October 1912, 22:40', place: 'Bar', with: ['Clara'], note: 'Bring the key.', turn: 1 },
+      { kind: 'story', text: 'Find out who sealed the vault', status: 'open', turn: 1 },
+      { kind: 'story', text: 'Return the lamp to the bar', status: 'resolved', turn: 1, resolvedTurn: 2 },
+    ])
+    expect(JSON.stringify(entries)).not.toContain('SECRET')
+    session.threads.tell(1)
+    expect(referencePage(session, 'quests').entries.map(entry => entry.text)).toContain('SECRET: the vault was emptied last night')
+  })
+
+  it('writes the times of a promise in the story\'s language and zone, and shows nothing when nothing is known', () => {
+    expect(referencePage(session, 'quests').entries).toEqual([])
+    const arthur = session.characters.getBySourceId('arthur')!.id
+    session.engagements.add({ title: '见面', at: Date.UTC(2026, 0, 5, 12, 0), participants: [arthur], turn: 1 })
+    expect(referencePage(session, 'quests', { zone: 'Asia/Shanghai', language: 'zh' }).entries).toEqual([{ kind: 'commitment', text: '见面', status: 'open', when: '2026年1月5日 星期一 20:00', turn: 1 }])
+  })
+
   it('refuses a page that does not exist', () => {
     expect(() => referencePage(session, 'secrets')).toThrow(UnknownSectionError)
   })

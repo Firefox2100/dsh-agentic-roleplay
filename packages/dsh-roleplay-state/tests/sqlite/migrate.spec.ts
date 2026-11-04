@@ -132,6 +132,19 @@ describe('migrate', () => {
     db.close()
   })
 
+  it('adds what the player knows of a thread to a version 9 session: its threads stay secret', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 9)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 9')
+    db.run("INSERT INTO story_threads (text, status, opened_turn, created_at) VALUES ('Old', 'open', 1, 'now')")
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ player_knows: number }>('SELECT player_knows FROM story_threads')?.player_knows).toBe(0)
+    expect(() => db.run("INSERT INTO story_threads (text, status, opened_turn, player_knows, created_at) VALUES ('X', 'open', 1, 2, 'now')")).toThrow()
+    db.close()
+  })
+
   describe('before an upgrade', () => {
     function oldDatabase(version: number): string {
       const file = join(dir, 'session.sqlite')

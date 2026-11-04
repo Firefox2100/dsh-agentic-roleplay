@@ -11,8 +11,6 @@ export interface ResolvedSource {
   prefix: string
   /** The credential the key is looked up under. */
   keyRef: string
-  /** A key still written in the profile's configuration by an earlier version. */
-  legacyKey: string | undefined
 }
 
 /** The part of DSH's credential service the catalogues use; the service is not there in a profile without it. */
@@ -52,19 +50,15 @@ export class Sources {
       const prefix = trimCharacters(base.pathname, '/', 'end')
       const keyRef = source.apiKeyRef.trim() === '' ? catalogueKeyRef(name) : source.apiKeyRef.trim()
       if (!CREDENTIAL_REF.test(keyRef)) return { source, problem: `has a key name "${keyRef}" that is not a credential name (letters, digits and "_", not starting with a digit)` }
-      return { source, resolved: { name, root: `${base.origin}${prefix}`, origin: base.origin, prefix, keyRef, legacyKey: source.apiKey.trim() === '' ? undefined : source.apiKey.trim() } }
+      return { source, resolved: { name, root: `${base.origin}${prefix}`, origin: base.origin, prefix, keyRef } }
     })
   }
 
-  /** The catalogue's key: the credential store's value for its reference, else the one an earlier version wrote in the configuration. */
+  /** The catalogue's key: the credential store's value for its reference; none when the profile has no store or the store holds none. */
   async key(source: ResolvedSource): Promise<string | undefined> {
     const store = this.store()
-    if (store !== undefined) {
-      let found
-      try { found = await store.resolve(source.keyRef) } catch (error) { throw new CatalogueError(`could not read the key "${source.keyRef}" of the catalogue "${source.name}": ${error instanceof Error ? error.message : String(error)}`, 'invalid') }
-      if (found !== undefined) return found.value
-    }
-    return source.legacyKey
+    if (store === undefined) return undefined
+    try { return (await store.resolve(source.keyRef))?.value } catch (error) { throw new CatalogueError(`could not read the key "${source.keyRef}" of the catalogue "${source.name}": ${error instanceof Error ? error.message : String(error)}`, 'invalid') }
   }
 
   async status(): Promise<CatalogueSourceStatus[]> {
@@ -72,12 +66,10 @@ export class Sources {
     return await Promise.all(this.resolved().map(async ({ source, resolved, problem }) => {
       const keyRef = resolved?.keyRef ?? (source.apiKeyRef.trim() === '' ? catalogueKeyRef(source.name) : source.apiKeyRef.trim())
       const stored = resolved === undefined || store === undefined ? undefined : await store.describe(keyRef)
-      const legacy = source.apiKey.trim() !== ''
       return {
         name: source.name.trim(), baseUrl: source.baseUrl.trim(), keyRef,
-        hasKey: stored?.configured === true || legacy,
-        ...(stored?.configured === true && stored.source !== undefined ? { keySource: stored.source } : legacy ? { keySource: 'configuration' } : {}),
-        ...(legacy ? { legacyKey: true } : {}),
+        hasKey: stored?.configured === true,
+        ...(stored?.configured === true && stored.source !== undefined ? { keySource: stored.source } : {}),
         ...(resolved === undefined ? { problem: problem ?? 'cannot be used' } : {}),
       }
     }))

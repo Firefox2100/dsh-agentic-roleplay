@@ -17,6 +17,14 @@ import { mainRole, mayHoldGuidance, playsRole, statesWorldFacts } from './roles.
 type Document = Record<string, unknown>
 
 /** What the extraction made, ready to be written into the world: one document per file, and what had to be left out of one. */
+/** What a card's passages were turned into besides characters, places and things: which pieces of the card each tracked value, prompt, rule set, command or trigger came from. */
+export interface Derived {
+  kind: 'variable' | 'prompt' | 'rules' | 'command' | 'trigger'
+  name: string
+  /** Ids of the card pieces it was made from. */
+  pieces: string[]
+}
+
 export interface Extracted {
   characters: Document[]
   locations: Document[]
@@ -33,8 +41,18 @@ export interface Extracted {
   commands: Document[]
   triggers: Document[]
   notes: string[]
+  /** Where the variables, prompts, rules, commands and triggers came from. */
+  derived: Derived[]
 }
-export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], variables: [], casting: [], commands: [], triggers: [], notes: [] })
+export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], variables: [], casting: [], commands: [], triggers: [], notes: [], derived: [] })
+
+const baseOf = (id: string): string => id.replace(/#\d+$/, '')
+
+/** The ids of the card pieces whose text is among these texts (one of them may have been cut short to fit a request). */
+function piecesOfTexts(card: NormalizedCard, items: readonly SourceItem[], texts: readonly string[]): string[] {
+  const known: [string, string][] = [...items.map((item): [string, string] => [item.text, baseOf(item.id)]), [cleanText(card.systemPrompt, card.name), 'field:system-prompt'], [cleanText(card.postHistoryInstructions, card.name), 'field:post-history']]
+  return [...new Set(known.filter(([body]) => body !== '' && texts.some(text => text !== '' && (body.startsWith(text) || text.startsWith(body)))).map(([, id]) => id))]
+}
 
 const SOURCE_BUDGET_CHARS = 14_000
 const MAX_TAGGED = 8
@@ -602,6 +620,8 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     if (failure !== undefined) result.notes.push(failure)
     const name = item.title === '' ? item.label : item.title
     result.casting.push(...casting)
+    if (casting.length > 0) result.derived.push({ kind: 'command', name: '', pieces: [baseOf(item.id)] })
+    if (rules.length > 0) result.derived.push({ kind: 'rules', name, pieces: [baseOf(item.id)] })
     if (casting.length > 0) addLore(result.lore, { id: uniqueKey(slug(item.label, 'guidance'), taken), ...guidanceEntry(casting, tr('{label}: how people are made up', { label: name })) })
     if (rules.length === 0) continue
     // what the card always sends is carried on every turn, up to a limit; the rest is lore the game master finds by search
@@ -647,8 +667,11 @@ function styleProblem(id: string, value: string, personas: readonly string[] = [
 }
 
 /** Turns the instructions of a card into the prose prompts of the world. Only prose and behaviour are kept: the rules of the game stay the program's. */
-export async function extractStyle(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified): Promise<Pick<Extracted, 'prompts' | 'notes'>> {
-  return await extractStyleFrom(ctx, card.name, instructionPieces(card, items, classified))
+export async function extractStyle(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified): Promise<Pick<Extracted, 'prompts' | 'notes' | 'derived'>> {
+  const texts = instructionPieces(card, items, classified)
+  const made = await extractStyleFrom(ctx, card.name, texts)
+  const pieces = piecesOfTexts(card, items, texts)
+  return { ...made, derived: made.prompts.map((prompt): Derived => ({ kind: 'prompt', name: prompt.id, pieces })) }
 }
 
 /** The prose prompts that instruction texts become, and what was left out of them. */
@@ -763,9 +786,9 @@ const MAX_VARIABLE_ROUNDS = 12
 const TOKENS_PER_VARIABLE = 600
 
 /** Finds what the card keeps track of, such as status panels and meters, and writes it as the world's tracked variables. Each group of the card's tracking text is read on its own, a request declares at most `variablesPerRequest` values and is asked again, told what is declared already, while it fills its share; the first declaration of a key stands. */
-export async function extractVariables(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Pick<Extracted, 'variables' | 'notes'>> {
+export async function extractVariables(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Pick<Extracted, 'variables' | 'notes' | 'derived'>> {
   const groups = trackingGroups(trackingPieces(card, items, classified))
-  if (groups.length === 0) return { variables: [], notes: [] }
+  if (groups.length === 0) return { variables: [], notes: [], derived: [] }
   const perRequest = ctx.variablesPerRequest ?? DEFAULT_VARIABLES_PER_REQUEST
   const names = (kind: string): string => roster.filter(entity => entity.kind === kind).map(entity => entity.name).join(', ')
   const tr = trOf(ctx)
@@ -801,9 +824,10 @@ export async function extractVariables(ctx: ImportContext, card: NormalizedCard,
         break
       }
     }
-    return { documents, notes }
+    return { documents, notes, pieces: piecesOfTexts(card, items, pieces) }
   })
   const variables: Document[] = []
-  for (const document of found.flatMap(entry => entry.documents)) if (!variables.some(kept => kept['key'] === document['key'])) variables.push(document)
-  return { variables, notes: found.flatMap(entry => entry.notes) }
+  const derived: Derived[] = []
+  for (const entry of found) for (const document of entry.documents) if (!variables.some(kept => kept['key'] === document['key'])) { variables.push(document); derived.push({ kind: 'variable', name: text(document['name']) || text(document['key']), pieces: entry.pieces }) }
+  return { variables, notes: found.flatMap(entry => entry.notes), derived }
 }

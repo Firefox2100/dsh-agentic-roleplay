@@ -84,6 +84,26 @@ describe('the world\'s own fields', () => {
     expect(await editWorldInfo(directory, { description: 'Fine.' })).toMatchObject({ description: 'Fine.', openingParts: true })
   })
 
+  it('ask start questions that are read, written in the file\'s own spelling and removed again', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour', alternate_openings: [{ title: 'Dawn', text: 'Gulls cry.' }] })
+    expect((await readWorldInfo(directory)).startQuestions).toEqual([])
+    const questions = parseWorldInfoEdit({ startQuestions: [{ id: 'tone', text: 'How grim?', options: [
+      { id: 'soft', label: 'Gentle', effect: { rules: ['No cruelty.'], clockMode: 'simulated' } },
+      { id: 'dawn', label: 'At dawn', description: 'Start early', effect: { opening: 0, startingTime: '1887-10-05T07:00:00', plots: { feud: 'available' } } },
+    ] }] }).startQuestions!
+    const info = await editWorldInfo(directory, { startQuestions: questions })
+    expect(info.startQuestions[0]!.options[1]).toMatchObject({ id: 'dawn', description: 'Start early', effect: { opening: 0, startingTime: '1887-10-05T07:00:00', plots: { feud: 'available' } } })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8')).start_questions[0].options[0]).toEqual({ id: 'soft', label: 'Gentle', effect: { rules: ['No cruelty.'], clock_mode: 'simulated' } })
+    await expect(editWorldInfo(directory, { startQuestions: [{ id: 'q', text: 'Where?', options: [{ id: 'a', label: 'A', effect: { opening: 5 } }, { id: 'b', label: 'B', effect: {} }] }] })).rejects.toThrow(/alternate openings/)
+    await editWorldInfo(directory, { startQuestions: [] })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('start_questions')
+  })
+
+  it('refuse start questions of the wrong shape before anything is written', () => {
+    expect(() => parseWorldInfoEdit({ startQuestions: 'tone' })).toThrow(/list/)
+    expect(() => parseWorldInfoEdit({ startQuestions: [{ id: 'q', text: 'Q', options: [{ id: 'a' }] }] })).toThrow(/answer needs/)
+  })
+
   it('offer other openings that are read, replaced, and removed again', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour', alternate_openings: [{ title: 'Dawn', text: 'Gulls cry.' }], unknown: 1 })
     expect((await readWorldInfo(directory)).alternateOpenings).toEqual([{ title: 'Dawn', text: 'Gulls cry.' }])

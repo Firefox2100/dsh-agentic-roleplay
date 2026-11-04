@@ -1,10 +1,11 @@
+import { CatalogueError } from '../../catalogue/errors.ts'
 import { WorldNotFoundError } from '../../sessions/errors.ts'
 import { readBinaryBody, readJsonBody } from '../body.ts'
 import { parseChoices } from '../../import/store.ts'
 import { parseSelectionChoice } from '../../import/staging.ts'
 import { sendError, sendJson } from '../respond.ts'
 import type { ApiDeps } from '../api.ts'
-import { type Routes, importFailure, languageField, sendImage, updateField } from './shared.ts'
+import { type Routes, catalogueFailure, importFailure, languageField, sendImage, updateField } from './shared.ts'
 
 /** The routes of the API for imports. */
 export function importsRoutes({ importer }: ApiDeps): Routes {
@@ -14,6 +15,14 @@ export function importsRoutes({ importer }: ApiDeps): Routes {
         const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'card'))
         try { sendJson(res, 200, await importer.upload(await readBinaryBody(req, importer.maxUploadBytes), name)) }
         catch (error) { return importFailure(res, error) }
+      },
+    },
+    '/worlds/import/card/url': {
+      POST: async (req, res) => {
+        const { url } = await readJsonBody(req) as { url?: unknown }
+        if (typeof url !== 'string') return sendError(res, 400, 'url must be text')
+        try { sendJson(res, 200, await importer.fromAddress(url)) }
+        catch (error) { return error instanceof CatalogueError ? catalogueFailure(res, error) : importFailure(res, error) }
       },
     },
     '/worlds/import/update': {

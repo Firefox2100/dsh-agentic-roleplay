@@ -8,13 +8,14 @@ import { childModel, childSampling, childTrace, runChild } from '../agents/child
 import { wrongLanguage } from '../translate/language.ts'
 import { externalGiven } from '../tools/external.ts'
 import { toolEnabled } from '../../shared/tools.ts'
-import { canonicalTags, tagUsage } from '../memory/tags.ts'
+import { canonicalLabel, canonicalTags, labelUsage, tagUsage } from '../memory/tags.ts'
 import { referent } from './referent.ts'
 import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundaries.ts'
 
 
 /** How many of the tags in use a brief lists. */
 const TAGS_LISTED = 60
+const LABELS_LISTED = 30
 
 /** What the keeper reads back by default: the parts of the records its edits write. */
 const VERIFY_SECTIONS = ['characters', 'factions', 'faction_relationships', 'events', 'beliefs', 'open_threads', 'relationships', 'knowledge', 'variables', 'engagements'] as const
@@ -50,6 +51,7 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
   const own = job.store.story.records({ rounds }).events
   const known = new Map(job.store.cast().map(member => [member.key, referent(member.character)]))
   const tags = [...tagUsage(job.store.story.events.list())].slice(0, TAGS_LISTED)
+  const labels = [...labelUsage(job.store.story.relationships.list().map(bond => bond.label))].slice(0, LABELS_LISTED)
   const before = records.events.filter(event => event.turn < first.turn || (event.turn === first.turn && event.round < first.round)).slice(-6)
   return [
     memory.flaky
@@ -74,6 +76,9 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     '',
     '## Tags already in use (choose from these; a new tag only when none fits)',
     ...(tags.length === 0 ? ['- none yet'] : [tags.map(([tag, count]) => `${tag} (${count})`).join(', ')]),
+    '',
+    '## Relationship labels already in use (use the same word for the same kind of bond; a new label only when none fits)',
+    ...(labels.length === 0 ? ['- none yet'] : [labels.map(([label, count]) => `${label} (${count})`).join(', ')]),
     '',
     '## Goals of the characters (ids for intent_edits)',
     ...(records.characters.flatMap(entry => entry.goals.map(goal => `- id ${goal.id}, ${entry.character}: ${goal.name} (${goal.type}, ${goal.status}${goal.deadline === null ? '' : `, deadline ${goal.deadline}`})${goal.plan.length === 0 ? '' : ` plan: ${goal.plan.join('; ')}`}`)).concat(records.characters.every(entry => entry.goals.length === 0) ? ['- none'] : [])),
@@ -127,7 +132,7 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
               ].join(' '),
             })
             if (wording !== undefined) throw new InvalidEditError([wording])
-            const result = await tool.execute(withKnownTags(args, tagUsage(job.store.story.events.list())), exec)
+            const result = await tool.execute(withKnownLabels(withKnownTags(args, tagUsage(job.store.story.events.list())), labelUsage(job.store.story.relationships.list().map(bond => bond.label))), exec)
             progress.edits += 1
             progress.unchecked = true
             return result
@@ -141,6 +146,13 @@ function keeperTools(job: CommitJob, memory: { flaky: boolean; recall: number },
       }
       return tool
     })
+}
+
+/** The edit with the labels of its relationships brought onto the labels already in use. */
+function withKnownLabels(args: unknown, known: ReadonlyMap<string, number>): never {
+  const edit = args as { relationships?: { label?: unknown }[] }
+  if (edit.relationships === undefined) return args as never
+  return { ...edit, relationships: edit.relationships.map(entry => (typeof entry.label === 'string' ? { ...entry, label: canonicalLabel(known, entry.label) } : entry)) } as never
 }
 
 type Tagged = { tags?: unknown }[] | undefined

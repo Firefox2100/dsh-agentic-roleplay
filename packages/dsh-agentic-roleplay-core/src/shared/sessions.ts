@@ -1,4 +1,5 @@
 import type { CharacterKind, CharacterRole, CharacterTier } from 'dsh-roleplay-model'
+import type { StartQuestionView } from './start-questions.ts'
 import type { WorldProblem } from './worlds.ts'
 
 /** A character as the start dialog lists it. */
@@ -20,6 +21,8 @@ export interface WorldCharactersPayload {
   startingTime: string
   /** The zone that time is in; empty when the world names none. */
   timeZone: string
+  /** What the world asks before a story starts. */
+  questions?: readonly StartQuestionView[]
   /** The preset the world suggests, when it names one. */
   preset?: string
   /** The lorebooks the world suggests. */
@@ -41,6 +44,8 @@ export interface StartSessionRequest {
   opening?: number
   /** Starts the story at this local time (`2024-05-01T08:00:00`, in the story's zone) instead of the world's starting time; refused when the chat's time follows the wall clock. */
   startingTime?: string
+  /** The player's answers to the world's start questions: question id to answer id. */
+  answers?: Record<string, string>
   /** A preset of the library whose prose prompts the story uses, over the world's own; the world's suggested preset is used when this is left out. */
   preset?: string
   /** Lorebooks of the library whose entries the story starts with; the world's suggested lorebooks are used when this is left out, and none when it is empty. */

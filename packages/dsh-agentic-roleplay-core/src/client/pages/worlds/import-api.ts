@@ -15,6 +15,11 @@ export async function uploadCard(file: File): Promise<ImportPreview> {
   return await answer(await fetch(`${API_PREFIX}/worlds/import/card`, { method: 'POST', credentials: 'same-origin', headers: { 'x-file-name': encodeURIComponent(file.name), 'content-type': file.type || 'application/octet-stream' }, body: file }))
 }
 
+/** Has the host fetch a card from a web address and read it; the answer is what it holds. */
+export async function fetchCard(url: string): Promise<ImportPreview> {
+  return await answer(await fetch(`${API_PREFIX}/worlds/import/card/url`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url }) }))
+}
+
 export async function startImport(id: string, choices: ImportChoices, language: string, update?: string): Promise<{ worldId: string; chatSessionId: string; started: boolean; failure?: string }> {
   return await answer(await fetch(`${API_PREFIX}/worlds/import/start?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ ...choices, language, ...(update === undefined ? {} : { update }) }) }))
 }

@@ -6,7 +6,7 @@ export type SettingsLocaleKey =
   | 'rootPath' | 'rootPathHint' | 'rootPathPlaceholder'
   | 'catalogues' | 'cataloguesHint' | 'catalogueName' | 'catalogueAddress' | 'catalogueKey' | 'catalogueKeyHint' | 'catalogueRemove' | 'catalogueAdd'
   | 'catalogueProblemName' | 'catalogueProblemAddress' | 'catalogueProblemDuplicate' | 'catalogueProblemKeyName'
-  | 'catalogueKeyName' | 'catalogueKeyChecking' | 'catalogueKeySet' | 'catalogueKeyUnset' | 'catalogueKeyReadOnly' | 'catalogueKeyStore' | 'catalogueKeyClear' | 'catalogueKeyLegacy' | 'catalogueKeyMove'
+  | 'catalogueKeyName' | 'catalogueKeyChecking' | 'catalogueKeySet' | 'catalogueKeyUnset' | 'catalogueKeyReadOnly' | 'catalogueKeyStore' | 'catalogueKeyClear'
   | 'authoringTools' | 'authoringToolsHint' | 'authoringToolsNone' | 'authoringKind_worldAuthoring' | 'authoringKind_presetAuthoring' | 'authoringKind_lorebookAuthoring' | 'authoringKind_worldAuthor'
   | 'sync' | 'syncHint' | 'syncRemote' | 'syncConfigFile' | 'syncRclone' | 'syncInterval' | 'syncPassword' | 'syncDetails' | 'syncProblemRemote' | 'syncProblemConfig' | 'syncProblemInterval'
   | 'redundantLayers' | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importStructuredOutputLabel' | 'importStructuredOutputHint' | 'importStructuredTool' | 'importStructuredSchema' | 'importVariablesPerRequestLabel' | 'importVariablesPerRequestHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'authoringApprovalLabel' | 'authoringApprovalHint' | 'authoringApprovalAsk' | 'authoringApprovalAuto' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
@@ -40,8 +40,6 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     catalogueKeyReadOnly: 'its source cannot be written, so it cannot be changed here',
     catalogueKeyStore: 'Store key',
     catalogueKeyClear: 'Remove key',
-    catalogueKeyLegacy: 'An earlier version saved a key as text in this profile\'s configuration. It is still used until you move it into the credential store; saving the settings after that removes the text.',
-    catalogueKeyMove: 'Move it to the credential store',
     authoringTools: 'Tools for the authoring assistants',
     authoringToolsHint: 'Tools that other plugins registered for everyone (a web search, an MCP server, files) which an assistant may use, for example to look up a setting you name. An assistant has none that is not ticked here, whatever else this profile registers. A tool you tick runs without asking you each time, so tick only the ones you are comfortable letting it use. The session doctor never has any.',
     authoringToolsNone: 'No other plugin has registered tools for everyone. A tool added to one assistant\'s own preset is not listed here.',
@@ -138,8 +136,6 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     catalogueKeyReadOnly: '其来源不可写入，无法在此更改',
     catalogueKeyStore: '存入密钥',
     catalogueKeyClear: '删除密钥',
-    catalogueKeyLegacy: '旧版本把密钥以文本形式保存在本配置中。在你把它移入凭据存储之前仍会继续使用；之后保存设置会删除这段文本。',
-    catalogueKeyMove: '移入凭据存储',
     authoringTools: '创作助手的工具',
     authoringToolsHint: '其他插件为所有人注册的工具（网络搜索、MCP 服务器、文件等），创作助手可以使用，例如查询你提到的某个设定。没有在这里勾选的工具，助手一律没有，无论这个配置档还注册了什么。你勾选的工具会直接运行，不会每次都征求你的同意，所以只勾选你放心让它使用的工具。会话医生永远没有任何工具。',
     authoringToolsNone: '没有其他插件为所有人注册工具。加在某个助手自己的预设中的工具不会列在这里。',

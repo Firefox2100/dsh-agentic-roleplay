@@ -7,8 +7,6 @@ export interface CatalogueSource {
   baseUrl: string
   /** The credential the key is stored under; empty means the name derived from the catalogue's name (`catalogueKeyRef`). */
   apiKeyRef: string
-  /** A key written in the profile's configuration by an earlier version. Still sent when the store has none for `apiKeyRef`, and removed when the settings are saved. */
-  apiKey: string
 }
 
 /** What a credential reference is: letters, digits and `_`, not starting with a digit (DSH's grammar). */
@@ -45,8 +43,6 @@ export interface CatalogueSourceStatus {
   keyRef: string
   /** Where the key comes from, when there is one. */
   keySource?: string
-  /** Whether the entry still holds a key in the profile's configuration. */
-  legacyKey?: boolean
   /** Why the entry cannot be used, when it cannot. */
   problem?: string
 }
@@ -55,6 +51,14 @@ export type CatalogueVisibility = 'public' | 'authenticated' | 'private'
 
 /** What a catalogue entry is: a roleplay world (installed as it is), a SillyTavern character card (converted into a new world) a SillyTavern preset (converted into a library preset) or a SillyTavern lorebook (converted into a library lorebook, and a preset when it carries instructions). */
 export type CatalogueKind = 'world' | 'card' | 'preset' | 'lorebook'
+
+/** What a web page address of a catalogue's site names: one resource, to be opened like a card of the list. */
+export interface CatalogueLink {
+  source: string
+  id: string
+  kind: CatalogueKind
+  name: string
+}
 
 export const CATALOGUE_CARD_TYPE = 'sillytavern/character'
 export const CATALOGUE_PRESET_TYPE = 'sillytavern/preset'

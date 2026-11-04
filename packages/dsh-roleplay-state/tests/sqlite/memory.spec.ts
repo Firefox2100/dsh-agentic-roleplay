@@ -110,13 +110,23 @@ describe('ThreadRepository', () => {
   it('opens and resolves threads', () => {
     const open = store.threads.open('Who took the key?', 2)
     store.threads.open('Where is Harlan?', 3)
-    expect(open).toEqual({ id: 1, text: 'Who took the key?', status: 'open', openedTurn: 2 })
+    expect(open).toEqual({ id: 1, text: 'Who took the key?', status: 'open', openedTurn: 2, playerKnows: false })
     const resolved = store.threads.resolve(open.id, 5)
-    expect(resolved).toEqual({ id: 1, text: 'Who took the key?', status: 'resolved', openedTurn: 2, resolvedTurn: 5 })
+    expect(resolved).toEqual({ id: 1, text: 'Who took the key?', status: 'resolved', openedTurn: 2, resolvedTurn: 5, playerKnows: false })
     expect(store.threads.list('open').map(thread => thread.text)).toEqual(['Where is Harlan?'])
     expect(store.threads.list()).toHaveLength(2)
     expect(() => store.threads.resolve(99, 1)).toThrow(NotFoundError)
     expect(store.threads.remove(1)).toBe(true)
+  })
+
+  it('keeps a thread secret until the player\'s character is told of it, however it was opened', () => {
+    const secret = store.threads.open('The cellar is flooding', 1)
+    const known = store.threads.open('Deliver the letter to the harbourmaster', 1, true)
+    expect([secret.playerKnows, known.playerKnows]).toEqual([false, true])
+    expect(store.threads.tell(secret.id).playerKnows).toBe(true)
+    expect(store.threads.tell(secret.id).playerKnows).toBe(true)
+    expect(store.threads.list().map(thread => thread.playerKnows)).toEqual([true, true])
+    expect(() => store.threads.tell(99)).toThrow(NotFoundError)
   })
 })
 

@@ -19,6 +19,7 @@ import { TranslateBanner } from './TranslateBanner.tsx'
 import { importStagedToWorld, importVerbatimToWorld, stageFile } from '../../import-selection-api.ts'
 import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSelection.tsx'
 import type { SelectionPreview } from '../../../shared/import-selection.ts'
+import { CardUrlDialog } from './CardUrlDialog.tsx'
 import { discardImport, importWithoutModel, revertUpdate, startImport, updateStatus, uploadCard } from './import-api.ts'
 import type { ImportPreview, UpdateStatus } from '../../../shared/import-card.ts'
 import { PlaytestDialog } from './PlaytestDialog.tsx'
@@ -42,6 +43,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const [addingAvatars, setAddingAvatars] = useState(false)
   const [editorVersion, setEditorVersion] = useState(0)
   const [importing, setImporting] = useState<ImportPreview | undefined>()
+  const [addressing, setAddressing] = useState(false)
   const [updating, setUpdating] = useState<string>()
   const [cardStatus, setCardStatus] = useState<UpdateStatus>()
   const [reverting, setReverting] = useState(false)
@@ -172,7 +174,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
     <div className={css.page} data-testid="roleplay-worlds-page">
       <div className={css.toolbar}>
         <span className={css.count}>{state.payload === undefined ? '' : count}</span>
-        <div className={css.toolbarActions}><Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('createWorld')}</Button><Button variant="outline" size="sm" disabled={uploading} onClick={() => { picker.current?.click() }}>{uploading ? t('importUploading') : t('importCard')}</Button><input ref={picker} type="file" accept=".png,.json,image/png,application/json" hidden onChange={(event) => { chooseCard(event.target.files?.[0]); event.target.value = '' }} /><Button
+        <div className={css.toolbarActions}><Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('createWorld')}</Button><Button variant="outline" size="sm" disabled={uploading} onClick={() => { picker.current?.click() }}>{uploading ? t('importUploading') : t('importCard')}</Button><Button variant="outline" size="sm" disabled={uploading} data-testid="roleplay-import-card-url" onClick={() => { setAddressing(true) }}>{t('importCardUrl')}</Button><input ref={picker} type="file" accept=".png,.json,image/png,application/json" hidden onChange={(event) => { chooseCard(event.target.files?.[0]); event.target.value = '' }} /><Button
           variant="outline"
           size="sm"
           icon={<IconRefreshOutlineRegular className={state.refreshing ? css.spinning : undefined} />}
@@ -231,6 +233,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
       {state.dialog !== undefined && (
         <StartSessionDialog key={state.dialog.worldId} t={t} dialog={state.dialog} onStart={startSession} onClose={closeStartDialog} />
       )}
+      {addressing && <CardUrlDialog t={t} onClose={() => { setAddressing(false) }} onRead={(preview) => { setAddressing(false); setImportNotice(undefined); setImportDone(undefined); setImporting(preview) }} />}
       {creating && <CreateWorldDialog t={t} onClose={() => { setCreating(false) }} onCreated={(world) => { setCreating(false); setEditing({ id: world.id, name: world.name }); refresh() }} />}
       {state.started !== undefined && (
         <Toast key={state.started.sequence} text={t('chatNotOpened', { name: state.started.sessionName, message: state.started.reason })} onDone={dismissStarted} />

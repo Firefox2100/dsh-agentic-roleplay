@@ -24,4 +24,5 @@
 - beliefs：只有当一个角色明确得知、怀疑或推断出超出单个事件的东西时才写；从该角色的视角来写；kind 是 belief、relationship 或 knowledge。
 - 实体知识（entity knowledge）：这张图是封闭世界。关系档案表示 from 角色认识 to 角色。对于通过被告知、阅读或推断而新得知的地点、物品或有方向的出口，添加 knowledge（character、kind；地点或物品用 subject，出口用 from+to）。普通的目睹和移动会自动记录。knowledge 只表示该实体存在，绝不表示它现在在哪里或它当前的状态。不要仅仅因为信息过时了就撤回它。
 - factions：faction_states 改变组织持久的、公开或私下的制度性状况；faction_memberships 记录加入、离开、职位、等级、可见性和承诺；faction_relationships 记录某个角色或组织对某个组织或角色的有方向的看法，同时也是知晓的连线。适用与角色关系相同的“具体原因”和“有方向”的规则：成员的行为并不会自动改变组织的看法，反之亦然。faction_intents_added 记录一个组织所采纳的长期战略目标。组织的目标会给成员压力，但绝不意味着每个成员都知道它或必须据此行动。
-- threads_opened：只有当各轮明确留下一个未解决、而且还没有开启的承诺、谜团或目标时才写。threads_resolved：各轮已经解决的、处于开启状态的线索的 id。
+- threads_opened：只有当各轮明确留下一个未解决、而且还没有开启的承诺、谜团或目标时才写。只是重复某个已开启线索的会被拒绝；看起来相似但确实是另一件事的，写进 threads_distinct。threads_resolved：各轮已经解决的、处于开启状态的线索的 id。
+- 线索的知晓（thread knowledge）：线索是故事自己的笔记，在玩家角色被告知、亲眼看到或亲自接下它之前，一直是秘密。开启时玩家角色就已经知道的线索，写进 threads_opened_known，而不是 threads_opened；玩家角色刚刚得知的已开启线索，把 id 写进 threads_known（read_records 会为每条线索显示 player_knows）。不要因为故事只是暗示、因为其他角色知道，或因为叙述隐含了它就标记：秘密留在 threads_opened，不做标记。

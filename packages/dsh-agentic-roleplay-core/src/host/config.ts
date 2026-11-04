@@ -15,8 +15,6 @@ export interface CatalogueEntry {
   baseUrl: string
   /** The credential in DSH's credential store that holds the API key, sent as a Bearer token to this catalogue's site only. Empty uses a name made from the catalogue's name. */
   apiKeyRef: string
-  /** Deprecated: a key written here as text by an earlier version. It is still sent when the store holds no key for `apiKeyRef`, and settings removes it when saved. */
-  apiKey: string
 }
 
 export interface Config {
@@ -66,7 +64,7 @@ export interface Config {
 export const Config = z.object({
   rootPath: z.string().default(DEFAULT_ROOT_PATH).volatile(),
   sessionStorePath: z.string().default(DEFAULT_STORE_PATH),
-  catalogues: z.array(z.object({ name: z.string().required(), baseUrl: z.string().required(), apiKeyRef: z.string().default(''), apiKey: z.string().default('') })).default([]).volatile(),
+  catalogues: z.array(z.object({ name: z.string().required(), baseUrl: z.string().required(), apiKeyRef: z.string().default('') })).default([]).volatile(),
   authoringTools: z.dict(z.dict(z.boolean())).default({}).volatile(),
   sync: z.object({ remote: z.string().default(''), rclone: z.string().default(''), configFile: z.string().default(''), passwordRef: z.string().default(''), intervalMinutes: z.number().min(0).default(0) }).default({ ...DEFAULT_SYNC }).volatile(),
   catalogueMaxBytes: z.number().min(1024).default(256 * 1024 * 1024).volatile(),

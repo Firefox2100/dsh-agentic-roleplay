@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canonicalTags, tagUsage } from '../../../src/host/memory/tags.ts'
+import { canonicalLabel, canonicalTags, labelUsage, tagUsage } from '../../../src/host/memory/tags.ts'
 
 describe('the tag vocabulary', () => {
   const known = tagUsage([{ tags: ['tavern', 'letter'] }, { tags: ['tavern', 'Vault-Door'] }, { tags: ['letter'] }, { tags: ['tavern'] }])
@@ -23,5 +23,20 @@ describe('the tag vocabulary', () => {
 
   it('starts from nothing', () => {
     expect(canonicalTags(new Map(), ['Inn Keeper'])).toEqual(['inn-keeper'])
+  })
+})
+
+describe('relationship labels', () => {
+  const known = labelUsage(['Rival', 'rival', 'old friend', 'Mentor'])
+
+  it('count each spelling and list the most used first', () => {
+    expect([...known]).toEqual([['Rival', 2], ['Mentor', 1], ['old friend', 1]])
+  })
+
+  it('bring a respelling onto the label in use and leave a new bond alone', () => {
+    expect(canonicalLabel(known, 'Old  Friend')).toBe('old friend')
+    expect(canonicalLabel(known, 'rivals')).toBe('Rival')
+    expect(canonicalLabel(known, 'mentors')).toBe('Mentor')
+    expect(canonicalLabel(known, 'blood oath')).toBe('blood oath')
   })
 })

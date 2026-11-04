@@ -43,6 +43,13 @@ export function catalogueRoutes({ catalogue }: ApiDeps): Routes {
     '/catalogue/updates': {
       GET: async (_req, res, url) => { try { sendJson(res, 200, await catalogue.updates(url.searchParams.get('source') ?? '')) } catch (error) { return catalogueFailure(res, error) } },
     },
+    '/catalogue/link': {
+      POST: async (req, res) => {
+        const { url } = await readJsonBody(req) as { url?: unknown }
+        if (typeof url !== 'string') return sendError(res, 400, 'url must be text')
+        try { sendJson(res, 200, { link: (await catalogue.link(url)) ?? null }) } catch (error) { return catalogueFailure(res, error) }
+      },
+    },
     '/catalogue/install': {
       POST: async (req, res) => {
         const body = await readJsonBody(req) as { url?: unknown; sha256?: unknown; mode?: unknown; overwriteChanges?: unknown }

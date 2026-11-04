@@ -224,7 +224,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const work: Work = { created: [] }
       // what the author made stays in the world whether or not it managed to report: a run that fails after creating is told as created, so that what it made is fitted in
       const result = await runChild<{ outcome: 'created' | 'declined'; summary: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring', editEstimate(authoring.perTurn, THING_TEXTS, THING_TEXT_CHARS, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world author'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring', editEstimate(authoring.perTurn, THING_TEXTS, THING_TEXT_CHARS, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'authoring'), turn: job.turn, trace: childTrace(job.store, 'authoring', 'world author'),
         parent, signal,
         persona: promptFor(parent, 'world/author', job.store.settings().prompts.language),
         prompt: createPrompt(job, authoring.perTurn),
@@ -255,7 +255,7 @@ export function worldAuthor(deps: { agentOf: (chat: string) => Agent | undefined
       const { authoring } = job.store.settings()
       const work: Work = { created: [] }
       const result = await runChild<{ complete: boolean; notes: string }>({
-        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring', editEstimate(pending.length, FIT_TEXTS, FIT_TEXT_CHARS, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'authoring'), trace: childTrace(job.store, 'authoring', 'world consolidation'),
+        reasoningEffort: job.store.settings().reasoning.children, sampling: childSampling(job.store.settings(), 'authoring', editEstimate(pending.length, FIT_TEXTS, FIT_TEXT_CHARS, job.store.settings().prompts.language)), ...childModel(job.store.settings(), 'authoring'), turn: job.turn, trace: childTrace(job.store, 'authoring', 'world consolidation'),
         parent, signal,
         persona: promptFor(parent, 'world/consolidate', job.store.settings().prompts.language),
         prompt: consolidationPrompt(job),

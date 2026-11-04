@@ -25,6 +25,7 @@ import { WorldFolderExistsError } from '../../../src/host/worlds/create-world.ts
 import { UnknownStarterError } from '../../../src/host/worlds/starter.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
+import { PromptEditError } from '../../../src/host/prompts/manage.ts'
 import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
 import { RcloneError, SyncRefusedError, UnitLockedError } from '../../../src/host/sync/errors.ts'
 import type { PresetApi } from '../../../src/host/presets/routes.ts'
@@ -104,6 +105,7 @@ const catalogue = {
   worlds: async (name: string, query: unknown) => { catalogueCalls.push(`worlds ${name} ${JSON.stringify(query)}`); if (catalogueError !== undefined) throw catalogueError; return { items: [], withKey: true } },
   world: async (name: string, id: string) => { catalogueCalls.push(`world ${name} ${id}`); if (catalogueError !== undefined) throw catalogueError; return { id } },
   cover: async (name: string, id: string) => { catalogueCalls.push(`cover ${name} ${id}`); if (catalogueError !== undefined) throw catalogueError; return { type: 'image/png', body: Buffer.from('png') } },
+  link: async (url: string) => { catalogueCalls.push(`link ${url}`); if (catalogueError !== undefined) throw catalogueError; return url.includes('/characters/') ? { source: 'Home', id: 'c1', kind: 'card', name: 'Ann' } : undefined },
   install: async (request: unknown) => { catalogueCalls.push(`install ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { world: { id: 'w' }, packs: [] } },
   updates: async (name: string) => { catalogueCalls.push(`updates ${name}`); if (catalogueError !== undefined) throw catalogueError; return { updates: [], problems: [] } },
   convert: async (request: unknown) => { catalogueCalls.push(`convert ${JSON.stringify(request)}`); if (catalogueError !== undefined) throw catalogueError; return { worldId: 'w', chatSessionId: 'c', started: true } },
@@ -174,7 +176,7 @@ beforeEach(async () => {
     } as never,
     playtest: {
       status: (id) => (id === 'harbor' ? { state: 'running', world: id, turns: 3, played: 1, step: 'playing', startedAt: 'now' } : undefined),
-      start: (request) => { if (request.turns > 10) throw new InvalidEditProblems(['turns must be a whole number from 1 to 10']); playtested.push(`${request.worldId} ${request.turns} ${request.playerCharacterId ?? ''} ${request.opening ?? ''} ${request.language ?? ''}`); return { state: 'running', world: request.worldId, turns: request.turns, played: 0, step: 'starting', startedAt: 'now' } },
+      start: (request) => { if (request.turns > 10) throw new InvalidEditProblems(['turns must be a whole number from 1 to 10']); playtested.push(`${request.worldId} ${request.turns} ${request.playerCharacterId ?? ''} ${request.opening ?? ''} ${request.startingTime ?? ''} ${request.language ?? ''}`); return { state: 'running', world: request.worldId, turns: request.turns, played: 0, step: 'starting', startedAt: 'now' } },
       stop: (id) => { playtested.push(`stop ${id}`); return Promise.resolve() },
     },
     anyLocked: () => lockedUnit !== undefined,
@@ -198,9 +200,16 @@ beforeEach(async () => {
       if (charactersError !== undefined) throw charactersError
       return cast
     },
+    prompts: {
+      list: () => [{ id: 'roleplay/game-master', language: 'en', state: 'different' }],
+      read: (id, language) => { if (id === 'nope') throw new PromptEditError('there is no shipped prompt "nope"'); return { id, language, state: 'different', current: 'mine', shipped: 'theirs', variables: ['language'] } },
+      write: (id, language, text) => { importCalls.push(`prompt write ${id} ${language} ${text}`); return Promise.resolve({ id, language, state: 'different' }) },
+      reset: (id, language) => { importCalls.push(`prompt reset ${id} ${language}`); return Promise.resolve({ id, language, state: 'default' }) },
+    },
     importer: {
       maxUploadBytes: 1024,
       upload: (file, name) => { importCalls.push(`upload ${file.length} ${name}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
+      fromAddress: (address) => { importCalls.push(`address ${address}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
       read: (id) => { importCalls.push(`read ${id}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
       choose: (id, choices) => { importCalls.push(`choose ${id} ${JSON.stringify(choices)}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve(preview) },
       discard: (id) => { importCalls.push(`discard ${id}`); return Promise.resolve() },
@@ -219,8 +228,8 @@ beforeEach(async () => {
       uploadPreset: (worldId, file, name, language) => { importCalls.push(`preset ${worldId} ${file.length} ${name} ${language ?? '-'}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
     },
     worldFiles: {
-      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], sampling: {}, tools: {} }),
-      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], sampling: {}, tools: {} }) },
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {} }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {} }) },
       dice: () => Promise.resolve({ checks: [] }),
       editDice: (_world, dice) => (dice.checks.some(check => check.key === '') ? Promise.reject(new InvalidEditProblems(['checks[0].key is required'])) : Promise.resolve(dice)),
       calendar: () => Promise.resolve({ hemisphere: 'north', holidays: [] }),
@@ -752,6 +761,15 @@ describe('roleplay API', () => {
       expect(await (await fetch(`${origin}/catalogue/sources`)).json()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: true, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY', keySource: 'file' }])
     })
 
+    it('says which resource a page address of a catalogue names, or none', async () => {
+      const link = (url: unknown) => fetch(`${origin}/catalogue/link`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url }) })
+      expect(await (await link('https://site.example/characters/c1')).json()).toEqual({ link: { source: 'Home', id: 'c1', kind: 'card', name: 'Ann' } })
+      expect(await (await link('https://site.example/other')).json()).toEqual({ link: null })
+      expect((await link(3)).status).toBe(400)
+      catalogueError = new CatalogueError('is not an address', 'input')
+      expect((await link('x')).status).toBe(400)
+    })
+
     it('describes and keeps a key in the credential store, and never answers with it', async () => {
       expect(await (await fetch(`${origin}/catalogue/key?ref=MY_KEY`)).json()).toEqual({ ref: 'MY_KEY', configured: true, writable: true, source: 'file' })
       const put = (body: unknown) => fetch(`${origin}/catalogue/key`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
@@ -1218,6 +1236,19 @@ describe('roleplay API', () => {
     })
   })
 
+  describe('the prompts of the root', () => {
+    it('lists them, reads one with the shipped text beside it, saves a text and puts the shipped one back, refusing what is not a prompt', async () => {
+      expect(await (await fetch(`${origin}/prompts`)).json()).toEqual([{ id: 'roleplay/game-master', language: 'en', state: 'different' }])
+      expect(await (await fetch(`${origin}/prompts/item?id=roleplay/game-master&language=en`)).json()).toMatchObject({ current: 'mine', shipped: 'theirs' })
+      expect((await fetch(`${origin}/prompts/item?id=nope&language=en`)).status).toBe(422)
+      const put = (body: unknown) => fetch(`${origin}/prompts/item?id=roleplay/game-master&language=en`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+      expect((await put({ text: 'new' })).status).toBe(200)
+      expect((await put({ text: 3 })).status).toBe(400)
+      expect(await (await fetch(`${origin}/prompts/item/reset?id=roleplay/game-master&language=en`, { method: 'POST' })).json()).toEqual({ id: 'roleplay/game-master', language: 'en', state: 'default' })
+      expect(importCalls).toEqual(['prompt write roleplay/game-master en new', 'prompt reset roleplay/game-master en'])
+    })
+  })
+
   describe('importing a card', () => {
     const post = (path: string, body: string | Uint8Array, headers: Record<string, string> = {}) => fetch(`${origin}${path}`, { method: 'POST', headers, body })
     const put = (path: string, body: unknown) => fetch(`${origin}${path}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
@@ -1227,6 +1258,21 @@ describe('roleplay API', () => {
       expect(response.status).toBe(200)
       expect(await response.json()).toMatchObject({ id: 'i1', choices: { name: 'Card' } })
       expect(importCalls).toEqual(['upload 3 我的 card.png'])
+    })
+
+    it('reads a card from an address, and answers the failures of the address and of the card with their own statuses', async () => {
+      const send = (body: unknown) => post('/worlds/import/card/url', JSON.stringify(body), { 'content-type': 'application/json' })
+      const read = await send({ url: 'https://cards.example/a.png' })
+      expect(read.status).toBe(200)
+      expect(await read.json()).toMatchObject({ id: 'i1' })
+      expect(importCalls).toEqual(['address https://cards.example/a.png'])
+      expect((await send({ url: 7 })).status).toBe(400)
+      importError = new ImportCardError('a.png is a web page: a character card is a PNG picture with the card in it, or a JSON file')
+      expect((await send({ url: 'https://cards.example/page' })).status).toBe(422)
+      importError = new CatalogueError('https://cards.example/page reports text/html, not a PNG picture or a JSON file', 'invalid')
+      expect((await send({ url: 'https://cards.example/page' })).status).toBe(422)
+      importError = new CatalogueError('could not reach cards.example', 'upstream')
+      expect((await send({ url: 'https://cards.example/page' })).status).toBe(502)
     })
 
     it('takes a narration preset for a world, and refuses one that is not a preset with the reason', async () => {
@@ -1465,9 +1511,9 @@ describe('roleplay API', () => {
     it('start, read and stop a bounded test play of a world', async () => {
       expect(await (await fetch(`${origin}/worlds/playtest?id=nobody`)).json()).toEqual({ state: 'idle' })
       expect(await (await fetch(`${origin}/worlds/playtest?id=harbor`)).json()).toMatchObject({ state: 'running', played: 1 })
-      const started = await post('/worlds/playtest?id=harbor', { turns: 3, playerCharacterId: 'ana', opening: 1, language: 'zh' })
+      const started = await post('/worlds/playtest?id=harbor', { turns: 3, playerCharacterId: 'ana', opening: 1, startingTime: ' 1912-04-14T23:40:00 ', language: 'zh' })
       expect(started.status).toBe(202)
-      expect(playtested).toContain('harbor 3 ana 1 zh')
+      expect(playtested).toContain('harbor 3 ana 1 1912-04-14T23:40:00 zh')
       expect((await post('/worlds/playtest?id=harbor', { turns: 'three' })).status).toBe(400)
       expect((await post('/worlds/playtest?id=harbor', { turns: 11 })).status).toBe(422)
       expect((await fetch(`${origin}/worlds/playtest?id=harbor`, { method: 'DELETE' })).status).toBe(200)

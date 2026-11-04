@@ -131,6 +131,17 @@ describe('finishing an import', () => {
     expect(await readdir(join(directory, '.import'))).toEqual(['report.json'])
   })
 
+  it('drops an optional field whose value cannot be used, keeps the value, and leaves a required or linking field as a problem', async () => {
+    const mixed = extracted()
+    mixed.characters.push({ id: 'ana', name: 'Ana', role: 'npc', kind: 'person', tier: 'supporting', summary: 'A sailor.', speech: { style: 'dry', examples: 'not a list' } } as never)
+    const result = await finishImport(fakeContext(() => ({ description: 'x', tags: [] })), input({ extracted: mixed }))
+    expect(result.ok && result.draft).toBeUndefined()
+    expect(((await read('characters/ana/character.json'))['speech'] as Record<string, unknown>)['examples']).toBeUndefined()
+    expect(((await read('characters/ana/character.json'))['speech'] as Record<string, unknown>)['style']).toBe('dry')
+    expect(await readFile(join(directory, '.import', 'repairs.json'), 'utf8')).toContain('not a list')
+    expect(result.ok && result.report.notes.join('\n')).toMatch(/1 field\(s\) were dropped/)
+  })
+
   it('writes a world that would start as a world, with no draft', async () => {
     const result = await finishImport(fakeContext(() => ({ description: 'x', tags: [] })), input())
     expect(result.ok && result.draft).toBeUndefined()

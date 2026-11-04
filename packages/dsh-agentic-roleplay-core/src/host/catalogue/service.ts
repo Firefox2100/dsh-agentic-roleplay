@@ -1,9 +1,9 @@
 import { createHash } from 'node:crypto'
 import { dirname } from 'node:path'
-import { CATALOGUE_CARD_TYPE, CATALOGUE_LOREBOOK_TYPE, CATALOGUE_PRESET_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueKeyStatus, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertPresetRequest, type ConvertPresetResult, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
+import { CATALOGUE_CARD_TYPE, CATALOGUE_LOREBOOK_TYPE, CATALOGUE_PRESET_TYPE, CATALOGUE_WORLD_TYPE, type CatalogueKeyStatus, type CatalogueLink, type CatalogueQuery, type CatalogueSourceStatus, type CatalogueUpdate, type CatalogueUpdates, type CatalogueVersion, type CatalogueVisibility, type CatalogueWorld, type CatalogueWorldDetail, type CatalogueWorldPage, type ConvertPresetRequest, type ConvertPresetResult, type ConvertRequest, type ConvertResult, type InstallRequest, type InstallResult } from '../../shared/catalogue.ts'
 import type { ImportChoices, ImportPreview } from '../../shared/import-card.ts'
 import type { SelectionKind, SelectionPreview } from '../../shared/import-selection.ts'
-import { isPng } from '../import/card.ts'
+import { cardFormat, isPng } from '../import/card.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { CatalogueError } from './errors.ts'
 import { installWorld } from './install.ts'
@@ -47,6 +47,11 @@ export interface CatalogueDeps {
 }
 
 const CHECKED_AT_ONCE = 4
+const PAGE = /^\/(characters|presets|lorebooks|agentic-worlds)\/([A-Za-z0-9_-]{1,100})\/?$/
+const PAGE_KINDS = { characters: 'card', presets: 'preset', lorebooks: 'lorebook', 'agentic-worlds': 'world' } as const
+/** Types a sender may name for a card: JSON or PNG, or nothing a card could not be (servers often send plain text for a JSON file and a generic type for any file). */
+const CARD_TYPES = new Set(['', 'application/json', 'text/json', 'image/png', 'application/octet-stream', 'binary/octet-stream', 'text/plain'])
+const MAX_NAME = 100
 
 const unexpected = (what: string): CatalogueError => new CatalogueError(`the catalogue answered with something unexpected: ${what}`, 'upstream')
 const object = (value: unknown, what: string): Json => { if (typeof value !== 'object' || value === null || Array.isArray(value)) throw unexpected(what); return value as Json }
@@ -84,6 +89,14 @@ function versionOf(value: unknown): { version: CatalogueVersion; number: number 
       ...(typeof item['artifactSha256'] === 'string' ? { sha256: item['artifactSha256'] } : {}),
     },
   }
+}
+
+/** A file name for a downloaded card: the last part of the address, or "card", with the extension its first bytes call for. */
+function cardName(url: URL, format: 'png' | 'json' | undefined): string {
+  let last = ''
+  try { last = decodeURIComponent(url.pathname.split('/').filter(part => part !== '').pop() ?? '') } catch { last = '' }
+  const base = Array.from(last.replace(/[\u0000-\u001f\u007f/\\]/g, '')).slice(0, MAX_NAME).join('') || 'card'
+  return format === undefined || base.toLowerCase().endsWith(`.${format}`) ? base : `${base}.${format}`
 }
 
 /** Browsing the worlds a catalogue holds and installing one; the catalogue's API key goes with every request that belongs to its site. */
@@ -174,6 +187,49 @@ export class Catalogue {
     return result
   }
 
+  /**
+   * The resource a web page address of a configured catalogue's site names (its `/characters/<id>`, `/presets/<id>`, `/lorebooks/<id>` or
+   * `/agentic-worlds/<id>` page), or nothing when the address is not such a page.
+   * @throws {CatalogueError} when the address is not a web address, or the page names a resource of another kind or one that does not exist.
+   */
+  async link(address: string): Promise<CatalogueLink | undefined> {
+    return await this.pageOf(this.parse(address))
+  }
+
+  private async pageOf(url: URL): Promise<CatalogueLink | undefined> {
+    const source = this.deps.sources.match(url)
+    const named = source === undefined ? null : PAGE.exec(url.pathname)
+    if (source === undefined || named === null) return undefined
+    const kind = PAGE_KINDS[named[1] as keyof typeof PAGE_KINDS]
+    const id = named[2]!
+    const resource = object(await this.json(source, `/resources/${id}`), 'a resource')
+    if (text(resource['resourceType']) !== TYPES[kind]) throw new CatalogueError(`${url.href} is the page of another kind of resource than the address says`, 'invalid')
+    return { source: source.name, id, kind, name: text(object(resource['metadata'], 'a resource without metadata')['name']) }
+  }
+
+  /**
+   * Fetches a character card from an address and hands it over for reading. A catalogue's page for a card is resolved to the card's latest
+   * release. Any address first gets a HEAD request: an answer that names a type other than JSON or PNG is refused before the file is
+   * downloaded, and a server that does not support HEAD (or fails it) is asked for the file anyway. The file is judged by its first bytes by
+   * the card reader, not by the type the server named.
+   * @throws {CatalogueError} when the address cannot be used, cannot be reached or names another type; the reader refuses what is no card.
+   */
+  async fetchCard(address: string): Promise<{ body: Buffer; name: string }> {
+    let url = this.parse(address)
+    const page = await this.pageOf(url)
+    if (page !== undefined) {
+      if (page.kind !== 'card') throw new CatalogueError(`${url.href} is not the page of a character card`, 'input')
+      const source = this.deps.sources.get(page.source)
+      url = new URL(this.address(source, `/versions/${(await this.latest(source, page.id)).id}/download`))
+    }
+    const options = { sources: this.deps.sources, maxBytes: this.deps.maxCardBytes(), accept: 'application/json, image/png;q=0.9, */*;q=0.1', ...(this.deps.transport === undefined ? {} : { transport: this.deps.transport }) }
+    const head = await fetchAddress(url.href, { ...options, method: 'HEAD' }).catch(() => undefined)
+    if (head !== undefined && !CARD_TYPES.has(head.type)) throw new CatalogueError(`${url.href} reports ${head.type}, not a PNG picture or a JSON file`, 'invalid')
+    const reply = await fetchAddress(url.href, options)
+    const format = cardFormat(reply.body)
+    return { body: reply.body, name: cardName(url, format) }
+  }
+
   async cover(name: string, id: string): Promise<{ type: string; body: Buffer }> {
     const source = this.deps.sources.get(name)
     const reply = await fetchAddress(this.address(source, `/images/covers/resources/${this.identifier(id)}`), { sources: this.deps.sources, maxBytes: MAX_COVER_BYTES, accept: 'image/*', ...(this.deps.transport === undefined ? {} : { transport: this.deps.transport }) })
@@ -189,8 +245,13 @@ export class Catalogue {
   async install(request: InstallRequest): Promise<InstallResult> {
     const address = request.url.trim()
     if (address === '') throw new CatalogueError('give the address of a world archive', 'input')
-    let url: URL
-    try { url = new URL(address) } catch { throw new CatalogueError(`"${address}" is not an address`, 'input') }
+    let url = this.parse(address)
+    const page = await this.pageOf(url)
+    if (page !== undefined) {
+      if (page.kind !== 'world') throw new CatalogueError(`${url.href} is the page of ${page.kind === 'card' ? 'a character card' : page.kind === 'preset' ? 'a preset' : 'a lorebook'}, not of a world: open it from the catalogue list`, 'input')
+      const source = this.deps.sources.get(page.source)
+      url = new URL(this.address(source, `/versions/${(await this.latest(source, page.id)).id}/download`))
+    }
     const reply = await fetchAddress(url.href, { sources: this.deps.sources, maxBytes: this.deps.maxBytes(), accept: 'application/zip, application/octet-stream;q=0.9, */*;q=0.1', ...(this.deps.transport === undefined ? {} : { transport: this.deps.transport }) })
     if (reply.body.length < 4 || reply.body.readUInt32LE(0) !== 0x04034b50) throw new CatalogueError(`${url.href} did not answer with a ZIP archive${reply.type === '' ? '' : ` (it sent ${reply.type})`}`, 'invalid')
     if (request.sha256 !== undefined && createHash('sha256').update(reply.body).digest('hex') !== request.sha256.toLowerCase()) throw new CatalogueError('the download does not match the checksum the catalogue published for it', 'invalid')
@@ -305,6 +366,21 @@ export class Catalogue {
       }
     }
     return found
+  }
+
+  /** The newest published release of a resource. */
+  private async latest(source: ResolvedSource, id: string): Promise<CatalogueVersion> {
+    const listed = await this.json(source, `/versions/resource/${this.identifier(id)}`)
+    if (!Array.isArray(listed)) throw unexpected('the list of versions')
+    const newest = listed.map(versionOf).sort((a, b) => b.number - a.number)[0]
+    if (newest === undefined) throw new CatalogueError('that resource has no release yet', 'unknown')
+    return newest.version
+  }
+
+  private parse(address: string): URL {
+    const trimmed = address.trim()
+    if (trimmed === '') throw new CatalogueError('give an address', 'input')
+    try { return new URL(trimmed) } catch { throw new CatalogueError(`"${trimmed}" is not an address`, 'input') }
   }
 
   private identifier(id: string): string {

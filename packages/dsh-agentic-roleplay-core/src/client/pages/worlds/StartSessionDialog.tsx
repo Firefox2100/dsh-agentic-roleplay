@@ -22,6 +22,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const [name, setName] = useState(dialog.worldName)
   const [opening, setOpening] = useState('')
   const [startTime, setStartTime] = useState('')
+  const [answers, setAnswers] = useState<Record<string, string>>({})
   const [preset, setPreset] = useState('')
   // Untouched, the world's own suggestion stands; once the person changes it, what they chose is sent, even when that is nothing.
   const [books, setBooks] = useState<ReadonlySet<string> | undefined>()
@@ -67,7 +68,7 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
         className={css.form}
         onSubmit={(event) => {
           event.preventDefault()
-          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(!openingValid ? {} : { opening: Number(opening) }), ...(preset === '' ? {} : { preset }), ...(books === undefined ? {} : { lorebooks: [...books] }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
+          if (canStart) onStart({ name, ...(selected.startsWith('avatar:') ? { playerAvatar: selected.slice('avatar:'.length) } : { playerCharacterId: selected }), avatars: bringing.map(avatar => avatar.key), ...(!openingValid ? {} : { opening: Number(opening) }), ...(Object.keys(answers).length === 0 ? {} : { answers }), ...(preset === '' ? {} : { preset }), ...(books === undefined ? {} : { lorebooks: [...books] }), ...(startTime.trim() === '' || shown['clock.mode'] === 'real' ? {} : { startingTime: startTime.trim() }), settings: fromDrafts(base, shown, options) })
         }}
       >
         <label className={css.field}>
@@ -98,6 +99,20 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
             </label>
           ))}
         </fieldset>
+
+        {dialog.status === 'ready' && dialog.questions.map(question => {
+          const picked = question.options.find(option => option.id === answers[question.id])
+          return (
+            <label key={question.id} className={css.field}>
+              <span className={css.label}>{question.text}</span>
+              <select value={picked?.id ?? ''} disabled={dialog.submitting} onChange={(event) => { const { value } = event.target; setAnswers((now) => { const next = { ...now }; if (value === '') delete next[question.id]; else next[question.id] = value; return next }) }}>
+                <option value="">{t('startQuestionNone')}</option>
+                {question.options.map(option => <option key={option.id} value={option.id}>{option.label}</option>)}
+              </select>
+              {picked?.description !== undefined && <span className={css.optionSummary}>{picked.description}</span>}
+            </label>
+          )
+        })}
 
         {dialog.status === 'ready' && dialog.openings.some(entry => entry.character === undefined || entry.character === selected) && (
           <label className={css.field}>

@@ -33,6 +33,7 @@ import { HttpError, sendError } from './respond.ts'
 import { presetRoutes } from '../presets/routes.ts'
 import type { PresetApi } from '../presets/routes.ts'
 import { lorebookRoutes } from '../lorebooks/routes.ts'
+import { promptRoutes, type PromptsApi } from '../prompts/routes.ts'
 import { syncRoutes, type SyncApi } from '../sync/routes.ts'
 import type { LorebookApi } from '../lorebooks/routes.ts'
 import { FRAME_FILES, PACK_FILES, interfaceRoutes, sendPackFile, type InterfaceApi } from '../interface/routes.ts'
@@ -79,6 +80,8 @@ export interface ApiDeps {
   importer: {
     maxUploadBytes: number
     upload(file: Buffer, name: string): Promise<ImportPreview>
+    /** Fetches a card from a web address (a catalogue's page for one included) and reads it like an upload. */
+    fromAddress(address: string): Promise<ImportPreview>
     read(id: string): Promise<ImportPreview>
     choose(id: string, choices: ImportChoices): Promise<ImportPreview>
     discard(id: string): Promise<void>
@@ -224,6 +227,8 @@ export interface ApiDeps {
   presets: PresetApi
   /** The lorebook library. */
   lorebooks: LorebookApi
+  /** The prompts of the roleplay root. */
+  prompts: PromptsApi
   /** Syncing with other devices. */
   sync: SyncApi
   /** The unit a request touches while it is being synced, or nothing; only asked while some unit is locked. */
@@ -248,6 +253,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     ...interfaceRoutes(packs),
     ...presetRoutes(presets),
     ...lorebookRoutes(lorebooks),
+    ...promptRoutes(deps.prompts),
     ...syncRoutes(sync),
   }
 

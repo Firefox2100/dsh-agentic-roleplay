@@ -10,7 +10,7 @@ export interface AfterTurnDeps {
   boundaries: () => Boundaries
   stores: (chat: string) => TurnStore | undefined
   /** Keeps a job among what the chat has in flight, so that a rewind or a halt waits for it. */
-  track: (chat: string, job: Promise<unknown>) => void
+  track: (chat: string, job: Promise<unknown>, optional?: boolean) => void
   problem: (message: string) => void
   /** Told when a job wrote to the story, so that what is new can be indexed. */
   written: (chat: string) => void
@@ -70,7 +70,7 @@ export class AfterTurnJobs {
         recordFailure(store.story, messageOf(error))
         this.deps.problem(`what the characters believe was not sorted: ${messageOf(error)}`)
       })
-      .finally(() => { this.reflecting.delete(owner.chat) }))
+      .finally(() => { this.reflecting.delete(owner.chat) }), true)
   }
 
   /** Fit what was made up into the rest of the world, when enough of it is waiting or some has waited long. */

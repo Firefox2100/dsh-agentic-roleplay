@@ -169,6 +169,9 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     beliefEdits: array('belief_edits').map((entry): BeliefEdit => defined<BeliefEdit>({ id: num(entry, 'id') ?? 0, text: text(entry, 'text'), about: strings(entry, 'about'), importance: num(entry, 'importance'), confidence: text(entry, 'confidence') as MemoryConfidence | undefined, evidenceFor: numbersOf(entry, 'evidence_for'), evidenceAgainst: numbersOf(entry, 'evidence_against') })),
     beliefRetractions: numbers('belief_retractions'),
     threadsOpened: Array.isArray(value['threads_opened']) ? (value['threads_opened'] as unknown[]).filter((entry): entry is string => typeof entry === 'string') : [],
+    threadsDistinct: Array.isArray(value['threads_distinct']) ? (value['threads_distinct'] as unknown[]).filter((entry): entry is string => typeof entry === 'string') : [],
+    threadsOpenedKnown: Array.isArray(value['threads_opened_known']) ? (value['threads_opened_known'] as unknown[]).filter((entry): entry is string => typeof entry === 'string') : [],
+    threadsKnown: numbers('threads_known'),
     threadsResolved: numbers('threads_resolved'),
     variableChanges: array('variable_changes').map((entry): VariableChangeSpec => defined<VariableChangeSpec>({
       variable: text(entry, 'variable') ?? '', subject: text(entry, 'subject') ?? '', to: scalar(entry, 'to'), by: num(entry, 'by'), baseline: scalar(entry, 'baseline'),
@@ -545,6 +548,9 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
       },
     },
     threads_opened: { type: 'array', items: { type: 'string' }, description: 'Promises made, mysteries raised, goals set that are not settled yet: one sentence each.' },
+    threads_distinct: { type: 'array', items: { type: 'string' }, description: 'A thread that looks like one already open but is a separate matter: one sentence each. A thread that only restates an open one is refused in threads_opened.' },
+    threads_opened_known: { type: 'array', items: { type: 'string' }, description: 'Like threads_opened, for a thread the player\'s character already knows of because they were told it, saw it, or took it on: one sentence each. A thread that only the story knows (a secret, something the player\'s character has not met) goes in threads_opened.' },
+    threads_known: { type: 'array', items: { type: 'integer' }, description: 'The ids of open threads the player\'s character has now learned of: told, shown or seen in an event, not merely hinted at.' },
     threads_resolved: { type: 'array', items: { type: 'integer' }, description: 'The ids of open threads that are now settled.' },
   }
   if (options.authoring === true) {

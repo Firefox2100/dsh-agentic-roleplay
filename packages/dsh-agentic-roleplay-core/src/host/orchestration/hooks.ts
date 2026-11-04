@@ -151,6 +151,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   // The turn that ended is where the next one will have to be cut from.
   ctx.on('session/event', (session, event) => {
     if (event.type !== 'turn/end' || session.header.origin === 'subagent' || roleplaySessionOf(session.id) === undefined) return
+    ctx.roleplayOrchestration.recovery.clear(session.id)
     timelines.ended(session.id, session, event.seq as number)
     const events = session.snapshotEvents()
     const began = events.findLastIndex(entry => entry.type === 'turn/start')
@@ -183,6 +184,16 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     agent.steer(notice(`You may not end the turn yet: ${missing}.`))
   })
 
+  // A tool call that could not be read is no reason to end the turn: the step is run again, and only a failure that goes on stands.
+  ctx.on('agent/request-error', async ({ agent, turn, failure }, next) => {
+    const owner = ownerOf(agent, turn)
+    if (owner !== undefined && ctx.roleplayOrchestration.recovery.retry(owner.chat, turn, failure)) {
+      ctx.logger.warn(`roleplay: ${owner.chat} turn ${turn}: the game master's call could not be read, running the step again`)
+      return { kind: 'retry' }
+    }
+    return next()
+  })
+
   // At the start of each turn the game master is told the state of the scene, and the
   // player's input is checked.
   ctx.on('agent/pre-step', async (payload, next) => {
@@ -199,7 +210,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
       .filter(message => message.source.kind === 'user')
       .flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : [])))
       .join('\n')
-    if (!store.settings().background.concurrent) await engine.quiesce(owner.chat)
+    if (!store.settings().background.concurrent) await engine.quiesce(owner.chat, { skipOptional: true })
     await ctx.roleplayOrchestration.unitFree(owner.chat)
     const began = await timelines.begin(owner.chat, payload.turn, text)
     deps.rolls?.begin(owner.chat, store.story.metadata.get().id, began.parent)

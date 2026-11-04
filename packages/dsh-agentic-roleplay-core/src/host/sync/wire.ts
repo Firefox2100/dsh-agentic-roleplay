@@ -37,6 +37,7 @@ export async function unitsOf(url: URL, worlds: WorldCatalog): Promise<string[]>
   }
   if (path.startsWith('/presets')) units.push('presets')
   if (path.startsWith('/lorebooks')) units.push('lorebooks')
+  if (path.startsWith('/prompts')) units.push('prompts')
   if (path.startsWith('/avatars') || path.startsWith('/worlds/avatars')) units.push('avatars')
   return units
 }

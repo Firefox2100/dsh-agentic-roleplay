@@ -1,3 +1,4 @@
+import { resembles } from './resemble.ts'
 import {
   ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_TYPES, KNOWLEDGE_KINDS, MAX_LOCATION_FEATURES, MEMBERSHIP_STATUSES, MEMORY_CONFIDENCES, MEMORY_KINDS, PERCEPTION_MODES, SLOT_ID,
   type CharacterId, type CharacterStatePatch, type Holder, type Location, type LocationFeature, type NewPerception, type RelationshipPatch,
@@ -300,6 +301,23 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   })
   for (const id of list(edit.beliefRetractions)) if (target.memories.get(id) === undefined) problems.push(`belief_retractions: there is no belief ${id}`)
   for (const [index, text] of list(edit.threadsOpened).entries()) if (!present(text)) problems.push(`threads_opened[${index}]: say what is unsettled`)
+  for (const [index, text] of list(edit.threadsDistinct).entries()) if (!present(text)) problems.push(`threads_distinct[${index}]: say what is unsettled`)
+  for (const [index, text] of list(edit.threadsOpenedKnown).entries()) if (!present(text)) problems.push(`threads_opened_known[${index}]: say what is unsettled`)
+  const settling = new Set(list(edit.threadsResolved))
+  const standing = target.threads.list('open').filter(thread => !settling.has(thread.id)).map(thread => ({ label: `thread ${thread.id}`, text: thread.text }))
+  for (const [field, texts] of [['threads_opened', list(edit.threadsOpened)], ['threads_opened_known', list(edit.threadsOpenedKnown)]] as const) {
+    texts.forEach((text, index) => {
+      if (!present(text)) return
+      const twin = standing.find(thread => resembles(thread.text, text))
+      if (twin !== undefined) problems.push(`${field}[${index}]: resembles ${twin.label} ("${twin.text}"). If it is the same matter, leave it out (threads_resolved settles one that is done${field === 'threads_opened_known' ? ', threads_known tells the player\'s character of one that is open' : ''}); if it is separate, send it in threads_distinct`)
+      else standing.push({ label: `the thread opened as ${field}[${index}]`, text })
+    })
+  }
+  for (const id of list(edit.threadsKnown)) {
+    const thread = target.threads.get(id)
+    if (thread === undefined) problems.push(`threads_known: there is no thread ${id}`)
+    else if (thread.status !== 'open') problems.push(`threads_known: thread ${id} is already settled`)
+  }
   for (const id of list(edit.threadsResolved)) if (target.threads.get(id) === undefined) problems.push(`threads_resolved: there is no thread ${id}`)
 
   list(edit.variableChanges).forEach((change, index) => {
@@ -516,7 +534,9 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
       result.writes += 1
     }
     for (const id of list(edit.beliefRetractions)) { target.memories.remove(id); result.writes += 1 }
-    for (const text of list(edit.threadsOpened)) { target.threads.open(text.trim(), edit.turn); result.writes += 1 }
+    for (const text of [...list(edit.threadsOpened), ...list(edit.threadsDistinct)]) { target.threads.open(text.trim(), edit.turn); result.writes += 1 }
+    for (const text of list(edit.threadsOpenedKnown)) { target.threads.open(text.trim(), edit.turn, true); result.writes += 1 }
+    for (const id of list(edit.threadsKnown)) { target.threads.tell(id); result.writes += 1 }
     for (const id of list(edit.threadsResolved)) { target.threads.resolve(id, edit.turn); result.writes += 1 }
     result.variableKeys = []
     for (const [index, spec] of list(edit.variables).entries()) {

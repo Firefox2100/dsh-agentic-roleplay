@@ -1,4 +1,4 @@
-import type { CatalogueKind, CatalogueSourceStatus, CatalogueUpdates, CatalogueWorldDetail, CatalogueWorldPage, ConflictReason, ConvertRequest, ConvertResult, InstallRequest, InstallResult } from '../../../shared/catalogue.ts'
+import type { CatalogueKind, CatalogueLink, CatalogueSourceStatus, CatalogueUpdates, CatalogueWorldDetail, CatalogueWorldPage, ConflictReason, ConvertRequest, ConvertResult, InstallRequest, InstallResult } from '../../../shared/catalogue.ts'
 import type { ImportChoices, ImportPreview } from '../../../shared/import-card.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
 import { trimCharacters } from '../../../shared/text.ts'
@@ -36,6 +36,12 @@ export const loadWorld = async (source: string, id: string, signal: AbortSignal)
 
 /** Where the host serves a world's cover from, asked with the catalogue's key. */
 export const coverUrl = (source: string, id: string): string => `${API_PREFIX}/catalogue/cover?${new URLSearchParams({ source, id })}`
+
+/** The resource a page address of a configured catalogue's site names, or nothing when the address is not such a page. */
+export async function resolveLink(url: string): Promise<CatalogueLink | undefined> {
+  const { link } = await answer<{ link: CatalogueLink | null }>(await fetch(`${API_PREFIX}/catalogue/link`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ url }) }))
+  return link ?? undefined
+}
 
 export async function install(request: InstallRequest): Promise<InstallResult> {
   return await answer(await fetch(`${API_PREFIX}/catalogue/install`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(request) }))

@@ -15,6 +15,7 @@ describe('the unit a request touches', () => {
   it('names the shared folders by route and nothing for a world it does not know', async () => {
     expect(await of('/presets')).toEqual(['presets'])
     expect(await of('/lorebooks/item')).toEqual(['lorebooks'])
+    expect(await of('/prompts/item')).toEqual(['prompts'])
     expect(await of('/worlds/avatars?id=x')).toEqual(['avatars'])
     expect(await of('/worlds/info?id=missing')).toEqual([])
     expect(await of('/catalogue/sources')).toEqual([])

@@ -144,7 +144,7 @@ export function factionStrategist(deps: { agentOf: (chat: string) => Agent | und
       for (const faction of dueFactions(session, now, everyDays).slice(0, perTurn)) {
         const store: TurnStore = job.store
         const strategy = await runChild<Strategy>({
-          parent, signal, reasoningEffort: store.settings().reasoning.children, sampling: childSampling(store.settings(), 'authoring', estimateAnswer(DECISION_LIMITS, store.settings().prompts.language)), ...childModel(store.settings(), 'authoring'), trace: childTrace(store, 'authoring', `faction ${faction.name}`),
+          parent, signal, turn: job.turn, reasoningEffort: store.settings().reasoning.children, sampling: childSampling(store.settings(), 'authoring', estimateAnswer(DECISION_LIMITS, store.settings().prompts.language)), ...childModel(store.settings(), 'authoring'), trace: childTrace(store, 'authoring', `faction ${faction.name}`),
           persona: promptFor(parent, 'roleplay/faction-strategist', store.settings().prompts.language),
           prompt: brief(session, faction, now, zone, last[keyOf(faction)] ?? now),
           result: RESULT,

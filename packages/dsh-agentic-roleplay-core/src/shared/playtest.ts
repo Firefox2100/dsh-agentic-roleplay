@@ -1,4 +1,5 @@
 import type { Finding } from './checks.ts'
+import type { MissingKnowledge } from './trace.ts'
 import type { StateChange } from './compare.ts'
 
 export const MAX_PLAYTEST_TURNS = 10
@@ -9,6 +10,8 @@ export interface PlaytestRequest {
   playerCharacterId?: string
   /** An alternate opening of the world, by its position; the world's own when left out. */
   opening?: number
+  /** Local story time to start at, as in the start dialog; the world's own when left out. */
+  startingTime?: string
   /** How many turns are played, 1 to {@link MAX_PLAYTEST_TURNS}. */
   turns: number
   /** The language the story is played in. */
@@ -38,6 +41,10 @@ export interface PlaytestReport {
   changes: StateChange[]
   /** What the world's own checks found, without a model. */
   findings: Finding[]
+  /** Calls the game master made that the harness or the world refused (a rule, a place or a thing the story did not allow or hold), from the turn traces. */
+  refused: { turn: number; tool: string; note: string }[]
+  /** What characters reached for and the story had no entry on: where the world lacks something its people would know. */
+  missing: (MissingKnowledge & { turn: number })[]
   /** Things the test play ran into: a turn that took very long, no suggestions, a turn that did not finish. */
   problems: string[]
 }

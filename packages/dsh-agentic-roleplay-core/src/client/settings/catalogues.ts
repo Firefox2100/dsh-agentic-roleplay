@@ -6,8 +6,6 @@ export interface CatalogueRow {
   baseUrl: string
   /** The credential the key is stored under; empty means the one derived from the name. */
   apiKeyRef: string
-  /** A key an earlier version wrote in the configuration; dropped when the settings are saved. */
-  apiKey: string
 }
 
 /** The credential a row's key lives under, or nothing while the row has no name to derive it from. */
@@ -17,7 +15,7 @@ export type RowProblem = 'name' | 'address' | 'duplicate' | 'keyName'
 
 const rowOf = (value: unknown): CatalogueRow => {
   const row = (typeof value === 'object' && value !== null ? value : {}) as Record<string, unknown>
-  return { name: typeof row['name'] === 'string' ? row['name'] : '', baseUrl: typeof row['baseUrl'] === 'string' ? row['baseUrl'] : '', apiKeyRef: typeof row['apiKeyRef'] === 'string' ? row['apiKeyRef'] : '', apiKey: typeof row['apiKey'] === 'string' ? row['apiKey'] : '' }
+  return { name: typeof row['name'] === 'string' ? row['name'] : '', baseUrl: typeof row['baseUrl'] === 'string' ? row['baseUrl'] : '', apiKeyRef: typeof row['apiKeyRef'] === 'string' ? row['apiKeyRef'] : '' }
 }
 
 /** The rows a draft text holds; the draft is only ever written by this form. */
@@ -52,7 +50,7 @@ export const cataloguesField: SettingsFieldSpec = {
   parse: (text) => {
     const rows = rowsOf(text)
     if (rows.some((_, index) => rowProblem(rows, index) !== undefined)) return undefined
-    return rows.length === 0 ? { kind: 'clear' } : { kind: 'set', value: rows.map(row => ({ name: row.name.trim(), baseUrl: row.baseUrl.trim(), apiKeyRef: row.apiKeyRef.trim(), ...(row.apiKey.trim() === '' ? {} : { apiKey: row.apiKey.trim() }) })) }
+    return rows.length === 0 ? { kind: 'clear' } : { kind: 'set', value: rows.map(row => ({ name: row.name.trim(), baseUrl: row.baseUrl.trim(), apiKeyRef: row.apiKeyRef.trim() })) }
   },
 }
 

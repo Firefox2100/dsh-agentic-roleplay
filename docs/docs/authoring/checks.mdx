@@ -61,11 +61,13 @@ A finding has a severity (**error**, **warning** or **info**), a code, where it 
 
 ## Playtest
 
-The checks read the files. **Playtest**, in the world editor's header, plays the world: it starts a story from it with one of its playable characters, plays 1 to 10 turns in which the test player takes what the story itself suggests (a plain move when no suggestion comes), and reports.
+The checks read the files. **Playtest**, in the world editor's header, plays the world: it starts a story from it with one of its playable characters (and, if you choose, one of its alternate openings and a starting time), plays 1 to 10 turns in which the test player takes what the story itself suggests (a plain move when no suggestion comes), and reports.
 
 - how far the test player got: the places visited and not visited, and the world's triggers that fired and those still waiting;
 - what changed from the start to the end (positions, who holds what, tracked values, threads, relationships, commitments) and how long each turn took, with turns much slower than the rest named;
 - what the checks that need no model say about the world (consistency, quality, playability);
+- the calls the game master made that were refused (a rule, or a place or thing the story did not allow or hold), with the turn and the reason, which shows where the world does not yet handle what a player tries;
+- what characters looked up in their own memory, known entities or background and found nothing on, with the turn and the character, which shows what the world lacks that its people would reach for (repeats are listed once);
 - what went wrong on the way, such as a turn that did not finish or a turn with no suggestion.
 
 The dialog says what it costs before you start: every turn is a full turn of play with the models you have selected, one after another, so it takes as long as playing those turns and uses the same models and limits. Only one test runs at a time, and **Stop after this turn** ends it early. The test story is made like any other and removed when the test ends, so nothing of it stays in your sessions; the world is only read. If the program stops during a test, its story stays in the Sessions list under a name that starts with *Playtest*, and you can delete it there.

@@ -3,6 +3,7 @@ import type { Boundaries } from './boundaries.ts'
 import { defaultBoundaries } from './defaults.ts'
 import type { Timelines } from '../timeline/service.ts'
 import type { ImageJobs } from '../images/jobs.ts'
+import { MasterRecovery } from './recovery.ts'
 import type { RecallPreview, RecallPreviewRequest } from '../../shared/recall-preview.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -17,6 +18,9 @@ declare module '@deepseek-ai/cordis' {
  */
 export class RoleplayOrchestration extends Service {
   private current: Boundaries = defaultBoundaries()
+
+  /** The game master's steps that were run again after a call that could not be read, and the output they were left. */
+  readonly recovery = new MasterRecovery()
 
   /** Resolves once the records of a chat's recorded rounds are written (or have failed): the writing goes on behind the story, so what needs them waits here. */
   settle: (chat: string) => Promise<void> = () => Promise.resolve()

@@ -7,12 +7,14 @@ import type { LorebookSummary } from '../../shared/lorebooks.ts'
 import { listLorebooks } from '../lorebooks-api.ts'
 import { listPresets } from '../presets-api.ts'
 import { SamplingFields, samplingOfTexts, samplingTexts, type SamplingTexts } from '../widgets/sampling-fields/SamplingFields.tsx'
+import { draftOfQuestions, questionsOfDraft, type QuestionDraft } from './questions-draft.ts'
+import { QuestionsEditor } from './QuestionsEditor.tsx'
 import { loadInfo, loadPlayable, saveInfo } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
-interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; preset: string; lorebooks: string[]; sampling: SamplingTexts; alternates: { title: string; text: string; character?: string }[] }
+interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; preset: string; lorebooks: string[]; sampling: SamplingTexts; alternates: { title: string; text: string; character?: string }[]; questions: QuestionDraft[] }
 
-const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, preset: info.preset, lorebooks: info.lorebooks, sampling: samplingTexts(info.sampling), alternates: info.alternateOpenings })
+const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, preset: info.preset, lorebooks: info.lorebooks, sampling: samplingTexts(info.sampling), alternates: info.alternateOpenings, questions: draftOfQuestions(info.startQuestions) })
 const lines = (value: string): string[] => value.split('\n').map(line => line.trim()).filter(line => line !== '')
 const words = (value: string): string[] => value.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag !== '')
 
@@ -26,6 +28,7 @@ function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   if (JSON.stringify(lines(draft.rules)) !== JSON.stringify(lines(saved.rules))) edit['rules'] = lines(draft.rules)
   const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), text: entry.text.trim(), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => entry.text !== '')
   if (JSON.stringify(cleaned(draft.alternates)) !== JSON.stringify(cleaned(saved.alternates))) edit['alternateOpenings'] = cleaned(draft.alternates)
+  if (JSON.stringify(questionsOfDraft(draft.questions)) !== JSON.stringify(questionsOfDraft(saved.questions))) edit['startQuestions'] = questionsOfDraft(draft.questions)
   return edit as WorldInfoEdit
 }
 
@@ -61,13 +64,13 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
   const edit = changes(saved, draft)
   const dirty = Object.keys(edit).length > 0
   const setBooksDraft = (lorebooks: string[]): void => { setDraft({ ...draft, lorebooks }); setStatus({ state: 'idle' }) }
-  const set = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks' | 'sampling'>, value: string): void => { setDraft({ ...draft, [key]: value }); setStatus({ state: 'idle' }) }
+  const set = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks' | 'sampling' | 'questions'>, value: string): void => { setDraft({ ...draft, [key]: value }); setStatus({ state: 'idle' }) }
   const setAlternates = (alternates: Draft['alternates']): void => { setDraft({ ...draft, alternates }); setStatus({ state: 'idle' }) }
   const save = (): void => {
     setStatus({ state: 'saving' })
     saveInfo(worldId, edit, new AbortController().signal).then((value) => { setInfo(value); setSaved(draftOf(value)); setDraft(draftOf(value)); setStatus({ state: 'saved' }); onSaved() }, (failure: unknown) => { setStatus({ state: 'failed', message: failure instanceof Error ? failure.message : String(failure) }) })
   }
-  const field = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks' | 'sampling'>, label: Parameters<Translate>[0], help?: Parameters<Translate>[0], options: { rows?: number; wide?: boolean; placeholder?: string; disabled?: boolean } = {}) => (
+  const field = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks' | 'sampling' | 'questions'>, label: Parameters<Translate>[0], help?: Parameters<Translate>[0], options: { rows?: number; wide?: boolean; placeholder?: string; disabled?: boolean } = {}) => (
     <label className={`${css.field} ${options.wide === true || options.rows !== undefined ? css.wide : ''}`}>
       <span className={css.label}>{t(label)}</span>
       {options.rows === undefined
@@ -123,6 +126,7 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
             ))}
             <Button variant="ghost" size="sm" onClick={() => { setAlternates([...draft.alternates, { title: '', text: '' }]) }}>{t('infoAlternateAdd')}</Button>
           </section>
+          <QuestionsEditor t={t} questions={draft.questions} openings={draft.alternates} onChange={(questions) => { setDraft({ ...draft, questions }); setStatus({ state: 'idle' }) }} />
           <section className={css.section}>
             <h3 className={css.sectionTitle}>{t('infoStory')}</h3>
             <div className={css.grid}>

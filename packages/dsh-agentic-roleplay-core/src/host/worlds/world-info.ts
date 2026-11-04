@@ -4,6 +4,7 @@ import { InvalidEditProblems } from '../../shared/world-state.ts'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import { parseSwitchboard } from '../../shared/settings.ts'
 import { parseSampling } from '../../shared/sampling.ts'
+import { startQuestionsToFile } from '../../shared/start-questions.ts'
 import { formatIssue } from '../validation.ts'
 import { parseWorldFile, WORLD_FILE_NAME } from './world-file.ts'
 import { atomicWrite } from '../atomic-write.ts'
@@ -16,7 +17,7 @@ const textOf = (value: unknown): string => (typeof value === 'string' ? value : 
 
 const toolsOf = (value: unknown): WorldInfo['tools'] => { const board = value === undefined ? {} : parseSwitchboard(value, 'tools'); return typeof board === 'string' ? {} : board }
 
-function infoOf(document: Json): WorldInfo {
+function infoOf(document: Json, startQuestions: WorldInfo['startQuestions'] = []): WorldInfo {
   const opening = document['opening_message']
   const parts = Array.isArray(opening) && opening.some(part => typeof part === 'object' && part !== null && (part as Json)['type'] === 'utterance')
   const plain = typeof opening === 'string' ? opening : Array.isArray(opening) ? opening.map(part => textOf((part as Json | null)?.['text'])).filter(text => text !== '').join('\n\n') : ''
@@ -30,7 +31,7 @@ function infoOf(document: Json): WorldInfo {
     opening: plain, openingParts: parts, authorName: textOf(author['name']), authorUrl: textOf(author['url']),
     timeZone: textOf(document['time_zone']), startingTime: textOf(document['starting_time']), preset: textOf(document['preset']), lorebooks: Array.isArray(document['lorebooks']) ? document['lorebooks'].filter((name): name is string => typeof name === 'string') : [], version: (typeof document['version'] === 'number' ? String(document['version']) : textOf(document['version'])),
     sampling: parseSampling(document['sampling'], 'sampling', []),
-    tools: toolsOf(document['tools']),
+    tools: toolsOf(document['tools']), startQuestions,
     alternateOpenings: Array.isArray(document['alternate_openings']) ? document['alternate_openings'].flatMap((entry): { title: string; text: string; character?: string }[] => (typeof entry === 'object' && entry !== null && typeof (entry as Json)['text'] === 'string' ? [{ title: textOf((entry as Json)['title']), text: (entry as Json)['text'] as string, ...(textOf((entry as Json)['character']) === '' ? {} : { character: textOf((entry as Json)['character']) }) }] : [])) : [],
   }
 }
@@ -40,8 +41,15 @@ async function readDocument(directory: string): Promise<{ text: string; document
   return { text, document: JSON.parse(text.replace(/^﻿/, '')) as Json }
 }
 
+/** The questions the file asks, as its own reader understands them; none when the file does not parse (its problems are reported elsewhere). */
+function questionsOf(text: string): WorldInfo['startQuestions'] {
+  const parsed = parseWorldFile(text)
+  return parsed.ok ? parsed.value.startQuestions ?? [] : []
+}
+
 export async function readWorldInfo(directory: string): Promise<WorldInfo> {
-  return infoOf((await readDocument(directory)).document)
+  const { text, document } = await readDocument(directory)
+  return infoOf(document, questionsOf(text))
 }
 
 function setOrRemove(document: Json, key: string, value: string): void {
@@ -61,6 +69,7 @@ export function editWorldInfo(directory: string, edit: WorldInfoEdit): Promise<W
 async function changeWorldInfo(directory: string, edit: WorldInfoEdit): Promise<WorldInfo> {
   const { text, document } = await readDocument(directory)
   const before = infoOf(document)
+  if (edit.startQuestions !== undefined) { if (edit.startQuestions.length === 0) delete document['start_questions']; else document['start_questions'] = startQuestionsToFile(edit.startQuestions) }
   if (edit.opening !== undefined && before.openingParts && edit.opening !== before.opening) throw new InvalidEditProblems(['the opening has lines spoken by characters: change it in the file, or ask the authoring assistant'])
   if (edit.name !== undefined) document['name'] = edit.name
   if (edit.description !== undefined) document['description'] = edit.description
@@ -87,5 +96,5 @@ async function changeWorldInfo(directory: string, edit: WorldInfoEdit): Promise<
   const parsed = parseWorldFile(next)
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
   await atomicWrite(join(directory, WORLD_FILE_NAME), next)
-  return infoOf(document)
+  return infoOf(document, questionsOf(next))
 }

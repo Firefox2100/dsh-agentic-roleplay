@@ -175,7 +175,7 @@ describe('the wire format', () => {
       states: [{ character: 'alice', publicState: 'p', innerState: 'i', activity: 'a' }],
       events: [{ turn: 2, round: 1, text: 't', importance: 3, tags: ['k'], involves: ['bob'], perceivedBy: [{ character: 'alice', mode: 'heard', content: 'c', gist: 'g', accuracy: 'partial' }] }],
       eventEdits: [{ id: 1, text: 'x' }], eventRetractions: [2], beliefs: [{ character: 'bob', kind: 'belief', text: 'b', about: ['alice'], importance: 2 }],
-      beliefEdits: [{ id: 1, importance: 4 }], beliefRetractions: [3], threadsOpened: ['o'], threadsResolved: [4], triggers: [],
+      beliefEdits: [{ id: 1, importance: 4 }], beliefRetractions: [3], threadsOpened: ['o'], threadsDistinct: [], threadsOpenedKnown: [], threadsKnown: [], threadsResolved: [4], triggers: [],
     })
   })
 
@@ -210,7 +210,7 @@ describe('reading the records back', () => {
     expect(round.events.map(event => event.text)).toEqual(['a'])
     expect(round.events[0]).toMatchObject({ involves: ['alice'], perceived_by: [{ character: 'alice', mode: 'witnessed', accuracy: 'accurate' }] })
     expect(round.beliefs.map(belief => belief.text)).toEqual(['x'])
-    expect(round.open_threads).toEqual([{ id: 1, text: 'open one', opened_turn: 1 }])
+    expect(round.open_threads).toEqual([{ id: 1, text: 'open one', opened_turn: 1, player_knows: false }])
   })
 
   it('names a character by its key: its id in the world, or its number when it has none', () => {
@@ -218,5 +218,47 @@ describe('reading the records back', () => {
     expect(characterKey(made)).toBe(String(made.id))
     expect(applyRecordsEdit(store, { turn: 1, states: [{ character: String(made.id), activity: 'x' }] }).writes).toBe(1)
     expect(store.characterStates.get(made.id)?.activity).toBe('x')
+  })
+})
+
+describe('which threads the player\'s character knows of', () => {
+  it('opens a thread as known, or tells the character of an open one, and refuses what is not there or already settled', () => {
+    store.edit(edit({ threadsOpened: ['The cellar is flooding'], threadsOpenedKnown: ['Deliver the letter to the harbourmaster'] }))
+    expect(store.threads.list('open').map(thread => [thread.text, thread.playerKnows])).toEqual([['The cellar is flooding', false], ['Deliver the letter to the harbourmaster', true]])
+    store.edit(edit({ turn: 2, threadsKnown: [1] }))
+    expect(store.threads.get(1)?.playerKnows).toBe(true)
+    expect(problemsOf(edit({ turn: 3, threadsKnown: [99] }))).toEqual(['threads_known: there is no thread 99'])
+    store.edit(edit({ turn: 3, threadsResolved: [2] }))
+    expect(problemsOf(edit({ turn: 4, threadsKnown: [2] }))).toEqual(['threads_known: thread 2 is already settled'])
+    expect(problemsOf(edit({ turn: 4, threadsOpenedKnown: ['  '] }))).toEqual(['threads_opened_known[0]: say what is unsettled'])
+  })
+
+  it('judges a known thread against the open ones like any other, and shows what is known when the records are read', () => {
+    store.edit(edit({ threadsOpened: ['Where did the vault key go after the festival?'] }))
+    expect(problemsOf(edit({ turn: 2, threadsOpenedKnown: ['Where did the key to the vault go after the festival'] }))).toEqual([expect.stringMatching(/threads_opened_known\[0\]: resembles thread 1 .* threads_known tells the player's character .* threads_distinct/)])
+    expect(problemsOf(edit({ turn: 2, threadsOpened: ['Who is following Clara through the market?'], threadsOpenedKnown: ['Who is following Clara through the market'] }))).toEqual([expect.stringMatching(/threads_opened_known\[0\]: resembles the thread opened as threads_opened\[0\]/)])
+    expect(store.records().open_threads).toEqual([{ id: 1, text: 'Where did the vault key go after the festival?', opened_turn: 1, player_knows: false }])
+  })
+
+  it('is offered in the schema and read from the wire', () => {
+    expect(JSON.stringify(recordsEditSchema())).toContain('threads_opened_known')
+    expect(parseRecordsEdit({ turn: 1, threads_opened_known: ['a b c', 7], threads_known: [2] })).toMatchObject({ threadsOpenedKnown: ['a b c'], threadsKnown: [2] })
+  })
+})
+
+describe('threads that restate an open one', () => {
+  it('are refused with the thread they resemble, unless the writer says they are separate, and a settled one may be opened again', () => {
+    store.edit(edit({ threadsOpened: ['Where did the vault key go after the festival?'] }))
+    expect(problemsOf(edit({ turn: 2, threadsOpened: ['Where did the key to the vault go after the festival'] }))).toEqual([expect.stringMatching(/threads_opened\[0\]: resembles thread 1 .* threads_distinct/)])
+    expect(problemsOf(edit({ turn: 2, threadsOpened: ['Who is following Clara through the market?'] }))).toEqual([])
+    expect(problemsOf(edit({ turn: 2, threadsDistinct: ['Where did the key to the vault go after the festival'] }))).toEqual([])
+    expect(store.threads.list('open')).toHaveLength(3)
+    expect(problemsOf(edit({ turn: 3, threadsResolved: [1, 3], threadsOpened: ['Where did the vault key go after the festival, really?'] }))).toEqual([])
+  })
+
+  it('also catches the same thread twice in one edit, and is offered in the schema', () => {
+    expect(problemsOf(edit({ threadsOpened: ['The lighthouse keeper is hiding something', 'The lighthouse keeper hides something'] }))).toEqual([expect.stringMatching(/resembles the thread opened as threads_opened\[0\]/)])
+    expect(JSON.stringify(recordsEditSchema())).toContain('threads_distinct')
+    expect(parseRecordsEdit({ turn: 1, threads_distinct: ['a b c'] }).threadsDistinct).toEqual(['a b c'])
   })
 })

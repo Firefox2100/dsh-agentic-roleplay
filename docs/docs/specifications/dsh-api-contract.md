@@ -20,6 +20,7 @@ below so it can be checked when DSH moves.
 | Agent presets | the `@deepseek-ai/dsh-agent-preset` row with `plugins` (persona, our two plugins, a `compaction` group) | the bundle's `cordis.patch.yml` |
 | Game master tools | `ctx.tools.register(defineTool(...))` | `host/orchestration/tools.ts`, `@dsh-agentic-roleplay/state` |
 | Prompt | `ctx.systemPrompt.section` | `orchestration.ts` |
+| Prompt | `ctx.systemPrompt.suppressRuntimeContext`, `ctx.systemPrompt.context` | `helper.ts` |
 | Turn control | `agent/pre-step` (waterfall), `agent/turn-stopping`, `agent.steer`, `exec.concludeTurn()`, `exec.agent`, `exec.signal` | `host/orchestration/hooks.ts`, `tools.ts` |
 | Chronicler (no tools of its own) | a `runChild` child with a `submit_result` of its own (below) | `compaction/chronicler.ts` |
 | Characters and record keeper (tools of their own) | **not the public sub-agent API**: see below | `agents/child.ts` |
@@ -80,6 +81,7 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 ## Prompts, language and messages sent for the person
 
 - **System prompt sections** (`ctx.systemPrompt.section`) take a `text` provider `(context) => string` evaluated at each assembly; `context.agent` (an `AssembleContext` merge from `dsh-agent`) is the agent being assembled, so a section can follow the chat's language. A preset's `dsh-persona` row with `prefix: ''` shadows the deployment persona and then disappears at render, which leaves the persona section to us. `{{...}}` in a section is read as a prompt variable unless the section sets `interpolate: false`; the prompt files avoid it either way.
+- **Runtime context** (`ctx.systemPrompt.suppressRuntimeContext`, `ctx.systemPrompt.context`): DSH adds a block of English runtime facts to every agent's request (the working directory, the file policy, approvals, delegation). The helper preset suppresses the optional ones and shadows the required working-directory entry with an empty one, because a helper works on the story's words and has no files. With the block, a helper asked to write Chinese often ran on until its output limit (a recorded reflection request replayed on the 35B with thinking off: one of four runs finished with the block, four of four without it).
 - **`sessionController.prompt(request, signal)`** needs the `AbortSignal` (without it the call fails inside DSH with `throwIfAborted` of undefined). It is how the plugin sends a message into a chat for the person (the card import's `/import-st`).
 - **A stored chat that starts with an opening** needs an empty `system/message` appended with `surfaceOp: 'append'` before any other surface node: the log format refuses a system prompt that follows other nodes.
 

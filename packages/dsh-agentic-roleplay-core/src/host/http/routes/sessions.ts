@@ -19,7 +19,7 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
     '/sessions': {
       GET: async (_req, res) => { sendJson(res, 200, sessions.list()) },
       POST: async (req, res) => {
-        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings, opening, startingTime, preset, lorebooks } = await readJsonBody(req)
+        const { worldId, playerCharacterId, playerAvatar, avatars: brought, name, settings, opening, startingTime, preset, lorebooks, answers } = await readJsonBody(req)
         if (typeof worldId !== 'string' || worldId.trim() === '') return sendError(res, 400, '"worldId" is required')
         if (playerCharacterId === undefined && playerAvatar === undefined) return sendError(res, 400, '"playerCharacterId" or "playerAvatar" is required')
         if (playerCharacterId !== undefined && (typeof playerCharacterId !== 'string' || playerCharacterId.trim() === '')) return sendError(res, 400, '"playerCharacterId" must be text')
@@ -28,10 +28,11 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
         if (name !== undefined && typeof name !== 'string') return sendError(res, 400, '"name" must be a string')
         if (opening !== undefined && (typeof opening !== 'number' || !Number.isInteger(opening))) return sendError(res, 400, '"opening" must be a whole number')
         if (startingTime !== undefined && typeof startingTime !== 'string') return sendError(res, 400, '"startingTime" must be text')
+        if (answers !== undefined && (typeof answers !== 'object' || answers === null || Array.isArray(answers) || !Object.values(answers).every(entry => typeof entry === 'string'))) return sendError(res, 400, '"answers" must map question ids to answer ids')
         if (preset !== undefined && typeof preset !== 'string') return sendError(res, 400, '"preset" must be text')
         if (lorebooks !== undefined && (!Array.isArray(lorebooks) || !lorebooks.every(entry => typeof entry === 'string'))) return sendError(res, 400, '"lorebooks" must be a list of lorebook names')
         try {
-          sendJson(res, 201, await sessions.start({ ...(preset === undefined || preset === '' ? {} : { preset }), ...(lorebooks === undefined ? {} : { lorebooks: lorebooks as string[] }), ...(opening === undefined ? {} : { opening }), ...(startingTime === undefined ? {} : { startingTime }), worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
+          sendJson(res, 201, await sessions.start({ ...(answers === undefined ? {} : { answers: answers as Record<string, string> }), ...(preset === undefined || preset === '' ? {} : { preset }), ...(lorebooks === undefined ? {} : { lorebooks: lorebooks as string[] }), ...(opening === undefined ? {} : { opening }), ...(startingTime === undefined ? {} : { startingTime }), worldId, ...(playerCharacterId === undefined ? {} : { playerCharacterId }), ...(playerAvatar === undefined ? {} : { playerAvatar }), ...(brought === undefined ? {} : { avatars: brought as string[] }), ...(name === undefined ? {} : { name }), ...(settings === undefined ? {} : { settings }) }))
         } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidStartError) return sendError(res, 422, error.message)

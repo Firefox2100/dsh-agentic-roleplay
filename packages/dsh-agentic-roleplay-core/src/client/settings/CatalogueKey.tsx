@@ -34,16 +34,15 @@ export function CatalogueKey({ t, row, disabled, onChange }: { t: Translate; row
     return () => { clearTimeout(timer); abort.abort() }
   }, [ref])
 
-  const keep = (next: string, then?: () => void): void => {
+  const keep = (next: string): void => {
     if (ref === undefined) return
     setBusy(true)
     storeKey(ref, next, new AbortController().signal).then(
-      (done) => { setStatus(done); setValue(''); setFailure(undefined); then?.() },
+      (done) => { setStatus(done); setValue(''); setFailure(undefined) },
       (error: unknown) => { setFailure(message(error)) },
     ).finally(() => { setBusy(false) })
   }
 
-  const legacy = row.apiKey.trim()
   const shown = status === undefined ? t('catalogueKeyChecking') : status.configured ? `${t('catalogueKeySet')} (${status.source ?? '?'})` : t('catalogueKeyUnset')
   return (
     <div className={css.keyArea} data-testid="roleplay-catalogue-key">
@@ -54,12 +53,6 @@ export function CatalogueKey({ t, row, disabled, onChange }: { t: Translate; row
         <Button variant="ghost" size="sm" disabled={disabled || busy || status?.configured !== true || status.writable === false} onClick={() => { keep('') }}>{t('catalogueKeyClear')}</Button>
       </div>
       <p className={css.keyHint} role="status">{ref ?? ''} · {shown}{status?.writable === false ? ` · ${t('catalogueKeyReadOnly')}` : ''}</p>
-      {legacy !== '' && (
-        <p className={css.problem} role="note">
-          {t('catalogueKeyLegacy')}{' '}
-          <Button variant="outline" size="sm" disabled={disabled || busy || ref === undefined || status?.writable === false} onClick={() => { keep(legacy, () => { onChange({ apiKey: '', apiKeyRef: ref ?? '' }) }) }}>{t('catalogueKeyMove')}</Button>
-        </p>
-      )}
       {failure !== undefined && <p className={css.problem} role="alert">{failure}</p>}
     </div>
   )

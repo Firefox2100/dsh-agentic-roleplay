@@ -5,7 +5,7 @@ import { dictionaries as selection, type ImportSelectionKey } from '../../widget
 import { dictionaries as editor, type WorldLocaleKey } from '../../world-editor/locales.ts'
 
 export type WorldsLocaleKey =
-  | SettingsFormKey | WorldLocaleKey | ImportSelectionKey | ImportCardKey | 'advanced' | 'advancedHelp' | 'worldMissing' | 'importPlainDone' | 'importPlainDraft' | 'importCard' | 'importUploading' | 'importUploadFailed' | 'importTags' | 'importNotStarted'
+  | SettingsFormKey | WorldLocaleKey | ImportSelectionKey | ImportCardKey | 'advanced' | 'advancedHelp' | 'worldMissing' | 'importPlainDone' | 'importPlainDraft' | 'importCard' | 'importCardUrl' | 'cardUrlTitle' | 'cardUrlHelp' | 'cardUrlAddress' | 'cardUrlPlaceholder' | 'cardUrlSubmit' | 'cardUrlReading' | 'importUploading' | 'importUploadFailed' | 'importTags' | 'importNotStarted'
   | 'nav' | 'loading' | 'loadFailed' | 'empty' | 'starterAdd' | 'starterAdding' | 'starterFailed'
   | 'countOne' | 'countOther'
   | 'refresh' | 'refreshing'
@@ -13,14 +13,14 @@ export type WorldsLocaleKey =
   | 'previousPage' | 'nextPage' | 'pageOf'
   | 'problems'
   | 'play' | 'openWorld' | 'chatNotOpened'
-  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startTime' | 'startTimeHelp' | 'startLorebooks' | 'startLorebookEntry' | 'startLorebookBroken' | 'startLorebookSuggested' | 'startLorebookMissing' | 'startLorebooksHelp' | 'startPreset' | 'startPresetDefault' | 'startPresetWorld' | 'startPresetNone' | 'startPresetBroken' | 'startPresetHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
+  | 'language' | 'startTitle' | 'sessionName' | 'playAs' | 'startOpening' | 'startOpeningDefault' | 'startQuestionNone' | 'startTime' | 'startTimeHelp' | 'startLorebooks' | 'startLorebookEntry' | 'startLorebookBroken' | 'startLorebookSuggested' | 'startLorebookMissing' | 'startLorebooksHelp' | 'startPreset' | 'startPresetDefault' | 'startPresetWorld' | 'startPresetNone' | 'startPresetBroken' | 'startPresetHelp' | 'loadingCharacters' | 'charactersFailed' | 'noPlayable'
   | 'start' | 'starting' | 'cancel' | 'close' | 'startFailed'
   | 'createWorld' | 'creatingWorld' | 'createWorldTitle' | 'createWorldHelp' | 'worldFolder' | 'worldFolderHelp' | 'worldName' | 'createWorldFailed' | 'worldPreset' | 'worldPresetNone' | 'worldPresetHelp'
   | 'updateFromCard' | 'updateReading' | 'updateNotFromCard' | 'revertUpdate' | 'revertTitle' | 'revertHelp' | 'revertConfirm' | 'reverting' | 'revertFailed' | 'revertDone'
   | 'importPreset' | 'presetReading' | 'presetFailed' | 'presetNotStarted' | 'presetVerbatim' | 'presetVerbatimReplaced'
   | 'authorWorld' | 'openingAuthor' | 'authorWorldFailed' | 'authoringChatTitle'
   | 'translateWarning' | 'translateAction' | 'translateOpening' | 'translateChatTitle' | 'translateFailed' | 'translateNotStarted' | 'languageEnglish' | 'languageChinese' | 'startLanguageNote'
-  | 'playtest' | 'pt_title' | 'pt_help' | 'pt_noPlayer' | 'pt_turns' | 'pt_cost' | 'pt_turnsInvalid' | 'pt_start' | 'pt_stop' | 'pt_running' | 'pt_failed' | 'pt_again' | 'pt_summary' | 'pt_places' | 'pt_triggers' | 'pt_turn' | 'pt_changes' | 'pt_findings' | 'pt_none' | 'pt_nothing'
+  | 'playtest' | 'pt_title' | 'pt_help' | 'pt_noPlayer' | 'pt_turns' | 'pt_cost' | 'pt_turnsInvalid' | 'pt_start' | 'pt_stop' | 'pt_running' | 'pt_failed' | 'pt_again' | 'pt_summary' | 'pt_places' | 'pt_triggers' | 'pt_turn' | 'pt_changes' | 'pt_findings' | 'pt_none' | 'pt_nothing' | 'pt_refused' | 'pt_refusedCall' | 'pt_missing' | 'pt_missingLookup'
   | 'addAvatars' | 'addAvatarsTitle' | 'addAvatarsHelp' | 'addAvatarsNone' | 'addAvatarsAdding' | 'addAvatarsFailed' | 'addAvatarsLoadFailed' | 'startAvatars' | 'startAvatarsHelp'
 
 const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKey | ImportSelectionKey | ImportCardKey>> = {
@@ -41,7 +41,11 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     play: 'Start a new session',
     openWorld: 'Edit {name}',
     worldMissing: 'This world is no longer there.',
-    importCard: 'Import card', importUploading: 'Reading the card…', importUploadFailed: 'Could not read the card: {message}',
+    importCard: 'Import card', importCardUrl: 'Import card from address',
+    cardUrlTitle: 'Import a card from an address',
+    cardUrlHelp: 'Paste the address of a character card: a PNG picture with the card in it, or a JSON file. The address is asked first what it holds and refused if it says something else; the file is then read by its content, not by its name. A page of a catalogue you added works too, with that catalogue\'s API key.',
+    cardUrlAddress: 'Address', cardUrlPlaceholder: 'https://example.com/card.png', cardUrlSubmit: 'Read the card', cardUrlReading: 'Fetching…',
+    importUploading: 'Reading the card…', importUploadFailed: 'Could not read the card: {message}',
     importTags: 'Tags',
     importPlainDone: 'The card was imported without a model: its character, its lorebook and its instructions are in the new world. Open it to add places and other people yourself, or have an assistant do it.',
     importPlainDraft: 'The card was imported without a model, but the world would not start yet: open it to see what is missing.',
@@ -54,7 +58,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     playAs: 'Play as',
     startLorebooks: 'Lorebooks', startLorebookEntry: '{name} ({count} entries)', startLorebookBroken: '{name} (has problems)', startLorebookSuggested: 'suggested by the world', startLorebookMissing: 'The world suggests the lorebook "{name}", which is not in your library.', startLorebooksHelp: 'The entries of the lorebooks you tick are copied into the story. Entries known to everyone are known to every character.',
     startPreset: 'Writing preset', startPresetDefault: 'Default style', startPresetWorld: 'The world\'s suggestion ({name})', startPresetNone: 'No preset', startPresetBroken: '{name} (has problems)', startPresetHelp: 'A preset sets how the story is written. Presets are kept in the presets folder of your roleplay folder.',
-    startOpening: 'Opening', startOpeningDefault: 'The world\'s own opening', startTime: 'Story starts at', startTimeHelp: 'Local time in {zone}, like 1912-04-14T23:40:00. Leave empty for the world\'s own start. Not used when the story follows the real clock.',
+    startOpening: 'Opening', startOpeningDefault: 'The world\'s own opening', startQuestionNone: 'No preference', startTime: 'Story starts at', startTimeHelp: 'Local time in {zone}, like 1912-04-14T23:40:00. Leave empty for the world\'s own start. Not used when the story follows the real clock.',
     loadingCharacters: 'Loading characters…',
     charactersFailed: 'Could not load the characters: {message}',
     noPlayable: 'This world has no playable character of its own. Bring one of your avatars to play it; make one on the Avatars tab first if you have none.',
@@ -83,6 +87,10 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     pt_changes: '{count} things changed from the start to the end:',
     pt_findings: 'The world\'s own checks found {count}:',
     pt_none: 'none', pt_nothing: '(nothing)',
+    pt_refused: 'The game master was refused {count} time(s), where the story or the world did not allow or hold what it tried:',
+    pt_refusedCall: 'Turn {turn}, {tool}: {note}',
+    pt_missing: 'Characters looked for {count} thing(s) the world has nothing on:',
+    pt_missingLookup: 'Turn {turn}, {character} looked for “{about}”',
     authorWorld: 'Author with AI', openingAuthor: 'Opening…', authorWorldFailed: 'Could not open the authoring chat: {message}', authoringChatTitle: 'Authoring {name}',
     translateWarning: 'This world is written in {from}, but you use {to}. Names, descriptions and the characters\' speech may mix the two languages.', translateAction: 'Translate into {to}', translateOpening: 'Opening…', translateChatTitle: 'Translating {name}', translateFailed: 'Could not start the translation: {message}', translateNotStarted: 'The authoring chat opened but the translation did not start: {message}. Ask it to translate the world.', languageEnglish: 'English', languageChinese: 'Chinese', startLanguageNote: 'This world is written in {from}, but the story will be played in {to}: names and descriptions stay in {from}. A translated copy can be made from the world\'s editor.',
     addAvatars: 'Add avatars', addAvatarsTitle: 'Add avatars to the world', addAvatarsHelp: 'Each avatar you tick becomes a playable character of this world, with its own copy of everything. It starts where the world\'s playable characters start.', addAvatarsNone: 'There are no avatars yet. Make some on the Avatars tab.', addAvatarsAdding: 'Adding…', addAvatarsFailed: 'Could not add the avatars: {message}', addAvatarsLoadFailed: 'Could not load the avatars: {message}', startAvatars: 'Bring avatars', startAvatarsHelp: 'Tick the avatars to bring into this session as characters; you can play them too. The world itself is not changed.',
@@ -104,7 +112,11 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     play: '开始新存档',
     openWorld: '编辑{name}',
     worldMissing: '这个世界已经不存在了。',
-    importCard: '导入角色卡', importUploading: '正在读取角色卡…', importUploadFailed: '无法读取角色卡：{message}',
+    importCard: '导入角色卡', importCardUrl: '从地址导入角色卡',
+    cardUrlTitle: '从地址导入角色卡',
+    cardUrlHelp: '粘贴角色卡的地址：内含角色卡的 PNG 图片，或 JSON 文件。会先询问该地址的内容类型，不是 PNG 或 JSON 就拒绝；随后按文件内容（而不是文件名）读取。你添加过的目录的页面地址也可以，并使用该目录的 API 密钥。',
+    cardUrlAddress: '地址', cardUrlPlaceholder: 'https://example.com/card.png', cardUrlSubmit: '读取角色卡', cardUrlReading: '正在获取…',
+    importUploading: '正在读取角色卡…', importUploadFailed: '无法读取角色卡：{message}',
     importTags: '标签',
     importPlainDone: '卡片已在不使用模型的情况下导入：它的角色、世界书和指令都已在新世界中。可以打开它自己补充地点和其他人物，或请助手来做。',
     importPlainDraft: '卡片已在不使用模型的情况下导入，但世界还无法开始：打开它查看缺少什么。',
@@ -117,7 +129,7 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     playAs: '扮演角色',
     startLorebooks: '世界书', startLorebookEntry: '{name}（{count} 个条目）', startLorebookBroken: '{name}（有问题）', startLorebookSuggested: '世界建议', startLorebookMissing: '世界建议使用世界书“{name}”，但你的资料库里没有。', startLorebooksHelp: '勾选的世界书的条目会复制进故事。人人皆知的条目，每个角色都知道。',
     startPreset: '写作预设', startPresetDefault: '默认风格', startPresetWorld: '世界的建议（{name}）', startPresetNone: '不使用预设', startPresetBroken: '{name}（有问题）', startPresetHelp: '预设决定故事的写法。预设保存在角色扮演文件夹的 presets 文件夹中。',
-    startOpening: '开场', startOpeningDefault: '世界自带的开场', startTime: '故事开始于', startTimeHelp: '{zone} 的本地时间，例如 1912-04-14T23:40:00。留空则使用世界自带的开始时间。故事跟随真实时钟时不适用。',
+    startOpening: '开场', startOpeningDefault: '世界自带的开场', startQuestionNone: '不选择', startTime: '故事开始于', startTimeHelp: '{zone} 的本地时间，例如 1912-04-14T23:40:00。留空则使用世界自带的开始时间。故事跟随真实时钟时不适用。',
     loadingCharacters: '正在加载角色…',
     charactersFailed: '无法加载角色：{message}',
     noPlayable: '这个世界自己没有可扮演的角色。请带上你的一个角色形象来扮演；如果还没有，先到“角色形象”标签页做一个。',
@@ -146,6 +158,10 @@ const own: Dictionaries<Exclude<WorldsLocaleKey, SettingsFormKey | WorldLocaleKe
     pt_changes: '从开始到结束有 {count} 处变化：',
     pt_findings: '世界自带的检查发现了 {count} 项：',
     pt_none: '无', pt_nothing: '（无）',
+    pt_refused: '游戏主持人被拒绝了 {count} 次，原因是故事或世界不允许、或没有它所尝试的内容：',
+    pt_refusedCall: '第 {turn} 回合，{tool}：{note}',
+    pt_missing: '角色查找了 {count} 样世界里没有记录的内容：',
+    pt_missingLookup: '第 {turn} 回合，{character} 查找了“{about}”',
     authorWorld: '使用 AI 编辑', openingAuthor: '正在打开…', authorWorldFailed: '无法打开世界编辑对话：{message}', authoringChatTitle: '编辑{name}',
     translateWarning: '这个世界是用{from}写的，而你使用的是{to}。名字、描述和角色的说话可能会两种语言混在一起。', translateAction: '翻译成{to}', translateOpening: '正在打开…', translateChatTitle: '翻译{name}', translateFailed: '无法开始翻译：{message}', translateNotStarted: '世界编辑对话已打开，但翻译没有开始：{message}。可以请它翻译这个世界。', languageEnglish: '英文', languageChinese: '中文', startLanguageNote: '这个世界是用{from}写的，而故事将用{to}进行：名字和描述仍是{from}。可以在世界编辑器里生成一个翻译后的副本。',
     addAvatars: '添加角色形象', addAvatarsTitle: '把角色形象加入世界', addAvatarsHelp: '勾选的每个角色形象都会成为这个世界的可扮演角色，并带有自己的一份副本。它们从世界中可扮演角色的起始位置出发。', addAvatarsNone: '还没有角色形象。请先到“角色形象”标签页创建。', addAvatarsAdding: '正在添加…', addAvatarsFailed: '无法添加角色形象：{message}', addAvatarsLoadFailed: '无法加载角色形象：{message}', startAvatars: '带上角色形象', startAvatarsHelp: '勾选要带进这个存档的角色形象，它们会成为存档中的角色，你也可以扮演它们。世界本身不会改变。',

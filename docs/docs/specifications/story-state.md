@@ -367,6 +367,8 @@ number words; optionally a baseline) and each subject has its own value (`variab
 
 ## Dice
 
+Story threads carry `player_knows` (migration 10, `0` by default, so the threads of an older story stay secret). The record keeper opens a thread the player's character already knows of with `threads_opened_known` and marks an open one with `threads_known` (a settled thread is refused); `read_records` shows the flag. The Quests page of the reference reads exactly the known threads, with the player's pending engagements.
+
 Dice checks and rolls are part of a story's state (schema version 8). `dice_checks` holds a world's checks, copied from its `dice.json` when the session starts: a key, a name, when to use it (`use_text`) and a JSON definition of the dice, the reading (`total` or `successes`), the comparison (`absolute`, `over` or `under` a target), an optional character variable to add, and the bands. `dice_rolls` is a log: the turn, the check (none for a plain roll), the expression, every die and the kept dice, the modifier, the target, the total, the value that was read, the band it fell in, the reason, the character and who asked (`agent` or `player`). A roll is recorded when it is made, in the same step as the tool answers, so a restart or a rewind restores exactly the rolls the restored state had. A check is refused when its notation is not valid, when it has no bands or a band without a label or a result, and when the dice can give a value no band holds (checks read against a target or a modifier are checked when rolled).
 
 ## What the world does by itself (triggers)

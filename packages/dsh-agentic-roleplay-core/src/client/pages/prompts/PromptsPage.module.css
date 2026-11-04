@@ -1,0 +1,34 @@
+.page { display: flex; flex: 1 1 0; flex-direction: column; gap: 8px; min-height: 0; }
+.toolbar { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 12px; min-height: 28px; }
+.toolbar select { box-sizing: border-box; min-height: 30px; max-width: 100%; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-md); background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; }
+.count { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.spacer { flex: 1 1 auto; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.help { margin: 0; font-size: 12px; line-height: 18px; color: var(--dsw-alias-label-secondary); }
+.viewport { flex: 1 1 0; min-height: 0; padding: 4px; overflow-y: auto; }
+.group { margin: 12px 0 4px; font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-tertiary); }
+.list { margin: 0; padding: 0; list-style: none; }
+.row { display: flex; gap: 8px; align-items: center; width: 100%; padding: 6px 4px; border: none; border-bottom: 0.5px solid var(--dsw-alias-border-l3); background: none; font: inherit; font-size: 13px; text-align: left; color: var(--dsw-alias-label-primary); cursor: pointer; }
+.row:hover { color: var(--dsw-alias-state-business-primary); }
+.row:focus-visible { position: relative; border-radius: var(--dsw-radius-sm); outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: -2px; }
+.rowName { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rowLanguage { font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.sign { min-width: 14px; font-size: 13px; font-weight: 500; text-align: center; color: var(--dsw-alias-state-business-primary); }
+.message { margin: 0; padding: 40px 0; font-size: 13px; text-align: center; color: var(--dsw-alias-label-secondary); }
+.error { margin: 0; font-size: 12px; color: var(--dsw-alias-state-error-primary); }
+.warning { margin: 0; font-size: 12px; color: var(--dsw-alias-state-warning-primary, var(--dsw-alias-state-error-primary)); }
+.ok { margin: 0; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.editHeader { display: flex; flex: 0 0 auto; gap: 8px; align-items: center; padding: 8px 16px; border-bottom: 0.5px solid var(--dsw-alias-border-l3); }
+.editTitle { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); }
+.editBody { display: flex; flex: 1 1 0; flex-direction: column; gap: 12px; min-height: 0; padding: 16px 24px; overflow-y: auto; }
+.panes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.pane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.label { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-tertiary); }
+.area { box-sizing: border-box; width: 100%; min-height: clamp(260px, 52vh, 560px); padding: 8px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px var(--dsw-font-mono, monospace); color: var(--dsw-alias-label-primary); resize: vertical; }
+.area:focus-visible { border-color: var(--dsw-alias-state-business-primary); outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 1px; }
+.shipped { box-sizing: border-box; margin: 0; min-height: clamp(260px, 52vh, 560px); padding: 8px; overflow-x: auto; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px var(--dsw-font-mono, monospace); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); }
+.line { display: block; min-height: 20px; }
+.missing { background: var(--dsw-alias-state-business-bg, rgba(100, 140, 255, 0.14)); color: var(--dsw-alias-label-primary); }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 900px) { .panes { grid-template-columns: 1fr; } .editBody { padding: 16px; } }
+@media (max-width: 520px) { .toolbar { align-items: stretch; } .toolbar select { flex: 1 1 140px; } .spacer { display: none; } .editHeader { flex-wrap: wrap; padding-inline: 12px; } .editTitle { overflow-wrap: anywhere; } }

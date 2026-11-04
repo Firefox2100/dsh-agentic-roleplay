@@ -1,6 +1,7 @@
 import { ROLE_TABLE, type Role } from './roles.ts'
 import type { CardPiece, Source } from './card-tools.ts'
 import { baseId } from './card-tools.ts'
+import type { Derived } from './extract.ts'
 
 /**
  * What became of one piece of a card: `carried` is kept word for word (an opening), `converted` made characters, places, things or other entries of the world, `guidance`
@@ -21,9 +22,11 @@ export interface PieceOutcome {
 
 const rolesOf = (source: Source, id: string): Role[] => [...new Set(Object.entries(source.records.classified ?? {}).filter(([key]) => baseId(key) === id).flatMap(([, entry]) => entry.roles))]
 
-function outcomeOf(source: Source, piece: CardPiece, made: readonly string[]): Omit<PieceOutcome, 'piece' | 'label' | 'madeInto'> {
+const MECHANICS: readonly Derived['kind'][] = ['variable', 'rules', 'command', 'trigger']
+
+function outcomeOf(source: Source, piece: CardPiece, made: readonly string[], mechanics: boolean, finished: boolean): Omit<PieceOutcome, 'piece' | 'label' | 'madeInto'> {
   const { choices, card } = source
-  const reported = source.records.report !== undefined
+  const reported = source.records.report !== undefined || finished
   if (piece.id === 'field:creator-notes') return { outcome: 'omitted', because: 'notes to people, not part of the world' }
   if (piece.id === 'field:first-message' || piece.id.startsWith('field:greeting-')) {
     if (choices.opening.kind === 'none') return { outcome: 'omitted', because: 'the person chose no opening' }
@@ -36,14 +39,21 @@ function outcomeOf(source: Source, piece: CardPiece, made: readonly string[]): O
   const roles = rolesOf(source, piece.id)
   if (roles.length === 0) return { outcome: 'awaiting', because: 'the import did not classify it' }
   if (roles.every(role => ROLE_TABLE[role].leftOut)) {
+    if (mechanics) return { outcome: 'converted', because: 'its rules became tracked values, rules or triggers' }
     return roles.includes('instruction') ? { outcome: 'guidance', because: 'how to run a story, not facts of this one' } : { outcome: 'omitted', because: roles.includes('template') ? 'a template or format of the source tool' : 'nothing to do with the story' }
   }
-  return made.length > 0 ? { outcome: 'converted' } : { outcome: 'read', because: 'no character, place or thing is named after it' }
+  if (made.length > 0 || mechanics) return { outcome: 'converted', ...(made.length === 0 ? { because: 'its rules became tracked values, rules or triggers' } : {}) }
+  return { outcome: 'read', because: 'no character, place, thing or rule is made from it: its words survive only as background' }
 }
 
 /** What became of every piece of the card, from the import's records; `made` is `entitiesByPiece` of the same source. */
-export function pieceOutcomes(source: Source, made: ReadonlyMap<string, readonly string[]>): PieceOutcome[] {
-  return source.pieces.map(piece => ({ piece: piece.id, label: piece.label, ...outcomeOf(source, piece, made.get(piece.id) ?? []), madeInto: [...made.get(piece.id) ?? []] }))
+export function pieceOutcomes(source: Source, made: ReadonlyMap<string, readonly string[]>, options: { derived?: readonly Derived[]; finished?: boolean } = {}): PieceOutcome[] {
+  const derived = options.derived ?? source.records.report?.derived ?? []
+  return source.pieces.map((piece) => {
+    const from = derived.filter(entry => entry.pieces.includes(piece.id))
+    const labels = from.map(entry => `${entry.kind}: ${entry.name}`)
+    return { piece: piece.id, label: piece.label, ...outcomeOf(source, piece, made.get(piece.id) ?? [], from.some(entry => MECHANICS.includes(entry.kind)), options.finished === true), madeInto: [...made.get(piece.id) ?? [], ...labels] }
+  })
 }
 
 export const outcomeCounts = (outcomes: readonly PieceOutcome[]): Record<Outcome, number> => Object.fromEntries(OUTCOMES.map(outcome => [outcome, outcomes.filter(entry => entry.outcome === outcome).length])) as Record<Outcome, number>

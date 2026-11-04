@@ -161,6 +161,8 @@ export interface StoryThread {
   status: ThreadStatus
   openedTurn: number
   resolvedTurn?: number
+  /** Whether the player's character knows of it: told, seen, or taken on. Threads are the story's own notes, so a thread is secret until this is set. */
+  playerKnows: boolean
 }
 
 /** A written account of a stretch of turns, built from the events in it. */

@@ -11,7 +11,7 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `rootPath` | `~/dsh-roleplay` | Folder for worlds, avatars, sessions and media |
 | `sessionStorePath` | `~/.dsh/sessions` | DSH session store used for the chats attached to roleplay sessions |
 | `authoringTools` | none | Tools from other plugins that each authoring assistant may use. Groups are `worldAuthoring`, `presetAuthoring`, `lorebookAuthoring` and `worldAuthor`. An unlisted tool is unavailable. The session doctor never receives these tools |
-| `catalogues` | none | World catalogues to browse. Each entry has `name`, API `baseUrl`, and optionally an `apiKeyRef` for DSH's credential store. The deprecated `apiKey` field is used only when the store has no key, then removed on the next save |
+| `catalogues` | none | World catalogues to browse. Each entry has `name`, API `baseUrl`, and optionally an `apiKeyRef` for DSH's credential store (the key itself is kept there, never in the configuration; an `apiKey` text written by an earlier version is no longer read) |
 | `sync.remote` | empty | rclone remote and folder, such as `mydrive:dsh-roleplay`; empty disables sync |
 | `sync.rclone` | empty | rclone executable; empty finds `rclone` on `PATH` |
 | `sync.configFile` | empty | Absolute path to the rclone configuration file, which must be outside `rootPath` |

@@ -19,6 +19,7 @@ interface Chunk {
 
 function chunksOf(file: Buffer): Chunk[] {
   const chunks: Chunk[] = []
+  if (file.length < PNG_SIGNATURE.length + 12 || file.toString('latin1', PNG_SIGNATURE.length + 4, PNG_SIGNATURE.length + 8) !== 'IHDR') throw new ImportCardError('the PNG file is damaged: it does not start with a picture header')
   let at = PNG_SIGNATURE.length
   while (at + 12 <= file.length) {
     const length = file.readUInt32BE(at)
@@ -51,8 +52,40 @@ export function pictureOf(file: Buffer): Buffer {
   return Buffer.concat([PNG_SIGNATURE, ...chunksOf(file).filter(chunk => !TEXT_CHUNKS.has(chunk.type)).map(chunk => chunk.raw)])
 }
 
+export type CardFormat = 'png' | 'json'
+
+const BYTE_ORDER_MARK = [0xef, 0xbb, 0xbf]
+const BLANKS = new Set([0x20, 0x09, 0x0a, 0x0d])
+const startOfText = (file: Buffer): number => {
+  let at = BYTE_ORDER_MARK.every((byte, index) => file[index] === byte) ? BYTE_ORDER_MARK.length : 0
+  while (at < file.length && BLANKS.has(file[at]!)) at += 1
+  return at
+}
+
+/** What a file is by its first bytes: never by its name or by the type a sender claimed. A card is a PNG picture or a JSON object. */
+export function cardFormat(file: Buffer): CardFormat | undefined {
+  if (isPng(file)) return 'png'
+  return file[startOfText(file)] === 0x7b ? 'json' : undefined
+}
+
+/** A few kinds of file people mistake for a card, named by their first bytes, so the refusal can say what arrived. */
+function kindOf(file: Buffer): string | undefined {
+  const start = file.toString('latin1', startOfText(file), startOfText(file) + 15).toLowerCase()
+  if (start.startsWith('<!doctype') || start.startsWith('<html') || start.startsWith('<?xml') || start.startsWith('<')) return 'a web page'
+  if (file.subarray(0, 2).toString('latin1') === 'PK') return 'a ZIP archive'
+  if (file[0] === 0xff && file[1] === 0xd8 && file[2] === 0xff) return 'a JPEG picture'
+  if (file.toString('latin1', 0, 4) === 'GIF8') return 'a GIF picture'
+  if (file.toString('latin1', 0, 4) === 'RIFF' && file.toString('latin1', 8, 12) === 'WEBP') return 'a WebP picture'
+  return undefined
+}
+
 function jsonOf(file: Buffer, name: string): unknown {
-  if (file.subarray(0, PNG_SIGNATURE.length).equals(PNG_SIGNATURE)) {
+  const format = cardFormat(file)
+  if (format === undefined) {
+    const found = file.length === 0 ? 'empty' : `${kindOf(file) ?? 'neither a PNG picture nor a JSON file'}`
+    throw new ImportCardError(`${name} is ${found}: a character card is a PNG picture with the card in it, or a JSON file`)
+  }
+  if (format === 'png') {
     const found = new Map<string, string>()
     for (const chunk of chunksOf(file)) {
       if (!TEXT_CHUNKS.has(chunk.type)) continue
@@ -70,7 +103,7 @@ function jsonOf(file: Buffer, name: string): unknown {
   try {
     return JSON.parse(file.toString('utf8').replace(/^﻿/, ''))
   } catch {
-    throw new ImportCardError(`${name} is neither a PNG picture with a card in it nor a JSON card`)
+    throw new ImportCardError(`${name} looks like JSON but cannot be read as JSON`)
   }
 }
 

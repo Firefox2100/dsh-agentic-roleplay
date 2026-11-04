@@ -455,6 +455,24 @@ describe('writing the records', () => {
     expect(started).toEqual([1])
   })
 
+  it('does not hold the next turn for a reflection, but anything that moves or ends the story still waits for it', async () => {
+    let release!: () => void
+    boundaries.reflector = { reflect: () => new Promise((done) => { release = () => { done({ characters: [] }) } }) }
+    await play()
+    await engine.narrate(owner, hello)
+    await engine.quiesce(owner.chat)
+    await engine.reflect(owner.chat)
+    await engine.quiesce(owner.chat, { skipOptional: true })
+    let quiet = false
+    const waiting = engine.quiesce(owner.chat).then(() => { quiet = true })
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(quiet).toBe(false)
+    release()
+    await waiting
+    expect(quiet).toBe(true)
+  })
+
   it('waits for the suggestions of the turn before the next one when asked to', async () => {
     store.settings = () => ({ ...QUIET, suggestions: { count: 1 }, background: { concurrent: false } })
     let release!: () => void

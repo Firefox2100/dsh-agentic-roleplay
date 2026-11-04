@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ReferencePerson, ReferencePlace, ReferenceProfile, ReferenceThing } from '../../../shared/reference.ts'
+import type { ReferencePerson, ReferencePlace, ReferenceProfile, ReferenceQuest, ReferenceThing } from '../../../shared/reference.ts'
 import { useReference } from '../use-reference.ts'
 import type {} from '../slot-contract.ts'
 import { Page, type Shown } from './Page.tsx'
@@ -74,6 +74,34 @@ export function ThingsPage({ t, sessionId, visible }: SectionProps): ReactNode {
             </li>
           ))}
         </ul>
+      )}
+    </Page>
+  )
+}
+
+/** What the player's character has been told of or taken on: promises and appointments first, then what the story has told them of. */
+export function QuestsPage({ t, sessionId, visible }: SectionProps): ReactNode {
+  const { reading } = useReference(sessionId, 'quests', visible)
+  return (
+    <Page<ReferenceQuest> reading={reading} className={css.message ?? ''} loading={t('loading')} failed={message => t('failed', { message })} empty={t('noQuests')}>
+      {quests => (
+        <>
+          <p className={css.meta}>{t('questsHint')}</p>
+          <ul className={css.list}>
+            {quests.map((quest, index) => (
+              <li key={`${quest.kind}-${index}-${quest.text}`} className={css.entry}>
+                <div className={css.head}>
+                  <span className={css.name}>{quest.text}</span>
+                  <span className={css.sub}>{quest.kind === 'commitment' ? t('questPromise') : t('questStory')}</span>
+                  {quest.status === 'resolved' && <span className={css.sub}>{t('questSettled', { turn: quest.resolvedTurn ?? quest.turn })}</span>}
+                </div>
+                {quest.when !== undefined && <p className={css.meta}>{quest.until === undefined ? quest.when : t('questSpan', { from: quest.when, to: quest.until })}{quest.place === undefined ? '' : ` · ${quest.place}`}</p>}
+                {quest.with !== undefined && <p className={css.meta}>{t('questWith', { list: quest.with.join(', ') })}</p>}
+                {quest.note !== undefined && <p className={css.text}>{quest.note}</p>}
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </Page>
   )

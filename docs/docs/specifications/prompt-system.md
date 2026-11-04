@@ -27,6 +27,14 @@ The package ships the originals in `prompts/<language>/` (English and Chinese). 
 
 The world, preset and lorebook authoring chats use the plugin's import/authoring model, reasoning and request ceiling. If one of their replies reaches the ceiling, `import/cut-off` steers the same turn to perform the pending action or finish with a short summary instead of silently ending an incomplete answer.
 
+## The Prompts page
+
+**Role Play → Prompts** lists every shipped prompt in both languages, grouped by folder, with a language filter and a switch for **Only those that differ**. A file whose text differs from the one this version ships carries a small **≠**. The sign cannot say why: you may have edited the file, or the shipped text may have moved on since the file was copied (files are never replaced by an update, so an old copy stays old). Nothing is replaced by itself and the plugin records no hash of what it shipped.
+
+Opening a prompt shows your file in a textarea beside the text this version ships, read-only, with the shipped lines that your text lacks highlighted and a count of both kinds of difference. Use it to bring a new rule into your own text. **Save** writes the file at once (the next request uses it) after the same checks the library makes when it starts: not empty, no `{{`, and only the variables the prompt is given. **Replace with the shipped text** asks first and keeps the file it replaces under `<roleplay root>/.trash/prompts/<time>/`. A save is refused while the prompts folder is syncing. A prompt other than the three prose ones (`persona`, `style`, `character-style`) carries rules of how the story is run, and the editor says so.
+
+The routes are `GET /prompts`, `GET`/`PUT /prompts/item?id=&language=` and `POST /prompts/item/reset?id=&language=`; the request counts as a change of the `prompts` sync unit.
+
 ## Prompts of a session and of a world
 
 ```text

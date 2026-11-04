@@ -15,12 +15,13 @@ import { dialectOf } from './dialect.ts'
 import { cardPieces, entitiesByPiece, type Source } from './card-tools.ts'
 import { outcomeCounts, pieceOutcomes, type Outcome } from './outcomes.ts'
 import { cleanText, withPlayer, type SourceItem } from './items.ts'
-import { pruneKnowledge, pruneLinks, pruneLoreSubjects, pruneMembers, pruneRelationships, type Extracted } from './extract.ts'
+import { pruneKnowledge, pruneLinks, pruneLoreSubjects, pruneMembers, pruneRelationships, type Derived, type Extracted } from './extract.ts'
 import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
 import { norm, type ChildJob, type ImportContext, type TextOf, trOf } from './run.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, openingText } from './store.ts'
 import { isLeftOut, type Classified, type Roster } from './survey.ts'
 import { atomicWrite } from '../atomic-write.ts'
+import { repairFields, type Repair } from './repair.ts'
 import { updateWorldFile } from '../worlds/world-file-io.ts'
 import { checkWorld, type WorldCheck } from '../worlds/world-check.ts'
 import { ENTITY_FOLDERS } from '../worlds/entity-folders.ts'
@@ -51,6 +52,8 @@ export interface ImportReport {
   leftOut: { instructions: number; templates: number; irrelevant: number; scripts: number; dialect?: CardDialect }
   /** The pictures the card pointed to: how many looked like pictures and how many were fetched into the world's image library. */
   pictures: { found: number; added: number }
+  /** Which card pieces each tracked value, prompt, rule set, command and trigger came from. */
+  derived?: Derived[]
   /** How many pieces of the card were carried, converted, turned into guidance, only read, left out, or not looked at. */
   pieces?: Record<Outcome, number>
   /** Things that could not be carried over, each with its reason. */
@@ -220,6 +223,8 @@ export interface FinishInput {
 }
 
 /** The world as it is after the import: every document written into it, or nothing changed and the problems found. */
+const MAX_REPAIR_ROUNDS = 4
+
 export type FinishResult = { ok: true; report: ImportReport; /** Present when the world was written but would not start yet: what is wrong with it. */ draft?: WorldCheck } | { ok: false; problems: string[] }
 
 /**
@@ -260,7 +265,19 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   } finally {
     await rm(stage, { recursive: true, force: true })
   }
-  const check = await checkWorld({ directory, summary: { name: choices.name } as never })
+  let check = await checkWorld({ directory, summary: { name: choices.name } as never })
+  // each round of mends can show the next part of the world's problems
+  const repairs: Repair[] = []
+  for (let round = 0; round < MAX_REPAIR_ROUNDS && !check.ok; round += 1) {
+    const made = await repairFields(directory, check.problems)
+    if (made.length === 0) break
+    repairs.push(...made)
+    check = await checkWorld({ directory, summary: { name: choices.name } as never })
+  }
+  if (repairs.length > 0) {
+    await writeAtomically(join(directory, IMPORT_FOLDER, 'repairs.json'), JSON.stringify(repairs, null, 2))
+    notes.push(`${repairs.length} field(s) were dropped because their value could not be used (${repairs.slice(0, 5).map(repair => `${repair.file}: ${repair.field}`).join('; ')}${repairs.length > 5 ? '; ...' : ''}); the values are kept in ${IMPORT_FOLDER}/repairs.json`)
+  }
   if (!check.ok) notes.push(`the world was written as a draft: it would not start yet (${check.problems.length + check.more} problem(s) in ${check.summary ?? 'the world'})`)
 
   const player = extracted.characters.find(document => document['role'] === 'playable')
@@ -293,6 +310,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
   }
 
   const taken = (role: 'instruction' | 'template' | 'irrelevant'): number => items.filter(item => { const classification = classified[item.id]; return classification !== undefined && isLeftOut(classification) && classification.roles[0] === role }).length
+  const derived = extracted.derived ?? []
   const sourceOf: Source = { card, choices, pieces: cardPieces(card, choices), records: { classified, roster } }
   const report: ImportReport = {
     prompts: extracted.prompts.map(entry => entry.id),
@@ -305,7 +323,8 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     portrait,
     leftOut: { instructions: taken('instruction'), templates: taken('template'), irrelevant: taken('irrelevant'), scripts: card.ignored.scripts, dialect: dialectOf(card) },
     pictures: input.pictures ?? { found: 0, added: 0 },
-    pieces: outcomeCounts(pieceOutcomes(sourceOf, entitiesByPiece(sourceOf))),
+    ...(derived.length === 0 ? {} : { derived }),
+    pieces: outcomeCounts(pieceOutcomes(sourceOf, entitiesByPiece(sourceOf), { derived, finished: true })),
     notes,
   }
   await writeAtomically(join(directory, IMPORT_FOLDER, 'report.json'), JSON.stringify(report, null, 2))

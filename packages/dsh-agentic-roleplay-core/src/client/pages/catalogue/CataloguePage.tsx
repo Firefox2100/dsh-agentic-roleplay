@@ -26,6 +26,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
   const source = usable.find(candidate => candidate.name === selected) ?? usable[0]
   const [search, setSearch] = useState('')
   const [applied, setApplied] = useState('')
+  const [tag, setTag] = useState('')
   const [sort, setSort] = useState<'recent' | 'popular'>('recent')
   const [page, setPage] = useState<{ items: CatalogueWorld[]; nextOffset?: number; withKey: boolean }>()
   const [loading, setLoading] = useState(false)
@@ -79,6 +80,9 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
     )
   }
 
+  // The catalogue's list is searched by words only: tags narrow what has been loaded.
+  const tags = [...new Set((page?.items ?? []).flatMap(entry => entry.tags))].sort((a, b) => a.localeCompare(b))
+  const shown = (page?.items ?? []).filter(entry => tag === '' || entry.tags.includes(tag))
   const problems = state.sources.filter(entry => entry.problem !== undefined)
   if (reviewing !== undefined) {
     return (
@@ -110,6 +114,12 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
           <option value="recent">{t('sortRecent')}</option>
           <option value="popular">{t('sortPopular')}</option>
         </select>
+        {tags.length > 0 && (
+          <select className={css.select} value={tag} aria-label={t('tagFilter')} onChange={(event) => { setTag(event.target.value) }}>
+            <option value="">{t('tagAny')}</option>
+            {tags.map(entry => <option key={entry} value={entry}>{entry}</option>)}
+          </select>
+        )}
         <span className={css.spacer} />
         <Button variant="outline" size="sm" onClick={() => { setImporting(true) }}>{t('importUrl')}</Button>
         <Button variant="outline" size="sm" icon={<IconRefreshOutlineRegular />} disabled={source === undefined || loading} onClick={() => { load(); setReload(count => count + 1) }}>{loading ? t('refreshing') : t('refresh')}</Button>
@@ -117,7 +127,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
 
       <div className={css.kinds} role="tablist">
         {(['world', 'card', 'preset', 'lorebook'] as const).map(entry => (
-          <button key={entry} type="button" role="tab" className={css.kind} aria-selected={kind === entry} data-testid={`roleplay-catalogue-kind-${entry}`} onClick={() => { setKind(entry); setPage(undefined) }}>{entry === 'world' ? t('kindWorlds') : entry === 'card' ? t('kindCards') : entry === 'preset' ? t('kindPresets') : t('kindLorebooks')}</button>
+          <button key={entry} type="button" role="tab" className={css.kind} aria-selected={kind === entry} data-testid={`roleplay-catalogue-kind-${entry}`} onClick={() => { setKind(entry); setPage(undefined); setTag('') }}>{entry === 'world' ? t('kindWorlds') : entry === 'card' ? t('kindCards') : entry === 'preset' ? t('kindPresets') : t('kindLorebooks')}</button>
         ))}
       </div>
 
@@ -146,10 +156,12 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
                   ? <p className={css.message}>{t('loading')}</p>
                   : page.items.length === 0
                     ? <p className={css.message}>{applied === '' ? (kind === 'card' ? t('emptyCards') : kind === 'preset' ? t('emptyPresets') : kind === 'lorebook' ? t('emptyLorebooks') : t('empty')) : t('emptySearch', { search: applied })}</p>
-                    : (
+                    : shown.length === 0
+                      ? <p className={css.message}>{t('emptyTag', { count: page.items.length, tag })}</p>
+                      : (
                       <>
                         <ul className={css.grid}>
-                          {page.items.map(world => (
+                          {shown.map(world => (
                             <li key={world.id}>
                               <button type="button" className={css.card} data-testid="roleplay-catalogue-card" onClick={() => { setOpened({ id: world.id, name: world.name, kind: world.kind }) }}>
                                 <span className={css.cover}>
@@ -175,7 +187,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
       </div>
 
       {opened !== undefined && source !== undefined && <WorldDialog t={t} source={source} id={opened.id} name={opened.name} kind={opened.kind} openChat={openChat} onReview={(review) => { setOpened(undefined); setReviewing(review) }} onClose={() => { setOpened(undefined) }} onChanged={() => { setNotice(undefined); setChanged(count => count + 1) }} />}
-      {importing && <ImportUrlDialog t={t} onClose={() => { setImporting(false) }} onInstalled={(name, packs) => { setImporting(false); setNotice(`${t('installed', { name })}${packs.length > 0 ? ` ${t('packsNotice', { packs: packs.join(', ') })}` : ''}`) }} />}
+      {importing && <ImportUrlDialog t={t} onClose={() => { setImporting(false) }} onLink={(link) => { setImporting(false); setSelected(link.source); setKind(link.kind); setOpened({ id: link.id, name: link.name, kind: link.kind }) }} onInstalled={(name, packs) => { setImporting(false); setNotice(`${t('installed', { name })}${packs.length > 0 ? ` ${t('packsNotice', { packs: packs.join(', ') })}` : ''}`) }} />}
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createCharacterTools, type Recalled } from '@dsh-agentic-roleplay/state'
-import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { MAX_TRACE_MISSING } from '../../shared/trace.ts'
 import { MAX_RUN_RECALLED, type RunRecall } from '../../shared/activity.ts'
 import { estimateAnswer } from '../agents/budget.ts'
 import { externalGiven } from '../tools/external.ts'
@@ -23,13 +24,28 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
     const brief = deps.boundaries().characterContext.brief(request)
     const settings = deps.store.settings()
     const tools = settings.memory.lookup
-      ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: settings.memory, queryVector: deps.store.queryVector }), request.member.character.id).filter(tool => toolEnabled(settings.tools, 'characters', tool.name))
+      ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: settings.memory, queryVector: deps.store.queryVector }), request.member.character.id).filter(tool => toolEnabled(settings.tools, 'characters', tool.name)).map(tool => notingEmpty(tool, deps.store, request.turn, request.member.character.name))
       : []
     const background = (request.knowledge?.lore.length ?? 0) > 0 && tools.some(tool => tool.name === 'recall_my_lore')
     const external = externalGiven(deps.parent.ctx.tools, settings.tools, 'characters')
     const named = request.member.character.tier === 'background' && settings.models.background.trim() !== '' ? settings.models.background : settings.models.characters
     const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named, request.away === true ? 'off stage' : undefined), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: submitGate(settings.prompts.language, background) })
     return parseCharacterAction(result)
+  }
+}
+
+/** A look-up that finds nothing is kept in the turn's trace: it is where the world lacks what a character reached for. */
+export function notingEmpty<T extends ToolDefinition>(tool: T, store: TurnStore, turn: number, character: string): T {
+  return {
+    ...tool,
+    async execute(args: never, exec: never) {
+      const found = await (tool.execute as (args: never, exec: never) => Promise<unknown>)(args, exec)
+      const about = (args as { about?: unknown }).about
+      if (Array.isArray(found) && found.length === 0 && typeof about === 'string' && about.trim() !== '') {
+        try { store.recordTrace?.(turn, {}, current => ({ missing: [...(current.missing ?? []), { character, tool: tool.name, about: about.trim().slice(0, 120) }].slice(-MAX_TRACE_MISSING) })) } catch { /* the trace only describes the turn */ }
+      }
+      return found
+    },
   }
 }
 

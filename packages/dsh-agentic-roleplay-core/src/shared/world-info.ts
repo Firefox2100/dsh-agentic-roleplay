@@ -1,5 +1,6 @@
 import { parseSampling, type StorySampling } from './sampling.ts'
 import { parseSwitchboard, type Switchboard } from './settings.ts'
+import { parseStartQuestionsEdit, type StartQuestion } from './start-questions.ts'
 import { InvalidEditProblems } from './world-state.ts'
 
 /** The most alternate openings a world may offer, and the longest one. */
@@ -40,6 +41,8 @@ export interface WorldInfo {
   /** The library lorebooks suggested for stories of this world. */
   lorebooks: string[]
   alternateOpenings: AlternateOpeningText[]
+  /** What the start dialog asks before a story begins, and what each answer changes. */
+  startQuestions: StartQuestion[]
   /** The optional tools the world's agents have switched on or off, by kind of agent: only what was chosen, and names this version does not know. */
   tools: Switchboard
 }
@@ -58,7 +61,7 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
   if (input === undefined) throw new InvalidEditProblems(['the changes must be an object'])
   const edit: Record<string, unknown> = {}
   for (const key of Object.keys(input)) {
-    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings' && key !== 'tools' && key !== 'sampling') problems.push(`there is no field "${key}"`)
+    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings' && key !== 'startQuestions' && key !== 'tools' && key !== 'sampling') problems.push(`there is no field "${key}"`)
   }
   for (const key of TEXT_FIELDS) {
     if (input[key] === undefined) continue
@@ -80,6 +83,10 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
       if (kept.some(entry => entry.text.length > MAX_OPENING_CHARS)) problems.push(`an alternate opening is longer than ${MAX_OPENING_CHARS} characters`)
       edit['alternateOpenings'] = kept
     }
+  }
+  if (input['startQuestions'] !== undefined) {
+    const questions = parseStartQuestionsEdit(input['startQuestions'], problems)
+    if (questions !== undefined) edit['startQuestions'] = questions
   }
   if (input['tools'] !== undefined) {
     const board = parseSwitchboard(input['tools'], 'tools')

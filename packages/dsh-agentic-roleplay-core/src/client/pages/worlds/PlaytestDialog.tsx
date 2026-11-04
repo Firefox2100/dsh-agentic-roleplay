@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { MAX_PLAYTEST_TURNS, type PlaytestReport } from '../../../shared/playtest.ts'
-import { playableCharacters, playtestStatus, startPlaytest, stopPlaytest, type PlaytestReading } from './playtest-api.ts'
+import { playtestChoices, playtestStatus, startPlaytest, stopPlaytest, type PlaytestChoices, type PlaytestReading } from './playtest-api.ts'
 import css from './StartSessionDialog.module.css'
 
 type T = TranslateNS<'roleplay.worlds'>
@@ -22,6 +22,10 @@ function Report({ t, report }: { t: T; report: PlaytestReport }) {
       {report.changes.slice(0, 12).map((change, index) => <p key={index} className={css.message}>{change.subject}: {change.a ?? t('pt_nothing')} → {change.b ?? t('pt_nothing')}</p>)}
       {report.findings.length > 0 && <p className={css.message}>{t('pt_findings', { count: report.findings.length })}</p>}
       {report.findings.slice(0, 10).map((finding, index) => <p key={index} className={css.message}>{finding.severity}: {finding.message}</p>)}
+      {report.refused.length > 0 && <p className={css.message}>{t('pt_refused', { count: report.refused.length })}</p>}
+      {report.missing.length > 0 && <p className={css.message}>{t('pt_missing', { count: report.missing.length })}</p>}
+      {report.missing.map((entry, index) => <p key={`m${index}`} className={css.message}>{t('pt_missingLookup', { turn: entry.turn, character: entry.character, about: entry.about })}</p>)}
+      {report.refused.map((call, index) => <p key={index} className={css.message}>{t('pt_refusedCall', { turn: call.turn, tool: call.tool, note: call.note })}</p>)}
       {report.problems.map((problem, index) => <p key={index} className={css.error}>{problem}</p>)}
     </div>
   )
@@ -35,6 +39,9 @@ export function PlaytestDialog({ t, worldId, worldName, onClose }: { t: T; world
   const [reading, setReading] = useState<PlaytestReading>({ state: 'idle' })
   const [players, setPlayers] = useState<readonly { id: string; name: string }[]>()
   const [player, setPlayer] = useState('')
+  const [choices, setChoices] = useState<PlaytestChoices>()
+  const [opening, setOpening] = useState('')
+  const [startTime, setStartTime] = useState('')
   const [turns, setTurns] = useState(String(DEFAULT_TURNS))
   const [error, setError] = useState<string>()
   const running = reading.state === 'running'
@@ -42,7 +49,7 @@ export function PlaytestDialog({ t, worldId, worldName, onClose }: { t: T; world
   useEffect(() => {
     const abort = new AbortController()
     playtestStatus(worldId, abort.signal).then(setReading, () => undefined)
-    playableCharacters(worldId, abort.signal).then((found) => { setPlayers(found); setPlayer(found[0]?.id ?? '') }, (failure: unknown) => { if (!abort.signal.aborted) setError(failure instanceof Error ? failure.message : String(failure)) })
+    playtestChoices(worldId, abort.signal).then((found) => { setChoices(found); setPlayers(found.players); setPlayer(found.players[0]?.id ?? '') }, (failure: unknown) => { if (!abort.signal.aborted) setError(failure instanceof Error ? failure.message : String(failure)) })
     return () => { abort.abort() }
   }, [worldId])
 
@@ -54,9 +61,11 @@ export function PlaytestDialog({ t, worldId, worldName, onClose }: { t: T; world
 
   const count = Number(turns)
   const valid = Number.isInteger(count) && count >= 1 && count <= MAX_PLAYTEST_TURNS
+  const chosenOpening = opening === '' ? undefined : choices?.openings[Number(opening)]
+  const openingValid = chosenOpening !== undefined && (chosenOpening.character === undefined || chosenOpening.character === player)
   const begin = (): void => {
     setError(undefined)
-    startPlaytest(worldId, { turns: count, ...(player === '' ? {} : { playerCharacterId: player }), language: t('language') }).then(setReading, (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) })
+    startPlaytest(worldId, { turns: count, ...(player === '' ? {} : { playerCharacterId: player }), ...(!openingValid ? {} : { opening: Number(opening) }), ...(startTime.trim() === '' ? {} : { startingTime: startTime.trim() }), language: t('language') }).then(setReading, (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) })
   }
   const stop = (): void => { stopPlaytest(worldId).then(setReading, (failure: unknown) => { setError(failure instanceof Error ? failure.message : String(failure)) }) }
 
@@ -75,6 +84,20 @@ export function PlaytestDialog({ t, worldId, worldName, onClose }: { t: T; world
                 <select value={player} onChange={(event) => { setPlayer(event.target.value) }}>{players.map(entry => <option key={entry.id} value={entry.id}>{entry.name}</option>)}</select>
               </label>
             )}
+            {choices?.openings.some(entry => entry.character === undefined || entry.character === player) === true && (
+              <label className={css.field}>
+                <span>{t('startOpening')}</span>
+                <select value={openingValid ? opening : ''} onChange={(event) => { setOpening(event.target.value) }}>
+                  <option value="">{t('startOpeningDefault')}</option>
+                  {choices.openings.flatMap((entry, index) => (entry.character === undefined || entry.character === player ? [<option key={index} value={String(index)}>{entry.title}</option>] : []))}
+                </select>
+              </label>
+            )}
+            <label className={css.field}>
+              <span>{t('startTime')}</span>
+              <Input value={startTime} placeholder={choices?.startingTime === '' || choices === undefined ? 'YYYY-MM-DDTHH:MM:SS' : choices.startingTime} onChange={(event) => { setStartTime(event.target.value) }} />
+              <span>{t('startTimeHelp', { zone: choices?.timeZone ?? '' })}</span>
+            </label>
             <label className={css.field}>
               <span>{t('pt_turns')}</span>
               <Input value={turns} inputMode="numeric" onChange={(event) => { setTurns(event.target.value) }} />

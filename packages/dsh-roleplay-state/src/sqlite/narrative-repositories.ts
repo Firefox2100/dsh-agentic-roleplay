@@ -11,6 +11,7 @@ interface ThreadRow {
   status: ThreadStatus
   opened_turn: number
   resolved_turn: number | null
+  player_knows: number
 }
 
 const toThread = (row: ThreadRow): StoryThread => ({
@@ -19,14 +20,21 @@ const toThread = (row: ThreadRow): StoryThread => ({
   status: row.status,
   openedTurn: row.opened_turn,
   ...(row.resolved_turn === null ? {} : { resolvedTurn: row.resolved_turn }),
+  playerKnows: row.player_knows === 1,
 })
 
 export class SqliteThreadRepository implements ThreadRepository {
   constructor(private readonly db: SqlDatabase, private readonly clock: Clock) {}
 
-  open(text: string, turn: number): StoryThread {
-    const { lastInsertRowid } = this.db.run('INSERT INTO story_threads (text, status, opened_turn, created_at) VALUES (?, ?, ?, ?)', [text, 'open', turn, this.clock().toISOString()])
+  open(text: string, turn: number, playerKnows = false): StoryThread {
+    const { lastInsertRowid } = this.db.run('INSERT INTO story_threads (text, status, opened_turn, player_knows, created_at) VALUES (?, ?, ?, ?, ?)', [text, 'open', turn, playerKnows ? 1 : 0, this.clock().toISOString()])
     return this.require(Number(lastInsertRowid))
+  }
+
+  tell(id: ThreadId): StoryThread {
+    this.require(id)
+    this.db.run('UPDATE story_threads SET player_knows = 1 WHERE id = ?', [id])
+    return this.require(id)
   }
 
   get(id: ThreadId): StoryThread | undefined {

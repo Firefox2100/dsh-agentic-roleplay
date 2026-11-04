@@ -1,13 +1,14 @@
 import { useId, useState } from 'react'
 import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { install } from './catalogue-api.ts'
+import type { CatalogueLink } from '../../../shared/catalogue.ts'
+import { install, resolveLink } from './catalogue-api.ts'
 import type { CatalogueLocaleKey } from './locales.ts'
 import css from './CataloguePage.module.css'
 
 type Translate = (key: CatalogueLocaleKey, values?: Record<string, string | number>) => string
 
-/** Installs a world from the address of its archive; an address on a configured catalogue's site is asked for with that catalogue's key. */
-export function ImportUrlDialog({ t, onClose, onInstalled }: { t: Translate; onClose: () => void; onInstalled: (name: string, packs: string[]) => void }) {
+/** Installs a world from the address of its archive, or opens the resource a page address of a configured catalogue names; an address on a configured catalogue's site is asked for with that catalogue's key. */
+export function ImportUrlDialog({ t, onClose, onInstalled, onLink }: { t: Translate; onClose: () => void; onInstalled: (name: string, packs: string[]) => void; onLink: (link: CatalogueLink) => void }) {
   const formId = useId()
   const [address, setAddress] = useState('')
   const [busy, setBusy] = useState(false)
@@ -15,8 +16,12 @@ export function ImportUrlDialog({ t, onClose, onInstalled }: { t: Translate; onC
   const submit = (): void => {
     if (address.trim() === '' || busy) return
     setBusy(true); setError(undefined)
-    install({ url: address.trim() }).then(
-      (result) => { onInstalled(result.world.name, result.packs) },
+    resolveLink(address.trim()).then(
+      async (link) => {
+        if (link !== undefined) { onLink(link); return }
+        const result = await install({ url: address.trim() })
+        onInstalled(result.world.name, result.packs)
+      },
       (failure: unknown) => { setBusy(false); setError(failure instanceof Error ? failure.message : String(failure)) },
     )
   }

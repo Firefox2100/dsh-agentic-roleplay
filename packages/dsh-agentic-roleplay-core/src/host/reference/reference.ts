@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
-import { isSessionId, locationKey, sessionDatabase, type Session } from '@dsh-agentic-roleplay/state'
+import { describeInstant, isSessionId, locationKey, sessionDatabase, type Session } from '@dsh-agentic-roleplay/state'
 import { SessionNotFoundError } from '../sessions/errors.ts'
 import { keyOf, profileOf, type ProfileSession } from './profile.ts'
-import { isReferenceSection, type ReferenceProfile, type ReferencePerson, type ReferencePlace, type ReferenceReplies, type ReferenceReply, type ReferenceSection, type ReferenceThing } from '../../shared/reference.ts'
+import { isReferenceSection, type ReferenceProfile, type ReferencePerson, type ReferencePlace, type ReferenceQuest, type ReferenceReplies, type ReferenceReply, type ReferenceSection, type ReferenceThing } from '../../shared/reference.ts'
 
-export type ReferenceSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'items' | 'knowledge' | 'relationships'> & ProfileSession
+export type ReferenceSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'items' | 'knowledge' | 'relationships' | 'threads' | 'engagements'> & ProfileSession
 
 export class UnknownSectionError extends Error {}
 
@@ -12,6 +12,9 @@ export class UnknownSectionError extends Error {}
 export interface PageOptions {
   /** Whose profile, by key; the player's own when absent. */
   character?: string
+  /** The story's time zone and the language times are written in; UTC and English when absent. */
+  zone?: string
+  language?: 'en' | 'zh'
 }
 
 /** Where the player's character is and what it has met or learned of: the only ground a page may read from. */
@@ -94,12 +97,43 @@ function things(session: ReferenceSession): ReferenceThing[] {
   return [...carried, ...around]
 }
 
+/**
+ * What the player's character has been told of or taken on: the story's threads that are marked as known to them (the others are the story's
+ * own notes and are never shown) and the promises and appointments they are part of, soonest first.
+ */
+function quests(session: ReferenceSession, options: PageOptions): ReferenceQuest[] {
+  const stand = standpoint(session)
+  if (stand === undefined) return []
+  const zone = options.zone ?? 'UTC'
+  const language = options.language ?? 'en'
+  const nameOf = (id: number): string | undefined => session.characters.get(id)?.name
+  const commitments = session.engagements.list({ status: 'pending', participant: stand.player.id }).map((engagement): ReferenceQuest => {
+    const place = engagement.locationId === undefined ? undefined : session.locations.get(engagement.locationId)?.name
+    const others = engagement.participants.filter(id => id !== stand.player.id).flatMap(id => nameOf(id) ?? [])
+    return {
+      kind: 'commitment', text: engagement.title, status: 'open', when: describeInstant(engagement.at, zone, language),
+      ...engagement.until === undefined ? {} : { until: describeInstant(engagement.until, zone, language) },
+      ...place === undefined ? {} : { place },
+      ...others.length === 0 ? {} : { with: others },
+      ...engagement.note === '' ? {} : { note: engagement.note },
+      turn: engagement.createdTurn,
+    }
+  })
+  const threads = session.threads.list().filter(thread => thread.playerKnows).map((thread): ReferenceQuest => ({
+    kind: 'story', text: thread.text, status: thread.status, turn: thread.openedTurn,
+    ...thread.resolvedTurn === undefined ? {} : { resolvedTurn: thread.resolvedTurn },
+  }))
+  return [...commitments, ...threads.filter(thread => thread.status === 'open'), ...threads.filter(thread => thread.status === 'resolved').reverse()]
+}
+
 /** One page per section; a new page is a new entry here and in `REFERENCE_SECTIONS`. */
-const PAGES: { [K in ReferenceSection]: (session: ReferenceSession, options: PageOptions) => ReferenceReplies[K] } = { profile, people, places, things }
+const PAGES: { [K in ReferenceSection]: (session: ReferenceSession, options: PageOptions) => ReferenceReplies[K] } = { profile, people, places, things, quests }
 
 export interface ReferenceDeps {
   sessionsDir(): string
   open(id: string): ReferenceSession
+  /** The time zone and language of a story, for the times a page writes. */
+  timing?(id: string): { zone: string; language: 'en' | 'zh' }
 }
 
 /**
@@ -116,5 +150,5 @@ export function referencePage(session: ReferenceSession, section: string, option
 /** @throws {SessionNotFoundError} when the id names no session. */
 export function referenceOfSession(deps: ReferenceDeps, id: string, section: string, options: PageOptions = {}): ReferenceReply {
   if (!isSessionId(id) || !existsSync(sessionDatabase(deps.sessionsDir(), id))) throw new SessionNotFoundError(`no session "${id}"`)
-  return referencePage(deps.open(id), section, options)
+  return referencePage(deps.open(id), section, { ...deps.timing?.(id), ...options })
 }

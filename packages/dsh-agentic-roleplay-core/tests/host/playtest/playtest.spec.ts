@@ -29,6 +29,7 @@ function fakes(options: { turnsFail?: boolean; suggestions?: boolean; place?: (p
     playing: () => false,
     notes: (): Note[] => (options.suggestions === false ? [] : [{ kind: 'suggestions', turn: played, lines: ['go up the tower', 'ring the bell'] }]),
     story: () => story,
+    trace: () => [{ turn: 1, startedAt: 0, calls: [{ tool: 'judge_action', failed: false, note: 'ok' }, { tool: 'activate_characters', failed: true, note: 'Mira is not at the quay' }], missing: [{ character: 'Mira', tool: 'recall_my_lore', about: 'The Old Lighthouse' }] }, { turn: 2, startedAt: 0, missing: [{ character: 'Mira', tool: 'recall_my_lore', about: 'the old lighthouse' }, { character: 'Tam', tool: 'recall_my_memories', about: 'the storm' }], calls: [{ tool: 'narrate', failed: true, note: 'the output named a place the world does not have' }] }],
     halt: () => Promise.resolve(),
     remove: (id) => { removed.push(id); return Promise.resolve() },
     check: () => Promise.resolve([{ check: 'first-scene', severity: 'info', code: 'start-alone', where: 'characters/ana', message: 'alone' }]),
@@ -54,6 +55,8 @@ describe('a bounded test play of a world', () => {
       places: { visited: ['Quay', 'Tower'], unvisited: [] },
       triggers: { fired: ['Bell'], waiting: ['Knock'] },
       findings: [{ code: 'start-alone' }],
+      missing: [{ turn: 1, character: 'Mira', tool: 'recall_my_lore', about: 'The Old Lighthouse' }, { turn: 2, character: 'Tam', tool: 'recall_my_memories', about: 'the storm' }],
+      refused: [{ turn: 1, tool: 'activate_characters', note: 'Mira is not at the quay' }, { turn: 2, tool: 'narrate', note: 'the output named a place the world does not have' }],
     })
     expect(status.report!.changes).toEqual(expect.arrayContaining([expect.objectContaining({ area: 'position', subject: 'Ana', a: 'quay', b: 'tower' })]))
     expect(removed).toEqual(['sess'])
@@ -104,5 +107,13 @@ describe('a bounded test play of a world', () => {
     tests.start({ worldId: 'w', turns: 1 })
     await tests.finished('w')
     expect(tests.status('w')).toMatchObject({ state: 'failed', error: expect.stringContaining('no playable character') })
+  })
+
+  it('takes its plain moves in the language of the story', async () => {
+    const { deps, sent } = fakes({ suggestions: false })
+    const tests = new Playtests(deps)
+    tests.start({ worldId: 'w', turns: 2, language: 'zh' })
+    await tests.finished('w')
+    expect(sent.slice(1)).toEqual(['我环顾四周，看看自己身处何地。', '我和离我最近的人说话。'])
   })
 })

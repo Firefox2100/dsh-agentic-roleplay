@@ -68,6 +68,14 @@ export interface CharacterAccess {
   names?: WithheldNames
 }
 
+/** A look-up a character made that came back empty: it asked its own memory, its known entities or its lore for something it has nothing on. */
+export interface MissingKnowledge {
+  character: string
+  /** `recall_my_memories`, `recall_my_known_entities` or `recall_my_lore`. */
+  tool: string
+  about: string
+}
+
 /** Where the game master's turn went and what it was given, from the chat's log and what the store knew at the time. */
 export interface TurnTrace {
   turn: number
@@ -85,6 +93,8 @@ export interface TurnTrace {
   scene?: PromptPart[]
   selected?: SceneSelection
   access?: CharacterAccess[]
+  /** What the characters looked up and found nothing on. */
+  missing?: MissingKnowledge[]
 }
 
 /** The most turns a session keeps a trace of: the oldest are dropped. */
@@ -93,5 +103,6 @@ export const MAX_TRACES = 30
 export const MAX_TRACE_CALLS = 60
 export const MAX_TRACE_STEERED = 20
 export const MAX_TRACE_ACCESS = 40
+export const MAX_TRACE_MISSING = 40
 /** Longest note kept for one call or steering message. */
 export const MAX_TRACE_NOTE = 240

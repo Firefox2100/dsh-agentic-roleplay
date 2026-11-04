@@ -4,8 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { pngWithCard, v3Card } from '../../support/cards.ts'
 import { Catalogue } from '../../../src/host/catalogue/service.ts'
-import { Sources } from '../../../src/host/catalogue/sources.ts'
+import { Sources, type CredentialStore } from '../../../src/host/catalogue/sources.ts'
 import type { Ask, Reply, Transport } from '../../../src/host/catalogue/transport.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
@@ -17,6 +18,7 @@ interface Call { url: string; authorization: string | undefined; guarded: boolea
 let root: string
 let worlds: WorldCatalog
 let calls: Call[]
+let methods: string[]
 let answers: Record<string, (ask: Ask) => Partial<Reply>>
 let configured: CatalogueSource[]
 
@@ -24,6 +26,7 @@ const json = (value: unknown): Partial<Reply> => ({ status: 200, type: 'applicat
 const zip = (archive: Buffer): Partial<Reply> => ({ status: 200, type: 'application/zip', body: archive })
 const transport: Transport = async (url, ask) => {
   calls.push({ url: url.href, authorization: ask.headers['authorization'], guarded: ask.guarded })
+  methods.push(ask.method ?? 'GET')
   const answer = answers[url.href] ?? answers[url.origin + url.pathname]
   const reply = answer === undefined ? { status: 404 } : answer(ask)
   return { status: 200, type: '', location: undefined, body: Buffer.alloc(0), ...reply }
@@ -35,8 +38,15 @@ let staged: { kind: string; file: Buffer; name: string }[]
 let cardsStaged: { file: Buffer; name: string }[]
 let cardsStarted: { id: string; choices: unknown; language: string | undefined; update?: string | undefined }[]
 const problems: string[] = []
+let keys: Record<string, string>
+const store: CredentialStore = {
+  resolve: ref => Promise.resolve(keys[ref] === undefined ? undefined : { value: keys[ref]!, source: 'file' }),
+  describe: ref => Promise.resolve({ configured: keys[ref] !== undefined, writable: true, ...(keys[ref] === undefined ? {} : { source: 'file' }) }),
+  set: (ref, value) => { keys[ref] = value; return Promise.resolve() },
+  unset: (ref) => { delete keys[ref]; return Promise.resolve() },
+}
 const make = (): Catalogue => new Catalogue({
-  sources: new Sources(() => configured), worlds, maxBytes: () => 1024 * 1024, maxCardBytes: () => 1024 * 1024, trashDays: () => 30, problem: (message) => { problems.push(message) }, transport,
+  sources: new Sources(() => configured, () => store), worlds, maxBytes: () => 1024 * 1024, maxCardBytes: () => 1024 * 1024, trashDays: () => 30, problem: (message) => { problems.push(message) }, transport,
   stage: (kind, file, name) => { staged.push({ kind, file, name }); return { id: 'st-1', kind, name, items: [] } },
   previewCard: async (file, name) => { cardsStaged.push({ file, name }); return { id: 'card-1', hasAvatar: false, choices: { name: 'Ann', disabledEntries: [], opening: { kind: 'first' } }, card: {} as never } },
   startCard: async (id, choices, language, update) => {
@@ -60,6 +70,7 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'catalogue-'))
   worlds = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
   calls = []
+  methods = []
   converted = []
   cardsStaged = []
   cardsStarted = []
@@ -67,7 +78,8 @@ beforeEach(async () => {
   staged = []
   lorebooks = []
   answers = {}
-  configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKeyRef: '', apiKey: 'secret' }, { name: 'Open', baseUrl: 'https://open.example/api', apiKeyRef: '', apiKey: '' }]
+  keys = { ROLEPLAY_CATALOGUE_HOME_API_KEY: 'secret' }
+  configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKeyRef: '' }, { name: 'Open', baseUrl: 'https://open.example/api', apiKeyRef: '' }]
 })
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
 
@@ -89,9 +101,9 @@ describe('browsing a catalogue', () => {
     answers['http://localhost:9798/resources'] = ask => json({ items: ask.headers['authorization'] === undefined ? [] : [item('w2', 'Hidden', 'private')] })
     const catalogue = make()
     expect((await catalogue.worlds('Home', {})).items).toHaveLength(1)
-    configured = [{ name: 'Home', baseUrl: 'http://localhost:9798', apiKeyRef: '', apiKey: '' }]
+    delete keys['ROLEPLAY_CATALOGUE_HOME_API_KEY']
     expect(await catalogue.worlds('Home', {})).toMatchObject({ withKey: false, items: [] })
-    expect(await catalogue.sources()).toEqual([{ name: 'Home', baseUrl: 'http://localhost:9798', hasKey: false, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY' }])
+    expect(await catalogue.sources()).toMatchObject([{ name: 'Home', hasKey: false, keyRef: 'ROLEPLAY_CATALOGUE_HOME_API_KEY' }, { name: 'Open', hasKey: false }])
   })
 
   it('says what is wrong when the catalogue refuses, is not reachable, or is not a catalogue', async () => {
@@ -466,3 +478,107 @@ describe('importing a SillyTavern lorebook', () => {
     expect(page.items[0]).toMatchObject({ kind: 'lorebook', name: 'Harbor' })
     expect(calls.at(-1)?.url).toContain('resourceType=sillytavern%2Florebook')
   })})
+
+describe('fetching a character card from an address', () => {
+  const CARD = JSON.stringify({ spec: 'chara_card_v3', data: { name: 'Ann' } })
+  const card = (type: string, body: Buffer = Buffer.from(CARD)): (() => Partial<Reply>) => () => ({ status: 200, type, body })
+
+  it('asks with HEAD first and then downloads the file, named after the address', async () => {
+    answers['https://cards.example/ann'] = card('application/json')
+    const fetched = await make().fetchCard('https://cards.example/ann')
+    expect(methods).toEqual(['HEAD', 'GET'])
+    expect(fetched).toEqual({ body: Buffer.from(CARD), name: 'ann.json' })
+    const png = pngWithCard({ ccv3: v3Card() })
+    answers['https://cards.example/a%20b/Ann.PNG'] = card('image/png', png)
+    expect(await make().fetchCard('https://cards.example/a%20b/Ann.PNG')).toEqual({ body: png, name: 'Ann.PNG' })
+  })
+
+  it('refuses before the download what the HEAD answer says is neither JSON nor PNG', async () => {
+    for (const type of ['text/html', 'image/jpeg', 'application/zip']) {
+      methods = []
+      answers['https://cards.example/page'] = card(type)
+      await expect(make().fetchCard('https://cards.example/page')).rejects.toMatchObject({ failure: 'invalid', message: expect.stringContaining(`reports ${type}`) })
+      expect(methods).toEqual(['HEAD'])
+    }
+  })
+
+  it('goes on to the download when the type is vague, missing, or the server does not do HEAD', async () => {
+    for (const type of ['', 'text/plain', 'application/octet-stream', 'application/json']) {
+      methods = []
+      answers['https://cards.example/c'] = card(type)
+      await make().fetchCard('https://cards.example/c')
+      expect(methods).toEqual(['HEAD', 'GET'])
+    }
+    methods = []
+    answers['https://cards.example/nohead'] = (ask) => (ask.method === 'HEAD' ? { status: 405 } : { status: 200, type: 'application/json', body: Buffer.from(CARD) })
+    expect((await make().fetchCard('https://cards.example/nohead')).body).toEqual(Buffer.from(CARD))
+    expect(methods).toEqual(['HEAD', 'GET'])
+  })
+
+  it('leaves it to the download to refuse an address a server answers 404 or 403 for, and to the card reader to refuse what is no card', async () => {
+    await expect(make().fetchCard('https://cards.example/none')).rejects.toThrow(/was not found/)
+    expect(methods).toEqual(['HEAD', 'GET'])
+    answers['https://cards.example/page'] = card('text/plain', Buffer.from('<html>hello</html>'))
+    expect((await make().fetchCard('https://cards.example/page')).body.toString()).toBe('<html>hello</html>')
+  })
+
+  it('applies the address guard to the HEAD and the download alike', async () => {
+    for (const url of ['http://127.0.0.1/c.json', 'http://192.168.1.5/c.json', 'ftp://cards.example/c.json', 'https://u:p@cards.example/c.json', 'not an address', ' ']) {
+      await expect(make().fetchCard(url)).rejects.toMatchObject({ failure: 'input' })
+    }
+    expect(calls).toEqual([])
+  })
+
+  it('asks for no more than the upload limit', async () => {
+    const limits: number[] = []
+    answers['https://cards.example/c'] = () => ({ status: 200, type: 'application/json', body: Buffer.from(CARD) })
+    const limited = new Catalogue({ sources: new Sources(() => configured, () => store), worlds, maxBytes: () => 1, maxCardBytes: () => 4096, trashDays: () => 30, problem: () => undefined, transport: async (url: URL, ask: Ask) => { limits.push(ask.maxBytes); return await transport(url, ask) } } as unknown as ConstructorParameters<typeof Catalogue>[0])
+    await limited.fetchCard('https://cards.example/c')
+    expect(limits).toEqual([4096, 4096])
+  })
+})
+
+describe('catalogue page links', () => {
+  const resource = (type: string) => ({ ...item('c1', 'Ann'), resourceType: type })
+  const versions = [{ id: 'v1', version: '1', versionNumber: 1, publishedAt: '2026-01-01T00:00:00Z', visibility: 'public' }, { id: 'v2', version: '2', versionNumber: 2, publishedAt: '2026-02-01T00:00:00Z', visibility: 'public' }]
+
+  it('names the resource a page of a configured site is about, and nothing for any other address', async () => {
+    answers['https://open.example/api/resources/c1'] = () => json(resource('sillytavern/character'))
+    expect(await make().link('https://open.example/characters/c1')).toEqual({ source: 'Open', id: 'c1', kind: 'card', name: 'Ann' })
+    answers['https://open.example/api/resources/p1'] = () => json({ ...resource('sillytavern/preset'), id: 'p1' })
+    expect(await make().link('https://open.example/presets/p1/')).toMatchObject({ kind: 'preset', id: 'p1' })
+    expect(await make().link('https://open.example/api/versions/v1/download')).toBeUndefined()
+    expect(await make().link('https://open.example/')).toBeUndefined()
+    expect(await make().link('https://other.example/characters/c1')).toBeUndefined()
+    await expect(make().link('nonsense')).rejects.toMatchObject({ failure: 'input' })
+  })
+
+  it('refuses a page of the wrong kind and a resource that is not there', async () => {
+    answers['https://open.example/api/resources/c1'] = () => json(resource('sillytavern/lorebook'))
+    await expect(make().link('https://open.example/characters/c1')).rejects.toMatchObject({ failure: 'invalid' })
+    await expect(make().link('https://open.example/worlds/zzz')).resolves.toBeUndefined()
+    await expect(make().link('https://open.example/lorebooks/zzz')).rejects.toMatchObject({ failure: 'unknown' })
+  })
+
+  it('fetches the card of a catalogue page from its newest release, with the key', async () => {
+    answers['http://localhost:9798/resources/c1'] = () => json(resource('sillytavern/character'))
+    answers['http://localhost:9798/versions/resource/c1'] = () => json(versions)
+    answers['http://localhost:9798/versions/v2/download'] = () => ({ status: 200, type: 'image/png', body: pngWithCard({ ccv3: v3Card() }) })
+    const fetched = await make().fetchCard('http://localhost:9798/characters/c1')
+    expect(fetched.name).toBe('download.png')
+    expect(calls.filter(call => call.url.endsWith('/download')).every(call => call.authorization === 'Bearer secret')).toBe(true)
+    answers['http://localhost:9798/resources/w1'] = () => json({ ...resource('dsh-agentic-roleplay/world'), id: 'w1' })
+    await expect(make().fetchCard('http://localhost:9798/agentic-worlds/w1')).rejects.toThrow(/not the page of a character card/)
+  })
+
+  it('installs the newest release of a world page, and sends a card page to the list', async () => {
+    answers['http://localhost:9798/resources/w1'] = () => json({ ...resource('dsh-agentic-roleplay/world'), id: 'w1' })
+    answers['http://localhost:9798/versions/resource/w1'] = () => json(versions)
+    answers['http://localhost:9798/versions/v2/download'] = () => zip(worldZip('harbor', WORLD))
+    answers['http://localhost:9798/versions/v2'] = () => json({ id: 'v2', resourceId: 'w1', version: '2' })
+    const installed = await make().install({ url: 'http://localhost:9798/agentic-worlds/w1' })
+    expect(installed.world.name).toBe('Harbor')
+    answers['http://localhost:9798/resources/c1'] = () => json(resource('sillytavern/character'))
+    await expect(make().install({ url: 'http://localhost:9798/characters/c1' })).rejects.toThrow(/page of a character card, not of a world/)
+  })
+})

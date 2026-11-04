@@ -123,7 +123,7 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
     beliefs: characters.flatMap(character => target.memories.list(character.id)
       .filter(belief => inScope(belief.turn))
       .map(belief => { const evidence = target.memories.evidenceOf(belief.id); return { id: belief.id, character: characterKey(character), kind: belief.kind, text: belief.text, about: belief.about.map(keyOf), importance: belief.importance, confidence: belief.confidence, evidence_for: evidence.filter(entry => entry.relation === 'supports').map(entry => entry.perceptionId), evidence_against: evidence.filter(entry => entry.relation === 'contradicts').map(entry => entry.perceptionId), turn: belief.turn } })),
-    open_threads: target.threads.list('open').map(thread => ({ id: thread.id, text: thread.text, opened_turn: thread.openedTurn })),
+    open_threads: target.threads.list('open').map(thread => ({ id: thread.id, text: thread.text, opened_turn: thread.openedTurn, player_knows: thread.playerKnows })),
     items: [...target.items.list()].sort((a, b) => Number(b.notable) - Number(a.notable) || a.id - b.id).slice(0, MAX_ITEMS_SHOWN).map(item => ({
       key: itemKey(item), name: item.name, quantity: item.quantity, quality: item.quality, state: item.container?.state ?? null, hidden: item.hidden, notable: item.notable,
       owner: item.ownerId === undefined ? null : keyOf(item.ownerId), holder: describeHolder(target, item.id, keyOf),

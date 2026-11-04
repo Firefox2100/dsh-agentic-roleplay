@@ -4,15 +4,39 @@ import { MAX_PLAYTEST_TURNS, type PlaytestReport, type PlaytestRequest, type Pla
 import type { Note } from '../../shared/notes.ts'
 import type { StartedSession, StartSessionRequest } from '../../shared/sessions.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
+import type { TurnTrace } from '../../shared/trace.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { compareStates, type StateSide } from '../timeline/compare.ts'
 
 /** The test player's words when the story offered no suggestion to take. */
-const FALLBACK_MOVES = ['I look around and take stock of where I am.', 'I speak to the nearest person.', 'I go somewhere else.']
+const FALLBACK_MOVES = {
+  en: ['I look around and take stock of where I am.', 'I speak to the nearest person.', 'I go somewhere else.'],
+  zh: ['我环顾四周，看看自己身处何地。', '我和离我最近的人说话。', '我去别的地方看看。'],
+}
+const movesIn = (language: string | undefined): readonly string[] => (language?.toLowerCase().startsWith('zh') === true ? FALLBACK_MOVES.zh : FALLBACK_MOVES.en)
 const POLL_MS = 1000
 const SUGGESTION_WAIT_MS = 90_000
 /** A turn that takes this many times the median is named as slow. */
 const SLOW_FACTOR = 3
+
+/** The most refused calls a report lists. */
+const MAX_REFUSED = 12
+/** The most missing look-ups a report lists. */
+const MAX_MISSING = 20
+
+function refusals(traces: readonly TurnTrace[]): PlaytestReport['refused'] {
+  return traces.flatMap(trace => (trace.calls ?? []).filter(call => call.failed).map(call => ({ turn: trace.turn, tool: call.tool, note: call.note }))).slice(0, MAX_REFUSED)
+}
+
+function lacks(traces: readonly TurnTrace[]): PlaytestReport['missing'] {
+  const seen = new Set<string>()
+  return traces.flatMap(trace => (trace.missing ?? []).map(entry => ({ turn: trace.turn, ...entry }))).filter(entry => {
+    const key = `${entry.character}\n${entry.tool}\n${entry.about.toLowerCase()}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  }).slice(0, MAX_MISSING)
+}
 
 export interface PlaytestDeps {
   start(request: StartSessionRequest): Promise<StartedSession>
@@ -23,6 +47,8 @@ export interface PlaytestDeps {
   playing(chat: string): boolean
   notes(session: string): Note[]
   story(session: string): Session
+  /** What each played turn's trace recorded; kept with the story, so it is read before the story is removed. */
+  trace(session: string): TurnTrace[]
   halt(chat: string): Promise<void>
   remove(session: string): Promise<void>
   /** The world's checks that need no model. */
@@ -100,6 +126,7 @@ export class Playtests {
     const started = await deps.start({
       worldId: request.worldId, name: `Playtest ${new Date(began).toISOString().slice(0, 16).replace('T', ' ')}`, playerCharacterId: player,
       ...request.opening === undefined ? {} : { opening: request.opening },
+      ...request.startingTime === undefined ? {} : { startingTime: request.startingTime },
       settings: { ...(request.language === undefined ? {} : { prompts: { language: request.language } }), images: { mode: 'off' }, suggestions: { count: 3 } },
     })
     const session = started.id
@@ -113,7 +140,7 @@ export class Playtests {
       if (placeOf() !== '') visited.add(placeOf())
       for (let turn = 1; turn <= request.turns && !abort.signal.aborted; turn += 1) {
         status.step = `turn ${turn} of ${request.turns}: choosing the player's move`
-        const move = await this.moveFor(session, turn, problems, abort.signal)
+        const move = await this.moveFor(session, turn, problems, abort.signal, request.language)
         if (abort.signal.aborted) break
         status.step = `turn ${turn} of ${request.turns}: playing`
         const sentAt = deps.now()
@@ -135,7 +162,7 @@ export class Playtests {
         world: started.worldName, asked: request.turns, played: turns.length, seconds: Math.round((deps.now() - began) / 1000), turns,
         places: { visited: places.filter(place => visited.has(place.key)).map(place => place.name), unvisited: places.filter(place => !visited.has(place.key)).map(place => place.name) },
         triggers: { fired: triggers.filter(trigger => trigger.fireCount > 0).map(trigger => trigger.name), waiting: triggers.filter(trigger => trigger.status === 'dormant' && trigger.fireCount === 0).map(trigger => trigger.name) },
-        changes: compareStates(first, last).changes, findings: await deps.check(request.worldId), problems,
+        changes: compareStates(first, last).changes, findings: await deps.check(request.worldId), refused: refusals(deps.trace(session)), missing: lacks(deps.trace(session)), problems,
       }
       status.report = report
       status.state = abort.signal.aborted ? 'stopped' : 'done'
@@ -147,8 +174,9 @@ export class Playtests {
   }
 
   /** What the test player says: one of the story's own suggestions, in turn, or a plain move when none came. */
-  private async moveFor(session: string, turn: number, problems: string[], signal: AbortSignal): Promise<string> {
-    if (turn === 1) return FALLBACK_MOVES[0]!
+  private async moveFor(session: string, turn: number, problems: string[], signal: AbortSignal, language?: string): Promise<string> {
+    const moves = movesIn(language)
+    if (turn === 1) return moves[0]!
     const until = this.deps.now() + SUGGESTION_WAIT_MS
     while (this.deps.now() < until && !signal.aborted) {
       const lines = this.deps.notes(session).find(note => note.kind === 'suggestions')?.lines ?? []
@@ -156,7 +184,7 @@ export class Playtests {
       await this.deps.sleep(POLL_MS)
     }
     if (!signal.aborted) problems.push(`no suggestion came before turn ${turn}, so the test player took a plain move`)
-    return FALLBACK_MOVES[(turn - 1) % FALLBACK_MOVES.length]!
+    return moves[(turn - 1) % moves.length]!
   }
 
   private async waitForTurn(session: string, chat: string, turn: number, signal: AbortSignal): Promise<boolean> {

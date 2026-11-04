@@ -231,7 +231,9 @@ export interface MemoryRepository {
 }
 
 export interface ThreadRepository {
-  open(text: string, turn: number): StoryThread
+  open(text: string, turn: number, playerKnows?: boolean): StoryThread
+  /** Marks a thread as known to the player's character. @throws {NotFoundError} */
+  tell(id: ThreadId): StoryThread
   get(id: ThreadId): StoryThread | undefined
   list(status?: ThreadStatus): StoryThread[]
   /** @throws {NotFoundError} */
