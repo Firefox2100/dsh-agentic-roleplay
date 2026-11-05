@@ -50,46 +50,29 @@ function ownerOf(agent: Agent, turn: number): TurnOwner | undefined {
   return roleplaySessionOf(agent.session.id) === undefined ? undefined : { chat: agent.session.id, turn }
 }
 
-/** Where the withdrawal of an agent's preview tool is kept: on the agent, so that a reloaded plugin still finds what its earlier self registered. */
-const PREVIEW_SHOWN = Symbol.for('dsh-agentic-roleplay.preview-tool')
+/** Where an agent keeps the fact that its conditional tools are registered: on the agent, so that a reloaded plugin does not register them a second time. */
+const CONDITIONAL_REGISTERED = Symbol.for('dsh-agentic-roleplay.conditional-tools')
 
-/** Registers the preview tool on the agent of a chat that shows one, once, and withdraws it when the setting is turned off. */
-export function previewToggle(tool: Parameters<Agent['ctx']['tools']['register']>[0]): (agent: Agent, enabled: boolean) => void {
-  return (agent, enabled) => {
-    const holder = agent as unknown as Record<symbol, (() => void) | undefined>
-    const withdraw = holder[PREVIEW_SHOWN]
-    if (enabled && withdraw === undefined) {
-      try { holder[PREVIEW_SHOWN] = agent.ctx.tools.register(tool) } catch (error) {
-        // A copy of this plugin from before a reload registered it and cannot be reached any more: the tool is there, which is all that is wanted.
-        if (!(error instanceof Error) || !error.message.includes('already registered')) throw error
-        holder[PREVIEW_SHOWN] = () => undefined
-      }
-    }
-    else if (!enabled && withdraw !== undefined) { delete holder[PREVIEW_SHOWN]; withdraw() }
-  }
+/** A tool and the step-time condition under which the agent may call it. */
+export interface ConditionalTool {
+  tool: ToolDefinition
+  when: () => boolean
 }
 
-/** Where the withdrawals of an agent's optional tools are kept, by tool name: on the agent, so that a reloaded plugin still finds what its earlier self registered. */
-const OPTIONAL_SHOWN = Symbol.for('dsh-agentic-roleplay.optional-tools')
-
-/** Puts an agent's optional tools in line with the switches: registers the ones that are on and not yet there, withdraws the ones that are off. */
-export function optionalToolSwitch(tools: readonly ToolDefinition[]): (agent: Agent, enabled: (tool: string) => boolean) => void {
-  return (agent, enabled) => {
-    const holder = agent as unknown as Record<symbol, Map<string, () => void> | undefined>
-    const shown = holder[OPTIONAL_SHOWN] ??= new Map<string, () => void>()
-    for (const tool of tools) {
-      const withdraw = shown.get(tool.name)
-      if (enabled(tool.name) && withdraw === undefined) {
-        try { shown.set(tool.name, agent.ctx.tools.register(tool)) } catch (error) {
-          if (!(error instanceof Error) || !error.message.includes('already registered')) throw error
-          shown.set(tool.name, () => undefined)
-        }
-      } else if (!enabled(tool.name) && withdraw !== undefined) {
-        shown.delete(tool.name)
-        withdraw()
-      }
+/**
+ * Registers an agent's switchable tools once, before its first request. DSH asks each condition at every step and leaves a tool out of the request while
+ * it is false, so a setting changed during a story applies at the next step without registering or withdrawing anything.
+ */
+export function registerConditionalTools(agent: Agent, entries: readonly ConditionalTool[]): void {
+  const holder = agent as unknown as Record<symbol, true | undefined>
+  if (holder[CONDITIONAL_REGISTERED] === true) return
+  for (const { tool, when } of entries) {
+    try { agent.ctx.tools.register(tool, { when }) } catch (error) {
+      // A copy of this plugin from before a reload registered it and cannot be reached any more: the tool is there, which is all that is wanted.
+      if (!(error instanceof Error) || !error.message.includes('already registered')) throw error
     }
   }
+  holder[CONDITIONAL_REGISTERED] = true
 }
 
 /** Where an agent's withdrawal of the external tools it was not given is kept: on the agent, so that a reloaded plugin still finds what its earlier self set. */
@@ -123,13 +106,16 @@ export function commandBringsPeopleIn(store: Pick<TurnStore, 'story'>, command: 
 export function installHooks(ctx: Context, deps: HookDeps): void {
   const { engine, boundaries, stores, timelines, previewTool } = deps
 
-  const showPreviewTool = previewToggle(previewTool)
-  const showOptionalTools = optionalToolSwitch(deps.optionalTools ?? [])
   /** The tools of the game master as the chat's settings say: its optional ones, and none of other plugins' that it was not given. */
-  const applyTools = (agent: Agent, store: TurnStore): void => {
-    const { tools } = store.settings()
-    showOptionalTools(agent, tool => toolEnabled(tools, 'gameMaster', tool))
-    externalToolLimit(agent, externalWithheld(agent.ctx.tools, tools, 'gameMaster'))
+  const applyLimit = (agent: Agent, store: TurnStore): void => {
+    externalToolLimit(agent, externalWithheld(agent.ctx.tools, store.settings().tools, 'gameMaster'))
+  }
+  const conditionsOf = (chat: string): ConditionalTool[] => {
+    const settings = () => stores(chat)?.settings()
+    return [
+      { tool: previewTool, when: () => settings()?.preview.enabled === true },
+      ...(deps.optionalTools ?? []).map(tool => ({ tool, when: () => { const current = settings(); return current !== undefined && toolEnabled(current.tools, 'gameMaster', tool.name) } })),
+    ]
   }
 
   // A game master that sends the same refused call over and over is told to move on, as an authoring assistant is.
@@ -144,8 +130,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const store = owner === undefined ? undefined : stores(owner.chat)
     if (store === undefined) return
     // The tools are in place before the first request: one registered afterwards changes the request's tool list and with it the start of the prompt, which is what a server's cache is keyed on.
-    showPreviewTool(agent, store.settings().preview.enabled)
-    applyTools(agent, store)
+    registerConditionalTools(agent, conditionsOf(agent.session.id))
+    applyLimit(agent, store)
   })
 
   // The turn that ended is where the next one will have to be cut from.
@@ -201,8 +187,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     const owner = ownerOf(payload.agent, payload.turn)
     const store = owner === undefined ? undefined : stores(owner.chat)
     if (owner !== undefined && store !== undefined) {
-      showPreviewTool(payload.agent, store.settings().preview.enabled)
-      applyTools(payload.agent, store)
+      applyLimit(payload.agent, store)
     }
     if (decision.kind !== 'enter' || payload.step !== 1) return decision
     if (owner === undefined || store === undefined) return decision

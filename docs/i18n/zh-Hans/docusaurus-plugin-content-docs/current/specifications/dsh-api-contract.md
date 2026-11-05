@@ -14,10 +14,11 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 浏览器 HTTP API | `ctx.webServer.register`、`ctx.connection.requestRejection` | `host/http/` |
 | 会话对应的对话 | `ctx.sessionController.create/rename`、`ctx.workspaceRegistry.create/archiveSession`、`ctx.sessionPersistence` | `host/agent/` |
 | 智能体预设 | `@deepseek-ai/dsh-agent-preset` 行及其 `plugins` | 套件的 `cordis.patch.yml` |
-| 游戏主持人工具 | `ctx.tools.register(defineTool(...))` | `host/orchestration/tools.ts`、`@dsh-agentic-roleplay/state` |
+| 游戏主持人工具 | `ctx.tools.register(defineTool(...), { when })` | `host/orchestration/tools.ts`、`@dsh-agentic-roleplay/state` |
 | 系统提示词 | `ctx.systemPrompt.section` | `orchestration.ts` |
 | 系统提示词 | `ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context` | `helper.ts` |
 | 回合控制 | `agent/pre-step`、`agent/turn-stopping`、`agent.steer`、`exec.concludeTurn()`、`exec.agent`、`exec.signal` | `host/orchestration/hooks.ts`、`tools.ts` |
+| 创作助手的模型选择 | 在 `agent/created` 中调用 `agent.model.current()`、`agent.model.select()` | `host/authoring/turn-guard.ts` |
 | 无自有工具的编年史作者 | 带有自己的 `submit_result` 的 `runChild` 子智能体（见下） | `compaction/chronicler.ts` |
 | 有专属工具的角色与记录员 | 不使用公开子智能体 API，见下文 | `agents/child.ts` |
 | 消息来源 | 合并到 `MessageSourceMap` 的 `roleplay` | `hooks.ts` |
@@ -39,7 +40,9 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 - **预设。** `roleplay-helper` 是 bundle 补丁里的一行 `@deepseek-ai/dsh-agent-preset`（所以单独安装 core 时没有辅助智能体）。它挂载 `core/helper` 插件：按会话 id 读取的系统提示段落给出角色设定，并在公开的 `agent/created` 事件里调用该子智能体的 `setup`。预设由所有使用它的智能体共享，所以每个子智能体自己的内容不放在插件里，而是按会话 id 查找。
 - **专属工具。** spawn 出来的子智能体会继承所有全局工具（故事读取工具、DSH 的 working directory），所以 `setup` 先调用 `agent.ctx.tools.restrict({ allow })`（`allow` 只含任务放行的外部工具），再把子智能体的工具注册到 `agent.ctx` 上，`restrict` 不会影响这些。`submit_result` 工具、调用预算、重复调用保护和提醒也是同样注册的。
 - **代价。** 每次运行都会在旁白主持人的日志里增加一条 `subagent/catalog` 事件（几百字节，回合结束后也可能出现，所以已结束回合的最后一个事件不一定是 `turn/end`）。DSH 同一父智能体最多同时容纳 `maxActiveSubagents` 个子智能体（默认 8），多的会被拒绝，因此 bundle 补丁把它提高到 32，以容纳一轮角色加上记录员、作者和建议。
-- **准确的测试版本。** 软件包声明 DSH `>=0.2.1-rc.2 <0.2.2`（`engines.dsh` 与 peer 依赖）。开发依赖与 `tests/support/dsh-contract.spec.ts` 固定到经过测试的准确版本，这些值都由 `scripts/dsh-compat.mjs` 这一份清单推导而来。支持后续补丁版本前，必须先检查该准确版本的变更，移植所有受影响的集成，并在该版本上完成测试，然后才能扩大版本范围。
+- **准确的测试版本。** 软件包声明 DSH `>=0.2.2-rc.1 <0.2.3`（`engines.dsh` 与 peer 依赖）。开发依赖与 `tests/support/dsh-contract.spec.ts` 固定到经过测试的准确版本，这些值都由 `scripts/dsh-compat.mjs` 这一份清单推导而来。支持后续补丁版本前，必须先检查该准确版本的变更，移植所有受影响的集成，并在该版本上完成测试，然后才能扩大版本范围。
+- **工具执行器。** 从 0.2.2 起 `dsh-tools` 自己不执行任何调用：部署需要挂载一个执行器（`dsh-base` 挂载原生执行器），挂载工具服务的测试要在旁边挂载 `@deepseek-ai/dsh-tool-executor-native`。`ctx.tools.execute` 接受一批调用。
+- **模型选择。** DSH 会在 `agent/request` 之前确定提供方、模型和推理强度。因此，创作预设会在智能体创建时验证所配置的推理强度，并通过 `agent.model.select()` 记录下来，不再改写已弃用的请求 hook。
 - **DSH 变化时**，重新阅读 `docs/subsystems/subagent.md`，让 `runChild` 与之保持一致；`tests/host/orchestration/loop.spec.ts` 中的真实循环测试通过一个替身 `agentPresets` 服务挂载该辅助插件。
 
 ## 回退、归档与删除

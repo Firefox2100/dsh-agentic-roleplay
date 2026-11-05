@@ -16,15 +16,15 @@ export function guardAuthoringTurns(ctx: Context, prompts: () => PromptLibrary, 
   const nudged = new Map<string, number>()
   guardRepeatedCalls(ctx, exec => (exec.agent === undefined ? undefined : languageOf(exec.agent.session.id)), AUTHORING_SAME_CALL)
 
-  ctx.on('agent/request', async (payload, next) => {
-    const config = await next()
+  ctx.on('agent/created', async ({ agent, signal }) => {
     const level = reasoning()
-    if (level === '' || payload.agent.session.header.origin === 'subagent' || languageOf(payload.agent.session.id) === undefined || config.reasoningEffort === level) return config
+    const current = agent.model.current()
+    if (level === '' || current === undefined || agent.session.header.origin === 'subagent' || languageOf(agent.session.id) === undefined || current.reasoningEffort === level) return
     try {
-      const info = await payload.agent.ctx.llm.resolveModelInfo(config.provider, config.model, payload.signal)
-      if (info.reasoning?.efforts.some(effort => effort.id === level) !== true) return config
-    } catch { return config }
-    return { ...config, reasoningEffort: ReasoningEffortId(level) }
+      const info = await agent.ctx.llm.resolveModelInfo(current.provider, current.model, signal ?? new AbortController().signal)
+      if (info.reasoning?.efforts.some(effort => effort.id === level) !== true) return
+    } catch { return }
+    agent.model.select({ ...current, reasoningEffort: ReasoningEffortId(level) })
   })
 
   ctx.on('agent/turn-stopping', ({ agent, turn }) => {

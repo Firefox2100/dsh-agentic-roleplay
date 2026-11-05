@@ -1,69 +1,37 @@
 import { describe, expect, it } from 'vitest'
-import { optionalToolSwitch, previewToggle } from '../../../src/host/orchestration/hooks.ts'
+import { registerConditionalTools } from '../../../src/host/orchestration/hooks.ts'
 
 function fakeAgent() {
-  const registered = new Set<string>()
-  const agent = { ctx: { tools: { register: (tool: { name: string }) => {
+  const registered = new Map<string, () => boolean>()
+  const agent = { ctx: { tools: { register: (tool: { name: string }, options: { when?: () => boolean } = {}) => {
     if (registered.has(tool.name)) throw new Error(`tool "${tool.name}" is already registered in this scope`)
-    registered.add(tool.name)
+    registered.set(tool.name, options.when ?? (() => true))
     return () => { registered.delete(tool.name) }
   } } } }
-  return { agent: agent as never, registered }
+  const offered = () => [...registered].filter(([, when]) => when()).map(([name]) => name).sort()
+  return { agent: agent as never, registered, offered }
 }
 
-const tool = { name: 'preview_scene' } as never
+const entry = (name: string, when: () => boolean) => ({ tool: { name } as never, when })
 
-describe('the preview tool of an agent', () => {
-  it('is registered once however often it is shown, and withdrawn when switched off', () => {
-    const { agent, registered } = fakeAgent()
-    const show = previewToggle(tool)
-    show(agent, true)
-    show(agent, true)
-    expect([...registered]).toEqual(['preview_scene'])
-    show(agent, false)
-    expect([...registered]).toEqual([])
-    show(agent, true)
-    expect([...registered]).toEqual(['preview_scene'])
-  })
-
-  it('is taken as shown when a copy of the plugin from before a reload already registered it', () => {
-    const { agent, registered } = fakeAgent()
-    ;(agent as { ctx: { tools: { register: (tool: { name: string }) => () => void } } }).ctx.tools.register(tool as { name: string })
-    expect(() => { previewToggle(tool)(agent, true) }).not.toThrow()
-    expect([...registered]).toEqual(['preview_scene'])
-  })
-
-  it('is not registered a second time by a plugin that was reloaded', () => {
-    const { agent, registered } = fakeAgent()
-    previewToggle(tool)(agent, true)
-    const reloaded = previewToggle(tool)
-    expect(() => { reloaded(agent, true) }).not.toThrow()
-    reloaded(agent, false)
-    expect([...registered]).toEqual([])
-  })
-})
-
-describe('the optional tools of an agent', () => {
-  const tools = [{ name: 'roll_check' }, { name: 'roll_dice' }] as never[]
-
-  it('are registered when switched on, once, and withdrawn when switched off, each by itself', () => {
-    const { agent, registered } = fakeAgent()
-    const show = optionalToolSwitch(tools)
-    show(agent, () => true)
-    show(agent, () => true)
-    expect([...registered].sort()).toEqual(['roll_check', 'roll_dice'])
-    show(agent, name => name === 'roll_dice')
-    expect([...registered]).toEqual(['roll_dice'])
-    show(agent, () => false)
-    expect([...registered]).toEqual([])
+describe('the switchable tools of an agent', () => {
+  it('are registered once with their condition, and offered only while the condition holds', () => {
+    const { agent, registered, offered } = fakeAgent()
+    const on = { preview: true, dice: false }
+    const entries = [entry('preview_scene', () => on.preview), entry('roll_dice', () => on.dice)]
+    registerConditionalTools(agent, entries)
+    registerConditionalTools(agent, entries)
+    expect([...registered.keys()].sort()).toEqual(['preview_scene', 'roll_dice'])
+    expect(offered()).toEqual(['preview_scene'])
+    on.preview = false
+    on.dice = true
+    expect(offered()).toEqual(['roll_dice'])
   })
 
   it('are not registered a second time by a plugin that was reloaded', () => {
     const { agent, registered } = fakeAgent()
-    optionalToolSwitch(tools)(agent, () => true)
-    const reloaded = optionalToolSwitch(tools)
-    expect(() => { reloaded(agent, () => true) }).not.toThrow()
-    reloaded(agent, () => false)
-    expect([...registered]).toEqual([])
+    ;(agent as { ctx: { tools: { register: (tool: { name: string }) => void } } }).ctx.tools.register({ name: 'roll_dice' })
+    expect(() => { registerConditionalTools(agent, [entry('roll_dice', () => true)]) }).not.toThrow()
+    expect([...registered.keys()]).toEqual(['roll_dice'])
   })
 })

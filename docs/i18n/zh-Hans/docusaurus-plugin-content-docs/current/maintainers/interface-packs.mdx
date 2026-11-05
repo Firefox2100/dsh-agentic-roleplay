@@ -92,7 +92,9 @@ description: 界面包如何被读取、提供、沙盒化和桥接，以及 DSH
 
 ## 创作
 
-世界创作预设挂载 DSH 的 `tool-fs`（捆绑补丁中的 `tool-fs` 行）。`registerPackJail` 在 `tools/pre-execute` 中最先注册一个监听器，把创作对话中的 `read`、`write` 和 `edit` 限制在 `<世界>/ui/<包>/` 的普通文本文件上（每次调用最多 200 KB），拒绝路径中的任何符号链接，在导入审阅期间拒绝写入，调用链上的其余部分，并且只把单纯的放行改为本插件自己的询问；之后的监听器的拒绝或询问仍然有效。`tests/host/authoring/pack-jail-runtime.spec.ts` 在 DSH 真实的工具运行时中运行这一切，若注册时没有 `prepend` 它就会失败。插件自己的工具是 `world_pack_guide`、`list_world_packs`、`check_world_pack` 和 `delete_world_pack_file`（DSH 的文件工具无法删除）。
+世界创作预设通过 bundle 补丁里的 `tool-fs` 行挂载 DSH 的 `tool-fs`。该行明确关闭 `applyPatch`。如果其他插件仍让创作助手看到了 `apply_patch`，包沙盒也会拒绝它，因为补丁把路径写在正文中，无法由参数检查可靠约束。创作助手可以用 `write` 和 `edit` 完成同样的修改。
+
+`registerPackJail` 会注册为第一个 `tools/pre-execute` 监听器。在创作对话中，它把 `read`、`write` 和 `edit` 限制到 `<世界>/ui/<包>/` 下的普通文本文件，每次调用最多 200 KB。它拒绝符号链接，也拒绝在导入审阅期间写入，然后继续调用后续监听器。只有普通的放行会被改成本插件自己的审批请求，因此后续监听器的拒绝或审批请求仍然有效。`tests/host/authoring/pack-jail-runtime.spec.ts` 会在 DSH 的真实工具运行时中测试这些规则；监听器未用 `prepend` 注册时，测试会失败。插件另行提供 `world_pack_guide`、`list_world_packs`、`check_world_pack` 和 `delete_world_pack_file`，其中最后一个补上了 DSH 文件工具不能删除文件的缺口。
 
 给模型的路径是相对于对话所在文件夹的；第一次实测中模型把一条很长的绝对路径写错了。拒绝信息会让它停下来并报告，否则它会反复尝试其他路径和 `sandbox_permissions`。
 

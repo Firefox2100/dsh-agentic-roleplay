@@ -10,6 +10,8 @@ import { TEXT_EXTENSIONS } from '../interface/world-packs.ts'
 /** DSH's own file tools, which the world authoring chat uses on the interface packs and nothing else. */
 export const PACK_FILE_TOOLS = ['read', 'write', 'edit'] as const
 const WRITING: readonly string[] = ['write', 'edit']
+/** A patch names its files inside its own text, so it cannot be held to the packs: it is refused, and `write` and `edit` do the same work. */
+const PATCHING = 'apply_patch'
 
 /** The most text a call may carry. */
 export const MAX_PACK_TEXT = 200 * 1024
@@ -67,7 +69,9 @@ const textOf = (value: unknown): string[] => (typeof value === 'string' ? [value
  */
 export async function packJail(exec: ToolExecution, next: () => Promise<PreToolDecision>, deps: PackJailDeps): Promise<PreToolDecision> {
   const chat = exec.agent?.session.id
-  if (!(PACK_FILE_TOOLS as readonly string[]).includes(exec.name) || chat === undefined || authoredWorldOf(chat) === undefined) return await next()
+  if (chat === undefined || authoredWorldOf(chat) === undefined) return await next()
+  if (exec.name === PATCHING) return { kind: 'deny', reason: 'apply_patch is not available in this chat: change an interface pack file with write or edit' }
+  if (!(PACK_FILE_TOOLS as readonly string[]).includes(exec.name)) return await next()
   const world = await deps.worldDirectory(chat)
   if (world === undefined) return { kind: 'deny', reason: 'the world of this chat no longer exists' }
   const args = exec.arguments as Record<string, unknown>

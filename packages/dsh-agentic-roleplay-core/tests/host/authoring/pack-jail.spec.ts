@@ -58,6 +58,15 @@ describe('the jail of the file tools in an authoring chat', () => {
     expect(await decide('edit', { file_path: `${WORLD}/ui/atlas/pack.json`, old_string: 'a', new_string: 'b' })).toMatchObject({ kind: 'ask', displayReason: { en: expect.stringContaining('atlas/pack.json') } })
   })
 
+  it('refuses apply_patch outright: a patch names its files inside its own text, so it cannot be held to the packs', async () => {
+    let reached = false
+    const next = () => { reached = true; return allow() }
+    const patch = '*** Begin Patch\n*** Update File: ../world.json\n@@\n-a\n+b\n*** End Patch'
+    expect(await decide('apply_patch', { input: patch }, next)).toMatchObject({ kind: 'deny', reason: expect.stringContaining('edit') })
+    expect(await packJail(exec('apply_patch', { input: patch }, 'session-0b8d9a52-2a39-4c10-9d3e-6a1f4d1a7c11'), allow, deps())).toEqual({ kind: 'allow' })
+    expect(reached).toBe(false)
+  })
+
   it('lets a read through without asking and asks before a write or an edit', async () => {
     expect(await decide('read', { file_path: `${WORLD}/ui/atlas/pack.json` })).toEqual({ kind: 'allow' })
     expect(await decide('write', { file_path: `${WORLD}/ui/atlas/pack.json`, content: '{}' })).toMatchObject({ kind: 'ask' })

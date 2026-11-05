@@ -8,14 +8,19 @@ const finish = (kind: string) => ({ chunk: { type: 'finish', reason: { kind } } 
 function agentOf(kinds: string[], origin = 'root', efforts: string[] = ['off', 'high']) {
   const steered: string[] = []
   const cancelled: unknown[] = []
+  const selected: unknown[] = []
   const events = kinds.map(kind => ({ type: 'assistant/message', data: { stream: [{ chunk: { type: 'text' } }, finish(kind)] } }))
   const agent = {
     session: { id: 'chat', header: { origin }, snapshotEvents: () => events },
     steer: (message: { content: { text: string }[] }) => { steered.push(message.content[0]!.text) },
     cancel: (reason: unknown) => { cancelled.push(reason) },
+    model: {
+      current: () => ({ provider: 'p', model: 'm', reasoningEffort: 'high' }),
+      select: (selection: unknown) => { selected.push(selection) },
+    },
     ctx: { llm: { resolveModelInfo: () => Promise.resolve({ reasoning: { efforts: efforts.map(id => ({ id })) } }) } },
   }
-  return { steered, cancelled, events, agent: agent as never }
+  return { steered, cancelled, events, selected, agent: agent as never }
 }
 
 function installed(language: string | null = 'zh', level = '') {
@@ -26,7 +31,7 @@ function installed(language: string | null = 'zh', level = '') {
     call: async (agent: never, name: string, args: object) => await handlers['tools/pre-execute']!({ agent, name, arguments: args } as never, () => Promise.resolve({ kind: 'allow' })) as { kind: string; reason?: string },
     step: async (agent: never, step: number) => await handlers['agent/pre-step']!({ agent, step } as never, () => Promise.resolve({ kind: 'enter' })),
     stop: (agent: never, turn = 1) => { handlers['agent/turn-stopping']!({ agent, turn } as never) },
-    request: async (agent: never, config: object) => await handlers['agent/request']!({ agent, signal: new AbortController().signal } as never, () => Promise.resolve(config)) as { reasoningEffort?: string },
+    created: async (agent: never) => await handlers['agent/created']!({ agent, signal: new AbortController().signal } as never),
   }
 }
 
@@ -68,17 +73,19 @@ describe('a reply that ran out of room', () => {
 })
 
 describe('the thinking level of an authoring assistant', () => {
-  const config = { provider: 'p', model: 'm', reasoningEffort: 'high' }
-
   it('is the one in the settings when the model offers it', async () => {
-    expect(await installed('en', 'off').request(agentOf([]).agent, config)).toMatchObject({ reasoningEffort: 'off' })
+    const candidate = agentOf([])
+    await installed('en', 'off').created(candidate.agent)
+    expect(candidate.selected).toEqual([{ provider: 'p', model: 'm', reasoningEffort: 'off' }])
   })
 
   it('stays the chat\'s own when the settings name none, the model lacks the level, or the agent is a helper or not an authoring chat', async () => {
-    expect(await installed('en', '').request(agentOf([]).agent, config)).toBe(config)
-    expect(await installed('en', 'off').request(agentOf([], 'root', ['high']).agent, config)).toBe(config)
-    expect(await installed('en', 'off').request(agentOf([], 'subagent').agent, config)).toBe(config)
-    expect(await installed(null, 'off').request(agentOf([]).agent, config)).toBe(config)
+    const candidates = [agentOf([]), agentOf([], 'root', ['high']), agentOf([], 'subagent'), agentOf([])]
+    await installed('en', '').created(candidates[0]!.agent)
+    await installed('en', 'off').created(candidates[1]!.agent)
+    await installed('en', 'off').created(candidates[2]!.agent)
+    await installed(null, 'off').created(candidates[3]!.agent)
+    expect(candidates.flatMap(candidate => candidate.selected)).toEqual([])
   })
 })
 

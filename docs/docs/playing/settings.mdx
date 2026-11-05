@@ -67,7 +67,7 @@ Settings with no form field used to be edited only in `settings.json`; the form 
 
 ## Import and authoring assistants
 
-Importing a card, a preset or a lorebook, translating a world and the world author's own helpers run as small agents, and they are set once for the whole plugin, not per story: **Settings → Role Play → Imports and authoring assistants**. Changes take effect at once.
+Importing a card, a preset or a lorebook, translating a world and the world author's own helpers run as small agents. They are set once for the whole plugin, not per story: **Settings → Role Play → Imports and authoring assistants**. Helper jobs read changes when they start. An open authoring chat picks up a changed thinking level when DSH next loads its agent.
 
 - **Thinking level:** how hard they think, as a level the model offers (for example `off`). A model that thinks without end never gives an answer, so set `off` when an import stalls. It also applies to the authoring chats themselves (the world, preset and lorebook assistants you talk to), whose model must offer the level. Empty uses the level of the story helpers below it, then the chat's own.
 - **Thinking level of story helpers:** the level the characters, record keeper, authors and suggestion writer of a story get when the chat's own setting is empty.

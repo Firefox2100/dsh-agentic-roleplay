@@ -63,6 +63,8 @@
               suffix: ''
           - id: tool-fs
             name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              applyPatch: false
           - id: authoring
             name: '@dsh-agentic-roleplay/core/authoring'
     # The preset authoring chat: reads and writes the prose prompts of one library

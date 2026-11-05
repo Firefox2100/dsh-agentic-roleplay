@@ -26,7 +26,10 @@ beforeEach(async () => {
 })
 afterEach(async () => { await ctx.fiber.dispose() })
 
-const call = (name: string, file_path: string) => (ctx.get('tools') as unknown as { execute(input: unknown): Promise<unknown> }).execute({ callId: `c-${Math.random()}` as never, name, arguments: { file_path, content: 'x' }, agent, signal: new AbortController().signal })
+const call = async (name: string, file_path: string) => {
+  const batch = await (ctx.get('tools') as unknown as { execute(input: unknown): Promise<{ results: { result: unknown }[] }> }).execute({ calls: [{ callId: `c-${Math.random()}` as never, name, arguments: { file_path, content: 'x' } }], agent, signal: new AbortController().signal })
+  return batch.results[0]!.result
+}
 
 describe('the jail among the listeners of tools/pre-execute, in the runtime of DSH', () => {
   it('stops a path outside the packs even when a listener registered before it allows everything', async () => {

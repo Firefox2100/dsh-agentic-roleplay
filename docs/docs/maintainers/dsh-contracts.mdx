@@ -3,7 +3,7 @@ title: DSH contracts
 description: DSH services, chat persistence, scoped child tools, rendering, approval, and upgrade checks.
 ---
 
-The core package supports DSH `>=0.2.1-rc.2 <0.2.2`; 0.2.0 is no longer supported, because 0.2.1 removed the sub-agent start options and the invariant packages this code used and changed how a stored chat is adopted. Most integration uses public Cordis services and slots. Helper agents with tools of their own also use only public API: DSH's sub-agent activation under a bundle-provided preset. Development dependencies and contract tests stay pinned to one exact tested DSH release; every DSH upgrade requires a fresh review before the supported range is widened.
+The core package supports DSH `>=0.2.2-rc.1 <0.2.3` and is tested on 0.2.2-rc.1. It no longer supports 0.2.1 or earlier because switchable tools now use `register(tool, { when })`, introduced in 0.2.2. Most integrations use public Cordis services and slots. Helpers with their own tools use DSH's public sub-agent activation API and a preset supplied by the bundle. Development dependencies and contract tests stay pinned to one tested DSH release. Each DSH upgrade gets a fresh review before the supported range changes.
 
 ## Chat and workspace lifecycle
 

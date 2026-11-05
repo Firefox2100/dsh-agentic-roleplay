@@ -4,6 +4,7 @@ import LlmRuntime from '@deepseek-ai/dsh-llm'
 import SessionStore from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import * as ToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 
 /** The directory collaborator the sub-agent service needs, without the filesystem or the prompt context the real one brings. */
@@ -32,6 +33,7 @@ export async function mountAgentServices(ctx: Context): Promise<void> {
   await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(SystemPrompt, {})
   await ctx.plugin(ToolRuntime, {})
+  await ctx.plugin(ToolExecutor)
   await ctx.plugin(AgentRegistry)
   await ctx.plugin(FixtureWorkingDirectory)
 }
