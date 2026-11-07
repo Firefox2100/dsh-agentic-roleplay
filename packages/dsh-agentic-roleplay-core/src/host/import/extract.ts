@@ -708,6 +708,7 @@ const VARIABLES_SCHEMA = {
           key: { type: 'string', description: 'Lowercase ASCII letters, digits and underscores, starting with a letter: trust_meter.' },
           name: { type: 'string' },
           description: { type: 'string', description: 'What it measures, in a sentence.' },
+          update: { type: 'string', description: 'When and how the card says it changes (its update rule: what makes it rise or fall, and by how much), in a sentence or two; empty when the card gives no rule.' },
           kind: { type: 'string', enum: ['number', 'flag', 'choice'] },
           subject: { type: 'string', enum: ['character', 'item', 'location', 'world'] },
           visibility: { type: 'string', enum: ['public', 'private', 'hidden'] },
@@ -718,7 +719,7 @@ const VARIABLES_SCHEMA = {
           bands: { type: 'array', items: { type: 'object', properties: { up_to: { type: 'number' }, label: { type: 'string' } }, required: ['up_to', 'label'], additionalProperties: false } },
         },
         // every field is required (empty or null when the card says nothing): models leave optional fields out, and with them the limits and starting values the card gives
-        required: ['key', 'name', 'description', 'kind', 'subject', 'visibility', 'only', 'min', 'max', 'integer', 'default', 'options', 'bands'],
+        required: ['key', 'name', 'description', 'update', 'kind', 'subject', 'visibility', 'only', 'min', 'max', 'integer', 'default', 'options', 'bands'],
         additionalProperties: false,
       },
     },
@@ -744,6 +745,7 @@ export function variableDocuments(answer: Document, roster: Roster): Document[] 
     const base = slug(text(entry['key']) || text(entry['name']), '').replace(/-/g, '_').slice(0, 40)
     const document: Document = { key: uniqueKey(/^[a-z][a-z0-9_]*$/.test(base) ? base : `variable_${index + 1}`, taken), name: text(entry['name']), kind: text(entry['kind']), subject: text(entry['subject']) }
     put(document, 'description', text(entry['description']))
+    put(document, 'update', text(entry['update']))
     put(document, 'visibility', text(entry['visibility']))
     put(document, 'only', list(entry['only']).flatMap(name => keyOf(name) ?? []))
     for (const field of ['min', 'max'] as const) if (typeof entry[field] === 'number') document[field] = entry[field]

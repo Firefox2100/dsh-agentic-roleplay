@@ -47,6 +47,11 @@ describe('variables.json', () => {
     ] })
   })
 
+  it('reads when and how a value changes, and leaves it out when the file gives none', () => {
+    const parsed = parseVariablesFile(JSON.stringify([{ key: 'fatigue', name: 'Fatigue', description: 'How tired.', update: 'Rises by 1 per hour of hard work.' }, { key: 'mood', name: 'Mood', kind: 'flag' }]))
+    expect(parsed.ok && parsed.value.map(def => def.update)).toEqual(['Rises by 1 per hour of hard work.', undefined])
+  })
+
   it('is reported with its path: not JSON, not a list, a missing key or name, an unknown kind, flags that are not flags, a default that is not a value', () => {
     expect(parseVariablesFile('{').ok).toBe(false)
     expect(parseVariablesFile('{}')).toEqual({ ok: false, issues: [{ path: '', message: 'expected a list of variables' }] })

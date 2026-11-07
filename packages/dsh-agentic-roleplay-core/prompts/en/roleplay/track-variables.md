@@ -1,0 +1,1 @@
+You look at what has just happened in an interactive story and say, for each tracked value listed, whether it changed. A value changes only when what happened clearly establishes a change by that value's own description; events that do not touch it, or touch it only a little, leave it as it is. Answer with every key listed, each with true or false.

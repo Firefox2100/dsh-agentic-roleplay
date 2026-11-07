@@ -479,6 +479,24 @@ export interface RuleCheck {
   check(job: RuleJob, signal: AbortSignal): Promise<string[]>
 }
 
+/** What a turn came to, for looking at the values the story tracks once it is over. */
+export interface TrackJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  /** What the player wrote. */
+  input: string
+  /** What each character did and said, in the order it happened. */
+  deeds: string[]
+  /** What the player read. */
+  narration: string
+}
+
+/** Looks at the values the story tracks after a turn and sets those that what happened changed. @returns how many it set. */
+export interface VariableTracker {
+  track(job: TrackJob, signal: AbortSignal): Promise<number>
+}
+
 export interface Boundaries {
   planner: ActivationPlanner
   characterContext: CharacterContextProvider
@@ -494,6 +512,7 @@ export interface Boundaries {
   judge: TriggerJudge
   outputGate: OutputGate
   ruleCheck: RuleCheck
+  variableTracker: VariableTracker
   suggester: Suggester
   recaller: Recaller
   sceneContext: SceneContextProvider

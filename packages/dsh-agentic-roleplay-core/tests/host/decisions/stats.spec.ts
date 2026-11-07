@@ -44,6 +44,6 @@ describe('what is kept about a story\'s decisions', () => {
     const stats = readDecisionStats(folder, at)
     expect(stats.since).toBe('then')
     expect(stats.sites.triggers.runs).toBe(0)
-    expect(Object.keys(stats.sites).sort()).toEqual(['agency', 'reflection', 'refusal', 'rules', 'secrets', 'triggers'])
+    expect(Object.keys(stats.sites).sort()).toEqual(['agency', 'reflection', 'refusal', 'reuse', 'rules', 'secrets', 'triggers', 'variables'])
   })
 })

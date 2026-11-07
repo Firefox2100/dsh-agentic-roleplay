@@ -17,6 +17,7 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `sync.configFile` | empty | Absolute path to the rclone configuration file, which must be outside `rootPath` |
 | `sync.passwordRef` | empty | DSH credential-store reference for an encrypted rclone configuration; empty uses `ROLEPLAY_SYNC_RCLONE_CONFIG_PASS` |
 | `sync.intervalMinutes` | `0` | Automatic-sync interval; 0 permits manual runs only |
+| `offload` | none | Models that cannot be loaded together, as `groups` (lists of the roles `main`, `embedding`, `reranker`, `decision`, `image`, `speech`) and `models` (the `route` and `model` name of each role except `main`, which is the chat's own model). Before a model of one role is used, the server unloads those of the roles it shares a group with. Empty never unloads anything |
 | `catalogueMaxBytes` | 256 MiB | Maximum downloaded-world size, checked both compressed and unpacked |
 | `catalogueTrashDays` | 30 | Days to keep files replaced by a catalogue update in `.trash/worlds/`; 0 keeps them indefinitely |
 | `importMaxUploadBytes` | 100 MiB | Maximum character-card upload size |
@@ -92,6 +93,8 @@ These defaults are copied into a new story's `settings.json`. A world or preset 
 | `reflection.minNew` | 4 | New perceptions needed for an automatic pass; a manual pass needs one |
 | `decisions.triggers` / `decisions.reflection` | `hybrid` / `llm` | Judge trigger statements and belief evidence with `llm`, `decision`, `hybrid` or `shadow`. `hybrid` accepts confident decision-model answers and sends the rest to the language model. Without a configured decision model, it quietly uses the language model alone |
 | `decisions.agency` / `decisions.refusal` | `off` / `off` | Optional output checks, using the same four modes plus `off` |
+| `decisions.reuse` | `off` | Before a scene picture is made on its own after a turn, asks the decision model whether each close stored picture's description shows the moment, and shows the first that does instead of making a new one. Decision-service-only: `off` or `on` |
+| `decisions.variables` | `llm` | After each turn, looks at every tracked value (world variables, and character variables for the people in the scene): one question for each value, whether what happened changed it, put to the language model, the decision model or both; the language model then gives the new value of those that did. Fill in each value's **When and how it changes** field. Same four modes plus `off` |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | Decision-service-only checks of allowed actions against rules, and outputs against hidden lore |
 | `decisions.gateThreshold` | 0.5 | Probability at which a decision answer counts as a fault; the 0.15 below it is uncertain |
 | `decisions.confidence` | 0.7 | Confidence required before a decision answer is accepted instead of handed to the language model |

@@ -106,12 +106,15 @@ export function imageTools(deps: ImageToolDeps): ToolDefinition[] {
       kind: { ...kindSchema, required: true }, key: { type: 'string', required: true },
       description: { type: 'string', required: true, description: 'One or two precise sentences of stable visual identity.' },
       tags: { ...stringList, required: true, description: 'Stable positive visual traits.' },
-      negative_tags: { ...stringList, required: true, description: 'Contradictions or drift to avoid.' },
+      negative_tags: { ...stringList, required: true, description: 'What the picture must not show for this entity: its opposites and the drift a model tends to make (a different build, hair colour, age, style). Never a trait it has, and never an expression, pose or action.' },
       global_id: { type: 'string', description: 'Existing globally unique identity; omit rather than invent one.' },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => output(`Visual identity stored: ${JSON.stringify(value)}`) },
     execute(args) {
       const subject = findSubject(deps.story, args.kind, args.key)
+      const own = new Set(args.tags.map(tag => tag.trim().toLowerCase()))
+      const contradicting = args.negative_tags.filter(tag => own.has(tag.trim().toLowerCase()))
+      if (contradicting.length > 0) throw new Error(`${contradicting.map(tag => `"${tag}"`).join(', ')} ${contradicting.length === 1 ? 'is' : 'are'} also in tags: a trait the entity has cannot be one to avoid. Leave ${contradicting.length === 1 ? 'it' : 'them'} out of negative_tags, or out of tags if it is not stable.`)
       const identity = deps.story.visualIdentities.set(subject.kind, subject.id, { description: args.description, tags: args.tags, negativeTags: args.negative_tags, ...(args.global_id === undefined ? {} : { globalId: args.global_id }) })
       return Promise.resolve({ kind: subject.kind, key: subject.key, version: identity.version })
     },

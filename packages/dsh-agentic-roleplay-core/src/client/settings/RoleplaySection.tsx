@@ -3,6 +3,7 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 import { AuthoringToolSettings } from './AuthoringToolSettings.tsx'
 import { AssistantSettings } from './AssistantSettings.tsx'
 import { CatalogueSettings } from './CatalogueSettings.tsx'
+import { OffloadSettings } from './OffloadSettings.tsx'
 import { SetupNotice } from './SetupNotice.tsx'
 import { SyncSettings } from './SyncSettings.tsx'
 import { formLabels } from './locales.ts'
@@ -37,6 +38,7 @@ export function RoleplaySection(props: RoleplaySectionProps) {
         />
         <CatalogueSettings t={t} text={state.catalogues.text} disabled={!state.writable} onEdit={(text) => { props.edit('catalogues', text) }} />
         <SyncSettings t={t} text={state.sync.text} disabled={!state.writable} onEdit={(text) => { props.edit('sync', text) }} />
+        <OffloadSettings t={t} text={state.offload.text} disabled={!state.writable} onEdit={(text) => { props.edit('offload', text) }} />
         <AssistantSettings t={t} group="assistants" fields={state.assistants} disabled={!state.writable} onEdit={(field, text) => { props.edit(field, text) }} onReset={(field) => { props.resetField(field) }} />
         <AssistantSettings t={t} group="limits" fields={state.assistants} disabled={!state.writable} onEdit={(field, text) => { props.edit(field, text) }} onReset={(field) => { props.resetField(field) }} />
         <AuthoringToolSettings t={t} text={state.authoringTools.text} disabled={!state.writable} onEdit={(text) => { props.edit('authoringTools', text) }} />

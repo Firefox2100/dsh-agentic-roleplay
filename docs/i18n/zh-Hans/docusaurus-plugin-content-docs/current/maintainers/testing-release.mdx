@@ -56,6 +56,8 @@ pnpm test:coverage
 
 - **每次都会运行**（`pnpm test`）：`coverage.spec.ts` 用两种语言的底本各开始一个故事，并按功能断言世界的每一部分都进入了故事，哪一部分不再进入就会点名。`cases.spec.ts` 运行由程序判定的用例（一致性、质量、首场景和与角色卡对照的检查），两种语言各一遍，并断言精确的发现。
 - **在线运行**：使用开发机上的模型，统计精确率、召回率、误报、重试、回退和耗时。`BENCH_LIVE=1 BENCH_LABEL=<名称> BENCH_MODE=llm|decision|hybrid npx vitest run tests/benchmark/live.spec.ts` 会运行需要模型判断的用例（数值和名称在含义层面的重复、相互矛盾的背景、设定单薄的角色、平淡的开场、缺口，以及与角色卡的对照，其中包括不应被标出的改写和翻译）。结果写入 `eval/results/checks-<名称>.json`。`BENCH_ONLY`、`BENCH_LANGS` 和 `BENCH_REPEAT` 可缩小范围或重复运行；比较差异之前请把同一用例多跑几遍，因为模型每次回答都有随机性。
+- **被追踪的数值**：`tests/benchmark/variable-cases.ts` 收录了一个小故事的 23 个带标注的回合（两种语言；数值有数字、开关和选项三类；既有同时改变多个数值、涉及多个人的回合，也有只是提到、回忆、担心或发生在别人身上、因而什么都不该改变的回合），`variables-harness.ts` 在预设的起始数值上对每个回合运行产品的追踪器。`variables-cases.spec.ts` 始终运行，用一个知道答案的模型检查这些用例。在线运行：`BENCH_LIVE=1 BENCH_LABEL=<名称> BENCH_MODE=llm|decision|hybrid npx vitest run tests/benchmark/variables.spec.ts`，结果写入 `eval/results/variables-<名称>.json`，包含哪些数值发生变化的精确率和召回率、新值正确的比例、被拒绝的编辑，以及按数值类型的分项。用例没有要求、但说得通的变化单独计数（`tolerated`）。`BENCH_TRACE=1` 会保留每个模型被问了什么、答了什么，包括决策模型给出的概率。
+- **图片复用**：`reuse-cases.ts` 收录了 12 个时刻（两种语言），每个时刻有两到四张按字面相近而被选出的已存图片（表现该时刻的那一张，如果有的话，以及相近但不对的：另一个钟点、另一些人、同一地点的另一种状态）。`BENCH_LIVE=1 BENCH_LABEL=<名称> BENCH_THRESHOLD=<阈值> npx vitest run tests/benchmark/reuse.spec.ts` 用随附的问题把它们交给决策模型，统计选中数、首选错误（产品会展示第一张被接受的图片）和漏选。
 - **重排序试验**：`BENCH_LIVE=1 npx vitest run tests/benchmark/rerank.spec.ts` 对三组带标注的数据（数值、事物、背景）里的每一对，分别按嵌入相近度和重排序模型排序，并统计真正的重复对有多少落进检查会交给模型询问的那十二对里。
 
 不要根据未标注的世界集合去调阈值：先在这里加一个用例。

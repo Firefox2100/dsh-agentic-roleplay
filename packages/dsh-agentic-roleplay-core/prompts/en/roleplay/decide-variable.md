@@ -1,0 +1,1 @@
+Did what just happened change ${subject}'s “${name}”? ${description}${update} It is now ${value}. Say yes only when what happened clearly establishes a change to it by that description; events that do not touch it, or touch it only a little, are no.

@@ -29,16 +29,29 @@ export class AfterTurnJobs {
   private readonly judging = new Set<string>()
   private readonly reflecting = new Set<string>()
   private readonly casting = new Set<string>()
+  private readonly tracking = new Set<string>()
 
   constructor(private readonly deps: AfterTurnDeps) {}
 
-  start(owner: { chat: string; turn: number }, cancel: AbortSignal): void {
+  start(owner: { chat: string; turn: number }, cancel: AbortSignal, facts?: { input: string; deeds: string[]; narration: string }): void {
+    if (facts !== undefined) this.trackVariables(owner, cancel, facts)
     this.consolidate(owner, cancel)
     this.strategize(owner, cancel)
     this.judge(owner, cancel)
     this.cast(owner, cancel)
     const reason = this.reflectionDue(owner)
     if (reason !== undefined) this.reflect(owner, reason, cancel)
+  }
+
+  /** The values the story tracks are looked at once the turn is over, and set when what happened changed them. */
+  private trackVariables(owner: { chat: string; turn: number }, cancel: AbortSignal, facts: { input: string; deeds: string[]; narration: string }): void {
+    const store = this.deps.stores(owner.chat)
+    if (store === undefined || store.settings().decisions.variables === 'off' || this.tracking.has(owner.chat)) return
+    this.tracking.add(owner.chat)
+    this.deps.track(owner.chat, this.deps.boundaries().variableTracker.track({ chat: owner.chat, turn: owner.turn, store, ...facts }, cancel)
+      .then((set) => { if (set > 0) this.deps.written(owner.chat) })
+      .catch((error: unknown) => { if (!cancel.aborted) this.deps.problem(`the tracked values were not looked at: ${messageOf(error)}`) })
+      .finally(() => { this.tracking.delete(owner.chat) }))
   }
 
   /** Whether a reflection is running for the chat. */

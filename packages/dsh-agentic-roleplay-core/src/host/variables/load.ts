@@ -35,7 +35,7 @@ function readDefinition(reader: Reader): VariableDefinitionInput | undefined {
   const only = reader.strings('only')
   const options = reader.strings('options')
   return {
-    key, name, kind, subject, visibility, ...(reader.raw('description') === undefined ? {} : { description: reader.text('description') }), only, options, bands,
+    key, name, kind, subject, visibility, ...(reader.raw('description') === undefined ? {} : { description: reader.text('description') }), ...(reader.raw('update') === undefined ? {} : { update: reader.text('update') }), only, options, bands,
     ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }),
     ...(integer === undefined ? {} : { integer }), ...(baseline === undefined ? {} : { baseline }), ...(always === undefined ? {} : { always }),
     ...(defaultValue === undefined || (typeof defaultValue === 'number' && !Number.isFinite(defaultValue)) ? {} : { default: defaultValue as VariableValue }),

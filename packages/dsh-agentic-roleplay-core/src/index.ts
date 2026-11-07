@@ -7,6 +7,9 @@ import { zoneOf } from './host/clock/story-clock.ts'
 import { liveSettings, useChildReasoning } from './host/sessions/settings.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import type { DecisionService, ImageGenerationService } from '@dsh-ai-providers/core'
+import { offloadOf } from './shared/offload.ts'
+import { guarded } from './host/residency/guard.ts'
+import { ModelResidency, type ModelAdmin } from './host/residency/residency.ts'
 // Type-only: declares `ctx.roleplayState`.
 import type {} from '@dsh-agentic-roleplay/state'
 import { AgentSessions, agentServicesOf } from './host/agent/agent-sessions.ts'
@@ -137,6 +140,12 @@ export function apply(ctx: Context, config: Config) {
   const root = new RoleplayRoot(ctx, config.rootPath)
   root.start()
   const orchestration = new RoleplayOrchestration(ctx)
+  // Which models may not be loaded together is read at each use; the model administration belongs to the AI providers plugin and may be absent.
+  orchestration.residency = new ModelResidency({
+    config: () => offloadOf(config.offload.get()),
+    admin: () => (ctx as Context & { get(name: 'aiModels'): ModelAdmin | undefined }).get('aiModels'),
+    problem: message => { ctx.logger.warn(`roleplay: ${message}`) },
+  })
   const worlds = new WorldCatalog(ctx, root)
   const prompts = new PromptLibrary(ctx, root)
   prompts.bootstrap()
@@ -376,13 +385,13 @@ async function editableWorld(worlds: WorldCatalog, worldId: string, rootPath: st
 }
 
 function imageGenerationOf(ctx: Context): ImageGenerationService {
-  const service = (ctx as Context & { get(name: 'imageGeneration'): ImageGenerationService | undefined }).get('imageGeneration')
+  const service = guarded(ctx.roleplayOrchestration.residency, 'image', (ctx as Context & { get(name: 'imageGeneration'): ImageGenerationService | undefined }).get('imageGeneration'), ['generate'])
   if (service === undefined) throw new AgentUnavailableError('no image generation provider is selected')
   return service
 }
 
 function textToSpeechOf(ctx: Context) {
-  const service = (ctx as Context & { get(name: 'textToSpeech'): import('@dsh-ai-providers/core').TtsService | undefined }).get('textToSpeech')
+  const service = guarded(ctx.roleplayOrchestration.residency, 'speech', (ctx as Context & { get(name: 'textToSpeech'): import('@dsh-ai-providers/core').TtsService | undefined }).get('textToSpeech'), ['synthesize'])
   if (service === undefined) throw new AgentUnavailableError('no text-to-speech provider is selected')
   return service
 }

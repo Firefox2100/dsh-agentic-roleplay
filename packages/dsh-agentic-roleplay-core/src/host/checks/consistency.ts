@@ -156,6 +156,51 @@ const names: Check = {
   },
 }
 
+const NUMERALS = /[\p{N}一二三四五六七八九十零〇两百千]/u
+
+/** Whether two names differ in exactly one place: a letter changed, added, left out, or two neighbours swapped. A difference in a number (Room 3, Room 4) is a pattern, not a slip. */
+export function oneApart(a: string, b: string): boolean {
+  const x = [...a]
+  const y = [...b]
+  if (Math.abs(x.length - y.length) > 1 || a === b) return false
+  let start = 0
+  while (start < x.length && start < y.length && x[start] === y[start]) start += 1
+  let endX = x.length
+  let endY = y.length
+  while (endX > start && endY > start && x[endX - 1] === y[endY - 1]) { endX -= 1; endY -= 1 }
+  const left = x.slice(start, endX)
+  const right = y.slice(start, endY)
+  const swapped = left.length === 2 && right.length === 2 && left[0] === right[1] && left[1] === right[0]
+  if (!(left.length <= 1 && right.length <= 1) && !swapped) return false
+  return ![...left, ...right].some(char => NUMERALS.test(char))
+}
+
+/** The shortest name that is compared: a very short one differs from many others by one letter. */
+const MIN_CONFUSABLE = 4
+
+const confusable: Check = {
+  id: 'name-confusable',
+  kit: 'consistency',
+  mode: 'code',
+  needs: [],
+  description: 'Two characters, places or organisations whose names differ by one letter (Mara and Mira): readers and the models mix them up, though they are two. Numbered names (Room 3, Room 4) are not reported.',
+  async run(input) {
+    const [{ characters }, { locations }, { factions }] = await Promise.all([loaded.characters(input), loaded.locations(input), loaded.factions(input)])
+    const kinds: [string, { id: string; name: string }[]][] = [['characters', characters], ['locations', locations], ['factions', factions]]
+    const found: Found[] = []
+    for (const [kind, entries] of kinds) {
+      const names = entries.map(entry => ({ id: entry.id, name: norm(entry.name) })).filter(entry => [...entry.name].length >= (/[\u3400-\u9fff]/u.test(entry.name) ? 2 : MIN_CONFUSABLE))
+      for (let a = 0; a < names.length; a++) for (let b = a + 1; b < names.length; b++) {
+        if (!oneApart(names[a]!.name, names[b]!.name)) continue
+        const first = entries.find(entry => entry.id === names[a]!.id)!
+        const second = entries.find(entry => entry.id === names[b]!.id)!
+        found.push({ severity: 'info', code: 'confusable-names', where: `${kind}/${second.id}`, message: `${kind}/${first.id} ("${first.name}") and ${kind}/${second.id} ("${second.name}") differ by one letter, so they are easy to mix up`, hint: 'If they are two, give one a clearly different name; if they are one, keep one and point everything that names the other at it.' })
+      }
+    }
+    return foundBy('name-confusable', found)
+  },
+}
+
 const prompts: Check = {
   id: 'world-prompts',
   kit: 'consistency',
@@ -196,4 +241,4 @@ const unread: Check = {
   },
 }
 
-export const consistencyChecks: readonly Check[] = [validity, graph, values, names, prompts, unread]
+export const consistencyChecks: readonly Check[] = [validity, graph, values, names, confusable, prompts, unread]

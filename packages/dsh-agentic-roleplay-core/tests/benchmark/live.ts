@@ -109,3 +109,47 @@ export function liveContext(options: LiveOptions, language: Language, counters: 
     ...decide === undefined || options.decision === undefined ? {} : { decide, confidence: options.decision.confidence },
   }
 }
+
+/**
+ * A request answered as a constrained reply (`response_format` json_schema), the way the product asks for a list of answers, with a refused or unreadable answer sent back up to three
+ * times. For the sites whose answer is a set of keyed verdicts rather than a tool call.
+ */
+export function liveStructured(options: LiveOptions, counters: Counters): (request: { persona: string; prompt: string; result: unknown }) => Promise<unknown> {
+  return async ({ persona, prompt, result }) => {
+    const messages: unknown[] = [{ role: 'system', content: persona }, { role: 'user', content: prompt }]
+    let last = ''
+    for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
+      const began = Date.now()
+      counters.llmCalls += 1
+      if (attempt > 1) counters.llmRetries += 1
+      const answer = await post<Completion>(`${options.llm.url}/chat/completions`, {
+        model: options.llm.model, messages, temperature: options.llm.temperature, max_tokens: 1500,
+        response_format: { type: 'json_schema', json_schema: { name: 'result', strict: true, schema: result } },
+        ...options.llm.reasoning === '' ? {} : { reasoning_effort: options.llm.reasoning },
+      }, options.llm.apiKey, 600_000)
+      counters.llmMs += Date.now() - began
+      counters.inputTokens += answer.usage?.prompt_tokens ?? 0
+      counters.outputTokens += answer.usage?.completion_tokens ?? 0
+      const content = answer.choices[0]?.message.content ?? ''
+      if (process.env['BENCH_TRACE'] !== undefined) counters.jobs.push({ persona: persona.slice(0, 300), prompt: prompt.slice(0, 2500), result: content })
+      try { return JSON.parse(content) as unknown } catch { last = `not valid JSON: ${content.slice(0, 120)}` }
+      messages.push({ role: 'assistant', content }, { role: 'user', content: 'Answer again with valid JSON only.' })
+    }
+    counters.failures.push(last)
+    throw new Error(`the answer was refused ${ATTEMPTS} times; the last reason: ${last}`)
+  }
+}
+
+/** The decision model as the product's `DecisionService` presents it, over the endpoint directly. */
+export function liveDecisionService(decision: NonNullable<LiveOptions['decision']>, counters: Counters): { decide: (state: Record<string, unknown>, questions: Record<string, { type: 'noul'; instructions: string }>) => Promise<{ answers: Record<string, { type: 'noul'; probability: number }>; model: string }> } {
+  return {
+    async decide(state, questions) {
+      const began = Date.now()
+      counters.decisionCalls += 1
+      const answer = await post<{ answers: Record<string, { noul?: number; noul_raw?: number }> }>(`${decision.url}/systemone`, { model: decision.model, state, questions }, undefined, 120_000)
+      counters.decisionMs += Date.now() - began
+      if (process.env['BENCH_TRACE'] !== undefined) counters.jobs.push({ persona: 'decision', prompt: JSON.stringify({ state, questions }).slice(0, 2500), result: Object.fromEntries(Object.keys(questions).map(key => [key, answer.answers[key]!.noul_raw ?? answer.answers[key]!.noul])) })
+      return { answers: Object.fromEntries(Object.keys(questions).map(key => [key, { type: 'noul' as const, probability: answer.answers[key]!.noul_raw ?? answer.answers[key]!.noul! }])), model: decision.model }
+    },
+  }
+}

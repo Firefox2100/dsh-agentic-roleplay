@@ -5,6 +5,14 @@ import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 const exec = (name: string, chat = authoringChatSessionId('harbor'), args: Record<string, unknown> = {}) => ({ name, arguments: args, agent: { session: { id: chat } } }) as never
 
 describe('world authoring approval gate', () => {
+  it('sends back a relationship change the tool would refuse, without asking the person, and asks for one that holds', async () => {
+    const next = vi.fn()
+    const objects = { change: { create: true, kind: 'character', from: { kind: 'character', key: 'a' }, to: { kind: 'character', key: 'b' }, label: 'father' } }
+    await expect(authoringApproval(exec('edit_world_relationship', undefined, objects), next)).resolves.toMatchObject({ kind: 'deny', reason: expect.stringContaining('from is needed: the key of the entity, written as plain text') })
+    const plain = { change: { create: true, kind: 'character', from: 'a', to: 'b', label: 'father' } }
+    await expect(authoringApproval(exec('edit_world_relationship', undefined, plain), next)).resolves.toMatchObject({ kind: 'ask' })
+  })
+
   it('asks once for every mutation in an authoring chat', async () => {
     const next = vi.fn()
     await expect(authoringApproval(exec('delete_world_element', undefined, { kind: 'character', key: 'clara' }), next)).resolves.toMatchObject({

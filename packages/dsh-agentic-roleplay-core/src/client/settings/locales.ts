@@ -9,6 +9,8 @@ export type SettingsLocaleKey =
   | 'catalogueKeyName' | 'catalogueKeyChecking' | 'catalogueKeySet' | 'catalogueKeyUnset' | 'catalogueKeyReadOnly' | 'catalogueKeyStore' | 'catalogueKeyClear'
   | 'authoringTools' | 'authoringToolsHint' | 'authoringToolsNone' | 'authoringKind_worldAuthoring' | 'authoringKind_presetAuthoring' | 'authoringKind_lorebookAuthoring' | 'authoringKind_worldAuthor'
   | 'sync' | 'syncHint' | 'syncRemote' | 'syncConfigFile' | 'syncRclone' | 'syncInterval' | 'syncPassword' | 'syncDetails' | 'syncProblemRemote' | 'syncProblemConfig' | 'syncProblemInterval'
+  | 'offload' | 'offloadHint' | 'offloadAdd' | 'offloadRemove' | 'offloadRoute' | 'offloadModel' | 'offloadProblemRoute' | 'offloadProblemModel'
+  | 'offloadRole_main' | 'offloadRole_embedding' | 'offloadRole_reranker' | 'offloadRole_decision' | 'offloadRole_image' | 'offloadRole_speech'
   | 'redundantLayers' | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importStructuredOutputLabel' | 'importStructuredOutputHint' | 'importStructuredTool' | 'importStructuredSchema' | 'importVariablesPerRequestLabel' | 'importVariablesPerRequestHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'authoringApprovalLabel' | 'authoringApprovalHint' | 'authoringApprovalAsk' | 'authoringApprovalAuto' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
   | 'overridden' | 'reset' | 'invalid'
   | 'readOnly' | 'unavailable' | 'save' | 'saving' | 'saveFailed'
@@ -90,6 +92,20 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     catalogueMaxBytesHint: 'The most a world downloaded from a catalogue may be, compressed and again unpacked. Default 268435456 (256 MB).',
     catalogueTrashDaysLabel: 'Days to keep replaced files',
     catalogueTrashDaysHint: 'How long the files an update replaced stay in the trash folder before they are deleted. 0 keeps them for good. Default 30.',
+    offload: 'Models that cannot be loaded together',
+    offloadHint: 'When the models of a story do not fit in memory at once, put the ones that exclude each other in a group: before one of them is used, the server unloads the others, and loads what is asked of it again on its own. Every switch costs the time of loading a model, so group a large model with another only when you have to, and leave this empty when everything fits. The chat\'s own model is "Story model"; the others need the route of the model server (as set in the AI providers) and the model\'s name there. Unloading needs a provider that supports it (LocalAI and Ollama do).',
+    offloadAdd: 'Add a group',
+    offloadRemove: 'Remove group',
+    offloadRoute: 'Route',
+    offloadModel: 'Model name',
+    offloadProblemRoute: 'Give the route this model is served on.',
+    offloadProblemModel: 'Give the name of this model on its server.',
+    offloadRole_main: 'Story model',
+    offloadRole_embedding: 'Embeddings',
+    offloadRole_reranker: 'Reranker',
+    offloadRole_decision: 'Decision model',
+    offloadRole_image: 'Images',
+    offloadRole_speech: 'Speech',
     sync: 'Sync with other devices',
     syncHint: 'Keeps the data folder in step with a folder on a remote, through rclone: each world, each session and each shared folder is synced as one unit and is left alone while it syncs. Leave the remote empty to keep sync off. The sync page lists the units.',
     syncRemote: 'Remote and folder',
@@ -186,6 +202,20 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     catalogueMaxBytesHint: '从目录下载的世界的最大体积，压缩后和解压后都不得超过。默认 268435456（256 MB）。',
     catalogueTrashDaysLabel: '被替换文件的保留天数',
     catalogueTrashDaysHint: '更新替换下来的文件在回收文件夹中保留多少天后删除。0 表示永久保留。默认 30。',
+    offload: '不能同时加载的模型',
+    offloadHint: '如果故事用到的模型无法同时放进内存，就把互相排斥的模型放进同一组：使用其中一个之前，服务器会先卸载其他的，之后再被请求时会自行重新加载。每次切换都要花一次加载模型的时间，所以只在不得不这样做时才把大模型和别的模型分在一组；如果所有模型都放得下，请留空。聊天本身使用的模型是“故事模型”；其他模型需要填模型服务器的路由（在 AI 提供方中设置的那个）以及模型在服务器上的名称。卸载需要提供方支持（LocalAI 和 Ollama 支持）。',
+    offloadAdd: '添加一组',
+    offloadRemove: '删除这一组',
+    offloadRoute: '路由',
+    offloadModel: '模型名称',
+    offloadProblemRoute: '请填写这个模型所在的路由。',
+    offloadProblemModel: '请填写这个模型在服务器上的名称。',
+    offloadRole_main: '故事模型',
+    offloadRole_embedding: '向量嵌入',
+    offloadRole_reranker: '重排序',
+    offloadRole_decision: '决策模型',
+    offloadRole_image: '图像',
+    offloadRole_speech: '语音',
     sync: '与其他设备同步',
     syncHint: '通过 rclone 让数据文件夹与远端的一个文件夹保持一致：每个世界、每个会话和每个共享文件夹各自作为一个单元同步，同步期间不会被改动。远端留空即关闭同步。“同步”页面会列出各个单元。',
     syncRemote: '远端和文件夹',

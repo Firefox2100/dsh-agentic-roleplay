@@ -63,7 +63,7 @@ function made(spec: Omit<BenchCase, 'build'> & { changes: readonly Change[] }, b
   return { ...rest, build: (language) => { const files = base(language); for (const change of changes) change(files, language); return files } }
 }
 
-const CODE_CHECKS = ['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'world-prompts', 'unread-fields', 'quality-cast', 'quality-places', 'quality-world', 'first-scene'] as const
+const CODE_CHECKS = ['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'name-confusable', 'world-prompts', 'unread-fields', 'quality-cast', 'quality-places', 'quality-world', 'first-scene'] as const
 
 const t = (language: Language) => pick(language)
 
@@ -92,6 +92,24 @@ export const CODE_CASES: readonly BenchCase[] = [
     list.push({ key: 'energy', name: 'Energy', description: 'How much strength is left.', kind: 'number', subject: 'character', min: 0, max: 10, integer: true, default: 10, visibility: 'public' })
   })], expect: [{ check: 'duplicate-values', code: 'duplicate-value', text: 'stamina' }] }),
   made({ id: 'alias-clash', title: 'an alias that is another character\'s name', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('characters/kit/character.json', (c, language) => { c['aliases'] = [t(language)('Tomas Reyes', '托马斯·雷耶斯')] })], expect: [{ check: 'name-clashes', code: 'alias-clash', text: 'kit' }] }),
+  made({
+    id: 'names-one-letter-apart', title: 'two characters whose names differ by one letter, who are not one person', kind: 'defect', checks: CODE_CHECKS, judged: false,
+    changes: [(files, language) => {
+      const kit = files.get('characters/kit/character.json') as Record<string, unknown>
+      files.set('characters/kip/character.json', { ...structuredClone(kit), id: 'kip', name: t(language)('Kip Alder', '基特·奥尔得'), summary: t(language)('A rope-maker\'s apprentice from the upper town.', '上城绳匠的学徒。'), aliases: [], relationships: [], role: 'npc' })
+    }],
+    expect: [{ check: 'name-confusable', code: 'confusable-names', where: 'characters/kip' }],
+  }),
+  made({
+    id: 'names-numbered-rooms', title: 'two rooms of one inn numbered one apart: a pattern, not a slip', kind: 'clean', checks: CODE_CHECKS, judged: false,
+    changes: [(files, language) => {
+      const room = files.get('locations/inn-room/location.json') as Record<string, unknown>
+      files.set('locations/inn-room-4/location.json', { ...structuredClone(room), id: 'inn-room-4', name: t(language)('Room 4', '四号客房'), description: t(language)('The room next to Room 3, with the window onto the yard.', '三号客房隔壁的房间，窗子对着院子。'), exits: [{ to: 'inn-bar', description: t(language)('the stairs down to the bar', '通往酒吧的楼梯') }] })
+      const bar = files.get('locations/inn-bar/location.json') as Record<string, unknown>
+      files.set('locations/inn-bar/location.json', { ...structuredClone(bar), exits: [...(bar['exits'] as unknown[]), { to: 'inn-room-4', description: t(language)('the stairs up to Room 4', '通往四号客房的楼梯') }] })
+    }],
+    expect: [],
+  }),
   made({ id: 'lore-title-twice', title: 'two background entries with one title', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('lore/fog-bell/lore.json', (c) => { c['title'] = (files => files)(c['title']) }), (files) => { const history = files.get('lore/lighthouse-history/lore.json') as Record<string, unknown>; const bell = structuredClone(files.get('lore/fog-bell/lore.json')) as Record<string, unknown>; bell['title'] = history['title']; files.set('lore/fog-bell/lore.json', bell) }], expect: [{ check: 'name-clashes', code: 'name-twice' }] }),
   made({ id: 'prompt-variable', title: 'a prompt the world carries uses a variable it is not given', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [(files, language) => { files.set(`prompts/${language}/roleplay/style.md`, 'Write as ${nobody} would.') }], expect: [{ check: 'world-prompts', code: 'prompt', where: 'style.md' }] }),
   made({ id: 'field-misspelt', title: 'a field written under a name the format does not have', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('characters/mara/character.json', (c) => { c['starting_place'] = 'pier'; c['notes'] = 'x' })], expect: [{ check: 'unread-fields', code: 'field-unread', where: 'characters/mara', text: 'starting_place' }] }),

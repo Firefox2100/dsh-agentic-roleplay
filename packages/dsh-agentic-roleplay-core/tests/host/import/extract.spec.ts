@@ -208,13 +208,13 @@ describe('the variables a card tracks', () => {
   const roster: Roster = [{ kind: 'character', key: 'mira', name: 'Mira Voss', aliases: [], player: false }]
   const answer = { variables: [
     { key: 'Trust in Mira', name: 'Trust', description: '', kind: 'number', subject: 'character', visibility: 'public', only: ['Mira Voss', 'Nobody'], min: 0, max: 100, integer: true, default: 30, options: [], bands: [{ up_to: 40, label: 'wary' }] },
-    { key: '信任', name: 'Coins', description: 'The player\'s money', kind: 'number', subject: 'character', visibility: 'public', only: [], min: null, max: null, integer: false, default: null, options: [], bands: [] },
+    { key: '信任', name: 'Coins', description: 'The player\'s money', update: 'Rises by what the player earns; falls by what is spent.', kind: 'number', subject: 'character', visibility: 'public', only: [], min: null, max: null, integer: false, default: null, options: [], bands: [] },
   ] }
 
   it('become documents: keys fitted, names turned into keys, empty and null left out', () => {
     expect(variableDocuments(answer, roster)).toEqual([
       { key: 'trust_in_mira', name: 'Trust', kind: 'number', subject: 'character', visibility: 'public', only: ['mira'], min: 0, max: 100, integer: true, default: 30, bands: [{ up_to: 40, label: 'wary' }] },
-      { key: 'variable_2', name: 'Coins', description: 'The player\'s money', kind: 'number', subject: 'character', visibility: 'public', integer: false },
+      { key: 'variable_2', name: 'Coins', description: 'The player\'s money', update: 'Rises by what the player earns; falls by what is spent.', kind: 'number', subject: 'character', visibility: 'public', integer: false },
     ])
   })
 

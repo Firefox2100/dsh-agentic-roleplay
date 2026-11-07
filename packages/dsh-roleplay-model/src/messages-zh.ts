@@ -251,5 +251,14 @@ const ZH: Readonly<Record<string, string>> = {
   'Description:': '描述：',
   "Creator's notes:": '作者备注：',
   'Document ({where}), about {subject}:': '文档（{where}），关于 {subject}：',
+  'you already said exactly this earlier in the story: "{line}". Say something new that answers this moment, or give no utterance': '你在故事里早先已经一字不差地说过这句话：“{line}”。请说点回应此刻的新话，或者不说话',
+  'What the player wrote:': '玩家写的：',
+  'What the characters did and said:': '角色做的事和说的话：',
+  'What the player read:': '玩家读到的内容：',
+  'The values to look at:': '要查看的数值：',
+  'The values that changed, to be given a new value:': '已经改变、要给出新值的数值：',
+  'Now: {value}.': '现在：{value}。',
+  'the story': '故事',
+  'Changes: {rule}': '变化规则：{rule}',
 }
 export { ZH }

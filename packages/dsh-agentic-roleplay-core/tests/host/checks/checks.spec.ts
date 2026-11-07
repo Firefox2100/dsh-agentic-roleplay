@@ -33,7 +33,7 @@ describe('the consistency kit', () => {
   it('finds nothing in a sound world', async () => {
     const report = await runChecks({ world: world() }, { kits: ['consistency'] })
     expect(report.findings).toEqual([])
-    expect(report.ran).toEqual(['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'world-prompts', 'unread-fields'])
+    expect(report.ran).toEqual(['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'name-confusable', 'world-prompts', 'unread-fields'])
     expect(report.skipped.map(entry => entry.check)).toEqual(['duplicate-values-meaning', 'name-near', 'lore-conflict'])
   })
 
@@ -157,5 +157,13 @@ describe('the tools', () => {
 
   it('work only in a world authoring chat', async () => {
     await expect(tools()[0]!.execute({} as never, { agent: { session: { id: 'session-x' } }, signal: new AbortController().signal } as never)).rejects.toThrow(/only in a world authoring chat/)
+  })
+})
+
+describe('names that differ by one letter', () => {
+  it('are told from the same name written twice, from numbered names and from names too short to compare', async () => {
+    const { oneApart } = await import('../../../src/host/checks/consistency.ts')
+    expect([oneApart('mara venn', 'mira venn'), oneApart('tomas', 'toma'), oneApart('anna', 'anan'), oneApart('阿昭', '阿照'), oneApart('基特·奥尔德', '基特·奥尔得'), oneApart('mara venn', 'maria venn')]).toEqual([true, true, true, true, true, true])
+    expect([oneApart('room 3', 'room 4'), oneApart('四号客房', '三号客房'), oneApart('mara', 'mara'), oneApart('mara', 'clara'), oneApart('mara venn', 'mario venn x')]).toEqual([false, false, false, false, false])
   })
 })

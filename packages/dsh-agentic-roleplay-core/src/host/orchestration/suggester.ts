@@ -33,6 +33,9 @@ function promptOf(job: SuggestionJob): string {
 }
 
 /** Offers the player what to do next from what they just read, with an agent of its own, in the background of the story. */
+/** The first `count` lines, tidied. */
+const wanted = (options: readonly string[], count: number): string[] => tidySuggestions(options).slice(0, count)
+
 export function suggestionWriter(deps: { agentOf: (chat: string) => Agent | undefined }): Suggester {
   return {
     async suggest(job, signal) {
@@ -43,13 +46,15 @@ export function suggestionWriter(deps: { agentOf: (chat: string) => Agent | unde
         persona: promptFor(parent, 'roleplay/suggester', job.store.settings().prompts.language, { max: MAX_SUGGESTION }),
         prompt: promptOf(job),
         result: RESULT,
+        // the reply is the result: as a tool call it was plain text for three of four runs (the lines, one after the other, up to the output limit), as a constrained reply it is a list every time; a longer list is cut to what was asked for
+        structured: true,
         beforeSubmit: (value) => {
-          const problems = suggestionProblems(tidySuggestions((value as { options: string[] }).options), job.count)
+          const problems = suggestionProblems(wanted((value as { options: string[] }).options, job.count), job.count)
           return problems.length === 0 ? undefined : `not acceptable: ${problems.join('; ')}`
         },
         maxCalls: 3,
       })
-      return result.options
+      return wanted(result.options, job.count)
     },
   }
 }

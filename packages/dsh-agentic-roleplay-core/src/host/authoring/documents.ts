@@ -57,6 +57,8 @@ async function find(world: EditableWorld, kind: AuthoredEntityKind, key: string)
 /** What a write may do with fields the format does not read: they never reach a story, so the assistant is told to put the words where they are read (`unread-fields` finds them in a world that has them). */
 export interface WriteOptions {
   refuseUnread?: boolean
+  /** Only check what would be written: nothing is. */
+  dryRun?: boolean
 }
 
 function unreadProblem(kind: AuthoredEntityKind, text: string, key: string): string | undefined {
@@ -91,6 +93,7 @@ export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredE
   const root = join(world.directory, format.directory)
   const folder = join(root, key)
   const text = serializeDocument(kind, key, document, options)
+  if (options.dryRun === true) return
   await mkdir(root, { recursive: true })
   await mkdir(folder, { recursive: false })
   try {
@@ -104,7 +107,9 @@ export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredE
 export async function replaceAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown, options: WriteOptions = {}): Promise<void> {
   const found = await find(world, kind, key)
   if (found === undefined) throw new InvalidEditProblems([`there is no ${kind} "${key}"`])
-  await atomicWrite(found.file, serializeDocument(kind, key, document, options))
+  const text = serializeDocument(kind, key, document, options)
+  if (options.dryRun === true) return
+  await atomicWrite(found.file, text)
 }
 
 /** Deletions remain recoverable without making the trash visible to the world loaders. */

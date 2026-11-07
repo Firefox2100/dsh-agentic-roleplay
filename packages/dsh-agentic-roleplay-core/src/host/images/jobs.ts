@@ -18,7 +18,9 @@ import type { ImagePresenterJob, ImagePresenterResult } from './presenter-agent.
 import { interpretImage, type ImageAttachments } from './interpreter.ts'
 import { addToLibrary } from './library.ts'
 import type { Embedder } from '../memory/embedding-index.ts'
-import { presentedFor } from './presented.ts'
+import type { TurnStore } from '../orchestration/boundaries.ts'
+import { present as showStored, presentedFor } from './presented.ts'
+import type { ReuseJob } from './reuse.ts'
 
 /** The same service, whose requests stand where the job's do unless a call says otherwise. */
 function withPriority(service: ImageGenerationService, priority: RequestPriority, highRes: boolean): ImageGenerationService {
@@ -38,10 +40,16 @@ export interface ImageJobsDeps {
   service: () => ImageGenerationService | undefined
   agentOf: (chat: string) => Agent | undefined
   settings: (id: string) => ChatSettings
+  /** The chat's story as the turn engine reads it; the pictures' reuse asks its settings and words. */
+  turnStore?: (chat: string) => TurnStore | undefined
   problem: (message: string) => void
   presenter?: (job: ImagePresenterJob) => Promise<ImagePresenterResult>
   /** DSH's attachment service, which lets a model be shown a picture; none means pictures cannot be described. */
   attachments?: () => ImageAttachments | undefined
+  /** Looks for a stored picture that shows the moment, before one is made; the path of the one to show again. */
+  reuseExisting?: (job: ReuseJob, signal: AbortSignal) => Promise<string | undefined>
+  /** Waits until the picture may be made (the story's own work is done when making it unloads the story's model). */
+  beforeGeneration?: (chat: string, signal: AbortSignal) => Promise<void>
   /** The embedding service, when there is one: pictures are then found by meaning as well as words. */
   embedder?: () => Embedder | undefined
   /** Describes one picture of the library; replaced in tests. */
@@ -109,7 +117,20 @@ export class ImageJobs {
       root: sessionFolder(this.deps.sessionsDir(), id), turn, timelineNode: node, request, purpose: 'transient', reuse,
       language: settings.prompts.language, sampling: childSampling(settings, 'records'), referenceMode: settings.images.references, ...(reuse && this.deps.attachments?.() !== undefined ? { attachments: this.deps.attachments() as ImageAttachments } : {}), ...(reuse && this.deps.embedder?.() !== undefined ? { embedder: this.deps.embedder() as Embedder } : {}), ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }),
     })
-    const promise = (reuse && settings.images.interpret && this.deps.attachments?.() !== undefined ? this.describePending(id, controller.signal).then(present) : present()).then(() => undefined).catch((error: unknown) => {
+    const store = (): TurnStore | undefined => this.deps.turnStore?.(chatSessionId(id))
+    const begin = (): Promise<unknown> => {
+      const make = (): Promise<unknown> => (reuse && settings.images.interpret && this.deps.attachments?.() !== undefined ? this.describePending(id, controller.signal).then(present) : present())
+      const waiting = this.deps.beforeGeneration?.(chatSessionId(id), controller.signal)
+      return waiting === undefined ? make() : waiting.then(make)
+    }
+    const makeOrShow = async (): Promise<unknown> => {
+      const turns = store()
+      const picked = automatic && reuse && turns !== undefined && this.deps.reuseExisting !== undefined ? await this.deps.reuseExisting({ chat: chatSessionId(id), store: turns, root: sessionFolder(this.deps.sessionsDir(), id), moment: request }, controller.signal) : undefined
+      if (picked === undefined) return await begin()
+      await showStored(sessionFolder(this.deps.sessionsDir(), id), node, { path: picked, reason: 'a stored picture that shows this moment' })
+      return undefined
+    }
+    const promise = makeOrShow().then(() => undefined).catch((error: unknown) => {
       if (controller.signal.aborted) return
       const message = error instanceof Error ? error.message : String(error)
       this.failures.set(this.key(id, node), message)

@@ -17,6 +17,7 @@ title: 配置参考
 | `sync.configFile` | 空 | rclone 配置文件的绝对路径，必须位于 `rootPath` 之外 |
 | `sync.passwordRef` | 空 | 加密 rclone 配置所用的 DSH 凭据引用；留空使用 `ROLEPLAY_SYNC_RCLONE_CONFIG_PASS` |
 | `sync.intervalMinutes` | `0` | 自动同步间隔；0 表示只允许手动同步 |
+| `offload` | 无 | 不能同时加载的模型：`groups`（由 `main`、`embedding`、`reranker`、`decision`、`image`、`speech` 这些角色组成的列表）和 `models`（除 `main`（即对话自己的模型）外，各角色的 `route` 与 `model` 名称）。使用某个角色的模型之前，服务器会先卸载与它同组的其他角色的模型。留空则从不卸载 |
 | `catalogueMaxBytes` | 256 MiB | 下载世界的大小上限，压缩包和解压结果分别检查 |
 | `catalogueTrashDays` | 30 | 目录更新替换的文件在 `.trash/worlds/` 中保留的天数；0 表示永久保留 |
 | `importMaxUploadBytes` | 100 MiB | 角色卡上传大小上限 |
@@ -92,6 +93,8 @@ title: 配置参考
 | `reflection.minNew` | 4 | 自动反思所需的新感知数；手动反思只需一条 |
 | `decisions.triggers` / `decisions.reflection` | `hybrid` / `llm` | 用 `llm`、`decision`、`hybrid` 或 `shadow` 判断触发条件和信念证据。`hybrid` 接受决策模型有把握的答案，其余交给语言模型。没有配置决策模型时，会直接使用语言模型，不显示提示 |
 | `decisions.agency` / `decisions.refusal` | `off` / `off` | 可选的输出检查，除上述四种模式外也可关闭 |
+| `decisions.reuse` | `off` | 回合结束后自动生成场景图之前，先让决策模型判断每张相近的已存图片的描述是否表现了这一刻，并展示第一张符合的图片，不再生成新图。仅由决策服务执行：`off` 或 `on` |
+| `decisions.variables` | `llm` | 每个回合之后检查所有被追踪的数值（世界变量，以及在场角色的角色变量）：对每个数值提一个问题，即刚才发生的事是否改变了它，交给语言模型、决策模型或两者；之后由语言模型给出改变了的数值的新值。请填写每个数值的 **何时、如何变化** 字段。模式与上述四种相同，另可关闭 |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | 仅由决策服务执行的规则复查和隐藏背景检查 |
 | `decisions.gateThreshold` | 0.5 | 决策答案从此概率起算作问题；低于它 0.15 以内视为不确定 |
 | `decisions.confidence` | 0.7 | 决策答案被采用而非交给语言模型所需的把握程度 |

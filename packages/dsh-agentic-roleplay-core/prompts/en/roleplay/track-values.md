@@ -1,0 +1,1 @@
+For each tracked value listed, say its new value after what has just happened: a number for a number (within its bounds), true or false for a flag, one of its words for a choice. Move a number by an amount that fits what happened and the value's own description. Give a value only for the keys listed.

@@ -19,6 +19,10 @@ import { checkWorld } from '../worlds/world-check.ts'
 import type { ImportSettings } from './service.ts'
 import { cachedJobs, forgetJobs } from './job-cache.ts'
 import { outputCeiling } from './output-ceiling.ts'
+import { guarded } from '../residency/guard.ts'
+import type { ModelResidency } from '../residency/residency.ts'
+
+const residencyOf = (agent: Agent): ModelResidency | undefined => (agent.ctx as unknown as { get(name: 'roleplayOrchestration'): { residency: ModelResidency | undefined } | undefined }).get('roleplayOrchestration')?.residency
 
 export const SURVEY_TOOL = 'import_survey'
 export const BUILD_TOOL = 'import_build'
@@ -89,12 +93,12 @@ export function contextOf(exec: ToolExecution, settings: ImportSettings, text: T
   const run: RunJob = keepIn === undefined ? ask : cachedJobs(keepIn, ask)
   // chosen but missing, the service fails each question, so the survey says why every piece went to the language model
   const decide: ImportContext['decide'] | undefined = settings.decisions === 'decision' ? (state, asks) => {
-    const service = (agent.ctx as unknown as { get(name: 'decisions'): DecisionService | undefined }).get('decisions')
+    const service = guarded(residencyOf(agent), 'decision', (agent.ctx as unknown as { get(name: 'decisions'): DecisionService | undefined }).get('decisions'), ['decide'])
     if (service === undefined) return Promise.reject(new Error('no decision service is selected, or the selected one is not loaded'))
     return askYesNo(service, state, asks, exec.signal)
   } : undefined
   const embed: ImportContext['embed'] = async (texts) => {
-    const service = (agent.ctx as unknown as { get(name: 'embeddings'): Embedder | undefined }).get('embeddings')
+    const service = guarded(residencyOf(agent), 'embedding', (agent.ctx as unknown as { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'), ['embed'])
     if (service === undefined) throw new NoEmbeddingService('no embedding provider is selected, or the selected one is not loaded')
     const { vectors, model } = await service.embed(texts, { inputType: 'document', signal: exec.signal })
     return { vectors, model }

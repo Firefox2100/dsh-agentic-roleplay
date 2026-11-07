@@ -8,7 +8,9 @@ import { externalGiven } from '../tools/external.ts'
 import { toolEnabled } from '../../shared/tools.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { MAX_OOC_ANSWER } from '../../shared/ooc.ts'
+import { languageOf, translator } from 'dsh-roleplay-model'
 import { wrongLanguage } from '../translate/language.ts'
+import { sameWords } from './defaults.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
 import { AWAY_ACTION_SCHEMA, CHARACTER_ACTION_SCHEMA, answerEstimate, parseCharacterAction } from './protocol.ts'
 import type { RunAnswer, RunCharacter } from './turn-engine.ts'
@@ -29,7 +31,7 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
     const background = (request.knowledge?.lore.length ?? 0) > 0 && tools.some(tool => tool.name === 'recall_my_lore')
     const external = externalGiven(deps.parent.ctx.tools, settings.tools, 'characters')
     const named = request.member.character.tier === 'background' && settings.models.background.trim() !== '' ? settings.models.background : settings.models.characters
-    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named, request.away === true ? 'off stage' : undefined), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: submitGate(settings.prompts.language, background) })
+    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named, request.away === true ? 'off stage' : undefined), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: submitGate(settings.prompts.language, background, request.away === true ? [] : ownLines(deps.store, request.member.character)) })
     return parseCharacterAction(result)
   }
 }
@@ -52,12 +54,28 @@ export function notingEmpty<T extends ToolDefinition>(tool: T, store: TurnStore,
 export const BACKGROUND_CHECK = 'before you answer: does this moment touch your own past, skills, training, secrets or what you know of a person or place? If it does, read that background first with recall_my_lore (about: the subject) and answer from it; if it does not, submit the same answer again unchanged'
 
 /** The model decides whether the moment touches its background; asking once at the point of answering is what makes it decide. */
-export function submitGate(language: string, background: boolean): (value: unknown) => string | undefined {
+export function submitGate(language: string, background: boolean, said: readonly string[] = []): (value: unknown) => string | undefined {
   let asked = !background
+  let reminded = false
+  const tr = translator(languageOf(language))
   return value => {
     if (!asked) { asked = true; return BACKGROUND_CHECK }
-    return spokenIn(language, value)
+    const wrong = spokenIn(language, value)
+    if (wrong !== undefined) return wrong
+    // once: a character that insists on the same words is let be (found live: a greeting word for word three turns after it was first said)
+    const line = (value as { utterance?: string }).utterance
+    if (!reminded && line !== undefined && said.some(earlier => sameWords(earlier, line))) {
+      reminded = true
+      return tr('you already said exactly this earlier in the story: "{line}". Say something new that answers this moment, or give no utterance', { line })
+    }
+    return undefined
   }
+}
+
+/** What a character has said in the story so far, most recent last, as the records keep it. */
+export function ownLines(store: TurnStore, character: { id: number; name: string }): string[] {
+  const opening = `${character.name}: "`
+  return store.story.events.list({ involving: character.id as never }).flatMap(event => (event.text.startsWith(opening) && event.text.endsWith('"') ? [event.text.slice(opening.length, -1)] : [])).slice(-12)
 }
 
 /** What a character that was given tools of other plugins may call on top of its memory look-ups. */

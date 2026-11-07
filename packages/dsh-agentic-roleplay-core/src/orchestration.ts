@@ -13,6 +13,7 @@ import { Timelines } from './host/timeline/service.ts'
 import { suggestionWriter } from './host/orchestration/suggester.ts'
 import { triggerJudge } from './host/triggers/judge.ts'
 import { outputGates } from './host/decisions/gates.ts'
+import { variableTracker } from './host/variables/tracker.ts'
 import { ruleChecks } from './host/decisions/extras.ts'
 import { factionStrategist } from './host/factions/strategist.ts'
 import { memoryReflector } from './host/memory/reflection.ts'
@@ -40,6 +41,8 @@ import { rerankMemories, type Reranker } from './host/memory/rerank-memories.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
 import type { ImageAttachments } from './host/images/interpreter.ts'
 import { ImageJobs } from './host/images/jobs.ts'
+import { guarded } from './host/residency/guard.ts'
+import { pictureReuse } from './host/images/reuse.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
 
@@ -58,10 +61,12 @@ export function apply(ctx: Context): void {
   const problem = (message: string): void => { ctx.logger.warn(`roleplay: ${message}`) }
   const sessionsDir = () => join(ctx.roleplayRoot.path, 'sessions')
   // The decision service is optional: a site set to use it falls back to the language model without it.
-  const decisions = (): DecisionService | undefined => (ctx as Context & { get(name: 'decisions'): DecisionService | undefined }).get('decisions')
+  const residency = () => ctx.roleplayOrchestration.residency
+  const decisions = (): DecisionService | undefined => guarded(residency(), 'decision', (ctx as Context & { get(name: 'decisions'): DecisionService | undefined }).get('decisions'), ['decide'])
+  const embeddings = (): Embedder | undefined => guarded(residency(), 'embedding', (ctx as Context & { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'), ['embed'])
   // The embedding plugin is optional: without it, or while it fails, memory is searched by words alone.
   const index = new EmbeddingIndex({
-    embedder: () => (ctx as Context & { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'),
+    embedder: embeddings,
     story: (chat) => {
       const id = roleplaySessionOf(chat)
       if (id === undefined) return undefined
@@ -75,7 +80,7 @@ export function apply(ctx: Context): void {
 
   // The ranker exists while a reranking service does, so that it never stands in the way of another plugin's ranker.
   ctx.inject(['rerankers'], (scope) => {
-    scope.effect(() => ctx.roleplayState.rankMemories(rerankMemories({ reranker: () => (scope as Context & { rerankers: Reranker }).rerankers, problem })), 'roleplay: rerank memories')
+    scope.effect(() => ctx.roleplayState.rankMemories(rerankMemories({ reranker: () => guarded(residency(), 'reranker', (scope as Context & { rerankers: Reranker }).rerankers, ['rerank']), problem })), 'roleplay: rerank memories')
   })
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: trigger judge')
@@ -84,6 +89,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: reflection')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)), external: parent => ctx.get('roleplayAuthoringTools')?.given(parent.ctx.tools, 'worldAuthor') ?? [] }) }), 'roleplay: world author')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ variableTracker: variableTracker({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: tracked values')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ suggester: suggestionWriter({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: suggestions')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
     const id = roleplaySessionOf(agentSessionId)
@@ -167,11 +173,15 @@ export function apply(ctx: Context): void {
     state: ctx.roleplayState,
     sessionsDir,
     timelines,
-    service: () => (ctx as Context & { get(name: 'imageGeneration'): ImageGenerationService | undefined }).get('imageGeneration'),
+    service: () => guarded(residency(), 'image', (ctx as Context & { get(name: 'imageGeneration'): ImageGenerationService | undefined }).get('imageGeneration'), ['generate']),
+    turnStore: chat => stores(chat),
+    reuseExisting: pictureReuse({ decisions, embedder: embeddings, problem }),
+    // a picture is made while the story's own model may still be writing its records, and making it unloads that model
+    beforeGeneration: async (chat, signal) => { if (residency()?.conflicts('image', 'main') === true) await Promise.race([engine.quiesce(chat), new Promise<void>(resolve => { signal.addEventListener('abort', () => { resolve() }, { once: true }) })]) },
     agentOf: chat => ctx.agents.get(SessionId(chat)),
     settings: id => liveSettings(sessionFolder(sessionsDir(), id), problem),
     attachments: () => (ctx as Context & { get(name: 'attachments'): ImageAttachments | undefined }).get('attachments'),
-    embedder: () => (ctx as Context & { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'),
+    embedder: embeddings,
     problem,
   })
   imageJobs = images

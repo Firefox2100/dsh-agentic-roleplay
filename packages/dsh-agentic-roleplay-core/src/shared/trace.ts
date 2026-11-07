@@ -95,6 +95,8 @@ export interface TurnTrace {
   access?: CharacterAccess[]
   /** What the characters looked up and found nothing on. */
   missing?: MissingKnowledge[]
+  /** The tracked values the check after the turn set: the value and whom it is of, before and after. */
+  tracked?: { key: string; from: string; to: string }[]
 }
 
 /** The most turns a session keeps a trace of: the oldest are dropped. */

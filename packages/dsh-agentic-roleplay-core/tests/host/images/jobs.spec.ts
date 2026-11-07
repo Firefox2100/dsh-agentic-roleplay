@@ -6,7 +6,7 @@ import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-prov
 import { createSessionStore, sessionDatabase } from '@dsh-agentic-roleplay/state'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { addToLibrary } from '../../../src/host/images/library.ts'
-import { present } from '../../../src/host/images/presented.ts'
+import { present, presentedFor } from '../../../src/host/images/presented.ts'
 import { updateImage } from '../../../src/host/images/gallery.ts'
 import { ImageJobs } from '../../../src/host/images/jobs.ts'
 import type { ImagePresenterJob } from '../../../src/host/images/presenter-agent.ts'
@@ -62,6 +62,32 @@ describe('scene image jobs', () => {
     const signal = author.mock.calls[0]![0].signal
     jobs.cancel(`session-${id}`)
     expect(signal.aborted).toBe(true)
+  })
+
+  it('waits for the story\'s own work before it makes a picture when told to,', async () => {
+    let open: () => void = () => undefined
+    const gate = new Promise<void>((resolve) => { open = resolve })
+    const waiting = await fixture('every-turn', { beforeGeneration: () => gate })
+    waiting.jobs.afterDelivery(`session-${waiting.id}`, 'n1', waiting.output)
+    await Promise.resolve()
+    expect(waiting.author).not.toHaveBeenCalled()
+    open()
+    await vi.waitFor(() => { expect(waiting.author).toHaveBeenCalledTimes(1) })
+  })
+
+  it('shows a stored picture instead of starting the presenter when one shows the moment, for a picture made on its own only', async () => {
+    const reuseExisting = vi.fn(async (_job: { moment: string }) => 'library/bar.png')
+    const beforeGeneration = vi.fn(async () => undefined)
+    const automatic = await fixture('every-turn', { reuseExisting, beforeGeneration, turnStore: () => ({}) as never })
+    automatic.jobs.afterDelivery(`session-${automatic.id}`, 'n1', automatic.output)
+    await vi.waitFor(async () => { expect((await presentedFor(join(automatic.directory, automatic.id), 'n1')).map(entry => entry.path)).toEqual(['library/bar.png']) })
+    expect(automatic.author).not.toHaveBeenCalled()
+    expect(beforeGeneration).not.toHaveBeenCalled()
+    expect(reuseExisting.mock.calls[0]![0]).toMatchObject({ moment: 'Rain crosses the empty street.' })
+    const requested = await fixture('manual', { reuseExisting, turnStore: () => ({}) as never })
+    await requested.jobs.generate(requested.id, 'n1')
+    expect(requested.author).toHaveBeenCalledTimes(1)
+    expect(reuseExisting).toHaveBeenCalledTimes(1)
   })
 
   it('asks the provider for what the player requested ahead of what a turn started on its own', async () => {

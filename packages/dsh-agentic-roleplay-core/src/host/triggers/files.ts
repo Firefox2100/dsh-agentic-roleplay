@@ -46,7 +46,7 @@ function waitsFor(condition: TriggerCondition): string[] {
  * what it names that the world does not have is refused, with every problem; nothing is written then.
  * @throws {InvalidEditProblems}
  */
-export async function writeTriggerDocument(directory: string, parts: WorldParts, key: string, document: unknown): Promise<'created' | 'replaced'> {
+export async function writeTriggerDocument(directory: string, parts: WorldParts, key: string, document: unknown, options: { dryRun?: boolean } = {}): Promise<'created' | 'replaced'> {
   if (!isDocument(document)) throw new InvalidEditProblems(['document must be a JSON object'])
   const unknown = Object.keys(document).filter(field => !FIELDS.has(field))
   if (unknown.length > 0) throw new InvalidEditProblems(unknown.map(field => `"${field}" is not a field of a trigger (${[...FIELDS].join(', ')})`))
@@ -58,7 +58,7 @@ export async function writeTriggerDocument(directory: string, parts: WorldParts,
   const others = documents.filter((_, index) => index !== at).flatMap((entry): TriggerDefinition[] => { const read = readTriggerDefinition(entry, 'trigger'); return 'definition' in read ? [read.definition] : [] })
   const problems = triggerProblemsOf(parts, [...others, parsed.definition]).get(key) ?? []
   if (problems.length > 0) throw new InvalidEditProblems(problems)
-  await writeDocuments(directory, at < 0 ? [...documents, written] : documents.map((entry, index) => (index === at ? written : entry)))
+  if (options.dryRun !== true) await writeDocuments(directory, at < 0 ? [...documents, written] : documents.map((entry, index) => (index === at ? written : entry)))
   return at < 0 ? 'created' : 'replaced'
 }
 

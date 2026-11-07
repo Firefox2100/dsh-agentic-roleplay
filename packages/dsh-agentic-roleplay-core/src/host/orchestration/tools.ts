@@ -5,6 +5,7 @@ import { describeTime, type SkipRequest } from '../clock/story-clock.ts'
 import type { Boundaries, CreateReport, TriggerReport, TurnStore } from './boundaries.ts'
 import { answerRunner, characterRunner } from './character-runner.ts'
 import { encodeOutput, encodePreview } from '../../shared/narration.ts'
+import { toolEnabled } from '../../shared/tools.ts'
 import { trimCharacters } from '../../shared/text.ts'
 import { AUTHORING_NEEDS } from './boundaries.ts'
 import { ITEM_ACTIONS, describeDuration, type ItemAction } from '@dsh-agentic-roleplay/state'
@@ -465,14 +466,16 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     output: {
       schema: { type: 'json' },
       render: (_args, value) => [{ type: 'text', text: (value as unknown as { allowed: boolean }).allowed
-        ? `Judged: it can work${(value as unknown as { roll?: true }).roll === true ? ' but it is uncertain: roll for it now with roll_check (list_checks shows the checks), naming the character it is for; nobody is asked to act before the dice are rolled. Then' : '. Now'} call ${PREVIEW_TOOL} (when the scene asks for it) and ${ACTIVATE_TOOL}, describing only what the character does.`
+        ? `Judged: it can work${(value as unknown as { roll?: true }).roll === true ? ` but it is uncertain: roll for it now with roll_check (list_checks shows the checks), naming the character it is for; nobody is asked to act before the dice are rolled.${(value as unknown as { quick?: true }).quick === true ? ' When nobody else needs to react and nothing moves or changes hands, settle it in one step with roll_and_narrate instead: it rolls for you and ends the turn. Otherwise' : ' Then'}` : '. Now'} call ${PREVIEW_TOOL} (when the scene asks for it) and ${ACTIVATE_TOOL}, describing only what the character does.`
         : `Judged: it cannot work${(value as unknown as { elsewhere?: true }).elsewhere === true ? ` (${(value as unknown as { reason: string }).reason})` : ''}. Play the failed attempt: ${RESOLVE_TOOL} with one outcome for the player's character (result failed, one sentence: what it does, what comes of it, why not) and nothing else, then ${NARRATE_TOOL}. Narrate what a witness would see of the attempt, never the effect the player claimed.` }],
     },
     isConcurrencySafe: () => false,
     async execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
       await deps.engine.checkRules(owner, args.allowed)
-      return record(deps.engine.judge(owner, args.allowed, args.reason, args.at, args.uncertain))
+      const judged = deps.engine.judge(owner, args.allowed, args.reason, args.at, args.uncertain)
+      const store = deps.stores(owner.chat)
+      return record(judged.roll === true && store !== undefined && toolEnabled(store.settings().tools, 'gameMaster', 'roll_and_narrate') ? { ...judged, quick: true } : judged)
     },
   })
 

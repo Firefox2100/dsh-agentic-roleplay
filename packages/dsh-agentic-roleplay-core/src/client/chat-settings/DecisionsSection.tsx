@@ -9,7 +9,7 @@ import css from './ChatSettingsView.module.css'
 type Translate = (key: ChatSettingsLocaleKey, values?: Record<string, string | number>) => string
 
 const MODE_LABEL = { off: 'decisionOff', llm: 'decisionLlm', decision: 'decisionDecision', hybrid: 'decisionHybrid', shadow: 'decisionShadow', on: 'decisionOn' } as const
-const SITE_LABEL = { triggers: 'decisionsSiteTriggers', reflection: 'decisionsSiteReflection', agency: 'decisionsSiteAgency', refusal: 'decisionsSiteRefusal', rules: 'decisionsSiteRules', secrets: 'decisionsSiteSecrets' } as const
+const SITE_LABEL = { reuse: 'decisionsSiteReuse', variables: 'decisionsSiteVariables', triggers: 'decisionsSiteTriggers', reflection: 'decisionsSiteReflection', agency: 'decisionsSiteAgency', refusal: 'decisionsSiteRefusal', rules: 'decisionsSiteRules', secrets: 'decisionsSiteSecrets' } as const
 
 /** Whether a decision model is there, and how the sites set to use one have done in this story. */
 export function DecisionsSection({ t, session, modes }: { t: Translate; session: string; modes: Record<DecisionSite, GateMode | ExtraMode> }) {

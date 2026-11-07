@@ -25,7 +25,7 @@ export function VariablesPanel({ t, worldId, actions }: { t: Translate; worldId:
     setStatus({ state: 'saving' })
     saveVariables(worldId, draft.map(declarationOf), new AbortController().signal).then((value) => { const drafts = value.map(draftOf); setSaved(drafts); setDraft(drafts); setStatus({ state: 'saved' }) }, (failure: unknown) => { setStatus({ state: 'failed', message: failure instanceof Error ? failure.message : String(failure) }) })
   }
-  const text = (index: number, key: 'key' | 'name' | 'description' | 'min' | 'max' | 'default' | 'only' | 'options', label: Parameters<Translate>[0], wide = false) => (
+  const text = (index: number, key: 'key' | 'name' | 'description' | 'update' | 'min' | 'max' | 'default' | 'only' | 'options', label: Parameters<Translate>[0], wide = false) => (
     <label className={`${css.field} ${wide ? css.wide : ''}`}><span className={css.label}>{t(label)}</span><input className={css.nameInput} value={draft[index]![key]} onChange={(event) => { patch(index, { [key]: event.target.value }) }} /></label>
   )
 
@@ -51,6 +51,7 @@ export function VariablesPanel({ t, worldId, actions }: { t: Translate; worldId:
                 <label className={css.field}><span className={css.label}>{t('variableSubject')}</span><select value={entry.subject} onChange={(event) => { patch(index, { subject: event.target.value as Draft['subject'] }) }}>{VARIABLE_SUBJECTS.map(subject => <option key={subject} value={subject}>{t(`variableSubject_${subject}`)}</option>)}</select></label>
                 <label className={css.field}><span className={css.label}>{t('variableVisibility')}</span><select value={entry.visibility} onChange={(event) => { patch(index, { visibility: event.target.value as Draft['visibility'] }) }}>{VARIABLE_VISIBILITIES.map(visibility => <option key={visibility} value={visibility}>{t(`variableVisibility_${visibility}`)}</option>)}</select></label>
                 {text(index, 'description', 'description', true)}
+                {text(index, 'update', 'variableUpdate', true)}
                 {entry.kind === 'number' && text(index, 'min', 'variableMin')}
                 {entry.kind === 'number' && text(index, 'max', 'variableMax')}
                 {text(index, 'default', 'variableDefault')}

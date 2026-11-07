@@ -35,6 +35,18 @@ function plotDocument(value: unknown) {
   return parsed.value[0]!
 }
 
+/** Checks a write the way its tool will, and writes nothing: a change the tool would refuse is not put to the person. @throws {InvalidEditProblems} */
+export async function validateMutation(reader: AuthoredWorldReader, exec: ToolExecution): Promise<void> {
+  const args = exec.arguments as Record<string, unknown>
+  if (exec.name !== 'create_world_element' && exec.name !== 'replace_world_element' && exec.name !== 'write_world_trigger') return
+  const { record } = await reader.read(exec)
+  const world = { id: record.summary.id, directory: record.directory }
+  const key = String(args['key'])
+  if (exec.name === 'write_world_trigger') { await writeTriggerDocument(record.directory, await loadWorldParts(record.directory), key, args['document'], { dryRun: true }); return }
+  const write = exec.name === 'create_world_element' ? createAuthoredEntity : replaceAuthoredEntity
+  await write(world, args['kind'] as AuthoredEntityKind, key, args['document'], { refuseUnread: true, dryRun: true })
+}
+
 /** The most problems a write reports back; `check_world` lists the rest. */
 const REPORTED_PROBLEMS = 8
 
@@ -166,7 +178,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
  * @param reviewing - whether the authoring chat is in such a turn.
  * @param options - `auto` is whether the person chose to have changes made without asking; `current` reads the document a replacement is about to replace, so the question can show what changes.
  */
-export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false), options: { auto?: () => boolean; current?: (chat: string, kind: AuthoredEntityKind, key: string) => Promise<unknown>; info?: (chat: string) => Promise<WorldInfo | undefined> } = {}): Promise<PreToolDecision> {
+export async function authoringApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, reviewing: (chat: string) => Promise<boolean> = () => Promise.resolve(false), options: { auto?: () => boolean; validate?: (exec: ToolExecution) => Promise<void>; current?: (chat: string, kind: AuthoredEntityKind, key: string) => Promise<unknown>; info?: (chat: string) => Promise<WorldInfo | undefined> } = {}): Promise<PreToolDecision> {
   if (!AUTHORING_MUTATION_TOOLS.has(exec.name) || exec.agent === undefined || authoredWorldOf(exec.agent.session.id) === undefined) return await next()
   const args = exec.arguments as Record<string, unknown>
   const auto = options.auto?.() === true
@@ -184,6 +196,14 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
   // The import may set the prose and the persona; the rules of the game are the person's to change.
   if (importing && prompt && !PROSE_PROMPTS.includes(String(args['id']))) return { kind: 'deny', reason: `an import may change only the prose prompts (${PROSE_PROMPTS.join(', ')}); "${String(args['id'])}" holds rules of the game and is left to the person` }
   if (importing || auto) return await next()
+  // a change the tool would refuse is sent back to the assistant without asking the person to approve it (found live: three approvals in a row for calls that all failed at once)
+  try {
+    if (exec.name === 'edit_world_relationship') parseRelationEdit(args['change'])
+    else await options.validate?.(exec)
+  } catch (error) {
+    if (error instanceof InvalidEditProblems) return { kind: 'deny', reason: error.message }
+    throw error
+  }
   if (pack) {
     const target = `file “${String(args['path'])}” of interface pack “${String(args['pack'])}”`
     const remove = exec.name.startsWith('delete')

@@ -629,6 +629,12 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE story_threads ADD COLUMN player_knows INTEGER NOT NULL DEFAULT 0 CHECK (player_knows IN (0, 1));
     `,
   },
+  {
+    version: 11,
+    sql: `
+      ALTER TABLE variable_defs ADD COLUMN update_rule TEXT NOT NULL DEFAULT '';
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

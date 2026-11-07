@@ -29,6 +29,7 @@ Anything you add after the command goes to the assistant. Add **deep** (`/check-
 - `duplicate-values`: tracked values that mean the same thing for the same subjects (`hp` and `health`). Which one to keep is a choice, so the finding names both and changes nothing.
 - `name-clashes`: an alias that is another character's name, two organisations or two background entries with one name.
 - `duplicate-values-meaning` (deep): tracked values that are one thing in other words or another language (`生命值` and `vigor`), which the table behind `duplicate-values` does not know.
+- `name-confusable`: two characters, places or organisations whose names differ by one letter (`Mara` and `Mira`, `阿昭` and `阿照`), which readers and the models mix up. It is only advice (an info finding), because two such people can be meant. Names that differ in a number (`Room 3`, `Room 4`) are not reported, nor names shorter than four letters.
 - `name-near` (deep): two characters, places, organisations or things that may be one written twice under different names (`The Mill` and `Old Mill`).
 - `lore-conflict` (deep): two background entries that say things that cannot both be true. Entries whose dates do not overlap are not compared, and a finding quotes the conflicting passage of each entry, so a quote that is not in its entry is refused.
 - `world-prompts`: the prompts the world carries must be prompts the product has, not empty, and use only the variables each is given.

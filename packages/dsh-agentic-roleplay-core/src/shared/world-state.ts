@@ -481,7 +481,7 @@ export function parseRelationEdit(value: unknown): RelationChange {
     if (typeof input['status'] !== 'string' || !choices.includes(input['status'] as never)) problems.push(`status must be one of: ${choices.join(', ')}`)
   }
   if (creating) {
-    for (const field of ['from', 'to'] as const) if (typeof input[field] !== 'string' || input[field].trim() === '') problems.push(`${field} is needed`)
+    for (const field of ['from', 'to'] as const) if (typeof input[field] !== 'string' || input[field].trim() === '') problems.push(`${field} is needed: the key of the entity, written as plain text and not as an object`)
     if ((kind === 'character' || kind === 'social') && (typeof input['label'] !== 'string' || input['label'].trim() === '')) problems.push('label is needed')
     if (kind === 'membership' && (typeof input['role'] !== 'string' || input['role'].trim() === '')) problems.push('role is needed')
     if (kind === 'exit' && typeof input['description'] !== 'string') problems.push('description is needed')

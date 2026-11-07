@@ -378,9 +378,9 @@ export function createTools(resolve: AgentResolver, options: {
     }),
     defineTool({
       name: 'list_variables',
-      description: 'What the story keeps track of: each variable with the key it is changed by, what it is about (every character, item or place, or the whole world), what it measures, its bounds or words, its default, and who can tell its value.',
+      description: 'What the story keeps track of: each variable with the key it is changed by, what it is about (every character, item or place, or the whole world), what it measures, when and how it changes, its bounds or words, its default, and who can tell its value.',
       parameters: {},
-      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: str, name: str, description: str, kind: str, subject: str, only: strs, min: { type: 'json', required: true }, max: { type: 'json', required: true }, options: strs, default: { type: 'json', required: true }, visibility: str, baseline: { type: 'boolean', required: true } } } }, render: pretty },
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: str, name: str, description: str, update: str, kind: str, subject: str, only: strs, min: { type: 'json', required: true }, max: { type: 'json', required: true }, options: strs, default: { type: 'json', required: true }, visibility: str, baseline: { type: 'boolean', required: true } } } }, render: pretty },
       isConcurrencySafe: () => true,
       async execute(_args, exec) {
         const agent = link(resolve, exec.agent)

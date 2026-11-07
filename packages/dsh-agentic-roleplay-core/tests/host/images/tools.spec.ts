@@ -67,6 +67,12 @@ describe('image author tools', () => {
     expect(service.calls).toEqual([{ references: 0 }, { references: 1 }, { references: 1 }])
   })
 
+  it('refuses a trait to avoid that the entity itself has', async () => {
+    const { tools } = await fixture()
+    await expect(call(tools, 'set_visual_identity', { kind: 'character', key: 'mira', description: 'Long black hair.', tags: ['Black Hair', 'grey eyes'], negative_tags: ['blue eyes', 'black hair'] })).rejects.toThrow(/"black hair" is also in tags/)
+    expect(await call(tools, 'list_visual_subjects', { kind: 'character' }) as { visual_identity?: unknown }[]).toMatchObject([{ key: 'mira' }])
+  })
+
   it('refuses generation before canonical identity exists', async () => {
     const { tools } = await fixture()
     await expect(call(tools, 'generate_reference_image', { kind: 'character', key: 'mira' })).rejects.toThrow(/no visual identity/)

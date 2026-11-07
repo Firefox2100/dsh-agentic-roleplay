@@ -15,6 +15,7 @@ export interface VariableDeclaration {
   subject: (typeof VARIABLE_SUBJECTS)[number]
   visibility: (typeof VARIABLE_VISIBILITIES)[number]
   description?: string
+  update?: string
   min?: number
   max?: number
   integer?: boolean
@@ -59,7 +60,7 @@ export function parseRoutineEdit(value: unknown): RoutineDefinition[] {
   return windows
 }
 
-const VARIABLE_FIELDS = ['key', 'name', 'kind', 'subject', 'visibility', 'description', 'min', 'max', 'integer', 'baseline', 'always', 'default', 'only', 'options', 'bands']
+const VARIABLE_FIELDS = ['key', 'name', 'kind', 'subject', 'visibility', 'description', 'update', 'min', 'max', 'integer', 'baseline', 'always', 'default', 'only', 'options', 'bands']
 
 /**
  * The declarations as the browser sends them, with empty fields left out. Whether they are acceptable together is checked against the world's files.
@@ -99,6 +100,7 @@ export function parseVariablesEdit(value: unknown): VariableDeclaration[] {
     return [{
       key: text('key'), name: text('name'), kind: text('kind') as VariableDeclaration['kind'], subject: text('subject') as VariableDeclaration['subject'], visibility: text('visibility') as VariableDeclaration['visibility'],
       ...(text('description') === '' ? {} : { description: text('description') }),
+      ...(text('update') === '' ? {} : { update: text('update') }),
       ...(min === undefined ? {} : { min }), ...(max === undefined ? {} : { max }),
       ...(integer === true ? { integer } : {}), ...(baseline === true ? { baseline } : {}), ...(always === true ? { always } : {}),
       ...(rawDefault === undefined || rawDefault === null || rawDefault === '' ? {} : { default: rawDefault as number | boolean | string }),

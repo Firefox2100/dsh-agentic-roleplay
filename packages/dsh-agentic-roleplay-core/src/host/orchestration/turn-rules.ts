@@ -100,8 +100,20 @@ export function checkOutcomes(attempt: Attempt, outcomes: readonly Outcome[], st
     ...outcomes.flatMap(outcome => store.checkVariableChanges(outcome.variableChanges ?? []).map(problem => `${outcome.character}: ${problem}`)),
     ...(state === undefined ? [] : rollProblems(outcomes, store, state)),
   ]
-  if (problems.length > 0) throw new Error(`the outcomes are not acceptable: ${problems.join('; ')} (expected exactly: ${expected.join(', ')})`)
+  if (problems.length > 0) throw new Error(`the outcomes are not acceptable: ${problems.join('; ')} ${expected.length === 0 ? '' : ` (expected exactly: ${expected.join(', ')})`}`)
   for (const outcome of outcomes) if (outcome.roll !== undefined) state?.cited.add(outcome.roll)
+}
+
+/** An outcome that gives a rolled-for character the dice's own result but leaves out the citation is mended, not refused: the model was seen to resend the same call nine times while naming the missing field. */
+export function mendRolls(outcomes: readonly Outcome[], store: TurnStore, state: Pick<TurnState, 'turn' | 'cited'>): readonly Outcome[] {
+  if (outcomes.every(outcome => outcome.roll !== undefined)) return outcomes
+  const open = store.story.dice.rolls({ turn: state.turn }).filter(roll => roll.readout !== undefined && roll.character !== undefined && !state.cited.has(roll.id) && !outcomes.some(outcome => outcome.roll === roll.id))
+  return outcomes.map((outcome) => {
+    if (outcome.roll !== undefined) return outcome
+    const own = open.filter(roll => roll.character === outcome.character)
+    const [only] = own
+    return own.length === 1 && only?.readout?.result === outcome.result ? { ...outcome, roll: only.id } : outcome
+  })
 }
 
 /**

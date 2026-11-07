@@ -145,6 +145,18 @@ describe('migrate', () => {
     db.close()
   })
 
+  it('adds the update rule of a tracked value to a version 10 session: the values it declared have none', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 10)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 10')
+    db.run("INSERT INTO variable_defs (key, ordinal, name, kind, subject, default_value, visibility) VALUES ('fatigue', 0, 'Fatigue', 'number', 'character', '0', 'public')")
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ update_rule: string }>("SELECT update_rule FROM variable_defs WHERE key = 'fatigue'")?.update_rule).toBe('')
+    db.close()
+  })
+
   describe('before an upgrade', () => {
     function oldDatabase(version: number): string {
       const file = join(dir, 'session.sqlite')

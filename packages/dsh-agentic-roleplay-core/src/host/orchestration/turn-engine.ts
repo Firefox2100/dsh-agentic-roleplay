@@ -19,7 +19,7 @@ import { whereabouts } from './whereabouts.ts'
 import { hiddenFrom } from '../decisions/extras.ts'
 import { foldSpeakerLabels, repeatsEarlier } from './turn-text.ts'
 import type { Attempt, RawSegment, TurnState } from './turn-state.ts'
-import { ROLL_FIRST, checkOutcomes, explainPhase, judgeDue, oocBlock, previewDue, rollDue } from './turn-rules.ts'
+import { ROLL_FIRST, checkOutcomes, explainPhase, judgeDue, mendRolls, oocBlock, previewDue, rollDue } from './turn-rules.ts'
 import { ReflectionRefusedError } from '../sessions/errors.ts'
 import type { RunRecall } from '../../shared/activity.ts'
 import type { RecallPreview, RecallPreviewCharacter, RecallPreviewRequest } from '../../shared/recall-preview.ts'
@@ -281,6 +281,7 @@ export class TurnEngine {
   async resolve(owner: TurnOwner, outcomes: readonly Outcome[], run: RunCharacter, signal: AbortSignal, elapsedSeconds?: number): Promise<ResolveReport> {
     const state = this.stateFor(owner)
     const store = this.storeOf(owner)
+    outcomes = mendRolls(outcomes, store, state)
     if (state.ooc !== undefined) return { done: this.decree(owner, state, outcomes, elapsedSeconds) }
     if (state.phase === 'idle' || state.phase === 'between') {
       if (judgeDue(state) || previewDue(state)) throw new Error(explainPhase(state, 'resolve_round'))
@@ -337,13 +338,18 @@ export class TurnEngine {
     return recordRound(this.storeOf(owner), owner, state, round => this.fire(owner, round))
   }
 
+  /** The turn settles a lone attempt in one step: nobody is asked to act, so there is no scene to preview. */
+  withoutPreview(owner: TurnOwner): void {
+    this.stateFor(owner).previewWanted = false
+  }
+
   /** Why a lone check of the player's character cannot be rolled, recorded and narrated in one call, if it cannot: nothing is rolled until this is clear. */
   soloCheckProblem(owner: TurnOwner, character: string): string | undefined {
     const state = this.stateFor(owner)
     const store = this.storeOf(owner)
     if (state.ooc !== undefined) return 'this turn is an out-of-character one: use ooc_ruling or ooc_answer'
     if (state.phase !== 'idle' || state.rounds > 0) return 'characters were already played in this turn: roll with roll_check, decide with resolve_round and deliver with narrate'
-    if (judgeDue(state) || previewDue(state)) return explainPhase(state, 'resolve_round')
+    if (judgeDue(state)) return explainPhase(state, 'resolve_round')
     if (state.judgement?.allowed === false) return `the action cannot work (${state.judgement.reason}): play it as a failed attempt with resolve_round, then narrate`
     const player = store.cast().find(member => member.character.control === 'player')
     return player?.key === character ? undefined : `this is only for the player's character${player === undefined ? '' : ` (${player.key})`}: anyone else's attempt goes through activate_characters`
@@ -611,9 +617,12 @@ export class TurnEngine {
 
   /**
    * Whether the game master may still be turned back, counting this objection. Only objections that get nowhere count: a turn that has moved on since the
-   * last one (what is missing changed) starts the count again, because a turn cut short by a model's output limit has to be steered through every step.
+   * last one (what is missing changed) starts the count again, because a turn cut short by a model's output limit has to be steered through every step. A step that
+   * made tool calls (`progressing`) is not an objection that gets nowhere and is not counted.
    */
-  object(owner: TurnOwner, missing: string): boolean {
+  object(owner: TurnOwner, missing: string, progressing = false): boolean {
+    // a step that made calls is the game master at work (found live: after a cut-off step every step is a stop, and one that rolled dice on the way to the round used up the three objections)
+    if (progressing) return true
     const key = `${owner.chat}#${owner.turn}`
     const last = this.objections.get(key)
     const count = last?.missing === missing ? last.count + 1 : 1
@@ -790,7 +799,11 @@ export class TurnEngine {
     this.suggestAfter(owner, state, output)
     this.startDueWrite(owner, state)
     this.delivered.set(owner.chat, state)
-    this.afterTurn.start(owner, state.cancel.signal)
+    this.afterTurn.start(owner, state.cancel.signal, {
+      input: state.input ?? '',
+      deeds: state.history.flatMap(entry => [`${entry.name}: ${entry.summary}`, ...(entry.utterance === undefined ? [] : [`${entry.name}: "${entry.utterance}"`])]),
+      narration: output.segments.map(segment => (segment.type === 'narration' ? segment.text : `${segment.name}: ${segment.text}`)).join('\n'),
+    })
     if (run !== undefined) this.offSceneIfDue(owner, state, run)
     return output
   }

@@ -21,3 +21,20 @@ describe('the check before a character answers', () => {
     expect(gate({ thought: 'He is testing me, I will answer plainly.', intent: 'I look at him calmly and answer.', utterance: 'I am good at first aid and other practical things.' })).toContain('Chinese')
   })
 })
+
+describe('a character that repeats its own words', () => {
+  const answer = (utterance: string) => ({ intent: 'greets', utterance, commitment: 'low' })
+
+  it('is told once that it said exactly this before, in the chat\'s language, and then let be', () => {
+    const gate = submitGate('en', false, ['Evening. You are out late.'])
+    expect(gate(answer('Evening.  You are out late. '))).toContain('you already said exactly this earlier in the story: "Evening.  You are out late. "')
+    expect(gate(answer('Evening. You are out late.'))).toBeUndefined()
+    expect(submitGate('zh', false, ['晚上好。'])(answer('晚上好。'))).toContain('一字不差')
+  })
+
+  it('may say new words, or nothing', () => {
+    const gate = submitGate('en', false, ['Evening.'])
+    expect(gate(answer('Still up, then?'))).toBeUndefined()
+    expect(gate({ intent: 'listens', commitment: 'low' })).toBeUndefined()
+  })
+})

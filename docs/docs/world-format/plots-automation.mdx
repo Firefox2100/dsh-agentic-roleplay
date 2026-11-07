@@ -19,6 +19,8 @@ The pacing system selects a small nudge when play lacks direction, respects cool
 
 `variables.json` declares typed values used by conditions and tools. Initial values may be supplied by the world or relevant entity. Use variables for facts that need deterministic tests, such as whether an alarm is active or how many seals remain.
 
+Each variable has a `description` (what it measures) and an optional `update` (when and how it changes: "rises by 1 for each hour of hard work, falls with sleep; talking or reading changes nothing"). The `update` is what the game master and the check after each turn read to decide whether and by how much a value moves, so a value with a clear rule does not move for nothing. A card that carries update rules for its values has them imported into `update`. The editor's Tracked values section edits it as "When and how it changes".
+
 Do not turn prose state into variables merely because it can be counted. Relationships, knowledge, placement and item state already have dedicated models.
 
 ## Triggers

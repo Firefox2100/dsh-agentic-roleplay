@@ -183,6 +183,10 @@ export interface ChatSettings {
     rules: ExtraMode
     /** Whether the output is also checked, by the decision model, for giving away hidden lore the player's character does not know (lore listed for others only); off by default. A passage that fails is sent back to the game master like the other gates' (at most twice). Needs a decision model: without one nothing is checked. */
     secrets: ExtraMode
+    /** Whether the values the story tracks (fatigue, unrest, an injury) are looked at after every turn, one question for each value and each person it applies to, by the language model, the decision model or both; the language model then gives the new value of those that changed. Off by default: without it the game master changes a value only when it thinks of it. */
+    variables: GateMode
+    /** Whether a scene picture that is made on its own after a turn first looks for a stored picture that shows the moment, by asking the decision model about each close candidate's description, and shows that one instead of making a new one; off by default. The language model alone found one in half the cases where one fitted, the decision model in all of them. */
+    reuse: ExtraMode
     /** The probability from which the decision model's answer to a gate's question counts as a fault, from 0.1 to 0.95; a little below it (0.15) is not sure. Decision models give a rare fault a low probability even when they see it, so this is not the confidence of the other sites. */
     gateThreshold: number
     /** How sure the decision model must be before its answer is used, from 0 (always) to 1 (only when certain). A yes needs at least this much; between the two, `hybrid` asks the language model and `decision` counts it as no. */
@@ -303,7 +307,7 @@ export const SETTINGS_SPEC = {
   reflection: { auto: flag(true), everyTurns: integer(0, 500, 20), onSceneChange: flag(true), sceneDays: integer(0, 365, 1), minTurns: integer(1, 100, 5), perRun: integer(1, 6, 3), minNew: integer(1, 50, 4) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
-  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), confidence: ratio(0, 1, 0.7) },
+  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), variables: choice(GATE_MODES, 'llm'), reuse: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), confidence: ratio(0, 1, 0.7) },
   interface: { pack: text(60, '') },
   rewind: { keepSnapshots: integer(0, 500, 30), rolls: choice(['reroll', 'keep'], 'reroll') },
   rules: { own: text(MAX_OWN_RULES, '') },

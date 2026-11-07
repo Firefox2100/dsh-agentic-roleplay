@@ -3,6 +3,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import { helpers } from './host/agents/child.ts'
+import type { RoleplayOrchestration } from './host/orchestration/service.ts'
 
 export const name = '@dsh-agentic-roleplay/core/helper'
 export const inject = ['tools', 'systemPrompt']
@@ -26,5 +27,12 @@ export function apply(ctx: Context): void {
   ctx.systemPrompt.context({ name: 'working-directory:current', order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
   ctx.on('agent/created', ({ agent }) => {
     helpers.get(agent.session.id)?.setup(agent)
+  })
+  // a helper runs on the story's model, which a model that cannot share memory with it (a picture just made) is unloaded for first
+  ctx.on('agent/pre-step', async (payload, next) => {
+    const decision = await next()
+    const selected = payload.agent.model.current()
+    if (decision.kind === 'enter') await (ctx as unknown as { get(name: 'roleplayOrchestration'): RoleplayOrchestration | undefined }).get('roleplayOrchestration')?.residency?.ensure('main', selected === undefined ? undefined : { provider: selected.provider, model: selected.model })
+    return decision
   })
 }

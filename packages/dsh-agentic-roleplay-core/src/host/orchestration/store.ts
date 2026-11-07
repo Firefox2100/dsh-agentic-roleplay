@@ -201,7 +201,7 @@ function trackedLines(session: Session): string[] {
   return lines.slice(0, MAX_TRACKED_LINES)
 }
 
-function checkMove(session: Session, characterKey: string, request: MoveRequest): MoveCheck {
+export function checkMove(session: Session, characterKey: string, request: MoveRequest): MoveCheck {
   const character = session.characters.list().find(candidate => keyOfCharacter(candidate) === characterKey)
   if (character === undefined) return { ok: false, problems: [`there is no character "${characterKey}"`] }
   const to = session.locations.list().find(candidate => locationKey(candidate) === request.location)
@@ -210,8 +210,11 @@ function checkMove(session: Session, characterKey: string, request: MoveRequest)
   const planned = session.planKnownMove(character.id, move)
   return planned.ok
     ? { ok: true, move, plan: planned.plan, to: { key: locationKey(to), name: to.name }, ...(request.position === undefined ? {} : { position: request.position }) }
-    : { ok: false, problems: planned.problems }
+    : { ok: false, problems: planned.problems.map(problem => (/^the character does not know place /.test(problem) ? unknownPlace(to.name) : problem)) }
 }
+
+/** What the game master is told when it sends a character somewhere it has not heard of (found live: the same refused call 38 times, because the reason named no way out). */
+const unknownPlace = (name: string): string => `the character has not heard of ${name}, and a character only goes where it knows the way. Do not send it there: take it to a place it knows (get_character lists them), or let the story first make the place known to it (someone tells it, a sign, a map) and send it on a later turn`
 
 /** An instruction text by its id, in a language. */
 export type PromptText = (language: string, id: string, variables?: Readonly<Record<string, string | number>>, session?: string) => string

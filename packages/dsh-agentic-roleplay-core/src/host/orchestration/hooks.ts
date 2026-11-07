@@ -18,6 +18,8 @@ import type { Timelines } from '../timeline/service.ts'
 import { MASTER_SAME_CALL } from '../agents/limits.ts'
 import { commandFlagKey, type StoryCommand } from '../../shared/commands.ts'
 import { guardRepeatedCalls } from '../agents/repeat-guard.ts'
+import { finishOf } from '../agents/cut-off.ts'
+import { RunawayThinking } from './runaway.ts'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { toolEnabled } from '../../shared/tools.ts'
 import { externalWithheld } from '../tools/external.ts'
@@ -118,6 +120,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     ]
   }
 
+  const runaway = new RunawayThinking()
+
   // A game master that sends the same refused call over and over is told to move on, as an authoring assistant is.
   guardRepeatedCalls(ctx, exec => {
     const owner = exec.agent === undefined ? undefined : ownerOf(exec.agent, 0)
@@ -163,7 +167,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     if (owner === undefined) return
     const missing = engine.missing(owner)
     if (missing === undefined) return
-    if (!engine.object(owner, missing)) {
+    if (!engine.object(owner, missing, finishOf(agent) === 'tool-calls')) {
       ctx.logger.warn(`roleplay: ${owner.chat} ended turn ${turn} without finishing it (${missing})`)
       return
     }
@@ -184,7 +188,11 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   // player's input is checked.
   ctx.on('agent/pre-step', async (payload, next) => {
     const decision = await next()
+    // the story's model, for the game master and every helper under it: whatever was loaded in its way is unloaded first
+    const selected = payload.agent.model.current()
+    if (decision.kind === 'enter') await ctx.roleplayOrchestration.residency?.ensure('main', selected === undefined ? undefined : { provider: selected.provider, model: selected.model })
     const owner = ownerOf(payload.agent, payload.turn)
+    if (decision.kind === 'enter' && owner !== undefined) await runaway.step(owner.chat, payload.agent, payload.step)
     const store = owner === undefined ? undefined : stores(owner.chat)
     if (owner !== undefined && store !== undefined) {
       applyLimit(payload.agent, store)

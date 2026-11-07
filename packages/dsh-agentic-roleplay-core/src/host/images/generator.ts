@@ -59,6 +59,13 @@ export function referencePrompt(request: Pick<ReferenceImageRequest, 'subject' |
   ])
 }
 
+/** What one subject must not look like may well be what another in the same picture does look like, so a trait that any subject has is not avoided. */
+function avoidedIn(subjects: TransientImageRequest['subjects']): string | undefined {
+  const wanted = new Set(subjects.flatMap(subject => subject.identity.tags.map(tag => tag.trim().toLowerCase())))
+  const avoided = [...new Set(subjects.flatMap(subject => subject.identity.negativeTags))].filter(tag => !wanted.has(tag.trim().toLowerCase()))
+  return avoided.length === 0 ? undefined : `Avoid: ${avoided.join(', ')}.`
+}
+
 export function transientPrompt(request: Pick<TransientImageRequest, 'scene' | 'subjects' | 'artDirection'>): string {
   return lines([
     request.artDirection,
@@ -69,7 +76,7 @@ export function transientPrompt(request: Pick<TransientImageRequest, 'scene' | '
       subject.transient === '' ? undefined : `Current visible state: ${subject.transient}`,
     ])),
     'Preserve every canonical identity. Depict only the stated subjects, state and action; do not invent story facts.',
-    request.subjects.flatMap(subject => subject.identity.negativeTags).length === 0 ? undefined : `Avoid: ${[...new Set(request.subjects.flatMap(subject => subject.identity.negativeTags))].join(', ')}.`,
+    avoidedIn(request.subjects),
   ])
 }
 

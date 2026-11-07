@@ -4,6 +4,7 @@ import { defaultBoundaries } from './defaults.ts'
 import type { Timelines } from '../timeline/service.ts'
 import type { ImageJobs } from '../images/jobs.ts'
 import { MasterRecovery } from './recovery.ts'
+import type { ModelResidency } from '../residency/residency.ts'
 import type { RecallPreview, RecallPreviewRequest } from '../../shared/recall-preview.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -48,6 +49,9 @@ export class RoleplayOrchestration extends Service {
 
   /** What the story's turns are and taking the story back to one; there while the orchestration is. */
   timelines: Timelines | undefined
+
+  /** Unloads the models that cannot share memory with the one about to be used; there while the plugin is. */
+  residency: ModelResidency | undefined
 
   /** Background scene illustration jobs; there while the orchestration is mounted. */
   images: ImageJobs | undefined

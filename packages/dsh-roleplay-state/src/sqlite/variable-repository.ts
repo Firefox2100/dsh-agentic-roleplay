@@ -22,6 +22,7 @@ interface DefRow {
   bands: string
   always_shown: number
   builtin: number
+  update_rule: string
 }
 
 interface ValueRow {
@@ -58,7 +59,7 @@ function parseBands(text: string): VariableBand[] {
 }
 
 const toDef = (row: DefRow): VariableDefinition => ({
-  key: row.key, name: row.name, description: row.description, kind: row.kind, subject: row.subject, only: parseStringList(row.only_keys, 'variable_defs.only_keys'),
+  key: row.key, name: row.name, description: row.description, update: row.update_rule, kind: row.kind, subject: row.subject, only: parseStringList(row.only_keys, 'variable_defs.only_keys'),
   ...(row.min_value === null ? {} : { min: row.min_value }), ...(row.max_value === null ? {} : { max: row.max_value }),
   integer: row.is_integer === 1, options: parseStringList(row.options, 'variable_defs.options'), default: parseValue(row.default_value, 'variable_defs.default_value'),
   baseline: row.has_baseline === 1, visibility: row.visibility, bands: parseBands(row.bands), always: row.always_shown === 1, builtin: row.builtin === 1,
@@ -100,11 +101,11 @@ export class SqliteVariableRepository implements VariableRepository {
   define(input: VariableDefinitionInput): VariableDefinition {
     const existing = this.def(input.key)
     if (existing?.builtin === true) {
-      const kept: VariableDefinition = { ...existing, name: input.name, description: input.description ?? existing.description, only: input.only ?? existing.only, visibility: input.visibility ?? existing.visibility, bands: input.bands ?? existing.bands, always: input.always ?? existing.always }
+      const kept: VariableDefinition = { ...existing, name: input.name, description: input.description ?? existing.description, update: input.update ?? existing.update, only: input.only ?? existing.only, visibility: input.visibility ?? existing.visibility, bands: input.bands ?? existing.bands, always: input.always ?? existing.always }
       return this.write(this.checked(kept))
     }
     return this.write(this.checked({
-      key: input.key, name: input.name, description: input.description ?? '', kind: input.kind, subject: input.subject, only: input.only ?? [],
+      key: input.key, name: input.name, description: input.description ?? '', update: input.update ?? '', kind: input.kind, subject: input.subject, only: input.only ?? [],
       ...(input.min === undefined ? {} : { min: input.min }), ...(input.max === undefined ? {} : { max: input.max }),
       integer: input.integer ?? false, options: input.options ?? [], default: input.default ?? (input.kind === 'flag' ? false : input.kind === 'choice' ? input.options?.[0] ?? '' : (input.min ?? 0)),
       baseline: input.baseline ?? false, visibility: input.visibility ?? 'public', bands: input.bands ?? [], always: input.always ?? false, builtin: false,
@@ -174,6 +175,7 @@ export class SqliteVariableRepository implements VariableRepository {
     if (!VARIABLE_KEY.test(def.key)) bad('the key is lowercase letters, digits and underscores, starting with a letter, at most 40 characters')
     if (def.name.trim() === '' || def.name.length > 80) bad('give it a name of at most 80 characters')
     if (def.description.length > 400) bad('the description is at most 400 characters')
+    if (def.update.length > 600) bad('the rule for when and how it changes is at most 600 characters')
     if (!VARIABLE_KINDS.includes(def.kind)) bad(`unknown kind "${String(def.kind)}"`)
     if (!VARIABLE_SUBJECTS.includes(def.subject)) bad(`unknown subject "${String(def.subject)}"`)
     if (!VARIABLE_VISIBILITIES.includes(def.visibility)) bad(`unknown visibility "${String(def.visibility)}"`)
@@ -199,12 +201,12 @@ export class SqliteVariableRepository implements VariableRepository {
     return guard(() => this.db.transaction(() => {
       const ordinal = this.db.get<{ ordinal: number }>('SELECT ordinal FROM variable_defs WHERE key = ?', [def.key])?.ordinal ?? (this.db.get<{ next: number | null }>('SELECT MAX(ordinal) + 1 AS next FROM variable_defs')?.next ?? 0)
       this.db.run(
-        `INSERT INTO variable_defs (key, ordinal, name, description, kind, subject, only_keys, min_value, max_value, is_integer, options, default_value, has_baseline, visibility, bands, always_shown, builtin)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO variable_defs (key, ordinal, name, description, kind, subject, only_keys, min_value, max_value, is_integer, options, default_value, has_baseline, visibility, bands, always_shown, builtin, update_rule)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT (key) DO UPDATE SET name = excluded.name, description = excluded.description, kind = excluded.kind, subject = excluded.subject, only_keys = excluded.only_keys,
            min_value = excluded.min_value, max_value = excluded.max_value, is_integer = excluded.is_integer, options = excluded.options, default_value = excluded.default_value,
-           has_baseline = excluded.has_baseline, visibility = excluded.visibility, bands = excluded.bands, always_shown = excluded.always_shown`,
-        [def.key, ordinal, def.name.trim(), def.description.trim(), def.kind, def.subject, toJson(def.only), def.min ?? null, def.max ?? null, def.integer ? 1 : 0, toJson(def.options), toJson(def.default), def.baseline ? 1 : 0, def.visibility, toJson(def.bands), def.always ? 1 : 0, def.builtin ? 1 : 0],
+           has_baseline = excluded.has_baseline, visibility = excluded.visibility, bands = excluded.bands, always_shown = excluded.always_shown, update_rule = excluded.update_rule`,
+        [def.key, ordinal, def.name.trim(), def.description.trim(), def.kind, def.subject, toJson(def.only), def.min ?? null, def.max ?? null, def.integer ? 1 : 0, toJson(def.options), toJson(def.default), def.baseline ? 1 : 0, def.visibility, toJson(def.bands), def.always ? 1 : 0, def.builtin ? 1 : 0, def.update.trim()],
       )
       return this.def(def.key)!
     }))

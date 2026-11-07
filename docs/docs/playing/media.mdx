@@ -37,6 +37,19 @@ The session **Gallery** shows generated and uploaded images together with their 
 
 An uploaded picture can become searchable after a vision-capable model describes it. Without image understanding, it can still be stored and viewed, but semantic reuse has less information to work with.
 
+## Fitting the models in memory
+
+A machine that cannot hold the story model, embedding model, reranker, decision model and image model at once can have the server swap them. In **Settings > Role Play > Models that cannot be loaded together**, add a group and tick the roles that exclude one another, such as **Story model** and **Images**. A role other than the story model also needs its server route (as named in the AI providers) and model name. The story model is the model selected for the chat.
+
+From then on, before a model of one of those roles is used, the others in its group are unloaded, and each is loaded again by the server when it is next asked for something. Nothing is unloaded again while the same role keeps being used, and a model the server reports as not loaded is left alone. Every swap costs the time of loading a model, so the cost depends on the groups you choose:
+
+- **Story model and images** is the usual case. With scene images made on their own after each turn, the picture waits until the story's records are written, then the story model is unloaded, the picture is made, and the next turn unloads the image model again. With images on request, the swap happens only when you ask for one.
+- **Story model and embeddings, reranker or decision model** swaps on every round of a turn and is slow; keep small models that fit beside the story model out of every group, or serve them from another machine.
+- A group that holds the story model and every other model (embeddings, reranker, speech, images) is the worst case: a turn in the checked setup took about five times as long, because the story model is loaded again between recall, the characters and the narration. Use it only when nothing fits together.
+- Models in no group are never unloaded.
+
+Unloading needs a provider that offers it (LocalAI and Ollama do). Unloading is shared server state: it also stops other clients of the same server from using the model. If a model cannot be unloaded, the reason is logged once and play goes on.
+
 ## When a capability is missing
 
 Media is optional. The story remains playable without image, speech or transcription providers. If a control is unavailable, check that a provider is both configured and selected for that capability under **Settings → Providers** (connections) and on the capability's own service page (the active provider). See [Configure AI services](../getting-started/ai-services) for the distinction between a connection and an active capability.

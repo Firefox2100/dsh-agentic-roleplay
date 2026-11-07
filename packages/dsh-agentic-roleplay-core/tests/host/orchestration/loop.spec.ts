@@ -21,6 +21,8 @@ import { join } from 'node:path'
 import { RoleplayState, sessionFolder, type Session } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { RoleplayOrchestration } from '../../../src/host/orchestration/service.ts'
+import { ModelResidency } from '../../../src/host/residency/residency.ts'
+import { offloadOf } from '../../../src/shared/offload.ts'
 import { readRunDetail } from '../../../src/host/sessions/activity.ts'
 import { writeSettings } from '../../../src/host/sessions/settings.ts'
 import { readDecisionStats } from '../../../src/host/decisions/stats.ts'
@@ -287,7 +289,7 @@ function answerFor(script: Script = {}) {
 
 function answerWithoutSuggestions(script: Script) {
   return (request: GenerateOptions): StreamChunk[] => {
-    if (systemOf(request).includes('You suggest what the player could do next')) return script.suggester === 'forgets' && !asText(request).includes('You have not finished') ? text('1. Ask Alice about the key') : call('sg-submit', 'submit_result', { options: SUGGESTED })
+    if (systemOf(request).includes('You suggest what the player could do next')) return script.suggester === 'forgets' && !asText(request).includes('That reply cannot be used') ? text('1. Ask Alice about the key') : text(JSON.stringify({ options: SUGGESTED }))
     if (systemOf(request).includes('You check one passage of narration') || systemOf(request).includes('You check one passage of an interactive story')) return call('t-gate', 'submit_result', { reason: 'It stays inside the story.', fault: script.gate === 'fault' })
     if (systemOf(request).includes('You judge statements about an interactive story')) return call('t-judge', 'submit_result', { verdicts: [{ number: 1, holds: true, reason: 'The records show Alice at the vault.' }] })
     if (systemOf(request).includes('You tidy the memory of one character')) {
@@ -877,14 +879,14 @@ describe('a turn with the real agent loop', () => {
       await vi.waitFor(() => { expect(session.metadata.getValue('notes')).toEqual([{ kind: 'suggestions', turn: 1, lines: SUGGESTED }]) }, { timeout: 5000 })
       const asked = adapter.requests.filter(request => systemOf(request).includes('You suggest what the player could do next'))
       expect(asked).toHaveLength(1)
-      expect(toolNames(asked[0]!).sort()).toEqual(['submit_result'])
+      expect(toolNames(asked[0]!)).toEqual([])
       const prompt = JSON.stringify(asked[0]!.messages)
       expect(prompt).toContain('Write exactly 3 suggestions.')
       expect(prompt).toContain('That is not something I expected.')
       expect(prompt).not.toContain('Alice takes the lantern')
     })
 
-    it('reminds a helper that stopped without submitting, and takes what it submits then', async () => {
+    it('sends back a helper reply that is not the result, and takes what it replies then', async () => {
       const { session, id } = await addSession('Vault', true)
       const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', suggester: 'forgets' }))
       const agent = await chat(`session-${id}`, adapter)
@@ -1731,6 +1733,20 @@ describe('a turn with the real agent loop', () => {
     expect(after.filter(event => event.type === 'assistant/message' || event.type === 'step/start')).toEqual([])
     expect(events.filter(event => event.type === 'turn/end')).toHaveLength(1)
     expect(events.filter(event => event.type !== 'subagent/catalog').at(-1)).toMatchObject({ type: 'turn/end', data: { reason: { kind: 'completed' } } })
+  })
+
+  it('unloads a model that cannot share memory with the story\'s before the story\'s own steps, once', async () => {
+    const calls: string[] = []
+    orchestration.residency = new ModelResidency({
+      config: () => offloadOf({ models: { image: { route: 'server', model: 'picture' } }, groups: [['main', 'image']] }),
+      admin: () => ({ operations: () => ['unload'], status: async () => ({ state: 'ready' }), unload: async (route, model) => { calls.push(`${route}/${model}`) } }),
+      problem: () => undefined,
+    })
+    const { id } = await addSession('Vault')
+    const agent = await chat(`session-${id}`, new ScriptedAdapter(answerFor()))
+    agent.followup(say('I open the vault door.'))
+    await agent.whenIdle()
+    expect(calls).toEqual(['server/picture'])
   })
 
   it('keeps a trace of the turn: the scene by section, the game master\'s calls and what each character was given', async () => {

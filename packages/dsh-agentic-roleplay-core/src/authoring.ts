@@ -5,7 +5,7 @@ import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
-import { authoredWorldWriteTools, authoringApproval, readAuthoredEntityDocument } from './host/authoring/write-tools.ts'
+import { authoredWorldWriteTools, authoringApproval, readAuthoredEntityDocument, validateMutation } from './host/authoring/write-tools.ts'
 import type { AuthoredEntityKind } from './host/authoring/documents.ts'
 import { registerPackJail } from './host/authoring/pack-jail.ts'
 import { worldPackTools } from './host/authoring/pack-tools.ts'
@@ -72,7 +72,7 @@ export function apply(ctx: Context): void {
     const directory = await worldDirectory(chat)
     return directory === undefined ? undefined : await readWorldInfo(directory)
   }
-  ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing, { auto: () => ctx.roleplayImport.settings.approval === 'auto', current, info }))
+  ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing, { auto: () => ctx.roleplayImport.settings.approval === 'auto', validate: exec => validateMutation(reader, exec), current, info }))
   for (const [name, order, id] of [
     ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],
     ['WORLD_AUTHORING_PROCEDURE', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_SUFFIX'), 'world/procedure'],

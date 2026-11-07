@@ -170,10 +170,10 @@ importers:
   packages/dsh-agentic-roleplay:
     dependencies:
       '@dsh-agentic-roleplay/core':
-        specifier: workspace:0.11.0
+        specifier: workspace:0.11.1
         version: link:../dsh-agentic-roleplay-core
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.11.0
+        specifier: workspace:0.11.1
         version: link:../dsh-roleplay-state
 
   packages/dsh-agentic-roleplay-core:
@@ -182,7 +182,7 @@ importers:
         specifier: 0.2.2-rc.1
         version: 0.2.2-rc.1(84bbfafadde53f653c59c1bd55738f81)
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.11.0
+        specifier: workspace:0.11.1
         version: link:../dsh-roleplay-state
       '@dsh-ai-providers/core':
         specifier: ^0.6.0

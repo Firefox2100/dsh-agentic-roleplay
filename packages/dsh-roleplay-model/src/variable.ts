@@ -28,6 +28,8 @@ export interface VariableDefinition {
   name: string
   /** What it measures or means, for the models that read and change it. */
   description: string
+  /** When and how it changes ("rises by 1 for each hour of hard work, falls with sleep"), for the models that decide whether and by how much; empty when the description says it. */
+  update: string
   kind: VariableKind
   subject: VariableSubject
   /** The subjects it applies to, by their keys; every subject of its kind when empty. */
@@ -69,9 +71,9 @@ export const VARIABLE_KEY = /^[a-z][a-z0-9_]{0,39}$/
 
 /** The feelings every character has: built in, from -1 to 1, with a temperament beside the current value. */
 export const EMOTION_VARIABLES: readonly VariableDefinition[] = [
-  { key: 'valence', name: 'Valence', description: 'How pleasant its mood is: -1 very unpleasant, 0 neutral, 1 very pleasant.', labels: [{ upTo: -0.6, label: 'miserable' }, { upTo: -0.25, label: 'unhappy' }, { upTo: 0.25, label: 'even' }, { upTo: 0.6, label: 'pleased' }, { upTo: 1, label: 'delighted' }] },
-  { key: 'arousal', name: 'Arousal', description: 'How worked up it is: -1 drowsy, 0 ordinary, 1 frantic.', labels: [{ upTo: -0.6, label: 'drowsy' }, { upTo: -0.25, label: 'calm' }, { upTo: 0.25, label: 'alert' }, { upTo: 0.6, label: 'keyed up' }, { upTo: 1, label: 'frantic' }] },
-  { key: 'dominance', name: 'Dominance', description: 'How much in control it feels: -1 helpless, 0 even, 1 commanding.', labels: [{ upTo: -0.6, label: 'helpless' }, { upTo: -0.25, label: 'uneasy' }, { upTo: 0.25, label: 'steady' }, { upTo: 0.6, label: 'confident' }, { upTo: 1, label: 'commanding' }] },
+  { key: 'valence', name: 'Valence', update: '', description: 'How pleasant its mood is: -1 very unpleasant, 0 neutral, 1 very pleasant.', labels: [{ upTo: -0.6, label: 'miserable' }, { upTo: -0.25, label: 'unhappy' }, { upTo: 0.25, label: 'even' }, { upTo: 0.6, label: 'pleased' }, { upTo: 1, label: 'delighted' }] },
+  { key: 'arousal', name: 'Arousal', update: '', description: 'How worked up it is: -1 drowsy, 0 ordinary, 1 frantic.', labels: [{ upTo: -0.6, label: 'drowsy' }, { upTo: -0.25, label: 'calm' }, { upTo: 0.25, label: 'alert' }, { upTo: 0.6, label: 'keyed up' }, { upTo: 1, label: 'frantic' }] },
+  { key: 'dominance', name: 'Dominance', update: '', description: 'How much in control it feels: -1 helpless, 0 even, 1 commanding.', labels: [{ upTo: -0.6, label: 'helpless' }, { upTo: -0.25, label: 'uneasy' }, { upTo: 0.25, label: 'steady' }, { upTo: 0.6, label: 'confident' }, { upTo: 1, label: 'commanding' }] },
 ].map(({ labels, ...rest }): VariableDefinition => ({
   ...rest, kind: 'number', subject: 'character', only: [], min: -1, max: 1, integer: false, options: [], default: 0, baseline: true, visibility: 'private',
   bands: labels.map(band => ({ upTo: band.upTo, label: band.label })), always: false, builtin: true,

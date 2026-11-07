@@ -53,6 +53,7 @@ export function createCheckNarrateTool(deps: ToolDeps): ToolDefinition {
       if (check === undefined) throw new Error(`there is no check "${args.check}"; list_checks shows the story's checks`)
       const problem = deps.engine.soloCheckProblem(owner, args.character)
       if (problem !== undefined) throw new Error(problem)
+      deps.engine.withoutPreview(owner)
       const given = { succeeded: args.on_success, partial: args.on_partial, failed: args.on_failure }
       const missing = BRANCHES.filter(([result]) => check.bands.some(band => band.result === result) && given[result] === undefined).map(([, name]) => name)
       if (missing.length > 0) throw new Error(`the check "${check.key}" can give ${[...new Set(check.bands.map(band => band.result))].join(', ')}: give ${missing.join(' and ')} too; nothing was rolled`)

@@ -2,6 +2,8 @@ import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
 import { authoringToolsField, cataloguesField, type CatalogueRow } from './catalogues.ts'
 import type { SyncConfig } from '../../shared/sync.ts'
 import { syncField } from './sync.ts'
+import { offloadField } from './offload.ts'
+import type { OffloadConfig } from '../../shared/offload.ts'
 import { ASSISTANT_FIELDS, assistantFields, type AssistantField, type AssistantSettings } from './assistants.ts'
 import {
   SettingsFormModel,
@@ -17,6 +19,7 @@ export interface RoleplaySettings extends AssistantSettings {
   catalogues?: CatalogueRow[]
   authoringTools?: Record<string, Record<string, boolean>>
   sync?: SyncConfig
+  offload?: OffloadConfig
 }
 
 export interface RoleplaySettingsState extends SettingsFormShell {
@@ -24,6 +27,7 @@ export interface RoleplaySettingsState extends SettingsFormShell {
   catalogues: SettingsFieldState
   authoringTools: SettingsFieldState
   sync: SettingsFieldState
+  offload: SettingsFieldState
   assistants: Record<AssistantField, SettingsFieldState>
 }
 
@@ -40,13 +44,14 @@ export class RoleplaySettingsController {
   private readonly store: SnapshotStore<RoleplaySettingsState>
 
   constructor(scope: SettingsFormScope<RoleplaySettings>) {
-    this.form = new SettingsFormModel(scope, [settingsTextField('rootPath'), cataloguesField, authoringToolsField, syncField, ...assistantFields])
+    this.form = new SettingsFormModel(scope, [settingsTextField('rootPath'), cataloguesField, authoringToolsField, syncField, offloadField, ...assistantFields])
     this.store = this.form.bind(() => ({
       ...this.form.shell(),
       rootPath: this.form.field('rootPath'),
       catalogues: this.form.field('catalogues'),
       authoringTools: this.form.field('authoringTools'),
       sync: this.form.field('sync'),
+      offload: this.form.field('offload'),
       assistants: Object.fromEntries(ASSISTANT_FIELDS.map(spec => [spec.field, this.form.field(spec.field)])) as Record<AssistantField, SettingsFieldState>,
     }))
   }

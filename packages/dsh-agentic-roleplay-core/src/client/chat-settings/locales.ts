@@ -14,7 +14,7 @@ export type ChatSettingsLocaleKey =
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
   | 'presetTitle' | 'presetHelp' | 'presetNone' | 'presetState_current' | 'presetState_changed' | 'presetState_edited' | 'presetState_missing' | 'presetChoose' | 'presetKeep' | 'presetRemove' | 'presetBroken' | 'presetConfirm' | 'presetTakeOut' | 'presetReapply' | 'presetSwitch' | 'presetApplied' | 'presetFailed' | 'presetLoadFailed'
   | 'lorebookTitle' | 'lorebookHelp' | 'lorebookNone' | 'lorebookHeld' | 'lorebookRow' | 'lorebookRemove' | 'lorebookConfirmRemove' | 'lorebookChoose' | 'lorebookKeep' | 'lorebookBroken' | 'lorebookAdd' | 'lorebookAdded' | 'lorebookRemoved' | 'lorebookFailed' | 'lorebookLoadFailed'
-  | 'decisionsTitle' | 'decisionsHelp' | 'decisionsLoading' | 'decisionsAvailable' | 'decisionsUnavailable' | 'decisionsTableLabel' | 'decisionsSite' | 'decisionsMode' | 'decisionsRuns' | 'decisionsItems' | 'decisionsDecided' | 'decisionsEscalated' | 'decisionsFallbacks' | 'decisionsAgreement' | 'decisionsDecisionTime' | 'decisionsLlmTime' | 'decisionsSiteTriggers' | 'decisionsSiteReflection' | 'decisionsSiteAgency' | 'decisionsSiteRefusal' | 'decisionsSiteRules' | 'decisionsSiteSecrets' | 'decisionsProblem' | 'decisionsSamples' | 'decisionsSample' | 'decisionsYes' | 'decisionsNo' | 'decisionsSince' | 'decisionsRefresh' | 'decisionsRefreshing'
+  | 'decisionsTitle' | 'decisionsHelp' | 'decisionsLoading' | 'decisionsAvailable' | 'decisionsUnavailable' | 'decisionsTableLabel' | 'decisionsSite' | 'decisionsMode' | 'decisionsRuns' | 'decisionsItems' | 'decisionsDecided' | 'decisionsEscalated' | 'decisionsFallbacks' | 'decisionsAgreement' | 'decisionsDecisionTime' | 'decisionsLlmTime' | 'decisionsSiteTriggers' | 'decisionsSiteReflection' | 'decisionsSiteAgency' | 'decisionsSiteRefusal' | 'decisionsSiteRules' | 'decisionsSiteSecrets' | 'decisionsSiteVariables' | 'decisionsSiteReuse' | 'decisionsProblem' | 'decisionsSamples' | 'decisionsSample' | 'decisionsYes' | 'decisionsNo' | 'decisionsSince' | 'decisionsRefresh' | 'decisionsRefreshing'
   | 'language' | 'doctorTitle' | 'doctorHelp' | 'doctorOpen' | 'doctorChat' | 'doctorFailed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
@@ -33,7 +33,7 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     decisionsUnavailable: 'No decision service is selected, or the selected one is not loaded, so sites set to use a decision model use the language model.',
     decisionsTableLabel: 'Decision statistics by site',
     decisionsSite: 'Site', decisionsMode: 'Set to', decisionsRuns: 'Runs', decisionsItems: 'Judgements', decisionsDecided: 'Decided', decisionsEscalated: 'Escalated', decisionsFallbacks: 'Fell back', decisionsAgreement: 'Agreement', decisionsDecisionTime: 'Decision model per run', decisionsLlmTime: 'Language model per run',
-    decisionsSiteTriggers: 'Trigger statements', decisionsSiteReflection: 'Belief checks', decisionsSiteAgency: 'Narration speaking for you', decisionsSiteRefusal: 'Output out of the story', decisionsSiteRules: 'Actions against the rules', decisionsSiteSecrets: 'Output giving away secrets',
+    decisionsSiteVariables: 'Tracked values', decisionsSiteReuse: 'Stored pictures', decisionsSiteTriggers: 'Trigger statements', decisionsSiteReflection: 'Belief checks', decisionsSiteAgency: 'Narration speaking for you', decisionsSiteRefusal: 'Output out of the story', decisionsSiteRules: 'Actions against the rules', decisionsSiteSecrets: 'Output giving away secrets',
     decisionsProblem: '{site}: the decision model could not be used the last time ({message}).',
     decisionsSamples: '{site}: latest disagreements',
     decisionsSample: 'Turn {turn}: {what} (decision model {probability}% yes, so {decision}; language model {llm})',
@@ -222,7 +222,7 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     decisionsUnavailable: '尚未选择决策服务，或所选服务未加载，因此设为使用决策模型的环节会改用语言模型。',
     decisionsTableLabel: '各环节的决策统计',
     decisionsSite: '环节', decisionsMode: '设置为', decisionsRuns: '运行次数', decisionsItems: '判断数', decisionsDecided: '已决策', decisionsEscalated: '已升级', decisionsFallbacks: '已回退', decisionsAgreement: '一致率', decisionsDecisionTime: '决策模型每次', decisionsLlmTime: '语言模型每次',
-    decisionsSiteTriggers: '触发器陈述', decisionsSiteReflection: '信念检查', decisionsSiteAgency: '叙述替你说话', decisionsSiteRefusal: '输出跳出故事', decisionsSiteRules: '按规则检查行动', decisionsSiteSecrets: '输出泄露秘密',
+    decisionsSiteVariables: '被追踪的数值', decisionsSiteReuse: '已存图片', decisionsSiteTriggers: '触发器陈述', decisionsSiteReflection: '信念检查', decisionsSiteAgency: '叙述替你说话', decisionsSiteRefusal: '输出跳出故事', decisionsSiteRules: '按规则检查行动', decisionsSiteSecrets: '输出泄露秘密',
     decisionsProblem: '{site}：上一次无法使用决策模型（{message}）。',
     decisionsSamples: '{site}：最近的分歧',
     decisionsSample: '第 {turn} 回合：{what}（决策模型认为 {probability}% 为是，因此为{decision}；语言模型为{llm}）',

@@ -51,7 +51,7 @@ export interface RecordsView {
   /** Things, notable first (at most 100), each with where it is. */
   items: { key: string; name: string; quantity: number; quality: string; state: string | null; hidden: boolean; notable: boolean; owner: string | null; holder: string }[]
   /** What is tracked: how each kind of variable is declared. */
-  variable_defs: { key: string; name: string; description: string; kind: string; subject: string; only: string[]; min: number | null; max: number | null; options: string[]; default: string | number | boolean; visibility: string; baseline: boolean }[]
+  variable_defs: { key: string; name: string; description: string; update: string; kind: string; subject: string; only: string[]; min: number | null; max: number | null; options: string[]; default: string | number | boolean; visibility: string; baseline: boolean }[]
   /** What each subject holds that is not the default (at most 200, most recently changed first). */
   variables: { variable: string; subject: string; about: string; value: string | number | boolean; described: string; baseline: string | number | boolean | null; visibility: string }[]
   /** What characters have committed to that is still pending, in the order they are due (at most 40); times in the story's time zone. */
@@ -129,7 +129,7 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
       owner: item.ownerId === undefined ? null : keyOf(item.ownerId), holder: describeHolder(target, item.id, keyOf),
     })),
     variable_defs: target.variables.defs().map(def => ({
-      key: def.key, name: def.name, description: def.description, kind: def.kind, subject: def.subject, only: def.only, min: def.min ?? null, max: def.max ?? null, options: def.options, default: def.default, visibility: def.visibility, baseline: def.baseline,
+      key: def.key, name: def.name, description: def.description, update: def.update, kind: def.kind, subject: def.subject, only: def.only, min: def.min ?? null, max: def.max ?? null, options: def.options, default: def.default, visibility: def.visibility, baseline: def.baseline,
     })),
     variables: target.variables.all().flatMap((entry) => {
       const def = target.variables.def(entry.variable)

@@ -177,7 +177,7 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
       variable: text(entry, 'variable') ?? '', subject: text(entry, 'subject') ?? '', to: scalar(entry, 'to'), by: num(entry, 'by'), baseline: scalar(entry, 'baseline'),
     })),
     variables: array('variables').map((entry): VariableDefinitionInput => defined<VariableDefinitionInput>({
-      key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', description: text(entry, 'description'), kind: (text(entry, 'kind') ?? '') as VariableKind, subject: (text(entry, 'subject') ?? '') as VariableSubject,
+      key: text(entry, 'key') ?? '', name: text(entry, 'name') ?? '', description: text(entry, 'description'), update: text(entry, 'update'), kind: (text(entry, 'kind') ?? '') as VariableKind, subject: (text(entry, 'subject') ?? '') as VariableSubject,
       only: strings(entry, 'only'), min: num(entry, 'min'), max: num(entry, 'max'), integer: bool(entry, 'integer'), options: strings(entry, 'options'), default: scalar(entry, 'default'),
       baseline: bool(entry, 'baseline'), visibility: text(entry, 'visibility') as VariableVisibility | undefined, always: bool(entry, 'always'),
       bands: Array.isArray(entry['bands']) ? entry['bands'].filter(isObject).map(band => ({ upTo: num(band, 'up_to') ?? Number.NaN, label: text(band, 'label') ?? '' })) : undefined,
@@ -564,6 +564,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
             key: { type: 'string', description: 'Lowercase letters, digits and underscores, starting with a letter.' },
             name: { type: 'string' },
             description: { type: 'string', description: 'What it measures or means, for those who read and change it.' },
+            update: { type: 'string', description: 'When and how it changes, in a sentence or two (rises by 1 for each hour of hard work; falls with sleep): what decides whether and by how much.' },
             kind: { type: 'string', enum: [...VARIABLE_KINDS] },
             subject: { type: 'string', enum: [...VARIABLE_SUBJECTS], description: 'What each value is about: every character, item or place has its own; world has one for the whole story.' },
             only: { type: 'array', items: { type: 'string' }, description: 'Keys of the subjects it applies to; leave out for all of its kind.' },

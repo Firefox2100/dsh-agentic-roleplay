@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CHECK_NARRATE_TOOL, createCheckNarrateTool } from '../../../src/host/orchestration/check-tool.ts'
 import { defaultBoundaries } from '../../../src/host/orchestration/defaults.ts'
+import { createTools } from '../../../src/host/orchestration/tools.ts'
 import { TurnEngine } from '../../../src/host/orchestration/turn-engine.ts'
 import { OPTIONAL_TOOLS } from '../../../src/shared/tools.ts'
 import { alice, arthur, fakeStore, type FakeStore } from './fixtures.ts'
@@ -44,6 +45,13 @@ describe('rolling and narrating in one call', () => {
     expect(rolls[0]).toMatchObject({ character: 'arthur', by: 'agent', readout: { result: 'succeeded' } })
   })
 
+  it('needs no preview of the scene first: nobody is asked to act on this path', async () => {
+    const settings = store.settings()
+    store.settings = () => ({ ...settings, preview: { enabled: true } })
+    const done = await call({}) as unknown as { output: { segments: unknown[] } }
+    expect(done.output.segments).toEqual([{ type: 'narration', text: 'The lock clicks open.' }])
+  })
+
   it('delivers the other branch when the dice fall the other way', async () => {
     const lost = await call({ target: 99 }) as unknown as { output: { segments: unknown[] } }
     expect(lost.output.segments).toEqual([{ type: 'narration', text: 'The lock will not move.' }])
@@ -68,5 +76,30 @@ describe('rolling and narrating in one call', () => {
   it('is not for a turn in which characters were already played', async () => {
     await call({})
     await expect(call({})).rejects.toThrow(/already played in this turn/)
+  })
+})
+
+describe('telling the game master about the quick path', () => {
+  const judged = async (enabled: boolean) => {
+    const settings = store.settings()
+    if (enabled) store.settings = () => ({ ...settings, tools: { gameMaster: { roll_and_narrate: true } } })
+    const judge = createTools({ engine, boundaries: defaultBoundaries, stores: chat => (chat === 'session-1' ? store : undefined), turnOf: () => 1, delivered: delivered as never }).find(tool => tool.name === 'judge_action')!
+    engine.expectJudgement({ chat: 'session-1', turn: 1 })
+    const value = await judge.execute({ rule_check: 'no rules listed', allowed: true, uncertain: true, reason: 'Arthur tries the lock' } as never, { agent: { session: { id: 'session-1' } } as never, signal: new AbortController().signal } as never)
+    return (judge.output as { render: (args: unknown, value: unknown) => { text: string }[] }).render({}, value)[0]!.text
+  }
+
+  it('names roll_and_narrate in the judgement of an uncertain attempt only when the tool is switched on', async () => {
+    const off = await judged(false)
+    expect(off).toContain('roll for it now with roll_check')
+    expect(off).not.toContain('roll_and_narrate')
+    expect(off).toMatch(/dice are rolled\. Then call preview_scene/)
+  })
+
+  it('offers it as the way to settle a lone attempt when it is switched on', async () => {
+    const on = await judged(true)
+    expect(on).toContain('roll for it now with roll_check')
+    expect(on).toContain('settle it in one step with roll_and_narrate')
+    expect(on).toMatch(/ends the turn\. Otherwise call preview_scene/)
   })
 })
