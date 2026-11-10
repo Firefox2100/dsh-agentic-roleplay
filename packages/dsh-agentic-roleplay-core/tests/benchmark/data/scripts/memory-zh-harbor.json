@@ -1,0 +1,180 @@
+{
+  "id": "memory-zh-harbor",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我对托马斯说，我姐姐温妮驾着海鸥号出海，一周前就该靠岸了。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问托马斯，这周客栈生意怎么样。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我要了一碗鱼汤，坐在炉火边喝完。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问托马斯，起雾的时候渡船还开吗。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我观察了一会儿屋里的人，听着他们说话。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问托马斯，一晚的房钱是多少。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问他，这雾一般要持续多久。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我在炉火边暖了暖手，想了想。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问托马斯，码头上的钟是做什么用的。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问他，集市是不是一早就开。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我拿出笔记本，写了几行字。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问托马斯，明天天气怎么样。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我谢过他的鱼汤，说味道很好。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我请托马斯帮个忙，告诉摆渡人该留意哪条船：我姐姐那条船叫什么来着？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "narration-has",
+          "text": "海鸥"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 14
+    },
+    {
+      "type": "no-repeats"
+    }
+  ]
+}

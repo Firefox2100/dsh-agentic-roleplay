@@ -1,0 +1,111 @@
+[
+  {
+    "id": "pemberton-bakery-full-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "The natural full row of the English daily-life world: a whole street, routines and a piece of news about the building that only some know. The script never asks about it, so any of it in the narration is a leak.",
+    "script": "bakery-quiet-en",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "pemberton-bakery-small-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "cast-small"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 3
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Three others, without the café owner who made an offer. The script asks the owner about worries: a disclosure is a finding about keeping a quiet worry, not a fault.",
+    "script": "bakery-asked-en",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "pemberton-bakery-solo-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "One other: the owner alone with the player, with values, an item, a place, a trigger and a wait to see.",
+    "script": "bakery-state-en",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "pemberton-bakery-solo-sleeper-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "sleeps",
+      "night-start"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "The English witness for sleep in a daily-life world: the baker's night is marked as sleep in her day, the player stays quiet, listens at the flat door, enters her dream with /dream, and then wakes her. She must not act while she sleeps and must answer once woken.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "sleeper-bakery-en"
+  }
+]

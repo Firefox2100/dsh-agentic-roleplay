@@ -17,6 +17,7 @@ export const ASSISTANT_FIELDS = [
   { field: 'importMaxUploadBytes', group: 'limits', kind: 'integer', min: 1024, max: 4294967296, placeholder: '104857600' },
   { field: 'catalogueMaxBytes', group: 'limits', kind: 'integer', min: 1024, max: 4294967296, placeholder: '268435456' },
   { field: 'catalogueTrashDays', group: 'limits', kind: 'integer', min: 0, max: 3650, placeholder: '30' },
+  { field: 'autonomyTickSeconds', group: 'limits', kind: 'integer', min: 0, max: 3600, placeholder: '30' },
 ] as const
 
 export type AssistantField = (typeof ASSISTANT_FIELDS)[number]['field']

@@ -1,0 +1,51 @@
+{
+  "id": "sleeps",
+  "description": "Marks the owner's night (21:30 to 05:30, in the room upstairs) as sleep, so that she is asleep there and takes no part unless something wakes her.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/chen/character.json": {
+      "routine": [
+        {
+          "from": "05:30",
+          "to": "07:00",
+          "activity": "去菜市场进货",
+          "location": "market"
+        },
+        {
+          "from": "07:00",
+          "to": "15:00",
+          "activity": "在面馆煮面招呼客人",
+          "location": "noodle-shop",
+          "position": "灶台后面"
+        },
+        {
+          "from": "15:00",
+          "to": "17:00",
+          "activity": "在楼上歇一会儿",
+          "location": "rooftop-room"
+        },
+        {
+          "from": "17:00",
+          "to": "21:30",
+          "activity": "晚市煮面收摊",
+          "location": "noodle-shop",
+          "position": "灶台后面"
+        },
+        {
+          "from": "21:30",
+          "to": "05:30",
+          "activity": "睡觉",
+          "location": "rooftop-room",
+          "interruptible": false,
+          "sleep": true
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "flat",
+  "name": "The flat above",
+  "description": "Jo's rented room over the shop, with a window onto the roofs.",
+  "features": [
+    {
+      "id": "desk",
+      "name": "The desk",
+      "description": "Job applications and a laptop with a cracked corner."
+    }
+  ],
+  "exits": []
+}

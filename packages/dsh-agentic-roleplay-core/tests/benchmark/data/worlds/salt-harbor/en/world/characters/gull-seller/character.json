@@ -1,0 +1,13 @@
+{
+  "id": "gull-seller",
+  "name": "The fish-seller",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "A stallholder who shouts the price of herring.",
+  "start": {
+    "public_state": "Calling out prices.",
+    "activity": "Selling herring.",
+    "location": "market"
+  }
+}

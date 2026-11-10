@@ -1,0 +1,99 @@
+{
+  "id": "okafor",
+  "name": "Samuel Okafor",
+  "age": 71,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "A retired bus driver who has a roll and tea at the bakery every morning.",
+  "personality": "Courteous, talkative, loves a long story about the old routes.",
+  "background": "Drove the number 14 for thirty-eight years.",
+  "appearance": "Tall, stooped, a flat cap and a pressed shirt.",
+  "speech": {
+    "style": "Unhurried, a little formal, fond of \"in my day\".",
+    "examples": [
+      "In my day the 14 never ran late, Jo.",
+      "A good roll is a quiet pleasure."
+    ]
+  },
+  "start": {
+    "public_state": "At the window table with a newspaper.",
+    "activity": "Reading the paper.",
+    "inner_state": "Knows about the building and does not want to upset Mags.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.3,
+        "arousal": 0.1,
+        "dominance": 0.3
+      }
+    },
+    "intents": [],
+    "location": "bakery",
+    "position": "the window table"
+  },
+  "relationships": [
+    {
+      "to": "mags",
+      "label": "Mags",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.7
+    },
+    {
+      "to": "jo",
+      "label": "Jo",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.6
+    },
+    {
+      "to": "lena",
+      "label": "Lena",
+      "familiarity": 0.4,
+      "trust": 0.3,
+      "affinity": 0.1
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "bakery",
+      "high-street",
+      "flat",
+      "market-square",
+      "park"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "town-history",
+      "building-news"
+    ]
+  },
+  "variables": {
+    "tiredness": 2
+  },
+  "routine": [
+    {
+      "from": "07:00",
+      "to": "09:00",
+      "activity": "breakfast at the bakery",
+      "location": "bakery",
+      "position": "the window table"
+    },
+    {
+      "from": "09:00",
+      "to": "12:00",
+      "activity": "playing dominoes at the park",
+      "location": "park",
+      "position": "the bench"
+    },
+    {
+      "from": "12:00",
+      "to": "07:00",
+      "activity": "at home",
+      "location": "high-street"
+    }
+  ]
+}

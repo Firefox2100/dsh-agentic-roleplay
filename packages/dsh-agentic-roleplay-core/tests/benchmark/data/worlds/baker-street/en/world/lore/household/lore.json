@@ -1,0 +1,14 @@
+{
+  "id": "household",
+  "title": "The household at 221B",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "Mr Holmes and Dr Watson share the first floor; Mrs Hudson keeps the house; breakfast is at nine.",
+  "body": "The first floor of 221B Baker Street is let to Mr Holmes and Dr Watson, who have shared it nine years; Mrs Hudson keeps the house and sets breakfast at nine, whatever the gentlemen are doing.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "sitting-room"
+    }
+  ]
+}

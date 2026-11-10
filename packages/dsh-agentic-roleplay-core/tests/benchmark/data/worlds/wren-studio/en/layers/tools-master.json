@@ -1,0 +1,25 @@
+{
+  "id": "tools-master",
+  "description": "The file tools go to the game master instead of the character: the story's narrator, not Wren, does the file work.",
+  "requires": [],
+  "conflicts": [
+    "no-tools"
+  ],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "tools": {
+        "characters": null,
+        "gameMaster": {
+          "read": true,
+          "write": true,
+          "edit": true,
+          "glob": true,
+          "grep": true
+        }
+      }
+    }
+  }
+}

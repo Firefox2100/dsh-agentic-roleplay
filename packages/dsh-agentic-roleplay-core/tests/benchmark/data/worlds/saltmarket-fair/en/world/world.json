@@ -1,0 +1,34 @@
+{
+  "id": "benchmark-saltmarket-fair-en",
+  "name": "Saltmarket Fair",
+  "description": "A travelling fair has set up on the common outside Saltmarket for three days. The Marshal keeps order and knows everyone who works there; the rest of the fair, performers, stallholders and visitors, is whoever the days bring.",
+  "starting_time": "1923-06-08T11:00",
+  "time_zone": "Europe/London",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "casting",
+      "fair",
+      "crowd"
+    ]
+  },
+  "rules": [
+    "Everyone at the fair is somebody: stallholders, performers and visitors have names, trades and reasons for being there, and nobody is a nameless crowd.",
+    "Nothing supernatural happens: the fortune-teller is a showwoman and the strongman lifts what can be lifted.",
+    "The Marshal knows everyone who works at the fair by name and trade."
+  ],
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "Bunting snaps over the common and the smell of frying onions drifts across the grass. Someone is already testing a brass horn behind the big top."
+    },
+    {
+      "type": "utterance",
+      "character": "marshal",
+      "text": "You will be wanting the sights. Walk the midway, and ask me if you want to know who anyone is."
+    }
+  ]
+}

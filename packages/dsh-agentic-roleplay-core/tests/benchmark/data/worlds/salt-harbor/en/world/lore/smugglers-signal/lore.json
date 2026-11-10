@@ -1,0 +1,18 @@
+{
+  "id": "smugglers-signal",
+  "title": "The smugglers' signal",
+  "kind": "custom",
+  "scope": "listed",
+  "known_by": [
+    "kit",
+    "bram"
+  ],
+  "summary": "Two long flashes and one short from the signal room mean a boat may land unseen.",
+  "body": "Fishermen who carry more than fish use the signal room's lamp: two long flashes and one short mean the watch is looking elsewhere.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "signal-room"
+    }
+  ]
+}

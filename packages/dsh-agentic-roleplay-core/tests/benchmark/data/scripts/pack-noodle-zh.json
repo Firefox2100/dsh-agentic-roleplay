@@ -1,0 +1,41 @@
+{
+  "id": "pack-noodle-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我把门口的桌子擦干净，问陈姨今天早上要不要我去买点葱。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我端着面走到靠窗的桌子，随口聊聊天气。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 2
+    },
+    {
+      "type": "pack-active",
+      "id": "scene"
+    }
+  ]
+}

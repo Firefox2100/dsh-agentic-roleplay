@@ -1,0 +1,42 @@
+[
+  {
+    "id": "missing-escort",
+    "name": "晚了的镖",
+    "premise": "那趟镖里装的不是货，是一封信，有人不想让它到。",
+    "themes": [
+      "信义",
+      "江湖"
+    ],
+    "hooks": [
+      {
+        "id": "empty-saddle",
+        "text": "一匹马独自回到镖局，鞍上有刀痕。",
+        "mode": "opportunity"
+      }
+    ],
+    "developments": [
+      {
+        "id": "temple-found",
+        "text": "后山破庙里发现了镖车的残骸。",
+        "mode": "opportunity",
+        "prerequisites": [
+          "empty-saddle"
+        ]
+      }
+    ],
+    "stakes": [
+      "镖局的信誉",
+      "药王谷与镖局的旧约"
+    ],
+    "resolutions": [
+      "信送到了",
+      "信被烧了"
+    ],
+    "participants": [
+      "tieshan",
+      "baizhi",
+      "guyan"
+    ],
+    "start": "available"
+  }
+]

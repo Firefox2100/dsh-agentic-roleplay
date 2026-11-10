@@ -1,0 +1,11 @@
+{
+  "id": "wren-studio",
+  "name": "Wren's Studio",
+  "theme": "assistant",
+  "languages": {
+    "en": {
+      "native": true
+    }
+  },
+  "purpose": "The assistant use case: a persona who is asked to do a real task with real file tools on a scratch folder (build a one-page website from a brief), in a story with almost no setting. Outcomes are files, checked by code; the folders it may reach are the containment."
+}

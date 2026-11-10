@@ -7,7 +7,21 @@ const CURSOR = 'agenda.cursor'
 const ASKED = 'agenda.asked'
 /** Characters on their way to the place their day has them at, by character id: they get there when the way has taken as long as it takes. */
 const TRAVEL = 'agenda.travel'
+/** The characters whose day changed since the autonomy last looked, by key: what makes a character likelier to write to the player (work is over, it woke up). */
+const SHIFTED = 'agenda.shifted'
 interface Journey { windowId: number; startsAt: number; arriveAt: number }
+/** Characters whose day has given way to what the story made of them, by character id: the routine does not pull them until `until`, when they rejoin it. */
+const HOLDS = 'agenda.holds'
+interface Hold {
+  since: number
+  until: number
+  /** The hold ends when the player's character is with the character again, once they have been apart: `apart` is set the first time catch-up finds them apart. */
+  untilPlayer?: { apart: boolean }
+}
+/** The longest a character stays where the story left it waiting for the player. */
+const PLAYER_HOLD_CAP = 24 * 60 * MINUTE
+/** How long a character that no window bounds is held when nothing says. */
+const DEFAULT_HOLD = 60 * MINUTE
 /** At most this many characters are asked to be given a day at a time, so that it never floods the world author. */
 const MAX_ASKED = 3
 
@@ -30,11 +44,67 @@ const SHOWN_GOALS = 3
 export interface AgendaView {
   zone: string
   /** What its day has it doing now, and until when. */
-  now?: { activity: string; place?: string; until: number; interruptible: boolean }
+  now?: { activity: string; place?: string; until: number; interruptible: boolean; sleep?: boolean }
+  /** Set while the story has taken it off its day (it was woken, led elsewhere): its day picks up again then. */
+  offDay?: { until: number }
   /** What its day has it doing next. */
   next?: { activity: string; place?: string; at: number }
   engagements: { title: string; at: number; place?: string; with: string[]; overdue: boolean }[]
   goals: { name: string; type: string; description: string; plan: string[]; deadline?: number; overdue: boolean }[]
+}
+
+const readHolds = (session: Pick<AgendaSession, 'metadata'>): Record<string, Hold> => {
+  const stored = session.metadata.getValue(HOLDS)
+  return typeof stored === 'object' && stored !== null && !Array.isArray(stored) ? { ...stored as unknown as Record<string, Hold> } : {}
+}
+
+/** Whether the story has taken a character off its day for now. */
+export function isHeld(session: Pick<AgendaSession, 'metadata'>, characterId: number, now: number): boolean {
+  const hold = readHolds(session)[characterId]
+  return hold !== undefined && now < hold.until
+}
+
+/**
+ * Take a character off its day: what the story made of it (it was led elsewhere, woken, sent on an errand) outranks the routine. The routine does not pull it back before
+ * `minutes` are over, or when that is not said before its day next changes, and it takes its day up again then.
+ */
+export function holdCharacter(session: AgendaSession, characterId: number, zone: string, now: number, minutes?: number, untilPlayer = false): number {
+  const windows = session.routines.list(characterId)
+  const current = occurrenceAt(windows, now, zone)
+  const next = current === undefined ? nextOccurrence(windows, now, zone, 24 * 60 * MINUTE) : undefined
+  const until = untilPlayer ? now + PLAYER_HOLD_CAP : minutes !== undefined ? now + minutes * MINUTE : current?.endsAt ?? next?.startsAt ?? now + DEFAULT_HOLD
+  const holds = readHolds(session)
+  const kept = holds[characterId]
+  const live = kept !== undefined && now < kept.until
+  const end = Math.max(until, live ? kept.until : -Infinity, now + MINUTE)
+  const waiting = untilPlayer || (live && kept.untilPlayer !== undefined)
+  holds[characterId] = { since: live ? kept.since : now, until: end, ...(waiting ? { untilPlayer: live && kept.untilPlayer !== undefined ? kept.untilPlayer : { apart: false } } : {}) }
+  session.metadata.setValue(HOLDS, holds as never)
+  const stored = session.metadata.getValue(TRAVEL)
+  if (typeof stored === 'object' && stored !== null && !Array.isArray(stored) && String(characterId) in stored) {
+    const { [String(characterId)]: _gone, ...rest } = stored as unknown as Record<string, Journey>
+    session.metadata.setValue(TRAVEL, rest as never)
+  }
+  return end
+}
+
+/** Whether a character is asleep now: its day has it asleep, in the place it sleeps in, and nothing has woken it. The player's character is never asleep: it is the player's. */
+export function sleepingNow(session: AgendaSession, characterId: number, zone: string, now: number): { until: number } | undefined {
+  const character = session.characters.get(characterId)
+  if (character === undefined || character.control === 'player' || isHeld(session, characterId, now)) return undefined
+  const current = occurrenceAt(session.routines.list(characterId), now, zone)
+  if (current?.window.sleep !== true) return undefined
+  const here = session.placements.get('character', characterId)
+  if (current.window.locationId !== undefined && here?.locationId !== current.window.locationId) return undefined
+  return { until: current.endsAt }
+}
+
+/** Everyone asleep now. */
+export function sleepersNow(session: AgendaSession, zone: string, now: number): { character: number; key: string; name: string; aliases: readonly string[]; until: number }[] {
+  return session.characters.list().flatMap((character) => {
+    const asleep = sleepingNow(session, character.id, zone, now)
+    return asleep === undefined ? [] : [{ character: character.id, key: keyOfCharacter(character), name: character.name, aliases: character.aliases, until: asleep.until }]
+  })
 }
 
 const keyOfCharacter = (character: { id: number; sourceId?: string }): string => character.sourceId ?? String(character.id)
@@ -52,15 +122,18 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
     const player = session.characters.list().find(character => character.control === 'player')
     const playerPlace = player === undefined ? undefined : session.placements.get('character', player.id)?.locationId
     const moves: RoutineMove[] = []
+    const shifted = new Set<string>()
     const stored = session.metadata.getValue(TRAVEL)
     const journeys: Record<string, Journey> = typeof stored === 'object' && stored !== null && !Array.isArray(stored) ? { ...stored as unknown as Record<string, Journey> } : {}
     const arrive = (character: { id: number; sourceId?: string; name: string }, target: RoutineWindow): void => {
+      if (cursor !== undefined) shifted.add(keyOfCharacter(character))
       if (target.locationId !== undefined) {
         session.move(character.id, { to: target.locationId, ignoreExits: true, ...(target.position === undefined ? {} : { position: target.position }), ...(target.featureKey === undefined ? {} : { featureKey: target.featureKey }) })
         moves.push({ character: keyOfCharacter(character), name: character.name, to: session.locations.get(target.locationId)?.name ?? String(target.locationId), activity: target.activity })
       }
       if (session.characterStates.get(character.id)?.activity !== target.activity) session.characterStates.update(character.id, { activity: target.activity })
     }
+    const holds = readHolds(session)
     const alreadyAsked = new Set(Array.isArray(session.metadata.getValue(ASKED)) ? session.metadata.getValue(ASKED) as number[] : [])
     const asked: number[] = []
     for (const character of session.characters.list()) {
@@ -77,6 +150,18 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
         }
         continue
       }
+      const held = holds[characterId]
+      let rejoin = false
+      if (held !== undefined) {
+        if (held.untilPlayer !== undefined && now < held.until) {
+          if (away) held.untilPlayer.apart = true
+          else if (held.untilPlayer.apart) delete holds[characterId]
+          continue
+        }
+        if (now < held.until) continue
+        delete holds[characterId]
+        rejoin = true
+      }
       if (!away) continue
       const current = occurrenceAt(window, now, zone)
       const journey = journeys[characterId]
@@ -88,7 +173,7 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
       }
       if (current === undefined) continue
       const before = cursor === undefined ? undefined : occurrenceAt(window, cursor, zone)
-      if (before !== undefined && before.window.id === current.window.id && before.startsAt === current.startsAt) continue
+      if (!rejoin && before !== undefined && before.window.id === current.window.id && before.startsAt === current.startsAt) continue
       const target = current.window
       const goesTo = target.locationId !== undefined && (here?.locationId !== target.locationId || (target.position !== undefined && here.position !== target.position))
       if (goesTo) {
@@ -103,24 +188,44 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
           continue
         }
         arrive(character, target)
-      } else if (session.characterStates.get(characterId)?.activity !== target.activity) session.characterStates.update(characterId, { activity: target.activity })
+      } else {
+        if (cursor !== undefined) shifted.add(keyOfCharacter(character))
+        if (session.characterStates.get(characterId)?.activity !== target.activity) session.characterStates.update(characterId, { activity: target.activity })
+      }
     }
     session.metadata.setValue(CURSOR, now)
     session.metadata.setValue(TRAVEL, journeys as never)
+    session.metadata.setValue(HOLDS, holds as never)
+    if (shifted.size > 0) {
+      const before = session.metadata.getValue(SHIFTED)
+      session.metadata.setValue(SHIFTED, [...new Set([...(Array.isArray(before) ? before.filter((entry): entry is string => typeof entry === 'string') : []), ...shifted])] as never)
+    }
     if (asked.length > 0) session.metadata.setValue(ASKED, [...alreadyAsked, ...asked])
     return moves
   })
 }
 
+/** The characters whose day changed since this was last asked, by key; asking forgets them. */
+export function takeShifts(session: Pick<AgendaSession, 'metadata'>): string[] {
+  const stored = session.metadata.getValue(SHIFTED)
+  const keys = Array.isArray(stored) ? stored.filter((entry): entry is string => typeof entry === 'string') : []
+  if (keys.length > 0) session.metadata.setValue(SHIFTED, [] as never)
+  return keys
+}
+
 /** A character's agenda at an instant, with places by name and others by name. */
-export function agendaView(session: AgendaSession, characterId: number, zone: string, now: number): AgendaView {
+export function agendaView(session: AgendaSession, characterId: number, zone: string, now: number, scheduled = true): AgendaView {
   const agenda = agendaAt(session, characterId, now, zone, { horizon: NEXT_HORIZON, engagements: SHOWN_ENGAGEMENTS, goals: SHOWN_GOALS })
+  const hold = scheduled ? readHolds(session)[characterId] : undefined
+  const held = hold !== undefined && now < hold.until
+  const dayless = !scheduled || session.characters.get(characterId)?.control === 'player'
   const place = (id: number | undefined): string | undefined => (id === undefined ? undefined : session.locations.get(id)?.name)
   const names = (ids: readonly number[]): string[] => ids.filter(id => id !== characterId).map(id => session.characters.get(id)?.name ?? String(id))
   return {
     zone,
-    ...(agenda.now === undefined ? {} : { now: { activity: agenda.now.window.activity, ...(place(agenda.now.window.locationId) === undefined ? {} : { place: place(agenda.now.window.locationId)! }), until: agenda.now.endsAt, interruptible: agenda.now.window.interruptible } }),
-    ...(agenda.next === undefined ? {} : { next: { activity: agenda.next.window.activity, ...(place(agenda.next.window.locationId) === undefined ? {} : { place: place(agenda.next.window.locationId)! }), at: agenda.next.startsAt } }),
+    ...(agenda.now === undefined || held || dayless ? {} : { now: { activity: agenda.now.window.activity, ...(place(agenda.now.window.locationId) === undefined ? {} : { place: place(agenda.now.window.locationId)! }), until: agenda.now.endsAt, interruptible: agenda.now.window.interruptible, ...(agenda.now.window.sleep === true ? { sleep: true } : {}) } }),
+    ...(held ? { offDay: { until: hold.until } } : {}),
+    ...(agenda.next === undefined || dayless ? {} : { next: { activity: agenda.next.window.activity, ...(place(agenda.next.window.locationId) === undefined ? {} : { place: place(agenda.next.window.locationId)! }), at: agenda.next.startsAt } }),
     engagements: agenda.engagements.map(({ engagement, overdue }) => ({ title: engagement.title, at: engagement.at, ...(place(engagement.locationId) === undefined ? {} : { place: place(engagement.locationId)! }), with: names(engagement.participants), overdue })),
     goals: agenda.goals.map(({ intent, deadlineAt, overdue }) => ({ name: intent.name, type: intent.type, description: intent.description, plan: intent.plan.slice(0, 3), ...(deadlineAt === undefined ? {} : { deadline: deadlineAt }), overdue })),
   }
@@ -133,6 +238,8 @@ export interface SceneAgenda {
   moved: RoutineMove[]
   /** Characters with the player's character whose day expects them elsewhere, or soon will. */
   here: { name: string; note: string }[]
+  /** Who is asleep now, anywhere: they take no part in the story unless what the player does wakes them. */
+  asleep: { key: string; name: string; until: number }[]
   /** Commitments due soon or overdue, whoever they are of. */
   engagements: { title: string; at: number; place?: string; with: string[]; overdue: boolean }[]
 }
@@ -143,12 +250,13 @@ const MAX_NOTES = 6
 /** An engagement that has been overdue for longer than this is not worth the game master's attention every turn. */
 const STALE = 24 * 60 * MINUTE
 
-export function sceneAgenda(session: AgendaSession, zone: string, now: number, moved: RoutineMove[]): SceneAgenda {
+export function sceneAgenda(session: AgendaSession, zone: string, now: number, moved: RoutineMove[], scheduled = true): SceneAgenda {
   const player = session.characters.list().find(character => character.control === 'player')
   const playerPlace = player === undefined ? undefined : session.placements.get('character', player.id)?.locationId
   const withPlayer = new Set(session.characters.list().filter(character => playerPlace !== undefined && session.placements.get('character', character.id)?.locationId === playerPlace && character.control !== 'player').map(character => character.id))
   const here: SceneAgenda['here'] = []
-  for (const characterId of withPlayer) {
+  for (const characterId of scheduled ? withPlayer : []) {
+    if (isHeld(session, characterId, now)) continue
     const windows = session.routines.list(characterId)
     const current = occurrenceAt(windows, now, zone)
     const upcoming = nextOccurrence(windows, now, zone, SOON)
@@ -167,5 +275,6 @@ export function sceneAgenda(session: AgendaSession, zone: string, now: number, m
       with: engagement.participants.map(id => session.characters.get(id)?.name ?? String(id)),
       overdue: now > (engagement.until ?? engagement.at + ENGAGEMENT_GRACE),
     }))
-  return { zone, moved, here: here.slice(0, MAX_NOTES), engagements }
+  const asleep = scheduled ? sleepersNow(session, zone, now).map(({ key, name, until }) => ({ key, name, until })) : []
+  return { zone, moved, here: here.slice(0, MAX_NOTES), asleep, engagements }
 }

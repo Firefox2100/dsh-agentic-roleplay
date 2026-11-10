@@ -1,0 +1,69 @@
+[
+  {
+    "key": "rumour",
+    "name": "传闻",
+    "description": "镇上的传闻有多凶：0 平静，10 人心惶惶。坏消息和可疑的人会让它上升，好消息让它下降。",
+    "kind": "number",
+    "subject": "world",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "平静"
+      },
+      {
+        "up_to": 6,
+        "label": "议论纷纷"
+      },
+      {
+        "up_to": 10,
+        "label": "人心惶惶"
+      }
+    ]
+  },
+  {
+    "key": "wounds",
+    "name": "伤势",
+    "description": "角色伤得多重：0 完好，10 垂危。挨了打会上升，上药和休息会下降。",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 0,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 2,
+        "label": "皮外伤"
+      },
+      {
+        "up_to": 6,
+        "label": "受了伤"
+      },
+      {
+        "up_to": 10,
+        "label": "重伤"
+      }
+    ]
+  },
+  {
+    "key": "silver",
+    "name": "银两",
+    "description": "沈青身上带的银子（两）。只有付钱或收钱时才会变。",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "shenqing"
+    ],
+    "min": 0,
+    "max": 500,
+    "integer": true,
+    "default": 12,
+    "visibility": "public"
+  }
+]

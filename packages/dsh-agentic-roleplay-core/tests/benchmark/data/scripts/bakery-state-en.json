@@ -1,0 +1,94 @@
+{
+  "id": "bakery-state-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "Mags hands me the week's wages, forty pounds in notes, and I pocket it.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I carry three heavy sacks of flour in from the back and get out of breath.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I pick up the flask of tea from the counter to take it to Mr Okafor.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I step out onto the high street for some fresh air.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 4 hours",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 5
+    },
+    {
+      "type": "value-changed",
+      "name": "Savings",
+      "of": "player"
+    },
+    {
+      "type": "value-changed",
+      "name": "Tiredness",
+      "of": "player"
+    },
+    {
+      "type": "item-held-by",
+      "item": "flask",
+      "holder": "jo"
+    },
+    {
+      "type": "character-at",
+      "character": "jo",
+      "place": "high-street"
+    },
+    {
+      "type": "trigger-fired",
+      "key": "lunch-queue"
+    }
+  ]
+}

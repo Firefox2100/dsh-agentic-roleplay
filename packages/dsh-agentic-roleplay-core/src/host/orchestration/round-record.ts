@@ -1,10 +1,19 @@
 import { describeValue, locationKey as placeKey, type ItemEffect } from '@dsh-agentic-roleplay/state'
 import type { TriggerReport, TurnStore } from './boundaries.ts'
+import type { Outcome } from './protocol.ts'
 import type { Utterance } from './protocol.ts'
 import { sameWords } from './defaults.ts'
 import { decisions } from './turn-rules.ts'
 import type { TurnState } from './turn-state.ts'
 import type { ResolveReport, TurnOwner } from './turn-engine.ts'
+
+/** Whether what happened to a character takes it off its routine: it went somewhere because of it, it was asleep (a dreamer stays asleep) and has been woken, or the game master said so. */
+function holds(member: TurnState['cast'][number], outcome: Outcome, check: ReturnType<TurnStore['checkMove']> | undefined, state: TurnState, store: TurnStore, turn: number): boolean {
+  if (member.character.control === 'player') return false
+  if (outcome.offRoutineMinutes !== undefined || outcome.waitsForPlayer === true) return true
+  if (check?.ok === true && check.plan.from !== check.move.to) return true
+  return state.dreaming !== member.key && store.asleep(turn, member.character.id) !== undefined
+}
 
 /** Records the game master's decisions as a finished round: what the characters did and said, what changed in the story, and the round queued for the keeper. `fire` runs the triggers the round may have made true. */
 export function recordRound(store: TurnStore, owner: TurnOwner, state: TurnState, fire: (round: number) => TriggerReport['fired']): NonNullable<ResolveReport['done']> {
@@ -41,6 +50,7 @@ export function recordRound(store: TurnStore, owner: TurnOwner, state: TurnState
         character: member.character.id,
         patch: { activity: outcome.summary, ...(outcome.publicState === undefined || outcome.publicState.trim() === '' ? {} : { publicState: outcome.publicState.trim() }) },
         ...(check?.ok === true ? { move: check.move } : {}),
+        ...(holds(member, outcome, check, state, store, owner.turn) ? { hold: { ...outcome.offRoutineMinutes === undefined ? {} : { minutes: outcome.offRoutineMinutes }, ...outcome.waitsForPlayer === true ? { untilPlayer: true as const } : {} } } : {}),
         ...(outcome.itemChanges === undefined || outcome.itemChanges.length === 0 ? {} : { items: outcome.itemChanges }),
       },
     }]

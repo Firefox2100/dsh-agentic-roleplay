@@ -1,0 +1,14 @@
+{
+  "id": "guild-charter",
+  "title": "The guild charter",
+  "kind": "politics",
+  "scope": "everyone",
+  "summary": "The guild alone may grant moorings and close roads on the harbor's land.",
+  "body": "The charter gives the guild sole right to grant moorings, set fish prices and close any road in the harbor's land for repairs for up to thirty days.",
+  "subjects": [
+    {
+      "kind": "faction",
+      "id": "harbor-guild"
+    }
+  ]
+}

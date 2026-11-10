@@ -4,11 +4,12 @@ import type { ObjectJsonSchema, ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { MAX_TRACE_MISSING } from '../../shared/trace.ts'
 import { MAX_RUN_RECALLED, type RunRecall } from '../../shared/activity.ts'
 import { estimateAnswer } from '../agents/budget.ts'
-import { externalGiven } from '../tools/external.ts'
+import { charactersGiven } from '../tools/external.ts'
 import { toolEnabled } from '../../shared/tools.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { MAX_OOC_ANSWER } from '../../shared/ooc.ts'
 import { languageOf, translator } from 'dsh-roleplay-model'
+import { foldersLine } from '../workspace/describe.ts'
 import { wrongLanguage } from '../translate/language.ts'
 import { sameWords } from './defaults.ts'
 import type { Boundaries, TurnStore } from './boundaries.ts'
@@ -29,9 +30,10 @@ export function characterRunner(deps: { parent: Agent; boundaries: () => Boundar
       ? createCharacterTools(() => ({ session: deps.store.story, turn: request.turn, policy: settings.memory, queryVector: deps.store.queryVector }), request.member.character.id).filter(tool => toolEnabled(settings.tools, 'characters', tool.name)).map(tool => notingEmpty(tool, deps.store, request.turn, request.member.character.name))
       : []
     const background = (request.knowledge?.lore.length ?? 0) > 0 && tools.some(tool => tool.name === 'recall_my_lore')
-    const external = externalGiven(deps.parent.ctx.tools, settings.tools, 'characters')
+    const external = charactersGiven(deps.parent.ctx.tools, settings.tools, request.away === true)
+    const folders = external.length === 0 ? undefined : await deps.store.folders?.().then(roots => foldersLine(roots, languageOf(settings.prompts.language)))
     const named = request.member.character.tier === 'background' && settings.models.background.trim() !== '' ? settings.models.background : settings.models.characters
-    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named, request.away === true ? 'off stage' : undefined), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: brief.prompt, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: submitGate(settings.prompts.language, background, request.away === true ? [] : ownLines(deps.store, request.member.character)) })
+    const result = await runChild({ parent: deps.parent, signal, sampling: childSampling(settings, 'characters', answerEstimate(settings.prompts.language, request.away === true)), ...childModel(settings, 'characters', named), trace: childTrace(deps.store, 'characters', request.member.character.name, recalledOf(request), named, request.away === true ? 'off stage' : undefined), reasoningEffort: deps.store.settings().reasoning.children, persona: brief.persona, prompt: folders === undefined ? brief.prompt : `${brief.prompt}\n\n${folders}`, tools, external, maxCalls: deps.store.settings().memory.lookupCalls + (external.length === 0 ? 0 : EXTERNAL_CALLS), result: request.away === true ? AWAY_ACTION_SCHEMA : CHARACTER_ACTION_SCHEMA, unenforced: ['thought'], beforeSubmit: submitGate(settings.prompts.language, background, request.away === true ? [] : ownLines(deps.store, request.member.character)) })
     return parseCharacterAction(result)
   }
 }

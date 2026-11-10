@@ -1,0 +1,42 @@
+[
+  {
+    "id": "the-dark-lamp",
+    "name": "熄灭的灯",
+    "premise": "有人故意熄灭了灯塔，守塔人带着证据躲了起来。",
+    "themes": [
+      "职责",
+      "同谋"
+    ],
+    "hooks": [
+      {
+        "id": "closed-road",
+        "text": "港务长封闭灯塔路的告示。",
+        "mode": "opportunity"
+      }
+    ],
+    "developments": [
+      {
+        "id": "cellar-found",
+        "text": "地窖和印着公会标记的木箱被发现。",
+        "mode": "opportunity",
+        "prerequisites": [
+          "closed-road"
+        ]
+      }
+    ],
+    "stakes": [
+      "守塔人的安危",
+      "公会对渔港的掌控"
+    ],
+    "resolutions": [
+      "公会败露",
+      "事情被掩盖"
+    ],
+    "participants": [
+      "bram",
+      "ines",
+      "tomas"
+    ],
+    "start": "available"
+  }
+]

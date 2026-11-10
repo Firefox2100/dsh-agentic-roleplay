@@ -39,3 +39,8 @@ export function externalGiven(registry: ToolRegistry, board: Switchboard, agent:
 export function externalWithheld(registry: ToolRegistry, board: Switchboard, agent: SwitchKind): string[] {
   return externalTools(registry).map(tool => tool.name).filter(name => !externalEnabled(board, agent, name))
 }
+
+/** What a character may use besides its own look-ups: nothing while it is away, because nobody is playing to see what it does with a tool. */
+export function charactersGiven(registry: ToolRegistry, board: Switchboard, away: boolean): string[] {
+  return away ? [] : externalGiven(registry, board, 'characters')
+}

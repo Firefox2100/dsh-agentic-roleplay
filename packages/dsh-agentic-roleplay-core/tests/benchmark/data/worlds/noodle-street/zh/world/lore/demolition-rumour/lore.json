@@ -1,0 +1,19 @@
+{
+  "id": "demolition-rumour",
+  "title": "拆迁的消息",
+  "kind": "custom",
+  "scope": "listed",
+  "summary": "开发商已经内部确定这一片要拆，补偿方案还没有公布。",
+  "body": "开发商已经和几户房东私下谈过，补偿方案要到年底才公布；王姐已经口头答应了其中一份，没有告诉租客。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "alley"
+    }
+  ],
+  "known_by": [
+    "chen",
+    "laozhou",
+    "wangjie"
+  ]
+}

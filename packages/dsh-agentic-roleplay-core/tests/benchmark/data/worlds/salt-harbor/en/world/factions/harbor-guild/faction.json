@@ -1,0 +1,67 @@
+{
+  "id": "harbor-guild",
+  "name": "The Harbor Guild",
+  "summary": "The body that controls moorings, fish prices and the harbor office.",
+  "description": "Chartered a century ago to keep the harbor orderly; in practice it decides who may fish and who may not.",
+  "values": [
+    "order",
+    "profit"
+  ],
+  "structure": "A master and a council of four.",
+  "start": {
+    "public_state": "Meeting daily about the closed road.",
+    "inner_state": "Divided over what the keeper knew.",
+    "goals": [
+      {
+        "name": "Keep the lighthouse road closed",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.8,
+        "urgency": 0.6,
+        "plan": []
+      }
+    ]
+  },
+  "members": [
+    {
+      "character": "ines",
+      "role": "master",
+      "rank": "first",
+      "status": "active",
+      "public": true,
+      "commitment": 0.9
+    },
+    {
+      "character": "tomas",
+      "role": "informer",
+      "rank": "",
+      "status": "active",
+      "public": false,
+      "commitment": 0.3
+    }
+  ],
+  "relationships": [
+    {
+      "to": {
+        "kind": "faction",
+        "id": "lamp-keepers"
+      },
+      "label": "rival",
+      "familiarity": 0.7,
+      "trust": -0.2,
+      "affinity": -0.2,
+      "tension": 0.7
+    },
+    {
+      "to": {
+        "kind": "character",
+        "id": "bram"
+      },
+      "label": "problem",
+      "familiarity": 0.6,
+      "trust": -0.4,
+      "affinity": -0.3,
+      "tension": 0.8
+    }
+  ]
+}

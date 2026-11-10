@@ -1,0 +1,90 @@
+[
+  {
+    "key": "fog-bell-rings",
+    "name": "雾钟敲响",
+    "when": {
+      "type": "time",
+      "from": "1887-10-03T20:00"
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "text": "码头的雾钟开始敲响，缓慢而沉闷。"
+      },
+      {
+        "type": "cue",
+        "audience": {
+          "place": "inn-bar"
+        },
+        "text": "钟响了，酒吧里安静了一瞬。"
+      }
+    ],
+    "announce": {
+      "audience": "everyone",
+      "text": "雾钟将在八点敲响。",
+      "at": "1887-10-03T18:30"
+    }
+  },
+  {
+    "key": "storm-breaks",
+    "name": "风暴降临",
+    "when": {
+      "type": "variable",
+      "variable": "storm_warning",
+      "op": "eq",
+      "value": true
+    },
+    "effects": [
+      {
+        "type": "edit",
+        "edit": {
+          "events": [
+            {
+              "text": "风暴席卷盐湾港，所有的船都赶回码头。",
+              "tags": [
+                "storm"
+              ],
+              "importance": 4,
+              "perceived_by": "everyone"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "key": "key-found",
+    "name": "钥匙被找到",
+    "when": {
+      "type": "item",
+      "item": "lighthouse-key",
+      "held_by": "mara"
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "text": "码头上有人看见玩家角色从系缆石下拿起了什么。"
+      }
+    ]
+  },
+  {
+    "key": "at-the-lighthouse",
+    "name": "到了灯塔",
+    "when": {
+      "type": "place",
+      "character": "mara",
+      "location": "lighthouse"
+    },
+    "effects": [
+      {
+        "type": "cue",
+        "audience": {
+          "characters": [
+            "bram"
+          ]
+        },
+        "text": "楼上传来脚步声。"
+      }
+    ]
+  }
+]

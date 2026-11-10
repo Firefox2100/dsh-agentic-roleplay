@@ -1,0 +1,19 @@
+{
+  "id": "surgery",
+  "name": "The doctor's consulting room",
+  "description": "A small room off the passage with a desk, a couch and a glass-fronted cabinet.",
+  "features": [
+    {
+      "id": "cabinet",
+      "name": "The cabinet",
+      "description": "Bottles, instruments and a locked drawer of case notes."
+    }
+  ],
+  "exits": [
+    {
+      "to": "stairs",
+      "description": "back to the hall",
+      "travel_time_seconds": 20
+    }
+  ]
+}

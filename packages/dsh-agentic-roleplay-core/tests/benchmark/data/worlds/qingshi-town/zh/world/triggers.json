@@ -1,0 +1,21 @@
+[
+  {
+    "key": "dusk-drum",
+    "name": "暮鼓",
+    "when": {
+      "type": "time",
+      "from": "1127-03-02T18:00"
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "text": "镇上的暮鼓响了，街上的摊子开始收拾。"
+      }
+    ],
+    "announce": {
+      "audience": "everyone",
+      "text": "暮鼓酉时敲响。",
+      "at": "1127-03-02T16:00"
+    }
+  }
+]

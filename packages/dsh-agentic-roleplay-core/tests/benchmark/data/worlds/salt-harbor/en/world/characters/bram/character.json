@@ -1,0 +1,93 @@
+{
+  "id": "bram",
+  "name": "Old Bram",
+  "aliases": [
+    "Bram Venn",
+    "the keeper"
+  ],
+  "age": 63,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "The lighthouse keeper, missing for nine days.",
+  "personality": "Silent by habit, exact by training, tender in ways he hides.",
+  "background": "Kept the lamp for thirty-one years and swore the keeper's oath never to let it go dark.",
+  "appearance": "Lean and weathered, white beard, a missing finger on his left hand.",
+  "speech": {
+    "style": "Few words, spoken slowly; nautical terms for everything.",
+    "examples": [
+      "Steady as she goes.",
+      "The lamp does not care who is sorry."
+    ]
+  },
+  "start": {
+    "public_state": "Not seen.",
+    "activity": "Waiting in the dark.",
+    "inner_state": "Guarding what he hid in the cellar and listening for footsteps.",
+    "emotion": {
+      "baseline": {
+        "valence": -0.3,
+        "arousal": 0.2,
+        "dominance": 0.2
+      }
+    },
+    "intents": [
+      {
+        "type": "agenda",
+        "name": "Keep the cellar secret",
+        "status": "active",
+        "horizon": "long",
+        "priority": 0.9,
+        "urgency": 0.5,
+        "plan": []
+      }
+    ],
+    "location": "lighthouse-cellar",
+    "position": "on an upturned crate"
+  },
+  "relationships": [
+    {
+      "to": "mara",
+      "label": "daughter",
+      "familiarity": 1,
+      "trust": 0.4,
+      "affinity": 0.7,
+      "tension": 0.5
+    },
+    {
+      "to": "kit",
+      "label": "errand boy",
+      "familiarity": 0.8,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "tomas",
+      "label": "old shipmate",
+      "familiarity": 0.9,
+      "trust": 0.6,
+      "affinity": 0.6
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "lighthouse",
+      "lighthouse-cellar",
+      "signal-room",
+      "pier"
+    ],
+    "items": [
+      "lighthouse-key",
+      "signal-lamp"
+    ],
+    "exits": [],
+    "lore": [
+      "cellar-secret",
+      "keeper-oath",
+      "lighthouse-history",
+      "smugglers-signal"
+    ]
+  }
+}

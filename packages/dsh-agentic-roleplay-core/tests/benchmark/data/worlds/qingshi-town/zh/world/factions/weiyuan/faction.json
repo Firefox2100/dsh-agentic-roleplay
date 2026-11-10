@@ -1,0 +1,47 @@
+{
+  "id": "weiyuan",
+  "name": "威远镖局",
+  "summary": "三省有名的镖局，押镖靠的是信义。",
+  "description": "二十年的老字号，靠一个“信”字立足。",
+  "values": [
+    "信义",
+    "声誉"
+  ],
+  "structure": "一位总镖头，几十个镖师。",
+  "start": {
+    "public_state": "在为晚了的镖四处打听。",
+    "inner_state": "怕这一趟毁了几十年的名声。",
+    "goals": []
+  },
+  "members": [
+    {
+      "character": "tieshan",
+      "role": "总镖头",
+      "rank": "",
+      "status": "active",
+      "public": true,
+      "commitment": 0.9
+    },
+    {
+      "character": "qianzhanggui",
+      "role": "耳目",
+      "rank": "",
+      "status": "active",
+      "public": false,
+      "commitment": 0.3
+    }
+  ],
+  "relationships": [
+    {
+      "to": {
+        "kind": "faction",
+        "id": "yaowanggu"
+      },
+      "label": "旧约",
+      "familiarity": 0.6,
+      "trust": 0.2,
+      "affinity": 0.1,
+      "tension": 0.4
+    }
+  ]
+}

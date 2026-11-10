@@ -1,0 +1,23 @@
+{
+  "id": "stairs",
+  "name": "The stairs and hall",
+  "description": "Seventeen steps down to the street door, with Mrs Hudson's kitchen at the foot.",
+  "features": [],
+  "exits": [
+    {
+      "to": "sitting-room",
+      "description": "up to the sitting room",
+      "travel_time_seconds": 15
+    },
+    {
+      "to": "street",
+      "description": "out of the street door",
+      "travel_time_seconds": 10
+    },
+    {
+      "to": "surgery",
+      "description": "along the passage to the doctor's consulting room",
+      "travel_time_seconds": 20
+    }
+  ]
+}

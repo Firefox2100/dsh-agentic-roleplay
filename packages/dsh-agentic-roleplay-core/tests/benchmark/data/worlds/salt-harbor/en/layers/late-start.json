@@ -1,0 +1,30 @@
+{
+  "id": "late-start",
+  "description": "Starts the story in the small hours (01:30 on the next night's date, 4 October), with the landlord already asleep in the inn room and the opening rewritten to match. The sleeper's own start is moved to where they sleep, because the days of the characters never move one who stands in the player's place.",
+  "requires": [
+    "sleeps"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "starting_time": "1887-10-04T01:30",
+      "opening_message": [
+        {
+          "type": "narration",
+          "text": "Past one in the morning the bar is empty, the lamps are turned low and the fog presses at the windows. Tomas went up to bed an hour ago."
+        }
+      ]
+    },
+    "characters/tomas/character.json": {
+      "start": {
+        "location": "inn-room",
+        "position": "in bed",
+        "activity": "Asleep.",
+        "public_state": "Asleep upstairs."
+      }
+    }
+  }
+}

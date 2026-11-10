@@ -1,0 +1,14 @@
+{
+  "id": "guild-charter",
+  "title": "公会特许状",
+  "kind": "politics",
+  "scope": "everyone",
+  "summary": "只有公会能批准泊位，并封闭港区土地上的道路。",
+  "body": "特许状赋予公会批准泊位、制定鱼价、以检修为由封闭港区任何道路（最长三十天）的专有权。",
+  "subjects": [
+    {
+      "kind": "faction",
+      "id": "harbor-guild"
+    }
+  ]
+}

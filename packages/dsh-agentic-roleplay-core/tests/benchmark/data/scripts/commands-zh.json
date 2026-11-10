@@ -1,0 +1,105 @@
+{
+  "id": "commands-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我问托马斯，今晚港务长来过没有。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/ooc 伊内斯走进客栈酒吧。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/roll 2d6 看出港务长的心情",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 2 hours until the bell",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "action": "regenerate",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问她想要什么。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "action": "rewind",
+      "to": 3,
+      "expect": []
+    },
+    {
+      "say": "我向他们道谢，说了晚安。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "character-at",
+      "character": "ines",
+      "place": "inn-bar"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    }
+  ]
+}

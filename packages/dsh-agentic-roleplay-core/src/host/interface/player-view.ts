@@ -45,7 +45,7 @@ export function playerViewOf(session: ViewSession, options: ViewOptions): Player
   if (player === undefined) return finish(view, session)
   const playerState = session.characterStates.get(player.id)
   view.player = { key: keyOf(player), name: player.name, summary: player.summary, publicState: playerState?.publicState ?? '' }
-  view.variables.push(...shown(player.name, shownVariables(session, 'character', player.id, keyOf(player), 'others')))
+  view.variables.push(...shown(player.name, shownVariables(session, 'character', player.id, keyOf(player), 'self')))
 
   const placement = session.placements.get('character', player.id)
   const here = placement === undefined ? undefined : session.locations.get(placement.locationId)

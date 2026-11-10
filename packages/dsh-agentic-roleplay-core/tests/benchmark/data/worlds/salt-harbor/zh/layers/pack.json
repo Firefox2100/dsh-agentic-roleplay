@@ -1,0 +1,35 @@
+{
+  "id": "pack",
+  "description": "An interface pack of the world's own, the same files as the shipped Scene pack (a status strip and a map in the sidebar), so that a story is started with a pack and nothing else changes.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "ui/scene/pack.json": {
+      "name": "Scene",
+      "version": "1.0",
+      "description": "A status strip above the input box (place, time, who is here) and a live map of the places you know in the right sidebar. Works with any world.",
+      "api": 1,
+      "actions": [
+        "open"
+      ],
+      "surfaces": {
+        "hud": {
+          "file": "strip.html",
+          "height": 40
+        },
+        "sidebar": {
+          "file": "map.html",
+          "title": "Map"
+        }
+      }
+    },
+    "ui/scene/strip.html": "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Scene location and time</title>\n<link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body>\n<div class=\"strip\"><span class=\"place\" id=\"place\"></span><span class=\"time\" id=\"time\"></span><span class=\"more\" id=\"more\"></span><button type=\"button\" id=\"map\"></button></div>\n<script src=\"strip.js\"></script>\n</body>\n</html>\n",
+    "ui/scene/strip.js": "const WORDS = {\n  en: { nowhere: 'Nowhere in particular', alone: 'alone', with: 'with', map: 'Map', mapTitle: 'Show the map in the sidebar' },\n  zh: { nowhere: '不在任何特定地点', alone: '独自一人', with: '与', map: '地图', mapTitle: '在侧栏显示地图' },\n}\nconst words = () => WORDS[document.documentElement.lang] ?? WORDS.en\nconst text = (id, value) => { document.getElementById(id).textContent = value }\nlet latest\n\nfunction render() {\n  const view = latest\n  if (view === undefined) return\n  const w = words()\n  text('place', view.place ? view.place.name : w.nowhere)\n  text('time', view.time ? [view.time.text, ...view.time.holidays].join(' · ') : '')\n  const here = view.place ? view.place.here.map(person => person.name) : []\n  const tracked = view.variables.filter(entry => entry.subject !== 'the world').map(entry => `${entry.subject}: ${entry.name} ${entry.value}`)\n  text('more', [here.length > 0 ? `${w.with} ${here.join(', ')}` : w.alone, ...tracked].join(' · '))\n  const button = document.getElementById('map')\n  button.textContent = w.map\n  button.title = w.mapTitle\n  rp.resize(document.documentElement.scrollHeight)\n}\n\nrp.watch((view) => { latest = view; render() })\nrp.on('theme', render)\ndocument.getElementById('map').addEventListener('click', () => { rp.open('sidebar').catch(error => console.warn(error)) })\n",
+    "ui/scene/map.html": "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Scene map</title>\n<link rel=\"stylesheet\" href=\"style.css\">\n</head>\n<body style=\"height: 100vh\">\n<svg id=\"map\" viewBox=\"0 0 400 400\" role=\"img\"></svg>\n<p class=\"muted map-empty\" id=\"empty\" hidden></p>\n<script src=\"map.js\"></script>\n</body>\n</html>\n",
+    "ui/scene/map.js": "const WORDS = {\n  en: { label: 'The places you know and the ways between them', empty: 'No places known yet.' },\n  zh: { label: '你所知道的地点以及它们之间的路', empty: '还没有已知的地点。' },\n}\nconst words = () => WORDS[document.documentElement.lang] ?? WORDS.en\nconst SVG = 'http://www.w3.org/2000/svg'\nconst CENTRE = 200\nconst RADIUS = 140\n\nfunction element(name, attributes = {}, text) {\n  const node = document.createElementNS(SVG, name)\n  for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, String(value))\n  if (text !== undefined) node.textContent = text\n  return node\n}\n\n/** Where each known place is drawn: the one the player is in at the centre, the others around it. */\nfunction layout(places) {\n  const others = places.filter(place => !place.here)\n  const spots = new Map(places.filter(place => place.here).map(place => [place.key, { x: CENTRE, y: CENTRE }]))\n  others.forEach((place, index) => {\n    const angle = (index / Math.max(1, others.length)) * Math.PI * 2 - Math.PI / 2\n    spots.set(place.key, { x: CENTRE + RADIUS * Math.cos(angle), y: CENTRE + RADIUS * Math.sin(angle) })\n  })\n  return spots\n}\n\nlet latest\n\nfunction render() {\n  const view = latest\n  if (view === undefined) return\n  const svg = document.getElementById('map')\n  svg.setAttribute('aria-label', words().label)\n  const empty = document.getElementById('empty')\n  empty.textContent = words().empty\n  empty.hidden = view.map.places.length > 0\n  const spots = layout(view.map.places)\n  svg.replaceChildren(\n    ...view.map.routes.flatMap((route) => {\n      const from = spots.get(route.from)\n      const to = spots.get(route.to)\n      return from && to ? [element('line', { class: 'edge', x1: from.x, y1: from.y, x2: to.x, y2: to.y })] : []\n    }),\n    ...view.map.places.map((place) => {\n      const spot = spots.get(place.key)\n      const group = element('g', { class: place.here ? 'node here' : 'node', transform: `translate(${spot.x} ${spot.y})` })\n      group.append(element('circle', { r: place.here ? 11 : 8 }), element('text', { y: place.here ? 28 : 24 }, place.name))\n      return group\n    }),\n  )\n}\n\nrp.watch((view) => { latest = view; render() })\nrp.on('theme', render)\n",
+    "ui/scene/style.css": ":root { color-scheme: light dark; }\nhtml, body { margin: 0; background: transparent; color: var(--dsw-alias-label-primary, CanvasText); font: 13px/20px system-ui, sans-serif; }\n.muted { color: var(--dsw-alias-label-tertiary, GrayText); }\nbutton { font: inherit; text-align: left; border: 1px solid var(--dsw-alias-border-l3, #8886); border-radius: var(--dsw-radius-sm, 8px); background: transparent; color: inherit; padding: 4px 10px; margin: 0 6px 6px 0; cursor: pointer; }\nbutton:hover { border-color: var(--dsw-alias-brand-primary, currentColor); }\n.strip { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; padding: 8px 12px; border: 1px solid var(--dsw-alias-border-l3, #8886); border-radius: var(--dsw-radius-sm, 8px); background: var(--dsw-alias-bg-layer-1, transparent); }\n.strip .place { font-weight: 600; color: var(--dsw-alias-brand-primary, inherit); }\n.strip .time, .strip .more { color: var(--dsw-alias-label-secondary, inherit); }\n.strip button { margin: 0 0 0 auto; padding: 0 8px; }\nsvg { display: block; width: 100%; height: 100%; }\n.edge { stroke: var(--dsw-alias-border-l2, #8888); stroke-width: 1.5; }\n.node circle { fill: var(--dsw-alias-bg-layer-2, #8882); stroke: var(--dsw-alias-border-l2, #888); stroke-width: 1.5; }\n.node.here circle { fill: var(--dsw-alias-brand-primary, #a52); stroke: none; }\n.node text { fill: var(--dsw-alias-label-secondary, currentColor); font-size: 11px; text-anchor: middle; }\n.node.here text { fill: var(--dsw-alias-label-primary, currentColor); font-weight: 600; }\n.map-empty { padding: 24px; }\n"
+  },
+  "patch": {}
+}

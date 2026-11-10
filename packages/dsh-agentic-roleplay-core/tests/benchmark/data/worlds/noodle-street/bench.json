@@ -1,0 +1,11 @@
+{
+  "id": "noodle-street",
+  "name": "巷口面馆",
+  "theme": "daily",
+  "languages": {
+    "zh": {
+      "native": true
+    }
+  },
+  "purpose": "A native-Chinese daily-life world: an old neighbourhood, a noodle shop, ordinary routines and small secrets. Where repetition, honorifics, schedules and a quiet rumour are tested, with nothing at stake but the day."
+}

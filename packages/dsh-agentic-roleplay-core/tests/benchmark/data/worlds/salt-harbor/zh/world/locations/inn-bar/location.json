@@ -1,0 +1,25 @@
+{
+  "id": "inn-bar",
+  "name": "锚与灯客栈·酒吧",
+  "description": "低矮横梁的酒吧，满是焦油和湿羊毛的味道，一头生着炉火，吧台上摊着账簿。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "counter",
+      "name": "吧台",
+      "description": "带疤的橡木台面，上面有一只黄铜铃。"
+    },
+    {
+      "id": "fireplace",
+      "name": "壁炉",
+      "description": "压着火的壁炉，两边各有一条长凳。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "inn-room",
+      "description": "通往客房的楼梯",
+      "travel_time_seconds": 30
+    }
+  ]
+}

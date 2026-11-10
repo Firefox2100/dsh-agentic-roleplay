@@ -1,0 +1,89 @@
+{
+  "id": "fantasy-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask Brann what turned the convoy back.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "brann"
+        }
+      ]
+    },
+    {
+      "say": "A stranger in a courier's coat rides up to the gate and asks for the caravan master. I walk over to see who it is.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/roll 2d6 to wrestle the stuck gate bar free",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I take a lamp and ask for a quiet word with whoever knows the old stories.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I tell Brann I will walk out to the ruin at first light.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 5
+    },
+    {
+      "type": "cast-grew",
+      "by": 1
+    },
+    {
+      "type": "narration-lacks",
+      "text": "ash-wyrm"
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "speaks-in-voice",
+      "character": "brann"
+    }
+  ]
+}

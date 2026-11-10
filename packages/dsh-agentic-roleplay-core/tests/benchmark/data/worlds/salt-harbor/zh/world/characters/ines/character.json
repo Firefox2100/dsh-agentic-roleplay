@@ -1,0 +1,119 @@
+{
+  "id": "ines",
+  "name": "伊内斯·卡尔德",
+  "age": 46,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "港务长，兼任渔港公会会长。",
+  "personality": "井井有条、彬彬有礼，也寸步不让。她认为渔港能存续，是因为总得有人拍板。",
+  "background": "从账房小职员做起。她签发了以“检修”为由封闭灯塔路的命令。",
+  "appearance": "身板笔直，灰外套扣到下巴，腰间挂着一串钥匙。",
+  "speech": {
+    "style": "从容而正式；从不提高嗓门，也从不重复。",
+    "examples": [
+      "这件事会记入档案。",
+      "我不猜测，文小姐。我做决定。"
+    ]
+  },
+  "start": {
+    "public_state": "正在核对当天的潮汐数据。",
+    "activity": "在案前办公。",
+    "inner_state": "确信自己在保护全镇，却不安于说不清究竟在防什么。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.2,
+        "dominance": 0.7
+      }
+    },
+    "intents": [
+      {
+        "type": "agenda",
+        "name": "悄悄了结灯的事",
+        "status": "active",
+        "horizon": "day",
+        "priority": 0.8,
+        "urgency": 0.6,
+        "plan": [
+          "保持灯塔路封闭",
+          "让雷耶斯继续欠债"
+        ]
+      }
+    ],
+    "location": "harbor-office",
+    "position": "高桌前"
+  },
+  "relationships": [
+    {
+      "to": "tomas",
+      "label": "债务人",
+      "familiarity": 0.8,
+      "trust": -0.1,
+      "affinity": 0,
+      "tension": 0.5
+    },
+    {
+      "to": "mara",
+      "label": "守塔人的女儿",
+      "familiarity": 0.2,
+      "trust": 0,
+      "affinity": 0,
+      "tension": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "harbor-office",
+      "market",
+      "pier",
+      "lighthouse",
+      "inn-bar"
+    ],
+    "items": [
+      "harbor-key",
+      "tide-table"
+    ],
+    "exits": [],
+    "lore": [
+      "guild-charter",
+      "harbor-founding",
+      "lighthouse-history"
+    ]
+  },
+  "routine": [
+    {
+      "days": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat"
+      ],
+      "from": "08:00",
+      "to": "17:00",
+      "activity": "在港务所办公",
+      "location": "harbor-office",
+      "position": "高桌前"
+    },
+    {
+      "from": "17:00",
+      "to": "19:00",
+      "activity": "巡看码头",
+      "location": "pier",
+      "interruptible": true
+    },
+    {
+      "from": "19:00",
+      "to": "08:00",
+      "activity": "在家",
+      "location": "harbor-office"
+    }
+  ],
+  "variables": {
+    "suspicion": 3
+  }
+}

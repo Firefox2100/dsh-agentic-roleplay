@@ -1,0 +1,7 @@
+{
+  "id": "flask",
+  "name": "Flask of tea",
+  "description": "A flask kept warm for Mr Okafor.",
+  "location": "bakery",
+  "feature": "counter"
+}

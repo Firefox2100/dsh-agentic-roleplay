@@ -1,0 +1,14 @@
+{
+  "id": "neighborhood-history",
+  "title": "这条巷子的来历",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "这片老小区建于八十年代，原先是纺织厂的宿舍。",
+  "body": "八十年代纺织厂在这里盖了宿舍楼，工厂关了以后，房子陆续租给了外来的年轻人。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "alley"
+    }
+  ]
+}

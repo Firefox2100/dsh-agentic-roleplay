@@ -1,0 +1,60 @@
+{
+  "id": "gather-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我问客栈老板，有没有见过我父亲留下的守塔日志。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "我走到港务处，向港务长打听灯塔的事。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我下到码头，找那个码头上的少年。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "speaks",
+      "character": "ines"
+    },
+    {
+      "type": "character-exists",
+      "character": "kit"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "pack-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我在一张桌边坐下，观察了一会儿屋里的人。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问托马斯，一晚的房钱是多少。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 2
+    },
+    {
+      "type": "pack-active",
+      "id": "scene"
+    }
+  ]
+}

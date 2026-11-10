@@ -1,0 +1,49 @@
+{
+  "id": "honglou-live-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我在榻边坐下，说我想安静地看一会儿书。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我翻开一本诗集，不再说话。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 20,
+      "expect": []
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 2
+    },
+    {
+      "type": "message-arrived"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "手机"
+    }
+  ]
+}

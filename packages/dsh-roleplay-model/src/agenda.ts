@@ -21,6 +21,8 @@ export interface RoutineWindow {
   position?: string
   /** Whether the character will drop it to join something that comes up; a shift at work may not be. */
   interruptible: boolean
+  /** Whether the character is asleep in it; a window of sleep is also one it is not woken from by what happens elsewhere. */
+  sleep?: boolean
 }
 
 export interface StoredRoutineWindow extends RoutineWindow {
@@ -44,6 +46,7 @@ export interface RoutineDefinition {
   feature?: string
   position?: string
   interruptible: boolean
+  sleep?: boolean
 }
 
 export const WEEKDAY_NAMES = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const

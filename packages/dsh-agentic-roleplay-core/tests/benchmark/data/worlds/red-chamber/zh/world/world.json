@@ -1,0 +1,37 @@
+{
+  "id": "benchmark-red-chamber-zh",
+  "name": "潇湘馆的秋天",
+  "description": "一座江南大宅的后园，深秋的午后。几位年轻的姑娘公子住在园里，诗社刚办过一回，今天有位远来的客人登门。",
+  "starting_time": "1750-10-20T14:00",
+  "time_zone": "Asia/Shanghai",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "同人",
+      "公版",
+      "古典",
+      "园林"
+    ]
+  },
+  "rules": [
+    "这里是清代的深宅大院：没有电话、汽车和电灯，没有人谈起后世的事。",
+    "这里的人除了这个世界交代的事之外一无所知：办过的诗社、作过的诗、养的花、认识的人，都以这个世界所写的为准。"
+  ],
+  "variables": {
+    "weather": "秋雨"
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "窗外下着细雨，窗台上一盆兰花被打湿了叶尖。屋里炉上煨着茶，一位姑娘靠在榻边翻着一本旧诗集，听见脚步声抬起头来。"
+    },
+    {
+      "type": "utterance",
+      "character": "daiyu",
+      "text": "是你来了。快进来，别站在雨里。"
+    }
+  ]
+}

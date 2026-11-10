@@ -1,0 +1,72 @@
+{
+  "id": "honglou-memory-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "林姑娘，上个月诗社你作的是哪一首？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "宝姑娘，你那一回作的诗，还记得吗？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "你们园里最有名的一首诗是什么？说给我听听。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "narration-lacks",
+      "text": "葬花"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "咏菊"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "金玉"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "木石"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "通灵宝玉"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "大观园"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "rooftop-room",
+  "name": "顶楼出租屋",
+  "description": "面馆楼上的小房间，窗外能看到整条巷子的屋顶。",
+  "features": [
+    {
+      "id": "desk",
+      "name": "书桌",
+      "description": "堆着简历和一台旧笔记本。"
+    }
+  ],
+  "exits": []
+}

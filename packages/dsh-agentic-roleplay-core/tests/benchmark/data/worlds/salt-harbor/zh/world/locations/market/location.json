@@ -1,0 +1,28 @@
+{
+  "id": "market",
+  "name": "集市",
+  "description": "鹅卵石铺的广场，油布篷下排着鱼摊，即便大雾天也很喧闹。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "notice-board",
+      "name": "告示板",
+      "description": "公会的告示，其中有封闭灯塔路的命令。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "inn-bar",
+      "description": "客栈的门",
+      "travel_time_seconds": 45
+    },
+    {
+      "to": "harbor-office",
+      "description": "港务所的楼梯",
+      "travel_time_seconds": 60
+    }
+  ],
+  "variables": {
+    "crowd": 6
+  }
+}

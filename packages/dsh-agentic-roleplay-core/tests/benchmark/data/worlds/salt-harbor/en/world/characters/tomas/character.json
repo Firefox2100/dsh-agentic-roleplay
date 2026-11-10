@@ -1,0 +1,142 @@
+{
+  "id": "tomas",
+  "name": "Tomas Reyes",
+  "age": 58,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "Landlord of the Anchor & Lamp, who hears everything and repeats little.",
+  "personality": "Genial on the surface, careful underneath. He keeps every promise he makes and makes as few as he can.",
+  "background": "Served as the keeper's mate for twenty years before buying the inn with a legacy. He owes the guild money.",
+  "appearance": "Broad, grey-whiskered, always wiping something.",
+  "speech": {
+    "style": "Warm, rambling, with sailors' sayings that trail off when a subject gets close.",
+    "examples": [
+      "Fog's thick tonight, and thick heads go with it.",
+      "Ah, now. That is a question for daylight."
+    ]
+  },
+  "start": {
+    "public_state": "Pouring for the evening crowd.",
+    "activity": "Tending the bar.",
+    "inner_state": "Sick with worry about Bram, and about what he agreed to hide.",
+    "emotion": {
+      "baseline": {
+        "valence": 0,
+        "arousal": 0.3,
+        "dominance": 0.4
+      }
+    },
+    "intents": [
+      {
+        "type": "agenda",
+        "name": "Keep the inn out of the guild's quarrel",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.6,
+        "urgency": 0.4,
+        "plan": []
+      }
+    ],
+    "location": "inn-bar",
+    "position": "behind the bar"
+  },
+  "relationships": [
+    {
+      "to": "mara",
+      "label": "the keeper's girl",
+      "summary": "Fond of her, and afraid of what she will find.",
+      "familiarity": 0.7,
+      "trust": 0.4,
+      "affinity": 0.6,
+      "tension": 0.4
+    },
+    {
+      "to": "bram",
+      "label": "old shipmate",
+      "familiarity": 0.9,
+      "trust": 0.7,
+      "affinity": 0.7
+    },
+    {
+      "to": "ines",
+      "label": "creditor",
+      "familiarity": 0.8,
+      "trust": -0.3,
+      "affinity": -0.1,
+      "tension": 0.6
+    },
+    {
+      "to": "quill",
+      "label": "lodger",
+      "summary": "Asks too many questions.",
+      "familiarity": 0.3,
+      "trust": -0.2,
+      "affinity": 0,
+      "tension": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "inn-bar",
+      "inn-room",
+      "market",
+      "pier",
+      "lighthouse",
+      "lighthouse-cellar"
+    ],
+    "items": [
+      "ledger"
+    ],
+    "exits": [
+      {
+        "from": "lighthouse",
+        "to": "lighthouse-cellar"
+      }
+    ],
+    "lore": [
+      "lighthouse-history",
+      "cellar-secret",
+      "keeper-oath"
+    ]
+  },
+  "routine": [
+    {
+      "from": "07:00",
+      "to": "11:00",
+      "activity": "airing the rooms and cooking breakfast",
+      "location": "inn-bar",
+      "on": [
+        "!holiday:fog-festival"
+      ]
+    },
+    {
+      "from": "11:00",
+      "to": "17:00",
+      "activity": "buying fish at the market",
+      "location": "market",
+      "on": [
+        "!holiday:fog-festival"
+      ]
+    },
+    {
+      "from": "17:00",
+      "to": "01:00",
+      "activity": "tending the bar",
+      "location": "inn-bar",
+      "position": "behind the bar"
+    },
+    {
+      "from": "01:00",
+      "to": "07:00",
+      "activity": "asleep",
+      "location": "inn-room"
+    }
+  ],
+  "variables": {
+    "fatigue": 4,
+    "suspicion": 2
+  }
+}

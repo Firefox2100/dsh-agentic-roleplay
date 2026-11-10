@@ -7,6 +7,7 @@ import type { DecisionSite, GateMode, SiteReport } from '../../src/shared/decisi
 import { DEFAULT_SETTINGS } from '../../src/shared/settings.ts'
 import { trackedItems, variableTracker } from '../../src/host/variables/tracker.ts'
 import type { Language } from './language.ts'
+import { Trace } from './trace.ts'
 import { CAST_KEYS, PLAYER, castName, startValue, valueOk, variableDefinitions, type ValueCheck, type VariableCase } from './variable-cases.ts'
 
 export interface ItemResult {
@@ -43,6 +44,8 @@ export interface VariableDeps {
   /** The language model's answer to a request with a result schema. */
   ask: (request: { persona: string; prompt: string; result: unknown; label: string }) => Promise<unknown>
   decisions?: DecisionService
+  /** Where the run's state and verdicts are written; the model's requests are written by whoever made `ask`. */
+  trace?: Trace
 }
 
 const signal = new AbortController().signal
@@ -70,10 +73,13 @@ export async function runVariableCase(benchmark: VariableCase, language: Languag
       text: (id: string, variables: Record<string, string> = {}) => shippedText(id, language, variables),
       recordDecisions: (site: DecisionSite, report: SiteReport) => { decisions.push({ site, report }) },
     } as unknown as TurnStore
+    const trace = deps.trace ?? Trace.off
     const turn = benchmark.turn(language)
+    trace.state('setup', { case: benchmark.id, language, kind: benchmark.kind, mode: deps.mode, start: benchmark.start ?? {}, expect: benchmark.expect, allow: benchmark.allow ?? [], input: turn.input, deeds: turn.deeds, narration: turn.narration })
     const job: TrackJob = { chat: 'bench', turn: 4, store, input: turn.input, deeds: turn.deeds, narration: turn.narration }
     const scene = `${job.input}\n${job.deeds.join('\n')}\n${job.narration}`
     const before = trackedItems(store, scene)
+    trace.state('asked-about', before.map(item => ({ key: item.key, kind: item.variable.kind, value: item.value })))
     const tracker = variableTracker({
       agentOf: () => undefined, problem: (message) => { problems.push(message) }, ...deps.decisions === undefined ? {} : { decisions: () => deps.decisions },
       ask: deps.ask,
@@ -81,6 +87,7 @@ export async function runVariableCase(benchmark: VariableCase, language: Languag
     const began = Date.now()
     await tracker.track(job, signal)
     const ms = Date.now() - began
+    trace.state('tracker', { decisions, problems, ms })
     const after = new Map(trackedItems(store, scene).map(item => [item.key, item.value]))
     const items = before.map((item): ItemResult => {
       const got = after.get(item.key)!
@@ -88,6 +95,11 @@ export async function runVariableCase(benchmark: VariableCase, language: Languag
       const expected = benchmark.expect[item.key]
       return { key: item.key, kind: item.variable.kind, started: item.value, got, changed, ...expected === undefined ? {} : { expected }, ...expected !== undefined && changed ? { valueOk: valueOk(expected, item.value, got, language) } : {}, ...expected === undefined && changed && (benchmark.allow ?? []).includes(item.key) ? { tolerated: true as const } : {} }
     })
+    for (const item of items) {
+      const asked = item.expected !== undefined
+      const held = asked ? item.changed && item.valueOk !== false : !item.changed || (benchmark.allow ?? []).includes(item.key)
+      trace.expect(item.key, held, { started: item.started, got: item.got, expected: item.expected, changed: item.changed, valueOk: item.valueOk })
+    }
     return {
       case: benchmark.id, kind: benchmark.kind, language, ms, items, decisions, problems,
       tp: items.filter(item => item.expected !== undefined && item.changed).length,

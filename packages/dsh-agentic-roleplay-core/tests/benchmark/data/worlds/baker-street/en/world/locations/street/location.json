@@ -1,0 +1,19 @@
+{
+  "id": "street",
+  "name": "Baker Street",
+  "description": "A long street of brown brick houses, hansom cabs at the kerb and the fog sitting low.",
+  "features": [
+    {
+      "id": "lamp",
+      "name": "The lamp-post",
+      "description": "A gas lamp that still burns at nine in the morning."
+    }
+  ],
+  "exits": [
+    {
+      "to": "stairs",
+      "description": "in at the street door",
+      "travel_time_seconds": 10
+    }
+  ]
+}

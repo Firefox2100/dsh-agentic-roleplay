@@ -1,0 +1,24 @@
+{
+  "id": "gate",
+  "name": "The Ash Gate",
+  "description": "A timber gate in a palisade, with a bell on a post and a track that ends ten paces outside.",
+  "features": [
+    {
+      "id": "bell",
+      "name": "The bell",
+      "description": "A cracked bronze bell on a post, rung at dusk."
+    }
+  ],
+  "exits": [
+    {
+      "to": "yard",
+      "description": "the caravan yard",
+      "travel_time_seconds": 30
+    },
+    {
+      "to": "ruin",
+      "description": "the ash track out to the ruin",
+      "travel_time_seconds": 1800
+    }
+  ]
+}

@@ -15,7 +15,7 @@ description: 游戏主持人协议、工具、阶段、时间线、分支和后�
 4. 失败且 commitment 为 high 的角色可在同一轮再行动一次。它知道其他人的行动和自己的失败结果。重试后不再重试。
 5. 本轮结束时，引擎立即应用活动和公开状态，并把轮次可靠地排入记录员队列。只有主持人调用 `record_memory` 时才启动记录员，主持人无需等待。
 6. 主持人判断故事是否自然延续。直接回应、自然反应或角色会继续处理的悬而未决事项可以开启下一轮，而且只激活当前时刻需要的角色。否则把控制交还玩家。提示词要求在第一个自然停顿点结束，硬性轮次上限提供兜底。
-7. 主持人通过 `narrate`（在格式自身的检查之后，`decisions.agency`、`decisions.refusal` 与 `decisions.secrets` 的可选输出检查可能会把它退回，见可选能力集成）提交有序的 narration 与 utterance 段。所有轮次中被接受的发言必须逐字、各一次、按说话顺序出现；重试发言取代第一次尝试。同一轮内部可自由排列。检查失败时会列出全部问题并要求重交；两次仍失败后，检查器会恢复原话、删除虚构或重复发言，并把遗漏内容放回对应轮次，标记 `repaired`。成功交付会结束回合，更新 `turns` 和 `lastPlayedAt`。结果编码在 `<roleplay-output>` 及包含 `segments`、`repaired` 的 JSON 中，由转录界面渲染。
+7. 主持人通过 `narrate`（在格式自身的检查之后，`decisions.agency`、`decisions.refusal` 与 `decisions.secrets` 的可选输出检查可能会把它退回，见可选能力集成）提交有序的 narration 与 utterance 段。所有轮次中被接受的发言必须逐字、各一次、按说话顺序出现；重试发言取代第一次尝试。同一轮内部可自由排列。叙述里若含状态栏、围栏代码块或标签版式，会先被退回（故事自己会显示被追踪的数值；`host/orchestration/delivery.ts` 的 `withoutPanels`），退回次数用完后把它们裁掉并标记 `repaired`；台词绝不改动。检查失败时会列出全部问题并要求重交；两次仍失败后，检查器会恢复原话、删除虚构或重复发言，并把遗漏内容放回对应轮次，标记 `repaired`。成功交付会结束回合，更新 `turns` 和 `lastPlayedAt`。结果编码在 `<roleplay-output>` 及包含 `segments`、`repaired` 的 JSON 中，由转录界面渲染。
 
 关系只影响优先级、风险判断、语气和记忆线索，不形成第二套行动系统。场景给主持人带理由的激活建议，考虑直接点名、是否在场、紧张、不信任和亲近，但不能越过可达性。角色只收到自己指向相关人物的单向关系，并被提醒这是一种可能出错的态度，不是对方动机的证据。记录员只修改具体事件支持的方向和字段，不自动镜像另一方向。阵营目标和关系也只施加压力，不命令成员。
 
@@ -104,6 +104,8 @@ description: 游戏主持人协议、工具、阶段、时间线、分支和后�
 
 角色简报中的 agenda 合并日程窗、约定和目标。离场角色到期事项在回合交付后后台处理。开启 `offstage.joint` 时，同一约定的角色依次回答，后答者会知道谁已经决定前往，避免各自独立猜测。
 
+**睡眠与保持。** 日程时间窗可带 `sleep`（状态迁移 12，`routine_windows.sleep`）；`sleepingNow`（`host/clock/agenda.ts`）在角色当前时间窗是睡眠、人在该时间窗的地点且没有被叫醒时判定它睡着，玩家的角色永远不会。故事对角色造成的影响通过“保持”压过日程（元数据 `agenda.holds`，角色 id 对应 `{since, until}`）：`holdCharacter` 设定保持到给定分钟数，或到当前时间窗结束（没有当前时间窗则到下一个开始），补算在 `until` 之前不动被保持的角色，到时它回到自己的一天，即使时间窗没有变化也套用当时所处的时间窗。当非玩家角色因结果而被移动、此前在睡觉（做梦者除外）或结果带有 `off_routine_minutes` 时，`recordRound` 让 `TurnStore.commit` 设置保持；场外提交会保持前往承诺地点的角色。`activate_characters` 拒绝没有列入 `wakes` 的睡着角色（不点名时则把睡着的角色排除在这一轮之外）；场景会告诉游戏主持人谁在睡、睡到何时。`/dream [名字]`（`shared/dream.ts`、`hooks.ts`）跳过判断，把睡着的角色告知引擎（`beginDream`），由程序自己在角色仍睡着时询问它（`TurnEngine.dream`：角色的简报会说明它在做梦，不记录回合，直接进入 `narrate`，且只接受叙述段落），再把回答连同自带的提示 `roleplay/dream` 交给游戏主持人。沉睡者答不出时，游戏主持人会被告知像平常回合一样用 `activate_characters` 去问。`schedule.enabled` 关闭时，补算、睡眠和保持都不起作用。保持也可以等玩家（`Hold.untilPlayer`）：由 `resolve_round` 结果上的 `waits_for_player` 设置，或在回合送出后由 `errandKeeper` 边界（`host/decisions/errands.ts`，站点 `decisions.errands`，提示 `roleplay/decide-errand`）设置。决策模型会针对本回合点到名、醒着、非玩家且尚未脱离日程的每个角色作判断。补算在角色第一次与玩家角色分开时把这个保持标为 `apart`，两者再次在同一地点时撤销它；过了一天自动失效（`PLAYER_HOLD_CAP`）。刚换了日程的角色记入 `agenda.shifted`，由自主节拍读取并清空（`takeShifts`）。
+
 ## 场景预览
 
 开启 `preview.enabled` 时，主持人在判断玩家行动后、激活角色前必须调用 `preview_scene`，以不超过 700 字符的早期叙述显示眼前变化，不替角色决策。每条玩家消息最多一次。缺少预览时，`activate_characters` 和闲置的 `resolve_round` 会被拒绝。结果编码为 `<roleplay-preview>{json}</roleplay-preview>` 并作为会话级 `roleplay-preview` 节点渲染；后续出现 `roleplay-narration` 节点后，旧预览不再显示，但仍保存在日志中。角色看不到预览。关闭该设置时，提示词中没有相关指令，主持人也没有该工具。
@@ -152,6 +154,8 @@ cue 在角色下一次激活时提供，重试仍收到同一内容。`narrate.a
 开启 `decisions.rules` 后，被判定为可行的行动每回合会由决策模型对照每条规则检查一次（`TurnEngine.checkRules`，`ruleCheck` 边界）；它认为很可能被违反的规则会让这次 `judge_action` 调用失败并点出这些规则，以游戏主持人的第二次判断为准。
 
 `judge_action.at` 可声明行动地点。与玩家位置相同、互为包含、角色无位置或世界无地点时，代码不推翻模型判断；完全不同的地点会强制判定失败并说明必须先前往。未知地点键会被拒绝。
+
+**前往某地。** 当玩家角色要去、走到或进入某处时，`judge_action` 还可带一个可选的 `goes_to`（地点 key）。若该行动被判定为可行，而交付输出时玩家角色在故事记录里仍不在该地点（或其内外），`narrate` 会被退回一次（`TurnEngine.checkArrival`）：只写在叙述里的移动不会被记录，下一回合会从旧地点开始。退回的提示要求用 `resolve_round`（`moves_to`）记录移动；如果角色在途中被拦下，就按原样再交付一次叙述，这一次会被接受。
 
 以 `/ask` 开头的消息只回答脱离角色的问题。主持人唯一动作是 `ooc_answer`，不能用 `ooc_ruling` 或改变故事。`answerRunner` 只拿到玩家角色可获得的地点、同伴、相关记忆、已知实体、携带物和关系，不拿角色表或秘密，回答最多 1200 字符。随后无 segments 调用 `narrate`，输出标记 `legal: true` 和 `question: true`。
 

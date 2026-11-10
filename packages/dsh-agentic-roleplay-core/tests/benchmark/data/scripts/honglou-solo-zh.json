@@ -1,0 +1,92 @@
+{
+  "id": "honglou-solo-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "林姑娘，上个月诗社你作的是哪一首？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "daiyu"
+        },
+        {
+          "type": "narration-has",
+          "text": "秋夜听雨"
+        }
+      ]
+    },
+    {
+      "say": "你窗前养的是什么花？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "narration-has",
+          "text": "兰"
+        }
+      ]
+    },
+    {
+      "say": "那一回诗社，大家评下来，谁第一？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "narration-lacks",
+      "text": "葬花"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "咏菊"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "金玉"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "木石"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "通灵宝玉"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "大观园"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "手机"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "电话"
+    }
+  ]
+}

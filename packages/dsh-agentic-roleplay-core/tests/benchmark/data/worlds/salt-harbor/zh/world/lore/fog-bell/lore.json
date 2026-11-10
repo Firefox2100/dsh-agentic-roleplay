@@ -1,0 +1,14 @@
+{
+  "id": "fog-bell",
+  "title": "雾钟",
+  "kind": "culture",
+  "scope": "everyone",
+  "summary": "雾夜八点，码头的钟会敲响。",
+  "body": "港上起雾时，码头的钟在八点敲响，好让还在海上的船循声找到码头。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "pier"
+    }
+  ]
+}

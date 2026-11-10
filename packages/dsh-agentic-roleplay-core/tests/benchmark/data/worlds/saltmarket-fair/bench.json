@@ -1,0 +1,11 @@
+{
+  "id": "saltmarket-fair",
+  "name": "Saltmarket Fair",
+  "theme": "casting",
+  "languages": {
+    "en": {
+      "native": true
+    }
+  },
+  "purpose": "The casting use case: a travelling fair with one named character, where nearly everybody the player meets has to be made up by the world as the story needs them, partly through the world's own /recruit command. Measured by how many people were made, that they are distinct and placed, and that the made-up cast keeps to the world."
+}

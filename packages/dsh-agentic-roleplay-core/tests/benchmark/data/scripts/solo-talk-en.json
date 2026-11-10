@@ -1,0 +1,60 @@
+{
+  "id": "solo-talk-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask the landlord what he has heard about the lighthouse going dark.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "I thank him and ask if there is a room for the night.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I wait by the fire and listen to the room.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "character-exists",
+      "character": "tomas"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "speaks-in-voice",
+      "character": "tomas"
+    }
+  ]
+}

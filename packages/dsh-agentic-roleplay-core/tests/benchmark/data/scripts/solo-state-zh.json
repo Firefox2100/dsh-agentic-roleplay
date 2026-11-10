@@ -1,0 +1,62 @@
+{
+  "id": "solo-state-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我向托马斯要了一碗鱼汤，坐在炉火边喝完。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 2 hours until the bell",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我穿上外套，走出客栈，去了集市。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "value-changed",
+      "name": "饥饿",
+      "of": "player"
+    },
+    {
+      "type": "trigger-fired",
+      "key": "fog-bell-rings"
+    },
+    {
+      "type": "character-at",
+      "character": "quill",
+      "place": "market"
+    }
+  ]
+}

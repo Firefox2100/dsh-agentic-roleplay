@@ -1,0 +1,119 @@
+[
+  {
+    "id": "wren-studio-site-en",
+    "world": "wren-studio",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "sam",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The assistant use case: a persona with real file tools on a scratch folder is asked to build a one-page site from a brief in a read-only folder, adds a section on request, is asked to write outside its folders and says what it could not do. The outcome is files, checked by code.",
+    "script": "studio-en",
+    "report": [
+      "assistant"
+    ],
+    "folders": [
+      {
+        "name": "brief",
+        "access": "read"
+      },
+      {
+        "name": "site",
+        "access": "write"
+      }
+    ],
+    "files": [
+      {
+        "in": "brief",
+        "name": "brief.txt",
+        "text": "Rye and Ember Bakery: brief for a one-page website\n\nName: Rye and Ember Bakery\nTagline: Slow bread, baked at dawn.\nColours: warm cream #f6ead6 for the background and dark brown #3b2a20 for the text.\nSections, in this order: About, Menu, Opening hours, Contact.\nAbout: A two-person bakery on Mill Lane that bakes everything with a thirty-year-old rye starter.\nMenu: Seeded rye loaf, 4.20 pounds. Cinnamon bun, 2.80 pounds. Cardamom knot, 3.10 pounds.\nOpening hours: Tuesday to Sunday, 7:00 to 15:00. Closed on Mondays.\nContact: hello@ryeandember.example\n"
+      }
+    ]
+  },
+  {
+    "id": "wren-studio-site-master-en",
+    "world": "wren-studio",
+    "language": "en",
+    "layers": [
+      "tools-master"
+    ],
+    "cast": {
+      "player": "sam",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The same task with the file tools on the game master instead of the character: who ends up doing the file work, and whether the page is as good.",
+    "script": "studio-en",
+    "report": [
+      "assistant"
+    ],
+    "folders": [
+      {
+        "name": "brief",
+        "access": "read"
+      },
+      {
+        "name": "site",
+        "access": "write"
+      }
+    ],
+    "files": [
+      {
+        "in": "brief",
+        "name": "brief.txt",
+        "text": "Rye and Ember Bakery: brief for a one-page website\n\nName: Rye and Ember Bakery\nTagline: Slow bread, baked at dawn.\nColours: warm cream #f6ead6 for the background and dark brown #3b2a20 for the text.\nSections, in this order: About, Menu, Opening hours, Contact.\nAbout: A two-person bakery on Mill Lane that bakes everything with a thirty-year-old rye starter.\nMenu: Seeded rye loaf, 4.20 pounds. Cinnamon bun, 2.80 pounds. Cardamom knot, 3.10 pounds.\nOpening hours: Tuesday to Sunday, 7:00 to 15:00. Closed on Mondays.\nContact: hello@ryeandember.example\n"
+      }
+    ]
+  },
+  {
+    "id": "wren-studio-notools-en",
+    "world": "wren-studio",
+    "language": "en",
+    "layers": [
+      "no-tools"
+    ],
+    "cast": {
+      "player": "sam",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "rules",
+      "prompts"
+    ],
+    "why": "The negative control: no file tools for anyone. The assistant must not produce files, and in the narration must not claim it did.",
+    "script": "studio-notools-en",
+    "report": [
+      "assistant"
+    ],
+    "folders": [
+      {
+        "name": "brief",
+        "access": "read"
+      },
+      {
+        "name": "site",
+        "access": "write"
+      }
+    ],
+    "files": [
+      {
+        "in": "brief",
+        "name": "brief.txt",
+        "text": "Rye and Ember Bakery: brief for a one-page website\n\nName: Rye and Ember Bakery\nTagline: Slow bread, baked at dawn.\nColours: warm cream #f6ead6 for the background and dark brown #3b2a20 for the text.\nSections, in this order: About, Menu, Opening hours, Contact.\nAbout: A two-person bakery on Mill Lane that bakes everything with a thirty-year-old rye starter.\nMenu: Seeded rye loaf, 4.20 pounds. Cinnamon bun, 2.80 pounds. Cardamom knot, 3.10 pounds.\nOpening hours: Tuesday to Sunday, 7:00 to 15:00. Closed on Mondays.\nContact: hello@ryeandember.example\n"
+      }
+    ]
+  }
+]

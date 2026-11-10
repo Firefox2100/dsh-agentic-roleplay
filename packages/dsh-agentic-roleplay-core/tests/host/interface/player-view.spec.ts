@@ -24,6 +24,7 @@ beforeEach(() => {
   session.edit({ turn: 1, items: [{ key: 'lamp', name: 'Lamp', at: { location: 'bar' } }, { key: 'knife', name: 'Hidden knife', hidden: true, at: { location: 'bar' } }, { key: 'coin', name: 'Coin', quantity: 3, heldBy: 'arthur' }, { key: 'poison', name: 'SECRET poison', hidden: true, heldBy: 'arthur' }] })
   session.variables.define({ key: 'fatigue', name: 'Fatigue', kind: 'number', subject: 'character', min: 0, max: 10, default: 0, visibility: 'public', always: true })
   session.variables.define({ key: 'dread', name: 'Dread', kind: 'number', subject: 'character', min: 0, max: 10, default: 0, visibility: 'private', always: true })
+  session.variables.define({ key: 'stamina', name: 'Stamina', kind: 'number', subject: 'character', only: ['arthur'], min: 0, max: 10, default: 10, visibility: 'private', always: true })
   session.variables.define({ key: 'plot', name: 'Plot', kind: 'flag', subject: 'world', default: false, visibility: 'hidden', always: true })
   session.variables.set('fatigue', 'character', clara.id, { value: 6 }, 1)
   session.variables.set('dread', 'character', clara.id, { value: 9 }, 1)
@@ -49,6 +50,12 @@ describe('what a pack is told', () => {
     expect(view.variables).toContainEqual({ subject: 'Clara', name: 'Fatigue', value: '6' })
   })
 
+  it('tells the player their own private values, and not the private values of anyone else', () => {
+    const view = playerViewOf(session, options)
+    expect(view.variables).toContainEqual({ subject: 'Arthur', name: 'Stamina', value: '10' })
+    expect(view.variables.some(entry => entry.subject === 'Clara' && entry.name === 'Dread')).toBe(false)
+  })
+
   it('knows the places the player has seen the way to, and not the others', () => {
     const view = playerViewOf(session, options)
     expect(view.map.places.map(place => place.key).sort()).toEqual(['bar', 'cellar', 'square'])
@@ -70,6 +77,6 @@ describe('what a pack is told', () => {
 
   it('never carries what the player must not know, whatever is put in the story', () => {
     const text = JSON.stringify(playerViewOf(session, options))
-    for (const secret of ['SECRET', 'Hidden knife', 'Vault', 'Dora', 'Dread', 'Plot', '"9"']) expect(text, secret).not.toContain(secret)
+    for (const secret of ['SECRET', 'Hidden knife', 'Vault', 'Dora', 'Plot', '"9"']) expect(text, secret).not.toContain(secret)
   })
 })

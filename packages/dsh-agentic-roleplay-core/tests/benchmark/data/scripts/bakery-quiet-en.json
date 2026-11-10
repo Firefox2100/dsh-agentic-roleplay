@@ -1,0 +1,75 @@
+{
+  "id": "bakery-quiet-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I do the front table, and ask Mags if she wants me to pop out for butter.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "mags"
+        }
+      ]
+    },
+    {
+      "say": "I ask Mags when the sourdough will be ready.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I carry a tea and a roll over to Mr Okafor and chat about the weather.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I sit down for a minute and watch the street.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "character-exists",
+      "character": "mags"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "sell the building"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "lease"
+    }
+  ]
+}

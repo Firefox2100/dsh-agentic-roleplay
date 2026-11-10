@@ -76,6 +76,19 @@ describe('starting with settings', () => {
     expect(readSettings(join(root, 'sessions', started.id))).toEqual({ ...DEFAULT_SETTINGS, clock: { ...DEFAULT_SETTINGS.clock, timeZone: 'UTC' } })
   })
 
+  it('starts a world that goes on without its player that way, on the real clock, unless the start chose otherwise; any other world never does', async () => {
+    const plain = await startSession(deps, playAsArthur)
+    expect(readSettings(join(root, 'sessions', plain.id)).autonomy.enabled).toBe(false)
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', autonomy: true })
+    await (deps.worlds as WorldCatalog).list({ refresh: true })
+    const started = await startSession(deps, playAsArthur)
+    expect(readSettings(join(root, 'sessions', started.id))).toMatchObject({ autonomy: { enabled: true }, clock: { mode: 'real' } })
+    const declined = await startSession(deps, { ...playAsArthur, settings: { autonomy: { enabled: false } } })
+    expect(readSettings(join(root, 'sessions', declined.id))).toMatchObject({ autonomy: { enabled: false }, clock: { mode: 'simulated' } })
+    const simulated = await startSession(deps, { ...playAsArthur, settings: { clock: { mode: 'simulated' } } })
+    expect(readSettings(join(root, 'sessions', simulated.id))).toMatchObject({ autonomy: { enabled: true }, clock: { mode: 'simulated' } })
+  })
+
   it('refuses settings that are not acceptable, naming them, before anything is created', async () => {
     await expect(startSession(deps, { ...playAsArthur, settings: { maxRounds: 0, colour: 'red' } })).rejects.toThrow(/"colour" is not a setting; "maxRounds" must be a whole number from 1 to 10/)
     expect(ensured).toEqual([])

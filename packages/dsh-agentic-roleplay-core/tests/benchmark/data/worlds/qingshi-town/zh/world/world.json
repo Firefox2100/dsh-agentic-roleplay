@@ -1,0 +1,43 @@
+{
+  "id": "benchmark-qingshi-town-zh",
+  "name": "青石镇",
+  "description": "青石镇是三条商路交汇的小镇。威远镖局押出去的一趟镖已经晚了五天，药王谷的人又恰好在这时来到镇上。",
+  "starting_time": "1127-03-02T16:00",
+  "time_zone": "Asia/Shanghai",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "武侠",
+      "镖局",
+      "江湖",
+      "小镇"
+    ]
+  },
+  "rules": [
+    "这里没有神仙、妖怪和法术：武功再高，也是凡人。",
+    "镇上不许私斗，违者由镖局和官府一起处置。",
+    "称呼要合乎江湖规矩：铁镖头、白姑娘、钱掌柜、沈姑娘。"
+  ],
+  "variables": {
+    "rumour": 2
+  },
+  "tools": {
+    "gameMaster": {
+      "roll_dice": true
+    }
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "申时的日头斜斜地照在青石板路上，镇口的茶棚里一半是商旅，一半是等消息的人。"
+    },
+    {
+      "type": "utterance",
+      "character": "tieshan",
+      "text": "沈姑娘，你来得正好。坐下，先喝口茶，我有件事要托付你。"
+    }
+  ]
+}

@@ -72,6 +72,14 @@ export class Timelines {
     return viewOf(this.read(id))
   }
 
+  /** What the narration of the last `count` turns before the one being played told, oldest first, on the path the story has taken; never what an alternative or a withdrawn turn said. */
+  narrationBefore(chat: string, count: number): string[] {
+    const id = roleplaySessionOf(chat)
+    if (id === undefined) return []
+    const { path, head } = this.view(id)
+    return path.filter(turn => turn.id !== head).slice(-count).flatMap(turn => (turn.output === undefined ? [] : [turn.output.segments.flatMap(segment => (segment.type === 'narration' ? [segment.text] : [])).join('\n')]))
+  }
+
   /**
    * The player has said something and a turn begins: the turn is added to the timeline after the head, and the state the earlier one left is kept at once,
    * with the records still waiting for the keeper in it (they are in the database, so a restored state carries them).

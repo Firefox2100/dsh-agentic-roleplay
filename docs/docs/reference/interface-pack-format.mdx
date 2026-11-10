@@ -144,7 +144,7 @@ interface PlayerView {
   }
   time?: { iso: string; zone: string; text: string; season: "spring" | "summer" | "autumn" | "winter"; holidays: string[] }  // absent until the clock has started
   carried: { name: string; quantity: number; where: string }[]
-  variables: { subject: string; name: string; value: string }[] // those anyone can tell
+  variables: { subject: string; name: string; value: string }[] // those anyone can tell, and the player's own character's private ones
   map: {
     places: { key: string; name: string; parent?: string; here: boolean }[]
     routes: { from: string; to: string }[]
@@ -153,7 +153,7 @@ interface PlayerView {
 }
 ```
 
-Never included: private and hidden variables (including feelings), anyone's inner state or intentions, relationships, other characters' knowledge, hidden things, places and routes the character has not heard of, the world's files and your settings.
+Never included: hidden variables, other characters' private variables (including feelings), anyone's inner state or intentions, relationships, other characters' knowledge, hidden things, places and routes the character has not heard of, the world's files and your settings.
 
 ### History
 

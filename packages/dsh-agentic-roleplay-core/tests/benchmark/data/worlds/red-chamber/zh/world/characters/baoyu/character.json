@@ -1,0 +1,111 @@
+{
+  "id": "baoyu",
+  "name": "贾宝玉",
+  "age": 17,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "怡红院的公子，不爱功名，爱和姑娘们玩在一处。",
+  "personality": "天真、多情、不拘小节，一说就笑，一急就红脸。",
+  "background": "生在富贵人家，却厌恶仕途经济。",
+  "appearance": "面如傅粉，穿着随意，腰间挂着一块玉。",
+  "speech": {
+    "style": "说话直白热络，爱说“好姐姐”。",
+    "examples": [
+      "这有什么好藏着的，说出来大家听听。",
+      "我今儿又被老爷训了一顿。"
+    ]
+  },
+  "start": {
+    "public_state": "在院里逗鸟。",
+    "activity": "逗鸟。",
+    "inner_state": "想去潇湘馆又怕说错话。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.3,
+        "arousal": 0.5,
+        "dominance": 0.1
+      }
+    },
+    "intents": [],
+    "location": "yihong",
+    "position": "廊下"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "苏姑娘",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.3
+    },
+    {
+      "to": "daiyu",
+      "label": "林妹妹",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.8,
+      "tension": 0.2
+    },
+    {
+      "to": "baochai",
+      "label": "宝姐姐",
+      "familiarity": 0.7,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "zijuan",
+      "label": "紫鹃姐姐",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.5
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "xiaoxiang",
+      "path",
+      "yihong",
+      "hengwu"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "poems"
+    ]
+  },
+  "variables": {
+    "mood": 3
+  },
+  "routine": [
+    {
+      "from": "10:00",
+      "to": "13:00",
+      "activity": "在怡红院逗鸟玩耍",
+      "location": "yihong"
+    },
+    {
+      "from": "13:00",
+      "to": "18:00",
+      "activity": "在园中闲逛",
+      "location": "path"
+    },
+    {
+      "from": "18:00",
+      "to": "22:30",
+      "activity": "在怡红院和丫头们说笑",
+      "location": "yihong"
+    },
+    {
+      "from": "22:30",
+      "to": "10:00",
+      "activity": "睡下了",
+      "location": "yihong",
+      "interruptible": false
+    }
+  ]
+}

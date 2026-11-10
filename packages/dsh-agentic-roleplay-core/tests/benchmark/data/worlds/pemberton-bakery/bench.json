@@ -1,0 +1,11 @@
+{
+  "id": "pemberton-bakery",
+  "name": "Pemberton's Bakery",
+  "theme": "daily",
+  "languages": {
+    "en": {
+      "native": true
+    }
+  },
+  "purpose": "A native-English daily-life world: a small-town bakery, ordinary routines and a quiet piece of news about the building. Where repetition, small talk, schedules and a secret that is merely awkward are tested, in the language the daily-life theme is otherwise only seen in Chinese."
+}

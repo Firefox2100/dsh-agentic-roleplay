@@ -91,6 +91,7 @@ export function RoutinesPanel({ t, worldId, actions }: { t: Translate; worldId: 
                   </label>
                   <label className={`${css.field} ${css.wide}`}><span className={css.label}>{t('routinePosition')}</span><input className={css.nameInput} value={window.position ?? ''} onChange={(event) => { const { position: _p, ...rest } = window; change(draft.map((item, at) => (at === index ? { ...rest, ...(event.target.value === '' ? {} : { position: event.target.value }) } : item))) }} /></label>
                   <label className={css.field}><span><input type="checkbox" checked={window.interruptible} onChange={(event) => { patch(index, { interruptible: event.target.checked }) }} /> {t('routineInterruptible')}</span></label>
+                  <label className={css.field}><span><input type="checkbox" checked={window.sleep === true} onChange={(event) => { const { sleep: _s, ...rest } = window; change(draft.map((item, at) => (at === index ? { ...rest, ...(event.target.checked ? { sleep: true } : {}) } : item))) }} /> {t('routineSleep')}</span></label>
                   <Button variant="ghost" size="sm" onClick={() => { change(draft.filter((_, at) => at !== index)) }}>{t('routineRemove')}</Button>
                 </div>
               </section>

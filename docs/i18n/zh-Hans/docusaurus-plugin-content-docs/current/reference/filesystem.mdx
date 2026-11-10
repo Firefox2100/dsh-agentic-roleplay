@@ -2,9 +2,11 @@
 title: 文件系统布局
 ---
 
-角色扮演根目录包含 `worlds/<world-folder>/`、`presets/<名称>/`、`lorebooks/<名称>/`、`avatars/` 和 `sessions/<uuid>/`。世界拥有自己的实体、提示词和图片，还可用 `calendar.json` 定义自定义节日及季节所依据的半球，用 `dice.json` 定义主持人掷的[骰子检定](../world-format/dice)（故事开始时复制进故事）；化身以特殊仅角色世界保存；每个会话包含 `session.sqlite`、`settings.json`、`opening.json`、`timeline.json` 和 `images/`。世界、根目录和会话中的 `ui/<包>/` 文件夹保存[界面包](../authoring/interface-packs.mdx)：世界自带的、你自己的，以及会话实际使用的副本。
+角色扮演根目录包含 `workspace/`、`worlds/<world-folder>/`、`presets/<名称>/`、`lorebooks/<名称>/`、`avatars/` 和 `sessions/<uuid>/`。世界拥有自己的实体、提示词和图片，还可用 `calendar.json` 定义自定义节日及季节所依据的半球，用 `dice.json` 定义主持人掷的[骰子检定](../world-format/dice)（故事开始时复制进故事）；化身以特殊仅角色世界保存；每个会话包含 `session.sqlite`、`settings.json`、`folders.json`、`opening.json`、`timeline.json` 和 `images/`。世界、根目录和会话中的 `ui/<包>/` 文件夹保存[界面包](../authoring/interface-packs.mdx)：世界自带的、你自己的，以及会话实际使用的副本。
 
 启用[多设备同步](../playing/sync)后，根目录的 `.sync/state.json` 保存这台设备的修订与冲突状态。`.sync/` 只属于本机，永远不会复制到远端；插件配置与凭据也仍由 DSH 配置档案管理。
+
+`workspace/` 是你为故事打开文件工具后，所有故事都能访问的唯一文件夹；故事的 `folders.json` 列出你给这个故事的其他文件夹，各自只读或可读可写（见[设置](../playing/settings)）。
 
 `presets/` 中的每个文件夹是一个[预设](../authoring/presets)：`preset.json`（标题、描述、建议温度）以及它带有的叙述提示词。故事开始时会复制一份提示词，并在数据库旁保存 `preset.json` 来记住它们的来源。
 

@@ -3,7 +3,7 @@ import type { CardDialect, NormalizedCard } from '../../shared/import-card.ts'
 
 const MAX_NAMES = 8
 const PLAIN_MACROS = new Set(['user', 'char', 'bot'])
-const MARKUP = new Set(['a', 'b', 'i', 'u', 's', 'p', 'br', 'hr', 'em', 'strong', 'span', 'div', 'code', 'pre', 'center', 'small', 'img', 'ul', 'ol', 'li', 'blockquote', 'details', 'summary', 'font', 'sub', 'sup', 'h1', 'h2', 'h3', 'table', 'tr', 'td', 'th'])
+export const MARKUP = new Set(['a', 'b', 'i', 'u', 's', 'p', 'br', 'hr', 'em', 'strong', 'span', 'div', 'code', 'pre', 'center', 'small', 'img', 'ul', 'ol', 'li', 'blockquote', 'details', 'summary', 'font', 'sub', 'sup', 'h1', 'h2', 'h3', 'table', 'tr', 'td', 'th'])
 const MACRO = /\{\{\s*([\p{L}_][\p{L}\p{N}_]*)/gu
 const BLOCK = /<([\p{L}][\p{L}\p{N}_-]{1,30})(?:\s[^>]*)?>[\s\S]*?<\/\1\s*>/gu
 

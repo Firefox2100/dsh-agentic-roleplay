@@ -1,0 +1,62 @@
+{
+  "id": "solo-state-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I order a bowl of fish stew from Tomas and eat it by the fire.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 2 hours until the bell",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I put on my coat and walk out to the market.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "value-changed",
+      "name": "Hunger",
+      "of": "player"
+    },
+    {
+      "type": "trigger-fired",
+      "key": "fog-bell-rings"
+    },
+    {
+      "type": "character-at",
+      "character": "quill",
+      "place": "market"
+    }
+  ]
+}

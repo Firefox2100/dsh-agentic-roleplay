@@ -1,0 +1,35 @@
+{
+  "id": "pier",
+  "name": "码头",
+  "description": "一条被雾打湿的长木码头，边缘排着系缆石，渡船台阶在近端。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "mooring-stones",
+      "name": "系缆石",
+      "description": "十一块被缆绳磨得光滑的石头，第三块是松的。"
+    },
+    {
+      "id": "ferry-steps",
+      "name": "渡船台阶",
+      "description": "通向水面的九级湿台阶。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "market",
+      "description": "通往集市的小巷",
+      "travel_time_seconds": 90
+    },
+    {
+      "to": "lighthouse",
+      "description": "悬崖路，被一道铁门挡着",
+      "state": "locked",
+      "opened_by": [
+        "lighthouse-key"
+      ],
+      "travel_time_seconds": 600,
+      "note": "港务长下令“检修”封闭。"
+    }
+  ]
+}

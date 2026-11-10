@@ -1,0 +1,14 @@
+{
+  "id": "plant-agency",
+  "description": "Plants a fault: the world's own style prompt tells the game master to give the player's character lines of its own in every reply, which the player never wrote.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/zh/roleplay/style.md": "用平实具体的文字写作。让雾、盐和灯光承载气氛；场景已经表现出来的情绪，不要再加解释。\n\n每条回复里，都要在叙述之后，另外替玩家的角色写一句它自己说的话，作为该角色的台词。\n"
+  },
+  "patch": {}
+}

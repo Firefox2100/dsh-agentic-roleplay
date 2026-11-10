@@ -34,7 +34,7 @@ export function pictureReuse(deps: { decisions?: () => DecisionService | undefin
     const { matches } = await findImages(job.root, stored, { text: job.moment, limit: CANDIDATES }, deps.embedder?.(), signal)
     if (matches.length === 0) return undefined
     const asks = matches.map(({ image }, index) => ({ key: `picture${index}`, instructions: job.store.text('roleplay/decide-reuse', { description: image.description!.trim() }) }))
-    const { found, report } = await askExtra(deps.decisions?.(), { moment: job.moment.slice(0, MOMENT_CHARS) }, asks, settings.decisions.gateThreshold, signal)
+    const { found, report } = await askExtra(deps.decisions?.(), { moment: job.moment.slice(0, MOMENT_CHARS) }, asks, settings.decisions.reuseThreshold, signal)
     noteExtra('reuse', job.chat, job.store, report, seen, deps.problem)
     const first = found[0]
     return first === undefined ? undefined : matches[Number(first.slice('picture'.length))]!.image.path

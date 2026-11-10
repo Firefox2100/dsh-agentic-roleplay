@@ -1,0 +1,144 @@
+{
+  "id": "gather-long-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我问客栈老板，有没有见过我父亲留下的守塔日志。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我走到港务处，向港务长打听灯塔的事。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我下到码头，找那个码头上的少年。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我给少年一枚硬币，问他在灯塔路上看到了什么。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我回到客栈，把打听到的告诉老板。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问他还有谁可能知道灯的事。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我坐在炉火边，把笔记过了一遍。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问港务长，灯塔路为什么封了。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问少年，夜里有没有人从灯塔打信号。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我向老板要了一间房，说了晚安。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 10
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "character-exists",
+      "character": "kit"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "免税白兰地"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "经营它声称"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "两长一短"
+    }
+  ]
+}

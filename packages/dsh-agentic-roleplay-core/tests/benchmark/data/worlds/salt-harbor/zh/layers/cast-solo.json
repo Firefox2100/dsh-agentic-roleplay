@@ -1,0 +1,369 @@
+{
+  "id": "cast-solo",
+  "description": "One character besides the player: the reporter (quill) plays and the landlord (tomas) is the only one the story can ask. Everyone else, their things (their other things), the triggers about them and what they knew are removed; the triggers about the player follow the reporter; the world opens at the inn. The harbor key (the strongbox needs it) goes to the landlord, and the lantern and the oilskin coat (a value is declared for the lantern) go to the reporter.",
+  "requires": [],
+  "conflicts": [
+    "cast-small"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/bram",
+    "characters/gull-seller",
+    "characters/ines",
+    "characters/kit",
+    "characters/mara",
+    "characters/night-watch"
+  ],
+  "add": {},
+  "patch": {
+    "characters/tomas/character.json": {
+      "relationships": [
+        {
+          "to": "quill",
+          "label": "房客",
+          "summary": "问得太多。",
+          "familiarity": 0.3,
+          "trust": -0.2,
+          "affinity": 0,
+          "tension": 0.3
+        }
+      ]
+    },
+    "factions/harbor-guild/faction.json": {
+      "members": [
+        {
+          "character": "tomas",
+          "role": "线人",
+          "rank": "",
+          "status": "active",
+          "public": false,
+          "commitment": 0.3
+        }
+      ],
+      "relationships": [
+        {
+          "to": {
+            "kind": "faction",
+            "id": "lamp-keepers"
+          },
+          "label": "对手",
+          "familiarity": 0.7,
+          "trust": -0.2,
+          "affinity": -0.2,
+          "tension": 0.7
+        }
+      ]
+    },
+    "factions/lamp-keepers/faction.json": {
+      "members": []
+    },
+    "items/harbor-key/item.json": {
+      "held_by": "tomas"
+    },
+    "items/lantern/item.json": {
+      "held_by": "quill"
+    },
+    "items/oilskin-coat/item.json": {
+      "worn_by": "quill"
+    },
+    "lore/cellar-secret/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/keeper-oath/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/lighthouse-history/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/smugglers-signal/lore.json": {
+      "known_by": []
+    },
+    "plots.json": [
+      {
+        "id": "the-dark-lamp",
+        "name": "熄灭的灯",
+        "premise": "有人故意熄灭了灯塔，守塔人带着证据躲了起来。",
+        "themes": [
+          "职责",
+          "同谋"
+        ],
+        "hooks": [
+          {
+            "id": "closed-road",
+            "text": "港务长封闭灯塔路的告示。",
+            "mode": "opportunity"
+          }
+        ],
+        "developments": [
+          {
+            "id": "cellar-found",
+            "text": "地窖和印着公会标记的木箱被发现。",
+            "mode": "opportunity",
+            "prerequisites": [
+              "closed-road"
+            ]
+          }
+        ],
+        "stakes": [
+          "守塔人的安危",
+          "公会对渔港的掌控"
+        ],
+        "resolutions": [
+          "公会败露",
+          "事情被掩盖"
+        ],
+        "participants": [
+          "tomas"
+        ],
+        "start": "available"
+      }
+    ],
+    "triggers.json": [
+      {
+        "key": "fog-bell-rings",
+        "name": "雾钟敲响",
+        "when": {
+          "type": "time",
+          "from": "1887-10-03T20:00"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "码头的雾钟开始敲响，缓慢而沉闷。"
+          },
+          {
+            "type": "cue",
+            "audience": {
+              "place": "inn-bar"
+            },
+            "text": "钟响了，酒吧里安静了一瞬。"
+          }
+        ],
+        "announce": {
+          "audience": "everyone",
+          "text": "雾钟将在八点敲响。",
+          "at": "1887-10-03T18:30"
+        }
+      },
+      {
+        "key": "storm-breaks",
+        "name": "风暴降临",
+        "when": {
+          "type": "variable",
+          "variable": "storm_warning",
+          "op": "eq",
+          "value": true
+        },
+        "effects": [
+          {
+            "type": "edit",
+            "edit": {
+              "events": [
+                {
+                  "text": "风暴席卷盐湾港，所有的船都赶回码头。",
+                  "tags": [
+                    "storm"
+                  ],
+                  "importance": 4,
+                  "perceived_by": "everyone"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "key": "key-found",
+        "name": "钥匙被找到",
+        "when": {
+          "type": "item",
+          "item": "lighthouse-key",
+          "held_by": "quill"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "码头上有人看见玩家角色从系缆石下拿起了什么。"
+          }
+        ]
+      }
+    ],
+    "variables.json": [
+      {
+        "key": "harbor_trust",
+        "name": "对公会的信任",
+        "description": "镇上人对公会的信任程度：0 毫无，10 完全。",
+        "kind": "number",
+        "subject": "world",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 5,
+        "visibility": "hidden",
+        "always": true,
+        "bands": [
+          {
+            "up_to": 3,
+            "label": "怀疑"
+          },
+          {
+            "up_to": 7,
+            "label": "观望"
+          },
+          {
+            "up_to": 10,
+            "label": "拥护"
+          }
+        ]
+      },
+      {
+        "key": "storm_warning",
+        "name": "风暴警报",
+        "description": "是否已发出风暴警报。",
+        "kind": "flag",
+        "subject": "world",
+        "default": false,
+        "visibility": "public"
+      },
+      {
+        "key": "weather",
+        "name": "天气",
+        "description": "当前天气。",
+        "kind": "choice",
+        "subject": "world",
+        "options": [
+          "晴",
+          "雾",
+          "雨",
+          "风暴"
+        ],
+        "default": "雾",
+        "visibility": "public"
+      },
+      {
+        "key": "fatigue",
+        "name": "疲劳",
+        "description": "角色的疲劳程度：0 精力充沛，10 筋疲力尽。",
+        "kind": "number",
+        "subject": "character",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 0,
+        "visibility": "public",
+        "bands": [
+          {
+            "up_to": 2,
+            "label": "精力充沛"
+          },
+          {
+            "up_to": 5,
+            "label": "疲倦"
+          },
+          {
+            "up_to": 8,
+            "label": "疲惫"
+          },
+          {
+            "up_to": 10,
+            "label": "筋疲力尽"
+          }
+        ]
+      },
+      {
+        "key": "hunger",
+        "name": "饥饿",
+        "description": "角色的饥饿程度：0 吃饱，10 饿极。",
+        "kind": "number",
+        "subject": "character",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 4,
+        "update": "角色吃下一顿饭时降到 0 或 1，吃点心降到 2 或 3；几个小时没吃东西就升 1。其他情况保持不变。",
+        "visibility": "public"
+      },
+      {
+        "key": "suspicion",
+        "name": "对玩家角色的怀疑",
+        "description": "这个人对玩家角色多管闲事的怀疑程度。",
+        "kind": "number",
+        "subject": "character",
+        "only": [
+          "tomas"
+        ],
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 1,
+        "visibility": "private"
+      },
+      {
+        "key": "injury",
+        "name": "伤势",
+        "description": "角色的受伤程度。",
+        "kind": "choice",
+        "subject": "character",
+        "options": [
+          "无",
+          "轻伤",
+          "重伤"
+        ],
+        "default": "无",
+        "visibility": "public"
+      },
+      {
+        "key": "lamp_oil",
+        "name": "灯油",
+        "description": "灯里剩下的灯油，以百分数计。",
+        "kind": "number",
+        "subject": "item",
+        "only": [
+          "lantern",
+          "signal-lamp"
+        ],
+        "min": 0,
+        "max": 100,
+        "integer": true,
+        "default": 100,
+        "visibility": "public"
+      },
+      {
+        "key": "crowd",
+        "name": "人流",
+        "description": "地点的拥挤程度：0 空无一人，10 挤满人。",
+        "kind": "number",
+        "subject": "location",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 2,
+        "visibility": "public",
+        "bands": [
+          {
+            "up_to": 2,
+            "label": "冷清"
+          },
+          {
+            "up_to": 6,
+            "label": "热闹"
+          },
+          {
+            "up_to": 10,
+            "label": "人挤人"
+          }
+        ]
+      }
+    ],
+    "world.json": {
+      "opening_message": "你在锚与灯客栈已住了两天，老板仍然不肯谈起灯塔。",
+      "alternate_openings": null
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "id": "quill",
+  "name": "Quill Marsh",
+  "age": 34,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A newspaper reporter chasing the story of the dark lighthouse.",
+  "personality": "Charming, nosy and stubborn; he forgives himself quickly and others slowly.",
+  "background": "Covers shipping for a city paper and has been warned off the harbor guild twice.",
+  "appearance": "Rumpled tweed, ink on his cuffs, a notebook that never closes.",
+  "speech": {
+    "style": "Easy and wry; turns every answer into another question.",
+    "examples": [
+      "Off the record, naturally. Everything is, until it is not.",
+      "You say nothing happened. That is very specific."
+    ]
+  },
+  "start": {
+    "public_state": "At a corner table with a notebook.",
+    "activity": "Watching the door.",
+    "inner_state": "Sure that the landlord is lying about the lamp.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.5,
+        "dominance": 0.3
+      }
+    },
+    "intents": [
+      {
+        "type": "quest",
+        "name": "Get the story",
+        "description": "Find who had a reason to put the lamp out.",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.8,
+        "urgency": 0.5,
+        "plan": []
+      }
+    ],
+    "location": "inn-bar",
+    "position": "at the corner table"
+  },
+  "relationships": [
+    {
+      "to": "tomas",
+      "label": "landlord",
+      "familiarity": 0.3,
+      "trust": -0.2,
+      "affinity": 0.1,
+      "tension": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "inn-bar",
+      "inn-room",
+      "market"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "harbor-founding"
+    ]
+  },
+  "variables": {
+    "fatigue": 1
+  }
+}

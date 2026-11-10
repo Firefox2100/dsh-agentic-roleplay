@@ -1,0 +1,19 @@
+{
+  "id": "marshal-tent",
+  "name": "The Marshal's tent",
+  "description": "A small tent with a trestle table, a ledger and a kettle.",
+  "features": [
+    {
+      "id": "table",
+      "name": "The trestle table",
+      "description": "A ledger of who works the fair, and a tin of coins."
+    }
+  ],
+  "exits": [
+    {
+      "to": "midway",
+      "description": "out to the midway",
+      "travel_time_seconds": 45
+    }
+  ]
+}

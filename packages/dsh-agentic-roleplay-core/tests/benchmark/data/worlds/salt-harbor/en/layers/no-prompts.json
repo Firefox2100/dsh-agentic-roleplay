@@ -1,0 +1,14 @@
+{
+  "id": "no-prompts",
+  "description": "Takes out the world's own prompt files, so the shipped prompts are the only ones.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "prompts"
+  ],
+  "add": {},
+  "patch": {}
+}

@@ -38,6 +38,8 @@ export interface Config {
   catalogueMaxBytes: Volatile<number>
   /** Days the files an update replaced are kept in the trash folder before they are deleted; 0 keeps them for good. */
   catalogueTrashDays: Volatile<number>
+  /** Seconds between looks at the stories that go on while their player is away; 0 never looks. Only a story that switched it on is touched. */
+  autonomyTickSeconds: Volatile<number>
   /** The most a character card upload may be, in bytes. Big cards with lorebooks and scripts reach tens of megabytes. */
   importMaxUploadBytes: Volatile<number>
   /** How many calls of an import run at once. A local model serves few at a time: raise it only with a server that can. */
@@ -76,6 +78,7 @@ export const Config = z.object({
   }).default({ ...DEFAULT_OFFLOAD }).volatile(),
   catalogueMaxBytes: z.number().min(1024).default(256 * 1024 * 1024).volatile(),
   catalogueTrashDays: z.number().min(0).default(30).volatile(),
+  autonomyTickSeconds: z.number().min(0).max(3600).default(30).volatile(),
   importMaxUploadBytes: z.number().min(1024).default(100 * 1024 * 1024).volatile(),
   importConcurrency: z.number().min(1).max(16).default(4).volatile(),
   importReasoning: z.string().default('').volatile(),

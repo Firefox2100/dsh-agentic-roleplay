@@ -1,0 +1,7 @@
+{
+  "id": "coins",
+  "name": "零钱",
+  "description": "几张皱巴巴的零钱。",
+  "quantity": 35,
+  "held_by": "xiaoman"
+}

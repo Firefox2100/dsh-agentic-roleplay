@@ -20,6 +20,7 @@ interface WindowRow {
   feature_key: string | null
   position: string
   interruptible: number
+  sleep: number
 }
 
 const toWindow = (row: WindowRow): StoredRoutineWindow => ({
@@ -34,6 +35,7 @@ const toWindow = (row: WindowRow): StoredRoutineWindow => ({
   ...(row.feature_key === null ? {} : { featureKey: row.feature_key }),
   ...(row.position === '' ? {} : { position: row.position }),
   interruptible: row.interruptible === 1,
+  ...(row.sleep === 1 ? { sleep: true } : {}),
 })
 
 const isMinute = (value: number): boolean => Number.isInteger(value) && value >= 0 && value < 1440
@@ -63,8 +65,8 @@ export class SqliteRoutineRepository implements RoutineRepository {
       this.db.run('DELETE FROM routine_windows WHERE character_id = ?', [characterId])
       windows.forEach((window, index) => {
         this.db.run(
-          'INSERT INTO routine_windows (character_id, ordinal, days, filters, start_minute, end_minute, activity, location_id, feature_key, position, interruptible) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [characterId, index, toJson([...new Set(window.days)].sort((a, b) => a - b)), toJson([...new Set(window.on ?? [])]), window.start, window.end, window.activity.trim(), window.locationId ?? null, window.featureKey ?? null, window.position ?? '', window.interruptible ? 1 : 0],
+          'INSERT INTO routine_windows (character_id, ordinal, days, filters, start_minute, end_minute, activity, location_id, feature_key, position, interruptible, sleep) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [characterId, index, toJson([...new Set(window.days)].sort((a, b) => a - b)), toJson([...new Set(window.on ?? [])]), window.start, window.end, window.activity.trim(), window.locationId ?? null, window.featureKey ?? null, window.position ?? '', window.interruptible ? 1 : 0, window.sleep === true ? 1 : 0],
         )
       })
       return this.list(characterId)

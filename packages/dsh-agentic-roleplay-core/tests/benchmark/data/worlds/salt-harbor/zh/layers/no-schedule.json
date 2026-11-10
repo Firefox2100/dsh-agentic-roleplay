@@ -1,0 +1,18 @@
+{
+  "id": "no-schedule",
+  "description": "Takes out the landlord's daily routine and the calendar it refers to (the Fog Festival).",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "calendar.json"
+  ],
+  "add": {},
+  "patch": {
+    "characters/tomas/character.json": {
+      "routine": null
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "strongbox",
+  "name": "公会保险箱",
+  "description": "钉在港务所地板上的铁箱。",
+  "container": {
+    "state": "locked",
+    "opened_by": [
+      "harbor-key"
+    ]
+  },
+  "notable": true,
+  "location": "harbor-office"
+}

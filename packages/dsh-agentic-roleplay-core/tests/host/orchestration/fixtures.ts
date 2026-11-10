@@ -37,7 +37,9 @@ export function withRanking(store: SessionStore): TurnStore['story'] {
 }
 
 export interface FakeStore extends TurnStore {
-  commits: { character: number; patch: Record<string, unknown>; move?: unknown; items?: unknown }[][]
+  commits: { character: number; patch: Record<string, unknown>; move?: unknown; items?: unknown; hold?: unknown }[][]
+  /** Who is asleep now, by character id, and until when. */
+  sleeping: Map<number, { until: number }>
   /** What the item check says is wrong, when something is. */
   itemsRefused?: string[]
   /** How many turns were counted as played. */
@@ -65,6 +67,7 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     problems: [],
     session,
     commits,
+    sleeping: new Map(),
     completed: 0,
     maxRounds,
     cast: () => cast,
@@ -88,9 +91,11 @@ export function fakeStore(cast: CastMember[], maxRounds = 3): FakeStore {
     recordActivity: (entry) => { recordActivity(session, entry) },
     notes: () => readNotes(session),
     clearNotes: () => { clearNotes(session) },
+    asleep: (_turn, characterId) => store.sleeping.get(characterId),
+    sleepers: () => [...store.sleeping].flatMap(([id, entry]) => { const found = cast.find(candidate => candidate.character.id === id); return found === undefined ? [] : [{ key: found.key, name: found.character.name, until: entry.until }] }),
     agenda: (turn, characterId) => agendaFor(session, store.settings().clock, turn, () => store.wall, characterId),
     commit: (updates) => {
-      commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch }, ...(update.move === undefined ? {} : { move: update.move }), ...(update.items === undefined ? {} : { items: update.items }) })))
+      commits.push(updates.map(update => ({ character: update.character as number, patch: { ...update.patch }, ...(update.move === undefined ? {} : { move: update.move }), ...(update.items === undefined ? {} : { items: update.items }), ...(update.hold === undefined ? {} : { hold: update.hold }) })))
       return updates.map(() => [])
     },
     checkItemChanges: entries => (store.itemsRefused === undefined ? { ok: true, effects: entries.map(() => []) } : { ok: false, problems: store.itemsRefused }),

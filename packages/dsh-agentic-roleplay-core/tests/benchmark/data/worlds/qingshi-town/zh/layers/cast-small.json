@@ -1,0 +1,151 @@
+{
+  "id": "cast-small",
+  "description": "Three characters besides the player: tieshan, baizhi and qianzhanggui. The scholar (guyan) is removed with what referred to him: the letter's lore has two readers, the long case goes, and the plot's participants lose him.",
+  "requires": [],
+  "conflicts": [
+    "cast-solo"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/guyan",
+    "items/long-case"
+  ],
+  "add": {},
+  "patch": {
+    "characters/shenqing/character.json": {
+      "relationships": [
+        {
+          "to": "tieshan",
+          "label": "铁镖头",
+          "familiarity": 0.5,
+          "trust": 0.6,
+          "affinity": 0.5
+        },
+        {
+          "to": "baizhi",
+          "label": "白姑娘",
+          "familiarity": 0.2,
+          "trust": 0.4,
+          "affinity": 0.3
+        },
+        {
+          "to": "qianzhanggui",
+          "label": "钱掌柜",
+          "familiarity": 0.4,
+          "trust": 0.4,
+          "affinity": 0.3
+        }
+      ]
+    },
+    "characters/tieshan/character.json": {
+      "relationships": [
+        {
+          "to": "shenqing",
+          "label": "沈姑娘",
+          "familiarity": 0.5,
+          "trust": 0.6,
+          "affinity": 0.5
+        },
+        {
+          "to": "baizhi",
+          "label": "白姑娘",
+          "familiarity": 0.6,
+          "trust": 0.4,
+          "affinity": 0.2,
+          "tension": 0.3
+        },
+        {
+          "to": "qianzhanggui",
+          "label": "钱掌柜",
+          "familiarity": 0.8,
+          "trust": 0.7,
+          "affinity": 0.6
+        }
+      ]
+    },
+    "characters/baizhi/character.json": {
+      "relationships": [
+        {
+          "to": "shenqing",
+          "label": "沈姑娘",
+          "familiarity": 0.2,
+          "trust": 0.4,
+          "affinity": 0.3
+        },
+        {
+          "to": "tieshan",
+          "label": "铁镖头",
+          "familiarity": 0.6,
+          "trust": 0.4,
+          "affinity": 0.2,
+          "tension": 0.3
+        }
+      ]
+    },
+    "characters/qianzhanggui/character.json": {
+      "relationships": [
+        {
+          "to": "shenqing",
+          "label": "沈姑娘",
+          "familiarity": 0.4,
+          "trust": 0.4,
+          "affinity": 0.3
+        },
+        {
+          "to": "tieshan",
+          "label": "铁镖头",
+          "familiarity": 0.8,
+          "trust": 0.6,
+          "affinity": 0.5
+        }
+      ]
+    },
+    "lore/letter-secret/lore.json": {
+      "known_by": [
+        "tieshan",
+        "baizhi"
+      ]
+    },
+    "plots.json": [
+      {
+        "id": "missing-escort",
+        "name": "晚了的镖",
+        "premise": "那趟镖里装的不是货，是一封信，有人不想让它到。",
+        "themes": [
+          "信义",
+          "江湖"
+        ],
+        "hooks": [
+          {
+            "id": "empty-saddle",
+            "text": "一匹马独自回到镖局，鞍上有刀痕。",
+            "mode": "opportunity"
+          }
+        ],
+        "developments": [
+          {
+            "id": "temple-found",
+            "text": "后山破庙里发现了镖车的残骸。",
+            "mode": "opportunity",
+            "prerequisites": [
+              "empty-saddle"
+            ]
+          }
+        ],
+        "stakes": [
+          "镖局的信誉",
+          "药王谷与镖局的旧约"
+        ],
+        "resolutions": [
+          "信送到了",
+          "信被烧了"
+        ],
+        "participants": [
+          "tieshan",
+          "baizhi"
+        ],
+        "start": "available"
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "lighthouse-cellar",
+  "name": "灯塔地窖",
+  "description": "干燥的石砌地窖，堆满木箱，里头有一张行军床和一盏提灯。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "crates",
+      "name": "木箱",
+      "description": "印着公会的标记。"
+    }
+  ]
+}

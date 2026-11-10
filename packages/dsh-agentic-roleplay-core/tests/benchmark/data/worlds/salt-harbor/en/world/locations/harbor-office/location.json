@@ -1,0 +1,13 @@
+{
+  "id": "harbor-office",
+  "name": "The Harbor Office",
+  "description": "A panelled upper room where the guild keeps its tide tables, charts and a locked strongbox.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "high-desk",
+      "name": "The high desk",
+      "description": "A standing desk with the day's figures."
+    }
+  ]
+}

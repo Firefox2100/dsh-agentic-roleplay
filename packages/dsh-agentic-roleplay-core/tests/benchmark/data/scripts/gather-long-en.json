@@ -1,0 +1,144 @@
+{
+  "id": "gather-long-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask the landlord whether he has seen my father's lamp keeper's log.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I walk to the harbor office and ask the harbor master about the lamp.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I go down to the pier and look for the dock boy.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I offer the boy a coin and ask what he saw on the lighthouse road.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I go back to the inn and tell the landlord what I learned.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask him who else might know about the lamp.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I sit by the fire and go over my notes.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask the harbor master why the lighthouse road is closed.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask the boy whether anyone signals from the lighthouse at night.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask the landlord for a room and say goodnight.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 10
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "character-exists",
+      "character": "kit"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "untaxed brandy"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "runs the smuggling"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "two long flashes"
+    }
+  ]
+}

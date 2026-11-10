@@ -1,0 +1,8 @@
+{
+  "id": "till-book",
+  "name": "Takings book",
+  "description": "Mags's book of daily takings and tabs.",
+  "location": "bakery",
+  "feature": "counter",
+  "owner": "mags"
+}

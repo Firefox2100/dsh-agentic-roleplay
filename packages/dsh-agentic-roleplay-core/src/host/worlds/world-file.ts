@@ -41,6 +41,8 @@ export interface WorldFile {
   rules?: string[]
   /** The optional tools the world's agents have switched on or off, by kind of agent; names this version does not know are kept. */
   tools?: Switchboard
+  /** Whether stories of this world go on while their player is away (characters keep to their days at the real time and may write); absent means not. */
+  autonomy?: boolean
   /** Provider voice id used for narration when a session starts. */
   narrationVoice?: string
   /** How the world's stories ask their models; a preset's own values and the person's choices at the start come before it. */
@@ -278,6 +280,9 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const variables = readVariableValues(reader)
   const rules = readRules(reader)
   const tools = readTools(reader)
+  const autonomyValue = reader.raw('autonomy')
+  if (autonomyValue !== undefined && autonomyValue !== null && typeof autonomyValue !== 'boolean') reader.fail('autonomy', 'must be true or false')
+  const autonomy = autonomyValue === true ? true : undefined
   const alternateOpenings = readAlternateOpenings(reader)
   const startQuestions = readStartQuestions(reader, alternateOpenings?.length ?? 0)
   const narrationVoice = reader.string('narration_voice')?.trim() || undefined
@@ -303,6 +308,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(variables === undefined ? {} : { variables }),
       ...(rules === undefined ? {} : { rules }),
       ...(tools === undefined ? {} : { tools }),
+      ...(autonomy === undefined ? {} : { autonomy }),
       ...(alternateOpenings === undefined ? {} : { alternateOpenings }),
       ...(startQuestions === undefined ? {} : { startQuestions }),
       ...(narrationVoice === undefined ? {} : { narrationVoice }),

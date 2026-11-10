@@ -1,0 +1,45 @@
+{
+  "id": "autonomy-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我整理了一下柜台，跟陈姨说我今天哪儿也不去了。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我坐下来安静地歇一会儿。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 20,
+      "expect": []
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 2
+    },
+    {
+      "type": "message-arrived"
+    }
+  ]
+}

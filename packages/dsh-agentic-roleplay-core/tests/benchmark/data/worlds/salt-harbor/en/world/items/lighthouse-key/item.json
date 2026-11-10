@@ -1,0 +1,11 @@
+{
+  "id": "lighthouse-key",
+  "name": "Lighthouse key",
+  "description": "A heavy iron key with a salt-white bow.",
+  "unique": true,
+  "hidden": true,
+  "notable": true,
+  "location": "pier",
+  "feature": "mooring-stones",
+  "position": "under the third stone"
+}

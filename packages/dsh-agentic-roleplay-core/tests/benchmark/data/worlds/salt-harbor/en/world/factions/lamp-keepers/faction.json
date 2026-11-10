@@ -1,0 +1,26 @@
+{
+  "id": "lamp-keepers",
+  "name": "The Order of Lamp-Keepers",
+  "summary": "The old brotherhood of lighthouse keepers along the coast.",
+  "description": "Its oath binds a keeper never to let a lamp go dark.",
+  "values": [
+    "duty",
+    "silence"
+  ],
+  "start": {
+    "public_state": "Dwindling.",
+    "inner_state": "Unaware that its last keeper in Salt Harbor has vanished.",
+    "goals": []
+  },
+  "members": [
+    {
+      "character": "bram",
+      "role": "keeper",
+      "rank": "senior",
+      "status": "active",
+      "public": true,
+      "commitment": 1
+    }
+  ],
+  "relationships": []
+}

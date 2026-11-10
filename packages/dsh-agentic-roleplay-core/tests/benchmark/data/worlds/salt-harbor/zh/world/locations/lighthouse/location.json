@@ -1,0 +1,27 @@
+{
+  "id": "lighthouse",
+  "name": "灯塔",
+  "description": "岬角上的石塔。大灯熄灭了，门虚掩着。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "spiral-stair",
+      "name": "螺旋梯",
+      "description": "九十一级铁梯通向信号室。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "signal-room",
+      "description": "螺旋梯",
+      "travel_time_seconds": 120
+    },
+    {
+      "to": "lighthouse-cellar",
+      "description": "梯后的活板门，被碎石压着",
+      "state": "blocked",
+      "note": "活板门上压着碎石。",
+      "travel_time_seconds": 60
+    }
+  ]
+}

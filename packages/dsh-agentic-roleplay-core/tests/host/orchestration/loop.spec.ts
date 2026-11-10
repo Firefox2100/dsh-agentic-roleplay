@@ -499,7 +499,7 @@ describe('a turn with the real agent loop', () => {
   describe('the world author', () => {
     async function playAuthored(author: NonNullable<Script['expand']>['author'], settings?: object) {
       const { session, id } = await addSession('Vault', true)
-      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', expand: { author } }))
       const agent = await chat(`session-${id}`, adapter)
       agent.followup(say('I wait for the ferry.'))
@@ -670,7 +670,7 @@ describe('a turn with the real agent loop', () => {
   describe('time', () => {
     async function playTime(time?: Script['time'], settings?: object) {
       const { session, id } = await addSession('Vault', true)
-      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...(time === undefined ? {} : { time }) }))
       const agent = await chat(`session-${id}`, adapter)
       agent.followup(say('I open the vault door.'))
@@ -924,7 +924,7 @@ describe('a turn with the real agent loop', () => {
       }
       const play = async (mode: string) => {
         const { session, id } = await addSession('Vault', true)
-        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { triggers: mode } })
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { triggers: mode, errands: 'off' } })
         session.triggers.add({ key: 'trust', name: 'Trust broken', condition: { type: 'judged', text: STATEMENT }, effects: [{ type: 'beat', text: 'Alice keeps her distance from Bob.' }], repeat: false, priority: 0 }, 'world', 0)
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
         const agent = await chat(`session-${id}`, adapter)
@@ -971,7 +971,7 @@ describe('a turn with the real agent loop', () => {
       }
       const play = async (settings: object, message = 'I open the vault door.', script: Script = {}) => {
         const { id } = await addSession('Vault')
-        writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...script }))
         const agent = await chat(`session-${id}`, adapter)
         agent.followup(say(message))
@@ -1045,7 +1045,7 @@ describe('a turn with the real agent loop', () => {
       it('sends the output back once for hidden lore the decision model finds given away, names it, and lets a revelation the game master repeats go through', async () => {
         const { session, id } = await addSession('Vault', true)
         session.lore.add({ sourceId: 'vault-secret', title: 'The vault key', kind: 'other', scope: 'listed', summary: 'The key to the vault is hidden under the third stone.', body: '', subjects: [], related: [], sources: [] })
-        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { secrets: 'on' } })
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { secrets: 'on', errands: 'off' } })
         const seen = answering([0.9])
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
         const agent = await chat(`session-${id}`, adapter)
@@ -1518,8 +1518,14 @@ describe('a turn with the real agent loop', () => {
       it('tells the game master how long the player lets time pass and to stop sooner for a decision, when the player waits with /wait', async () => {
         const { adapter } = await playOoc('moves-bob', '/wait 2 hours until dawn')
         const notice = JSON.stringify(masterRequests(adapter)[0]!.messages)
-        expect(notice).toContain('The player lets 120 minutes pass (until dawn)')
-        expect(notice).toContain('advance_time')
+        expect(notice).toContain('The player let 120 minutes pass (until dawn)')
+        expect(notice).toContain('do not call advance_time for it')
+      })
+
+      it('refuses a dream when nobody is asleep, and the game master is told why and asks nobody', async () => {
+        const { adapter } = await playOoc('moves-bob', '/dream')
+        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('nobody is asleep, so there is no dream to enter')
+        expect(characterRequests(adapter)).toEqual([])
       })
 
       it('refuses a wait with no time, and the game master is told why', async () => {
@@ -1917,7 +1923,7 @@ describe('a turn with the real agent loop', () => {
 
     async function play(keeper: NonNullable<Script['keeper']>, settings?: object) {
       const { session, id } = await addSession('Vault')
-      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ keeper }))
       const agent = await chat(`session-${id}`, adapter)
       agent.followup(say('I open the vault door.'))
@@ -2262,7 +2268,7 @@ describe('a turn with the real agent loop', () => {
     async function playLong(turns: number, settings: object) {
       withCompaction = true
       const { session, id } = await addSession('Vault')
-      writeSettings(sessionFolder(join(root, 'sessions'), id), settings)
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ padding: 7000 }))
       const agent = await chat(`session-${id}`, adapter)
       for (let turn = 1; turn <= turns; turn++) {

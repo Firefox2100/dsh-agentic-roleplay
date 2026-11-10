@@ -1,0 +1,19 @@
+{
+  "id": "temple",
+  "name": "后山破庙",
+  "description": "半塌的山神庙，供桌上积着厚厚的灰，院子里有新鲜的车辙。",
+  "features": [
+    {
+      "id": "altar",
+      "name": "供桌",
+      "description": "缺了一角的石供桌。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "town-gate",
+      "description": "沿土路回镇口",
+      "travel_time_seconds": 1800
+    }
+  ]
+}

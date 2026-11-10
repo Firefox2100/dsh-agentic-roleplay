@@ -1,0 +1,45 @@
+{
+  "id": "cast-solo",
+  "description": "One character besides the player: mags. Everyone else is removed with what referred to them; only mags knows the building news.",
+  "requires": [],
+  "conflicts": [
+    "cast-small"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/okafor",
+    "characters/dev",
+    "characters/lena"
+  ],
+  "add": {},
+  "patch": {
+    "characters/jo/character.json": {
+      "relationships": [
+        {
+          "to": "mags",
+          "label": "Mags",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.7
+        }
+      ]
+    },
+    "characters/mags/character.json": {
+      "relationships": [
+        {
+          "to": "jo",
+          "label": "Jo",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.8
+        }
+      ]
+    },
+    "lore/building-news/lore.json": {
+      "known_by": [
+        "mags"
+      ],
+      "body": "The landlord has decided to sell the corner building after Christmas, and has told Mags only that the lease is under review."
+    }
+  }
+}

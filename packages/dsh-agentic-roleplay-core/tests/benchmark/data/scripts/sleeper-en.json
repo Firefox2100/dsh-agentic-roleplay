@@ -1,0 +1,74 @@
+{
+  "id": "sleeper-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I keep quiet in the empty bar and look at the clock behind the counter. It is long past midnight.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "I sit still at my corner table and do nothing, so as not to disturb anyone upstairs.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "/dream",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I put my hand on Tomas's shoulder and shake him awake. 'Tomas, wake up. Someone is down at the pier with a lantern.'",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "player-silent"
+    }
+  ]
+}

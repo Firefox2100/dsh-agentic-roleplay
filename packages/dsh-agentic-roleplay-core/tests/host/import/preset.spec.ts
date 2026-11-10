@@ -101,7 +101,7 @@ describe('what a preset becomes', () => {
     const context = fakeContext(() => ({ narration: 'Write in the second person, in short scenes.', characters: 'Stay in character.', left_out: ['a dice format'], persona_names: [] }))
     const made = await extractStyleFrom(context, 'Slow burn', ['[Main]\nWrite in the second person.'])
     expect(made.prompts.map(entry => entry.id)).toEqual(['roleplay/style', 'roleplay/character-style'])
-    expect(made.notes).toEqual(['instructions not carried: a dice format'])
+    expect(made.notes).toEqual(['instructions left out on purpose: a dice format'])
     expect(context.asked[0]!.prompt).toContain('Slow burn')
   })
 

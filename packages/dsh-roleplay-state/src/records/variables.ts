@@ -119,15 +119,18 @@ export interface ShownVariable {
 /** At most this many variables are told for one subject. */
 export const MAX_SHOWN = 8
 
-/** The variables of a subject that are worth telling, in the order they were declared: those whose value is not the default, and those always told. */
-export function shownVariables(context: VariableContext, kind: VariableSubject, subjectId: number, subjectKey: string, audience: VariableAudience): ShownVariable[] {
+/**
+ * The variables of a subject that are worth telling, in the order they were declared: those whose value is not the default, and those always told.
+ * With `all` every variable the audience may see is given, at its default too and without the cap: what a page of status shows, where nothing is told to a model.
+ */
+export function shownVariables(context: VariableContext, kind: VariableSubject, subjectId: number, subjectKey: string, audience: VariableAudience, options: { all?: boolean } = {}): ShownVariable[] {
   const stored = new Map(context.variables.list(kind, subjectId).map(entry => [entry.variable, entry]))
   return context.variables.defs().flatMap((def): ShownVariable[] => {
     if (def.subject !== kind || !(def.only.length === 0 || def.only.includes(subjectKey))) return []
     if (audience === 'others' ? def.visibility !== 'public' : audience === 'self' ? def.visibility === 'hidden' : false) return []
     const entry = stored.get(def.key)
     const value = entry?.value ?? def.default
-    if (value === def.default && !def.always) return []
+    if (value === def.default && !def.always && options.all !== true) return []
     return [{ variable: def, value, ...(entry?.baseline === undefined ? {} : { baseline: entry.baseline }) }]
-  }).slice(0, MAX_SHOWN)
+  }).slice(0, options.all === true ? Infinity : MAX_SHOWN)
 }

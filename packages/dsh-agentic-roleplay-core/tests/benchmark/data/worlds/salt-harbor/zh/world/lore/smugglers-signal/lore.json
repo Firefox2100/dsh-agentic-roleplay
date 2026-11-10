@@ -1,0 +1,18 @@
+{
+  "id": "smugglers-signal",
+  "title": "走私者的暗号",
+  "kind": "custom",
+  "scope": "listed",
+  "known_by": [
+    "kit",
+    "bram"
+  ],
+  "summary": "信号室打出两长一短的闪光，表示船可以悄悄靠岸。",
+  "body": "运货不止是鱼的渔民会用信号室的灯：两长一短，意味着夜巡队的目光在别处。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "signal-room"
+    }
+  ]
+}

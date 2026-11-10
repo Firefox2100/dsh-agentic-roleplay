@@ -44,6 +44,9 @@ export class RoleplayOrchestration extends Service {
   /** Whether a turn of the chat is being played; there while the orchestration is. */
   playing: (chat: string) => boolean = () => false
 
+  /** One look at a story that goes on while its player is away (the characters' days, and perhaps a message); there while the orchestration is. */
+  autonomy: (chat: string, signal: AbortSignal) => Promise<{ outcome: string; moved: number; message?: string }> = () => Promise.resolve({ outcome: 'off', moved: 0 })
+
   /** Whether a reflection of the chat is running; there while the orchestration is. */
   reflecting: (chat: string) => boolean = () => false
 

@@ -1,0 +1,21 @@
+{
+  "id": "signal-room",
+  "name": "The Signal Room",
+  "description": "A glass room under the lamp, cold and smelling of lamp oil. A signal lamp stands by the window.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "lamp-housing",
+      "name": "The great lamp",
+      "description": "The lens is clean; the wick has been taken out."
+    }
+  ],
+  "exits": [
+    {
+      "to": "pier",
+      "description": "a rope down the cliff",
+      "one_way": true,
+      "travel_time_seconds": 300
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 {
   "name": "@dsh-agentic-roleplay/all",
-  "version": "0.11.1",
+  "version": "0.12.0",
   "description": "Agentic roleplay bundle for DeepSeek Harness. Install this one package to get every roleplay plugin.",
   "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
   "type": "module",
@@ -28,7 +28,7 @@
   ],
   "license": "GPL-3.0-only",
   "dependencies": {
-    "@dsh-agentic-roleplay/core": "workspace:0.11.1",
-    "@dsh-agentic-roleplay/state": "workspace:0.11.1"
+    "@dsh-agentic-roleplay/core": "workspace:0.12.0",
+    "@dsh-agentic-roleplay/state": "workspace:0.12.0"
   }
 }

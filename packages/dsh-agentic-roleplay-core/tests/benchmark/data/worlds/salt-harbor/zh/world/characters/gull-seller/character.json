@@ -1,0 +1,13 @@
+{
+  "id": "gull-seller",
+  "name": "卖鱼的妇人",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "摊位上吆喝鲱鱼价钱的妇人。",
+  "start": {
+    "public_state": "正在吆喝价钱。",
+    "activity": "卖鲱鱼。",
+    "location": "market"
+  }
+}

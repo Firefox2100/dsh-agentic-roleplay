@@ -1,0 +1,85 @@
+{
+  "id": "guyan",
+  "name": "顾言",
+  "age": 29,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "三天前住进客栈的书生，行李里有个上了锁的长匣。",
+  "personality": "斯文、客气，问得多答得少。",
+  "background": "自称进京赶考，却从不谈自己的家乡。",
+  "appearance": "青衫，面色苍白，不离身的一只长匣。",
+  "speech": {
+    "style": "文绉绉的，爱用“在下”“请教”。",
+    "examples": [
+      "在下只是路过。",
+      "有劳了，在下受教。"
+    ]
+  },
+  "start": {
+    "public_state": "在客栈大堂角落里读书。",
+    "activity": "读书。",
+    "inner_state": "正在等一个人，也在避开一个人。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.0,
+        "arousal": 0.3,
+        "dominance": 0.2
+      }
+    },
+    "intents": [],
+    "location": "inn",
+    "position": "靠窗的角落"
+  },
+  "relationships": [
+    {
+      "to": "shenqing",
+      "label": "沈姑娘",
+      "familiarity": 0.1,
+      "trust": 0.1,
+      "affinity": 0.1
+    },
+    {
+      "to": "tieshan",
+      "label": "铁镖头",
+      "familiarity": 0.3,
+      "trust": 0.0,
+      "affinity": -0.1,
+      "tension": 0.4
+    },
+    {
+      "to": "baizhi",
+      "label": "白姑娘",
+      "familiarity": 0.4,
+      "trust": 0.0,
+      "affinity": -0.2,
+      "tension": 0.5
+    },
+    {
+      "to": "qianzhanggui",
+      "label": "钱掌柜",
+      "familiarity": 0.4,
+      "trust": 0.3,
+      "affinity": 0.2
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "town-gate",
+      "escort-office",
+      "herb-shop",
+      "inn",
+      "temple"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "letter-secret"
+    ]
+  },
+  "variables": {
+    "wounds": 0
+  }
+}

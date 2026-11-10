@@ -1,0 +1,64 @@
+{
+  "id": "kit",
+  "name": "Kit Alder",
+  "age": 16,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "A dock boy who sees more than he is asked about.",
+  "personality": "Cheerful, easily bribed with food, loyal to whoever was kind to him first.",
+  "background": "An orphan raised among the moorings. He ran messages for Bram until the lamp went out.",
+  "appearance": "Thin, sunburnt, barefoot, with a gull feather in his cap.",
+  "speech": {
+    "style": "Quick and slangy; answers with a question when frightened.",
+    "examples": [
+      "Maybe I saw something. Maybe I am hungry.",
+      "Not me. Never. Who says?"
+    ]
+  },
+  "start": {
+    "public_state": "Coiling rope on the pier.",
+    "activity": "Coiling rope.",
+    "inner_state": "Knows who goes up the lighthouse road at night and is scared to say.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.3,
+        "arousal": 0.6,
+        "dominance": -0.3
+      }
+    },
+    "intents": [],
+    "location": "pier",
+    "position": "on a coil of rope"
+  },
+  "relationships": [
+    {
+      "to": "bram",
+      "label": "master",
+      "familiarity": 0.8,
+      "trust": 0.9,
+      "affinity": 0.8
+    },
+    {
+      "to": "mara",
+      "label": "the keeper's girl",
+      "familiarity": 0.4,
+      "trust": 0.3,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "pier",
+      "market",
+      "lighthouse"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "smugglers-signal"
+    ]
+  }
+}

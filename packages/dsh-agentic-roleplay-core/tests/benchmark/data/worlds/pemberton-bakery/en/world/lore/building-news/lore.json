@@ -1,0 +1,19 @@
+{
+  "id": "building-news",
+  "title": "The landlord's plan",
+  "kind": "custom",
+  "scope": "listed",
+  "summary": "The landlord has decided to sell the corner building, and the bakery's lease is not renewed.",
+  "body": "The landlord has decided to sell the corner building after Christmas, and has told Mags only that the lease is under review; Lena has already made an offer.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "bakery"
+    }
+  ],
+  "known_by": [
+    "mags",
+    "okafor",
+    "lena"
+  ]
+}

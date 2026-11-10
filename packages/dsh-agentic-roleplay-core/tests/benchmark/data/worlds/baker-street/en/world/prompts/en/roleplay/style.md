@@ -1,0 +1,1 @@
+Write in plain period prose: gaslight, coal smoke, wet wool, the sound of cabs. Keep the characters in their own voices, and let what they know come only from what the world says.

@@ -1,0 +1,24 @@
+{
+  "id": "town-gate",
+  "name": "镇口",
+  "description": "一座没有门的石牌坊，旁边是茶棚和拴马桩，官道从这里伸出去。",
+  "features": [
+    {
+      "id": "tea-stall",
+      "name": "茶棚",
+      "description": "几张长桌，一口大铜壶。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "escort-office",
+      "description": "镖局的大门",
+      "travel_time_seconds": 60
+    },
+    {
+      "to": "temple",
+      "description": "通往后山的土路",
+      "travel_time_seconds": 1800
+    }
+  ]
+}

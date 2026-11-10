@@ -1,0 +1,53 @@
+{
+  "id": "no-places",
+  "description": "Takes out every place: the story has no map and nobody is anywhere in particular. The background entries lose the place they were about (they stay). Must come before no-lore, which removes those entries; what was placed in a place or named one must be gone first.",
+  "requires": [
+    "cast-solo",
+    "no-items",
+    "no-schedule",
+    "no-triggers"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "locations"
+  ],
+  "add": {},
+  "patch": {
+    "lore/cellar-secret/lore.json": {
+      "subjects": null
+    },
+    "lore/fog-bell/lore.json": {
+      "subjects": null
+    },
+    "lore/harbor-founding/lore.json": {
+      "subjects": null
+    },
+    "lore/lighthouse-history/lore.json": {
+      "subjects": null
+    },
+    "lore/smugglers-signal/lore.json": {
+      "subjects": null
+    },
+    "characters/tomas/character.json": {
+      "start": {
+        "location": null,
+        "position": null
+      },
+      "knowledge": {
+        "locations": null,
+        "exits": null
+      }
+    },
+    "characters/quill/character.json": {
+      "start": {
+        "location": null,
+        "position": null
+      },
+      "knowledge": {
+        "locations": null,
+        "exits": null
+      }
+    }
+  }
+}

@@ -1,0 +1,69 @@
+[
+  {
+    "key": "dread",
+    "name": "Dread",
+    "description": "How afraid the town is: 0 calm, 10 panic. It rises with bad news and omens and falls with good news.",
+    "kind": "number",
+    "subject": "world",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "uneasy"
+      },
+      {
+        "up_to": 6,
+        "label": "frightened"
+      },
+      {
+        "up_to": 10,
+        "label": "panicking"
+      }
+    ]
+  },
+  {
+    "key": "wounds",
+    "name": "Wounds",
+    "description": "How badly hurt the character is: 0 unhurt, 10 dying. A hit raises it; care and rest lower it.",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 0,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 2,
+        "label": "scratched"
+      },
+      {
+        "up_to": 6,
+        "label": "hurt"
+      },
+      {
+        "up_to": 10,
+        "label": "badly hurt"
+      }
+    ]
+  },
+  {
+    "key": "coin",
+    "name": "Coin",
+    "description": "Silver the player's character carries. It changes only when money is paid or earned.",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "edda"
+    ],
+    "min": 0,
+    "max": 500,
+    "integer": true,
+    "default": 30,
+    "visibility": "public"
+  }
+]

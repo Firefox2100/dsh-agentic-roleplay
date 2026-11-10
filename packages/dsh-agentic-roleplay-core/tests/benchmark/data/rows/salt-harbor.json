@@ -1,0 +1,1332 @@
+[
+  {
+    "id": "salt-harbor-full-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "mara",
+      "npcs": 7
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The anchor with everything on and the whole cast: the controlled reference every cast-size or feature comparison is made against, and the world the check benchmark's planted defects are in.",
+    "report": [
+      "language"
+    ],
+    "script": "gather-long-en"
+  },
+  {
+    "id": "salt-harbor-full-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "mara",
+      "npcs": 7
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The anchor with everything on and the whole cast: the controlled reference every cast-size or feature comparison is made against, and the world the check benchmark's planted defects are in.",
+    "report": [
+      "language"
+    ],
+    "script": "gather-long-zh"
+  },
+  {
+    "id": "salt-harbor-solo-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "One character the story can ask (the landlord) beside the reporter who plays, with every other system left on: shows what one character costs and does in a story that still has places, things, triggers, dice, values and a clock. Compared with the full row on identical facts.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "solo-state-en"
+  },
+  {
+    "id": "salt-harbor-small-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-small"
+    ],
+    "cast": {
+      "player": "mara",
+      "npcs": 3
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "Three characters the story can ask beside the keeper's daughter, every other system on: the middle of the cast range, where the game master chooses who is asked but nobody is crowded.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "commands-en"
+  },
+  {
+    "id": "salt-harbor-solo-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "One character the story can ask (the landlord) beside the reporter who plays, with every other system left on: shows what one character costs and does in a story that still has places, things, triggers, dice, values and a clock. Compared with the full row on identical facts.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "solo-state-zh"
+  },
+  {
+    "id": "salt-harbor-small-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-small"
+    ],
+    "cast": {
+      "player": "mara",
+      "npcs": 3
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "Three characters the story can ask beside the keeper's daughter, every other system on: the middle of the cast range, where the game master chooses who is asked but nobody is crowded.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "commands-zh"
+  },
+  {
+    "id": "salt-harbor-solo-bare-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-rules",
+      "no-prompts",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "no-places",
+      "no-lore"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [],
+    "why": "The single-card case in its barest form: one character the story can ask and a player, with no places, things, organisations, background, values, triggers, dice, routines, rules or prompt files. The memory system and the loop are all there is, so this row shows what they do alone, and that nothing absent leaves a trace in the prompts.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "solo-talk-en"
+  },
+  {
+    "id": "salt-harbor-solo-some-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A single character with a basic scenario: the places of the harbour, some background, the world's rules and its own prompts, but no values, triggers, dice, routines, organisations or things. The middle of the feature range for one character. Its script never asks about the guild's secret, so anything of it that reaches the narration is a leak.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "solo-quiet-en"
+  },
+  {
+    "id": "salt-harbor-solo-bare-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-rules",
+      "no-prompts",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "no-places",
+      "no-lore"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [],
+    "why": "The single-card case in its barest form: one character the story can ask and a player, with no places, things, organisations, background, values, triggers, dice, routines, rules or prompt files. The memory system and the loop are all there is, so this row shows what they do alone, and that nothing absent leaves a trace in the prompts.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "solo-talk-zh"
+  },
+  {
+    "id": "salt-harbor-solo-some-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A single character with a basic scenario: the places of the harbour, some background, the world's rules and its own prompts, but no values, triggers, dice, routines, organisations or things. The middle of the feature range for one character. Its script never asks about the guild's secret, so anything of it that reaches the narration is a leak.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "solo-quiet-zh"
+  },
+  {
+    "id": "salt-harbor-solo-some-panel-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-panel"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that demands a status bar after every reply. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-talk-en",
+    "plant": {
+      "what": "a style prompt that demands a status bar after every reply",
+      "caught": [
+        "narration-clean"
+      ],
+      "finds": "quality-panels"
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-leaky-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-leak"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that tells the narration to reveal the guild's secret in the first reply. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-quiet-en",
+    "plant": {
+      "what": "a style prompt that tells the narration to reveal the guild's secret in the first reply",
+      "caught": [
+        "narration-lacks"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-panel-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-panel"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that demands a status bar after every reply. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-talk-zh",
+    "plant": {
+      "what": "a style prompt that demands a status bar after every reply",
+      "caught": [
+        "narration-clean"
+      ],
+      "finds": "quality-panels"
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-leaky-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-leak"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that tells the narration to reveal the guild's secret in the first reply. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-quiet-zh",
+    "plant": {
+      "what": "a style prompt that tells the narration to reveal the guild's secret in the first reply",
+      "caught": [
+        "narration-lacks"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-as-zh-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "An English world told in Chinese: the chat's language is not the world's, so the narration must come out Chinese from English facts.",
+    "report": [
+      "settings"
+    ],
+    "script": "solo-talk-zh",
+    "settings": {
+      "prompts": {
+        "language": "zh"
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-gates-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The language-model gates on what the game master delivers (the player's character given no words of its own, no stepping out of the story) switched on.",
+    "report": [
+      "settings"
+    ],
+    "script": "solo-quiet-en",
+    "settings": {
+      "decisions": {
+        "agency": "llm",
+        "refusal": "llm"
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-nopreview-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The scene preview switched off: the game master's first action of a turn changes.",
+    "report": [
+      "settings"
+    ],
+    "script": "solo-quiet-en",
+    "settings": {
+      "preview": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-asked-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The secret-keeping probe: the reporter asks the landlord, who knows the guild's secret and is written to keep it, about the lighthouse and the signal room. A disclosure here is a real finding about keeping a secret under questioning (the sibling row never asks).",
+    "report": [
+      "secrets"
+    ],
+    "script": "solo-asked-en"
+  },
+  {
+    "id": "salt-harbor-solo-some-asked-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The secret-keeping probe: the reporter asks the landlord, who knows the guild's secret and is written to keep it, about the lighthouse and the signal room. A disclosure here is a real finding about keeping a secret under questioning (the sibling row never asks).",
+    "report": [
+      "secrets"
+    ],
+    "script": "solo-asked-zh"
+  },
+  {
+    "id": "salt-harbor-solo-some-memory-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "Memory over a long story: the reporter says in the first turn whose boat is overdue, thirteen ordinary turns follow with the conversation folded into summaries at a small limit, and the landlord is asked for the boat's name at the end.",
+    "report": [
+      "memory"
+    ],
+    "script": "memory-en",
+    "settings": {
+      "context": {
+        "limitTokens": 4000,
+        "retainRatio": 0.3
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-memory-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "Memory over a long story: the reporter says in the first turn whose boat is overdue, thirteen ordinary turns follow with the conversation folded into summaries at a small limit, and the landlord is asked for the boat's name at the end.",
+    "report": [
+      "memory"
+    ],
+    "script": "memory-zh-harbor",
+    "settings": {
+      "context": {
+        "limitTokens": 4000,
+        "retainRatio": 0.3
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-start-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-rules",
+      "no-prompts",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "no-places",
+      "no-lore",
+      "questions"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "start-questions"
+    ],
+    "why": "Start questions in the mystery world: the answer 'off the evening ferry' must choose the alternate opening, and nothing else.",
+    "report": [
+      "start"
+    ],
+    "script": "start-en",
+    "answers": {
+      "arrival": "ferry"
+    }
+  },
+  {
+    "id": "salt-harbor-solo-start-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-rules",
+      "no-prompts",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "no-places",
+      "no-lore",
+      "questions"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "start-questions"
+    ],
+    "why": "Start questions in the mystery world: the answer 'off the evening ferry' must choose the alternate opening, and nothing else.",
+    "report": [
+      "start"
+    ],
+    "script": "start-zh",
+    "answers": {
+      "arrival": "ferry"
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-pack-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "pack"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts",
+      "packs"
+    ],
+    "why": "A world with its own interface pack: the story must be started with it, copied from the world and usable, and play as any other.",
+    "report": [
+      "pack"
+    ],
+    "script": "pack-en"
+  },
+  {
+    "id": "salt-harbor-solo-some-pack-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "pack"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts",
+      "packs"
+    ],
+    "why": "A world with its own interface pack: the story must be started with it, copied from the world and usable, and play as any other.",
+    "report": [
+      "pack"
+    ],
+    "script": "pack-zh"
+  },
+  {
+    "id": "salt-harbor-solo-some-agency-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-agency"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that gives the player's character lines of its own in every reply. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-talk-en",
+    "plant": {
+      "what": "a style prompt that gives the player's character lines of its own in every reply",
+      "caught": [
+        "player-silent"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-language-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-language"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that writes the narration in the other language. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-talk-en",
+    "plant": {
+      "what": "a style prompt that writes the narration in the other language",
+      "caught": [
+        "narration-language"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-danger-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-danger"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that steps out of the story with a warning when the player does something dangerous. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-danger-en",
+    "plant": {
+      "what": "a style prompt that steps out of the story with a warning when the player does something dangerous",
+      "caught": [
+        "narration-lacks"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-agency-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-agency"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that gives the player's character lines of its own in every reply. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-talk-zh",
+    "plant": {
+      "what": "a style prompt that gives the player's character lines of its own in every reply",
+      "caught": [
+        "player-silent"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-language-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-language"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that writes the narration in the other language. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-talk-zh",
+    "plant": {
+      "what": "a style prompt that writes the narration in the other language",
+      "caught": [
+        "narration-language"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-danger-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "plant-danger"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "A planted fault, to show the benchmark sees it: a style prompt that steps out of the story with a warning when the player does something dangerous. The result is reported apart: caught when the expectation fails, defended when the program kept it out of the story.",
+    "report": [
+      "plant"
+    ],
+    "script": "solo-danger-zh",
+    "plant": {
+      "what": "a style prompt that steps out of the story with a warning when the player does something dangerous",
+      "caught": [
+        "narration-lacks"
+      ]
+    }
+  },
+  {
+    "id": "salt-harbor-solo-sleeper-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "sleeps",
+      "late-start"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "routines",
+      "calendar",
+      "prompts"
+    ],
+    "why": "A mystery world with a landlord who sleeps through the small hours (his night is marked as sleep in his day): the player stays quiet, listens at the door, enters his dream with /dream, and then wakes him. He must not answer while he sleeps, and must answer once woken. ",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "sleeper-en"
+  },
+  {
+    "id": "salt-harbor-solo-errand-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "sleeps"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "routines",
+      "calendar",
+      "prompts"
+    ],
+    "why": "The player pulls the landlord away from his bar to the lighthouse and tells him to wait there however long it takes, then goes elsewhere and lets eight hours pass: past the end of his bar shift and into his night. A story that takes the character off his day should keep him where he was told to wait; one that drags him back to his bed has let the schedule overrule the story. Chance, as the game master has to say how long: repeat it.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "errand-en"
+  },
+  {
+    "id": "salt-harbor-solo-errand-off-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "sleeps"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "routines",
+      "calendar",
+      "prompts"
+    ],
+    "why": "The same errand with the characters' days switched off: nothing moves by itself, so the landlord stays at the lighthouse. The control for the row that has days: if this one fails, the failure is in the story and not in the schedule.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "errand-en",
+    "settings": {
+      "schedule": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-sleeper-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "sleeps",
+      "late-start"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "routines",
+      "calendar",
+      "prompts"
+    ],
+    "why": "A mystery world with a landlord who sleeps through the small hours (his night is marked as sleep in his day): the player stays quiet, listens at the door, enters his dream with /dream, and then wakes him. He must not answer while he sleeps, and must answer once woken. ",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "sleeper-zh"
+  },
+  {
+    "id": "salt-harbor-solo-errand-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "sleeps"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "routines",
+      "calendar",
+      "prompts"
+    ],
+    "why": "The player pulls the landlord away from his bar to the lighthouse and tells him to wait there however long it takes, then goes elsewhere and lets eight hours pass: past the end of his bar shift and into his night. A story that takes the character off his day should keep him where he was told to wait; one that drags him back to his bed has let the schedule overrule the story. Chance, as the game master has to say how long: repeat it.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "errand-zh"
+  },
+  {
+    "id": "salt-harbor-solo-errand-off-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items",
+      "sleeps"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "routines",
+      "calendar",
+      "prompts"
+    ],
+    "why": "The same errand with the characters' days switched off: nothing moves by itself, so the landlord stays at the lighthouse. The control for the row that has days: if this one fails, the failure is in the story and not in the schedule.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "errand-zh",
+    "settings": {
+      "schedule": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-walk-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The player walks to another place, spends a turn there and walks back. Where the character stands is checked at the end: a move that is only narrated and never recorded leaves the character at the market or the bar by chance, so the start of the walk and the way back both have to be recorded.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "walk-en"
+  },
+  {
+    "id": "salt-harbor-solo-walk-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The player walks to another place, spends a turn there and walks back. Where the character stands is checked at the end: a move that is only narrated and never recorded leaves the character at the market or the bar by chance, so the start of the walk and the way back both have to be recorded.",
+    "report": [
+      "language",
+      "cast"
+    ],
+    "script": "walk-zh"
+  }
+]

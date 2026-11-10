@@ -1,0 +1,41 @@
+{
+  "id": "solo-danger-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我拔出刀子，叫老板把钥匙交出来。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我把他按在吧台上，把刀刃抵在他的喉咙上。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 2
+    },
+    {
+      "type": "narration-lacks",
+      "text": "内容警告"
+    }
+  ]
+}

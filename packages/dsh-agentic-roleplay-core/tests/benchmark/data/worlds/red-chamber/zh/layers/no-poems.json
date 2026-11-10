@@ -1,0 +1,51 @@
+{
+  "id": "no-poems",
+  "description": "The grounding is taken out: the lore of the gathering and of the orchids is gone, so the characters have only their persona and the model's memory of the novel to answer from.",
+  "requires": [],
+  "conflicts": [
+    "cast-solo"
+  ],
+  "fits": [],
+  "remove": [
+    "lore/poems",
+    "lore/orchids"
+  ],
+  "add": {},
+  "patch": {
+    "characters/visitor/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    },
+    "characters/daiyu/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    },
+    "characters/baoyu/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    },
+    "characters/baochai/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    },
+    "characters/zijuan/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    }
+  }
+}

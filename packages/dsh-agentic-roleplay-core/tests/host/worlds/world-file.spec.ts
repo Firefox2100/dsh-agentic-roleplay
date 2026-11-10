@@ -14,6 +14,15 @@ function issues(text: string): string[] {
 }
 
 describe('parseWorldFile', () => {
+  describe('the story going on while the player is away', () => {
+    it('is off unless the world says true, and refuses anything but true or false', () => {
+      expect(parse(JSON.stringify({ name: 'W' })).autonomy).toBeUndefined()
+      expect(parse(JSON.stringify({ name: 'W', autonomy: false })).autonomy).toBeUndefined()
+      expect(parse(JSON.stringify({ name: 'W', autonomy: true })).autonomy).toBe(true)
+      expect(issues(JSON.stringify({ name: 'W', autonomy: 'yes' }))).toEqual([expect.stringContaining('autonomy')])
+    })
+  })
+
   describe('the start questions', () => {
     const question = (effect: unknown) => ({ id: 'tone', text: 'How dark?', options: [{ id: 'grim', label: 'Grim', effect }, { id: 'light', label: 'Light' }] })
 

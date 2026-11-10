@@ -1,0 +1,10 @@
+{
+  "id": "lantern",
+  "name": "Hand lantern",
+  "description": "A tin lantern with a horn window.",
+  "held_by": "mara",
+  "quality": "worn but sound",
+  "variables": {
+    "lamp_oil": 80
+  }
+}

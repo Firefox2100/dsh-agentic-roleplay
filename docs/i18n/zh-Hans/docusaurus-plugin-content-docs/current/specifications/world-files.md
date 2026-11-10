@@ -177,6 +177,7 @@ worlds/<world folder>/
 | `activity` | string | | 必填。 |
 | `location`、`feature`、`position` | string | | 地点、特征及文字位置；feature 需要 location。 |
 | `interruptible` | boolean | true | 是否会为临时事件中断日程。 |
+| `sleep` | boolean | false | 角色是否在这个时间窗里睡觉（在它指定的地点、且没有被叫醒时）。 |
 
 每个角色最多 24 个时间窗，按对话时区解释。
 

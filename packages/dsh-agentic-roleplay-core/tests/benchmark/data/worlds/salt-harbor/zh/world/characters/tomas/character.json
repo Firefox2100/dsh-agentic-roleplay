@@ -1,0 +1,142 @@
+{
+  "id": "tomas",
+  "name": "托马斯·雷耶斯",
+  "age": 58,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "锚与灯客栈的老板，什么都听，却很少转述。",
+  "personality": "表面和气，内里谨慎。承诺过的事一定做到，所以尽量少许诺。",
+  "background": "做了二十年守塔人的助手后，用一笔遗产买下客栈。他欠着公会的钱。",
+  "appearance": "体格宽厚，胡须花白，手里总在擦着什么。",
+  "speech": {
+    "style": "热络、絮叨，带着水手的俗话；话题一靠近要害就戛然而止。",
+    "examples": [
+      "今晚雾厚，脑袋也跟着糊涂。",
+      "哎，这个嘛，是白天才该问的事。"
+    ]
+  },
+  "start": {
+    "public_state": "正在给晚间的客人倒酒。",
+    "activity": "照看吧台。",
+    "inner_state": "为布拉姆忧心如焚，也为自己答应隐瞒的事不安。",
+    "emotion": {
+      "baseline": {
+        "valence": 0,
+        "arousal": 0.3,
+        "dominance": 0.4
+      }
+    },
+    "intents": [
+      {
+        "type": "agenda",
+        "name": "让客栈置身于公会的纷争之外",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.6,
+        "urgency": 0.4,
+        "plan": []
+      }
+    ],
+    "location": "inn-bar",
+    "position": "吧台后面"
+  },
+  "relationships": [
+    {
+      "to": "mara",
+      "label": "守塔人的女儿",
+      "summary": "很疼她，也怕她查出什么。",
+      "familiarity": 0.7,
+      "trust": 0.4,
+      "affinity": 0.6,
+      "tension": 0.4
+    },
+    {
+      "to": "bram",
+      "label": "老同伴",
+      "familiarity": 0.9,
+      "trust": 0.7,
+      "affinity": 0.7
+    },
+    {
+      "to": "ines",
+      "label": "债主",
+      "familiarity": 0.8,
+      "trust": -0.3,
+      "affinity": -0.1,
+      "tension": 0.6
+    },
+    {
+      "to": "quill",
+      "label": "房客",
+      "summary": "问得太多。",
+      "familiarity": 0.3,
+      "trust": -0.2,
+      "affinity": 0,
+      "tension": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "inn-bar",
+      "inn-room",
+      "market",
+      "pier",
+      "lighthouse",
+      "lighthouse-cellar"
+    ],
+    "items": [
+      "ledger"
+    ],
+    "exits": [
+      {
+        "from": "lighthouse",
+        "to": "lighthouse-cellar"
+      }
+    ],
+    "lore": [
+      "lighthouse-history",
+      "cellar-secret",
+      "keeper-oath"
+    ]
+  },
+  "routine": [
+    {
+      "from": "07:00",
+      "to": "11:00",
+      "activity": "开窗通风，准备早饭",
+      "location": "inn-bar",
+      "on": [
+        "!holiday:fog-festival"
+      ]
+    },
+    {
+      "from": "11:00",
+      "to": "17:00",
+      "activity": "去集市买鱼",
+      "location": "market",
+      "on": [
+        "!holiday:fog-festival"
+      ]
+    },
+    {
+      "from": "17:00",
+      "to": "01:00",
+      "activity": "照看吧台",
+      "location": "inn-bar",
+      "position": "吧台后面"
+    },
+    {
+      "from": "01:00",
+      "to": "07:00",
+      "activity": "睡觉",
+      "location": "inn-room"
+    }
+  ],
+  "variables": {
+    "fatigue": 4,
+    "suspicion": 2
+  }
+}

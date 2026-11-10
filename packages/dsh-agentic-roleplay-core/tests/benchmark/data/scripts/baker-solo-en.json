@@ -1,0 +1,96 @@
+{
+  "id": "baker-solo-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "Good morning, Mr Holmes. What was the last case you closed?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "holmes"
+        },
+        {
+          "type": "narration-has",
+          "text": "Lamplighter"
+        }
+      ]
+    },
+    {
+      "say": "Do you play anything when you are thinking, Mr Holmes?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "narration-has",
+          "text": "cello"
+        }
+      ]
+    },
+    {
+      "say": "And before that, what did you work on?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Speckled"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Baskerville"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Scarlet"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Moriarty"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Reichenbach"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Irene Adler"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Five Orange"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "violin"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "telephone"
+    }
+  ]
+}

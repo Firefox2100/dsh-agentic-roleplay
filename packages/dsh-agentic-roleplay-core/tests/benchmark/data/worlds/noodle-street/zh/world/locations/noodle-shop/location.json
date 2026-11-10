@@ -1,0 +1,29 @@
+{
+  "id": "noodle-shop",
+  "name": "面馆",
+  "description": "不到二十平米的小店，六张桌子，墙上贴着手写的价目表，灶上总是坐着一口大锅。",
+  "features": [
+    {
+      "id": "counter",
+      "name": "柜台",
+      "description": "玻璃柜台里摆着小菜，旁边是收款码和一只招财猫。"
+    },
+    {
+      "id": "stove",
+      "name": "灶台",
+      "description": "两口灶，一口煮面，一口熬骨头汤。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "alley",
+      "description": "推门就是巷口",
+      "travel_time_seconds": 10
+    },
+    {
+      "to": "rooftop-room",
+      "description": "门边的铁楼梯通到楼上",
+      "travel_time_seconds": 60
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "fog-bell",
+  "title": "The fog bell",
+  "kind": "culture",
+  "scope": "everyone",
+  "summary": "The bell on the pier rings at eight on foggy nights.",
+  "body": "When fog lies on the harbor the pier bell is rung at eight, so that boats still out can find the pier by sound.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "pier"
+    }
+  ]
+}

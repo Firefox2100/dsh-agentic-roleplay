@@ -1,0 +1,29 @@
+{
+  "id": "yard",
+  "name": "Caravan Yard",
+  "description": "A dusty yard of wagons, tethered horses and cook fires, ringed by low sheds.",
+  "features": [
+    {
+      "id": "well-trough",
+      "name": "Water trough",
+      "description": "A stone trough green with moss."
+    }
+  ],
+  "exits": [
+    {
+      "to": "gate",
+      "description": "the gate",
+      "travel_time_seconds": 30
+    },
+    {
+      "to": "shrine",
+      "description": "the shrine house",
+      "travel_time_seconds": 60
+    },
+    {
+      "to": "forge",
+      "description": "the forge shed",
+      "travel_time_seconds": 40
+    }
+  ]
+}

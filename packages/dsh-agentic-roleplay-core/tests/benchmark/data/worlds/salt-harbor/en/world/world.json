@@ -1,0 +1,49 @@
+{
+  "id": "benchmark-salt-harbor-en",
+  "name": "Salt Harbor",
+  "description": "A fogbound fishing port where the lighthouse has gone dark and its keeper has not been seen for nine days. The harbor guild says he left; the night watch says nothing.",
+  "starting_time": "1887-10-03T18:30",
+  "time_zone": "UTC",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "mystery",
+      "harbor",
+      "fog",
+      "1880s"
+    ]
+  },
+  "rules": [
+    "There is no magic: nothing happens that could not happen in 1887.",
+    "Nobody in the town carries a firearm."
+  ],
+  "variables": {
+    "storm_warning": false
+  },
+  "tools": {
+    "gameMaster": {
+      "roll_dice": true
+    }
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "The evening ferry noses into the pier through a wall of fog. The lighthouse above the town should be turning by now; it is not."
+    },
+    {
+      "type": "utterance",
+      "character": "tomas",
+      "text": "You are the keeper's girl, aren't you? Come in out of the fog before the bell rings."
+    }
+  ],
+  "alternate_openings": [
+    {
+      "title": "A reporter at the inn",
+      "text": "You have been at the Anchor & Lamp for two days, and the landlord still will not talk about the lighthouse.",
+      "character": "quill"
+    }
+  ]
+}

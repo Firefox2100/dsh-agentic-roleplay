@@ -8,7 +8,7 @@ import { REFERENCE_ID, REFERENCE_KIND, ReferenceBody, ReferenceGuide, type Refer
 import { JournalPage } from './sections/Journal.tsx'
 import { RelationsPage } from './sections/Relations.tsx'
 import { MapPage } from './sections/Map.tsx'
-import { PeoplePage, PlacesPage, ProfilePage, QuestsPage, ThingsPage } from './sections/sections.tsx'
+import { PeoplePage, PlacesPage, ProfilePage, QuestsPage, StatusPage, ThingsPage } from './sections/sections.tsx'
 import type {} from './slot-contract.ts'
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
@@ -30,7 +30,8 @@ export function registerReference(ctx: Context): void {
   const sections = createSlotList(ctx, 'roleplay.reference.section')
   ctx.effect(() => sections.start(), 'roleplay: reference page list')
 
-  const pages: { id: string; order: number; label: 'profile' | 'people' | 'relations' | 'quests' | 'places' | 'map' | 'things' | 'journal'; component: typeof PeoplePage }[] = [
+  const pages: { id: string; order: number; label: 'status' | 'profile' | 'people' | 'relations' | 'quests' | 'places' | 'map' | 'things' | 'journal'; component: typeof PeoplePage }[] = [
+    { id: 'status', order: 3, label: 'status', component: StatusPage },
     { id: 'profile', order: 5, label: 'profile', component: ProfilePage },
     { id: 'people', order: 10, label: 'people', component: PeoplePage },
     { id: 'relations', order: 12, label: 'relations', component: RelationsPage },

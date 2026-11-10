@@ -1,0 +1,90 @@
+{
+  "id": "cast-small",
+  "description": "Three characters besides the player: chen, laozhou and xiaoyu. The landlord (wangjie) is removed with what referred to her; the rumour is then known to chen and laozhou only.",
+  "requires": [],
+  "conflicts": [
+    "cast-solo"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/wangjie"
+  ],
+  "add": {},
+  "patch": {
+    "characters/xiaoman/character.json": {
+      "relationships": [
+        {
+          "to": "chen",
+          "label": "陈姨",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.7
+        },
+        {
+          "to": "laozhou",
+          "label": "周老师",
+          "familiarity": 0.6,
+          "trust": 0.6,
+          "affinity": 0.6
+        },
+        {
+          "to": "xiaoyu",
+          "label": "小宇",
+          "familiarity": 0.5,
+          "trust": 0.5,
+          "affinity": 0.5
+        }
+      ]
+    },
+    "characters/chen/character.json": {
+      "relationships": [
+        {
+          "to": "xiaoman",
+          "label": "小满",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.8
+        },
+        {
+          "to": "laozhou",
+          "label": "老周",
+          "familiarity": 0.9,
+          "trust": 0.8,
+          "affinity": 0.7
+        },
+        {
+          "to": "xiaoyu",
+          "label": "小宇",
+          "familiarity": 0.7,
+          "trust": 0.6,
+          "affinity": 0.6
+        }
+      ]
+    },
+    "characters/laozhou/character.json": {
+      "relationships": [
+        {
+          "to": "chen",
+          "label": "陈姨",
+          "familiarity": 0.9,
+          "trust": 0.8,
+          "affinity": 0.7
+        },
+        {
+          "to": "xiaoman",
+          "label": "小满",
+          "familiarity": 0.6,
+          "trust": 0.6,
+          "affinity": 0.6
+        }
+      ]
+    },
+    "lore/demolition-rumour/lore.json": {
+      "known_by": [
+        "chen",
+        "laozhou"
+      ],
+      "body": "开发商已经和几户房东私下谈过，补偿方案要到年底才公布。"
+    }
+  }
+}

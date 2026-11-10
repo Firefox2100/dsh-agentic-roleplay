@@ -1,0 +1,74 @@
+{
+  "id": "sleeper-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我悄悄站在空荡荡的酒吧里，看着柜台后面的钟。早已过了半夜。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "我在角落的桌边一动不动地坐着，什么也不做，免得吵醒楼上的人。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "/dream",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我把手放在托马斯肩上把他摇醒：“托马斯，醒醒。码头那边有人提着灯。”",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "player-silent"
+    }
+  ]
+}

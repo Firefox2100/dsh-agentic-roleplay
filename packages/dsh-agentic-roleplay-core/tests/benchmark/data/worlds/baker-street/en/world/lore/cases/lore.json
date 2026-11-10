@@ -1,0 +1,14 @@
+{
+  "id": "cases",
+  "title": "The cases of recent years",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "Mr Holmes's recent cases: the Tide Clock affair, the Missing Hansom of Marylebone, and the Lamplighter's Ledger.",
+  "body": "The cases this household talks about are the Tide Clock affair (a harbour-master's clock that ran backwards, last spring), the Missing Hansom of Marylebone (a cab and its driver, in November) and the Lamplighter's Ledger (a dead man's accounts, in January, the last one closed). Nobody here refers to any other case.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "sitting-room"
+    }
+  ]
+}

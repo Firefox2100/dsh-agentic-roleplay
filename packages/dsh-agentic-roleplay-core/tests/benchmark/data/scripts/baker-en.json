@@ -1,0 +1,114 @@
+{
+  "id": "baker-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "Good morning, Mr Holmes. What was the last case you closed?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "holmes"
+        },
+        {
+          "type": "narration-has",
+          "text": "Lamplighter"
+        }
+      ]
+    },
+    {
+      "say": "Dr Watson, what does Mr Holmes play when he is thinking?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "narration-has",
+          "text": "cello"
+        }
+      ]
+    },
+    {
+      "say": "Mrs Hudson, is breakfast always at nine, whatever the gentlemen are doing?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I look about the room and ask what the three of them are working on today.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Speckled"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Baskerville"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Scarlet"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Moriarty"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Reichenbach"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Irene Adler"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Five Orange"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "violin"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "telephone"
+    },
+    {
+      "type": "speaks-in-voice",
+      "character": "holmes"
+    }
+  ]
+}

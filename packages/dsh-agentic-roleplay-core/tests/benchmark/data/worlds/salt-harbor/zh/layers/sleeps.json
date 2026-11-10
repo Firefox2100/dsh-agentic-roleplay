@@ -1,0 +1,51 @@
+{
+  "id": "sleeps",
+  "description": "Marks the landlord's night (01:00 to 07:00, in the inn room) as sleep, so that he is asleep there and takes no part unless something wakes him.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [
+    "no-schedule"
+  ],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/tomas/character.json": {
+      "routine": [
+        {
+          "from": "07:00",
+          "to": "11:00",
+          "activity": "开窗通风，准备早饭",
+          "location": "inn-bar",
+          "on": [
+            "!holiday:fog-festival"
+          ]
+        },
+        {
+          "from": "11:00",
+          "to": "17:00",
+          "activity": "去集市买鱼",
+          "location": "market",
+          "on": [
+            "!holiday:fog-festival"
+          ]
+        },
+        {
+          "from": "17:00",
+          "to": "01:00",
+          "activity": "照看吧台",
+          "location": "inn-bar",
+          "position": "吧台后面"
+        },
+        {
+          "from": "01:00",
+          "to": "07:00",
+          "activity": "睡觉",
+          "location": "inn-room",
+          "sleep": true
+        }
+      ]
+    }
+  }
+}

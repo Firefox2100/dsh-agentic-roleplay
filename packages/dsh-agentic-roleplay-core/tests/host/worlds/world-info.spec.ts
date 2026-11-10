@@ -16,6 +16,18 @@ async function world(document: object): Promise<string> {
   return directory
 }
 
+describe('the world going on while the player is away', () => {
+  it('is read as off, switched on and off again by an edit that leaves the rest of the file alone, and refuses what is not true or false', async () => {
+    const directory = await world({ id: 'w', name: 'W', description: 'd' })
+    expect((await readWorldInfo(directory)).autonomy).toBe(false)
+    expect((await editWorldInfo(directory, { autonomy: true })).autonomy).toBe(true)
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).toMatchObject({ id: 'w', name: 'W', description: 'd', autonomy: true })
+    expect((await editWorldInfo(directory, { autonomy: false })).autonomy).toBe(false)
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('autonomy')
+    expect(() => parseWorldInfoEdit({ autonomy: 'yes' })).toThrow(/true or false/)
+  })
+})
+
 describe('the world\'s own fields', () => {
   it('carry the preset the world suggests, set and cleared like any text field, and refuse a name that is no preset', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour' })

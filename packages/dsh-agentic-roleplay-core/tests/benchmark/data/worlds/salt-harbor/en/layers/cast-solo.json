@@ -1,0 +1,369 @@
+{
+  "id": "cast-solo",
+  "description": "One character besides the player: the reporter (quill) plays and the landlord (tomas) is the only one the story can ask. Everyone else, their things (their other things), the triggers about them and what they knew are removed; the triggers about the player follow the reporter; the world opens at the inn. The harbor key (the strongbox needs it) goes to the landlord, and the lantern and the oilskin coat (a value is declared for the lantern) go to the reporter.",
+  "requires": [],
+  "conflicts": [
+    "cast-small"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/bram",
+    "characters/gull-seller",
+    "characters/ines",
+    "characters/kit",
+    "characters/mara",
+    "characters/night-watch"
+  ],
+  "add": {},
+  "patch": {
+    "characters/tomas/character.json": {
+      "relationships": [
+        {
+          "to": "quill",
+          "label": "lodger",
+          "summary": "Asks too many questions.",
+          "familiarity": 0.3,
+          "trust": -0.2,
+          "affinity": 0,
+          "tension": 0.3
+        }
+      ]
+    },
+    "factions/harbor-guild/faction.json": {
+      "members": [
+        {
+          "character": "tomas",
+          "role": "informer",
+          "rank": "",
+          "status": "active",
+          "public": false,
+          "commitment": 0.3
+        }
+      ],
+      "relationships": [
+        {
+          "to": {
+            "kind": "faction",
+            "id": "lamp-keepers"
+          },
+          "label": "rival",
+          "familiarity": 0.7,
+          "trust": -0.2,
+          "affinity": -0.2,
+          "tension": 0.7
+        }
+      ]
+    },
+    "factions/lamp-keepers/faction.json": {
+      "members": []
+    },
+    "items/harbor-key/item.json": {
+      "held_by": "tomas"
+    },
+    "items/lantern/item.json": {
+      "held_by": "quill"
+    },
+    "items/oilskin-coat/item.json": {
+      "worn_by": "quill"
+    },
+    "lore/cellar-secret/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/keeper-oath/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/lighthouse-history/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/smugglers-signal/lore.json": {
+      "known_by": []
+    },
+    "plots.json": [
+      {
+        "id": "the-dark-lamp",
+        "name": "The dark lamp",
+        "premise": "Someone put the lighthouse out on purpose, and the keeper is hiding with the proof.",
+        "themes": [
+          "duty",
+          "complicity"
+        ],
+        "hooks": [
+          {
+            "id": "closed-road",
+            "text": "The harbor master's notice closing the lighthouse road.",
+            "mode": "opportunity"
+          }
+        ],
+        "developments": [
+          {
+            "id": "cellar-found",
+            "text": "The cellar and its guild-stamped crates come to light.",
+            "mode": "opportunity",
+            "prerequisites": [
+              "closed-road"
+            ]
+          }
+        ],
+        "stakes": [
+          "the keeper's safety",
+          "the guild's hold on the harbor"
+        ],
+        "resolutions": [
+          "the guild is exposed",
+          "the matter is buried"
+        ],
+        "participants": [
+          "tomas"
+        ],
+        "start": "available"
+      }
+    ],
+    "triggers.json": [
+      {
+        "key": "fog-bell-rings",
+        "name": "The fog bell rings",
+        "when": {
+          "type": "time",
+          "from": "1887-10-03T20:00"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "The fog bell on the pier begins to ring, slow and flat."
+          },
+          {
+            "type": "cue",
+            "audience": {
+              "place": "inn-bar"
+            },
+            "text": "The bell has started; the bar goes quiet for a moment."
+          }
+        ],
+        "announce": {
+          "audience": "everyone",
+          "text": "The fog bell will ring at eight.",
+          "at": "1887-10-03T18:30"
+        }
+      },
+      {
+        "key": "storm-breaks",
+        "name": "The storm breaks",
+        "when": {
+          "type": "variable",
+          "variable": "storm_warning",
+          "op": "eq",
+          "value": true
+        },
+        "effects": [
+          {
+            "type": "edit",
+            "edit": {
+              "events": [
+                {
+                  "text": "A storm broke over Salt Harbor and every boat ran for the pier.",
+                  "tags": [
+                    "storm"
+                  ],
+                  "importance": 4,
+                  "perceived_by": "everyone"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "key": "key-found",
+        "name": "The key is found",
+        "when": {
+          "type": "item",
+          "item": "lighthouse-key",
+          "held_by": "quill"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "Someone on the pier has seen the player's character pick something up from the mooring stones."
+          }
+        ]
+      }
+    ],
+    "variables.json": [
+      {
+        "key": "harbor_trust",
+        "name": "Trust in the guild",
+        "description": "How far the town believes the guild: 0 none, 10 complete.",
+        "kind": "number",
+        "subject": "world",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 5,
+        "visibility": "hidden",
+        "always": true,
+        "bands": [
+          {
+            "up_to": 3,
+            "label": "doubtful"
+          },
+          {
+            "up_to": 7,
+            "label": "wary"
+          },
+          {
+            "up_to": 10,
+            "label": "loyal"
+          }
+        ]
+      },
+      {
+        "key": "storm_warning",
+        "name": "Storm warning",
+        "description": "Whether a storm warning has been raised.",
+        "kind": "flag",
+        "subject": "world",
+        "default": false,
+        "visibility": "public"
+      },
+      {
+        "key": "weather",
+        "name": "Weather",
+        "description": "What the weather is doing.",
+        "kind": "choice",
+        "subject": "world",
+        "options": [
+          "clear",
+          "fog",
+          "rain",
+          "storm"
+        ],
+        "default": "fog",
+        "visibility": "public"
+      },
+      {
+        "key": "fatigue",
+        "name": "Fatigue",
+        "description": "How tired the character is: 0 rested, 10 exhausted.",
+        "kind": "number",
+        "subject": "character",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 0,
+        "visibility": "public",
+        "bands": [
+          {
+            "up_to": 2,
+            "label": "rested"
+          },
+          {
+            "up_to": 5,
+            "label": "tired"
+          },
+          {
+            "up_to": 8,
+            "label": "weary"
+          },
+          {
+            "up_to": 10,
+            "label": "exhausted"
+          }
+        ]
+      },
+      {
+        "key": "hunger",
+        "name": "Hunger",
+        "description": "How hungry the character is: 0 full, 10 starving.",
+        "kind": "number",
+        "subject": "character",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 4,
+        "update": "Falls to 0 or 1 when the character eats a meal, and to 2 or 3 for a snack. Rises by 1 for every few hours that pass without food. Otherwise it stays.",
+        "visibility": "public"
+      },
+      {
+        "key": "suspicion",
+        "name": "Suspicion of the player's character",
+        "description": "How much this person suspects the player's character of meddling.",
+        "kind": "number",
+        "subject": "character",
+        "only": [
+          "tomas"
+        ],
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 1,
+        "visibility": "private"
+      },
+      {
+        "key": "injury",
+        "name": "Injury",
+        "description": "How badly the character is hurt.",
+        "kind": "choice",
+        "subject": "character",
+        "options": [
+          "none",
+          "light",
+          "serious"
+        ],
+        "default": "none",
+        "visibility": "public"
+      },
+      {
+        "key": "lamp_oil",
+        "name": "Lamp oil",
+        "description": "How much oil is left in a lamp, in percent.",
+        "kind": "number",
+        "subject": "item",
+        "only": [
+          "lantern",
+          "signal-lamp"
+        ],
+        "min": 0,
+        "max": 100,
+        "integer": true,
+        "default": 100,
+        "visibility": "public"
+      },
+      {
+        "key": "crowd",
+        "name": "Crowd",
+        "description": "How crowded a place is: 0 empty, 10 packed.",
+        "kind": "number",
+        "subject": "location",
+        "min": 0,
+        "max": 10,
+        "integer": true,
+        "default": 2,
+        "visibility": "public",
+        "bands": [
+          {
+            "up_to": 2,
+            "label": "quiet"
+          },
+          {
+            "up_to": 6,
+            "label": "busy"
+          },
+          {
+            "up_to": 10,
+            "label": "packed"
+          }
+        ]
+      }
+    ],
+    "world.json": {
+      "opening_message": "You have been at the Anchor & Lamp for two days, and the landlord still will not talk about the lighthouse.",
+      "alternate_openings": null
+    }
+  }
+}

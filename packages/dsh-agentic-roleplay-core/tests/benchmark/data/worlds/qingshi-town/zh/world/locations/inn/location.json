@@ -1,0 +1,19 @@
+{
+  "id": "inn",
+  "name": "悦来客栈",
+  "description": "二楼是客房，一楼是大堂，柜台上挂着一块写着价目的木牌。",
+  "features": [
+    {
+      "id": "lobby",
+      "name": "大堂",
+      "description": "八张方桌，靠墙的位置最抢手。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "escort-office",
+      "description": "回镖局",
+      "travel_time_seconds": 120
+    }
+  ]
+}

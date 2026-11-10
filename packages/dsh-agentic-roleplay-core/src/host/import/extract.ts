@@ -8,6 +8,7 @@ import { parseLoreFile } from '../lore/lore-file.ts'
 import { parseVariablesFile, variableProblems } from '../variables/load.ts'
 import type { NormalizedCard } from '../../shared/import-card.ts'
 import { cleanText, MAX_ITEM_CHARS, type SourceItem } from './items.ts'
+import { panelsOfCard, withoutLeftOut, withoutOutputMarkup } from './panels.ts'
 import { promptProblem } from '../prompts/library.ts'
 import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
 import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
@@ -334,7 +335,8 @@ const LORE_SUBJECT: Record<Kind, string> = { character: 'character', place: 'loc
 export function loreDocuments(answer: Document, roster: Roster, taken: Set<string>): Built[] {
   return objects(answer['entries']).flatMap((entry): Built[] => {
     const title = text(entry['title'])
-    const body = text(entry['body'])
+    // an entry that only tells the game master to print markup after replies is not background
+    const body = withoutOutputMarkup(text(entry['body']))
     if (title === '' || body === '') return []
     const notes: string[] = []
     const subjects: Document[] = []
@@ -346,7 +348,7 @@ export function loreDocuments(answer: Document, roster: Roster, taken: Set<strin
       if (!seen.has(found.key)) { seen.add(found.key); subjects.push({ kind: LORE_SUBJECT[found.kind], id: found.key }) }
     }
     const kind: LoreKind = LORE_KINDS.includes(entry['kind'] as never) ? entry['kind'] as LoreKind : 'other'
-    const document: Document = { id: uniqueKey(slug(title, 'lore'), taken), title, kind, summary: text(entry['summary']), body }
+    const document: Document = { id: uniqueKey(slug(title, 'lore'), taken), title, kind, summary: withoutOutputMarkup(text(entry['summary'])), body }
     put(document, 'subjects', subjects)
     return [{ document, notes }]
   })
@@ -609,7 +611,7 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     try {
       const prompt = `${tr('Card: {name}', { name: card.name })}\n${tr('Piece: {label}', { label: item.label })}\n\n${tr('Source piece:')}\n${item.text.slice(0, MAX_ITEM_CHARS + 500)}`
       const answer = await ctx.run<Document>({ persona: ctx.text('import/generator', { rules: ctx.text('import/common-rules') }), maxTokens: 600 + item.text.length, prompt, result: GUIDANCE_SCHEMA as never, check: value => passageProblem(value, item.text) })
-      const passages = (field: 'casting' | 'rules'): string[] => (answer[field] as string[]).filter(passage => passage.trim() !== '')
+      const passages = (field: 'casting' | 'rules'): string[] => (answer[field] as string[]).map(withoutOutputMarkup).filter(passage => passage.trim() !== '')
       return { item, casting: passages('casting'), rules: passages('rules') }
     } catch (error) {
       return { item, casting: [], rules: [], failure: `${item.label}: ${error instanceof Error ? error.message : String(error)}` }
@@ -688,10 +690,11 @@ export async function extractStyleFrom(ctx: ImportContext, name: string, pieces:
       result: STYLE_SCHEMA as never,
       check: value => styleProblem('roleplay/style', text(value.narration), list(value.persona_names)) ?? styleProblem('roleplay/character-style', text(value.characters), list(value.persona_names)),
     })
-    const made = [['roleplay/style', text(answer.narration)], ['roleplay/character-style', text(answer.characters)]] as const
+    const leftOut = list(answer.left_out)
+    const made = [['roleplay/style', withoutLeftOut(text(answer.narration), leftOut)], ['roleplay/character-style', withoutLeftOut(text(answer.characters), leftOut)]] as const
     const prompts = made.flatMap(([id, body]) => (body === '' ? [] : [{ id, text: body }]))
     if (!prompts.every(entry => PROSE_PROMPTS.includes(entry.id))) throw new Error('only prose prompts can be made')
-    return { prompts, notes: list(answer.left_out).map(entry => `instructions not carried: ${entry}`) }
+    return { prompts, notes: list(answer.left_out).map(entry => `instructions left out on purpose: ${entry}`) }
   } catch (error) {
     return { prompts: [], notes: [`the instructions of the card were not carried over: ${error instanceof Error ? error.message : String(error)}`] }
   }
@@ -732,9 +735,10 @@ const VARIABLES_SCHEMA = {
 /** What a card that keeps its game state in variables says of them: the tool that updates them names itself in the text, whatever role the piece was given. */
 const STATE_SPEC = /stat_data|\[mvu_|<UpdateVariable>|<initvar>|JSON ?Patch/i
 
-function trackingPieces(card: NormalizedCard, items: readonly SourceItem[], classified: Classified): string[] {
+function trackingPieces(card: NormalizedCard, items: readonly SourceItem[], classified: Classified, tr: Translate): string[] {
   const specs = items.filter(item => mainRole(classified[item.id] ?? { roles: [] }) !== 'irrelevant' && STATE_SPEC.test(item.text)).map(item => item.text)
-  return [...new Set([...items.filter(item => mainRole(classified[item.id] ?? { roles: [] }) === 'template').map(item => item.text), ...instructionPieces(card, items, classified), ...specs])]
+  const panels = panelsOfCard(card).map(panel => `${tr('A status panel from one of the card\'s own messages (it shows which values the card keeps and where they start):')}\n${panel}`)
+  return [...new Set([...items.filter(item => mainRole(classified[item.id] ?? { roles: [] }) === 'template').map(item => item.text), ...instructionPieces(card, items, classified), ...specs, ...panels])]
 }
 
 /** The documents of `variables.json` an answer describes, with the roster's names turned into keys. */
@@ -789,11 +793,11 @@ const TOKENS_PER_VARIABLE = 600
 
 /** Finds what the card keeps track of, such as status panels and meters, and writes it as the world's tracked variables. Each group of the card's tracking text is read on its own, a request declares at most `variablesPerRequest` values and is asked again, told what is declared already, while it fills its share; the first declaration of a key stands. */
 export async function extractVariables(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Pick<Extracted, 'variables' | 'notes' | 'derived'>> {
-  const groups = trackingGroups(trackingPieces(card, items, classified))
+  const tr = trOf(ctx)
+  const groups = trackingGroups(trackingPieces(card, items, classified, tr))
   if (groups.length === 0) return { variables: [], notes: [], derived: [] }
   const perRequest = ctx.variablesPerRequest ?? DEFAULT_VARIABLES_PER_REQUEST
   const names = (kind: string): string => roster.filter(entity => entity.kind === kind).map(entity => entity.name).join(', ')
-  const tr = trOf(ctx)
   const found = await mapLimit(groups, ctx.concurrency, async (pieces, index) => {
     const documents: Document[] = []
     const notes: string[] = []

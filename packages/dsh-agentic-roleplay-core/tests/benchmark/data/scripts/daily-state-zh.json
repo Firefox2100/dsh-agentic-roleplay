@@ -1,0 +1,94 @@
+{
+  "id": "daily-state-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "陈姨把这周的工钱两百块递给我，我收下了，塞进围裙口袋。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我扛着三箱面粉从后门搬进店里，累得直喘气。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我拿起柜台上的保温桶，准备给老周送去。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我出门去菜市场，替陈姨买一把葱。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 4 hours",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 5
+    },
+    {
+      "type": "value-changed",
+      "name": "存款",
+      "of": "player"
+    },
+    {
+      "type": "value-changed",
+      "name": "疲惫",
+      "of": "player"
+    },
+    {
+      "type": "item-held-by",
+      "item": "flask",
+      "holder": "xiaoman"
+    },
+    {
+      "type": "character-at",
+      "character": "xiaoman",
+      "place": "market"
+    },
+    {
+      "type": "trigger-fired",
+      "key": "lunch-rush"
+    }
+  ]
+}

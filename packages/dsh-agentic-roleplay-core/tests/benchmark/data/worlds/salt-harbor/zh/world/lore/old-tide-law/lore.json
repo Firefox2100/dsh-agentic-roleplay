@@ -1,0 +1,9 @@
+{
+  "id": "old-tide-law",
+  "title": "旧潮汐法",
+  "kind": "geography",
+  "scope": "everyone",
+  "summary": "1885 年之前，大潮期间码头对所有船只关闭。",
+  "body": "新防波堤建成之前，大潮的三天里，码头对所有船只关闭。",
+  "ends_at": "1885-12-31"
+}

@@ -1,0 +1,42 @@
+{
+  "id": "no-cases",
+  "description": "The grounding is taken out: the lore of the cases and of the cello is gone, so the characters have only their persona and the model's memory of the books to answer from.",
+  "requires": [],
+  "conflicts": [
+    "cast-solo"
+  ],
+  "fits": [],
+  "remove": [
+    "lore/cases",
+    "lore/cello"
+  ],
+  "add": {},
+  "patch": {
+    "characters/visitor/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    },
+    "characters/holmes/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    },
+    "characters/watson/character.json": {
+      "knowledge": {
+        "lore": [
+          "household"
+        ]
+      }
+    },
+    "characters/lestrade/character.json": {
+      "knowledge": {
+        "lore": []
+      }
+    }
+  }
+}

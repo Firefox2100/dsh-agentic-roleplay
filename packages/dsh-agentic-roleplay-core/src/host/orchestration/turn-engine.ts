@@ -27,6 +27,9 @@ import type { RecallPreview, RecallPreviewCharacter, RecallPreviewRequest } from
 export type { RawSegment } from './turn-state.ts'
 
 /** Asks one character to act; what the game master calls a character is the character's key. */
+/** Told to the game master when it asks again in a dream the harness has already asked. */
+const DREAM_ASKED = 'the sleeper was already asked for this dream and nothing in a dream changes the waking world: call narrate with the dream, as narration only'
+
 export type RunCharacter = (request: CharacterRequest, signal: AbortSignal) => Promise<CharacterAction>
 
 /** Answers a question of the player from what the player's character knows, given as the request a character would be given. */
@@ -78,6 +81,7 @@ export interface ResolveReport {
 }
 
 const MAX_OBJECTIONS = 3
+const MAX_PREVIEW_REFUSALS = 3
 /** The most characters a preview of the scene may have: it is an opening, not the output. */
 export const MAX_PREVIEW = 700
 export { OFFSTAGE_ROUND } from './off-stage.ts'
@@ -110,6 +114,8 @@ export class TurnEngine {
   private readonly reflectionCancels = new Map<string, AbortController>()
   /** Chats whose characters away from the player are being asked about what fell due: one run at a time. */
   private readonly offstage = new Set<string>()
+  /** Told when a round of characters begins; the function it returns is told how the round went. Used to trace rounds, never to decide anything. */
+  observe?: (chat: string, round: { turn: number; attempt: number; characters: readonly string[]; away: boolean }) => (attempt: Attempt | Error) => void
 
   constructor(
     private readonly boundaries: () => Boundaries,
@@ -126,6 +132,33 @@ export class TurnEngine {
    * The turn is an out-of-character command of the player: nobody is asked to act and no preview is shown. The game master rules on
    * whether it is allowed (`rule`) and, if so, makes it happen with outcomes for any characters, with the world's tools, and says what the player perceives.
    */
+  /** The turn is the player's visit to the dream of a sleeping character: the sleeper may be asked, and stays asleep. */
+  beginDream(owner: TurnOwner, key: string, situation: string): void {
+    const state = this.stateFor(owner)
+    state.dreaming = key
+    state.dreamSituation = situation
+  }
+
+  /**
+   * The harness asks the sleeper itself, so that a dream never depends on the game master choosing the right tools: the answer is
+   * returned for the game master to narrate and no round is recorded, because nothing in a dream changes the waking world.
+   * Nothing is returned when the sleeper could not answer, and the game master then asks as in any turn.
+   */
+  async dream(owner: TurnOwner, run: RunCharacter): Promise<CharacterReport | undefined> {
+    const state = this.stateFor(owner)
+    const key = state.dreaming
+    if (key === undefined) return undefined
+    const store = this.storeOf(owner)
+    state.situation = state.dreamSituation ?? ''
+    state.cast = store.cast()
+    const attempt = await this.ask(owner, 1, [key], state.cast, state, run, state.cancel.signal)
+    const report = attempt.reports[0]
+    if (report === undefined) return undefined
+    state.dreamed = true
+    state.phase = 'between'
+    return report
+  }
+
   beginOoc(owner: TurnOwner, request: string, question = false): void {
     const state = this.stateFor(owner)
     state.ooc = { request, ...(question ? { question: true as const } : {}) }
@@ -174,7 +207,7 @@ export class TurnEngine {
    * When the action is said to happen at a place (`at`, a place key) and the character is somewhere else, it does not work whatever was judged: the character has to get there first.
    * @throws {Error} when the turn is not an ordinary one, was already judged, the reason is empty, or `at` is not a place.
    */
-  judge(owner: TurnOwner, allowed: boolean, reason: string, at?: string, uncertain?: boolean): { allowed: boolean; reason: string; elsewhere?: true; roll?: true } {
+  judge(owner: TurnOwner, allowed: boolean, reason: string, at?: string, uncertain?: boolean, goesTo?: string): { allowed: boolean; reason: string; elsewhere?: true; roll?: true } {
     const state = this.stateFor(owner)
     if (state.ooc !== undefined) throw new Error('this turn is an out-of-character ' + (state.ooc.question === true ? 'question: answer it with ooc_answer' : 'command: rule on it with ooc_ruling'))
     if (state.phase !== 'idle') throw new Error('the action is judged first, before anything else')
@@ -193,7 +226,14 @@ export class TurnEngine {
         return { ...state.judgement, elsewhere: true }
       }
     }
-    state.judgement = { allowed, reason: why }
+    const destination = goesTo?.trim() ?? ''
+    if (destination !== '') {
+      const store = this.storeOf(owner)
+      const player = store.cast().find(member => member.character.control === 'player')
+      const found = whereabouts(store.story.locations.list(), player?.place?.location, destination)
+      if (found.kind === 'unknown') throw new Error(`there is no place "${destination}" (list_locations shows the keys): name the place the character is going to, or leave "goes_to" out`)
+    }
+    state.judgement = { allowed, reason: why, ...allowed && destination !== '' ? { goesTo: destination } : {} }
     const { tools } = this.storeOf(owner).settings()
     if (allowed && uncertain === true && (toolEnabled(tools, 'gameMaster', 'roll_check') || toolEnabled(tools, 'gameMaster', 'roll_dice'))) {
       state.rollWanted = true
@@ -237,13 +277,14 @@ export class TurnEngine {
    * Ask the characters to act: the first round of a turn, or the next one.
    * @throws {Error} when a round is still open, the limit of rounds is reached, a character cannot be activated or no store exists.
    */
-  async activate(owner: TurnOwner, input: { situation: string; characters?: readonly string[] }, run: RunCharacter, signal: AbortSignal): Promise<AttemptReport> {
+  async activate(owner: TurnOwner, input: { situation: string; characters?: readonly string[]; wakes?: readonly string[] }, run: RunCharacter, signal: AbortSignal): Promise<AttemptReport> {
     const state = this.stateFor(owner)
+    if (state.dreamed === true) throw new Error(DREAM_ASKED)
     if (state.ooc !== undefined) throw new Error(state.ooc.question === true ? 'a question asks nobody to act and changes nothing: answer it with ooc_answer' : 'an out-of-character command asks nobody to act: decree what happens with resolve_round, or narrate')
     if (state.phase !== 'idle' && state.phase !== 'between') throw new Error(explainPhase(state, 'activate_characters'))
     if (judgeDue(state)) throw new Error(explainPhase(state, 'activate_characters'))
     if (state.judgement?.allowed === false && state.rounds === 0) throw new Error(`the action cannot work (${state.judgement.reason}): nobody is asked to act on it. Play the failed attempt with resolve_round: one outcome for the player's character, result failed`)
-    if (previewDue(state)) throw new Error(explainPhase(state, 'activate_characters'))
+    if (this.previewHeld(state)) throw new Error(explainPhase(state, 'activate_characters'))
     if (rollDue(state, this.storeOf(owner))) throw new Error(ROLL_FIRST)
     const store = this.storeOf(owner)
     const limit = store.settings().maxRounds
@@ -254,8 +295,18 @@ export class TurnEngine {
     if (situation === '') throw new Error('describe the situation: the characters are told nothing else')
     const cast = store.cast()
     const most = store.settings().maxCharacters
-    const keys = this.boundaries().planner.plan({ cast, ...(input.characters === undefined ? {} : { requested: input.characters }) })
-    if (keys.length === 0) throw new Error('there is no character to activate')
+    const planned = this.boundaries().planner.plan({ cast, ...(input.characters === undefined ? {} : { requested: input.characters }) })
+    const sleeping = planned.flatMap((key) => {
+      const member = cast.find(candidate => candidate.key === key)
+      const asleep = member === undefined || state.dreaming === key ? undefined : store.asleep(owner.turn, member.character.id)
+      return asleep === undefined ? [] : [{ key, name: member!.character.name, until: asleep.until }]
+    })
+    const woken = sleeping.filter(entry => input.wakes?.includes(entry.key) === true)
+    const sleepers = sleeping.filter(entry => !woken.includes(entry))
+    if (sleepers.length > 0 && input.characters !== undefined && input.characters.length > 0) throw new Error(`${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep: asleep characters take part only if what the player does wakes them. If it does, name them in wakes and show them waking in your narration; otherwise leave them out`)
+    const keys = planned.filter(key => !sleepers.some(entry => entry.key === key))
+    if (keys.length === 0) throw new Error(sleepers.length > 0 ? `${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep, so nobody here can act: narrate the quiet, or wake them with wakes` : 'there is no character to activate')
+    if (woken.length > 0) state.woken = new Set([...(state.woken ?? []), ...woken.map(entry => entry.key)])
     if (keys.length > most) throw new Error(`${keys.length} characters were asked, which is more than one round allows (${most}): ask only those the moment actually reaches, and the others in a later round if the story comes to them`)
     const signature = `${[...keys].sort((a, b) => a.localeCompare(b)).join(',')}|${situation.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()}`
     if (repeatsEarlier(signature, state.asked)) throw new Error('the same characters were already asked about the same situation in this message, so nothing new would come of it: say what changed, ask others, or deliver the output with narrate')
@@ -281,10 +332,11 @@ export class TurnEngine {
   async resolve(owner: TurnOwner, outcomes: readonly Outcome[], run: RunCharacter, signal: AbortSignal, elapsedSeconds?: number): Promise<ResolveReport> {
     const state = this.stateFor(owner)
     const store = this.storeOf(owner)
+    if (state.dreamed === true) throw new Error(DREAM_ASKED)
     outcomes = mendRolls(outcomes, store, state)
     if (state.ooc !== undefined) return { done: this.decree(owner, state, outcomes, elapsedSeconds) }
     if (state.phase === 'idle' || state.phase === 'between') {
-      if (judgeDue(state) || previewDue(state)) throw new Error(explainPhase(state, 'resolve_round'))
+      if (judgeDue(state) || this.previewHeld(state)) throw new Error(explainPhase(state, 'resolve_round'))
       if (rollDue(state, this.storeOf(owner))) throw new Error(ROLL_FIRST)
       const player = store.cast().find(member => member.character.control === 'player')
       if (player !== undefined && outcomes.length === 1 && outcomes[0]?.character === player.key) return { done: this.resolvePlayer(owner, state, outcomes[0], elapsedSeconds) }
@@ -336,6 +388,15 @@ export class TurnEngine {
     })
     state.first = { reports, failures: [], outcomes: [...outcomes] }
     return recordRound(this.storeOf(owner), owner, state, round => this.fire(owner, round))
+  }
+
+  /** The preview comes first, but a game master that does not show it must not go on refused for ever (a model repeated the same refused calls for the rest of the turn): after a few refusals it is let go and the turn goes on without one. */
+  private previewHeld(state: TurnState): boolean {
+    if (!previewDue(state)) return false
+    state.previewRefusals += 1
+    if (state.previewRefusals <= MAX_PREVIEW_REFUSALS) return true
+    state.previewWanted = false
+    return false
   }
 
   /** The turn settles a lone attempt in one step: nobody is asked to act, so there is no scene to preview. */
@@ -448,11 +509,13 @@ export class TurnEngine {
    */
   async narrate(owner: TurnOwner, segments: readonly RawSegment[], run?: RunCharacter, addressed: readonly number[] = []): Promise<TurnOutput> {
     const state = this.stateFor(owner)
+    if (state.phase === 'idle') this.previewHeld(state)
     if (state.phase !== 'between') throw new Error(explainPhase(state, 'narrate'))
     const pending = new Set(this.storeOf(owner).pendingBeats().map(beat => beat.id))
     const unknown = addressed.filter(id => !pending.has(id))
     if (unknown.length > 0) throw new Error(`addressed: ${unknown.join(', ')} ${unknown.length === 1 ? 'is' : 'are'} not ${unknown.length === 1 ? 'a beat' : 'beats'} still to weave in (the scene lists them)`)
     state.addressed = [...new Set(addressed)]
+    if (state.dreamed === true && segments.some(segment => segment.type === 'utterance')) throw new Error('a dream is narrated, and what the sleeper says in it is part of the narration: deliver narration segments only')
     if (state.ooc !== undefined) {
       if (state.ooc.question === true && segments.length > 0) throw new Error('a question is answered with ooc_answer: deliver no segments, the player is shown the answer')
       if (state.ooc.ruling?.legal !== true && segments.length > 0) throw new Error('the command was refused: deliver no segments, the player is told why')
@@ -475,7 +538,9 @@ export class TurnEngine {
    * story genuinely needs it, and makes it or says why not. @throws {Error} when the world is closed, the turn's limit is reached or a round is open.
    */
   async expand(owner: TurnOwner, input: { need: string; what: string }, signal: AbortSignal): Promise<CreateReport> {
-    return await expandWorld(this.boundaries(), this.storeOf(owner), this.stateFor(owner), owner, input, signal)
+    const state = this.stateFor(owner)
+    if (state.dreaming !== undefined) throw new Error(`this turn is a dream: nothing is made up for it and the world is not changed. Call activate_characters with only ${state.dreaming} (the sleeper stays asleep), then narrate the dream`)
+    return await expandWorld(this.boundaries(), this.storeOf(owner), state, owner, input, signal)
   }
 
   /** The game master introduces a thing the story uses, with no world author asked. @throws {Error} when the world is closed, a round is open, or the thing cannot be put where it was said. */
@@ -670,9 +735,25 @@ export class TurnEngine {
   private stateFor({ chat, turn }: TurnOwner): TurnState {
     const known = this.states.get(chat)
     if (known?.turn === turn) return known
-    const fresh: TurnState = { turn, phase: 'idle', cast: [], rounds: 0, situations: [], asked: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], cited: new Set(), reported: new Set(), refused: 0, previewed: false, previewWanted: this.stores(chat)?.settings().preview.enabled ?? false, focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map(), cues: new Map(), addressed: [] }
+    const fresh = this.blankState(chat, turn)
     this.states.set(chat, fresh)
     return fresh
+  }
+
+  private blankState(chat: string, turn: number): TurnState {
+    return { turn, phase: 'idle', cast: [], rounds: 0, situations: [], asked: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], cited: new Set(), reported: new Set(), refused: 0, previewed: false, previewRefusals: 0, previewWanted: this.stores(chat)?.settings().preview.enabled ?? false, focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map(), cues: new Map(), addressed: [] }
+  }
+
+  /**
+   * One character, asked alone about a situation of its own, away from any turn (the player is not playing): what it answers is returned and nothing else is
+   * recorded, so a message can be written while the player is away. The turn is only the one the story is at, for what the character remembers and knows.
+   */
+  async askAlone(owner: TurnOwner, key: string, situation: string, run: RunCharacter, signal: AbortSignal): Promise<CharacterReport | undefined> {
+    const store = this.storeOf(owner)
+    const state = this.blankState(owner.chat, owner.turn)
+    state.situation = situation
+    const attempt = await this.ask(owner, 1, [key], store.cast(), state, run, signal, true)
+    return attempt.reports[0]
   }
 
   private storeOf(owner: TurnOwner): TurnStore {
@@ -682,7 +763,10 @@ export class TurnEngine {
   }
 
   private ask(owner: TurnOwner, number: 1 | 2, keys: readonly string[], cast: readonly CastMember[], state: TurnState, run: RunCharacter, signal: AbortSignal, away = false): Promise<Attempt> {
-    return askCharacters({ boundaries: this.boundaries(), store: this.stores(owner.chat), storeOf: o => this.storeOf(o), problem: message => { this.problem(message) } }, owner, number, keys, cast, state, run, signal, away)
+    const done = this.observe?.(owner.chat, { turn: owner.turn, attempt: number, characters: keys, away })
+    const asked = askCharacters({ boundaries: this.boundaries(), store: this.stores(owner.chat), storeOf: o => this.storeOf(o), problem: message => { this.problem(message) } }, owner, number, keys, cast, state, run, signal, away)
+    if (done === undefined) return asked
+    return asked.then(attempt => { done(attempt); return attempt }, (error: unknown) => { done(error instanceof Error ? error : new Error(String(error))); throw error })
   }
 
   /**
@@ -786,8 +870,25 @@ export class TurnEngine {
     throw new Error(`the output is not acceptable: ${findings.map(finding => finding.message).join('; ')}. Deliver it again with this corrected; utterances may not be touched`)
   }
 
+  /**
+   * The player's character was judged to be going somewhere, and the story still has it where it was: the output is sent back once, because
+   * a move that is only narrated is not recorded (the next turn would start from the old place). If something stopped the character, the second delivery stands.
+   */
+  private checkArrival(owner: TurnOwner, state: TurnState, silent: boolean): void {
+    const goesTo = state.judgement?.goesTo
+    if (goesTo === undefined || silent || state.arrivalChecked === true || state.ooc !== undefined) return
+    const store = this.storeOf(owner)
+    const player = store.cast().find(member => member.character.control === 'player')
+    if (player?.place === undefined) return
+    const found = whereabouts(store.story.locations.list(), player.place.location, goesTo)
+    if (found.kind !== 'elsewhere') return
+    state.arrivalChecked = true
+    throw new Error(`${player.character.name} was judged to be going to ${found.target.name}, but is still at ${found.here.name} in the story's records, and what is not recorded did not happen: record the move with resolve_round (an outcome for ${player.character.name} with moves_to ${goesTo}), then narrate again. If something stops ${player.character.name} on the way, deliver the narration again as it is and say what stopped them`)
+  }
+
   private async deliver(owner: TurnOwner, state: TurnState, segments: readonly NarrationSegment[], silent: boolean, run?: RunCharacter): Promise<TurnOutput> {
     let output = checkedOutput(this.boundaries().narrationChecker, this.storeOf(owner).settings().prompts.language, state, segments, silent)
+    this.checkArrival(owner, state, silent)
     await this.gate(owner, state, output, silent)
     if (state.ooc?.ruling !== undefined) output = { ...output, ooc: state.ooc.ruling }
     const store = this.storeOf(owner)

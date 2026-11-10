@@ -1,0 +1,8 @@
+{
+  "id": "ledger",
+  "name": "Room ledger",
+  "description": "The inn's book of guests, dates and payments.",
+  "location": "inn-bar",
+  "feature": "counter",
+  "owner": "tomas"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "market",
+  "name": "菜市场",
+  "description": "早上最热闹的地方，摊位挨着摊位。",
+  "features": [
+    {
+      "id": "veg-stall",
+      "name": "菜摊",
+      "description": "陈姨常去的那家，摊主认识她。"
+    }
+  ],
+  "exits": []
+}

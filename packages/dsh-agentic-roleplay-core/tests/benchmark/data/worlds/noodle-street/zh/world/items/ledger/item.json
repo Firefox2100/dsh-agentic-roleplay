@@ -1,0 +1,8 @@
+{
+  "id": "ledger",
+  "name": "账本",
+  "description": "陈姨记面馆每天流水和赊账的小本子。",
+  "location": "noodle-shop",
+  "feature": "counter",
+  "owner": "chen"
+}

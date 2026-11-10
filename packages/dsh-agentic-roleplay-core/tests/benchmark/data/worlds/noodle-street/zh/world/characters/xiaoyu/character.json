@@ -1,0 +1,86 @@
+{
+  "id": "xiaoyu",
+  "name": "赵小宇",
+  "age": 24,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "骑电动车送外卖的小伙子，常来面馆取餐。",
+  "personality": "爱说笑，嘴快，赶时间时没耐心，但肯帮忙。",
+  "background": "老家在外县，来这座城市三年，租着合租房。",
+  "appearance": "黄色头盔，外卖箱上贴着贴纸。",
+  "speech": {
+    "style": "语速快，爱说“哥”“姐”“稍等稍等”。",
+    "examples": [
+      "姐，我这单马上超时了，你先给我打包！",
+      "稍等稍等，我看看手机。"
+    ]
+  },
+  "start": {
+    "public_state": "靠在门口看手机。",
+    "activity": "等取餐。",
+    "inner_state": "在想怎么凑够下个月的房租。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.6,
+        "dominance": 0.0
+      }
+    },
+    "intents": [],
+    "location": "alley",
+    "position": "电动车旁"
+  },
+  "relationships": [
+    {
+      "to": "chen",
+      "label": "陈姨",
+      "familiarity": 0.7,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "xiaoman",
+      "label": "小满",
+      "familiarity": 0.5,
+      "trust": 0.5,
+      "affinity": 0.5
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "alley",
+      "market",
+      "noodle-shop"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": []
+  },
+  "variables": {
+    "fatigue": 5
+  },
+  "routine": [
+    {
+      "from": "10:30",
+      "to": "13:30",
+      "activity": "送午市外卖",
+      "location": "alley"
+    },
+    {
+      "from": "13:30",
+      "to": "17:00",
+      "activity": "在公园长椅上休息",
+      "location": "park",
+      "position": "长椅"
+    },
+    {
+      "from": "17:00",
+      "to": "21:00",
+      "activity": "送晚市外卖",
+      "location": "alley"
+    }
+  ]
+}

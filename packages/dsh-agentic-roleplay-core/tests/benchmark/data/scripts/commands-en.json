@@ -1,0 +1,105 @@
+{
+  "id": "commands-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask Tomas whether the harbor master has been in tonight.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/ooc Ines walks into the inn bar.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/roll 2d6 to read the harbor master's mood",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 2 hours until the bell",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "action": "regenerate",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask her what she wants.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "action": "rewind",
+      "to": 3,
+      "expect": []
+    },
+    {
+      "say": "I thank them and say goodnight.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "character-at",
+      "character": "ines",
+      "place": "inn-bar"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    }
+  ]
+}

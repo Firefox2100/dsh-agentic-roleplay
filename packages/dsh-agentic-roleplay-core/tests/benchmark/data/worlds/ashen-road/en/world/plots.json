@@ -1,0 +1,42 @@
+[
+  {
+    "id": "the-late-convoy",
+    "name": "The late convoy",
+    "premise": "The convoy was turned back by something in the ash that the guild does not want named.",
+    "themes": [
+      "trust",
+      "fear"
+    ],
+    "hooks": [
+      {
+        "id": "empty-saddle",
+        "text": "A rider's horse comes in alone, its saddle scorched.",
+        "mode": "opportunity"
+      }
+    ],
+    "developments": [
+      {
+        "id": "ruin-found",
+        "text": "The old well in the ruin is open again.",
+        "mode": "opportunity",
+        "prerequisites": [
+          "empty-saddle"
+        ]
+      }
+    ],
+    "stakes": [
+      "the town's winter stores",
+      "the order's hold on the old well"
+    ],
+    "resolutions": [
+      "the well is sealed again",
+      "the guild takes the well"
+    ],
+    "participants": [
+      "brann",
+      "lioren",
+      "vessa"
+    ],
+    "start": "available"
+  }
+]

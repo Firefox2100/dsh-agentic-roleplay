@@ -4,6 +4,7 @@ import type { ActivityEntry, RunDetail } from '../../shared/activity.ts'
 import type { SceneSelection, TurnTrace } from '../../shared/trace.ts'
 import type { TokenCount } from '../../shared/usage.ts'
 import type { Note } from '../../shared/notes.ts'
+import type { AutonomyMessage, AutonomyState } from '../sessions/autonomy.ts'
 import type { ReflectionOutcome, ReflectionReason } from '../../shared/reflection.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { DecisionSite, SiteReport } from '../../shared/decisions.ts'
@@ -117,6 +118,8 @@ export interface CharacterRequest {
   turn: number
   /** The character acts away from the player, and its answer also says in a line what came of it. */
   away?: true
+  /** Set when the character is asleep and the player is in its dream: what it does and says is the dream's. */
+  dreaming?: true
   /** What the moment reminds this character of, as it comes back to it. */
   memories?: readonly Recalled[]
   /** Whether the character can ask itself about more of what it remembers, while it decides. */
@@ -497,6 +500,11 @@ export interface VariableTracker {
   track(job: TrackJob, signal: AbortSignal): Promise<number>
 }
 
+/** Says, after a turn, which characters the story told or left to wait for the player, and keeps them where they are until the player comes to them. @returns how many it kept. */
+export interface ErrandKeeper {
+  keep(job: TrackJob, signal: AbortSignal): Promise<number>
+}
+
 export interface Boundaries {
   planner: ActivationPlanner
   characterContext: CharacterContextProvider
@@ -513,6 +521,7 @@ export interface Boundaries {
   outputGate: OutputGate
   ruleCheck: RuleCheck
   variableTracker: VariableTracker
+  errandKeeper: ErrandKeeper
   suggester: Suggester
   recaller: Recaller
   sceneContext: SceneContextProvider
@@ -589,6 +598,26 @@ export interface TurnStore {
   recordUsage?(turn: number, tokens: TokenCount, ms?: number): void
   /** Adds what one source knows of a turn to its trace; `merge` reads what is there to add to it. */
   recordTrace?(turn: number, patch: Partial<Omit<TurnTrace, 'turn'>>, merge?: (current: TurnTrace) => Partial<Omit<TurnTrace, 'turn'>>): void
+  /** The folders the file tools of this story's agents reach, the shared workspace first. */
+  folders?(): Promise<{ path: string; write: boolean }[]>
+  /** What the story does while the player is away: the days of the characters at the real time, and the messages characters leave. */
+  autonomy?: {
+    /** Takes the characters' days up to the real time now, costing no model request. */
+    catchUp(turn: number): RoutineMove[]
+    state(): AutonomyState
+    /** The characters whose day changed since this was last asked, by key. */
+    shifts(): string[]
+    /** When the player last played, in UTC milliseconds. */
+    lastPlayerAt(): number | undefined
+    /** A character wrote to the player: shown beside the story, counted, and kept to be told to the story at the player's next message. */
+    said(turn: number, message: AutonomyMessage): void
+    /** A character was asked and did not want to write. */
+    asked(character: string, at: number): void
+    /** The player writes: what the story was not told of yet, and the count of things done without a reply starts again. */
+    inbox(): AutonomyMessage[]
+    /** How the last look ended, kept in the story so that a story that stays quiet can say why. */
+    looked?(outcome: string, at: number): void
+  }
   /** The notes of the session as they stand. */
   notes(): Note[]
   /** Removes the notes: they belong to the turn that made them. */
@@ -596,7 +625,13 @@ export interface TurnStore {
   /** A character's agenda now: its day, its commitments and its goals. */
   agenda(turn: number, characterId: Character['id']): AgendaView
   /** Writes the updates of one round, moves included, together or not at all. */
-  commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch; move?: Move; items?: readonly ItemChangeSpec[] }[]): ItemEffect[][]
+  commit(updates: readonly { character: Character['id']; patch: CharacterStatePatch; move?: Move; items?: readonly ItemChangeSpec[]; /** The story takes the character off its day: for this many minutes, or until its day next changes. */ hold?: { minutes?: number; untilPlayer?: true } }[]): ItemEffect[][]
+  /** Keeps a character where the story has it until the player's character is with it again (for a day at most), whatever its routine says. Absent in a store that keeps no days. */
+  holdForPlayer?(characterId: Character['id']): void
+  /** Whether a character is asleep now, and until when; never the player's character, and nobody when the chat keeps no days. */
+  asleep(turn: number, characterId: Character['id']): { until: number } | undefined
+  /** Everyone asleep now. */
+  sleepers(turn: number): { key: string; name: string; aliases?: readonly string[]; until: number }[]
   /** Why these changes to what is tracked cannot be made, if they cannot; nothing is changed. */
   checkVariableChanges(changes: readonly VariableChangeSpec[]): string[]
   /** Changes what is tracked, together or not at all, and says what each came to. */

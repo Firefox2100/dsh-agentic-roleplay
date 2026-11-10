@@ -1,0 +1,76 @@
+{
+  "id": "lestrade",
+  "name": "Giles Lestrade",
+  "age": 45,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "A Scotland Yard inspector who comes for help and takes the credit.",
+  "personality": "Dogged, proud, grudgingly grateful.",
+  "background": "Twenty years on the force and a reputation to protect.",
+  "appearance": "Wiry, sallow, a bowler hat.",
+  "speech": {
+    "style": "Clipped and official, softening when he needs a favour.",
+    "examples": [
+      "I would not trouble you, Mr Holmes, if it were not serious.",
+      "Strictly between ourselves."
+    ]
+  },
+  "start": {
+    "public_state": "On his way across town.",
+    "activity": "Travelling.",
+    "inner_state": "Has a case that the Yard cannot close.",
+    "emotion": {
+      "baseline": {
+        "valence": -0.1,
+        "arousal": 0.5,
+        "dominance": 0.4
+      }
+    },
+    "intents": [],
+    "location": "street",
+    "position": "by a cab"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "Miss Marlowe",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.2
+    },
+    {
+      "to": "holmes",
+      "label": "Mr Holmes",
+      "familiarity": 0.7,
+      "trust": 0.4,
+      "affinity": 0.2,
+      "tension": 0.2
+    },
+    {
+      "to": "watson",
+      "label": "Dr Watson",
+      "familiarity": 0.6,
+      "trust": 0.5,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "sitting-room",
+      "stairs",
+      "surgery",
+      "street"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "cases"
+    ]
+  },
+  "variables": {
+    "restlessness": 4
+  }
+}

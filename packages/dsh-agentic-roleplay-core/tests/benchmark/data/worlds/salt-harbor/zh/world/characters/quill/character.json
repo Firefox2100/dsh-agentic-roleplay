@@ -1,0 +1,72 @@
+{
+  "id": "quill",
+  "name": "奎尔·马什",
+  "age": 34,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "为追灯塔熄灭的新闻而来的报社记者。",
+  "personality": "讨喜、好奇又固执；原谅自己很快，原谅别人很慢。",
+  "background": "在城里报社跑航运新闻，已被渔港公会警告过两次。",
+  "appearance": "皱巴巴的粗呢外套，袖口沾着墨水，笔记本从不合上。",
+  "speech": {
+    "style": "轻松而诙谐；每个回答都会变成新的提问。",
+    "examples": [
+      "当然是不记名的。一切都是，直到不再是。",
+      "你说什么也没发生。这说法可太具体了。"
+    ]
+  },
+  "start": {
+    "public_state": "坐在角落的桌边，面前摊着笔记本。",
+    "activity": "盯着门口。",
+    "inner_state": "确信老板在灯的事上撒了谎。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.5,
+        "dominance": 0.3
+      }
+    },
+    "intents": [
+      {
+        "type": "quest",
+        "name": "拿到新闻",
+        "description": "查出谁有理由熄灭那盏灯。",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.8,
+        "urgency": 0.5,
+        "plan": []
+      }
+    ],
+    "location": "inn-bar",
+    "position": "角落的桌边"
+  },
+  "relationships": [
+    {
+      "to": "tomas",
+      "label": "房东",
+      "familiarity": 0.3,
+      "trust": -0.2,
+      "affinity": 0.1,
+      "tension": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "inn-bar",
+      "inn-room",
+      "market"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "harbor-founding"
+    ]
+  },
+  "variables": {
+    "fatigue": 1
+  }
+}

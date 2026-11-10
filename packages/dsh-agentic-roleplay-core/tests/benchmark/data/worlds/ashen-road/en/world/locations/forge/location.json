@@ -1,0 +1,19 @@
+{
+  "id": "forge",
+  "name": "Tarrow's Forge",
+  "description": "A sooty shed where Tarrow shoes horses and mends blades.",
+  "features": [
+    {
+      "id": "anvil",
+      "name": "The anvil",
+      "description": "A battered anvil with a notch on one side."
+    }
+  ],
+  "exits": [
+    {
+      "to": "yard",
+      "description": "the yard",
+      "travel_time_seconds": 40
+    }
+  ]
+}

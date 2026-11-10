@@ -1,0 +1,7 @@
+{
+  "id": "long-case",
+  "name": "长匣",
+  "description": "一只上了锁的旧木匣，匣盖上没有任何记号。",
+  "held_by": "guyan",
+  "unique": true
+}

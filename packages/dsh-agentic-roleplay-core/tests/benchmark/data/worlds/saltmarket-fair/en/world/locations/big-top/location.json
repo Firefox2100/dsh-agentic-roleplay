@@ -1,0 +1,19 @@
+{
+  "id": "big-top",
+  "name": "The big top",
+  "description": "A patched canvas tent with a ring of sawdust and a few rows of benches.",
+  "features": [
+    {
+      "id": "ring",
+      "name": "The ring",
+      "description": "A circle of sawdust with a post at its centre."
+    }
+  ],
+  "exits": [
+    {
+      "to": "midway",
+      "description": "out to the midway",
+      "travel_time_seconds": 60
+    }
+  ]
+}

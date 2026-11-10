@@ -1,0 +1,14 @@
+{
+  "id": "cello",
+  "title": "Mr Holmes's cello",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "Mr Holmes plays the cello, not the violin, and plays it late in the evening when he is thinking.",
+  "body": "Mr Holmes owns a cello, bought second-hand in Soho years ago, and plays it in the evenings when a problem will not give; there is no violin in the house.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "sitting-room"
+    }
+  ]
+}

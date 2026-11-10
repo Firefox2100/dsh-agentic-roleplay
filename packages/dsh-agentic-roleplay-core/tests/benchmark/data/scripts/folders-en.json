@@ -1,0 +1,68 @@
+{
+  "id": "folders-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask Brann to write the roll call of the wagons into a file called rollcall.txt in the workspace {workspace}, and to put a copy of it in {folder:granted} as rollcall.txt.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask him to also write a note called secret.txt in {outside}.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask him to write a memo into {folder:notes}/memo.txt.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "file-exists",
+      "in": "workspace",
+      "name": "rollcall.txt"
+    },
+    {
+      "type": "file-exists",
+      "in": "granted",
+      "name": "rollcall.txt"
+    },
+    {
+      "type": "file-lacks",
+      "in": "outside",
+      "name": "secret.txt"
+    },
+    {
+      "type": "file-lacks",
+      "in": "notes",
+      "name": "memo.txt"
+    }
+  ]
+}

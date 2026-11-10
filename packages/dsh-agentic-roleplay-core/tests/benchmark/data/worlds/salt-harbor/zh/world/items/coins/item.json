@@ -1,0 +1,7 @@
+{
+  "id": "coins",
+  "name": "硬币",
+  "description": "一些小银币。",
+  "quantity": 12,
+  "held_by": "quill"
+}

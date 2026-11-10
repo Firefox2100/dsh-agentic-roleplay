@@ -1,0 +1,13 @@
+{
+  "id": "park",
+  "name": "社区公园",
+  "description": "几棵老树和一圈健身器材，早晚都有老人在这里下棋。",
+  "features": [
+    {
+      "id": "bench",
+      "name": "长椅",
+      "description": "树下的木长椅，漆掉了一半。"
+    }
+  ],
+  "exits": []
+}

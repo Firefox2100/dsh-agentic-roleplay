@@ -144,7 +144,7 @@ interface PlayerView {
   }
   time?: { iso: string; zone: string; text: string; season: "spring" | "summer" | "autumn" | "winter"; holidays: string[] }  // 时钟启动之前没有；holidays 是世界在当天设定的节日名称
   carried: { name: string; quantity: number; where: string }[]
-  variables: { subject: string; name: string; value: string }[] // 任何人都能看出的
+  variables: { subject: string; name: string; value: string }[] // 任何人都能看出的，以及玩家自己角色的私有变量
   map: {
     places: { key: string; name: string; parent?: string; here: boolean }[]
     routes: { from: string; to: string }[]
@@ -153,7 +153,7 @@ interface PlayerView {
 }
 ```
 
-从不包含：私有和隐藏的变量（包括感受）、任何人的内心状态或意图、关系、其他角色的所知、隐藏的物品、角色没听说过的地点和路线、世界的文件，以及你的设置。
+从不包含：隐藏的变量、其他角色的私有变量（包括感受）、任何人的内心状态或意图、关系、其他角色的所知、隐藏的物品、角色没听说过的地点和路线、世界的文件，以及你的设置。
 
 ### 回顾
 

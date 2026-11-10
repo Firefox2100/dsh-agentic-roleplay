@@ -1,0 +1,15 @@
+{
+  "id": "baker-street",
+  "name": "Baker Street, 1895",
+  "theme": "fan",
+  "languages": {
+    "en": {
+      "native": true
+    }
+  },
+  "purpose": "The fan-fiction companion use case: characters taken from a public-domain work, on the real clock, with a daily life and messages. What they know of their past is carried by the world (invented cases, and deliberate changes from the books), so a correct answer comes from the world state, and a famous detail from the books in the narration is a sign the model went by memory.",
+  "source": {
+    "derivedFrom": "Arthur Conan Doyle's Sherlock Holmes stories (public domain)",
+    "note": "Names and the idea of the characters only. Every description and every fact in this world is written for it; the cases, the dates and the changes from the stories are invented, so that what the characters know comes from the world, not from the model's memory of the books."
+  }
+}

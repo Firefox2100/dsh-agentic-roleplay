@@ -1,0 +1,14 @@
+{
+  "id": "fair-rules",
+  "title": "The rules of the fair",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "No naked flames after dusk, no betting on the games, and the Marshal settles every quarrel.",
+  "body": "The fair keeps three rules: no naked flames after dusk, no betting on the games, and every quarrel goes to the Marshal, whose word is final.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "marshal-tent"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "checks": [
+    {
+      "key": "notice",
+      "name": "察觉",
+      "use": "尝试发现、听到或意识到某件不明显但重要的事。",
+      "dice": "2d6",
+      "reading": "total",
+      "compare": "absolute",
+      "bands": [
+        {
+          "max": 6,
+          "label": "没有察觉",
+          "result": "failed"
+        },
+        {
+          "min": 7,
+          "max": 9,
+          "label": "察觉了一部分",
+          "result": "partial"
+        },
+        {
+          "min": 10,
+          "label": "清楚地察觉",
+          "result": "succeeded"
+        }
+      ]
+    },
+    {
+      "key": "endure",
+      "name": "坚持",
+      "use": "在寒冷、恐惧或疲惫中硬撑，且身体能否撑住并不确定。",
+      "dice": "1d20",
+      "compare": "over",
+      "bands": [
+        {
+          "max": -1,
+          "label": "撑不住",
+          "result": "failed"
+        },
+        {
+          "min": 0,
+          "max": 9,
+          "label": "撑住了",
+          "result": "succeeded"
+        },
+        {
+          "min": 10,
+          "label": "轻松撑住",
+          "result": "succeeded"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Write in lean, concrete prose with the weight of travel in it: dust, ash, lamp-smoke, tired hands. Let magic be quiet, costly and strange, never flashy.

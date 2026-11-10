@@ -1,0 +1,51 @@
+{
+  "id": "sam",
+  "name": "Sam",
+  "age": 30,
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A client with a small business and a brief.",
+  "personality": "Friendly, a little rushed.",
+  "background": "Runs a bakery and needs a website.",
+  "appearance": "Apron in a tote bag.",
+  "speech": {
+    "style": "Plain and friendly.",
+    "examples": [
+      "Hi, can you help?",
+      "That looks great."
+    ]
+  },
+  "start": {
+    "public_state": "Holding a folder.",
+    "activity": "Arriving.",
+    "inner_state": "Hoping it is quick.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.3
+      }
+    },
+    "intents": [],
+    "location": "studio",
+    "position": "by the door"
+  },
+  "relationships": [
+    {
+      "to": "wren",
+      "label": "the studio's assistant",
+      "familiarity": 0.3,
+      "trust": 0.5,
+      "affinity": 0.4
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "studio"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": []
+  }
+}

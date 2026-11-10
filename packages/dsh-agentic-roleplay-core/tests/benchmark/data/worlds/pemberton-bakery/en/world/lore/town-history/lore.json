@@ -1,0 +1,14 @@
+{
+  "id": "town-history",
+  "title": "The corner building",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "The bakery has stood on this corner since 1962.",
+  "body": "Pemberton's has baked on the corner of High Street since 1962; Mags's father opened it, and the flat above has always been let to whoever helps in the shop.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "bakery"
+    }
+  ]
+}

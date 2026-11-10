@@ -31,7 +31,7 @@ function infoOf(document: Json, startQuestions: WorldInfo['startQuestions'] = []
     opening: plain, openingParts: parts, authorName: textOf(author['name']), authorUrl: textOf(author['url']),
     timeZone: textOf(document['time_zone']), startingTime: textOf(document['starting_time']), preset: textOf(document['preset']), lorebooks: Array.isArray(document['lorebooks']) ? document['lorebooks'].filter((name): name is string => typeof name === 'string') : [], version: (typeof document['version'] === 'number' ? String(document['version']) : textOf(document['version'])),
     sampling: parseSampling(document['sampling'], 'sampling', []),
-    tools: toolsOf(document['tools']), startQuestions,
+    tools: toolsOf(document['tools']), autonomy: document['autonomy'] === true, startQuestions,
     alternateOpenings: Array.isArray(document['alternate_openings']) ? document['alternate_openings'].flatMap((entry): { title: string; text: string; character?: string }[] => (typeof entry === 'object' && entry !== null && typeof (entry as Json)['text'] === 'string' ? [{ title: textOf((entry as Json)['title']), text: (entry as Json)['text'] as string, ...(textOf((entry as Json)['character']) === '' ? {} : { character: textOf((entry as Json)['character']) }) }] : [])) : [],
   }
 }
@@ -91,6 +91,7 @@ async function changeWorldInfo(directory: string, edit: WorldInfoEdit): Promise<
   if (edit.lorebooks !== undefined) { if (edit.lorebooks.length === 0) delete document['lorebooks']; else document['lorebooks'] = edit.lorebooks }
   if (edit.alternateOpenings !== undefined) { if (edit.alternateOpenings.length === 0) delete document['alternate_openings']; else document['alternate_openings'] = edit.alternateOpenings.map(entry => ({ title: entry.title === '' ? entry.text.slice(0, 40) : entry.title, text: entry.text, ...(entry.character === undefined || entry.character === '' ? {} : { character: entry.character }) })) }
   if (edit.sampling !== undefined) { if (Object.keys(edit.sampling).length === 0) delete document['sampling']; else document['sampling'] = edit.sampling }
+  if (edit.autonomy !== undefined) { if (edit.autonomy) document['autonomy'] = true; else delete document['autonomy'] }
   if (edit.tools !== undefined) { if (Object.keys(edit.tools).length === 0) delete document['tools']; else document['tools'] = edit.tools }
   const next = JSON.stringify(document, null, /^([ \t]+)"/m.exec(text)?.[1] ?? '  ') + (text.endsWith('\n') ? '\n' : '')
   const parsed = parseWorldFile(next)

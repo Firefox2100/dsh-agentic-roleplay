@@ -4,6 +4,7 @@ import { afterAll, describe, expect, it } from 'vitest'
 import type { GateMode } from '../../src/shared/decisions.ts'
 import { LANGUAGES, type Language } from './language.ts'
 import { liveDecisionService, liveStructured, newCounters, type LiveOptions } from './live.ts'
+import { openTrace, traceFolder } from './trace.ts'
 import { VARIABLE_CASES } from './variable-cases.ts'
 import { ratio, runVariableCase, total, type VariableCaseResult } from './variables-harness.ts'
 
@@ -32,7 +33,7 @@ const options: LiveOptions = {
   concurrency: 1,
 }
 
-const results: (VariableCaseResult & { run: number; counters: ReturnType<typeof newCounters> })[] = []
+const results: (VariableCaseResult & { run: number; counters: ReturnType<typeof newCounters>; trace?: string | undefined })[] = []
 
 function summarise(): Record<string, unknown> {
   const all = total(results)
@@ -73,11 +74,12 @@ describe.skipIf(!live)(`the tracked-value benchmark, live (${label}, ${mode})`, 
     for (const benchmark of VARIABLE_CASES.filter(candidate => (only === undefined || only.includes(candidate.id)) && !skip.includes(candidate.id))) {
       for (let run = 1; run <= repeat; run += 1) {
         it(`${language} ${benchmark.id}${repeat > 1 ? ` #${run}` : ''}`, async () => {
-          const counters = newCounters()
+          const trace = openTrace(traceFolder(out, label), `${language}-${benchmark.id}-${run}`, { id: benchmark.id, label, language, run, options: { llm: options.llm.model, temperature: options.llm.temperature, reasoning: options.llm.reasoning, decision: options.decision, mode } })
+          const counters = newCounters(trace)
           const result = await runVariableCase(benchmark, language, {
-            mode, ask: liveStructured(options, counters), ...options.decision === undefined ? {} : { decisions: liveDecisionService(options.decision, counters) as never },
+            mode, trace, ask: liveStructured(options, counters), ...options.decision === undefined ? {} : { decisions: liveDecisionService(options.decision, counters) as never },
           })
-          results.push({ ...result, run, counters })
+          results.push({ ...result, run, counters, trace: trace.file })
           expect(results.at(-1)?.case).toBe(benchmark.id)
         }, 600_000)
       }

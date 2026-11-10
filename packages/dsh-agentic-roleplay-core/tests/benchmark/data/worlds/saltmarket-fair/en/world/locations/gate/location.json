@@ -1,0 +1,19 @@
+{
+  "id": "gate",
+  "name": "The fair gate",
+  "description": "A rope across the track and a painted board with the prices.",
+  "features": [
+    {
+      "id": "board",
+      "name": "The price board",
+      "description": "Sixpence for adults, a penny for children."
+    }
+  ],
+  "exits": [
+    {
+      "to": "midway",
+      "description": "in along the midway",
+      "travel_time_seconds": 30
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "start-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask the landlord what he has heard about the lighthouse going dark.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 1
+    },
+    {
+      "type": "opening-has",
+      "text": "ferry"
+    }
+  ]
+}

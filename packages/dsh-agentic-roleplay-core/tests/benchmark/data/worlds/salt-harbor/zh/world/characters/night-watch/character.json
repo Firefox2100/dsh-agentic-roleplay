@@ -1,0 +1,13 @@
+{
+  "id": "night-watch",
+  "name": "夜巡队",
+  "role": "npc",
+  "kind": "group",
+  "tier": "supporting",
+  "summary": "四个提灯的人，天黑后巡行渔港，听命于公会。",
+  "start": {
+    "public_state": "正在集市集合，准备夜巡。",
+    "activity": "集合。",
+    "location": "market"
+  }
+}

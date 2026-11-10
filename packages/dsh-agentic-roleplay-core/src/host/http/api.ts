@@ -33,6 +33,7 @@ import { HttpError, sendError } from './respond.ts'
 import { presetRoutes } from '../presets/routes.ts'
 import type { PresetApi } from '../presets/routes.ts'
 import { lorebookRoutes } from '../lorebooks/routes.ts'
+import { folderRoutes, type FoldersApi } from '../workspace/routes.ts'
 import { promptRoutes, type PromptsApi } from '../prompts/routes.ts'
 import { syncRoutes, type SyncApi } from '../sync/routes.ts'
 import type { LorebookApi } from '../lorebooks/routes.ts'
@@ -227,6 +228,8 @@ export interface ApiDeps {
   presets: PresetApi
   /** The lorebook library. */
   lorebooks: LorebookApi
+  /** The folders the file tools of a story may reach. */
+  folders: FoldersApi
   /** The prompts of the roleplay root. */
   prompts: PromptsApi
   /** Syncing with other devices. */
@@ -253,6 +256,7 @@ export function createApiHandler(deps: ApiDeps): (req: IncomingMessage, res: Ser
     ...interfaceRoutes(packs),
     ...presetRoutes(presets),
     ...lorebookRoutes(lorebooks),
+    ...folderRoutes(deps.folders),
     ...promptRoutes(deps.prompts),
     ...syncRoutes(sync),
   }

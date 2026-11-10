@@ -1,0 +1,87 @@
+{
+  "id": "fair-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I walk down the midway and look for a fortune-teller's tent.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/recruit a juggler for the troupe",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I go back to the Marshal's tent and ask who has just joined.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "marshal"
+        }
+      ]
+    },
+    {
+      "say": "I find a knife-thrower and ask for a show.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask the first stallholder I meet what they sell and how long they have worked the fair.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 5
+    },
+    {
+      "type": "cast-grew",
+      "by": 3
+    },
+    {
+      "type": "cast-distinct"
+    },
+    {
+      "type": "cast-placed"
+    },
+    {
+      "type": "no-repeats"
+    }
+  ]
+}

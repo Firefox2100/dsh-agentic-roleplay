@@ -1,0 +1,30 @@
+{
+  "id": "start-noodle-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我问陈姨，今天午市怎么这么忙。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 1
+    },
+    {
+      "type": "opening-has",
+      "text": "六张桌子"
+    }
+  ]
+}

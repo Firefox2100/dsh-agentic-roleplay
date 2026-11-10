@@ -1,0 +1,12 @@
+{
+  "hemisphere": "north",
+  "holidays": [
+    {
+      "id": "fog-festival",
+      "name": "雾节",
+      "on": [
+        "10-03"
+      ]
+    }
+  ]
+}

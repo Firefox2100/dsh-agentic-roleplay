@@ -1,0 +1,74 @@
+{
+  "id": "sleeper-bakery-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I keep quiet in the shuttered shop and look at the clock above the counter. It is late.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "mags"
+        }
+      ]
+    },
+    {
+      "say": "I sit still on a stool by the front table and do nothing, so as not to disturb anyone upstairs.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "mags"
+        }
+      ]
+    },
+    {
+      "say": "/dream",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I knock hard, push the door open and shake Mags awake. 'Mags, wake up. There is a light on in the shop across the street.'",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "mags"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "player-silent"
+    }
+  ]
+}

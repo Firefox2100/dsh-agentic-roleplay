@@ -1,0 +1,14 @@
+{
+  "id": "convoy-charter",
+  "title": "The convoy charter",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "The autumn convoy carries the town's winter stores and is chartered by the Caravan Guild.",
+  "body": "Every autumn a guild-chartered convoy carries grain, oil and salt to Holt's Rest; without it the town cannot last the winter.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "yard"
+    }
+  ]
+}

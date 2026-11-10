@@ -42,7 +42,9 @@ export function explainPhase(state: TurnState, attempted: 'activate_characters' 
   }
   const waiting = (attempt: Attempt | undefined): string => (attempt?.reports ?? []).map(report => report.character).join(', ')
   switch (state.phase) {
-    case 'idle': return judgeDue(state)
+    case 'idle': return state.dreaming !== undefined && attempted !== 'resolve_round'
+      ? `this turn is a dream, not an out-of-character command: call activate_characters with only ${state.dreaming} (the sleeper stays asleep), then narrate the dream`
+      : judgeDue(state)
       ? 'call judge_action first: does what the player\'s character tries work? It does not when it is not viable or it breaks a rule of the world or of the player'
       : previewDue(state)
       ? 'call preview_scene first: two or three sentences that show the player how the scene opens, before the characters are asked'

@@ -1,0 +1,53 @@
+{
+  "id": "walk-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我穿上外套，走出客栈，去了集市。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我在摊位之间转了转，听鱼贩们聊些什么。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我走回客栈，在吧台边坐下。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "character-at",
+      "character": "quill",
+      "place": "inn-bar"
+    }
+  ]
+}

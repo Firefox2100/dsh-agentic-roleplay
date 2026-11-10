@@ -1,0 +1,14 @@
+{
+  "id": "no-triggers",
+  "description": "Takes out every trigger: nothing in the world happens by itself.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "triggers.json"
+  ],
+  "add": {},
+  "patch": {}
+}

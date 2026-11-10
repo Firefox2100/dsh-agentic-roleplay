@@ -183,6 +183,7 @@ beforeEach(async () => {
     locked: async url => (url.searchParams.get('id') === 'harbor' ? lockedUnit : undefined),
     presets: presetApi,
     lorebooks: lorebookApi,
+    folders: { status: (id) => (id === 'missing' ? Promise.reject(new SessionNotFoundError('no session')) : Promise.resolve({ workspace: '/w', folders: [], limit: 16 })), set: (_id, folders) => Promise.resolve({ workspace: '/w', folders: [...folders], limit: 16 }) },
     packs: { worldPacks: () => Promise.resolve([]), preview: () => Promise.reject(new Error('no preview here')), status: () => Promise.resolve({ setting: '', problems: [], available: [] }), sync: () => Promise.resolve({ updated: [], added: [], unchanged: [] }), history: () => [], describe: () => ({ pack: null, problems: [] }), view: () => ({ unchanged: true }), file: id => (id === 'sess' ? { kind: 'page', body: '<p>hi</p>', mediaType: 'text/html; charset=utf-8' } : undefined), sessionOfFrame: key => (key === 'good' ? 'sess' : undefined), storage: () => null, availability: () => ({ tab: false }) },
     worlds,
     avatars: { create: async () => 'new', remove: async () => undefined, addToWorld: async () => [] },
@@ -228,8 +229,8 @@ beforeEach(async () => {
       uploadPreset: (worldId, file, name, language) => { importCalls.push(`preset ${worldId} ${file.length} ${name} ${language ?? '-'}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
     },
     worldFiles: {
-      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {} }),
-      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {} }) },
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }) },
       dice: () => Promise.resolve({ checks: [] }),
       editDice: (_world, dice) => (dice.checks.some(check => check.key === '') ? Promise.reject(new InvalidEditProblems(['checks[0].key is required'])) : Promise.resolve(dice)),
       calendar: () => Promise.resolve({ hemisphere: 'north', holidays: [] }),
@@ -677,6 +678,14 @@ describe('roleplay API', () => {
       expect((await send('POST', '/sessions/lorebooks?id=busy', { name: 'harbor' })).status).toBe(409)
       expect(await (await send('DELETE', '/sessions/lorebooks?id=sess&name=harbor')).json()).toEqual({ removed: 1 })
       expect(lorebookCalls).toEqual(['story add sess harbor', 'story add busy harbor', 'story remove sess harbor'])
+    })
+
+    it('shows and sets the folders of a story', async () => {
+      expect(await (await send('GET', '/sessions/folders?id=sess')).json()).toEqual({ workspace: '/w', folders: [], limit: 16 })
+      expect((await send('GET', '/sessions/folders?id=missing')).status).toBe(404)
+      expect(await (await send('PUT', '/sessions/folders?id=sess', { folders: [{ path: '/n', access: 'read' }] })).json()).toEqual({ workspace: '/w', folders: [{ path: '/n', access: 'read' }], limit: 16 })
+      expect((await send('PUT', '/sessions/folders?id=sess', { folders: [{ path: '/n', access: 'all' }] })).status).toBe(400)
+      expect((await send('PUT', '/sessions/folders?id=sess', {})).status).toBe(400)
     })
 
     it('opens the authoring chat and takes an uploaded lorebook', async () => {

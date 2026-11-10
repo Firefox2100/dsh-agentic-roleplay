@@ -104,6 +104,9 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   }
   const givenClock = ((request.settings as { clock?: { mode?: unknown } } | undefined)?.clock)?.mode
   if (answers.clockMode !== undefined && givenClock === undefined) settings = { ...settings, clock: { ...settings.clock, mode: answers.clockMode } }
+  // A world that goes on without its player starts its stories that way, on the real clock, unless the start chose otherwise; a world that does not say so never does.
+  const givenAutonomy = ((request.settings as { autonomy?: { enabled?: unknown } } | undefined)?.autonomy)?.enabled
+  if (world.autonomy === true && givenAutonomy === undefined) settings = { ...settings, autonomy: { ...settings.autonomy, enabled: true }, ...givenClock === undefined && answers.clockMode === undefined ? { clock: { ...settings.clock, mode: 'real' as const } } : {} }
   // The zone a story is read in is chosen once, here: the zone of the computer when time follows the wall clock, otherwise the world's.
   const timeZone = settings.clock.timeZone !== '' ? settings.clock.timeZone : settings.clock.mode === 'real' ? systemTimeZone() : world.clock?.timeZone ?? 'UTC'
   // What the world says of its tools is where the story starts from; a choice made at the start is added on top, tool by tool.

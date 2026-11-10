@@ -55,6 +55,8 @@ export interface WorldRecord {
   rules?: string[]
   /** The optional tools switched on or off for the world's agents. */
   tools?: Switchboard
+  /** Whether stories of the world go on while their player is away. */
+  autonomy?: boolean
   narrationVoice?: string
   sampling?: StorySampling
   preset?: string
@@ -141,6 +143,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.startQuestions === undefined ? {} : { startQuestions: world.startQuestions }),
     ...(world.rules === undefined ? {} : { rules: world.rules }),
     ...(world.tools === undefined ? {} : { tools: world.tools }),
+    ...(world.autonomy === undefined ? {} : { autonomy: world.autonomy }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
     ...(world.sampling === undefined ? {} : { sampling: world.sampling }),
     ...(world.preset === undefined ? {} : { preset: world.preset }),

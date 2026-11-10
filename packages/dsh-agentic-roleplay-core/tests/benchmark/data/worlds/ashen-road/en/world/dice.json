@@ -1,0 +1,55 @@
+{
+  "checks": [
+    {
+      "key": "strike",
+      "name": "Strike",
+      "use": "A blow, a parry or a shove in a fight where it is uncertain who lands it.",
+      "dice": "2d6",
+      "reading": "total",
+      "compare": "absolute",
+      "bands": [
+        {
+          "max": 6,
+          "label": "misses",
+          "result": "failed"
+        },
+        {
+          "min": 7,
+          "max": 9,
+          "label": "glancing hit",
+          "result": "partial"
+        },
+        {
+          "min": 10,
+          "label": "clean hit",
+          "result": "succeeded"
+        }
+      ]
+    },
+    {
+      "key": "nerve",
+      "name": "Nerve",
+      "use": "Holding steady in front of something frightening when it is uncertain that courage will hold.",
+      "dice": "1d20",
+      "compare": "over",
+      "bands": [
+        {
+          "max": -1,
+          "label": "breaks",
+          "result": "failed"
+        },
+        {
+          "min": 0,
+          "max": 9,
+          "label": "holds",
+          "result": "succeeded"
+        },
+        {
+          "min": 10,
+          "label": "holds easily",
+          "result": "succeeded"
+        }
+      ]
+    }
+  ]
+}

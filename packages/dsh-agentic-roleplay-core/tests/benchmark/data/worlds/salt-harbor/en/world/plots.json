@@ -1,0 +1,42 @@
+[
+  {
+    "id": "the-dark-lamp",
+    "name": "The dark lamp",
+    "premise": "Someone put the lighthouse out on purpose, and the keeper is hiding with the proof.",
+    "themes": [
+      "duty",
+      "complicity"
+    ],
+    "hooks": [
+      {
+        "id": "closed-road",
+        "text": "The harbor master's notice closing the lighthouse road.",
+        "mode": "opportunity"
+      }
+    ],
+    "developments": [
+      {
+        "id": "cellar-found",
+        "text": "The cellar and its guild-stamped crates come to light.",
+        "mode": "opportunity",
+        "prerequisites": [
+          "closed-road"
+        ]
+      }
+    ],
+    "stakes": [
+      "the keeper's safety",
+      "the guild's hold on the harbor"
+    ],
+    "resolutions": [
+      "the guild is exposed",
+      "the matter is buried"
+    ],
+    "participants": [
+      "bram",
+      "ines",
+      "tomas"
+    ],
+    "start": "available"
+  }
+]

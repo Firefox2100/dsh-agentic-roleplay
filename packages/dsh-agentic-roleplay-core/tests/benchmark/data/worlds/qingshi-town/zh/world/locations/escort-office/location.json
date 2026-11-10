@@ -1,0 +1,34 @@
+{
+  "id": "escort-office",
+  "name": "威远镖局",
+  "description": "前院是练武场，后面是账房和马厩，门楣上挂着一面褪了色的镖旗。",
+  "features": [
+    {
+      "id": "yard",
+      "name": "练武场",
+      "description": "夯实的黄土地，兵器架上插着刀枪。"
+    },
+    {
+      "id": "ledger-room",
+      "name": "账房",
+      "description": "一张大桌，满墙的账册。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "town-gate",
+      "description": "大门外是镇口",
+      "travel_time_seconds": 60
+    },
+    {
+      "to": "herb-shop",
+      "description": "出门向西是药铺",
+      "travel_time_seconds": 120
+    },
+    {
+      "to": "inn",
+      "description": "出门向东是客栈",
+      "travel_time_seconds": 120
+    }
+  ]
+}

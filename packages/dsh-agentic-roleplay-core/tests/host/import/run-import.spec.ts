@@ -59,7 +59,7 @@ describe('the steps of an import', () => {
     expect(summary).toMatchObject({ pieces: 7, roles: { character: 1, place: 1, instruction: 1, world: 1, scenario: 1, irrelevant: 2 }, leftOut: 3, roster: { characters: ['Old Tam'], places: ['The Lighthouse'] }, playable: undefined, notes: [] })
     expect(await importPhase(world)).toBe('surveyed')
     const built = await build(fakeContext(answers), world)
-    expect(built).toEqual({ characters: 1, places: 1, factions: 0, things: 0, lore: 1, prompts: ['roleplay/style', 'roleplay/character-style'], variables: 1, notes: ['instructions not carried: a status panel', 'not tracked: an output format'] })
+    expect(built).toEqual({ characters: 1, places: 1, factions: 0, things: 0, lore: 1, prompts: ['roleplay/style', 'roleplay/character-style'], variables: 1, notes: ['instructions left out on purpose: a status panel', 'not tracked: an output format'] })
     expect(await importPhase(world)).toBe('built')
     const done = await finish(fakeContext(answers), world)
     expect(done).toMatchObject({ ok: true, report: { counts: { characters: 1, places: 1, lore: 1 }, hasPlayableCharacter: false, cover: true, opening: 'imported', prompts: ['roleplay/style', 'roleplay/character-style'], variables: 1 } })

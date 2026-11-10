@@ -256,6 +256,7 @@ describe('days in a prompt', () => {
       zone: 'UTC',
       moved: [{ character: 'marcus', name: 'Marcus', to: 'Home', activity: 'rests' }],
       here: [{ name: 'Clara', note: 'its day says "sleeps" at Home now, yet it is here' }],
+      asleep: [],
       engagements: [{ title: 'Meet Marcus', at: Date.UTC(1912, 9, 4, 21), place: 'The Shop', with: ['Clara', 'Marcus'], overdue: true }, { title: 'Soon', at: Date.UTC(1912, 9, 4, 22), with: ['Marcus'], overdue: false }],
     }, evening)
     expect(text).toBe([
@@ -263,13 +264,13 @@ describe('days in a prompt', () => {
       'With the player\'s character, and their days: Clara: its day says "sleeps" at Home now, yet it is here. The characters decide for themselves whether to keep to their day; the moment may keep them.',
       'Commitments due soon or overdue: "Meet Marcus" (Clara, Marcus, at The Shop) was due 21:00 and is still open; "Soon" (Marcus) is due 22:00.',
     ].join('\n'))
-    expect(describeSceneAgenda({ zone: 'UTC', moved: [], here: [], engagements: [] }, evening)).toBe('')
+    expect(describeSceneAgenda({ zone: 'UTC', moved: [], here: [], asleep: [], engagements: [] }, evening)).toBe('')
   })
 
   it('goes after the time in the scene, and is absent when there is nothing to tell', () => {
-    const scene = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda: { zone: 'UTC', moved: [{ character: 'marcus', name: 'Marcus', to: 'Home', activity: 'rests' }], here: [], engagements: [] } }, cast: [arthur], turn: 2, input: 'Hi.', story: withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } })) })
+    const scene = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda: { zone: 'UTC', moved: [{ character: 'marcus', name: 'Marcus', to: 'Home', activity: 'rests' }], here: [], asleep: [], engagements: [] } }, cast: [arthur], turn: 2, input: 'Hi.', story: withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } })) })
     expect(scene.split('\n\n').slice(0, 2).map(part => part.slice(0, 22))).toEqual(['Time: Friday 4 October', 'By their routines sinc'])
-    const quiet = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda: { zone: 'UTC', moved: [], here: [], engagements: [] } }, cast: [arthur], turn: 2, input: 'Hi.', story: withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } })) })
+    const quiet = castSummary.scene({ time: { now: { mode: 'simulated', now: evening, zone: 'UTC' }, agenda: { zone: 'UTC', moved: [], here: [], asleep: [], engagements: [] } }, cast: [arthur], turn: 2, input: 'Hi.', story: withRanking(createSessionStore(':memory:', { id: 's', name: 'S', world: { id: 'w', name: 'W' } })) })
     expect(quiet).not.toContain('routines')
   })
 })

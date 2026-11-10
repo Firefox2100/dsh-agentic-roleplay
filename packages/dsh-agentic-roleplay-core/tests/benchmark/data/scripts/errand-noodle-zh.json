@@ -1,0 +1,67 @@
+{
+  "id": "errand-noodle-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "陈姨，麻烦你现在去公园帮我看着老周下棋，我回来之前别回店里，多晚都行。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "chen"
+        }
+      ]
+    },
+    {
+      "say": "我去菜市场替陈姨买葱，在摊子前挑了半天。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 9小时 等我在市场忙完",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "character-at",
+      "character": "chen",
+      "place": "noodle-shop",
+      "not": true
+    },
+    {
+      "type": "character-at",
+      "character": "chen",
+      "place": "rooftop-room",
+      "not": true
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "player-silent"
+    }
+  ]
+}

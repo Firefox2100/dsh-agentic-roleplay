@@ -1,0 +1,7 @@
+{
+  "id": "harbor-key",
+  "name": "保险箱钥匙",
+  "description": "环上挂着的一把小钢钥匙。",
+  "unique": true,
+  "held_by": "ines"
+}

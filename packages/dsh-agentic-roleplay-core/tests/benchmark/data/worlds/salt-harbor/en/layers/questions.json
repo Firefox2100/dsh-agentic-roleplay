@@ -1,0 +1,41 @@
+{
+  "id": "questions",
+  "description": "One start question, how the story begins: already at the inn (the world's own opening) or off the evening ferry (an alternate opening for the reporter). It changes only the opening.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "alternate_openings": [
+        {
+          "title": "Off the evening ferry",
+          "text": "The evening ferry noses into the pier through a wall of fog. You step off with your notebook under your arm, and the lighthouse above the town is dark.",
+          "character": "quill"
+        }
+      ],
+      "start_questions": [
+        {
+          "id": "arrival",
+          "text": "How does the story begin?",
+          "options": [
+            {
+              "id": "inn",
+              "label": "Already at the inn"
+            },
+            {
+              "id": "ferry",
+              "label": "Off the evening ferry",
+              "effect": {
+                "opening": 0
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

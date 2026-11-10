@@ -1,0 +1,102 @@
+{
+  "id": "hudson",
+  "name": "Martha Hudson",
+  "age": 60,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "The landlady, who keeps the house running and has heard everything through the floor.",
+  "personality": "Brisk, tolerant, unshockable; shows her love in meals.",
+  "background": "Has let the rooms for nine years and has never once been bored.",
+  "appearance": "Apron, lace cap, a ring of keys.",
+  "speech": {
+    "style": "Brisk and motherly; plain speech, firm about meal times.",
+    "examples": [
+      "Breakfast is cold, Mr Holmes, and it is not my doing.",
+      "I shall not ask what that smell is."
+    ]
+  },
+  "start": {
+    "public_state": "Clearing the breakfast tray.",
+    "activity": "Clearing the tray.",
+    "inner_state": "Worried that the gentlemen are not eating.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.4
+      }
+    },
+    "intents": [],
+    "location": "sitting-room",
+    "position": "by the table"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "Miss Marlowe",
+      "familiarity": 0.5,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "holmes",
+      "label": "Mr Holmes",
+      "familiarity": 0.8,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "watson",
+      "label": "Dr Watson",
+      "familiarity": 0.8,
+      "trust": 0.7,
+      "affinity": 0.6
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "sitting-room",
+      "stairs",
+      "surgery",
+      "street"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household"
+    ]
+  },
+  "variables": {
+    "restlessness": 1
+  },
+  "routine": [
+    {
+      "from": "07:00",
+      "to": "10:00",
+      "activity": "seeing to breakfast and the fires",
+      "location": "stairs"
+    },
+    {
+      "from": "10:00",
+      "to": "17:00",
+      "activity": "shopping and housework",
+      "location": "stairs"
+    },
+    {
+      "from": "17:00",
+      "to": "21:30",
+      "activity": "cooking and the evening tray",
+      "location": "stairs"
+    },
+    {
+      "from": "21:30",
+      "to": "07:00",
+      "activity": "asleep downstairs",
+      "location": "stairs",
+      "interruptible": false
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "id": "solo-quiet-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我在一张桌边坐下，观察了一会儿屋里的人。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问托马斯，一晚的房钱是多少。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问他，这雾一般要持续多久。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "narration-lacks",
+      "text": "免税白兰地"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "经营它声称"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "两长一短"
+    }
+  ]
+}

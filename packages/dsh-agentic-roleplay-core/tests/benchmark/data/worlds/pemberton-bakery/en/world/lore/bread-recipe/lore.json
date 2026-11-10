@@ -1,0 +1,17 @@
+{
+  "id": "bread-recipe",
+  "title": "The sourdough",
+  "kind": "custom",
+  "scope": "listed",
+  "summary": "Mags feeds her sourdough starter with rye and keeps it in a crock behind the ovens.",
+  "body": "The sourdough starter is thirty years old and fed with rye flour; Mags will not share the ratio.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "bakery"
+    }
+  ],
+  "known_by": [
+    "mags"
+  ]
+}

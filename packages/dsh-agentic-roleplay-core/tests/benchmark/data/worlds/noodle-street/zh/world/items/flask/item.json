@@ -1,0 +1,7 @@
+{
+  "id": "flask",
+  "name": "保温桶",
+  "description": "给老周留的早饭，用毛巾裹着。",
+  "location": "noodle-shop",
+  "feature": "counter"
+}

@@ -8,6 +8,7 @@ import { CODE_CASES, FIDELITY_CODE_CASES, UPDATE_CASES } from './cases.ts'
 import { ALL_JUDGED } from './judged-cases.ts'
 import type { Language } from './language.ts'
 import { LANGUAGES } from './language.ts'
+import { openTrace, traceFolder } from './trace.ts'
 import { liveContext, newCounters, type DecisionMode, type LiveOptions } from './live.ts'
 import { NONE, add, precision, recall, score, type Scored, type Totals } from './score.ts'
 import { SALT_HARBOR_ID } from './salt-harbor.ts'
@@ -49,6 +50,7 @@ interface Result {
   findings: { check: string; code: string; where: string; message: string }[]
   skipped: { check: string; reason: string }[]
   counters: ReturnType<typeof newCounters>
+  trace?: string | undefined
 }
 
 const results: Result[] = []
@@ -97,14 +99,21 @@ describe.skipIf(!live)(`the live benchmark (${label}, ${mode})`, () => {
       for (let run = 1; run <= repeat; run += 1) {
         it(`${language} ${benchmark.id}${repeat > 1 ? ` #${run}` : ''}`, async () => {
           const world = await tempWorld(benchmark.build(language), { id: SALT_HARBOR_ID[language], name: benchmark.id })
-          const counters = newCounters()
+          const trace = openTrace(traceFolder(out, label), `${language}-${benchmark.id}-${run}`, { id: benchmark.id, label, language, run, options: { llm: options.llm.model, temperature: options.llm.temperature, decision: options.decision, embed: options.embed?.model, mode } })
+          const counters = newCounters(trace)
           const began = Date.now()
           try {
             const card = benchmark.card === undefined ? undefined : await loadCardEvidence(world.directory, benchmark.card)
             const model = benchmark.judged || benchmark.card !== undefined ? liveContext(options, language, counters) : undefined
             const report = await runChecks({ world: world.world, ...card === undefined ? {} : { card }, ...model === undefined ? {} : { model } }, { ids: benchmark.checks, deep: true })
+            const scored = score(benchmark, report.findings)
+            trace.state('world', { files: [...benchmark.build(language).keys()] })
+            trace.state('findings', report.findings)
+            for (const hit of scored.tp) trace.expect(`${hit.check} ${hit.code}`, true, hit)
+            for (const miss of scored.fn) trace.expect(`${miss.check} ${miss.code}`, false, { missing: miss })
+            for (const extra of scored.fp) trace.expect(`${extra.check} ${extra.code} (not planted)`, false, { unexpected: extra })
             results.push({
-              case: benchmark.id, kind: benchmark.kind, language, run, ms: Date.now() - began, scored: score(benchmark, report.findings),
+              case: benchmark.id, kind: benchmark.kind, language, run, ms: Date.now() - began, scored, trace: trace.file,
               findings: report.findings.map(finding => ({ check: finding.check, code: finding.code, where: finding.where, message: finding.message })), skipped: report.skipped, counters,
             })
             expect(results.at(-1)?.case).toBe(benchmark.id)

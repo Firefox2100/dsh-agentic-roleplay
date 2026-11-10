@@ -1,0 +1,13 @@
+{
+  "id": "yihong",
+  "name": "怡红院",
+  "description": "热闹些的院子，廊下挂着鸟笼，屋里总有人说笑。",
+  "features": [],
+  "exits": [
+    {
+      "to": "path",
+      "description": "回小径",
+      "travel_time_seconds": 150
+    }
+  ]
+}

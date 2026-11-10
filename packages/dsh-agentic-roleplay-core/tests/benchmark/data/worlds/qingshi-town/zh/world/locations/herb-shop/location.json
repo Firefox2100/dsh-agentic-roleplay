@@ -1,0 +1,19 @@
+{
+  "id": "herb-shop",
+  "name": "回春堂",
+  "description": "药香扑鼻的小铺，柜台后面是一整面药屉。",
+  "features": [
+    {
+      "id": "counter",
+      "name": "药柜",
+      "description": "数百个小抽屉，每个都贴着药名。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "escort-office",
+      "description": "回镖局",
+      "travel_time_seconds": 120
+    }
+  ]
+}

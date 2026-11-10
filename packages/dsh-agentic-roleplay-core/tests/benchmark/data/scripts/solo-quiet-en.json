@@ -1,0 +1,60 @@
+{
+  "id": "solo-quiet-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I settle at a table and watch the room for a while.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask Tomas how much a room for the night costs.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I ask him how long the fog usually lasts.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "narration-lacks",
+      "text": "untaxed brandy"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "runs the smuggling"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "two long flashes"
+    }
+  ]
+}

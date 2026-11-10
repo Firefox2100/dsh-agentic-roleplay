@@ -1,6 +1,16 @@
 /** The pages of the reference: what the player may look up about the story, never what only the story knows. */
-export const REFERENCE_SECTIONS = ['profile', 'people', 'places', 'things', 'quests'] as const
+export const REFERENCE_SECTIONS = ['status', 'profile', 'people', 'places', 'things', 'quests'] as const
 export type ReferenceSection = (typeof REFERENCE_SECTIONS)[number]
+
+/** The tracked values of one subject the player may read, all of them, defaults included. */
+export interface ReferenceStatus {
+  subject: 'world' | 'player' | 'place' | 'person' | 'thing'
+  key?: string
+  /** Absent for the world. */
+  name?: string
+  here?: boolean
+  values: { name: string; value: string }[]
+}
 
 export interface ReferencePerson {
   key: string
@@ -111,6 +121,7 @@ export interface ReferenceProfile {
 export const PROFILE_MEMORY_LIMIT = 100
 
 export interface ReferenceReplies {
+  status: ReferenceStatus[]
   profile: ReferenceProfile[]
   people: ReferencePerson[]
   places: ReferencePlace[]

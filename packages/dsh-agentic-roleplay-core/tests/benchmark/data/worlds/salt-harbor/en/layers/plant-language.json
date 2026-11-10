@@ -1,0 +1,14 @@
+{
+  "id": "plant-language",
+  "description": "Plants a fault: the world's own style prompt tells the game master to write its narration in the other language.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/en/roleplay/style.md": "Write in plain, concrete prose. Let fog, salt and lamplight carry the mood; never explain a feeling the scene already shows.\n\nWrite all the narration in Chinese (中文), whatever language the player writes in.\n"
+  },
+  "patch": {}
+}

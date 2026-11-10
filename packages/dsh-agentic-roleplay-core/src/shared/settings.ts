@@ -4,7 +4,7 @@ import type { TurnUsage } from './usage.ts'
 import type { TurnTrace } from './trace.ts'
 import type { Intervention } from './interventions.ts'
 import type { ReflectionStatus } from './reflection.ts'
-import { DECISION_MODES, EXTRA_MODES, GATE_MODES, type DecisionMode, type ExtraMode, type GateMode } from './decisions.ts'
+import { DECISION_MODES, EXTRA_MODES, GATE_MODES, REPEAT_MODES, type DecisionMode, type ExtraMode, type GateMode, type RepeatMode } from './decisions.ts'
 import type { VectorStatus } from './vectors.ts'
 import { MAX_OWN_RULES } from './rules.ts'
 
@@ -86,6 +86,30 @@ export interface ChatSettings {
     joint: boolean
     /** Whether those characters also say in a line what came of it, in the same request, for the note shown to the player (it costs no request of its own). */
     summary: boolean
+  }
+  schedule: {
+    /** Whether the characters keep to their days (routines): where they are, when they sleep, and that the story takes a moment's departure from it into account. Off for a story whose characters have no days to keep. */
+    enabled: boolean
+  }
+  autonomy: {
+    /** Whether the story goes on while you are away from the chat: characters keep to their days at the real time and may write to you. It needs the real clock, and costs model requests while nobody is reading. */
+    enabled: boolean
+    /** Whether characters, while you are away, write to you now and then (a message shown beside the story, which the story knows of). */
+    messages: boolean
+    /** The most things the characters do on their own in a row with no message from you in between: after that nothing runs until you write. */
+    maxUnanswered: number
+    /** How long you must have been away before the characters act on their own, in minutes. */
+    idleMinutes: number
+    /** After you have been away this many hours nothing more happens until you write: a player who is gone for good is not written to. */
+    awayHours: number
+    /** The chance, at each look (every 30 seconds by default), that someone writes once the idle time has passed; each message already sent without a reply multiplies it by `decay`, so a story that was left alone has a couple of messages and then goes quiet. */
+    chance: number
+    /** What each unanswered message multiplies the chance by, from 0 (one message and then quiet) to 1 (no easing off). */
+    decay: number
+    /** The chance that a character whose day just changed (work is over, it woke up) writes at that look. */
+    transitionChance: number
+    /** The least time between two messages from the same character, in minutes. */
+    messageGapMinutes: number
   }
   sampling: {
     /** The temperature of the game master's own requests: it decides what happens and writes the narration. */
@@ -179,16 +203,27 @@ export interface ChatSettings {
     agency: GateMode
     /** Whether the output is checked for stepping out of the story (a refusal, a warning, a disclaimer, a remark to the player), and by whom; off by default. */
     refusal: GateMode
+    /** Whether the narration is checked for a sentence it already used in one of the last turns, and by whom; off by default. Only a repeat found by code is asked about: the decision model or the language model says whether it is meant (a refrain, a catchphrase, a ritual) or stale filler, and filler is sent back to the game master (at most twice, then it is delivered as it is). `strict` sends back every repeat with no model at all, for a world that has nothing meant to repeat: it is the cheapest and may refuse a repeat that was meant. */
+    repeats: RepeatMode
+    /** How many of the turns before this one a sentence is compared against, from 1 to 30. */
+    repeatTurns: number
+    /** The shortest sentence, in characters, that counts as a repeat, from 6 to 60; shorter ones (a name, "Yes.") are allowed to come back. */
+    repeatChars: number
     /** Whether the player's action is also checked against every rule of the world and of the player in one pass of the decision model, when the game master judges it allowed; off by default. A rule it finds likely broken is put to the game master once, to judge again. Needs a decision model: without one nothing is checked. */
     rules: ExtraMode
     /** Whether the output is also checked, by the decision model, for giving away hidden lore the player's character does not know (lore listed for others only); off by default. A passage that fails is sent back to the game master like the other gates' (at most twice). Needs a decision model: without one nothing is checked. */
     secrets: ExtraMode
+    /** Whether a decision model also says whether a character has a reason to write to the player now, when chance has picked one (without one, chance alone decides). */
+    messages: ExtraMode
+    errands: ExtraMode
     /** Whether the values the story tracks (fatigue, unrest, an injury) are looked at after every turn, one question for each value and each person it applies to, by the language model, the decision model or both; the language model then gives the new value of those that changed. Off by default: without it the game master changes a value only when it thinks of it. */
     variables: GateMode
     /** Whether a scene picture that is made on its own after a turn first looks for a stored picture that shows the moment, by asking the decision model about each close candidate's description, and shows that one instead of making a new one; off by default. The language model alone found one in half the cases where one fitted, the decision model in all of them. */
     reuse: ExtraMode
     /** The probability from which the decision model's answer to a gate's question counts as a fault, from 0.1 to 0.95; a little below it (0.15) is not sure. Decision models give a rare fault a low probability even when they see it, so this is not the confidence of the other sites. */
     gateThreshold: number
+    /** The probability from which the decision model's answer that a stored picture shows the moment counts as a yes, from 0.1 to 0.95. Higher than the gates' cut on purpose: a wrong picture shown again is worse than a new one, and the measured separation needs 0.8 to 0.9. */
+    reuseThreshold: number
     /** How sure the decision model must be before its answer is used, from 0 (always) to 1 (only when certain). A yes needs at least this much; between the two, `hybrid` asks the language model and `decision` counts it as no. */
     confidence: number
   }
@@ -300,6 +335,8 @@ export const SETTINGS_SPEC = {
   diagnostics: { keepRuns: flag(false) },
   background: { concurrent: flag(false) },
   offstage: { perTurn: integer(0, 5, 2), perCharacter: integer(1, 3, 1), joint: flag(true), summary: flag(true) },
+  schedule: { enabled: flag(true) },
+  autonomy: { enabled: flag(false), messages: flag(true), maxUnanswered: integer(1, 20, 3), idleMinutes: integer(1, 10_080, 15), awayHours: integer(1, 720, 12), chance: ratio(0, 1, 0.05), decay: ratio(0, 1, 0.5), transitionChance: ratio(0, 1, 0.4), messageGapMinutes: integer(5, 10_080, 180) },
   sampling: { master: ratio(0, 2, 0.7), characters: ratio(0, 2, 0.8), topP: ratio(0, 1, 1), topK: integer(0, 1000, 0), minP: ratio(0, 1, 0), frequencyPenalty: ratio(-2, 2, 0), presencePenalty: ratio(-2, 2, 0), repetitionPenalty: ratio(0, 2, 1), suggestions: ratio(0, 2, 0.2), authoring: ratio(0, 2, 0.4), records: ratio(0, 2, 0.1), tools: choice(['auto', 'required'], 'required'), masterMaxTokens: integer(1024, 64000, 12000), maxTokens: integer(256, 64000, 8000), shortMaxTokens: integer(256, 64000, 2000), headroom: ratio(1, 10, 2) },
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
@@ -307,7 +344,7 @@ export const SETTINGS_SPEC = {
   reflection: { auto: flag(true), everyTurns: integer(0, 500, 20), onSceneChange: flag(true), sceneDays: integer(0, 365, 1), minTurns: integer(1, 100, 5), perRun: integer(1, 6, 3), minNew: integer(1, 50, 4) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
-  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), variables: choice(GATE_MODES, 'llm'), reuse: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), confidence: ratio(0, 1, 0.7) },
+  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), repeats: choice(REPEAT_MODES, 'off'), repeatTurns: integer(1, 30, 6), repeatChars: integer(6, 60, 12), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), messages: choice(EXTRA_MODES, 'off'), errands: choice(EXTRA_MODES, 'on'), variables: choice(GATE_MODES, 'llm'), reuse: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), reuseThreshold: ratio(0.1, 0.95, 0.85), confidence: ratio(0, 1, 0.7) },
   interface: { pack: text(60, '') },
   rewind: { keepSnapshots: integer(0, 500, 30), rolls: choice(['reroll', 'keep'], 'reroll') },
   rules: { own: text(MAX_OWN_RULES, '') },

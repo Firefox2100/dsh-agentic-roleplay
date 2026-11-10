@@ -1,0 +1,236 @@
+{
+  "id": "cast-small",
+  "description": "Three characters besides the player: the keeper's daughter (mara) plays, with the landlord (tomas), the harbor master (ines) and the boy (kit). The reporter, the missing keeper and the two groups are removed with what referred to them; the reporter's alternate opening is dropped.",
+  "requires": [],
+  "conflicts": [
+    "cast-solo"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/bram",
+    "characters/gull-seller",
+    "characters/night-watch",
+    "characters/quill",
+    "items/coins",
+    "items/notebook"
+  ],
+  "add": {},
+  "patch": {
+    "characters/kit/character.json": {
+      "relationships": [
+        {
+          "to": "mara",
+          "label": "守塔人的女儿",
+          "familiarity": 0.4,
+          "trust": 0.3,
+          "affinity": 0.3
+        }
+      ]
+    },
+    "characters/mara/character.json": {
+      "relationships": [
+        {
+          "to": "tomas",
+          "label": "家里的老朋友",
+          "summary": "她十岁时他教过她打牌。",
+          "familiarity": 0.7,
+          "trust": 0.4,
+          "affinity": 0.4,
+          "tension": 0.1
+        },
+        {
+          "to": "kit",
+          "label": "隔壁的男孩，长大了",
+          "familiarity": 0.4,
+          "trust": 0.2,
+          "affinity": 0.2
+        },
+        {
+          "to": "ines",
+          "label": "港务长",
+          "summary": "对父亲冷淡，对她也冷淡。",
+          "familiarity": 0.3,
+          "trust": -0.1,
+          "affinity": -0.1,
+          "tension": 0.3
+        }
+      ]
+    },
+    "characters/tomas/character.json": {
+      "relationships": [
+        {
+          "to": "mara",
+          "label": "守塔人的女儿",
+          "summary": "很疼她，也怕她查出什么。",
+          "familiarity": 0.7,
+          "trust": 0.4,
+          "affinity": 0.6,
+          "tension": 0.4
+        },
+        {
+          "to": "ines",
+          "label": "债主",
+          "familiarity": 0.8,
+          "trust": -0.3,
+          "affinity": -0.1,
+          "tension": 0.6
+        }
+      ]
+    },
+    "factions/harbor-guild/faction.json": {
+      "relationships": [
+        {
+          "to": {
+            "kind": "faction",
+            "id": "lamp-keepers"
+          },
+          "label": "对手",
+          "familiarity": 0.7,
+          "trust": -0.2,
+          "affinity": -0.2,
+          "tension": 0.7
+        }
+      ]
+    },
+    "factions/lamp-keepers/faction.json": {
+      "members": []
+    },
+    "lore/cellar-secret/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/keeper-oath/lore.json": {
+      "known_by": [
+        "tomas",
+        "mara"
+      ]
+    },
+    "lore/lighthouse-history/lore.json": {
+      "known_by": [
+        "mara",
+        "tomas",
+        "ines"
+      ]
+    },
+    "lore/smugglers-signal/lore.json": {
+      "known_by": [
+        "kit"
+      ]
+    },
+    "plots.json": [
+      {
+        "id": "the-dark-lamp",
+        "name": "熄灭的灯",
+        "premise": "有人故意熄灭了灯塔，守塔人带着证据躲了起来。",
+        "themes": [
+          "职责",
+          "同谋"
+        ],
+        "hooks": [
+          {
+            "id": "closed-road",
+            "text": "港务长封闭灯塔路的告示。",
+            "mode": "opportunity"
+          }
+        ],
+        "developments": [
+          {
+            "id": "cellar-found",
+            "text": "地窖和印着公会标记的木箱被发现。",
+            "mode": "opportunity",
+            "prerequisites": [
+              "closed-road"
+            ]
+          }
+        ],
+        "stakes": [
+          "守塔人的安危",
+          "公会对渔港的掌控"
+        ],
+        "resolutions": [
+          "公会败露",
+          "事情被掩盖"
+        ],
+        "participants": [
+          "ines",
+          "tomas"
+        ],
+        "start": "available"
+      }
+    ],
+    "triggers.json": [
+      {
+        "key": "fog-bell-rings",
+        "name": "雾钟敲响",
+        "when": {
+          "type": "time",
+          "from": "1887-10-03T20:00"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "码头的雾钟开始敲响，缓慢而沉闷。"
+          },
+          {
+            "type": "cue",
+            "audience": {
+              "place": "inn-bar"
+            },
+            "text": "钟响了，酒吧里安静了一瞬。"
+          }
+        ],
+        "announce": {
+          "audience": "everyone",
+          "text": "雾钟将在八点敲响。",
+          "at": "1887-10-03T18:30"
+        }
+      },
+      {
+        "key": "storm-breaks",
+        "name": "风暴降临",
+        "when": {
+          "type": "variable",
+          "variable": "storm_warning",
+          "op": "eq",
+          "value": true
+        },
+        "effects": [
+          {
+            "type": "edit",
+            "edit": {
+              "events": [
+                {
+                  "text": "风暴席卷盐湾港，所有的船都赶回码头。",
+                  "tags": [
+                    "storm"
+                  ],
+                  "importance": 4,
+                  "perceived_by": "everyone"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "key": "key-found",
+        "name": "钥匙被找到",
+        "when": {
+          "type": "item",
+          "item": "lighthouse-key",
+          "held_by": "mara"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "码头上有人看见玩家角色从系缆石下拿起了什么。"
+          }
+        ]
+      }
+    ],
+    "world.json": {
+      "alternate_openings": null
+    }
+  }
+}

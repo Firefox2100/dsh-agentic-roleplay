@@ -1,6 +1,7 @@
 import { mapLimit, norm } from '../import/run.ts'
 import { CheckSkipped, foundBy, type Check, type Found } from './check.ts'
 import { verdictOf } from './judge.ts'
+import { findPanel } from '../import/panels.ts'
 import { loaded } from './loaded.ts'
 
 /** A place described in fewer letters than this has nothing to play with (a Chinese, Japanese or Korean character counts as three: it says as much as a short word). */
@@ -73,6 +74,27 @@ const about: Check = {
   },
 }
 
+const PANEL_QUOTE_CHARS = 120
+
+const panels: Check = {
+  id: 'quality-panels',
+  kit: 'quality',
+  mode: 'code',
+  needs: [],
+  description: 'Status bars, panels and update blocks written into the opening, the prompts, the lore or the characters: a story shows its tracked values itself, and a game master that is told to print one writes it into the narration.',
+  async run(input) {
+    const { texts } = await loaded.text(input)
+    const found: Found[] = []
+    for (const [where, body] of texts) {
+      const panel = findPanel(body)
+      if (panel === undefined) continue
+      const quote = panel.replace(/\s+/g, ' ').slice(0, PANEL_QUOTE_CHARS)
+      found.push({ severity: 'warning', code: 'output-panel', where, message: `${where} holds a status bar or markup a story would print: ${quote}`, hint: 'Take it out with the editing tools; keeping it is never intended. Declare the values it shows in variables.json (the story shows them) and do not keep the layout or an instruction to print it.' })
+    }
+    return foundBy('quality-panels', found)
+  },
+}
+
 const SHEET_SCHEMA = { type: 'object', properties: { reason: { type: 'string' }, playable: { type: 'boolean' } }, required: ['reason', 'playable'], additionalProperties: false } as const
 
 const sheets: Check = {
@@ -139,4 +161,4 @@ const gaps: Check = {
   },
 }
 
-export const qualityChecks: readonly Check[] = [cast, places, about, sheets, gaps]
+export const qualityChecks: readonly Check[] = [cast, places, about, panels, sheets, gaps]

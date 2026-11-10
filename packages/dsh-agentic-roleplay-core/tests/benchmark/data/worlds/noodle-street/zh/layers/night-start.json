@@ -1,0 +1,30 @@
+{
+  "id": "night-start",
+  "description": "Starts the story at 22:30 the same day, with the shop shut and the owner asleep upstairs; the opening is rewritten to match. The sleeper's own start is moved to where they sleep, because the days of the characters never move one who stands in the player's place.",
+  "requires": [
+    "sleeps"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "starting_time": "2024-10-14T22:30",
+      "opening_message": [
+        {
+          "type": "narration",
+          "text": "晚上十点半，面馆早已打烊，灶台冷了。楼上陈姨房里的灯灭了很久，只剩巷口的风声。"
+        }
+      ]
+    },
+    "characters/chen/character.json": {
+      "start": {
+        "location": "rooftop-room",
+        "position": "床上",
+        "activity": "睡觉",
+        "public_state": "在楼上睡着了。"
+      }
+    }
+  }
+}

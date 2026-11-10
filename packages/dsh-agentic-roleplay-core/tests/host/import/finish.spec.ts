@@ -35,8 +35,8 @@ beforeEach(async () => {
 afterEach(async () => { await rm(directory, { recursive: true, force: true }) })
 
 describe('the opening of the world', () => {
-  it('is the chosen text as plain paragraphs: no emphasis marks, tags or code fences, the card\'s name for the character and a word for the player', () => {
-    expect(openingMessage('*The fog* lifts.\r\n\r\n\r\n**{{char}}** waves at {{user}}.<br>```\ncode```', 'Tam')).toBe('The fog lifts.\n\nTam waves at the player.code')
+  it('is the chosen text as plain paragraphs: no emphasis marks or tags, no fenced block (a status panel), the card\'s name for the character and a word for the player', () => {
+    expect(openingMessage('*The fog* lifts.\r\n\r\n\r\n**{{char}}** waves at {{user}}.<br>```\ncode```', 'Tam')).toBe('The fog lifts.\n\nTam waves at the player.')
     expect(openingMessage('{{user}} waits.', 'Tam', 'Ana')).toBe('Ana waits.')
     expect(openingMessage('2 * 3 * 4', 'Tam')).toBe('2 * 3 * 4')
   })

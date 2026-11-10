@@ -1,0 +1,43 @@
+{
+  "id": "benchmark-ashen-road-en",
+  "name": "The Ashen Road",
+  "description": "Where the last road runs out into the ash, the caravan town of Holt's Rest waits for the autumn convoy. It is three days late, and something out on the waste is turning the riders back.",
+  "starting_time": "1203-09-12T16:00",
+  "time_zone": "UTC",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "fantasy",
+      "frontier",
+      "caravan",
+      "wasteland"
+    ]
+  },
+  "rules": [
+    "Magic is real but rare, slow and always costs the caster something: blood, years or a memory.",
+    "No god answers a prayer in person; only people act.",
+    "Nobody here has gunpowder or anything made of steam."
+  ],
+  "variables": {
+    "dread": 2
+  },
+  "tools": {
+    "gameMaster": {
+      "roll_dice": true
+    }
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "The sun is low over Holt's Rest and the yard smells of horses and woodsmoke. Past the gate the road simply stops, swallowed by grey ash."
+    },
+    {
+      "type": "utterance",
+      "character": "brann",
+      "text": "Edda. You came. Sit before you fall down; the convoy's three days late and I need someone who can swing that blade."
+    }
+  ]
+}

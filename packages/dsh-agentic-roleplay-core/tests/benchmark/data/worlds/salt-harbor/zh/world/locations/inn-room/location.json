@@ -1,0 +1,13 @@
+{
+  "id": "inn-room",
+  "name": "三号客房",
+  "description": "吧台楼上的一间窄房，窗外是码头，屋里有个洗脸架。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "window",
+      "name": "窗子",
+      "description": "隔着雾，正对着黑漆漆的灯塔。"
+    }
+  ]
+}

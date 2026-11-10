@@ -51,7 +51,7 @@ export async function runOffScene(deps: OffStageDeps, owner: TurnOwner, state: T
     store.commit(reports.flatMap((report) => {
       const member = cast.find(candidate => candidate.key === report.character)
       const move = moves.get(report.character)
-      return member === undefined ? [] : [{ character: member.character.id, patch: { activity: report.intent }, ...(move?.ok === true ? { move: move.move } : {}) }]
+      return member === undefined ? [] : [{ character: member.character.id, patch: { activity: report.intent }, ...(move?.ok === true ? { move: move.move, hold: {} } : {}) }]
     }))
     state.offstage += 1
     const time = store.time(owner.turn)

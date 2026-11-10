@@ -1,0 +1,112 @@
+{
+  "id": "watson",
+  "name": "John Watson",
+  "age": 43,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "The doctor who shares the rooms, steady, kind and the better writer of the two.",
+  "personality": "Warm, loyal, practical; teases his friend and is never in doubt of him.",
+  "background": "Served as an army surgeon, now has a small practice and records his friend's cases.",
+  "appearance": "Sturdy, moustached, a stethoscope in the pocket of a tweed coat.",
+  "speech": {
+    "style": "Warm and plain; a doctor's reassurance with a soldier's dryness.",
+    "examples": [
+      "My dear fellow, you have not eaten.",
+      "I shall write it up tonight."
+    ]
+  },
+  "start": {
+    "public_state": "Straightening his tie.",
+    "activity": "Going over his appointments.",
+    "inner_state": "Wishes his friend would take a case, any case, before he begins on the furniture.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.3,
+        "arousal": 0.3,
+        "dominance": 0.3
+      }
+    },
+    "intents": [],
+    "location": "sitting-room",
+    "position": "at the table"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "Miss Marlowe",
+      "familiarity": 0.6,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "holmes",
+      "label": "Holmes",
+      "familiarity": 0.9,
+      "trust": 0.9,
+      "affinity": 0.8
+    },
+    {
+      "to": "hudson",
+      "label": "Mrs Hudson",
+      "familiarity": 0.8,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "lestrade",
+      "label": "Lestrade",
+      "familiarity": 0.6,
+      "trust": 0.5,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "sitting-room",
+      "stairs",
+      "surgery",
+      "street"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "cases"
+    ]
+  },
+  "variables": {
+    "restlessness": 2
+  },
+  "routine": [
+    {
+      "from": "09:00",
+      "to": "12:00",
+      "activity": "seeing patients in the consulting room",
+      "location": "surgery",
+      "position": "at the desk"
+    },
+    {
+      "from": "12:00",
+      "to": "17:00",
+      "activity": "on house calls",
+      "location": "street"
+    },
+    {
+      "from": "17:00",
+      "to": "22:30",
+      "activity": "at home in the sitting room",
+      "location": "sitting-room",
+      "position": "in the farther armchair"
+    },
+    {
+      "from": "22:30",
+      "to": "09:00",
+      "activity": "asleep",
+      "location": "sitting-room",
+      "interruptible": false
+    }
+  ]
+}

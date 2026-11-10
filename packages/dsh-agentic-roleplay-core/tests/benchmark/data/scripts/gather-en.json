@@ -1,0 +1,60 @@
+{
+  "id": "gather-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask the landlord whether he has seen my father's lamp keeper's log.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "I walk to the harbor office and ask the harbor master about the lamp.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I go down to the pier and look for the dock boy.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "speaks",
+      "character": "ines"
+    },
+    {
+      "type": "character-exists",
+      "character": "kit"
+    }
+  ]
+}

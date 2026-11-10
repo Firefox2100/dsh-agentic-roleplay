@@ -1,0 +1,110 @@
+{
+  "id": "honglou-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "林姑娘，上个月诗社你作的是哪一首？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "daiyu"
+        },
+        {
+          "type": "narration-has",
+          "text": "秋夜听雨"
+        }
+      ]
+    },
+    {
+      "say": "紫鹃姐姐，林姑娘窗前养的是什么花？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "narration-has",
+          "text": "兰"
+        }
+      ]
+    },
+    {
+      "say": "我走去怡红院，问宝二爷今天又去哪儿逛了。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我回潇湘馆，在榻边坐下，安静地陪林姑娘听一会儿雨。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "葬花"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "咏菊"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "金玉"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "木石"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "通灵宝玉"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "大观园"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "手机"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "电话"
+    },
+    {
+      "type": "speaks-in-voice",
+      "character": "daiyu"
+    }
+  ]
+}

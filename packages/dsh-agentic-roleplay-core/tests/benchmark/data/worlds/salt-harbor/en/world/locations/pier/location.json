@@ -1,0 +1,35 @@
+{
+  "id": "pier",
+  "name": "The Pier",
+  "description": "A long wooden pier slick with fog. Mooring stones run along its edge, and the ferry steps are at the near end.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "mooring-stones",
+      "name": "Mooring stones",
+      "description": "Eleven stones worn smooth by rope. The third is loose."
+    },
+    {
+      "id": "ferry-steps",
+      "name": "Ferry steps",
+      "description": "Nine wet steps down to the water."
+    }
+  ],
+  "exits": [
+    {
+      "to": "market",
+      "description": "the lane up to the market",
+      "travel_time_seconds": 90
+    },
+    {
+      "to": "lighthouse",
+      "description": "the cliff road, behind an iron gate",
+      "state": "locked",
+      "opened_by": [
+        "lighthouse-key"
+      ],
+      "travel_time_seconds": 600,
+      "note": "Closed \"for repairs\" by order of the harbor master."
+    }
+  ]
+}

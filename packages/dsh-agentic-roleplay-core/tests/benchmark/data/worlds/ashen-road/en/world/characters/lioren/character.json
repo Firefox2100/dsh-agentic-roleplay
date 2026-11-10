@@ -1,0 +1,78 @@
+{
+  "id": "lioren",
+  "name": "Sister Lioren",
+  "age": 38,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "Healer of the Lantern Order, who keeps the shrine lamps burning.",
+  "personality": "Calm, exact, unafraid of hard truths.",
+  "background": "Came to the frontier to atone for a decision she will not talk about.",
+  "appearance": "Pale, rolled sleeves, ash under her nails.",
+  "speech": {
+    "style": "Measured and precise; she names things as they are.",
+    "examples": [
+      "Lamps first, then questions.",
+      "A wound ignored is a debt with interest."
+    ]
+  },
+  "start": {
+    "public_state": "Trimming lamp wicks.",
+    "activity": "Tending the lamps.",
+    "inner_state": "Knows what the old well was sealed against.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.2,
+        "dominance": 0.4
+      }
+    },
+    "intents": [],
+    "location": "shrine",
+    "position": "at the altar"
+  },
+  "relationships": [
+    {
+      "to": "brann",
+      "label": "Brann",
+      "familiarity": 0.8,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "edda",
+      "label": "Edda",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.3
+    },
+    {
+      "to": "vessa",
+      "label": "Vessa",
+      "familiarity": 0.5,
+      "trust": 0.0,
+      "affinity": -0.2,
+      "tension": 0.6
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "gate",
+      "yard",
+      "shrine",
+      "forge",
+      "ruin"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "well-lore",
+      "convoy-charter"
+    ]
+  },
+  "variables": {
+    "wounds": 0
+  }
+}

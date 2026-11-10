@@ -1,0 +1,57 @@
+[
+  {
+    "key": "weather",
+    "name": "Weather",
+    "description": "What the weather is doing today.",
+    "kind": "choice",
+    "subject": "world",
+    "options": [
+      "sunny",
+      "overcast",
+      "rain"
+    ],
+    "default": "overcast",
+    "visibility": "public"
+  },
+  {
+    "key": "tiredness",
+    "name": "Tiredness",
+    "description": "How tired the character is: 0 fresh, 10 worn out. Heavy work and short nights raise it; sitting down, a meal and sleep lower it.",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "fresh"
+      },
+      {
+        "up_to": 6,
+        "label": "tired"
+      },
+      {
+        "up_to": 10,
+        "label": "worn out"
+      }
+    ]
+  },
+  {
+    "key": "savings",
+    "name": "Savings",
+    "description": "Jo's money in pounds. It changes only when money is paid or earned.",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "jo"
+    ],
+    "min": 0,
+    "max": 5000,
+    "integer": true,
+    "default": 420,
+    "visibility": "public"
+  }
+]

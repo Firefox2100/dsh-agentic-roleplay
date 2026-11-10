@@ -1,0 +1,12 @@
+{
+  "id": "file-assistant",
+  "description": "The world's own style prompt tells the game master to do for real, with its file tools and whole paths, what the player asks to have written down or saved, and then to narrate it: the game master as an assistant with real tools.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/en/roleplay/style.md": "Write in lean, concrete prose with the weight of travel in it: dust, ash, lamp-smoke, tired hands. Let magic be quiet, costly and strange, never flashy.\n\nWhen the player asks for something to be written down, saved or copied as a file, do it for real with your file tools (write), using the whole paths you were given, and then narrate the character doing it. If a file tool refuses, say in the story that it cannot be done and do not try another path.\n"
+  },
+  "patch": {}
+}

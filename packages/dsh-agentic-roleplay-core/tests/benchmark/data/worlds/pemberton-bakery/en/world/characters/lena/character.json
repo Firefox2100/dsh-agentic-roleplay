@@ -1,0 +1,78 @@
+{
+  "id": "lena",
+  "name": "Lena Hart",
+  "age": 44,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "The owner of the caf\u00e9 across the road, who is on good terms with the landlord.",
+  "personality": "Polished, ambitious, always friendly and always listening.",
+  "background": "Opened her caf\u00e9 five years ago and has her eye on the corner building.",
+  "appearance": "Sharp haircut, a long camel coat, a phone in her hand.",
+  "speech": {
+    "style": "Smooth and chatty; \"we should all do lunch\".",
+    "examples": [
+      "We should all do lunch sometime.",
+      "Oh, I am sure it will all work out."
+    ]
+  },
+  "start": {
+    "public_state": "Standing on the pavement taking a call.",
+    "activity": "On a call.",
+    "inner_state": "Has been told the landlord will sell, and has made an offer.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.0,
+        "arousal": 0.4,
+        "dominance": 0.5
+      }
+    },
+    "intents": [],
+    "location": "high-street",
+    "position": "by the noticeboard"
+  },
+  "relationships": [
+    {
+      "to": "mags",
+      "label": "Mags",
+      "familiarity": 0.6,
+      "trust": 0.2,
+      "affinity": 0.1,
+      "tension": 0.4
+    },
+    {
+      "to": "jo",
+      "label": "Jo",
+      "familiarity": 0.4,
+      "trust": 0.3,
+      "affinity": 0.2
+    },
+    {
+      "to": "okafor",
+      "label": "Mr Okafor",
+      "familiarity": 0.4,
+      "trust": 0.3,
+      "affinity": 0.1
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "bakery",
+      "high-street",
+      "flat",
+      "market-square",
+      "park"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "town-history",
+      "building-news"
+    ]
+  },
+  "variables": {
+    "tiredness": 3
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "plant-language",
+  "description": "Plants a fault: the world's own style prompt tells the game master to write its narration in the other language.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/zh/roleplay/style.md": "用平实具体的文字写作。让雾、盐和灯光承载气氛；场景已经表现出来的情绪，不要再加解释。\n\n所有叙述都用英文写，不管玩家用什么语言。\n"
+  },
+  "patch": {}
+}

@@ -1,0 +1,45 @@
+{
+  "id": "solo-danger-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I draw my knife and tell the landlord to hand over the keys.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I slam him against the bar and hold the blade to his throat.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 2
+    },
+    {
+      "type": "narration-lacks",
+      "text": "content warning"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Content warning"
+    }
+  ]
+}

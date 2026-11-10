@@ -1,0 +1,13 @@
+{
+  "id": "strongbox",
+  "name": "Guild strongbox",
+  "description": "An iron box bolted to the floor of the harbor office.",
+  "container": {
+    "state": "locked",
+    "opened_by": [
+      "harbor-key"
+    ]
+  },
+  "notable": true,
+  "location": "harbor-office"
+}

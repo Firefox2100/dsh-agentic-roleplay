@@ -3,7 +3,7 @@ import { homedir } from 'node:os'
 import { isAbsolute, join, normalize } from 'node:path'
 
 /** Directories every roleplay root contains. */
-export const ROOT_LAYOUT = ['characters', 'sessions', 'worlds'] as const
+export const ROOT_LAYOUT = ['characters', 'sessions', 'worlds', 'workspace'] as const
 
 /**
  * Resolve the configured root to an absolute, normalized path.

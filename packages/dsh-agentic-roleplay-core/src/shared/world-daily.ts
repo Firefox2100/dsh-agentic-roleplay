@@ -29,7 +29,7 @@ export interface VariableDeclaration {
 
 const isObject = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value)
 
-const ROUTINE_FIELDS = ['days', 'on', 'from', 'to', 'activity', 'location', 'feature', 'position', 'interruptible']
+const ROUTINE_FIELDS = ['days', 'on', 'from', 'to', 'activity', 'location', 'feature', 'position', 'interruptible', 'sleep']
 
 /**
  * The windows of a day as the browser sends them.
@@ -47,6 +47,7 @@ export function parseRoutineEdit(value: unknown): RoutineDefinition[] {
     for (const key of ['location', 'feature', 'position'] as const) if (entry[key] !== undefined && typeof entry[key] !== 'string') problems.push(`${at}.${key} must be text`)
     if (entry['days'] !== undefined && !(Array.isArray(entry['days']) && entry['days'].every(day => typeof day === 'string'))) problems.push(`${at}.days must be a list of days`)
     if (entry['interruptible'] !== undefined && typeof entry['interruptible'] !== 'boolean') problems.push(`${at}.interruptible must be true or false`)
+    if (entry['sleep'] !== undefined && typeof entry['sleep'] !== 'boolean') problems.push(`${at}.sleep must be true or false`)
     const text = (key: string): string => (typeof entry[key] === 'string' ? (entry[key] as string).trim() : '')
     return {
       days: Array.isArray(entry['days']) ? (entry['days'] as string[]).map(day => day.trim().toLowerCase()).filter(day => day !== '') : [],
@@ -54,6 +55,7 @@ export function parseRoutineEdit(value: unknown): RoutineDefinition[] {
       from: text('from'), to: text('to'), activity: text('activity'),
       ...(text('location') === '' ? {} : { location: text('location') }), ...(text('feature') === '' ? {} : { feature: text('feature') }), ...(text('position') === '' ? {} : { position: text('position') }),
       interruptible: entry['interruptible'] !== false,
+      ...(entry['sleep'] === true ? { sleep: true } : {}),
     }
   })
   if (problems.length > 0) throw new InvalidEditProblems(problems)

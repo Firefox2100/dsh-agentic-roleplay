@@ -1,0 +1,19 @@
+{
+  "id": "ruin",
+  "name": "The Old Ruin",
+  "description": "Broken walls half buried in ash, and in the middle an old well with its lid pushed aside.",
+  "features": [
+    {
+      "id": "old-well",
+      "name": "The old well",
+      "description": "A ring of black stone; cold air breathes out of it."
+    }
+  ],
+  "exits": [
+    {
+      "to": "gate",
+      "description": "back along the track",
+      "travel_time_seconds": 1800
+    }
+  ]
+}

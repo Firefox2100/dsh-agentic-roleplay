@@ -1,0 +1,37 @@
+{
+  "id": "benchmark-baker-street-en",
+  "name": "Baker Street, 1895",
+  "description": "The sitting room at 221B Baker Street, a winter morning in 1895. The detective is between cases, the doctor is back from his surgery rounds, and a friend of the house has come to call.",
+  "starting_time": "1895-02-12T09:00",
+  "time_zone": "Europe/London",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "fan fiction",
+      "public domain",
+      "detective",
+      "Victorian"
+    ]
+  },
+  "rules": [
+    "It is February 1895: there are no telephones, motor cars or electric light in the rooms, and nobody speaks of the future.",
+    "Nobody here knows anything about their own lives except what the world says of them: the cases they solved, the habits they keep and the people they know are those of this world."
+  ],
+  "variables": {
+    "fog": "thick"
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "The fire has been lit and the breakfast things are still on the table. A cello leans against the window seat, and the detective, in his dressing gown, is reading the agony column with great attention."
+    },
+    {
+      "type": "utterance",
+      "character": "holmes",
+      "text": "Ah, you are early. Sit down and tell me what the weather has done to your temper."
+    }
+  ]
+}

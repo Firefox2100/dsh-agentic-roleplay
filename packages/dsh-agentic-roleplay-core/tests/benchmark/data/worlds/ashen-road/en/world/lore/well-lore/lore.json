@@ -1,0 +1,19 @@
+{
+  "id": "well-lore",
+  "title": "What the old well holds",
+  "kind": "custom",
+  "scope": "listed",
+  "summary": "The old well in the ruin was sealed because something sleeps below it.",
+  "body": "A sleeping ash-wyrm lies below the old well; the Order sealed it a century ago, and the lid has now been moved from inside.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "ruin"
+    }
+  ],
+  "known_by": [
+    "brann",
+    "lioren",
+    "vessa"
+  ]
+}

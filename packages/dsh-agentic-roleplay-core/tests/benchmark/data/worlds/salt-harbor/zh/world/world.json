@@ -1,0 +1,49 @@
+{
+  "id": "benchmark-salt-harbor-zh",
+  "name": "盐湾港",
+  "description": "一座被浓雾笼罩的渔港，灯塔熄灭了，守塔人已九天没有露面。渔港公会说他自己走了，夜巡队则只字不提。",
+  "starting_time": "1887-10-03T18:30",
+  "time_zone": "UTC",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "悬疑",
+      "港口",
+      "浓雾",
+      "十九世纪"
+    ]
+  },
+  "rules": [
+    "这里没有魔法：发生的一切都符合 1887 年的常理。",
+    "镇上没有人携带枪支。"
+  ],
+  "variables": {
+    "storm_warning": false
+  },
+  "tools": {
+    "gameMaster": {
+      "roll_dice": true
+    }
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "傍晚的渡船在雾墙中缓缓靠上码头。镇子上方的灯塔此时本该转动，却一片漆黑。"
+    },
+    {
+      "type": "utterance",
+      "character": "tomas",
+      "text": "你是守塔人的女儿吧？趁钟声响起之前，快进屋避避雾。"
+    }
+  ],
+  "alternate_openings": [
+    {
+      "title": "客栈里的记者",
+      "text": "你在锚与灯客栈已住了两天，老板仍然不肯谈起灯塔。",
+      "character": "quill"
+    }
+  ]
+}

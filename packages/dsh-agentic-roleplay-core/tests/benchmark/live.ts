@@ -1,6 +1,7 @@
 import type { ImportContext, RunJob } from '../../src/host/import/run.ts'
 import { shippedText } from '../../src/host/prompts/library.ts'
 import type { Language } from './language.ts'
+import { Trace, jobKey } from './trace.ts'
 
 export type DecisionMode = 'llm' | 'decision' | 'hybrid'
 
@@ -31,17 +32,32 @@ export interface Counters {
   failures: string[]
   /** What each job was asked and answered, when asked for (BENCH_TRACE), to find out why a case came out as it did. */
   jobs: { persona: string; prompt: string; result: unknown }[]
+  /** Everything the run asked and was answered, whole, as it happens (see `trace.ts`). */
+  trace: Trace
 }
 
-export const newCounters = (): Counters => ({ llmCalls: 0, llmRetries: 0, llmMs: 0, inputTokens: 0, outputTokens: 0, yesNoCalls: 0, decisionCalls: 0, decisionMs: 0, embedCalls: 0, embedTexts: 0, failures: [], jobs: [] })
+export const newCounters = (trace: Trace = Trace.off): Counters => ({ llmCalls: 0, llmRetries: 0, llmMs: 0, inputTokens: 0, outputTokens: 0, yesNoCalls: 0, decisionCalls: 0, decisionMs: 0, embedCalls: 0, embedTexts: 0, failures: [], jobs: [], trace })
 
 const YES_NO_KEYS = ['same', 'conflict', 'playable', 'covered']
 const ATTEMPTS = 3
 
-async function post<T>(url: string, body: unknown, apiKey: string | undefined, timeoutMs: number): Promise<T> {
-  const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...apiKey === undefined ? {} : { authorization: `Bearer ${apiKey}` } }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) })
-  if (!response.ok) throw new Error(`${url} answered ${response.status}: ${(await response.text()).slice(0, 300)}`)
-  return await response.json() as T
+async function post<T>(url: string, body: unknown, apiKey: string | undefined, timeoutMs: number, trace: Trace = Trace.off, kind = 'llm', summarise: (answer: T) => unknown = answer => answer): Promise<T> {
+  const began = Date.now()
+  trace.event('request', { service: kind, url, body })
+  try {
+    const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...apiKey === undefined ? {} : { authorization: `Bearer ${apiKey}` } }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) })
+    if (!response.ok) {
+      const text = await response.text()
+      trace.event('error', { service: kind, url, status: response.status, ms: Date.now() - began, body: text })
+      throw new Error(`${url} answered ${response.status}: ${text.slice(0, 300)}`)
+    }
+    const answer = await response.json() as T
+    trace.event('response', { service: kind, status: response.status, ms: Date.now() - began, raw: summarise(answer) })
+    return answer
+  } catch (error) {
+    if (!(error instanceof Error) || !error.message.includes(' answered ')) trace.event('error', { service: kind, url, ms: Date.now() - began, message: error instanceof Error ? error.message : String(error) })
+    throw error
+  }
 }
 
 interface Completion {
@@ -58,6 +74,7 @@ export function liveContext(options: LiveOptions, language: Language, counters: 
     const properties = (job.result as { properties?: Record<string, unknown> }).properties ?? {}
     if (YES_NO_KEYS.some(key => key in properties)) counters.yesNoCalls += 1
     const messages: unknown[] = [{ role: 'system', content: job.persona }, { role: 'user', content: job.prompt }]
+    counters.trace.event('job', { key: jobKey(job.persona, job.prompt, job.result), style: 'tool-call' })
     let last = ''
     for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
       const began = Date.now()
@@ -67,7 +84,7 @@ export function liveContext(options: LiveOptions, language: Language, counters: 
         model: options.llm.model, messages, temperature: options.llm.temperature, max_tokens: Math.max(job.maxTokens ?? 1000, 300),
         tools: [{ type: 'function', function: { name: 'submit_result', description: 'Submit the result.', parameters: job.result } }], tool_choice: 'required',
         ...options.llm.reasoning === '' ? {} : { reasoning_effort: options.llm.reasoning },
-      }, options.llm.apiKey, 600_000)
+      }, options.llm.apiKey, 600_000, counters.trace)
       counters.llmMs += Date.now() - began
       counters.inputTokens += answer.usage?.prompt_tokens ?? 0
       counters.outputTokens += answer.usage?.completion_tokens ?? 0
@@ -79,26 +96,28 @@ export function liveContext(options: LiveOptions, language: Language, counters: 
         try { value = JSON.parse(call.function.arguments) } catch { problem = 'the arguments were not valid JSON' }
         if (problem === undefined) problem = job.check?.(value)
       }
-      if (problem === undefined) { if (process.env['BENCH_TRACE'] !== undefined) counters.jobs.push({ persona: job.persona.slice(0, 300), prompt: job.prompt.slice(0, 2500), result: value }); return value }
+      if (problem === undefined) { counters.trace.event('result', { attempt, value }); if (process.env['BENCH_TRACE'] !== undefined) counters.jobs.push({ persona: job.persona.slice(0, 300), prompt: job.prompt.slice(0, 2500), result: value }); return value }
       last = problem
+      counters.trace.event('refusal', { attempt, problem, ...call === undefined ? { content: answer.choices[0]?.message.content ?? '' } : { arguments: call.function.arguments } })
       messages.push(call === undefined ? { role: 'assistant', content: answer.choices[0]?.message.content ?? '' } : { role: 'assistant', content: null, tool_calls: [call] })
       messages.push(call === undefined ? { role: 'user', content: problem } : { role: 'tool', tool_call_id: call.id, content: `Refused: ${problem}` })
     }
     counters.failures.push(last)
+    counters.trace.event('error', { service: 'job', message: `refused ${ATTEMPTS} times; the last reason: ${last}` })
     throw new Error(`the result was refused ${ATTEMPTS} times; the last reason: ${last}`)
   }) as never
 
   const embed: ImportContext['embed'] = options.embed === undefined ? undefined : async (texts) => {
     counters.embedCalls += 1
     counters.embedTexts += texts.length
-    const answer = await post<{ data: { embedding: number[]; index: number }[]; model: string }>(`${options.embed!.url}/embeddings`, { model: options.embed!.model, input: texts }, undefined, 300_000)
+    const answer = await post<{ data: { embedding: number[]; index: number }[]; model: string }>(`${options.embed!.url}/embeddings`, { model: options.embed!.model, input: texts }, undefined, 300_000, counters.trace, 'embedding', reply => ({ model: reply.model, vectors: reply.data.length, dimensions: reply.data[0]?.embedding.length }))
     return { vectors: [...answer.data].sort((a, b) => a.index - b.index).map(entry => entry.embedding), model: answer.model }
   }
 
   const decide: ImportContext['decide'] = options.decision === undefined ? undefined : async (state, asks) => {
     const began = Date.now()
     counters.decisionCalls += 1
-    const answer = await post<{ answers: Record<string, { noul?: number; noul_raw?: number }> }>(`${options.decision!.url}/systemone`, { model: options.decision!.model, state, questions: Object.fromEntries(asks.map(({ key, instructions }) => [key, { type: 'noul', instructions }])) }, undefined, 120_000)
+    const answer = await post<{ answers: Record<string, { noul?: number; noul_raw?: number }> }>(`${options.decision!.url}/systemone`, { model: options.decision!.model, state, questions: Object.fromEntries(asks.map(({ key, instructions }) => [key, { type: 'noul', instructions }])) }, undefined, 120_000, counters.trace, 'decision')
     counters.decisionMs += Date.now() - began
     return new Map(asks.map(({ key }) => [key, answer.answers[key]!.noul_raw ?? answer.answers[key]!.noul!]))
   }
@@ -117,6 +136,7 @@ export function liveContext(options: LiveOptions, language: Language, counters: 
 export function liveStructured(options: LiveOptions, counters: Counters): (request: { persona: string; prompt: string; result: unknown }) => Promise<unknown> {
   return async ({ persona, prompt, result }) => {
     const messages: unknown[] = [{ role: 'system', content: persona }, { role: 'user', content: prompt }]
+    counters.trace.event('job', { key: jobKey(persona, prompt, result), style: 'structured' })
     let last = ''
     for (let attempt = 1; attempt <= ATTEMPTS; attempt += 1) {
       const began = Date.now()
@@ -126,16 +146,17 @@ export function liveStructured(options: LiveOptions, counters: Counters): (reque
         model: options.llm.model, messages, temperature: options.llm.temperature, max_tokens: 1500,
         response_format: { type: 'json_schema', json_schema: { name: 'result', strict: true, schema: result } },
         ...options.llm.reasoning === '' ? {} : { reasoning_effort: options.llm.reasoning },
-      }, options.llm.apiKey, 600_000)
+      }, options.llm.apiKey, 600_000, counters.trace)
       counters.llmMs += Date.now() - began
       counters.inputTokens += answer.usage?.prompt_tokens ?? 0
       counters.outputTokens += answer.usage?.completion_tokens ?? 0
       const content = answer.choices[0]?.message.content ?? ''
       if (process.env['BENCH_TRACE'] !== undefined) counters.jobs.push({ persona: persona.slice(0, 300), prompt: prompt.slice(0, 2500), result: content })
-      try { return JSON.parse(content) as unknown } catch { last = `not valid JSON: ${content.slice(0, 120)}` }
+      try { const value = JSON.parse(content) as unknown; counters.trace.event('result', { attempt, value }); return value } catch { last = `not valid JSON: ${content.slice(0, 120)}`; counters.trace.event('refusal', { attempt, problem: last, content }) }
       messages.push({ role: 'assistant', content }, { role: 'user', content: 'Answer again with valid JSON only.' })
     }
     counters.failures.push(last)
+    counters.trace.event('error', { service: 'job', message: `refused ${ATTEMPTS} times; the last reason: ${last}` })
     throw new Error(`the answer was refused ${ATTEMPTS} times; the last reason: ${last}`)
   }
 }
@@ -146,7 +167,7 @@ export function liveDecisionService(decision: NonNullable<LiveOptions['decision'
     async decide(state, questions) {
       const began = Date.now()
       counters.decisionCalls += 1
-      const answer = await post<{ answers: Record<string, { noul?: number; noul_raw?: number }> }>(`${decision.url}/systemone`, { model: decision.model, state, questions }, undefined, 120_000)
+      const answer = await post<{ answers: Record<string, { noul?: number; noul_raw?: number }> }>(`${decision.url}/systemone`, { model: decision.model, state, questions }, undefined, 120_000, counters.trace, 'decision')
       counters.decisionMs += Date.now() - began
       if (process.env['BENCH_TRACE'] !== undefined) counters.jobs.push({ persona: 'decision', prompt: JSON.stringify({ state, questions }).slice(0, 2500), result: Object.fromEntries(Object.keys(questions).map(key => [key, answer.answers[key]!.noul_raw ?? answer.answers[key]!.noul])) })
       return { answers: Object.fromEntries(Object.keys(questions).map(key => [key, { type: 'noul' as const, probability: answer.answers[key]!.noul_raw ?? answer.answers[key]!.noul! }])), model: decision.model }

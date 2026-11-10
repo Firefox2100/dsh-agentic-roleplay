@@ -30,11 +30,13 @@ export class AfterTurnJobs {
   private readonly reflecting = new Set<string>()
   private readonly casting = new Set<string>()
   private readonly tracking = new Set<string>()
+  private readonly erranding = new Set<string>()
 
   constructor(private readonly deps: AfterTurnDeps) {}
 
   start(owner: { chat: string; turn: number }, cancel: AbortSignal, facts?: { input: string; deeds: string[]; narration: string }): void {
     if (facts !== undefined) this.trackVariables(owner, cancel, facts)
+    if (facts !== undefined) this.keepErrands(owner, cancel, facts)
     this.consolidate(owner, cancel)
     this.strategize(owner, cancel)
     this.judge(owner, cancel)
@@ -52,6 +54,17 @@ export class AfterTurnJobs {
       .then((set) => { if (set > 0) this.deps.written(owner.chat) })
       .catch((error: unknown) => { if (!cancel.aborted) this.deps.problem(`the tracked values were not looked at: ${messageOf(error)}`) })
       .finally(() => { this.tracking.delete(owner.chat) }))
+  }
+
+  /** Characters the story told or left to wait for the player are kept where they are until the player comes to them. */
+  private keepErrands(owner: { chat: string; turn: number }, cancel: AbortSignal, facts: { input: string; deeds: string[]; narration: string }): void {
+    const store = this.deps.stores(owner.chat)
+    if (store === undefined || store.settings().decisions.errands === 'off' || this.erranding.has(owner.chat)) return
+    this.erranding.add(owner.chat)
+    this.deps.track(owner.chat, this.deps.boundaries().errandKeeper.keep({ chat: owner.chat, turn: owner.turn, store, ...facts }, cancel)
+      .then((kept) => { if (kept > 0) this.deps.written(owner.chat) })
+      .catch((error: unknown) => { if (!cancel.aborted) this.deps.problem(`who waits for the player was not looked at: ${messageOf(error)}`) })
+      .finally(() => { this.erranding.delete(owner.chat) }))
   }
 
   /** Whether a reflection is running for the chat. */

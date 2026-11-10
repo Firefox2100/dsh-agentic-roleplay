@@ -1,0 +1,114 @@
+{
+  "id": "mags",
+  "name": "Margaret \"Mags\" Pemberton",
+  "age": 58,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "The owner, who has baked in this shop for thirty years.",
+  "personality": "Warm, bossy, worries aloud and keeps the real worries to herself.",
+  "background": "Took over the bakery from her father and has never had a holiday longer than a weekend.",
+  "appearance": "Round face, forearms like a rugby player, a pencil behind her ear.",
+  "speech": {
+    "style": "Brisk and affectionate; \"love\" and \"right then\".",
+    "examples": [
+      "Right then, front table, love.",
+      "I am not worried. I am just counting."
+    ]
+  },
+  "start": {
+    "public_state": "Shaping rolls at the counter.",
+    "activity": "Shaping rolls.",
+    "inner_state": "Has heard the landlord wants to sell and has told no one.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.0,
+        "arousal": 0.4,
+        "dominance": 0.5
+      }
+    },
+    "intents": [],
+    "location": "bakery",
+    "position": "behind the counter"
+  },
+  "relationships": [
+    {
+      "to": "jo",
+      "label": "Jo",
+      "familiarity": 0.8,
+      "trust": 0.8,
+      "affinity": 0.8
+    },
+    {
+      "to": "okafor",
+      "label": "Mr Okafor",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.7
+    },
+    {
+      "to": "dev",
+      "label": "Dev",
+      "familiarity": 0.7,
+      "trust": 0.6,
+      "affinity": 0.6
+    },
+    {
+      "to": "lena",
+      "label": "Lena",
+      "familiarity": 0.6,
+      "trust": 0.2,
+      "affinity": 0.1,
+      "tension": 0.4
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "bakery",
+      "high-street",
+      "flat",
+      "market-square",
+      "park"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "town-history",
+      "building-news"
+    ]
+  },
+  "variables": {
+    "tiredness": 5
+  },
+  "routine": [
+    {
+      "from": "04:00",
+      "to": "15:00",
+      "activity": "baking and serving",
+      "location": "bakery",
+      "position": "behind the counter"
+    },
+    {
+      "from": "15:00",
+      "to": "17:00",
+      "activity": "resting upstairs",
+      "location": "flat"
+    },
+    {
+      "from": "17:00",
+      "to": "21:30",
+      "activity": "closing up the shop",
+      "location": "bakery",
+      "position": "behind the counter"
+    },
+    {
+      "from": "21:30",
+      "to": "04:00",
+      "activity": "asleep",
+      "location": "flat",
+      "interruptible": false
+    }
+  ]
+}

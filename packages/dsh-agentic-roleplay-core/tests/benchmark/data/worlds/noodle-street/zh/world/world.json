@@ -1,0 +1,37 @@
+{
+  "id": "benchmark-noodle-street-zh",
+  "name": "巷口面馆",
+  "description": "老小区巷口的一家小面馆。陈姨天不亮就开门，街坊们按时来吃面。最近巷子里传着一个消息：这一片要拆了。",
+  "starting_time": "2024-10-14T07:30",
+  "time_zone": "Asia/Shanghai",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "日常",
+      "都市",
+      "街坊",
+      "面馆"
+    ]
+  },
+  "rules": [
+    "这是当下的普通城市生活，没有超自然的事情。",
+    "说话是日常口语，称呼要符合年龄和关系：陈姨、周老师、王姐、小满。"
+  ],
+  "variables": {
+    "weather": "阴"
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "早上七点半，巷口的面馆已经冒起了热气。你从楼上下来，围裙还挂在椅背上。"
+    },
+    {
+      "type": "utterance",
+      "character": "chen",
+      "text": "小满，醒了就把门口的桌子擦一擦，老周马上就到。"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "id": "ledger",
+  "name": "镖局账册",
+  "description": "记着每趟镖的去向和押金。",
+  "location": "escort-office",
+  "feature": "ledger-room",
+  "owner": "tieshan"
+}

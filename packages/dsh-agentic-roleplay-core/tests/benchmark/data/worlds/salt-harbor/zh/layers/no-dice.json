@@ -1,0 +1,18 @@
+{
+  "id": "no-dice",
+  "description": "Takes the dice out: the world's checks and the game master's dice tool switch.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "dice.json"
+  ],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "tools": null
+    }
+  }
+}

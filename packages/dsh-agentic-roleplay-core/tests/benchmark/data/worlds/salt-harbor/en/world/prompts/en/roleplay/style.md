@@ -1,0 +1,1 @@
+Write in plain, concrete prose. Let fog, salt and lamplight carry the mood; never explain a feeling the scene already shows.

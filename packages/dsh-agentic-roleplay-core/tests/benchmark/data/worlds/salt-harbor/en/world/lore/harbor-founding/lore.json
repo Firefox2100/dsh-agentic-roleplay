@@ -1,0 +1,14 @@
+{
+  "id": "harbor-founding",
+  "title": "The founding of Salt Harbor",
+  "kind": "history",
+  "scope": "everyone",
+  "summary": "Salt-panners settled the cove in 1789 and built the first pier.",
+  "body": "Salt Harbor was founded in 1789 by families of salt-panners who built its first pier from driftwood. The guild's charter dates from the town's hundredth year.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "harbor"
+    }
+  ]
+}

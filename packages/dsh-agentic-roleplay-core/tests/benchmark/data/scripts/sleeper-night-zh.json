@@ -1,0 +1,74 @@
+{
+  "id": "sleeper-night-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我站在黑漆漆的面馆里，摸了摸冷掉的灶台，看着墙上的钟。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "chen"
+        }
+      ]
+    },
+    {
+      "say": "我在桌边一动不动地坐着，什么也不做，免得吵醒楼上的人。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "chen"
+        }
+      ]
+    },
+    {
+      "say": "/dream",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我轻轻推开门，拍了拍陈姨的肩膀把她叫醒：“陈姨，醒醒，我肚子好饿。”",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "chen"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "player-silent"
+    }
+  ]
+}

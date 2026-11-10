@@ -1,0 +1,29 @@
+{
+  "id": "bakery",
+  "name": "The bakery",
+  "description": "A narrow shop with a glass counter, six small tables and a chalkboard of the day's bread.",
+  "features": [
+    {
+      "id": "counter",
+      "name": "The counter",
+      "description": "Glass cases of loaves, rolls and buns, and a brass till."
+    },
+    {
+      "id": "ovens",
+      "name": "The ovens",
+      "description": "Two deck ovens behind a half door."
+    }
+  ],
+  "exits": [
+    {
+      "to": "high-street",
+      "description": "the front door",
+      "travel_time_seconds": 10
+    },
+    {
+      "to": "flat",
+      "description": "the stairs at the back",
+      "travel_time_seconds": 45
+    }
+  ]
+}

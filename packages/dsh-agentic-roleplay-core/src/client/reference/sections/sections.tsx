@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ReferencePerson, ReferencePlace, ReferenceProfile, ReferenceQuest, ReferenceThing } from '../../../shared/reference.ts'
+import type { ReferencePerson, ReferencePlace, ReferenceProfile, ReferenceQuest, ReferenceStatus, ReferenceThing } from '../../../shared/reference.ts'
 import { useReference } from '../use-reference.ts'
 import type {} from '../slot-contract.ts'
 import { Page, type Shown } from './Page.tsx'
@@ -9,6 +9,29 @@ import css from './Page.module.css'
 export type SectionProps = PropsRuntime<'roleplay.reference.section'> & PropsLocale<'roleplay.reference'>
 
 const unit = (count: number): string => (count === 1 ? '' : ` ×${count}`)
+
+/** Every tracked value the player may read, one block for each subject that has any. */
+export function StatusPage({ t, sessionId, visible }: SectionProps): ReactNode {
+  const { reading } = useReference(sessionId, 'status', visible)
+  return (
+    <Page<ReferenceStatus> reading={reading} className={css.message ?? ''} loading={t('loading')} failed={message => t('failed', { message })} empty={t('noStatus')}>
+      {groups => (
+        <>
+          <p className={css.meta}>{t('statusHint')}</p>
+          {groups.map(group => (
+            <Block key={`${group.subject}-${group.key ?? ''}-${group.here === true ? 'here' : ''}`} title={group.name ?? t('statusWorld')}>
+              <div className={css.head}>
+                {group.subject === 'player' && <span className={css.tag}>{t('statusYou')}</span>}
+                {group.subject !== 'player' && group.here === true && <span className={css.tag}>{t('here')}</span>}
+              </div>
+              <ul className={css.list}>{group.values.map(value => <li key={value.name} className={css.text}>{value.name}: {value.value}</li>)}</ul>
+            </Block>
+          ))}
+        </>
+      )}
+    </Page>
+  )
+}
 
 export function PeoplePage({ t, sessionId, visible }: SectionProps): ReactNode {
   const { reading } = useReference(sessionId, 'people', visible)

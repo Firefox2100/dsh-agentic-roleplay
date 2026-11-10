@@ -1,0 +1,28 @@
+{
+  "id": "market",
+  "name": "The Market",
+  "description": "A cobbled square of fish stalls under oilcloth awnings, loud even in the fog.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "notice-board",
+      "name": "Notice board",
+      "description": "Guild notices, among them the order closing the lighthouse road."
+    }
+  ],
+  "exits": [
+    {
+      "to": "inn-bar",
+      "description": "the inn door",
+      "travel_time_seconds": 45
+    },
+    {
+      "to": "harbor-office",
+      "description": "the harbor office stair",
+      "travel_time_seconds": 60
+    }
+  ],
+  "variables": {
+    "crowd": 6
+  }
+}

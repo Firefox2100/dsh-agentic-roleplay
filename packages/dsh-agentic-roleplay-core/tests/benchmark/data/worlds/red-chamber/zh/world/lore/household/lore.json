@@ -1,0 +1,14 @@
+{
+  "id": "household",
+  "title": "园中的人家",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "园里住着几位姑娘公子，各有各的院子，诗社每月一聚。",
+  "body": "后园里住着几位年轻的姑娘公子，各有自己的院子，诗社每月办一回，由园里的人轮流作东。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "path"
+    }
+  ]
+}

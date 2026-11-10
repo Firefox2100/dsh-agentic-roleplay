@@ -1,0 +1,30 @@
+{
+  "id": "night-start",
+  "description": "Starts the story at 23:00 the same day, with the shop shut and Mags asleep in the flat; the opening is rewritten to match. The sleeper's own start is moved to where they sleep, because the days of the characters never move one who stands in the player's place.",
+  "requires": [
+    "sleeps"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "starting_time": "2024-10-14T23:00",
+      "opening_message": [
+        {
+          "type": "narration",
+          "text": "Eleven at night. The shutters are down, the ovens are cold, and the only light is the streetlamp through the shop window. Upstairs, behind the door of the flat, Mags has been asleep for an hour."
+        }
+      ]
+    },
+    "characters/mags/character.json": {
+      "start": {
+        "location": "flat",
+        "position": "in bed",
+        "activity": "Asleep.",
+        "public_state": "Asleep upstairs."
+      }
+    }
+  }
+}

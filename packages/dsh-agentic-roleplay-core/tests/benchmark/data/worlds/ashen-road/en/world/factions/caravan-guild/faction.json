@@ -1,0 +1,47 @@
+{
+  "id": "caravan-guild",
+  "name": "The Caravan Guild",
+  "summary": "The body that charters convoys and sets the price of salt and oil.",
+  "description": "Chartered to keep the roads open; in practice it decides who trades and who starves.",
+  "values": [
+    "profit",
+    "order"
+  ],
+  "structure": "A factor in each town and a council on the coast.",
+  "start": {
+    "public_state": "Quietly sending factors to the frontier.",
+    "inner_state": "Wants control of the old well.",
+    "goals": []
+  },
+  "members": [
+    {
+      "character": "vessa",
+      "role": "factor",
+      "rank": "",
+      "status": "active",
+      "public": true,
+      "commitment": 0.8
+    },
+    {
+      "character": "brann",
+      "role": "contractor",
+      "rank": "",
+      "status": "active",
+      "public": true,
+      "commitment": 0.4
+    }
+  ],
+  "relationships": [
+    {
+      "to": {
+        "kind": "faction",
+        "id": "lantern-order"
+      },
+      "label": "rival",
+      "familiarity": 0.6,
+      "trust": -0.2,
+      "affinity": -0.2,
+      "tension": 0.6
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "shrine",
+  "name": "The Lantern Shrine",
+  "description": "A whitewashed house with a hundred lamps, kept lit against the ash by the Order.",
+  "features": [
+    {
+      "id": "altar",
+      "name": "The altar",
+      "description": "A plain table of lamps, wicks and oil."
+    }
+  ],
+  "exits": [
+    {
+      "to": "yard",
+      "description": "the yard",
+      "travel_time_seconds": 60
+    }
+  ]
+}

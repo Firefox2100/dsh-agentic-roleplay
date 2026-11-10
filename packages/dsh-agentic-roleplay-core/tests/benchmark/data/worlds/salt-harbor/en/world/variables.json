@@ -1,0 +1,168 @@
+[
+  {
+    "key": "harbor_trust",
+    "name": "Trust in the guild",
+    "description": "How far the town believes the guild: 0 none, 10 complete.",
+    "kind": "number",
+    "subject": "world",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 5,
+    "visibility": "hidden",
+    "always": true,
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "doubtful"
+      },
+      {
+        "up_to": 7,
+        "label": "wary"
+      },
+      {
+        "up_to": 10,
+        "label": "loyal"
+      }
+    ]
+  },
+  {
+    "key": "storm_warning",
+    "name": "Storm warning",
+    "description": "Whether a storm warning has been raised.",
+    "kind": "flag",
+    "subject": "world",
+    "default": false,
+    "visibility": "public"
+  },
+  {
+    "key": "weather",
+    "name": "Weather",
+    "description": "What the weather is doing.",
+    "kind": "choice",
+    "subject": "world",
+    "options": [
+      "clear",
+      "fog",
+      "rain",
+      "storm"
+    ],
+    "default": "fog",
+    "visibility": "public"
+  },
+  {
+    "key": "fatigue",
+    "name": "Fatigue",
+    "description": "How tired the character is: 0 rested, 10 exhausted.",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 0,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 2,
+        "label": "rested"
+      },
+      {
+        "up_to": 5,
+        "label": "tired"
+      },
+      {
+        "up_to": 8,
+        "label": "weary"
+      },
+      {
+        "up_to": 10,
+        "label": "exhausted"
+      }
+    ]
+  },
+  {
+    "key": "hunger",
+    "name": "Hunger",
+    "description": "How hungry the character is: 0 full, 10 starving.",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 4,
+    "update": "Falls to 0 or 1 when the character eats a meal, and to 2 or 3 for a snack. Rises by 1 for every few hours that pass without food. Otherwise it stays.",
+    "visibility": "public"
+  },
+  {
+    "key": "suspicion",
+    "name": "Suspicion of the player's character",
+    "description": "How much this person suspects the player's character of meddling.",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "tomas",
+      "ines"
+    ],
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 1,
+    "visibility": "private"
+  },
+  {
+    "key": "injury",
+    "name": "Injury",
+    "description": "How badly the character is hurt.",
+    "kind": "choice",
+    "subject": "character",
+    "options": [
+      "none",
+      "light",
+      "serious"
+    ],
+    "default": "none",
+    "visibility": "public"
+  },
+  {
+    "key": "lamp_oil",
+    "name": "Lamp oil",
+    "description": "How much oil is left in a lamp, in percent.",
+    "kind": "number",
+    "subject": "item",
+    "only": [
+      "lantern",
+      "signal-lamp"
+    ],
+    "min": 0,
+    "max": 100,
+    "integer": true,
+    "default": 100,
+    "visibility": "public"
+  },
+  {
+    "key": "crowd",
+    "name": "Crowd",
+    "description": "How crowded a place is: 0 empty, 10 packed.",
+    "kind": "number",
+    "subject": "location",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 2,
+        "label": "quiet"
+      },
+      {
+        "up_to": 6,
+        "label": "busy"
+      },
+      {
+        "up_to": 10,
+        "label": "packed"
+      }
+    ]
+  }
+]

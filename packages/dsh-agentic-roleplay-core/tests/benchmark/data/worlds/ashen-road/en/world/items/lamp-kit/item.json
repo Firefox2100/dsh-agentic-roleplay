@@ -1,0 +1,7 @@
+{
+  "id": "lamp-kit",
+  "name": "Healer's kit",
+  "description": "Bandages, a needle and a little vial of lamp oil.",
+  "location": "shrine",
+  "feature": "altar"
+}

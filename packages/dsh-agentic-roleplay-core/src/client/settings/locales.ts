@@ -11,7 +11,7 @@ export type SettingsLocaleKey =
   | 'sync' | 'syncHint' | 'syncRemote' | 'syncConfigFile' | 'syncRclone' | 'syncInterval' | 'syncPassword' | 'syncDetails' | 'syncProblemRemote' | 'syncProblemConfig' | 'syncProblemInterval'
   | 'offload' | 'offloadHint' | 'offloadAdd' | 'offloadRemove' | 'offloadRoute' | 'offloadModel' | 'offloadProblemRoute' | 'offloadProblemModel'
   | 'offloadRole_main' | 'offloadRole_embedding' | 'offloadRole_reranker' | 'offloadRole_decision' | 'offloadRole_image' | 'offloadRole_speech'
-  | 'redundantLayers' | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importStructuredOutputLabel' | 'importStructuredOutputHint' | 'importStructuredTool' | 'importStructuredSchema' | 'importVariablesPerRequestLabel' | 'importVariablesPerRequestHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'authoringApprovalLabel' | 'authoringApprovalHint' | 'authoringApprovalAsk' | 'authoringApprovalAuto' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
+  | 'redundantLayers' | 'limits' | 'limitsHint' | 'importMaxUploadBytesLabel' | 'importMaxUploadBytesHint' | 'catalogueMaxBytesLabel' | 'catalogueMaxBytesHint' | 'catalogueTrashDaysLabel' | 'catalogueTrashDaysHint' | 'autonomyTickSecondsLabel' | 'autonomyTickSecondsHint' | 'assistants' | 'assistantsHint' | 'importReasoningLabel' | 'importReasoningHint' | 'childReasoningLabel' | 'childReasoningHint' | 'importModelLabel' | 'importModelHint' | 'importTemperatureLabel' | 'importTemperatureHint' | 'importMaxTokensLabel' | 'importMaxTokensHint' | 'importStructuredOutputLabel' | 'importStructuredOutputHint' | 'importStructuredTool' | 'importStructuredSchema' | 'importVariablesPerRequestLabel' | 'importVariablesPerRequestHint' | 'importTimeoutMinutesLabel' | 'importTimeoutMinutesHint' | 'importConcurrencyLabel' | 'importConcurrencyHint' | 'importDecisionsLabel' | 'importDecisionsHint' | 'importConfidenceLabel' | 'importConfidenceHint' | 'authoringApprovalLabel' | 'authoringApprovalHint' | 'authoringApprovalAsk' | 'authoringApprovalAuto' | 'importDecisionLlm' | 'importDecisionModel' | 'assistantInvalidRange' | 'assistantInvalidChoice'
   | 'overridden' | 'reset' | 'invalid'
   | 'readOnly' | 'unavailable' | 'save' | 'saving' | 'saveFailed'
 
@@ -91,6 +91,8 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     catalogueMaxBytesLabel: 'Largest catalogue download (bytes)',
     catalogueMaxBytesHint: 'The most a world downloaded from a catalogue may be, compressed and again unpacked. Default 268435456 (256 MB).',
     catalogueTrashDaysLabel: 'Days to keep replaced files',
+    autonomyTickSecondsLabel: 'Seconds between looks at stories that go on without you',
+    autonomyTickSecondsHint: 'How often the stories that switched on "the story goes on while I am away" are looked at: characters take up their days, and one may write to you. 0 never looks; the least is 5. Default 30.',
     catalogueTrashDaysHint: 'How long the files an update replaced stay in the trash folder before they are deleted. 0 keeps them for good. Default 30.',
     offload: 'Models that cannot be loaded together',
     offloadHint: 'When the models of a story do not fit in memory at once, put the ones that exclude each other in a group: before one of them is used, the server unloads the others, and loads what is asked of it again on its own. Every switch costs the time of loading a model, so group a large model with another only when you have to, and leave this empty when everything fits. The chat\'s own model is "Story model"; the others need the route of the model server (as set in the AI providers) and the model\'s name there. Unloading needs a provider that supports it (LocalAI and Ollama do).',
@@ -201,6 +203,8 @@ export const dictionaries: Dictionaries<SettingsLocaleKey> = {
     catalogueMaxBytesLabel: '目录下载大小上限（字节）',
     catalogueMaxBytesHint: '从目录下载的世界的最大体积，压缩后和解压后都不得超过。默认 268435456（256 MB）。',
     catalogueTrashDaysLabel: '被替换文件的保留天数',
+    autonomyTickSecondsLabel: '查看无人在场继续进行的故事的间隔（秒）',
+    autonomyTickSecondsHint: '多久查看一次打开了“我不在时故事继续”的故事：角色按各自日程行事，其中一人可能给你写消息。0 表示从不查看，最短 5 秒。默认 30。',
     catalogueTrashDaysHint: '更新替换下来的文件在回收文件夹中保留多少天后删除。0 表示永久保留。默认 30。',
     offload: '不能同时加载的模型',
     offloadHint: '如果故事用到的模型无法同时放进内存，就把互相排斥的模型放进同一组：使用其中一个之前，服务器会先卸载其他的，之后再被请求时会自行重新加载。每次切换都要花一次加载模型的时间，所以只在不得不这样做时才把大模型和别的模型分在一组；如果所有模型都放得下，请留空。聊天本身使用的模型是“故事模型”；其他模型需要填模型服务器的路由（在 AI 提供方中设置的那个）以及模型在服务器上的名称。卸载需要提供方支持（LocalAI 和 Ollama 支持）。',

@@ -1,0 +1,21 @@
+{
+  "id": "signal-room",
+  "name": "信号室",
+  "description": "灯下的玻璃房间，又冷又带着灯油味，窗边立着一盏信号灯。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "lamp-housing",
+      "name": "大灯",
+      "description": "透镜很干净，灯芯被人取走了。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "pier",
+      "description": "沿悬崖垂下的一根绳子",
+      "one_way": true,
+      "travel_time_seconds": 300
+    }
+  ]
+}

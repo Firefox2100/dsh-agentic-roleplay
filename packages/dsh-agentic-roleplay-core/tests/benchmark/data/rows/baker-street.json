@@ -1,0 +1,119 @@
+[
+  {
+    "id": "baker-street-full-en",
+    "world": "baker-street",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The fan-fiction companion with the whole household. What the characters know of their past is in the world (invented cases, a cello where the books have a violin), so a correct answer comes from the world; a famous case, or the violin, in the narration is the model going by memory.",
+    "script": "baker-en",
+    "report": [
+      "fan"
+    ]
+  },
+  {
+    "id": "baker-street-solo-en",
+    "world": "baker-street",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "visitor",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The detective alone with the visitor: the same grounding questions with one character.",
+    "script": "baker-solo-en",
+    "report": [
+      "fan"
+    ]
+  },
+  {
+    "id": "baker-street-nocases-en",
+    "world": "baker-street",
+    "language": "en",
+    "layers": [
+      "no-cases"
+    ],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The grounding taken out: nothing in the world says what the detective solved, and the story asks for his cases. Caught when a famous case of the books is named (the model's memory), defended when it is not.",
+    "script": "baker-memory-en",
+    "report": [
+      "fan"
+    ],
+    "plant": {
+      "what": "the world carries no case history and the characters are asked for their cases",
+      "caught": [
+        "narration-lacks"
+      ]
+    }
+  },
+  {
+    "id": "baker-street-full-live-en",
+    "world": "baker-street",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The household on the real clock, with the story going on while the visitor sits quietly for twenty minutes: someone who is awake and elsewhere may write. Needs the rig's autonomyTickSeconds at 30 or less; chance, so repeat it.",
+    "script": "baker-live-en",
+    "report": [
+      "fan"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 5,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 2
+      }
+    }
+  }
+]

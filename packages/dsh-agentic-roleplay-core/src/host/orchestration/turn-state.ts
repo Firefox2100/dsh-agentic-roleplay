@@ -56,6 +56,8 @@ export interface TurnState {
   previewed: boolean
   /** Whether the chat asked for a preview when the turn began: the characters are not asked before it is shown. */
   previewWanted: boolean
+  /** How often the game master was sent back for a preview it did not show. */
+  previewRefusals: number
   /** Whether the game master asked for the records to be written in this turn. */
   requested: boolean
   /** How many rounds off stage were recorded in this turn. */
@@ -65,12 +67,22 @@ export interface TurnState {
   recalled: Map<string, readonly Recalled[]>
   /** What the world made each character notice in the first attempt of the round, so a retry is told the same. */
   cues: Map<string, readonly string[]>
+  /** The sleeping characters the game master said the player's action woke, in this turn. */
+  woken?: Set<string>
+  /** The key of the sleeping character whose dream the player is in, in a dream turn. */
+  dreaming?: string
+  /** What the sleeper was told, kept for the dream's one question. */
+  dreamSituation?: string
+  /** The harness asked the sleeper: the game master only narrates. */
+  dreamed?: true
   /** The beats the game master said it wove into the output it is delivering. */
   addressed: number[]
   /** Set when the turn is an out-of-character command or question of the player: what it asks, and how the game master ruled on it or answered it. */
   ooc?: { request: string; question?: true; ruling?: OocRuling }
   /** The game master's judgment of the player's action, which it gives before anything else in an ordinary turn. */
-  judgement?: { allowed: boolean; reason: string }
+  judgement?: { allowed: boolean; reason: string; goesTo?: string }
+  /** The output was sent back once because the player's character was to go somewhere and was not moved. */
+  arrivalChecked?: true
   /** Whether the game master has to judge the player's action before anything else: the loop asks for it at the start of an ordinary turn. */
   judgeWanted?: true
   /** The rules were checked for the action the game master judged allowed; it is put to it once. */

@@ -1,0 +1,80 @@
+[
+  {
+    "id": "saltmarket-fair-en",
+    "world": "saltmarket-fair",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "rae",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "triggers",
+      "rules",
+      "prompts"
+    ],
+    "why": "The casting use case: one named character and a fair full of people who must be made up as the story needs them, partly by the world's own /recruit command. At least three new people, distinct and placed.",
+    "script": "fair-en",
+    "report": [
+      "casting"
+    ]
+  },
+  {
+    "id": "saltmarket-fair-no-recruit-en",
+    "world": "saltmarket-fair",
+    "language": "en",
+    "layers": [
+      "no-recruit"
+    ],
+    "cast": {
+      "player": "rae",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The same story without the world's own command: the /recruit turn is plain text, so anyone made comes from the game master asking the world author itself.",
+    "script": "fair-en",
+    "report": [
+      "casting"
+    ]
+  },
+  {
+    "id": "saltmarket-fair-closed-en",
+    "world": "saltmarket-fair",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "rae",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "triggers",
+      "rules",
+      "prompts"
+    ],
+    "why": "Casting switched off in the chat (the world author may not make anyone): the fair has nobody but the Marshal. Caught when the benchmark sees that nobody was made, as it must.",
+    "script": "fair-en",
+    "report": [
+      "casting"
+    ],
+    "settings": {
+      "authoring": {
+        "enabled": false
+      }
+    },
+    "plant": {
+      "what": "the world author is switched off, so nobody can be cast",
+      "caught": [
+        "cast-grew"
+      ]
+    }
+  }
+]

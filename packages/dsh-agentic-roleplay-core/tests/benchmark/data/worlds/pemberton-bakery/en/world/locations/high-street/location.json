@@ -1,0 +1,24 @@
+{
+  "id": "high-street",
+  "name": "High Street",
+  "description": "The town's one shopping street, with a bus stop, a florist and the caf\u00e9 across the road.",
+  "features": [
+    {
+      "id": "noticeboard",
+      "name": "The noticeboard",
+      "description": "Fliers for the Harvest Fair and a notice about a planning application."
+    }
+  ],
+  "exits": [
+    {
+      "to": "market-square",
+      "description": "east to the square",
+      "travel_time_seconds": 150
+    },
+    {
+      "to": "park",
+      "description": "west to the park",
+      "travel_time_seconds": 360
+    }
+  ]
+}

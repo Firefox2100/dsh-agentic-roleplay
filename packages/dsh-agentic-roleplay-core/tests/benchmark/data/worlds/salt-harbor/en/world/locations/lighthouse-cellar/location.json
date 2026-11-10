@@ -1,0 +1,13 @@
+{
+  "id": "lighthouse-cellar",
+  "name": "The Lighthouse Cellar",
+  "description": "A dry stone cellar full of crates, with a camp bed and a lantern.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "crates",
+      "name": "Crates",
+      "description": "Stamped with the guild's mark."
+    }
+  ]
+}

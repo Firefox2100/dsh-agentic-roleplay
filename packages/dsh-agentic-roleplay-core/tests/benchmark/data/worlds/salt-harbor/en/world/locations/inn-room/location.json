@@ -1,0 +1,13 @@
+{
+  "id": "inn-room",
+  "name": "Room 3",
+  "description": "A narrow room over the bar with a view of the pier and a washstand.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "window",
+      "name": "The window",
+      "description": "It looks across the fog toward the dark lighthouse."
+    }
+  ]
+}

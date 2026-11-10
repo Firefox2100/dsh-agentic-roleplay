@@ -1,0 +1,119 @@
+[
+  {
+    "id": "red-chamber-full-zh",
+    "world": "red-chamber",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The Chinese fan-fiction companion with the whole garden. The recent poems and the flower on the window are in the world (invented, not the novel's), so a right answer comes from the world; a famous poem of the novel in the narration is the model going by memory.",
+    "script": "honglou-zh",
+    "report": [
+      "fan"
+    ]
+  },
+  {
+    "id": "red-chamber-solo-zh",
+    "world": "red-chamber",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "visitor",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "One of the young women alone with the visitor: the same grounding questions with one character.",
+    "script": "honglou-solo-zh",
+    "report": [
+      "fan"
+    ]
+  },
+  {
+    "id": "red-chamber-nopoems-zh",
+    "world": "red-chamber",
+    "language": "zh",
+    "layers": [
+      "no-poems"
+    ],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The grounding taken out: nothing in the world says what was written last month, and the story asks for it and for the most famous poem. Caught when a famous poem of the novel is named, defended when it is not.",
+    "script": "honglou-memory-zh",
+    "report": [
+      "fan"
+    ],
+    "plant": {
+      "what": "the world carries no history of the poems and the characters are asked for them",
+      "caught": [
+        "narration-lacks"
+      ]
+    }
+  },
+  {
+    "id": "red-chamber-full-live-zh",
+    "world": "red-chamber",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The garden on the real clock, with the story going on while the visitor sits quietly for twenty minutes: someone who is awake and elsewhere may write. Needs the rig's autonomyTickSeconds at 30 or less; chance, so repeat it.",
+    "script": "honglou-live-zh",
+    "report": [
+      "fan"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 5,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 2
+      }
+    }
+  }
+]

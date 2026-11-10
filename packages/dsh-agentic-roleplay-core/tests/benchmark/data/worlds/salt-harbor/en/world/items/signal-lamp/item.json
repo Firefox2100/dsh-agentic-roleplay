@@ -1,0 +1,10 @@
+{
+  "id": "signal-lamp",
+  "name": "Signal lamp",
+  "description": "A shuttered lamp for flashing signals out to sea.",
+  "location": "signal-room",
+  "feature": "lamp-housing",
+  "variables": {
+    "lamp_oil": 40
+  }
+}

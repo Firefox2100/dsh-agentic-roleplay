@@ -1,0 +1,57 @@
+[
+  {
+    "key": "weather",
+    "name": "天气",
+    "description": "今天的天气。",
+    "kind": "choice",
+    "subject": "world",
+    "options": [
+      "晴",
+      "阴",
+      "雨"
+    ],
+    "default": "阴",
+    "visibility": "public"
+  },
+  {
+    "key": "fatigue",
+    "name": "疲惫",
+    "description": "角色有多累：0 精神饱满，10 累垮了。干活、熬夜会加重，吃饭、休息会减轻。",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "精神"
+      },
+      {
+        "up_to": 6,
+        "label": "有点累"
+      },
+      {
+        "up_to": 10,
+        "label": "很累"
+      }
+    ]
+  },
+  {
+    "key": "savings",
+    "name": "存款",
+    "description": "小满手头的钱（元）。收到工钱或花钱时才会变。",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "xiaoman"
+    ],
+    "min": 0,
+    "max": 5000,
+    "integer": true,
+    "default": 800,
+    "visibility": "public"
+  }
+]

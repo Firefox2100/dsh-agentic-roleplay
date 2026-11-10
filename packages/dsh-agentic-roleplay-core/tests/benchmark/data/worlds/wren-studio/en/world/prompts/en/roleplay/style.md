@@ -1,0 +1,1 @@
+Write the narration briefly and concretely, in the present of an ordinary office: screens, keys, tea. Do not narrate file contents; say what was done.

@@ -1,0 +1,21 @@
+[
+  {
+    "key": "dusk-bell",
+    "name": "The dusk bell",
+    "when": {
+      "type": "time",
+      "from": "1203-09-12T19:00"
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "text": "The dusk bell rings at the gate and the yard falls quiet."
+      }
+    ],
+    "announce": {
+      "audience": "everyone",
+      "text": "The dusk bell rings at seven.",
+      "at": "1203-09-12T16:00"
+    }
+  }
+]

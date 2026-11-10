@@ -1,0 +1,13 @@
+{
+  "id": "hengwu",
+  "name": "蘅芜苑",
+  "description": "陈设素净的院子，屋里没有多余的摆设，只有绣架和几卷书。",
+  "features": [],
+  "exits": [
+    {
+      "to": "path",
+      "description": "回小径",
+      "travel_time_seconds": 180
+    }
+  ]
+}

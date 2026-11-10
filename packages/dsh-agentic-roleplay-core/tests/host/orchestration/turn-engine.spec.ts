@@ -803,7 +803,7 @@ describe('places', () => {
 
   it('applies a move with the round, tells the game master and keeps where each was and who moved for the keeper', async () => {
     const { resolution } = await act([{ ...outcome('alice', 'succeeded', 'Alice goes down to the cellar'), moveTo: { location: 'cellar', position: 'by the barrels' } }])
-    expect(store.commits[0]).toEqual([{ character: alice.character.id, patch: { activity: 'Alice goes down to the cellar' }, move: { to: cellar.id, position: 'by the barrels' } }])
+    expect(store.commits[0]).toEqual([{ character: alice.character.id, patch: { activity: 'Alice goes down to the cellar' }, move: { to: cellar.id, position: 'by the barrels' }, hold: {} }])
     expect(resolution.done?.moves).toEqual([{ character: 'alice', name: 'Alice', to: 'Cellar', via: 0 }])
     expect(store.queue[0]).toMatchObject({ place: { key: 'the-bar', name: 'The Bar' } })
     expect(store.queue[0]?.entries[0]).toMatchObject({ character: 'alice', at: { key: 'the-bar', name: 'The Bar' }, moved: { key: 'cellar', name: 'Cellar', position: 'by the barrels' } })
@@ -1457,6 +1457,14 @@ describe('the preview of the scene', () => {
     expect(runner.requests).toHaveLength(1)
   })
 
+  it('lets a game master go that never shows it: after three refusals the turn goes on without one', async () => {
+    const runner = scriptedRunner(only)
+    for (let refusal = 0; refusal < 3; refusal += 1) await expect(engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)).rejects.toThrow(/call preview_scene first/)
+    await engine.activate(owner, { situation, characters: ['alice'] }, runner.run, signal)
+    expect(runner.requests).toHaveLength(1)
+    expect(engine.missing(owner)).not.toMatch(/preview_scene/)
+  })
+
   it('is not asked for when the chat turned it off, or when the turn needs no round', async () => {
     store.settings = () => ({ ...DEFAULT_SETTINGS, suggestions: { count: 0 }, preview: { enabled: false } })
     const runner = scriptedRunner(only)
@@ -1662,6 +1670,29 @@ describe('judging where the action happens', () => {
     }
     standing(tavern)
     expect(engine.judge({ chat: 'session-1', turn: 5 }, true, 'Arthur searches.', 'cellar')).toEqual({ allowed: true, reason: 'Arthur searches.' })
+  })
+
+  it('sends the output back once when the character was to go somewhere and the story still has it where it was', async () => {
+    standing(tavern)
+    expect(engine.judge(owner, true, 'Arthur walks to the market.', undefined, false, 'market')).toMatchObject({ allowed: true, goesTo: 'market' })
+    await engine.resolve(owner, [outcome('arthur', 'succeeded', 'Arthur sets off')], scriptedRunner(calm).run, signal)
+    await expect(engine.narrate(owner, narration('Arthur reaches the market.'))).rejects.toThrow(/judged to be going to Market, but is still at Tavern.*moves_to market/s)
+    await expect(engine.narrate(owner, narration('Arthur is stopped at the door.'))).resolves.toMatchObject({ repaired: false })
+  })
+
+  it('asks nothing when the character got there, was in the place already, or the move was not judged', async () => {
+    standing(market)
+    engine.judge(owner, true, 'Arthur walks to the market.', undefined, false, 'market')
+    await engine.resolve(owner, [outcome('arthur', 'succeeded', 'Arthur arrives')], scriptedRunner(calm).run, signal)
+    await expect(engine.narrate(owner, narration('Arthur looks around the market.'))).resolves.toMatchObject({ repaired: false })
+    expect(() => engine.judge({ chat: 'session-1', turn: 2 }, true, 'x', undefined, false, 'moon')).toThrow(/there is no place "moon"/)
+  })
+
+  it('tells a dream turn to ask the sleeper first, not to rule or narrate', async () => {
+    engine.beginDream(owner, 'alice', 'a dream')
+    expect(engine.missing(owner)).toMatch(/a dream, not an out-of-character command: call activate_characters with only alice/)
+    await expect(engine.narrate(owner, narration('A dream.'))).rejects.toThrow(/call activate_characters with only alice/)
+    await expect(engine.expand(owner, { need: 'variable', what: 'a dream' }, signal)).rejects.toThrow(/this turn is a dream/)
   })
 
   it('takes a character that is in no place as no evidence, and asks for a place that exists', () => {
@@ -1950,5 +1981,71 @@ describe('looking at what a moment would bring back', () => {
     expect((await engine.recallPreview('session-1', { situation: 'x', character: 'bob' }, signal)).characters.map(person => person.key)).toEqual(['bob'])
     await expect(engine.recallPreview('session-1', { situation: 'x', character: 'nobody' }, signal)).rejects.toThrow(/no character "nobody"/)
     await expect(engine.recallPreview('other', { situation: 'x' }, signal)).rejects.toThrow(/no story/)
+  })
+})
+
+describe('sleepers and the days of the characters', () => {
+  const only = { bob: { intent: 'b', commitment: 'low' as const }, alice: { intent: 'a', commitment: 'low' as const } }
+  const asleep = (...who: (typeof alice)[]): void => { for (const member of who) store.sleeping.set(member.character.id, { until: Date.UTC(2026, 0, 2, 7) }) }
+
+  it('does not ask a sleeper by name: it takes part only if the game master says the player woke it', async () => {
+    asleep(bob)
+    const { run, requests } = scriptedRunner(only)
+    await expect(engine.activate(owner, { situation, characters: ['bob', 'alice'] }, run, signal)).rejects.toThrow(/Bob is asleep.*wakes/)
+    expect(requests).toEqual([])
+    await engine.activate(owner, { situation, characters: ['bob', 'alice'], wakes: ['bob'] }, run, signal)
+    expect(requests.map(request => request.member.key).sort()).toEqual(['alice', 'bob'])
+  })
+
+  it('leaves out the sleepers when nobody is named, and says so when nobody else is left', async () => {
+    asleep(bob)
+    const { run, requests } = scriptedRunner(only)
+    await expect(engine.activate(owner, { situation, characters: [] }, run, signal)).resolves.toBeDefined()
+    expect(requests.map(request => request.member.key)).not.toContain('bob')
+    store = fakeStore([arthur, bob])
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined))
+    asleep(bob)
+    await expect(engine.activate(owner, { situation, characters: [] }, scriptedRunner(only).run, signal)).rejects.toThrow(/asleep, so nobody here can act/)
+  })
+
+  it('asks the sleeper whose dream the player is in, and it is not woken by that', async () => {
+    asleep(bob)
+    engine.beginDream(owner, 'bob', 'a dream')
+    const { run, requests } = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['bob'] }, run, signal)
+    expect(requests.map(request => request.member.key)).toEqual(['bob'])
+    await engine.resolve(owner, [outcome('bob', 'succeeded', 'Bob dreams of the sea')], run, signal)
+    expect(store.commits[0]?.[0]).not.toHaveProperty('hold')
+  })
+
+  it('asks the sleeper itself in a dream, records no round and leaves the game master to narrate', async () => {
+    asleep(bob)
+    engine.beginDream(owner, 'bob', 'a dream')
+    const { run, requests } = scriptedRunner(only)
+    const report = await engine.dream(owner, run)
+    expect(report?.character).toBe('bob')
+    expect(requests.map(request => request.member.key)).toEqual(['bob'])
+    expect(requests[0]).toMatchObject({ dreaming: true })
+    await expect(engine.activate(owner, { situation, characters: ['bob'] }, run, signal)).rejects.toThrow(/already asked/)
+    await expect(engine.narrate(owner, [{ type: 'utterance', character: 'bob', text: 'Hi' }])).rejects.toThrow(/narration segments only/)
+    await expect(engine.narrate(owner, narration('The sea folds over a lamp.'))).resolves.toBeDefined()
+    expect(store.commits).toEqual([])
+  })
+
+  it('takes a woken sleeper off its day when the round is recorded', async () => {
+    asleep(bob)
+    const { run } = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['bob'], wakes: ['bob'] }, run, signal)
+    await engine.resolve(owner, [outcome('bob', 'succeeded', 'Bob wakes with a start')], run, signal)
+    expect(store.commits[0]?.[0]).toHaveProperty('hold', {})
+  })
+
+  it('takes a character off its day for as long as the game master says, and holds nobody that only stayed', async () => {
+    const { run } = scriptedRunner(only)
+    await engine.activate(owner, { situation, characters: ['alice', 'bob'] }, run, signal)
+    await engine.resolve(owner, [{ ...outcome('alice', 'succeeded', 'Alice keeps watch'), offRoutineMinutes: 90 }, outcome('bob', 'succeeded', 'Bob nods')], run, signal)
+    const [alicesUpdate, bobsUpdate] = store.commits[0] ?? []
+    expect(alicesUpdate).toHaveProperty('hold', { minutes: 90 })
+    expect(bobsUpdate).not.toHaveProperty('hold')
   })
 })

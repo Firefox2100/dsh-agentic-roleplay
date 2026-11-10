@@ -157,6 +157,19 @@ describe('migrate', () => {
     db.close()
   })
 
+  it('adds sleep to the routine windows of a version 11 session: the windows it had are awake', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 11)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 11')
+    db.run("INSERT INTO characters (name, name_key, kind, tier, role, control, created_at) VALUES ('Ana', 'ana', 'person', 'principal', 'npc', 'agent', 'now')")
+    db.run("INSERT INTO routine_windows (character_id, ordinal, start_minute, end_minute, activity) VALUES (1, 0, 600, 700, 'works')")
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ sleep: number }>('SELECT sleep FROM routine_windows')?.sleep).toBe(0)
+    db.close()
+  })
+
   describe('before an upgrade', () => {
     function oldDatabase(version: number): string {
       const file = join(dir, 'session.sqlite')

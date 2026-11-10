@@ -1,0 +1,43 @@
+{
+  "id": "no-items",
+  "description": "Takes out every thing, the slots and the lock that needed a key. The tracked values, the triggers and the routine that named things must be gone first.",
+  "requires": [
+    "cast-solo",
+    "no-variables",
+    "no-triggers"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "items"
+  ],
+  "add": {},
+  "patch": {
+    "locations/pier/location.json": {
+      "exits": [
+        {
+          "to": "market",
+          "description": "the lane up to the market",
+          "travel_time_seconds": 90
+        },
+        {
+          "to": "lighthouse",
+          "description": "the cliff road, behind an iron gate",
+          "state": "locked",
+          "travel_time_seconds": 600,
+          "note": "Closed \"for repairs\" by order of the harbor master."
+        }
+      ]
+    },
+    "characters/tomas/character.json": {
+      "knowledge": {
+        "items": null
+      }
+    },
+    "characters/quill/character.json": {
+      "knowledge": {
+        "items": null
+      }
+    }
+  }
+}

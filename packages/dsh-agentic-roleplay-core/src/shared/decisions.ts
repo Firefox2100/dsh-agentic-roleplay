@@ -1,5 +1,5 @@
 /** The places where a language model's closed-choice judgement can be given to a decision model instead, or, for the gates, a check can be made at all. */
-export const DECISION_SITES = ['triggers', 'reflection', 'agency', 'refusal', 'rules', 'secrets', 'variables', 'reuse'] as const
+export const DECISION_SITES = ['triggers', 'reflection', 'agency', 'refusal', 'repeats', 'rules', 'secrets', 'messages', 'errands', 'variables', 'reuse'] as const
 export type DecisionSite = (typeof DECISION_SITES)[number]
 
 /** The sites that check what the game master delivers to the player. They are off unless a chat turns one on: a check costs a request, or at least a call, in every turn. */
@@ -10,7 +10,7 @@ export type GateSite = (typeof GATE_SITES)[number]
  * The sites only a decision model serves: a check the harness did not have before. They are off unless a chat turns one on, and then cost one more
  * call of the decision model in the turn; off, the story plays as it did without them.
  */
-export const EXTRA_SITES = ['rules', 'secrets', 'reuse'] as const satisfies readonly DecisionSite[]
+export const EXTRA_SITES = ['rules', 'secrets', 'messages', 'errands', 'reuse'] as const satisfies readonly DecisionSite[]
 export type ExtraSite = (typeof EXTRA_SITES)[number]
 export const EXTRA_MODES = ['off', 'on'] as const
 export type ExtraMode = (typeof EXTRA_MODES)[number]
@@ -28,6 +28,10 @@ export type DecisionMode = (typeof DECISION_MODES)[number]
 /** What a gate can be set to: the modes of any site, or off. */
 export const GATE_MODES = ['off', ...DECISION_MODES] as const
 export type GateMode = (typeof GATE_MODES)[number]
+
+/** What the repeat check can be set to: a gate's modes, or `strict`, which refuses every repeated sentence by code alone, with no model, and so may refuse a repeat that was meant. */
+export const REPEAT_MODES = ['off', 'strict', ...DECISION_MODES] as const
+export type RepeatMode = (typeof REPEAT_MODES)[number]
 
 /** How the judgements of one site went, as one run of it reports them. */
 export interface SiteReport {

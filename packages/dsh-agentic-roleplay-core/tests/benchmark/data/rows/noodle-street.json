@@ -1,0 +1,335 @@
+[
+  {
+    "id": "noodle-street-full-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "The natural full row of the daily-life world: a whole neighbourhood, routines and a quiet rumour only some know. Shows repetition, honorifics, schedules and whether the rumour stays with those who know it. The long script never asks for the rumour.",
+    "script": "daily-long-zh",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "noodle-street-small-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-small"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 3
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Three others: the same morning without the landlord who made the rumour.",
+    "script": "daily-asked-zh",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "noodle-street-solo-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "One other: the owner alone with the player, the single-card case in a daily-life world.",
+    "script": "daily-state-zh",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "noodle-street-real-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "The solo daily-life row on the wall clock: real-time mode, where the world's dated trigger is long past and time cannot be skipped. Only a daily-life world has a clock worth following.",
+    "script": "daily-quiet-zh",
+    "report": [
+      "settings"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      }
+    }
+  },
+  {
+    "id": "noodle-street-full-autonomy-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "The story that goes on while the player is away: on the real clock with the shortest idle time and gap, the player stays in the shop and does nothing for twenty minutes, and a character who is elsewhere and knows the player (the rider, the landlord) may write. Needs the rig's plugin setting autonomyTickSeconds at 30 or less. The chance of a message per look is raised to 0.5 so that the row tests the writing and not the luck of the draw (at the default 0.05 a quiet twenty minutes is likely).",
+    "script": "autonomy-zh",
+    "report": [
+      "autonomy"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 5,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 2,
+        "chance": 0.5
+      }
+    }
+  },
+  {
+    "id": "noodle-street-solo-memory-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Memory over a long story: a fact is told in the first turn (the name of a lost cat), thirteen ordinary turns follow with the conversation folded into summaries at a small limit, and the owner is asked for it at the end.",
+    "script": "memory-zh",
+    "report": [
+      "memory"
+    ],
+    "settings": {
+      "context": {
+        "limitTokens": 4000,
+        "retainRatio": 0.3
+      }
+    }
+  },
+  {
+    "id": "noodle-street-solo-start-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "questions"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules",
+      "start-questions"
+    ],
+    "why": "Start questions: the start dialog's answers (the lunch rush, the real clock) must choose the opening and the clock mode of the story, and nothing else.",
+    "script": "start-noodle-zh",
+    "report": [
+      "start"
+    ],
+    "answers": {
+      "time": "rush",
+      "pace": "live"
+    }
+  },
+  {
+    "id": "noodle-street-solo-pack-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "pack"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules",
+      "packs"
+    ],
+    "why": "A world with its own interface pack in a daily-life world: the story must be started with it, copied from the world and usable, and play as any other.",
+    "script": "pack-noodle-zh",
+    "report": [
+      "pack"
+    ]
+  },
+  {
+    "id": "noodle-street-solo-sleeper-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "sleeps",
+      "night-start"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "rules",
+      "routines",
+      "calendar",
+      "items",
+      "triggers"
+    ],
+    "why": "A daily-life world at night: the shop is shut and the owner sleeps upstairs (her night is marked as sleep). The player stays quiet, listens at the door, enters her dream with /dream, then wakes her to ask for food. She must not answer while she sleeps and must once woken.",
+    "report": [
+      "theme"
+    ],
+    "script": "sleeper-night-zh"
+  },
+  {
+    "id": "noodle-street-solo-errand-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "sleeps"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "rules",
+      "routines",
+      "calendar",
+      "items",
+      "triggers"
+    ],
+    "why": "The player sends the owner to the park to watch the old man play chess and tells her not to come back before the player does, however late, then goes to the market and lets nine hours pass, which carries the day past her shift into the afternoon. A character taken off her day should stay where she was sent; the schedule may only have her back when the story lets it. Chance: repeat it.",
+    "report": [
+      "theme"
+    ],
+    "script": "errand-noodle-zh"
+  },
+  {
+    "id": "noodle-street-solo-errand-off-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "sleeps"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "rules",
+      "routines",
+      "calendar",
+      "items",
+      "triggers"
+    ],
+    "why": "The same errand with the days switched off: nothing moves by itself. The control for the row that has days.",
+    "report": [
+      "theme"
+    ],
+    "script": "errand-noodle-zh",
+    "settings": {
+      "schedule": {
+        "enabled": false
+      }
+    }
+  }
+]

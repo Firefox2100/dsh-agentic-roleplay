@@ -405,14 +405,14 @@ export function createTools(resolve: AgentResolver, options: {
         const names = new Map(session.characters.list().map(character => [character.id, characterKey(character)]))
         const agenda = agendaAt(session, found.id, state.now, zone, { horizon: 48 * 3_600_000, engagements: 10, goals: 5 })
         const place = (id: number | undefined) => (id === undefined ? null : places.get(id) ?? null)
-        const occurrence = (entry: typeof agenda.now) => (entry === undefined ? null : { activity: entry.window.activity, location: place(entry.window.locationId), from: localIso(entry.startsAt, zone), until: localIso(entry.endsAt, zone), interruptible: entry.window.interruptible })
+        const occurrence = (entry: typeof agenda.now) => (entry === undefined ? null : { activity: entry.window.activity, location: place(entry.window.locationId), from: localIso(entry.startsAt, zone), until: localIso(entry.endsAt, zone), interruptible: entry.window.interruptible, asleep: entry.window.sleep === true })
         return JSON.parse(JSON.stringify({
           now: describeInstant(state.now, zone),
           routine_now: occurrence(agenda.now),
           routine_next: occurrence(agenda.next),
           engagements: agenda.engagements.map(entry => ({ id: entry.engagement.id, title: entry.engagement.title, at: localIso(entry.engagement.at, zone), location: place(entry.engagement.locationId), with: entry.engagement.participants.map(id => names.get(id) ?? String(id)), overdue: entry.overdue })),
           goals: agenda.goals.map(entry => ({ id: entry.intent.id, name: entry.intent.name, type: entry.intent.type, priority: entry.intent.priority, urgency: entry.intent.urgency, deadline: entry.deadlineAt === undefined ? null : localIso(entry.deadlineAt, zone), overdue: entry.overdue, plan: entry.intent.plan })),
-          day: session.routines.list(found.id).map(window => ({ days: window.days.length === 0 ? 'every day' : window.days.join(','), from: minuteText(window.start), to: minuteText(window.end), activity: window.activity, location: place(window.locationId), interruptible: window.interruptible })),
+          day: session.routines.list(found.id).map(window => ({ days: window.days.length === 0 ? 'every day' : window.days.join(','), from: minuteText(window.start), to: minuteText(window.end), activity: window.activity, location: place(window.locationId), interruptible: window.interruptible, sleep: window.sleep === true })),
         })) as never
       },
     }),

@@ -19,6 +19,7 @@ title: 配置参考
 | `sync.intervalMinutes` | `0` | 自动同步间隔；0 表示只允许手动同步 |
 | `offload` | 无 | 不能同时加载的模型：`groups`（由 `main`、`embedding`、`reranker`、`decision`、`image`、`speech` 这些角色组成的列表）和 `models`（除 `main`（即对话自己的模型）外，各角色的 `route` 与 `model` 名称）。使用某个角色的模型之前，服务器会先卸载与它同组的其他角色的模型。留空则从不卸载 |
 | `catalogueMaxBytes` | 256 MiB | 下载世界的大小上限，压缩包和解压结果分别检查 |
+| `autonomyTickSeconds` | 30 | 查看已打开[“我不在时故事继续”](../playing/settings)的故事的间隔（秒，最短 5）；0 表示从不查看 |
 | `catalogueTrashDays` | 30 | 目录更新替换的文件在 `.trash/worlds/` 中保留的天数；0 表示永久保留 |
 | `importMaxUploadBytes` | 100 MiB | 角色卡上传大小上限 |
 | `importConcurrency` | 4 | 可同时运行的导入与创作辅助请求数 |
@@ -76,6 +77,14 @@ title: 配置参考
 | `clock.mode` / `clock.timeZone` | `simulated` / 空 | 故事时间模式（`simulated` 或 `real`）及其 IANA 时区。开始会话时，现实时间留空则使用主机时区；模拟时间留空则依次使用世界时区和 UTC |
 | `clock.roundSeconds` / `clock.maxSkipDays` | 30 / 30 | 模拟时间中一轮的默认秒数，以及一次时钟推进最多跨过的天数 |
 | `background.concurrent` | `false` | 允许后台工作与下一回合重叠，而不是先完成再开始 |
+| `autonomy.enabled` / `autonomy.messages` | `false` / `true` | 你不在时故事继续（仅真实时钟），以及角色可以给你发消息 |
+| `autonomy.maxUnanswered` | 3 | 角色自行连续做的事达到这个数而你没有任何消息时，不再运行任何东西 |
+| `autonomy.idleMinutes` / `autonomy.messageGapMinutes` | 15 / 180 | 你至少离开多少分钟后角色才会行动，以及同一角色两条消息之间的最短间隔（分钟） |
+| `autonomy.awayHours` | 12 | 离开这么多小时之后，在你发言之前不再发生任何事 |
+| `autonomy.chance` / `autonomy.decay` | 0.05 / 0.5 | 空闲时间过去之后每次查看时有人写消息的概率，以及每条没有回复的消息使它乘以的系数 |
+| `autonomy.transitionChance` | 0.4 | 刚换了日程的角色在那次查看时写消息的概率 |
+| `schedule.enabled` | `true` | 角色是否按各自的日程生活（日程和睡眠） |
+| `decisions.messages` | `off` | 由决策模型判断被概率选中的角色是否有理由写消息；没有决策模型时只由概率决定 |
 | `offstage.perTurn` / `offstage.perCharacter` | 2 / 1 | 每回合处理的离场角色数，以及每个角色的行动上限 |
 | `offstage.joint` / `offstage.summary` | `true` / `true` | 一起处理重叠情境，并生成“与此同时”摘要 |
 | `factions.perTurn` / `factions.everyDays` | 1 / 3 | 每回合推进的派系数，以及默认故事时间间隔 |
@@ -93,9 +102,11 @@ title: 配置参考
 | `reflection.minNew` | 4 | 自动反思所需的新感知数；手动反思只需一条 |
 | `decisions.triggers` / `decisions.reflection` | `hybrid` / `llm` | 用 `llm`、`decision`、`hybrid` 或 `shadow` 判断触发条件和信念证据。`hybrid` 接受决策模型有把握的答案，其余交给语言模型。没有配置决策模型时，会直接使用语言模型，不显示提示 |
 | `decisions.agency` / `decisions.refusal` | `off` / `off` | 可选的输出检查，除上述四种模式外也可关闭 |
+| `decisions.repeats` | `off` | 旁白在最近 `decisions.repeatTurns` 个回合（6，取值 1 到 30）里已经讲过的句子（至少 `decisions.repeatChars` 个字符，12，取值 6 到 60）。模式同上，另加 `strict`：不用任何模型，把每个重复都退回 |
 | `decisions.reuse` | `off` | 回合结束后自动生成场景图之前，先让决策模型判断每张相近的已存图片的描述是否表现了这一刻，并展示第一张符合的图片，不再生成新图。仅由决策服务执行：`off` 或 `on` |
 | `decisions.variables` | `llm` | 每个回合之后检查所有被追踪的数值（世界变量，以及在场角色的角色变量）：对每个数值提一个问题，即刚才发生的事是否改变了它，交给语言模型、决策模型或两者；之后由语言模型给出改变了的数值的新值。请填写每个数值的 **何时、如何变化** 字段。模式与上述四种相同，另可关闭 |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | 仅由决策服务执行的规则复查和隐藏背景检查 |
+| `decisions.reuseThreshold` | 0.85 | 决策答案从此概率起算作“已存图片表现了这一刻”（0.1 到 0.95） |
 | `decisions.gateThreshold` | 0.5 | 决策答案从此概率起算作问题；低于它 0.15 以内视为不确定 |
 | `decisions.confidence` | 0.7 | 决策答案被采用而非交给语言模型所需的把握程度 |
 

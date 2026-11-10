@@ -1,0 +1,49 @@
+{
+  "id": "baker-live-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "Good morning, Mr Holmes. I shall sit by the fire and read for a while.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I settle into the armchair with my notebook and say nothing more.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 20,
+      "expect": []
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 2
+    },
+    {
+      "type": "message-arrived"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "telephone"
+    }
+  ]
+}

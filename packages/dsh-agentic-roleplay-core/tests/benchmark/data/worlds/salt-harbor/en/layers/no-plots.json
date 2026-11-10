@@ -1,0 +1,14 @@
+{
+  "id": "no-plots",
+  "description": "Takes out the plot of the story.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "plots.json"
+  ],
+  "add": {},
+  "patch": {}
+}

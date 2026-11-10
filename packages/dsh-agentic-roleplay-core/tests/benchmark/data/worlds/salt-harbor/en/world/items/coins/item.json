@@ -1,0 +1,7 @@
+{
+  "id": "coins",
+  "name": "Coins",
+  "description": "Small silver coins.",
+  "quantity": 12,
+  "held_by": "quill"
+}

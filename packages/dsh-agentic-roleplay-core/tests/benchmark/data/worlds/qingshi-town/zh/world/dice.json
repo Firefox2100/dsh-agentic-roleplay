@@ -1,0 +1,55 @@
+{
+  "checks": [
+    {
+      "key": "duel",
+      "name": "比试",
+      "use": "拳脚或兵刃的一招交手，谁占上风没有把握。",
+      "dice": "2d6",
+      "reading": "total",
+      "compare": "absolute",
+      "bands": [
+        {
+          "max": 6,
+          "label": "落了下风",
+          "result": "failed"
+        },
+        {
+          "min": 7,
+          "max": 9,
+          "label": "势均力敌",
+          "result": "partial"
+        },
+        {
+          "min": 10,
+          "label": "占了上风",
+          "result": "succeeded"
+        }
+      ]
+    },
+    {
+      "key": "nerve",
+      "name": "胆气",
+      "use": "面对令人害怕的事，不确定自己能不能稳住。",
+      "dice": "1d20",
+      "compare": "over",
+      "bands": [
+        {
+          "max": -1,
+          "label": "慌了神",
+          "result": "failed"
+        },
+        {
+          "min": 0,
+          "max": 9,
+          "label": "稳住了",
+          "result": "succeeded"
+        },
+        {
+          "min": 10,
+          "label": "毫不动摇",
+          "result": "succeeded"
+        }
+      ]
+    }
+  ]
+}

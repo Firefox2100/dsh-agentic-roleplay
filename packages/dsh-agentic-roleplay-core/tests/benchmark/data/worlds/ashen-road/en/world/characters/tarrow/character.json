@@ -1,0 +1,69 @@
+{
+  "id": "tarrow",
+  "name": "Tarrow Dunn",
+  "age": 44,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "The smith of Holt's Rest, who shoes the horses and mends everyone's blades.",
+  "personality": "Slow to speak, quick to help, fiercely proud of his work.",
+  "background": "A smith's son, he has never left the town and never wanted to.",
+  "appearance": "Huge forearms, a leather apron, a missing finger.",
+  "speech": {
+    "style": "Few words, then a long pause.",
+    "examples": [
+      "Hold it steady.",
+      "That blade has seen worse. So have you."
+    ]
+  },
+  "start": {
+    "public_state": "Hammering at the forge.",
+    "activity": "Hammering a shoe.",
+    "inner_state": "Worried about the horses that came back with burns.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.2,
+        "dominance": 0.2
+      }
+    },
+    "intents": [],
+    "location": "forge",
+    "position": "at the anvil"
+  },
+  "relationships": [
+    {
+      "to": "brann",
+      "label": "Brann",
+      "familiarity": 0.8,
+      "trust": 0.8,
+      "affinity": 0.7
+    },
+    {
+      "to": "edda",
+      "label": "Edda",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "gate",
+      "yard",
+      "shrine",
+      "forge",
+      "ruin"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "convoy-charter"
+    ]
+  },
+  "variables": {
+    "wounds": 1
+  }
+}

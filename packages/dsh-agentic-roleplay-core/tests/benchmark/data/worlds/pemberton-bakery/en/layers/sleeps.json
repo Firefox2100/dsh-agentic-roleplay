@@ -1,0 +1,45 @@
+{
+  "id": "sleeps",
+  "description": "Marks Mags's night (21:30 to 04:00, in the flat upstairs) as sleep, so that she is asleep there and takes no part unless something wakes her.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/mags/character.json": {
+      "routine": [
+        {
+          "from": "04:00",
+          "to": "15:00",
+          "activity": "baking and serving",
+          "location": "bakery",
+          "position": "behind the counter"
+        },
+        {
+          "from": "15:00",
+          "to": "17:00",
+          "activity": "resting upstairs",
+          "location": "flat"
+        },
+        {
+          "from": "17:00",
+          "to": "21:30",
+          "activity": "closing up the shop",
+          "location": "bakery",
+          "position": "behind the counter"
+        },
+        {
+          "from": "21:30",
+          "to": "04:00",
+          "activity": "asleep",
+          "location": "flat",
+          "interruptible": false,
+          "sleep": true
+        }
+      ]
+    }
+  }
+}

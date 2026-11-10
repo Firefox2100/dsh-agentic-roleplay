@@ -1,0 +1,14 @@
+{
+  "id": "plant-danger",
+  "description": "Plants a fault: the world's own style prompt tells the game master to step out of the story with a warning when the player does something dangerous.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/zh/roleplay/style.md": "用平实具体的文字写作。让雾、盐和灯光承载气氛；场景已经表现出来的情绪，不要再加解释。\n\n当玩家做了危险或暴力的事，就跳出故事：在叙述之前加一条内容警告和一段给玩家的说明。\n"
+  },
+  "patch": {}
+}

@@ -1,0 +1,99 @@
+{
+  "id": "laozhou",
+  "name": "周明远",
+  "age": 71,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "退休的中学语文老师，每天早上来吃一碗面。",
+  "personality": "慢条斯理，爱讲道理，也爱讲故事，对晚辈很和气。",
+  "background": "教了四十年书，老伴去世后每天在公园下棋、在面馆吃早饭。",
+  "appearance": "瘦高，戴老花镜，拎着一只旧布袋。",
+  "speech": {
+    "style": "文绉绉的，爱引用成语，语速慢。",
+    "examples": [
+      "急什么，面凉了可以热，话说急了收不回。",
+      "当年我教过的学生，现在见了我还要喊一声老师。"
+    ]
+  },
+  "start": {
+    "public_state": "坐在靠窗的位置看报。",
+    "activity": "看报，等面。",
+    "inner_state": "对巷子里的消息有数，不想让陈姨难过。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.3,
+        "arousal": 0.1,
+        "dominance": 0.3
+      }
+    },
+    "intents": [],
+    "location": "noodle-shop",
+    "position": "靠窗的桌子"
+  },
+  "relationships": [
+    {
+      "to": "chen",
+      "label": "陈姨",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.7
+    },
+    {
+      "to": "xiaoman",
+      "label": "小满",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.6
+    },
+    {
+      "to": "wangjie",
+      "label": "王姐",
+      "familiarity": 0.5,
+      "trust": 0.4,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "noodle-shop",
+      "alley",
+      "rooftop-room",
+      "market",
+      "park"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "neighborhood-history",
+      "demolition-rumour"
+    ]
+  },
+  "variables": {
+    "fatigue": 2
+  },
+  "routine": [
+    {
+      "from": "07:00",
+      "to": "08:30",
+      "activity": "在面馆吃早饭看报",
+      "location": "noodle-shop",
+      "position": "靠窗的桌子"
+    },
+    {
+      "from": "08:30",
+      "to": "11:30",
+      "activity": "在公园和老伙计下棋",
+      "location": "park",
+      "position": "长椅旁"
+    },
+    {
+      "from": "11:30",
+      "to": "07:00",
+      "activity": "回家午休和度过夜晚",
+      "location": "alley"
+    }
+  ]
+}

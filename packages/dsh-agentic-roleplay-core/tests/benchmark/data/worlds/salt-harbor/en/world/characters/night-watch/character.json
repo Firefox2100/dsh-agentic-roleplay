@@ -1,0 +1,13 @@
+{
+  "id": "night-watch",
+  "name": "The Night Watch",
+  "role": "npc",
+  "kind": "group",
+  "tier": "supporting",
+  "summary": "Four men with lanterns who walk the harbor after dark and answer to the guild.",
+  "start": {
+    "public_state": "Gathering at the market for the night round.",
+    "activity": "Gathering.",
+    "location": "market"
+  }
+}

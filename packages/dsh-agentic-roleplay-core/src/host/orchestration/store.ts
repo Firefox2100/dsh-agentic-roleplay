@@ -15,6 +15,10 @@ import { forgetRunDetails, keepRunDetail, recordActivity } from '../sessions/act
 import { recordDecisions } from '../decisions/stats.ts'
 import { addUsage } from '../sessions/usage.ts'
 import { addToNote, clearNotes, putNote, readNotes } from '../sessions/notes.ts'
+import { lastPlayerAt, readAutonomy, recordAsk, recordMessage, takeInbox } from '../sessions/autonomy.ts'
+import { catchUpRoutines, holdCharacter, sleepersNow, sleepingNow, takeShifts } from '../clock/agenda.ts'
+import { storyRoots } from '../workspace/service.ts'
+import { dirname } from 'node:path'
 import { agendaFor, passRound, skipAhead, startTurn } from '../clock/passage.ts'
 import { dueOffScene, markHandled } from '../clock/offscene.ts'
 import { describeShown } from '../variables/describe.ts'
@@ -230,9 +234,9 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     text: (id, variables) => prompt(settings().prompts.language, id, variables),
     rules: () => rulesOf(worldRules(session), settings().rules.own),
     time: turn => readTime(session, settings().clock, turn, wall()),
-    beginTurn: (turn) => { observeAsPlayer(session, turn); return startTurn(session, settings().clock, turn, wall()) },
-    endRound: (turn, round, stated, minimum) => passRound(session, settings().clock, turn, round, wall(), stated, minimum),
-    skipTime: (turn, round, request) => skipAhead(session, settings().clock, turn, round, wall(), request),
+    beginTurn: (turn) => { observeAsPlayer(session, turn); return startTurn(session, settings().clock, turn, wall(), settings().schedule.enabled) },
+    endRound: (turn, round, stated, minimum) => passRound(session, settings().clock, turn, round, wall(), stated, minimum, settings().schedule.enabled),
+    skipTime: (turn, round, request) => skipAhead(session, settings().clock, turn, round, wall(), request, settings().schedule.enabled),
     checkVariableChanges: changes => changes.flatMap((spec) => { const planned = planVariableChange(session, spec); return planned.ok ? [] : planned.problems }),
     changeVariables: (turn, changes) => session.transaction(() => changes.map(spec => changeVariable(session, spec, turn))),
     trackedFor: (characterId, presentIds) => trackedFor(session, characterId, presentIds),
@@ -264,14 +268,36 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     },
     recordUsage: (turn, tokens, ms) => { addUsage(session, turn, 'master', tokens, ms) },
     recordTrace: (turn, patch, merge) => { updateTrace(session, turn, patch, merge) },
+    folders: async () => await storyRoots(dirname(dirname(folder)), folder),
+    autonomy: {
+      catchUp: (turn) => { if (!settings().schedule.enabled) return []; const { now, zone } = readTime(session, settings().clock, turn, wall()); return catchUpRoutines(session, zone, now, turn, false) },
+      shifts: () => takeShifts(session),
+      state: () => readAutonomy(session),
+      lastPlayerAt: () => lastPlayerAt(session),
+      said: (turn, message) => { session.transaction(() => { recordMessage(session, message); addToNote(session, 'message', turn, [`${message.name}: ${message.text}`]) }) },
+      asked: (character, at) => { recordAsk(session, character, at) },
+      inbox: () => takeInbox(session),
+      looked: (outcome, at) => { session.metadata.setValue('autonomy.look', { outcome, at } as never) },
+    },
     notes: () => readNotes(session),
     clearNotes: () => { clearNotes(session) },
-    agenda: (turn, characterId) => agendaFor(session, settings().clock, turn, wall, characterId),
-    commit: (updates) => session.transaction(() => updates.map(({ character, patch, move, items }) => {
+    agenda: (turn, characterId) => agendaFor(session, settings().clock, turn, wall, characterId, settings().schedule.enabled),
+    asleep: (turn, characterId) => { if (!settings().schedule.enabled) return undefined; const { now, zone } = readTime(session, settings().clock, turn, wall()); return sleepingNow(session, characterId, zone, now) },
+    sleepers: (turn) => { if (!settings().schedule.enabled) return []; const { now, zone } = readTime(session, settings().clock, turn, wall()); return sleepersNow(session, zone, now).map(({ key, name, aliases, until }) => ({ key, name, aliases, until })) },
+    holdForPlayer: (characterId) => {
+      if (!settings().schedule.enabled) return
+      const { now, zone } = readTime(session, settings().clock, session.metadata.get().turns + 1, wall())
+      holdCharacter(session, characterId, zone, now, undefined, true)
+    },
+    commit: (updates) => session.transaction(() => updates.map(({ character, patch, move, items, hold }) => {
       session.characterStates.update(character, patch)
       // What a character does with things happens where it is, so before it goes anywhere.
       const effects = (items ?? []).map(spec => changeItem(session, character, spec))
       if (move !== undefined) session.move(character, move)
+      if (hold !== undefined && settings().schedule.enabled) {
+        const { now, zone } = readTime(session, settings().clock, session.metadata.get().turns + 1, wall())
+        holdCharacter(session, character, zone, now, hold.minutes, hold.untilPlayer === true)
+      }
       return effects
     })),
     checkItemChanges: entries => dryRunItems(session, entries),

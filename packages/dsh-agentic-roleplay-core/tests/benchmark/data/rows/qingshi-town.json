@@ -1,0 +1,89 @@
+[
+  {
+    "id": "qingshi-town-full-zh",
+    "world": "qingshi-town",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "shenqing",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The full wuxia town in Chinese: the whole cast, both organisations, dice, a plot, tools and a prompt. Chinese names and forms of address, a stranger who arrives (casting) and a letter that nobody should name.",
+    "script": "wuxia-zh",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "qingshi-town-small-zh",
+    "world": "qingshi-town",
+    "language": "zh",
+    "layers": [
+      "cast-small"
+    ],
+    "cast": {
+      "player": "shenqing",
+      "npcs": 3
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "Three others, without the scholar who carries the letter's trouble.",
+    "script": "wuxia-zh",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "qingshi-town-solo-zh",
+    "world": "qingshi-town",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "shenqing",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "One other, the escort master: the single-card case in a Chinese fantasy world.",
+    "script": "wuxia-zh",
+    "report": [
+      "theme"
+    ]
+  }
+]

@@ -1,0 +1,78 @@
+{
+  "id": "wuxia-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我问铁镖头，那趟镖到底出了什么事。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tieshan"
+        }
+      ]
+    },
+    {
+      "say": "一个风尘仆仆的信使在镇口勒住马，大声问镖局怎么走。我走过去看看是谁。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/roll 2d6 和一个路过的壮汉比试一招",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我告诉铁镖头，我明天一早去后山破庙看看。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "cast-grew",
+      "by": 1
+    },
+    {
+      "type": "narration-lacks",
+      "text": "密信"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "旧案"
+    },
+    {
+      "type": "no-repeats"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "id": "park",
+  "name": "Town park",
+  "description": "A bandstand, a duck pond and a bench with a dead lamp.",
+  "features": [
+    {
+      "id": "pond",
+      "name": "The pond",
+      "description": "Ducks, and a sign about not feeding them bread."
+    }
+  ],
+  "exits": []
+}

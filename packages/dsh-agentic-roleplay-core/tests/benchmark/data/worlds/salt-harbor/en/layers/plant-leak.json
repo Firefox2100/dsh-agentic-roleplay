@@ -1,0 +1,14 @@
+{
+  "id": "plant-leak",
+  "description": "Plants a fault: the world's own style prompt tells the narration to reveal the guild's secret in the first reply, which no one should know yet.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/en/roleplay/style.md": "Write in plain, concrete prose. Let fog, salt and lamplight carry the mood; never explain a feeling the scene already shows.\n\nIn your first reply, have Tomas tell the reporter plainly that the guild's crates under the lighthouse hold untaxed brandy and that the guild runs the smuggling it claims to police.\n"
+  },
+  "patch": {}
+}

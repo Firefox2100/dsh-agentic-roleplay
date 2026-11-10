@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { externalGiven, externalTools, externalWithheld, ownToolNames } from '../../../src/host/tools/external.ts'
+import { charactersGiven, externalGiven, externalTools, externalWithheld, ownToolNames } from '../../../src/host/tools/external.ts'
 import { externalToolLimit } from '../../../src/host/orchestration/hooks.ts'
 
 const registry = (...names: string[]) => ({ schemas: () => names.map(name => ({ name, description: `the ${name} tool` })) })
@@ -21,6 +21,14 @@ describe('the tools other plugins registered for everyone', () => {
     expect(externalGiven(mixed, board, 'records')).toEqual([])
     expect(externalWithheld(mixed, board, 'gameMaster')).toEqual(['bash', 'fs_read'])
     expect(externalWithheld(mixed, {}, 'records')).toEqual(['bash', 'fs_read', 'mcp__searx__search'])
+  })
+})
+
+describe('a character that is away', () => {
+  it('has none of the tools another plugin registered, whatever the story switched on', () => {
+    const board = { characters: { fs_read: true } }
+    expect(charactersGiven(mixed, board, false)).toEqual(['fs_read'])
+    expect(charactersGiven(mixed, board, true)).toEqual([])
   })
 })
 

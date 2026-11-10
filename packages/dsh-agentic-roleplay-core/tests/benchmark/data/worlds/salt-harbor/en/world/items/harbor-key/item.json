@@ -1,0 +1,7 @@
+{
+  "id": "harbor-key",
+  "name": "Strongbox key",
+  "description": "A small steel key on a ring.",
+  "unique": true,
+  "held_by": "ines"
+}

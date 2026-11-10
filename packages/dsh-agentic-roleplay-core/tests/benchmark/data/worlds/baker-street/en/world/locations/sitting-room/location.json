@@ -1,0 +1,24 @@
+{
+  "id": "sitting-room",
+  "name": "The sitting room at 221B",
+  "description": "A crowded first-floor room: two armchairs by the fire, a table spread with papers and chemicals, a cello by the window seat, a bust of a statesman gone grey with dust.",
+  "features": [
+    {
+      "id": "fire",
+      "name": "The fire",
+      "description": "A coal fire that Mrs Hudson keeps going from seven."
+    },
+    {
+      "id": "table",
+      "name": "The table",
+      "description": "Papers, a microscope and the remains of breakfast."
+    }
+  ],
+  "exits": [
+    {
+      "to": "stairs",
+      "description": "the door to the stairs",
+      "travel_time_seconds": 10
+    }
+  ]
+}

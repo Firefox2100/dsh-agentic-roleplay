@@ -1,0 +1,162 @@
+{
+  "id": "daily-long-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我把门口的桌子擦干净，问陈姨今天早上要不要我去买点葱。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问陈姨，今天的骨汤什么时候熬好。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我端着面走到靠窗的桌子，随口跟周老师聊聊天气。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问周老师，他年轻时在这条巷子里住过吗。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我回到柜台，帮陈姨收拾碗筷。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问陈姨，今天午市要不要多备点面。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我走出店门，看看巷口的通知栏。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我跟路过的小宇打了个招呼，问他今天忙不忙。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我回到店里，替陈姨记今天的账。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我问陈姨，骨汤是不是要熬很久。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我坐下来歇一会儿，喝口水。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我跟陈姨说，我下午想去投个简历。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 12
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "character-exists",
+      "character": "chen"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "口头答应"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "私下谈过"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "hemisphere": "north",
+  "holidays": [
+    {
+      "id": "candlemas-fair",
+      "name": "Candlemas Fair",
+      "on": [
+        "02-14"
+      ]
+    }
+  ]
+}

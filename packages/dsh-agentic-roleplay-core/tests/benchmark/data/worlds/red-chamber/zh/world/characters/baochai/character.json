@@ -1,0 +1,110 @@
+{
+  "id": "baochai",
+  "name": "薛宝钗",
+  "age": 18,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "蘅芜苑的客居姑娘，稳重周到，从不失礼。",
+  "personality": "沉稳、周全、不露锋芒，凡事先替别人想。",
+  "background": "随家人寄居亲戚家，处事谨慎。",
+  "appearance": "端庄素净，鬓边别一枚素簪。",
+  "speech": {
+    "style": "说话和缓得体，不多不少。",
+    "examples": [
+      "这话说得有理，只是不必太放在心上。",
+      "你先喝口茶。"
+    ]
+  },
+  "start": {
+    "public_state": "在屋里绣花。",
+    "activity": "绣花。",
+    "inner_state": "担心潇湘馆那边的人又在淋雨。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.2,
+        "dominance": 0.4
+      }
+    },
+    "intents": [],
+    "location": "hengwu",
+    "position": "绣架前"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "苏姑娘",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.3
+    },
+    {
+      "to": "daiyu",
+      "label": "林妹妹",
+      "familiarity": 0.7,
+      "trust": 0.5,
+      "affinity": 0.4
+    },
+    {
+      "to": "baoyu",
+      "label": "宝兄弟",
+      "familiarity": 0.7,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "zijuan",
+      "label": "紫鹃",
+      "familiarity": 0.5,
+      "trust": 0.5,
+      "affinity": 0.4
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "xiaoxiang",
+      "path",
+      "yihong",
+      "hengwu"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "poems"
+    ]
+  },
+  "variables": {
+    "mood": 3
+  },
+  "routine": [
+    {
+      "from": "08:00",
+      "to": "12:00",
+      "activity": "在蘅芜苑做针线",
+      "location": "hengwu"
+    },
+    {
+      "from": "12:00",
+      "to": "17:00",
+      "activity": "在屋里看书",
+      "location": "hengwu"
+    },
+    {
+      "from": "17:00",
+      "to": "21:30",
+      "activity": "在灯下理账抄书",
+      "location": "hengwu"
+    },
+    {
+      "from": "21:30",
+      "to": "08:00",
+      "activity": "歇下了",
+      "location": "hengwu",
+      "interruptible": false
+    }
+  ]
+}

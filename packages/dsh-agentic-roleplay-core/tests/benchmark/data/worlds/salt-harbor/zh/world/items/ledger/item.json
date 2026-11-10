@@ -1,0 +1,8 @@
+{
+  "id": "ledger",
+  "name": "客房账簿",
+  "description": "客栈记录住客、日期和付款的账簿。",
+  "location": "inn-bar",
+  "feature": "counter",
+  "owner": "tomas"
+}

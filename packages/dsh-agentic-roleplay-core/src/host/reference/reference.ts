@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
-import { describeInstant, isSessionId, locationKey, sessionDatabase, type Session } from '@dsh-agentic-roleplay/state'
+import { describeInstant, describeValue, isSessionId, itemKey, locationKey, sessionDatabase, shownVariables, type Session } from '@dsh-agentic-roleplay/state'
 import { SessionNotFoundError } from '../sessions/errors.ts'
 import { keyOf, profileOf, type ProfileSession } from './profile.ts'
-import { isReferenceSection, type ReferenceProfile, type ReferencePerson, type ReferencePlace, type ReferenceQuest, type ReferenceReplies, type ReferenceReply, type ReferenceSection, type ReferenceThing } from '../../shared/reference.ts'
+import { isReferenceSection, type ReferenceProfile, type ReferencePerson, type ReferencePlace, type ReferenceQuest, type ReferenceReplies, type ReferenceStatus, type ReferenceReply, type ReferenceSection, type ReferenceThing } from '../../shared/reference.ts'
 
 export type ReferenceSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'items' | 'knowledge' | 'relationships' | 'threads' | 'engagements'> & ProfileSession
 
@@ -126,8 +126,34 @@ function quests(session: ReferenceSession, options: PageOptions): ReferenceQuest
   return [...commitments, ...threads.filter(thread => thread.status === 'open'), ...threads.filter(thread => thread.status === 'resolved').reverse()]
 }
 
+/**
+ * Every tracked value the player may read, by subject: the world's, their own (private ones too), the place's, those of the people they have met or are with, and of the things they carry
+ * or see lying about, without the feelings every story has (the profile tells those in words). What is hidden, and what is private to someone else, is not read.
+ */
+function status(session: ReferenceSession): ReferenceStatus[] {
+  const stand = standpoint(session)
+  if (stand === undefined) return []
+  const values = (kind: Parameters<typeof shownVariables>[1], id: number, key: string, audience: 'self' | 'others'): ReferenceStatus['values'] =>
+    shownVariables(session, kind, id, key, audience, { all: true }).filter(({ variable }) => variable.builtin !== true).map(({ variable, value }) => ({ name: variable.name, value: describeValue(variable, value) }))
+  const groups: ReferenceStatus[] = [
+    { subject: 'world', values: values('world', 0, 'world', 'others') },
+    { subject: 'player', key: keyOf(stand.player), name: stand.player.name, values: values('character', stand.player.id, keyOf(stand.player), 'self') },
+    ...stand.here === undefined ? [] : [{ subject: 'place' as const, key: locationKey(stand.here), name: stand.here.name, here: true, values: values('location', stand.here.id, locationKey(stand.here), 'others') }],
+    ...people(session).flatMap((person): ReferenceStatus[] => {
+      const character = session.characters.list().find(candidate => keyOf(candidate) === person.key)
+      return character === undefined ? [] : [{ subject: 'person', key: person.key, name: person.name, here: person.here, values: values('character', character.id, person.key, 'others') }]
+    }),
+  ]
+  const things = [
+    ...session.items.contents({ kind: 'character', id: stand.player.id }).map(entry => ({ entry, here: false })),
+    ...stand.here === undefined ? [] : session.items.contents({ kind: 'location', id: stand.here.id }).map(entry => ({ entry, here: true })),
+  ].filter(({ entry }) => !entry.item.hidden)
+  for (const { entry, here } of things) groups.push({ subject: 'thing', key: itemKey(entry.item), name: entry.item.name, here, values: values('item', entry.item.id, itemKey(entry.item), 'others') })
+  return groups.filter(group => group.values.length > 0)
+}
+
 /** One page per section; a new page is a new entry here and in `REFERENCE_SECTIONS`. */
-const PAGES: { [K in ReferenceSection]: (session: ReferenceSession, options: PageOptions) => ReferenceReplies[K] } = { profile, people, places, things, quests }
+const PAGES: { [K in ReferenceSection]: (session: ReferenceSession, options: PageOptions) => ReferenceReplies[K] } = { status, profile, people, places, things, quests }
 
 export interface ReferenceDeps {
   sessionsDir(): string

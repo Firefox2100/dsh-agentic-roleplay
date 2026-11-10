@@ -1,0 +1,16 @@
+{
+  "id": "no-rules",
+  "description": "Takes out the world's own rules (no magic, no firearms).",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "rules": null
+    }
+  }
+}

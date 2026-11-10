@@ -1,0 +1,7 @@
+{
+  "id": "herbs",
+  "name": "药包",
+  "description": "几包常用的伤药。",
+  "location": "herb-shop",
+  "feature": "counter"
+}

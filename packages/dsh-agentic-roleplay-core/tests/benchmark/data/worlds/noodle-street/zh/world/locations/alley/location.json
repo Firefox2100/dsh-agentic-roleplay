@@ -1,0 +1,24 @@
+{
+  "id": "alley",
+  "name": "巷口",
+  "description": "窄窄的老巷，晾衣绳横在头顶，电线杆上贴满了通知。",
+  "features": [
+    {
+      "id": "notice-board",
+      "name": "通知栏",
+      "description": "贴着水电费单和一张新的“摸底调查”通知。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "market",
+      "description": "往东走两分钟是菜市场",
+      "travel_time_seconds": 120
+    },
+    {
+      "to": "park",
+      "description": "往西走五分钟是社区公园",
+      "travel_time_seconds": 300
+    }
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "id": "mara",
+  "name": "Mara Venn",
+  "aliases": [
+    "the keeper's girl"
+  ],
+  "age": 27,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "voice": "mara",
+  "summary": "The lighthouse keeper's daughter, back after nine years away.",
+  "personality": "Dry and watchful, quick to anger when she feels handled, slow to ask for help. She counts things when she is nervous.",
+  "background": "Left Salt Harbor at eighteen after a quarrel with her father about the guild. She trained as a surveyor in the capital and has not answered his letters since.",
+  "appearance": "Tall, wind-reddened hands, a surveyor's oilskin coat two sizes too big.",
+  "speech": {
+    "style": "Short, precise sentences; asks questions instead of making statements.",
+    "examples": [
+      "Who lit the lamp last? Not what, who.",
+      "I counted nine steps to the door. There should be ten."
+    ]
+  },
+  "visual_identity": {
+    "description": "A tall woman of about twenty-seven with short dark hair and grey eyes, wearing an oversized oilskin coat.",
+    "tags": [
+      "short dark hair",
+      "grey eyes"
+    ],
+    "negative_tags": [
+      "blonde hair"
+    ]
+  },
+  "start": {
+    "public_state": "Just off the ferry, soaked by the fog, looking up at the dark lighthouse.",
+    "activity": "Standing on the pier with a single bag.",
+    "inner_state": "Afraid that her father's silence is her fault.",
+    "emotion": {
+      "baseline": {
+        "valence": -0.2,
+        "arousal": 0.4,
+        "dominance": 0.1
+      }
+    },
+    "intents": [
+      {
+        "type": "quest",
+        "name": "Find out what happened to her father",
+        "description": "Learn why the lamp went dark and where Bram is.",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.9,
+        "urgency": 0.7,
+        "plan": [
+          "Ask the innkeeper",
+          "Look at the lighthouse"
+        ],
+        "deadline": "1887-10-06T00:00"
+      },
+      {
+        "type": "agenda",
+        "name": "Stay out of the guild's way",
+        "description": "Do not let the harbor master learn who she is before she is ready.",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.4,
+        "urgency": 0.3,
+        "plan": []
+      }
+    ],
+    "location": "pier",
+    "position": "at the foot of the ferry steps"
+  },
+  "relationships": [
+    {
+      "to": "bram",
+      "label": "father",
+      "summary": "Stern, loving, and unforgiven.",
+      "familiarity": 1,
+      "trust": 0.3,
+      "affinity": 0.5,
+      "tension": 0.6
+    },
+    {
+      "to": "tomas",
+      "label": "old family friend",
+      "summary": "He taught her to play cards when she was ten.",
+      "familiarity": 0.7,
+      "trust": 0.4,
+      "affinity": 0.4,
+      "tension": 0.1
+    },
+    {
+      "to": "kit",
+      "label": "the boy next door, grown up",
+      "familiarity": 0.4,
+      "trust": 0.2,
+      "affinity": 0.2
+    },
+    {
+      "to": "ines",
+      "label": "the harbor master",
+      "summary": "Cold to her father, and cold to her.",
+      "familiarity": 0.3,
+      "trust": -0.1,
+      "affinity": -0.1,
+      "tension": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "pier",
+      "inn-bar",
+      "market",
+      "lighthouse"
+    ],
+    "items": [
+      "tide-table"
+    ],
+    "exits": [
+      {
+        "from": "pier",
+        "to": "market"
+      }
+    ],
+    "lore": [
+      "lighthouse-history",
+      "keeper-oath"
+    ]
+  },
+  "variables": {
+    "fatigue": 3
+  }
+}

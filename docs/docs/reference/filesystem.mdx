@@ -4,6 +4,7 @@ title: Filesystem layout
 
 ```text
 <root>/
+  workspace/
   worlds/<world-folder>/
     world.json
     calendar.json
@@ -30,6 +31,7 @@ title: Filesystem layout
   sessions/<uuid>/
     session.sqlite
     settings.json
+    folders.json
     opening.json
     timeline.json
     ui/<pack>/
@@ -43,6 +45,8 @@ title: Filesystem layout
 The roleplay root is portable content. Base plugin configuration and credentials remain in the DSH profile. `.sync/` is device-local bookkeeping for [cross-device sync](../playing/sync); it is deliberately never copied to the remote.
 
 World folder names are not identities. `world.json.id` is the durable world reference stored by sessions. Entity IDs are local to a world and are remapped into session database IDs on import while retained as source IDs.
+
+`workspace/` is the one folder that the file tools of every story reach when you switch them on; a story's `folders.json` lists the other folders you gave that story, each read-only or read and write (see [Settings](../playing/settings)).
 
 A folder in `presets/` is a [preset](../authoring/presets): its `preset.json` (title, description, suggested temperatures) and the narration prompts it carries. A story gets a copy of the prompts when it starts, and keeps `preset.json` beside its database to remember where they came from.
 

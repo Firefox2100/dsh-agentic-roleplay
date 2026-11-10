@@ -205,13 +205,13 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     }),
     routineExceptions: array('routine_exceptions').map((entry): RoutineExceptionSpec => defined<RoutineExceptionSpec>({
       character: text(entry, 'character') ?? '', date: text(entry, 'date') ?? '', activity: text(entry, 'activity') ?? '', from: text(entry, 'from'), to: text(entry, 'to'),
-      location: text(entry, 'location'), feature: text(entry, 'feature'), position: text(entry, 'position'), interruptible: bool(entry, 'interruptible'),
+      location: text(entry, 'location'), feature: text(entry, 'feature'), position: text(entry, 'position'), interruptible: bool(entry, 'interruptible'), sleep: bool(entry, 'sleep'),
     })),
     routines: array('routines').map((entry): RoutineSet => ({
       character: text(entry, 'character') ?? '',
       windows: Array.isArray(entry['windows']) ? entry['windows'].filter(isObject).map((window): RoutineWindowSpec => defined<RoutineWindowSpec>({
         days: strings(window, 'days'), on: strings(window, 'on'), from: text(window, 'from') ?? '', to: text(window, 'to') ?? '', activity: text(window, 'activity') ?? '',
-        location: text(window, 'location'), feature: text(window, 'feature'), position: text(window, 'position'), interruptible: bool(window, 'interruptible'),
+        location: text(window, 'location'), feature: text(window, 'feature'), position: text(window, 'position'), interruptible: bool(window, 'interruptible'), sleep: bool(window, 'sleep'),
       })) : [],
     })),
   }
@@ -523,6 +523,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
           feature: { type: 'string' },
           position: { type: 'string' },
           interruptible: { type: 'boolean' },
+          sleep: { type: 'boolean' },
         },
         required: ['character', 'date', 'activity'],
         additionalProperties: false,
@@ -640,6 +641,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
                   feature: { type: 'string' },
                   position: { type: 'string' },
                   interruptible: { type: 'boolean', description: 'Whether it would drop this for something that comes up; true by default.' },
+                  sleep: { type: 'boolean', description: 'True when the character is asleep in this window (the night\'s sleep, a nap); leave out otherwise.' },
                 },
                 required: ['from', 'to', 'activity'],
                 additionalProperties: false,

@@ -1,0 +1,10 @@
+{
+  "id": "lantern",
+  "name": "手提灯",
+  "description": "锡皮提灯，带角质窗。",
+  "held_by": "mara",
+  "quality": "陈旧但完好",
+  "variables": {
+    "lamp_oil": 80
+  }
+}

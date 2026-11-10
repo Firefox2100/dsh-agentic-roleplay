@@ -53,7 +53,7 @@ Wherever other characters, the game master or the record keeper read about a cha
 
 ## Routines
 
-`routine` is an ordered list of recurring windows. Each may specify `days`, `on`, `from`, `to`, `activity`, `location`, `feature`, `position` and `interruptible`. Times use `HH:MM`; a window ending before it starts crosses midnight.
+`routine` is an ordered list of recurring windows. Each may specify `days`, `on`, `from`, `to`, `activity`, `location`, `feature`, `position`, `interruptible` and `sleep`. Times use `HH:MM`; a window ending before it starts crosses midnight.
 
 `days` accepts weekdays from `mon` to `sun`. `on` adds dates, months, seasons, holidays and exclusions using the shared [day-token format](./calendar). When both are present, both must match. This keeps a weekday routine from running during a named holiday, for example:
 
@@ -67,3 +67,7 @@ Wherever other characters, the game master or the record keeper read about a cha
   "location": "archive"
 }
 ```
+
+`sleep: true` marks a window in which the character is asleep: the night's sleep, a nap. A character is asleep in such a window only in the place the window names (or anywhere, when it names none), and only while nothing has woken it. A sleeping character takes no part in the story unless what the player does wakes it, does not write to the player, and can be visited in its dream with `/dream`. The player's own character has no routine and never sleeps through one, whatever its file says: it is the player's. Nobody sleeps in a story whose *Characters keep to their days* setting is off.
+
+What the story makes of a character wins over its routine. A character who is led elsewhere, sent on an errand or woken is off its routine until it has been the length of time the game master said, or, when it said nothing, until its day next changes, and then takes the day up again where it stands in it.

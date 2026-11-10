@@ -1,0 +1,93 @@
+{
+  "id": "bram",
+  "name": "老布拉姆",
+  "aliases": [
+    "布拉姆·文",
+    "守塔人"
+  ],
+  "age": 63,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "守塔人，已失踪九天。",
+  "personality": "习惯沉默，训练使然的一丝不苟，温柔却总藏着不露。",
+  "background": "守灯三十一年，立过“绝不让灯熄灭”的守塔誓言。",
+  "appearance": "清瘦、饱经风霜，白胡子，左手少一根手指。",
+  "speech": {
+    "style": "话少而慢，什么都用航海术语来说。",
+    "examples": [
+      "稳住舵。",
+      "灯不在乎谁在懊悔。"
+    ]
+  },
+  "start": {
+    "public_state": "无人见到。",
+    "activity": "在黑暗里等待。",
+    "inner_state": "守着藏在地窖的东西，留神听着脚步声。",
+    "emotion": {
+      "baseline": {
+        "valence": -0.3,
+        "arousal": 0.2,
+        "dominance": 0.2
+      }
+    },
+    "intents": [
+      {
+        "type": "agenda",
+        "name": "守住地窖的秘密",
+        "status": "active",
+        "horizon": "long",
+        "priority": 0.9,
+        "urgency": 0.5,
+        "plan": []
+      }
+    ],
+    "location": "lighthouse-cellar",
+    "position": "坐在一只倒扣的木箱上"
+  },
+  "relationships": [
+    {
+      "to": "mara",
+      "label": "女儿",
+      "familiarity": 1,
+      "trust": 0.4,
+      "affinity": 0.7,
+      "tension": 0.5
+    },
+    {
+      "to": "kit",
+      "label": "跑腿的孩子",
+      "familiarity": 0.8,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "tomas",
+      "label": "老同伴",
+      "familiarity": 0.9,
+      "trust": 0.6,
+      "affinity": 0.6
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "lighthouse",
+      "lighthouse-cellar",
+      "signal-room",
+      "pier"
+    ],
+    "items": [
+      "lighthouse-key",
+      "signal-lamp"
+    ],
+    "exits": [],
+    "lore": [
+      "cellar-secret",
+      "keeper-oath",
+      "lighthouse-history",
+      "smugglers-signal"
+    ]
+  }
+}

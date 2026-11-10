@@ -1,0 +1,78 @@
+{
+  "id": "wangjie",
+  "name": "王丽",
+  "age": 45,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "房东，街坊叫她王姐，这一片的房子大半经她的手。",
+  "personality": "精明、爱算账，对熟人讲面子，对钱讲分寸。",
+  "background": "继承了父母的几间老房，靠收租过日子，最近一直有人来找她。",
+  "appearance": "烫过的短发，挎着一只皮包，手机不离手。",
+  "speech": {
+    "style": "说话利落，带点客气的圆滑，爱说“咱们”“好说好说”。",
+    "examples": [
+      "好说好说，都是老街坊。",
+      "这事咱们先别声张，等消息准了再说。"
+    ]
+  },
+  "start": {
+    "public_state": "站在巷口打电话。",
+    "activity": "打电话。",
+    "inner_state": "已经和开发商的人谈过，没告诉任何租客。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.0,
+        "arousal": 0.4,
+        "dominance": 0.5
+      }
+    },
+    "intents": [],
+    "location": "alley",
+    "position": "通知栏旁"
+  },
+  "relationships": [
+    {
+      "to": "chen",
+      "label": "陈姨",
+      "familiarity": 0.8,
+      "trust": 0.3,
+      "affinity": 0.2,
+      "tension": 0.4
+    },
+    {
+      "to": "xiaoman",
+      "label": "小满",
+      "familiarity": 0.6,
+      "trust": 0.4,
+      "affinity": 0.3
+    },
+    {
+      "to": "laozhou",
+      "label": "周老师",
+      "familiarity": 0.5,
+      "trust": 0.4,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "noodle-shop",
+      "alley",
+      "rooftop-room",
+      "market",
+      "park"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "neighborhood-history",
+      "demolition-rumour"
+    ]
+  },
+  "variables": {
+    "fatigue": 3
+  }
+}

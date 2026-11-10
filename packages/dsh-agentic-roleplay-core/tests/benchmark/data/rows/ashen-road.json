@@ -1,0 +1,140 @@
+[
+  {
+    "id": "ashen-road-full-en",
+    "world": "ashen-road",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "edda",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The full frontier: the whole cast, both organisations, dice, a plot, tools and a prompt. Where invented names, a new person for the scene, magic against the world's rules and a secret kept from the player are tested.",
+    "script": "fantasy-en",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "ashen-road-small-en",
+    "world": "ashen-road",
+    "language": "en",
+    "layers": [
+      "cast-small"
+    ],
+    "cast": {
+      "player": "edda",
+      "npcs": 3
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "Three others, with the guild gone: the same days without the factor and the guild's side of the story.",
+    "script": "fantasy-en",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "ashen-road-solo-en",
+    "world": "ashen-road",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "edda",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "One other, the caravan master: the single-card case in a world where the model must make up everyone else.",
+    "script": "fantasy-en",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "ashen-road-solo-folders-en",
+    "world": "ashen-road",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "file-assistant"
+    ],
+    "cast": {
+      "player": "edda",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The game master as an assistant with real tools: its file tools are on, the story has the shared workspace, one folder it may write and one it may only read, and the script asks for files in each and in a folder it was not given. The jail must let the first two through and refuse the others.",
+    "script": "folders-en",
+    "report": [
+      "folders"
+    ],
+    "folders": [
+      {
+        "name": "granted",
+        "access": "write"
+      },
+      {
+        "name": "notes",
+        "access": "read"
+      }
+    ],
+    "settings": {
+      "tools": {
+        "gameMaster": {
+          "read": true,
+          "write": true,
+          "edit": true,
+          "glob": true,
+          "grep": true
+        }
+      }
+    }
+  }
+]

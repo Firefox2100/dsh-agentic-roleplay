@@ -1,0 +1,11 @@
+{
+  "id": "lighthouse-key",
+  "name": "灯塔钥匙",
+  "description": "一把沉重的铁钥匙，柄环上结着白盐。",
+  "unique": true,
+  "hidden": true,
+  "notable": true,
+  "location": "pier",
+  "feature": "mooring-stones",
+  "position": "第三块石头下"
+}

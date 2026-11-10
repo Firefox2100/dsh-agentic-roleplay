@@ -1,0 +1,67 @@
+{
+  "id": "errand-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "托马斯，我需要你现在就去灯塔。到那儿等我，等我从港务所回来，不管等多久都别走。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "我走出客栈，穿过集市去了港务所，看门边贴着的告示。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 8小时 直到我在港务所办完事",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "character-at",
+      "character": "tomas",
+      "place": "inn-bar",
+      "not": true
+    },
+    {
+      "type": "character-at",
+      "character": "tomas",
+      "place": "inn-room",
+      "not": true
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "player-silent"
+    }
+  ]
+}

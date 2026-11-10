@@ -1,0 +1,10 @@
+{
+  "id": "signal-lamp",
+  "name": "信号灯",
+  "description": "带遮光板的灯，用来向海上打信号。",
+  "location": "signal-room",
+  "feature": "lamp-housing",
+  "variables": {
+    "lamp_oil": 40
+  }
+}

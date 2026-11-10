@@ -635,6 +635,12 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE variable_defs ADD COLUMN update_rule TEXT NOT NULL DEFAULT '';
     `,
   },
+  {
+    version: 12,
+    sql: `
+      ALTER TABLE routine_windows ADD COLUMN sleep INTEGER NOT NULL DEFAULT 0 CHECK (sleep IN (0, 1));
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

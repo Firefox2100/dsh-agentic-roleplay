@@ -1,0 +1,8 @@
+{
+  "id": "ledger",
+  "name": "Brann's ledger",
+  "description": "The caravan master's ledger of wagons, debts and families.",
+  "location": "yard",
+  "feature": "well-trough",
+  "owner": "brann"
+}

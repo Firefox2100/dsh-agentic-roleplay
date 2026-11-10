@@ -1,0 +1,55 @@
+{
+  "checks": [
+    {
+      "key": "notice",
+      "name": "Notice",
+      "use": "An attempt to spot, overhear or realise something that is not obvious and matters.",
+      "dice": "2d6",
+      "reading": "total",
+      "compare": "absolute",
+      "bands": [
+        {
+          "max": 6,
+          "label": "misses it",
+          "result": "failed"
+        },
+        {
+          "min": 7,
+          "max": 9,
+          "label": "catches a part",
+          "result": "partial"
+        },
+        {
+          "min": 10,
+          "label": "notices clearly",
+          "result": "succeeded"
+        }
+      ]
+    },
+    {
+      "key": "endure",
+      "name": "Endure",
+      "use": "Pushing on through cold, fear or exhaustion when it is uncertain that the body will hold.",
+      "dice": "1d20",
+      "compare": "over",
+      "bands": [
+        {
+          "max": -1,
+          "label": "gives out",
+          "result": "failed"
+        },
+        {
+          "min": 0,
+          "max": 9,
+          "label": "holds",
+          "result": "succeeded"
+        },
+        {
+          "min": 10,
+          "label": "holds easily",
+          "result": "succeeded"
+        }
+      ]
+    }
+  ]
+}

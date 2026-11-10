@@ -1,0 +1,236 @@
+{
+  "id": "cast-small",
+  "description": "Three characters besides the player: the keeper's daughter (mara) plays, with the landlord (tomas), the harbor master (ines) and the boy (kit). The reporter, the missing keeper and the two groups are removed with what referred to them; the reporter's alternate opening is dropped.",
+  "requires": [],
+  "conflicts": [
+    "cast-solo"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/bram",
+    "characters/gull-seller",
+    "characters/night-watch",
+    "characters/quill",
+    "items/coins",
+    "items/notebook"
+  ],
+  "add": {},
+  "patch": {
+    "characters/kit/character.json": {
+      "relationships": [
+        {
+          "to": "mara",
+          "label": "the keeper's girl",
+          "familiarity": 0.4,
+          "trust": 0.3,
+          "affinity": 0.3
+        }
+      ]
+    },
+    "characters/mara/character.json": {
+      "relationships": [
+        {
+          "to": "tomas",
+          "label": "old family friend",
+          "summary": "He taught her to play cards when she was ten.",
+          "familiarity": 0.7,
+          "trust": 0.4,
+          "affinity": 0.4,
+          "tension": 0.1
+        },
+        {
+          "to": "kit",
+          "label": "the boy next door, grown up",
+          "familiarity": 0.4,
+          "trust": 0.2,
+          "affinity": 0.2
+        },
+        {
+          "to": "ines",
+          "label": "the harbor master",
+          "summary": "Cold to her father, and cold to her.",
+          "familiarity": 0.3,
+          "trust": -0.1,
+          "affinity": -0.1,
+          "tension": 0.3
+        }
+      ]
+    },
+    "characters/tomas/character.json": {
+      "relationships": [
+        {
+          "to": "mara",
+          "label": "the keeper's girl",
+          "summary": "Fond of her, and afraid of what she will find.",
+          "familiarity": 0.7,
+          "trust": 0.4,
+          "affinity": 0.6,
+          "tension": 0.4
+        },
+        {
+          "to": "ines",
+          "label": "creditor",
+          "familiarity": 0.8,
+          "trust": -0.3,
+          "affinity": -0.1,
+          "tension": 0.6
+        }
+      ]
+    },
+    "factions/harbor-guild/faction.json": {
+      "relationships": [
+        {
+          "to": {
+            "kind": "faction",
+            "id": "lamp-keepers"
+          },
+          "label": "rival",
+          "familiarity": 0.7,
+          "trust": -0.2,
+          "affinity": -0.2,
+          "tension": 0.7
+        }
+      ]
+    },
+    "factions/lamp-keepers/faction.json": {
+      "members": []
+    },
+    "lore/cellar-secret/lore.json": {
+      "known_by": [
+        "tomas"
+      ]
+    },
+    "lore/keeper-oath/lore.json": {
+      "known_by": [
+        "tomas",
+        "mara"
+      ]
+    },
+    "lore/lighthouse-history/lore.json": {
+      "known_by": [
+        "mara",
+        "tomas",
+        "ines"
+      ]
+    },
+    "lore/smugglers-signal/lore.json": {
+      "known_by": [
+        "kit"
+      ]
+    },
+    "plots.json": [
+      {
+        "id": "the-dark-lamp",
+        "name": "The dark lamp",
+        "premise": "Someone put the lighthouse out on purpose, and the keeper is hiding with the proof.",
+        "themes": [
+          "duty",
+          "complicity"
+        ],
+        "hooks": [
+          {
+            "id": "closed-road",
+            "text": "The harbor master's notice closing the lighthouse road.",
+            "mode": "opportunity"
+          }
+        ],
+        "developments": [
+          {
+            "id": "cellar-found",
+            "text": "The cellar and its guild-stamped crates come to light.",
+            "mode": "opportunity",
+            "prerequisites": [
+              "closed-road"
+            ]
+          }
+        ],
+        "stakes": [
+          "the keeper's safety",
+          "the guild's hold on the harbor"
+        ],
+        "resolutions": [
+          "the guild is exposed",
+          "the matter is buried"
+        ],
+        "participants": [
+          "ines",
+          "tomas"
+        ],
+        "start": "available"
+      }
+    ],
+    "triggers.json": [
+      {
+        "key": "fog-bell-rings",
+        "name": "The fog bell rings",
+        "when": {
+          "type": "time",
+          "from": "1887-10-03T20:00"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "The fog bell on the pier begins to ring, slow and flat."
+          },
+          {
+            "type": "cue",
+            "audience": {
+              "place": "inn-bar"
+            },
+            "text": "The bell has started; the bar goes quiet for a moment."
+          }
+        ],
+        "announce": {
+          "audience": "everyone",
+          "text": "The fog bell will ring at eight.",
+          "at": "1887-10-03T18:30"
+        }
+      },
+      {
+        "key": "storm-breaks",
+        "name": "The storm breaks",
+        "when": {
+          "type": "variable",
+          "variable": "storm_warning",
+          "op": "eq",
+          "value": true
+        },
+        "effects": [
+          {
+            "type": "edit",
+            "edit": {
+              "events": [
+                {
+                  "text": "A storm broke over Salt Harbor and every boat ran for the pier.",
+                  "tags": [
+                    "storm"
+                  ],
+                  "importance": 4,
+                  "perceived_by": "everyone"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "key": "key-found",
+        "name": "The key is found",
+        "when": {
+          "type": "item",
+          "item": "lighthouse-key",
+          "held_by": "mara"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "Someone on the pier has seen the player's character pick something up from the mooring stones."
+          }
+        ]
+      }
+    ],
+    "world.json": {
+      "alternate_openings": null
+    }
+  }
+}

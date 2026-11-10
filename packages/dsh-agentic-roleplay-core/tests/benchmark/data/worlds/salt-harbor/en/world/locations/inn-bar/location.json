@@ -1,0 +1,25 @@
+{
+  "id": "inn-bar",
+  "name": "The Anchor & Lamp, bar",
+  "description": "A low-beamed bar that smells of tar and wet wool, with a fire at one end and a ledger on the counter.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "counter",
+      "name": "The counter",
+      "description": "Scarred oak with a brass bell."
+    },
+    {
+      "id": "fireplace",
+      "name": "Fireplace",
+      "description": "A banked fire with a bench either side."
+    }
+  ],
+  "exits": [
+    {
+      "to": "inn-room",
+      "description": "the stair to the rooms",
+      "travel_time_seconds": 30
+    }
+  ]
+}

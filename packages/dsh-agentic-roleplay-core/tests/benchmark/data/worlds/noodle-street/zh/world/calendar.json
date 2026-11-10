@@ -1,0 +1,12 @@
+{
+  "hemisphere": "north",
+  "holidays": [
+    {
+      "id": "food-fair",
+      "name": "社区美食节",
+      "on": [
+        "10-20"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "id": "start-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我问老板，他有没有听说灯塔为什么熄了。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 1
+    },
+    {
+      "type": "opening-has",
+      "text": "渡船"
+    }
+  ]
+}

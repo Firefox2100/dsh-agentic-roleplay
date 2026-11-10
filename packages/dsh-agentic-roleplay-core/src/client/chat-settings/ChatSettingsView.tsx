@@ -10,6 +10,7 @@ import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { DecisionsSection } from './DecisionsSection.tsx'
 import { InterfaceSection } from './InterfaceSection.tsx'
 import { LorebookSection } from './LorebookSection.tsx'
+import { FoldersSection } from './FoldersSection.tsx'
 import { PresetSection } from './PresetSection.tsx'
 import { ReflectionSection } from './ReflectionSection.tsx'
 import { VectorsSection } from './VectorsSection.tsx'
@@ -144,6 +145,7 @@ export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewPro
       {session !== undefined && <InterfaceSection t={t} session={session} value={String(drafts['interface.pack'] ?? '')} onChange={(next) => { change('interface.pack', next) }} saved={payload.settings.interface.pack} disabled={saving} />}
       {session !== undefined && <PresetSection t={t} session={session} disabled={saving} />}
       {session !== undefined && <LorebookSection t={t} session={session} disabled={saving} />}
+      {session !== undefined && <FoldersSection t={t} session={session} disabled={saving} />}
       <ToolSwitches board={payload.settings.tools} onChange={setTools} disabled={saving} external={external} {...(toolsError === undefined ? {} : { error: toolsError })} t={t} />
       {session !== undefined && <DecisionsSection t={t} session={session} modes={payload.settings.decisions} />}
       <ReflectionSection t={t} status={payload.reflection} disabled={saving} onStart={reflect} onRefresh={refreshActivity} />

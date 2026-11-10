@@ -1,0 +1,42 @@
+[
+  {
+    "key": "weather",
+    "name": "天气",
+    "description": "今天的天气。",
+    "kind": "choice",
+    "subject": "world",
+    "options": [
+      "晴",
+      "阴",
+      "秋雨"
+    ],
+    "default": "秋雨",
+    "visibility": "public"
+  },
+  {
+    "key": "mood",
+    "name": "心绪",
+    "description": "角色的心绪：0 开朗，10 郁郁。独处、阴雨会加重，有人陪伴、说得开心会减轻。",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 3,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "开朗"
+      },
+      {
+        "up_to": 6,
+        "label": "平静"
+      },
+      {
+        "up_to": 10,
+        "label": "郁郁"
+      }
+    ]
+  }
+]

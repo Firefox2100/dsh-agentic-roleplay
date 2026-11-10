@@ -1,4 +1,5 @@
 import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
+import { splitPanels } from './panels.ts'
 import { openingText } from './store.ts'
 
 /** One piece of a card that is read on its own: a field, the chosen opening, or a lorebook entry (or a part of a long one). */
@@ -70,8 +71,8 @@ export function itemise(card: NormalizedCard, choices: ImportChoices): SourceIte
     ...itemsOf('field:description', 'description', '', [], card.description, name),
     ...itemsOf('field:personality', 'personality', '', [], card.personality, name),
     ...itemsOf('field:scenario', 'scenario', '', [], card.scenario, name),
-    ...itemsOf('field:example', 'example messages', '', [], card.messageExample, name),
-    ...(opening === undefined ? [] : itemsOf('field:opening', 'opening', '', [], opening, name)),
+    ...itemsOf('field:example', 'example messages', '', [], splitPanels(card.messageExample).prose, name),
+    ...(opening === undefined ? [] : itemsOf('field:opening', 'opening', '', [], splitPanels(opening).prose, name)),
     ...(card.book?.entries ?? []).filter(entry => !off.has(entry.id)).flatMap(entry => itemsOf(entry.id, entry.title === '' ? entry.id : `entry “${entry.title}”`, entry.title, entry.keys, entry.content, name, entry.constant)),
   ]
 }

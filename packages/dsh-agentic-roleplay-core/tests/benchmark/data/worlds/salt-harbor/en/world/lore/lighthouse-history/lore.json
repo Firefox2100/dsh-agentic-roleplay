@@ -1,0 +1,23 @@
+{
+  "id": "lighthouse-history",
+  "title": "The lighthouse",
+  "kind": "history",
+  "scope": "listed",
+  "known_by": [
+    "mara",
+    "tomas",
+    "ines",
+    "bram"
+  ],
+  "summary": "Built in 1851; the lamp has burned every night since.",
+  "body": "The lighthouse on the headland was built in 1851 after a wreck killed forty fishermen. Its lamp has burned every night since, until nine days ago.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "lighthouse"
+    }
+  ],
+  "related": [
+    "keeper-oath"
+  ]
+}

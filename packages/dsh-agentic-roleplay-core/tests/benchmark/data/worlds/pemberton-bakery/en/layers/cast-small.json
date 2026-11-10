@@ -1,0 +1,90 @@
+{
+  "id": "cast-small",
+  "description": "Three characters besides the player: mags, okafor and dev. The caf\u00e9 owner (lena) is removed with what referred to her; the building news is then known to mags and okafor only.",
+  "requires": [],
+  "conflicts": [
+    "cast-solo"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/lena"
+  ],
+  "add": {},
+  "patch": {
+    "characters/jo/character.json": {
+      "relationships": [
+        {
+          "to": "mags",
+          "label": "Mags",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.7
+        },
+        {
+          "to": "okafor",
+          "label": "Mr Okafor",
+          "familiarity": 0.6,
+          "trust": 0.6,
+          "affinity": 0.6
+        },
+        {
+          "to": "dev",
+          "label": "Dev",
+          "familiarity": 0.5,
+          "trust": 0.5,
+          "affinity": 0.5
+        }
+      ]
+    },
+    "characters/mags/character.json": {
+      "relationships": [
+        {
+          "to": "jo",
+          "label": "Jo",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.8
+        },
+        {
+          "to": "okafor",
+          "label": "Mr Okafor",
+          "familiarity": 0.9,
+          "trust": 0.8,
+          "affinity": 0.7
+        },
+        {
+          "to": "dev",
+          "label": "Dev",
+          "familiarity": 0.7,
+          "trust": 0.6,
+          "affinity": 0.6
+        }
+      ]
+    },
+    "characters/okafor/character.json": {
+      "relationships": [
+        {
+          "to": "mags",
+          "label": "Mags",
+          "familiarity": 0.9,
+          "trust": 0.8,
+          "affinity": 0.7
+        },
+        {
+          "to": "jo",
+          "label": "Jo",
+          "familiarity": 0.6,
+          "trust": 0.6,
+          "affinity": 0.6
+        }
+      ]
+    },
+    "lore/building-news/lore.json": {
+      "known_by": [
+        "mags",
+        "okafor"
+      ],
+      "body": "The landlord has decided to sell the corner building after Christmas, and has told Mags only that the lease is under review."
+    }
+  }
+}

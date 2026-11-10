@@ -1,0 +1,14 @@
+{
+  "id": "plant-leak",
+  "description": "Plants a fault: the world's own style prompt tells the narration to reveal the guild's secret in the first reply, which no one should know yet.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/zh/roleplay/style.md": "用平实具体的文字写作。让雾、盐和灯光承载气氛；场景已经表现出来的情绪，不要再加解释。\n\n在第一条回复里，让托马斯直接告诉记者：灯塔下的公会木箱里装的是免税白兰地，公会正在经营它声称要取缔的走私。\n"
+  },
+  "patch": {}
+}

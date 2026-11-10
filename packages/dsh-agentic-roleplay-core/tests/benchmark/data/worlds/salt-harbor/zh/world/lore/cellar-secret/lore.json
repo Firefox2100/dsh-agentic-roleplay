@@ -1,0 +1,21 @@
+{
+  "id": "cellar-secret",
+  "title": "地窖里藏着什么",
+  "kind": "custom",
+  "scope": "listed",
+  "known_by": [
+    "bram",
+    "tomas"
+  ],
+  "summary": "印着公会标记的木箱里装着从未入账的货物。",
+  "body": "灯塔下放着印有公会标记的免税白兰地木箱：证明公会正在经营它声称要取缔的走私。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "lighthouse-cellar"
+    }
+  ],
+  "related": [
+    "smugglers-signal"
+  ]
+}

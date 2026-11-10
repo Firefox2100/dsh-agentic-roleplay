@@ -1,0 +1,14 @@
+{
+  "id": "orchids",
+  "title": "窗前的兰花",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "黛玉窗前养着几盆兰花，是她自己侍弄的，从不让别人浇水。",
+  "body": "潇湘馆窗台上养着几盆兰花，是黛玉自己侍弄的，从不让别人浇水；园里的人提起她的花，说的就是这几盆兰花。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "xiaoxiang"
+    }
+  ]
+}

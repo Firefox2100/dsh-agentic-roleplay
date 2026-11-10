@@ -1,0 +1,8 @@
+{
+  "commands": [
+    {
+      "word": "recruit",
+      "description": "Take on a new performer for the troupe: someone arrives at the Marshal's tent and gives a name and a trade."
+    }
+  ]
+}

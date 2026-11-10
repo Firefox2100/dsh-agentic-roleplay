@@ -1,0 +1,86 @@
+{
+  "id": "cast-solo",
+  "description": "One character besides the player: tieshan. Everyone else is removed with what referred to them; both factions go, the plot follows him alone, the letter's lore is his.",
+  "requires": [],
+  "conflicts": [
+    "cast-small"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/baizhi",
+    "characters/qianzhanggui",
+    "characters/guyan",
+    "factions",
+    "items/long-case",
+    "items/herbs"
+  ],
+  "add": {},
+  "patch": {
+    "characters/shenqing/character.json": {
+      "relationships": [
+        {
+          "to": "tieshan",
+          "label": "铁镖头",
+          "familiarity": 0.5,
+          "trust": 0.6,
+          "affinity": 0.5
+        }
+      ]
+    },
+    "characters/tieshan/character.json": {
+      "relationships": [
+        {
+          "to": "shenqing",
+          "label": "沈姑娘",
+          "familiarity": 0.5,
+          "trust": 0.6,
+          "affinity": 0.5
+        }
+      ]
+    },
+    "lore/letter-secret/lore.json": {
+      "known_by": [
+        "tieshan"
+      ]
+    },
+    "plots.json": [
+      {
+        "id": "missing-escort",
+        "name": "晚了的镖",
+        "premise": "那趟镖里装的不是货，是一封信，有人不想让它到。",
+        "themes": [
+          "信义",
+          "江湖"
+        ],
+        "hooks": [
+          {
+            "id": "empty-saddle",
+            "text": "一匹马独自回到镖局，鞍上有刀痕。",
+            "mode": "opportunity"
+          }
+        ],
+        "developments": [
+          {
+            "id": "temple-found",
+            "text": "后山破庙里发现了镖车的残骸。",
+            "mode": "opportunity",
+            "prerequisites": [
+              "empty-saddle"
+            ]
+          }
+        ],
+        "stakes": [
+          "镖局的信誉"
+        ],
+        "resolutions": [
+          "信送到了",
+          "信被烧了"
+        ],
+        "participants": [
+          "tieshan"
+        ],
+        "start": "available"
+      }
+    ]
+  }
+}

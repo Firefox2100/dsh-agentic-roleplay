@@ -220,6 +220,7 @@ stays where it is, and, if it matters and was away while time passed, the world 
 | `activity` | string | | Required. What it is doing: `minds the shop`. |
 | `location`, `feature`, `position` | string | | The id of a place of the world, a feature of it, and where in it. `feature` needs `location`. |
 | `interruptible` | boolean | true | Whether it would drop this for something that comes up. |
+| `sleep` | boolean | false | Whether the character is asleep in this window (in the place it names, while nothing has woken it). |
 
 At most 24 windows. Times are read in the zone of the chat.
 

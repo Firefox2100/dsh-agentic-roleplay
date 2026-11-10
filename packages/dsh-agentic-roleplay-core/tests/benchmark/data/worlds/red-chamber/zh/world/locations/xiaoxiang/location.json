@@ -1,0 +1,24 @@
+{
+  "id": "xiaoxiang",
+  "name": "潇湘馆",
+  "description": "后园深处一处幽静的小院，窗下摆着几盆兰花，屋里常有药香和墨香。",
+  "features": [
+    {
+      "id": "window",
+      "name": "窗边的榻",
+      "description": "一张旧榻，窗台上排着几盆兰花。"
+    },
+    {
+      "id": "desk",
+      "name": "书案",
+      "description": "摊着诗稿和一方旧砚。"
+    }
+  ],
+  "exits": [
+    {
+      "to": "path",
+      "description": "出院门是园中小径",
+      "travel_time_seconds": 30
+    }
+  ]
+}

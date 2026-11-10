@@ -1,0 +1,83 @@
+{
+  "id": "visitor",
+  "name": "苏漪",
+  "age": 24,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "远道而来的客人，是园里一位姑娘幼时的朋友。",
+  "personality": "安静、细心，爱听别人说话。",
+  "background": "从外地来，替家里人送一封信，顺便探望旧友。",
+  "appearance": "素色的衣裙，手里一把油纸伞。",
+  "speech": {
+    "style": "说话轻缓，有礼。",
+    "examples": [
+      "打扰了。",
+      "你慢慢说，我听着。"
+    ]
+  },
+  "start": {
+    "public_state": "收起油纸伞。",
+    "activity": "收伞。",
+    "inner_state": "盼着见到旧友。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.1
+      }
+    },
+    "intents": [],
+    "location": "xiaoxiang",
+    "position": "门边"
+  },
+  "relationships": [
+    {
+      "to": "daiyu",
+      "label": "林姑娘",
+      "familiarity": 0.6,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "baoyu",
+      "label": "宝二爷",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.3
+    },
+    {
+      "to": "baochai",
+      "label": "宝姑娘",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.3
+    },
+    {
+      "to": "zijuan",
+      "label": "紫鹃姐姐",
+      "familiarity": 0.4,
+      "trust": 0.5,
+      "affinity": 0.4
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "xiaoxiang",
+      "path",
+      "yihong",
+      "hengwu"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "poems"
+    ]
+  },
+  "variables": {
+    "mood": 3
+  }
+}

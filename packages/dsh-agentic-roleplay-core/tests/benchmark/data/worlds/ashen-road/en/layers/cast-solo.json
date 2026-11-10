@@ -1,0 +1,86 @@
+{
+  "id": "cast-solo",
+  "description": "One character besides the player: brann. Everyone else is removed with what referred to them; both factions go, the plot follows brann alone, the well lore is his.",
+  "requires": [],
+  "conflicts": [
+    "cast-small"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/lioren",
+    "characters/tarrow",
+    "characters/vessa",
+    "factions",
+    "items/sealed-letter",
+    "items/lamp-kit"
+  ],
+  "add": {},
+  "patch": {
+    "characters/brann/character.json": {
+      "relationships": [
+        {
+          "to": "edda",
+          "label": "Edda",
+          "familiarity": 0.5,
+          "trust": 0.5,
+          "affinity": 0.4
+        }
+      ]
+    },
+    "lore/well-lore/lore.json": {
+      "known_by": [
+        "brann"
+      ]
+    },
+    "plots.json": [
+      {
+        "id": "the-late-convoy",
+        "name": "The late convoy",
+        "premise": "The convoy was turned back by something in the ash that Brann would rather not name.",
+        "themes": [
+          "trust",
+          "fear"
+        ],
+        "hooks": [
+          {
+            "id": "empty-saddle",
+            "text": "A rider's horse comes in alone, its saddle scorched.",
+            "mode": "opportunity"
+          }
+        ],
+        "developments": [
+          {
+            "id": "ruin-found",
+            "text": "The old well in the ruin is open again.",
+            "mode": "opportunity",
+            "prerequisites": [
+              "empty-saddle"
+            ]
+          }
+        ],
+        "stakes": [
+          "the town's winter stores"
+        ],
+        "resolutions": [
+          "the well is sealed again",
+          "the town leaves it open"
+        ],
+        "participants": [
+          "brann"
+        ],
+        "start": "available"
+      }
+    ],
+    "characters/edda/character.json": {
+      "relationships": [
+        {
+          "to": "brann",
+          "label": "Brann Holt",
+          "familiarity": 0.5,
+          "trust": 0.5,
+          "affinity": 0.4
+        }
+      ]
+    }
+  }
+}

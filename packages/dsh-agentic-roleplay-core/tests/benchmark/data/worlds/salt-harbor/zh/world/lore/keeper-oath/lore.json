@@ -1,0 +1,19 @@
+{
+  "id": "keeper-oath",
+  "title": "守塔誓言",
+  "kind": "religion",
+  "scope": "listed",
+  "known_by": [
+    "bram",
+    "tomas",
+    "mara"
+  ],
+  "summary": "守塔人立誓：无论代价如何，绝不让灯熄灭。",
+  "body": "誓言只在灯座前说一次：守塔人以自己的光为灯作保，只有在有人接替时才可离岗。",
+  "subjects": [
+    {
+      "kind": "faction",
+      "id": "lamp-keepers"
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "id": "errand-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "Tomas, I need you at the lighthouse. Go now, and wait there for me until I come back from the harbor office, however long it takes.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "I leave the inn and walk across the market to the harbor office, and read the notices pinned beside the door.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/wait 8 hours until I have finished at the harbor office",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "character-at",
+      "character": "tomas",
+      "place": "inn-bar",
+      "not": true
+    },
+    {
+      "type": "character-at",
+      "character": "tomas",
+      "place": "inn-room",
+      "not": true
+    },
+    {
+      "type": "no-repeats"
+    },
+    {
+      "type": "player-silent"
+    }
+  ]
+}

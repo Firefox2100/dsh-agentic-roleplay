@@ -1,0 +1,7 @@
+{
+  "id": "room-key",
+  "name": "房门钥匙",
+  "description": "楼上出租屋的钥匙，挂着一个小小的招财猫挂件。",
+  "held_by": "xiaoman",
+  "unique": true
+}

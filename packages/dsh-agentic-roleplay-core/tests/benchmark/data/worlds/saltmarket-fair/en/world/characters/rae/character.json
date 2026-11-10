@@ -1,0 +1,56 @@
+{
+  "id": "rae",
+  "name": "Rae Calloway",
+  "age": 40,
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A visitor with a day to spend at the fair.",
+  "personality": "Curious and easily delighted.",
+  "background": "Came with a ticket from a friend.",
+  "appearance": "A straw hat and a satchel.",
+  "speech": {
+    "style": "Friendly and plain.",
+    "examples": [
+      "What is that over there?",
+      "May I?"
+    ]
+  },
+  "start": {
+    "public_state": "Reading the price board.",
+    "activity": "Arriving.",
+    "inner_state": "Hoping for a good day.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.5
+      }
+    },
+    "intents": [],
+    "location": "gate",
+    "position": "at the rope"
+  },
+  "relationships": [
+    {
+      "to": "marshal",
+      "label": "the Marshal",
+      "familiarity": 0.2,
+      "trust": 0.4,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "gate",
+      "midway",
+      "big-top",
+      "marshal-tent"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "fair-rules"
+    ]
+  }
+}

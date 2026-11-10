@@ -1,0 +1,21 @@
+{
+  "id": "cellar-secret",
+  "title": "What the cellar holds",
+  "kind": "custom",
+  "scope": "listed",
+  "known_by": [
+    "bram",
+    "tomas"
+  ],
+  "summary": "Crates stamped with the guild's mark hold goods that were never entered in its books.",
+  "body": "Under the lighthouse lie crates of untaxed brandy stamped with the guild's mark: proof that the guild runs the smuggling it claims to police.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "lighthouse-cellar"
+    }
+  ],
+  "related": [
+    "smugglers-signal"
+  ]
+}

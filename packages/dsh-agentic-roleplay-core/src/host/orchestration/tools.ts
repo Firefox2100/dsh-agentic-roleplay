@@ -142,6 +142,11 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         required: true,
         description: 'An objective description of the moment: in the first round what the player\'s character just did or said; in a later round what is happening now, following from the rounds before (they are told those too). Every character is told this and nothing more, so leave out anyone\'s private thoughts.',
       },
+      wakes: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Keys of the characters asleep (the scene says who) that what the player did wakes: only those you list take part, and your narration must show them waking. A sleeper you do not list cannot be asked. Leave out when nobody is woken.',
+      },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderAttempt(value as unknown as AttemptReport) }] },
     isConcurrencySafe: () => false,
@@ -149,7 +154,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       const { agent, owner } = ownerOf(exec.agent)
       await deps.engine.settle(owner.chat, owner.turn)
       const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) })
-      return record(await deps.engine.activate(owner, { situation: args.situation, characters: args.characters }, run, exec.signal))
+      return record(await deps.engine.activate(owner, { situation: args.situation, characters: args.characters, ...(args.wakes === undefined ? {} : { wakes: args.wakes }) }, run, exec.signal))
     },
   })
 
@@ -167,6 +172,8 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
             character: { type: 'string', required: true, description: 'The character\'s key; for the player\'s character, only when it moves or handles things; in an out-of-character command, any character of the story.' },
             result: { type: 'string', required: true, enum: RESULTS, description: 'Whether the character\'s intent went through.' },
             summary: { type: 'string', required: true, description: 'What concretely happens to the character, in a sentence. It becomes what the character is doing.' },
+            off_routine_minutes: { type: 'integer', description: 'For a character that has a daily routine: how long, in minutes, from now until it is free to go back to its routine, counting the whole time away and not only the way there (an errand, a vigil, a long talk). Never for the player\'s character, who has no routine. Always give it when the character is told or chooses to stay, wait, watch or keep going until something happens or someone returns ("wait however long it takes"): then count generously, past the longest the wait could last, such as 600 for a whole night. Leave it out only for a short detour: it then keeps to what it does until its day next changes, and its routine takes it back after that. A character who is led or sent elsewhere, or woken, is taken off its routine either way.' },
+            waits_for_player: { type: 'boolean', description: 'True when the character is told or chooses to stay, wait or watch until the player\'s character is with it again, or goes on an errand that ends only when it is back with the player. It then keeps to that until the player comes to it, whatever its routine says, for at most a day. Never for the player\'s character.' },
             roll: { type: 'integer', description: 'The id of the dice roll that decided this outcome (the id roll_check gave), when you rolled for it: the result you give must be the roll\'s.' },
             spoken: { type: 'boolean', description: 'Whether the character gets to say its utterance. It does unless something prevents it, such as being silenced or knocked out first.' },
             public_state: { type: 'string', description: 'What anyone present can now see or infer about the character, when that changed.' },
@@ -236,6 +243,8 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         ...(outcome.public_state === undefined ? {} : { publicState: outcome.public_state }),
         ...(outcome.spoken === undefined ? {} : { spoken: outcome.spoken }),
         ...(outcome.roll === undefined ? {} : { roll: outcome.roll }),
+        ...(outcome.waits_for_player === true ? { waitsForPlayer: true as const } : {}),
+        ...(outcome.off_routine_minutes === undefined ? {} : { offRoutineMinutes: outcome.off_routine_minutes }),
         ...(outcome.item_changes === undefined || outcome.item_changes.length === 0 ? {} : { itemChanges: outcome.item_changes.map(change => ({ item: change.item, action: change.action as ItemAction, ...(change.to === undefined ? {} : { to: change.to }), ...(change.quantity === undefined ? {} : { quantity: change.quantity }), ...(change.position === undefined ? {} : { position: change.position }), ...(change.feature === undefined ? {} : { feature: change.feature }), ...(change.with === undefined ? {} : { with: change.with }), ...(change.exit === undefined ? {} : { exit: change.exit }), ...(change.forced === true ? { forced: true } : {}) })) }),
         ...(outcome.variable_changes === undefined || outcome.variable_changes.length === 0 ? {} : { variableChanges: outcome.variable_changes.map(change => ({ variable: change.variable, subject: change.subject, ...(change.to === undefined ? {} : { to: change.to }), ...(change.by === undefined ? {} : { by: change.by }), ...(change.baseline === undefined ? {} : { baseline: change.baseline }) })) }),
         ...(outcome.moves_to === undefined ? {} : { moveTo: { location: outcome.moves_to.location, ...(outcome.moves_to.position === undefined ? {} : { position: outcome.moves_to.position }), ...(outcome.moves_to.feature === undefined ? {} : { feature: outcome.moves_to.feature }), ...(outcome.moves_to.ignore_exits === true ? { ignoreExits: true } : {}) } }),
@@ -460,6 +469,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       rule_check: { type: 'string', required: true, description: 'First, go through every rule the scene lists, one by one, in a few words each: does what the character tries need what the rule excludes? The rules are literal. Then whether it is viable here. Write "no rules listed" when there are none.' },
       at: { type: 'string', description: 'The key of the place where the action happens, only when the player says it happens at a particular place (talking to the baker in the market, searching the cellar) rather than where the character is. If the character is somewhere else the action cannot work: it has to go there first. Leave it out when the action happens where the character is, and when the player is going somewhere (the journey is its own action).' },
       allowed: { type: 'boolean', required: true, description: 'Whether what the character tries can work: false when any listed rule is broken or it is not viable.' },
+      goes_to: { type: 'string', description: 'The key of the place the player\'s character is going to, only when what it tries is to go, walk or travel to another place, or to enter one (the market, the cellar, home). Leave it out for anything else. If you do not then record the move with resolve_round, you are asked to before the output is delivered.' },
       uncertain: { type: 'boolean', required: true, description: 'Always answer, when it can work: true when it can plainly go either way and the result matters to the story, such as talking round someone wary or hostile, a hard lock, a stealthy approach past someone watching, a climb, a leap, a chase, a fight, a hurried search; false for what plainly succeeds (walking, opening an unlocked door, asking a friendly question) or has nothing at stake. When it is true and you have dice tools, you roll for it before anyone is asked to act and the dice decide; without dice tools it changes nothing.' },
       reason: { type: 'string', required: true, description: 'What the character tries, and the rule or the fact that decides it, in a sentence.' },
     },
@@ -473,7 +483,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     async execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
       await deps.engine.checkRules(owner, args.allowed)
-      const judged = deps.engine.judge(owner, args.allowed, args.reason, args.at, args.uncertain)
+      const judged = deps.engine.judge(owner, args.allowed, args.reason, args.at, args.uncertain, args.goes_to)
       const store = deps.stores(owner.chat)
       return record(judged.roll === true && store !== undefined && toolEnabled(store.settings().tools, 'gameMaster', 'roll_and_narrate') ? { ...judged, quick: true } : judged)
     },

@@ -1,0 +1,17 @@
+{
+  "id": "shop-recipe",
+  "title": "骨汤的做法",
+  "kind": "custom",
+  "scope": "listed",
+  "summary": "陈姨的骨汤要熬六个小时，里面放了一味不外传的香料。",
+  "body": "骨汤用猪骨熬六个小时，最后放一把自己晒的陈皮和花椒，比例陈姨从不告诉别人。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "noodle-shop"
+    }
+  ],
+  "known_by": [
+    "chen"
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "keeper-oath",
+  "title": "The keeper's oath",
+  "kind": "religion",
+  "scope": "listed",
+  "known_by": [
+    "bram",
+    "tomas",
+    "mara"
+  ],
+  "summary": "A keeper swears never to let the lamp go dark, whatever it costs.",
+  "body": "The oath is spoken once, at the foot of the lamp: the keeper answers for the light with his own, and may leave it only for a successor.",
+  "subjects": [
+    {
+      "kind": "faction",
+      "id": "lamp-keepers"
+    }
+  ]
+}

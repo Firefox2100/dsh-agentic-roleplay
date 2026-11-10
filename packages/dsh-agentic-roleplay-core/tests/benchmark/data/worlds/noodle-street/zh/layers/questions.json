@@ -1,0 +1,64 @@
+{
+  "id": "questions",
+  "description": "Two start questions: when the story begins (two alternate openings: before opening, and the lunch rush) and how it is played (the real clock or not). They change only what a start answer may: the opening and the clock mode.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "alternate_openings": [
+        {
+          "title": "开门之前",
+          "text": "天刚蒙蒙亮，面馆的卷帘门还只拉起了一半。你睡眼惺忪地从楼上下来，灶上的骨汤已经咕嘟咕嘟地响了。",
+          "character": "xiaoman"
+        },
+        {
+          "title": "午市高峰",
+          "text": "午市的客人一拨接一拨地涌进来，六张桌子全坐满了。你系紧围裙，端起两碗面，在桌子之间侧着身子挤过去。",
+          "character": "xiaoman"
+        }
+      ],
+      "start_questions": [
+        {
+          "id": "time",
+          "text": "故事从什么时候开始？",
+          "options": [
+            {
+              "id": "early",
+              "label": "开门之前",
+              "effect": {
+                "opening": 0
+              }
+            },
+            {
+              "id": "rush",
+              "label": "午市高峰",
+              "effect": {
+                "opening": 1
+              }
+            }
+          ]
+        },
+        {
+          "id": "pace",
+          "text": "故事怎么进行？",
+          "options": [
+            {
+              "id": "steady",
+              "label": "按故事自己的节奏"
+            },
+            {
+              "id": "live",
+              "label": "跟着现实的时钟",
+              "effect": {
+                "clock_mode": "real"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

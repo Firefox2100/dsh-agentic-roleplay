@@ -1,0 +1,42 @@
+[
+  {
+    "key": "fog",
+    "name": "Fog",
+    "description": "How thick the London fog is.",
+    "kind": "choice",
+    "subject": "world",
+    "options": [
+      "clear",
+      "thin",
+      "thick"
+    ],
+    "default": "thick",
+    "visibility": "public"
+  },
+  {
+    "key": "restlessness",
+    "name": "Restlessness",
+    "description": "How restless the character is for want of work: 0 content, 10 unbearable. Idle days raise it; a case lowers it.",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "content"
+      },
+      {
+        "up_to": 6,
+        "label": "restless"
+      },
+      {
+        "up_to": 10,
+        "label": "unbearable"
+      }
+    ]
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "hemisphere": "north",
+  "holidays": [
+    {
+      "id": "harvest-fair",
+      "name": "Harvest Fair",
+      "on": [
+        "10-20"
+      ]
+    }
+  ]
+}

@@ -20,6 +20,8 @@ interface NodeLike {
 /** The suggestions are made after the output is shown, so they are asked for until they are there. */
 const POLL_MS = 2000
 const GIVE_UP_AFTER = 45
+/** Messages from characters arrive while nobody is playing, so they are looked for all the while the dock is open, slowly. */
+const MESSAGE_POLL_MS = 30_000
 
 /**
  * What the player could do next, as chips stacked above the input; clicking one fills the input (the player may
@@ -40,6 +42,21 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
   const [meanwhile, setMeanwhile] = useState<readonly string[]>([])
   const [unfinished, setUnfinished] = useState<readonly string[]>([])
   const [unwritten, setUnwritten] = useState(0)
+  const [messages, setMessages] = useState<readonly string[]>([])
+
+  useEffect(() => {
+    let stopped = false
+    const look = (): void => {
+      notes().then((found) => {
+        if (stopped) return
+        const lines = found.find(note => note.kind === 'message')?.lines ?? []
+        setMessages(previous => (previous.join('\n') === lines.join('\n') ? previous : lines))
+      }).catch((error: unknown) => { console.warn('roleplay: the notes could not be read', error) })
+    }
+    look()
+    const timer = setInterval(look, MESSAGE_POLL_MS)
+    return () => { stopped = true; clearInterval(timer) }
+  }, [notes])
 
   useEffect(() => {
     setOffered([])
@@ -67,7 +84,7 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
     return () => { stopped = true; if (timer !== undefined) clearTimeout(timer) }
   }, [latest, notes])
 
-  if (running || (offered.length === 0 && meanwhile.length === 0 && unfinished.length === 0 && unwritten === 0)) return null
+  if (running || (offered.length === 0 && meanwhile.length === 0 && unfinished.length === 0 && unwritten === 0 && messages.length === 0)) return null
   return (
     <div className={css.dock} data-testid="roleplay-suggestions" data-rp="suggestions">
       {unwritten > 0 && <span className={css.label} data-testid="roleplay-unwritten">{t('unwritten', { count: unwritten })}</span>}
@@ -75,6 +92,12 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
         <div className={css.card} data-testid="roleplay-world-findings">
           <span className={css.label}>{t('worldFindings')}</span>
           <ul className={css.lines}>{unfinished.map(line => <li key={line}>{line}</li>)}</ul>
+        </div>
+      )}
+      {messages.length > 0 && (
+        <div className={css.card} data-testid="roleplay-messages">
+          <span className={css.label}>{t('messagesAway')}</span>
+          <ul className={css.lines}>{messages.map(line => <li key={line}>{line}</li>)}</ul>
         </div>
       )}
       {meanwhile.length > 0 && (

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
-import { DECISION_SITES, type DecisionsPayload, type DecisionSite, type ExtraMode, type GateMode } from '../../shared/decisions.ts'
+import { DECISION_SITES, type DecisionsPayload, type DecisionSite, type ExtraMode, type RepeatMode } from '../../shared/decisions.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
 import { agreement, perRun } from './decision-figures.ts'
 import { loadDecisions } from './settings-api.ts'
@@ -8,11 +8,11 @@ import css from './ChatSettingsView.module.css'
 
 type Translate = (key: ChatSettingsLocaleKey, values?: Record<string, string | number>) => string
 
-const MODE_LABEL = { off: 'decisionOff', llm: 'decisionLlm', decision: 'decisionDecision', hybrid: 'decisionHybrid', shadow: 'decisionShadow', on: 'decisionOn' } as const
-const SITE_LABEL = { reuse: 'decisionsSiteReuse', variables: 'decisionsSiteVariables', triggers: 'decisionsSiteTriggers', reflection: 'decisionsSiteReflection', agency: 'decisionsSiteAgency', refusal: 'decisionsSiteRefusal', rules: 'decisionsSiteRules', secrets: 'decisionsSiteSecrets' } as const
+const MODE_LABEL = { off: 'decisionOff', llm: 'decisionLlm', decision: 'decisionDecision', hybrid: 'decisionHybrid', shadow: 'decisionShadow', strict: 'decisionStrict', on: 'decisionOn' } as const
+const SITE_LABEL = { reuse: 'decisionsSiteReuse', errands: 'decisionsSiteErrands', variables: 'decisionsSiteVariables', triggers: 'decisionsSiteTriggers', reflection: 'decisionsSiteReflection', agency: 'decisionsSiteAgency', refusal: 'decisionsSiteRefusal', repeats: 'decisionsSiteRepeats', rules: 'decisionsSiteRules', secrets: 'decisionsSiteSecrets', messages: 'decisionsSiteMessages' } as const
 
 /** Whether a decision model is there, and how the sites set to use one have done in this story. */
-export function DecisionsSection({ t, session, modes }: { t: Translate; session: string; modes: Record<DecisionSite, GateMode | ExtraMode> }) {
+export function DecisionsSection({ t, session, modes }: { t: Translate; session: string; modes: Record<DecisionSite, RepeatMode | ExtraMode> }) {
   const [payload, setPayload] = useState<DecisionsPayload | undefined>()
   const [error, setError] = useState<string | undefined>()
   const [refreshing, setRefreshing] = useState(false)

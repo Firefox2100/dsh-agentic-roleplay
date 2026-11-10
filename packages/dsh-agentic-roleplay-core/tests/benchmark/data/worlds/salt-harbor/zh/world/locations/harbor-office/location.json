@@ -1,0 +1,13 @@
+{
+  "id": "harbor-office",
+  "name": "港务所",
+  "description": "镶木板的楼上房间，公会在此存放潮汐表、海图和一只上锁的保险箱。",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "high-desk",
+      "name": "高桌",
+      "description": "一张站立式高桌，摊着当天的数据。"
+    }
+  ]
+}

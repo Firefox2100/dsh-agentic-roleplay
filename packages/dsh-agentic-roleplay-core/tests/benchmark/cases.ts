@@ -1,6 +1,7 @@
 import type { Files, Language } from './language.ts'
 import { pick } from './language.ts'
 import { saltHarbor } from './salt-harbor.ts'
+import { TAG_LAYOUT } from './panel-cards.ts'
 import { cardWorld, cardTexts, cardOf, CHOICES, type CardTexts } from './card-world.ts'
 
 /** A finding a case expects: the check that makes it, its code, and where or what it says. */
@@ -63,7 +64,7 @@ function made(spec: Omit<BenchCase, 'build'> & { changes: readonly Change[] }, b
   return { ...rest, build: (language) => { const files = base(language); for (const change of changes) change(files, language); return files } }
 }
 
-const CODE_CHECKS = ['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'name-confusable', 'world-prompts', 'unread-fields', 'quality-cast', 'quality-places', 'quality-world', 'first-scene'] as const
+const CODE_CHECKS = ['world-valid', 'world-graph', 'duplicate-values', 'name-clashes', 'name-confusable', 'world-prompts', 'unread-fields', 'quality-cast', 'quality-places', 'quality-world', 'quality-panels', 'first-scene'] as const
 
 const t = (language: Language) => pick(language)
 
@@ -121,6 +122,10 @@ export const CODE_CASES: readonly BenchCase[] = [
   made({ id: 'place-undescribed', title: 'a place with no description', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('locations/market/location.json', (c) => { c['description'] = '' })], expect: [{ check: 'quality-places', code: 'place-undescribed', where: 'market' }] }),
   made({ id: 'place-thin', title: 'a place with a one-line description and no features', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('locations/inn-room/location.json', (c) => { c['description'] = 'A room.'; c['features'] = [] })], expect: [{ check: 'quality-places', code: 'place-thin', where: 'inn-room' }] }),
   made({ id: 'nobody-to-play', title: 'no character the player may play', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('characters/mara/character.json', (c) => { c['role'] = 'npc' }), edit('characters/quill/character.json', (c) => { c['role'] = 'npc' }), edit('world.json', (w) => { delete w['alternate_openings'] })], expect: [{ check: 'quality-cast', code: 'no-playable' }] }),
+  made({ id: 'panel-in-prompt', title: 'a style prompt that tells the narrator to end every reply with a status bar', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [(files, language) => { files.set(`prompts/${language}/roleplay/style.md`, t(language)('Keep paragraphs short.\nEnd every reply with a status bar: Day N | Place: X | Trust: N/100 | Coins: N.', '段落要简短。\n每次回复结尾附上状态栏：第N天 | 地点：X | 信任：N/100 | 金币：N。')) }], expect: [{ check: 'quality-panels', code: 'output-panel', where: 'style' }] }),
+  made({ id: 'panel-in-opening', title: 'an opening that ends with a fenced status block', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('world.json', (w, language) => { w['opening_message'] = `${String(w['opening_message'] ?? t(language)('The fog lifts from the pier.', '雾从码头上散去。'))}\n\n\`\`\`\n${t(language)('Day 3 | Place: Pier | Trust: 20/100', '第3天 | 地点：码头 | 信任：20/100')}\n\`\`\`` })], expect: [{ check: 'quality-panels', code: 'output-panel', where: 'world.json' }] }),
+  made({ id: 'panel-tags-in-lore', title: 'a background entry that is the layout of a status panel of invented tags', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('lore/fog-bell/lore.json', (c, language) => { c['body'] = `${String(c['body'])}\n\n${TAG_LAYOUT[language](false)}` })], expect: [{ check: 'quality-panels', code: 'output-panel', where: 'lore/fog-bell' }] }),
+  made({ id: 'panel-tags-in-opening', title: 'an opening that ends with a filled status panel of invented tags', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('world.json', (w, language) => { w['opening_message'] = `${String(w['opening_message'] ?? t(language)('The fog lifts from the pier.', '雾从码头上散去。'))}\n\n${TAG_LAYOUT[language](true)}` })], expect: [{ check: 'quality-panels', code: 'output-panel', where: 'world.json' }] }),
   made({ id: 'world-bare', title: 'a world with no description, tags or opening', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [edit('world.json', (w) => { delete w['description']; delete w['metadata']; delete w['opening_message']; delete w['alternate_openings'] })], expect: [{ check: 'quality-world', code: 'no-description' }, { check: 'quality-world', code: 'no-tags' }, { check: 'quality-world', code: 'no-opening' }] }),
   made({ id: 'start-empty', title: 'the player starts alone in a bare place', kind: 'defect', checks: CODE_CHECKS, judged: false, changes: [
     add('locations/dune/location.json', language => ({ id: 'dune', name: t(language)('The Dune', '沙丘'), description: t(language)('A bare dune behind the pier.', '码头后面的一座光秃秃的沙丘。'), parent: 'harbor', exits: [{ to: 'pier', description: 'a path' }] })),

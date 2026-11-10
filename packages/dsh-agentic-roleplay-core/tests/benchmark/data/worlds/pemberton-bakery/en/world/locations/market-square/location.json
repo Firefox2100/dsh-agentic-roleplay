@@ -1,0 +1,13 @@
+{
+  "id": "market-square",
+  "name": "Market square",
+  "description": "Stalls on Mondays and Fridays, a war memorial and benches.",
+  "features": [
+    {
+      "id": "veg-stall",
+      "name": "The veg stall",
+      "description": "Where Mags buys her apples."
+    }
+  ],
+  "exits": []
+}

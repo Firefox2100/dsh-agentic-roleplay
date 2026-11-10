@@ -37,6 +37,8 @@ import { PresetAuthoringSessions } from './host/agent/preset-authoring-sessions.
 import { LorebookAuthoringSessions } from './host/agent/lorebook-authoring-sessions.ts'
 import { lorebookImportMessage } from './host/authoring/lorebook-author-tools.ts'
 import { Lorebooks } from './host/lorebooks/service.ts'
+import { StoryFoldersService } from './host/workspace/service.ts'
+import { AutonomyTicker } from './host/autonomy/ticker.ts'
 import { narrationImportMessage } from './host/authoring/preset-author-tools.ts'
 import { DoctorSessions } from './host/agent/doctor-sessions.ts'
 import { Config } from './host/config.ts'
@@ -156,6 +158,24 @@ export function apply(ctx: Context, config: Config) {
   const languages = new AuthoringLanguages(ctx, () => join(root.path, 'worlds'))
   const authoringTools = new AuthoringTools(ctx, () => config.authoringTools.get())
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
+  const autonomy = new AutonomyTicker({
+    sessions: () => listSessions({ state: ctx.roleplayState, sessionsDir: () => join(root.path, 'sessions') }).sessions.map(session => ({ id: session.id, name: session.name, archived: session.archivedAt !== undefined })),
+    settings: id => liveSettings(sessionFolder(join(root.path, 'sessions'), id)),
+    ensure: async (id, name) => await agent.ensure(id, name),
+    tick: async (chat, signal) => await orchestration.autonomy(chat, signal),
+    problem: (message) => { ctx.logger.warn(`roleplay: ${message}`) },
+  })
+  ctx.effect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const controller = new AbortController()
+    const later = (): void => {
+      const seconds = config.autonomyTickSeconds.get()
+      timer = setTimeout(() => { void (seconds === 0 ? Promise.resolve(0) : autonomy.run(controller.signal)).finally(later) }, Math.max(5, seconds === 0 ? 60 : seconds) * 1000)
+      timer.unref()
+    }
+    later()
+    return () => { controller.abort(); if (timer !== undefined) clearTimeout(timer) }
+  }, 'roleplay: stories that go on while the player is away')
   const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const presetAuthoring = new PresetAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const lorebookAuthoring = new LorebookAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
@@ -237,6 +257,7 @@ export function apply(ctx: Context, config: Config) {
     catalogue,
     presets: presetLibrary,
     lorebooks: lorebookLibrary,
+    folders: new StoryFoldersService({ root: () => root.path, sessionFolder: (id) => { const sessions = join(root.path, 'sessions'); if (!isSessionId(id) || !existsSync(sessionDatabase(sessions, id))) throw new SessionNotFoundError(`no session "${id}"`); return sessionFolder(sessions, id) } }),
     prompts: new PromptManager(prompts),
     packs: new InterfaceService({ open: id => ctx.roleplayState.openSession(deps.sessionsDir(), id), root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, world: worldId => worlds.find(worldId) }),
     speech: {

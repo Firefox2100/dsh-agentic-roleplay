@@ -1,0 +1,45 @@
+{
+  "id": "cast-solo",
+  "description": "One character besides the player: chen. Everyone else is removed with what referred to them; only chen knows the rumour.",
+  "requires": [],
+  "conflicts": [
+    "cast-small"
+  ],
+  "fits": [],
+  "remove": [
+    "characters/laozhou",
+    "characters/xiaoyu",
+    "characters/wangjie"
+  ],
+  "add": {},
+  "patch": {
+    "characters/xiaoman/character.json": {
+      "relationships": [
+        {
+          "to": "chen",
+          "label": "陈姨",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.7
+        }
+      ]
+    },
+    "characters/chen/character.json": {
+      "relationships": [
+        {
+          "to": "xiaoman",
+          "label": "小满",
+          "familiarity": 0.8,
+          "trust": 0.8,
+          "affinity": 0.8
+        }
+      ]
+    },
+    "lore/demolition-rumour/lore.json": {
+      "known_by": [
+        "chen"
+      ],
+      "body": "开发商已经和几户房东私下谈过，补偿方案要到年底才公布。"
+    }
+  }
+}

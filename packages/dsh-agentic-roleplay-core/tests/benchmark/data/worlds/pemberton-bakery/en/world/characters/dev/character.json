@@ -1,0 +1,80 @@
+{
+  "id": "dev",
+  "name": "Dev Patel",
+  "age": 25,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "A courier on a scooter who collects the bakery's orders.",
+  "personality": "Cheerful, fast-talking, always late for the next drop.",
+  "background": "Moved here for a girlfriend and a job; kept the job.",
+  "appearance": "Helmet under one arm, a delivery bag on his back.",
+  "speech": {
+    "style": "Quick and friendly; \"mate\", \"two secs\".",
+    "examples": [
+      "Two secs, Jo, let me check the app.",
+      "Mate, I am going to be late."
+    ]
+  },
+  "start": {
+    "public_state": "Leaning on the doorframe, checking his phone.",
+    "activity": "Waiting for the order.",
+    "inner_state": "Worried about next month's rent.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.6,
+        "dominance": 0.0
+      }
+    },
+    "intents": [],
+    "location": "high-street",
+    "position": "by his scooter"
+  },
+  "relationships": [
+    {
+      "to": "mags",
+      "label": "Mags",
+      "familiarity": 0.7,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "jo",
+      "label": "Jo",
+      "familiarity": 0.5,
+      "trust": 0.5,
+      "affinity": 0.5
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "bakery",
+      "high-street",
+      "market-square"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": []
+  },
+  "variables": {
+    "tiredness": 5
+  },
+  "routine": [
+    {
+      "from": "10:30",
+      "to": "14:00",
+      "activity": "delivering lunches",
+      "location": "high-street"
+    },
+    {
+      "from": "14:00",
+      "to": "17:00",
+      "activity": "resting at the park",
+      "location": "park",
+      "position": "the bench"
+    }
+  ]
+}

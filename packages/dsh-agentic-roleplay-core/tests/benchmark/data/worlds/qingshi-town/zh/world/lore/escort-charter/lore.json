@@ -1,0 +1,14 @@
+{
+  "id": "escort-charter",
+  "title": "镖局的规矩",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "威远镖局押镖三不押：不押官银、不押违禁、不押来路不明的信。",
+  "body": "威远镖局立镖局时定下三条规矩：不押官银，不押违禁之物，不押来路不明的信；这一次破了第三条。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "escort-office"
+    }
+  ]
+}

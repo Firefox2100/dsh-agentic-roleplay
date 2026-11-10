@@ -15,6 +15,7 @@ import { triggerJudge } from './host/triggers/judge.ts'
 import { outputGates } from './host/decisions/gates.ts'
 import { variableTracker } from './host/variables/tracker.ts'
 import { ruleChecks } from './host/decisions/extras.ts'
+import { errandChecks } from './host/decisions/errands.ts'
 import { factionStrategist } from './host/factions/strategist.ts'
 import { memoryReflector } from './host/memory/reflection.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
@@ -23,6 +24,7 @@ import { installHooks } from './host/orchestration/hooks.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { PERSONA_SECTION, PROTOCOL_SECTION } from './host/orchestration/prompt.ts'
 import { roleplaySessionOf } from './shared/chat.ts'
+import { TurnTraces, sessionOfChat, tracerOf } from './host/observability/trace.ts'
 import { liveSettings } from './host/sessions/settings.ts'
 import type { ChatSettings } from './shared/settings.ts'
 import { storesOf } from './host/orchestration/store.ts'
@@ -30,6 +32,10 @@ import { toolEnabled } from './shared/tools.ts'
 import { describeChecks } from './host/dice/describe.ts'
 import { RollReplay } from './host/dice/replay.ts'
 import { createDiceTools, sessionFolder, type DiceLink } from '@dsh-agentic-roleplay/state'
+import { tickAutonomy } from './host/orchestration/autonomy.ts'
+import { registerFoldersJail } from './host/workspace/jail.ts'
+import { storyRoots } from './host/workspace/service.ts'
+import { workspaceOf } from './host/workspace/folders.ts'
 import { FALLBACK_LANGUAGE, shippedText } from './host/prompts/library.ts'
 import { COMMANDS_KEY, commandFlagKey, commandsOf } from './shared/commands.ts'
 import { STANDING_PROMPT } from './host/import/extract.ts'
@@ -84,11 +90,12 @@ export function apply(ctx: Context): void {
   })
   ctx.effect(() => ctx.roleplayOrchestration.replace({ committer: recordKeeper({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: record keeper')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: trigger judge')
-  ctx.effect(() => ctx.roleplayOrchestration.replace({ outputGate: outputGates({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: output gates')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ outputGate: outputGates({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, earlier: (chat, count) => timelines.narrationBefore(chat, count), problem }) }), 'roleplay: output gates')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ ruleCheck: ruleChecks({ decisions, problem }) }), 'roleplay: rule check')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: reflection')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)), external: parent => ctx.get('roleplayAuthoringTools')?.given(parent.ctx.tools, 'worldAuthor') ?? [] }) }), 'roleplay: world author')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ errandKeeper: errandChecks({ decisions, problem }) }), 'roleplay: errands')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ variableTracker: variableTracker({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: tracked values')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ suggester: suggestionWriter({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: suggestions')
   ctx.effect(() => ctx.roleplayState.bind((agentSessionId) => {
@@ -155,10 +162,12 @@ export function apply(ctx: Context): void {
   // The story has no files, so a directory line only tells a character about the machine; a scoped entry of the same name shadows the required one.
   ctx.systemPrompt.context({ name: WORKING_DIRECTORY_CONTEXT, order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
   const rolls = new RollReplay(chat => stores(chat)?.settings().rewind.rolls ?? 'reroll')
-  const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, roller: chat => rolls.roller(chat), delivered: (chat, output) => { const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
+  const turnTraces = new TurnTraces(() => tracerOf(ctx))
+  const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, roller: chat => rolls.roller(chat), delivered: (chat, output) => { turnTraces.output(chat, output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: ${segment.text}` : segment.text)).join('\n\n')); const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
   const [previewTool, ...tools] = [...createTools(toolDeps)].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); ctx.roleplayOrchestration.playing = chat => engine.playing(chat); ctx.roleplayOrchestration.recallPreview = (chat, request, signal) => engine.recallPreview(chat, request, signal); return () => { ctx.roleplayOrchestration.recallPreview = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false; ctx.roleplayOrchestration.playing = () => false } }, 'roleplay: reflection control')
+  ctx.effect(() => { ctx.roleplayOrchestration.autonomy = async (chat, signal) => { const started = Date.now(); const run = await tickAutonomy({ engine, stores, boundaries, agentOf: id => ctx.agents.get(SessionId(id)), wall: Date.now, problem, decisions }, chat, signal); stores(chat)?.autonomy?.looked?.(run.outcome, Date.now()); const tracer = tracerOf(ctx); if (tracer !== undefined && (run.moved > 0 || run.outcome === 'wrote' || run.outcome === 'declined')) tracer.start({ name: 'autonomy look', kind: 'span', metadata: { outcome: run.outcome, moved: run.moved, seconds: (Date.now() - started) / 1000 }, trace: { name: 'autonomy look', sessionId: sessionOfChat(chat), tags: ['roleplay', 'autonomy'] } }).end({ output: run }); return run }; return () => { ctx.roleplayOrchestration.autonomy = () => Promise.resolve({ outcome: 'off', moved: 0 }) } }, 'roleplay: autonomy')
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.idle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
   let imageJobs: ImageJobs | undefined
   const timelines = new Timelines({
@@ -197,5 +206,6 @@ export function apply(ctx: Context): void {
     const agent = ctx.agents.get(SessionId(chat))
     return store === undefined || agent === undefined ? undefined : { session: store.story, turn: currentTurn(agent) }
   }
-  installHooks(ctx, { engine, boundaries, stores, timelines, rolls, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink, { rollerFor: chat => rolls.roller(chat) }), createCheckNarrateTool(toolDeps)] })
+  registerFoldersJail(ctx, { roots: async session => await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)), workspace: () => workspaceOf(ctx.roleplayRoot.path) })
+  installHooks(ctx, { traces: turnTraces, engine, boundaries, stores, timelines, rolls, folders: async chat => { const session = roleplaySessionOf(chat); return session === undefined ? undefined : await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)) }, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink, { rollerFor: chat => rolls.roller(chat) }), createCheckNarrateTool(toolDeps)] })
 }

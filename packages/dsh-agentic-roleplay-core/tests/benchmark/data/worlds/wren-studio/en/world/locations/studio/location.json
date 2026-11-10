@@ -1,0 +1,13 @@
+{
+  "id": "studio",
+  "name": "The studio",
+  "description": "One bright room with two desks, a kettle and a window onto the car park.",
+  "features": [
+    {
+      "id": "desk",
+      "name": "Wren's desk",
+      "description": "A screen, a keyboard and a mug of cold tea."
+    }
+  ],
+  "exits": []
+}

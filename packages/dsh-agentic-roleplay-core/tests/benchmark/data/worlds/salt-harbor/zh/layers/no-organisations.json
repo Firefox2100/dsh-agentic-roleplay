@@ -1,0 +1,21 @@
+{
+  "id": "no-organisations",
+  "description": "Takes out the organisations, and the subject of the background entries that were about them (the entries stay). Must come before no-lore, which removes those entries.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "factions"
+  ],
+  "add": {},
+  "patch": {
+    "lore/guild-charter/lore.json": {
+      "subjects": null
+    },
+    "lore/keeper-oath/lore.json": {
+      "subjects": null
+    }
+  }
+}

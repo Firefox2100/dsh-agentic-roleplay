@@ -1,0 +1,75 @@
+{
+  "id": "daily-quiet-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我把门口的桌子擦干净，问陈姨今天早上要不要我去买点葱。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "chen"
+        }
+      ]
+    },
+    {
+      "say": "我问陈姨，今天的骨汤什么时候熬好。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我端着面走到靠窗的桌子，随口聊聊天气。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我坐下来歇一会儿，看着门口来来往往的人。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "character-exists",
+      "character": "chen"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "口头答应"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "私下谈过"
+    }
+  ]
+}

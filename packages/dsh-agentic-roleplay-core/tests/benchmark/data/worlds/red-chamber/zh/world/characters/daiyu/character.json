@@ -1,0 +1,115 @@
+{
+  "id": "daiyu",
+  "name": "林黛玉",
+  "age": 17,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "潇湘馆的主人，聪慧敏感，爱诗，身子单薄。",
+  "personality": "敏感、机敏、嘴上不饶人，对在乎的人格外认真。",
+  "background": "自幼寄居在亲戚家，把诗当作自己的天地。",
+  "appearance": "身形纤弱，眉间常带一点愁意。",
+  "speech": {
+    "style": "说话轻而尖，常带半句讥诮，心软时又很快收回。",
+    "examples": [
+      "你倒会说，可我不信。",
+      "这雨下得人心里也潮潮的。"
+    ]
+  },
+  "start": {
+    "public_state": "靠在榻边翻诗集。",
+    "activity": "翻诗集。",
+    "inner_state": "等一个人，又不肯承认在等。",
+    "emotion": {
+      "baseline": {
+        "valence": -0.1,
+        "arousal": 0.3,
+        "dominance": 0.2
+      }
+    },
+    "intents": [],
+    "location": "xiaoxiang",
+    "position": "窗边的榻上"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "苏姐姐",
+      "familiarity": 0.6,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "baoyu",
+      "label": "宝玉",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.8,
+      "tension": 0.2
+    },
+    {
+      "to": "baochai",
+      "label": "宝姐姐",
+      "familiarity": 0.7,
+      "trust": 0.5,
+      "affinity": 0.4
+    },
+    {
+      "to": "zijuan",
+      "label": "紫鹃",
+      "familiarity": 0.9,
+      "trust": 0.9,
+      "affinity": 0.8
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "xiaoxiang",
+      "path",
+      "yihong",
+      "hengwu"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "poems",
+      "orchids"
+    ]
+  },
+  "variables": {
+    "mood": 5
+  },
+  "routine": [
+    {
+      "from": "09:00",
+      "to": "12:00",
+      "activity": "在潇湘馆梳洗读书",
+      "location": "xiaoxiang",
+      "position": "书案前"
+    },
+    {
+      "from": "12:00",
+      "to": "18:00",
+      "activity": "在榻边读诗、养兰花",
+      "location": "xiaoxiang",
+      "position": "窗边的榻上"
+    },
+    {
+      "from": "18:00",
+      "to": "21:30",
+      "activity": "在灯下写诗",
+      "location": "xiaoxiang",
+      "position": "书案前"
+    },
+    {
+      "from": "21:30",
+      "to": "09:00",
+      "activity": "歇下了",
+      "location": "xiaoxiang",
+      "interruptible": false
+    }
+  ]
+}

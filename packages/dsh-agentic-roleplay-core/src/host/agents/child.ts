@@ -16,6 +16,7 @@ import type {} from '@deepseek-ai/dsh-subagent'
 import { ToolArgsError, validateJsonSchemaValue, type ObjectJsonSchema, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { DEFAULT_MAX_CALLS, MAX_REMINDERS, MAX_OVERRUN, STEPS_AFTER_RETIRE, STEPS_PAST_BUDGET, REPEATS_TOLD, REPEATS_STOPPED, MAX_RESULT_REFUSALS, STOP_GRACE_MS } from './limits.ts'
 import { sharedSamplingOf, type SharedSamplingKey } from '../../shared/sampling.ts'
+import { sessionOfChat, startHelperSpan, tracerOf } from '../observability/trace.ts'
 
 /** The tool every child ends with: its arguments are the child's result. */
 export const SUBMIT_TOOL = 'submit_result'
@@ -409,6 +410,14 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     },
   }
   helpers.set(childId, entry)
+  // The helper's span is where its model requests nest: they are made by an agent DSH runs on its own, which the async context does not reach.
+  const tracer = tracerOf(parent.ctx)
+  const chat = String(parent.session.id)
+  const span = tracer === undefined ? undefined : startHelperSpan(tracer, chat, {
+    name: task.persona.split('\n', 1)[0]!.slice(0, 80), kind: 'agent', input: task.prompt,
+    metadata: { turn: task.turn ?? currentTurn(parent), session: sessionOfChat(chat), tools: (task.tools ?? []).map(tool => tool.name), external: task.external ?? [] },
+  })
+  const unlink = span === undefined ? undefined : tracer?.link(String(childId), span.ref)
   if (task.structured === true) {
     const { toolChoice: _unused, ...rest } = task.sampling ?? {}
     samplings.set(childId, { ...rest, body: { ...rest.body, response_format: { type: 'json_schema', json_schema: { name: 'result', strict: true, schema: task.result } } } })
@@ -442,9 +451,14 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
       }
       await (overran ? Promise.race([activation.dispose(), new Promise<void>((resolve) => { setTimeout(resolve, STOP_GRACE_MS) })]) : activation.dispose())
     }
+  } catch (error) {
+    span?.update({ level: 'ERROR', statusMessage: error instanceof Error ? error.message : String(error) })
+    throw error
   } finally {
     helpers.delete(childId)
     samplings.delete(childId)
+    unlink?.()
+    span?.end({ ...submitted === undefined ? {} : { output: submitted.value }, metadata: { calls: stats.calls, tokens: stats.tokens ?? NO_TOKENS } })
   }
   if (signal.aborted) throw new Error('cancelled')
   if (rambled && submitted === undefined) throw new Error(`the agent wrote text up to the limit of ${task.maxTokens ?? task.sampling?.maxTokens ?? 'its model'} tokens and never called ${SUBMIT_TOOL}, and was stopped`)

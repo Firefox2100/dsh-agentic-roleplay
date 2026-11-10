@@ -1,0 +1,23 @@
+{
+  "id": "path",
+  "name": "园中小径",
+  "description": "青石小径两旁是落叶和几丛未谢的菊，往前通向几处院落。",
+  "features": [],
+  "exits": [
+    {
+      "to": "xiaoxiang",
+      "description": "往潇湘馆去",
+      "travel_time_seconds": 30
+    },
+    {
+      "to": "yihong",
+      "description": "往怡红院去",
+      "travel_time_seconds": 150
+    },
+    {
+      "to": "hengwu",
+      "description": "往蘅芜苑去",
+      "travel_time_seconds": 180
+    }
+  ]
+}

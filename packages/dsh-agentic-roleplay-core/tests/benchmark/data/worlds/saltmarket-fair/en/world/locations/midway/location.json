@@ -1,0 +1,29 @@
+{
+  "id": "midway",
+  "name": "The midway",
+  "description": "A lane of stalls, games and tents with the big top at the far end.",
+  "features": [
+    {
+      "id": "stalls",
+      "name": "The stalls",
+      "description": "Coconut shy, toffee apples, a shooting gallery."
+    }
+  ],
+  "exits": [
+    {
+      "to": "gate",
+      "description": "back to the gate",
+      "travel_time_seconds": 30
+    },
+    {
+      "to": "big-top",
+      "description": "on to the big top",
+      "travel_time_seconds": 60
+    },
+    {
+      "to": "marshal-tent",
+      "description": "to the Marshal's tent behind the stalls",
+      "travel_time_seconds": 45
+    }
+  ]
+}

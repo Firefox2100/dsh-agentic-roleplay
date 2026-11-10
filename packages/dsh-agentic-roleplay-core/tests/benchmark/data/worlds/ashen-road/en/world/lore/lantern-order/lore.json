@@ -1,0 +1,14 @@
+{
+  "id": "lantern-order",
+  "title": "The Lantern Order",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "A small order of healers who keep lamps burning against the ash.",
+  "body": "The Lantern Order keeps the lamps of the frontier lit and tends the sick; its sisters carry no weapons.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "shrine"
+    }
+  ]
+}

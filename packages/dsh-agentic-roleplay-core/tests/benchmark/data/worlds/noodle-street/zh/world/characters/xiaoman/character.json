@@ -1,0 +1,85 @@
+{
+  "id": "xiaoman",
+  "name": "林小满",
+  "age": 23,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "毕业一年的姑娘，白天在面馆帮工，晚上投简历。",
+  "personality": "话不多，手脚勤快，嘴上说无所谓，心里记着每一句闲话。",
+  "background": "从外地来这座城市，租了面馆楼上的房间，用帮工抵一部分房租。",
+  "appearance": "扎着低马尾，总穿着那件洗旧的围裙。",
+  "speech": {
+    "style": "说话简短，爱用“还行”“再说吧”。",
+    "examples": [
+      "还行吧，不累。",
+      "再说吧，先把这碗面端过去。"
+    ]
+  },
+  "start": {
+    "public_state": "在擦桌子。",
+    "activity": "擦桌子。",
+    "inner_state": "想着昨天投出去的那份简历。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.3,
+        "dominance": 0.0
+      }
+    },
+    "intents": [],
+    "location": "noodle-shop",
+    "position": "门口的桌子旁"
+  },
+  "relationships": [
+    {
+      "to": "chen",
+      "label": "陈姨",
+      "familiarity": 0.8,
+      "trust": 0.8,
+      "affinity": 0.7
+    },
+    {
+      "to": "laozhou",
+      "label": "周老师",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.6
+    },
+    {
+      "to": "xiaoyu",
+      "label": "小宇",
+      "familiarity": 0.5,
+      "trust": 0.5,
+      "affinity": 0.5
+    },
+    {
+      "to": "wangjie",
+      "label": "王姐",
+      "familiarity": 0.6,
+      "trust": 0.4,
+      "affinity": 0.3,
+      "tension": 0.2
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "noodle-shop",
+      "alley",
+      "rooftop-room",
+      "market",
+      "park"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "neighborhood-history"
+    ]
+  },
+  "variables": {
+    "fatigue": 3,
+    "savings": 800
+  }
+}

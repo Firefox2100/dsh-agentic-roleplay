@@ -1,0 +1,19 @@
+{
+  "id": "letter-secret",
+  "title": "镖里的那封信",
+  "kind": "custom",
+  "scope": "listed",
+  "summary": "那趟镖里只有一封信，是药王谷谷主写给朝中一位大人的，揭发了镖局东家的旧案。",
+  "body": "镖车里没有货，只有一封药王谷谷主写给朝中大人的密信，信里揭发了镖局东家二十年前的旧案；有人不想让它送到。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "temple"
+    }
+  ],
+  "known_by": [
+    "tieshan",
+    "baizhi",
+    "guyan"
+  ]
+}

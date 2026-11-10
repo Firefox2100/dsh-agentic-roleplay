@@ -18,6 +18,7 @@ import { cleanText, withPlayer, type SourceItem } from './items.ts'
 import { pruneKnowledge, pruneLinks, pruneLoreSubjects, pruneMembers, pruneRelationships, type Derived, type Extracted } from './extract.ts'
 import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
 import { norm, type ChildJob, type ImportContext, type TextOf, trOf } from './run.ts'
+import { splitPanels } from './panels.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, openingText } from './store.ts'
 import { isLeftOut, type Classified, type Roster } from './survey.ts'
 import { atomicWrite } from '../atomic-write.ts'
@@ -92,7 +93,7 @@ export async function writePortrait(directory: string, picture: Buffer, characte
 
 /** The card's opening as the world's opening message: plain paragraphs, without the markup the card's tool read as emphasis. */
 export function openingMessage(raw: string, cardName: string, player?: string): string {
-  const text = cleanText(raw, cardName)
+  const text = cleanText(splitPanels(raw).prose, cardName)
     .replace(/<\/?[a-z][^>\n]*>/gi, '')
     .replace(/```[a-z]*\n?|```/g, '')
     .replace(/\*\*([^*\n]+)\*\*/g, '$1')

@@ -1,0 +1,135 @@
+{
+  "id": "mara",
+  "name": "玛拉·文",
+  "aliases": [
+    "守塔人的女儿"
+  ],
+  "age": 27,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "voice": "mara",
+  "summary": "守塔人的女儿，离开九年后第一次回来。",
+  "personality": "冷静而警觉，一觉得被人摆布就容易发火，却很少开口求助。紧张时会不停地数东西。",
+  "background": "十八岁时因与父亲争吵公会的事离开盐湾港，在省城学了测绘，此后再没回过父亲的信。",
+  "appearance": "身材高挑，双手被海风吹得发红，穿着一件大了两号的测绘员油布外套。",
+  "speech": {
+    "style": "句子简短、准确；更爱发问，而不是下断语。",
+    "examples": [
+      "最后一次点灯的是谁？我问的是谁，不是什么。",
+      "我数到门口是九级台阶，应该是十级才对。"
+    ]
+  },
+  "visual_identity": {
+    "description": "一位二十七岁上下的高个女子，短黑发，灰色眼睛，穿着宽大的油布外套。",
+    "tags": [
+      "黑色短发",
+      "灰色眼睛"
+    ],
+    "negative_tags": [
+      "金发"
+    ]
+  },
+  "start": {
+    "public_state": "刚下渡船，被雾打得湿透，正抬头望着黑漆漆的灯塔。",
+    "activity": "提着一只包站在码头上。",
+    "inner_state": "担心父亲的沉默是自己造成的。",
+    "emotion": {
+      "baseline": {
+        "valence": -0.2,
+        "arousal": 0.4,
+        "dominance": 0.1
+      }
+    },
+    "intents": [
+      {
+        "type": "quest",
+        "name": "查清父亲出了什么事",
+        "description": "弄清灯为何熄灭，布拉姆又在哪里。",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.9,
+        "urgency": 0.7,
+        "plan": [
+          "问客栈老板",
+          "去看看灯塔"
+        ],
+        "deadline": "1887-10-06T00:00"
+      },
+      {
+        "type": "agenda",
+        "name": "避开公会",
+        "description": "在自己准备好之前，不让港务长知道她的身份。",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.4,
+        "urgency": 0.3,
+        "plan": []
+      }
+    ],
+    "location": "pier",
+    "position": "渡船台阶脚下"
+  },
+  "relationships": [
+    {
+      "to": "bram",
+      "label": "父亲",
+      "summary": "严厉、疼爱，却至今没有原谅。",
+      "familiarity": 1,
+      "trust": 0.3,
+      "affinity": 0.5,
+      "tension": 0.6
+    },
+    {
+      "to": "tomas",
+      "label": "家里的老朋友",
+      "summary": "她十岁时他教过她打牌。",
+      "familiarity": 0.7,
+      "trust": 0.4,
+      "affinity": 0.4,
+      "tension": 0.1
+    },
+    {
+      "to": "kit",
+      "label": "隔壁的男孩，长大了",
+      "familiarity": 0.4,
+      "trust": 0.2,
+      "affinity": 0.2
+    },
+    {
+      "to": "ines",
+      "label": "港务长",
+      "summary": "对父亲冷淡，对她也冷淡。",
+      "familiarity": 0.3,
+      "trust": -0.1,
+      "affinity": -0.1,
+      "tension": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "pier",
+      "inn-bar",
+      "market",
+      "lighthouse"
+    ],
+    "items": [
+      "tide-table"
+    ],
+    "exits": [
+      {
+        "from": "pier",
+        "to": "market"
+      }
+    ],
+    "lore": [
+      "lighthouse-history",
+      "keeper-oath"
+    ]
+  },
+  "variables": {
+    "fatigue": 3
+  }
+}

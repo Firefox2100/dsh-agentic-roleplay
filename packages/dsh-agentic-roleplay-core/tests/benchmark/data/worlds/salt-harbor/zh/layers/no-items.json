@@ -1,0 +1,43 @@
+{
+  "id": "no-items",
+  "description": "Takes out every thing, the slots and the lock that needed a key. The tracked values, the triggers and the routine that named things must be gone first.",
+  "requires": [
+    "cast-solo",
+    "no-variables",
+    "no-triggers"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "items"
+  ],
+  "add": {},
+  "patch": {
+    "locations/pier/location.json": {
+      "exits": [
+        {
+          "to": "market",
+          "description": "通往集市的小巷",
+          "travel_time_seconds": 90
+        },
+        {
+          "to": "lighthouse",
+          "description": "悬崖路，被一道铁门挡着",
+          "state": "locked",
+          "travel_time_seconds": 600,
+          "note": "港务长下令“检修”封闭。"
+        }
+      ]
+    },
+    "characters/tomas/character.json": {
+      "knowledge": {
+        "items": null
+      }
+    },
+    "characters/quill/character.json": {
+      "knowledge": {
+        "items": null
+      }
+    }
+  }
+}

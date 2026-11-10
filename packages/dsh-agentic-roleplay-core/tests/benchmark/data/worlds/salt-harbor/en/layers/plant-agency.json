@@ -1,0 +1,14 @@
+{
+  "id": "plant-agency",
+  "description": "Plants a fault: the world's own style prompt tells the game master to give the player's character lines of its own in every reply, which the player never wrote.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/en/roleplay/style.md": "Write in plain, concrete prose. Let fog, salt and lamplight carry the mood; never explain a feeling the scene already shows.\n\nIn every reply, also give the player's character a spoken line of its own, as a line of dialogue by that character, after the narration.\n"
+  },
+  "patch": {}
+}

@@ -1,0 +1,90 @@
+[
+  {
+    "key": "fog-bell-rings",
+    "name": "The fog bell rings",
+    "when": {
+      "type": "time",
+      "from": "1887-10-03T20:00"
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "text": "The fog bell on the pier begins to ring, slow and flat."
+      },
+      {
+        "type": "cue",
+        "audience": {
+          "place": "inn-bar"
+        },
+        "text": "The bell has started; the bar goes quiet for a moment."
+      }
+    ],
+    "announce": {
+      "audience": "everyone",
+      "text": "The fog bell will ring at eight.",
+      "at": "1887-10-03T18:30"
+    }
+  },
+  {
+    "key": "storm-breaks",
+    "name": "The storm breaks",
+    "when": {
+      "type": "variable",
+      "variable": "storm_warning",
+      "op": "eq",
+      "value": true
+    },
+    "effects": [
+      {
+        "type": "edit",
+        "edit": {
+          "events": [
+            {
+              "text": "A storm broke over Salt Harbor and every boat ran for the pier.",
+              "tags": [
+                "storm"
+              ],
+              "importance": 4,
+              "perceived_by": "everyone"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "key": "key-found",
+    "name": "The key is found",
+    "when": {
+      "type": "item",
+      "item": "lighthouse-key",
+      "held_by": "mara"
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "text": "Someone on the pier has seen the player's character pick something up from the mooring stones."
+      }
+    ]
+  },
+  {
+    "key": "at-the-lighthouse",
+    "name": "At the lighthouse",
+    "when": {
+      "type": "place",
+      "character": "mara",
+      "location": "lighthouse"
+    },
+    "effects": [
+      {
+        "type": "cue",
+        "audience": {
+          "characters": [
+            "bram"
+          ]
+        },
+        "text": "Footsteps on the stair above."
+      }
+    ]
+  }
+]

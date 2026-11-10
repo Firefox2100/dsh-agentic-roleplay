@@ -1,0 +1,168 @@
+[
+  {
+    "key": "harbor_trust",
+    "name": "对公会的信任",
+    "description": "镇上人对公会的信任程度：0 毫无，10 完全。",
+    "kind": "number",
+    "subject": "world",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 5,
+    "visibility": "hidden",
+    "always": true,
+    "bands": [
+      {
+        "up_to": 3,
+        "label": "怀疑"
+      },
+      {
+        "up_to": 7,
+        "label": "观望"
+      },
+      {
+        "up_to": 10,
+        "label": "拥护"
+      }
+    ]
+  },
+  {
+    "key": "storm_warning",
+    "name": "风暴警报",
+    "description": "是否已发出风暴警报。",
+    "kind": "flag",
+    "subject": "world",
+    "default": false,
+    "visibility": "public"
+  },
+  {
+    "key": "weather",
+    "name": "天气",
+    "description": "当前天气。",
+    "kind": "choice",
+    "subject": "world",
+    "options": [
+      "晴",
+      "雾",
+      "雨",
+      "风暴"
+    ],
+    "default": "雾",
+    "visibility": "public"
+  },
+  {
+    "key": "fatigue",
+    "name": "疲劳",
+    "description": "角色的疲劳程度：0 精力充沛，10 筋疲力尽。",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 0,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 2,
+        "label": "精力充沛"
+      },
+      {
+        "up_to": 5,
+        "label": "疲倦"
+      },
+      {
+        "up_to": 8,
+        "label": "疲惫"
+      },
+      {
+        "up_to": 10,
+        "label": "筋疲力尽"
+      }
+    ]
+  },
+  {
+    "key": "hunger",
+    "name": "饥饿",
+    "description": "角色的饥饿程度：0 吃饱，10 饿极。",
+    "kind": "number",
+    "subject": "character",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 4,
+    "update": "角色吃下一顿饭时降到 0 或 1，吃点心降到 2 或 3；几个小时没吃东西就升 1。其他情况保持不变。",
+    "visibility": "public"
+  },
+  {
+    "key": "suspicion",
+    "name": "对玩家角色的怀疑",
+    "description": "这个人对玩家角色多管闲事的怀疑程度。",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "tomas",
+      "ines"
+    ],
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 1,
+    "visibility": "private"
+  },
+  {
+    "key": "injury",
+    "name": "伤势",
+    "description": "角色的受伤程度。",
+    "kind": "choice",
+    "subject": "character",
+    "options": [
+      "无",
+      "轻伤",
+      "重伤"
+    ],
+    "default": "无",
+    "visibility": "public"
+  },
+  {
+    "key": "lamp_oil",
+    "name": "灯油",
+    "description": "灯里剩下的灯油，以百分数计。",
+    "kind": "number",
+    "subject": "item",
+    "only": [
+      "lantern",
+      "signal-lamp"
+    ],
+    "min": 0,
+    "max": 100,
+    "integer": true,
+    "default": 100,
+    "visibility": "public"
+  },
+  {
+    "key": "crowd",
+    "name": "人流",
+    "description": "地点的拥挤程度：0 空无一人，10 挤满人。",
+    "kind": "number",
+    "subject": "location",
+    "min": 0,
+    "max": 10,
+    "integer": true,
+    "default": 2,
+    "visibility": "public",
+    "bands": [
+      {
+        "up_to": 2,
+        "label": "冷清"
+      },
+      {
+        "up_to": 6,
+        "label": "热闹"
+      },
+      {
+        "up_to": 10,
+        "label": "人挤人"
+      }
+    ]
+  }
+]

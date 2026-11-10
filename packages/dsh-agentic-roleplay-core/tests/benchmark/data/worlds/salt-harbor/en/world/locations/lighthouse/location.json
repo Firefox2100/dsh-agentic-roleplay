@@ -1,0 +1,27 @@
+{
+  "id": "lighthouse",
+  "name": "The Lighthouse",
+  "description": "A stone tower on the headland. The great lamp is dark and the door stands unlatched.",
+  "parent": "harbor",
+  "features": [
+    {
+      "id": "spiral-stair",
+      "name": "Spiral stair",
+      "description": "Ninety-one iron steps up to the signal room."
+    }
+  ],
+  "exits": [
+    {
+      "to": "signal-room",
+      "description": "the spiral stair",
+      "travel_time_seconds": 120
+    },
+    {
+      "to": "lighthouse-cellar",
+      "description": "a trapdoor behind the stair, under rubble",
+      "state": "blocked",
+      "note": "Rubble lies on the trapdoor.",
+      "travel_time_seconds": 60
+    }
+  ]
+}

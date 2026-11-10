@@ -59,6 +59,10 @@ export interface Outcome {
   variableChanges?: VariableChangeSpec[]
   /** The id of the dice roll that decided it: the result is the one the roll gave. */
   roll?: number
+  /** For about this long (minutes) the character is off its routine because of what happened to it: the routine does not pull it back before. */
+  offRoutineMinutes?: number
+  /** The character stays where it is, or where it went, until the player's character is with it again: a wait, a watch, an errand whose end is the player's return. */
+  waitsForPlayer?: true
 }
 
 /** A request to send a character somewhere, with places named by key. */

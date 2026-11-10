@@ -1,0 +1,12 @@
+{
+  "hemisphere": "north",
+  "holidays": [
+    {
+      "id": "chongyang-gathering",
+      "name": "重阳小聚",
+      "on": [
+        "10-23"
+      ]
+    }
+  ]
+}

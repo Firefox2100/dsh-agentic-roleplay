@@ -45,6 +45,7 @@ export async function askCharacters(deps: AskDeps, owner: TurnOwner, number: 1 |
       member, cast, situation: state.situation, attempt: number, language: store?.settings().prompts.language ?? 'en', turn: owner.turn, ...(away ? { away: true as const } : {}), lookup: store === undefined ? false : store.settings().memory.lookup && toolEnabled(store.settings().tools, 'characters', 'recall_my_memories'), text: (id, variables) => deps.storeOf(owner).text(id, variables),
       ...(time === undefined ? {} : { time }),
       ...(agenda === undefined ? {} : { agenda }),
+      ...(state.dreaming === key ? { dreaming: true as const } : {}),
       ...(cues.length === 0 ? {} : { cues }),
       ...(upcoming.length === 0 ? {} : { upcoming }),
       ...(tracked === undefined || (tracked.self === '' && tracked.others.length === 0) ? {} : { tracked }),

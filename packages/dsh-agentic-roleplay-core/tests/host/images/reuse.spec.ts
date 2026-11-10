@@ -30,22 +30,22 @@ beforeEach(async () => {
 })
 afterEach(async () => { await rm(root, { recursive: true, force: true }) })
 
-const store = (reuse: 'off' | 'on'): TurnStore => ({
-  settings: () => ({ ...DEFAULT_SETTINGS, decisions: { ...DEFAULT_SETTINGS.decisions, reuse } }),
+const store = (reuse: 'off' | 'on', reuseThreshold = DEFAULT_SETTINGS.decisions.reuseThreshold): TurnStore => ({
+  settings: () => ({ ...DEFAULT_SETTINGS, decisions: { ...DEFAULT_SETTINGS.decisions, reuse, reuseThreshold } }),
   text: (_id: string, variables: Record<string, string> = {}) => `Does it show this moment? ${variables['description']}`,
   recordDecisions: (site: DecisionSite, report: SiteReport) => { recorded.push({ site, report }) },
 }) as unknown as TurnStore
 
 /** A decision service that says yes to the pictures whose description holds the word. */
-const deciding = (word: string): DecisionService => ({
+const deciding = (word: string, yes = 0.95): DecisionService => ({
   decide: async (_state: unknown, questions: Record<string, { instructions: string }>) => {
     asked.push(Object.values(questions).map(question => question.instructions))
-    return { answers: Object.fromEntries(Object.entries(questions).map(([key, question]) => [key, { type: 'noul', probability: question.instructions.includes(word) ? 0.95 : 0.05 }])), model: 'decide-1' }
+    return { answers: Object.fromEntries(Object.entries(questions).map(([key, question]) => [key, { type: 'noul', probability: question.instructions.includes(word) ? yes : 0.05 }])), model: 'decide-1' }
   },
 }) as unknown as DecisionService
 
 const reuse = (service?: DecisionService, problems: string[] = []) => pictureReuse({ ...service === undefined ? {} : { decisions: () => service }, problem: message => { problems.push(message) } })
-const job = (mode: 'off' | 'on', moment = 'Arthur leans on the bar next to the open filing cabinet, watching Clara.') => ({ chat: 'c', store: store(mode), root, moment })
+const job = (mode: 'off' | 'on', moment = 'Arthur leans on the bar next to the open filing cabinet, watching Clara.', threshold?: number) => ({ chat: 'c', store: store(mode, threshold), root, moment })
 
 describe('showing a stored picture instead of making one', () => {
   it('does nothing while it is off', async () => {
@@ -57,6 +57,11 @@ describe('showing a stored picture instead of making one', () => {
     expect(await reuse(deciding('counter'))(job('on'), signal)).toBe('library/bar.png')
     expect(asked[0]!.some(question => question.includes('monument'))).toBe(false)
     expect(recorded.map(entry => entry.site)).toEqual(['reuse'])
+  })
+
+  it('needs the probability to reach decisions.reuseThreshold', async () => {
+    expect(await reuse(deciding('counter', 0.7))(job('on'), signal)).toBeUndefined()
+    expect(await reuse(deciding('counter', 0.7))(job('on', undefined, 0.6), signal)).toBe('library/bar.png')
   })
 
   it('takes none when no description fits, and never asks about a picture that is not described yet', async () => {

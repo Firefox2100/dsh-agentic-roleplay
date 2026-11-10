@@ -1,0 +1,14 @@
+{
+  "id": "sect-lore",
+  "title": "药王谷",
+  "kind": "custom",
+  "scope": "everyone",
+  "summary": "药王谷是一处隐于山中的医家门派，弟子不涉江湖恩怨。",
+  "body": "药王谷是隐于山中的医家门派，弟子行医济世，从不涉江湖恩怨，因此这次下山格外引人注意。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "herb-shop"
+    }
+  ]
+}

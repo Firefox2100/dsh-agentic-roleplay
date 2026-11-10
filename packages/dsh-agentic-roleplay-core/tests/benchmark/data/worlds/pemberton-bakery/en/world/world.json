@@ -1,0 +1,37 @@
+{
+  "id": "benchmark-pemberton-bakery-en",
+  "name": "Pemberton's Bakery",
+  "description": "A corner bakery in a small English town. Mags Pemberton lights the ovens at four, the regulars come in by half past seven, and this autumn there is talk that the landlord wants to sell the building.",
+  "starting_time": "2024-10-14T07:30",
+  "time_zone": "Europe/London",
+  "author": {
+    "name": "Benchmark",
+    "url": "https://example.test/benchmark"
+  },
+  "metadata": {
+    "tags": [
+      "daily life",
+      "bakery",
+      "small town",
+      "neighbours"
+    ]
+  },
+  "rules": [
+    "This is ordinary present-day life: nothing supernatural happens.",
+    "People talk the way neighbours do: first names, short sentences, tea."
+  ],
+  "variables": {
+    "weather": "overcast"
+  },
+  "opening_message": [
+    {
+      "type": "narration",
+      "text": "Half past seven, and the bakery smells of warm bread. You tie your apron on behind the counter while the first of the regulars shuffles in."
+    },
+    {
+      "type": "utterance",
+      "character": "mags",
+      "text": "Jo, love, can you do the front table before Mr Okafor gets his hands on it? He will want his usual."
+    }
+  ]
+}

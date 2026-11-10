@@ -1,0 +1,25 @@
+{
+  "id": "no-lore",
+  "description": "Takes out the world's background entries and what the characters know of them.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "lore"
+  ],
+  "add": {},
+  "patch": {
+    "characters/tomas/character.json": {
+      "knowledge": {
+        "lore": null
+      }
+    },
+    "characters/quill/character.json": {
+      "knowledge": {
+        "lore": null
+      }
+    }
+  }
+}

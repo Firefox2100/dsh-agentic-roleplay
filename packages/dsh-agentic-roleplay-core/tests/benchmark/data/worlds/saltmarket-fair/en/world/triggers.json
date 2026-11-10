@@ -1,0 +1,29 @@
+[
+  {
+    "key": "recruit-performer",
+    "name": "A performer joins the troupe",
+    "repeat": true,
+    "when": {
+      "type": "variable",
+      "variable": "command_recruit",
+      "op": "eq",
+      "value": true
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "dispatch": "author",
+        "need": "arrival",
+        "text": "A performer joins the troupe: [draw]. They come to the Marshal's tent and give a name and a trade.",
+        "draw": [
+          "a juggler",
+          "a fire-eater",
+          "a fiddler",
+          "a puppeteer",
+          "an acrobat",
+          "a ventriloquist"
+        ]
+      }
+    ]
+  }
+]

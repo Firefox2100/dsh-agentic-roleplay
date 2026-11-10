@@ -1,0 +1,99 @@
+{
+  "id": "zijuan",
+  "name": "紫鹃",
+  "age": 16,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "服侍黛玉的丫鬟，心细，最懂主子的心思。",
+  "personality": "细心、忠心、嘴上谨慎，心里什么都明白。",
+  "background": "自小跟在黛玉身边。",
+  "appearance": "一身青布衣裙，袖口干净利落。",
+  "speech": {
+    "style": "说话轻声细语，爱劝人加衣。",
+    "examples": [
+      "姑娘，外头下雨了，披件衣裳吧。",
+      "这话我不敢多说。"
+    ]
+  },
+  "start": {
+    "public_state": "在外间收拾茶具。",
+    "activity": "收拾茶具。",
+    "inner_state": "担心姑娘的身子，也担心她的心事。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.3,
+        "dominance": 0.2
+      }
+    },
+    "intents": [],
+    "location": "xiaoxiang",
+    "position": "外间"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "苏姑娘",
+      "familiarity": 0.4,
+      "trust": 0.5,
+      "affinity": 0.4
+    },
+    {
+      "to": "daiyu",
+      "label": "姑娘",
+      "familiarity": 0.9,
+      "trust": 0.9,
+      "affinity": 0.8
+    },
+    {
+      "to": "baoyu",
+      "label": "宝二爷",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "baochai",
+      "label": "宝姑娘",
+      "familiarity": 0.5,
+      "trust": 0.5,
+      "affinity": 0.4
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "xiaoxiang",
+      "path",
+      "yihong",
+      "hengwu"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "orchids"
+    ]
+  },
+  "variables": {
+    "mood": 3
+  },
+  "routine": [
+    {
+      "from": "07:00",
+      "to": "21:00",
+      "activity": "在潇湘馆服侍",
+      "location": "xiaoxiang",
+      "position": "外间"
+    },
+    {
+      "from": "21:00",
+      "to": "07:00",
+      "activity": "歇在外间",
+      "location": "xiaoxiang",
+      "interruptible": false
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "red-chamber",
+  "name": "潇湘馆的秋天",
+  "theme": "fan",
+  "languages": {
+    "zh": {
+      "native": true
+    }
+  },
+  "purpose": "The fan-fiction companion use case in Chinese: characters taken from a public-domain novel, on the real clock, with a daily life. What they know of their recent past is carried by the world (invented poems and gatherings, a flower the novel does not give), so a correct answer comes from the world state and a famous detail of the novel in the narration is the model going by memory.",
+  "source": {
+    "derivedFrom": "Cao Xueqin's Dream of the Red Chamber (public domain); the names of the characters only",
+    "note": "Every description and fact here is written for this world: the poems, the gatherings and the habits are invented or changed on purpose, so that what the characters know comes from the world, not from the model's memory of the novel."
+  }
+}

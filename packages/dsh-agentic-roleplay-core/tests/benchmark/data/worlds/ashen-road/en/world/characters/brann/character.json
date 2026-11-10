@@ -1,0 +1,85 @@
+{
+  "id": "brann",
+  "name": "Brann Holt",
+  "age": 50,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "Master of the Holt's Rest caravans, who owns the yard and the town's trust.",
+  "personality": "Blunt, tired, generous with the people he relies on.",
+  "background": "Built the yard with his own hands after a bandit winter.",
+  "appearance": "Broad, grey-bearded, a ledger always under one arm.",
+  "speech": {
+    "style": "Gruff, plain, fond of road sayings.",
+    "examples": [
+      "The road feeds those who respect it.",
+      "Don't thank me, work."
+    ]
+  },
+  "start": {
+    "public_state": "Counting wagons.",
+    "activity": "Counting wagons.",
+    "inner_state": "Terrified of what he will have to say to the families.",
+    "emotion": {
+      "baseline": {
+        "valence": -0.1,
+        "arousal": 0.4,
+        "dominance": 0.6
+      }
+    },
+    "intents": [],
+    "location": "yard",
+    "position": "by the ledger table"
+  },
+  "relationships": [
+    {
+      "to": "edda",
+      "label": "Edda",
+      "familiarity": 0.5,
+      "trust": 0.5,
+      "affinity": 0.4
+    },
+    {
+      "to": "lioren",
+      "label": "Sister Lioren",
+      "familiarity": 0.8,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "tarrow",
+      "label": "Tarrow",
+      "familiarity": 0.8,
+      "trust": 0.8,
+      "affinity": 0.7
+    },
+    {
+      "to": "vessa",
+      "label": "Vessa",
+      "familiarity": 0.4,
+      "trust": 0.1,
+      "affinity": 0.0,
+      "tension": 0.5
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "gate",
+      "yard",
+      "shrine",
+      "forge",
+      "ruin"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "convoy-charter",
+      "well-lore"
+    ]
+  },
+  "variables": {
+    "wounds": 0
+  }
+}

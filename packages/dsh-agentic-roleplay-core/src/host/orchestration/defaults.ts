@@ -1,7 +1,7 @@
 import { languageOf, translator, type Character, type Language, type Translate } from 'dsh-roleplay-model'
 import type {
   ItemView, KnownRelationship, SceneItems,
-  ActivationPlanner, Author, Boundaries, OutputGate, VariableTracker, RuleCheck, Reflector, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  ActivationPlanner, Author, Boundaries, OutputGate, VariableTracker, ErrandKeeper, RuleCheck, Reflector, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
 import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from '@dsh-agentic-roleplay/state'
@@ -99,6 +99,7 @@ export function describeAgenda(agenda: AgendaView, now: number, tr: Translate = 
   const at = (place: string | undefined): string => (place === undefined ? '' : tr(' at {place}', { place }))
   const lines: string[] = []
   if (agenda.now !== undefined) lines.push(tr('Your day, now: {activity}{place}, until {until}{note}.', { activity: agenda.now.activity, place: at(agenda.now.place), until: when(agenda.now.until), note: agenda.now.interruptible ? '' : tr(' (not something you would drop lightly)') }))
+  if (agenda.now === undefined && agenda.offDay !== undefined) lines.push(tr('What is happening to you has taken you from your day for now; you take it up again {until}.', { until: when(agenda.offDay.until) }))
   if (agenda.next !== undefined) lines.push(tr('Your day, next: {activity}{place}, from {from}.', { activity: agenda.next.activity, place: at(agenda.next.place), from: when(agenda.next.at) }))
   for (const engagement of agenda.engagements) {
     const values = { title: engagement.title, place: at(engagement.place), with: engagement.with.length === 0 ? '' : tr(', with {names}', { names: engagement.with.join(tr(', ')) }), at: when(engagement.at) }
@@ -120,6 +121,7 @@ export function describeSceneAgenda(agenda: SceneAgenda, now: number, tr: Transl
   const join = (entries: readonly string[]): string => entries.join(tr('; '))
   if (agenda.moved.length > 0) lines.push(tr('By their routines since you last looked: {moves}.', { moves: join(agenda.moved.map(move => tr('{name} went to {place} ({activity})', { name: move.name, place: move.to, activity: move.activity }))) }))
   if (agenda.here.length > 0) lines.push(tr('With the player\'s character, and their days: {days}. The characters decide for themselves whether to keep to their day; the moment may keep them.', { days: join(agenda.here.map(entry => `${entry.name}${tr(': ')}${entry.note}`)) }))
+  if (agenda.asleep.length > 0) lines.push(tr('Asleep now: {names}. An asleep character takes part only if what the player does wakes them: name them in wakes when you ask them, and show them waking.', { names: join(agenda.asleep.map(entry => tr('{name} (until {until})', { name: `${entry.name} [${entry.key}]`, until: describeWhen(entry.until, now, agenda.zone, language) }))) }))
   if (agenda.engagements.length > 0) {
     const entries = agenda.engagements.map((engagement) => {
       const values = { title: engagement.title, with: engagement.with.join(tr(', ')), place: engagement.place === undefined ? '' : tr(', at {place}', { place: engagement.place }), when: describeWhen(engagement.at, now, agenda.zone, language) }
@@ -217,6 +219,7 @@ export const sharedContext: CharacterContextProvider = {
     if (request.tracked !== undefined && request.tracked.others.length > 0) sections.push(`${tr('What you can tell of the others here:')}\n${request.tracked.others.map(other => `- ${other.name}: ${other.text}`).join('\n')}`)
     const day = agenda === undefined || time === undefined ? [] : describeAgenda(agenda, time.now, tr, language)
     if (day.length > 0) sections.push(`${tr('Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):')}\n${day.join('\n')}`)
+    if (request.dreaming === true) sections.push(tr('You are asleep and dreaming, and the player\'s character is in your dream. What you intend and say is the dream\'s: it may shift, blur and be odd, and it is not something you do awake. Answer from what the dream would make of the moment, out of your own fears, wants and what you have not said.'))
     if (carrying !== undefined && carrying.length > 0) sections.push(`${tr('What you have on you:')}\n${describeItems(carrying, { withKeys: false }, tr)}`)
     if (relationships !== undefined && relationships.length > 0) {
       sections.push(`${tr('How you stand with people who bear on this moment (your own view, not objective fact):')}\n${relationships.map((relation) => { const attitude = describeAttitude(relation, tr); return `- ${relation.name}${relation.present ? tr(' (here)') : tr(' (not here)')} — ${relation.label}${relation.summary === '' ? '' : `${tr(': ')}${relation.summary}`}${attitude === '' ? '' : ` [${attitude}]`}` }).join('\n')}`)
@@ -490,6 +493,7 @@ export const reflectsOnNothing: Reflector = { reflect: () => Promise.resolve({ c
 
 /** Finds no fault: without a gate the output is delivered as the game master wrote it. */
 export const tracksNothing: VariableTracker = { track: () => Promise.resolve(0) }
+export const keepsNoErrands: ErrandKeeper = { keep: () => Promise.resolve(0) }
 export const passesEverything: OutputGate = { check: () => Promise.resolve([]) }
 
 /** Finds no broken rule: without a check the game master's judgement of an action stands as it is. */
@@ -518,6 +522,7 @@ export function defaultBoundaries(): Boundaries {
     outputGate: passesEverything,
     ruleCheck: breaksNoRule,
     variableTracker: tracksNothing,
+    errandKeeper: keepsNoErrands,
     suggester: offersNothing,
     recaller: recordsRecall,
     sceneContext: castSummary,

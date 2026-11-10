@@ -1,6 +1,7 @@
 import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
 import type { CardPiece } from './card-tools.ts'
 import { alternateOpenings, openingMessage } from './finish.ts'
+import { splitPanels } from './panels.ts'
 import { openingText } from './store.ts'
 
 /** A pair of pieces of two versions of a card that are the same thing. */
@@ -157,7 +158,7 @@ export function worldFieldChanges(before: { card: NormalizedCard; choices: Impor
   }
   if (before.card.tags.join('\n') !== after.card.tags.join('\n')) changes.push({ field: 'tags', because: `the card\'s tags are now: ${after.card.tags.join(', ') || '(none)'}; the world\'s tags follow them, and you add none of your own` })
   if (differ(before.card.creator, after.card.creator)) changes.push({ field: 'authorName', because: `the card\'s creator is now “${after.card.creator}”` })
-  if (differ(openingText(before.card, before.choices.opening) ?? '', openingText(after.card, after.choices.opening) ?? '')) changes.push({ field: 'opening', because: 'the greeting the world opens with changed; suggested is the new greeting as the import writes an opening (plain paragraphs, the card\'s markup removed, the player named by the world\'s player character where the card says {{user}})', suggested: openingMessage(openingText(after.card, after.choices.opening) ?? '', after.card.name) })
+  if (differ(splitPanels(openingText(before.card, before.choices.opening) ?? '').prose, splitPanels(openingText(after.card, after.choices.opening) ?? '').prose)) changes.push({ field: 'opening', because: 'the greeting the world opens with changed; suggested is the new greeting as the import writes an opening (plain paragraphs, the card\'s markup removed, the player named by the world\'s player character where the card says {{user}})', suggested: openingMessage(openingText(after.card, after.choices.opening) ?? '', after.card.name) })
   if (JSON.stringify(alternateOpenings(before.card, before.choices.opening)) !== JSON.stringify(alternateOpenings(after.card, after.choices.opening))) changes.push({ field: 'alternateOpenings', because: 'the card\'s other greetings changed; suggested is the whole list as the import writes it', suggested: alternateOpenings(after.card, after.choices.opening) })
   return changes
 }

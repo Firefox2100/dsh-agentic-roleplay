@@ -137,7 +137,7 @@ export function populateRoutines(session: Session, characters: readonly Characte
     if (routine === undefined || routine.length === 0) continue
     session.routines.replace(session.characters.getBySourceId(id)!.id, routine.map(window => ({
       days: window.days.map(day => WEEKDAY_NAMES.indexOf(day as (typeof WEEKDAY_NAMES)[number])), on: window.on ?? [],
-      start: parseTimeOfDay(window.from)!, end: parseTimeOfDay(window.to)!, activity: window.activity, interruptible: window.interruptible,
+      start: parseTimeOfDay(window.from)!, end: parseTimeOfDay(window.to)!, activity: window.activity, interruptible: window.interruptible, ...(window.sleep === true ? { sleep: true } : {}),
       ...(window.location === undefined ? {} : { locationId: session.locations.getBySourceId(window.location)!.id }),
       ...(window.feature === undefined ? {} : { featureKey: window.feature }), ...(window.position === undefined ? {} : { position: window.position }),
     })))

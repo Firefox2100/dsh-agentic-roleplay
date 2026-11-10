@@ -1,0 +1,56 @@
+{
+  "id": "marshal",
+  "name": "Hester Vane",
+  "age": 40,
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "The Fair Marshal, who knows everyone who works the fair and keeps the peace.",
+  "personality": "Brisk, fair, tired of arguments; remembers every name.",
+  "background": "Has run the fair for twelve seasons.",
+  "appearance": "Tall, in a battered top hat and a waistcoat with too many pockets.",
+  "speech": {
+    "style": "Brisk and kindly; gives orders as suggestions.",
+    "examples": [
+      "Ask me who anyone is; I know them all.",
+      "Keep to the midway and keep your hands in your pockets."
+    ]
+  },
+  "start": {
+    "public_state": "Standing at the gate with a ledger.",
+    "activity": "Checking the ledger.",
+    "inner_state": "Wants the fair to pass without an incident.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.5
+      }
+    },
+    "intents": [],
+    "location": "gate",
+    "position": "by the price board"
+  },
+  "relationships": [
+    {
+      "to": "rae",
+      "label": "a visitor",
+      "familiarity": 0.2,
+      "trust": 0.4,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "gate",
+      "midway",
+      "big-top",
+      "marshal-tent"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "fair-rules"
+    ]
+  }
+}

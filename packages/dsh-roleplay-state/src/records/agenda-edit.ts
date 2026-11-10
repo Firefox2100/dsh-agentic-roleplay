@@ -155,7 +155,7 @@ export function prepareAgenda(target: RecordsTarget, edit: RecordsEdit, context:
       } else if (window.feature !== undefined) problems.push(`${here}: a feature needs a location`)
       if (start === undefined || end === undefined) return []
       return [{
-        days, on: [...list(window.on)], start, end, activity: window.activity.trim(), interruptible: window.interruptible ?? true,
+        days, on: [...list(window.on)], start, end, activity: window.activity.trim(), interruptible: window.interruptible ?? true, ...(window.sleep === true ? { sleep: true } : {}),
         ...(window.location === undefined ? {} : { location: window.location }), ...(window.feature === undefined ? {} : { featureKey: window.feature }),
         ...(window.position === undefined || window.position.trim() === '' ? {} : { position: window.position.trim() }),
       }]
@@ -184,7 +184,7 @@ export function prepareAgenda(target: RecordsTarget, edit: RecordsEdit, context:
     return [{
       character,
       window: {
-        days: [], on: [spec.date], start, end, activity: spec.activity.trim(), interruptible: spec.interruptible ?? true,
+        days: [], on: [spec.date], start, end, activity: spec.activity.trim(), interruptible: spec.interruptible ?? true, ...(spec.sleep === true ? { sleep: true } : {}),
         ...(spec.location === undefined ? {} : { location: spec.location }), ...(spec.feature === undefined ? {} : { featureKey: spec.feature }),
         ...(spec.position === undefined || spec.position.trim() === '' ? {} : { position: spec.position.trim() }),
       },

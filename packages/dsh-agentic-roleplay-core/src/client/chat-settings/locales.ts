@@ -14,7 +14,8 @@ export type ChatSettingsLocaleKey =
   | 'packTitle' | 'packHelp' | 'packActive' | 'packNone' | 'packOff' | 'packProblems' | 'packChoose' | 'packFirst' | 'packPlain' | 'packFromRoot' | 'packWorldChanged' | 'packWorldNew' | 'packWorldProblems' | 'packUpdate' | 'packUpdateConfirm' | 'packUpdated' | 'packSyncFailed' | 'packSurfaces' | 'packLoadFailed' | 'packBroken'
   | 'presetTitle' | 'presetHelp' | 'presetNone' | 'presetState_current' | 'presetState_changed' | 'presetState_edited' | 'presetState_missing' | 'presetChoose' | 'presetKeep' | 'presetRemove' | 'presetBroken' | 'presetConfirm' | 'presetTakeOut' | 'presetReapply' | 'presetSwitch' | 'presetApplied' | 'presetFailed' | 'presetLoadFailed'
   | 'lorebookTitle' | 'lorebookHelp' | 'lorebookNone' | 'lorebookHeld' | 'lorebookRow' | 'lorebookRemove' | 'lorebookConfirmRemove' | 'lorebookChoose' | 'lorebookKeep' | 'lorebookBroken' | 'lorebookAdd' | 'lorebookAdded' | 'lorebookRemoved' | 'lorebookFailed' | 'lorebookLoadFailed'
-  | 'decisionsTitle' | 'decisionsHelp' | 'decisionsLoading' | 'decisionsAvailable' | 'decisionsUnavailable' | 'decisionsTableLabel' | 'decisionsSite' | 'decisionsMode' | 'decisionsRuns' | 'decisionsItems' | 'decisionsDecided' | 'decisionsEscalated' | 'decisionsFallbacks' | 'decisionsAgreement' | 'decisionsDecisionTime' | 'decisionsLlmTime' | 'decisionsSiteTriggers' | 'decisionsSiteReflection' | 'decisionsSiteAgency' | 'decisionsSiteRefusal' | 'decisionsSiteRules' | 'decisionsSiteSecrets' | 'decisionsSiteVariables' | 'decisionsSiteReuse' | 'decisionsProblem' | 'decisionsSamples' | 'decisionsSample' | 'decisionsYes' | 'decisionsNo' | 'decisionsSince' | 'decisionsRefresh' | 'decisionsRefreshing'
+  | 'foldersTitle' | 'foldersHelp' | 'foldersNone' | 'foldersRowRead' | 'foldersRowWrite' | 'foldersRemove' | 'foldersPath' | 'foldersAccess' | 'foldersRead' | 'foldersWrite' | 'foldersAdd' | 'foldersFailed' | 'foldersLoadFailed'
+  | 'decisionsTitle' | 'decisionsHelp' | 'decisionsLoading' | 'decisionsAvailable' | 'decisionsUnavailable' | 'decisionsTableLabel' | 'decisionsSiteErrands' | 'decisionsSite' | 'decisionsMode' | 'decisionsRuns' | 'decisionsItems' | 'decisionsDecided' | 'decisionsEscalated' | 'decisionsFallbacks' | 'decisionsAgreement' | 'decisionsDecisionTime' | 'decisionsLlmTime' | 'decisionsSiteTriggers' | 'decisionsSiteReflection' | 'decisionsSiteAgency' | 'decisionsSiteRefusal' | 'decisionsSiteRules' | 'decisionsSiteSecrets' | 'decisionsSiteMessages' | 'decisionsSiteRepeats' | 'decisionsSiteVariables' | 'decisionsSiteReuse' | 'decisionsProblem' | 'decisionsSamples' | 'decisionsSample' | 'decisionsYes' | 'decisionsNo' | 'decisionsSince' | 'decisionsRefresh' | 'decisionsRefreshing'
   | 'language' | 'doctorTitle' | 'doctorHelp' | 'doctorOpen' | 'doctorChat' | 'doctorFailed'
   | 'pendingRecords' | 'pendingConsolidation' | 'save' | 'saving' | 'saved' | 'saveFailed'
 
@@ -33,7 +34,8 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     decisionsUnavailable: 'No decision service is selected, or the selected one is not loaded, so sites set to use a decision model use the language model.',
     decisionsTableLabel: 'Decision statistics by site',
     decisionsSite: 'Site', decisionsMode: 'Set to', decisionsRuns: 'Runs', decisionsItems: 'Judgements', decisionsDecided: 'Decided', decisionsEscalated: 'Escalated', decisionsFallbacks: 'Fell back', decisionsAgreement: 'Agreement', decisionsDecisionTime: 'Decision model per run', decisionsLlmTime: 'Language model per run',
-    decisionsSiteVariables: 'Tracked values', decisionsSiteReuse: 'Stored pictures', decisionsSiteTriggers: 'Trigger statements', decisionsSiteReflection: 'Belief checks', decisionsSiteAgency: 'Narration speaking for you', decisionsSiteRefusal: 'Output out of the story', decisionsSiteRules: 'Actions against the rules', decisionsSiteSecrets: 'Output giving away secrets',
+    decisionsSiteRepeats: 'Repeated sentences',
+    decisionsSiteVariables: 'Tracked values', decisionsSiteReuse: 'Stored pictures', decisionsSiteTriggers: 'Trigger statements', decisionsSiteReflection: 'Belief checks', decisionsSiteAgency: 'Narration speaking for you', decisionsSiteRefusal: 'Output out of the story', decisionsSiteRules: 'Actions against the rules', decisionsSiteSecrets: 'Output giving away secrets', decisionsSiteMessages: 'Messages while you are away', decisionsSiteErrands: 'Characters who wait for you',
     decisionsProblem: '{site}: the decision model could not be used the last time ({message}).',
     decisionsSamples: '{site}: latest disagreements',
     decisionsSample: 'Turn {turn}: {what} (decision model {probability}% yes, so {decision}; language model {llm})',
@@ -183,6 +185,19 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     lorebookRemoved: 'Done: {count} entries removed.',
     lorebookFailed: 'Could not change the lorebooks: {message}',
     lorebookLoadFailed: 'Could not read the lorebooks: {message}',
+    foldersTitle: 'Folders for the file tools',
+    foldersHelp: 'When the file tools are switched on for an agent of this story, they reach only the workspace every story shares ({workspace}) and the folders given here, always by whole path. Give a folder read-only unless the agent should change it. Shell and terminal tools are not held to these folders.',
+    foldersNone: 'No other folder is given to this story.',
+    foldersRowRead: '{path} (read only)',
+    foldersRowWrite: '{path} (read and write)',
+    foldersRemove: 'Remove',
+    foldersPath: 'Folder (whole path)',
+    foldersAccess: 'Access',
+    foldersRead: 'Read only',
+    foldersWrite: 'Read and write',
+    foldersAdd: 'Give this folder',
+    foldersFailed: 'The folder was not given: {message}',
+    foldersLoadFailed: 'Could not read the folders: {message}',
     packTitle: 'Interface pack',
     packHelp: 'A pack changes how this story looks and can add a status strip, buttons, an opening card, a backdrop or a tab. A world can carry packs; yours go in the ui folder of your roleplay folder.',
     packActive: 'In use: {name}',
@@ -222,7 +237,8 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     decisionsUnavailable: '尚未选择决策服务，或所选服务未加载，因此设为使用决策模型的环节会改用语言模型。',
     decisionsTableLabel: '各环节的决策统计',
     decisionsSite: '环节', decisionsMode: '设置为', decisionsRuns: '运行次数', decisionsItems: '判断数', decisionsDecided: '已决策', decisionsEscalated: '已升级', decisionsFallbacks: '已回退', decisionsAgreement: '一致率', decisionsDecisionTime: '决策模型每次', decisionsLlmTime: '语言模型每次',
-    decisionsSiteVariables: '被追踪的数值', decisionsSiteReuse: '已存图片', decisionsSiteTriggers: '触发器陈述', decisionsSiteReflection: '信念检查', decisionsSiteAgency: '叙述替你说话', decisionsSiteRefusal: '输出跳出故事', decisionsSiteRules: '按规则检查行动', decisionsSiteSecrets: '输出泄露秘密',
+    decisionsSiteRepeats: '重复的句子',
+    decisionsSiteVariables: '被追踪的数值', decisionsSiteReuse: '已存图片', decisionsSiteTriggers: '触发器陈述', decisionsSiteReflection: '信念检查', decisionsSiteAgency: '叙述替你说话', decisionsSiteRefusal: '输出跳出故事', decisionsSiteRules: '按规则检查行动', decisionsSiteSecrets: '输出泄露秘密', decisionsSiteMessages: '你不在时的消息', decisionsSiteErrands: '等你的角色',
     decisionsProblem: '{site}：上一次无法使用决策模型（{message}）。',
     decisionsSamples: '{site}：最近的分歧',
     decisionsSample: '第 {turn} 回合：{what}（决策模型认为 {probability}% 为是，因此为{decision}；语言模型为{llm}）',
@@ -372,6 +388,19 @@ const own: Dictionaries<Exclude<ChatSettingsLocaleKey, SettingsFormKey | ToolSwi
     lorebookRemoved: '完成：删除了 {count} 条。',
     lorebookFailed: '无法更改世界书：{message}',
     lorebookLoadFailed: '无法读取世界书：{message}',
+    foldersTitle: '文件工具可用的文件夹',
+    foldersHelp: '这个故事里的某个智能体打开文件工具后，只能访问所有故事共用的工作区（{workspace}）和这里给出的文件夹，并且一律使用完整路径。除非智能体需要修改，否则只给只读。终端和命令行工具不受这些文件夹限制。',
+    foldersNone: '没有给这个故事其他文件夹。',
+    foldersRowRead: '{path}（只读）',
+    foldersRowWrite: '{path}（可读可写）',
+    foldersRemove: '移除',
+    foldersPath: '文件夹（完整路径）',
+    foldersAccess: '权限',
+    foldersRead: '只读',
+    foldersWrite: '可读可写',
+    foldersAdd: '给出这个文件夹',
+    foldersFailed: '没有给出这个文件夹：{message}',
+    foldersLoadFailed: '无法读取文件夹：{message}',
     packTitle: '界面包',
     packHelp: '界面包会改变此故事的外观，并可添加状态条、按钮、开场卡片、背景或标签页。世界可以自带界面包；你自己的放在角色扮演目录的 ui 文件夹中。',
     packActive: '使用中：{name}',

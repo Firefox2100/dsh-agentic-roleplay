@@ -1,0 +1,26 @@
+{
+  "id": "lamp-keepers",
+  "name": "守灯人会",
+  "summary": "沿海灯塔守护人的古老兄弟会。",
+  "description": "会规要求守塔人绝不让灯熄灭。",
+  "values": [
+    "职责",
+    "缄默"
+  ],
+  "start": {
+    "public_state": "日渐凋零。",
+    "inner_state": "尚不知盐湾港的最后一位守塔人已经失踪。",
+    "goals": []
+  },
+  "members": [
+    {
+      "character": "bram",
+      "role": "守塔人",
+      "rank": "资深",
+      "status": "active",
+      "public": true,
+      "commitment": 1
+    }
+  ],
+  "relationships": []
+}

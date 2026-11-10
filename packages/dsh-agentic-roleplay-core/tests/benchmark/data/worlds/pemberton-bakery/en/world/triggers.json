@@ -1,0 +1,16 @@
+[
+  {
+    "key": "lunch-queue",
+    "name": "The lunch queue",
+    "when": {
+      "type": "time",
+      "from": "2024-10-14T12:00"
+    },
+    "effects": [
+      {
+        "type": "beat",
+        "text": "It is noon, and the queue for sandwiches reaches the door."
+      }
+    ]
+  }
+]

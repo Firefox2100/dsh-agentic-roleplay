@@ -1,0 +1,23 @@
+{
+  "id": "lighthouse-history",
+  "title": "灯塔的来历",
+  "kind": "history",
+  "scope": "listed",
+  "known_by": [
+    "mara",
+    "tomas",
+    "ines",
+    "bram"
+  ],
+  "summary": "建于 1851 年，此后灯夜夜不熄。",
+  "body": "岬角上的灯塔建于 1851 年，起因是一场海难夺去了四十名渔民的性命。此后灯夜夜不熄，直到九天前。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "lighthouse"
+    }
+  ],
+  "related": [
+    "keeper-oath"
+  ]
+}

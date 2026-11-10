@@ -1,0 +1,7 @@
+{
+  "id": "notebook",
+  "name": "记者笔记本",
+  "description": "有三页用速记写下的灯塔笔记。",
+  "worn_by": "quill",
+  "wearable": "satchel"
+}

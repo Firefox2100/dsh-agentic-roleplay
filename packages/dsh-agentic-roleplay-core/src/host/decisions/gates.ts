@@ -8,6 +8,7 @@ import { promptFor } from '../prompts/access.ts'
 import type { GateFinding, GateJob, OutputGate } from '../orchestration/boundaries.ts'
 import { announceProblem, askYesNo, routeVerdicts } from './route.ts'
 import { askExtra, noteExtra } from './extras.ts'
+import { repeatFindings } from './repeats.ts'
 
 /**
  * How far below the threshold a probability may fall and still be not sure. A decision model gives a rare fault a low probability even when it
@@ -67,7 +68,7 @@ const GATES: Record<GateSite, Gate> = {
  * Checks the output of a turn for the faults the chat's settings switch on (`decisions.agency`, `decisions.refusal`), each by the language model, a
  * decision model, or both, as the setting says. A check that cannot be made never stops the turn: it is reported once, and the output goes on as it is.
  */
-export function outputGates(deps: { agentOf: (chat: string) => Agent | undefined; decisions?: () => DecisionService | undefined; problem?: (message: string) => void }): OutputGate {
+export function outputGates(deps: { agentOf: (chat: string) => Agent | undefined; decisions?: () => DecisionService | undefined; earlier?: (chat: string, count: number) => string[]; problem?: (message: string) => void }): OutputGate {
   const seen = new Map<string, string>()
   return {
     async check(job, signal): Promise<GateFinding[]> {
@@ -107,7 +108,8 @@ export function outputGates(deps: { agentOf: (chat: string) => Agent | undefined
           return []
         }
       }))
-      return [...found.flat(), ...await secretFindings(job, settings.decisions, deps.decisions?.(), seen, signal, deps.problem)]
+      const repeats = await repeatFindings(job, { agentOf: deps.agentOf, ...deps.decisions === undefined ? {} : { decisions: deps.decisions }, earlier: deps.earlier ?? (() => []), seen, ...deps.problem === undefined ? {} : { problem: deps.problem } }, signal)
+      return [...found.flat(), ...repeats, ...await secretFindings(job, settings.decisions, deps.decisions?.(), seen, signal, deps.problem)]
     },
   }
 }

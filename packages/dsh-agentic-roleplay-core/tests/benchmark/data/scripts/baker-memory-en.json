@@ -1,0 +1,76 @@
+{
+  "id": "baker-memory-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "Good morning, Mr Holmes. What was the last case you closed?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "Dr Watson, which of Mr Holmes's cases did you write up most recently?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "And before that? Tell me about the most famous one.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Speckled"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Baskerville"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Scarlet"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Moriarty"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Reichenbach"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Irene Adler"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "Five Orange"
+    }
+  ]
+}

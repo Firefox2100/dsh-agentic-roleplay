@@ -92,8 +92,10 @@ function readRoutine(reader: Reader): RoutineDefinition[] {
     if (location === undefined && feature !== undefined) window.fail('feature', 'needs a location')
     const flag = window.raw('interruptible')
     if (flag !== undefined && typeof flag !== 'boolean') window.fail('interruptible', 'must be true or false')
+    const sleep = window.raw('sleep')
+    if (sleep !== undefined && typeof sleep !== 'boolean') window.fail('sleep', 'must be true or false')
     if (from === undefined || to === undefined || activity === undefined) return []
-    return [{ days, ...(on.length === 0 ? {} : { on }), from, to, activity, ...(location === undefined ? {} : { location }), ...(feature === undefined ? {} : { feature }), ...(position === undefined ? {} : { position }), interruptible: flag !== false }]
+    return [{ days, ...(on.length === 0 ? {} : { on }), from, to, activity, ...(location === undefined ? {} : { location }), ...(feature === undefined ? {} : { feature }), ...(position === undefined ? {} : { position }), interruptible: flag !== false, ...(sleep === true ? { sleep: true } : {}) }]
   })
   if (windows.length > MAX_ROUTINE_WINDOWS) reader.fail('routine', `a character has at most ${MAX_ROUTINE_WINDOWS} windows in its day`)
   return windows

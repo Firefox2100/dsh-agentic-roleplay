@@ -1,0 +1,28 @@
+{
+  "id": "no-variables",
+  "description": "Takes out every tracked value: the declarations, the starting values and the world's starting flag. The trigger that waited on a value must be gone first.",
+  "requires": [
+    "cast-solo",
+    "no-triggers"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "variables.json"
+  ],
+  "add": {},
+  "patch": {
+    "world.json": {
+      "variables": null
+    },
+    "characters/tomas/character.json": {
+      "variables": null
+    },
+    "characters/quill/character.json": {
+      "variables": null
+    },
+    "locations/market/location.json": {
+      "variables": null
+    }
+  }
+}

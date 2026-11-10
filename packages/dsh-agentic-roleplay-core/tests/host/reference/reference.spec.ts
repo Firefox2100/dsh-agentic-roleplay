@@ -53,6 +53,46 @@ describe('the profile page', () => {
   })
 })
 
+describe('the status page', () => {
+  const many = 12
+  const declare = (): void => {
+    session.variables.define({ key: 'day', name: 'Day', kind: 'number', subject: 'world', integer: true, min: 1, default: 3, visibility: 'public' })
+    session.variables.define({ key: 'omen', name: 'SECRET OMEN', kind: 'flag', subject: 'world', default: false, visibility: 'hidden' })
+    session.variables.define({ key: 'stamina', name: 'Stamina', kind: 'number', subject: 'character', only: ['arthur'], min: 0, max: 10, default: 10, visibility: 'private' })
+    session.variables.define({ key: 'trust', name: 'Trust', kind: 'number', subject: 'character', min: 0, max: 100, default: 20, visibility: 'public' })
+    session.variables.define({ key: 'dread', name: 'Dread', kind: 'number', subject: 'character', min: 0, max: 10, default: 0, visibility: 'private' })
+    session.variables.define({ key: 'damp', name: 'Damp', kind: 'flag', subject: 'location', default: false, visibility: 'public' })
+    session.variables.define({ key: 'worn', name: 'Wear', kind: 'number', subject: 'item', min: 0, max: 10, default: 10, visibility: 'public' })
+    for (let index = 0; index < many; index += 1) session.variables.define({ key: `skill_${index}`, name: `Skill ${index}`, kind: 'number', subject: 'character', only: ['arthur'], min: 0, max: 10, default: 1, visibility: 'public' })
+  }
+
+  it('gives every value the player may read, defaults and more than a told subject holds included, grouped by subject', () => {
+    declare()
+    const groups = referencePage(session, 'status').entries
+    expect(groups.map(group => [group.subject, group.name])).toEqual([['world', undefined], ['player', 'Arthur'], ['place', 'Bar'], ['person', 'Clara'], ['thing', 'Coin'], ['thing', 'Lamp']])
+    const player = groups.find(group => group.subject === 'player')!
+    expect(player.values).toContainEqual({ name: 'Stamina', value: '10' })
+    expect(player.values).toContainEqual({ name: 'Trust', value: '20' })
+    expect(player.values.filter(value => value.name.startsWith('Skill'))).toHaveLength(many)
+  })
+
+  it('never gives what is hidden, what is private to someone else, or what belongs to someone not met', () => {
+    declare()
+    session.variables.set('dread', 'character', session.characters.getBySourceId('clara')!.id, { value: 9 }, 1)
+    session.variables.set('trust', 'character', session.characters.getBySourceId('dora')!.id, { value: 77 }, 1)
+    session.variables.set('omen', 'world', 0, { value: true }, 1)
+    const text = JSON.stringify(referencePage(session, 'status'))
+    for (const secret of ['SECRET', 'Dora', '77', 'Omen']) expect(text, secret).not.toContain(secret)
+    const clara = referencePage(session, 'status').entries.find(group => group.name === 'Clara')
+    expect(clara?.values).toEqual([{ name: 'Trust', value: '20' }])
+    expect(referencePage(session, 'status').entries.find(group => group.subject === 'player')?.values).toContainEqual({ name: 'Dread', value: '0' })
+  })
+
+  it('has nothing when nothing is tracked', () => {
+    expect(referencePage(session, 'status').entries).toEqual([])
+  })
+})
+
 describe('the reference pages', () => {
   it('lists the people at the player\'s place and those met, with only what can be seen', () => {
     const reply = referencePage(session, 'people')

@@ -1,0 +1,64 @@
+{
+  "id": "kit",
+  "name": "基特·奥尔德",
+  "age": 16,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "码头上的少年，看到的比被问到的多。",
+  "personality": "开朗，一点吃的就能收买，谁先对他好，他就忠于谁。",
+  "background": "在系缆桩之间长大的孤儿，灯灭之前一直给布拉姆跑腿送信。",
+  "appearance": "瘦削、晒得黝黑、光着脚，帽子上插着一根海鸥羽毛。",
+  "speech": {
+    "style": "语速快、带俚语；害怕时就用提问来回答。",
+    "examples": [
+      "也许我看见了什么。也许我只是饿了。",
+      "不是我。绝对不是。谁说的？"
+    ]
+  },
+  "start": {
+    "public_state": "在码头上盘缆绳。",
+    "activity": "盘缆绳。",
+    "inner_state": "知道夜里谁走灯塔路，却不敢说。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.3,
+        "arousal": 0.6,
+        "dominance": -0.3
+      }
+    },
+    "intents": [],
+    "location": "pier",
+    "position": "坐在一卷缆绳上"
+  },
+  "relationships": [
+    {
+      "to": "bram",
+      "label": "师傅",
+      "familiarity": 0.8,
+      "trust": 0.9,
+      "affinity": 0.8
+    },
+    {
+      "to": "mara",
+      "label": "守塔人的女儿",
+      "familiarity": 0.4,
+      "trust": 0.3,
+      "affinity": 0.3
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "pier",
+      "market",
+      "lighthouse"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "smugglers-signal"
+    ]
+  }
+}

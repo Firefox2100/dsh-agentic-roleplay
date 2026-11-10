@@ -1,0 +1,60 @@
+{
+  "id": "solo-talk-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我问老板，他有没有听说灯塔为什么熄了。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "我向他道谢，问今晚有没有空房。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我坐在炉火边，听着屋里的动静。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "character-exists",
+      "character": "tomas"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "speaks-in-voice",
+      "character": "tomas"
+    }
+  ]
+}

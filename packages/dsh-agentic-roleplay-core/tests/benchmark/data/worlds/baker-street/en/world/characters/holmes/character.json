@@ -1,0 +1,114 @@
+{
+  "id": "holmes",
+  "name": "Sherlock Holmes",
+  "age": 41,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "The consulting detective, restless between cases, who plays the cello when he thinks.",
+  "personality": "Quick, exact, dry, bored by the ordinary; fond of his friends and unable to say so.",
+  "background": "Has made a living by solving what the police cannot, in these rooms, for nine years.",
+  "appearance": "Spare, sharp-featured, in a worn dressing gown until noon.",
+  "speech": {
+    "style": "Fast and precise; short deductions, dry asides, no small talk.",
+    "examples": [
+      "You have walked from the station; your boots say so.",
+      "The facts, if you please, and in order."
+    ]
+  },
+  "start": {
+    "public_state": "Reading the agony column in a dressing gown.",
+    "activity": "Reading.",
+    "inner_state": "Needs a case before the afternoon, or he will be unbearable.",
+    "emotion": {
+      "baseline": {
+        "valence": -0.1,
+        "arousal": 0.6,
+        "dominance": 0.6
+      }
+    },
+    "intents": [],
+    "location": "sitting-room",
+    "position": "in the nearer armchair"
+  },
+  "relationships": [
+    {
+      "to": "visitor",
+      "label": "Miss Marlowe",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "watson",
+      "label": "Watson",
+      "familiarity": 0.9,
+      "trust": 0.9,
+      "affinity": 0.8
+    },
+    {
+      "to": "hudson",
+      "label": "Mrs Hudson",
+      "familiarity": 0.8,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "lestrade",
+      "label": "Lestrade",
+      "familiarity": 0.7,
+      "trust": 0.4,
+      "affinity": 0.2,
+      "tension": 0.2
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "sitting-room",
+      "stairs",
+      "surgery",
+      "street"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "cases",
+      "cello"
+    ]
+  },
+  "variables": {
+    "restlessness": 5
+  },
+  "routine": [
+    {
+      "from": "09:00",
+      "to": "13:00",
+      "activity": "reading the papers and thinking",
+      "location": "sitting-room",
+      "position": "in the nearer armchair"
+    },
+    {
+      "from": "13:00",
+      "to": "18:00",
+      "activity": "out on his own business",
+      "location": "street"
+    },
+    {
+      "from": "18:00",
+      "to": "23:30",
+      "activity": "in the sitting room with his cello and his pipe",
+      "location": "sitting-room",
+      "position": "by the window seat"
+    },
+    {
+      "from": "23:30",
+      "to": "09:00",
+      "activity": "asleep, or awake and not to be disturbed",
+      "location": "sitting-room",
+      "interruptible": false
+    }
+  ]
+}

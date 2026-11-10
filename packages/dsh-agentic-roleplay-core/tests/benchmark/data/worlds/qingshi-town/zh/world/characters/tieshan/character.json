@@ -1,0 +1,86 @@
+{
+  "id": "tieshan",
+  "name": "铁山",
+  "age": 48,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "威远镖局的总镖头，嗓门大，最重信义。",
+  "personality": "直爽，护短，答应过的事绝不反悔。",
+  "background": "二十年前白手起家，把镖局撑成了三省有名的字号。",
+  "appearance": "虎背熊腰，一脸络腮胡，腰间挂着一对铁胆。",
+  "speech": {
+    "style": "说话洪亮，爱用江湖俗语。",
+    "examples": [
+      "干咱们这行，信字比命重。",
+      "沈姑娘，这事只能托给你。"
+    ]
+  },
+  "start": {
+    "public_state": "在茶棚里等沈青。",
+    "activity": "等人。",
+    "inner_state": "那封信若是送不到，镖局的招牌就砸了。",
+    "emotion": {
+      "baseline": {
+        "valence": -0.2,
+        "arousal": 0.5,
+        "dominance": 0.6
+      }
+    },
+    "intents": [],
+    "location": "town-gate",
+    "position": "茶棚里"
+  },
+  "relationships": [
+    {
+      "to": "shenqing",
+      "label": "沈姑娘",
+      "familiarity": 0.5,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "baizhi",
+      "label": "白姑娘",
+      "familiarity": 0.6,
+      "trust": 0.4,
+      "affinity": 0.2,
+      "tension": 0.3
+    },
+    {
+      "to": "qianzhanggui",
+      "label": "钱掌柜",
+      "familiarity": 0.8,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "guyan",
+      "label": "顾先生",
+      "familiarity": 0.3,
+      "trust": 0.0,
+      "affinity": -0.1,
+      "tension": 0.4
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "town-gate",
+      "escort-office",
+      "herb-shop",
+      "inn",
+      "temple"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "escort-charter",
+      "letter-secret"
+    ]
+  },
+  "variables": {
+    "wounds": 0
+  }
+}

@@ -1,0 +1,1 @@
+Write the fair as a crowd of particular people: when someone new comes into the scene, give them a name, a trade and one memorable habit, and never the same trade twice in a day.

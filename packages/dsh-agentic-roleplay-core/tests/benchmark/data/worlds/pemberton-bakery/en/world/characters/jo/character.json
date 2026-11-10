@@ -1,0 +1,84 @@
+{
+  "id": "jo",
+  "name": "Jo Ellis",
+  "age": 24,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A baker's assistant who lives above the shop and applies for other jobs at night.",
+  "personality": "Quiet, hard-working, says \"fine\" when it is not.",
+  "background": "Moved to town for a degree that did not lead anywhere, and stayed because of the room above the bakery.",
+  "appearance": "Hair in a messy bun, flour on the apron.",
+  "speech": {
+    "style": "Short, a little dry; says \"fine\" and \"I will see\".",
+    "examples": [
+      "Fine. I will do the front table.",
+      "I will see."
+    ]
+  },
+  "start": {
+    "public_state": "Wiping the front table.",
+    "activity": "Wiping tables.",
+    "inner_state": "Thinking about the application she sent last night.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.1,
+        "arousal": 0.3,
+        "dominance": 0.0
+      }
+    },
+    "intents": [],
+    "location": "bakery",
+    "position": "by the front table"
+  },
+  "relationships": [
+    {
+      "to": "mags",
+      "label": "Mags",
+      "familiarity": 0.8,
+      "trust": 0.8,
+      "affinity": 0.7
+    },
+    {
+      "to": "okafor",
+      "label": "Mr Okafor",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.6
+    },
+    {
+      "to": "dev",
+      "label": "Dev",
+      "familiarity": 0.5,
+      "trust": 0.5,
+      "affinity": 0.5
+    },
+    {
+      "to": "lena",
+      "label": "Lena",
+      "familiarity": 0.4,
+      "trust": 0.3,
+      "affinity": 0.2
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "bakery",
+      "high-street",
+      "flat",
+      "market-square",
+      "park"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "town-history"
+    ]
+  },
+  "variables": {
+    "tiredness": 3,
+    "savings": 420
+  }
+}

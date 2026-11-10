@@ -1,0 +1,7 @@
+{
+  "id": "sealed-letter",
+  "name": "Sealed letter",
+  "description": "A letter sealed with the guild's signet, addressed to Brann.",
+  "held_by": "vessa",
+  "unique": true
+}

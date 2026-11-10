@@ -1,0 +1,79 @@
+{
+  "id": "vessa",
+  "name": "Vessa Orrin",
+  "age": 33,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "A guild factor from the coast who arrived two days ago asking about the convoy.",
+  "personality": "Smooth, curious, always counting the room.",
+  "background": "Works for the Caravan Guild's coastal office and does not say what it wants.",
+  "appearance": "Neat travelling clothes, no dust on them, a signet ring.",
+  "speech": {
+    "style": "Courteous, warm on the surface, careful with details.",
+    "examples": [
+      "Surely we can come to terms.",
+      "How very interesting."
+    ]
+  },
+  "start": {
+    "public_state": "Sitting at the edge of the yard.",
+    "activity": "Taking notes.",
+    "inner_state": "Has been told to find out who opened the well.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.5
+      }
+    },
+    "intents": [],
+    "location": "yard",
+    "position": "on a crate"
+  },
+  "relationships": [
+    {
+      "to": "brann",
+      "label": "Brann",
+      "familiarity": 0.4,
+      "trust": 0.1,
+      "affinity": 0.0,
+      "tension": 0.5
+    },
+    {
+      "to": "lioren",
+      "label": "Lioren",
+      "familiarity": 0.5,
+      "trust": 0.0,
+      "affinity": -0.2,
+      "tension": 0.6
+    },
+    {
+      "to": "edda",
+      "label": "the sellsword",
+      "familiarity": 0.2,
+      "trust": 0.1,
+      "affinity": 0.1
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "gate",
+      "yard",
+      "shrine",
+      "forge",
+      "ruin"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "well-lore",
+      "convoy-charter"
+    ]
+  },
+  "variables": {
+    "wounds": 0
+  }
+}

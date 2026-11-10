@@ -170,10 +170,10 @@ importers:
   packages/dsh-agentic-roleplay:
     dependencies:
       '@dsh-agentic-roleplay/core':
-        specifier: workspace:0.11.1
+        specifier: workspace:0.12.0
         version: link:../dsh-agentic-roleplay-core
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.11.1
+        specifier: workspace:0.12.0
         version: link:../dsh-roleplay-state
 
   packages/dsh-agentic-roleplay-core:
@@ -182,11 +182,11 @@ importers:
         specifier: 0.2.2-rc.1
         version: 0.2.2-rc.1(84bbfafadde53f653c59c1bd55738f81)
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.11.1
+        specifier: workspace:0.12.0
         version: link:../dsh-roleplay-state
       '@dsh-ai-providers/core':
-        specifier: ^0.6.0
-        version: 0.6.0(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-llm@0.2.2-rc.1(@deepseek-ai/cordis@4.0.5))
+        specifier: ^0.7.0
+        version: 0.7.0(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-llm@0.2.2-rc.1(@deepseek-ai/cordis@4.0.5))
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: 4.0.5
@@ -4344,8 +4344,8 @@ packages:
     resolution: {integrity: sha512-xx0W3eav2uW1NRIpuHJWNwLTC15xPNjU4Uxi9NSnd3swYC96BE3vFiT93SD8s24kmAAWNwgZwfZ2fghGZ01Lcw==}
     engines: {node: '>=20.0'}
 
-  '@dsh-ai-providers/core@0.6.0':
-    resolution: {integrity: sha512-G5Ob1Dqjg/NkOhoK6ULLj7YAh3Lbsk2uB+FbExpAg/W7wlo0nVRV82SdS6wWZwoanFsrQIaV0BLmu5oI/Fm68A==}
+  '@dsh-ai-providers/core@0.7.0':
+    resolution: {integrity: sha512-T3JuPK/4Te+miQO4+WjWpyajhGa/1Kd6SS9XaeGI2a8xy2tfwg6xiPd4e4ATHPHxmVPhSocE8mRzALQ+x3bFeg==}
     engines: {node: '>=22'}
     peerDependencies:
       '@deepseek-ai/cordis': 4.0.5
@@ -16340,7 +16340,7 @@ snapshots:
       - uglify-js
       - webpack-cli
 
-  '@dsh-ai-providers/core@0.6.0(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-llm@0.2.2-rc.1(@deepseek-ai/cordis@4.0.5))':
+  '@dsh-ai-providers/core@0.7.0(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-llm@0.2.2-rc.1(@deepseek-ai/cordis@4.0.5))':
     dependencies:
       '@deepseek-ai/cordis': 4.0.5(@deepseek-ai/cordis-plugin-include@1.1.0)(@deepseek-ai/cordis-plugin-loader@1.0.6)
       '@deepseek-ai/dsh-llm': 0.2.2-rc.1(@deepseek-ai/cordis@4.0.5)

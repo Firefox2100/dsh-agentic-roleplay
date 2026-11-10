@@ -1,0 +1,13 @@
+{
+  "id": "no-recruit",
+  "description": "The world's own /recruit command and the trigger behind it are taken out, so the only way people are made is the game master asking the world author itself.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [
+    "commands.json",
+    "triggers.json"
+  ],
+  "add": {},
+  "patch": {}
+}

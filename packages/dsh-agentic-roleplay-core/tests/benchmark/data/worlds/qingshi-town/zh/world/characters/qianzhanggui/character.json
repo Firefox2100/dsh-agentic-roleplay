@@ -1,0 +1,76 @@
+{
+  "id": "qianzhanggui",
+  "name": "钱万金",
+  "age": 55,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "悦来客栈的掌柜，镇上消息最灵通的人。",
+  "personality": "圆滑、爱算账，最爱听也最爱传闲话，但从不得罪人。",
+  "background": "在这条商路上开了三十年客栈，见过的人比吃过的盐还多。",
+  "appearance": "圆脸，常拨弄着一把算盘。",
+  "speech": {
+    "style": "说话客气带笑，爱说“好说好说”。",
+    "examples": [
+      "好说好说，都是来往的朋友。",
+      "这话我可没说过。"
+    ]
+  },
+  "start": {
+    "public_state": "在柜台后打算盘。",
+    "activity": "打算盘。",
+    "inner_state": "听说了镖局的事，不敢多问。",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.3
+      }
+    },
+    "intents": [],
+    "location": "inn",
+    "position": "柜台后"
+  },
+  "relationships": [
+    {
+      "to": "shenqing",
+      "label": "沈姑娘",
+      "familiarity": 0.4,
+      "trust": 0.4,
+      "affinity": 0.3
+    },
+    {
+      "to": "tieshan",
+      "label": "铁镖头",
+      "familiarity": 0.8,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "guyan",
+      "label": "顾先生",
+      "familiarity": 0.3,
+      "trust": 0.2,
+      "affinity": 0.1
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "town-gate",
+      "escort-office",
+      "herb-shop",
+      "inn",
+      "temple"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "escort-charter"
+    ]
+  },
+  "variables": {
+    "wounds": 0
+  }
+}

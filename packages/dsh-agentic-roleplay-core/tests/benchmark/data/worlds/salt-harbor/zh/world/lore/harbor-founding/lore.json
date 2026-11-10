@@ -1,0 +1,14 @@
+{
+  "id": "harbor-founding",
+  "title": "盐湾港的建立",
+  "kind": "history",
+  "scope": "everyone",
+  "summary": "晒盐人于 1789 年在海湾定居，建起第一座码头。",
+  "body": "盐湾港由晒盐人家族于 1789 年建立，第一座码头用浮木搭成。公会的特许状来自建镇百年之时。",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "harbor"
+    }
+  ]
+}

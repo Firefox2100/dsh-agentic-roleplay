@@ -1,0 +1,7 @@
+{
+  "id": "salt-harbor",
+  "name": "Salt Harbor",
+  "theme": "mystery",
+  "languages": { "en": { "native": true }, "zh": { "native": false, "pairedWith": "en" } },
+  "purpose": "The anchor: a fogbound harbour mystery that uses every part of the world format at once, in English and a Chinese translation of the same facts, for controlled comparisons such as cast size on identical facts."
+}

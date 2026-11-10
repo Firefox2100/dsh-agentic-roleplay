@@ -353,6 +353,8 @@ export interface RoutineWindowSpec {
   feature?: string
   position?: string
   interruptible?: boolean
+  /** Whether the character is asleep in this window. */
+  sleep?: boolean
 }
 
 /** One day on which a character does something other than its routine says: it takes the place of the routine's windows on that date and is dropped when the same date is set again. */
@@ -368,6 +370,8 @@ export interface RoutineExceptionSpec {
   feature?: string
   position?: string
   interruptible?: boolean
+  /** Whether the character is asleep in this window. */
+  sleep?: boolean
 }
 
 /** Sets the recurring day of a character, replacing what it had. */

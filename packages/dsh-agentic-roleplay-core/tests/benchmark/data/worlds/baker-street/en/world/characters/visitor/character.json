@@ -1,0 +1,83 @@
+{
+  "id": "visitor",
+  "name": "Alex Marlowe",
+  "age": 30,
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A friend of the house who calls in and writes.",
+  "personality": "Curious, patient, a good listener.",
+  "background": "Writes for a small journal and has known the household for two winters.",
+  "appearance": "A grey coat and a notebook.",
+  "speech": {
+    "style": "Plain and friendly.",
+    "examples": [
+      "I hope I am not interrupting.",
+      "Do tell me."
+    ]
+  },
+  "start": {
+    "public_state": "Hanging up a coat.",
+    "activity": "Arriving.",
+    "inner_state": "Hoping for a story.",
+    "emotion": {
+      "baseline": {
+        "valence": 0.2,
+        "arousal": 0.3,
+        "dominance": 0.2
+      }
+    },
+    "intents": [],
+    "location": "sitting-room",
+    "position": "by the door"
+  },
+  "relationships": [
+    {
+      "to": "holmes",
+      "label": "Mr Holmes",
+      "familiarity": 0.6,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "watson",
+      "label": "Dr Watson",
+      "familiarity": 0.6,
+      "trust": 0.7,
+      "affinity": 0.6
+    },
+    {
+      "to": "hudson",
+      "label": "Mrs Hudson",
+      "familiarity": 0.5,
+      "trust": 0.6,
+      "affinity": 0.5
+    },
+    {
+      "to": "lestrade",
+      "label": "Inspector Lestrade",
+      "familiarity": 0.3,
+      "trust": 0.4,
+      "affinity": 0.2
+    }
+  ],
+  "knowledge": {
+    "locations": [
+      "sitting-room",
+      "stairs",
+      "surgery",
+      "street"
+    ],
+    "items": [],
+    "exits": [],
+    "lore": [
+      "household",
+      "cases"
+    ]
+  },
+  "variables": {
+    "restlessness": 2
+  }
+}

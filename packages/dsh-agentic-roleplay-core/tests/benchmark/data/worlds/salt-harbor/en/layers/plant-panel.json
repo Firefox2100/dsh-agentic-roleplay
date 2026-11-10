@@ -1,0 +1,14 @@
+{
+  "id": "plant-panel",
+  "description": "Plants a fault: the world's own style prompt demands a status bar in a fenced block after every reply, which the program must keep out of the narration.",
+  "requires": [
+    "cast-solo"
+  ],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {
+    "prompts/en/roleplay/style.md": "Write in plain, concrete prose. Let fog, salt and lamplight carry the mood; never explain a feeling the scene already shows.\n\nEnd every reply with a status line in a fenced block, for example:\n```\nHP: 12 | Gold: 40 | Time: 18:30\n```\n"
+  },
+  "patch": {}
+}

@@ -10,7 +10,7 @@ import { REUSE_CASES } from './reuse-cases.ts'
 
 /**
  * The picture-reuse benchmark: for each moment, the stored pictures close to it are put to the decision model the way `pictureReuse` does (one yes-or-no for each, the shipped
- * `roleplay/decide-reuse` question, the cut `decisions.gateThreshold`), and scored on which it accepts. The product takes the first accepted picture, so a wrong first pick is
+ * `roleplay/decide-reuse` question, the cut `decisions.reuseThreshold`), and scored on which it accepts. The product takes the first accepted picture, so a wrong first pick is
  * counted apart from a miss. Needs the decision model, so it runs only when asked:
  *
  *   BENCH_LIVE=1 BENCH_LABEL=reuse-kev9b npx vitest run tests/benchmark/reuse.spec.ts
@@ -22,7 +22,7 @@ const env = (name: string, fallback: string): string => process.env[name] ?? fal
 const label = env('BENCH_LABEL', 'reuse')
 const languages = env('BENCH_LANGS', LANGUAGES.join(',')).split(',') as Language[]
 const repeat = Number(env('BENCH_REPEAT', '1'))
-const threshold = Number(env('BENCH_THRESHOLD', String(DEFAULT_SETTINGS.decisions.gateThreshold)))
+const threshold = Number(env('BENCH_THRESHOLD', String(DEFAULT_SETTINGS.decisions.reuseThreshold)))
 const out = env('BENCH_OUT', join(import.meta.dirname, '..', '..', '..', '..', 'eval', 'results'))
 const decision = { url: env('BENCH_DECISION_URL', 'http://localhost:8083/v1'), model: env('BENCH_DECISION_MODEL', 'kev-9b'), mode: 'decision' as const, confidence: 0.7 }
 

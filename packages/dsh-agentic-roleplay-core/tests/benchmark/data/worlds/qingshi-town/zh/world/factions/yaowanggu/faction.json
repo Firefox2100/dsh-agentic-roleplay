@@ -1,0 +1,39 @@
+{
+  "id": "yaowanggu",
+  "name": "药王谷",
+  "summary": "隐于山中的医家门派。",
+  "description": "医家门派，弟子行医济世，不涉江湖。",
+  "values": [
+    "济世",
+    "不争"
+  ],
+  "structure": "一位谷主和若干弟子。",
+  "start": {
+    "public_state": "派人下山追一封信。",
+    "inner_state": "不愿被卷进镖局的旧案。",
+    "goals": []
+  },
+  "members": [
+    {
+      "character": "baizhi",
+      "role": "弟子",
+      "rank": "",
+      "status": "active",
+      "public": true,
+      "commitment": 0.9
+    }
+  ],
+  "relationships": [
+    {
+      "to": {
+        "kind": "faction",
+        "id": "weiyuan"
+      },
+      "label": "旧约",
+      "familiarity": 0.6,
+      "trust": 0.2,
+      "affinity": 0.1,
+      "tension": 0.4
+    }
+  ]
+}

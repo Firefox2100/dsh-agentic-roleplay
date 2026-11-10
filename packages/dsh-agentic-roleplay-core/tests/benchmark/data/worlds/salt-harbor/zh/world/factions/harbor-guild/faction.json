@@ -1,0 +1,67 @@
+{
+  "id": "harbor-guild",
+  "name": "渔港公会",
+  "summary": "掌管泊位、鱼价和港务所的组织。",
+  "description": "百年前为维持渔港秩序而设，实际上决定谁能出海捕鱼、谁不能。",
+  "values": [
+    "秩序",
+    "利益"
+  ],
+  "structure": "一名会长与四人议事会。",
+  "start": {
+    "public_state": "每天开会商议封路的事。",
+    "inner_state": "对守塔人到底知道什么，内部有分歧。",
+    "goals": [
+      {
+        "name": "保持灯塔路封闭",
+        "status": "active",
+        "horizon": "short",
+        "priority": 0.8,
+        "urgency": 0.6,
+        "plan": []
+      }
+    ]
+  },
+  "members": [
+    {
+      "character": "ines",
+      "role": "会长",
+      "rank": "首席",
+      "status": "active",
+      "public": true,
+      "commitment": 0.9
+    },
+    {
+      "character": "tomas",
+      "role": "线人",
+      "rank": "",
+      "status": "active",
+      "public": false,
+      "commitment": 0.3
+    }
+  ],
+  "relationships": [
+    {
+      "to": {
+        "kind": "faction",
+        "id": "lamp-keepers"
+      },
+      "label": "对手",
+      "familiarity": 0.7,
+      "trust": -0.2,
+      "affinity": -0.2,
+      "tension": 0.7
+    },
+    {
+      "to": {
+        "kind": "character",
+        "id": "bram"
+      },
+      "label": "麻烦",
+      "familiarity": 0.6,
+      "trust": -0.4,
+      "affinity": -0.3,
+      "tension": 0.8
+    }
+  ]
+}
