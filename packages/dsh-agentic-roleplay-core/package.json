@@ -90,8 +90,8 @@
     "@dsh-ai-providers/core": "^0.7.0"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.5",
-    "@deepseek-ai/cordis-plugin-loader": "^1.0.6",
+    "@deepseek-ai/cordis": "^4.1.0",
+    "@deepseek-ai/cordis-plugin-loader": "^1.1.0",
     "@deepseek-ai/dsh-agent": "0.2.2-rc.1",
     "@deepseek-ai/dsh-agent-loop": "0.2.2-rc.1",
     "@deepseek-ai/dsh-api-remotes": "0.2.2-rc.1",

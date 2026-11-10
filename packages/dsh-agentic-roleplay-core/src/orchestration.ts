@@ -197,7 +197,14 @@ export function apply(ctx: Context): void {
   ctx.effect(() => {
     ctx.roleplayOrchestration.halt = async (chat) => { images.cancel(chat); engine.stop(chat); await engine.quiesce(chat); engine.forget(chat) }
     ctx.roleplayOrchestration.quiesce = chat => engine.quiesce(chat)
-    return () => { ctx.roleplayOrchestration.halt = () => Promise.resolve(); ctx.roleplayOrchestration.quiesce = () => Promise.resolve() }
+    // The agent services this plugin depends on unload after it does, and a helper still starting then would wait for them forever.
+    return async () => {
+      ctx.roleplayOrchestration.halt = () => Promise.resolve()
+      ctx.roleplayOrchestration.quiesce = () => Promise.resolve()
+      images.cancelAll()
+      engine.stopAll()
+      await engine.quiesceAll()
+    }
   }, 'roleplay: halt')
   ctx.effect(() => { ctx.roleplayOrchestration.timelines = timelines; return () => { ctx.roleplayOrchestration.timelines = undefined } }, 'roleplay: timelines')
   ctx.effect(() => { ctx.roleplayOrchestration.images = images; return () => { ctx.roleplayOrchestration.images = undefined } }, 'roleplay: images')

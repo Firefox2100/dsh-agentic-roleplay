@@ -96,6 +96,11 @@ export class ImageJobs {
     this.active.delete(id)
   }
 
+  cancelAll(): void {
+    for (const job of this.active.values()) job.controller.abort()
+    this.active.clear()
+  }
+
   /**
    * @param priority - `foreground` when the player asked for the picture, `background` when it is made on its own after a turn and may wait behind the next one.
    * @param automatic - the picture was not asked for: the library is looked at first, and the pictures the person brought are described before that.

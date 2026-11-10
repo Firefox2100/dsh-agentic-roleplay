@@ -710,6 +710,15 @@ export class TurnEngine {
     this.reflectionCancels.get(chat)?.abort()
   }
 
+  /** The same for every chat the engine has seen; used when the plugin unloads. */
+  stopAll(): void {
+    for (const chat of new Set([...this.states.keys(), ...this.working.keys(), ...this.reflectionCancels.keys()])) this.stop(chat)
+  }
+
+  async quiesceAll(): Promise<void> {
+    await Promise.all([...new Set([...this.working.keys(), ...this.chains.keys()])].map(chat => this.quiesce(chat)))
+  }
+
   /** Resolves when nothing of the chat writes to its story any more: the records, what was made up being fitted in, the characters away, the suggestions. */
   async quiesce(chat: string, options: { skipOptional?: boolean } = {}): Promise<void> {
     for (;;) {
