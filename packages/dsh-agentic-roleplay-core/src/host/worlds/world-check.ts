@@ -1,4 +1,4 @@
-import { relative } from 'node:path'
+import { relative, sep } from 'node:path'
 import { InvalidWorldError } from '../sessions/errors.ts'
 import { loadValidatedWorld, type CheckedWorld } from './validated-world.ts'
 
@@ -31,7 +31,7 @@ export async function checkWorld(world: CheckedWorld): Promise<WorldCheck> {
     return { ok: true, problems: [], more: 0 }
   } catch (error) {
     if (!(error instanceof InvalidWorldError)) throw error
-    const problems = error.problems.map((problem): WorldProblem => ({ where: relative(world.directory, problem.path) || '(the world)', message: problem.message }))
+    const problems = error.problems.map((problem): WorldProblem => ({ where: relative(world.directory, problem.path).split(sep).join('/') || '(the world)', message: problem.message }))
     return { ok: false, summary: error.message, problems: problems.slice(0, LISTED), more: Math.max(0, problems.length - LISTED) }
   }
 }

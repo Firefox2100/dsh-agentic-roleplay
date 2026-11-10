@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ImageGenerationService, type ImageGenerationResult } from '@dsh-ai-providers/core'
+import { native } from '../../support/native.ts'
 import { afterEach, describe, expect, it } from 'vitest'
 import { generateReferenceImage, generateTransientImage } from '../../../src/host/images/generator.ts'
 import { readPngMetadata, withPngMetadata } from '../../../src/host/images/png-metadata.ts'
@@ -39,13 +40,13 @@ describe('PNG metadata', () => {
 
 describe('image storage and unwired generators', () => {
   it('uses stable global and local entity paths', () => {
-    expect(entityImageDirectory('/world', { kind: 'character', localId: 'alice' })).toBe('/world/images/characters/alice')
-    expect(entityImageDirectory('/world', { kind: 'item', localId: 4, globalId: 'urn-4' })).toBe('/world/images/global/urn-4')
-    expect(sceneImagePath('/session', 'n12', 2)).toBe('/session/images/scenes/turn-n12-02.png')
+    expect(entityImageDirectory('/world', { kind: 'character', localId: 'alice' })).toBe(native('/world/images/characters/alice'))
+    expect(entityImageDirectory('/world', { kind: 'item', localId: 4, globalId: 'urn-4' })).toBe(native('/world/images/global/urn-4'))
+    expect(sceneImagePath('/session', 'n12', 2)).toBe(native('/session/images/scenes/turn-n12-02.png'))
   })
 
   it('takes ids in any script and refuses what would leave the directory', () => {
-    expect(entityImageDirectory('/world', { kind: 'character', localId: '陌白-福尔摩斯' })).toBe('/world/images/characters/陌白-福尔摩斯')
+    expect(entityImageDirectory('/world', { kind: 'character', localId: '陌白-福尔摩斯' })).toBe(native('/world/images/characters/陌白-福尔摩斯'))
     for (const bad of ['..', 'a/b', '../x', '.hidden', 'a\\b', '']) expect(() => entityImageDirectory('/world', { kind: 'character', localId: bad })).toThrow(/not safe/)
   })
 

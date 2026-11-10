@@ -135,7 +135,7 @@ describe('scanWorlds', () => {
       expect(problems).toEqual([{ path: join(dir, 'b', 'world.json'), message: 'id "same" is already used by a' }])
     })
 
-    it.skipIf(process.getuid?.() === 0)('makes a world unlisted, with the reason, when the file cannot be updated', async () => {
+    it.skipIf(process.getuid?.() === 0 || process.platform === 'win32')('makes a world unlisted, with the reason, when the file cannot be updated', async () => {
       const folder = await world('w', { name: 'W' })
       await chmod(folder, 0o555)
       try {

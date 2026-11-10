@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { relative } from 'node:path'
+import { relative, sep } from 'node:path'
 import type { ImageGenerationService } from '@dsh-ai-providers/core'
 import type { ImageBlock } from '@deepseek-ai/dsh-llm'
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
@@ -128,7 +128,7 @@ export function imageTools(deps: ImageToolDeps): ToolDefinition[] {
       const subject = findSubject(deps.story, args.kind, args.key)
       const identity = identityOf(deps.story, subject)
       const path = await generateReferenceImage(deps.service, { root: deps.root, subject: imageSubject(subject, identity), identity, ...(args.art_direction === undefined ? {} : { artDirection: args.art_direction }), ...(deps.signal === undefined ? {} : { signal: deps.signal }) })
-      const local = relative(deps.root, path)
+      const local = relative(deps.root, path).split(sep).join('/')
       recorded.push(local)
       return { path: local }
     },
@@ -161,7 +161,7 @@ export function imageTools(deps: ImageToolDeps): ToolDefinition[] {
       const references = referenceMode === 'text-only' ? [] : await Promise.all(referencePaths.filter(entry => existsSync(entry.path)).map(async entry => ({ data: new Blob([await readFile(entry.path)], { type: 'image/png' }), description: `${entry.subject.kind} ${entry.subject.name}` })))
       const serial = await nextSceneSerial(deps.root, deps.timelineNode)
       const path = await generateTransientImage(deps.service, { root: deps.root, timelineNode: deps.timelineNode, turn: deps.turn, serial, scene: args.scene, subjects: selected, ...(args.art_direction === undefined ? {} : { artDirection: args.art_direction }), ...(args.segment === undefined ? {} : { segment: args.segment }), ...(args.reusable === undefined ? {} : { reusable: args.reusable }), ...(references.length === 0 ? {} : { references }), ...(deps.signal === undefined ? {} : { signal: deps.signal }) })
-      const local = relative(deps.root, path)
+      const local = relative(deps.root, path).split(sep).join('/')
       recorded.push(local)
       return { path: local, serial }
     },

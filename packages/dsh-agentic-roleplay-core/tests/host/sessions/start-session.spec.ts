@@ -5,6 +5,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, isSessionId } from '@dsh-agentic-roleplay/state'
+import { removeTemp } from '../../support/temp.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
 import { readNotes } from '../../../src/host/sessions/notes.ts'
@@ -54,7 +55,7 @@ beforeEach(async () => {
     root: () => root,
   }
 })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 const playAsArthur = { worldId: 'blackwater', playerCharacterId: 'arthur' }
 

@@ -12,11 +12,12 @@ describe('replacing a file in one step', () => {
   it('writes a new file, keeps the permissions of the one it replaces and leaves no temporary file', async () => {
     const file = join(directory, 'a.json')
     await atomicWrite(file, 'one')
-    expect((await stat(file)).mode & 0o777).toBe(0o644)
+    // Windows has no permission bits to keep: chmod only toggles the read-only attribute.
+    if (process.platform !== 'win32') expect((await stat(file)).mode & 0o777).toBe(0o644)
     await chmod(file, 0o600)
     await atomicWrite(file, 'two')
     expect(await readFile(file, 'utf8')).toBe('two')
-    expect((await stat(file)).mode & 0o777).toBe(0o600)
+    if (process.platform !== 'win32') expect((await stat(file)).mode & 0o777).toBe(0o600)
     expect(await readdir(directory)).toEqual(['a.json'])
   })
 
@@ -29,7 +30,7 @@ describe('replacing a file in one step', () => {
     await chmod(join(directory, 'd.json'), 0o600)
     atomicWriteSync(join(directory, 'd.json'), 'new')
     expect(await readFile(join(directory, 'd.json'), 'utf8')).toBe('new')
-    expect((await stat(join(directory, 'd.json'))).mode & 0o777).toBe(0o600)
+    if (process.platform !== 'win32') expect((await stat(join(directory, 'd.json'))).mode & 0o777).toBe(0o600)
     expect((await readdir(directory)).sort()).toEqual(['d.json', 'deep'])
   })
 })

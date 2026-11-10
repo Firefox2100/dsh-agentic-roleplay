@@ -51,9 +51,12 @@ function fill(id: string, text: string, given: PromptVariables, tag: string): st
   })
 }
 
+/** Prompt text as it was written: a checkout that writes CRLF must not change what the models are sent. */
+const textOf = (path: string): string => readFileSync(path, 'utf8').replaceAll('\r\n', '\n')
+
 /** A prompt as the package ships it, without a roleplay root: for code that has none, such as tests. */
 export function shippedText(id: string, language = FALLBACK_LANGUAGE, variables: PromptVariables = {}): string {
-  return fill(id, readFileSync(join(shippedPromptsDirectory(), language, `${id}.md`), 'utf8'), variables, language)
+  return fill(id, textOf(join(shippedPromptsDirectory(), language, `${id}.md`)), variables, language)
 }
 
 export function listFiles(directory: string, prefix = ''): string[] {
@@ -99,7 +102,7 @@ export class PromptLibrary extends Service {
     return readdirSync(this.directory, { withFileTypes: true }).filter(entry => entry.isDirectory() && LANGUAGE.test(entry.name)).flatMap(entry =>
       listFiles(join(this.directory, entry.name)).flatMap((id) => {
         const path = join(this.directory, entry.name, `${id}.md`)
-        const text = readFileSync(path, 'utf8')
+        const text = textOf(path)
         const message = !ID.test(id) || ![entry.name, FALLBACK_LANGUAGE].some(name => existsSync(join(this.shipped, name, `${id}.md`))) ? undefined : text.includes('{{') ? 'holds "{{", which DSH reads as a variable of its own' : promptProblem(entry.name, id, text, this.shipped)
         return message === undefined ? [] : [{ path, message }]
       }))
@@ -113,7 +116,7 @@ export class PromptLibrary extends Service {
     if (!ID.test(id)) throw new Error(`"${id}" is not a prompt id`)
     const tag = languageOf(language)
     const own = session === undefined ? undefined : this.override(id, tag, session)
-    return fill(id, readFileSync(own ?? this.file(id, tag), 'utf8'), variables, tag)
+    return fill(id, textOf(own ?? this.file(id, tag)), variables, tag)
   }
 
   private override(id: string, language: string, session: string): string | undefined {

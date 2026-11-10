@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import { sessionDatabase, sessionFolder, type RoleplayState } from '@dsh-agentic-roleplay/state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { TurnOutput } from '../../shared/narration.ts'
@@ -121,19 +122,20 @@ export class Timelines {
   /**
    * The turn ended in the log. Its own message is found now: it is the first message of the player after the last turn that ended
    * (it is not in the log yet when the turn begins).
+   * @param beganSeq - where that turn's own `turn/start` sits, so the log is not searched for it.
    */
-  ended(chat: string, session: { snapshotEvents(): readonly { seq: number; type: string; data: unknown }[] }, seq: number): void {
+  ended(chat: string, session: { snapshotEvents(fromSeq?: SessionLogOffset): readonly { seq: number; type: string; data: unknown }[] }, seq: number, beganSeq?: SessionLogOffset): void {
     const id = this.idOf(chat)
     const timeline = this.read(id)
     const node = timeline.nodes.find(candidate => candidate.id === timeline.head)
     if (node === undefined || node.endSeq !== undefined) return
     const after = Math.max(-1, ...timeline.nodes.filter(other => other.id !== node.id).map(other => other.endSeq ?? other.userSeq))
-    const human = session.snapshotEvents().find(event => event.seq > after && event.type === 'user/message' && (event.data as { source: { kind: string } }).source.kind === 'user')
+    const human = session.snapshotEvents((after + 1) as SessionLogOffset).find(event => event.seq > after && event.type === 'user/message' && (event.data as { source: { kind: string } }).source.kind === 'user')
     if (human === undefined) throw new TimelineError(`turn ${node.turn} has no message of the player in the log`)
     node.userSeq = human.seq
     node.endSeq = seq
-    const began = session.snapshotEvents().find(event => event.type === 'turn/start' && (event.data as { turn?: number }).turn === node.turn)
-    node.startSeq = Math.min(began?.seq ?? human.seq, human.seq)
+    const began = beganSeq ?? session.snapshotEvents(0 as SessionLogOffset).find(event => event.type === 'turn/start' && (event.data as { turn?: number }).turn === node.turn)?.seq
+    node.startSeq = Math.min(began ?? human.seq, human.seq)
     writeTimeline(this.folder(id), timeline)
   }
 

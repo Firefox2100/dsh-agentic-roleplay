@@ -92,7 +92,7 @@ export function agentServicesOf(ctx: Context): () => AgentServices {
     }
     const persistence = ctx.get('sessionPersistence') as SessionPersistenceLike | undefined
     const agents = ctx.get('agents') as { get(id: string): LiveAgent | undefined } | undefined
-    return { controller, registry, ...(persistence === undefined ? {} : { persistence }), ...(agents === undefined ? {} : { unload: unloader(agents) }) }
+    return { controller, registry, ...(persistence === undefined ? {} : { persistence }), ...(agents === undefined ? {} : { unload: unloader(ctx, agents) }) }
   }
 }
 
@@ -100,16 +100,33 @@ interface LiveAgent {
   scope: { rawDispose?: () => Promise<unknown> | void; dispose(): Promise<unknown> | void }
 }
 
-/** DSH has no call to unload an agent; disposing its scope is what its own teardown (a closed log, a released registration) hangs from. */
-function unloader(agents: { get(id: string): LiveAgent | undefined }): (chat: string) => Promise<void> {
+/** How long a disposed chat may take to leave DSH's agent registry before the replacement is refused. */
+const UNLOAD_WAIT_MS = 5000
+
+/**
+ * DSH has no call to unload an agent; disposing its scope is what its own teardown (a closed log, a released
+ * registration) hangs from. `agent/disposed` says when it has left the registry; the bound is only a guard for a
+ * teardown that never finishes.
+ */
+function unloader(ctx: Context, agents: { get(id: string): LiveAgent | undefined }): (chat: string) => Promise<void> {
   return async (chat) => {
     const live = agents.get(chat)
     if (live === undefined) return
-    await (live.scope.rawDispose ?? live.scope.dispose.bind(live.scope))()
-    for (let waited = 0; agents.get(chat) !== undefined; waited += 50) {
-      if (waited >= 5000) throw new Error(`the chat ${chat} is still loaded and cannot be replaced`)
-      await new Promise(resolve => setTimeout(resolve, 50))
-    }
+    let off = (): void => {}
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(resolve, UNLOAD_WAIT_MS)
+        const settle = (done: () => void): void => { clearTimeout(timer); done() }
+        off = ctx.on('agent/disposed', ({ agent }) => { if (agent.session.id === chat) settle(resolve) })
+        void (async () => {
+          try {
+            await (live.scope.rawDispose ?? live.scope.dispose.bind(live.scope))()
+            // The event is the answer; the bound only unblocks a teardown that never gets there.
+          } catch (error) { settle(() => reject(error)) }
+        })()
+      })
+    } finally { off() }
+    if (agents.get(chat) !== undefined) throw new Error(`the chat ${chat} is still loaded and cannot be replaced`)
   }
 }
 

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { PackToken, StripSurface } from '../../shared/interface-pack.ts'
-import { useBackdropHost } from './backdrop.ts'
+import { useBackdropHost, BACKDROP_LIFT_RULE } from './backdrop.ts'
 import { usePack, usePlayerView } from './hooks.ts'
 import { PackFrame, type FrameInput } from '../widgets/pack-frame/PackFrame.tsx'
 import { sessionBackend } from '../widgets/pack-frame/frame-api.ts'
@@ -37,15 +37,6 @@ export function PackDock({ sessionId, surface, frameInput, overrideTokens, useSe
   const [height, setHeight] = useState<number | undefined>(undefined)
   const resize = useCallback((next: number) => { setHeight(next) }, [])
 
-  useEffect(() => {
-    if (surface !== 'hud' || pack === undefined || pack.skin === '') return undefined
-    const style = document.createElement('style')
-    style.setAttribute('data-roleplay-pack', pack.id)
-    style.textContent = pack.skin
-    document.head.append(style)
-    return () => { style.remove() }
-  }, [surface, pack?.id, pack?.skin])
-
   const tokens = pack?.theme
   useEffect(() => {
     if (surface !== 'hud' || tokens === undefined || Object.keys(tokens).length === 0) return undefined
@@ -55,8 +46,11 @@ export function PackDock({ sessionId, surface, frameInput, overrideTokens, useSe
   if (session === undefined || pack === undefined) return null
   const shown = strip !== undefined && !(surface === 'opening' && (running || view === undefined || view.story.turn > 0))
   if (!shown && backdrop === undefined) return null
+  const skin = surface === 'hud' && pack.skin !== '' ? pack.skin : undefined
   return (
     <>
+      {skin !== undefined && <style data-roleplay-pack={pack.id}>{skin}</style>}
+      {layer !== undefined && <style>{BACKDROP_LIFT_RULE}</style>}
       {shown && strip !== undefined && (
         <div className={css.hud} data-rp={surface}>
           <PackFrame backend={sessionBackend(session)} pack={pack} surface={surface} view={view} input={frameInput} onResize={resize} {...(height === undefined && strip.height === undefined ? {} : { height: height ?? strip.height as number })} title={t(surface)} />

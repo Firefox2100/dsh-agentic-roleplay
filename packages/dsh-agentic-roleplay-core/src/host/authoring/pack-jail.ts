@@ -42,7 +42,7 @@ export function packFileProblem(tool: string, path: string, world: string, texts
   const ui = join(world, PACKS_FOLDER)
   const inside = relative(ui, path)
   const segments = inside.split(sep)
-  const hint = `in this chat the file tools reach only the text files of the world's interface packs, ${join(ui, '<pack>', '<file>')}. Nothing, not another path and not sandbox_permissions, lifts that: do not try again for this file, tell the person that it cannot be changed from here`
+  const hint = `in this chat the file tools reach only the text files of the world's interface packs, ${PACKS_FOLDER}/<pack>/<file>. Nothing, not another path and not sandbox_permissions, lifts that: do not try again for this file, tell the person that it cannot be changed from here`
   if (inside === '' || inside.startsWith('..') || isAbsolute(inside) || segments.length < 2) return `${path} is not a file of an interface pack: ${hint}`
   if (!isPackId(segments[0] as string)) return `"${segments[0]}" is not a usable pack name (letters, digits, "-" and "_"): ${hint}`
   if (segments.some(segment => segment.startsWith('.'))) return `${path}: names may not start with a dot`
@@ -84,7 +84,7 @@ export async function packJail(exec: ToolExecution, next: () => Promise<PreToolD
   if (writing && await deps.reviewing(chat)) return { kind: 'deny', reason: 'an import does not write interface packs; they are left to the person' }
   const decision = await next()
   if (!writing || decision.kind !== 'allow') return decision
-  const target = `“${relative(join(world, PACKS_FOLDER), path)}”`
+  const target = `“${relative(join(world, PACKS_FOLDER), path).split(sep).join('/')}”`
   return {
     kind: 'ask',
     reason: `${exec.name} interface pack file ${target}`,

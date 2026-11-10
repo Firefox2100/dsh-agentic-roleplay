@@ -1,6 +1,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { existsSync } from 'node:fs'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
+import { removeTemp } from '../../support/temp.ts'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, sessionFolder } from '@dsh-agentic-roleplay/state'
@@ -32,7 +33,7 @@ beforeEach(async () => {
   failure = undefined
   state = new RoleplayState(new Context(), { journalMode: 'delete' })
 })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 describe('putting a session away', () => {
   it('hides and stops its chat, keeps everything, and marks it in the list', async () => {

@@ -3,7 +3,7 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import * as tools from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
-import { DSH_DEVELOPMENT } from '../../../../scripts/dsh-compat.mjs'
+import { DSH_RELEASES } from '../../../../scripts/dsh-compat.mjs'
 import { SCROLL_BODY } from '../../src/client/interface/conversation-body.ts'
 
 /**
@@ -13,12 +13,14 @@ import { SCROLL_BODY } from '../../src/client/interface/conversation-body.ts'
  */
 const require = createRequire(import.meta.url)
 
+/** The packages whose behaviour the bundle builds on, all published together with the runtime. */
+const DSH_PACKAGES = ['dsh-subagent', 'dsh-tools', 'dsh-agent', 'dsh-session', 'dsh-compaction-basic']
+
 describe('the DSH this bundle is built against', () => {
-  it('is the exact DSH release whose contracts this bundle was developed against', () => {
-    for (const name of ['dsh-subagent', 'dsh-tools', 'dsh-agent', 'dsh-session', 'dsh-compaction-basic']) {
-      const { version } = require(`@deepseek-ai/${name}/package.json`) as { version: string }
-      expect(version, `@deepseek-ai/${name}`).toBe(DSH_DEVELOPMENT)
-    }
+  it('is a DSH release whose contracts this bundle was tested against', () => {
+    const installed = DSH_PACKAGES.map(name => (require(`@deepseek-ai/${name}/package.json`) as { version: string }).version)
+    expect(new Set(installed).size, `the installed DSH packages disagree: ${installed.join(', ')}`).toBe(1)
+    expect(DSH_RELEASES, `@deepseek-ai/dsh-*@${installed[0]} is not a tested release: verify it, fix what it changed, then add it to DSH_RELEASES in scripts/dsh-compat.mjs`).toContain(installed[0])
   })
 
   it('still exports what a helper\'s result is checked with', () => {

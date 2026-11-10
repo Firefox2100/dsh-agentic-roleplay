@@ -93,7 +93,7 @@ export async function installWorld(catalog: WorldCatalog, archive: Buffer, maxBy
     await mkdir(catalog.directory, { recursive: true })
     if (replacing !== undefined) {
       placed = basename(replacing.directory)
-      backup = join('.trash', 'worlds', `${placed}-${stamp()}`)
+      backup = ['.trash', 'worlds', `${placed}-${stamp()}`].join('/')
       await mkdir(join(root, dirname(backup)), { recursive: true })
       await rename(replacing.directory, join(root, backup))
     } else {

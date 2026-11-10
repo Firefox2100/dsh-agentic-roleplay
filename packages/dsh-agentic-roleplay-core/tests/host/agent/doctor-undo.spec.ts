@@ -1,5 +1,6 @@
 import { Context } from '@deepseek-ai/cordis'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
+import { removeTemp } from '../../support/temp.ts'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState } from '@dsh-agentic-roleplay/state'
@@ -21,7 +22,7 @@ beforeEach(async () => {
   halted = []
   state = new RoleplayState(new Context(), { journalMode: 'delete' })
 })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 function started() {
   const session = state.createSession(sessionsDir(), { name: 'Night', world })

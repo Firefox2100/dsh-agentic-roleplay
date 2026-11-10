@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, readdir, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { native } from '../../support/native.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { helpersOf, purgeChat, sessionFolderOf, type PurgeDeps, type StoredHeader } from '../../../src/host/agent/purge.ts'
 
@@ -36,9 +37,9 @@ afterEach(async () => { await rm(root, { recursive: true, force: true }) })
 
 describe('where DSH keeps a session', () => {
   it('is a folder of the session\'s own under a folder of its project, named as DSH names them', () => {
-    expect(sessionFolderOf('/store', { id: chat, cwd: CWD })).toBe(`/store/--home-x-workspace-dsh-roleplay--/${chat}`)
-    expect(sessionFolderOf('/store', { id: chat })).toBe(`/store/_no-cwd/${chat}`)
-    expect(sessionFolderOf('/store', { id: 'a/b', cwd: '/my project/é' })).toBe('/store/--my~0020project-~00E9--/a~002Fb')
+    expect(sessionFolderOf('/store', { id: chat, cwd: CWD })).toBe(native(`/store/--home-x-workspace-dsh-roleplay--/${chat}`))
+    expect(sessionFolderOf('/store', { id: chat })).toBe(native(`/store/_no-cwd/${chat}`))
+    expect(sessionFolderOf('/store', { id: 'a/b', cwd: '/my project/é' })).toBe(native('/store/--my~0020project-~00E9--/a~002Fb'))
   })
 
   it('finds what a chat started, to any depth, and not what only has it as a parent: a branch is a session of its own', () => {

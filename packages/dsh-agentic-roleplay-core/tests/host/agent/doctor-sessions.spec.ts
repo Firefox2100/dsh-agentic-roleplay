@@ -1,3 +1,5 @@
+import { native } from '../../support/native.ts'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { DOCTOR_AGENT_PRESET, DOCTOR_PROJECT_TITLE, DoctorSessions } from '../../../src/host/agent/doctor-sessions.ts'
 import type { AgentServices } from '../../../src/host/agent/agent-sessions.ts'
@@ -16,7 +18,7 @@ function fakes(known: string[] = []) {
       create: header => { calls.push(['store', header.id, header.cwd, header.agentPreset]); return Promise.resolve({ append: () => Promise.resolve(), flush: () => Promise.resolve(), close: () => Promise.resolve() }) },
     },
     registry: {
-      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'p', path: `${path}/canonical`, sessionIds: known, attachSession: (id) => { calls.push(['attach', id]); return Promise.resolve() } }) },
+      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'p', path: join(path, 'canonical'), sessionIds: known, attachSession: (id) => { calls.push(['attach', id]); return Promise.resolve() } }) },
       archiveSession: () => Promise.resolve(),
       unarchiveSession: () => Promise.resolve(),
     },
@@ -45,8 +47,8 @@ describe('the chat of a session doctor', () => {
     const chat = await new DoctorSessions(() => services, () => '/root', prompts).ensure({ id: ID, name: 'Night one' }, 'Doctor: Night one', 'zh')
     expect(chat).toBe(`doctor-${ID}`)
     expect(calls).toEqual([
-      ['project', '/root/sessions', DOCTOR_PROJECT_TITLE],
-      ['store', `doctor-${ID}`, '/root/sessions/canonical', DOCTOR_AGENT_PRESET],
+      ['project', native('/root/sessions'), DOCTOR_PROJECT_TITLE],
+      ['store', `doctor-${ID}`, native('/root/sessions/canonical'), DOCTOR_AGENT_PRESET],
       ['session', { workspaceId: 'p', sessionId: `doctor-${ID}`, agentPreset: DOCTOR_AGENT_PRESET }],
       ['rename', { sessionId: `doctor-${ID}`, title: 'Doctor: Night one' }],
     ])

@@ -1,17 +1,20 @@
 import { mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ROOT_LAYOUT, ensureRootLayout, resolveRootPath } from '../../../src/host/storage/root-path.ts'
 
+/** The same absolute path as the platform writes it: the code uses `node:path`, so Windows answers with backslashes. */
+const native = (path: string): string => path.split('/').join(sep)
+
 describe('resolveRootPath', () => {
   it('expands a leading tilde', () => {
-    expect(resolveRootPath('~/rp', '/home/u')).toBe('/home/u/rp')
-    expect(resolveRootPath('~', '/home/u')).toBe('/home/u')
+    expect(resolveRootPath('~/rp', '/home/u')).toBe(native('/home/u/rp'))
+    expect(resolveRootPath('~', '/home/u')).toBe(native('/home/u'))
   })
 
   it('normalizes absolute paths and trims whitespace', () => {
-    expect(resolveRootPath('  /data/rp/../roleplay/ ', '/home/u')).toBe('/data/roleplay/')
+    expect(resolveRootPath('  /data/rp/../roleplay/ ', '/home/u')).toBe(native('/data/roleplay/'))
   })
 
   it('rejects blank and relative paths', () => {

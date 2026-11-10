@@ -1,8 +1,9 @@
 import { Context } from '@deepseek-ai/cordis'
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState } from '@dsh-agentic-roleplay/state'
+import { removeTemp } from '../../support/temp.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { listSessions } from '../../../src/host/sessions/list-sessions.ts'
 
@@ -16,7 +17,7 @@ beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'list-sessions-'))
   state = new RoleplayState(new Context(), { journalMode: 'delete' })
 })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 describe('listSessions', () => {
   it('is empty before any session exists', () => {

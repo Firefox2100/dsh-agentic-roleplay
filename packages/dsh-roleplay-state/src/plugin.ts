@@ -243,7 +243,11 @@ export class RoleplayState extends Service {
     return session
   }
 
-  private closeAll(): void {
+  /**
+   * Releases every session connection this service holds: on plugin unload, and by a caller that is about to delete
+   * the folder (Windows refuses to delete a SQLite file that is still open).
+   */
+  closeAll(): void {
     for (const { store } of this.sessions.values()) store.close()
     this.sessions.clear()
   }

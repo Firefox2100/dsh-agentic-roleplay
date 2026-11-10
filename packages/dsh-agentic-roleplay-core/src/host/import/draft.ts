@@ -1,5 +1,5 @@
 import { mkdir, rename } from 'node:fs/promises'
-import { basename, join, relative } from 'node:path'
+import { basename, join, relative, sep } from 'node:path'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -44,5 +44,5 @@ export async function actOnDraft(deps: Pick<StartImportDeps, 'worlds' | 'authori
   const destination = join(trash, `${basename(record.directory)}-${Date.now()}`)
   await rename(record.directory, destination)
   await deps.worlds.list({ refresh: true })
-  return { action, keptIn: relative(deps.root(), destination) }
+  return { action, keptIn: relative(deps.root(), destination).split(sep).join('/') }
 }

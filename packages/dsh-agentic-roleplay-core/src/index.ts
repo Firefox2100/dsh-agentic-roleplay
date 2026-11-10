@@ -48,7 +48,7 @@ import { deleteSession } from './host/sessions/delete-session.ts'
 import { purgeOf } from './host/agent/purge-services.ts'
 import { AuthoringTools } from './host/tools/authoring-tools.ts'
 import { externalTools, type ToolRegistry } from './host/tools/external.ts'
-import { redundantLayers, redundantLayersMessage, selectedBundles } from './host/setup/rows.ts'
+import { profileDirectory, redundantLayers, redundantLayersMessage, selectedBundles } from './host/setup/rows.ts'
 import { editCalendar, editDice, editRoutine, editVariables, readCalendarDocument, readDiceDocument, readRoutines, readVariables } from './host/worlds/daily-life.ts'
 import { addWorldLore, removeWorldLore } from './host/worlds/lore-entries.ts'
 import { editSessionNarrationVoice, editWorldCharacter as editSessionCharacter, editWorldFaction as editSessionFaction, editWorldLore as editSessionLore, editWorldPlots as editSessionPlots, editWorldPlace as editSessionPlace, editWorldRelation as editSessionRelation, editWorldThing as editSessionThing, generateSessionCharacterPortrait, generateSessionEntityImage, readWorldState, sessionCharacterPortraitFile, sessionEntityImageFile, uploadSessionCharacterPortrait, uploadSessionEntityImage } from './host/sessions/world-state.ts'
@@ -118,7 +118,7 @@ interface RequestPolicies {
 }
 
 export function apply(ctx: Context, config: Config) {
-  const layers = (): string[] => redundantLayers(selectedBundles((ctx as unknown as { get(name: 'profileContext'): { dir: string } | undefined }).get('profileContext')?.dir))
+  const layers = (): string[] => redundantLayers(selectedBundles(profileDirectory()))
   const repeated = layers()
   if (repeated.length > 0) ctx.logger.error(redundantLayersMessage(repeated))
   // The controls of the helper agents' requests are applied by the model service that serves them, when there is one.

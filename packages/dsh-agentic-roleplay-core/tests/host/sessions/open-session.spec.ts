@@ -1,5 +1,6 @@
 import { Context } from '@deepseek-ai/cordis'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
+import { removeTemp } from '../../support/temp.ts'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState } from '@dsh-agentic-roleplay/state'
@@ -34,7 +35,7 @@ beforeEach(async () => {
   received = []
   chatExists = true
 })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 describe('openSession', () => {
   it('makes sure the session has its chat and names it', async () => {

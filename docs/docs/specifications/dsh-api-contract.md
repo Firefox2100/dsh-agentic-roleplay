@@ -16,6 +16,7 @@ below so it can be checked when DSH moves.
 | Plugins, services | `Context`, `Service`, `ctx.inject`, `ctx.effect`, `ctx.provide` (cordis) | everywhere |
 | Configuration | Schemastery `Config`, volatile fields, `loader/volatile-update` | `index.ts`, `host/config.ts` |
 | Browser HTTP API | `ctx.webServer.register`, `ctx.connection.requestRejection` | `host/http/` |
+| Profile's selected bundles (the duplicate-layer warning) | `DSH_PROFILE_DIR` (an environment fact) and the profile's own `package.json`, read only; DSH exposes no service for a profile's bundle list | `host/setup/rows.ts` |
 | The chat of a session | `ctx.sessionController.create/rename`, `ctx.workspaceRegistry.create/archiveSession`, `workspace.attachSession`, `ctx.sessionPersistence` | `host/agent/` |
 | Agent presets | the `@deepseek-ai/dsh-agent-preset` row with `plugins` (persona, our two plugins, a `compaction` group) | the bundle's `cordis.patch.yml` |
 | Game master tools | `ctx.tools.register(defineTool(...), { when })` | `host/orchestration/tools.ts`, `@dsh-agentic-roleplay/state` |
@@ -37,6 +38,12 @@ below so it can be checked when DSH moves.
 `uiWorkspace.openSession`, and the shell primitives (`Button`, `Input`, `Switch`, `Modal`, `Tag`,
 `Tooltip`). The client bundle format is the shell's module loader, checked by `tsdown.config.ts`.
 
+One element is put outside the plugin's own components: an interface pack's backdrop layer, inserted as the first
+child of the conversation body, with that body's scrolling element marked so it is lifted over the layer. The chat
+paints its own background and offers no slot behind it, so a backdrop cannot be rendered from the plugin's subtree;
+the scrolling element's class is read and checked by `tests/support/dsh-contract.spec.ts`. The lift rule and a pack's
+own skin are `<style>` elements the dock component renders, not nodes appended to the document by hand.
+
 ## Helper agents
 
 Characters, the record keeper, the world author, the faction strategist and the other one-shot helpers are *children with tools of their own*: a tool built around
@@ -55,9 +62,11 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 - **Costs.** Each run adds a `subagent/catalog` event to the game master's log (a few hundred bytes, also after the turn ended, so the last event of a finished turn is not always
   `turn/end`). DSH admits at most `maxActiveSubagents` children of one parent at once (default 8) and refuses the rest, so the bundle patch raises it to 32 for a round of
   characters plus the keeper, author and suggestions.
-- **Exact tested release.** The packages declare DSH `>=0.2.2-rc.1 <0.2.3` (`engines.dsh` and the peer dependency). Development dependencies and
-  `tests/support/dsh-contract.spec.ts` are pinned to the exact tested release; `scripts/dsh-compat.mjs` is the one list these are derived from. Supporting a later patch tuple
-  requires inspecting its changes, porting every affected integration, and testing against that exact release before widening the range.
+- **Tested release, ranged dependencies.** The packages declare DSH `>=0.2.2-rc.1 <0.2.3` (`engines.dsh` and the peer dependency), and the DSH sub-packages in
+  `devDependencies` and the workspace override use that same range rather than one exact release, so upgrading DSH pulls them along instead of leaving them behind.
+  `scripts/dsh-compat.mjs` is the one list these are derived from, and it also records the releases that were verified (`DSH_RELEASES`):
+  `tests/support/dsh-contract.spec.ts` fails while the installed release is not on that list. Supporting a later patch tuple therefore means inspecting its changes,
+  porting every affected integration, testing against that release, and only then adding it to `DSH_RELEASES` and widening the range.
 - **Tool executor.** From 0.2.2 `dsh-tools` runs nothing by itself: a deployment mounts an executor (`dsh-base` mounts the native one), and a test that mounts the tool service mounts `@deepseek-ai/dsh-tool-executor-native` beside it. `ctx.tools.execute` takes a batch of calls.
 - **Model selection.** DSH fixes the provider, model and reasoning effort before `agent/request`. Authoring presets therefore validate their configured effort when the agent is created and record it with `agent.model.select()`. They do not rewrite the deprecated request hook.
 - **When DSH changes**, re-read `docs/subsystems/subagent.md` and port `runChild` to match; the real-loop tests in `tests/host/orchestration/loop.spec.ts` mount the helper

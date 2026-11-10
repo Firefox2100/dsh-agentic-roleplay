@@ -2,6 +2,7 @@ import { mkdtemp, readFile, readdir, rm, writeFile, mkdir } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
+import { native } from '../../support/native.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { PromptLibrary, copyWorldPrompts, languageOf, shippedPromptsDirectory } from '../../../src/host/prompts/library.ts'
 
@@ -92,9 +93,9 @@ describe('checking the edited files in the root', () => {
     await writeFile(join(root, 'prompts', 'en', 'a', 'mine.md'), 'Not shipped ${anything}.\n')
     const found = prompts.problems().map(problem => [problem.path.slice(root.length), problem.message])
     expect(found).toHaveLength(3)
-    expect(found).toContainEqual(['/prompts/en/a/greet.md', expect.stringContaining('${nobody}')])
-    expect(found).toContainEqual(['/prompts/zh/a/greet.md', expect.stringContaining('{{')])
-    expect(found).toContainEqual(['/prompts/en/a/only-en.md', 'the prompt is empty'])
+    expect(found).toContainEqual([native('/prompts/en/a/greet.md'), expect.stringContaining('${nobody}')])
+    expect(found).toContainEqual([native('/prompts/zh/a/greet.md'), expect.stringContaining('{{')])
+    expect(found).toContainEqual([native('/prompts/en/a/only-en.md'), 'the prompt is empty'])
   })
 
   it('has nothing to check before the folder exists', () => {

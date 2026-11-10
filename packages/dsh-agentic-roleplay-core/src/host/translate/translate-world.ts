@@ -233,7 +233,7 @@ export async function translateWorld(ctx: ImportContext, worlds: WorldCatalog, s
   if (record !== undefined) {
     try { await loadValidatedWorld(record) } catch (error) {
       if (!(error instanceof InvalidWorldError)) throw error
-      problems.push(...error.problems.map(problem => `${relative(destination, problem.path) || '.'}: ${problem.message}`))
+      problems.push(...error.problems.map(problem => `${relative(destination, problem.path).split(sep).join('/') || '.'}: ${problem.message}`))
     }
   }
   return {

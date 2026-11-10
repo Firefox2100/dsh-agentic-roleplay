@@ -1,6 +1,7 @@
 import { Context } from '@deepseek-ai/cordis'
 import { existsSync } from 'node:fs'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp } from 'node:fs/promises'
+import { removeTemp } from '../support/temp.ts'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState, type Session } from '@dsh-agentic-roleplay/state'
@@ -29,7 +30,7 @@ beforeEach(async () => {
     root: () => root,
   }
 })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 async function start(language: Language, player: string): Promise<{ session: Session; id: string }> {
   await writeFiles(join(root, 'worlds', `salt-harbor-${language}`), saltHarbor(language))

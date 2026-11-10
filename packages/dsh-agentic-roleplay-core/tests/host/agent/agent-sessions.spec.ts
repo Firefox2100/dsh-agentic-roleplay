@@ -1,4 +1,6 @@
 import { Context } from '@deepseek-ai/cordis'
+import { join } from 'node:path'
+import { native } from '../../support/native.ts'
 import { describe, expect, it } from 'vitest'
 import {
   AGENT_PRESET, AgentSessions, PROJECT_TITLE, agentServicesOf, chatSessionId,
@@ -26,7 +28,7 @@ function fakes(known: string[] = [], stored: string[] = []) {
       },
     },
     registry: {
-      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'project-1', path: `${path}/canonical`, sessionIds: known, attachSession: (id) => { calls.push(['attach', id]); return Promise.resolve() } }) },
+      create: (path, title) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'project-1', path: join(path, 'canonical'), sessionIds: known, attachSession: (id) => { calls.push(['attach', id]); return Promise.resolve() } }) },
       archiveSession: (id, options) => { calls.push(['archive', id, options]); return Promise.resolve() },
       unarchiveSession: (id) => { calls.push(['unarchive', id]); return Promise.resolve() },
     },
@@ -64,9 +66,9 @@ describe('AuthoringSessions', () => {
 
     expect(await authoring.ensure('harbor', 'Harbor')).toBe('world-author-harbor')
     expect(calls).toEqual([
-      ['project', '/data/roleplay/worlds', AUTHORING_PROJECT_TITLE],
+      ['project', native('/data/roleplay/worlds'), AUTHORING_PROJECT_TITLE],
       ['stat', 'world-author-harbor'],
-      ['store', 'world-author-harbor', '/data/roleplay/worlds/canonical', AUTHORING_AGENT_PRESET],
+      ['store', 'world-author-harbor', native('/data/roleplay/worlds/canonical'), AUTHORING_AGENT_PRESET],
       ['store-events', 'approval/policy,turn/start,step/start,system/message,assistant/message,step/end,turn/end'],
       ['stat', 'world-author-harbor'],
       ['attach', 'world-author-harbor'],
@@ -78,7 +80,7 @@ describe('AuthoringSessions', () => {
     const { calls, services } = fakes(['world-author-harbor'])
     await authoringSessions(services, '/data').ensure('harbor', 'New name')
     expect(calls).toEqual([
-      ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
+      ['project', native('/data/worlds'), AUTHORING_PROJECT_TITLE],
       ['rename', { sessionId: 'world-author-harbor', title: 'Authoring New name' }],
     ])
   })
@@ -87,7 +89,7 @@ describe('AuthoringSessions', () => {
     const { calls, services } = fakes([], ['world-author-harbor'])
     await authoringSessions(services, '/data').ensure('harbor', 'Harbor')
     expect(calls).toEqual([
-      ['project', '/data/worlds', AUTHORING_PROJECT_TITLE],
+      ['project', native('/data/worlds'), AUTHORING_PROJECT_TITLE],
       ['stat', 'world-author-harbor'],
       ['stat', 'world-author-harbor'],
       ['attach', 'world-author-harbor'],
@@ -119,7 +121,7 @@ describe('AgentSessions', () => {
     const { calls, services } = fakes()
     await new AgentSessions(() => services, () => '/data/roleplay').ensure('abc', 'Night one', [{ type: 'narration', text: 'The lanterns sway.' }])
     expect(calls.map(call => call[0])).toEqual(['project', 'stat', 'store', 'store-events', 'stat', 'attach', 'rename'])
-    expect(calls[2]).toEqual(['store', 'session-abc', '/data/roleplay/canonical', AGENT_PRESET])
+    expect(calls[2]).toEqual(['store', 'session-abc', native('/data/roleplay/canonical'), AGENT_PRESET])
     expect(calls[3]).toEqual(['store-events', 'turn/start,step/start,system/message,assistant/message,tool/call,tool/result,step/end,turn/end'])
   })
 
@@ -192,7 +194,7 @@ describe('AgentSessions', () => {
       ['project', '/data', PROJECT_TITLE],
       ['unload', 'session-abc'],
       ['purge', 'session-abc'],
-      ['store', 'session-abc', '/data/canonical', AGENT_PRESET],
+      ['store', 'session-abc', native('/data/canonical'), AGENT_PRESET],
       ['store-events', ''],
       ['rename', { sessionId: 'session-abc', title: 'From another device' }],
     ])
@@ -239,18 +241,18 @@ describe('agentServicesOf', () => {
     ctx.provide('agents')
     ctx.set('sessionController', {} as never)
     ctx.set('workspaceRegistry', {} as never)
-    let reads = 0
-    const disposed: string[] = []
-    ctx.set('agents', {
-      get: (id: string) => {
-        reads += 1
-        if (reads > 2) return undefined
-        return { scope: { rawDispose: () => { disposed.push(id) }, dispose: () => undefined } }
+    let live: { scope: { rawDispose: () => void; dispose: () => void } } | undefined = {
+      scope: {
+        rawDispose: () => {
+          live = undefined
+          ctx.emit('agent/disposed', { agent: { session: { id: 'session-abc' } } } as never)
+        },
+        dispose: () => undefined,
       },
-    } as never)
+    }
+    ctx.set('agents', { get: () => live } as never)
     await agentServicesOf(ctx)().unload?.('session-abc')
-    expect(disposed).toEqual(['session-abc'])
-    expect(reads).toBe(3)
+    expect(live).toBeUndefined()
   })
 
   it('does nothing when the chat has no live agent', async () => {

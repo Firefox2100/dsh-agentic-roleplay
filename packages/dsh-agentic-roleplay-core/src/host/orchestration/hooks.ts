@@ -2,6 +2,7 @@ import { TurnTraces, tracerOf } from '../observability/trace.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import { languageOf, translator } from 'dsh-roleplay-model'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import { tokensOf } from '../agents/usage.ts'
 import { masterTrace } from '../diagnostics/master-trace.ts'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -159,19 +160,34 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
   })
 
   // The turn that ended is where the next one will have to be cut from.
+  /** Where the open turn of each chat began, so its own events can be read back without walking the whole log. */
+  const openTurns = new Map<string, { seq: number; time: number }>()
   ctx.on('session/event', (session, event) => {
-    if (event.type !== 'turn/end' || session.header.origin === 'subagent' || roleplaySessionOf(session.id) === undefined) return
+    if (session.header.origin === 'subagent' || roleplaySessionOf(session.id) === undefined) return
+    if (event.type === 'turn/start') {
+      openTurns.set(session.id, { seq: event.seq as number, time: event.time })
+      return
+    }
+    if (event.type !== 'turn/end') return
     ctx.roleplayOrchestration.recovery.clear(session.id)
     turns.end(session.id)
-    timelines.ended(session.id, session, event.seq as number)
-    const events = session.snapshotEvents()
-    const began = events.findLastIndex(entry => entry.type === 'turn/start')
-    const start = began === -1 ? undefined : events[began]
+    // A plugin reloaded in the middle of a turn has forgotten where it began: that turn is read from the whole log instead.
+    const began = openTurns.get(session.id)
+    openTurns.delete(session.id)
+    timelines.ended(session.id, session, event.seq as number, began === undefined ? undefined : (began.seq as SessionLogOffset))
+    const events = session.snapshotEvents((began?.seq ?? 0) as SessionLogOffset) // The turn's own events, from its start.
+    const from = began === undefined ? events.findLastIndex(entry => entry.type === 'turn/start') : 0
+    if (from === -1) return
+    const turn = events.slice(from)
+    const start = turn[0]
     if (start?.type !== 'turn/start') return
     const store = stores(session.id)
-    store?.recordUsage?.(start.data.turn, tokensOf(events.slice(began)), Math.max(0, event.time - start.time))
-    try { store?.recordTrace?.(start.data.turn, { ...masterTrace(events.slice(began)), endedAt: event.time }) } catch (error) { ctx.logger.warn(`roleplay: the trace of turn ${start.data.turn} could not be kept: ${error instanceof Error ? error.message : String(error)}`) }
+    store?.recordUsage?.(start.data.turn, tokensOf(turn), Math.max(0, event.time - start.time))
+    try { store?.recordTrace?.(start.data.turn, { ...masterTrace(turn), endedAt: event.time }) } catch (error) { ctx.logger.warn(`roleplay: the trace of turn ${start.data.turn} could not be kept: ${error instanceof Error ? error.message : String(error)}`) }
   })
+
+  // A chat that is gone never ends a turn: nothing is left to read its usage from.
+  ctx.on('session/disposed', (session) => { openTurns.delete(session.id) })
 
   // A chat DSH makes as a branch of a roleplay chat (its fork, from any button) gets a session of its own, made from the state where it was cut.
   ctx.on('agent/created', async ({ agent }) => {

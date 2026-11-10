@@ -1,9 +1,11 @@
 import { access, readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { DSH_DEVELOPMENT, DSH_ENGINES } from './dsh-compat.mjs'
+import { DSH_DEPENDENCY_RANGE, DSH_ENGINES, DSH_RELEASES } from './dsh-compat.mjs'
 import { releasePackages } from './release-packages.mjs'
 
 const root = resolve(import.meta.dirname, '..')
+/** Text from the working tree: a Windows checkout may hold CRLF where the repository holds LF. */
+const readText = async path => (await readFile(path, 'utf8')).replaceAll('\r\n', '\n')
 const names = new Set(releasePackages.map(({ name }) => name))
 const workspace = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'))
 const version = workspace.version
@@ -29,7 +31,7 @@ for (const { folder, name } of releasePackages) {
   if (manifest.scripts?.prepack !== 'node -e "require(\'node:fs\').copyFileSync(\'../../LICENSE\', \'LICENSE\')"') throw new Error(`${name}: prepack must copy the repository license into the package`)
   if (manifest.scripts?.postpack !== 'node -e "require(\'node:fs\').rmSync(\'LICENSE\', { force: true })"') throw new Error(`${name}: postpack must remove the staged package license`)
 
-  const readme = await readFile(resolve(directory, 'README.md'), 'utf8')
+  const readme = await readText(resolve(directory, 'README.md'))
   if (!readme.startsWith(`# ${name}\n`)) throw new Error(`${name}: README heading must match the package name`)
 
   for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
@@ -46,7 +48,7 @@ for (const { folder, name } of releasePackages) {
 
   for (const field of ['dependencies', 'devDependencies']) {
     for (const [dependency, range] of Object.entries(manifest[field] ?? {})) {
-      if (dependency.startsWith('@deepseek-ai/dsh-') && range !== DSH_DEVELOPMENT) throw new Error(`${name}: ${field}.${dependency} must be ${DSH_DEVELOPMENT}`)
+      if (dependency.startsWith('@deepseek-ai/dsh-') && range !== DSH_DEPENDENCY_RANGE) throw new Error(`${name}: ${field}.${dependency} must be ${DSH_DEPENDENCY_RANGE}`)
     }
   }
   if (manifest.peerDependencies?.['@deepseek-ai/dsh'] !== undefined && manifest.peerDependencies['@deepseek-ai/dsh'] !== DSH_ENGINES) throw new Error(`${name}: the @deepseek-ai/dsh peer must be ${DSH_ENGINES}`)
@@ -73,12 +75,12 @@ const standaloneBundles = [
 for (const [folder, name, id] of standaloneBundles) {
   const directory = resolve(root, 'packages', folder)
   const expected = `- insert:\n    - id: ${id}\n      name: '${name}'\n`
-  if (await readFile(resolve(directory, 'cordis.patch.yml'), 'utf8') !== expected) throw new Error(`${name}: standalone bundle must insert only its own plugin row`)
+  if (await readText(resolve(directory, 'cordis.patch.yml')) !== expected) throw new Error(`${name}: standalone bundle must insert only its own plugin row`)
 }
 
 const allDirectory = resolve(root, 'packages', 'dsh-agentic-roleplay')
 const allManifest = JSON.parse(await readFile(resolve(allDirectory, 'package.json'), 'utf8'))
-const allPatch = await readFile(resolve(allDirectory, 'cordis.patch.yml'), 'utf8')
+const allPatch = await readText(resolve(allDirectory, 'cordis.patch.yml'))
 for (const name of [
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
   '@deepseek-ai/dsh-experimental-speech-to-text',
@@ -90,9 +92,12 @@ for (const name of [
   if (allPatch.includes(name)) throw new Error(`${allManifest.name}: bundle patch must not insert DSH speech package ${name}`)
 }
 
-const workspaceFile = await readFile(resolve(root, 'pnpm-workspace.yaml'), 'utf8')
-if (!workspaceFile.includes(`  '@deepseek-ai/dsh': ${DSH_DEVELOPMENT}\n`)) throw new Error(`pnpm-workspace.yaml must override @deepseek-ai/dsh to ${DSH_DEVELOPMENT} (run pnpm sync:dsh)`)
+const workspaceFile = await readText(resolve(root, 'pnpm-workspace.yaml'))
+if (!workspaceFile.includes(`  '@deepseek-ai/dsh': '${DSH_DEPENDENCY_RANGE}'\n`)) throw new Error(`pnpm-workspace.yaml must override @deepseek-ai/dsh to '${DSH_DEPENDENCY_RANGE}' (run pnpm sync:dsh)`)
 const resolvedDsh = new Set([...(await readFile(resolve(root, 'pnpm-lock.yaml'), 'utf8')).matchAll(/^  '@deepseek-ai\/dsh[a-z-]*@([^':(]+)/gm)].map(match => match[1]))
-if (resolvedDsh.size !== 1 || !resolvedDsh.has(DSH_DEVELOPMENT)) throw new Error(`pnpm-lock.yaml must resolve every DSH package to ${DSH_DEVELOPMENT}, found ${[...resolvedDsh].join(', ')}: reinstall without the lockfile`)
+if (resolvedDsh.size !== 1) throw new Error(`pnpm-lock.yaml must resolve every DSH package to one release, found ${[...resolvedDsh].join(', ')}`)
+for (const release of resolvedDsh) {
+  if (!DSH_RELEASES.includes(release)) throw new Error(`pnpm-lock.yaml resolves DSH to ${release}, which is not a tested release; verify it, then add it to scripts/dsh-compat.mjs`)
+}
 
 console.log(`Release metadata and build outputs are valid for ${releasePackages.length} packages at ${version}.`)

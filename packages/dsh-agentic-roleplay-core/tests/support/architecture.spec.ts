@@ -2,7 +2,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import { areaOf, importsOf } from './imports.ts'
+import { areaOf, importsOf, portable } from './imports.ts'
 
 const src = fileURLToPath(new URL('../../src', import.meta.url))
 const edges = importsOf(src)
@@ -56,7 +56,7 @@ describe('how files are replaced', () => {
   ])
 
   it('goes through atomicWrite in every file that is not on the list of those not moved yet', () => {
-    const found = sources(src).map(file => relative(src, file)).filter((file) => {
+    const found = sources(src).map(file => portable(relative(src, file))).filter((file) => {
       if (file === 'host/atomic-write.ts') return false
       const text = readFileSync(join(src, file), 'utf8')
       // the file system's rename (imported from node:fs), not a method that a DSH service happens to call rename

@@ -1,7 +1,7 @@
 /** Writes the DSH constraints of `scripts/dsh-compat.mjs` into every package manifest, so a new tested release is one edit there. */
 import { readFile, readdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { DSH_DEVELOPMENT, DSH_ENGINES } from './dsh-compat.mjs'
+import { DSH_DEPENDENCY_RANGE, DSH_ENGINES } from './dsh-compat.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const section = (text, field, edit) => text.replace(new RegExp(`("${field}"\\s*:\\s*\\{)([^{}]*)(\\})`), (_match, open, body, close) => open + edit(body) + close)
@@ -11,15 +11,16 @@ for (const folder of await readdir(resolve(root, 'packages'))) {
   const file = resolve(root, 'packages', folder, 'package.json')
   const before = await readFile(file, 'utf8')
   let text = section(before, 'peerDependencies', body => body.replace(/("@deepseek-ai\/dsh")(\s*:\s*)"[^"]*"/, `$1$2"${DSH_ENGINES}"`))
-  for (const field of ['dependencies', 'devDependencies']) text = section(text, field, body => body.replace(dshPackages, `$1$2"${DSH_DEVELOPMENT}"`))
+  // A range, not one release: upgrading DSH must move these sub-packages with it.
+  for (const field of ['dependencies', 'devDependencies']) text = section(text, field, body => body.replace(dshPackages, `$1$2"${DSH_DEPENDENCY_RANGE}"`))
   text = text.replace(/("engines"\s*:\s*\{[^{}]*)"dsh"\s*:\s*"[^"]*"/, `$1"dsh": "${DSH_ENGINES}"`)
   JSON.parse(text)
   if (text !== before) await writeFile(file, text)
 }
 
-// A peer dependency resolves to the lowest release of its range, so the workspace names the development release.
+// A peer dependency resolves to the lowest release of its range, so the workspace selects the highest one the range allows.
 const workspaceFile = resolve(root, 'pnpm-workspace.yaml')
 const workspace = await readFile(workspaceFile, 'utf8')
-const override = `  '@deepseek-ai/dsh': ${DSH_DEVELOPMENT}`
+const override = `  '@deepseek-ai/dsh': '${DSH_DEPENDENCY_RANGE}'`
 const pinned = /^  '@deepseek-ai\/dsh': .*$/m.test(workspace) ? workspace.replace(/^  '@deepseek-ai\/dsh': .*$/m, override) : workspace.replace('overrides:\n', `overrides:\n${override}\n`)
 if (pinned !== workspace) await writeFile(workspaceFile, pinned)

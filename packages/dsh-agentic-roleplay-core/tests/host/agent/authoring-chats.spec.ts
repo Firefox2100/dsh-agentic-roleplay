@@ -1,3 +1,5 @@
+import { native } from '../../support/native.ts'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { AuthoringSessions, AUTHORING_AGENT_PRESET, AUTHORING_PROJECT_TITLE } from '../../../src/host/agent/authoring-sessions.ts'
 import { LOREBOOK_AUTHORING_PRESET, LOREBOOK_AUTHORING_PROJECT_TITLE, LorebookAuthoringSessions } from '../../../src/host/agent/lorebook-authoring-sessions.ts'
@@ -16,7 +18,7 @@ function fakes(known: string[] = []) {
       create: (header: { id: string; cwd: string; agentPreset: string }) => { calls.push(['store', header.id, header.cwd, header.agentPreset]); return Promise.resolve({ append: () => Promise.resolve(), flush: () => Promise.resolve(), close: () => Promise.resolve() } as never) },
     } as never,
     registry: {
-      create: (path: string, title: string) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'p', path: `${path}/canonical`, sessionIds: known, attachSession: (id: string) => { calls.push(['attach', id]); return Promise.resolve() } } as never) },
+      create: (path: string, title: string) => { calls.push(['project', path, title]); return Promise.resolve({ id: 'p', path: join(path, 'canonical'), sessionIds: known, attachSession: (id: string) => { calls.push(['attach', id]); return Promise.resolve() } } as never) },
       archiveSession: () => Promise.resolve(),
       unarchiveSession: () => Promise.resolve(),
     } as never,
@@ -41,8 +43,8 @@ describe('the authoring chats of a world, a preset and a lorebook', () => {
       const { calls, services } = fakes()
       const languages = languagesOf()
       const chat = await make(services, languages)
-      expect(calls[0]).toEqual(['project', `/root/${folder}`, project])
-      expect(calls[1]).toEqual(['store', chat, `/root/${folder}/canonical`, preset])
+      expect(calls[0]).toEqual(['project', native(`/root/${folder}`), project])
+      expect(calls[1]).toEqual(['store', chat, native(`/root/${folder}/canonical`), preset])
       expect(calls.find(call => call[0] === 'session')?.[1]).toMatchObject({ sessionId: chat, agentPreset: preset })
       expect(calls.find(call => call[0] === 'rename')?.[1]).toEqual({ sessionId: chat, title })
       expect(welcome).toContain('|zh|')

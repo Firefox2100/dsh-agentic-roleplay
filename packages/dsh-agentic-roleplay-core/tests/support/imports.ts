@@ -13,6 +13,9 @@ export interface ImportEdge {
 
 const SPECIFIER = /(?:^|[\s;])(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\sfrom\s+)?['"]([^'"]+)['"]|\bimport\(\s*['"]([^'"]+)['"]\s*\)|\brequire\(\s*['"]([^'"]+)['"]\s*\)/g
 
+/** Paths in this report are compared with `/`, so that the rules hold on Windows as well as on the CI host. */
+export const portable = (path: string): string => path.replaceAll('\\', '/')
+
 function sourceFiles(folder: string): string[] {
   return readdirSync(folder).flatMap((name) => {
     const path = join(folder, name)
@@ -28,7 +31,7 @@ export function importsOf(root: string): ImportEdge[] {
     return [...text.matchAll(SPECIFIER)].map((match): ImportEdge => {
       const specifier = (match[1] ?? match[2] ?? match[3])!
       const isRelative = specifier.startsWith('.')
-      return { from: relative(root, file), specifier, target: isRelative ? relative(root, resolve(dirname(file), specifier)) : specifier, relative: isRelative }
+      return { from: portable(relative(root, file)), specifier, target: isRelative ? portable(relative(root, resolve(dirname(file), specifier))) : specifier, relative: isRelative }
     })
   })
 }

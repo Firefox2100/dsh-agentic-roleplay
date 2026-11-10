@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState } from '@dsh-agentic-roleplay/state'
+import { removeTemp } from '../../support/temp.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { startSession } from '../../../src/host/sessions/start-session.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
@@ -12,13 +13,14 @@ import { listWorldPacks } from '../../../src/host/interface/world-packs.ts'
 import { UnknownStarterError, addStarterWorld, listStarterWorlds, starterDirectory } from '../../../src/host/worlds/starter.ts'
 
 let root: string
+let state: RoleplayState | undefined
 let catalog: WorldCatalog
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'starter-'))
   catalog = new WorldCatalog(new Context(), { path: root } as RoleplayRoot)
 })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 describe('the starter worlds', () => {
   it('ship with the package and are listed as not yet added', async () => {
@@ -53,15 +55,16 @@ describe('the starter worlds', () => {
 
   it('start a session: the world that ships is whole and its start has nothing unfinished', async () => {
     await addStarterWorld(catalog, 'blackwater-observatory')
-    const state = new RoleplayState(new Context(), { journalMode: 'delete' })
+    const local = new RoleplayState(new Context(), { journalMode: 'delete' })
+    state = local
     const ensured: (readonly { type: string; text: string }[] | undefined)[] = []
     const world = (await catalog.list()).worlds[0]!
     const started = await startSession({
-      worlds: catalog, state,
+      worlds: catalog, state: local,
       agent: { ensure: (id, _title, opening) => { ensured.push(opening); return Promise.resolve(`session-${id}`) }, retire: () => Promise.resolve() },
       sessionsDir: () => join(root, 'sessions'),
     }, { worldId: world.id, playerCharacterId: 'arthur-moore' })
-    const session = state.openSession(join(root, 'sessions'), started.id)
+    const session = local.openSession(join(root, 'sessions'), started.id)
     expect(session.characters.list().length).toBeGreaterThanOrEqual(4)
     expect(session.metadata.get().world).toMatchObject({ version: '1.0' })
     expect(ensured[0]?.[0]?.text).toContain('Blackwater Ridge is loud tonight')

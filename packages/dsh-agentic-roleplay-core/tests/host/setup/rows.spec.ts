@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { redundantLayers, redundantLayersMessage, selectedBundles } from '../../../src/host/setup/rows.ts'
+import { profileDirectory, redundantLayers, redundantLayersMessage, selectedBundles } from '../../../src/host/setup/rows.ts'
 
 describe('the bundle layers of a profile', () => {
   it('are fine with the all bundle alone, or with single packages alone', () => {
@@ -26,6 +26,28 @@ describe('the bundle layers of a profile', () => {
       await writeFile(join(dir, 'package.json'), JSON.stringify({ dsh: { profile: { bundles: ['a', 3, 'b'] } } }))
       expect(selectedBundles(dir)).toEqual(['a', 'b'])
       expect(selectedBundles(undefined)).toEqual([])
+    })
+
+    it('names the profile DSH launched the plugin in through DSH_PROFILE_DIR', () => {
+      const before = { dir: process.env.DSH_PROFILE_DIR, home: process.env.DSH_HOME, profile: process.env.DSH_PROFILE }
+      try {
+        process.env.DSH_PROFILE_DIR = join(tmpdir(), 'some-profile')
+        expect(profileDirectory()).toBe(join(tmpdir(), 'some-profile'))
+        delete process.env.DSH_PROFILE_DIR
+        delete process.env.DSH_HOME
+        delete process.env.DSH_PROFILE
+        expect(profileDirectory()).toBeUndefined()
+        process.env.DSH_HOME = join(tmpdir(), 'home')
+        process.env.DSH_PROFILE = 'roleplay-dev'
+        expect(profileDirectory()).toBe(join(tmpdir(), 'home', 'profiles', 'roleplay-dev'))
+      } finally {
+        if (before.dir === undefined) delete process.env.DSH_PROFILE_DIR
+        else process.env.DSH_PROFILE_DIR = before.dir
+        if (before.home === undefined) delete process.env.DSH_HOME
+        else process.env.DSH_HOME = before.home
+        if (before.profile === undefined) delete process.env.DSH_PROFILE
+        else process.env.DSH_PROFILE = before.profile
+      }
     })
   })
 })

@@ -1,8 +1,9 @@
 import { Context } from '@deepseek-ai/cordis'
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readdir, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { RoleplayState } from '@dsh-agentic-roleplay/state'
+import { removeTemp } from '../../support/temp.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readChatSettings, writeChatSettings } from '../../../src/host/sessions/chat-settings.ts'
 import { SessionNotFoundError } from '../../../src/host/sessions/errors.ts'
@@ -10,8 +11,9 @@ import { InvalidSettingsError, SETTINGS_FILE, liveSettings, readSettings, useChi
 import { DEFAULT_SETTINGS, SETTINGS_SPEC } from '../../../src/shared/settings.ts'
 
 let root: string
+let state: RoleplayState | undefined
 beforeEach(async () => { root = await mkdtemp(join(tmpdir(), 'settings-')) })
-afterEach(async () => { await rm(root, { recursive: true, force: true }) })
+afterEach(async () => { await removeTemp(root, state) })
 
 describe('the settings file', () => {
   it('is the defaults until something is stored', () => {
@@ -61,11 +63,14 @@ describe('the settings in force', () => {
 
   it('do not read the file again while it is unchanged', async () => {
     writeSettings(root, { maxRounds: 2 })
-    expect(liveSettings(root).maxRounds).toBe(2)
     const file = join(root, SETTINGS_FILE)
-    const { mtimeMs } = await import('node:fs').then(fs => fs.statSync(file))
+    // A whole second both times: Windows rounds a restored timestamp, and the cache is keyed on it.
+    const when = new Date('2026-01-01T00:00:00.000Z')
+    const fs = await import('node:fs')
+    fs.utimesSync(file, when, when)
+    expect(liveSettings(root).maxRounds).toBe(2)
     await writeFile(file, '{"maxRounds": 9}')
-    await import('node:fs').then(fs => fs.utimesSync(file, mtimeMs / 1000, mtimeMs / 1000))
+    fs.utimesSync(file, when, when)
     expect(liveSettings(root).maxRounds).toBe(2)
   })
 
@@ -92,18 +97,17 @@ describe('the settings of a session', () => {
   const sessionsDir = () => join(root, 'sessions')
   let clockMode: 'simulated' | 'real' | undefined
   const deps = { sessionsDir, pendingRecords: () => 2, pendingConsolidation: () => 3, activity: () => [], usage: () => [], trace: () => [], interventions: () => [], vectors: () => ({ available: false, embedded: 0, pending: 0 }), reflection: () => ({ running: false }), clockMode: () => clockMode }
-  beforeEach(() => { clockMode = undefined })
-  const state = new RoleplayState(new Context(), { journalMode: 'delete' })
+  beforeEach(() => { clockMode = undefined; state = new RoleplayState(new Context(), { journalMode: 'delete' }) })
 
   it('are read and written through the session, with the bounds the form needs', () => {
-    const { id } = state.createSession(sessionsDir(), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
+    const { id } = state!.createSession(sessionsDir(), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
     expect(readChatSettings(deps, id)).toEqual({ settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 2, pendingConsolidation: 3, activity: [], usage: [], trace: [], interventions: [], vectors: { available: false, embedded: 0, pending: 0 }, reflection: { running: false } })
     expect(writeChatSettings(deps, id, { maxRounds: 4 }).settings.maxRounds).toBe(4)
     expect(readChatSettings(deps, id).settings.maxRounds).toBe(4)
   })
 
   it('tell the mode of the clock, which simulated time cannot leave for the real clock, though the real clock can be left', () => {
-    const { id } = state.createSession(sessionsDir(), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
+    const { id } = state!.createSession(sessionsDir(), { name: 'Night one', world: { id: 'w', name: 'W' } }).metadata.get()
     clockMode = 'simulated'
     expect(readChatSettings(deps, id).clockMode).toBe('simulated')
     expect(() => writeChatSettings(deps, id, { clock: { mode: 'real' } })).toThrow(/cannot be real: the story's time is simulated/)
