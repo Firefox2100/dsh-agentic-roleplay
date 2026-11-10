@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { IconPlayOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { NarrationNodeData } from './definitions.ts'
-import css from './NarrationView.module.css'
+import css from './NarrationView.module.css'import { IconPlay } from '../ui/icons.tsx'
+
 
 /** A steady colour per speaker, so a character looks the same wherever it speaks. */
 function hueOf(name: string): number {
@@ -30,7 +30,7 @@ export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData;
   }
   return (
     <div className={css.output} data-testid="roleplay-narration" data-rp="narration">
-      <button type="button" className={css.playAll} disabled={playing} title={t('speakAll')} onClick={() => { void play(data.segments) }}><IconPlayOutlineRegular aria-hidden="true" /> {t(playing ? 'speaking' : 'speakAll')}</button>
+      <button type="button" className={css.playAll} disabled={playing} title={t('speakAll')} onClick={() => { void play(data.segments) }}><IconPlay aria-hidden="true" /> {t(playing ? 'speaking' : 'speakAll')}</button>
       {data.ooc !== undefined && (
         <p className={data.ooc.legal ? css.oocNote : css.oocRefused} data-testid="roleplay-ooc" data-rp="ooc">
           <span className={css.oocLabel}>{t(data.ooc.question === true ? 'oocAnswer' : data.ooc.legal ? 'oocDone' : 'oocRefused')}</span> {data.ooc.note}
@@ -44,7 +44,7 @@ export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData;
               {Array.from(segment.name)[0]?.toUpperCase()}
             </div>
             <div className={css.speech}>
-              <span className={css.name} data-rp="speaker">{segment.name}<button type="button" className={css.playLine} disabled={playing} aria-label={t('speakLine')} title={t('speakLine')} onClick={() => { void play([segment]) }}><IconPlayOutlineRegular aria-hidden="true" /></button></span>
+              <span className={css.name} data-rp="speaker">{segment.name}<button type="button" className={css.playLine} disabled={playing} aria-label={t('speakLine')} title={t('speakLine')} onClick={() => { void play([segment]) }}><IconPlay aria-hidden="true" /></button></span>
               <span className={css.words} data-rp="words">{segment.text}</span>
             </div>
           </div>

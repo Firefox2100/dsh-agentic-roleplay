@@ -18,3 +18,17 @@ Before upgrading DSH:
 4. confirm the authored opening remains turn 1;
 5. test take-back, branching and chat retirement;
 6. verify browser slots and the shared world editor.
+
+## How the browser learns that the story changed
+
+The transcript follows DSH's conversation events. Everything else on screen — strips, the interface tab, suggestions, the journal — shows story state from the session's SQLite database, which a DSH session projection cannot carry: a projection folds the session log, and the story is not in the log.
+
+So the browser reads those values over `/roleplay-api` and looks again:
+
+- when it has a reason to: a turn starting or ending (`useSession(state => state.running)` in the input dock, on the pack's own tab and on its page in the right sidebar), or the tab that shows the value being opened;
+- on a timer while the value is on screen and the page is visible (`pageVisible()` in `src/client/visibility.ts`);
+- never while the tab is in the background: a hidden page skips the request, and a poll built as a timeout chain keeps its attempt for when the player comes back;
+- at once when the page comes back into view: the values that would have polled in the background look again through `onPageVisible()`, so a tab left in the background does not make the player wait for the next tick.
+
+Current intervals: interface pack 10 s, player view 5 s, suggestions 2 s only until the first answer arrives (30 s for messages the characters send on their own), reflection 4 s, sync 2 s, playtest 2 s, a gallery with pictures still being described 3 s, reference pages 8 s, a scene image still generating 1.5 s. They are bounds on waiting, not a replacement for the turn signal: a change of turn looks again at once.
+

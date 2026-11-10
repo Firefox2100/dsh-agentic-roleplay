@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { VectorStatus } from '../../shared/vectors.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
 import css from './ChatSettingsView.module.css'

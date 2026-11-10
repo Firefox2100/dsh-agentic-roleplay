@@ -737,6 +737,7 @@ export class TurnEngine {
     this.chains.delete(chat)
     this.delivered.delete(chat)
     this.runs.delete(chat)
+    this.failedRuns.delete(chat)
     this.working.delete(chat)
     for (const key of this.objections.keys()) if (key.startsWith(`${chat}#`)) this.objections.delete(key)
   }

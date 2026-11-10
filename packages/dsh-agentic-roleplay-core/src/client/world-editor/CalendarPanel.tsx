@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { CalendarDocument } from '../../shared/world-daily.ts'
 import type { Translate } from './WorldEditor.tsx'
 import { loadCalendar, saveCalendar } from './world-files-api.ts'

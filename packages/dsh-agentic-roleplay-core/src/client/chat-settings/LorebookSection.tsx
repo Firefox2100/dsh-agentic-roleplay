@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { LorebookStatus } from '../../shared/lorebooks.ts'
 import { addStoryLorebook, loadStoryLorebooks, removeStoryLorebook } from '../lorebooks-api.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'

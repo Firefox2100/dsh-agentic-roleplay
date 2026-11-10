@@ -1,4 +1,5 @@
-import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
 import { CatalogueKey } from './CatalogueKey.tsx'
 import { rowProblem, rowsOf, type CatalogueRow } from './catalogues.ts'
 import type { SettingsLocaleKey } from './locales.ts'

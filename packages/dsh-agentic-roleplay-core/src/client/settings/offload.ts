@@ -1,4 +1,4 @@
-import type { SettingsFieldSpec } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SettingsFieldSpec } from '../ui/settings-form.ts'
 import { OFFLOAD_ROLES, offloadOf, offloadProblem, type OffloadConfig, type OffloadProblem, type OffloadRole } from '../../shared/offload.ts'
 
 /** The roles that are served as a model of their own; `main` is the chat's. */

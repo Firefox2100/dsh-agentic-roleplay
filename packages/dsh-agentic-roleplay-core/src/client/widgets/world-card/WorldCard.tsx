@@ -1,7 +1,9 @@
 import { useState, type CSSProperties } from 'react'
-import { IconPlayOutlineRegular, Tag, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Tooltip } from '../../ui/Tooltip.tsx'
+import { Tag } from '../../ui/Tag.tsx'
 import { worldCoverPath, type WorldSummary } from '../../../shared/worlds.ts'
-import css from './WorldCard.module.css'
+import css from './WorldCard.module.css'import { IconPlay } from '../../ui/icons.tsx'
+
 
 /** Stable hue per name, so a world without a cover keeps the same colour. */
 function hueOf(name: string): number {
@@ -47,7 +49,7 @@ export function WorldCard({ world, playLabel, openLabel, draftLabel, onPlay, onO
               data-testid="world-play"
               onClick={(event) => { event.stopPropagation(); onPlay(world) }}
             >
-              <IconPlayOutlineRegular size={14} />
+              <IconPlay size={14} />
             </button>
           )}
         </div>

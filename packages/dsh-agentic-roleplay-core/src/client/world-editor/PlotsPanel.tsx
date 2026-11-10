@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Tag } from '../ui/Tag.tsx'
 import type { PlotDefinition } from 'dsh-roleplay-model'
 import type { WorldState } from '../../shared/world-state.ts'
 import type { Translate } from './WorldEditor.tsx'

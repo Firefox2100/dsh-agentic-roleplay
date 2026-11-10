@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Button, IconRefreshOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SyncSide, SyncUnitStatus } from '../../../shared/sync.ts'
 import type {} from '../../panel/slot-contract.ts'
 import type { SyncFace } from './sync-controller.ts'
-import css from './SyncPage.module.css'
+import css from './SyncPage.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+
 
 export type SyncPageProps =
   PropsRuntime<'roleplay.page'>
@@ -73,7 +75,7 @@ export function SyncPage(props: SyncPageProps) {
       <div className={css.toolbar}>
         <span className={css.meta}>{t('lastRun', { when: when(status?.lastRun, t('never'), t('dateLocale')) })}</span>
         <span className={css.actions}>
-          <Button size="sm" variant="ghost" disabled={busy} onClick={refresh}><IconRefreshOutlineRegular />{t('refresh')}</Button>
+          <Button size="sm" variant="ghost" disabled={busy} onClick={refresh}><IconRefresh />{t('refresh')}</Button>
           <Button size="sm" variant="primary" disabled={busy || status?.problem !== undefined} onClick={() => { run() }}>{busy ? t('running') : t('run')}</Button>
         </span>
       </div>

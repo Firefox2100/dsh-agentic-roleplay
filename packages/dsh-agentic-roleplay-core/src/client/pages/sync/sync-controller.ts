@@ -1,6 +1,7 @@
-import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore, type SnapshotStore } from '../../store.ts'
 import type { SyncSide, SyncStatus } from '../../../shared/sync.ts'
 import { forgetSync, loadSyncStatus, resolveSync, restoreSync, runSync } from '../../sync-api.ts'
+import { onPageVisible, pageVisible } from '../../visibility.ts'
 
 export interface SyncState {
   status: 'idle' | 'loading' | 'ready' | 'failed'
@@ -31,6 +32,7 @@ export class SyncController {
   readonly store = createSnapshotStore<SyncState>({ status: 'idle', working: false })
   private readonly abort = new AbortController()
   private timer: ReturnType<typeof setInterval> | undefined
+  private off: (() => void) | undefined
   private readonly face: SyncFace = {
     hooks: { sync: this.store },
     load: () => { if (this.store.getSnapshot().status === 'idle') void this.read(true) },
@@ -53,7 +55,9 @@ export class SyncController {
   private async work(action: () => Promise<unknown>): Promise<void> {
     if (this.store.getSnapshot().working) return
     this.store.update((draft) => { draft.working = true; delete draft.error })
-    this.timer ??= setInterval(() => { void this.read(false) }, 2000)
+    this.timer ??= setInterval(() => { if (pageVisible()) void this.read(false) }, 2000)
+    // The run keeps going while the page is away; coming back should show how far it got.
+    this.off ??= onPageVisible(() => { void this.read(false) })
     try {
       await action()
     } catch (error) {
@@ -71,6 +75,8 @@ export class SyncController {
   private stopPolling(): void {
     if (this.timer !== undefined) clearInterval(this.timer)
     this.timer = undefined
+    this.off?.()
+    this.off = undefined
   }
 
   private async read(first: boolean): Promise<void> {

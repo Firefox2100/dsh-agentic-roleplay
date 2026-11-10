@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { ReferenceReplies, ReferenceSection } from '../../shared/reference.ts'
 import { roleplaySessionOf } from '../../shared/chat.ts'
+import { onPageVisible, pageVisible } from '../visibility.ts'
 import { loadReference } from './reference-api.ts'
 
 /** How often a page on screen reads again: the story moves with every turn. */
@@ -18,12 +19,24 @@ export function useReference<K extends ReferenceSection>(chat: string, section: 
   useEffect(() => {
     if (session === undefined || !visible) return undefined
     const abort = new AbortController()
-    loadReference(session, section, abort.signal, character).then(
-      (reply) => { setResult({ identity, reading: { state: 'ready', entries: reply.entries } }) },
-      (failure: unknown) => { if (!abort.signal.aborted) setResult({ identity, reading: { state: 'failed', message: failure instanceof Error ? failure.message : String(failure) } }) },
-    )
-    const timer = window.setTimeout(() => { setTick(count => count + 1) }, REFRESH_MS)
-    return () => { window.clearTimeout(timer); abort.abort() }
+    const load = (): void => {
+      if (!pageVisible()) return
+      loadReference(session, section, abort.signal, character).then(
+        (reply) => { setResult({ identity, reading: { state: 'ready', entries: reply.entries } }) },
+        (failure: unknown) => { if (!abort.signal.aborted) setResult({ identity, reading: { state: 'failed', message: failure instanceof Error ? failure.message : String(failure) } }) },
+      )
+    }
+    load()
+    let timer: number | undefined
+    const schedule = (): void => { timer = window.setTimeout(() => { load(); schedule() }, REFRESH_MS) }
+    schedule()
+    // A hidden page skips its reads but keeps the chain, and reads again the moment it is back on screen.
+    const off = onPageVisible(() => { load() })
+    return () => {
+      if (timer !== undefined) window.clearTimeout(timer)
+      off()
+      abort.abort()
+    }
   }, [session, section, visible, tick, character])
   const refresh = useCallback(() => { setTick(count => count + 1) }, [])
   return { reading, refresh }

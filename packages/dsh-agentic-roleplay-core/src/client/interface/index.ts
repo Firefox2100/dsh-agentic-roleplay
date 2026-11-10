@@ -8,8 +8,8 @@ import { availability } from './api.ts'
 import { PackDock } from './PackDock.tsx'
 import { InterfaceTab } from './InterfaceTab.tsx'
 import { SIDEBAR_ID, SIDEBAR_KIND, SidebarBody, SidebarGuide } from './SidebarPage.tsx'
-import { IconGlobeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
-import { dictionaries, type InterfaceLocaleKey } from './locales.ts'
+import { dictionaries, type InterfaceLocaleKey } from './locales.ts'import { IconGlobe } from '../ui/icons.tsx'
+
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -71,7 +71,7 @@ export function registerInterface(ctx: Context): void {
         kind: SIDEBAR_KIND,
         keepMounted: true,
         title: () => t('sidebarTitle'),
-        guide: [{ id: 'page', order: 30, title: () => t('sidebarTitle'), description: () => t('sidebarDescription'), icon: IconGlobeOutlineRegular }],
+        guide: [{ id: 'page', order: 30, title: () => t('sidebarTitle'), description: () => t('sidebarDescription'), icon: IconGlobe }],
       }), 'roleplay: sidebar tab type')
       right.effect(() => right.slots.inject('sidebar.right.tab.guide.entry', () => right.slots.register({
         name: 'sidebar.right.tab.guide.entry',

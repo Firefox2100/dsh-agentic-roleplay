@@ -200,9 +200,6 @@ importers:
       '@deepseek-ai/dsh-agent-loop':
         specifier: '>=0.2.2-rc.1 <0.2.3'
         version: 0.2.2-rc.1(9e7b418363416bf010cab87e6e1b8cb9)
-      '@deepseek-ai/dsh-api-remotes':
-        specifier: '>=0.2.2-rc.1 <0.2.3'
-        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-scope@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0))
       '@deepseek-ai/dsh-client-locale':
         specifier: '>=0.2.2-rc.1 <0.2.3'
         version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
@@ -218,13 +215,7 @@ importers:
       '@deepseek-ai/dsh-client-ui-layout':
         specifier: '>=0.2.2-rc.1 <0.2.3'
         version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: '>=0.2.2-rc.1 <0.2.3'
-        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
       '@deepseek-ai/dsh-client-ui-renderer':
-        specifier: '>=0.2.2-rc.1 <0.2.3'
-        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
-      '@deepseek-ai/dsh-client-ui-session':
         specifier: '>=0.2.2-rc.1 <0.2.3'
         version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)
       '@deepseek-ai/dsh-client-ui-settings':
@@ -1942,11 +1933,6 @@ packages:
 
   '@deepseek-ai/dsh-client-ui-plugin-recommendations@0.2.2-rc.1':
     resolution: {integrity: sha512-wioUOf2kZx01scCuKf0BZsQIX/uWGSVBeJE05ZEDKYy2FPP4/6Mq++kGNJTrRWdGDoXrcTH1NDcjMs9cdrwBBw==}
-    peerDependencies:
-      '@deepseek-ai/cordis': 4.1.0
-
-  '@deepseek-ai/dsh-client-ui-primitives@0.2.2-rc.1':
-    resolution: {integrity: sha512-6ZUYgZ6XYmh/twuwGzKPA4XH3RSODl4b1W4p1pqoFJ7xLn1EroEmA+E/sqa5Z2+JvFWxfPttsHTHkOyH8uK8Tg==}
     peerDependencies:
       '@deepseek-ai/cordis': 4.1.0
 
@@ -12362,10 +12348,6 @@ snapshots:
     dependencies:
       '@deepseek-ai/cordis': 4.1.0(@deepseek-ai/cordis-plugin-include@1.1.0)(@deepseek-ai/cordis-plugin-loader@1.1.0)
 
-  '@deepseek-ai/dsh-client-ui-primitives@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)':
-    dependencies:
-      '@deepseek-ai/cordis': 4.1.0(@deepseek-ai/cordis-plugin-include@1.1.0)(@deepseek-ai/cordis-plugin-loader@1.1.0)
-
   '@deepseek-ai/dsh-client-ui-reference@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)':
     dependencies:
       '@deepseek-ai/cordis': 4.1.0(@deepseek-ai/cordis-plugin-include@1.1.0)(@deepseek-ai/cordis-plugin-loader@1.1.0)
@@ -15258,20 +15240,15 @@ snapshots:
       - ws
       - zod
 
-  '@deepseek-ai/libreoffice-kit-darwin-arm64@0.1.5':
-    optional: true
+  '@deepseek-ai/libreoffice-kit-darwin-arm64@0.1.5': {}
 
-  '@deepseek-ai/libreoffice-kit-darwin-x64@0.1.5':
-    optional: true
+  '@deepseek-ai/libreoffice-kit-darwin-x64@0.1.5': {}
 
-  '@deepseek-ai/libreoffice-kit-wasm@0.1.5':
-    optional: true
+  '@deepseek-ai/libreoffice-kit-wasm@0.1.5': {}
 
-  '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.5':
-    optional: true
+  '@deepseek-ai/libreoffice-kit-win32-arm64@0.1.5': {}
 
-  '@deepseek-ai/libreoffice-kit-win32-x64@0.1.5':
-    optional: true
+  '@deepseek-ai/libreoffice-kit-win32-x64@0.1.5': {}
 
   '@deepseek-ai/libreoffice-kit@0.1.5':
     dependencies:
@@ -15286,17 +15263,13 @@ snapshots:
       '@deepseek-ai/libreoffice-kit-win32-arm64': 0.1.5
       '@deepseek-ai/libreoffice-kit-win32-x64': 0.1.5
 
-  '@deepseek-ai/node-addon-system-darwin-arm64@0.1.2':
-    optional: true
+  '@deepseek-ai/node-addon-system-darwin-arm64@0.1.2': {}
 
-  '@deepseek-ai/node-addon-system-darwin-x64@0.1.2':
-    optional: true
+  '@deepseek-ai/node-addon-system-darwin-x64@0.1.2': {}
 
-  '@deepseek-ai/node-addon-system-linux-arm64@0.1.2':
-    optional: true
+  '@deepseek-ai/node-addon-system-linux-arm64@0.1.2': {}
 
-  '@deepseek-ai/node-addon-system-linux-x64@0.1.2':
-    optional: true
+  '@deepseek-ai/node-addon-system-linux-x64@0.1.2': {}
 
   '@deepseek-ai/node-addon-system@0.1.2':
     optionalDependencies:
@@ -16717,50 +16690,35 @@ snapshots:
 
   '@keyv/serialize@1.1.1': {}
 
-  '@koromix/koffi-darwin-arm64@3.1.1':
-    optional: true
+  '@koromix/koffi-darwin-arm64@3.1.1': {}
 
-  '@koromix/koffi-darwin-x64@3.1.1':
-    optional: true
+  '@koromix/koffi-darwin-x64@3.1.1': {}
 
-  '@koromix/koffi-freebsd-arm64@3.1.1':
-    optional: true
+  '@koromix/koffi-freebsd-arm64@3.1.1': {}
 
-  '@koromix/koffi-freebsd-ia32@3.1.1':
-    optional: true
+  '@koromix/koffi-freebsd-ia32@3.1.1': {}
 
-  '@koromix/koffi-freebsd-x64@3.1.1':
-    optional: true
+  '@koromix/koffi-freebsd-x64@3.1.1': {}
 
-  '@koromix/koffi-linux-arm64@3.1.1':
-    optional: true
+  '@koromix/koffi-linux-arm64@3.1.1': {}
 
-  '@koromix/koffi-linux-ia32@3.1.1':
-    optional: true
+  '@koromix/koffi-linux-ia32@3.1.1': {}
 
-  '@koromix/koffi-linux-loong64@3.1.1':
-    optional: true
+  '@koromix/koffi-linux-loong64@3.1.1': {}
 
-  '@koromix/koffi-linux-riscv64@3.1.1':
-    optional: true
+  '@koromix/koffi-linux-riscv64@3.1.1': {}
 
-  '@koromix/koffi-linux-x64@3.1.1':
-    optional: true
+  '@koromix/koffi-linux-x64@3.1.1': {}
 
-  '@koromix/koffi-openbsd-ia32@3.1.1':
-    optional: true
+  '@koromix/koffi-openbsd-ia32@3.1.1': {}
 
-  '@koromix/koffi-openbsd-x64@3.1.1':
-    optional: true
+  '@koromix/koffi-openbsd-x64@3.1.1': {}
 
-  '@koromix/koffi-win32-arm64@3.1.1':
-    optional: true
+  '@koromix/koffi-win32-arm64@3.1.1': {}
 
-  '@koromix/koffi-win32-ia32@3.1.1':
-    optional: true
+  '@koromix/koffi-win32-ia32@3.1.1': {}
 
-  '@koromix/koffi-win32-x64@3.1.1':
-    optional: true
+  '@koromix/koffi-win32-x64@3.1.1': {}
 
   '@leichtgewicht/ip-codec@2.0.5': {}
 
@@ -17731,41 +17689,29 @@ snapshots:
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
 
-  '@vscode/ripgrep-darwin-arm64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-darwin-arm64@1.18.0': {}
 
-  '@vscode/ripgrep-darwin-x64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-darwin-x64@1.18.0': {}
 
-  '@vscode/ripgrep-linux-arm64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-linux-arm64@1.18.0': {}
 
-  '@vscode/ripgrep-linux-arm@1.18.0':
-    optional: true
+  '@vscode/ripgrep-linux-arm@1.18.0': {}
 
-  '@vscode/ripgrep-linux-ia32@1.18.0':
-    optional: true
+  '@vscode/ripgrep-linux-ia32@1.18.0': {}
 
-  '@vscode/ripgrep-linux-ppc64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-linux-ppc64@1.18.0': {}
 
-  '@vscode/ripgrep-linux-riscv64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-linux-riscv64@1.18.0': {}
 
-  '@vscode/ripgrep-linux-s390x@1.18.0':
-    optional: true
+  '@vscode/ripgrep-linux-s390x@1.18.0': {}
 
-  '@vscode/ripgrep-linux-x64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-linux-x64@1.18.0': {}
 
-  '@vscode/ripgrep-win32-arm64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-win32-arm64@1.18.0': {}
 
-  '@vscode/ripgrep-win32-ia32@1.18.0':
-    optional: true
+  '@vscode/ripgrep-win32-ia32@1.18.0': {}
 
-  '@vscode/ripgrep-win32-x64@1.18.0':
-    optional: true
+  '@vscode/ripgrep-win32-x64@1.18.0': {}
 
   '@vscode/ripgrep@1.18.0':
     optionalDependencies:
@@ -21886,17 +21832,13 @@ snapshots:
 
   shell-quote@1.12.0: {}
 
-  sherpa-onnx-darwin-arm64@1.13.8:
-    optional: true
+  sherpa-onnx-darwin-arm64@1.13.8: {}
 
-  sherpa-onnx-darwin-x64@1.13.8:
-    optional: true
+  sherpa-onnx-darwin-x64@1.13.8: {}
 
-  sherpa-onnx-linux-arm64@1.13.8:
-    optional: true
+  sherpa-onnx-linux-arm64@1.13.8: {}
 
-  sherpa-onnx-linux-x64@1.13.8:
-    optional: true
+  sherpa-onnx-linux-x64@1.13.8: {}
 
   sherpa-onnx-node@1.13.8:
     optionalDependencies:
@@ -21907,11 +21849,9 @@ snapshots:
       sherpa-onnx-win-ia32: 1.13.8
       sherpa-onnx-win-x64: 1.13.8
 
-  sherpa-onnx-win-ia32@1.13.8:
-    optional: true
+  sherpa-onnx-win-ia32@1.13.8: {}
 
-  sherpa-onnx-win-x64@1.13.8:
-    optional: true
+  sherpa-onnx-win-x64@1.13.8: {}
 
   side-channel-list@1.0.1:
     dependencies:

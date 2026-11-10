@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
 import type { PresetSummary } from '../../../shared/presets.ts'
 import { listRulesPrompts, readPreset, readPresetPrompt, removePresetPrompt, updatePresetInfo, writePresetPrompt, type PresetText } from '../../presets-api.ts'
 import { SamplingFields, samplingOfTexts, samplingTexts, type SamplingTexts } from '../../widgets/sampling-fields/SamplingFields.tsx'
 import type { PresetsPageProps } from './PresetsPage.tsx'
-import css from './PresetsPage.module.css'
+import css from './PresetsPage.module.css'import { IconChevronLeft } from '../../ui/icons.tsx'
+
 
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
 const PROMPT_IDS = ['roleplay/persona', 'roleplay/style', 'roleplay/character-style'] as const
@@ -101,7 +102,7 @@ export function PresetEditor({ t, name, onBack, author }: { t: PresetsPageProps[
   return (
     <div className={css.page} data-testid="roleplay-preset-editor">
       <div className={css.editHeader}>
-        <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={onBack}>{t('back')}</Button>
+        <Button variant="ghost" size="sm" icon={<IconChevronLeft />} onClick={onBack}>{t('back')}</Button>
         <span className={css.editTitle}>{loaded.summary.title}</span>
         <Button variant="primary" size="sm" onClick={author}>{t('author')}</Button>
       </div>

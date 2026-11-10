@@ -3,6 +3,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import { sessionDatabase, sessionFolder, type RoleplayState } from '@dsh-agentic-roleplay/state'
+import { SerialQueue } from '../serial.ts'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { TurnOutput } from '../../shared/narration.ts'
 import { START_SNAPSHOT, childrenOf, noticeText, pathTo, snapshotOf, viewOf, type Timeline, type TimelineNode, type TimelineView } from '../../shared/timeline.ts'
@@ -45,14 +46,12 @@ export interface TimelineDeps {
  * Everything here is one at a time per chat.
  */
 export class Timelines {
-  private readonly queues = new Map<string, Promise<unknown>>()
+  private readonly queue = new SerialQueue()
 
   constructor(private readonly deps: TimelineDeps) {}
 
   private serial<T>(chat: string, job: () => Promise<T>): Promise<T> {
-    const run = (this.queues.get(chat) ?? Promise.resolve()).then(job, job)
-    this.queues.set(chat, run.catch(() => undefined))
-    return run
+    return this.queue.run(chat, job)
   }
 
   private idOf(chat: string): string {

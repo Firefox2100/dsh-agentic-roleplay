@@ -1,0 +1,17 @@
+/* A fixed explanation bubble placed from its anchor's measured rectangle. */
+
+.bubble {
+  position: fixed;
+  z-index: 1200;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  border-radius: var(--dsw-radius-sm, 6px);
+  background: var(--dsw-alias-bg-layer-3, rgb(32 32 32 / 96%));
+  color: var(--dsw-alias-label-primary, white);
+  box-shadow: var(--dsw-elevation-medium, 0 4px 12px rgb(0 0 0 / 24%));
+  font-size: 12px;
+  line-height: 18px;
+  pointer-events: none;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

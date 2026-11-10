@@ -1,4 +1,4 @@
-import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore, type SnapshotStore } from '../../store.ts'
 import type { CatalogueSourceStatus } from '../../../shared/catalogue.ts'
 import type { OpenChat } from '../../chat/open-chat.ts'
 import { loadSources } from './catalogue-api.ts'

@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
+import { Tag } from '../ui/Tag.tsx'
 import type { WorldState, WorldTrigger } from '../../shared/world-state.ts'
 import type { TriggersLocaleKey } from './triggers-locales.ts'
 import { describeCondition, describeEffect, namesOf } from './trigger-text.ts'

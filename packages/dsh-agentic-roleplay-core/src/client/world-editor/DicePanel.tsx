@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { DiceCheckDefinition } from 'dsh-roleplay-model'
 import type { DiceDocument } from '../../shared/world-dice.ts'
 import type { Translate } from './WorldEditor.tsx'

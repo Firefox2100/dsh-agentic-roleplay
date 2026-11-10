@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
-import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
+import { Tag } from '../ui/Tag.tsx'
 import type { NewRelationEdit, RelationChange, RelationEdit, RelationEntity, WorldRelation, WorldState } from '../../shared/world-state.ts'
 import type { Translate } from './WorldEditor.tsx'
 import type { WorldSource } from './source.ts'

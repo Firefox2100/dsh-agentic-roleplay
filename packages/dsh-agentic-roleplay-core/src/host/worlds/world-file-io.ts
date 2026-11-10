@@ -1,20 +1,17 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { atomicWrite } from '../atomic-write.ts'
+import { SerialQueue } from '../serial.ts'
 import { WORLD_FILE_NAME } from './world-file.ts'
 
-const queues = new Map<string, Promise<unknown>>()
+const queue = new SerialQueue()
 
 /**
  * Runs `work` after everything asked for the same folder before it has finished. The import, the editor and the assistant each read `world.json`, change a field and write it
  * back; run side by side, the last one to write would take back what the others changed.
  */
 export function serialized<T>(directory: string, work: () => Promise<T>): Promise<T> {
-  const run = (queues.get(directory) ?? Promise.resolve()).then(work, work)
-  const tail = run.then(() => undefined, () => undefined)
-  queues.set(directory, tail)
-  void tail.then(() => { if (queues.get(directory) === tail) queues.delete(directory) })
-  return run
+  return queue.run(directory, work)
 }
 
 type Json = Record<string, unknown>

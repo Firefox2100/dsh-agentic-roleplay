@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
 import type { StarterWorld } from '../../../shared/starter.ts'
 import { addStarter, loadStarters } from './starter-api.ts'
 import type { WorldsLocaleKey } from './locales.ts'

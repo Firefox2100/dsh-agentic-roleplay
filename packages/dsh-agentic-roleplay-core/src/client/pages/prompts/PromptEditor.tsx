@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, IconChevronLeftOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
 import type { PromptDetail } from '../../../shared/prompts.ts'
 import { readPrompt, resetPrompt, savePrompt } from '../../prompts-api.ts'
 import { compareLines } from './prompt-diff.ts'
 import type { PromptsPageProps } from './PromptsPage.tsx'
-import css from './PromptsPage.module.css'
+import css from './PromptsPage.module.css'import { IconChevronLeft } from '../../ui/icons.tsx'
+
 
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
 const PROSE = ['roleplay/persona', 'roleplay/style', 'roleplay/character-style']
@@ -43,7 +45,7 @@ export function PromptEditor({ t, id, language, onBack }: { t: PromptsPageProps[
   return (
     <div className={css.page} data-testid="roleplay-prompt-editor">
       <div className={css.editHeader}>
-        <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={onBack}>{t('back')}</Button>
+        <Button variant="ghost" size="sm" icon={<IconChevronLeft />} onClick={onBack}>{t('back')}</Button>
         <span className={css.editTitle}>{id} · {language}{loaded.state === 'different' ? ` ${t('different')}` : ''}</span>
         {dirty && <span className={css.warning}>{t('unsaved')}</span>}
       </div>

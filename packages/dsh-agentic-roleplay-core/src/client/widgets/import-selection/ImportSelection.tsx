@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
-import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
 import type { SelectionChoice, SelectionPreview } from '../../../shared/import-selection.ts'
 import { SAMPLING_KEYS } from '../../../shared/sampling.ts'
 import type { ImportSelectionKey } from './locales.ts'

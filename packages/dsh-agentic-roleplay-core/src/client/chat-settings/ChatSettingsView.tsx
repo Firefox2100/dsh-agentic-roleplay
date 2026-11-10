@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { SettingsPayload } from '../../shared/settings.ts'

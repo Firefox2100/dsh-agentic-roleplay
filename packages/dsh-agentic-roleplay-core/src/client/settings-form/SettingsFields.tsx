@@ -1,4 +1,7 @@
-import { Button, Input, SegmentedControl, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SegmentedControl } from '../ui/SegmentedControl.tsx'
+import { Switch } from '../ui/Switch.tsx'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
 import { localized, type RequestOption } from '@dsh-ai-providers/core'
 import css from './SettingsFields.module.css'
 import { FAST_PRESET, FORM_FIELDS, boundsOf, keyOf, optionKey, problemsOf, type Drafts } from './fields.ts'

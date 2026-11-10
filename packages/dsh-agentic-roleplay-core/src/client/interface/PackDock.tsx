@@ -33,7 +33,7 @@ export function PackDock({ sessionId, surface, frameInput, overrideTokens, useSe
   const anchor = useRef<HTMLSpanElement>(null)
   const layer = useBackdropHost(anchor, backdrop !== undefined)
   const running = useSession(state => state.running)
-  const view = usePlayerView(session, strip !== undefined || backdrop !== undefined)
+  const view = usePlayerView(session, strip !== undefined || backdrop !== undefined, running)
   const [height, setHeight] = useState<number | undefined>(undefined)
   const resize = useCallback((next: number) => { setHeight(next) }, [])
 

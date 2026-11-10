@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { ImageLightbox, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { ImageLightbox } from '../../ui/ImageLightbox.tsx'
+import { Tooltip } from '../../ui/Tooltip.tsx'
 import type { GalleryImage } from '../../../shared/gallery.ts'
 
 export interface MediaImageLabels {

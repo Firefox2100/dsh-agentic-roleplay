@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
 import { SYNC_PASSWORD_REF } from '../../shared/sync.ts'
 import { describePassword, storePassword, type PasswordStatus } from '../sync-api.ts'
 import type { SettingsLocaleKey } from './locales.ts'

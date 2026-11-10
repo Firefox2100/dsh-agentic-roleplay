@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import { VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES } from 'dsh-roleplay-model'
 import { NEW, declarationOf, draftOf, type Draft } from './variables-draft.ts'
 import type { Translate } from './WorldEditor.tsx'

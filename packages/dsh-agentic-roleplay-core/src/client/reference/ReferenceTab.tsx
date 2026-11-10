@@ -1,5 +1,5 @@
 import { useId, useState, type ReactNode } from 'react'
-import { Button, IconListPenOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import { roleplaySessionOf } from '../../shared/chat.ts'
@@ -7,7 +7,8 @@ import { PageTabs } from '../widgets/page-tabs/PageTabs.tsx'
 import { SidebarGuideEntry } from '../widgets/sidebar-guide/SidebarGuideEntry.tsx'
 import type { ListedEntry } from '../widgets/slot-list/slot-list.ts'
 import type {} from './slot-contract.ts'
-import css from './ReferenceTab.module.css'
+import css from './ReferenceTab.module.css'import { IconListPen } from '../ui/icons.tsx'
+
 
 /** The kind of the tab type, and the identity it registers its card and body under. */
 export const REFERENCE_KIND = 'roleplay-reference'
@@ -27,7 +28,7 @@ export type ReferenceGuideProps = PropsRuntime<'sidebar.right.tab.guide.entry'> 
 export function ReferenceGuide({ sessionId, useTabInfo, t }: ReferenceGuideProps): ReactNode {
   const { tab } = useTabInfo()
   if (roleplaySessionOf(sessionId) === undefined) return null
-  return <SidebarGuideEntry kind={REFERENCE_KIND} title={t('title')} description={t('description')} icon={IconListPenOutlineRegular} onOpen={() => { tab.actions.openTab(REFERENCE_KIND, { replaceTab: true }) }} />
+  return <SidebarGuideEntry kind={REFERENCE_KIND} title={t('title')} description={t('description')} icon={IconListPen} onOpen={() => { tab.actions.openTab(REFERENCE_KIND, { replaceTab: true }) }} />
 }
 
 /** What the player may look up beside the story, one page at a time; a page is an entry of `roleplay.reference.section`. */

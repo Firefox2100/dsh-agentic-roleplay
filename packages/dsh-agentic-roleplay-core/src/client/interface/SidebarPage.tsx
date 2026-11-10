@@ -1,12 +1,13 @@
 import type { ReactNode } from 'react'
-import { Button, IconGlobeOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { usePack, usePlayerView } from './hooks.ts'
 import { PackFrame, type FrameInput } from '../widgets/pack-frame/PackFrame.tsx'
 import { sessionBackend } from '../widgets/pack-frame/frame-api.ts'
-import css from './SidebarPage.module.css'
+import css from './SidebarPage.module.css'import { IconGlobe } from '../ui/icons.tsx'
+
 
 /** The kind of the tab type, and the identity it registers its card and body under. */
 export const SIDEBAR_KIND = 'roleplay-pack'
@@ -33,7 +34,7 @@ export function SidebarGuide({ sessionId, useTabInfo, description, t }: SidebarG
   return (
     <div className={css.entry} data-sidebar-right-guide-entry={SIDEBAR_KIND}>
       <Button variant="ghost" className={css.main} aria-label={title} onClick={() => { tab.actions.openTab(SIDEBAR_KIND, { replaceTab: true }) }} />
-      <span className={css.icon} aria-hidden="true"><IconGlobeOutlineRegular size={description === undefined ? 22 : 26} /></span>
+      <span className={css.icon} aria-hidden="true"><IconGlobe size={description === undefined ? 22 : 26} /></span>
       <span className={css.text}>
         <span className={css.title} aria-hidden="true">{title}</span>
         <span className={css.description} aria-hidden="true">{t('sidebarDescription')}</span>
@@ -46,12 +47,14 @@ export function SidebarGuide({ sessionId, useTabInfo, description, t }: SidebarG
  * The body of the tab: a bar of ours with a way back to the guide, and under it the pack's page, which has the rest of
  * the sidebar to itself. The page is kept while the tab is hidden, so what it draws goes on between looks.
  */
-export function SidebarBody({ sessionId, useTabInfo, frameInput, t }: SidebarBodyProps): ReactNode {
+export function SidebarBody({ sessionId, useTabInfo, useSession, frameInput, t }: SidebarBodyProps): ReactNode {
   const session = roleplaySessionOf(sessionId)
   const { tab } = useTabInfo()
+  const running = useSession(session => session.running)
   const pack = usePack(session)?.pack ?? undefined
   const page = pack?.surfaces.sidebar
-  const view = usePlayerView(session, tab.visible && page !== undefined)
+  // A turn changes what the pack's page shows, so the view is read again when the turn starts and ends.
+  const view = usePlayerView(session, tab.visible && page !== undefined, running)
   const back = (): void => { tab.actions.openTab('guide', { replaceTab: true }) }
   return (
     <div className={css.page} data-rp="sidebar">

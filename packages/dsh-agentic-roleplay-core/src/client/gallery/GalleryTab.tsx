@@ -1,11 +1,12 @@
 import { useMemo, type ReactNode } from 'react'
-import { Button, IconBrowseOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { GalleryView } from '../widgets/gallery-view/GalleryView.tsx'
 import { SidebarGuideEntry } from '../widgets/sidebar-guide/SidebarGuideEntry.tsx'
-import css from './GalleryTab.module.css'
+import css from './GalleryTab.module.css'import { IconBrowse } from '../ui/icons.tsx'
+
 
 /** The kind of the tab type, and the identity it registers its card and body under. */
 export const GALLERY_KIND = 'roleplay-gallery'
@@ -18,7 +19,7 @@ export type GalleryGuideProps = PropsRuntime<'sidebar.right.tab.guide.entry'> & 
 export function GalleryGuide({ sessionId, useTabInfo, t }: GalleryGuideProps): ReactNode {
   const { tab } = useTabInfo()
   if (roleplaySessionOf(sessionId) === undefined) return null
-  return <SidebarGuideEntry kind={GALLERY_KIND} title={t('tab')} description={t('guideText')} icon={IconBrowseOutlineRegular} onOpen={() => { tab.actions.openTab(GALLERY_KIND, { replaceTab: true }) }} />
+  return <SidebarGuideEntry kind={GALLERY_KIND} title={t('tab')} description={t('guideText')} icon={IconBrowse} onOpen={() => { tab.actions.openTab(GALLERY_KIND, { replaceTab: true }) }} />
 }
 
 /** The gallery page of the right sidebar: the pictures of the chat's roleplay session, readable beside the story. */

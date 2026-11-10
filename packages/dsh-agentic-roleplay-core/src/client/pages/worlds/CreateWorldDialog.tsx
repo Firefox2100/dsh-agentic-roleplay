@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react'
-import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
+import { Input } from '../../ui/Input.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PresetSummary } from '../../../shared/presets.ts'
 import { listPresets } from '../../presets-api.ts'

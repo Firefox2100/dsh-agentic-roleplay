@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Button, IconChevronLeftOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
 import type { LoreKind, LoreScope } from 'dsh-roleplay-model'
 import type { LorebookEntry, LorebookSummary, LorebookText } from '../../../shared/lorebooks.ts'
 import { readLorebook, removeLorebookEntry, updateLorebookInfo, writeLorebookEntry } from '../../lorebooks-api.ts'
 import type { LorebooksPageProps } from './LorebooksPage.tsx'
-import css from './LorebooksPage.module.css'
+import css from './LorebooksPage.module.css'import { IconChevronLeft } from '../../ui/icons.tsx'
+
 
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
 const KINDS = ['history', 'culture', 'religion', 'politics', 'geography', 'science', 'custom', 'legend', 'other'] as const satisfies readonly LoreKind[]
@@ -90,7 +91,7 @@ export function LorebookEditor({ t, name, onBack, author }: { t: LorebooksPagePr
   return (
     <div className={css.page} data-testid="roleplay-lorebook-editor">
       <div className={css.editHeader}>
-        <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={onBack}>{t('back')}</Button>
+        <Button variant="ghost" size="sm" icon={<IconChevronLeft />} onClick={onBack}>{t('back')}</Button>
         <span className={css.editTitle}>{loaded.summary.title}</span>
         <Button variant="primary" size="sm" onClick={author}>{t('author')}</Button>
       </div>

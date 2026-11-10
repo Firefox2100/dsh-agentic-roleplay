@@ -1,4 +1,4 @@
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { Translate } from './WorldEditor.tsx'
 import { MAX_QUESTION_OPTIONS, MAX_START_QUESTIONS } from '../../shared/start-questions.ts'
 import { newOption, newQuestion, type OptionDraft, type QuestionDraft } from './questions-draft.ts'

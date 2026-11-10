@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { WorldState } from '../../shared/world-state.ts'
 import { CharactersPanel } from './CharactersPanel.tsx'
 import { PlacesPanel, ThingsPanel } from './EntityPanels.tsx'
@@ -21,7 +21,8 @@ import type { WorldLocaleKey } from './locales.ts'
 import type { GalleryLocaleKey } from '../widgets/gallery-view/locales.ts'
 import { NotEditableError, type WorldSource } from './source.ts'
 import css from './WorldEditor.module.css'
-import { navigateEditorTabs } from './EditorTabs.tsx'
+import { navigateEditorTabs } from './EditorTabs.tsx'import { IconRefresh } from '../ui/icons.tsx'
+
 
 export type Translate = (key: WorldLocaleKey, values?: Record<string, string | number>) => string
 
@@ -102,14 +103,14 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
       </nav>}
       <div className={css.content}>
         {warnNoPlayable && !load.world.characters.some(character => character.role === 'playable' || character.control === 'player') && <p className={css.warning} role="status" data-testid="roleplay-no-playable">{t('noPlayableWarning')}</p>}
-        {section === 'info' && source.worldId !== undefined && <InfoPanel t={t} worldId={source.worldId} onSaved={refresh} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'prompts' && source.worldId !== undefined && <PromptsPanel t={t} worldId={source.worldId} language={t('language')} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'routines' && source.worldId !== undefined && <RoutinesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'calendar' && source.worldId !== undefined && <CalendarPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'dice' && source.worldId !== undefined && <DicePanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'tools' && source.worldId !== undefined && <ToolsPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'variables' && source.worldId !== undefined && <VariablesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'interface' && source.worldId !== undefined && <PacksPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'info' && source.worldId !== undefined && <InfoPanel t={t} worldId={source.worldId} onSaved={refresh} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'prompts' && source.worldId !== undefined && <PromptsPanel t={t} worldId={source.worldId} language={t('language')} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'routines' && source.worldId !== undefined && <RoutinesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'calendar' && source.worldId !== undefined && <CalendarPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'dice' && source.worldId !== undefined && <DicePanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'tools' && source.worldId !== undefined && <ToolsPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'variables' && source.worldId !== undefined && <VariablesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'interface' && source.worldId !== undefined && <PacksPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'images' && source.worldId !== undefined && <GalleryView t={galleryText} target={{ kind: 'worlds', id: source.worldId }} />}
         {section === 'characters' && (
           <CharactersPanel
@@ -118,16 +119,16 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
             world={load.world}
             source={source}
             onChanged={changed}
-            actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>}
+            actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>}
           />
         )}
-        {section === 'places' && <PlacesPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'things' && <ThingsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'factions' && <FactionsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'lore' && <LorePanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'plots' && <PlotsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'triggers' && <TriggersPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
-        {section === 'relations' && <RelationsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefreshOutlineRegular />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'places' && <PlacesPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'things' && <ThingsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'factions' && <FactionsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'lore' && <LorePanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'plots' && <PlotsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'triggers' && <TriggersPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'relations' && <RelationsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
       </div>
     </div>
   )

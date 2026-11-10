@@ -1,4 +1,4 @@
-import { createSnapshotStore, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore, type SnapshotStore } from '../../store.ts'
 import { createAvatar, deleteAvatar, listAvatars, type AvatarSummary } from '../../avatars-api.ts'
 
 export interface AvatarsState {

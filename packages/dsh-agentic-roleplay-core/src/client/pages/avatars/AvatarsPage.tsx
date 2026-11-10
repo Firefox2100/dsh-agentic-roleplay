@@ -1,5 +1,7 @@
 import { useEffect, useId, useMemo, useState } from 'react'
-import { Button, IconChevronLeftOutlineRegular, IconRefreshOutlineRegular, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
+import { Input } from '../../ui/Input.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { AVATARS_WORLD_ID } from '../../../shared/avatars.ts'
 import type { AvatarSummary } from '../../avatars-api.ts'
@@ -7,7 +9,8 @@ import type {} from '../../panel/slot-contract.ts'
 import { worldSource } from '../../world-editor/authored-world-source.ts'
 import { WorldEditor } from '../../world-editor/WorldEditor.tsx'
 import type { AvatarsFace } from './avatars-controller.ts'
-import css from './AvatarsPage.module.css'
+import css from './AvatarsPage.module.css'import { IconChevronLeft, IconRefresh } from '../../ui/icons.tsx'
+
 
 export type AvatarsPageProps =
   PropsRuntime<'roleplay.page'>
@@ -81,7 +84,7 @@ export function AvatarsPage({ t, useAvatars, load, refresh, create, remove }: Av
     return (
       <div className={css.page} data-testid="roleplay-avatar-editor">
         <div className={css.editHeader}>
-          <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined); refresh() }}>{t('avatarsBack')}</Button>
+          <Button variant="ghost" size="sm" icon={<IconChevronLeft />} onClick={() => { setEditing(undefined); refresh() }}>{t('avatarsBack')}</Button>
           <span className={css.editTitle}>{editing.name}</span>
         </div>
         <div className={css.editBody}>
@@ -99,7 +102,7 @@ export function AvatarsPage({ t, useAvatars, load, refresh, create, remove }: Av
         <span className={css.count}>{state.avatars === undefined ? '' : t(avatars.length === 1 ? 'avatarsCountOne' : 'avatarsCountOther', { count: avatars.length })}</span>
         <div className={css.actions}>
           <Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('avatarCreate')}</Button>
-          <Button variant="outline" size="sm" icon={<IconRefreshOutlineRegular />} disabled={state.refreshing || state.status === 'loading'} aria-busy={state.refreshing} onClick={refresh}>{state.refreshing ? t('avatarsRefreshing') : t('avatarsRefresh')}</Button>
+          <Button variant="outline" size="sm" icon={<IconRefresh />} disabled={state.refreshing || state.status === 'loading'} aria-busy={state.refreshing} onClick={refresh}>{state.refreshing ? t('avatarsRefreshing') : t('avatarsRefresh')}</Button>
         </div>
       </div>
       {state.error !== undefined && !failedWithoutData && <p className={css.error} role="alert">{t('avatarsLoadFailed', { message: state.error })}</p>}

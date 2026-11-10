@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
+import { Tag } from '../ui/Tag.tsx'
 import { CHARACTER_KINDS, CHARACTER_ROLES, CHARACTER_TIERS, INTENT_STATUSES } from 'dsh-roleplay-model'
 import type { WorldCharacter, WorldState } from '../../shared/world-state.ts'
 import { draftProblems, editOf, isDirty, toDraft, type CharacterDraft } from './character-draft.ts'

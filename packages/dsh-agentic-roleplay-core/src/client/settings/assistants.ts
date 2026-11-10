@@ -1,4 +1,4 @@
-import type { SettingsFieldSpec } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SettingsFieldSpec } from '../ui/settings-form.ts'
 
 /** The settings of the helper agents of imports and authoring: each is one field of the plugin's configuration, written only when it differs from the default. */
 export const ASSISTANT_FIELDS = [

@@ -1,16 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@deepseek-ai/dsh-client-store', () => ({
-  createSnapshotStore: <T extends object>(initial: T) => {
-    let state = initial
-    return {
-      getSnapshot: () => state,
-      subscribe: () => () => undefined,
-      update: (change: (draft: T) => void) => { const draft = structuredClone(state); change(draft); state = draft },
-    }
-  },
-}))
-
 const { SyncController } = await import('../../../../src/client/pages/sync/sync-controller.ts')
 const settle = () => new Promise(resolve => setTimeout(resolve, 10))
 let requests: string[]

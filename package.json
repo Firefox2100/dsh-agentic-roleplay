@@ -13,7 +13,7 @@
     "typecheck": "pnpm -r run typecheck",
     "test": "node --test scripts/*.test.mjs && pnpm -r run test",
     "test:coverage": "node --test scripts/*.test.mjs && pnpm -r run test --coverage --coverage.reporter=text --coverage.reporter=lcov && node scripts/merge-coverage.mjs",
-    "release:build": "pnpm --filter './packages/**' run build",
+    "release:build": "pnpm --filter \"./packages/*\" run build",
     "release:check": "node scripts/check-release.mjs",
     "sync:dsh": "node scripts/sync-dsh-ranges.mjs",
     "release:publish": "node scripts/publish.mjs"

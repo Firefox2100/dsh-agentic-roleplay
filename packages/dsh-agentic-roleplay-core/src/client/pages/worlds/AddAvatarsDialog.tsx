@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from 'react'
-import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { addAvatarsToWorld, listAvatars, type AvatarSummary } from '../../avatars-api.ts'
 import { AvatarChoices } from '../../widgets/avatar-choices/AvatarChoices.tsx'

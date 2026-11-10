@@ -1,4 +1,4 @@
-import { defineStore, type EngineStoreHandle } from '@deepseek-ai/dsh-client-store'
+import { defineStore, type StoreHandle } from '../store.ts'
 
 type PanelState = {
   /** Selected page id; undefined until the user picks one. */
@@ -9,7 +9,7 @@ type PanelActions = {
   selectPage: (draft: PanelState, id: string) => void
 }
 
-export function createPanelStore(): EngineStoreHandle<PanelState, PanelActions> {
+export function createPanelStore(): StoreHandle<PanelState, PanelActions> {
   return defineStore({
     init: (): PanelState => ({ page: undefined }),
     actions: {

@@ -1,5 +1,5 @@
 import type { ComponentType, ReactNode } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
 import css from './SidebarGuideEntry.module.css'
 
 /** A card of the right sidebar's new-tab guide, drawn like DSH's own entries. */

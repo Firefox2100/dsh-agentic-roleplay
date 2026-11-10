@@ -1,20 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createSnapshotStore } from '../../../src/client/store.ts'
 import type { BranchController as Controller } from '../../../src/client/branch/branch-controller.ts'
 
-// The shell provides the store at run time; a small one stands in for it here.
-vi.mock('@deepseek-ai/dsh-client-store', () => ({
-  createSnapshotStore: <T extends object>(initial: T) => {
-    let state = initial
-    const listeners = new Set<() => void>()
-    return {
-      getSnapshot: () => state,
-      subscribe: (listener: () => void) => { listeners.add(listener); return () => { listeners.delete(listener) } },
-      update: (change: (draft: T) => void) => { const draft = structuredClone(state); change(draft); state = draft; for (const listener of listeners) listener() },
-    }
-  },
-}))
 const { BranchController } = await import('../../../src/client/branch/branch-controller.ts')
-const { createSnapshotStore } = await import('@deepseek-ai/dsh-client-store')
 
 type Row = { parentId?: string; origin?: 'subagent' }
 const uuid = (digit: string) => `${digit.repeat(8)}-${digit.repeat(4)}-4${digit.repeat(3)}-8${digit.repeat(3)}-${digit.repeat(12)}`

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Button, Input, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
+import { Tag } from '../ui/Tag.tsx'
 import { isStrip, SURFACE_NAMES, type PackPreview, type SurfaceName, type WorldPackDetail } from '../../shared/interface-pack.ts'
 import { PackFrame, type FrameInput } from '../widgets/pack-frame/PackFrame.tsx'
 import type { FrameBackend } from '../widgets/pack-frame/frame-api.ts'

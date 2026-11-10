@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconChevronLeftOutlineRegular, IconRefreshOutlineRegular, Toast } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Toast } from '../../ui/Toast.tsx'
+import { Button } from '../../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { pageCount, pageStart, pagingFor } from '../../paging/paging.ts'
 import type {} from '../../panel/slot-contract.ts'
@@ -25,7 +26,8 @@ import type { ImportPreview, UpdateStatus } from '../../../shared/import-card.ts
 import { PlaytestDialog } from './PlaytestDialog.tsx'
 import { RevertUpdateDialog } from './RevertUpdateDialog.tsx'
 import type { WorldsFace } from './worlds-controller.ts'
-import css from './WorldsPage.module.css'
+import css from './WorldsPage.module.css'import { IconChevronLeft, IconRefresh } from '../../ui/icons.tsx'
+
 
 export type WorldsPageProps =
   PropsRuntime<'roleplay.page'>
@@ -138,7 +140,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
     return (
       <div className={css.page} data-testid="roleplay-world-editor">
         <div className={css.editHeader}>
-          <Button variant="ghost" size="sm" icon={<IconChevronLeftOutlineRegular />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
+          <Button variant="ghost" size="sm" icon={<IconChevronLeft />} onClick={() => { setEditing(undefined) }}>{t('back')}</Button>
           <span className={css.editTitle}>{editing.name}</span>
           <input ref={updatePicker} type="file" accept=".png,.json,image/png,application/json" hidden data-testid="roleplay-update-input" onChange={(event) => { chooseUpdateCard(editing.id, event.target.files?.[0]); event.target.value = '' }} />
           <input ref={presetPicker} type="file" accept=".json,application/json" hidden data-testid="roleplay-preset-input" onChange={(event) => { choosePreset(editing.id, event.target.files?.[0]); event.target.value = '' }} />
@@ -177,7 +179,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
         <div className={css.toolbarActions}><Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('createWorld')}</Button><Button variant="outline" size="sm" disabled={uploading} onClick={() => { picker.current?.click() }}>{uploading ? t('importUploading') : t('importCard')}</Button><Button variant="outline" size="sm" disabled={uploading} data-testid="roleplay-import-card-url" onClick={() => { setAddressing(true) }}>{t('importCardUrl')}</Button><input ref={picker} type="file" accept=".png,.json,image/png,application/json" hidden onChange={(event) => { chooseCard(event.target.files?.[0]); event.target.value = '' }} /><Button
           variant="outline"
           size="sm"
-          icon={<IconRefreshOutlineRegular className={state.refreshing ? css.spinning : undefined} />}
+          icon={<IconRefresh className={state.refreshing ? css.spinning : undefined} />}
           disabled={state.refreshing || state.status === 'loading'}
           aria-busy={state.refreshing}
           onClick={refresh}

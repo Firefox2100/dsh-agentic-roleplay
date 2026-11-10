@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { InterfaceStatus } from '../../shared/interface-pack.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
 import { loadInterfaceStatus, syncInterface } from './settings-api.ts'

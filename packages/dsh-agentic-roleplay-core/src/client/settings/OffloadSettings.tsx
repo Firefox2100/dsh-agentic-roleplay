@@ -1,4 +1,5 @@
-import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
 import { OFFLOAD_ROLES, type OffloadRole } from '../../shared/offload.ts'
 import type { SettingsLocaleKey } from './locales.ts'
 import { SERVED_ROLES, offloadDraftOf, offloadProblemOf, type OffloadDraft } from './offload.ts'

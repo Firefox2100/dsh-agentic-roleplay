@@ -1,0 +1,129 @@
+/* The dialog's full-viewport layer: a mask plus a centered card, 24px of air on every side. */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: auto;
+}
+
+.mask {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: var(--dsw-mask-blur, blur(8px));
+}
+
+.mask::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--dsw-alias-bg-mask-1, rgb(0 0 0 / 40%));
+  animation: rpModalEnter var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+}
+
+.dialog {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: min(380px, 100%);
+  max-height: 100%;
+  padding: 0 0 24px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--dsw-radius-panel, 12px);
+  background: var(--dsw-alias-bg-layer-2, Canvas);
+  box-shadow: var(--dsw-elevation-prominent, 0 12px 32px rgb(0 0 0 / 24%));
+  animation: rpModalEnter var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+}
+
+@keyframes rpModalEnter {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mask::after,
+  .dialog {
+    animation: none;
+  }
+}
+
+.dialog:focus {
+  outline: none;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 22px 14px 12px 24px;
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.close {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--dsw-radius-sm, 6px);
+  background: transparent;
+  cursor: pointer;
+  color: var(--dsw-alias-label-secondary, inherit);
+}
+
+@media (hover: hover) {
+  .close:hover {
+    background: var(--dsw-alias-interactive-bg-hover, rgb(0 0 0 / 6%));
+  }
+}
+
+.description {
+  margin: 0;
+  padding: 0 24px;
+  font-size: 14px;
+  line-height: 22px;
+  font-weight: 400;
+  color: var(--dsw-alias-label-primary, inherit);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin-top: 20px;
+  padding: 0 24px;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 24px;
+}

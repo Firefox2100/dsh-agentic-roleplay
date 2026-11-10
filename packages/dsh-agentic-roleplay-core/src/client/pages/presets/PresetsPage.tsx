@@ -1,6 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { trimCharacters, withoutExtension } from '../../../shared/text.ts'
-import { Button, IconRefreshOutlineRegular, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
+import { Input } from '../../ui/Input.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PresetSummary } from '../../../shared/presets.ts'
 import type { SelectionPreview } from '../../../shared/import-selection.ts'
@@ -8,7 +10,8 @@ import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSele
 import type {} from '../../panel/slot-contract.ts'
 import { PresetEditor } from './PresetEditor.tsx'
 import type { PresetsFace } from './presets-controller.ts'
-import css from './PresetsPage.module.css'
+import css from './PresetsPage.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+
 
 export type PresetsPageProps =
   PropsRuntime<'roleplay.page'>
@@ -98,7 +101,7 @@ export function PresetsPage({ t, usePresets, load, refresh, create, remove, auth
           <input ref={picker} type="file" accept=".json,application/json" hidden data-testid="roleplay-preset-file" onChange={(event) => { choose(event.target.files?.[0]); event.target.value = '' }} />
           <Button variant="outline" size="sm" disabled={staging} onClick={() => { picker.current?.click() }}>{staging ? t('importReading') : t('import')}</Button>
           <Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('create')}</Button>
-          <Button variant="outline" size="sm" icon={<IconRefreshOutlineRegular />} disabled={state.refreshing || state.status === 'loading'} aria-busy={state.refreshing} onClick={refresh}>{state.refreshing ? t('refreshing') : t('refresh')}</Button>
+          <Button variant="outline" size="sm" icon={<IconRefresh />} disabled={state.refreshing || state.status === 'loading'} aria-busy={state.refreshing} onClick={refresh}>{state.refreshing ? t('refreshing') : t('refresh')}</Button>
         </div>
       </div>
       {state.error !== undefined && !failedWithoutData && <p className={css.error} role="alert">{t('loadFailed', { message: state.error })}</p>}

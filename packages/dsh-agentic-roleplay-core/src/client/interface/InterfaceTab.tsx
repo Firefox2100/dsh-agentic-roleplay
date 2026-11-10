@@ -12,12 +12,14 @@ export interface InterfaceTabInjected {
 export type InterfaceTabProps = PropsRuntime<'conversation.view'> & InterfaceTabInjected & PropsLocale<'roleplay.interface'>
 
 /** The tab of the story's interface pack: a page of its own beside Chat. */
-export function InterfaceTab({ sessionId, frameInput, t }: InterfaceTabProps) {
+export function InterfaceTab({ sessionId, frameInput, useSession, t }: InterfaceTabProps) {
   const session = roleplaySessionOf(sessionId)
+  const running = useSession(session => session.running)
   const payload = usePack(session)
   const pack = payload?.pack ?? undefined
   const tab = pack?.surfaces.tab
-  const view = usePlayerView(session, tab !== undefined)
+  // A turn changes what the pack's page shows, so the view is read again when the turn starts and ends.
+  const view = usePlayerView(session, tab !== undefined, running)
   if (session === undefined) return <p className={css.message}>{t('notRoleplay')}</p>
   if (payload === undefined) return null
   if (pack === undefined) {

@@ -25,7 +25,7 @@ below so it can be checked when DSH moves.
 | Turn control | `agent/pre-step` (waterfall), `agent/turn-stopping`, `agent.steer`, `exec.concludeTurn()`, `exec.agent`, `exec.signal` | `host/orchestration/hooks.ts`, `tools.ts` |
 | Authoring model choice | `agent.model.current()`, `agent.model.select()` from `agent/created` | `host/authoring/turn-guard.ts` |
 | Chronicler (no tools of its own) | a `runChild` child with a `submit_result` of its own (below) | `compaction/chronicler.ts` |
-| Characters and record keeper (tools of their own) | **not the public sub-agent API**: see below | `agents/child.ts` |
+| Characters and record keeper (tools of their own) | **not the model-facing `subagent` tool**: the public `ctx.subagents.startActivation()` service method, with a `submit_result` tool of the child's own (see below) | `agents/child.ts` |
 | Message source | merge into `MessageSourceMap` (`roleplay`) | `hooks.ts` |
 | Looking up an agent | `ctx.agents.get` | `orchestration.ts` |
 | Compaction | `BasicCompactionEngine` (`@deepseek-ai/dsh-compaction-basic`, default export): its documented sole hook `summarize()` and `compactRegion()`; `ctx.tokenMeter.measure(session)`; `session.surface.nodes`; `session.snapshotEvents()`; `session.header.origin` | `host/compaction/` |
@@ -35,8 +35,31 @@ below so it can be checked when DSH moves.
 
 `ctx.slots` (`settings.section`, `sidebar.panellist`, `main` panels, `conversation.chat.node`,
 `conversation.view`), `ctx.locale`, `ctx.configForms`, `ctx.uiConversation` (events and views),
-`uiWorkspace.openSession`, and the shell primitives (`Button`, `Input`, `Switch`, `Modal`, `Tag`,
-`Tooltip`). The client bundle format is the shell's module loader, checked by `tsdown.config.ts`.
+and `uiWorkspace.openSession`. The client bundle format is the shell's module loader, checked by
+`tsdown.config.ts`.
+
+Snapshot stores are the plugin's own (`src/client/store.ts`). A `hooks` source and a `store`
+registration only need the `getSnapshot`/`subscribe` pair, so the plugin never requires the shell's
+store package: it is absent from `SHELL_MODULES`, and the bundle boundary rejects a runtime import.
+`@deepseek-ai/dsh-client-store` stays a devDependency for types only — the slot typings name its
+`PropsStore`/`StoreHandle` shapes, and losing the package makes every slot prop fall back to `any` —
+but nothing imports it at runtime, so it is still erased from the bundle.
+
+**The controls are the plugin's own copy.** The practices forbid loading a Harness Client package as
+a module — one of them changing between releases, or throwing, blanks the slot entry — and sanction a
+copy under the plugin's own class prefix that keeps only `--dsw-alias-*` tokens. That copy is
+`src/client/ui/`: `Button`, `Input`, `Switch`, `SegmentedControl`, `Modal`, `Tooltip`, `Tag`, `Toast`,
+`ImageLightbox`, the settings form frame and its value field (`SettingsForm`, `SettingsValueField`,
+`settings-form.ts`), and the outline icons the plugin draws. Behavior the shell got for free is kept by
+the copy: the modal traps focus, closes on Escape and restores the trigger's focus; the switch is
+`role="switch"` with `aria-checked`; the segmented control walks its tabs with the arrow keys; a tooltip
+flips and clamps to the viewport. `@deepseek-ai/dsh-client-ui-primitives` is no longer a dependency and
+not in `SHELL_MODULES`, so a runtime import of it now fails the bundle boundary check.
+
+The two pieces of that copy with logic worth testing are plain functions, free of React and of the DOM:
+`src/client/ui/place.ts` (which side a bubble lands on, when it flips and how it clamps) and
+`src/client/ui/walk.ts` (which segment a tablist key moves to). `tests/client/ui/place.spec.ts` covers
+both, so a behavior change there is caught without a browser.
 
 One element is put outside the plugin's own components: an interface pack's backdrop layer, inserted as the first
 child of the conversation body, with that body's scrolling element marked so it is lifted over the layer. The chat
@@ -96,6 +119,14 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 - **Runtime context** (`ctx.systemPrompt.suppressRuntimeContext`, `ctx.systemPrompt.context`): DSH adds a block of English runtime facts to every agent's request (the working directory, the file policy, approvals, delegation). The helper preset suppresses the optional ones and shadows the required working-directory entry with an empty one, because a helper works on the story's words and has no files. With the block, a helper asked to write Chinese often ran on until its output limit (a recorded reflection request replayed on the 35B with thinking off: one of four runs finished with the block, four of four without it).
 - **`sessionController.prompt(request, signal)`** needs the `AbortSignal` (without it the call fails inside DSH with `throwIfAborted` of undefined). It is how the plugin sends a message into a chat for the person (the card import's `/import-st`).
 - **A stored chat that starts with an opening** needs an empty `system/message` appended with `surfaceOp: 'append'` before any other surface node: the log format refuses a system prompt that follows other nodes.
+
+## What we deliberately do not use
+
+These are DSH services that look applicable and are not, so a later review does not have to work it out again:
+
+- **`ctx.commands`.** The player's `/ooc`, `/ask`, `/wait` and `/dream` are turns the game master rules on, and a world's own `/word` commands are in-story text the characters react to. A command handler runs *instead of* sending anything to the model, so registering either kind would take away the turn it exists for; the composer's discovery list is not worth that.
+- **Session projections (`ctx.sessionProjections`).** A projection folds the session log into state DSH pushes with the chat. The story lives in the session's SQLite (records, memories, timeline), not in the log, so a projection cannot carry it. The values the browser needs come from `/roleplay-api`; how often they are read is in §7.4 of `AGENTS.md`.
+- **The `/api` typert RPC surface.** A third-party service there needs a declared contract and generated client bindings. `/roleplay-api` registers through `webServer.register` and sits behind the same authenticated connection and `connection.requestRejection` fence; the browser never reaches it without the session's credentials.
 
 ## When upgrading DSH
 

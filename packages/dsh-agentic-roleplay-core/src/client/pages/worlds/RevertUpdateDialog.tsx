@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import css from './StartSessionDialog.module.css'
 

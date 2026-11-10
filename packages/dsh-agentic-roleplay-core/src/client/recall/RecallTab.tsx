@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { Button, IconSearchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
 import type { RunRecall } from '../../shared/activity.ts'
@@ -7,7 +7,8 @@ import { roleplaySessionOf } from '../../shared/chat.ts'
 import { MAX_SITUATION, type RecallPreview } from '../../shared/recall-preview.ts'
 import { loadCharacters, previewRecall } from './recall-api.ts'
 import { SidebarGuideEntry } from '../widgets/sidebar-guide/SidebarGuideEntry.tsx'
-import css from './RecallTab.module.css'
+import css from './RecallTab.module.css'import { IconSearch } from '../ui/icons.tsx'
+
 
 /** The kind of the tab type, and the identity it registers its card and body under. */
 export const RECALL_KIND = 'roleplay-recall'
@@ -22,7 +23,7 @@ type Translate = RecallBodyProps['t']
 export function RecallGuide({ sessionId, useTabInfo, t }: RecallGuideProps): ReactNode {
   const { tab } = useTabInfo()
   if (roleplaySessionOf(sessionId) === undefined) return null
-  return <SidebarGuideEntry kind={RECALL_KIND} title={t('title')} description={t('description')} icon={IconSearchOutlineRegular} onOpen={() => { tab.actions.openTab(RECALL_KIND, { replaceTab: true }) }} />
+  return <SidebarGuideEntry kind={RECALL_KIND} title={t('title')} description={t('description')} icon={IconSearch} onOpen={() => { tab.actions.openTab(RECALL_KIND, { replaceTab: true }) }} />
 }
 
 const figure = (value: number): string => (Math.round(value * 100) / 100).toString()

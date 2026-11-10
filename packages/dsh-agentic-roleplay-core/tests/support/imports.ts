@@ -9,9 +9,12 @@ export interface ImportEdge {
   /** For a relative specifier, the module it names relative to the source root; otherwise the specifier. */
   target: string
   relative: boolean
+  /** Written as `import type`/`export type`, so the build erases it and nothing is loaded at run time. */
+  typeOnly: boolean
 }
 
 const SPECIFIER = /(?:^|[\s;])(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\sfrom\s+)?['"]([^'"]+)['"]|\bimport\(\s*['"]([^'"]+)['"]\s*\)|\brequire\(\s*['"]([^'"]+)['"]\s*\)/g
+const TYPE_ONLY = /(?:^|[\s;])(?:import|export)\s+type\b/
 
 /** Paths in this report are compared with `/`, so that the rules hold on Windows as well as on the CI host. */
 export const portable = (path: string): string => path.replaceAll('\\', '/')
@@ -31,7 +34,7 @@ export function importsOf(root: string): ImportEdge[] {
     return [...text.matchAll(SPECIFIER)].map((match): ImportEdge => {
       const specifier = (match[1] ?? match[2] ?? match[3])!
       const isRelative = specifier.startsWith('.')
-      return { from: portable(relative(root, file)), specifier, target: isRelative ? portable(relative(root, resolve(dirname(file), specifier))) : specifier, relative: isRelative }
+      return { from: portable(relative(root, file)), specifier, target: isRelative ? portable(relative(root, resolve(dirname(file), specifier))) : specifier, relative: isRelative, typeOnly: TYPE_ONLY.test(match[0]) }
     })
   })
 }

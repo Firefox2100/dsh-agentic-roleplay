@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
+import { Input } from '../../ui/Input.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { MAX_PLAYTEST_TURNS, type PlaytestReport } from '../../../shared/playtest.ts'
 import { playtestChoices, playtestStatus, startPlaytest, stopPlaytest, type PlaytestChoices, type PlaytestReading } from './playtest-api.ts'
+import { onPageVisible, pageVisible } from '../../visibility.ts'
 import css from './StartSessionDialog.module.css'
 
 type T = TranslateNS<'roleplay.worlds'>
@@ -55,8 +58,11 @@ export function PlaytestDialog({ t, worldId, worldName, onClose }: { t: T; world
 
   useEffect(() => {
     if (!running) return undefined
-    const timer = setInterval(() => { playtestStatus(worldId).then(setReading, () => undefined) }, POLL_MS)
-    return () => { clearInterval(timer) }
+    const read = (): void => { playtestStatus(worldId).then(setReading, () => undefined) }
+    const timer = setInterval(() => { if (pageVisible()) read() }, POLL_MS)
+    // The run keeps going while the page is away; coming back should show where it is now.
+    const off = onPageVisible(read)
+    return () => { clearInterval(timer); off() }
   }, [running, worldId])
 
   const count = Number(turns)

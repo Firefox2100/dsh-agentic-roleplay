@@ -1,5 +1,7 @@
 import { useId, useState } from 'react'
-import { Button, Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../ui/Modal.tsx'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { BranchFace } from './branch-controller.ts'
 import css from './BranchDialog.module.css'

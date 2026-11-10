@@ -21,7 +21,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 回合控制 | `agent/pre-step`、`agent/turn-stopping`、`agent.steer`、`exec.concludeTurn()`、`exec.agent`、`exec.signal` | `host/orchestration/hooks.ts`、`tools.ts` |
 | 创作助手的模型选择 | 在 `agent/created` 中调用 `agent.model.current()`、`agent.model.select()` | `host/authoring/turn-guard.ts` |
 | 无自有工具的编年史作者 | 带有自己的 `submit_result` 的 `runChild` 子智能体（见下） | `compaction/chronicler.ts` |
-| 有专属工具的角色与记录员 | 不使用公开子智能体 API，见下文 | `agents/child.ts` |
+| 有专属工具的角色与记录员 | **不使用面向模型的 `subagent` 工具**，而是公开的 `ctx.subagents.startActivation()` 服务方法，外加子智能体自己的 `submit_result` 工具（见下文） | `agents/child.ts` |
 | 消息来源 | 合并到 `MessageSourceMap` 的 `roleplay` | `hooks.ts` |
 | 查找智能体 | `ctx.agents.get` | `orchestration.ts` |
 | 上下文折叠 | `BasicCompactionEngine` 的 `summarize()` 与 `compactRegion()`，以及 `ctx.tokenMeter.measure(session)`、`session.surface.nodes`、`session.snapshotEvents()`、`session.header.origin` | `host/compaction/` |
@@ -31,7 +31,13 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 ## 浏览器端
 
-客户端使用 `ctx.slots`，包括 `settings.section`、`sidebar.panellist`、主区域面板、`conversation.chat.node` 和 `conversation.view`；还使用 `ctx.locale`、`ctx.configForms`、`ctx.uiConversation`、`uiWorkspace.openSession`，以及 `Button`、`Input`、`Switch`、`Modal`、`Tag`、`Tooltip` 等外壳组件。客户端包格式由外壳模块加载器决定，并通过 `tsdown.config.ts` 检查。
+客户端使用 `ctx.slots`，包括 `settings.section`、`sidebar.panellist`、主区域面板、`conversation.chat.node` 和 `conversation.view`；还使用 `ctx.locale`、`ctx.configForms`、`ctx.uiConversation`、`uiWorkspace.openSession`。客户端包格式由外壳模块加载器决定，并通过 `tsdown.config.ts` 检查。
+
+快照存储是插件自己的（`src/client/store.ts`）：`hooks` 源和 `store` 注册只需要 `getSnapshot`/`subscribe` 这一对方法，所以运行时从不 require 外壳的存储包——它不在 `SHELL_MODULES` 里，打包边界会拒绝它的运行时导入。`@deepseek-ai/dsh-client-store` 仍留在 devDependencies 里，但只提供类型：插槽的类型声明引用它的 `PropsStore`/`StoreHandle` 形状，去掉这个包会让所有插槽 prop 退化成 `any`；运行时没有任何地方 import 它，产物里会被擦掉。
+
+**控件是插件自己的一份副本。** 插件规范禁止把 Harness 客户端包当作模块加载：它们可能随版本变化，抛错会让插槽条目整块白掉；规范允许的做法是复制到插件自己的类名前缀下，只保留 `--dsw-alias-*` 主题 token。这份副本在 `src/client/ui/`：`Button`、`Input`、`Switch`、`SegmentedControl`、`Modal`、`Tooltip`、`Tag`、`Toast`、`ImageLightbox`、设置表单的外框与字段（`SettingsForm`、`SettingsValueField`、`settings-form.ts`），以及插件自己绘制的轮廓图标。外壳原本免费提供的行为都保留了：模态框把焦点关在里面、Escape 关闭并还原触发元素的焦点；开关是 `role="switch"` 加 `aria-checked`；分段控件用方向键在 tab 之间移动；提示气泡会按视口翻转并夹紧。`@deepseek-ai/dsh-client-ui-primitives` 已不再是依赖、也不在 `SHELL_MODULES` 里，运行时 import 它会被打包边界检查拒绝。
+
+这份副本里有两处逻辑值得单独测试，它们是既不含 React 也不碰 DOM 的纯函数：`src/client/ui/place.ts`（气泡落在哪一侧、什么时候翻转、怎么夹紧）与 `src/client/ui/walk.ts`（tablist 的按键落到哪一段）。`tests/client/ui/place.spec.ts` 覆盖两者，改动这些行为不用打开浏览器就能被测试抓住。
 
 有一个元素被放在插件自己的组件之外：界面包的背景层，它作为会话正文的第一个子元素插入，并给该正文的滚动元素做标记，使其升到这一层之上。聊天会绘制自己的背景，也没有提供位于背景之后的插槽，所以背景无法从插件的子树里渲染；滚动元素的类名由 `tests/support/dsh-contract.spec.ts` 读取并检查。抬升规则和界面包自己的皮肤是由 dock 组件渲染的 `<style>` 元素，而不是手工追加到文档里的节点。
 
@@ -62,6 +68,14 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 - **运行时上下文**（`ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context`）：DSH 会给每个智能体的请求加上一段英文的运行时事实（工作目录、文件策略、审批、委派）。辅助智能体的预设会屏蔽其中可选的部分，并用空内容覆盖必需的工作目录条目，因为辅助智能体只处理故事的文字，没有文件。带着这一段时，要求写中文的辅助智能体常常一直写到输出上限（把记录下的一次反思请求在关闭思考的 35B 上重放：带这一段时四次中只有一次完成，去掉后四次全部完成）。
 - `sessionController.prompt(request, signal)` 必须接收 `AbortSignal`，否则 DSH 内部会对 `undefined` 调用 `throwIfAborted`。插件通过它代表用户向对话发送消息，例如卡片导入的 `/import-st`。
 - 带开场内容的持久对话必须先以 `surfaceOp: 'append'` 追加一个空 `system/message`，再写其他表面节点。日志格式不允许系统提示词出现在其他节点之后。
+
+## 刻意不用的接口
+
+下面这些 DSH 服务看起来合适，其实不适用；以后复查时不必再推一遍：
+
+- **`ctx.commands`。** 玩家的 `/ooc`、`/ask`、`/wait`、`/dream` 是由游戏主持裁定的回合，世界自己定义的 `/word` 则是角色要回应的故事内文本。命令处理器执行时**不会**把内容发给模型，注册这两类命令就等于拿掉它们存在的那个回合；输入框里的命令提示不值得这么做。
+- **会话投影（`ctx.sessionProjections`）。** 投影把会话日志折叠成 DSH 随对话推送的状态。故事在会话的 SQLite 里（记录、记忆、时间线），不在日志里，投影搬不动。浏览器需要的值走 `/roleplay-api`，读取频率见 `AGENTS.md` §7.4。
+- **`/api` 的 typert RPC 面。** 第三方服务要在上面提供接口，需要声明契约并生成客户端绑定。`/roleplay-api` 通过 `webServer.register` 注册，和 `/api` 在同一个鉴权连接与 `connection.requestRejection` 栅栏之后；没有会话凭据，浏览器碰不到它。
 
 ## 升级 DSH 时
 

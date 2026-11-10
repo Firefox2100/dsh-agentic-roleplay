@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Button, IconRefreshOutlineRegular, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
+import { Tag } from '../../ui/Tag.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { CatalogueKind, CatalogueUpdate, CatalogueWorld, CatalogueWorldPage } from '../../../shared/catalogue.ts'
 import type {} from '../../panel/slot-contract.ts'
@@ -8,7 +9,8 @@ import { convertStaged, coverUrl, discardCard, loadUpdates, loadWorlds } from '.
 import type { CatalogueFace } from './catalogue-controller.ts'
 import { ImportUrlDialog } from './ImportUrlDialog.tsx'
 import { WorldDialog, type CardReview } from './WorldDialog.tsx'
-import css from './CataloguePage.module.css'
+import css from './CataloguePage.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+
 
 export type CataloguePageProps =
   PropsRuntime<'roleplay.page'>
@@ -122,7 +124,7 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
         )}
         <span className={css.spacer} />
         <Button variant="outline" size="sm" onClick={() => { setImporting(true) }}>{t('importUrl')}</Button>
-        <Button variant="outline" size="sm" icon={<IconRefreshOutlineRegular />} disabled={source === undefined || loading} onClick={() => { load(); setReload(count => count + 1) }}>{loading ? t('refreshing') : t('refresh')}</Button>
+        <Button variant="outline" size="sm" icon={<IconRefresh />} disabled={source === undefined || loading} onClick={() => { load(); setReload(count => count + 1) }}>{loading ? t('refreshing') : t('refresh')}</Button>
       </div>
 
       <div className={css.kinds} role="tablist">

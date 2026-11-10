@@ -1,16 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@deepseek-ai/dsh-client-store', () => ({
-  createSnapshotStore: <T extends object>(initial: T) => {
-    let state = initial
-    return {
-      getSnapshot: () => state,
-      subscribe: () => () => undefined,
-      update: (change: (draft: T) => void) => { const draft = structuredClone(state); change(draft); state = draft },
-    }
-  },
-}))
-
 const { SessionsController } = await import('../../../../src/client/pages/sessions/sessions-controller.ts')
 const payload = { directory: '/sessions', sessions: [], problems: [] }
 const settle = () => new Promise(resolve => setTimeout(resolve, 10))

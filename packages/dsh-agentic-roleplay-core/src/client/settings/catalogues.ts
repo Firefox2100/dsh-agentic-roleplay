@@ -1,4 +1,4 @@
-import type { SettingsFieldSpec } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SettingsFieldSpec } from '../ui/settings-form.ts'
 import { CREDENTIAL_REF, catalogueKeyRef } from '../../shared/catalogue.ts'
 
 export interface CatalogueRow {

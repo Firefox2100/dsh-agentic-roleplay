@@ -1,19 +1,11 @@
-import type { SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import type { SnapshotStore } from '../store.ts'
 import { authoringToolsField, cataloguesField, type CatalogueRow } from './catalogues.ts'
 import type { SyncConfig } from '../../shared/sync.ts'
 import { syncField } from './sync.ts'
 import { offloadField } from './offload.ts'
 import type { OffloadConfig } from '../../shared/offload.ts'
 import { ASSISTANT_FIELDS, assistantFields, type AssistantField, type AssistantSettings } from './assistants.ts'
-import {
-  SettingsFormModel,
-  settingsTextField,
-  type SettingsFieldState,
-  type SettingsFormActions,
-  type SettingsFormScope,
-  type SettingsFormShell,
-} from '@deepseek-ai/dsh-client-ui-primitives'
-
+import { SettingsFormModel, settingsTextField, type SettingsFieldState, type SettingsFormActions, type SettingsFormScope, type SettingsFormShell } from '../ui/settings-form.ts'
 export interface RoleplaySettings extends AssistantSettings {
   rootPath?: string
   catalogues?: CatalogueRow[]

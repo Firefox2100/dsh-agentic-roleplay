@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { decideDraft, draftStatus, type DraftStatus } from './import-api.ts'
 import css from './TranslateBanner.module.css'

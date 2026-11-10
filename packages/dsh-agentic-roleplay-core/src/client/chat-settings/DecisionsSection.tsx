@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import { DECISION_SITES, type DecisionsPayload, type DecisionSite, type ExtraMode, type RepeatMode } from '../../shared/decisions.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
 import { agreement, perRun } from './decision-figures.ts'

@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Button, IconRefreshOutlineRegular, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
 import { MediaImage } from '../media-image/MediaImage.tsx'
+import { onPageVisible, pageVisible } from '../../visibility.ts'
 import { imageUrl, loadGallery, updateImage, uploadImage, type GalleryContents, type GalleryImage, type GalleryTarget } from './gallery-api.ts'
 import type { GalleryLocaleKey } from './locales.ts'
-import css from './GalleryView.module.css'
+import css from './GalleryView.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+
 
 export type GalleryText = (key: GalleryLocaleKey, values?: Record<string, string | number>) => string
 type Filter = 'all' | 'transient' | 'reference' | 'uploaded'
@@ -63,8 +66,9 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
   useEffect(() => {
     if (!waiting) return
     const abort = new AbortController()
-    const timer = window.setTimeout(() => { read(abort.signal) }, POLL_MS)
-    return () => { window.clearTimeout(timer); abort.abort() }
+    const timer = window.setTimeout(() => { if (pageVisible()) read(abort.signal) }, POLL_MS)
+    const off = onPageVisible(() => { read(abort.signal) })
+    return () => { window.clearTimeout(timer); off(); abort.abort() }
   }, [waiting, read, load])
 
   if (load.status === 'loading') return <p className={css.message}>{t('loading')}</p>
@@ -103,7 +107,7 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
           </select>
           <Button variant="outline" size="sm" disabled={uploading} onClick={() => { picker.current?.click() }}>{uploading ? t('uploading') : t('upload')}</Button>
           <input ref={picker} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden onChange={(event) => { void add(event.target.files); event.target.value = '' }} />
-          <Button variant="outline" size="sm" icon={<IconRefreshOutlineRegular />} disabled={refreshing} aria-busy={refreshing} onClick={() => { read(new AbortController().signal) }}>{refreshing ? t('refreshing') : t('refresh')}</Button>
+          <Button variant="outline" size="sm" icon={<IconRefresh />} disabled={refreshing} aria-busy={refreshing} onClick={() => { read(new AbortController().signal) }}>{refreshing ? t('refreshing') : t('refresh')}</Button>
         </div>
       </div>
       {notice !== undefined && <p className={css.error} role="alert">{notice}</p>}

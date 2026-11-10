@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { FolderAccess, FoldersStatus } from '../../shared/folders.ts'
 import { loadStoryFolders, saveStoryFolders } from '../folders-api.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'

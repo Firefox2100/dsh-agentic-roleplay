@@ -1,9 +1,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import { IconSearchOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { dictionaries, type RecallLocaleKey } from './locales.ts'
-import { RECALL_ID, RECALL_KIND, RecallBody, RecallGuide } from './RecallTab.tsx'
+import { RECALL_ID, RECALL_KIND, RecallBody, RecallGuide } from './RecallTab.tsx'import { IconSearch } from '../ui/icons.tsx'
+
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -24,7 +24,7 @@ export function registerRecall(ctx: Context): void {
       kind: RECALL_KIND,
       keepMounted: true,
       title: () => t('tab'),
-      guide: [{ id: 'recall', order: 31, title: () => t('title'), description: () => t('description'), icon: IconSearchOutlineRegular }],
+      guide: [{ id: 'recall', order: 31, title: () => t('title'), description: () => t('description'), icon: IconSearch }],
     }), 'roleplay: recall tab type')
     right.effect(() => right.slots.inject('sidebar.right.tab.guide.entry', () => right.slots.register({
       name: 'sidebar.right.tab.guide.entry',

@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Button, Modal, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
+import { Tag } from '../../ui/Tag.tsx'
 import type { ImportPreview } from '../../../shared/import-card.ts'
 import type { CatalogueKind, CatalogueSourceStatus, CatalogueWorldDetail, InstallMode } from '../../../shared/catalogue.ts'
 import { importStagedLorebook, importStagedPreset, importVerbatimLorebook, importVerbatimPreset, stageRelease } from '../../import-selection-api.ts'

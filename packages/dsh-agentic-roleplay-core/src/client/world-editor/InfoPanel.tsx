@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import type { Translate } from './WorldEditor.tsx'
 import type { PresetSummary } from '../../shared/presets.ts'

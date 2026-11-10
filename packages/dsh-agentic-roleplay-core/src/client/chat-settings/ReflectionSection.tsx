@@ -1,19 +1,22 @@
 import { useEffect } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { ReflectionStatus } from '../../shared/reflection.ts'
+import { pageVisible, onPageVisible } from '../visibility.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
 import css from './ChatSettingsView.module.css'
 
 type Translate = (key: ChatSettingsLocaleKey, values?: Record<string, string | number>) => string
 
-const POLL_MS = 3000
+const POLL_MS = 4000
 
 /** When the characters last sorted what they took in, and a way to have them do it now. */
 export function ReflectionSection({ t, status, onStart, onRefresh, disabled }: { t: Translate; status: ReflectionStatus; onStart: () => void; onRefresh: () => void; disabled: boolean }) {
   useEffect(() => {
     if (!status.running) return undefined
-    const timer = setInterval(onRefresh, POLL_MS)
-    return () => { clearInterval(timer) }
+    const timer = setInterval(() => { if (pageVisible()) onRefresh() }, POLL_MS)
+    // Coming back to the page should not wait for the next tick to show how far the characters have got.
+    const off = onPageVisible(onRefresh)
+    return () => { clearInterval(timer); off() }
   }, [status.running, onRefresh])
   const reasons = { turns: t('reflectTurns'), scene: t('reflectScene'), manual: t('reflectManual') }
   return (

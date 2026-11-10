@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Button, IconRefreshOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PromptEntry } from '../../../shared/prompts.ts'
 import type {} from '../../panel/slot-contract.ts'
 import { PromptEditor } from './PromptEditor.tsx'
 import type { PromptsFace } from './prompts-controller.ts'
-import css from './PromptsPage.module.css'
+import css from './PromptsPage.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+
 
 export type PromptsPageProps =
   PropsRuntime<'roleplay.page'>
@@ -50,7 +51,7 @@ export function PromptsPage({ t, usePrompts, load, refresh }: PromptsPageProps) 
         </select>
         <label className={css.check}><input type="checkbox" checked={onlyDifferent} onChange={(event) => { setOnlyDifferent(event.target.checked) }} />{t('differentOnly')}</label>
         <span className={css.spacer} />
-        <Button variant="outline" size="sm" icon={<IconRefreshOutlineRegular />} disabled={state.refreshing || state.status === 'loading'} aria-busy={state.refreshing} onClick={refresh}>{state.refreshing ? t('refreshing') : t('refresh')}</Button>
+        <Button variant="outline" size="sm" icon={<IconRefresh />} disabled={state.refreshing || state.status === 'loading'} aria-busy={state.refreshing} onClick={refresh}>{state.refreshing ? t('refreshing') : t('refresh')}</Button>
       </div>
       <p className={css.help}>{t('help')}</p>
       {state.error !== undefined && !failedWithoutData && <p className={css.error} role="alert">{t('loadFailed', { message: state.error })}</p>}

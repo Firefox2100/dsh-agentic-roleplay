@@ -1,4 +1,4 @@
-import type { SettingsFieldSpec } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SettingsFieldSpec } from '../ui/settings-form.ts'
 import { DEFAULT_SYNC, type SyncConfig } from '../../shared/sync.ts'
 import { CREDENTIAL_REF } from '../../shared/catalogue.ts'
 

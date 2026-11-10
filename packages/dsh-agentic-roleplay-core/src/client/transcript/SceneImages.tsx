@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { MediaImage } from '../widgets/media-image/MediaImage.tsx'
+import { onPageVisible, pageVisible } from '../visibility.ts'
 import css from './NarrationView.module.css'
 
 async function request(chat: string, node: string, method: 'GET' | 'POST'): Promise<SceneImageStatus> {
@@ -23,8 +24,11 @@ export function SceneImages({ chat, node, t }: { chat: string; node: string; t: 
   useEffect(() => { refresh() }, [refresh])
   useEffect(() => {
     if (status?.state !== 'generating') return
-    const timer = window.setTimeout(refresh, 1500)
-    return () => { window.clearTimeout(timer) }
+    const timer = window.setTimeout(() => { if (pageVisible()) refresh() }, 1500)
+    const off = onPageVisible(refresh)
+
+
+    return () => { window.clearTimeout(timer); off() }
   }, [refresh, status])
   const generate = () => {
     setStatus(current => current === undefined ? current : { ...current, state: 'generating' })

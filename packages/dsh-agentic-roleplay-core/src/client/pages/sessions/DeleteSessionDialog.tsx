@@ -1,4 +1,5 @@
-import { Button, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Modal } from '../../ui/Modal.tsx'
+import { Button } from '../../ui/Button.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { Removal } from './sessions-controller.ts'
 import css from './DeleteSessionDialog.module.css'

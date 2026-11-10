@@ -1,4 +1,5 @@
-import { SettingsForm, SettingsValueField } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SettingsForm } from '../ui/SettingsForm.tsx'
+import { SettingsValueField } from '../ui/SettingsValueField.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { AuthoringToolSettings } from './AuthoringToolSettings.tsx'
 import { AssistantSettings } from './AssistantSettings.tsx'

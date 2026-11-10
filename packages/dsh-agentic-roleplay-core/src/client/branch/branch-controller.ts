@@ -1,4 +1,4 @@
-import { createSnapshotStore, type ObservableSnapshot, type SnapshotStore } from '@deepseek-ai/dsh-client-store'
+import { createSnapshotStore, type ObservableSnapshot, type SnapshotStore } from '../store.ts'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import type { SessionsPayload } from '../../shared/sessions.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'

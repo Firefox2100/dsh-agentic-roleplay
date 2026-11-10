@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
 import type { RoutineDefinition } from 'dsh-roleplay-model'
 import type { WorldRoutines } from '../../shared/world-daily.ts'
 import type { Translate } from './WorldEditor.tsx'

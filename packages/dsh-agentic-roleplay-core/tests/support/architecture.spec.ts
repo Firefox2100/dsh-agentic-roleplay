@@ -10,8 +10,10 @@ const edges = importsOf(src)
 const offenders = (found: typeof edges): string[] => found.map(edge => `${edge.from} imports ${edge.specifier}`)
 const outsideNode = (edge: (typeof edges)[number]): boolean => edge.specifier.startsWith('node:')
 
-/** What the browser half may load from the shell and from the page's own libraries; the build refuses the rest at run time, this refuses it earlier. */
-const SHELL = /^(@deepseek-ai\/(cordis|dsh-client-[a-z-]+)(\/client)?|react|react\/jsx-runtime|react-dom|react-dom\/client)$/
+/** The shell's modules the browser half may load at run time; types from other client packages are erased by the build and stay allowed. */
+const RUNTIME_SHELL = new Set(['@deepseek-ai/cordis', '@deepseek-ai/dsh-client-ui-slots', 'react', 'react/jsx-runtime', 'react-dom', 'react-dom/client'])
+/** Packages the browser half carries in its own bundle: the model, and the AI providers package whose route names and option types it shares. */
+const BUNDLED = new Set(['dsh-roleplay-model', '@dsh-ai-providers/core'])
 
 describe('how the bundle is layered', () => {
   it('looks at the sources it is about', () => {
@@ -26,12 +28,15 @@ describe('how the bundle is layered', () => {
     expect(offenders(shared.filter(edge => !edge.relative && edge.specifier !== 'dsh-roleplay-model'))).toEqual([])
   })
 
-  it('has the browser half reach the host through its HTTP API only: no host code, no Node, no state package, only what the shell provides', () => {
+  it('has the browser half reach the host through its HTTP API only: no host code, no Node, no state package, and at run time only the modules the shell hands it', () => {
     const client = edges.filter(edge => areaOf(edge.from) === 'client')
     expect(offenders(client.filter(edge => edge.relative && areaOf(edge.target) === 'host'))).toEqual([])
     expect(offenders(client.filter(outsideNode))).toEqual([])
-    const outside = client.filter(edge => !edge.relative && edge.specifier !== 'dsh-roleplay-model' && edge.specifier !== '@dsh-ai-providers/core' && !SHELL.test(edge.specifier))
+    const outside = client.filter(edge => !edge.relative && !edge.typeOnly && !RUNTIME_SHELL.has(edge.specifier) && !BUNDLED.has(edge.specifier))
     expect(offenders(outside)).toEqual([])
+    // a Harness client package is not a module the plugin may load (its own copy of a control or a store stands in); naming its types is fine
+    const loaded = client.filter(edge => !edge.typeOnly && /^@deepseek-ai\/dsh-client-/.test(edge.specifier) && !RUNTIME_SHELL.has(edge.specifier))
+    expect(offenders(loaded)).toEqual([])
   })
 
   it('has the host know nothing of the browser half', () => {

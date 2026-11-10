@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconArchiveOffOutlineRegular, IconArchiveOutlineRegular, IconDownloadOutlineRegular, IconPlayOutlineRegular, IconRefreshOutlineRegular, IconTrashOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../../ui/Button.tsx'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { pageCount, pageStart, pagingFor } from '../../paging/paging.ts'
 import type {} from '../../panel/slot-contract.ts'
@@ -9,7 +9,8 @@ import { DeleteSessionDialog } from './DeleteSessionDialog.tsx'
 import { ExportSessionDialog } from './ExportSessionDialog.tsx'
 import { exportAddress, type ExportKind, type SessionsFace } from './sessions-controller.ts'
 import { useRowFit } from './use-row-fit.ts'
-import css from './SessionsPage.module.css'
+import css from './SessionsPage.module.css'import { IconArchive, IconArchiveOff, IconDownload, IconPlay, IconRefresh, IconTrash } from '../../ui/icons.tsx'
+
 
 export type SessionsPageProps =
   PropsRuntime<'roleplay.page'>
@@ -60,7 +61,7 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
         <Button
           variant="outline"
           size="sm"
-          icon={<IconRefreshOutlineRegular className={state.refreshing ? css.spinning : undefined} />}
+          icon={<IconRefresh className={state.refreshing ? css.spinning : undefined} />}
           disabled={state.refreshing || state.status === 'loading'}
           aria-busy={state.refreshing}
           onClick={refresh}
@@ -119,7 +120,7 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
                           <Button
                             variant="ghost"
                             size="sm"
-                            icon={<IconPlayOutlineRegular />}
+                            icon={<IconPlay />}
                             aria-label={t('open')}
                             title={t('open')}
                             disabled={state.opening !== undefined || session.archivedAt !== undefined}
@@ -128,7 +129,7 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
                           <Button
                             variant="ghost"
                             size="sm"
-                            icon={<IconDownloadOutlineRegular />}
+                            icon={<IconDownload />}
                             aria-label={t('export')}
                             title={t('export')}
                             onClick={() => { askExport(session.id, session.name) }}
@@ -136,7 +137,7 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
                           <Button
                             variant="ghost"
                             size="sm"
-                            icon={session.archivedAt === undefined ? <IconArchiveOutlineRegular /> : <IconArchiveOffOutlineRegular />}
+                            icon={session.archivedAt === undefined ? <IconArchive /> : <IconArchiveOff />}
                             aria-label={session.archivedAt === undefined ? t('archive') : t('restore')}
                             title={session.archivedAt === undefined ? t('archive') : t('restore')}
                             disabled={state.moving !== undefined}
@@ -145,7 +146,7 @@ export function SessionsPage({ t, useRoleplaySessions, load, refresh, open, arch
                           <Button
                             variant="ghost"
                             size="sm"
-                            icon={<IconTrashOutlineRegular />}
+                            icon={<IconTrash />}
                             aria-label={t('delete')}
                             title={t('delete')}
                             onClick={() => { askRemoval(session.id, session.name) }}

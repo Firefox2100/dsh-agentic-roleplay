@@ -1,7 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar-right/client'
-import { IconListPenOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { createSlotList } from '../widgets/slot-list/slot-list.ts'
 import { dictionaries, type ReferenceLocaleKey } from './locales.ts'
 import { REFERENCE_ID, REFERENCE_KIND, ReferenceBody, ReferenceGuide, type ReferenceFace } from './ReferenceTab.tsx'
@@ -9,7 +8,8 @@ import { JournalPage } from './sections/Journal.tsx'
 import { RelationsPage } from './sections/Relations.tsx'
 import { MapPage } from './sections/Map.tsx'
 import { PeoplePage, PlacesPage, ProfilePage, QuestsPage, StatusPage, ThingsPage } from './sections/sections.tsx'
-import type {} from './slot-contract.ts'
+import type {} from './slot-contract.ts'import { IconListPen } from '../ui/icons.tsx'
+
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
@@ -57,7 +57,7 @@ export function registerReference(ctx: Context): void {
       kind: REFERENCE_KIND,
       keepMounted: true,
       title: () => t('tab'),
-      guide: [{ id: 'reference', order: 30, title: () => t('title'), description: () => t('description'), icon: IconListPenOutlineRegular }],
+      guide: [{ id: 'reference', order: 30, title: () => t('title'), description: () => t('description'), icon: IconListPen }],
     }), 'roleplay: reference tab type')
     right.effect(() => right.slots.inject('sidebar.right.tab.guide.entry', () => right.slots.register({
       name: 'sidebar.right.tab.guide.entry',

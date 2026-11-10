@@ -1,4 +1,4 @@
-import type { SettingsFormLabels } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { SettingsFormLabels } from '../ui/SettingsForm.tsx'
 import type { Dictionaries } from '../i18n.ts'
 
 export type SettingsLocaleKey =

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Button, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Tag } from '../ui/Tag.tsx'
 import type { Translate } from './WorldEditor.tsx'
 import { savePresetFromWorld } from '../presets-api.ts'
 import { loadPrompt, loadPrompts, removePrompt, savePrompt, type PromptEntry, type PromptText } from './world-files-api.ts'

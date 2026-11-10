@@ -1,4 +1,6 @@
-import { SettingsValueField, Tag, type SettingsFieldState } from '@deepseek-ai/dsh-client-ui-primitives'
+import { SettingsValueField } from '../ui/SettingsValueField.tsx'
+import type { SettingsFieldState } from '../ui/settings-form.ts'
+import { Tag } from '../ui/Tag.tsx'
 import { ASSISTANT_FIELDS, type AssistantField } from './assistants.ts'
 import type { SettingsLocaleKey } from './locales.ts'
 import css from './AssistantSettings.module.css'

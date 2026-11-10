@@ -1,0 +1,81 @@
+/* A top-center banner: slides in, holds for --rp-toast-hold, then fades. */
+
+.banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 1300;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 10px 14px;
+  transform: translateX(-50%);
+  border-radius: var(--dsw-radius-panel, 12px);
+  background: var(--dsw-alias-bg-layer-3, rgb(32 32 32 / 96%));
+  color: var(--dsw-alias-label-primary, white);
+  box-shadow: var(--dsw-elevation-prominent, 0 12px 32px rgb(0 0 0 / 24%));
+  font-size: 13px;
+  line-height: 20px;
+  animation: rpToastEnter var(--ds-transition-duration, 160ms) var(--ds-ease-in-out, ease);
+}
+
+.fading {
+  opacity: 0;
+  transition: opacity 200ms var(--ds-ease-in-out, ease);
+}
+
+@keyframes rpToastEnter {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation: none;
+  }
+
+  .fading {
+    transition: none;
+  }
+}
+
+.text {
+  overflow-wrap: anywhere;
+}
+
+.success {
+  flex: none;
+  color: var(--dsw-alias-accent-green, #3fb950);
+}
+
+.action {
+  flex: none;
+  display: inline-flex;
+  gap: 4px;
+}
+
+.prefix {
+  opacity: 0.7;
+}
+
+.actionButton {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--dsw-alias-brand-primary, #4c8dff);
+  font: inherit;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  text-decoration: underline;
+}

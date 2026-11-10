@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button } from '../ui/Button.tsx'
+import { Input } from '../ui/Input.tsx'
 import type { CatalogueKeyStatus } from '../../shared/catalogue.ts'
 import { describeKey, storeKey } from './catalogue-keys-api.ts'
 import { keyRefOf, type CatalogueRow } from './catalogues.ts'

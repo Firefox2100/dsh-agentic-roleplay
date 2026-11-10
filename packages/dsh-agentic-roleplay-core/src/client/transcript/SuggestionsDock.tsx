@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { Note } from '../../shared/notes.ts'
+import { onPageVisible, pageVisible } from '../visibility.ts'
 import css from './SuggestionsDock.module.css'
 import { NARRATION_NODE } from './definitions.ts'
 
@@ -54,8 +55,10 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
       }).catch((error: unknown) => { console.warn('roleplay: the notes could not be read', error) })
     }
     look()
-    const timer = setInterval(look, MESSAGE_POLL_MS)
-    return () => { stopped = true; clearInterval(timer) }
+    const timer = setInterval(() => { if (pageVisible()) look() }, MESSAGE_POLL_MS)
+    // A message from a character may have arrived while the page was in the background.
+    const off = onPageVisible(look)
+    return () => { stopped = true; clearInterval(timer); off() }
   }, [notes])
 
   useEffect(() => {
@@ -67,6 +70,8 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
     let stopped = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const look = (attempt: number): void => {
+      // A tab in the background does not spend its attempts: the suggestions can wait for the player to come back.
+      if (!pageVisible()) { timer = setTimeout(() => { look(attempt) }, POLL_MS); return }
       notes().then((found) => {
         if (stopped) return
         const away = found.find(note => note.kind === 'away')?.lines ?? []
