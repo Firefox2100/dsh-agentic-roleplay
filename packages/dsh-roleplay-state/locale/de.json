@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Rollenspielzustand",
+    "description": "Speichert jede Rollenspielsitzung in einer eigenen SQLite-Datenbank und stellt anderen Plugins ihren kanonischen Geschichtszustand bereit."
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Núcleo do jogo de interpretação agêntico",
+    "description": "Disponibiliza a interface de jogo de interpretação, a coordenação de agentes, ferramentas de criação e armazenamento de histórias."
+  }
+}

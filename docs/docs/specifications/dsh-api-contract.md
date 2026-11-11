@@ -42,12 +42,12 @@ and `uiWorkspace.openSession`. The client bundle format is the shell's module lo
 Snapshot stores are the plugin's own (`src/client/store.ts`). A `hooks` source and a `store`
 registration only need the `getSnapshot`/`subscribe` pair, so the plugin never requires the shell's
 store package: it is absent from `SHELL_MODULES`, and the bundle boundary rejects a runtime import.
-`@deepseek-ai/dsh-client-store` stays a devDependency for types only — the slot typings name its
-`PropsStore`/`StoreHandle` shapes, and losing the package makes every slot prop fall back to `any` —
-but nothing imports it at runtime, so it is still erased from the bundle.
+`@deepseek-ai/dsh-client-store` stays a devDependency for types only. The slot typings name its
+`PropsStore`/`StoreHandle` shapes, and losing the package makes every slot prop fall back to `any`.
+Nothing imports it at runtime, so it is still erased from the bundle.
 
 **The controls are the plugin's own copy.** The practices forbid loading a Harness Client package as
-a module — one of them changing between releases, or throwing, blanks the slot entry — and sanction a
+a module. If one changes between releases or throws, it blanks the slot entry. The practices allow a
 copy under the plugin's own class prefix that keeps only `--dsw-alias-*` tokens. That copy is
 `src/client/ui/`: `Button`, `Input`, `Switch`, `SegmentedControl`, `Modal`, `Tooltip`, `Tag`, `Toast`,
 `ImageLightbox`, the settings form frame and its value field (`SettingsForm`, `SettingsValueField`,
@@ -130,7 +130,7 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 These are DSH services that look applicable and are not, so a later review does not have to work it out again:
 
 - **`ctx.commands`.** The player's `/ooc`, `/ask`, `/wait` and `/dream` are turns the game master rules on, and a world's own `/word` commands are in-story text the characters react to. A command handler runs *instead of* sending anything to the model, so registering either kind would take away the turn it exists for; the composer's discovery list is not worth that.
-- **Session projections (`ctx.sessionProjections`).** A projection folds the session log into state DSH pushes with the chat. The story lives in the session's SQLite (records, memories, timeline), not in the log, so a projection cannot carry it. The values the browser needs come from `/roleplay-api`; how often they are read is in §7.4 of `AGENTS.md`.
+- **Session projections (`ctx.sessionProjections`).** A projection folds the session log into state DSH pushes with the chat. The story lives in the session's SQLite (records, memories, timeline), not in the log, so a projection cannot carry it. The browser reads the values it needs from `/roleplay-api`.
 - **The `/api` typert RPC surface.** A third-party service there needs a declared contract and generated client bindings. `/roleplay-api` registers through `webServer.register` and sits behind the same authenticated connection and `connection.requestRejection` fence; the browser never reaches it without the session's credentials.
 
 ## When upgrading DSH

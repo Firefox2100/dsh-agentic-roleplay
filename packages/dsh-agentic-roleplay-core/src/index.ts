@@ -117,7 +117,6 @@ export const inject = ['roleplayState']
 interface RequestPolicies {
   policy(policy: (request: { options: { sessionId?: unknown } }) => (Partial<Record<SharedSamplingKey, number>> & { temperature?: number; toolChoice?: 'auto' | 'required'; maxTokens?: number; priority?: 'foreground' | 'background' }) | undefined): () => void
 }
-
 export function apply(ctx: Context, config: Config) {
   const layers = (): string[] => redundantLayers(selectedBundles(profileDirectory()))
   const repeated = layers()

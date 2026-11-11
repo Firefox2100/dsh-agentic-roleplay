@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Role Play State",
+    "description": "Stores each roleplay session in its own SQLite database and exposes its canonical story state to other plugins."
+  }
+}

@@ -45,7 +45,6 @@ const cardParameter = { type: 'string' as const, required: true as const, descri
 function checkedCard(args: { card: string }): void {
   if (args.card.trim() !== CARD) throw new Error(`the card to import is ${CARD}`)
 }
-
 const output = (render: (value: never) => string) => ({ schema: { type: 'json' as const }, render: (_args: unknown, value: unknown) => [{ type: 'text' as const, text: render(value as never) }] })
 const json = (value: unknown): never => JSON.parse(JSON.stringify(value)) as never
 

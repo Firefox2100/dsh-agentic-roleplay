@@ -1,6 +1,6 @@
 {
   "name": "@dsh-agentic-roleplay/state",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "DSH plugin for roleplay session state: one SQLite database per session, exposed to other plugins as a service over canonical models.",
   "author": {"name": "Firefox2100", "url": "https://github.com/Firefox2100"},
   "type": "module",
@@ -12,7 +12,8 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/*.json": "./locale/*.json"
   },
   "engines": {
     "node": "^22.19.0 || >=24.0.0",
@@ -33,6 +34,7 @@
   },
   "files": [
     "icon.svg",
+    "locale",
     "lib",
     "cordis.patch.yml",
     "README.md",

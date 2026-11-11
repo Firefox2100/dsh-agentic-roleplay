@@ -38,7 +38,6 @@ describe('the DSH this bundle is built against', () => {
     expect(client).toMatch(new RegExp(`\\.[A-Za-z0-9]+${SCROLL_BODY}\\{`))
   })
 })
-
 /**
  * The version-sensitive uses listed in docs/docs/specifications/dsh-api-contract.md. Each one is read
  * out of the installed declarations (or the runtime module) so that an upgrade which moves it fails

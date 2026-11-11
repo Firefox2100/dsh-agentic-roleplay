@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "État du jeu de rôle",
+    "description": "Stocke chaque session de jeu de rôle dans sa propre base SQLite et expose son état narratif canonique aux autres modules."
+  }
+}

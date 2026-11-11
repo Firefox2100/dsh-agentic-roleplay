@@ -39,7 +39,6 @@ export function doctorApproval(exec: ToolExecution): PreToolDecision | undefined
     displayReason: { en: `Change the story's records?\n${shown}`, zh: `修改故事的记录？\n${shown}` },
   }
 }
-
 export function apply(ctx: Context): void {
   silenceHarnessDevContext(ctx)
   const sessionsDir = () => join(ctx.roleplayRoot.path, 'sessions')

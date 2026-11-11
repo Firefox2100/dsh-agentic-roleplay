@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Estado del juego de rol",
+    "description": "Guarda cada sesión de juego de rol en su propia base de datos SQLite y ofrece su estado narrativo canónico a otros complementos."
+  }
+}

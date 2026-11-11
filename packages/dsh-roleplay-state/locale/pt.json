@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Estado do jogo de interpretação",
+    "description": "Guarda cada sessão de jogo de interpretação na sua própria base de dados SQLite e disponibiliza o respetivo estado narrativo canónico a outros plugins."
+  }
+}

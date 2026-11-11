@@ -9,7 +9,6 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     'roleplay.branch': BranchLocaleKey
   }
 }
-
 const NAMESPACE = 'roleplay.branch'
 
 /** Asks for a name when DSH's fork of a roleplay chat has made a session of its own. Forks of ordinary chats are not touched. */

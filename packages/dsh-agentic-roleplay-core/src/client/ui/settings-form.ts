@@ -89,6 +89,14 @@ export interface SettingsFormShell {
   failed: boolean
 }
 
+export interface SettingsFormLabels {
+  unavailable: string
+  readOnly: string
+  saveFailed: string
+  save: string
+  saving: string
+}
+
 /** The write actions every card injects. */
 export interface SettingsFormActions {
   /** Stage draft text for one field. */
@@ -331,4 +339,3 @@ export class SettingsFormModel<T> {
     for (const listener of this.listeners) listener()
   }
 }
-

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Cœur du jeu de rôle agentique",
+    "description": "Fournit l’interface de jeu de rôle, l’orchestration des agents, les outils de création et le stockage des histoires."
+  }
+}

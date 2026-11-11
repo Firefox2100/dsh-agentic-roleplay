@@ -1,17 +1,20 @@
 import type { BuiltInLocaleId } from '@deepseek-ai/dsh-client-locale/client'
 
+export type AdditionalRoleplayLocaleId = 'ja' | 'es' | 'fr' | 'de' | 'ru' | 'pt'
+export type RoleplayLocaleId = BuiltInLocaleId | AdditionalRoleplayLocaleId
+
 /**
  * A feature's copy for every locale the web UI ships. Typing it as a full
  * record makes a missing translation a compile error.
  */
-export type Dictionaries<Key extends string> = Record<BuiltInLocaleId, Record<Key, string>>
+export type Dictionaries<Key extends string> = Record<RoleplayLocaleId, Record<Key, string>>
 
 /** A feature's copy together with the copy of a shared piece it embeds. */
 export function withDictionaries<Own extends string, Shared extends string>(own: Dictionaries<Own>, shared: Dictionaries<Shared>): Dictionaries<Own | Shared> {
-  return Object.fromEntries((Object.keys(own) as BuiltInLocaleId[]).map(locale => [locale, { ...own[locale], ...shared[locale] }])) as Dictionaries<Own | Shared>
+  return Object.fromEntries((Object.keys(own) as RoleplayLocaleId[]).map(locale => [locale, { ...own[locale], ...shared[locale] }])) as Dictionaries<Own | Shared>
 }
 
 /** A shared piece's copy under keys of its own, for a feature whose own keys would collide with it. */
 export function prefixed<Key extends string, Prefix extends string>(dictionaries: Dictionaries<Key>, prefix: Prefix): Dictionaries<`${Prefix}${Key}`> {
-  return Object.fromEntries((Object.keys(dictionaries) as BuiltInLocaleId[]).map(locale => [locale, Object.fromEntries(Object.entries(dictionaries[locale]).map(([key, value]) => [`${prefix}${key}`, value]))])) as Dictionaries<`${Prefix}${Key}`>
+  return Object.fromEntries((Object.keys(dictionaries) as RoleplayLocaleId[]).map(locale => [locale, Object.fromEntries(Object.entries(dictionaries[locale]).map(([key, value]) => [`${prefix}${key}`, value]))])) as Dictionaries<`${Prefix}${Key}`>
 }

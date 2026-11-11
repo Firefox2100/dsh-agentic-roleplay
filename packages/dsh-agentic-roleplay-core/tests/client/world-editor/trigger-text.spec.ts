@@ -25,7 +25,7 @@ describe('a trigger in sentences', () => {
     expect(describeEffect(en, names, { type: 'beat', text: 'A bell tolls.' })).toBe('tells the game master: “A bell tolls.”')
     expect(describeEffect(en, names, { type: 'cue', audience: { characters: ['clara', 'arthur'] }, text: 'Smoke.', while: { type: 'place', character: '@self', location: 'bar' } })).toBe('Clara, Arthur notice: “Smoke.” (only while @self is in The Bar)')
     expect(describeEffect(en, names, { type: 'cue', audience: { place: 'cellar' }, text: 'Damp.' })).toBe('whoever is in The Cellar notice: “Damp.”')
-    expect(describeEffect(en, names, { type: 'edit', edit: { events: [{}, {}] } })).toBe('changes the story’s records (2 event(s))')
+    expect(describeEffect(en, names, { type: 'edit', edit: { events: [{}, {}] } })).toBe('changes the story’s records (events: 2)')
   })
 
   it('has the same words in both languages', () => {

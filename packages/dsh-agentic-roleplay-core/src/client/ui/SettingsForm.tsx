@@ -1,20 +1,8 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import type { SettingsFormShell } from './settings-form.ts'
+import type { SettingsFormLabels, SettingsFormShell } from './settings-form.ts'
 import css from './SettingsForm.module.css'
 
-/** The copy the form frame renders, from the owning plugin's dictionary. */
-export interface SettingsFormLabels {
-  /** Shown in place of the controls while the namespace is not served. */
-  unavailable: string
-  /** Shown over the controls while the document is read-only. */
-  readOnly: string
-  /** Shown beside the save after a save the Host did not accept. */
-  saveFailed: string
-  /** The save control. */
-  save: string
-  /** The save control while a save is crossing the wire. */
-  saving: string
-}
+export type { SettingsFormLabels } from './settings-form.ts'
 
 export interface SettingsFormProps {
   /** The frame's copy. */

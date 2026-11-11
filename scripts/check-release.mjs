@@ -61,10 +61,20 @@ for (const { folder, name } of releasePackages) {
 
 await access(resolve(root, 'LICENSE'))
 
-for (const folder of ['dsh-roleplay-state', 'dsh-agentic-roleplay-core', 'dsh-agentic-roleplay']) {
-  const manifest = JSON.parse(await readFile(resolve(root, 'packages', folder, 'package.json'), 'utf8'))
+const bundleFolders = ['dsh-roleplay-state', 'dsh-agentic-roleplay-core', 'dsh-agentic-roleplay']
+const bundleLocales = ['en', 'zh', 'ja', 'es', 'fr', 'de', 'ru', 'pt']
+for (const folder of bundleFolders) {
+  const directory = resolve(root, 'packages', folder)
+  const manifest = JSON.parse(await readFile(resolve(directory, 'package.json'), 'utf8'))
   if (manifest.dsh?.bundle?.patch !== './cordis.patch.yml') throw new Error(`${manifest.name}: missing DSH bundle declaration`)
-  await access(resolve(root, 'packages', folder, 'cordis.patch.yml'))
+  if (manifest.exports?.['./locale/*.json'] !== './locale/*.json' || !manifest.files.includes('locale')) throw new Error(`${manifest.name}: locale metadata must be exported and published`)
+  await access(resolve(directory, 'cordis.patch.yml'))
+  for (const locale of bundleLocales) {
+    const metadata = JSON.parse(await readFile(resolve(directory, 'locale', `${locale}.json`), 'utf8'))
+    for (const field of ['title', 'description']) {
+      if (typeof metadata.meta?.[field] !== 'string' || metadata.meta[field].trim() === '') throw new Error(`${manifest.name}: locale/${locale}.json meta.${field} is missing`)
+    }
+  }
 }
 
 
@@ -100,9 +110,8 @@ for (const release of resolvedDsh) {
   if (!DSH_RELEASES.includes(release)) throw new Error(`pnpm-lock.yaml resolves DSH to ${release}, which is not a tested release; verify it, then add it to scripts/dsh-compat.mjs`)
 }
 
-// What the browser half ships: the shell loads this bundle by module id and supplies the modules it
-// may require, so a stray import either fails at load time in every slot or pins the plugin to a
-// DSH build that happens to export it (AGENTS.md §4).
+// The shell loads the client bundle by module id and supplies the modules it may require. A stray import either fails
+// in every slot or ties the plugin to one DSH build that happens to export it.
 const coreDirectory = resolve(root, 'packages', 'dsh-agentic-roleplay-core')
 const clientBundle = await readText(resolve(coreDirectory, 'lib', 'client.js'))
 const [bundleHead, bundleId] = clientBundle.split('\n')
@@ -112,11 +121,10 @@ for (const [, name] of clientBundle.matchAll(/require\("([^"]+)"\)/g)) {
   if (!shellProvided.has(name)) throw new Error(`the client bundle requires ${name}, which the shell does not provide: bundle it instead (tsdown SHELL_MODULES) or drop the import`)
 }
 for (const name of ['@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-store', '@deepseek-ai/dsh-client-ui-dockkit']) {
-  if (clientBundle.includes(name)) throw new Error(`the client bundle still mentions ${name}: the plugin owns its controls and its store (AGENTS.md §4)`)
+  if (clientBundle.includes(name)) throw new Error(`the client bundle still mentions ${name}: the plugin owns its controls and its store`)
 }
 
-// What the host half ships: every @deepseek-ai import must stay an import of the profile's own copy,
-// and the private model package must be inlined rather than left as a dangling specifier.
+// The host bundle leaves DSH imports for the profile to supply, while the private model package stays inlined.
 const hostBundle = await readText(resolve(coreDirectory, 'lib', 'index.js'))
 if (hostBundle.includes('dsh-roleplay-model')) throw new Error('the host bundle still imports the private model package instead of inlining it')
 if (hostBundle.includes('@deepseek-ai/dsh-client-')) throw new Error('the host bundle must not import client packages')
