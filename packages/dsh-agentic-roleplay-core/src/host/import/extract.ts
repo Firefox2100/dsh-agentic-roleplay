@@ -10,6 +10,7 @@ import type { NormalizedCard } from '../../shared/import-card.ts'
 import { cleanText, MAX_ITEM_CHARS, type SourceItem } from './items.ts'
 import { panelsOfCard, withoutLeftOut, withoutOutputMarkup } from './panels.ts'
 import { promptProblem } from '../prompts/library.ts'
+import { MAX_RULE_LENGTH as MAX_RULE_CHARS, MAX_RULES } from '../worlds/world-file.ts'
 import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
 import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { findEntity, isLeftOut, type Classified, type Entity, type Kind, type Roster } from './survey.ts'
@@ -34,6 +35,8 @@ export interface Extracted {
   lore: Document[]
   /** The prose prompts the card's instructions became, by prompt id. */
   prompts: { id: string; text: string }[]
+  /** The rules of the world the card's instructions lay down, one short sentence each: they become the world's own rules. */
+  rules: string[]
   /** What the card keeps track of, as the documents of `variables.json`. */
   variables: Document[]
   /** The passages that say how people are made up in play, as the card wrote them: the casting job turns them into the world's commands and triggers. */
@@ -45,7 +48,7 @@ export interface Extracted {
   /** Where the variables, prompts, rules, commands and triggers came from. */
   derived: Derived[]
 }
-export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], variables: [], casting: [], commands: [], triggers: [], notes: [], derived: [] })
+export const emptyExtracted = (): Extracted => ({ characters: [], locations: [], factions: [], items: [], lore: [], prompts: [], rules: [], variables: [], casting: [], commands: [], triggers: [], notes: [], derived: [] })
 
 const baseOf = (id: string): string => id.replace(/#\d+$/, '')
 
@@ -647,9 +650,10 @@ const STYLE_SCHEMA = {
     narration: { type: 'string', description: 'How the narration is written: voice, tone, perspective, pacing, level of detail. Empty when the instructions say nothing about it.' },
     characters: { type: 'string', description: 'How every character speaks and behaves: staying in character, manner, and how it deals with what it is asked to do or refuses. Use ${name} for the character. Empty when the instructions say nothing about it.' },
     left_out: { type: 'array', items: { type: 'string' }, description: 'What the instructions contained that is not prose or behaviour guidance (rules of the game, formats, panels, scripts), one short phrase each.' },
+    world_rules: { type: 'array', items: { type: 'string' }, description: 'The rules of the world the instructions lay down: what exists, does not exist or may not happen in the story (for example "there are no firearms"), one short sentence each, in the language of the instructions, as faithfully as they say it. Not style, not formats, not anything about the player or tools. Empty when there are none.' },
     persona_names: { type: 'array', items: { type: 'string' }, description: 'Every name the instructions give to the AI itself (a writer, narrator or assistant persona), exactly as written; empty when it has none. These names must not appear in narration or characters.' },
   },
-  required: ['narration', 'characters', 'left_out', 'persona_names'],
+  required: ['narration', 'characters', 'world_rules', 'left_out', 'persona_names'],
 } as const
 
 const MAX_STYLE_CHARS = 2000
@@ -661,6 +665,12 @@ export function instructionPieces(card: NormalizedCard, items: readonly SourceIt
   return [...fields, ...pieces]
 }
 
+function ruleProblem(rules: readonly string[]): string | undefined {
+  if (rules.length > MAX_RULES) return `world_rules has ${rules.length} rules; keep the ${MAX_RULES} that matter most`
+  const long = rules.find(rule => rule.length > MAX_RULE_CHARS)
+  return long === undefined ? undefined : `a world rule is ${long.length} characters long; each is one sentence of at most ${MAX_RULE_CHARS}`
+}
+
 function styleProblem(id: string, value: string, personas: readonly string[] = []): string | undefined {
   const named = personas.find(name => name.trim() !== '' && value.toLowerCase().includes(name.trim().toLowerCase()))
   if (named !== undefined) return `${id} uses the persona name "${named}"; say "the character" or "the narrator" instead`
@@ -669,34 +679,35 @@ function styleProblem(id: string, value: string, personas: readonly string[] = [
 }
 
 /** Turns the instructions of a card into the prose prompts of the world. Only prose and behaviour are kept: the rules of the game stay the program's. */
-export async function extractStyle(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified): Promise<Pick<Extracted, 'prompts' | 'notes' | 'derived'>> {
+export async function extractStyle(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified): Promise<Pick<Extracted, 'prompts' | 'rules' | 'notes' | 'derived'>> {
   const texts = instructionPieces(card, items, classified)
   const made = await extractStyleFrom(ctx, card.name, texts)
   const pieces = piecesOfTexts(card, items, texts)
-  return { ...made, derived: made.prompts.map((prompt): Derived => ({ kind: 'prompt', name: prompt.id, pieces })) }
+  return { ...made, derived: [...made.prompts.map((prompt): Derived => ({ kind: 'prompt', name: prompt.id, pieces })), ...(made.rules.length === 0 ? [] : [{ kind: 'rules', name: 'world rules', pieces } as Derived])] }
 }
 
 /** The prose prompts that instruction texts become, and what was left out of them. */
-export async function extractStyleFrom(ctx: ImportContext, name: string, pieces: readonly string[]): Promise<Pick<Extracted, 'prompts' | 'notes'>> {
-  if (pieces.length === 0) return { prompts: [], notes: [] }
+export async function extractStyleFrom(ctx: ImportContext, name: string, pieces: readonly string[]): Promise<Pick<Extracted, 'prompts' | 'rules' | 'notes'>> {
+  if (pieces.length === 0) return { prompts: [], rules: [], notes: [] }
   ctx.say('writing the style prompts')
   try {
     const tr = trOf(ctx)
     const prompt = `${tr('Card: {name}', { name })}\n\n${tr('The instructions of the card:')}\n\n${pieces.join('\n\n---\n\n').slice(0, SOURCE_BUDGET_CHARS)}`
-    const answer = await ctx.run<{ narration: string; characters: string; left_out: string[]; persona_names: string[] }>({
+    const answer = await ctx.run<{ narration: string; characters: string; world_rules?: string[]; left_out: string[]; persona_names: string[] }>({
       persona: ctx.text('import/style', { rules: ctx.text('import/common-rules') }),
       maxTokens: 8000,
       prompt,
       result: STYLE_SCHEMA as never,
-      check: value => styleProblem('roleplay/style', text(value.narration), list(value.persona_names)) ?? styleProblem('roleplay/character-style', text(value.characters), list(value.persona_names)),
+      check: value => styleProblem('roleplay/style', text(value.narration), list(value.persona_names)) ?? styleProblem('roleplay/character-style', text(value.characters), list(value.persona_names)) ?? ruleProblem(list(value.world_rules)),
     })
     const leftOut = list(answer.left_out)
     const made = [['roleplay/style', withoutLeftOut(text(answer.narration), leftOut)], ['roleplay/character-style', withoutLeftOut(text(answer.characters), leftOut)]] as const
     const prompts = made.flatMap(([id, body]) => (body === '' ? [] : [{ id, text: body }]))
     if (!prompts.every(entry => PROSE_PROMPTS.includes(entry.id))) throw new Error('only prose prompts can be made')
-    return { prompts, notes: list(answer.left_out).map(entry => `instructions left out on purpose: ${entry}`) }
+    const rules = list(answer.world_rules).map(withoutOutputMarkup).filter(rule => rule.trim() !== '')
+    return { prompts, rules, notes: list(answer.left_out).map(entry => `instructions left out on purpose: ${entry}`) }
   } catch (error) {
-    return { prompts: [], notes: [`the instructions of the card were not carried over: ${error instanceof Error ? error.message : String(error)}`] }
+    return { prompts: [], rules: [], notes: [`the instructions of the card were not carried over: ${error instanceof Error ? error.message : String(error)}`] }
   }
 }
 

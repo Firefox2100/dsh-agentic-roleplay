@@ -1,0 +1,92 @@
+{
+  "id": "ask-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我在一张桌边坐下，环顾屋里。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/ask 屋里还有谁，我在哪里？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "narration-has",
+          "text": "托马斯"
+        },
+        {
+          "type": "character-silent",
+          "character": "tomas"
+        }
+      ]
+    },
+    {
+      "say": "/ask 托马斯知道信号室是做什么用的吗？他在隐瞒什么？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "tomas"
+        },
+        {
+          "type": "narration-lacks",
+          "text": "免税白兰地"
+        },
+        {
+          "type": "narration-lacks",
+          "text": "两长一短"
+        }
+      ]
+    },
+    {
+      "say": "我向托马斯要一杯茶。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "tomas"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 4
+    },
+    {
+      "type": "character-at",
+      "character": "quill",
+      "place": "inn-bar"
+    },
+    {
+      "type": "narration-lacks",
+      "text": "经营它声称"
+    }
+  ]
+}

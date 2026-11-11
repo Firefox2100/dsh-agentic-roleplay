@@ -6,6 +6,8 @@ import type { CalendarDocument, VariableDeclaration, WorldRoutines } from '../..
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 import { CHARACTERS_DIR, loadCharacters } from '../characters/load.ts'
 import { CHARACTER_FILE_NAME, parseCharacterFile } from '../characters/character-file.ts'
+import { COMMANDS_FILE_NAME, commandVariable, loadCommands, parseCommandsFile } from '../commands/load.ts'
+import type { CommandsDocument } from '../../shared/world-commands.ts'
 import { DICE_FILE_NAME, loadDice, parseDiceFile } from '../dice/load.ts'
 import { CALENDAR_FILE_NAME, loadCalendar, parseCalendarFile } from '../calendar/load.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
@@ -18,6 +20,9 @@ import { parseWorldFile, WORLD_FILE_NAME } from './world-file.ts'
 import { entityFolder, replaceFile, type EditableWorld } from './world-editor.ts'
 
 type Json = Record<string, unknown>
+
+/** `dryRun` reads and checks the document as a write would and writes nothing. */
+export interface EditOptions { dryRun?: boolean }
 
 /** The day each character lives, and the places its windows may name. */
 export async function readRoutines(world: EditableWorld): Promise<WorldRoutines> {
@@ -67,7 +72,7 @@ export async function readVariables(world: EditableWorld): Promise<VariableDecla
  * character, item, place or the world still gives a value to cannot be removed, and a value must still fit its declaration.
  * @throws {InvalidEditProblems} naming each problem; nothing is written.
  */
-export async function editVariables(world: EditableWorld, declarations: readonly VariableDeclaration[]): Promise<VariableDeclaration[]> {
+export async function editVariables(world: EditableWorld, declarations: readonly VariableDeclaration[], options: EditOptions = {}): Promise<VariableDeclaration[]> {
   const text = `${JSON.stringify(declarations, null, 2)}\n`
   const parsed = parseVariablesFile(text)
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
@@ -76,6 +81,7 @@ export async function editVariables(world: EditableWorld, declarations: readonly
   const worldFile = parseWorldFile(await readFile(join(world.directory, WORLD_FILE_NAME), 'utf8'))
   const problems = variableProblems({ defs: parsed.value, characters, items, locations, values: worldFile.ok ? worldFile.value.variables : undefined })
   if (problems.length > 0) throw new InvalidEditProblems(problems)
+  if (options.dryRun === true) return [...declarations]
   if (declarations.length === 0) await rm(join(world.directory, VARIABLES_FILE_NAME), { force: true })
   else await replaceFileOrCreate(join(world.directory, VARIABLES_FILE_NAME), text)
   return await readVariables(world)
@@ -100,7 +106,7 @@ export async function readCalendarDocument(world: EditableWorld): Promise<Calend
  * A calendar with no holidays and the northern seasons is no file at all.
  * @throws {InvalidEditProblems} naming each problem; nothing is written.
  */
-export async function editCalendar(world: EditableWorld, calendar: CalendarDocument): Promise<CalendarDocument> {
+export async function editCalendar(world: EditableWorld, calendar: CalendarDocument, options: EditOptions = {}): Promise<CalendarDocument> {
   const text = `${JSON.stringify(calendar, null, 2)}\n`
   const parsed = parseCalendarFile(text)
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
@@ -110,6 +116,7 @@ export async function editCalendar(world: EditableWorld, calendar: CalendarDocum
   const named = new Set(calendar.holidays.map(holiday => holiday.id))
   for (const id of new Set([...triggers.matchAll(/holiday:([\p{L}\p{N}_-]+)/gu)].map(match => match[1]!))) if (!named.has(id)) problems.push(`a trigger names the holiday "${id}", which the calendar does not have`)
   if (problems.length > 0) throw new InvalidEditProblems(problems)
+  if (options.dryRun === true) return calendar
   if (calendar.holidays.length === 0 && calendar.hemisphere === 'north') await rm(join(world.directory, CALENDAR_FILE_NAME), { force: true })
   else await replaceFileOrCreate(join(world.directory, CALENDAR_FILE_NAME), text)
   return await readCalendarDocument(world)
@@ -126,7 +133,7 @@ export async function readDiceDocument(world: EditableWorld): Promise<DiceDocume
  * declares for characters. No checks is no file at all.
  * @throws {InvalidEditProblems} naming each problem; nothing is written.
  */
-export async function editDice(world: EditableWorld, dice: DiceDocument): Promise<DiceDocument> {
+export async function editDice(world: EditableWorld, dice: DiceDocument, options: EditOptions = {}): Promise<DiceDocument> {
   const written = dice.checks.map(({ reading, compare, ...check }) => ({ ...check, ...(reading === undefined || reading === 'total' ? {} : { reading }), ...(compare === undefined || compare === 'absolute' ? {} : { compare }) }))
   const text = `${JSON.stringify({ checks: written }, null, 2)}\n`
   const parsed = parseDiceFile(text)
@@ -138,7 +145,33 @@ export async function editDice(world: EditableWorld, dice: DiceDocument): Promis
     return variable === undefined || variable.kind !== 'number' || (variable.subject !== 'character') ? [`the check "${check.key}" adds "${check.modifier}", which the world does not declare as a number about characters (Tracked values)`] : []
   })
   if (problems.length > 0) throw new InvalidEditProblems(problems)
+  if (options.dryRun === true) return dice
   if (dice.checks.length === 0) await rm(join(world.directory, DICE_FILE_NAME), { force: true })
   else await replaceFileOrCreate(join(world.directory, DICE_FILE_NAME), text)
   return await readDiceDocument(world)
+}
+
+/** The world's own slash commands as `commands.json` has them; none without the file. */
+export async function readCommandsDocument(world: EditableWorld): Promise<CommandsDocument> {
+  const { commands } = await loadCommands(world.directory)
+  return { commands: commands.map(command => ({ word: command.word, description: command.description, key: command.key })) }
+}
+
+/**
+ * Replaces the world's commands. They are read as a story start reads them, and the flag a command raises must not be a value the world declares itself.
+ * No commands is no file at all.
+ * @throws {InvalidEditProblems} naming each problem; nothing is written.
+ */
+export async function editCommands(world: EditableWorld, document: CommandsDocument, options: EditOptions = {}): Promise<CommandsDocument> {
+  const written = document.commands.map(({ key, ...command }) => ({ ...command, ...(key === undefined || key === command.word ? {} : { key }) }))
+  const text = `${JSON.stringify({ commands: written }, null, 2)}\n`
+  const parsed = parseCommandsFile(text)
+  if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
+  const declared = new Set((await loadVariables(world.directory)).defs.map(def => def.key))
+  const problems = parsed.value.flatMap(command => (declared.has(commandVariable(command)) ? [`the command "/${command.word}" raises the flag "${commandVariable(command)}", which the world already declares as a tracked value`] : []))
+  if (problems.length > 0) throw new InvalidEditProblems(problems)
+  if (options.dryRun === true) return document
+  if (document.commands.length === 0) await rm(join(world.directory, COMMANDS_FILE_NAME), { force: true })
+  else await replaceFileOrCreate(join(world.directory, COMMANDS_FILE_NAME), text)
+  return await readCommandsDocument(world)
 }

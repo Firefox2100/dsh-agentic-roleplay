@@ -9,7 +9,7 @@ import { VARIABLES_FILE_NAME } from '../variables/load.ts'
 import { COMMANDS_FILE_NAME } from '../commands/load.ts'
 import { TRIGGERS_FILE_NAME } from '../triggers/load.ts'
 
-import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS } from '../worlds/world-file.ts'
+import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, MAX_RULES } from '../worlds/world-file.ts'
 
 import { dialectOf } from './dialect.ts'
 import { cardPieces, entitiesByPiece, type Source } from './card-tools.ts'
@@ -302,6 +302,7 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     world['metadata'] = { ...(typeof world['metadata'] === 'object' && world['metadata'] !== null ? world['metadata'] as Document : {}), tags: described.tags }
     if (opening !== undefined) world['opening_message'] = openingMessage(opening, card.name, player === undefined ? undefined : String(player['name']))
     if (alternates.length > 0) world['alternate_openings'] = alternates
+    if (extracted.rules.length > 0 && world['rules'] === undefined) world['rules'] = extracted.rules.slice(0, MAX_RULES)
     if (card.creator.trim() !== '' && world['author'] === undefined) world['author'] = { name: card.creator.trim() }
     if (cover) world['cover_media_id'] = 'cover'
   })

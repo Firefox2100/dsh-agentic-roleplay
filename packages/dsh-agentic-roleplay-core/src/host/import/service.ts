@@ -35,6 +35,18 @@ export class RoleplayImport extends Service {
     super(ctx, 'roleplayImport')
   }
 
+  private readonly turns = new Map<string, number>()
+
+  /** Notes that a turn of a chat ended; the authoring chats are the ones that report here. */
+  turnEnded(chat: string): void {
+    this.turns.set(chat, (this.turns.get(chat) ?? 0) + 1)
+  }
+
+  /** How many turns of the chat have ended since the plugin started. */
+  turnsOf(chat: string): number {
+    return this.turns.get(chat) ?? 0
+  }
+
   /** The settings as they stand now: they are edited while the plugin runs. */
   get settings(): ImportSettings {
     return this.read()

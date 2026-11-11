@@ -115,7 +115,7 @@ export function parseStartQuestionsEdit(value: unknown, problems: string[]): Sta
     if (!isObject(entry) || typeof entry['id'] !== 'string' || typeof entry['text'] !== 'string' || !Array.isArray(entry['options'])) { problems.push('a start question needs an id, a text and a list of options'); return undefined }
     const options: StartOption[] = []
     for (const option of entry['options']) {
-      if (!isObject(option) || typeof option['id'] !== 'string' || typeof option['label'] !== 'string' || !isObject(option['effect']) || (option['description'] !== undefined && typeof option['description'] !== 'string')) { problems.push('an answer needs an id, a label and an effect'); return undefined }
+      if (!isObject(option) || typeof option['id'] !== 'string' || typeof option['label'] !== 'string' || !isObject(option['effect']) || (option['description'] !== undefined && typeof option['description'] !== 'string')) { problems.push('an answer needs an id, a label and an effect object, such as {"id": "morning", "label": "Morning", "effect": {"startingTime": "07:00"}} (the effect may hold rules, opening, startingTime, clockMode, tools, plots; {} changes nothing)'); return undefined }
       const effect = option['effect']
       const known: StartEffect = {}
       if (Array.isArray(effect['rules'])) known.rules = effect['rules'].filter((rule): rule is string => typeof rule === 'string')

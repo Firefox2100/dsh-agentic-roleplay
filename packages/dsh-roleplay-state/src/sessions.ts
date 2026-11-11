@@ -137,7 +137,7 @@ export function forkSession(sessionsDir: string, fromId: string, toId: string, s
     const file = sessionDatabase(sessionsDir, toId)
     if ('snapshot' in source) copyFileSync(snapshotPath(sessionsDir, fromId, source.snapshot), file)
     else source.live.snapshotTo(file)
-    for (const name of ['settings.json', 'journal.json']) if (existsSync(join(from, name))) copyFileSync(join(from, name), join(target, name))
+    for (const name of ['settings.json', 'journal.json', 'folders.json']) if (existsSync(join(from, name))) copyFileSync(join(from, name), join(target, name))
     if (options.keep.length > 0) mkdirSync(join(target, SNAPSHOT_FOLDER))
     for (const name of options.keep) copyFileSync(snapshotPath(sessionsDir, fromId, name), snapshotPath(sessionsDir, toId, name))
     const store = openSessionStore(file, storeOptions)

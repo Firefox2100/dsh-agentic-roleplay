@@ -153,10 +153,12 @@ export function presetAuthorTools(reader: PresetReader, settings: () => ImportSe
 }
 
 /** Every change to a preset is put to the person; the first import into an empty preset only fills it, so it is not. */
-export async function presetApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, carries: (chat: string) => boolean): Promise<PreToolDecision> {
+export async function presetApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, carries: (chat: string) => boolean, auto: () => boolean = () => false): Promise<PreToolDecision> {
   if (!(PRESET_MUTATION_TOOLS as readonly string[]).includes(exec.name) || exec.agent === undefined || presetOfChat(exec.agent.session.id) === undefined) return await next()
   const args = exec.arguments as Record<string, unknown>
   const chat = exec.agent.session.id
+  // automatic approval never reaches the prompts that hold rules of the game: those stay the person's to confirm
+  if (auto() && !isRulesPrompt(args['id'])) return await next()
   if (exec.name === NARRATION_IMPORT_TOOL) {
     if (!carries(chat)) return await next()
     return { kind: 'ask', reason: 'replace the preset\'s prompts with ones made from the uploaded preset', displayReason: { en: 'Replace this preset\'s prompts with ones made from the uploaded preset?', zh: '用上传的预设生成的提示词，替换此预设的提示词？' } }

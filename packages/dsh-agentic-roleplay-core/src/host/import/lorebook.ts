@@ -3,6 +3,7 @@ import type { LorebookEntry } from '../../shared/lorebooks.ts'
 import { MAX_PREVIEW_TEXT, type SelectionItem } from '../../shared/import-selection.ts'
 import { ImportCardError } from './card.ts'
 import { cleanText, partsOf, withPlayer } from './items.ts'
+import { textLanguage, wrongLanguage } from '../translate/language.ts'
 import { mapLimit, slug, trOf, uniqueKey, type ImportContext } from './run.ts'
 
 /** One entry of a SillyTavern lorebook, as the importer reads it. */
@@ -117,6 +118,11 @@ const RULES_TARGETS: readonly SteeringTarget[] = ['game-master', 'character-rule
 /** Whether writing to the prompt changes how the models are told to run the game, not only how the story reads. */
 export const isRulesTarget = (target: SteeringTarget): boolean => RULES_TARGETS.includes(target)
 
+/** Words of the answer's own vocabulary that a constrained reply wrote into the guidance field instead of the instruction. */
+const LABELS = new Set(['knowledge', 'steering', 'skip', ...Object.keys(STEERING_TARGETS)])
+
+const isLabel = (guidance: string): boolean => LABELS.has(guidance.toLowerCase()) || /^[a-z][a-z0-9_-]*$/i.test(guidance)
+
 const DECISIONS_SCHEMA = {
   type: 'object',
   properties: {
@@ -176,6 +182,7 @@ function problemOf(answer: { entries?: Decision[] }, batch: readonly StEntry[]):
   const given = answer.entries ?? []
   const wanted = new Set(batch.map(entry => entry.ref))
   const seen = new Set<number>()
+  const language = textLanguage(batch.map(entry => entry.text).join(' '))
   for (const decision of given) {
     if (!wanted.has(decision.ref)) return `entry ${decision.ref} was not given; the entries are ${[...wanted].join(', ')}`
     if (seen.has(decision.ref)) return `entry ${decision.ref} is decided twice`
@@ -184,6 +191,9 @@ function problemOf(answer: { entries?: Decision[] }, batch: readonly StEntry[]):
     if (decision.role === 'knowledge' && decision.scope === 'listed' && decision.has_secrets !== true && strings(decision.known_by).length === 0) return `entry ${decision.ref} is listed but names nobody who knows it: use everyone, or name them`
     if (decision.role === 'steering' && (!isSteeringTarget(text(decision.target)) || text(decision.guidance) === '')) return `entry ${decision.ref} is steering: say where it belongs (${Object.keys(STEERING_TARGETS).join(', ')}) and give the guidance`
     const source = batch.find(entry => entry.ref === decision.ref)
+    if (decision.role === 'steering' && isLabel(text(decision.guidance))) return `the guidance for entry ${decision.ref} is a label ("${text(decision.guidance)}"), not an instruction: write what the entry asks for`
+    const wrong = decision.role === 'steering' && language !== undefined ? wrongLanguage(language, { [`the guidance for entry ${decision.ref}`]: text(decision.guidance) }) : undefined
+    if (wrong !== undefined) return wrong
     if (decision.role === 'steering' && source !== undefined && source.text.length > MAX_STEERING_SOURCE_CHARS) return `entry ${decision.ref} is ${source.text.length} characters long, too long to be an instruction: an entry that describes a person, a place or history is knowledge, and what is thrown away as steering is lost. Make it knowledge, or skip it if it is neither`
     if (decision.role === 'steering' && source !== undefined && text(decision.guidance).length < source.text.length * MIN_STEERING_SHARE) return `the guidance for entry ${decision.ref} is much shorter than the entry (${text(decision.guidance).length} of ${source.text.length} characters): keep everything the entry asks for, or, if it is not an instruction, make it knowledge`
   }

@@ -43,7 +43,7 @@ export function packFileProblem(tool: string, path: string, world: string, texts
   const inside = relative(ui, path)
   const segments = inside.split(sep)
   const hint = `in this chat the file tools reach only the text files of the world's interface packs, ${PACKS_FOLDER}/<pack>/<file>. Nothing, not another path and not sandbox_permissions, lifts that: do not try again for this file, tell the person that it cannot be changed from here`
-  if (inside === '' || inside.startsWith('..') || isAbsolute(inside) || segments.length < 2) return `${path} is not a file of an interface pack: ${hint}`
+  if (inside === '' || inside.startsWith('..') || isAbsolute(inside) || segments.length < 2) return `${path} is not a file of an interface pack: ${hint}. The world's own files are changed with the world tools instead: write_world_file for variables, dice, commands and the calendar, edit_world_info for world.json (opening, rules, start questions), create_world_element and replace_world_element for characters, places, items, factions and lore`
   if (!isPackId(segments[0] as string)) return `"${segments[0]}" is not a usable pack name (letters, digits, "-" and "_"): ${hint}`
   if (segments.some(segment => segment.startsWith('.'))) return `${path}: names may not start with a dot`
   if (!TEXT_EXTENSIONS.includes(extname(path).slice(1).toLowerCase())) return `${path} is not a text file of a pack (${TEXT_EXTENSIONS.join(', ')}); pictures and other files are added by hand`

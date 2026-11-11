@@ -85,6 +85,14 @@ describe('the approval gate of preset authoring', () => {
     expect(next).toHaveBeenCalledTimes(1)
   })
 
+  it('lets the changes through when the person chose automatic approval, except for prompts that hold rules of the game', async () => {
+    const next = vi.fn().mockResolvedValue({ kind: 'allow' })
+    await presetApproval(exec('write_preset_prompt', { language: 'en', id: 'roleplay/style' }), next, () => true, () => true)
+    await presetApproval(exec('import_narration_preset', { file: '.import/preset.json' }), next, () => true, () => true)
+    expect(next).toHaveBeenCalledTimes(2)
+    await expect(presetApproval(exec('write_preset_prompt', { language: 'en', id: 'roleplay/rules' }), next, () => true, () => true)).resolves.toMatchObject({ kind: 'ask' })
+  })
+
   it('warns when the prompt is rules of the game, not prose', async () => {
     const next = vi.fn()
     const decision = await presetApproval(exec('write_preset_prompt', { language: 'en', id: 'roleplay/rules' }), next, () => true)

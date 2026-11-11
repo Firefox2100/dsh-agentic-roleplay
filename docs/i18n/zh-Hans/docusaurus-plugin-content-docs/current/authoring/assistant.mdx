@@ -10,6 +10,8 @@ title: 创作助手
 
 助手还能读取和写入世界的**触发器**（世界自行发生的事）：`list_world_triggers` 和 `get_world_trigger` 用于读取，`write_world_trigger` 和 `delete_world_trigger` 按键创建、替换和删除。触发器会像故事开始时那样被读取，格式有误或提到世界里没有的角色、地点、物品、变量或触发器时，会连同全部问题一起被拒绝；被删除的触发器的文档保存在世界的 `.trash/triggers` 里，被其他触发器等待的触发器不能删除。
 
+整个世界范围的文件——追踪的数值（`variables.json`）、检定（`dice.json`）、世界自己的斜杠指令（`commands.json`）和节日（`calendar.json`）——用 `get_world_file` 读取，用 `write_world_file` 替换：它接收完整的文档，与编辑器的面板一样对照世界的其余部分检查，有问题时连同全部问题一并拒绝；空文档会删除该文件。没有 `update`（何时、如何变化）说明的数值或选项变量会被拒绝，因为没有规则的值会无故变化。脚本可以用 `POST /roleplay-api/worlds/authoring/message?id=<世界 id>` 和 `{ "text": "..." }` 像用户一样向世界的创作对话发消息；必要时会先打开对话，消息发出后返回 202。`DELETE /roleplay-api/worlds/authoring/chat?id=<世界 id>` 会彻底删除该对话及其启动的所有内容，世界本身保留。开场问题是 `edit_world_info` 的 `startQuestions` 字段。世界里的智能体有哪些可选工具、故事在玩家离开时是否继续进行，仍由用户自己决定，助手不会更改。
+
 它适合需要综合多个世界部分的工作，例如：添加符合既有阵营的人物、寻找不完整连接、把一个前提拆成少量可选节拍，或检查私密知识是否交给了正确角色。只改一个明确字段时，视觉编辑器通常更快。
 
 ## 询问原始角色卡

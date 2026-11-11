@@ -33,7 +33,7 @@ These values configure the plugin for the whole DSH profile. Session settings be
 | `importTimeoutMinutes` | 15 | Minutes before an import or authoring helper is stopped without a result; 0 disables the timeout |
 | `importDecisions` | `llm` | `decision` lets the configured decision service preclassify card pieces it can settle confidently; `llm` sends every piece to the language model |
 | `importConfidence` | 0.7 | Confidence required to accept a decision-model classification |
-| `authoringApproval` | `ask` | `ask` requests approval for every world-authoring-chat change; `auto` writes immediately while retaining replaced or deleted files in the world's `.trash` folder |
+| `authoringApproval` | `ask` | `ask` requests approval for every world-authoring-chat change; `auto` writes immediately while retaining replaced or deleted files in the world's `.trash` folder; the preset and lorebook assistants follow it too, except for prompts that hold rules of the game, which are always asked |
 
 All fields except the restart-time `sessionStorePath` are editable under **Settings, Role Play** and take effect without restarting. See [Sync between devices](../playing/sync) before pointing more than one installation at the same remote.
 
@@ -86,6 +86,7 @@ These defaults are copied into a new story's `settings.json`. A world or preset 
 | `autonomy.chance` / `autonomy.decay` | 0.05 / 0.5 | The chance at each look that someone writes once the idle time has passed, and what each message sent with no reply multiplies it by |
 | `autonomy.transitionChance` | 0.4 | The chance that a character whose day just changed writes at that look |
 | `schedule.enabled` | `true` | Whether the characters keep to their days (routines and sleep) |
+| `decisions.errands` | `on` | A decision model looks after each turn at the awake characters it named and says whether any is waiting for the player (sent on an errand, told to stay or watch); such a character is kept off its day until you are with it again. Decision-service-only: `off` or `on`; without a service nothing is held by this site |
 | `decisions.messages` | `off` | A decision model says whether a character picked by chance has a reason to write; without one chance alone decides |
 | `factions.perTurn` / `factions.everyDays` | 1 / 3 | Due factions advanced per turn, and their default story-time interval |
 | `triggers.enabled` / `triggers.maxFires` | `true` / 3 | Whether triggers run, and how many may fire per turn |

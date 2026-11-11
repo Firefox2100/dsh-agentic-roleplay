@@ -89,6 +89,15 @@ describe('the tools of lorebook authoring', () => {
 describe('approving changes to a lorebook', () => {
   const state = (carries: boolean, waiting = { ids: ['roleplay/style'], rules: false }) => ({ carries: () => carries, waiting: () => waiting })
 
+  it('lets the changes through when the person chose automatic approval, except a preset that touches rules of the game', async () => {
+    const next = vi.fn().mockResolvedValue({ kind: 'allow' })
+    const auto = (waiting?: { ids: string[]; rules: boolean }) => ({ ...state(true, waiting), auto: () => true })
+    await lorebookApproval(exec('import_lorebook', { file: '.import/lorebook.json' }), next, auto())
+    await lorebookApproval(exec('apply_steering', {}), next, auto())
+    expect(next).toHaveBeenCalledTimes(2)
+    await expect(lorebookApproval(exec('apply_steering', {}), next, auto({ ids: ['roleplay/rules'], rules: true }))).resolves.toMatchObject({ kind: 'ask' })
+  })
+
   it('asks for every write and removal in a lorebook chat, and leaves reading alone', async () => {
     const next = vi.fn().mockResolvedValue({ kind: 'allow' })
     await expect(lorebookApproval(exec('write_lorebook_entry', { id: 'tides' }), next, state(true))).resolves.toMatchObject({ kind: 'ask', reason: 'write lorebook entry “tides”' })

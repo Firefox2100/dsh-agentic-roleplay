@@ -10,7 +10,7 @@ import type { ApiDeps } from '../api.ts'
 import { type Routes, languageField } from './shared.ts'
 
 /** The routes of the API for worlds. */
-export function worldsRoutes({ worlds, createWorld, starter, authorWorld, translation, worldCharacters, avatars, playtest }: ApiDeps): Routes {
+export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToAuthor, authoringStatus, chatStatus, forgetAuthoring, translation, worldCharacters, avatars, playtest }: ApiDeps): Routes {
   return {
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
@@ -39,6 +39,37 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, transl
         catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/authoring/status': {
+      GET: async (_req, res, url) => { sendJson(res, 200, chatStatus(url.searchParams.get('chat') ?? '')) },
+    },
+    '/worlds/authoring/chat': {
+      DELETE: async (_req, res, url) => {
+        try { await forgetAuthoring(url.searchParams.get('id') ?? ''); sendJson(res, 200, { ok: true }) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/worlds/authoring/message': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { text?: unknown; language?: unknown }
+        if (typeof body.text !== 'string' || body.text.trim() === '') return sendError(res, 400, 'the request needs the text to say')
+        try { sendJson(res, 202, await sayToAuthor(url.searchParams.get('id') ?? '', body.text, languageField(body.language))) }
+        catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/worlds/authoring/status': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, await authoringStatus(url.searchParams.get('id') ?? '')) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           throw error
         }
       },

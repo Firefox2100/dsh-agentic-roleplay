@@ -115,7 +115,7 @@ describe('what a preset becomes', () => {
   })
 
   it('is nothing for a preset with no pieces, and the failure noted when the model cannot', async () => {
-    expect(await extractStyleFrom(fakeContext(() => ({})), 'x', [])).toEqual({ prompts: [], notes: [] })
+    expect(await extractStyleFrom(fakeContext(() => ({})), 'x', [])).toEqual({ prompts: [], rules: [], notes: [] })
     const failed = await extractStyleFrom(fakeContext(() => { throw new Error('no answer') }), 'x', ['p'])
     expect(failed.prompts).toEqual([])
     expect(failed.notes[0]).toContain('no answer')

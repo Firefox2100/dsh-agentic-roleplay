@@ -35,7 +35,10 @@ export function apply(ctx: Context): void {
   const waiting = (chat: string) => { const directory = directoryOf(chat); return directory === undefined ? { ids: [], rules: false } : pendingTargets(directory) }
   limitAuthoringAgents(ctx, chat => (lorebookOfChat(chat) === undefined ? undefined : 'lorebookAuthoring'))
   guardAuthoringTurns(ctx, () => ctx.roleplayPrompts, (chat) => { const book = lorebookOfChat(chat); return book === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(`lorebook:${book}`) }, () => ctx.roleplayImport.settings.reasoning)
-  ctx.on('tools/pre-execute', (exec, next) => lorebookApproval(exec, next, { carries, waiting }))
+  ctx.on('session/event', (session, event) => {
+    if (event.type === 'turn/end' && session.header.origin !== 'subagent' && lorebookOfChat(session.id) !== undefined) ctx.roleplayImport.turnEnded(session.id)
+  })
+  ctx.on('tools/pre-execute', (exec, next) => lorebookApproval(exec, next, { carries, waiting, auto: () => ctx.roleplayImport.settings.approval === 'auto' }))
   const languageOf = (context: object): string => {
     const chat = (context as { agent?: Agent }).agent?.session.id
     const book = chat === undefined ? undefined : lorebookOfChat(chat)

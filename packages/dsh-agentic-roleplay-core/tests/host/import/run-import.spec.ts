@@ -29,7 +29,7 @@ const answers = (job: { prompt: string; persona: string }): unknown => {
     if (prompt.includes('Piece: scenario')) return { roles: ['scenario'], targets: [] }
     return { roles: ['irrelevant'], targets: [] }
   }
-  if (job.persona.startsWith('You turn the instructions')) return { narration: 'Write short answers, in a dry voice.', characters: 'Stay in character as ${name}.', left_out: ['a status panel'], persona_names: [] }
+  if (job.persona.startsWith('You turn the instructions')) return { narration: 'Write short answers, in a dry voice.', characters: 'Stay in character as ${name}.', world_rules: ['There are no firearms in this world.'], left_out: ['a status panel'], persona_names: [] }
   if (job.persona.startsWith('You find what a character card keeps track of')) return { variables: [{ key: 'Trust Meter', name: 'Trust', kind: 'number', subject: 'character', only: ['Old Tam'], min: 0, max: 100, integer: true, default: 50, bands: [{ up_to: 40, label: 'Wary' }, { up_to: 100, label: 'Easy' }] }], left_out: ['an output format'] }
   if (job.persona.startsWith('You make the final list')) return { characters: [{ name: 'Old Tam', aliases: ['Tam'] }], places: [{ name: 'The Lighthouse', aliases: [] }], factions: [], things: [] }
   if (prompt.includes('Make the character')) return { tier: 'principal', kind: 'person', summary: 'Keeps the light.', personality: 'Gruff.', background: '', appearance: '', speech: { style: '', examples: [] }, start: { location: 'The Lighthouse' } }
@@ -71,7 +71,7 @@ describe('the steps of an import', () => {
     expect(await isReviewing(world)).toBe(false)
     expect(await importPhase(world)).toBe('done')
     expect(JSON.parse(await readFile(join(world, 'characters', 'old-tam', 'character.json'), 'utf8'))).toMatchObject({ role: 'npc', start: { location: 'the-lighthouse' } })
-    expect(JSON.parse(await readFile(join(world, 'world.json'), 'utf8'))).toMatchObject({ description: 'A harbour town.', opening_message: 'The fog lifts from the pier.', cover_media_id: 'cover' })
+    expect(JSON.parse(await readFile(join(world, 'world.json'), 'utf8'))).toMatchObject({ description: 'A harbour town.', opening_message: 'The fog lifts from the pier.', cover_media_id: 'cover', rules: ['There are no firearms in this world.'] })
     expect((await readdir(world)).sort()).toEqual(['.checks', '.import', 'characters', 'images', 'lore', 'locations', 'media', 'prompts', 'variables.json', 'world.json'].sort())
   })
 

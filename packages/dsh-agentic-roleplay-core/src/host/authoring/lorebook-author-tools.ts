@@ -210,10 +210,12 @@ export function lorebookAuthorTools(reader: LorebookReader, settings: () => Impo
 }
 
 /** Every change to a lorebook is put to the person; the first import into an empty one only fills it, and a preset made of guidance warns when it touches rules of the game. */
-export async function lorebookApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, state: { carries: (chat: string) => boolean; waiting: (chat: string) => { ids: string[]; rules: boolean } }): Promise<PreToolDecision> {
+export async function lorebookApproval(exec: ToolExecution, next: () => Promise<PreToolDecision>, state: { carries: (chat: string) => boolean; waiting: (chat: string) => { ids: string[]; rules: boolean }; auto?: () => boolean }): Promise<PreToolDecision> {
   if (!(LOREBOOK_MUTATION_TOOLS as readonly string[]).includes(exec.name) || exec.agent === undefined || lorebookOfChat(exec.agent.session.id) === undefined) return await next()
   const args = exec.arguments as Record<string, unknown>
   const chat = exec.agent.session.id
+  // automatic approval never makes a preset that touches the prompts holding rules of the game
+  if (state.auto?.() === true && !(exec.name === STEERING_TOOL && state.waiting(chat).rules)) return await next()
   if (exec.name === LOREBOOK_IMPORT_TOOL) {
     if (!state.carries(chat)) return await next()
     return { kind: 'ask', reason: 'add the entries of the uploaded lorebook to this lorebook', displayReason: { en: 'Add the entries of the uploaded lorebook to this lorebook?', zh: '把上传的世界书中的条目加入此世界书？' } }

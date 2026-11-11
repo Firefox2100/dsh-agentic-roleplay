@@ -30,7 +30,10 @@ export function apply(ctx: Context): void {
   }
   limitAuthoringAgents(ctx, chat => (presetOfChat(chat) === undefined ? undefined : 'presetAuthoring'))
   guardAuthoringTurns(ctx, () => ctx.roleplayPrompts, (chat) => { const preset = presetOfChat(chat); return preset === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(`preset:${preset}`) }, () => ctx.roleplayImport.settings.reasoning)
-  ctx.on('tools/pre-execute', (exec, next) => presetApproval(exec, next, carries))
+  ctx.on('session/event', (session, event) => {
+    if (event.type === 'turn/end' && session.header.origin !== 'subagent' && presetOfChat(session.id) !== undefined) ctx.roleplayImport.turnEnded(session.id)
+  })
+  ctx.on('tools/pre-execute', (exec, next) => presetApproval(exec, next, carries, () => ctx.roleplayImport.settings.approval === 'auto'))
   const languageOf = (context: object): string => {
     const chat = (context as { agent?: Agent }).agent?.session.id
     const preset = chat === undefined ? undefined : presetOfChat(chat)

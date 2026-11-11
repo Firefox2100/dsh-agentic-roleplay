@@ -196,6 +196,7 @@ export async function build(ctx: ImportContext, world: string): Promise<BuildSum
   const extracted = await extractEntities(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified, roster)
   const style = await extractStyle(ctx, card, items, classified)
   extracted.prompts.push(...style.prompts)
+  extracted.rules.push(...style.rules)
   extracted.notes.push(...style.notes)
   extracted.derived.push(...style.derived)
   const tracked = await extractVariables(ctx, card, items, classified, roster)

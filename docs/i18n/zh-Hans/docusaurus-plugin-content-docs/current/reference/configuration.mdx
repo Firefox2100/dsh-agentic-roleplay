@@ -33,7 +33,7 @@ title: 配置参考
 | `importTimeoutMinutes` | 15 | 导入或创作助手未给出结果前最多运行的分钟数；0 表示不限时 |
 | `importDecisions` | `llm` | `decision` 让已配置的决策服务先判断有把握的卡片片段；`llm` 把每个片段都交给语言模型 |
 | `importConfidence` | 0.7 | 采用决策模型分类所需的把握程度 |
-| `authoringApproval` | `ask` | `ask` 要求逐项批准世界创作对话的修改；`auto` 立即写入，并把被替换或删除的文件保存在世界的 `.trash` 文件夹中 |
+| `authoringApproval` | `ask` | `ask` 要求逐项批准世界创作对话的修改；`auto` 立即写入，并把被替换或删除的文件保存在世界的 `.trash` 文件夹中；预设和世界书助手同样遵循此项，但涉及游戏规则的提示词始终会询问 |
 
 除需重启的 `sessionStorePath` 外，所有字段都可在**设置、角色扮演**中编辑，并立即生效。让多台设备使用同一远端前，请先阅读[多设备同步](../playing/sync)。
 
@@ -84,6 +84,7 @@ title: 配置参考
 | `autonomy.chance` / `autonomy.decay` | 0.05 / 0.5 | 空闲时间过去之后每次查看时有人写消息的概率，以及每条没有回复的消息使它乘以的系数 |
 | `autonomy.transitionChance` | 0.4 | 刚换了日程的角色在那次查看时写消息的概率 |
 | `schedule.enabled` | `true` | 角色是否按各自的日程生活（日程和睡眠） |
+| `decisions.errands` | `on` | 每回合之后，决策模型查看被点到的清醒角色，判断是否有人在等玩家（被派去办事、被告知留下或守望）；这样的角色会一直脱离日程，直到你和它再次相遇。仅由决策服务执行：`off` 或 `on`；没有服务时本环节不保持任何角色 |
 | `decisions.messages` | `off` | 由决策模型判断被概率选中的角色是否有理由写消息；没有决策模型时只由概率决定 |
 | `offstage.perTurn` / `offstage.perCharacter` | 2 / 1 | 每回合处理的离场角色数，以及每个角色的行动上限 |
 | `offstage.joint` / `offstage.summary` | `true` / `true` | 一起处理重叠情境，并生成“与此同时”摘要 |

@@ -1,6 +1,6 @@
 import { join, relative } from 'node:path'
 import { roleplaySessionOf } from './shared/chat.ts'
-import { authoredWorldOf } from './shared/authoring-chat.ts'
+import { authoredWorldOf, authoringChatSessionId } from './shared/authoring-chat.ts'
 import { lorebookOfChat } from './shared/lorebook-chat.ts'
 import { presetOfChat } from './shared/preset-chat.ts'
 import { zoneOf } from './host/clock/story-clock.ts'
@@ -49,7 +49,7 @@ import { purgeOf } from './host/agent/purge-services.ts'
 import { AuthoringTools } from './host/tools/authoring-tools.ts'
 import { externalTools, type ToolRegistry } from './host/tools/external.ts'
 import { profileDirectory, redundantLayers, redundantLayersMessage, selectedBundles } from './host/setup/rows.ts'
-import { editCalendar, editDice, editRoutine, editVariables, readCalendarDocument, readDiceDocument, readRoutines, readVariables } from './host/worlds/daily-life.ts'
+import { editCalendar, editCommands, editDice, editRoutine, editVariables, readCalendarDocument, readCommandsDocument, readDiceDocument, readRoutines, readVariables } from './host/worlds/daily-life.ts'
 import { addWorldLore, removeWorldLore } from './host/worlds/lore-entries.ts'
 import { editSessionNarrationVoice, editWorldCharacter as editSessionCharacter, editWorldFaction as editSessionFaction, editWorldLore as editSessionLore, editWorldPlots as editSessionPlots, editWorldPlace as editSessionPlace, editWorldRelation as editSessionRelation, editWorldThing as editSessionThing, generateSessionCharacterPortrait, generateSessionEntityImage, readWorldState, sessionCharacterPortraitFile, sessionEntityImageFile, uploadSessionCharacterPortrait, uploadSessionEntityImage } from './host/sessions/world-state.ts'
 import { editWorldNarrationVoice, editWorldCharacter as editWorldFileCharacter, editWorldFaction as editWorldFileFaction, editWorldLore as editWorldFileLore, editWorldPlots as editWorldFilePlots, editWorldPlace as editWorldFilePlace, editWorldRelation as editWorldFileRelation, editWorldThing as editWorldFileThing, generateWorldCharacterPortrait, generateWorldEntityImage, readWorldEditor, readWorldTrigger, removeWorldTrigger, writeWorldTrigger, uploadWorldEntityImage, worldCharacterPortraitFile, worldEntityImageFile, uploadWorldCharacterPortrait } from './host/worlds/world-editor.ts'
@@ -201,6 +201,10 @@ export function apply(ctx: Context, config: Config) {
   }
   const staging = new ImportStaging()
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
+  const chatStatus = (chatSessionId: string) => {
+    const live = (ctx.get as unknown as (name: 'agents') => { get(id: string): { status: string } | undefined } | undefined)('agents')?.get(chatSessionId)
+    return { chatSessionId, turns: roleplayImport.turnsOf(chatSessionId), running: live !== undefined && live.status !== 'idle' }
+  }
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
   const archiveDeps: ArchiveDeps = { state: ctx.roleplayState, sessionsDir: deps.sessionsDir, worldsDir: () => join(root.path, 'worlds'), worldDirectory: async id => (await worlds.find(id))?.directory, maxBytes: () => config.importMaxUploadBytes.get() * 4 }
   const presetLibrary = new Presets({ root: () => root.path, worldDirectory: async worldId => (await worlds.find(worldId))?.directory, authoring: presetAuthoring, importMessage: narrationImportMessage, get maxUploadBytes() { return config.importMaxUploadBytes.get() }, staging, playing: id => orchestration.playing(chatSessionId(id)) })
@@ -273,6 +277,24 @@ export function apply(ctx: Context, config: Config) {
       if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
       return { chatSessionId: await authoring.ensure(world.summary.id, world.summary.name, title, language) }
     },
+    sayToAuthor: async (worldId, text, language) => {
+      const world = await worlds.find(worldId)
+      if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
+      const chatSessionId = await authoring.ensure(world.summary.id, world.summary.name, undefined, language)
+      await authoring.send(chatSessionId, text)
+      return { chatSessionId }
+    },
+    authoringStatus: async (worldId) => {
+      const world = await worlds.find(worldId)
+      if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
+      return chatStatus(authoringChatSessionId(world.summary.id))
+    },
+    chatStatus,
+    forgetAuthoring: async (worldId) => {
+      const world = await worlds.find(worldId)
+      if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
+      await purgeChat(authoringChatSessionId(world.summary.id))
+    },
     translation: {
       language: id => worldLanguage(worlds, id),
       start: (id, to, title, language) => startTranslation({ worlds, authoring, text: (key, lang, variables) => prompts.text(key, lang, variables) }, id, to, title, language),
@@ -335,6 +357,8 @@ export function apply(ctx: Context, config: Config) {
       editRoutine: async (worldId, key, windows) => await editRoutine(await editableWorld(worlds, worldId, root.path), key, windows),
       dice: async worldId => await readDiceDocument(await editableWorld(worlds, worldId, root.path)),
       editDice: async (worldId, dice) => await editDice(await editableWorld(worlds, worldId, root.path), dice),
+      commands: async worldId => await readCommandsDocument(await editableWorld(worlds, worldId, root.path)),
+      editCommands: async (worldId, commands) => await editCommands(await editableWorld(worlds, worldId, root.path), commands),
       calendar: async worldId => await readCalendarDocument(await editableWorld(worlds, worldId, root.path)),
       editCalendar: async (worldId, calendar) => await editCalendar(await editableWorld(worlds, worldId, root.path), calendar),
       variables: async worldId => await readVariables(await editableWorld(worlds, worldId, root.path)),

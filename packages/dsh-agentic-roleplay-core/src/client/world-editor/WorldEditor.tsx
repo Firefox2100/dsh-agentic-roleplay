@@ -14,6 +14,7 @@ import { PromptsPanel } from './PromptsPanel.tsx'
 import { RoutinesPanel } from './RoutinesPanel.tsx'
 import { CalendarPanel } from './CalendarPanel.tsx'
 import { ToolsPanel } from './ToolsPanel.tsx'
+import { CommandsPanel } from './CommandsPanel.tsx'
 import { DicePanel } from './DicePanel.tsx'
 import { VariablesPanel } from './VariablesPanel.tsx'
 import { GalleryView } from '../widgets/gallery-view/GalleryView.tsx'
@@ -21,7 +22,8 @@ import type { WorldLocaleKey } from './locales.ts'
 import type { GalleryLocaleKey } from '../widgets/gallery-view/locales.ts'
 import { NotEditableError, type WorldSource } from './source.ts'
 import css from './WorldEditor.module.css'
-import { navigateEditorTabs } from './EditorTabs.tsx'import { IconRefresh } from '../ui/icons.tsx'
+import { navigateEditorTabs } from './EditorTabs.tsx'
+import { IconRefresh } from '../ui/icons.tsx'
 
 
 export type Translate = (key: WorldLocaleKey, values?: Record<string, string | number>) => string
@@ -48,6 +50,7 @@ const SECTIONS = [
   { id: 'calendar', label: 'sectionCalendar', built: true, ownFiles: true },
   { id: 'variables', label: 'sectionVariables', built: true, ownFiles: true },
   { id: 'dice', label: 'sectionDice', built: true, ownFiles: true },
+  { id: 'commands', label: 'sectionCommands', built: true, ownFiles: true },
   { id: 'tools', label: 'sectionTools', built: true, ownFiles: true },
   { id: 'prompts', label: 'sectionPrompts', built: true, ownFiles: true },
   { id: 'interface', label: 'pk_title', built: true, ownFiles: true },
@@ -108,6 +111,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
         {section === 'routines' && source.worldId !== undefined && <RoutinesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'calendar' && source.worldId !== undefined && <CalendarPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'dice' && source.worldId !== undefined && <DicePanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'commands' && source.worldId !== undefined && <CommandsPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'tools' && source.worldId !== undefined && <ToolsPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'variables' && source.worldId !== undefined && <VariablesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'interface' && source.worldId !== undefined && <PacksPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}

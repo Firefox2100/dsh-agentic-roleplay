@@ -1,3 +1,4 @@
+import { parseCommandsEdit } from '../../../shared/world-commands.ts'
 import { parseDiceEdit } from '../../../shared/world-dice.ts'
 import { parseCalendarEdit, parseRoutineEdit, parseVariablesEdit } from '../../../shared/world-daily.ts'
 import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parseLoreEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type PlotsEdit } from '../../../shared/world-state.ts'
@@ -84,6 +85,16 @@ export function worldFilesRoutes({ worldFiles, worldEditor, sessions }: ApiDeps)
       GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.dice(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } },
       PUT: async (req, res, url) => {
         try { sendJson(res, 200, await worldFiles.editDice(url.searchParams.get('id') ?? '', parseDiceEdit(await readJsonBody(req)))) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
+          throw error
+        }
+      },
+    },
+    '/worlds/commands': {
+      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.commands(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message); throw error } },
+      PUT: async (req, res, url) => {
+        try { sendJson(res, 200, await worldFiles.editCommands(url.searchParams.get('id') ?? '', parseCommandsEdit(await readJsonBody(req)))) } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems })
           throw error

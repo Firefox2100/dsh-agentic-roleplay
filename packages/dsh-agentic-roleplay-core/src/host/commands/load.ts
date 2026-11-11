@@ -9,7 +9,7 @@ import { Reader, type Issue, type ParseResult } from '../validation.ts'
 export const COMMANDS_FILE_NAME = 'commands.json'
 export const MAX_COMMANDS = 20
 /** The words the game itself uses after a slash. */
-const RESERVED = new Set(['ooc', 'roll'])
+const RESERVED = new Set(['ooc', 'ask', 'roll', 'wait', 'dream'])
 const WORD = /^[\p{L}\p{N}_]{1,30}$/u
 const KEY = /^[a-z][a-z0-9_]{0,29}$/
 

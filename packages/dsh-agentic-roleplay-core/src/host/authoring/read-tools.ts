@@ -7,6 +7,7 @@ import type { WorldCatalog } from '../worlds/catalog.ts'
 import { readWorldEditor } from '../worlds/world-editor.ts'
 import { readTriggerDocuments } from '../triggers/files.ts'
 import { readWorldInfo } from '../worlds/world-info.ts'
+import { WORLD_FILE_KINDS, isWorldFileKind, readWorldFile } from './world-files.ts'
 import { AUTHORED_ENTITY_KINDS, readAuthoredEntityDocument, type AuthoredEntityKind } from './documents.ts'
 
 type AgentExec = { agent?: { session: { id: string } } }
@@ -138,6 +139,18 @@ export function authoredWorldReadTools(reader: AuthoredWorldReader): ToolDefinit
         const found = (await readTriggerDocuments(record.directory)).find(entry => entry['key'] === args.key)
         if (found === undefined) throw new Error(`there is no trigger with key "${args.key}"`)
         return json(found)
+      },
+    }),
+    defineTool({
+      name: 'get_world_file',
+      description: `Read the exact stored document of a whole-world file: ${WORLD_FILE_KINDS.join(', ')} (tracked values, dice checks, the world's own slash commands, the holidays). Its empty form is returned when the world has none. Use this before replacing one.`,
+      parameters: { kind: { type: 'string', required: true, enum: WORLD_FILE_KINDS } },
+      output: jsonOutput,
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        if (!isWorldFileKind(args.kind)) throw new Error(`kind must be one of ${WORLD_FILE_KINDS.join(', ')}`)
+        return json(await readWorldFile(record.directory, args.kind))
       },
     }),
     defineTool({

@@ -1328,5 +1328,155 @@
       "cast"
     ],
     "script": "walk-zh"
+  },
+  {
+    "id": "salt-harbor-solo-some-ask-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The /ask command: the reporter asks the game master about the story. The answer comes from what the reporter was shown or could know, so the landlord's secret stays unsaid; the landlord does not speak or act on those turns, and an ordinary turn afterwards still plays.",
+    "report": [
+      "commands",
+      "secrets"
+    ],
+    "script": "ask-en"
+  },
+  {
+    "id": "salt-harbor-solo-some-ask-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "The /ask command: the reporter asks the game master about the story. The answer comes from what the reporter was shown or could know, so the landlord's secret stays unsaid; the landlord does not speak or act on those turns, and an ordinary turn afterwards still plays.",
+    "report": [
+      "commands",
+      "secrets"
+    ],
+    "script": "ask-zh"
+  },
+  {
+    "id": "salt-harbor-solo-some-reflect-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "Reflection under a long story: the memory story with the reflection pass forced to run every four turns, so beliefs are written and then take part in recall. The planted fact must still come back at the end, and the passes must not break a turn.",
+    "report": [
+      "memory",
+      "reflection"
+    ],
+    "script": "memory-en",
+    "settings": {
+      "context": {
+        "limitTokens": 4000,
+        "retainRatio": 0.3
+      },
+      "reflection": {
+        "auto": true,
+        "everyTurns": 4,
+        "minTurns": 4,
+        "minNew": 1,
+        "onSceneChange": false
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-some-reflect-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "no-dice",
+      "no-plots",
+      "no-schedule",
+      "no-triggers",
+      "no-variables",
+      "no-organisations",
+      "no-items"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "rules",
+      "prompts"
+    ],
+    "why": "Reflection under a long story: the memory story with the reflection pass forced to run every four turns, so beliefs are written and then take part in recall. The planted fact must still come back at the end, and the passes must not break a turn.",
+    "report": [
+      "memory",
+      "reflection"
+    ],
+    "script": "memory-zh-harbor",
+    "settings": {
+      "context": {
+        "limitTokens": 4000,
+        "retainRatio": 0.3
+      },
+      "reflection": {
+        "auto": true,
+        "everyTurns": 4,
+        "minTurns": 4,
+        "minNew": 1,
+        "onSceneChange": false
+      }
+    }
   }
 ]

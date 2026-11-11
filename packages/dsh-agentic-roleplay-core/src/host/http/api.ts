@@ -2,6 +2,7 @@ import type { PlaytestRequest, PlaytestStatus } from '../../shared/playtest.ts'
 import type { StoryStatistics } from '../../shared/statistics.ts'
 import type { StoryComparison } from '../../shared/compare.ts'
 import type { ExternalTool } from '../../shared/tools.ts'
+import { type CommandsDocument } from '../../shared/world-commands.ts'
 import { type DiceDocument } from '../../shared/world-dice.ts'
 import { type CalendarDocument, type VariableDeclaration, type WorldRoutines } from '../../shared/world-daily.ts'
 import type { RoutineDefinition } from 'dsh-roleplay-model'
@@ -65,6 +66,14 @@ export interface ApiDeps {
   /** The worlds the package ships, and adding one to the person's worlds. */
   starter: { list(): Promise<import('../../shared/starter.ts').StarterWorld[]>; add(folder: string): Promise<import('../../shared/worlds.ts').WorldSummary> }
   authorWorld(worldId: string, title: string, language?: string): Promise<{ chatSessionId: string }>
+  /** Writes into a world's authoring chat as the person would, opening the chat first when it does not exist. */
+  sayToAuthor(worldId: string, text: string, language?: string): Promise<{ chatSessionId: string }>
+  /** Whether the world's authoring assistant is working, and how many of its turns have ended: a caller reads the count before it speaks and waits for it to grow and the assistant to be idle. */
+  authoringStatus(worldId: string): Promise<{ chatSessionId: string; turns: number; running: boolean }>
+  /** The same for any authoring chat by its DSH id (a preset's or a lorebook's assistant). */
+  chatStatus(chat: string): { chatSessionId: string; turns: number; running: boolean }
+  /** Deletes a world's authoring chat and what it started, for good; the world itself stays. */
+  forgetAuthoring(worldId: string): Promise<void>
   translation: {
     language(worldId: string): Promise<'en' | 'zh' | undefined>
     start(worldId: string, to: 'en' | 'zh', title: string, language: string): Promise<{ chatSessionId: string; started: boolean; failure?: string }>
@@ -120,6 +129,8 @@ export interface ApiDeps {
     variables(worldId: string): Promise<VariableDeclaration[]>
     dice(worldId: string): Promise<DiceDocument>
     editDice(worldId: string, dice: DiceDocument): Promise<DiceDocument>
+    commands(worldId: string): Promise<CommandsDocument>
+    editCommands(worldId: string, commands: CommandsDocument): Promise<CommandsDocument>
     calendar(worldId: string): Promise<CalendarDocument>
     editCalendar(worldId: string, calendar: CalendarDocument): Promise<CalendarDocument>
     editVariables(worldId: string, declarations: VariableDeclaration[]): Promise<VariableDeclaration[]>

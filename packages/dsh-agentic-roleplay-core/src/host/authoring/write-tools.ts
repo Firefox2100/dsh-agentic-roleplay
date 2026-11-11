@@ -11,6 +11,7 @@ import { checkWorld } from '../worlds/world-check.ts'
 import { formatIssue } from '../validation.ts'
 import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, readAuthoredEntityDocument, replaceAuthoredEntity, type AuthoredEntityKind } from './documents.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
+import { WORLD_FILE_KINDS, isWorldFileKind, writeWorldFile } from './world-files.ts'
 import { PACK_MUTATION_TOOLS } from './pack-tools.ts'
 import { PROMPT_MUTATION_TOOLS, PROSE_PROMPTS } from './prompt-tools.ts'
 import { changedFields, createdFields, plain, sizeOf, type Summary } from './approval-summary.ts'
@@ -21,12 +22,17 @@ const kindParameter = { type: 'string' as const, required: true as const, enum: 
 const keyParameter = { type: 'string' as const, required: true as const, description: 'Stable entity key.' }
 
 /** The fields of `world.json` the assistant changes: what the world says about itself. The name, the preset, the lorebooks, the sampling and the tool switches are the person's choices and stay theirs. */
-export const WORLD_INFO_FIELDS = ['description', 'tags', 'rules', 'opening', 'alternateOpenings', 'startingTime', 'timeZone', 'version', 'authorName', 'authorUrl'] as const
+export const WORLD_INFO_FIELDS = ['description', 'tags', 'rules', 'opening', 'alternateOpenings', 'startQuestions', 'startingTime', 'timeZone', 'version', 'authorName', 'authorUrl'] as const
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
+export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', 'write_world_file', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
+}
+
+function fileKind(value: unknown) {
+  if (!isWorldFileKind(value)) throw new InvalidEditProblems([`kind must be one of ${WORLD_FILE_KINDS.join(', ')}`])
+  return value
 }
 
 function plotDocument(value: unknown) {
@@ -38,8 +44,9 @@ function plotDocument(value: unknown) {
 /** Checks a write the way its tool will, and writes nothing: a change the tool would refuse is not put to the person. @throws {InvalidEditProblems} */
 export async function validateMutation(reader: AuthoredWorldReader, exec: ToolExecution): Promise<void> {
   const args = exec.arguments as Record<string, unknown>
-  if (exec.name !== 'create_world_element' && exec.name !== 'replace_world_element' && exec.name !== 'write_world_trigger') return
+  if (exec.name !== 'create_world_element' && exec.name !== 'replace_world_element' && exec.name !== 'write_world_trigger' && exec.name !== 'write_world_file') return
   const { record } = await reader.read(exec)
+  if (exec.name === 'write_world_file') { await writeWorldFile({ id: record.summary.id, directory: record.directory }, fileKind(args['kind']), args['document'], { dryRun: true }); return }
   const world = { id: record.summary.id, directory: record.directory }
   const key = String(args['key'])
   if (exec.name === 'write_world_trigger') { await writeTriggerDocument(record.directory, await loadWorldParts(record.directory), key, args['document'], { dryRun: true }); return }
@@ -74,7 +81,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
   return [
     defineTool({
       name: 'create_world_element',
-      description: 'Create a character, location, item, faction or lore entry from a complete authored JSON document. The key becomes its stable id. Requires user approval.',
+      description: 'Create a character, location, item, faction or lore entry from a complete authored JSON document. The key becomes its stable id. A character that is somewhere in the story needs start.location, the key of an existing place (start: {"location": "yard"}); one without it is in no place. Requires user approval.',
       parameters: { kind: kindParameter, key: keyParameter, document: { type: 'json', required: true, description: 'Complete snake_case document in the world file format.' } },
       output: jsonOutput,
       async execute(args, exec) {
@@ -110,7 +117,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
     }),
     defineTool({
       name: 'edit_world_info',
-      description: `Change what the world says about itself in world.json: ${WORLD_INFO_FIELDS.join(', ')}. Give only the fields to change, as {"description": "...", "tags": ["..."], "opening": "...", "alternateOpenings": [{"title": "...", "text": "..."}]}: a list replaces the whole list, so read get_world_info first. The description is a short summary (a few sentences). An opening with lines spoken by characters cannot be edited as text. The name, preset, lorebooks, sampling and tool switches are the person's and cannot be changed here. Requires user approval.`,
+      description: `Change what the world says about itself in world.json: ${WORLD_INFO_FIELDS.join(', ')}. Give only the fields to change, as {"description": "...", "tags": ["..."], "opening": "...", "alternateOpenings": [{"title": "...", "text": "..."}]}: a list replaces the whole list, so read get_world_info first. The description is a short summary (a few sentences). An opening with lines spoken by characters cannot be edited as text. startQuestions is a list of {"id", "text", "options": [{"id", "label", "effect": {...}}]} with two to eight options each; an effect may hold rules (a list of text), opening (the position of an alternate opening), startingTime, clockMode (simulated or real), tools and plots, and {} changes nothing. The name, preset, lorebooks, sampling and tool switches are the person's and cannot be changed here. Requires user approval.`,
       parameters: { changes: { type: 'json', required: true, description: 'The fields to change, with their new values.' } },
       output: jsonOutput,
       async execute(args, exec) {
@@ -157,6 +164,17 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
         const { record } = await reader.read(exec)
         const action = await writeTriggerDocument(record.directory, await loadWorldParts(record.directory), args.key, args.document)
         return result(action, 'trigger', args.key, await readWorldEditor({ id: record.summary.id, directory: record.directory })) as never
+      },
+    }),
+    defineTool({
+      name: 'write_world_file',
+      description: `Replace one whole-world file with a complete document: variables (variables.json, a list of what stories track: key, name, kind number|flag|choice, subject character|item|location|world, min and max for a number (copy the limits the person gave), default, integer, visibility, and an "update" field, a sentence saying when and how it changes, which a tracked value needs so that it moves only when it should; visibility is public, private or hidden), dice (dice.json, {checks: [...]}), commands (commands.json, {commands: [{word, description}]}, the world's own slash commands) or calendar (calendar.json, {hemisphere, holidays: [{id, name, on}]}). Read it with get_world_file first and send the whole document, since it replaces the file; an empty document removes the file. It is checked against the rest of the world as the editor does (a value a character still has, a holiday a trigger names) and refused with every problem. Requires user approval.`,
+      parameters: { kind: { type: 'string', required: true, enum: WORLD_FILE_KINDS }, document: { type: 'json', required: true, description: 'The complete document in the file format: a list for variables, an object holding the list for the others.' } },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        await writeWorldFile({ id: record.summary.id, directory: record.directory }, fileKind(args.kind), args.document)
+        return result('written', args.kind, args.kind, await readWorldEditor({ id: record.summary.id, directory: record.directory })) as never
       },
     }),
     defineTool({
@@ -226,10 +244,10 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
     const detail = await infoDetail(args['changes'], await options.info?.(exec.agent.session.id).catch(() => undefined))
     return { kind: 'ask', reason: 'edit the authored world\'s description, tags, opening or other world.json fields', displayReason: withDetail({ en: 'Edit what the world says about itself', zh: '编辑世界对自身的描述' }, detail) }
   }
-  const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : exec.name.endsWith('trigger') ? 'trigger' : 'plots'
+  const kind = typeof args['kind'] === 'string' ? args['kind'] : exec.name === 'edit_world_relationship' ? 'relationship' : exec.name.endsWith('trigger') ? 'trigger' : exec.name === 'write_world_file' ? 'file' : 'plots'
   const key = typeof args['key'] === 'string' ? args['key'] : ''
   const target = key === '' ? kind : `${kind} “${key}”`
-  const action = exec.name.startsWith('create') ? 'Create' : exec.name.startsWith('delete') ? 'Delete' : exec.name === 'write_world_trigger' ? 'Write' : 'Edit'
+  const action = exec.name.startsWith('create') ? 'Create' : exec.name.startsWith('delete') ? 'Delete' : exec.name === 'write_world_trigger' || exec.name === 'write_world_file' ? 'Write' : 'Edit'
   const detail = await detailOf(exec, kind, key, options.current).catch(() => undefined)
   return {
     kind: 'ask',
@@ -243,6 +261,12 @@ async function infoDetail(changes: unknown, before: WorldInfo | undefined): Prom
   let edit: Record<string, unknown>
   try { edit = parseWorldInfoEdit(changes) as Record<string, unknown> } catch { return plain(changes) }
   return before === undefined ? plain(edit) : changedFields(before, { ...before, ...edit })
+}
+
+function fileDetail(document: unknown): Summary | undefined {
+  const lists = Array.isArray(document) ? [document] : typeof document === 'object' && document !== null ? Object.values(document).filter(Array.isArray) : []
+  const entries = lists.length === 0 ? undefined : lists.reduce((sum, list) => sum + list.length, 0)
+  return entries === undefined ? undefined : { en: `${entries} entries`, zh: `${entries} 项` }
 }
 
 function withDetail(headline: Summary, detail: Summary | undefined): Summary {
@@ -261,6 +285,7 @@ async function detailOf(exec: ToolExecution, kind: string, key: string, current:
     case 'edit_world_relationship': return plain(args['change'])
     case 'replace_world_plots': return Array.isArray(args['plots']) ? { en: `${args['plots'].length} plots`, zh: `${args['plots'].length} 条剧情` } : undefined
     case 'write_world_trigger': return createdFields(args['document'])
+    case 'write_world_file': return fileDetail(args['document'])
     default: return undefined
   }
 }

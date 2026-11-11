@@ -72,6 +72,9 @@ export function apply(ctx: Context): void {
     const directory = await worldDirectory(chat)
     return directory === undefined ? undefined : await readWorldInfo(directory)
   }
+  ctx.on('session/event', (session, event) => {
+    if (event.type === 'turn/end' && session.header.origin !== 'subagent' && authoredWorldOf(session.id) !== undefined) ctx.roleplayImport.turnEnded(session.id)
+  })
   ctx.on('tools/pre-execute', (exec, next) => authoringApproval(exec, next, reviewing, { auto: () => ctx.roleplayImport.settings.approval === 'auto', validate: exec => validateMutation(reader, exec), current, info }))
   for (const [name, order, id] of [
     ['WORLD_AUTHORING_PERSONA', ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'), 'world/persona'],

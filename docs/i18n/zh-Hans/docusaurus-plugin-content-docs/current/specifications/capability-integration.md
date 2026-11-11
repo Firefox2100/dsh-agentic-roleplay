@@ -56,6 +56,8 @@ ctx.roleplayState.rankMemories(async ({ situation, candidates, signal }) => {
 
 第三个额外环节 `decisions.messages`（`off` 或 `on`）服务于玩家不在时继续进行的故事（`host/orchestration/autonomy.ts`）。每次查看时，故事抽取一次发消息的概率（`autonomy.chance`，每条已发出而没有回复的消息使它乘以 `autonomy.decay`），刚换了日程的角色有自己的概率（`autonomy.transitionChance`）；只有抽中且该环节开启时，才会向决策模型提出一个问题（`roleplay/decide-message`），状态包括角色、它正在做的事、它的日程是否刚刚变化、玩家离开了多久、未回复的消息数和一天中的时间。概率低于 `decisions.gateThreshold` 则保持安静；没有决策服务或服务失败时，仅由抽取结果决定，原因只报告一次。
 
+第四个额外环节 `decisions.errands`（`off` 或 `on`，默认 `on`）在每个已交付的回合之后运行（`errandKeeper`，`host/decisions/errands.ts`，提示词 `roleplay/decide-errand`）：对回合中被点到、尚未脱离日程的每个清醒的非玩家角色提一个问题；被判断为在等玩家的角色（被派去办事、被告知留下、等候或守望）会脱离日程，直到玩家与它再次相遇或过去一天。没有决策服务时本环节不保持任何角色；游戏主持人仍可自己标记这样的保持。
+
 缺少决策服务或其出错，都不会让故事停下：该环节的判断交给语言模型，原因只记录一次并保留。路由只有一个函数（`host/decisions/route.ts` 的 `routeVerdicts`），由各环节共用。每个环节做了什么会累加到故事数据库旁的 `decisions.json`（运行次数、已决策、已升级、已回退、一致、分歧、各路径耗时、最近的分歧），因此故事回退不会改变它；`GET /roleplay-api/sessions/decisions?id=` 把它连同服务状态提供给对话设置标签页。
 
 决策模型以后台优先级、并通过该服务自己的并发能力被调用，因此对它设置的限制不会让它排在语言模型任务之后。

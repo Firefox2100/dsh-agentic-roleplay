@@ -99,5 +99,11 @@ describe('sorting the entries of a lorebook', () => {
     expect((await check([decision(0, { scope: 'listed' }), decision(1, {})]))[0]).toContain('names nobody')
     expect((await check([decision(0, {}), decision(1, { role: 'steering' })]))[0]).toContain('say where it belongs')
     expect((await check([decision(0, {}), decision(0, {}), decision(1, {})]))[0]).toContain('decided twice')
+    const chinese = { name: 'B', entries: [{ ref: 0, title: '语气', keys: [], text: '用第二人称叙述，语气温暖，不要写太长的段落，也不要替玩家做决定。' }] }
+    const seen = async (entries: unknown[]): Promise<string> => { const out: string[] = []; await classifyEntries(ctx({ entries }, out), chinese).catch(() => undefined); return out[0] ?? '' }
+    expect(await seen([decision(0, { role: 'steering', target: 'style', guidance: 'steering' })])).toContain('is a label')
+    expect(await seen([decision(0, { role: 'steering', target: 'style', guidance: 'steer_the_character' })])).toContain('is a label')
+    expect(await seen([decision(0, { role: 'steering', target: 'style', guidance: 'Use the second person and a warm tone, and never decide for the player.' })])).toContain('written in English')
+    expect(await seen([decision(0, { role: 'steering', target: 'style', guidance: '用第二人称叙述，语气温暖，不替玩家做决定。' })])).toBe('ok')
   })
 })

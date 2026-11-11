@@ -193,6 +193,16 @@ beforeEach(async () => {
       if (worldId === 'missing') throw new WorldNotFoundError('missing world')
       return { chatSessionId: `world-author-${worldId}` }
     },
+    sayToAuthor: async worldId => {
+      if (worldId === 'missing') throw new WorldNotFoundError('missing world')
+      return { chatSessionId: `world-author-${worldId}` }
+    },
+    authoringStatus: async worldId => {
+      if (worldId === 'missing') throw new WorldNotFoundError('missing world')
+      return { chatSessionId: `world-author-${worldId}`, turns: 2, running: false }
+    },
+    chatStatus: chat => ({ chatSessionId: chat, turns: 1, running: true }),
+    forgetAuthoring: async worldId => { if (worldId === 'missing') throw new WorldNotFoundError('missing world') },
     translation: {
       language: async id => { if (id === 'missing') throw new WorldNotFoundError('missing world'); return id === 'harbor' ? 'en' : undefined },
       start: async (id, to) => { if (id === 'harbor' && to === 'en') throw new InvalidEditProblems(['this world is already written in English']); return { chatSessionId: `world-author-${id}`, started: true } },
@@ -233,6 +243,8 @@ beforeEach(async () => {
       editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }) },
       dice: () => Promise.resolve({ checks: [] }),
       editDice: (_world, dice) => (dice.checks.some(check => check.key === '') ? Promise.reject(new InvalidEditProblems(['checks[0].key is required'])) : Promise.resolve(dice)),
+      commands: () => Promise.resolve({ commands: [] }),
+      editCommands: (_world, commands) => Promise.resolve(commands),
       calendar: () => Promise.resolve({ hemisphere: 'north', holidays: [] }),
       editCalendar: (_world, calendar) => (calendar.holidays.some(holiday => holiday.id === '') ? Promise.reject(new InvalidEditProblems(['holidays[0].id is required'])) : Promise.resolve(calendar)),
       routines: () => Promise.resolve({ characters: [], places: [] }),
@@ -549,6 +561,14 @@ describe('roleplay API', () => {
     expect((await put({ hemisphere: 'moon', holidays: [] })).status).toBe(422)
   })
 
+  it('reads and replaces the commands of a world', async () => {
+    expect(await (await fetch(`${origin}/worlds/commands?id=harbor`)).json()).toEqual({ commands: [] })
+    const put = (body: unknown) => fetch(`${origin}/worlds/commands?id=harbor`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    expect(await (await put({ commands: [{ word: '/recruit', description: 'A new person.' }] })).json()).toEqual({ commands: [{ word: 'recruit', description: 'A new person.' }] })
+    expect((await put({ commands: [{ word: 'x' }] })).status).toBe(422)
+    expect((await put({ commands: 'x' })).status).toBe(422)
+  })
+
   it('says which language a world is written in, and asks for its translation', async () => {
     const known = await fetch(`${origin}/worlds/language?id=harbor`)
     expect(await known.json()).toEqual({ language: 'en' })
@@ -566,6 +586,17 @@ describe('roleplay API', () => {
     expect(opened.status).toBe(200)
     expect(await opened.json()).toEqual({ chatSessionId: 'world-author-harbor' })
 
+    const say = (id: string, body: unknown) => fetch(`${origin}/worlds/authoring/message?id=${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    const said = await say('harbor', { text: 'Add a blacksmith.' })
+    expect(said.status).toBe(202)
+    expect(await said.json()).toEqual({ chatSessionId: 'world-author-harbor' })
+    expect((await say('harbor', { text: ' ' })).status).toBe(400)
+    expect((await say('missing', { text: 'hi' })).status).toBe(404)
+    expect(await (await fetch(`${origin}/worlds/authoring/status?id=harbor`)).json()).toEqual({ chatSessionId: 'world-author-harbor', turns: 2, running: false })
+    expect((await fetch(`${origin}/worlds/authoring/status?id=missing`)).status).toBe(404)
+    expect(await (await fetch(`${origin}/authoring/status?chat=preset-author-x`)).json()).toEqual({ chatSessionId: 'preset-author-x', turns: 1, running: true })
+    expect((await fetch(`${origin}/worlds/authoring/chat?id=harbor`, { method: 'DELETE' })).status).toBe(200)
+    expect((await fetch(`${origin}/worlds/authoring/chat?id=missing`, { method: 'DELETE' })).status).toBe(404)
     const missing = await fetch(`${origin}/worlds/authoring?id=missing`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Missing' }) })
     expect(missing.status).toBe(404)
   })
