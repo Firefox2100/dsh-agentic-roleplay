@@ -6,6 +6,7 @@ import { presetOfChat } from './shared/preset-chat.ts'
 import { zoneOf } from './host/clock/story-clock.ts'
 import { liveSettings, useChildReasoning } from './host/sessions/settings.ts'
 import type { Context } from '@deepseek-ai/cordis'
+import { SessionId } from '@deepseek-ai/dsh-session'
 import type { DecisionService, ImageGenerationService } from '@dsh-ai-providers/core'
 import { offloadOf } from './shared/offload.ts'
 import { guarded } from './host/residency/guard.ts'
@@ -47,7 +48,7 @@ import { registerApi } from './host/http/index.ts'
 import { deleteSession } from './host/sessions/delete-session.ts'
 import { purgeOf } from './host/agent/purge-services.ts'
 import { AuthoringTools } from './host/tools/authoring-tools.ts'
-import { externalTools, type ToolRegistry } from './host/tools/external.ts'
+import { externalTools } from './host/tools/external.ts'
 import { profileDirectory, redundantLayers, redundantLayersMessage, selectedBundles } from './host/setup/rows.ts'
 import { editCalendar, editCommands, editDice, editRoutine, editVariables, readCalendarDocument, readCommandsDocument, readDiceDocument, readRoutines, readVariables } from './host/worlds/daily-life.ts'
 import { addWorldLore, removeWorldLore } from './host/worlds/lore-entries.ts'
@@ -202,7 +203,8 @@ export function apply(ctx: Context, config: Config) {
   const staging = new ImportStaging()
   const purgeChat = purgeOf(ctx, config.sessionStorePath)
   const chatStatus = (chatSessionId: string) => {
-    const live = (ctx.get as unknown as (name: 'agents') => { get(id: string): { status: string } | undefined } | undefined)('agents')?.get(chatSessionId)
+    // Looked up rather than injected: a profile without the agent service still loads, and the registry is DSH's own.
+    const live = ctx.get('agents')?.get(SessionId(chatSessionId))
     return { chatSessionId, turns: roleplayImport.turnsOf(chatSessionId), running: live !== undefined && live.status !== 'idle' }
   }
   const deps = { worlds, state: ctx.roleplayState, agent, sessionsDir: () => join(root.path, 'sessions'), root: () => root.path, avatars: () => avatarsWorld(root.path) }
@@ -349,7 +351,7 @@ export function apply(ctx: Context, config: Config) {
       },
     },
     redundantLayers: layers,
-    externalTools: () => { const registry = (ctx as unknown as { get(name: 'tools'): ToolRegistry | undefined }).get('tools'); return registry === undefined ? [] : externalTools(registry) },
+    externalTools: () => { const registry = ctx.get('tools'); return registry === undefined ? [] : externalTools(registry) },
     worldFiles: {
       info: async worldId => await readWorldInfo((await editableWorld(worlds, worldId, root.path)).directory),
       editInfo: async (worldId, edit) => { const info = await editWorldInfo((await editableWorld(worlds, worldId, root.path)).directory, edit); await worlds.list({ refresh: true }); return info },

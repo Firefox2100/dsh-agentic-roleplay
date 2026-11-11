@@ -11,7 +11,7 @@ interface LiveAgent {
 
 /** What DSH's services give and the purge needs, looked up when used: a profile without them cannot delete a chat. */
 export function purgeDepsOf(ctx: Context, storePath: string): PurgeDeps {
-  const service = <T>(name: string): T | undefined => (ctx.get as unknown as (name: string) => T | undefined)(name)
+  const service = <T>(name: string): T | undefined => ctx.get(name)
   return {
     storeRoot: () => resolveRootPath(storePath),
     stored: () => service<StoredSessions>('sessionPersistence'),

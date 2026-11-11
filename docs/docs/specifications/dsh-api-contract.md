@@ -22,6 +22,7 @@ below so it can be checked when DSH moves.
 | Game master tools | `ctx.tools.register(defineTool(...), { when })` | `host/orchestration/tools.ts`, `@dsh-agentic-roleplay/state` |
 | Prompt | `ctx.systemPrompt.section` | `orchestration.ts` |
 | Prompt | `ctx.systemPrompt.suppressRuntimeContext`, `ctx.systemPrompt.context` | `helper.ts` |
+| Prompt, scoped | `ctx.systemPrompt.section`/`context` registered in a preset's scope shadows the profile's contribution of the same name (empty text contributes nothing), which is how the presets keep the Web bundle's orientation text out of story prompts | `host/prompts/dev-context.ts` |
 | Turn control | `agent/pre-step` (waterfall), `agent/turn-stopping`, `agent.steer`, `exec.concludeTurn()`, `exec.agent`, `exec.signal` | `host/orchestration/hooks.ts`, `tools.ts` |
 | Authoring model choice | `agent.model.current()`, `agent.model.select()` from `agent/created` | `host/authoring/turn-guard.ts` |
 | Chronicler (no tools of its own) | a `runChild` child with a `submit_result` of its own (below) | `compaction/chronicler.ts` |
@@ -79,6 +80,10 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 - **The preset.** `roleplay-helper` is a `@deepseek-ai/dsh-agent-preset` row in the bundle's patch (so a standalone core install has no helpers). It mounts the `core/helper`
   plugin, which gives the child its persona (a system-prompt section read by session id) and, on the public `agent/created` event, calls the child's `setup`. A preset is shared by
   every agent that uses it, so nothing per child lives in the plugin: it is looked up by the child's session id.
+- **The harness' own orientation text.** The Web bundle's `harness-dev-context` plugin tells every agent where the DSH checkout is and what "this page" is: noise in a
+  story prompt, and this machine's paths in the turn. `SystemPrompt` resolves a contribution by name at the nearest scope, so each preset registers `harness:source`
+  and `app:web-surface` again with empty text in its own scope (`host/prompts/dev-context.ts`). The plugin keeps its profile-wide row, so every other session in the
+  profile still reads that orientation; only the story's agents do not.
 - **Tools of its own.** A spawned child inherits every global tool (the story's readers, DSH's working directory), so `setup` first calls `agent.ctx.tools.restrict({ allow })`
   (`allow` is only the external tools the task lets through), then registers the child's tools on `agent.ctx`, which `restrict` never touches. The `submit_result` tool, the call
   budget, the repeated-call guard and the reminders are registered the same way.
@@ -130,6 +135,16 @@ These are DSH services that look applicable and are not, so a later review does 
 
 ## When upgrading DSH
 
-Read the upgrade guides, then check each row above: typecheck first (the types are the
+Two checks run before anyone reads a guide. `tests/support/dsh-contract.spec.ts` reads the installed
+declarations and fails naming the symbol that moved: `ctx.subagents.startActivation()`, `ctx.tokenMeter`,
+`SessionSurface.nodes`, the `BasicCompactionEngine` export, the slot typings still coming from
+`@deepseek-ai/dsh-client-store`, the conversation body's scrolling class, and the installed release being
+one of `DSH_RELEASES`. `pnpm release:check` then reads the built bundles: the client bundle must keep the
+shell's module format (`window.__ModuleLoader__.load({ id, ... })`) and may require only `react`,
+`react/jsx-runtime`, `react-dom` and `@deepseek-ai/dsh-client-ui-slots`, and it must not mention the
+primitives or the shell's store; the host bundle must leave the private model package inlined and must not
+import a client package.
+
+Then read the upgrade guides, and check each row above: typecheck first (the types are the
 contract), then the real-loop tests in `tests/host/orchestration/loop.spec.ts`, which run the
 actual agent loop, sub-agents, tool registry and compaction with a scripted model.

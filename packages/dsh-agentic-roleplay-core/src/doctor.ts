@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
 import { defineTool, type PreToolDecision, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { createTools, isSessionId, sessionDatabase, sessionFolder, type AgentLink } from '@dsh-agentic-roleplay/state'
@@ -40,6 +41,7 @@ export function doctorApproval(exec: ToolExecution): PreToolDecision | undefined
 }
 
 export function apply(ctx: Context): void {
+  silenceHarnessDevContext(ctx)
   const sessionsDir = () => join(ctx.roleplayRoot.path, 'sessions')
   const resolve = (chat: string): AgentLink | undefined => {
     const id = doctorSessionOf(chat)

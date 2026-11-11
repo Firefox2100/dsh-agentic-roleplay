@@ -115,9 +115,11 @@
               suffix: ''
           - id: doctor
             name: '@dsh-agentic-roleplay/core/doctor'
-# The Web bundle's row that tells every agent where the DSH checkout is and what "this page" is: nothing a story's game master or characters should hear.
-- id: harness-dev-context
-  disabled: true
+# The Web bundle's `harness-dev-context` row is left exactly as the profile has it. Each preset above
+# shadows that plugin's two sections and contexts in its own scope (silenceHarnessDevContext), so a
+# story's game master, characters and authors never read where the DSH checkout is or what "this page"
+# is, while every other session in the profile keeps that orientation. Disabling the row here would take
+# it away from all of them.
 # Helpers are children of the game master and DSH admits at most this many at once (it refuses the rest): a round of characters plus the keeper, the author and the suggestions run side by side.
 - id: subagent
   config:

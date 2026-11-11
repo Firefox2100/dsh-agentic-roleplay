@@ -18,6 +18,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 游戏主持人工具 | `ctx.tools.register(defineTool(...), { when })` | `host/orchestration/tools.ts`、`@dsh-agentic-roleplay/state` |
 | 系统提示词 | `ctx.systemPrompt.section` | `orchestration.ts` |
 | 系统提示词 | `ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context` | `helper.ts` |
+| 系统提示词（按作用域） | 在预设自己的作用域里注册同名的 `ctx.systemPrompt.section`/`context` 会遮蔽 profile 的那一条（空文本不贡献内容），各预设因此把 Web bundle 的引导文字挡在故事提示词之外 | `host/prompts/dev-context.ts` |
 | 回合控制 | `agent/pre-step`、`agent/turn-stopping`、`agent.steer`、`exec.concludeTurn()`、`exec.agent`、`exec.signal` | `host/orchestration/hooks.ts`、`tools.ts` |
 | 创作助手的模型选择 | 在 `agent/created` 中调用 `agent.model.current()`、`agent.model.select()` | `host/authoring/turn-guard.ts` |
 | 无自有工具的编年史作者 | 带有自己的 `submit_result` 的 `runChild` 子智能体（见下） | `compaction/chronicler.ts` |
@@ -66,6 +67,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 - `ctx.systemPrompt.section` 接收每次装配时求值的 `(context) => string`。通过 `dsh-agent` 合并的 `context.agent` 表示当前智能体，因此提示词段可跟随对话语言。预设中 `prefix: ''` 的 `dsh-persona` 行会遮蔽部署 persona，并在渲染时消失，把 persona 段留给本插件。除非设定 `interpolate: false`，段中的 `{{...}}` 会被 DSH 当作提示词变量；本项目的提示词文件无论如何都避免使用它。
 - **运行时上下文**（`ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context`）：DSH 会给每个智能体的请求加上一段英文的运行时事实（工作目录、文件策略、审批、委派）。辅助智能体的预设会屏蔽其中可选的部分，并用空内容覆盖必需的工作目录条目，因为辅助智能体只处理故事的文字，没有文件。带着这一段时，要求写中文的辅助智能体常常一直写到输出上限（把记录下的一次反思请求在关闭思考的 35B 上重放：带这一段时四次中只有一次完成，去掉后四次全部完成）。
+- **Web bundle 的引导文字**：`harness-dev-context` 会告诉每个智能体 DSH 的 checkout 在哪、"这个页面"是什么——对故事提示词是噪音，还会把本机路径写进回合里。`SystemPrompt` 按最近的作域解析同名贡献，所以每个预设都在自己的作用域里用空文本重新注册 `harness:source` 与 `app:web-surface`（`host/prompts/dev-context.ts`）。插件在 profile 里那一行照旧，profile 中其他会话仍有这段引导，只有故事的智能体没有。
 - `sessionController.prompt(request, signal)` 必须接收 `AbortSignal`，否则 DSH 内部会对 `undefined` 调用 `throwIfAborted`。插件通过它代表用户向对话发送消息，例如卡片导入的 `/import-st`。
 - 带开场内容的持久对话必须先以 `surfaceOp: 'append'` 追加一个空 `system/message`，再写其他表面节点。日志格式不允许系统提示词出现在其他节点之后。
 
@@ -79,4 +81,6 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 ## 升级 DSH 时
 
-先阅读升级指南，再逐项核对本页。首先运行类型检查，因为类型就是契约；然后运行 `tests/host/orchestration/loop.spec.ts` 中的真实循环测试。该测试使用脚本模型执行真正的智能体循环、子智能体、工具注册表和上下文折叠。
+在翻升级指南之前，先跑两个检查。`tests/support/dsh-contract.spec.ts` 读取已安装的声明文件，失败时会直接说出是哪个符号挪走了：`ctx.subagents.startActivation()`、`ctx.tokenMeter`、`SessionSurface.nodes`、`BasicCompactionEngine` 导出、插槽类型仍来自 `@deepseek-ai/dsh-client-store`、会话正文的滚动类名，以及安装版本是否在 `DSH_RELEASES` 里。然后 `pnpm release:check` 检查构建产物：客户端产物必须保持外壳的模块格式（`window.__ModuleLoader__.load({ id, ... })`），只允许 require `react`、`react/jsx-runtime`、`react-dom` 与 `@deepseek-ai/dsh-client-ui-slots`，且不得出现 primitives 或外壳的 store；宿主产物必须把私有模型包内联，且不得导入客户端包。
+
+再阅读升级指南，并逐项核对本页。首先运行类型检查，因为类型就是契约；然后运行 `tests/host/orchestration/loop.spec.ts` 中的真实循环测试。该测试使用脚本模型执行真正的智能体循环、子智能体、工具注册表和上下文折叠。

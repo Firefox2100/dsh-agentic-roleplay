@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@dsh-agentic-roleplay/state'
 import type { DecisionService, ImageGenerationService } from '@dsh-ai-providers/core'
@@ -63,6 +64,7 @@ export const name = '@dsh-agentic-roleplay/core/orchestration'
 export const inject = ['roleplayOrchestration', 'roleplayState', 'roleplayRoot', 'roleplayPrompts', 'tools', 'subagents', 'systemPrompt', 'agents']
 
 export function apply(ctx: Context): void {
+  silenceHarnessDevContext(ctx)
   const boundaries = () => ctx.roleplayOrchestration.boundaries
   const problem = (message: string): void => { ctx.logger.warn(`roleplay: ${message}`) }
   const sessionsDir = () => join(ctx.roleplayRoot.path, 'sessions')

@@ -100,4 +100,25 @@ for (const release of resolvedDsh) {
   if (!DSH_RELEASES.includes(release)) throw new Error(`pnpm-lock.yaml resolves DSH to ${release}, which is not a tested release; verify it, then add it to scripts/dsh-compat.mjs`)
 }
 
+// What the browser half ships: the shell loads this bundle by module id and supplies the modules it
+// may require, so a stray import either fails at load time in every slot or pins the plugin to a
+// DSH build that happens to export it (AGENTS.md §4).
+const coreDirectory = resolve(root, 'packages', 'dsh-agentic-roleplay-core')
+const clientBundle = await readText(resolve(coreDirectory, 'lib', 'client.js'))
+const [bundleHead, bundleId] = clientBundle.split('\n')
+if (bundleHead !== 'window.__ModuleLoader__.load({' || bundleId !== '\tid: "@dsh-agentic-roleplay/core",') throw new Error('the client bundle no longer uses the module format the shell loads (see the tsdown banner)')
+const shellProvided = new Set(['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@deepseek-ai/dsh-client-ui-slots'])
+for (const [, name] of clientBundle.matchAll(/require\("([^"]+)"\)/g)) {
+  if (!shellProvided.has(name)) throw new Error(`the client bundle requires ${name}, which the shell does not provide: bundle it instead (tsdown SHELL_MODULES) or drop the import`)
+}
+for (const name of ['@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-store', '@deepseek-ai/dsh-client-ui-dockkit']) {
+  if (clientBundle.includes(name)) throw new Error(`the client bundle still mentions ${name}: the plugin owns its controls and its store (AGENTS.md §4)`)
+}
+
+// What the host half ships: every @deepseek-ai import must stay an import of the profile's own copy,
+// and the private model package must be inlined rather than left as a dangling specifier.
+const hostBundle = await readText(resolve(coreDirectory, 'lib', 'index.js'))
+if (hostBundle.includes('dsh-roleplay-model')) throw new Error('the host bundle still imports the private model package instead of inlining it')
+if (hostBundle.includes('@deepseek-ai/dsh-client-')) throw new Error('the host bundle must not import client packages')
+
 console.log(`Release metadata and build outputs are valid for ${releasePackages.length} packages at ${version}.`)

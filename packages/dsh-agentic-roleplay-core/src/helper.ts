@@ -1,6 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import { join } from 'node:path'
 import { sessionFolder } from '@dsh-agentic-roleplay/state'
@@ -8,7 +9,6 @@ import { helpers } from './host/agents/child.ts'
 import { workspaceOf } from './host/workspace/folders.ts'
 import { registerFoldersJail } from './host/workspace/jail.ts'
 import { storyRoots } from './host/workspace/service.ts'
-import type { RoleplayOrchestration } from './host/orchestration/service.ts'
 
 export const name = '@dsh-agentic-roleplay/core/helper'
 export const inject = ['tools', 'systemPrompt']
@@ -18,6 +18,7 @@ export const inject = ['tools', 'systemPrompt']
  * one child's is found by its session id: its persona, and the equipment its caller set up for it when it was created.
  */
 export function apply(ctx: Context): void {
+  silenceHarnessDevContext(ctx)
   ctx.systemPrompt.section({
     name: 'ROLEPLAY_HELPER_PERSONA',
     order: ctx.systemPrompt.getSectionOrder('DEPLOYMENT_PERSONA_PREFIX'),
@@ -31,7 +32,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.systemPrompt.suppressRuntimeContext(), 'roleplay: helper runtime context')
   ctx.systemPrompt.context({ name: 'working-directory:current', order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
   // The story's file-tool folders hold for the helpers too: they run under this preset, whose agents the orchestration plugin's own listener does not hear (a character wrote outside its folders live).
-  const rootOf = (): string | undefined => (ctx as unknown as { get(name: 'roleplayRoot'): { path: string } | undefined }).get('roleplayRoot')?.path
+  const rootOf = (): string | undefined => ctx.get('roleplayRoot')?.path
   registerFoldersJail(ctx, {
     roots: async (session) => { const root = rootOf(); return root === undefined ? undefined : await storyRoots(root, sessionFolder(join(root, 'sessions'), session)) },
     workspace: () => workspaceOf(rootOf() ?? ''),
@@ -43,7 +44,7 @@ export function apply(ctx: Context): void {
   ctx.on('agent/pre-step', async (payload, next) => {
     const decision = await next()
     const selected = payload.agent.model.current()
-    if (decision.kind === 'enter') await (ctx as unknown as { get(name: 'roleplayOrchestration'): RoleplayOrchestration | undefined }).get('roleplayOrchestration')?.residency?.ensure('main', selected === undefined ? undefined : { provider: selected.provider, model: selected.model })
+    if (decision.kind === 'enter') await ctx.get('roleplayOrchestration')?.residency?.ensure('main', selected === undefined ? undefined : { provider: selected.provider, model: selected.model })
     return decision
   })
 }

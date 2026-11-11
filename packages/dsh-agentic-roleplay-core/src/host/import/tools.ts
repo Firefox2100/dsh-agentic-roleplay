@@ -4,11 +4,9 @@ import { defineTool, type ToolDefinition, type ToolExecution } from '@deepseek-a
 import type { Context } from '@deepseek-ai/cordis'
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import { parseImportCommand } from '../../shared/import-card.ts'
-import type { DecisionService } from '@dsh-ai-providers/core'
 import { currentTurn } from '../orchestration/current-turn.ts'
 import { ChildTimeoutError, namedModel, runChild } from '../agents/child.ts'
 import { askYesNo } from '../decisions/route.ts'
-import type { Embedder } from '../memory/embedding-index.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
 import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
@@ -22,7 +20,7 @@ import { outputCeiling } from './output-ceiling.ts'
 import { guarded } from '../residency/guard.ts'
 import type { ModelResidency } from '../residency/residency.ts'
 
-const residencyOf = (agent: Agent): ModelResidency | undefined => (agent.ctx as unknown as { get(name: 'roleplayOrchestration'): { residency: ModelResidency | undefined } | undefined }).get('roleplayOrchestration')?.residency
+const residencyOf = (agent: Agent): ModelResidency | undefined => agent.ctx.get('roleplayOrchestration')?.residency
 
 export const SURVEY_TOOL = 'import_survey'
 export const BUILD_TOOL = 'import_build'
@@ -93,12 +91,12 @@ export function contextOf(exec: ToolExecution, settings: ImportSettings, text: T
   const run: RunJob = keepIn === undefined ? ask : cachedJobs(keepIn, ask)
   // chosen but missing, the service fails each question, so the survey says why every piece went to the language model
   const decide: ImportContext['decide'] | undefined = settings.decisions === 'decision' ? (state, asks) => {
-    const service = guarded(residencyOf(agent), 'decision', (agent.ctx as unknown as { get(name: 'decisions'): DecisionService | undefined }).get('decisions'), ['decide'])
+    const service = guarded(residencyOf(agent), 'decision', agent.ctx.get('decisions'), ['decide'])
     if (service === undefined) return Promise.reject(new Error('no decision service is selected, or the selected one is not loaded'))
     return askYesNo(service, state, asks, exec.signal)
   } : undefined
   const embed: ImportContext['embed'] = async (texts) => {
-    const service = guarded(residencyOf(agent), 'embedding', (agent.ctx as unknown as { get(name: 'embeddings'): Embedder | undefined }).get('embeddings'), ['embed'])
+    const service = guarded(residencyOf(agent), 'embedding', agent.ctx.get('embeddings'), ['embed'])
     if (service === undefined) throw new NoEmbeddingService('no embedding provider is selected, or the selected one is not loaded')
     const { vectors, model } = await service.embed(texts, { inputType: 'document', signal: exec.signal })
     return { vectors, model }

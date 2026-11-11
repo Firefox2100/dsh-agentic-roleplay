@@ -5,6 +5,7 @@ import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
 import { guardAuthoringTurns } from './host/authoring/turn-guard.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import { lorebookOfChat } from './shared/lorebook-chat.ts'
 import { LorebookReader, lorebookApproval, lorebookAuthorTools, pendingTargets } from './host/authoring/lorebook-author-tools.ts'
@@ -20,6 +21,7 @@ export const inject = ['roleplayRoot', 'roleplayImport', 'roleplayPrompts', 'rol
 
 /** The lorebook authoring chat: reads and writes the entries of one library lorebook, each write approved by the person. */
 export function apply(ctx: Context): void {
+  silenceHarnessDevContext(ctx)
   const library = () => ctx.roleplayRoot.path
   const reader = new LorebookReader(library)
   const prompting = { prompts: () => ctx.roleplayPrompts, languages: () => ctx.roleplayAuthoringLanguages }

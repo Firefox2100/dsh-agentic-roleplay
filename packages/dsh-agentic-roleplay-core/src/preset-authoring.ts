@@ -5,6 +5,7 @@ import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
 import { guardAuthoringTurns } from './host/authoring/turn-guard.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import { presetOfChat } from './shared/preset-chat.ts'
 import { PresetReader, presetApproval, presetAuthorTools } from './host/authoring/preset-author-tools.ts'
@@ -20,6 +21,7 @@ export const inject = ['roleplayRoot', 'roleplayImport', 'roleplayPrompts', 'rol
 
 /** The preset authoring chat: reads and writes the prose prompts of one library preset, each write approved by the person. */
 export function apply(ctx: Context): void {
+  silenceHarnessDevContext(ctx)
   const library = () => ctx.roleplayRoot.path
   const reader = new PresetReader(library)
   const prompting = { prompts: () => ctx.roleplayPrompts, languages: () => ctx.roleplayAuthoringLanguages }
