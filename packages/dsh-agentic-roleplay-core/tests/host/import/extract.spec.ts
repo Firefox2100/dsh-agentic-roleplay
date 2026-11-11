@@ -188,6 +188,28 @@ describe('what a character has on it', () => {
   })
 })
 
+describe('where a character starts that no piece named as a place', () => {
+  const scene = item('entry:0', 'Mara bumps into the player on purpose at the harbour landing.', 'Scene')
+  const classified: Classified = { 'entry:0': { roles: ['character', 'scenario'], targets: [{ name: 'Mara', kind: 'character' }] } }
+  const roster: Roster = [{ kind: 'character', key: 'mara', name: 'Mara', aliases: [], player: false }]
+  const answers = (start: string) => (job: { prompt: string }): unknown => (job.prompt.includes('Make the place')
+    ? { description: 'A wet landing.' }
+    : { tier: 'principal', kind: 'person', summary: 'A pilot.', personality: '', background: '', appearance: '', speech: { style: '', examples: [] }, start: { location: start } })
+
+  it('is made from the card\'s words, and the character starts in it', async () => {
+    const made = await extractEntities(fakeContext(answers('Harbour landing')), card, [scene], classified, roster)
+    expect(made.locations).toEqual([{ id: 'harbour-landing', name: 'Harbour landing', description: 'A wet landing.' }])
+    expect(made.characters[0]!['start']).toMatchObject({ location: 'harbour-landing' })
+    expect(made.notes.join(' ')).not.toContain('starts nowhere')
+  })
+
+  it('is not made from a placeholder, and the character then starts nowhere, as noted', async () => {
+    const made = await extractEntities(fakeContext(answers('[custom start]')), card, [scene], classified, roster)
+    expect(made.locations).toEqual([])
+    expect(made.notes.join(' ')).toContain('starts nowhere')
+  })
+})
+
 describe('guidance on making people up while the story is played', () => {
   const pieces = [item('entry:0', 'Template 1: a hitchhiker at a gas station. Template 2: a rich stranger. Every new person gets a name, an age, a job and six lines of speech.', 'Who turns up'), item('entry:1', 'The harbour is old. Visitors arrive by boat. Tam keeps the light.', 'Harbour')]
   const classified: Classified = {

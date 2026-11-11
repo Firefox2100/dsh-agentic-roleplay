@@ -23,11 +23,11 @@ export interface PresetsFace {
   create: (name: string, title: string, description: string) => Promise<void>
   remove: (name: string) => Promise<void>
   /** Opens the preset's authoring chat in the main area. */
-  author: (name: string) => Promise<void>
+  author: (name: string, language: string) => Promise<void>
   /** Sends a SillyTavern preset to the host, which says what it holds for the person to choose from; rejects with the host's reason. */
   stage: (file: File) => Promise<SelectionPreview>
   /** Imports the chosen prompts of a staged preset into a new library preset and opens its authoring chat. */
-  importStaged: (choice: SelectionChoice, name: string) => Promise<ImportedPreset>
+  importStaged: (choice: SelectionChoice, name: string, language: string) => Promise<ImportedPreset>
   /** Imports the chosen prompts of a staged preset as they are, with no assistant, into a new library preset. */
   importVerbatim: (choice: SelectionChoice, name: string) => Promise<void>
 }
@@ -44,18 +44,18 @@ export class PresetsController {
     refresh: () => { void this.read(true) },
     create: async (name, title, description) => { await createPreset({ name, ...(title === '' ? {} : { title }), ...(description === '' ? {} : { description }) }, this.abort.signal); await this.read(true) },
     remove: async (name) => { await deletePreset(name, this.abort.signal); await this.read(true) },
-    author: async (name) => { this.openChat((await authorPreset(name, this.language(), this.abort.signal)).chatSessionId) },
+    author: async (name, language) => { this.openChat((await authorPreset(name, language, this.abort.signal)).chatSessionId) },
     stage: async file => await stageFile('preset', file, this.abort.signal),
     importVerbatim: async (choice, name) => { await importVerbatimPreset(choice, { name }, this.abort.signal); await this.read(true) },
-    importStaged: async (choice, name) => {
-      const opened = await importStagedPreset(choice, { name, language: this.language() }, this.abort.signal)
+    importStaged: async (choice, name, language) => {
+      const opened = await importStagedPreset(choice, { name, language }, this.abort.signal)
       await this.read(true)
       this.openChat(opened.chatSessionId)
       return { started: opened.started, ...(opened.failure === undefined ? {} : { failure: opened.failure }) }
     },
   }
 
-  constructor(private readonly openChat: OpenChat, private readonly language: () => string) {}
+  constructor(private readonly openChat: OpenChat) {}
 
   inject(): PresetsFace {
     return this.face

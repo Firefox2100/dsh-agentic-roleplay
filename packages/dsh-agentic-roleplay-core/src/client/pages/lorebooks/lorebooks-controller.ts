@@ -23,11 +23,11 @@ export interface LorebooksFace {
   create: (name: string, title: string, description: string) => Promise<void>
   remove: (name: string) => Promise<void>
   /** Opens the lorebook's authoring chat in the main area. */
-  author: (name: string) => Promise<void>
+  author: (name: string, language: string) => Promise<void>
   /** Sends a SillyTavern lorebook to the host, which says what it holds for the person to choose from; rejects with the host's reason. */
   stage: (file: File) => Promise<SelectionPreview>
   /** Imports the chosen entries of a staged lorebook into a new library lorebook and opens its authoring chat. */
-  importStaged: (choice: SelectionChoice, name: string) => Promise<ImportedLorebook>
+  importStaged: (choice: SelectionChoice, name: string, language: string) => Promise<ImportedLorebook>
   /** Imports the chosen entries of a staged lorebook as they are, with no assistant; resolves with how many entries the new lorebook has. */
   importVerbatim: (choice: SelectionChoice, name: string, knownBy: 'everyone' | 'master') => Promise<number>
 }
@@ -44,22 +44,22 @@ export class LorebooksController {
     refresh: () => { void this.read(true) },
     create: async (name, title, description) => { await createLorebook({ name, ...(title === '' ? {} : { title }), ...(description === '' ? {} : { description }) }, this.abort.signal); await this.read(true) },
     remove: async (name) => { await deleteLorebook(name, this.abort.signal); await this.read(true) },
-    author: async (name) => { this.openChat((await authorLorebook(name, this.language(), this.abort.signal)).chatSessionId) },
+    author: async (name, language) => { this.openChat((await authorLorebook(name, language, this.abort.signal)).chatSessionId) },
     stage: async file => await stageFile('lorebook', file, this.abort.signal),
     importVerbatim: async (choice, name, knownBy) => {
       const made = await importVerbatimLorebook(choice, { name, knownBy }, this.abort.signal)
       await this.read(true)
       return made.entries
     },
-    importStaged: async (choice, name) => {
-      const opened = await importStagedLorebook(choice, { name, language: this.language() }, this.abort.signal)
+    importStaged: async (choice, name, language) => {
+      const opened = await importStagedLorebook(choice, { name, language }, this.abort.signal)
       await this.read(true)
       this.openChat(opened.chatSessionId)
       return { started: opened.started, ...(opened.failure === undefined ? {} : { failure: opened.failure }) }
     },
   }
 
-  constructor(private readonly openChat: OpenChat, private readonly language: () => string) {}
+  constructor(private readonly openChat: OpenChat) {}
 
   inject(): LorebooksFace {
     return this.face

@@ -101,6 +101,7 @@ describe('parseWorldFile', () => {
       cover_media_id: 'media-1',
     }))).toEqual({
       id: 'world_blackwater_observatory',
+      language: 'en',
       name: 'The Blackwater Observatory',
       description: 'The year is 1912.',
       tags: ['mystery', 'gothic'],

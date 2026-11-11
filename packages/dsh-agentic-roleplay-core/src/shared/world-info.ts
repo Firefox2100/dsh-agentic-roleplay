@@ -36,6 +36,8 @@ export interface WorldInfo {
   version: string
   /** How this world's stories ask their models; only what the file sets. */
   sampling: StorySampling
+  /** The language stories of this world are played in by default, as a tag (`ja`), or empty to follow the person's interface language. */
+  language: string
   /** The library preset suggested for stories of this world, or empty. */
   preset: string
   /** The library lorebooks suggested for stories of this world. */
@@ -51,7 +53,7 @@ export interface WorldInfo {
 
 export type WorldInfoEdit = Partial<Omit<WorldInfo, 'openingParts'>>
 
-const TEXT_FIELDS = ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'preset'] as const
+const TEXT_FIELDS = ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'language', 'preset'] as const
 const LIST_FIELDS = ['tags', 'rules', 'lorebooks'] as const
 export const MAX_WORLD_NAME = 200
 export const MAX_WORLD_VERSION = 40

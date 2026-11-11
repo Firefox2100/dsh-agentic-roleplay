@@ -5,6 +5,7 @@ import type { WorldAuthor } from '../../shared/worlds.ts'
 import { readIdentifier } from '../identifiers.ts'
 import { isLorebookName } from '../lorebooks/lorebooks.ts'
 import { isPresetName } from '../presets/presets.ts'
+import { LANGUAGE_TAG, languageOf } from '../prompts/library.ts'
 import { parseSwitchboard, type Switchboard } from '../../shared/settings.ts'
 import { MAX_QUESTION_OPTIONS, MAX_QUESTION_TEXT, MAX_START_QUESTIONS, START_PLOT_STATUSES, type StartEffect, type StartQuestion } from '../../shared/start-questions.ts'
 import { Reader, type Issue, type ParseResult } from '../validation.ts'
@@ -47,6 +48,8 @@ export interface WorldFile {
   narrationVoice?: string
   /** How the world's stories ask their models; a preset's own values and the person's choices at the start come before it. */
   sampling?: StorySampling
+  /** The language the world's stories are played in by default (`ja`, `zh`), whatever language the person's interface is in. */
+  language?: string
   /** The name of the preset in the person's library this world suggests; sessions use it when none is chosen. */
   preset?: string
   /** The lorebooks of the person's library this world suggests; stories are started with them when none are chosen. */
@@ -287,6 +290,9 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
   const startQuestions = readStartQuestions(reader, alternateOpenings?.length ?? 0)
   const narrationVoice = reader.string('narration_voice')?.trim() || undefined
   const sampling = readSampling(reader)
+  const languageText = reader.string('language')?.trim() || undefined
+  if (languageText !== undefined && !LANGUAGE_TAG.test(languageText)) reader.fail('language', 'must be a language tag such as "en", "zh", "ja" or "pt-BR"')
+  const language = languageText !== undefined && LANGUAGE_TAG.test(languageText) ? languageOf(languageText) : undefined
   const preset = reader.string('preset')?.trim() || undefined
   if (preset !== undefined && !isPresetName(preset)) reader.fail('preset', 'must be the name of a preset: letters, digits, "-" and "_"')
   const lorebooks = reader.strings('lorebooks').map(entry => entry.trim()).filter(entry => entry !== '')
@@ -313,6 +319,7 @@ export function parseWorldFile(text: string): ParseResult<WorldFile> {
       ...(startQuestions === undefined ? {} : { startQuestions }),
       ...(narrationVoice === undefined ? {} : { narrationVoice }),
       ...(sampling === undefined ? {} : { sampling }),
+      ...(language === undefined ? {} : { language }),
       ...(preset === undefined ? {} : { preset }),
       ...(lorebooks.length === 0 ? {} : { lorebooks: [...new Set(lorebooks)] }),
     },

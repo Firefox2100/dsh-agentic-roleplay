@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
-import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
+import { silenceHarnessDevContext, silenceRuntimeContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import { join } from 'node:path'
 import { sessionFolder } from '@dsh-agentic-roleplay/state'
@@ -28,9 +28,8 @@ export function apply(ctx: Context): void {
       return agent === undefined ? '' : helpers.get(agent.session.id)?.persona ?? ''
     },
   })
-  // A helper works on the story's words and has no files: DSH's runtime facts (the directory, the file policy, approvals, delegation), in English, led a model writing Chinese to run on until its output limit.
-  ctx.effect(() => ctx.systemPrompt.suppressRuntimeContext(), 'roleplay: helper runtime context')
-  ctx.systemPrompt.context({ name: 'working-directory:current', order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
+  // A helper works on the story's words and has no files: DSH's English runtime facts led a model writing Chinese to run on until its output limit.
+  silenceRuntimeContext(ctx)
   // The story's file-tool folders hold for the helpers too: they run under this preset, whose agents the orchestration plugin's own listener does not hear (a character wrote outside its folders live).
   const rootOf = (): string | undefined => ctx.get('roleplayRoot')?.path
   registerFoldersJail(ctx, {

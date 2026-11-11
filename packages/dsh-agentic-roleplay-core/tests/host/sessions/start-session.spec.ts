@@ -77,6 +77,15 @@ describe('starting with settings', () => {
     expect(readSettings(join(root, 'sessions', started.id))).toEqual({ ...DEFAULT_SETTINGS, clock: { ...DEFAULT_SETTINGS.clock, timeZone: 'UTC' } })
   })
 
+  it('plays a world in the language its file declares unless the start chose another, and in English for a language without prompts of its own', async () => {
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', language: 'ja-JP' })
+    await (deps.worlds as WorldCatalog).list({ refresh: true })
+    const declared = await startSession(deps, playAsArthur)
+    expect(readSettings(join(root, 'sessions', declared.id)).prompts.language).toBe('ja')
+    const chosen = await startSession(deps, { ...playAsArthur, settings: { prompts: { language: 'zh' } } })
+    expect(readSettings(join(root, 'sessions', chosen.id)).prompts.language).toBe('zh')
+  })
+
   it('starts a world that goes on without its player that way, on the real clock, unless the start chose otherwise; any other world never does', async () => {
     const plain = await startSession(deps, playAsArthur)
     expect(readSettings(join(root, 'sessions', plain.id)).autonomy.enabled).toBe(false)

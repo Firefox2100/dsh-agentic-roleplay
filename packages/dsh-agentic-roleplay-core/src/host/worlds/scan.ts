@@ -59,6 +59,7 @@ export interface WorldRecord {
   autonomy?: boolean
   narrationVoice?: string
   sampling?: StorySampling
+  language?: string
   preset?: string
   lorebooks?: string[]
 }
@@ -146,6 +147,7 @@ async function loadWorld(folder: string, dir: string, file: string, problems: Wo
     ...(world.autonomy === undefined ? {} : { autonomy: world.autonomy }),
     ...(world.narrationVoice === undefined ? {} : { narrationVoice: world.narrationVoice }),
     ...(world.sampling === undefined ? {} : { sampling: world.sampling }),
+    ...(world.language === undefined ? {} : { language: world.language }),
     ...(world.preset === undefined ? {} : { preset: world.preset }),
     ...(world.lorebooks === undefined ? {} : { lorebooks: world.lorebooks }),
   }

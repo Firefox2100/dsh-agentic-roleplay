@@ -127,7 +127,7 @@ title: 配置参考
 | `sampling.masterMaxTokens` | 12000 | 主持人单次请求的最大输出令牌数，含推理 |
 | `sampling.maxTokens` / `sampling.shortMaxTokens` | 8000 / 2000 | 一般和短辅助请求的输出上限 |
 | `sampling.headroom` | 2 | 在上限内按预计回答长度扩大的倍数 |
-| `prompts.language` | `en` | 内置提示词语言：`en` 或 `zh` |
+| `prompts.language` | `en` | 故事提示词的语言。`en` 和 `zh` 有专属提示词；其他语言使用英文提示词，并要求模型用该语言写作 |
 | `reasoning.children` | 空 | 辅助智能体的推理等级；留空使用插件级回退值 |
 
 ### 界面、规则与媒体

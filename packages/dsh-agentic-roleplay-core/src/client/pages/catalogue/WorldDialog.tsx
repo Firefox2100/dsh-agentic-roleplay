@@ -110,7 +110,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
       setDone({ text: t('importedVerbatimPreset', { name: made.name }), packs: [], untracked: false })
       return
     }
-    const opened = await (selecting?.kind === 'lorebook' ? importStagedLorebook : importStagedPreset)(choice, { title: detail?.name ?? name, language: t('language') })
+    const opened = await (selecting?.kind === 'lorebook' ? importStagedLorebook : importStagedPreset)(choice, { title: detail?.name ?? name, language: options.language })
     openChat(opened.chatSessionId)
     onClose()
   }
@@ -186,7 +186,7 @@ export function WorldDialog({ t, source, id, name, kind, onClose, onChanged, ope
         )}
       </div>
     </Modal>
-    {selecting !== undefined && <ImportSelectionDialog preview={selecting} t={t} canVerbatim onClose={() => { setSelecting(undefined) }} onConfirm={importChosen} />}
+    {selecting !== undefined && <ImportSelectionDialog preview={selecting} t={t} interfaceLanguage={t('language')} canVerbatim onClose={() => { setSelecting(undefined) }} onConfirm={importChosen} />}
     </>
   )
 }

@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Modal } from '../../ui/Modal.tsx'
 import { Button } from '../../ui/Button.tsx'
 import type { PromptDetail } from '../../../shared/prompts.ts'
 import { readPrompt, resetPrompt, savePrompt } from '../../prompts-api.ts'
 import { compareLines } from './prompt-diff.ts'
 import type { PromptsPageProps } from './PromptsPage.tsx'
-import css from './PromptsPage.module.css'import { IconChevronLeft } from '../../ui/icons.tsx'
+import css from './PromptsPage.module.css'
+import { IconChevronLeft } from '../../ui/icons.tsx'
 
 
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
@@ -27,6 +28,15 @@ export function PromptEditor({ t, id, language, onBack }: { t: PromptsPageProps[
     readPrompt(id, language, abort.signal).then(accept, (problem: unknown) => { if (!abort.signal.aborted) setFailure(messageOf(problem)) })
     return () => { abort.abort() }
   }, [id, language])
+
+  const area = useRef<HTMLTextAreaElement>(null)
+  // Keep both comparison panes aligned without trapping the editor in a nested scrollbar.
+  useLayoutEffect(() => {
+    const box = area.current
+    if (box === null) return
+    box.style.height = '0px'
+    box.style.height = `${box.scrollHeight + 2}px`
+  }, [text, loaded])
 
   const comparison = useMemo(() => (loaded === undefined ? undefined : compareLines(loaded.shipped, text)), [loaded, text])
 
@@ -56,7 +66,7 @@ export function PromptEditor({ t, id, language, onBack }: { t: PromptsPageProps[
         <div className={css.panes}>
           <div className={css.pane}>
             <span className={css.label}>{t('yours')}</span>
-            <textarea className={css.area} value={text} aria-label={t('yours')} data-testid="roleplay-prompt-text" onChange={(event) => { setText(event.target.value); setStatus({ state: 'idle' }) }} />
+            <textarea ref={area} className={css.area} value={text} aria-label={t('yours')} data-testid="roleplay-prompt-text" onChange={(event) => { setText(event.target.value); setStatus({ state: 'idle' }) }} />
           </div>
           <div className={css.pane}>
             <span className={css.label}>{t('shippedText')}</span>

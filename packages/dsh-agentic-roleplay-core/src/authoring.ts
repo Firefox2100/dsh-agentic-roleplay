@@ -2,7 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { limitAuthoringAgents } from './host/tools/authoring-tools.ts'
 import { guardAuthoringTurns } from './host/authoring/turn-guard.ts'
 import type {} from '@deepseek-ai/dsh-system-prompt'
-import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
+import { silenceHarnessDevContext, silenceRuntimeContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
@@ -33,6 +33,7 @@ export const inject = ['roleplayWorlds', 'roleplayImport', 'roleplayPrompts', 'r
 
 export function apply(ctx: Context): void {
   silenceHarnessDevContext(ctx)
+  silenceRuntimeContext(ctx)
   const prompting = { prompts: () => ctx.roleplayPrompts, languages: () => ctx.roleplayAuthoringLanguages }
   const languageOf = (context: object): string => {
     const chat = (context as { agent?: Agent }).agent?.session.id

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { childSamplingOf, helpers, repairedJson, runChild, structuredReply } from '../../../src/host/agents/child.ts'
+import { ANSWERED_IN_THINKING, childSamplingOf, helpers, repairedJson, runChild, structuredReply } from '../../../src/host/agents/child.ts'
 
 const schema = { type: 'object', properties: { roles: { type: 'array', items: { type: 'string' } } }, required: ['roles'], additionalProperties: false } as never
 
@@ -37,6 +37,38 @@ function parentAnswering(replies: string[], seen: Seen) {
 }
 
 const task = (parent: never, extra: object = {}) => ({ parent, signal: new AbortController().signal, persona: 'persona', prompt: 'question', result: schema, structured: true, sampling: { temperature: 0.2, toolChoice: 'required' as const }, ...extra })
+
+/** A parent whose first run writes its whole answer as thinking (an empty reply) and whose later runs call the submit tool when they have it. */
+function parentThatThinksItsAnswer(seen: { structured: boolean[] }, model = 'p/m') {
+  const [provider, name] = model.split('/')
+  return {
+    session: { snapshotEvents: () => [], requestHeader: () => ({ config: { provider, model: name } }) },
+    ctx: { get: () => ({ startActivation: async ({ childId }: { childId: string }) => {
+      const events: unknown[] = []
+      const handlers: Record<string, () => void> = {}
+      const tools: { name: string; execute: (args: unknown, exec: { concludeTurn: () => void }) => unknown }[] = []
+      const child = { session: { snapshotEvents: () => events }, steer: () => undefined, cancel: () => undefined, ctx: { tools: { restrict: () => undefined, register: (tool: never) => { tools.push(tool); return () => undefined }, guard: () => undefined }, on: (event: string, handler: () => void) => { handlers[event] = handler } } }
+      helpers.get(childId)!.setup(child as never)
+      const structured = tools.length === 0
+      seen.structured.push(structured)
+      return { result: (async () => {
+        if (structured) { events.push({ type: 'assistant/message', data: { stream: [], turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'reasoning', text: '{"roles":["a"]}' }] } } }); handlers['agent/turn-stopping']!() } else await tools[0]!.execute({ roles: ['a'] }, { concludeTurn: () => undefined })
+      })(), dispose: () => Promise.resolve() }
+    } }) },
+  } as never
+}
+
+describe('a helper whose endpoint writes a constrained answer as thinking', () => {
+  it('is asked again as a tool call, and from then on for that model without the first try', async () => {
+    const seen = { structured: [] as boolean[] }
+    expect(await runChild<{ roles: string[] }>(task(parentThatThinksItsAnswer(seen, 'think/one')))).toEqual({ roles: ['a'] })
+    expect(seen.structured).toEqual([true, false])
+    expect(await runChild<{ roles: string[] }>(task(parentThatThinksItsAnswer(seen, 'think/one')))).toEqual({ roles: ['a'] })
+    expect(seen.structured).toEqual([true, false, false])
+    expect(await runChild<{ roles: string[] }>(task(parentThatThinksItsAnswer(seen, 'think/two')))).toEqual({ roles: ['a'] })
+    expect(seen.structured).toEqual([true, false, false, true, false])
+  })
+})
 
 describe('a helper that answers with a constrained reply', () => {
   it('has no tool to call, asks the endpoint for the schema, and takes the reply as its result', async () => {
@@ -95,6 +127,11 @@ describe('a helper that answers with a constrained reply', () => {
     const child = { session: { snapshotEvents: () => [reply('{"roles":[]}'), reply('{"roles":["a"]}')] } } as never
     expect(structuredReply(child, schema)).toEqual({ value: { roles: ['a'] } })
     expect(structuredReply({ session: { snapshotEvents: () => [] } } as never, schema)).toEqual({ problem: 'the reply is empty' })
+  })
+
+  it('says so when the whole answer was written as thinking and the reply is empty', () => {
+    const event = { type: 'assistant/message', data: { message: { role: 'assistant', content: [{ type: 'reasoning', text: '{"roles":["a"]}' }] } } }
+    expect(structuredReply({ session: { snapshotEvents: () => [event] } } as never, schema)).toEqual({ problem: ANSWERED_IN_THINKING })
   })
 })
 

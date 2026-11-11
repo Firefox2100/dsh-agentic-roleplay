@@ -90,8 +90,8 @@ Names of tools, fields and values that the code understands (`activate_character
 
 The language is a folder: `en`, `zh`. It is chosen where the work begins:
 
-- a roleplay session: the chat setting **Language of the instructions** (`prompts.language`), set from the interface language when the session is started and editable afterwards;
-- the authoring assistant and the card import of a world: the interface language at the moment the person opens the assistant or starts the import (kept per world in `worlds/.authoring/`);
+- a roleplay session: the chat setting **Language of the instructions** (`prompts.language`), set from the world's `language` when the world declares one, else from the interface language, when the session is started, and editable afterwards;
+- authoring assistants and assisted imports: the language selected beside the action, initially the interface language (kept for each authoring chat in `worlds/.authoring/`);
 - a language that has no folder in the package falls back to English.
 
 Every prompt may use `${language}`, which is filled with the name of the folder's language (English, 中文). The prompts that tell a model what to write (narration, speech, summaries, beliefs, suggestions) name it, so a story is written in the chat's language even when the world's files are in another; the names and terms of the world stay as its files spell them. A world in another language can be translated (see the editor guide). Characters' words and thoughts and the narration are also refused when they are written in the other script, and, in a Chinese story, when they leave ordinary lowercase English words in (names and acronyms keep their capitals and pass); the model is told which words and writes again.

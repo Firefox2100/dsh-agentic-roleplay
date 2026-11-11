@@ -1,18 +1,16 @@
-# One row per plugin in the bundle. The core row id is the settings form id
-# and must match ENTRY_ID in the core package.
+# A complete roleplay installation. The core and all packages ship identical layers.
 - insert:
     - id: roleplay-state
       name: '@dsh-agentic-roleplay/state'
     - id: roleplay
       name: '@dsh-agentic-roleplay/core'
-    # The agent preset roleplay chats run under; its id must match AGENT_PRESET
-    # in the core package. It mounts no agent tools: the orchestration plugin
-    # brings the game master's own tools, hooks and instructions.
+    # Roleplay chats receive their tools and instructions from orchestration.
     - id: preset-roleplay
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: roleplay
         name: Role Play
+        description: Play interactive stories with character agents, persistent world state, memory, and roleplay tools.
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
@@ -31,14 +29,13 @@
             config:
               - id: roleplay-compaction
                 name: '@dsh-agentic-roleplay/core/compaction'
-    # The preset every helper agent (characters, record keeper, author, chronicler, ...) runs under, started
-    # through DSH's sub-agent API. Its id must match HELPER_PRESET in the core package. It mounts no agent
-    # tools: each helper is given its own when it starts.
+    # Helpers receive role-specific tools when they start.
     - id: preset-roleplay-helper
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: roleplay-helper
         name: Role Play Helper
+        description: Internal preset used by roleplay characters and supporting agents during a story.
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
@@ -47,14 +44,13 @@
               suffix: ''
           - id: helper
             name: '@dsh-agentic-roleplay/core/helper'
-    # The authoring preset mounts its persona and its own tools, plus DSH's read,
-    # write and edit for the interface packs only: the authoring plugin keeps them
-    # on `<world>/ui/<pack>/` and asks before any change.
+    # File tools are jailed to interface packs and writes require approval.
     - id: preset-world-authoring
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: world-authoring
         name: World Authoring
+        description: Create and refine roleplay worlds, characters, rules, and interface packs with guided authoring tools.
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
@@ -67,14 +63,12 @@
               applyPatch: false
           - id: authoring
             name: '@dsh-agentic-roleplay/core/authoring'
-    # The preset authoring chat: reads and writes the prose prompts of one library
-    # preset, each write approved by the person. Its id must match
-    # PRESET_AUTHORING_PRESET in the core package.
     - id: preset-preset-authoring
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: preset-authoring
         name: Preset Authoring
+        description: Edit the reusable prose instructions that shape how a roleplay world is narrated and played.
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
@@ -83,14 +77,12 @@
               suffix: ''
           - id: preset-authoring
             name: '@dsh-agentic-roleplay/core/preset-authoring'
-    # The lorebook authoring chat: reads and writes the entries of one library
-    # lorebook, each write approved by the person. Its id must match
-    # LOREBOOK_AUTHORING_PRESET in the core package.
     - id: preset-lorebook-authoring
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: lorebook-authoring
         name: Lorebook Authoring
+        description: Build and revise reusable lorebook entries for characters, places, history, and other world knowledge.
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
@@ -99,14 +91,12 @@
               suffix: ''
           - id: lorebook-authoring
             name: '@dsh-agentic-roleplay/core/lorebook-authoring'
-    # The session doctor chat: a bystander that reads one session's records and
-    # proposes fixes through the records edit, each approved by the player. Its
-    # id must match DOCTOR_AGENT_PRESET in the core package.
     - id: preset-session-doctor
       name: '@deepseek-ai/dsh-agent-preset'
       config:
         id: session-doctor
         name: Session Doctor
+        description: Inspect a roleplay session for record problems and propose player-approved repairs.
         plugins:
           - id: persona
             name: '@deepseek-ai/dsh-persona'
@@ -115,12 +105,7 @@
               suffix: ''
           - id: doctor
             name: '@dsh-agentic-roleplay/core/doctor'
-# The Web bundle's `harness-dev-context` row is left exactly as the profile has it. Each preset above
-# shadows that plugin's two sections and contexts in its own scope (silenceHarnessDevContext), so a
-# story's game master, characters and authors never read where the DSH checkout is or what "this page"
-# is, while every other session in the profile keeps that orientation. Disabling the row here would take
-# it away from all of them.
-# Helpers are children of the game master and DSH admits at most this many at once (it refuses the rest): a round of characters plus the keeper, the author and the suggestions run side by side.
+# Allows one character round and its supporting helpers to run concurrently.
 - id: subagent
   config:
     maxActiveSubagents: 32

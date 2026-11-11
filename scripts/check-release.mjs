@@ -78,19 +78,18 @@ for (const folder of bundleFolders) {
 }
 
 
-const standaloneBundles = [
-  ['dsh-roleplay-state', '@dsh-agentic-roleplay/state', 'roleplay-state'],
-  ['dsh-agentic-roleplay-core', '@dsh-agentic-roleplay/core', 'roleplay'],
-]
-for (const [folder, name, id] of standaloneBundles) {
-  const directory = resolve(root, 'packages', folder)
-  const expected = `- insert:\n    - id: ${id}\n      name: '${name}'\n`
-  if (await readText(resolve(directory, 'cordis.patch.yml')) !== expected) throw new Error(`${name}: standalone bundle must insert only its own plugin row`)
+// Core and all must remain equivalent complete installs; state remains independently installable.
+const statePatch = `- insert:\n    - id: roleplay-state\n      name: '@dsh-agentic-roleplay/state'\n`
+if (await readText(resolve(root, 'packages', 'dsh-roleplay-state', 'cordis.patch.yml')) !== statePatch) throw new Error('@dsh-agentic-roleplay/state: standalone bundle must insert only its own plugin row')
+const corePatch = await readText(resolve(root, 'packages', 'dsh-agentic-roleplay-core', 'cordis.patch.yml'))
+for (const id of ['roleplay-state', 'roleplay', 'preset-roleplay', 'preset-roleplay-helper', 'preset-world-authoring', 'preset-preset-authoring', 'preset-lorebook-authoring', 'preset-session-doctor', 'subagent']) {
+  if (!new RegExp(`^\\s*(?:- )?- id: ${id}$|^\\s+- id: ${id}$|^- id: ${id}$`, 'm').test(corePatch)) throw new Error(`@dsh-agentic-roleplay/core: its bundle layer must hold the row ${id}, so that installing core alone is complete`)
 }
 
 const allDirectory = resolve(root, 'packages', 'dsh-agentic-roleplay')
 const allManifest = JSON.parse(await readFile(resolve(allDirectory, 'package.json'), 'utf8'))
 const allPatch = await readText(resolve(allDirectory, 'cordis.patch.yml'))
+if (allPatch !== corePatch) throw new Error(`${allManifest.name}: its bundle layer must be identical to the core package's (copy packages/dsh-agentic-roleplay-core/cordis.patch.yml over it)`)
 for (const name of [
   '@deepseek-ai/dsh-experimental-voice-input-bundle',
   '@deepseek-ai/dsh-experimental-speech-to-text',

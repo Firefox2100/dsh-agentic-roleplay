@@ -10,7 +10,9 @@ import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSele
 import type {} from '../../panel/slot-contract.ts'
 import { PresetEditor } from './PresetEditor.tsx'
 import type { PresetsFace } from './presets-controller.ts'
-import css from './PresetsPage.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+import { LanguageSelect, primaryLanguage } from '../../widgets/language-select/LanguageSelect.tsx'
+import css from './PresetsPage.module.css'
+import { IconRefresh } from '../../ui/icons.tsx'
 
 
 export type PresetsPageProps =
@@ -71,12 +73,13 @@ export function PresetsPage({ t, usePresets, load, refresh, create, remove, auth
   const [staging, setStaging] = useState(false)
   const [notice, setNotice] = useState<string>()
   const picker = useRef<HTMLInputElement>(null)
+  const [assistantLanguage, setAssistantLanguage] = useState(() => primaryLanguage(t('language')))
 
   useEffect(() => { load() }, [load])
 
   const open = (name: string): void => {
     setNotice(undefined)
-    author(name).catch((failure: unknown) => { setNotice(t('authorFailed', { message: messageOf(failure) })) })
+    author(name, assistantLanguage).catch((failure: unknown) => { setNotice(t('authorFailed', { message: messageOf(failure) })) })
   }
 
   const choose = (file: File | undefined): void => {
@@ -98,6 +101,7 @@ export function PresetsPage({ t, usePresets, load, refresh, create, remove, auth
       <div className={css.toolbar}>
         <span className={css.count}>{state.presets === undefined ? '' : t(presets.length === 1 ? 'countOne' : 'countOther', { count: presets.length })}</span>
         <div className={css.actions}>
+          <LanguageSelect compact value={assistantLanguage} onChange={setAssistantLanguage} interfaceLanguage={t('language')} label={t('assistantLanguage')} title={t('assistantLanguageHelp')} testId="roleplay-assistant-language" />
           <input ref={picker} type="file" accept=".json,application/json" hidden data-testid="roleplay-preset-file" onChange={(event) => { choose(event.target.files?.[0]); event.target.value = '' }} />
           <Button variant="outline" size="sm" disabled={staging} onClick={() => { picker.current?.click() }}>{staging ? t('importReading') : t('import')}</Button>
           <Button variant="primary" size="sm" onClick={() => { setCreating(true) }}>{t('create')}</Button>
@@ -135,7 +139,7 @@ export function PresetsPage({ t, usePresets, load, refresh, create, remove, auth
       </div>
       {creating && <NameDialog t={t} submit={create} onClose={() => { setCreating(false) }} />}
       {staged !== undefined && (
-        <ImportSelectionDialog preview={staged} t={t} canConfirm={NAME.test(importName)} canVerbatim onClose={() => { setStaged(undefined) }} onConfirm={async (choice, options) => { if (options.verbatim) { await importVerbatim(choice, importName); setNotice(t('importedVerbatim', { name: importName })); return } const result = await importStaged(choice, importName); if (!result.started) setNotice(t('importNotStarted', { message: result.failure ?? '' })) }}>
+        <ImportSelectionDialog preview={staged} t={t} interfaceLanguage={t('language')} canConfirm={NAME.test(importName)} canVerbatim onClose={() => { setStaged(undefined) }} onConfirm={async (choice, options) => { if (options.verbatim) { await importVerbatim(choice, importName); setNotice(t('importedVerbatim', { name: importName })); return } const result = await importStaged(choice, importName, options.language); if (!result.started) setNotice(t('importNotStarted', { message: result.failure ?? '' })) }}>
           <label className={css.field}><span className={css.label}>{t('presetName')}</span><Input value={importName} maxLength={64} onChange={(event) => { setImportName(event.target.value) }} /><span className={css.help}>{t('presetNameHelp')}</span></label>
         </ImportSelectionDialog>
       )}

@@ -185,8 +185,12 @@ export const isUnfinishedCall = (error: unknown): boolean => error instanceof Er
  * lets {@link HelperEntry.setup} give it tools of its own. Several run side by side with different tools and different results from the same tool.
  * @throws {Error} when the child is cancelled, stops without a result, or exceeds its calls.
  */
-export async function runChild<T>(task: ChildTask): Promise<T> {
-  for (let attempt = 1; ; attempt += 1) {
+export async function runChild<T>(asked: ChildTask): Promise<T> {
+  let task = asked
+  let unfinished = 0
+  for (;;) {
+    // Some endpoints put constrained output in reasoning and leave the answer empty.
+    if (task.structured === true && hidesAnswers.has(modelOf(task))) task = { ...task, structured: false }
     const began = Date.now()
     const turnAtStart = task.turn ?? currentTurn(task.parent)
     const stats: RunStats = { calls: 0, record: [] }
@@ -202,11 +206,29 @@ export async function runChild<T>(task: ChildTask): Promise<T> {
     } catch (cause) {
       const error = clock.signal.aborted && !task.signal.aborted ? new ChildTimeoutError(minutes) : cause
       task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: turnAtStart, tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
-      if (attempt >= 2 || task.signal.aborted || error instanceof ChildTimeoutError || !isUnfinishedCall(error)) throw error
+      if (task.signal.aborted) throw error
+      if (task.structured === true && error instanceof Error && error.message === ANSWERED_IN_THINKING) {
+        const model = modelOf(task)
+        if (model !== '') hidesAnswers.add(model)
+        task = { ...task, structured: false }
+        continue
+      }
+      unfinished += 1
+      if (unfinished >= 2 || error instanceof ChildTimeoutError || !isUnfinishedCall(error)) throw error
     } finally {
       if (timer !== undefined) clearTimeout(timer)
     }
   }
+}
+
+/** Models known to return constrained output only in their reasoning block. */
+const hidesAnswers = new Set<string>()
+
+/** The selected model as `provider/model`, or an empty string when it is unknown. */
+function modelOf(task: Pick<ChildTask, 'parent' | 'model'>): string {
+  const config = task.model === undefined ? task.parent.session.requestHeader?.()?.config : undefined
+  const model = task.model ?? (config?.provider === undefined || config.model === undefined ? undefined : { provider: config.provider, model: config.model })
+  return model === undefined ? '' : `${model.provider}/${model.model}`
 }
 
 /**
@@ -249,12 +271,15 @@ export function repairedJson(text: string, accepts: (value: unknown) => boolean 
   return undefined
 }
 
+/** A constrained result was returned only as reasoning, leaving the answer empty. */
+export const ANSWERED_IN_THINKING = 'the reply is empty: the answer was written as thinking, which this endpoint does with a constrained reply while the model thinks'
+
 /** The result in the last reply of a structured child: its JSON, which must fit the schema; else what is wrong with it. */
 export function structuredReply(child: Agent, schema: ObjectJsonSchema, cut = false): { value: unknown } | { problem: string } {
   const message = child.session.snapshotEvents().findLast(event => event.type === 'assistant/message')
   const content = message?.type === 'assistant/message' ? message.data.message.content : []
   const text = content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('').trim().replace(/^```(?:json)?\s*|\s*```$/g, '')
-  if (text === '') return { problem: 'the reply is empty' }
+  if (text === '') return { problem: content.some(block => block.type === 'reasoning' && block.text.trim() !== '') ? ANSWERED_IN_THINKING : 'the reply is empty' }
   let value: unknown
   try { value = JSON.parse(text) } catch (error) {
     // the cut that keeps the most is the one after the last whole entry: a cut inside a half-written entry makes JSON that does not fit the schema
@@ -286,6 +311,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
   let stepsAfterRetire = -1
   let overran = false
   let rambled = false
+  let hidden = false
   let refusals = 0
   let lastRefusal = ''
   let previous: { name: string; args: string; failed: boolean; repeats: number } | undefined
@@ -396,6 +422,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
           refusals += 1
           lastRefusal = refusal ?? ''
           if (stats.record.length < MAX_RUN_CALLS) stats.record.push({ tool: 'reply', args: '', outcome: cut(lastRefusal), failed: true })
+          if (lastRefusal === ANSWERED_IN_THINKING) { hidden = true; overran = true; stopped?.(); return }
           if (refusals >= MAX_RESULT_REFUSALS) { overran = true; stopped?.(); return }
           child.steer(createUserMessage({ content: [{ type: 'text', text: `That reply cannot be used: ${lastRefusal}\nReply again with the whole result as one JSON object.` }], source: { kind: 'roleplay' } }))
           return
@@ -462,6 +489,7 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
   }
   if (signal.aborted) throw new Error('cancelled')
   if (rambled && submitted === undefined) throw new Error(`the agent wrote text up to the limit of ${task.maxTokens ?? task.sampling?.maxTokens ?? 'its model'} tokens and never called ${SUBMIT_TOOL}, and was stopped`)
+  if (hidden && submitted === undefined) throw new Error(ANSWERED_IN_THINKING)
   if (overran && submitted === undefined) throw new Error(refusals >= MAX_RESULT_REFUSALS ? `the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}` : `the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
   if (submitted === undefined) {
     const ended = entry.agent?.session.snapshotEvents().findLast(event => event.type === 'turn/end')

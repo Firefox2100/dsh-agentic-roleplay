@@ -9,7 +9,8 @@ import { convertStaged, coverUrl, discardCard, loadUpdates, loadWorlds } from '.
 import type { CatalogueFace } from './catalogue-controller.ts'
 import { ImportUrlDialog } from './ImportUrlDialog.tsx'
 import { WorldDialog, type CardReview } from './WorldDialog.tsx'
-import css from './CataloguePage.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+import css from './CataloguePage.module.css'
+import { IconRefresh } from '../../ui/icons.tsx'
 
 
 export type CataloguePageProps =
@@ -92,7 +93,8 @@ export function CataloguePage({ t, useCatalogue, load, openChat }: CataloguePage
         <ImportCard
           t={t}
           preview={reviewing.preview}
-          start={(choices, update) => convertStaged({ source: reviewing.source, versionId: reviewing.versionId, id: reviewing.preview.id, choices, language: t('language'), ...(update === undefined ? {} : { update }) })}
+          language={t('language')}
+          start={(choices, update, language) => convertStaged({ source: reviewing.source, versionId: reviewing.versionId, id: reviewing.preview.id, choices, language, ...(update === undefined ? {} : { update }) })}
           discard={() => discardCard(reviewing.preview.id)}
           onCancelled={() => { setReviewing(undefined) }}
           onStarted={(chat, started) => { setReviewing(undefined); setChanged(count => count + 1); if (!started) setNotice(t('convertNotStartedShort')); openChat(chat) }}

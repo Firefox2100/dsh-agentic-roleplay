@@ -126,9 +126,13 @@ const CHARACTER_SCHEMA = {
   additionalProperties: false,
 } as const
 
-type Built = { document: Document; notes: string[]; /** The things a character has on them at the start, by name, as the model wrote them. */ carried?: string[] }
+type Built = { document: Document; notes: string[]; /** The place a character starts in, by the name it was given, when the roster has no such place. */ unplaced?: string; /** The things a character has on them at the start, by name, as the model wrote them. */ carried?: string[] }
 /** The most things one character is given from what the text says it carries. */
 const MAX_CARRIED = 12
+
+const unplacedNote = (character: string, place: string): string => `${character}: the place "${place}" is not one of the world's places, so the character starts nowhere`
+/** Maximum inferred starting places created during one import. */
+const MAX_STARTING_PLACES = 3
 
 /** The document of a character file from what the call answered; names of places and characters become the keys they have in the roster. */
 export function characterDocument(entity: Entity, answer: Document, roster: Roster): Built {
@@ -148,7 +152,8 @@ export function characterDocument(entity: Entity, answer: Document, roster: Rost
   const given = (typeof answer['start'] === 'object' && answer['start'] !== null ? answer['start'] : {}) as Document
   for (const [from, to] of [['public_state', 'public_state'], ['inner_state', 'inner_state'], ['activity', 'activity']] as const) put(start, to, text(given[from]))
   const place = text(given['location']) === '' ? undefined : findEntity(roster, text(given['location']), 'place')
-  if (text(given['location']) !== '' && place === undefined) notes.push(`${entity.name}: the place "${text(given['location'])}" is not one of the world's places, so the character starts nowhere`)
+  const unplaced = text(given['location']) !== '' && place === undefined ? text(given['location']) : undefined
+  if (unplaced !== undefined) notes.push(unplacedNote(entity.name, unplaced))
   if (place !== undefined) { start['location'] = place.key; put(start, 'position', text(given['position'])) }
   const goals = objects(answer['goals']).filter(goal => text(goal['name']) !== '').map(goal => ({ type: 'agenda', name: text(goal['name']), ...(text(goal['description']) === '' ? {} : { description: text(goal['description']) }), status: 'active' }))
   put(start, 'intents', goals)
@@ -185,7 +190,7 @@ export function characterDocument(entity: Entity, answer: Document, roster: Rost
   put(knowledge, 'exits', exits)
   put(document, 'knowledge', Object.keys(knowledge).length === 0 ? undefined : knowledge)
   const carried = [...new Set(list(answer['carries']))].slice(0, MAX_CARRIED)
-  return { document, notes, ...(carried.length === 0 ? {} : { carried }) }
+  return { document, notes, ...(unplaced === undefined ? {} : { unplaced }), ...(carried.length === 0 ? {} : { carried }) }
 }
 
 const PLACE_SCHEMA = {
@@ -556,6 +561,40 @@ function jobFor(text: TextOf, tr: Translate, entity: Entity, sources: readonly S
   }
 }
 
+/** Creates missing places named by character starting locations. */
+async function startingPlaces(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster, results: readonly { entity: Entity; built?: Built }[]): Promise<{ entity: Entity; built: Built }[]> {
+  const wanted = new Map<string, { name: string; who: Built[] }>()
+  for (const { built } of results) {
+    const name = built?.unplaced
+    if (name === undefined || /[[\]{}]/.test(name) || name.length > 100 || roster.some(other => other.kind === 'character' && norm(other.name) === norm(name))) continue
+    const found = wanted.get(norm(name)) ?? { name, who: [] }
+    found.who.push(built!)
+    wanted.set(norm(name), found)
+  }
+  const made: { entity: Entity; built: Built }[] = []
+  const keys = new Set(roster.map(other => other.key))
+  for (const { name, who } of [...wanted.values()].slice(0, MAX_STARTING_PLACES)) {
+    const entity: Entity = { kind: 'place', key: uniqueKey(slug(name, 'place'), keys), name, aliases: [], player: false }
+    keys.add(entity.key)
+    const known = [...roster, ...made.map(each => each.entity), entity]
+    ctx.say(`writing place: ${name}`)
+    try {
+      const answer = await ctx.run(jobFor(ctx.text, trOf(ctx), entity, sourcesFor(entity, items, classified), known, card))
+      made.push({ entity, built: placeDocument(entity, answer, known) })
+    } catch (error) {
+      for (const character of who) character.notes.push(`${name}: ${error instanceof Error ? error.message : String(error)}`)
+      continue
+    }
+    for (const character of who) {
+      const start = character.document['start'] as Document
+      start['location'] = entity.key
+      const at = character.notes.indexOf(unplacedNote(String(character.document['name']), name))
+      if (at >= 0) character.notes.splice(at, 1)
+    }
+  }
+  return made
+}
+
 /** Makes the documents of every entity of the roster, and the lore from the pieces about the world. */
 export async function extractEntities(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
   const result = emptyExtracted()
@@ -570,6 +609,7 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
       return { entity, failure: `${entity.kind} ${entity.name}: ${error instanceof Error ? error.message : String(error)}` }
     }
   })
+  entityResults.push(...await startingPlaces(ctx, card, items, classified, roster, entityResults))
   for (const { entity, built, failure } of entityResults) {
     if (failure !== undefined || built === undefined) { result.notes.push(failure ?? `${entity.name}: nothing was written`); continue }
     result.notes.push(...built.notes)

@@ -7,13 +7,18 @@ import { profileDirectory, redundantLayers, redundantLayersMessage, selectedBund
 describe('the bundle layers of a profile', () => {
   it('are fine with the all bundle alone, or with single packages alone', () => {
     expect(redundantLayers(['@deepseek-ai/dsh-base', '@dsh-agentic-roleplay/all'])).toEqual([])
-    expect(redundantLayers(['@dsh-agentic-roleplay/state', '@dsh-agentic-roleplay/core'])).toEqual([])
+    expect(redundantLayers(['@dsh-agentic-roleplay/core'])).toEqual([])
+    expect(redundantLayers(['@dsh-agentic-roleplay/state'])).toEqual([])
+  })
+
+  it('name the state layer selected beside the core layer, which already holds the state plugin', () => {
+    expect(redundantLayers(['@dsh-agentic-roleplay/state', '@dsh-agentic-roleplay/core'])).toEqual(['@dsh-agentic-roleplay/state'])
   })
 
   it('name the single-package layers selected beside the all bundle, which would insert its rows twice', () => {
     const found = redundantLayers(['@dsh-agentic-roleplay/state', '@dsh-agentic-roleplay/all', '@dsh-agentic-roleplay/core', '@someone/else'])
     expect(found).toEqual(['@dsh-agentic-roleplay/state', '@dsh-agentic-roleplay/core'])
-    expect(redundantLayersMessage(found)).toMatch(/"@dsh-agentic-roleplay\/state", "@dsh-agentic-roleplay\/core".*next to the all bundle/)
+    expect(redundantLayersMessage(found)).toMatch(/"@dsh-agentic-roleplay\/state", "@dsh-agentic-roleplay\/core".*next to a layer that already inserts the same plugin rows/)
   })
 
   describe('read from the profile', () => {

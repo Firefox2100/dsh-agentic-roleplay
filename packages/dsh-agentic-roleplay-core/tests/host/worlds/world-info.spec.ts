@@ -29,6 +29,16 @@ describe('the world going on while the player is away', () => {
 })
 
 describe('the world\'s own fields', () => {
+  it('carry the language the world is played in, set and cleared like any text field, and refuse what is no language tag', async () => {
+    const directory = await world({ id: 'w1', name: 'Harbour' })
+    expect(await readWorldInfo(directory)).toMatchObject({ language: '' })
+    expect(await editWorldInfo(directory, { language: 'ja' })).toMatchObject({ language: 'ja' })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).toMatchObject({ language: 'ja' })
+    await expect(editWorldInfo(directory, { language: 'japanese please' })).rejects.toThrow(/language/)
+    expect(await editWorldInfo(directory, { language: '' })).toMatchObject({ language: '' })
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8'))).not.toHaveProperty('language')
+  })
+
   it('carry the preset the world suggests, set and cleared like any text field, and refuse a name that is no preset', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour' })
     expect(await readWorldInfo(directory)).toMatchObject({ preset: '' })

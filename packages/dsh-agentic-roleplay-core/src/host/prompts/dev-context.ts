@@ -23,3 +23,9 @@ export function silenceHarnessDevContext(ctx: Context): void {
     ctx.systemPrompt.context({ name: entry.name, order: ctx.systemPrompt.getContextOrder(entry.context), interpolate: false, text: '' })
   }
 }
+
+/** Removes DSH runtime facts from agents that receive their working context elsewhere. */
+export function silenceRuntimeContext(ctx: Context): void {
+  ctx.effect(() => ctx.systemPrompt.suppressRuntimeContext(), 'roleplay: runtime context')
+  ctx.systemPrompt.context({ name: 'working-directory:current', order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
+}

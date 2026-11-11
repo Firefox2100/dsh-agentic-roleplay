@@ -7,6 +7,7 @@ import { Tag } from '../../ui/Tag.tsx'
 import type { ImportChoices, ImportPreview, OpeningChoice, UpdateTarget } from '../../../shared/import-card.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
 import type { ImportCardKey } from './locales.ts'
+import { LanguageSelect, primaryLanguage } from '../language-select/LanguageSelect.tsx'
 import css from './ImportCard.module.css'
 
 type T = (key: ImportCardKey, values?: Record<string, string | number>) => string
@@ -38,15 +39,17 @@ function Text({ label, text, t, note }: { label: string; text: string; t: T; not
  * What a card holds, for the person to look through and decide what becomes of it: which lorebook entries are read at all, and which greeting opens the story.
  * The caller says what starting and cancelling do, because a card comes from a file or from a catalogue.
  */
-export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain, discard, onCancelled, onStarted, onImportedPlain }: {
+export function ImportCard({ t, language, preview, initialUpdate, start: begin, startPlain, discard, onCancelled, onStarted, onImportedPlain }: {
   t: T
+  /** The interface language (a tag such as `zh-CN`): the language of the prompts the import starts out with. */
+  language: string
   preview: ImportPreview
   /** The world the person chose to update before the card was read, which then starts out selected. */
   initialUpdate?: string
   /** Makes the world with the choices, or updates the world named by `update`; rejects with the reason when it cannot. */
-  start: (choices: ImportChoices, update?: string) => Promise<{ chatSessionId: string; started: boolean }>
+  start: (choices: ImportChoices, update: string | undefined, promptLanguage: string) => Promise<{ chatSessionId: string; started: boolean }>
   /** Imports the card into a new world without a model; when it is not given, the choice is not offered. Rejects with the reason when it cannot. */
-  startPlain?: (choices: ImportChoices) => Promise<{ worldId: string; draft: boolean }>
+  startPlain?: (choices: ImportChoices, promptLanguage: string) => Promise<{ worldId: string; draft: boolean }>
   onImportedPlain?: (worldId: string, draft: boolean) => void
   /** Lets the host forget the card; called before `onCancelled`. */
   discard: () => Promise<void>
@@ -65,6 +68,7 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain
   const [opening, setOpening] = useState<OpeningChoice>(preview.choices.opening)
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set())
   const [update, setUpdate] = useState<string | undefined>(() => initialUpdate ?? defaultTarget(preview.targets))
+  const [promptLanguage, setPromptLanguage] = useState(() => primaryLanguage(language))
   const [starting, setStarting] = useState(false)
   const [error, setError] = useState<string>()
   const others = (preview.targets ?? []).filter(target => !target.sameName)
@@ -81,7 +85,7 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain
     if (name.trim() === '' || starting) return
     setStarting(true)
     setError(undefined)
-    begin(choices(), update).then(
+    begin(choices(), update, promptLanguage).then(
       (started) => { onStarted(started.chatSessionId, started.started) },
       (failure: unknown) => { setStarting(false); setError(failure instanceof Error ? failure.message : String(failure)) },
     )
@@ -90,7 +94,7 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain
     if (name.trim() === '' || starting || startPlain === undefined) return
     setStarting(true)
     setError(undefined)
-    startPlain(choices()).then(
+    startPlain(choices(), promptLanguage).then(
       (done) => { onImportedPlain?.(done.worldId, done.draft) },
       (failure: unknown) => { setStarting(false); setError(failure instanceof Error ? failure.message : String(failure)) },
     )
@@ -117,6 +121,11 @@ export function ImportCard({ t, preview, initialUpdate, start: begin, startPlain
             <label className={css.label}>
               <span>{t('ic_worldName')}</span>
               <Input value={name} maxLength={200} disabled={update !== undefined} onChange={(event) => { setName(event.target.value) }} />
+            </label>
+            <label className={css.label}>
+              <span>{t('ic_promptLanguage')}</span>
+              <LanguageSelect value={promptLanguage} onChange={setPromptLanguage} interfaceLanguage={language} label={t('ic_promptLanguage')} disabled={starting} testId="roleplay-import-language" />
+              <span className={css.note}>{t('ic_promptLanguageHelp')}</span>
             </label>
             <p className={css.note}>{t('ic_source', { spec: card.sourceSpec === 'chara_card_v2' ? 'V2' : 'V3', converted: card.sourceSpec === 'chara_card_v2' ? ' (read as V3)' : '' })}{card.creator === '' ? '' : ` ${t('ic_creator')}: ${card.creator}.`}</p>
             {card.tags.length > 0 && <div className={css.tags}>{card.tags.map(tag => <Tag key={tag}>{tag}</Tag>)}</div>}

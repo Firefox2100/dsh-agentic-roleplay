@@ -20,7 +20,7 @@ export function registerLorebooksPage(ctx: Context): void {
   const t = ctx.locale.bind(NAMESPACE)
   ctx.effect(() => ctx.locale.register(NAMESPACE, dictionaries), 'roleplay: lorebooks dictionaries')
 
-  const lorebooks = new LorebooksController(createChatOpener(ctx), () => t('language'))
+  const lorebooks = new LorebooksController(createChatOpener(ctx))
   ctx.effect(() => () => { lorebooks.dispose() }, 'roleplay: lorebooks requests')
 
   ctx.slots.inject('roleplay.page', () => ctx.slots.register({

@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ALL = ['@dsh-agentic-roleplay/all', 'dsh-agentic-roleplay']
-const SINGLE = ['@dsh-agentic-roleplay/core', '@dsh-agentic-roleplay/state', 'dsh-agentic-roleplay-core', 'dsh-roleplay-state']
+const CORE = ['@dsh-agentic-roleplay/core', 'dsh-agentic-roleplay-core']
+const STATE = ['@dsh-agentic-roleplay/state', 'dsh-roleplay-state']
 
 /**
  * The profile directory DSH launched this plugin in: `DSH_PROFILE_DIR`, which a profile-launched Host carries, or
@@ -29,14 +30,12 @@ export function selectedBundles(profileDir: string | undefined): string[] {
   } catch { return [] }
 }
 
-/**
- * The layers of single packages that are selected next to the `all` layer. Each of them inserts the same plugin row as `all`, so the profile then holds the row twice
- * and DSH, which writes a plugin's settings through its row, refuses every save of Settings → Role Play.
- */
+/** Layers made redundant by a selected complete install. Duplicate rows prevent DSH from saving their settings. */
 export function redundantLayers(bundles: readonly string[]): string[] {
-  return bundles.some(name => ALL.includes(name)) ? bundles.filter(name => SINGLE.includes(name)) : []
+  if (bundles.some(name => ALL.includes(name))) return bundles.filter(name => CORE.includes(name) || STATE.includes(name))
+  return bundles.some(name => CORE.includes(name)) ? bundles.filter(name => STATE.includes(name)) : []
 }
 
 export function redundantLayersMessage(layers: readonly string[]): string {
-  return `the profile selects ${layers.map(name => `"${name}"`).join(', ')} next to the all bundle, which already inserts the same plugin rows, so DSH refuses to save the Role Play settings: deselect them (keep the packages installed) and restart`
+  return `the profile selects ${layers.map(name => `"${name}"`).join(', ')} next to a layer that already inserts the same plugin rows (the all bundle, or the core package, which includes the state plugin), so DSH refuses to save the Role Play settings: deselect them (keep the packages installed) and restart`
 }

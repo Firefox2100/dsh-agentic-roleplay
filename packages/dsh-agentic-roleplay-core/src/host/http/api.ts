@@ -76,6 +76,8 @@ export interface ApiDeps {
   forgetAuthoring(worldId: string): Promise<void>
   translation: {
     language(worldId: string): Promise<'en' | 'zh' | undefined>
+    /** The language the world's file declares for its stories, if it does. */
+    declared(worldId: string): Promise<string | undefined>
     start(worldId: string, to: 'en' | 'zh', title: string, language: string): Promise<{ chatSessionId: string; started: boolean; failure?: string }>
   }
   worldCharacters(worldId: string): Promise<WorldCharactersPayload>

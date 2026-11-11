@@ -21,9 +21,17 @@ dsh plugin --profile <profile> add @dsh-agentic-roleplay/all
 
 The bundle installs the roleplay core and `@dsh-agentic-roleplay/state`. Restart the profile after installation, then open **Role Play** in the DSH sidebar.
 
+The bundle is a convenience, not a requirement. `@dsh-agentic-roleplay/core` ships the same configuration layer, with the state plugin, the roleplay and helper presets, the three authoring assistants and the session doctor, so this works just as well:
+
+```bash
+dsh plugin --profile <profile> add @dsh-agentic-roleplay/core
+```
+
+`@dsh-agentic-roleplay/state` alone adds only the story database and its tools, for other plugins that build on it.
+
 Microphone input is optional. Install and enable **Voice Input** from DSH's own plugin list if you want it. The roleplay bundle does not install DSH speech packages, so DSH can keep them on the same release as the runtime. You can use its SenseVoice provider, an API speech-to-text provider, or both.
 
-Keep only the `all` bundle layer selected. The core and state packages also ship layers of their own for installing them without the bundle, and those layers add the same plugin rows. With both selected the profile holds two `roleplay` rows, and DSH refuses to save **Settings → Role Play** ("this deployment did not accept these values"). If you manage plugins with a plugin manager, deselect the `@dsh-agentic-roleplay/core` and `@dsh-agentic-roleplay/state` layers and keep the packages installed, then restart. The Role Play settings page shows a warning, and the log an error, when it finds this.
+Keep only one of these layers selected: `@dsh-agentic-roleplay/all` or `@dsh-agentic-roleplay/core`. They add the same plugin rows, and the core layer already includes the state plugin, so a `@dsh-agentic-roleplay/state` layer beside either of them is redundant too. With two selected the profile holds a row twice, and DSH refuses to save **Settings → Role Play** ("this deployment did not accept these values"). If you manage plugins with a plugin manager, deselect the extra layers and keep the packages installed, then restart. The Role Play settings page shows a warning, and the log an error, when it finds this.
 
 ## First-run checklist
 
@@ -44,7 +52,7 @@ Treat this folder as your roleplay library. Backing it up preserves authored wor
 
 ## Updating
 
-Update the bundle and restart the profile. Before a DSH minor-version upgrade, check the project release notes: the child-agent implementation uses a small set of version-sensitive DSH composition APIs.
+Update the bundle (or the core package, if that is what you installed) and restart the profile. Nothing needs to be removed first: the rows are the same, and a profile that already has the `all` bundle keeps working. A profile that installed core alone and wrote its own preset rows keeps them, because a row in the profile's own patch replaces the shipped row of the same id. Before a DSH minor-version upgrade, check the project release notes: the child-agent implementation uses a small set of version-sensitive DSH composition APIs.
 
 ### Moving from 0.9.0
 

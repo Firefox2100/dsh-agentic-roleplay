@@ -76,7 +76,7 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToA
     },
     '/worlds/language': {
       GET: async (_req, res, url) => {
-        try { sendJson(res, 200, { language: await translation.language(url.searchParams.get('id') ?? '') ?? null }) }
+        try { const id = url.searchParams.get('id') ?? ''; sendJson(res, 200, { language: await translation.language(id) ?? null, declared: await translation.declared(id) ?? null }) }
         catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           throw error

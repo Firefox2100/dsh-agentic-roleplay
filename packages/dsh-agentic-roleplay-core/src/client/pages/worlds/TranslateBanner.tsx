@@ -1,23 +1,33 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../../ui/Button.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
-import { storyLanguageOf, translateWorld, worldLanguage, type StoryLanguage } from './translate-api.ts'
+import { storyLanguageOf, translateWorld, worldLanguages, type StoryLanguage } from './translate-api.ts'
 import css from './TranslateBanner.module.css'
 
 type Translate = TranslateNS<'roleplay.worlds'>
 
-export const languageName = (t: Translate, language: StoryLanguage): string => (language === 'zh' ? t('languageChinese') : t('languageEnglish'))
+/** A language by name in the person's own language; the two the plugin has texts for use them, any other is named by the browser. */
+export function languageName(t: Translate, language: string): string {
+  if (language === 'zh') return t('languageChinese')
+  if (language === 'en') return t('languageEnglish')
+  try { return new Intl.DisplayNames([t('language')], { type: 'language' }).of(language) ?? language } catch { return language }
+}
 
 /** The language a world is written in, read from the host; nothing while it is being read or when it cannot be told. */
 export function useWorldLanguage(worldId: string): StoryLanguage | undefined {
-  const [language, setLanguage] = useState<StoryLanguage | undefined>()
+  return useWorldLanguages(worldId).written
+}
+
+/** Both languages of a world: the one its words are in, and the one its file declares for its stories. */
+export function useWorldLanguages(worldId: string): { written?: StoryLanguage; declared?: string } {
+  const [languages, setLanguages] = useState<{ written?: StoryLanguage; declared?: string }>({})
   useEffect(() => {
     const abort = new AbortController()
-    setLanguage(undefined)
-    worldLanguage(worldId, abort.signal).then(setLanguage, () => undefined)
+    setLanguages({})
+    worldLanguages(worldId, abort.signal).then(setLanguages, () => undefined)
     return () => { abort.abort() }
   }, [worldId])
-  return language
+  return languages
 }
 
 /** Says that a world is written in another language than the person's, and offers to translate it into a copy. */

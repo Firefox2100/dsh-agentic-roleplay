@@ -205,6 +205,7 @@ beforeEach(async () => {
     forgetAuthoring: async worldId => { if (worldId === 'missing') throw new WorldNotFoundError('missing world') },
     translation: {
       language: async id => { if (id === 'missing') throw new WorldNotFoundError('missing world'); return id === 'harbor' ? 'en' : undefined },
+      declared: async id => (id === 'harbor' ? 'ja' : undefined),
       start: async (id, to) => { if (id === 'harbor' && to === 'en') throw new InvalidEditProblems(['this world is already written in English']); return { chatSessionId: `world-author-${id}`, started: true } },
     },
     worldCharacters: async () => {
@@ -239,8 +240,8 @@ beforeEach(async () => {
       uploadPreset: (worldId, file, name, language) => { importCalls.push(`preset ${worldId} ${file.length} ${name} ${language ?? '-'}`); if (importError !== undefined) return Promise.reject(importError); return Promise.resolve({ chatSessionId: `world-author-${worldId}`, preset: 'P', started: true }) },
     },
     worldFiles: {
-      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }),
-      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }) },
+      info: (worldId) => Promise.resolve({ name: worldId, description: '', tags: [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', language: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }),
+      editInfo: (worldId, edit) => { if (edit.timeZone === 'bad') return Promise.reject(new InvalidEditProblems(['time_zone is not a time zone'])); return Promise.resolve({ name: edit.name ?? worldId, description: '', tags: edit.tags ?? [], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', language: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }) },
       dice: () => Promise.resolve({ checks: [] }),
       editDice: (_world, dice) => (dice.checks.some(check => check.key === '') ? Promise.reject(new InvalidEditProblems(['checks[0].key is required'])) : Promise.resolve(dice)),
       commands: () => Promise.resolve({ commands: [] }),
@@ -571,8 +572,8 @@ describe('roleplay API', () => {
 
   it('says which language a world is written in, and asks for its translation', async () => {
     const known = await fetch(`${origin}/worlds/language?id=harbor`)
-    expect(await known.json()).toEqual({ language: 'en' })
-    expect(await (await fetch(`${origin}/worlds/language?id=other`)).json()).toEqual({ language: null })
+    expect(await known.json()).toEqual({ language: 'en', declared: 'ja' })
+    expect(await (await fetch(`${origin}/worlds/language?id=other`)).json()).toEqual({ language: null, declared: null })
     expect((await fetch(`${origin}/worlds/language?id=missing`)).status).toBe(404)
     const ask = (id: string, body: object) => fetch(`${origin}/worlds/translate?id=${id}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
     expect(await (await ask('other', { to: 'zh', title: 'Translating' })).json()).toEqual({ chatSessionId: 'world-author-other', started: true })

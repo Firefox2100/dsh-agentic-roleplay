@@ -21,12 +21,12 @@
 .editHeader { display: flex; flex: 0 0 auto; gap: 8px; align-items: center; padding: 8px 16px; border-bottom: 0.5px solid var(--dsw-alias-border-l3); }
 .editTitle { flex: 1 1 auto; font-size: 14px; font-weight: 500; color: var(--dsw-alias-label-primary); }
 .editBody { display: flex; flex: 1 1 0; flex-direction: column; gap: 12px; min-height: 0; padding: 16px 24px; overflow-y: auto; }
-.panes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+.panes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
 .pane { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .label { font-size: 12px; font-weight: 500; color: var(--dsw-alias-label-tertiary); }
-.area { box-sizing: border-box; width: 100%; min-height: clamp(260px, 52vh, 560px); padding: 8px; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px var(--dsw-font-mono, monospace); color: var(--dsw-alias-label-primary); resize: vertical; }
+.area { box-sizing: border-box; width: 100%; flex: 1 1 auto; min-height: 260px; padding: 8px; overflow: hidden; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px var(--dsw-font-mono, monospace); color: var(--dsw-alias-label-primary); resize: none; }
 .area:focus-visible { border-color: var(--dsw-alias-state-business-primary); outline: 2px solid var(--dsw-alias-state-business-primary); outline-offset: 1px; }
-.shipped { box-sizing: border-box; margin: 0; min-height: clamp(260px, 52vh, 560px); padding: 8px; overflow-x: auto; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px var(--dsw-font-mono, monospace); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); }
+.shipped { box-sizing: border-box; margin: 0; flex: 1 1 auto; min-height: 260px; padding: 8px; overflow-x: auto; border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); background: var(--dsw-alias-bg-layer-1); font: 13px/20px var(--dsw-font-mono, monospace); white-space: pre-wrap; overflow-wrap: anywhere; color: var(--dsw-alias-label-secondary); }
 .line { display: block; min-height: 20px; }
 .missing { background: var(--dsw-alias-state-business-bg, rgba(100, 140, 255, 0.14)); color: var(--dsw-alias-label-primary); }
 .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

@@ -20,7 +20,7 @@ export function registerPresetsPage(ctx: Context): void {
   const t = ctx.locale.bind(NAMESPACE)
   ctx.effect(() => ctx.locale.register(NAMESPACE, dictionaries), 'roleplay: presets dictionaries')
 
-  const presets = new PresetsController(createChatOpener(ctx), () => t('language'))
+  const presets = new PresetsController(createChatOpener(ctx))
   ctx.effect(() => () => { presets.dispose() }, 'roleplay: presets requests')
 
   ctx.slots.inject('roleplay.page', () => ctx.slots.register({

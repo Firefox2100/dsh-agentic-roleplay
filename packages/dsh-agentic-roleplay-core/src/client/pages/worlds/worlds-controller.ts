@@ -84,7 +84,7 @@ export interface WorldsFace {
   closeStartDialog: () => void
   startSession: (options: StartOptions) => void
   dismissStarted: () => void
-  openAuthoring: (worldId: string, title: string) => void
+  openAuthoring: (worldId: string, title: string, language: string) => void
   /** Shows a DSH chat in place of the panel. */
   openChat: (chatSessionId: string) => void
 }
@@ -119,11 +119,11 @@ export class WorldsController {
     closeStartDialog: () => { this.closeStartDialog() },
     startSession: (options) => { void this.startSession(options) },
     dismissStarted: () => { this.store.update((draft) => { delete draft.started }) },
-    openAuthoring: (worldId, title) => { void this.openAuthoring(worldId, title) },
+    openAuthoring: (worldId, title, language) => { void this.openAuthoring(worldId, title, language) },
     openChat: (chatSessionId) => { this.openChat(chatSessionId) },
   }
 
-  constructor(openChat: OpenChat, private readonly language: () => string) {
+  constructor(openChat: OpenChat) {
     this.openChat = openChat
   }
 
@@ -145,12 +145,12 @@ export class WorldsController {
     await this.run('/worlds/refresh', { method: 'POST' })
   }
 
-  async openAuthoring(worldId: string, title: string): Promise<void> {
+  async openAuthoring(worldId: string, title: string, language: string): Promise<void> {
     const current = this.store.getSnapshot().authoring
     if (current?.worldId === worldId && current.error === undefined) return
     this.store.update((draft) => { draft.authoring = { worldId } })
     try {
-      const opened = await request<{ chatSessionId: string }>(`/worlds/authoring?id=${encodeURIComponent(worldId)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, language: this.language() }) }, this.abort.signal)
+      const opened = await request<{ chatSessionId: string }>(`/worlds/authoring?id=${encodeURIComponent(worldId)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, language }) }, this.abort.signal)
       this.store.update((draft) => { delete draft.authoring })
       this.openChat(opened.chatSessionId)
     } catch (error) {

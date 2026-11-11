@@ -7,8 +7,8 @@ import { DEFAULT_SETTINGS } from '../../../shared/settings.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../../settings-form/embedding-options.ts'
 import { SettingsFields } from '../../settings-form/SettingsFields.tsx'
-import { languageName, useWorldLanguage } from './TranslateBanner.tsx'
-import { storyLanguageOf } from './translate-api.ts'
+import { languageName, useWorldLanguages } from './TranslateBanner.tsx'
+import { playedLanguageOf } from './translate-api.ts'
 import { AvatarChoices } from '../../widgets/avatar-choices/AvatarChoices.tsx'
 import type { StartDialog, StartOptions } from './worlds-controller.ts'
 import css from './StartSessionDialog.module.css'
@@ -42,11 +42,12 @@ export function StartSessionDialog({ t, dialog, onStart, onClose }: {
   const selected = players.find(player => player.value === choice)?.value ?? players[0]?.value
   const chosenOpening = opening === '' ? undefined : dialog.openings[Number(opening)]
   const openingValid = chosenOpening !== undefined && (chosenOpening.character === undefined || chosenOpening.character === selected)
-  const base = { ...DEFAULT_SETTINGS, prompts: { language: t('language') } }
+  const { written, declared } = useWorldLanguages(dialog.worldId)
+  // A declared world language replaces the interface-language default.
+  const base = { ...DEFAULT_SETTINGS, prompts: { language: declared ?? t('language') } }
   const shown = { ...toDrafts(base, options), ...drafts }
-  const written = useWorldLanguage(dialog.worldId)
   const chosen = shown['prompts.language']
-  const played = storyLanguageOf(typeof chosen === 'string' && chosen.trim() !== '' ? chosen : t('language'))
+  const played = playedLanguageOf(typeof chosen === 'string' && chosen.trim() !== '' ? chosen : base.prompts.language)
   const canStart = dialog.status === 'ready' && selected !== undefined && !dialog.submitting && problemsOf(shown, options).size === 0
 
   return (

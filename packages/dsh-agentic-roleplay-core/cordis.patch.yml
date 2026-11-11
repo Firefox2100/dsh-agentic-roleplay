@@ -1,3 +1,111 @@
+# A complete roleplay installation. The core and all packages ship identical layers.
 - insert:
+    - id: roleplay-state
+      name: '@dsh-agentic-roleplay/state'
     - id: roleplay
       name: '@dsh-agentic-roleplay/core'
+    # Roleplay chats receive their tools and instructions from orchestration.
+    - id: preset-roleplay
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: roleplay
+        name: Role Play
+        description: Play interactive stories with character agents, persistent world state, memory, and roleplay tools.
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: orchestration
+            name: '@dsh-agentic-roleplay/core/orchestration'
+          # Folds the oldest turns of a long conversation into summaries written
+          # from the story's recorded events, at the limit set per chat.
+          - id: compaction
+            name: cordis:group
+            group: true
+            isolate:
+              compaction: true
+            config:
+              - id: roleplay-compaction
+                name: '@dsh-agentic-roleplay/core/compaction'
+    # Helpers receive role-specific tools when they start.
+    - id: preset-roleplay-helper
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: roleplay-helper
+        name: Role Play Helper
+        description: Internal preset used by roleplay characters and supporting agents during a story.
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: helper
+            name: '@dsh-agentic-roleplay/core/helper'
+    # File tools are jailed to interface packs and writes require approval.
+    - id: preset-world-authoring
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: world-authoring
+        name: World Authoring
+        description: Create and refine roleplay worlds, characters, rules, and interface packs with guided authoring tools.
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: tool-fs
+            name: '@deepseek-ai/dsh-tool-fs'
+            config:
+              applyPatch: false
+          - id: authoring
+            name: '@dsh-agentic-roleplay/core/authoring'
+    - id: preset-preset-authoring
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: preset-authoring
+        name: Preset Authoring
+        description: Edit the reusable prose instructions that shape how a roleplay world is narrated and played.
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: preset-authoring
+            name: '@dsh-agentic-roleplay/core/preset-authoring'
+    - id: preset-lorebook-authoring
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: lorebook-authoring
+        name: Lorebook Authoring
+        description: Build and revise reusable lorebook entries for characters, places, history, and other world knowledge.
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: lorebook-authoring
+            name: '@dsh-agentic-roleplay/core/lorebook-authoring'
+    - id: preset-session-doctor
+      name: '@deepseek-ai/dsh-agent-preset'
+      config:
+        id: session-doctor
+        name: Session Doctor
+        description: Inspect a roleplay session for record problems and propose player-approved repairs.
+        plugins:
+          - id: persona
+            name: '@deepseek-ai/dsh-persona'
+            config:
+              prefix: ''
+              suffix: ''
+          - id: doctor
+            name: '@dsh-agentic-roleplay/core/doctor'
+# Allows one character round and its supporting helpers to run concurrently.
+- id: subagent
+  config:
+    maxActiveSubagents: 32

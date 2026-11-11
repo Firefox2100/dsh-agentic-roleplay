@@ -4,6 +4,7 @@ import { Button } from '../../ui/Button.tsx'
 import type { SelectionChoice, SelectionPreview } from '../../../shared/import-selection.ts'
 import { SAMPLING_KEYS } from '../../../shared/sampling.ts'
 import type { ImportSelectionKey } from './locales.ts'
+import { LanguageSelect, primaryLanguage } from '../language-select/LanguageSelect.tsx'
 import css from './ImportSelection.module.css'
 
 /** How the person wants the import done beyond what is ticked. */
@@ -12,6 +13,8 @@ export interface ImportOptions {
   verbatim: boolean
   /** Who the entries of a verbatim import are told to. */
   knownBy: 'everyone' | 'master'
+  /** The language the assistant works in and writes the prompts in (used when the import is not verbatim). */
+  language: string
 }
 
 const messageOf = (failure: unknown): string => (failure instanceof Error ? failure.message : String(failure))
@@ -20,9 +23,11 @@ const messageOf = (failure: unknown): string => (failure instanceof Error ? fail
  * The choice of what an imported preset or lorebook brings: every item the file offers, each ticked or not, and the file's sampling. Only the ticked items reach the conversion.
  * What the caller needs besides the choice (a name for the new library entry) goes in as `children`.
  */
-export function ImportSelectionDialog({ preview, t, onConfirm, onClose, canConfirm = true, canVerbatim = preview.kind === 'lorebook', children }: {
+export function ImportSelectionDialog({ preview, t, interfaceLanguage, onConfirm, onClose, canConfirm = true, canVerbatim = preview.kind === 'lorebook', children }: {
   preview: SelectionPreview
   t: (key: ImportSelectionKey, values?: Record<string, string>) => string
+  /** The interface language (a tag such as `zh-CN`): the language of the prompts the import starts out with. */
+  interfaceLanguage: string
   /** Rejects with the reason when the import cannot go ahead; the dialog then stays open and says why. */
   onConfirm: (choice: SelectionChoice, options: ImportOptions) => Promise<void>
   onClose: () => void
@@ -35,6 +40,7 @@ export function ImportSelectionDialog({ preview, t, onConfirm, onClose, canConfi
   const [ticked, setTicked] = useState(asFile)
   const [keepSampling, setKeepSampling] = useState(true)
   const [verbatim, setVerbatim] = useState(false)
+  const [language, setLanguage] = useState(() => primaryLanguage(interfaceLanguage))
   const [knownBy, setKnownBy] = useState<ImportOptions['knownBy']>('master')
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string>()
@@ -43,7 +49,7 @@ export function ImportSelectionDialog({ preview, t, onConfirm, onClose, canConfi
   const toggle = (id: string, on: boolean): void => { const next = new Set(ticked); if (on) next.add(id); else next.delete(id); setTicked(next) }
   const confirm = (): void => {
     setBusy(true); setFailure(undefined)
-    onConfirm({ id: preview.id, enabled: preview.items.filter(item => item.usable && ticked.has(item.id)).map(item => item.id), sampling: keepSampling }, { verbatim: verbatim && canVerbatim, knownBy }).then(onClose, (problem: unknown) => { setBusy(false); setFailure(messageOf(problem)) })
+    onConfirm({ id: preview.id, enabled: preview.items.filter(item => item.usable && ticked.has(item.id)).map(item => item.id), sampling: keepSampling }, { verbatim: verbatim && canVerbatim, knownBy, language }).then(onClose, (problem: unknown) => { setBusy(false); setFailure(messageOf(problem)) })
   }
   const ignored = [['regexScripts', preview.ignored?.regexScripts], ['scripts', preview.ignored?.scripts]].flatMap(([key, count]) => (typeof count === 'number' && count > 0 ? [t(`is_ignored_${key as 'regexScripts' | 'scripts'}`, { count: String(count) })] : []))
   const on = usable.filter(item => ticked.has(item.id)).length
@@ -87,6 +93,11 @@ export function ImportSelectionDialog({ preview, t, onConfirm, onClose, canConfi
               )}
           </div>
         )}
+        <div className={css.sampling}>
+          <label className={css.meta}>{t('is_language')}</label>
+          <LanguageSelect value={language} onChange={setLanguage} interfaceLanguage={interfaceLanguage} label={t('is_language')} disabled={busy || (verbatim && canVerbatim)} testId="roleplay-import-language" />
+          <span className={css.meta}>{t('is_languageHelp')}</span>
+        </div>
         {canVerbatim && (
           <div className={css.sampling}>
             <label><input type="checkbox" checked={verbatim} disabled={busy} data-testid="roleplay-import-verbatim" onChange={(event) => { setVerbatim(event.target.checked) }} /> {t(preview.kind === 'lorebook' ? 'is_verbatim' : 'is_verbatimPreset')}</label>

@@ -30,6 +30,9 @@ export function shippedPromptsDirectory(from: string = dirname(fileURLToPath(imp
   }
 }
 
+/** A language tag as a world file or a person writes it: `ja`, `zh-CN`, `pt_BR`. */
+export const LANGUAGE_TAG = /^[A-Za-z]{2,3}(?:[-_][A-Za-z0-9]{2,8})?$/
+
 /** `zh-CN` and `ZH` are both `zh`; anything that is not a language tag is refused. */
 export function languageOf(tag: string | undefined): string {
   const primary = (tag ?? FALLBACK_LANGUAGE).trim().toLowerCase().split(/[-_]/)[0] ?? ''
@@ -38,7 +41,7 @@ export function languageOf(tag: string | undefined): string {
 }
 
 /** How a language is named inside a prompt, for the instruction to write in it. */
-const LANGUAGE_NAMES: Record<string, string> = { en: 'English', zh: '中文' }
+const LANGUAGE_NAMES: Record<string, string> = { en: 'English', zh: '中文', ja: '日本語', ko: '한국어', es: 'Español', fr: 'Français', de: 'Deutsch', pt: 'Português', ru: 'Русский', it: 'Italiano' }
 
 function fill(id: string, text: string, given: PromptVariables, tag: string): string {
   const variables: PromptVariables = { language: LANGUAGE_NAMES[tag] ?? tag, ...given }
@@ -56,7 +59,10 @@ const textOf = (path: string): string => readFileSync(path, 'utf8').replaceAll('
 
 /** A prompt as the package ships it, without a roleplay root: for code that has none, such as tests. */
 export function shippedText(id: string, language = FALLBACK_LANGUAGE, variables: PromptVariables = {}): string {
-  return fill(id, textOf(join(shippedPromptsDirectory(), language, `${id}.md`)), variables, language)
+  const directory = shippedPromptsDirectory()
+  // Unsupported languages use English instructions while retaining their requested output language.
+  const path = [language, FALLBACK_LANGUAGE].map(name => join(directory, name, `${id}.md`)).find(candidate => existsSync(candidate)) ?? join(directory, language, `${id}.md`)
+  return fill(id, textOf(path), variables, language)
 }
 
 export function listFiles(directory: string, prefix = ''): string[] {

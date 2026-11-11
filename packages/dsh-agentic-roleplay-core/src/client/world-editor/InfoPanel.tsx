@@ -12,16 +12,16 @@ import { QuestionsEditor } from './QuestionsEditor.tsx'
 import { loadInfo, loadPlayable, saveInfo } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
-interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; autonomy: boolean; preset: string; lorebooks: string[]; sampling: SamplingTexts; alternates: { title: string; text: string; character?: string }[]; questions: QuestionDraft[] }
+interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; language: string; autonomy: boolean; preset: string; lorebooks: string[]; sampling: SamplingTexts; alternates: { title: string; text: string; character?: string }[]; questions: QuestionDraft[] }
 
-const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, autonomy: info.autonomy, preset: info.preset, lorebooks: info.lorebooks, sampling: samplingTexts(info.sampling), alternates: info.alternateOpenings, questions: draftOfQuestions(info.startQuestions) })
+const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, language: info.language, autonomy: info.autonomy, preset: info.preset, lorebooks: info.lorebooks, sampling: samplingTexts(info.sampling), alternates: info.alternateOpenings, questions: draftOfQuestions(info.startQuestions) })
 const lines = (value: string): string[] => value.split('\n').map(line => line.trim()).filter(line => line !== '')
 const words = (value: string): string[] => value.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag !== '')
 
 /** The edit that turns the saved fields into the drafted ones: only what changed. */
 function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   const edit: Record<string, unknown> = {}
-  for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'preset'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
+  for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'language', 'preset'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
   if (draft.autonomy !== saved.autonomy) edit['autonomy'] = draft.autonomy
   if (JSON.stringify(draft.lorebooks) !== JSON.stringify(saved.lorebooks)) edit['lorebooks'] = draft.lorebooks
   if (JSON.stringify(samplingOfTexts(draft.sampling)) !== JSON.stringify(samplingOfTexts(saved.sampling))) edit['sampling'] = samplingOfTexts(draft.sampling)
@@ -134,6 +134,7 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
               {field('authorName', 'infoAuthor')}
               {field('version', 'infoVersion', 'infoVersionHelp', { placeholder: '1.0' })}
               {field('authorUrl', 'infoAuthorUrl', undefined, { placeholder: 'https://' })}
+              {field('language', 'infoLanguage', 'infoLanguageHelp', { placeholder: 'en, zh, ja' })}
               {field('timeZone', 'infoTimeZone', 'infoTimeZoneHelp', { placeholder: 'Europe/London' })}
               {field('startingTime', 'infoStartingTime', 'infoStartingTimeHelp', { placeholder: '1912-04-14T23:40:00' })}
               <label className={css.field}>

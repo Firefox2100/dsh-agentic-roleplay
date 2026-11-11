@@ -33,6 +33,7 @@ title: world.json
 | `alternate_openings` | Optional list | Other first messages the player may choose when starting a session: `{title, text, character?}`, plain narration, at most 30 of at most 20,000 characters; a missing title is the first words of the text |
 | `start_questions` | Optional list | Questions the start dialog asks before a story begins; see below |
 | `narration_voice` | Optional | Initial TTS voice for narration |
+| `language` | Optional | The language new stories of this world are played in, as a tag (`en`, `zh`, `ja`, `pt-BR`; only the first part counts). Without it a story follows the interface language of the person who starts it. The person can still choose another when starting. A language that has no prompts of its own uses the English ones and tells the models to write in it |
 | `preset` | Optional | Name of a preset in the person's library that sessions of this world start with unless one is chosen; see the prompt system specification |
 | `lorebooks` | Optional list | Names of lorebooks in the person's library that sessions of this world start with unless the start dialog chooses others; see [lorebooks](../authoring/lorebooks) |
 | `variables` | Optional object | Initial values for world-scoped variables |

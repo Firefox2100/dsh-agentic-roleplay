@@ -298,6 +298,7 @@ export function apply(ctx: Context, config: Config) {
     },
     translation: {
       language: id => worldLanguage(worlds, id),
+      declared: async id => { const record = await worlds.find(id); if (record === undefined) throw new WorldNotFoundError(`there is no world with id "${id}"`); return record.language },
       start: (id, to, title, language) => startTranslation({ worlds, authoring, text: (key, lang, variables) => prompts.text(key, lang, variables) }, id, to, title, language),
     },
     importer: {

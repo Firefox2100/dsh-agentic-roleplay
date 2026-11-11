@@ -20,7 +20,7 @@ export function registerWorldsPage(ctx: Context): void {
   const t = ctx.locale.bind(NAMESPACE)
   ctx.effect(() => ctx.locale.register(NAMESPACE, dictionaries), 'roleplay: worlds dictionaries')
 
-  const worlds = new WorldsController(createChatOpener(ctx), () => t('language'))
+  const worlds = new WorldsController(createChatOpener(ctx))
   ctx.effect(() => () => { worlds.dispose() }, 'roleplay: worlds requests')
 
   ctx.slots.inject('roleplay.page', () => ctx.slots.register({

@@ -127,7 +127,7 @@ The modes and fallback rules are explained in [Optional capability integration](
 | `sampling.masterMaxTokens` | 12000 | Maximum output tokens for one game-master request, including reasoning |
 | `sampling.maxTokens` / `sampling.shortMaxTokens` | 8000 / 2000 | Output ceilings for general and short helper requests |
 | `sampling.headroom` | 2 | Multiplier applied to a helper's estimated answer size before its ceiling |
-| `prompts.language` | `en` | Shipped prompt language: `en` or `zh` |
+| `prompts.language` | `en` | Language of a story's prompts. `en` and `zh` have prompts of their own; any other language uses the English ones and tells the models to write in it |
 | `reasoning.children` | empty | Helper-agent reasoning level; empty uses the plugin fallback |
 
 ### Interface, rules and media
