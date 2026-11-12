@@ -3,7 +3,9 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
-import { parseImportCommand } from '../../shared/import-card.ts'
+import { IMPORT_COMMAND, importRequestOf } from '../../shared/import-card.ts'
+import { registerCommands } from '../commands/registry.ts'
+import { beginImport, type ImportState } from './begin.ts'
 import { currentTurn } from '../orchestration/current-turn.ts'
 import { ChildTimeoutError, namedModel, runChild } from '../agents/child.ts'
 import { askYesNo } from '../decisions/route.ts'
@@ -12,7 +14,7 @@ import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { IMPORT_FOLDER } from './store.ts'
 import { NoEmbeddingService, type ImportContext, type RunJob, type TextOf } from './run.ts'
-import { build, endReview, finish, importPhase, isReviewing, settleDraft, startRepair, survey, type Phase } from './run-import.ts'
+import { build, endReview, finish, importPhase, isReviewing, settleDraft, survey, type Phase } from './run-import.ts'
 import { checkWorld } from '../worlds/world-check.ts'
 import type { ImportSettings } from './service.ts'
 import { cachedJobs, forgetJobs } from './job-cache.ts'
@@ -174,41 +176,47 @@ export function importNotice(phase: Phase | undefined, text: TextOf): string {
   return text('import/notice', { card: CARD, phase, done: phase === 'done' ? text('import/notice-done') : '' })
 }
 
-/** Hears the `/import-st` command in an authoring chat, makes that turn an import turn, and does not let it end before the import is done. */
-export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Prompting): void {
-  const textFor = (worldId: string | undefined): TextOf => (id, variables) => prompting.prompts().text(id, worldId === undefined ? undefined : prompting.languages().get(worldId), { ...toolNames, ...variables })
-  const imports = new Map<string, number>()
-  const objections = new Map<string, number>()
-  const repairs = new Map<string, number>()
+/** The text of an import's prompts for a world: in the language of its authoring chat, with the names of the import tools filled in. */
+export const importTextFor = (prompting: Prompting) => (worldId: string | undefined): TextOf => (id, variables) => prompting.prompts().text(id, worldId === undefined ? undefined : prompting.languages().get(worldId), { ...toolNames, ...variables })
+
+/**
+ * The `/import-st` command of an authoring chat, and the gate that does not let an import turn end before the import is done. Running the command makes the next turn of the chat an import turn
+ * (`beginImport`) and gives the chat the procedure of the step the import has reached.
+ */
+export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Prompting, state: ImportState): void {
+  const textFor = importTextFor(prompting)
+  const { importing: imports, objections, repairs } = state
   const authoring = (agent: Agent): string | undefined => (agent.session.header.origin === 'subagent' || authoredWorldOf(agent.session.id) === undefined ? undefined : agent.session.id)
 
-  ctx.on('agent/pre-step', async (payload, next) => {
-    const decision = await next()
-    const chat = authoring(payload.agent)
-    if (decision.kind !== 'enter' || payload.step !== 1 || chat === undefined) return decision
-    const text = payload.messages.filter(message => message.source.kind === 'user').flatMap(message => message.content.flatMap(block => (block.type === 'text' ? [block.text] : []))).join('\n')
-    if (parseImportCommand(text) === undefined) return decision
-    const worldId = authoredWorldOf(chat)
-    const record = worldId === undefined ? undefined : await worlds.find(worldId)
-    const phase = record === undefined ? undefined : await importPhase(record.directory)
-    if (phase !== undefined && phase !== 'done') { imports.set(chat, payload.turn); objections.delete(chat); repairs.delete(chat) }
-    if (phase === 'repair' && record !== undefined) await startRepair(record.directory)
-    return { ...decision, messages: [...decision.messages, createUserMessage({ content: [{ type: 'text', text: importNotice(phase, textFor(worldId)) }], source: { kind: 'roleplay' } })] }
-  })
+  registerCommands(ctx, [{
+    name: IMPORT_COMMAND.slice(1),
+    description: 'Import the character card waiting in this world',
+    hint: '<card file> [what to do]',
+    recordInput: false,
+    handler: async ({ agent, rawInput }) => {
+      const chat = authoring(agent)
+      if (chat === undefined) return { kind: 'error', text: `${IMPORT_COMMAND} runs in the authoring chat of a world` }
+      const begun = await beginImport({ worlds, text: textFor, state }, chat, importRequestOf(rawInput))
+      if (!begun.ok) return { kind: 'error', text: begun.reason }
+      agent.followup(createUserMessage({ content: [{ type: 'text', text: begun.message }], source: { kind: 'roleplay' } }))
+      return { kind: 'success', text: 'Importing the card…' }
+    },
+  }])
 
   // The turn that imported the card may correct the world; when it is over the world is an ordinary one.
   ctx.on('session/event', async (session, event) => {
     if (event.type !== 'turn/end' || session.header.origin === 'subagent') return
     const worldId = authoredWorldOf(session.id)
     const record = worldId === undefined ? undefined : await worlds.find(worldId)
+    imports.delete(session.id)
     if (record === undefined) return
     await endReview(record.directory)
     await settleDraft(record.directory)
   })
 
-  ctx.on('agent/turn-stopping', async ({ agent, turn }) => {
+  ctx.on('agent/turn-stopping', async ({ agent }) => {
     const chat = authoring(agent)
-    if (chat === undefined || imports.get(chat) !== turn) return
+    if (chat === undefined || !imports.has(chat)) return
     const worldId = authoredWorldOf(chat)
     const record = worldId === undefined ? undefined : await worlds.find(worldId)
     const phase = record === undefined ? undefined : await importPhase(record.directory)

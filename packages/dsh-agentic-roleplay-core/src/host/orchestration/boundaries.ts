@@ -594,6 +594,8 @@ export interface TurnStore {
   recordDecisions?(site: DecisionSite, report: SiteReport): void
   /** A turn begins, the player having typed the command `word` (or none): lowers the flags of the world's commands and raises that command's, so that its triggers can act. Returns the command when the world defines it. */
   raiseCommand?(word: string | undefined, turn: number): StoryCommand | undefined
+  /** The commands the story's world defines. */
+  commands?(): StoryCommand[]
   /** Adds the tokens the game master's own requests used to a turn's record. */
   recordUsage?(turn: number, tokens: TokenCount, ms?: number): void
   /** Adds what one source knows of a turn to its trace; `merge` reads what is there to add to it. */

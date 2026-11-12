@@ -104,7 +104,7 @@ description: 游戏主持人协议、工具、阶段、时间线、分支和后�
 
 角色简报中的 agenda 合并日程窗、约定和目标。离场角色到期事项在回合交付后后台处理。开启 `offstage.joint` 时，同一约定的角色依次回答，后答者会知道谁已经决定前往，避免各自独立猜测。
 
-**睡眠与保持。** 日程时间窗可带 `sleep`（状态迁移 12，`routine_windows.sleep`）；`sleepingNow`（`host/clock/agenda.ts`）在角色当前时间窗是睡眠、人在该时间窗的地点且没有被叫醒时判定它睡着，玩家的角色永远不会。故事对角色造成的影响通过“保持”压过日程（元数据 `agenda.holds`，角色 id 对应 `{since, until}`）：`holdCharacter` 设定保持到给定分钟数，或到当前时间窗结束（没有当前时间窗则到下一个开始），补算在 `until` 之前不动被保持的角色，到时它回到自己的一天，即使时间窗没有变化也套用当时所处的时间窗。当非玩家角色因结果而被移动、此前在睡觉（做梦者除外）或结果带有 `off_routine_minutes` 时，`recordRound` 让 `TurnStore.commit` 设置保持；场外提交会保持前往承诺地点的角色。`activate_characters` 拒绝没有列入 `wakes` 的睡着角色（不点名时则把睡着的角色排除在这一轮之外）；场景会告诉游戏主持人谁在睡、睡到何时。`/dream [名字]`（`shared/dream.ts`、`hooks.ts`）跳过判断，把睡着的角色告知引擎（`beginDream`），由程序自己在角色仍睡着时询问它（`TurnEngine.dream`：角色的简报会说明它在做梦，不记录回合，直接进入 `narrate`，且只接受叙述段落），再把回答连同自带的提示 `roleplay/dream` 交给游戏主持人。沉睡者答不出时，游戏主持人会被告知像平常回合一样用 `activate_characters` 去问。`schedule.enabled` 关闭时，补算、睡眠和保持都不起作用。保持也可以等玩家（`Hold.untilPlayer`）：由 `resolve_round` 结果上的 `waits_for_player` 设置，或在回合送出后由 `errandKeeper` 边界（`host/decisions/errands.ts`，站点 `decisions.errands`，提示 `roleplay/decide-errand`）设置。决策模型会针对本回合点到名、醒着、非玩家且尚未脱离日程的每个角色作判断。补算在角色第一次与玩家角色分开时把这个保持标为 `apart`，两者再次在同一地点时撤销它；过了一天自动失效（`PLAYER_HOLD_CAP`）。刚换了日程的角色记入 `agenda.shifted`，由自主节拍读取并清空（`takeShifts`）。
+**睡眠与保持。** 日程时间窗可带 `sleep`（状态迁移 12，`routine_windows.sleep`）；`sleepingNow`（`host/clock/agenda.ts`）在角色当前时间窗是睡眠、人在该时间窗的地点且没有被叫醒时判定它睡着，玩家的角色永远不会。故事对角色造成的影响通过“保持”压过日程（元数据 `agenda.holds`，角色 id 对应 `{since, until}`）：`holdCharacter` 设定保持到给定分钟数，或到当前时间窗结束（没有当前时间窗则到下一个开始），补算在 `until` 之前不动被保持的角色，到时它回到自己的一天，即使时间窗没有变化也套用当时所处的时间窗。当非玩家角色因结果而被移动、此前在睡觉（做梦者除外）或结果带有 `off_routine_minutes` 时，`recordRound` 让 `TurnStore.commit` 设置保持；场外提交会保持前往承诺地点的角色。`activate_characters` 拒绝没有列入 `wakes` 的睡着角色（不点名时则把睡着的角色排除在这一轮之外）；场景会告诉游戏主持人谁在睡、睡到何时。`/dream [名字]`（已注册的命令，`host/orchestration/player-commands.ts`；它开启的回合在 `hooks.ts` 里接收它）跳过判断，把睡着的角色告知引擎（`beginDream`），由程序自己在角色仍睡着时询问它（`TurnEngine.dream`：角色的简报会说明它在做梦，不记录回合，直接进入 `narrate`，且只接受叙述段落），再把回答连同自带的提示 `roleplay/dream` 交给游戏主持人。沉睡者答不出时，游戏主持人会被告知像平常回合一样用 `activate_characters` 去问。`schedule.enabled` 关闭时，补算、睡眠和保持都不起作用。保持也可以等玩家（`Hold.untilPlayer`）：由 `resolve_round` 结果上的 `waits_for_player` 设置，或在回合送出后由 `errandKeeper` 边界（`host/decisions/errands.ts`，站点 `decisions.errands`，提示 `roleplay/decide-errand`）设置。决策模型会针对本回合点到名、醒着、非玩家且尚未脱离日程的每个角色作判断。补算在角色第一次与玩家角色分开时把这个保持标为 `apart`，两者再次在同一地点时撤销它；过了一天自动失效（`PLAYER_HOLD_CAP`）。刚换了日程的角色记入 `agenda.shifted`，由自主节拍读取并清空（`takeShifts`）。
 
 ## 场景预览
 
@@ -157,9 +157,9 @@ cue 在角色下一次激活时提供，重试仍收到同一内容。`narrate.a
 
 **前往某地。** 当玩家角色要去、走到或进入某处时，`judge_action` 还可带一个可选的 `goes_to`（地点 key）。若该行动被判定为可行，而交付输出时玩家角色在故事记录里仍不在该地点（或其内外），`narrate` 会被退回一次（`TurnEngine.checkArrival`）：只写在叙述里的移动不会被记录，下一回合会从旧地点开始。退回的提示要求用 `resolve_round`（`moves_to`）记录移动；如果角色在途中被拦下，就按原样再交付一次叙述，这一次会被接受。
 
-以 `/ask` 开头的消息只回答脱离角色的问题。主持人唯一动作是 `ooc_answer`，不能用 `ooc_ruling` 或改变故事。`answerRunner` 只拿到玩家角色可获得的地点、同伴、相关记忆、已知实体、携带物和关系，不拿角色表或秘密，回答最多 1200 字符。随后无 segments 调用 `narrate`，输出标记 `legal: true` 和 `question: true`。
+已注册的 `/ask` 命令会开启一个只回答脱离角色问题的回合。主持人唯一动作是 `ooc_answer`，不能用 `ooc_ruling` 或改变故事。`answerRunner` 只拿到玩家角色可获得的地点、同伴、相关记忆、已知实体、携带物和关系，不拿角色表或秘密，回答最多 1200 字符。随后无 segments 调用 `narrate`，输出标记 `legal: true` 和 `question: true`。
 
-以 `/ooc` 开头的命令单独占一个回合。它不显示预览，也不激活角色。主持人先用 `ooc_ruling(rule_check, legal, reason)` 判断，只受世界规则和玩家规则约束。合法命令可创建内容、强制任意角色行动或移动、改变变量和推进时间，但仍通过普通状态检查。非法判定前后都不能修改状态。强制结果写成 decree 轮次，记录员只记录角色经历的事实，不记录命令来源。该回合仍可回退、重新生成和分支。
+已注册的 `/ooc` 命令会单独开启一个回合。它不显示预览，也不激活角色。主持人先用 `ooc_ruling(rule_check, legal, reason)` 判断，只受世界规则和玩家规则约束。合法命令可创建内容、强制任意角色行动或移动、改变变量和推进时间，但仍通过普通状态检查。非法判定前后都不能修改状态。强制结果写成 decree 轮次，记录员只记录角色经历的事实，不记录命令来源。该回合仍可回退、重新生成和分支。
 
 ## 回合中的骰子
 
@@ -167,7 +167,7 @@ cue 在角色下一次激活时提供，重试仍收到同一内容。`narrate.a
 
 `roll_and_narrate`（`host/orchestration/check-tool.ts`）是可选的快速通道，默认关闭（`tools.gameMaster`）。用于玩家自己的不确定尝试，且无需其他角色反应、也没有移动或物品易手时：主持人为检定可能给出的每种结果写好摘要和叙述；代码掷骰，取骰子选中的分支，把它记为玩家的一轮（并引用该次掷骰），交付其叙述并结束回合。这一次调用取代 `roll_check`、`resolve_round` 和 `narrate` 三步。引擎先做检查（`soloCheckProblem`：普通回合、尚无人被询问、判断已完成、尝试被允许、是玩家自己的角色；不需要预览场景，因为没有人被要求行动），工具再检查检定可能给出的每个分支都已写好，所以不会白掷。该工具开启时，对不确定尝试的判断结果会在 `roll_check` 旁边点出它；没有这句话，模型在实际游玩中从未选用它，即使玩家自己的规则点了它的名。未被选中的分支是浪费的 token，也没有角色会对实际结果作出反应，因此它不是默认选项。
 
-`resolve_round` 的每个 outcome 可带可选的 `roll`。引擎会拒绝并告诉主持人原因的情形有：引用的掷骰不属于本回合、是没有结果的普通掷骰、是为另一个角色掷的、或已经决定了另一个 outcome；引用了某次掷骰却没有带上其结果的 outcome；以及为被掷过骰的角色给出却没有引用该掷骰的 outcome。该轮交给记录员的记录会说明骰子决定了什么。玩家看到什么取决于对话设置 `dice.visibility`：`card` 把该回合的掷骰附在交付的输出上，由对话记录显示为折叠卡片，`hidden` 则不附带。以 `/roll NdM` 开头的消息会在回合开始前为玩家掷出这些骰子，并把结果作为事实告诉主持人；无法读取的记法会连同原因拒绝这一回合，与其他无需主持人判断的输入相同。
+`resolve_round` 的每个 outcome 可带可选的 `roll`。引擎会拒绝并告诉主持人原因的情形有：引用的掷骰不属于本回合、是没有结果的普通掷骰、是为另一个角色掷的、或已经决定了另一个 outcome；引用了某次掷骰却没有带上其结果的 outcome；以及为被掷过骰的角色给出却没有引用该掷骰的 outcome。该轮交给记录员的记录会说明骰子决定了什么。玩家看到什么取决于对话设置 `dice.visibility`：`card` 把该回合的掷骰附在交付的输出上，由对话记录显示为折叠卡片，`hidden` 则不附带。已注册的 `/roll NdM` 命令会在回合开始前为玩家掷出这些骰子，并把结果作为事实告诉主持人；无法读取的记法会在回合开始前被拒绝。
 
 ## 其他插件的工具
 

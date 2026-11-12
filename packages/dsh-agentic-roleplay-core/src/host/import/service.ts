@@ -1,5 +1,7 @@
 import { Service, type Context } from '@deepseek-ai/cordis'
 
+import { ImportState } from './begin.ts'
+
 declare module '@deepseek-ai/cordis' {
   interface Context {
     roleplayImport: RoleplayImport
@@ -36,6 +38,9 @@ export class RoleplayImport extends Service {
   }
 
   private readonly turns = new Map<string, number>()
+
+  /** The imports the authoring chats are running; shared by the chats' command and gate and by the plugin's own starts. */
+  readonly state = new ImportState()
 
   /** Notes that a turn of a chat ended; the authoring chats are the ones that report here. */
   turnEnded(chat: string): void {

@@ -8,12 +8,12 @@ import { importPhase } from '../../../src/host/import/run-import.ts'
 import { lorebookImportMessage } from '../../../src/host/authoring/lorebook-author-tools.ts'
 import { narrationImportMessage } from '../../../src/host/authoring/preset-author-tools.ts'
 import { presetMessage } from '../../../src/host/import/preset-tools.ts'
-import { folderNameOf, importMessage, resumeImport, startImport } from '../../../src/host/import/start-import.ts'
+import { folderNameOf, importRequest, resumeImport, startImport } from '../../../src/host/import/start-import.ts'
 import { ImportStore } from '../../../src/host/import/store.ts'
 import type { RoleplayRoot } from '../../../src/host/storage/roleplay-root.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
-import { parseImportCommand } from '../../../src/shared/import-card.ts'
+import { importRequestOf } from '../../../src/shared/import-card.ts'
 import { v3Card } from '../../support/cards.ts'
 
 let root: { path: string }
@@ -27,7 +27,8 @@ const deps = (worlds: WorldCatalog, store: ImportStore) => ({
   worlds,
   authoring: {
     ensure: (id: string, name: string, title: string) => { created.push([id, name, title]); return Promise.resolve(`world-author-${id}`) },
-    send: (chat: string, text: string) => { sent.push([chat, text]); return sendError === undefined ? Promise.resolve() : Promise.reject(sendError) },
+    send: () => Promise.resolve(),
+    startImport: (chat: string, request: string) => { sent.push([chat, request]); return sendError === undefined ? Promise.resolve() : Promise.reject(sendError) },
   },
 })
 
@@ -40,22 +41,20 @@ beforeEach(async () => {
 })
 afterEach(async () => { await rm(root.path, { recursive: true, force: true }) })
 
-describe('the command that starts an import', () => {
+describe('what starts an import', () => {
   it('speaks the language of the person who starts it, and is still the same command', () => {
-    expect(importMessage('zh-CN')).toBe('/import-st .import/card.json 把这张卡片导入这个新建的世界。')
-    expect(parseImportCommand(importMessage('zh'))).toEqual({ card: '.import/card.json', request: '把这张卡片导入这个新建的世界。' })
-    expect(importMessage('fr')).toBe(importMessage())
+    expect(importRequest('zh-CN')).toBe('把这张卡片导入这个新建的世界。')
+    expect(importRequest('fr')).toBe(importRequest())
     expect(presetMessage('zh')).toContain('叙述预设')
     expect(narrationImportMessage('zh')).toContain('预设')
     expect(lorebookImportMessage('zh')).toContain('世界书')
     expect(lorebookImportMessage()).toMatch(/^Turn the SillyTavern lorebook/)
   })
 
-  it('is read from a message with the card it names and what is asked of it', () => {
-    expect(parseImportCommand(importMessage())).toEqual({ card: '.import/card.json', request: 'Import this card into this newly created world.' })
-    expect(parseImportCommand('  /IMPORT-ST x')).toEqual({ card: 'x', request: '' })
-    expect(parseImportCommand('/import-stx y')).toBeUndefined()
-    expect(parseImportCommand('please /import-st')).toBeUndefined()
+  it('is the request that follows the card the command names', () => {
+    expect(importRequestOf(` .import/card.json ${importRequest()}`)).toBe('Import this card into this newly created world.')
+    expect(importRequestOf(' x')).toBe('')
+    expect(importRequestOf('')).toBe('')
   })
 
   it('makes a folder name from a world name', () => {
@@ -73,8 +72,8 @@ describe('starting an import', () => {
     const made = await store.create(card(), Buffer.from('png'))
     const started = await startImport(deps(worlds, store), made.id, { name: 'My Harbour', disabledEntries: [], opening: { kind: 'first' } })
     expect(started).toMatchObject({ started: true, chatSessionId: `world-author-${started.worldId}` })
-    expect(sent).toEqual([[started.chatSessionId, importMessage(undefined, card())]])
-    expect(parseImportCommand(sent[0]![1])?.request).toMatch(/^Import this card into this newly created world\. The source is a V3 card with/)
+    expect(sent).toEqual([[started.chatSessionId, importRequest(undefined, card())]])
+    expect(sent[0]![1]).toMatch(/^Import this card into this newly created world\. The source is a V3 card with/)
     expect(created).toEqual([[started.worldId, 'My Harbour', 'Authoring My Harbour']])
     const record = await worlds.find(started.worldId)
     expect(record?.folder).toBe('My Harbour')
@@ -113,7 +112,7 @@ describe('carrying on an import that stopped', () => {
     const resumed = await resumeImport(deps(worlds, store), started.worldId)
     expect(resumed).toMatchObject({ worldId: started.worldId, started: true })
     expect(sent).toHaveLength(1)
-    expect(parseImportCommand(sent[0]![1])).toBeDefined()
+    expect(sent[0]![1]).toMatch(/Import this card/)
     const record = (await worlds.find(started.worldId))!
     await writeFile(join(record.directory, '.import', 'state.json'), JSON.stringify({ phase: 'done' }))
     await expect(resumeImport(deps(worlds, store), started.worldId)).rejects.toBeInstanceOf(InvalidEditProblems)

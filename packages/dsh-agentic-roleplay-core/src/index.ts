@@ -36,6 +36,8 @@ import { ImportStaging } from './host/import/staging.ts'
 import { AuthoringSessions } from './host/agent/authoring-sessions.ts'
 import { PresetAuthoringSessions } from './host/agent/preset-authoring-sessions.ts'
 import { LorebookAuthoringSessions } from './host/agent/lorebook-authoring-sessions.ts'
+import { beginImport } from './host/import/begin.ts'
+import { importTextFor } from './host/import/tools.ts'
 import { lorebookImportMessage } from './host/authoring/lorebook-author-tools.ts'
 import { Lorebooks } from './host/lorebooks/service.ts'
 import { StoryFoldersService } from './host/workspace/service.ts'
@@ -176,7 +178,7 @@ export function apply(ctx: Context, config: Config) {
     later()
     return () => { controller.abort(); if (timer !== undefined) clearTimeout(timer) }
   }, 'roleplay: stories that go on while the player is away')
-  const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
+  const authoring = new AuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages, (chat, request) => beginImport({ worlds: ctx.roleplayWorlds, text: importTextFor({ prompts: () => prompts, languages: () => languages }), state: ctx.roleplayImport.state }, chat, request))
   const presetAuthoring = new PresetAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const lorebookAuthoring = new LorebookAuthoringSessions(agentServicesOf(ctx), () => root.path, prompts, languages)
   const doctors = new DoctorSessions(agentServicesOf(ctx), () => root.path, prompts)

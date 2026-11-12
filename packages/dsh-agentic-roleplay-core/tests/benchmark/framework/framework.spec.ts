@@ -26,6 +26,7 @@ beforeEach(() => {
   write('worlds/tiny/en/world/locations/home/location.json', { id: 'home', name: 'Home' })
   write('worlds/tiny/en/layers/dice.json', { id: 'dice', add: { 'dice.json': { checks: [] } } })
   write('worlds/tiny/en/layers/hours.json', { id: 'hours', requires: ['dice'], patch: { 'characters/bob/character.json': { routine: [{ days: ['mon'], from: '08:00', to: '09:00' }] } } })
+  write('worlds/tiny/en/layers/commands.json', { id: 'commands', add: { 'commands.json': { commands: [{ word: 'recruit', description: 'Bring someone in.' }, { word: '招募', key: 'zhaomu', description: '招人' }] } } })
   write('worlds/tiny/en/layers/fantasy-spell.json', { id: 'fantasy-spell', fits: ['fantasy'], add: { 'spells.json': [] } })
 })
 afterEach(() => { rmSync(root, { recursive: true, force: true }) })
@@ -330,5 +331,90 @@ describe('worlds taken from existing fiction', () => {
     expect(check({ theme: 'fan', source: { derivedFrom: 'A novel (public domain)', note: '' } })[0]).toMatch(/derived from existing fiction/)
     expect(check({ theme: 'fan', source: { derivedFrom: 'A novel (public domain)', note: 'Every fact here is invented.' } })).toEqual([])
     expect(check({ theme: 'daily' })).toEqual([])
+  })
+})
+
+describe('the commands a script writes', () => {
+  const run = (say: string, extra: Partial<Row> = {}, expect: Script['turns'][number]['expect'] = [{ type: 'narration-clean' }]): string[] => {
+    write('scripts/s.json', { id: 's', language: 'en', turns: [{ say, expect }], expect: [] } satisfies Script)
+    write('rows/rows.json', [row({ script: 's', ...extra })])
+    write('excluded.json', [])
+    return validateData(loadData(root))
+  }
+
+  it('may be the five every story has, with what each needs', () => {
+    for (const line of ['/ooc Bob goes home', '/ask who is here', '/roll 2d6 pick the lock', '/wait 2 hours', '/dream', 'I say /ooc to Bob']) expect(run(line)).toEqual([])
+  })
+
+  it('are refused when the row\'s world does not have the command, the name is not one DSH takes, or the arguments are refused at once', () => {
+    expect(run('/recruit a juggler')[0]).toMatch(/\/recruit is no command of this row/)
+    expect(run('/招募 找人', { layers: ['commands'] })[0]).toMatch(/not a name DSH takes/)
+    expect(run('/ooc')[0]).toMatch(/nothing after it/)
+    expect(run('/roll')[0]).toMatch(/no dice/)
+    expect(run('/wait a while')[0]).toMatch(/no time DSH can read/)
+  })
+
+  it('may be a command of the world: by its word, or by the key of its flag when the word is not a name DSH takes', () => {
+    expect(run('/recruit a juggler', { layers: ['commands'] })).toEqual([])
+    expect(run('/zhaomu 找人', { layers: ['commands'] })).toEqual([])
+  })
+
+  it('may be typed as text on purpose when the row says so, which is how a control without the command is played', () => {
+    expect(run('/recruit a juggler', { typedAsText: ['recruit'] })).toEqual([])
+  })
+})
+
+describe('judging that a line ran as a command', () => {
+  const script: Script = { id: 's', language: 'en', turns: [{ say: '/ooc Bob goes home', expect: [{ type: 'command-ruled' }] }, { say: '/ask who?', expect: [{ type: 'command-ruled', question: true }] }, { say: 'I nod.', expect: [{ type: 'command-ruled' }] }], expect: [] }
+  const segments = [{ type: 'narration' as const, text: 'Bob goes.' }]
+
+  it('holds when the turn carries a ruling, of the kind asked for, and fails for a move or the other kind', () => {
+    const verdicts = evaluate(script, { language: 'en', player: 'ann', turns: [], played: [{ segments, ooc: { legal: true } }, { segments, ooc: { legal: true } }, { segments }] })
+    expect(verdicts.map(verdict => verdict.held)).toEqual([true, false, false])
+    expect(verdicts[1]!.found).toMatch(/other kind/)
+    expect(verdicts[2]!.found).toMatch(/played as a move/)
+    expect(evaluate(script, { language: 'en', player: 'ann', turns: [], played: [{ segments, ooc: { legal: true } }, { segments, ooc: { legal: true, question: true } }, { segments }] })[1]!.held).toBe(true)
+  })
+
+  it('at the end of a script means that some turn of the story was ruled on', () => {
+    const ended: Script = { id: 's', language: 'en', turns: [], expect: [{ type: 'command-ruled' }] }
+    expect(evaluate(ended, { language: 'en', player: 'ann', turns: [{ segments }, { segments, ooc: { legal: false } }] })[0]!.held).toBe(true)
+    expect(evaluate(ended, { language: 'en', player: 'ann', turns: [{ segments }] })[0]!.held).toBe(false)
+  })
+})
+
+describe('what the player reads of an out-of-character answer', () => {
+  const asked: Script = { id: 's', language: 'en', turns: [{ say: '/ask who is here?', expect: [{ type: 'narration-has', text: 'Tomas' }, { type: 'narration-lacks', text: 'brandy' }, { type: 'narration-clean' }] }], expect: [] }
+
+  it('is its note too: the answer to a question is nowhere else, so a leak or a missing name is found there', () => {
+    const turn = (note: string) => ({ language: 'en' as const, player: 'ann', turns: [], played: [{ segments: [], ooc: { legal: true, note, question: true } }] })
+    expect(evaluate(asked, turn('Tomas is at the bar.')).map(verdict => verdict.held)).toEqual([true, true, true])
+    expect(evaluate(asked, turn('Nobody you know.')).map(verdict => verdict.held)).toEqual([false, true, true])
+    expect(evaluate(asked, turn('Tomas hides brandy.')).map(verdict => verdict.held)).toEqual([true, false, true])
+    expect(evaluate(asked, turn('Tomas.\n```\nHP: 12 | Gold: 40\n```')).map(verdict => verdict.held)).toEqual([true, true, false])
+  })
+})
+
+describe('judging what a command made of its turn', () => {
+  const script: Script = { id: 's', language: 'en', turns: [{ say: '/wait 2 hours', expect: [{ type: 'scene-has', section: 'wait' }] }, { say: '/roll 2d6', expect: [{ type: 'scene-has', section: 'roll' }] }], expect: [] }
+  const segments = [{ type: 'narration' as const, text: 'Time passes.' }]
+
+  it('holds when the game master was given the section, fails with the sections it was given when not, and is not judged when the turn\'s scene was not read', () => {
+    const verdicts = evaluate(script, { language: 'en', player: 'ann', turns: [], played: [{ segments, scene: ['time', 'wait'] }, { segments, scene: ['time', 'rules'] }] })
+    expect(verdicts.map(verdict => verdict.held)).toEqual([true, false])
+    expect(verdicts[1]!.found).toBe('time, rules')
+    expect(evaluate(script, { language: 'en', player: 'ann', turns: [], played: [{ segments }, { segments }] }).map(verdict => verdict.held)).toEqual([undefined, undefined])
+  })
+
+  it('is refused at the end of a script, and for a section that no command makes', () => {
+    const run = (turns: Script['turns'], end: Script['expect'] = []): string[] => {
+      write('scripts/s.json', { id: 's', language: 'en', turns, expect: end } satisfies Script)
+      write('rows/rows.json', [row({ script: 's' })])
+      write('excluded.json', [])
+      return validateData(loadData(root))
+    }
+    expect(run([{ say: '/wait 2 hours', expect: [{ type: 'scene-has', section: 'wait' }] }])).toEqual([])
+    expect(run([{ say: 'Hi.', expect: [] }], [{ type: 'scene-has', section: 'wait' }])[0]).toMatch(/about one turn/)
+    expect(run([{ say: '/wait 2 hours', expect: [{ type: 'scene-has', section: 'weather' as never }] }])[0]).toMatch(/not one of roll, wait, dream and command/)
   })
 })

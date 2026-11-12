@@ -56,3 +56,13 @@ export const CHECK_COMMANDS: Readonly<Record<string, readonly KitId[]>> = {
 }
 
 export const findingKey = (finding: Finding): string => `${finding.check}\n${finding.code}\n${finding.where}\n${finding.message}`
+
+/** How the check commands are described where commands are listed. Add `deep` after the name to let the model judge too, and anything else to say what to look at. */
+export const CHECK_COMMAND_DESCRIPTIONS: Readonly<Record<keyof typeof CHECK_COMMANDS, string>> = {
+  check: 'Check the world with every kit of checks',
+  'check-all': 'Check the world with every kit of checks',
+  'check-world': 'Check that the world agrees with itself',
+  'check-card': 'Check that the world carries what the imported card says',
+  'check-quality': 'Check the quality of the world: panels, style, leftovers',
+  'check-play': 'Check that the world can be played',
+}

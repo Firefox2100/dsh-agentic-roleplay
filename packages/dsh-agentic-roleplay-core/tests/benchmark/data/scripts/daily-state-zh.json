@@ -54,6 +54,10 @@
         },
         {
           "type": "narration-clean"
+        },
+        {
+          "type": "scene-has",
+          "section": "wait"
         }
       ]
     }

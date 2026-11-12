@@ -1,12 +1,3 @@
-/** The command or question in a player's message, or nothing when the message is an ordinary action. The request may be empty. */
-export function parseOoc(text: string): { request: string; question: boolean } | undefined {
-  const value = text.trimStart()
-  const boundary = value.search(/\s/u)
-  const command = value.slice(0, boundary < 0 ? value.length : boundary).toLowerCase()
-  if (command !== '/ooc' && command !== '/ask') return undefined
-  return { request: value.slice(command.length).trim(), question: command === '/ask' }
-}
-
 /**
  * How an out-of-character command was ruled on, and the plain words to the player that go with it. A question is never refused:
  * its `note` is the answer and `question` says so.

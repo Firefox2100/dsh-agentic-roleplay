@@ -10,9 +10,9 @@ export interface Observation {
   /** The key of the character the player plays. */
   player: string
   /** What the story shows now, from its first turn to its head. */
-  turns: { segments: NarrationSegment[] }[]
+  turns: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean }; scene?: string[] }[]
   /** What each of the script's steps delivered when it was played, kept even where the story was taken back after it. */
-  played?: { segments: NarrationSegment[] }[]
+  played?: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean }; scene?: string[] }[]
   /** Absent when the run could not read the story's records. */
   characters?: { key: string; name?: string; placed: boolean; place?: string; /** What the story says it is doing. */ activity?: string }[]
   /** How many of each character's lines the decision model found in its voice, when one was asked. */
@@ -49,10 +49,12 @@ export interface Verdict {
 }
 
 const textOf = (segments: readonly NarrationSegment[]): string => segments.map(segment => segment.text).join('\n')
+/** What the player reads of a turn: its narration, and what the ruling of an out-of-character command tells them (the answer to a question is only there). */
+const readOf = (turn: Observation['turns'][number]): string => [textOf(turn.segments), turn.ooc?.note ?? ''].filter(part => part !== '').join('\n')
 const has = (text: string, part: string): boolean => text.toLowerCase().includes(part.toLowerCase())
 
 function judge(expectation: Expectation, observation: Observation, turns: Observation['turns']): Pick<Verdict, 'held' | 'found'> {
-  const text = turns.map(turn => textOf(turn.segments)).join('\n')
+  const text = turns.map(readOf).join('\n')
   switch (expectation.type) {
     case 'narration-clean': {
       const panel = findPanel(text)
@@ -63,6 +65,15 @@ function judge(expectation: Expectation, observation: Observation, turns: Observ
       return wrong === undefined ? { held: true } : { held: false, found: wrong }
     }
     case 'narration-has': return { held: has(text, expectation.text) }
+    case 'command-ruled': {
+      const ruled = turns.filter(turn => turn.ooc !== undefined && (expectation.question === undefined || (turn.ooc.question === true) === expectation.question))
+      return ruled.length > 0 ? { held: true } : { held: false, found: turns.some(turn => turn.ooc !== undefined) ? 'ruled as the other kind of command' : 'played as a move: no ruling' }
+    }
+    case 'scene-has': {
+      const read = turns.filter(turn => turn.scene !== undefined)
+      if (read.length === 0) return { held: undefined }
+      return read.some(turn => turn.scene!.includes(expectation.section)) ? { held: true } : { held: false, found: read.map(turn => turn.scene!.join(', ')).join(' | ') || 'no section' }
+    }
     case 'narration-lacks': return has(text, expectation.text) ? { held: false, found: expectation.text } : { held: true }
     case 'speaks': return { held: turns.some(turn => turn.segments.some(segment => segment.type === 'utterance' && segment.character === expectation.character)) }
     case 'speaks-in-voice': {

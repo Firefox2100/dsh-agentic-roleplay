@@ -1,3 +1,4 @@
+import { CommandRefusedError } from '../../commands/registry.ts'
 import { createReadStream } from 'node:fs'
 import { pipeline } from 'node:stream/promises'
 import { InvalidEditProblems } from '../../../shared/world-state.ts'
@@ -62,6 +63,7 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToA
         catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          if (error instanceof CommandRefusedError) return sendError(res, 422, error.message)
           throw error
         }
       },

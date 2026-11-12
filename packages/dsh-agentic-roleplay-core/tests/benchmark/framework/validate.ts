@@ -1,3 +1,7 @@
+import { parseCommandsFile } from '../../../src/host/commands/load.ts'
+import { PlayerIntents, worldCommands } from '../../../src/host/orchestration/player-commands.ts'
+import { rollArguments } from '../../../src/shared/roll.ts'
+import { waitArguments } from '../../../src/shared/wait.ts'
 import type { Files, Language } from '../language.ts'
 import { parseSettings } from '../../../src/shared/settings.ts'
 import { compose, ComposeError } from './compose.ts'
@@ -31,7 +35,29 @@ export function worldOfRow(data: BenchData, row: Row): { files: ReturnType<typeo
 
 const KNOWN = new Set<string>(EXPECTATION_TYPES)
 /** What can be judged on one turn's narration; the rest is about the story as a whole and belongs at the end of the script. */
-const PER_TURN = new Set<string>(['narration-clean', 'narration-language', 'narration-has', 'narration-lacks', 'speaks', 'character-silent', 'player-silent'])
+const PER_TURN = new Set<string>(['narration-clean', 'narration-language', 'narration-has', 'command-ruled', 'scene-has', 'narration-lacks', 'speaks', 'character-silent', 'player-silent'])
+
+/** The commands every story has, and the names the commands a world defines are offered under: the word, or the key of its flag when the word is not a name DSH takes. */
+const FIXED_COMMANDS = ['ooc', 'ask', 'roll', 'wait', 'dream']
+export function commandNamesOf(files: Files): string[] {
+  const file = files.get('commands.json')
+  const parsed = file === undefined ? undefined : parseCommandsFile(JSON.stringify(file))
+  return parsed?.ok === true ? worldCommands(new PlayerIntents(), parsed.value.map(command => ({ ...command }))).map(spec => spec.name) : []
+}
+
+/** What is wrong with a line a script writes as a command: a name DSH does not take, a command the row's world does not have, or arguments the command refuses at once. */
+function commandProblem(say: string, row: Row, files: Files): string | undefined {
+  const match = /^\/(\S*)(.*)$/su.exec(say.trimStart())
+  if (match === null) return undefined
+  const [, name = '', rest = ''] = match
+  if (row.typedAsText?.includes(name) === true) return undefined
+  if (!/^[a-z][a-z0-9_-]*$/.test(name)) return `/${name} is not a name DSH takes for a command (lower case ASCII): a word of the world in another script is typed as its key`
+  if (![...FIXED_COMMANDS, ...commandNamesOf(files)].includes(name)) return `/${name} is no command of this row (the commands are ${[...FIXED_COMMANDS, ...commandNamesOf(files)].map(each => `/${each}`).join(', ')}); a row that plays it as text on purpose says so in typedAsText`
+  if ((name === 'ooc' || name === 'ask') && rest.trim() === '') return `/${name} has nothing after it, and is refused at once`
+  if (name === 'roll' && rollArguments(rest).expression === '') return '/roll has no dice, and is refused at once'
+  if (name === 'wait' && waitArguments(rest).minutes === undefined) return '/wait has no time DSH can read, and is refused at once'
+  return undefined
+}
 
 /** What is wrong with a script for the row that plays it: its language, a turn with nothing to say, an unknown expectation, a character the row does not have. */
 function scriptProblems(script: Script, row: Row, cast: readonly string[], files: Files): string[] {
@@ -44,6 +70,7 @@ function scriptProblems(script: Script, row: Row, cast: readonly string[], files
     const here = `${at}: turn ${index + 1}`
     if ((turn.say === undefined) === (turn.action === undefined)) problems.push(`${here} must either say something or take an action`)
     else if (turn.say !== undefined && turn.say.trim() === '') problems.push(`${here} says nothing`)
+    if (turn.say !== undefined) { const refused = commandProblem(turn.say, row, files); if (refused !== undefined) problems.push(`${here}: ${refused}`) }
     if (turn.action === 'rewind' && (!Number.isInteger(turn.to) || (turn.to ?? -1) < 0 || (turn.to ?? 0) >= index)) problems.push(`${here} rewinds to a turn that is not before it`)
     if (turn.action === 'wait' && (!Number.isInteger(turn.minutes) || (turn.minutes ?? 0) < 1 || (turn.minutes ?? 0) > 240)) problems.push(`${here} waits for a whole number of minutes from 1 to 240`)
     if ((turn.action === 'wait' || turn.action === 'rewind') && turn.expect.length > 0) problems.push(`${here} delivers nothing to expect`)
@@ -62,6 +89,8 @@ function scriptProblems(script: Script, row: Row, cast: readonly string[], files
   }
   for (const { expectation, where } of all) {
     if (!KNOWN.has(expectation.type)) { problems.push(`${at}: ${where} expects "${expectation.type}", which is not in the vocabulary`); continue }
+    if (expectation.type === 'scene-has' && where === 'the end') problems.push(`${at}: the end expects scene-has, which is about one turn: put it in the turn`)
+    if (expectation.type === 'scene-has' && !['roll', 'wait', 'dream', 'command'].includes(expectation.section)) problems.push(`${at}: ${where} expects the scene section "${String(expectation.section)}", which is not one of roll, wait, dream and command`)
     const character = 'character' in expectation ? expectation.character : undefined
     if (character !== undefined && !cast.includes(character)) problems.push(`${at}: ${where} names ${character}, who is not in the row`)
     if (expectation.type === 'speaks-in-voice' && !sheetsOf(files).has(expectation.character)) problems.push(`${at}: ${where} names ${expectation.character}, whose sheet has no speech style to judge by`)

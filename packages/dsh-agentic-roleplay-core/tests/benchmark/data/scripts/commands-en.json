@@ -21,6 +21,9 @@
         },
         {
           "type": "narration-clean"
+        },
+        {
+          "type": "command-ruled"
         }
       ]
     },
@@ -32,6 +35,10 @@
         },
         {
           "type": "narration-clean"
+        },
+        {
+          "type": "scene-has",
+          "section": "roll"
         }
       ]
     },
@@ -43,6 +50,10 @@
         },
         {
           "type": "narration-clean"
+        },
+        {
+          "type": "scene-has",
+          "section": "wait"
         }
       ]
     },

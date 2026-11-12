@@ -14,7 +14,7 @@ let root: string
 let sent: string[]
 let worlds: WorldCatalog
 const world = () => join(root, 'worlds', 'draft')
-const deps = () => ({ worlds, root: () => root, authoring: { ensure: (id: string) => Promise.resolve(`world-author-${id}`), send: (_chat: string, text: string) => { sent.push(text); return Promise.resolve() } } })
+const deps = () => ({ worlds, root: () => root, authoring: { ensure: (id: string) => Promise.resolve(`world-author-${id}`), send: () => Promise.resolve(), startImport: (_chat: string, request: string) => { sent.push(request); return Promise.resolve() } } })
 const write = async (path: string, value: unknown) => { await mkdir(join(path, '..'), { recursive: true }); await writeFile(path, JSON.stringify(value)) }
 
 beforeEach(async () => {

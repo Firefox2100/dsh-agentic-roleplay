@@ -257,6 +257,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
       if (entry.turn !== undefined && entry.tokens !== undefined) addUsage(session, entry.turn, 'helper', entry.tokens)
     },
     recordDecisions: (site, report) => { recordDecisions(folder, site, report) },
+    commands: () => commandsOf(session.metadata.getValue(COMMANDS_KEY)),
     raiseCommand: (word, turn) => {
       const commands = commandsOf(session.metadata.getValue(COMMANDS_KEY))
       const used = word === undefined ? undefined : commands.find(command => command.word === word.toLowerCase())

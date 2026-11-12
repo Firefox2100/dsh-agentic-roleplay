@@ -331,5 +331,33 @@
         "enabled": false
       }
     }
+  },
+  {
+    "id": "noodle-street-solo-command-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "cast-solo",
+      "street-command"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "rules",
+      "routines",
+      "calendar",
+      "items",
+      "triggers"
+    ],
+    "why": "A world command whose word is not in ASCII: /加面 is typed as its key, /extra_noodles, which DSH lists in the chat's commands. The turn it begins raises the command's flag, a trigger waits on it and the owner brings the second bowl. Held when the trigger fired, which a line played as plain text would not do.",
+    "report": [
+      "theme"
+    ],
+    "script": "command-noodle-zh"
   }
 ]

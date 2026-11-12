@@ -37,6 +37,7 @@ const deps = (worlds: WorldCatalog, store: ImportStore) => ({
   authoring: {
     ensure: (id: string) => Promise.resolve(authoringChatSessionId(id)),
     send: (chat: string, text: string) => { sent.push([chat, text]); return Promise.resolve() },
+    startImport: () => Promise.resolve(),
   },
 })
 

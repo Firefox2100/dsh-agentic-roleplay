@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
+import type { Agent } from '@deepseek-ai/dsh-agent'
+import { CommandRefusedError, runCommandLine, type CommandOutcome } from '../commands/registry.ts'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { chatSessionId } from '../../shared/chat.ts'
 import type { NarrationSegment } from '../../shared/narration.ts'
@@ -44,6 +46,8 @@ export interface AgentServices {
   persistence?: SessionPersistenceLike
   /** Stops the chat's live agent and lets go of its log, so the log can be written again; a chat nobody has loaded here is not affected. */
   unload?: (chat: string) => Promise<void>
+  /** Runs a line the way the input box does when the chat's agent knows the command it starts; nothing when it is no command of that chat (or the chat is not loaded). */
+  command?: (chat: string, line: string) => Promise<CommandOutcome | undefined>
 }
 
 export interface AgentChatRequest {
@@ -92,7 +96,11 @@ export function agentServicesOf(ctx: Context): () => AgentServices {
     }
     const persistence = ctx.get('sessionPersistence') as SessionPersistenceLike | undefined
     const agents = ctx.get('agents') as { get(id: string): LiveAgent | undefined } | undefined
-    return { controller, registry, ...(persistence === undefined ? {} : { persistence }), ...(agents === undefined ? {} : { unload: unloader(ctx, agents) }) }
+    const command = agents === undefined ? undefined : async (chat: string, line: string): Promise<CommandOutcome | undefined> => {
+      const live = agents.get(chat) as unknown as Agent | undefined
+      return live === undefined ? undefined : await runCommandLine(ctx, live, line, new AbortController().signal)
+    }
+    return { controller, registry, ...(persistence === undefined ? {} : { persistence }), ...(agents === undefined ? {} : { unload: unloader(ctx, agents) }), ...(command === undefined ? {} : { command }) }
   }
 }
 
@@ -189,7 +197,14 @@ export class AgentSessions {
 
   /** Says something in the chat of a session as the player would; it is queued behind what the chat is doing. The chat must exist (`ensure`). */
   async send(sessionId: string, text: string): Promise<void> {
-    await this.services().controller.prompt({ requestId: randomUUID(), sessionId: chatSessionId(sessionId), mode: 'queue', content: [{ type: 'text', text }] }, new AbortController().signal)
+    const services = this.services()
+    const chat = chatSessionId(sessionId)
+    const ran = text.startsWith('/') ? await services.command?.(chat, text) : undefined
+    if (ran !== undefined) {
+      if (ran.kind === 'error') throw new CommandRefusedError(ran.text)
+      return
+    }
+    await services.controller.prompt({ requestId: randomUUID(), sessionId: chat, mode: 'queue', content: [{ type: 'text', text }] }, new AbortController().signal)
   }
 
   /** Give the chat of a session a new title. A chat that was never created has none to change. */

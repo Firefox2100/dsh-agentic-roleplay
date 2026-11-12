@@ -42,6 +42,9 @@
     "script": "fair-en",
     "report": [
       "casting"
+    ],
+    "typedAsText": [
+      "recruit"
     ]
   },
   {

@@ -1,0 +1,56 @@
+{
+  "id": "street-command",
+  "description": "The world's own command: /加面 (typed as its key, /extra_noodles, because DSH names a command in lower case ASCII) raises its flag for the turn, and a trigger waits on the flag and tells the game master the owner brings a second bowl. A world whose command word is not in ASCII, so that the key a word is offered under is what the player types.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [
+    "daily"
+  ],
+  "remove": [],
+  "add": {
+    "commands.json": {
+      "commands": [
+        {
+          "word": "加面",
+          "key": "extra_noodles",
+          "description": "要求陈姨再加一碗面：她把面端上来，并收下这碗的钱。"
+        }
+      ]
+    }
+  },
+  "patch": {
+    "triggers.json": [
+      {
+        "key": "lunch-rush",
+        "name": "午市高峰",
+        "when": {
+          "type": "time",
+          "from": "2024-10-14T11:30"
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "午饭时间到了，面馆里的座位一下子坐满了人。"
+          }
+        ]
+      },
+      {
+        "key": "extra-noodles",
+        "name": "客人要加面",
+        "repeat": true,
+        "when": {
+          "type": "variable",
+          "variable": "command_extra_noodles",
+          "op": "eq",
+          "value": true
+        },
+        "effects": [
+          {
+            "type": "beat",
+            "text": "玩家要了一碗加面：陈姨应当把热面端上来，并收下这碗的钱。"
+          }
+        ]
+      }
+    ]
+  }
+}

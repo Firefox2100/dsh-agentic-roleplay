@@ -56,7 +56,7 @@ To pick a type in code, add a `draw` list and place `[draw]` in the text. The au
 
 ## Slash commands
 
-`commands.json` defines words the player can type after a slash, such as `/recruit`. Each command has a `word` made from letters, digits or underscores, plus a `description` shown to the game master when the command is used. The game reserves `ooc`, `ask`, `roll`, `wait` and `dream`. A word outside lowercase ASCII also needs a `key` for its flag.
+`commands.json` defines words the player can type after a slash, such as `/recruit`. Each command has a `word` made from letters, digits or underscores, plus a `description` shown to the game master when the command is used. The game reserves `ooc`, `ask`, `roll`, `wait` and `dream`. A word outside lowercase ASCII also needs a `key` for its flag. The commands of a world are listed, with their descriptions, when the player types a slash in that world's chat, and nowhere else. DSH only takes command names in lowercase ASCII, so a word in another script is typed as its `key` (`/recruit_zh` for the second command below), and the description in the list names the word.
 
 ```json
 { "commands": [

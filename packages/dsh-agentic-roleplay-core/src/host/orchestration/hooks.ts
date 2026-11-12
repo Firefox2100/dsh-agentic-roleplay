@@ -11,11 +11,9 @@ import type { PromptPart, SceneSelection } from '../../shared/trace.ts'
 import { estimateTokens } from '../diagnostics/estimate.ts'
 import type { TurnEngine, TurnOwner } from './turn-engine.ts'
 import { roleplaySessionOf } from './store.ts'
-import { parseOoc } from '../../shared/ooc.ts'
 import { characterRunner } from './character-runner.ts'
-import { parseDream } from '../../shared/dream.ts'
-import { parseRoll } from '../../shared/roll.ts'
-import { parseWait } from '../../shared/wait.ts'
+import { PlayerIntents, playerCommands, worldCommands } from './player-commands.ts'
+import { registerAgentCommands, registerCommands } from '../commands/registry.ts'
 import type { RollReplay } from '../dice/replay.ts'
 import { describeInstant, rollPlain } from '@dsh-agentic-roleplay/state'
 import type { Timelines } from '../timeline/service.ts'
@@ -51,6 +49,8 @@ export interface HookDeps {
   optionalTools?: readonly ToolDefinition[]
   /** The turn traces, shared with what delivers the output. */
   traces?: TurnTraces
+  /** What the commands of the players asked, by message: shared with the commands, which are registered here. */
+  intents?: PlayerIntents
 }
 
 /** DSH's file tools that a story may give its game master. */
@@ -119,6 +119,8 @@ export function commandBringsPeopleIn(store: Pick<TurnStore, 'story'>, command: 
 
 export function installHooks(ctx: Context, deps: HookDeps): void {
   const { engine, boundaries, stores, timelines, previewTool } = deps
+  const intents = deps.intents ?? new PlayerIntents()
+  registerCommands(ctx, playerCommands(intents))
 
   /** The tools of the game master as the chat's settings say: its optional ones, and none of other plugins' that it was not given. */
   const applyLimit = (agent: Agent, store: TurnStore): void => {
@@ -157,6 +159,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     // The tools are in place before the first request: one registered afterwards changes the request's tool list and with it the start of the prompt, which is what a server's cache is keyed on.
     registerConditionalTools(agent, conditionsOf(agent.session.id))
     applyLimit(agent, store)
+    registerAgentCommands(agent, worldCommands(intents, store.commands?.() ?? []))
   })
 
   // The turn that ended is where the next one will have to be cut from.
@@ -247,10 +250,11 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     deps.rolls?.begin(owner.chat, store.story.metadata.get().id, began.parent)
 
     const cast = store.cast()
-    const ooc = parseOoc(text)
-    const command = ooc === undefined ? /^\/([\p{L}\p{N}_]+)/u.exec(text.trim())?.[1] : undefined
-    const used = store.raiseCommand?.(command, payload.turn)
-    const dream = ooc === undefined ? parseDream(text) : undefined
+    // what the player's message was meant to do is told by the command that sent it, never by its words
+    const intent = intents.take(payload.messages.filter(message => message.source.kind === 'user').map(message => String(message.id)))
+    const ooc = intent?.kind === 'ooc' ? intent : undefined
+    const used = store.raiseCommand?.(intent?.kind === 'world' ? intent.word : undefined, payload.turn)
+    const dream = intent?.kind === 'dream' ? intent : undefined
     const verdict = ooc === undefined ? boundaries().inputValidator.validate({ text, turn: payload.turn, cast }) : { ok: true as const }
     if (ooc !== undefined && ooc.request !== '') engine.beginOoc(owner, ooc.request, ooc.question)
     else if (ooc === undefined) { if (dream === undefined) engine.expectJudgement(owner); engine.noteInput(owner, text) }
@@ -279,7 +283,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     if (arrived.length > 0) addLine('messages', tr('While the player was away, these messages reached their character, who has read them: {messages}. Refer to them only if the player does.', { messages: arrived.map(message => `${message.name}: "${message.text}"`).join(' ') }))
     const rules = store.rules()
     if (rules.length > 0) addLine('rules', store.text('roleplay/rules', { rules: rules.map(rule => `- ${rule}`).join('\n') }))
-    const wanted = ooc === undefined && dream === undefined ? parseRoll(text) : undefined
+    const wanted = intent?.kind === 'roll' ? intent : undefined
     if (wanted !== undefined) {
       try {
         const made = rollPlain(wanted.expression, deps.rolls?.roller(owner.chat))
@@ -310,7 +314,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
         addLine('dream', store.text('roleplay/dream', { name: sleeper.name, key: sleeper.key, asked }))
       }
     }
-    const waiting = ooc === undefined && wanted === undefined && dream === undefined ? parseWait(text) : undefined
+    const waiting = intent?.kind === 'wait' ? intent : undefined
     if (waiting !== undefined) {
       const clock = store.settings().clock
       const refusal = clock.mode === 'real' ? tr('this chat follows the clock on the wall, so time cannot be skipped') : waiting.minutes === undefined ? tr('say how long, for example /wait 2 hours or /wait 30 minutes until the ferry') : waiting.minutes > clock.maxSkipDays * 1440 ? tr('that is more than the {days} days this chat allows in one skip', { days: clock.maxSkipDays }) : undefined

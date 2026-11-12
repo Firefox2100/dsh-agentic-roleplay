@@ -1,6 +1,6 @@
 import { join } from 'node:path'
 import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
-import { IMPORT_COMMAND, type ImportChoices, type NormalizedCard } from '../../shared/import-card.ts'
+import type { ImportChoices, NormalizedCard } from '../../shared/import-card.ts'
 import { trimCharacters } from '../../shared/text.ts'
 import type { WorldSummary } from '../../shared/worlds.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
@@ -17,7 +17,7 @@ export interface StartImportDeps {
   store: ImportStore
   worlds: WorldCatalog
   /** Creates or reopens the authoring chat of a world and says what the person sees in it. */
-  authoring: { ensure(worldId: string, worldName: string, title: string, language?: string): Promise<string>; send(chat: string, text: string): Promise<void> }
+  authoring: { ensure(worldId: string, worldName: string, title: string, language?: string): Promise<string>; send(chat: string, text: string): Promise<void>; startImport(chat: string, request: string): Promise<void> }
 }
 
 export interface StartedImport {
@@ -41,11 +41,11 @@ export function folderNameOf(name: string): string {
   return folder === '' ? 'imported world' : folder
 }
 
-/** The command that starts the import, for a card kept in the world's import folder. */
-export function importMessage(language?: string, card?: NormalizedCard): string {
+/** What the person asks of the import of the card kept in the world's import folder: the request, and a summary of the card when it can be read. */
+export function importRequest(language?: string, card?: NormalizedCard): string {
   const tr = translator(storyLanguageOf(language))
   const request = tr('Import this card into this newly created world.')
-  return `${IMPORT_COMMAND} ${IMPORT_FOLDER}/card.json ${card === undefined ? request : `${request} ${sourceSummary(card, language)}`}`
+  return card === undefined ? request : `${request} ${sourceSummary(card, language)}`
 }
 
 /** The card kept in a world's import folder, when it can be read; the message then carries a summary of it. */
@@ -54,7 +54,7 @@ async function cardOf(directory: string): Promise<NormalizedCard | undefined> {
 }
 
 /**
- * Has the chat of a world whose import stopped before it was done carry on from the step it reached (the import hooks tell the chat which step that is). An import is lost
+ * Has the chat of a world whose import stopped before it was done carry on from the step it reached (the import command tells the chat which step that is). An import is lost
  * to a server restart, a refused finish or a chat that ended early; the card and what was extracted stay in the world's import folder.
  * @throws {WorldNotFoundError} when the world is gone. @throws {InvalidEditProblems} when no import is waiting in it.
  */
@@ -65,7 +65,7 @@ export async function resumeImport(deps: Pick<StartImportDeps, 'worlds' | 'autho
   if (phase === undefined || phase === 'done') throw new InvalidEditProblems(['no import is waiting in this world'])
   const chatSessionId = await deps.authoring.ensure(record.summary.id, record.summary.name, authoringTitle(record.summary.name, language), language)
   let failure: string | undefined
-  try { await deps.authoring.send(chatSessionId, importMessage(language, await cardOf(record.directory))) } catch (error) { failure = error instanceof Error ? error.message : String(error) }
+  try { await deps.authoring.startImport(chatSessionId, importRequest(language, await cardOf(record.directory))) } catch (error) { failure = error instanceof Error ? error.message : String(error) }
   return { worldId: record.summary.id, chatSessionId, started: failure === undefined, ...(failure === undefined ? {} : { failure }) }
 }
 
@@ -98,7 +98,7 @@ export async function startImport(deps: StartImportDeps, id: string, choices: Im
   const chatSessionId = await deps.authoring.ensure(world.id, world.name, authoringTitle(world.name, language), language)
   let failure: string | undefined
   try {
-    await deps.authoring.send(chatSessionId, importMessage(language, await cardOf(directory)))
+    await deps.authoring.startImport(chatSessionId, importRequest(language, await cardOf(directory)))
   } catch (error) {
     failure = error instanceof Error ? error.message : String(error)
   }

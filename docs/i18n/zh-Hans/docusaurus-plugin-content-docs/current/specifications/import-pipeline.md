@@ -9,7 +9,7 @@ SillyTavern 角色卡可以是带有 `ccv3` 或 `chara` 数据块的 PNG，也�
 
 1. 在世界页选择**导入角色卡**（上传），或**从地址导入角色卡**（`POST /worlds/import/card/url`）。主机读取角色卡，代码位于 `host/import/card.ts`。文件上限由 `importMaxUploadBytes` 控制，默认 100 MB。上传内容暂存在导入目录，并显示其中的信息。文件按开头的字节判断（`cardFormat`）：PNG 签名后紧跟文件头数据块，或在可选的字节序标记和空白之后以 `{` 开头的 JSON 对象。其他内容一律拒绝，并说明它看起来是什么（网页、ZIP 压缩包、JPEG、GIF 或 WebP 图片，或什么都不是），不看文件名，也不看声明的类型。从地址导入时，主机（`Catalogue.fetchCard`，沿用目录传输层的地址防护和密钥规则）先发送 HEAD：回答中指明的类型不是 JSON 或 PNG 时，在下载前就拒绝（通用二进制、纯文本以及没有类型都放行，因为很多主机对角色卡就是这样回答）；服务器不支持 HEAD 或 HEAD 失败时，仍会请求文件。已配置目录站点上角色卡的页面地址（`/characters/<id>`）会解析为该卡的最新版本。
 2. 选择导入器收到的内容：世界名称、需要关闭的 lorebook 条目，以及作为开场的一个问候语。关闭的条目不会继续传递；开场可选第一条消息或一个备选问候。
-3. 开始导入。系统创建世界，把上传内容移入 `.import/`，创建创作对话，并代表用户发送 `/import-st .import/card.json ...`。创作智能体通过 `agent/pre-step` 识别命令，收到专用流程而非普通请求，导入完成前不能结束该回合。
+3. 开始导入。系统创建世界，把上传内容移入 `.import/`，再创建创作对话。插件直接开始导入，并把专用流程作为第一条消息发出。以后需要恢复时，用户可以运行已注册的 `/import-st` 命令，输入框会列出并补全它。导入完成前，创作智能体不能结束该回合。
 4. 导入包含三个工具。每次调用都由专注于一项小任务的 `runChild` 执行，最多按 `importConcurrency` 并发运行：
    - `import_survey` 逐项列出字段、开场和 lorebook 条目。长条目按段落或句子边界截分。每项会被分类为角色、玩家、说话方式、地点、阵营、物品、世界、场景、指令、生成指引、模板或无关内容，并标出涉及的命名事物。最后通过一次模型调用合并角色、地点、阵营和物品名册；确定性回退会合并名称包含关系。
    - `import_build` 从与实体有关的片段中为每个实体提取一份文档，并把背景片段转成设定条目。文档使用世界本身的解析器检查，不合法时带原因退回，直到通过。
@@ -91,7 +91,7 @@ SillyTavern 角色卡可以是带有 `ccv3` 或 `chara` 数据块的 PNG，也�
 - **判断复用导入的运行器。** 由模型判断的检查拿到的是调用它的工具的 `ImportContext`（`contextOf`），因此聊天所用的模型、`importReasoning`、`importTemperature`、token 上限、超时、并发数和 `importDecisions` 都照样生效，不需要新增任何配置。
 - **按含义查找**（`similar.ts`、`semantic.ts`）。`ImportContext.embed` 用所选的嵌入提供方做嵌入（没有提供方时以 `NoEmbeddingService` 拒绝）。`candidates` 返回检查自己的过滤条件允许的、最接近的配对，余弦阈值故意设得很低、至多 12 对，因为接近只用来挑出要问什么，不决定任何事。`duplicate-values-meaning`、`name-near`（也按嵌套名称）和 `lore-conflict`（日期不相交的条目不会配对）是基于这些配对的 `decision` 检查：先走 `verdictOf`；`lore-conflict` 之后再让语言模型给出结论，并要求引用两个条目各自的原文，引文必须能在条目里找到（`conflictProblem`）。`card-coverage` 仍是 `code` 检查，但运行带模型时，会先对每个未被覆盖的片段询问最接近的几份文档，再报告它。向量按文本哈希保存在 `<world>/.checks/vectors.json`（float32、base64，保留最新 4000 条），模型或维度变化时会丢弃。助手的 `create_world_element` 和 `replace_world_element` 传入 `refuseUnread`，用 `Reader.unreadBy` 拒绝没有任何解析器会读的字段。
 - **结果**按检查分别保存在 `<world>/.checks/results.json`（`results.ts`）；每次运行会对照这次运行的检查上次保存的结果，说明多少条是新的、哪些已经消失。与 `.import` 一样，点开头的文件夹从不属于已发布的世界或翻译。
-- **工具与命令。** `check_world`、`check_card`（带 `version`）、`check_quality`、`check_play`（都带 `deep`）和 `check_list` 是世界创作聊天的工具（`tools.ts`）。命令 `/check`、`/check-all`、`/check-world`、`/check-card`、`/check-quality` 和 `/check-play` 由同一个解析器读取（`shared/authoring-commands.ts`，`/import-st` 也用它）；`hooks.ts` 在这个回合的第一步加入通知 `checks/notice`。
+- **工具与命令。** `check_world`、`check_card`（带 `version`）、`check_quality`、`check_play`（都带 `deep`）和 `check_list` 是世界创作聊天的工具（`tools.ts`）。命令 `/check`、`/check-all`、`/check-world`、`/check-card`、`/check-quality` 和 `/check-play` 是注册到 DSH 指令注册表的命令（`host/checks/commands.ts`，`/import-st` 在 `host/import/tools.ts`），所以输入框会列出并补全它们；运行时把通知 `checks/notice` 交给助手。
 - **在导入流程中。** `finish`、`structureImport` 和 `card_update_finish` 通过 `checkImported` 运行所有由程序判定的检查并保存结果（导入带有决策模型时，`decision` 类检查也会运行）；`import_finish` 和 `card_update_finish` 把发现作为 `checks` 返回。审阅提示词要求助手依据它们行动，并在卡片或发现需要时运行 deep 检查。更新消息要求助手在结束之前用 `version: new` 运行 `check_card`。
 
 ## 提示词

@@ -29,6 +29,10 @@
         {
           "type": "character-silent",
           "character": "tomas"
+        },
+        {
+          "type": "command-ruled",
+          "question": true
         }
       ]
     },
@@ -52,6 +56,10 @@
         {
           "type": "narration-lacks",
           "text": "two long flashes"
+        },
+        {
+          "type": "command-ruled",
+          "question": true
         }
       ]
     },

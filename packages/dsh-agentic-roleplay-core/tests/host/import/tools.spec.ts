@@ -8,7 +8,7 @@ import { NoEmbeddingService } from '../../../src/host/import/run.ts'
 import { contextOf, importHooks, importNotice, importTools } from '../../../src/host/import/tools.ts'
 import { IMPORT_FOLDER } from '../../../src/host/import/store.ts'
 import { shippedText } from '../../../src/host/prompts/library.ts'
-import { importMessage } from '../../../src/host/import/start-import.ts'
+import { ImportState } from '../../../src/host/import/begin.ts'
 
 let directory: string
 const worlds = { find: (id: string) => Promise.resolve(id === 'w1' ? { summary: { id: 'w1', name: 'W' }, directory } : undefined) } as never
@@ -58,20 +58,30 @@ describe('the import turn', () => {
 
   function hooked() {
     const listeners: Record<string, (...args: never[]) => unknown> = {}
-    importHooks({ on: (name: string, listener: (...args: never[]) => unknown) => { listeners[name] = listener } } as never, worlds, prompting)
-    const agent = (id: string, origin?: 'subagent') => ({ session: { id, header: { ...(origin === undefined ? {} : { origin }) } }, steer: vi.fn() })
-    const step = (agent: unknown, text: string) => (listeners['agent/pre-step'] as (payload: unknown, next: () => Promise<unknown>) => Promise<{ messages: { content: { text: string }[] }[] }>)(
-      { agent, step: 1, turn: 1, messages: [{ source: { kind: 'user' }, content: [{ type: 'text', text }] }] }, () => Promise.resolve({ kind: 'enter', messages: [] }))
+    const commands = new Map<string, (call: unknown) => Promise<{ kind: string; text?: string }>>()
+    const scope = { commands: { register: (definition: { name: string; handler: never }) => { commands.set(definition.name, definition.handler); return () => undefined } }, effect: (run: () => unknown) => { run() } }
+    const state = new ImportState()
+    importHooks({ on: (name: string, listener: (...args: never[]) => unknown) => { listeners[name] = listener }, inject: (_names: string[], run: (scope: unknown) => void) => { run(scope) } } as never, worlds, prompting, state)
+    const agent = (id: string, origin?: 'subagent') => ({ session: { id, header: { ...(origin === undefined ? {} : { origin }) } }, steer: vi.fn(), followup: vi.fn() })
+    /** Runs `/import-st` in the chat; what the chat was told is what the command handed to `followup`. */
+    const step = async (who: ReturnType<typeof agent>, rawInput = ' .import/card.json Import this card into this newly created world.') => {
+      const result = await commands.get('import-st')!({ agent: who, rawInput, signal: new AbortController().signal })
+      const message = who.followup.mock.calls.at(-1)?.[0] as { content: { text: string }[] } | undefined
+      return { result, told: message?.content[0]?.text }
+    }
     const stopping = (agent: unknown, turn = 1) => (listeners['agent/turn-stopping'] as (payload: unknown) => Promise<void>)({ agent, turn })
-    return { agent, step, stopping }
+    return { agent, step, stopping, commands, state }
   }
 
-  it('is recognised in an authoring chat, and the turn is not allowed to end before the import is done, but only three times', async () => {
+  it('is a command of an authoring chat, listed with the interface, that starts the import turn and does not let it end before the import is done, but only three times', async () => {
     await markReady(directory)
-    const { agent, step, stopping } = hooked()
+    const { agent, step, stopping, commands } = hooked()
+    expect([...commands.keys()]).toEqual(['import-st'])
     const chatAgent = agent(chat)
-    const decision = await step(chatAgent, importMessage())
-    expect(decision.messages[0]!.content[0]!.text).toMatch(/import_survey/)
+    const started = await step(chatAgent)
+    expect(started.result).toMatchObject({ kind: 'success' })
+    expect(started.told).toMatch(/import_survey/)
+    expect(started.told).toMatch(/Import this card into this newly created world\./)
     await stopping(chatAgent)
     expect(chatAgent.steer).toHaveBeenCalledTimes(1)
     await stopping(chatAgent)
@@ -84,16 +94,18 @@ describe('the import turn', () => {
     await markReady(directory)
     const { agent, step, stopping } = hooked()
     const chatAgent = agent(chat)
-    await step(chatAgent, importMessage())
+    await step(chatAgent)
     await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'done' }))
     await stopping(chatAgent)
     expect(chatAgent.steer).not.toHaveBeenCalled()
     const other = agent(chat)
-    expect((await step(other, 'Add a tavern.')).messages).toEqual([])
     await stopping(other)
     expect(other.steer).not.toHaveBeenCalled()
-    expect((await step(agent('session-abc'), importMessage())).messages).toEqual([])
-    expect((await step(agent(chat, 'subagent'), importMessage())).messages).toEqual([])
+    for (const who of [agent('session-abc'), agent(chat, 'subagent')]) {
+      const refused = await step(who)
+      expect(refused.result).toMatchObject({ kind: 'error' })
+      expect(who.followup).not.toHaveBeenCalled()
+    }
   })
 
   it('sends a turn back to mend a world that would not start, up to five times, tells it what is wrong, and lets it end once the world starts', async () => {
@@ -104,7 +116,7 @@ describe('the import turn', () => {
     await writeFile(join(directory, 'characters', 'tam', 'character.json'), JSON.stringify({ name: 'Tam', role: 'npc', summary: 'x', start: { location: 'nowhere' } }))
     await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'repair', reviewing: true }))
     await writeFile(join(directory, IMPORT_FOLDER, 'state.json'), JSON.stringify({ phase: 'repair' }))
-    expect((await step(chatAgent, importMessage())).messages[0]!.content[0]!.text).toMatch(/check_world/)
+    expect((await step(chatAgent)).told).toMatch(/check_world/)
     expect(await isReviewing(directory)).toBe(true)
     await stopping(chatAgent)
     expect(chatAgent.steer).toHaveBeenCalledTimes(1)
@@ -112,17 +124,19 @@ describe('the import turn', () => {
     for (let round = 0; round < 7; round += 1) await stopping(chatAgent)
     expect(chatAgent.steer).toHaveBeenCalledTimes(5)
     const mended = agent(chat)
-    await step(mended, importMessage())
+    await step(mended)
     await writeFile(join(directory, 'characters', 'tam', 'character.json'), JSON.stringify({ name: 'Tam', role: 'npc', summary: 'x' }))
     await stopping(mended)
     expect(mended.steer).not.toHaveBeenCalled()
   })
 
-  it('says there is nothing to import when the world holds no card', async () => {
+  it('says there is nothing to import when the world holds no card, and starts no turn', async () => {
     await rm(join(directory, IMPORT_FOLDER), { recursive: true })
     const { agent, step, stopping } = hooked()
     const chatAgent = agent(chat)
-    expect((await step(chatAgent, importMessage())).messages[0]!.content[0]!.text).toMatch(/no card is waiting/)
+    const refused = await step(chatAgent)
+    expect(refused.result).toMatchObject({ kind: 'error', text: expect.stringMatching(/no card is waiting/) })
+    expect(chatAgent.followup).not.toHaveBeenCalled()
     await stopping(chatAgent)
     expect(chatAgent.steer).not.toHaveBeenCalled()
   })

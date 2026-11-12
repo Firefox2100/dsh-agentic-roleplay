@@ -19,6 +19,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 系统提示词 | `ctx.systemPrompt.section` | `orchestration.ts` |
 | 系统提示词 | `ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context` | `helper.ts` |
 | 系统提示词（按作用域） | 在预设自己的作用域里注册同名的 `ctx.systemPrompt.section`/`context` 会遮蔽 profile 的那一条（空文本不贡献内容），各预设因此把 Web bundle 的引导文字挡在故事提示词之外 | `host/prompts/dev-context.ts` |
+| 命令 | `ctx.commands.register`（在预设的插件里，作用于该预设的智能体）、`agent/created` 时的 `agent.ctx.inject(['commands'], ...)`（作用于某个聊天的智能体）、`agent.followup`；命令名只能用 DSH 的字符集（`[a-z][a-z0-9_-]*`），输入提示不能为空 | `host/commands/registry.ts`、`host/orchestration/player-commands.ts`、`host/checks/commands.ts`、`host/import/tools.ts` |
 | 回合控制 | `agent/pre-step`、`agent/turn-stopping`、`agent.steer`、`exec.concludeTurn()`、`exec.agent`、`exec.signal` | `host/orchestration/hooks.ts`、`tools.ts` |
 | 创作助手的模型选择 | 在 `agent/created` 中调用 `agent.model.current()`、`agent.model.select()` | `host/authoring/turn-guard.ts` |
 | 无自有工具的编年史作者 | 带有自己的 `submit_result` 的 `runChild` 子智能体（见下） | `compaction/chronicler.ts` |
@@ -67,14 +68,13 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 - `ctx.systemPrompt.section` 接收每次装配时求值的 `(context) => string`。通过 `dsh-agent` 合并的 `context.agent` 表示当前智能体，因此提示词段可跟随对话语言。预设中 `prefix: ''` 的 `dsh-persona` 行会遮蔽部署 persona，并在渲染时消失，把 persona 段留给本插件。除非设定 `interpolate: false`，段中的 `{{...}}` 会被 DSH 当作提示词变量；本项目的提示词文件无论如何都避免使用它。
 - **运行时上下文**（`ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context`）：DSH 会给每个智能体的请求加上一段英文的运行时事实（工作目录、文件策略、审批、委派）。辅助智能体的预设会屏蔽其中可选的部分，并用空内容覆盖必需的工作目录条目，因为辅助智能体只处理故事的文字，没有文件。带着这一段时，要求写中文的辅助智能体常常一直写到输出上限（把记录下的一次反思请求在关闭思考的 35B 上重放：带这一段时四次中只有一次完成，去掉后四次全部完成）。
-- `sessionController.prompt(request, signal)` 必须接收 `AbortSignal`，否则 DSH 内部会对 `undefined` 调用 `throwIfAborted`。插件通过它代表用户向对话发送消息，例如卡片导入的 `/import-st`。
+- `sessionController.prompt(request, signal)` 必须接收 `AbortSignal`，否则 DSH 内部会对 `undefined` 调用 `throwIfAborted`。插件通过它向对话发送普通消息；斜杠命令改走 `ctx.commands.execute`。
 - 带开场内容的持久对话必须先以 `surfaceOp: 'append'` 追加一个空 `system/message`，再写其他表面节点。日志格式不允许系统提示词出现在其他节点之后。
 
 ## 刻意不用的接口
 
 下面这些 DSH 服务看起来合适，其实不适用；以后复查时不必再推一遍：
 
-- **`ctx.commands`。** 玩家的 `/ooc`、`/ask`、`/wait`、`/dream` 是由游戏主持裁定的回合，世界自己定义的 `/word` 则是角色要回应的故事内文本。命令处理器执行时**不会**把内容发给模型，注册这两类命令就等于拿掉它们存在的那个回合；输入框里的命令提示不值得这么做。
 - **会话投影（`ctx.sessionProjections`）。** 投影把会话日志折叠成 DSH 随对话推送的状态。故事在会话的 SQLite 里（记录、记忆、时间线），不在日志里，投影搬不动。浏览器从 `/roleplay-api` 读取所需的值。
 - **`/api` 的 typert RPC 面。** 第三方服务要在上面提供接口，需要声明契约并生成客户端绑定。`/roleplay-api` 通过 `webServer.register` 注册，和 `/api` 在同一个鉴权连接与 `connection.requestRejection` 栅栏之后；没有会话凭据，浏览器碰不到它。
 

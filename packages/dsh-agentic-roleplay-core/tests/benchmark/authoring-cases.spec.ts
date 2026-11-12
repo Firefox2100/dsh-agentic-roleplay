@@ -10,10 +10,11 @@ import { writeFiles } from './write.ts'
 const made: string[] = []
 afterEach(async () => { for (const folder of made.splice(0)) await rm(folder, { recursive: true, force: true }) })
 
-async function world(language: (typeof LANGUAGES)[number], extra: Record<string, unknown> = {}, over: Record<string, unknown> = {}): Promise<string> {
+async function world(language: (typeof LANGUAGES)[number], extra: Record<string, unknown> = {}, over: Record<string, unknown> = {}, planted?: (files: ReturnType<typeof seedWorld>) => void): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'authoring-'))
   made.push(directory)
   const files = seedWorld(language)
+  planted?.(files)
   files.set('world.json', { ...(files.get('world.json') as object), ...over })
   await writeFiles(directory, files)
   for (const [path, value] of Object.entries(extra)) { await mkdir(dirname(join(directory, path)), { recursive: true }); await writeFile(join(directory, path), JSON.stringify(value)) }
@@ -31,6 +32,7 @@ const outcome = (id: AuthoringId, language: (typeof LANGUAGES)[number]): [Record
     case 'holiday': return [{ 'calendar.json': { hemisphere: 'north', holidays: [{ id: 'harvest', name: 'Harvest', on: ['09-21'] }] } }, {}]
     case 'opening': return [{}, { opening_message: p('A heron stands by the weir.', '一只苍鹭站在堰边。') }]
     case 'overreach': return [{}, {}]
+    case 'check': return [{ 'characters/miller/character.json': { name: p('Hale the Miller', '老葛'), role: 'npc', summary: p('Runs the mill.', '经营磨坊。'), start: { location: 'mill' } } }, {}]
   }
 }
 
@@ -49,10 +51,10 @@ describe.each(LANGUAGES)('authoring requests (%s)', (language) => {
 
   it.each(AUTHORING)('%s: fails on the seed unless it asks to leave things alone, and holds once the request is carried out', async (id) => {
     const entry = cases.find(candidate => candidate.kind === id)!
-    const untouched = await authoringProblems(entry.expect, seed(await world(language)))
+    const untouched = await authoringProblems(entry.expect, seed(await world(language, {}, {}, entry.seed)))
     expect(untouched.length > 0, 'the oracle sees nothing wrong with the seed').toBe(id !== 'overreach')
     const [files, info] = outcome(id, language)
-    expect(await authoringProblems(entry.expect, seed(await world(language, files, info)))).toEqual([])
+    expect(await authoringProblems(entry.expect, seed(await world(language, files, info, entry.seed)))).toEqual([])
   })
 
   it('sees an assistant that overreached', async () => {

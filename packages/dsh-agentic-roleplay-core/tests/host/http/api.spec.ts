@@ -27,6 +27,7 @@ import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 import { API_PREFIX } from '../../../src/shared/worlds.ts'
 import { PromptEditError } from '../../../src/host/prompts/manage.ts'
 import { CatalogueError } from '../../../src/host/catalogue/errors.ts'
+import { CommandRefusedError } from '../../../src/host/commands/registry.ts'
 import { RcloneError, SyncRefusedError, UnitLockedError } from '../../../src/host/sync/errors.ts'
 import type { PresetApi } from '../../../src/host/presets/routes.ts'
 import type { LorebookApi } from '../../../src/host/lorebooks/routes.ts'
@@ -328,7 +329,7 @@ beforeEach(async () => {
         opened = id
         return Promise.resolve({ id, chatSessionId: `session-${id}` })
       },
-      send: (id, text) => { said.push(`${id}: ${text}`); return Promise.resolve() },
+      send: (id, text) => { if (text.startsWith('/refused')) return Promise.reject(new CommandRefusedError('Say how long')); said.push(`${id}: ${text}`); return Promise.resolve() },
       readSettings: () => {
         if (settingsError !== undefined) throw settingsError
         return { settings: DEFAULT_SETTINGS, bounds: SETTINGS_SPEC, pendingRecords: 0, pendingConsolidation: 0, activity: [], usage: [], trace: [], interventions: [], vectors: { available: true, embedded: 0, pending: 0 }, reflection: { running: false } }
@@ -1148,6 +1149,12 @@ describe('roleplay API', () => {
       expect((await say({ id: 'abc', text: ' ' })).status).toBe(400)
       expect((await say({ text: 'x' })).status).toBe(400)
       expect((await fetch(`${origin}/sessions/message`)).status).toBe(405)
+    })
+
+    it('answers 422 with what the command says when a line starts a command that refuses to run', async () => {
+      const response = await say({ id: 'abc', text: '/refused' })
+      expect(response.status).toBe(422)
+      expect(await response.json()).toEqual({ message: 'Say how long' })
     })
   })
 

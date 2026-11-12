@@ -65,7 +65,7 @@ export interface RowRun {
   trace?: string | undefined
 }
 
-interface Delivered { opening?: NarrationSegment[]; turns: { turn: number; output?: { segments: NarrationSegment[] } }[] }
+interface Delivered { opening?: NarrationSegment[]; turns: { turn: number; output?: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean } } }[] }
 interface StatusGroup { subject: string; key?: string; name?: string; values: { name: string; value: string }[] }
 
 /** The largest file whose text is read back for the expectations. */
@@ -148,7 +148,7 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
   trace.state('row', { row, script, settings: settingsOf(row), files: [...composed.files.keys()], places })
   let session: string | undefined
   const played: RowRun['turns'] = []
-  const steps: { segments: NarrationSegment[] }[] = []
+  const steps: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean }; scene?: string[] }[] = []
   let failure: string | undefined
   let initialValues: Observation['initialValues']
   let castAtStart: number | undefined
@@ -198,10 +198,13 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
         if (Date.now() - sent > TURN_LIMIT_MS) throw new Error(`no turn finished within ${TURN_LIMIT_MS / 60_000} minutes`)
         await sleep(POLL_MS)
       }
-      const delivered = await rig.api<Delivered>(`/sessions/export?id=${session}&format=json`)
+      const delivered = await rig.api<Delivered>(`/sessions/export?id=${session}&format=json&annotated=1`)
       const segments = delivered.turns.at(-1)?.output?.segments ?? []
+      const ooc = delivered.turns.at(-1)?.output?.ooc
       trace.event('response', { service: 'story', ms: Date.now() - sent, raw: segments })
-      steps.push({ segments })
+      // the sections of the scene the game master was given in this turn, from the program's own trace of it
+      const scene = await rig.api<{ trace?: { turn: number; scene?: { id: string }[] }[] }>(`/sessions/settings?id=${session}`).then(read => [...(read.trace ?? [])].sort((a, b) => a.turn - b.turn).at(-1)?.scene?.map(part => part.id), () => undefined)
+      steps.push({ segments, ...(ooc === undefined ? {} : { ooc }), ...(scene === undefined ? {} : { scene }) })
       played.push({ say, seconds: Math.round((Date.now() - sent) / 1000), segments })
     }
   } catch (error) {
@@ -211,8 +214,8 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
   let observation: Observation = { language: chatLanguage(row), player: row.cast.player, turns: [], played: steps }
   if (session !== undefined) {
     try {
-      const shown = await rig.api<Delivered>(`/sessions/export?id=${session}&format=json`)
-      observation = { ...observation, turns: shown.turns.filter(turn => turn.output !== undefined).map(turn => ({ segments: turn.output!.segments })), ...shown.opening === undefined ? {} : { opening: shown.opening.map(segment => segment.text).join('\n') } }
+      const shown = await rig.api<Delivered>(`/sessions/export?id=${session}&format=json&annotated=1`)
+      observation = { ...observation, turns: shown.turns.filter(turn => turn.output !== undefined).map(turn => ({ segments: turn.output!.segments, ...(turn.output!.ooc === undefined ? {} : { ooc: turn.output!.ooc }) })), ...shown.opening === undefined ? {} : { opening: shown.opening.map(segment => segment.text).join('\n') } }
     } catch (error) { trace.note(`the story could not be read back: ${error instanceof Error ? error.message : String(error)}`) }
     try {
       const state = await rig.api<World>(`/sessions/world?id=${session}`)

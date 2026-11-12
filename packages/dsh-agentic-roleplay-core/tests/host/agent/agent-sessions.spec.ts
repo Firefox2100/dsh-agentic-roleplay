@@ -266,3 +266,62 @@ describe('agentServicesOf', () => {
     await expect(agentServicesOf(ctx)().unload?.('session-abc')).resolves.toBeUndefined()
   })
 })
+
+describe('what a player says through the plugin', () => {
+  const sessions = (command?: AgentServices['command']) => {
+    const { calls, services } = fakes()
+    return { calls, sessions: new AgentSessions(() => ({ ...services, ...(command === undefined ? {} : { command }) }), () => '/root') }
+  }
+  const prompted = (calls: unknown[][]) => calls.filter(call => call[0] === 'prompt').length
+
+  it('runs a line that starts one of the chat\'s commands, and sends nothing to the model itself', async () => {
+    const seen: string[] = []
+    const { calls, sessions: made } = sessions(async (chat, line) => { seen.push(`${chat} ${line}`); return { kind: 'success' } })
+    await made.send('abc', '/ooc make it rain')
+    expect(seen).toEqual([`${chatSessionId('abc')} /ooc make it rain`])
+    expect(prompted(calls)).toBe(0)
+  })
+
+  it('refuses with what the command says when it will not run, and sends nothing', async () => {
+    const { calls, sessions: made } = sessions(async () => ({ kind: 'error', text: 'Say how long' }))
+    await expect(made.send('abc', '/wait')).rejects.toThrow(/Say how long/)
+    expect(prompted(calls)).toBe(0)
+  })
+
+  it('sends every other line as the player\'s move: a line no command of the chat starts, and a line that is no command', async () => {
+    const asked: string[] = []
+    const { calls, sessions: made } = sessions(async (_chat, line) => { asked.push(line); return undefined })
+    await made.send('abc', '/unknown thing')
+    await made.send('abc', 'I open the door.')
+    expect(prompted(calls)).toBe(2)
+    expect(asked).toEqual(['/unknown thing'])
+  })
+})
+
+describe('what the person says in an authoring chat', () => {
+  const authoring = (command?: AgentServices['command']) => {
+    const { calls, services } = fakes()
+    const prompts = {} as PromptLibrary
+    const languages = {} as AuthoringLanguages
+    return { calls, chat: new AuthoringSessions(() => ({ ...services, ...(command === undefined ? {} : { command }) }), () => '/root', prompts, languages) }
+  }
+  const prompted = (calls: unknown[][]) => calls.filter(call => call[0] === 'prompt').length
+
+  it('runs a line that starts one of the chat\'s commands (/check-world) and sends it to nobody as a message', async () => {
+    const seen: string[] = []
+    const { calls, chat } = authoring(async (id, line) => { seen.push(`${id} ${line}`); return { kind: 'success' } })
+    await chat.send(authoringChatSessionId('w1'), '/check-world')
+    expect(seen).toEqual([`${authoringChatSessionId('w1')} /check-world`])
+    expect(prompted(calls)).toBe(0)
+  })
+
+  it('refuses with what the command says, and sends every other line as the person\'s message', async () => {
+    const refused = authoring(async () => ({ kind: 'error', text: 'runs in the authoring chat of a world' }))
+    await expect(refused.chat.send('c', '/check')).rejects.toThrow(/authoring chat/)
+    expect(prompted(refused.calls)).toBe(0)
+    const plain = authoring(async () => undefined)
+    await plain.chat.send('c', 'Add a tavern.')
+    await plain.chat.send('c', '/not-a-command here')
+    expect(prompted(plain.calls)).toBe(2)
+  })
+})

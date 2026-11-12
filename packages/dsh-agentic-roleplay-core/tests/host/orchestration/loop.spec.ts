@@ -5,6 +5,7 @@ import { outputBudget } from '../../../src/host/agents/budget.ts'
 import { keeperEstimate } from '../../../src/host/orchestration/committer.ts'
 import { PromptLibrary } from '../../../src/host/prompts/library.ts'
 import { Context } from '@deepseek-ai/cordis'
+import type { Agent } from '@deepseek-ai/dsh-agent'
 import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { createUserMessage, ToolCallId, type GenerateOptions, type StreamChunk } from '@deepseek-ai/dsh-llm'
 import { SessionId, SessionLogOffset, SessionSeq } from '@deepseek-ai/dsh-session'
@@ -31,6 +32,8 @@ import { readTimeline, writeTimeline } from '../../../src/host/timeline/file.ts'
 import * as orchestrationPlugin from '../../../src/orchestration.ts'
 import compactionPlugin from '../../../src/compaction.ts'
 import TokenMeter from '@deepseek-ai/dsh-token-meter'
+import CommandRuntime from '@deepseek-ai/dsh-commands'
+import { COMMANDS_KEY } from '../../../src/shared/commands.ts'
 import { mountAgentServices } from '../../support/mount.ts'
 import { ScriptedAdapter } from '../../support/scripted-adapter.ts'
 
@@ -445,12 +448,17 @@ async function chat(chatId: string, adapter: ScriptedAdapter) {
   return new Proxy(agent, {
     get(target, property) {
       if (property === 'whenIdle') return async () => { await target.whenIdle(); await orchestration.settle(chatId) }
+      if (property === 'raw') return target
       const value: unknown = Reflect.get(target, property, target)
       return typeof value === 'function' ? value.bind(target) : value
     },
   })
 }
 
+/** What running a command on a chat, as the input box does, answers; the commands of a chat are the registry's for the agent itself, not for the wrapper the tests read it through. */
+const command = async (agent: unknown, line: string) => (await ctx.commands.execute((agent as { raw: Agent }).raw, line, [], new AbortController().signal))?.result
+/** A player's line: a command when it starts one the chat knows, the player's move when it does not. */
+const sayLine = async (agent: ReturnType<typeof chat> extends Promise<infer A> ? A : never, line: string) => { if (line.startsWith('/')) return await command(agent, line); agent.followup(say(line)); return undefined }
 const say = (value: string) => createUserMessage({ content: [{ type: 'text', text: value }], source: { kind: 'user' } })
 const activityOf = (session: Session, sourceId: string) => session.characterStates.get(session.characters.getBySourceId(sourceId)?.id ?? 0)?.activity
 const publicStateOf = (session: Session, sourceId: string) => session.characterStates.get(session.characters.getBySourceId(sourceId)?.id ?? 0)?.publicState
@@ -473,6 +481,7 @@ beforeEach(async () => {
   await mountAgentServices(ctx)
   await ctx.plugin(AgentLoop, { agents: [] })
   await ctx.plugin(TokenMeter)
+  await ctx.plugin(CommandRuntime)
   await ctx.plugin(SubagentRuntime)
   await ctx.plugin(spawn, { providerName: 'spawn' })
   ctx.provide('agentPresets')
@@ -974,7 +983,7 @@ describe('a turn with the real agent loop', () => {
         writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...script }))
         const agent = await chat(`session-${id}`, adapter)
-        agent.followup(say(message))
+        await sayLine(agent, message)
         await agent.whenIdle()
         return { adapter, agent, folder: sessionFolder(join(root, 'sessions'), id) }
       }
@@ -1437,14 +1446,49 @@ describe('a turn with the real agent loop', () => {
       expect(JSON.stringify(masterRequests(adapter).map(request => request.messages))).toContain('call judge_action first')
     })
 
+    describe('the commands of a world', () => {
+      const defined = [{ word: 'recruit', key: 'recruit', description: 'Bring someone in.' }, { word: '招募', key: 'zhaomu', description: '招人' }]
+      const withCommands = async () => {
+        const { session, id } = await addSession('Vault', true)
+        session.metadata.setValue(COMMANDS_KEY, defined as never)
+        for (const command of defined) session.variables.define({ key: `command_${command.key}`, name: `/${command.word}`, kind: 'flag', subject: 'world', visibility: 'hidden', default: false })
+        return { session, id }
+      }
+
+      it('are listed in the chat of the world that has them and in no other, a word in another script under its key', async () => {
+        const { id } = await withCommands()
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const mine = await chat(`session-${id}`, adapter)
+        const names = ctx.commands.list((mine as unknown as { raw: Agent }).raw).map(entry => entry.name)
+        expect(names).toEqual(expect.arrayContaining(['recruit', 'zhaomu', 'ooc', 'ask', 'roll', 'wait', 'dream']))
+        expect(names).not.toContain('招募')
+        expect(ctx.commands.list((mine as unknown as { raw: Agent }).raw).find(entry => entry.name === 'zhaomu')?.description).toBe('/招募: 招人')
+        const { id: other } = await addSession('Vault', true)
+        const elsewhere = await chat(`session-${other}`, adapter)
+        expect(ctx.commands.list((elsewhere as unknown as { raw: Agent }).raw).map(entry => entry.name)).not.toContain('recruit')
+      })
+
+      it('begin a turn that is told the world\'s command was used, as the player\'s move in the story', async () => {
+        const { id } = await withCommands()
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        expect(await command(agent, '/recruit looks for help')).toMatchObject({ kind: 'success' })
+        await agent.whenIdle()
+        const told = JSON.stringify(masterRequests(adapter)[0]!.messages)
+        expect(told).toContain("world's command /recruit")
+        expect(told).not.toContain('OUT-OF-CHARACTER')
+        expect(characterRequests(adapter).length).toBeGreaterThanOrEqual(0)
+      })
+    })
+
     describe('out-of-character commands', () => {
-      const playOoc = async (ooc: NonNullable<Script['ooc']>, command = '/ooc Bob now goes down to the cellar, something urgent came up') => {
+      const playOoc = async (ooc: NonNullable<Script['ooc']>, line = '/ooc Bob now goes down to the cellar, something urgent came up') => {
         const { session, id } = await addSession('Vault', true)
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ooc }))
         const agent = await chat(`session-${id}`, adapter)
-        agent.followup(say(command))
+        const answered = await sayLine(agent, line)
         await agent.whenIdle()
-        return { session, id, adapter, agent }
+        return { session, id, adapter, agent, answered }
       }
       const bobAt = (session: Session) => session.placements.get('character', session.characters.getBySourceId('bob')!.id)?.locationId === session.locations.getBySourceId('cellar')!.id
 
@@ -1503,16 +1547,13 @@ describe('a turn with the real agent loop', () => {
         expect(keepers(adapter)).toEqual([])
       })
 
-      it('is told to ask what the player wants when the question is empty', async () => {
-        const { adapter } = await playOoc('question', '/ask')
-        expect(characterRequests(adapter)).toEqual([])
-        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('empty out-of-character message (/ask)')
-      })
-
-      it('is not an empty command: the game master is told to ask what the player wants, and nobody acts', async () => {
-        const { adapter } = await playOoc('moves-bob', '/ooc')
-        expect(characterRequests(adapter)).toEqual([])
-        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('The player sent an empty out-of-character message (/ooc)')
+      it('is refused at once when the question or the command is empty: nothing is sent, no turn is spent', async () => {
+        for (const line of ['/ask', '/ooc']) {
+          const { adapter, answered, session } = await playOoc('moves-bob', line)
+          expect(answered).toMatchObject({ kind: 'error' })
+          expect(adapter.requests).toEqual([])
+          expect(session.metadata.get().turns).toBe(0)
+        }
       })
 
       it('tells the game master how long the player lets time pass and to stop sooner for a decision, when the player waits with /wait', async () => {
@@ -1528,9 +1569,10 @@ describe('a turn with the real agent loop', () => {
         expect(characterRequests(adapter)).toEqual([])
       })
 
-      it('refuses a wait with no time, and the game master is told why', async () => {
-        const { adapter } = await playOoc('moves-bob', '/wait a while')
-        expect(JSON.stringify(masterRequests(adapter)[0]!.messages)).toContain('say how long, for example /wait 2 hours')
+      it('refuses a wait with no time at once, and spends no turn', async () => {
+        const { adapter, answered } = await playOoc('moves-bob', '/wait a while')
+        expect(answered).toMatchObject({ kind: 'error', text: expect.stringContaining('Say how long') })
+        expect(adapter.requests).toEqual([])
       })
     })
 

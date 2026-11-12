@@ -1,0 +1,59 @@
+{
+  "id": "command-noodle-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我走进面馆，在柜台前坐下。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "/extra_noodles 陈姨，再给我加一碗面。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "scene-has",
+          "section": "command"
+        }
+      ]
+    },
+    {
+      "say": "我谢过她，把钱放在柜台上。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "trigger-fired",
+      "key": "extra-noodles"
+    },
+    {
+      "type": "no-repeats"
+    }
+  ]
+}

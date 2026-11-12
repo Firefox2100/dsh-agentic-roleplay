@@ -23,6 +23,7 @@ below so it can be checked when DSH moves.
 | Prompt | `ctx.systemPrompt.section` | `orchestration.ts` |
 | Prompt | `ctx.systemPrompt.suppressRuntimeContext`, `ctx.systemPrompt.context` | `helper.ts` |
 | Prompt, scoped | `ctx.systemPrompt.section`/`context` registered in a preset's scope shadows the profile's contribution of the same name (empty text contributes nothing), which is how the presets keep the Web bundle's orientation text out of story prompts | `host/prompts/dev-context.ts` |
+| Commands | `ctx.commands.register` (in a preset's plugin for a preset's agents), `agent.ctx.inject(['commands'], ...)` at `agent/created` (for one chat's agent), `agent.followup`, a name in DSH's alphabet (`[a-z][a-z0-9_-]*`) with a non-empty input hint | `host/commands/registry.ts`, `host/orchestration/player-commands.ts`, `host/checks/commands.ts`, `host/import/tools.ts` |
 | Turn control | `agent/pre-step` (waterfall), `agent/turn-stopping`, `agent.steer`, `exec.concludeTurn()`, `exec.agent`, `exec.signal` | `host/orchestration/hooks.ts`, `tools.ts` |
 | Authoring model choice | `agent.model.current()`, `agent.model.select()` from `agent/created` | `host/authoring/turn-guard.ts` |
 | Chronicler (no tools of its own) | a `runChild` child with a `submit_result` of its own (below) | `compaction/chronicler.ts` |
@@ -122,14 +123,13 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 
 - **System prompt sections** (`ctx.systemPrompt.section`) take a `text` provider `(context) => string` evaluated at each assembly; `context.agent` (an `AssembleContext` merge from `dsh-agent`) is the agent being assembled, so a section can follow the chat's language. A preset's `dsh-persona` row with `prefix: ''` shadows the deployment persona and then disappears at render, which leaves the persona section to us. `{{...}}` in a section is read as a prompt variable unless the section sets `interpolate: false`; the prompt files avoid it either way.
 - **Runtime context** (`ctx.systemPrompt.suppressRuntimeContext`, `ctx.systemPrompt.context`): DSH adds a block of English runtime facts to every agent's request (the working directory, the file policy, approvals, delegation). The helper preset suppresses the optional ones and shadows the required working-directory entry with an empty one, because a helper works on the story's words and has no files. With the block, a helper asked to write Chinese often ran on until its output limit (a recorded reflection request replayed on the 35B with thinking off: one of four runs finished with the block, four of four without it).
-- **`sessionController.prompt(request, signal)`** needs the `AbortSignal` (without it the call fails inside DSH with `throwIfAborted` of undefined). It is how the plugin sends a message into a chat for the person (the card import's `/import-st`).
+- **`sessionController.prompt(request, signal)`** needs the `AbortSignal` (without it the call fails inside DSH with `throwIfAborted` of undefined). It sends ordinary plugin-authored messages into chats. Slash commands go through `ctx.commands.execute` instead.
 - **A stored chat that starts with an opening** needs an empty `system/message` appended with `surfaceOp: 'append'` before any other surface node: the log format refuses a system prompt that follows other nodes.
 
 ## What we deliberately do not use
 
 These are DSH services that look applicable and are not, so a later review does not have to work it out again:
 
-- **`ctx.commands`.** The player's `/ooc`, `/ask`, `/wait` and `/dream` are turns the game master rules on, and a world's own `/word` commands are in-story text the characters react to. A command handler runs *instead of* sending anything to the model, so registering either kind would take away the turn it exists for; the composer's discovery list is not worth that.
 - **Session projections (`ctx.sessionProjections`).** A projection folds the session log into state DSH pushes with the chat. The story lives in the session's SQLite (records, memories, timeline), not in the log, so a projection cannot carry it. The browser reads the values it needs from `/roleplay-api`.
 - **The `/api` typert RPC surface.** A third-party service there needs a declared contract and generated client bindings. `/roleplay-api` registers through `webServer.register` and sits behind the same authenticated connection and `connection.requestRejection` fence; the browser never reaches it without the session's credentials.
 

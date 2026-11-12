@@ -53,6 +53,7 @@ describe.skipIf(!live)(`the world-authoring benchmark, live (${label})`, () => {
           const worldId = `bench-author-${made.id}-${run}-${Date.now().toString(36)}`
           const folder = join(root, 'worlds', worldId)
           const files = seedWorld(language)
+          made.seed?.(files)
           files.set('world.json', { ...(files.get('world.json') as Record<string, unknown>), id: worldId })
           await rm(folder, { recursive: true, force: true })
           await mkdir(folder, { recursive: true })

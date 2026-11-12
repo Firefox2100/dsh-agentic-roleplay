@@ -85,6 +85,8 @@ export interface Row {
   answers?: Record<string, string>
   /** Folders of the computer given to the story for its file tools, made for the run: by name, each read-only or read and write. A script writes `{workspace}`, `{folder:<name>}` and `{outside}` (a folder the story was not given) for their paths. */
   folders?: { name: string; access: 'read' | 'write' }[]
+  /** Words after a slash that the row's script types on purpose as plain text, because the world has no such command in this row (the control that shows what the command adds). */
+  typedAsText?: string[]
   /** Text files put in a folder (`workspace` or one of the row's folders) before the story begins: a brief the task depends on. */
   files?: { in: string; name: string; text: string }[]
   /** A fault planted on purpose, to show the benchmark can see it: the result is reported apart, and an expectation of these kinds that fails means it was caught. */
@@ -126,6 +128,10 @@ export type Expectation =
   | { type: 'narration-language' }
   /** The narration holds the text (case does not matter). */
   | { type: 'narration-has'; text: string }
+  /** The turn was an out-of-character command and was ruled on as one (`/ooc`, or with `question` true `/ask`): its output carries the ruling's note, which a move never does. Turns only. */
+  | { type: 'command-ruled'; question?: boolean }
+  /** The game master was given this part of the scene in the turn: `roll`, `wait`, `dream` (a command that was played as itself: the player's roll, the time moved on, a dream entered) or `command` (a command of the world). It is the program's own record, in no language. Turns only. */
+  | { type: 'scene-has'; section: 'roll' | 'wait' | 'dream' | 'command' }
   /** The narration does not hold the text: a secret, a name the player has not been told. */
   | { type: 'narration-lacks'; text: string }
   /** The named character speaks (an utterance of its own). */
@@ -177,7 +183,7 @@ export type Expectation =
   /** No file of this name is in the folder. */
   | { type: 'file-lacks'; in: string; name: string }
 
-export const EXPECTATION_TYPES = ['narration-clean', 'narration-language', 'narration-has', 'narration-lacks', 'speaks', 'speaks-in-voice', 'character-silent', 'character-doing', 'player-silent', 'turns', 'character-exists', 'value-changed', 'value-is', 'trigger-fired', 'character-at', 'item-held-by', 'cast-grew', 'cast-distinct', 'cast-placed', 'no-repeats', 'message-arrived', 'opening-has', 'setting-is', 'pack-active', 'file-has', 'html-sane', 'file-exists', 'file-lacks'] as const
+export const EXPECTATION_TYPES = ['narration-clean', 'narration-language', 'narration-has', 'command-ruled', 'scene-has', 'narration-lacks', 'speaks', 'speaks-in-voice', 'character-silent', 'character-doing', 'player-silent', 'turns', 'character-exists', 'value-changed', 'value-is', 'trigger-fired', 'character-at', 'item-held-by', 'cast-grew', 'cast-distinct', 'cast-placed', 'no-repeats', 'message-arrived', 'opening-has', 'setting-is', 'pack-active', 'file-has', 'html-sane', 'file-exists', 'file-lacks'] as const
 
 export interface ScriptTurn {
   /** What the player writes: a command such as `/ooc`, `/wait` or `/roll` is written as the player would. */

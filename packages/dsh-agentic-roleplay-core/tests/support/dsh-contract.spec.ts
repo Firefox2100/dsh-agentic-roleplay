@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import * as compaction from '@deepseek-ai/dsh-compaction-basic'
+import { parseCommand } from '@deepseek-ai/dsh-commands'
 import * as tools from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
 import { DSH_RELEASES } from '../../../../scripts/dsh-compat.mjs'
@@ -65,5 +66,17 @@ describe('the DSH interfaces this bundle is registered against', () => {
       declaration('dsh-client-ui-slots'),
       'the devDependency on @deepseek-ai/dsh-client-store in packages/dsh-agentic-roleplay-core/package.json exists only for this import; when it is gone the dependency is dead',
     ).toContain("from '@deepseek-ai/dsh-client-store'")
+  })
+
+  it('still takes commands the way the commands of a chat are registered: by name in DSH\'s own alphabet, with a hint, run by the registry', () => {
+    const registry = declaration('dsh-commands')
+    for (const member of ['register(', 'find(', 'list(', 'execute(']) expect(registry).toContain(member)
+    const types = declaration('dsh-commands', join('lib', 'types', 'types.d.ts'))
+    expect(types).toMatch(/readonly hint: string/)
+    expect(registry).toMatch(/readonly handler:/)
+    // a world's word in another script cannot be a command name: it is offered under the key of its flag
+    expect(parseCommand('/zhaomu 找人')).toEqual({ name: 'zhaomu', rawInput: ' 找人' })
+    expect(parseCommand('/招募')).toBeUndefined()
+    expect(parseCommand('/Recruit')).toBeUndefined()
   })
 })

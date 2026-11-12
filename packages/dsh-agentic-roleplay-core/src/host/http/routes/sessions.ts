@@ -1,3 +1,4 @@
+import { CommandRefusedError } from '../../commands/registry.ts'
 import { UnknownStateError } from '../../sessions/compare-session.ts'
 import { TimelineError } from '../../timeline/service.ts'
 import { InvalidSettingsError } from '../../sessions/settings.ts'
@@ -54,6 +55,7 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
           if (error instanceof SessionArchivedError) return sendError(res, 409, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          if (error instanceof CommandRefusedError) return sendError(res, 422, error.message)
           throw error
         }
       },

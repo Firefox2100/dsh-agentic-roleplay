@@ -1,4 +1,3 @@
-import { parseAuthoringCommand } from './authoring-commands.ts'
 
 /** One lorebook entry of a character card, as the importer and its preview see it. */
 export interface CardEntry {
@@ -97,13 +96,12 @@ export interface ImportPreview {
 
 export const MAX_IMPORT_NAME = 200
 
-/** The message the plugin sends on the player's behalf to start the import in the new world's authoring chat. */
+/** The command that imports the card waiting in a world, in the world's authoring chat. */
 export const IMPORT_COMMAND = '/import-st'
 
-/** The command in a message, with the card it names, or nothing when the message is not the command. */
-export function parseImportCommand(text: string): { card: string; request: string } | undefined {
-  const command = parseAuthoringCommand(text, [IMPORT_COMMAND.slice(1)])
-  if (command === undefined) return undefined
-  const boundary = command.rest.search(/\s/u)
-  return boundary < 0 ? { card: command.rest, request: '' } : { card: command.rest.slice(0, boundary), request: command.rest.slice(boundary).trim() }
+/** What follows the command's name: the card it names, then what the person asks for. The card is always the one in the world's import folder; only the request is passed on. */
+export function importRequestOf(rawInput: string): string {
+  const rest = rawInput.trim()
+  const boundary = rest.search(/\s/u)
+  return boundary < 0 ? '' : rest.slice(boundary).trim()
 }
