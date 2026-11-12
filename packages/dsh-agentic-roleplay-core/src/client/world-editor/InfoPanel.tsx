@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Button } from '../ui/Button.tsx'
-import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
+import type { AlternateOpeningText, WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
+import type { OpeningPart } from '../../shared/opening.ts'
+import { OpeningEditor } from './OpeningEditor.tsx'
 import type { Translate } from './WorldEditor.tsx'
 import type { PresetSummary } from '../../shared/presets.ts'
 import type { LorebookSummary } from '../../shared/lorebooks.ts'
@@ -9,25 +11,27 @@ import { listPresets } from '../presets-api.ts'
 import { SamplingFields, samplingOfTexts, samplingTexts, type SamplingTexts } from '../widgets/sampling-fields/SamplingFields.tsx'
 import { draftOfQuestions, questionsOfDraft, type QuestionDraft } from './questions-draft.ts'
 import { QuestionsEditor } from './QuestionsEditor.tsx'
-import { loadInfo, loadPlayable, saveInfo } from './world-files-api.ts'
+import { loadCast, loadInfo, saveInfo } from './world-files-api.ts'
 import css from './CharactersPanel.module.css'
 
-interface Draft { name: string; description: string; tags: string; rules: string; opening: string; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; language: string; autonomy: boolean; preset: string; lorebooks: string[]; sampling: SamplingTexts; alternates: { title: string; text: string; character?: string }[]; questions: QuestionDraft[] }
+interface Draft { name: string; description: string; tags: string; rules: string; opening: string; openingParts?: OpeningPart[]; authorName: string; authorUrl: string; timeZone: string; startingTime: string; version: string; language: string; autonomy: boolean; preset: string; lorebooks: string[]; sampling: SamplingTexts; alternates: AlternateOpeningText[]; questions: QuestionDraft[] }
 
-const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, language: info.language, autonomy: info.autonomy, preset: info.preset, lorebooks: info.lorebooks, sampling: samplingTexts(info.sampling), alternates: info.alternateOpenings, questions: draftOfQuestions(info.startQuestions) })
+const draftOf = (info: WorldInfo): Draft => ({ name: info.name, description: info.description, tags: info.tags.join(', '), rules: info.rules.join('\n'), opening: info.opening, ...(info.openingParts === undefined ? {} : { openingParts: info.openingParts }), authorName: info.authorName, authorUrl: info.authorUrl, timeZone: info.timeZone, startingTime: info.startingTime, version: info.version, language: info.language, autonomy: info.autonomy, preset: info.preset, lorebooks: info.lorebooks, sampling: samplingTexts(info.sampling), alternates: info.alternateOpenings, questions: draftOfQuestions(info.startQuestions) })
 const lines = (value: string): string[] => value.split('\n').map(line => line.trim()).filter(line => line !== '')
 const words = (value: string): string[] => value.split(/[,，]/).map(tag => tag.trim()).filter(tag => tag !== '')
 
 /** The edit that turns the saved fields into the drafted ones: only what changed. */
 function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   const edit: Record<string, unknown> = {}
-  for (const key of ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'language', 'preset'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
+  for (const key of ['name', 'description', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'language', 'preset'] as const) if (draft[key].trim() !== saved[key].trim()) edit[key] = draft[key]
+  if (draft.openingParts !== undefined) { if (JSON.stringify(draft.openingParts) !== JSON.stringify(saved.openingParts)) edit['openingParts'] = draft.openingParts }
+  else if (saved.openingParts !== undefined || draft.opening.trim() !== saved.opening.trim()) edit['opening'] = draft.opening
   if (draft.autonomy !== saved.autonomy) edit['autonomy'] = draft.autonomy
   if (JSON.stringify(draft.lorebooks) !== JSON.stringify(saved.lorebooks)) edit['lorebooks'] = draft.lorebooks
   if (JSON.stringify(samplingOfTexts(draft.sampling)) !== JSON.stringify(samplingOfTexts(saved.sampling))) edit['sampling'] = samplingOfTexts(draft.sampling)
   if (JSON.stringify(words(draft.tags)) !== JSON.stringify(words(saved.tags))) edit['tags'] = words(draft.tags)
   if (JSON.stringify(lines(draft.rules)) !== JSON.stringify(lines(saved.rules))) edit['rules'] = lines(draft.rules)
-  const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), text: entry.text.trim(), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => entry.text !== '')
+  const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), ...(entry.parts === undefined ? { text: entry.text.trim() } : { parts: entry.parts }), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => ('text' in entry ? entry.text !== '' : entry.parts.some(part => part.text.trim() !== '')))
   if (JSON.stringify(cleaned(draft.alternates)) !== JSON.stringify(cleaned(saved.alternates))) edit['alternateOpenings'] = cleaned(draft.alternates)
   if (JSON.stringify(questionsOfDraft(draft.questions)) !== JSON.stringify(questionsOfDraft(saved.questions))) edit['startQuestions'] = questionsOfDraft(draft.questions)
   return edit as WorldInfoEdit
@@ -40,6 +44,7 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
   const [draft, setDraft] = useState<Draft>()
   const [status, setStatus] = useState<{ state: 'idle' | 'saving' | 'saved' | 'failed'; message?: string }>({ state: 'idle' })
   const [playable, setPlayable] = useState<{ id: string; name: string }[]>([])
+  const [cast, setCast] = useState<{ id: string; name: string }[]>([])
   const [presets, setPresets] = useState<PresetSummary[]>([])
   const [books, setBooks] = useState<LorebookSummary[]>([])
   useEffect(() => {
@@ -50,7 +55,7 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
   }, [])
   useEffect(() => {
     const abort = new AbortController()
-    loadPlayable(worldId, abort.signal).then(setPlayable, () => undefined)
+    loadCast(worldId, abort.signal).then((people) => { setCast(people.map(({ id, name }) => ({ id, name }))); setPlayable(people.filter(person => person.playable).map(({ id, name }) => ({ id, name }))) }, () => undefined)
     return () => { abort.abort() }
   }, [worldId])
 
@@ -65,13 +70,13 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
   const edit = changes(saved, draft)
   const dirty = Object.keys(edit).length > 0
   const setBooksDraft = (lorebooks: string[]): void => { setDraft({ ...draft, lorebooks }); setStatus({ state: 'idle' }) }
-  const set = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks' | 'sampling' | 'questions' | 'autonomy'>, value: string): void => { setDraft({ ...draft, [key]: value }); setStatus({ state: 'idle' }) }
+  const set = (key: Exclude<keyof Draft, 'openingParts' | 'alternates' | 'lorebooks' | 'sampling' | 'questions' | 'autonomy'>, value: string): void => { setDraft({ ...draft, [key]: value }); setStatus({ state: 'idle' }) }
   const setAlternates = (alternates: Draft['alternates']): void => { setDraft({ ...draft, alternates }); setStatus({ state: 'idle' }) }
   const save = (): void => {
     setStatus({ state: 'saving' })
     saveInfo(worldId, edit, new AbortController().signal).then((value) => { setInfo(value); setSaved(draftOf(value)); setDraft(draftOf(value)); setStatus({ state: 'saved' }); onSaved() }, (failure: unknown) => { setStatus({ state: 'failed', message: failure instanceof Error ? failure.message : String(failure) }) })
   }
-  const field = (key: Exclude<keyof Draft, 'alternates' | 'lorebooks' | 'sampling' | 'questions' | 'autonomy'>, label: Parameters<Translate>[0], help?: Parameters<Translate>[0], options: { rows?: number; wide?: boolean; placeholder?: string; disabled?: boolean } = {}) => (
+  const field = (key: Exclude<keyof Draft, 'openingParts' | 'alternates' | 'lorebooks' | 'sampling' | 'questions' | 'autonomy'>, label: Parameters<Translate>[0], help?: Parameters<Translate>[0], options: { rows?: number; wide?: boolean; placeholder?: string; disabled?: boolean } = {}) => (
     <label className={`${css.field} ${options.wide === true || options.rows !== undefined ? css.wide : ''}`}>
       <span className={css.label}>{t(label)}</span>
       {options.rows === undefined
@@ -98,7 +103,11 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
               {field('tags', 'infoTags', 'infoTagsHelp')}
               {field('description', 'description', undefined, { rows: 5 })}
               {field('rules', 'infoRules', 'infoRulesHelp', { rows: 5 })}
-              {field('opening', 'infoOpening', info.openingParts ? 'infoOpeningParts' : 'infoOpeningHelp', { rows: 8, disabled: info.openingParts })}
+              <div className={`${css.field} ${css.wide}`}>
+                <span className={css.label}>{t('infoOpening')}</span>
+                <OpeningEditor t={t} characters={cast} rows={8} value={{ text: draft.opening, ...(draft.openingParts === undefined ? {} : { parts: draft.openingParts }) }} onChange={(value) => { const { openingParts: _dropped, ...rest } = draft; setDraft({ ...rest, opening: value.text, ...(value.parts === undefined ? {} : { openingParts: value.parts }) }); setStatus({ state: 'idle' }) }} />
+                <span className={css.help}>{t('infoOpeningHelp')}</span>
+              </div>
             </div>
           </section>
           <section className={css.section}>
@@ -110,10 +119,10 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
                   <span className={css.label}>{t('infoAlternateTitle')}</span>
                   <input className={css.nameInput} value={entry.title} onChange={(event) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { ...item, title: event.target.value } : item))) }} />
                 </label>
-                <label className={`${css.field} ${css.wide}`}>
+                <div className={`${css.field} ${css.wide}`}>
                   <span className={css.label}>{t('infoAlternateText')}</span>
-                  <textarea className={css.area} rows={5} value={entry.text} onChange={(event) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { ...item, text: event.target.value } : item))) }} />
-                </label>
+                  <OpeningEditor t={t} characters={cast} rows={5} value={{ text: entry.text, ...(entry.parts === undefined ? {} : { parts: entry.parts }) }} onChange={(value) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { title: item.title, text: value.text, ...(value.parts === undefined ? {} : { parts: value.parts }), ...(item.character === undefined ? {} : { character: item.character }) } : item))) }} />
+                </div>
                 <label className={css.field}>
                   <span className={css.label}>{t('infoAlternateFor')}</span>
                   <select className={css.select} value={entry.character ?? ''} onChange={(event) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { ...item, character: event.target.value } : item))) }}>

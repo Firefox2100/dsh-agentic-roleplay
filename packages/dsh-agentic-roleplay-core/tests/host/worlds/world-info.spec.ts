@@ -71,7 +71,7 @@ describe('the world\'s own fields', () => {
 
   it('are read, and changed without touching anything else in the file', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour', description: 'Old.', metadata: { tags: ['a'], extra: 1 }, cover_media_id: 'cover', opening_message: 'It begins.', unknown: { keep: true } })
-    expect(await readWorldInfo(directory)).toMatchObject({ name: 'Harbour', tags: ['a'], opening: 'It begins.', openingParts: false, rules: [] })
+    expect(await readWorldInfo(directory)).toMatchObject({ name: 'Harbour', tags: ['a'], opening: 'It begins.', rules: [] })
     const info = await editWorldInfo(directory, { description: 'New.', tags: ['b', 'c'], rules: ['There is no magic.'], authorName: 'Someone', authorUrl: 'https://example.test', timeZone: 'Europe/London', startingTime: '1912-04-14T23:40:00', opening: '' })
     expect(info).toMatchObject({ description: 'New.', tags: ['b', 'c'], rules: ['There is no magic.'], authorName: 'Someone', opening: '' })
     const written = JSON.parse(await readFile(join(directory, 'world.json'), 'utf8')) as Record<string, unknown>
@@ -99,11 +99,31 @@ describe('the world\'s own fields', () => {
     await expect(editWorldInfo(await world({ id: 'w2', name: 'Bay', version: 'y'.repeat(41) }), { description: 'x' })).rejects.toThrow(/version/)
   })
 
-  it('keep an opening that has lines spoken by characters', async () => {
+  it('read an opening with lines spoken by characters, and change it as parts or as plain text', async () => {
     const directory = await world({ id: 'w1', name: 'Harbour', opening_message: [{ type: 'narration', text: 'Fog.' }, { type: 'utterance', character: 'mira', text: 'Hello.' }] })
-    expect((await readWorldInfo(directory)).openingParts).toBe(true)
-    await expect(editWorldInfo(directory, { opening: 'Replaced.' })).rejects.toThrow(/lines spoken/)
-    expect(await editWorldInfo(directory, { description: 'Fine.' })).toMatchObject({ description: 'Fine.', openingParts: true })
+    const info = await readWorldInfo(directory)
+    expect(info.openingParts).toEqual([{ type: 'narration', text: 'Fog.' }, { type: 'utterance', character: 'mira', text: 'Hello.' }])
+    expect(info.opening).toBe('Fog.\n\nHello.')
+    expect(await editWorldInfo(directory, { description: 'Fine.' })).toMatchObject({ description: 'Fine.', openingParts: info.openingParts })
+    const changed = await editWorldInfo(directory, { openingParts: [{ type: 'utterance', character: 'mira', text: 'Go.' }, { type: 'narration', text: 'She leaves.' }] })
+    expect(changed.openingParts).toHaveLength(2)
+    const plain = await editWorldInfo(directory, { opening: 'Fog and a bell.' })
+    expect(plain.openingParts).toBeUndefined()
+    expect(JSON.parse(await readFile(join(directory, 'world.json'), 'utf8')).opening_message).toBe('Fog and a bell.')
+  })
+
+  it('keep alternate openings as parts or as plain text, each as it was given', async () => {
+    const edit = parseWorldInfoEdit({ alternateOpenings: [{ title: 'Quarrel', parts: [{ type: 'utterance', character: 'mira', text: 'Out of my way.' }, { type: 'narration', text: 'She shoves past.' }] }, { title: 'Dawn', text: 'Gulls cry.' }] })
+    const directory = await world({ id: 'w1', name: 'Harbour' })
+    const info = await editWorldInfo(directory, edit)
+    expect(info.alternateOpenings[0]).toMatchObject({ title: 'Quarrel', text: 'Out of my way.\n\nShe shoves past.', parts: [{ type: 'utterance' }, { type: 'narration' }] })
+    expect(info.alternateOpenings[1]).toEqual({ title: 'Dawn', text: 'Gulls cry.' })
+    const file = JSON.parse(await readFile(join(directory, 'world.json'), 'utf8')).alternate_openings
+    expect(file[0]).not.toHaveProperty('text')
+    expect(file[1]).not.toHaveProperty('parts')
+    expect(() => parseWorldInfoEdit({ alternateOpenings: [{ text: 'a', parts: [] }] })).toThrow(/not both/)
+    expect(() => parseWorldInfoEdit({ opening: 'a', openingParts: [] })).toThrow(/not both/)
+    expect(() => parseWorldInfoEdit({ openingParts: [{ type: 'utterance', text: 'x' }] })).toThrow(/character is needed/)
   })
 
   it('ask start questions that are read, written in the file\'s own spelling and removed again', async () => {
@@ -146,7 +166,7 @@ describe('the world\'s own fields', () => {
 
   it('come from the browser checked', () => {
     expect(parseWorldInfoEdit({ alternateOpenings: [{ title: ' T ', text: ' x ' }, { text: '  ' }] })).toEqual({ alternateOpenings: [{ title: 'T', text: 'x' }] })
-    expect(() => parseWorldInfoEdit({ alternateOpenings: [{ title: 1, text: 'x' }] })).toThrow(/list of/)
+    expect(() => parseWorldInfoEdit({ alternateOpenings: [{ title: 1, text: 'x' }] })).toThrow(/must be text/)
     expect(() => parseWorldInfoEdit({ alternateOpenings: [{ text: 'x'.repeat(20_001) }] })).toThrow(/longer than/)
     expect(parseWorldInfoEdit({ name: ' X ', tags: [' a ', ''] })).toEqual({ name: 'X', tags: ['a'] })
     expect(() => parseWorldInfoEdit({ name: '', nope: 1, rules: 'x' })).toThrow(/needs a name/)

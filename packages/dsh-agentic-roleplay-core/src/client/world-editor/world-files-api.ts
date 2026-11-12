@@ -43,12 +43,12 @@ export const saveVariables = async (world: string, variables: readonly VariableD
 export const loadWorldPacks = async (world: string, signal: AbortSignal): Promise<WorldPackDetail[]> => await read(await fetch(`${API_PREFIX}/worlds/interface?${query(world)}`, init('GET', signal)))
 export const loadPackPreview = async (world: string, pack: string, signal: AbortSignal): Promise<PackPreview> => await read(await fetch(`${API_PREFIX}/worlds/interface/preview?${query(world)}&pack=${encodeURIComponent(pack)}`, init('GET', signal)))
 
-/** The playable characters of an authored world, for choosing whom an opening is for. */
-export async function loadPlayable(worldId: string, signal: AbortSignal): Promise<{ id: string; name: string }[]> {
+/** The characters of an authored world, for choosing who speaks a line of an opening and whom an alternate opening is for. */
+export async function loadCast(worldId: string, signal: AbortSignal): Promise<{ id: string; name: string; playable: boolean }[]> {
   const response = await fetch(`${API_PREFIX}/worlds/characters?id=${encodeURIComponent(worldId)}`, { credentials: 'same-origin', signal })
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
   const { characters } = await response.json() as { characters: { id: string; name: string; role: string }[] }
-  return characters.filter(character => character.role === 'playable').map(({ id, name }) => ({ id, name }))
+  return characters.map(({ id, name, role }) => ({ id, name, playable: role === 'playable' }))
 }
 
 const packQuery = (world: string, pack: string, path?: string): string => `${query(world)}&pack=${encodeURIComponent(pack)}${path === undefined ? '' : `&path=${encodeURIComponent(path)}`}`

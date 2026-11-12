@@ -78,7 +78,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   const openingIndex = request.opening ?? answers.opening
   const startingTimeAsked = request.startingTime?.trim() || answers.startingTime
   if (openingIndex !== undefined && (!Number.isInteger(openingIndex) || openingIndex < 0 || openingIndex >= (world.alternateOpenings?.length ?? 0))) throw new InvalidStartError(`the world has no alternate opening ${String(openingIndex)}`)
-  const opening = openingIndex === undefined ? openingOf(world, authored) : [{ type: 'narration' as const, text: world.alternateOpenings![openingIndex]!.text }]
+  const opening = openingIndex === undefined ? openingOf(world, authored) : speakingOf(world, world.alternateOpenings![openingIndex]!.parts ?? [{ type: 'narration' as const, text: world.alternateOpenings![openingIndex]!.text }], authored, `alternate_openings[${openingIndex}]`)
   const keys = [...new Set(request.avatars ?? [])]
   if (keys.length > 0 && deps.avatars === undefined) throw new InvalidStartError('player avatars are not available')
   const avatars = keys.length === 0 ? undefined : await deps.avatars!()
@@ -90,6 +90,8 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
   if (player === undefined) throw new InvalidStartError(request.playerAvatar === undefined ? `"${world.summary.name}" has no character "${request.playerCharacterId}"` : `the avatar "${request.playerAvatar}" is not among the avatars brought along`)
   if (player.role !== 'playable') throw new InvalidStartError(`${player.name} cannot be played`)
   const openingProblems = (world.alternateOpenings ?? []).flatMap((entry, index) => (entry.character === undefined || authored.some(character => character.id === entry.character && character.role === 'playable') ? [] : [{ path: `alternate_openings[${index}].character`, message: `"${entry.character}" is not a playable character of this world` }]))
+  const speakerProblems = (world.alternateOpenings ?? []).flatMap((entry, index) => (entry.parts ?? []).flatMap(part => (part.type === 'utterance' && !authored.some(character => character.id === part.character) ? [{ path: `alternate_openings[${index}].parts`, message: `"${part.character}" is not a character of this world` }] : [])))
+  openingProblems.push(...speakerProblems)
   if (openingProblems.length > 0) throw new InvalidWorldError(`the alternate openings of "${world.summary.name}" have ${openingProblems.length} problem(s)`, openingProblems)
   const forCharacter = openingIndex === undefined ? undefined : world.alternateOpenings![openingIndex]!.character
   if (forCharacter !== undefined && forCharacter !== player.id) throw new InvalidStartError(`this opening is for ${authored.find(character => character.id === forCharacter)?.name ?? forCharacter}, not for ${player.name}`)
@@ -207,16 +209,21 @@ function presetFor(deps: StartSessionDeps, asked: string | undefined, suggested:
   }
 }
 
-/** The opening of the world with each speaker's name, or the reason it cannot be used. */
-function openingOf(world: { directory: string; summary: { name: string }; opening?: readonly OpeningSegment[] }, characters: readonly { id: string; name: string }[]): NarrationSegment[] | undefined {
-  if (world.opening === undefined) return [{ type: 'narration', text: DEFAULT_OPENING }]
+/** The parts of an opening with each speaker's name, or the reason it cannot be used: a speaker the world does not have. */
+function speakingOf(world: { directory: string; summary: { name: string } }, parts: readonly OpeningSegment[], characters: readonly { id: string; name: string }[], where: string): NarrationSegment[] {
   const problems: WorldProblem[] = []
-  const segments = world.opening.map((segment): NarrationSegment => {
+  const segments = parts.map((segment): NarrationSegment => {
     if (segment.type === 'narration') return segment
     const speaker = characters.find(character => character.id === segment.character)
-    if (speaker === undefined) problems.push({ path: join(world.directory, WORLD_FILE_NAME), message: `opening_message: "${segment.character}" is not a character of this world` })
+    if (speaker === undefined) problems.push({ path: join(world.directory, WORLD_FILE_NAME), message: `${where}: "${segment.character}" is not a character of this world` })
     return { type: 'utterance', character: segment.character, name: speaker?.name ?? segment.character, text: segment.text }
   })
   if (problems.length > 0) throw new InvalidWorldError(`the opening of "${world.summary.name}" has ${problems.length} problem(s)`, problems)
   return segments
+}
+
+/** The opening of the world with each speaker's name, or the reason it cannot be used. */
+function openingOf(world: { directory: string; summary: { name: string }; opening?: readonly OpeningSegment[] }, characters: readonly { id: string; name: string }[]): NarrationSegment[] | undefined {
+  if (world.opening === undefined) return [{ type: 'narration', text: DEFAULT_OPENING }]
+  return speakingOf(world, world.opening, characters, 'opening_message')
 }

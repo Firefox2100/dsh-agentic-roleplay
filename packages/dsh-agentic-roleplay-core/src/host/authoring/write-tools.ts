@@ -1,8 +1,10 @@
+import { lettersOf } from '../import/opening-parts.ts'
+import { checkOpeningSpeakers } from './opening-speakers.ts'
 import { defineTool, type PreToolDecision, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import { InvalidEditProblems, parseRelationEdit } from '../../shared/world-state.ts'
 import { editWorldPlots, editWorldRelation, readWorldEditor } from '../worlds/world-editor.ts'
-import { editWorldInfo } from '../worlds/world-info.ts'
+import { editWorldInfo, readWorldInfo } from '../worlds/world-info.ts'
 import { parseWorldInfoEdit, type WorldInfo } from '../../shared/world-info.ts'
 import { parsePlotsFile } from '../plots/load.ts'
 import { deleteTriggerDocument, writeTriggerDocument } from '../triggers/files.ts'
@@ -22,9 +24,9 @@ const kindParameter = { type: 'string' as const, required: true as const, enum: 
 const keyParameter = { type: 'string' as const, required: true as const, description: 'Stable entity key.' }
 
 /** The fields of `world.json` the assistant changes: what the world says about itself. The name, the preset, the lorebooks, the sampling and the tool switches are the person's choices and stay theirs. */
-export const WORLD_INFO_FIELDS = ['description', 'tags', 'rules', 'opening', 'alternateOpenings', 'startQuestions', 'startingTime', 'timeZone', 'version', 'authorName', 'authorUrl'] as const
+export const WORLD_INFO_FIELDS = ['description', 'tags', 'rules', 'opening', 'openingParts', 'alternateOpenings', 'startQuestions', 'startingTime', 'timeZone', 'version', 'authorName', 'authorUrl'] as const
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', 'write_world_file', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
+export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'reshape_opening', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', 'write_world_file', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -44,6 +46,7 @@ function plotDocument(value: unknown) {
 /** Checks a write the way its tool will, and writes nothing: a change the tool would refuse is not put to the person. @throws {InvalidEditProblems} */
 export async function validateMutation(reader: AuthoredWorldReader, exec: ToolExecution): Promise<void> {
   const args = exec.arguments as Record<string, unknown>
+  if (exec.name === 'edit_world_info') { const { record } = await reader.read(exec); await checkOpeningSpeakers(record.directory, parseWorldInfoEdit(args['changes'])); return }
   if (exec.name !== 'create_world_element' && exec.name !== 'replace_world_element' && exec.name !== 'write_world_trigger' && exec.name !== 'write_world_file') return
   const { record } = await reader.read(exec)
   if (exec.name === 'write_world_file') { await writeWorldFile({ id: record.summary.id, directory: record.directory }, fileKind(args['kind']), args['document'], { dryRun: true }); return }
@@ -52,6 +55,14 @@ export async function validateMutation(reader: AuthoredWorldReader, exec: ToolEx
   if (exec.name === 'write_world_trigger') { await writeTriggerDocument(record.directory, await loadWorldParts(record.directory), key, args['document'], { dryRun: true }); return }
   const write = exec.name === 'create_world_element' ? createAuthoredEntity : replaceAuthoredEntity
   await write(world, args['kind'] as AuthoredEntityKind, key, args['document'], { refuseUnread: true, dryRun: true })
+}
+
+/** Which openings (the world's own, or an alternate by position) hold other words than before, ignoring quotation marks and spacing: a change of form alone must not change them. */
+function openingWordsChanged(before: WorldInfo, after: WorldInfo): string[] {
+  const changed: string[] = []
+  if (lettersOf(before.opening) !== lettersOf(after.opening)) changed.push('opening')
+  after.alternateOpenings.forEach((entry, index) => { const was = before.alternateOpenings[index]; if (was !== undefined && lettersOf(was.text) !== lettersOf(entry.text)) changed.push(`alternate:${index}`) })
+  return changed
 }
 
 /** The most problems a write reports back; `check_world` lists the rest. */
@@ -117,7 +128,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
     }),
     defineTool({
       name: 'edit_world_info',
-      description: `Change what the world says about itself in world.json: ${WORLD_INFO_FIELDS.join(', ')}. Give only the fields to change, as {"description": "...", "tags": ["..."], "opening": "...", "alternateOpenings": [{"title": "...", "text": "..."}]}: a list replaces the whole list, so read get_world_info first. The description is a short summary (a few sentences). An opening with lines spoken by characters cannot be edited as text. startQuestions is a list of {"id", "text", "options": [{"id", "label", "effect": {...}}]} with two to eight options each; an effect may hold rules (a list of text), opening (the position of an alternate opening), startingTime, clockMode (simulated or real), tools and plots, and {} changes nothing. The name, preset, lorebooks, sampling and tool switches are the person's and cannot be changed here. Requires user approval.`,
+      description: `Change what the world says about itself in world.json: ${WORLD_INFO_FIELDS.join(', ')}. Give only the fields to change, as {"description": "...", "tags": ["..."], "opening": "...", "alternateOpenings": [{"title": "...", "text": "..."}]}: a list replaces the whole list, so read get_world_info first. The description is a short summary (a few sentences). An opening is either plain text, which is narration only (opening, and text in an alternate opening), or an ordered list of parts, [{"type": "narration", "text": "..."}, {"type": "utterance", "character": "<character id>", "text": "..."}] (openingParts, and parts in an alternate opening); give one form, not both. Use parts whenever a character speaks, with the speaker's id from list_characters, and plain text only for pure narration; the words must stay exactly as they are when you only change the form, and a speaker you are not sure of stays narration. To only change the form of an opening, or to split it, use reshape_opening: it keeps every word, while retyping the opening here can lose some. Giving opening replaces parts with plain text; giving openingParts replaces plain text with parts. startQuestions is a list of {"id", "text", "options": [{"id", "label", "effect": {...}}]} with two to eight options each; an effect may hold rules (a list of text), opening (the position of an alternate opening), startingTime, clockMode (simulated or real), tools and plots, and {} changes nothing. The name, preset, lorebooks, sampling and tool switches are the person's and cannot be changed here. Requires user approval.`,
       parameters: { changes: { type: 'json', required: true, description: 'The fields to change, with their new values.' } },
       output: jsonOutput,
       async execute(args, exec) {
@@ -125,9 +136,12 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
         const edit = parseWorldInfoEdit(args.changes)
         const refused = Object.keys(edit).filter(key => !(WORLD_INFO_FIELDS as readonly string[]).includes(key))
         if (refused.length > 0) throw new InvalidEditProblems([`${refused.join(', ')} cannot be changed here: ${WORLD_INFO_FIELDS.join(', ')} can`])
+        await checkOpeningSpeakers(record.directory, edit)
+        const before = await readWorldInfo(record.directory)
         const info = await editWorldInfo(record.directory, edit)
         await reader.refresh()
-        return { action: 'edited', kind: 'world info', changed: Object.keys(edit), info } as never
+        const reworded = openingWordsChanged(before, info)
+        return { action: 'edited', kind: 'world info', changed: Object.keys(edit), info, ...(reworded.length === 0 ? {} : { opening_words_changed: reworded, note: 'The words of these openings are not what they were. If you only meant to change their form (plain text or parts), put the original words back or use reshape_opening, which keeps every word.' }) } as never
       },
     }),
     defineTool({
@@ -239,6 +253,10 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
       reason: `${remove ? 'delete' : 'write'} authored world ${target}`,
       displayReason: withDetail({ en: `${remove ? 'Delete' : 'Write'} ${target} in the world files`, zh: `${remove ? '删除' : '写入'}世界文件中的${target}` }, remove ? undefined : sizeOf(args['text'])),
     }
+  }
+  if (exec.name === 'reshape_opening') {
+    const target = String(args['target'])
+    return { kind: 'ask', reason: `change the form of the authored world's ${target}`, displayReason: { en: `Change the opening “${target}” to ${String(args['form']) === 'parts' ? 'parts (narration and spoken lines)' : 'plain text'}? Its words stay the same.`, zh: `把开场“${target}”改为${String(args['form']) === 'parts' ? '分段形式（叙述与台词）' : '纯文本'}？文字内容不变。` } }
   }
   if (exec.name === 'edit_world_info') {
     const detail = await infoDetail(args['changes'], await options.info?.(exec.agent.session.id).catch(() => undefined))

@@ -1,16 +1,21 @@
 import { parseSampling, type StorySampling } from './sampling.ts'
+import { MAX_OPENING_PARTS, MAX_OPENING_TEXT, parseOpeningParts, partsText, type OpeningPart } from './opening.ts'
 import { parseSwitchboard, type Switchboard } from './settings.ts'
 import { parseStartQuestionsEdit, type StartQuestion } from './start-questions.ts'
 import { InvalidEditProblems } from './world-state.ts'
 
 /** The most alternate openings a world may offer, and the longest one. */
 export const MAX_ALTERNATE_OPENINGS = 30
-export const MAX_OPENING_CHARS = 20_000
+export const MAX_OPENING_CHARS = MAX_OPENING_TEXT
+export { MAX_OPENING_PARTS }
 
 /** Another way the story can begin, which the player may choose when starting a session. */
 export interface AlternateOpeningText {
   title: string
+  /** The words of the opening: all of it when it is plain text, its parts' texts together when it has parts. */
   text: string
+  /** The opening as parts (narration and lines of characters), when it is written so; absent for plain narration. */
+  parts?: OpeningPart[]
   /** The id of the playable character it is for; empty or absent for any. */
   character?: string
 }
@@ -24,8 +29,8 @@ export interface WorldInfo {
   rules: string[]
   /** The opening message as plain text; empty when the world has none. */
   opening: string
-  /** The opening has several parts (narration and lines of characters): it can be read but not edited as text. */
-  openingParts: boolean
+  /** The opening as parts (narration and lines of characters), when the file gives it so; absent when it is plain text. `opening` then holds their words together. */
+  openingParts?: OpeningPart[]
   authorName: string
   authorUrl: string
   /** An IANA time zone name, or empty. */
@@ -51,7 +56,7 @@ export interface WorldInfo {
   autonomy: boolean
 }
 
-export type WorldInfoEdit = Partial<Omit<WorldInfo, 'openingParts'>>
+export type WorldInfoEdit = Partial<WorldInfo>
 
 const TEXT_FIELDS = ['name', 'description', 'opening', 'authorName', 'authorUrl', 'timeZone', 'startingTime', 'version', 'language', 'preset'] as const
 const LIST_FIELDS = ['tags', 'rules', 'lorebooks'] as const
@@ -65,7 +70,7 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
   if (input === undefined) throw new InvalidEditProblems(['the changes must be an object'])
   const edit: Record<string, unknown> = {}
   for (const key of Object.keys(input)) {
-    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings' && key !== 'startQuestions' && key !== 'tools' && key !== 'sampling' && key !== 'autonomy') problems.push(`there is no field "${key}"`)
+    if (!(TEXT_FIELDS as readonly string[]).includes(key) && !(LIST_FIELDS as readonly string[]).includes(key) && key !== 'alternateOpenings' && key !== 'openingParts' && key !== 'startQuestions' && key !== 'tools' && key !== 'sampling' && key !== 'autonomy') problems.push(`there is no field "${key}"`)
   }
   for (const key of TEXT_FIELDS) {
     if (input[key] === undefined) continue
@@ -77,12 +82,34 @@ export function parseWorldInfoEdit(value: unknown): WorldInfoEdit {
     if (Array.isArray(input[key]) && input[key].every(entry => typeof entry === 'string')) edit[key] = (input[key] as string[]).map(entry => entry.trim()).filter(entry => entry !== '')
     else problems.push(`${key} must be a list of text`)
   }
+  if (input['openingParts'] !== undefined) {
+    if (input['opening'] !== undefined) problems.push('give the opening as text or as parts, not both')
+    const parts = parseOpeningParts(input['openingParts'], 'openingParts', problems)
+    if (parts !== undefined) edit['openingParts'] = parts
+  }
   if (input['alternateOpenings'] !== undefined) {
     const list = input['alternateOpenings']
     const entries = Array.isArray(list) ? list.map(entry => (typeof entry === 'object' && entry !== null ? entry as Record<string, unknown> : undefined)) : undefined
-    if (entries === undefined || entries.some(entry => entry === undefined || typeof entry['text'] !== 'string' || (entry['title'] !== undefined && typeof entry['title'] !== 'string') || (entry['character'] !== undefined && typeof entry['character'] !== 'string'))) problems.push('alternateOpenings must be a list of { title, text, character? }')
+    const kept: AlternateOpeningText[] = []
+    if (entries === undefined) problems.push('alternateOpenings must be a list of { title, text or parts, character? }')
     else {
-      const kept = entries.map(entry => ({ title: String(entry!['title'] ?? '').trim(), text: String(entry!['text']).trim(), ...(String(entry!['character'] ?? '').trim() === '' ? {} : { character: String(entry!['character']).trim() }) })).filter(entry => entry.text !== '')
+      for (const [index, entry] of entries.entries()) {
+        const at = `alternateOpenings[${index}]`
+        if (entry === undefined) { problems.push(`${at} must be an object`); continue }
+        if ((entry['title'] !== undefined && typeof entry['title'] !== 'string') || (entry['character'] !== undefined && typeof entry['character'] !== 'string')) { problems.push(`${at}: title and character must be text`); continue }
+        const title = String(entry['title'] ?? '').trim()
+        const character = String(entry['character'] ?? '').trim()
+        const named = character === '' ? {} : { character }
+        if (entry['parts'] !== undefined) {
+          if (entry['text'] !== undefined) problems.push(`${at}: give the opening as text or as parts, not both`)
+          const parts = parseOpeningParts(entry['parts'], `${at}.parts`, problems)
+          if (parts !== undefined && parts.length > 0) kept.push({ title, text: partsText(parts), parts, ...named })
+          continue
+        }
+        if (typeof entry['text'] !== 'string') { problems.push(`${at}.text must be text`); continue }
+        const text = entry['text'].trim()
+        if (text !== '') kept.push({ title, text, ...named })
+      }
       if (kept.length > MAX_ALTERNATE_OPENINGS) problems.push(`there are more than ${MAX_ALTERNATE_OPENINGS} alternate openings`)
       if (kept.some(entry => entry.text.length > MAX_OPENING_CHARS)) problems.push(`an alternate opening is longer than ${MAX_OPENING_CHARS} characters`)
       edit['alternateOpenings'] = kept

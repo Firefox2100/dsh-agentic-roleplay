@@ -31,6 +31,9 @@ const outcome = (id: AuthoringId, language: (typeof LANGUAGES)[number]): [Record
     case 'question': return [{}, { start_questions: [{ id: 'when', text: 'When?', options: [{ id: 'a', label: 'Morning', effect: {} }, { id: 'b', label: 'Evening', effect: {} }] }] }]
     case 'holiday': return [{ 'calendar.json': { hemisphere: 'north', holidays: [{ id: 'harvest', name: 'Harvest', on: ['09-21'] }] } }, {}]
     case 'opening': return [{}, { opening_message: p('A heron stands by the weir.', '一只苍鹭站在堰边。') }]
+    case 'opening-split': return [{}, { opening_message: [{ type: 'narration', text: p('Hale the Miller wipes his hands.', '老葛擦了擦手。') }, { type: 'utterance', character: 'miller', text: p('You are late,', '你来晚了，') }, { type: 'narration', text: p('he says.', '他说，') }, { type: 'utterance', character: 'miller', text: p('The flour will not wait.', '面粉可不等人。') }] }]
+    case 'opening-join': return [{}, { opening_message: p('Water turns the wheel.\n\nFlour dust hangs in the light.', '流水推着水轮转动。\n\n面粉的细尘悬在光里。') }]
+    case 'opening-speaker': return [{}, { opening_message: [{ type: 'narration', text: p('Hale the Miller wipes his hands.', '老葛擦了擦手。') }, { type: 'utterance', character: 'miller', text: p('You are late.', '你来晚了。') }] }]
     case 'overreach': return [{}, {}]
     case 'check': return [{ 'characters/miller/character.json': { name: p('Hale the Miller', '老葛'), role: 'npc', summary: p('Runs the mill.', '经营磨坊。'), start: { location: 'mill' } } }, {}]
   }

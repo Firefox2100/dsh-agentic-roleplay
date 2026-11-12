@@ -15,6 +15,7 @@ import { importHooks, importTools } from './host/import/tools.ts'
 import { cardTools } from './host/import/card-tools.ts'
 import { updateHooks, updateTools } from './host/import/update-tools.ts'
 import { presetTools } from './host/import/preset-tools.ts'
+import { openingTools } from './host/import/opening-tools.ts'
 import { isReviewing } from './host/import/run-import.ts'
 import { checkTools } from './host/checks/tools.ts'
 import { checkCommands } from './host/checks/commands.ts'
@@ -49,6 +50,7 @@ export function apply(ctx: Context): void {
   for (const tool of cardTools(ctx.roleplayWorlds)) ctx.tools.register(tool)
   for (const tool of updateTools(ctx.roleplayWorlds)) ctx.tools.register(tool)
   for (const tool of presetTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
+  for (const tool of openingTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of translateTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of checkTools(reader, { settings: () => ctx.roleplayImport.settings, prompting })) ctx.tools.register(tool)
   importHooks(ctx, ctx.roleplayWorlds, prompting, ctx.roleplayImport.state)

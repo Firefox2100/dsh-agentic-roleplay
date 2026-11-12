@@ -93,7 +93,7 @@ describe('what a newer card changes about the world itself', () => {
   it('suggests the greetings as the import writes them, without the card\'s markup', () => {
     const found = worldFieldChanges({ card: base, choices: first }, { card: { ...base, firstMessage: '*Gulls* cry.', alternateGreetings: ['*Dusk* falls.'] }, choices: first })
     expect(found.find(change => change.field === 'opening')?.suggested).toBe('Gulls cry.')
-    expect(found.find(change => change.field === 'alternateOpenings')?.suggested).toEqual([{ title: 'Alternate 1', text: 'Dusk falls.' }])
+    expect(found.find(change => change.field === 'alternateOpenings')?.suggested).toEqual([{ title: 'Dusk falls.', text: 'Dusk falls.' }])
   })
 
   it('follows the greeting the world opens with: the one chosen is the opening, the others are alternates', () => {

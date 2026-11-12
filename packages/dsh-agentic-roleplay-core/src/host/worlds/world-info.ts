@@ -1,7 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
-import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
+import type { AlternateOpeningText, WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
+import { parseOpeningParts, partsText, type OpeningPart } from '../../shared/opening.ts'
 import { parseSwitchboard } from '../../shared/settings.ts'
 import { parseSampling } from '../../shared/sampling.ts'
 import { startQuestionsToFile } from '../../shared/start-questions.ts'
@@ -17,10 +18,27 @@ const textOf = (value: unknown): string => (typeof value === 'string' ? value : 
 
 const toolsOf = (value: unknown): WorldInfo['tools'] => { const board = value === undefined ? {} : parseSwitchboard(value, 'tools'); return typeof board === 'string' ? {} : board }
 
+/** The parts of an opening as the file has them; parts that cannot be read are left out. */
+function partsOf(list: unknown[]): OpeningPart[] | undefined {
+  const problems: string[] = []
+  const parts = parseOpeningParts(list, 'opening', problems)
+  return parts === undefined || parts.length === 0 ? undefined : parts
+}
+
+function alternateOf(entry: unknown): AlternateOpeningText[] {
+  if (typeof entry !== 'object' || entry === null) return []
+  const body = entry as Json
+  const character = textOf(body['character'])
+  const named = character === '' ? {} : { character }
+  const parts = Array.isArray(body['parts']) ? partsOf(body['parts']) : undefined
+  if (parts !== undefined) return [{ title: textOf(body['title']), text: partsText(parts), parts, ...named }]
+  return typeof body['text'] === 'string' ? [{ title: textOf(body['title']), text: body['text'], ...named }] : []
+}
+
 function infoOf(document: Json, startQuestions: WorldInfo['startQuestions'] = []): WorldInfo {
   const opening = document['opening_message']
-  const parts = Array.isArray(opening) && opening.some(part => typeof part === 'object' && part !== null && (part as Json)['type'] === 'utterance')
-  const plain = typeof opening === 'string' ? opening : Array.isArray(opening) ? opening.map(part => textOf((part as Json | null)?.['text'])).filter(text => text !== '').join('\n\n') : ''
+  const parts = Array.isArray(opening) ? partsOf(opening) : undefined
+  const plain = typeof opening === 'string' ? opening : parts === undefined ? '' : partsText(parts)
   const metadata = typeof document['metadata'] === 'object' && document['metadata'] !== null ? document['metadata'] as Json : {}
   const author = typeof document['author'] === 'object' && document['author'] !== null ? document['author'] as Json : {}
   const rules = document['rules']
@@ -28,11 +46,11 @@ function infoOf(document: Json, startQuestions: WorldInfo['startQuestions'] = []
     name: textOf(document['name']), description: textOf(document['description']),
     tags: Array.isArray(metadata['tags']) ? metadata['tags'].filter((tag): tag is string => typeof tag === 'string') : [],
     rules: typeof rules === 'string' ? [rules] : Array.isArray(rules) ? rules.filter((rule): rule is string => typeof rule === 'string') : [],
-    opening: plain, openingParts: parts, authorName: textOf(author['name']), authorUrl: textOf(author['url']),
+    opening: plain, ...(parts === undefined ? {} : { openingParts: parts }), authorName: textOf(author['name']), authorUrl: textOf(author['url']),
     timeZone: textOf(document['time_zone']), startingTime: textOf(document['starting_time']), language: textOf(document['language']), preset: textOf(document['preset']), lorebooks: Array.isArray(document['lorebooks']) ? document['lorebooks'].filter((name): name is string => typeof name === 'string') : [], version: (typeof document['version'] === 'number' ? String(document['version']) : textOf(document['version'])),
     sampling: parseSampling(document['sampling'], 'sampling', []),
     tools: toolsOf(document['tools']), autonomy: document['autonomy'] === true, startQuestions,
-    alternateOpenings: Array.isArray(document['alternate_openings']) ? document['alternate_openings'].flatMap((entry): { title: string; text: string; character?: string }[] => (typeof entry === 'object' && entry !== null && typeof (entry as Json)['text'] === 'string' ? [{ title: textOf((entry as Json)['title']), text: (entry as Json)['text'] as string, ...(textOf((entry as Json)['character']) === '' ? {} : { character: textOf((entry as Json)['character']) }) }] : [])) : [],
+    alternateOpenings: Array.isArray(document['alternate_openings']) ? document['alternate_openings'].flatMap(alternateOf) : [],
   }
 }
 
@@ -70,12 +88,12 @@ async function changeWorldInfo(directory: string, edit: WorldInfoEdit): Promise<
   const { text, document } = await readDocument(directory)
   const before = infoOf(document)
   if (edit.startQuestions !== undefined) { if (edit.startQuestions.length === 0) delete document['start_questions']; else document['start_questions'] = startQuestionsToFile(edit.startQuestions) }
-  if (edit.opening !== undefined && before.openingParts && edit.opening !== before.opening) throw new InvalidEditProblems(['the opening has lines spoken by characters: change it in the file, or ask the authoring assistant'])
   if (edit.name !== undefined) document['name'] = edit.name
   if (edit.description !== undefined) document['description'] = edit.description
   if (edit.tags !== undefined) document['metadata'] = { ...(typeof document['metadata'] === 'object' && document['metadata'] !== null ? document['metadata'] as Json : {}), tags: edit.tags }
   if (edit.rules !== undefined) { if (edit.rules.length === 0) delete document['rules']; else document['rules'] = edit.rules }
-  if (edit.opening !== undefined && !before.openingParts) setOrRemove(document, 'opening_message', edit.opening)
+  if (edit.opening !== undefined) setOrRemove(document, 'opening_message', edit.opening)
+  if (edit.openingParts !== undefined) { if (edit.openingParts.length === 0) delete document['opening_message']; else document['opening_message'] = edit.openingParts }
   if (edit.authorName !== undefined || edit.authorUrl !== undefined) {
     const name = edit.authorName ?? before.authorName
     const url = edit.authorUrl ?? before.authorUrl
@@ -90,7 +108,7 @@ async function changeWorldInfo(directory: string, edit: WorldInfoEdit): Promise<
   if (edit.language !== undefined) setOrRemove(document, 'language', edit.language)
   if (edit.preset !== undefined) setOrRemove(document, 'preset', edit.preset)
   if (edit.lorebooks !== undefined) { if (edit.lorebooks.length === 0) delete document['lorebooks']; else document['lorebooks'] = edit.lorebooks }
-  if (edit.alternateOpenings !== undefined) { if (edit.alternateOpenings.length === 0) delete document['alternate_openings']; else document['alternate_openings'] = edit.alternateOpenings.map(entry => ({ title: entry.title === '' ? entry.text.slice(0, 40) : entry.title, text: entry.text, ...(entry.character === undefined || entry.character === '' ? {} : { character: entry.character }) })) }
+  if (edit.alternateOpenings !== undefined) { if (edit.alternateOpenings.length === 0) delete document['alternate_openings']; else document['alternate_openings'] = edit.alternateOpenings.map(entry => ({ title: entry.title === '' ? entry.text.slice(0, 40) : entry.title, ...(entry.parts === undefined ? { text: entry.text } : { parts: entry.parts }), ...(entry.character === undefined || entry.character === '' ? {} : { character: entry.character }) })) }
   if (edit.sampling !== undefined) { if (Object.keys(edit.sampling).length === 0) delete document['sampling']; else document['sampling'] = edit.sampling }
   if (edit.autonomy !== undefined) { if (edit.autonomy) document['autonomy'] = true; else delete document['autonomy'] }
   if (edit.tools !== undefined) { if (Object.keys(edit.tools).length === 0) delete document['tools']; else document['tools'] = edit.tools }

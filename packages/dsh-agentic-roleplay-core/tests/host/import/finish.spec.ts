@@ -6,6 +6,7 @@ import { readPngMetadata } from '../../../src/host/images/png-metadata.ts'
 import { readCard } from '../../../src/host/import/card.ts'
 import { emptyExtracted } from '../../../src/host/import/extract.ts'
 import { alternateOpenings, breakParentCircles, finishImport, openingMessage, replacePlayer, shareThePlaces } from '../../../src/host/import/finish.ts'
+import type { ChildJob } from '../../../src/host/import/run.ts'
 import type { SourceItem } from '../../../src/host/import/items.ts'
 import { defaultChoices } from '../../../src/host/import/store.ts'
 import type { Classified, Roster } from '../../../src/host/import/survey.ts'
@@ -74,15 +75,18 @@ describe('the other greetings of a card', () => {
   const greeted = readCard(Buffer.from(JSON.stringify(v3Card({ first_mes: 'The fog lifts.', alternate_greetings: ['Night falls on the pier.', '  ', 'Morning at the dock, {{user}}.'] }))), 'x.json')
 
   it('become openings to choose from, except the one that was chosen', () => {
-    expect(alternateOpenings(greeted, { kind: 'first' }, 'Arthur')).toEqual([{ title: 'Alternate 1', text: 'Night falls on the pier.' }, { title: 'Alternate 3', text: 'Morning at the dock, Arthur.' }])
-    expect(alternateOpenings(greeted, { kind: 'alternate', index: 0 })).toEqual([{ title: 'First message', text: 'The fog lifts.' }, { title: 'Alternate 3', text: expect.stringContaining('Morning at the dock') }])
+    expect(alternateOpenings(greeted, { kind: 'first' }, 'Arthur')).toEqual([{ title: 'Night falls on the pier.', text: 'Night falls on the pier.' }, { title: 'Morning at the dock, Arthur.', text: 'Morning at the dock, Arthur.' }])
+    expect(alternateOpenings(greeted, { kind: 'alternate', index: 0 })).toEqual([{ title: 'The fog lifts.', text: 'The fog lifts.' }, { title: expect.stringContaining('Morning at the dock'), text: expect.stringContaining('Morning at the dock') }])
     expect(alternateOpenings(greeted, { kind: 'none' })).toEqual([])
   })
 })
 
+/** Answers the job that splits an opening as a model that finds no one speaking would, and every other job from `other`. */
+const withOpening = (other: (job: ChildJob<never>, asked: number) => unknown) => (job: ChildJob<never>, asked: number): unknown => (job.persona.includes('split the opening') ? { parts: [{ speaker: '', text: job.prompt.split('Passage:\n')[1] ?? '' }] } : other(job, asked))
+
 describe('finishing an import', () => {
   it('moves the documents in, all valid, and fills in the world\'s own file: description and tags from one call, the chosen opening, the creator and the cover', async () => {
-    const ctx = fakeContext(() => ({ description: 'A fishing town in autumn.', tags: ['harbour', 'harbour', 'autumn'], starting_time: '1912-10-04T08:00:00' }))
+    const ctx = fakeContext(withOpening(() => ({ description: 'A fishing town in autumn.', tags: ['harbour', 'harbour', 'autumn'], starting_time: '1912-10-04T08:00:00' })))
     const result = await finishImport(ctx, input({ picture: PNG }))
     expect(result).toMatchObject({ ok: true, report: {
       counts: { characters: 1, places: 1, factions: 0, things: 0, lore: 1 }, hasPlayableCharacter: false, opening: 'imported', cover: true, portrait: true,
@@ -91,12 +95,29 @@ describe('finishing an import', () => {
     expect(await read('characters/tam/character.json')).toMatchObject({ id: 'tam', name: 'Old Tam' })
     expect(await read('lore/founding/lore.json')).toMatchObject({ title: 'Founding' })
     expect(await read('world.json')).toEqual({
-      id: 'w1', name: 'Test Harbour', description: 'A fishing town in autumn.', starting_time: '1912-10-04T08:00:00', metadata: { tags: ['harbour', 'autumn'] }, opening_message: 'The fog lifts from the pier.', author: { name: 'Someone' }, cover_media_id: 'cover', alternate_openings: [{ title: 'Alternate 1', text: 'A second morning.' }],
+      id: 'w1', name: 'Test Harbour', description: 'A fishing town in autumn.', starting_time: '1912-10-04T08:00:00', metadata: { tags: ['harbour', 'autumn'] }, opening_message: 'The fog lifts from the pier.', author: { name: 'Someone' }, cover_media_id: 'cover', alternate_openings: [{ title: 'A second morning.', text: 'A second morning.' }],
     })
     expect(await readFile(join(directory, 'media', 'manifest.jsonl'), 'utf8')).toBe('{"id":"cover","file":"media/files/cover.png"}\n')
     expect(await readdir(join(directory, '.import'))).toEqual(['report.json'])
     const portrait = await readFile(join(directory, 'images', 'characters', 'tam', 'reference.png'))
     expect(readPngMetadata(portrait)).toMatchObject({ purpose: 'reference', origin: 'uploaded', subjects: [{ kind: 'character', localId: 'tam', name: 'Old Tam' }] })
+  })
+
+  it('writes a greeting where a character speaks as parts, one with only narration as plain text, and says when a split was refused', async () => {
+    const spoken = readCard(Buffer.from(JSON.stringify(v3Card({ first_mes: 'Move, old man.\nTam shrugs.', alternate_greetings: ['Fog rolls in.', 'Rain.'] }))), 'x.json')
+    const ctx = fakeContext((job) => {
+      if (!job.persona.includes('split the opening')) return { description: 'x', tags: [] }
+      const text = job.prompt.split('Passage:\n')[1] ?? ''
+      if (text.startsWith('Move')) return { parts: [{ speaker: 'Old Tam', text: 'Move, old man.' }, { speaker: '', text: 'Tam shrugs.' }] }
+      if (text.startsWith('Fog')) return { parts: [{ speaker: '', text }] }
+      return { parts: [{ speaker: 'Old Tam', text: 'Something else entirely.' }] }
+    })
+    const result = await finishImport(ctx, input({ card: spoken, choices: { ...defaultChoices(spoken), name: 'Test Harbour' } }))
+    expect(result).toMatchObject({ ok: true })
+    const world = await read('world.json') as { opening_message: unknown; alternate_openings: unknown[] }
+    expect(world.opening_message).toEqual([{ type: 'utterance', character: 'tam', text: 'Move, old man.' }, { type: 'narration', text: 'Tam shrugs.' }])
+    expect(world.alternate_openings).toEqual([{ title: 'Fog rolls in.', text: 'Fog rolls in.' }, { title: 'Rain.', text: 'Rain.' }])
+    expect(result.ok && result.report.notes.some(note => /kept as plain text/.test(note))).toBe(true)
   })
 
   it('writes the commands and the casting triggers, with the player marker replaced', async () => {

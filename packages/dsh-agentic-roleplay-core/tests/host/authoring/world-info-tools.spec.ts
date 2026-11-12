@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -49,6 +49,17 @@ describe('edit_world_info', () => {
     expect(done).toMatchObject({ action: 'edited', changed: expect.arrayContaining(['description', 'tags', 'opening', 'alternateOpenings']) })
     expect(await world()).toMatchObject({ id: 'harbor', name: 'Harbor', description: 'A port in the rain.', metadata: { tags: ['sea', 'rain'] }, opening_message: 'Gulls cry.', rules: ['No magic.'], preset: 'grim', alternate_openings: [{ title: 'Later', text: 'Dusk falls.' }] })
     expect(refreshed).toBe(1)
+  })
+
+  it('takes an opening as parts, refuses a speaker the world does not have with the ids it has, and says when a change of form changed the words', async () => {
+    await mkdir(join(directory, 'characters', 'tam'), { recursive: true })
+    await writeFile(join(directory, 'characters', 'tam', 'character.json'), JSON.stringify({ name: 'Old Tam', role: 'npc', summary: 'Keeps the light.' }))
+    await expect(call('edit_world_info', { changes: { openingParts: [{ type: 'utterance', character: 'tom', text: 'Rain.' }] } })).rejects.toThrow(/"tom" is not a character of this world; the characters are tam \(Old Tam\)/)
+    const same = await call('edit_world_info', { changes: { openingParts: [{ type: 'narration', text: 'Rain' }, { type: 'utterance', character: 'tam', text: 'falls.' }] } })
+    expect(same.opening_words_changed).toBeUndefined()
+    expect((await world()).opening_message).toEqual([{ type: 'narration', text: 'Rain' }, { type: 'utterance', character: 'tam', text: 'falls.' }])
+    const reworded = await call('edit_world_info', { changes: { openingParts: [{ type: 'utterance', character: 'tam', text: 'Snow falls.' }] } })
+    expect(reworded).toMatchObject({ opening_words_changed: ['opening'], note: expect.stringContaining('reshape_opening') })
   })
 
   it('refuses what is the person\'s to choose, with the fields it can change, and changes nothing', async () => {

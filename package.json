@@ -1,6 +1,6 @@
 {
   "name": "dsh-agentic-roleplay-workspace",
-  "version": "0.12.3",
+  "version": "0.12.4",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.3.4",

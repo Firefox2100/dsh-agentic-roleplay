@@ -58,16 +58,20 @@ export interface WorldFile {
 
 export interface AlternateOpening {
   title: string
+  /** The words of the opening: all of them when it is plain text, and its parts' texts together when it has parts. */
   text: string
+  /** The opening as parts (narration and lines of characters) when the file gives it so; absent when it is plain narration. */
+  parts?: OpeningSegment[]
   /** The id of the playable character this opening is for; any character may take it when this is absent. */
   character?: string
 }
 
 import { parseSampling, type StorySampling } from '../../shared/sampling.ts'
 import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, MAX_WORLD_VERSION } from '../../shared/world-info.ts'
+import { MAX_OPENING_PARTS, partsText } from '../../shared/opening.ts'
 export { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS }
 
-/** `alternate_openings` is a list of `{ title, text, character? }`: other first messages the player may start with, each for any character or for one playable character. */
+/** `alternate_openings` is a list of `{ title, text | parts, character? }`: other first messages the player may start with, each for any character or for one playable character. */
 function readAlternateOpenings(reader: Reader): AlternateOpening[] | undefined {
   const value = reader.raw('alternate_openings')
   if (value === undefined || value === null) return undefined
@@ -75,11 +79,13 @@ function readAlternateOpenings(reader: Reader): AlternateOpening[] | undefined {
   if (value.length > MAX_ALTERNATE_OPENINGS) reader.fail('alternate_openings', `has more than ${MAX_ALTERNATE_OPENINGS} openings`)
   const openings: AlternateOpening[] = []
   for (const entry of reader.objects('alternate_openings')) {
-    const text = entry.string('text', { required: true })?.trim()
+    const given = entry.raw('parts')
+    const parts = given === undefined || given === null ? undefined : readParts(entry, 'parts')
+    const text = parts === undefined ? entry.string('text', { required: true })?.trim() : partsText(parts)
     if (text === undefined || text === '') continue
-    if (text.length > MAX_OPENING_CHARS) entry.fail('text', `is longer than ${MAX_OPENING_CHARS} characters`)
+    if (text.length > MAX_OPENING_CHARS) entry.fail(parts === undefined ? 'text' : 'parts', `is longer than ${MAX_OPENING_CHARS} characters`)
     const character = entry.string('character')?.trim()
-    openings.push({ title: entry.string('title')?.trim() || text.slice(0, 40), text, ...(character === undefined || character === '' ? {} : { character }) })
+    openings.push({ title: entry.string('title')?.trim() || text.slice(0, 40), text, ...(parts === undefined ? {} : { parts }), ...(character === undefined || character === '' ? {} : { character }) })
   }
   return openings.length === 0 ? undefined : openings
 }
@@ -212,17 +218,10 @@ export type OpeningSegment =
   | { type: 'narration'; text: string }
   | { type: 'utterance'; character: string; text: string }
 
-/** `opening_message` is plain text (one narration), or a list of parts in the order the player reads them. */
-function readOpening(reader: Reader): OpeningSegment[] | undefined {
-  const value = reader.raw('opening_message')
-  if (value === undefined || value === null) return undefined
-  if (typeof value === 'string') return value.trim() === '' ? undefined : [{ type: 'narration', text: value.trim() }]
-  if (!Array.isArray(value)) {
-    reader.fail('opening_message', 'must be text or a list of parts')
-    return undefined
-  }
+/** The parts of an opening in the order the player reads them, from the list `reader` holds under `key`; a problem is reported for each part that cannot be read. */
+function readParts(reader: Reader, key: string): OpeningSegment[] | undefined {
   const parts: OpeningSegment[] = []
-  for (const part of reader.objects('opening_message')) {
+  for (const part of reader.objects(key)) {
     const type = part.oneOf('type', ['narration', 'utterance'] as const, 'narration')
     const text = part.string('text', { required: true })?.trim()
     if (text === undefined || text === '') continue
@@ -233,7 +232,20 @@ function readOpening(reader: Reader): OpeningSegment[] | undefined {
     const character = part.string('character', { required: true })
     if (character !== undefined) parts.push({ type, character, text })
   }
+  if (parts.length > MAX_OPENING_PARTS) reader.fail(key, `has more than ${MAX_OPENING_PARTS} parts`)
   return parts.length === 0 ? undefined : parts
+}
+
+/** `opening_message` is plain text (one narration), or a list of parts in the order the player reads them. */
+function readOpening(reader: Reader): OpeningSegment[] | undefined {
+  const value = reader.raw('opening_message')
+  if (value === undefined || value === null) return undefined
+  if (typeof value === 'string') return value.trim() === '' ? undefined : [{ type: 'narration', text: value.trim() }]
+  if (!Array.isArray(value)) {
+    reader.fail('opening_message', 'must be text or a list of parts')
+    return undefined
+  }
+  return readParts(reader, 'opening_message')
 }
 
 /** `time_zone` (an IANA name) and `starting_time` (an ISO 8601 date and time, in `time_zone` unless it carries an offset). */

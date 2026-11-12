@@ -69,7 +69,7 @@ const about: Check = {
     const found: Found[] = []
     if (text(info.description) === '') found.push({ severity: 'info', code: 'no-description', where: 'world.json', message: 'the world has no description, so the worlds list shows nothing about it' })
     if (info.tags.length === 0) found.push({ severity: 'info', code: 'no-tags', where: 'world.json', message: 'the world has no tags' })
-    if (text(info.opening) === '' && !info.openingParts) found.push({ severity: 'info', code: 'no-opening', where: 'world.json', message: 'the world has no opening, so a story starts with "The story begins."' })
+    if (text(info.opening) === '' && info.openingParts === undefined) found.push({ severity: 'info', code: 'no-opening', where: 'world.json', message: 'the world has no opening, so a story starts with "The story begins."' })
     return foundBy('quality-world', found)
   },
 }

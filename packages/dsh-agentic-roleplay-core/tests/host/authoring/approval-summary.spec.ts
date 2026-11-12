@@ -24,7 +24,7 @@ describe('the question put to the person', () => {
   })
 
   it('shows what a change to the world\'s own fields turns each into, and still asks when the old values cannot be read', async () => {
-    const info = vi.fn(() => Promise.resolve({ name: 'Harbor', description: 'A port.', tags: ['sea'], rules: [], opening: '', openingParts: false, authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', language: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }))
+    const info = vi.fn(() => Promise.resolve({ name: 'Harbor', description: 'A port.', tags: ['sea'], rules: [], opening: '', authorName: '', authorUrl: '', timeZone: '', startingTime: '', version: '', language: '', preset: '', lorebooks: [], alternateOpenings: [], startQuestions: [], sampling: {}, tools: {}, autonomy: false }))
     const decision = await authoringApproval(exec('edit_world_info', { changes: { description: 'A port in the rain.', tags: ['sea', 'rain'] } }), allow, undefined, { info })
     expect(decision).toMatchObject({ kind: 'ask', reason: expect.stringContaining('world.json') })
     const text = (decision as unknown as { displayReason: { en: string; zh: string } }).displayReason

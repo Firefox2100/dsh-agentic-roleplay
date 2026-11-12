@@ -17,7 +17,8 @@ import { outcomeCounts, pieceOutcomes, type Outcome } from './outcomes.ts'
 import { cleanText, withPlayer, type SourceItem } from './items.ts'
 import { pruneKnowledge, pruneLinks, pruneLoreSubjects, pruneMembers, pruneRelationships, type Derived, type Extracted } from './extract.ts'
 import { promptProblem, PROMPTS_FOLDER, shippedLanguages } from '../prompts/library.ts'
-import { norm, type ChildJob, type ImportContext, type TextOf, trOf } from './run.ts'
+import { mapLimit, norm, type ChildJob, type ImportContext, type TextOf, trOf } from './run.ts'
+import { shapeOpening, type Speaker } from './opening-parts.ts'
 import { splitPanels } from './panels.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, openingText } from './store.ts'
 import { isLeftOut, type Classified, type Roster } from './survey.ts'
@@ -61,13 +62,27 @@ export interface ImportReport {
   notes: string[]
 }
 
-/** The card's other greetings, as the other openings a player may start with: the first message and the alternates that were not chosen. */
+/** A title for an opening taken from a card: its first words, so the start dialog shows what the story begins with. */
+export function openingTitle(text: string): string {
+  const first = text.trim().split('\n')[0]!.replace(/\s+/g, ' ')
+  if (first.length <= 40) return first
+  const cut = first.slice(0, 40)
+  const space = cut.lastIndexOf(' ')
+  return `${(space > 15 ? cut.slice(0, space) : cut).replace(/[,;:.\s]+$/, '')}…`
+}
+
+/** The card's other greetings, as the other openings a player may start with: the first message and the alternates that were not chosen, each titled by its first words. */
 export function alternateOpenings(card: NormalizedCard, chosen: ImportChoices['opening'], player?: string): { title: string; text: string }[] {
   if (chosen.kind === 'none') return []
-  const greetings = [{ title: 'First message', text: card.firstMessage, taken: chosen.kind === 'first' }, ...card.alternateGreetings.map((text, index) => ({ title: `Alternate ${index + 1}`, text, taken: chosen.kind === 'alternate' && chosen.index === index }))]
-  return greetings.flatMap(({ title, text, taken }) => {
+  const greetings = [{ text: card.firstMessage, taken: chosen.kind === 'first' }, ...card.alternateGreetings.map((text, index) => ({ text, taken: chosen.kind === 'alternate' && chosen.index === index }))]
+  const used = new Map<string, number>()
+  return greetings.flatMap(({ text, taken }) => {
     const cleaned = taken || text.trim() === '' ? '' : openingMessage(text, card.name, player)
-    return cleaned === '' || cleaned.length > MAX_OPENING_CHARS ? [] : [{ title, text: cleaned }]
+    if (cleaned === '' || cleaned.length > MAX_OPENING_CHARS) return []
+    const base = openingTitle(cleaned)
+    const seen = used.get(base) ?? 0
+    used.set(base, seen + 1)
+    return [{ title: seen === 0 ? base : `${base} (${seen + 1})`, text: cleaned }]
   }).slice(0, MAX_ALTERNATE_OPENINGS)
 }
 
@@ -295,12 +310,18 @@ export async function finishImport(ctx: ImportContext, input: FinishInput): Prom
     await writeAtomically(join(directory, 'media', 'manifest.jsonl'), `${JSON.stringify({ id: 'cover', file: 'media/files/cover.png' })}\n`)
     cover = true
   }
-  const alternates = alternateOpenings(card, choices.opening, player === undefined ? undefined : String(player['name']))
+  const openingPlayer = player === undefined ? undefined : String(player['name'])
+  const speakers: Speaker[] = extracted.characters.map(document => ({ id: String(document['id']), name: String(document['name']), aliases: Array.isArray(document['aliases']) ? document['aliases'].filter((alias): alias is string => typeof alias === 'string') : [] }))
+  const playerId = player === undefined ? undefined : String(player['id'])
+  const shapedMain = opening === undefined ? undefined : await shapeOpening(ctx, openingMessage(opening, card.name, openingPlayer), speakers, playerId)
+  const shapedAlternates = await mapLimit(alternateOpenings(card, choices.opening, openingPlayer), ctx.concurrency, async entry => ({ title: entry.title, shaped: await shapeOpening(ctx, entry.text, speakers, playerId) }))
+  const alternates = shapedAlternates.map(({ title, shaped }) => ({ title, ...(shaped.parts === undefined ? { text: shaped.text } : { parts: shaped.parts }) }))
+  for (const note of [shapedMain?.note, ...shapedAlternates.map(entry => entry.shaped.note)]) if (note !== undefined) notes.push(note)
   await updateWorldFile(directory, (world) => {
     world['description'] = described.description
     if (described.startingTime !== undefined && world['starting_time'] === undefined) world['starting_time'] = described.startingTime
     world['metadata'] = { ...(typeof world['metadata'] === 'object' && world['metadata'] !== null ? world['metadata'] as Document : {}), tags: described.tags }
-    if (opening !== undefined) world['opening_message'] = openingMessage(opening, card.name, player === undefined ? undefined : String(player['name']))
+    if (shapedMain !== undefined) world['opening_message'] = shapedMain.parts ?? shapedMain.text
     if (alternates.length > 0) world['alternate_openings'] = alternates
     if (extracted.rules.length > 0 && world['rules'] === undefined) world['rules'] = extracted.rules.slice(0, MAX_RULES)
     if (card.creator.trim() !== '' && world['author'] === undefined) world['author'] = { name: card.creator.trim() }
