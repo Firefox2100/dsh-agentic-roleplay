@@ -163,7 +163,7 @@ beforeEach(async () => {
   const worlds = new WorldCatalog(new Context(), { path: base } as RoleplayRoot)
   const handler = createApiHandler({
     catalogue: catalogue as never,
-    speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), streaming: () => true },
+    speech: { voices: async () => [{ id: 'clara', name: 'Clara' }], speak: async () => ({ bytes: new Uint8Array([1, 2]), mediaType: 'audio/mpeg' }), synthesis: () => true, images: () => false, streaming: () => true },
     sync: {
       status: async () => { if (syncError !== undefined) throw syncError; return { running: false, units: [] } },
       run: async (units?: readonly string[]) => { if (syncError !== undefined) throw syncError; syncCalls.push(`run ${units?.join(',') ?? 'all'}`); return { units: [] } },
@@ -509,7 +509,7 @@ describe('roleplay API', () => {
   })
 
   it('lists voices and returns synthesized audio', async () => {
-    expect(await (await fetch(`${origin}/speech/capabilities`)).json()).toEqual({ streaming: true })
+    expect(await (await fetch(`${origin}/speech/capabilities`)).json()).toEqual({ streaming: true, synthesis: true, images: false })
     const voices = await fetch(`${origin}/speech/voices`)
     expect(await voices.json()).toEqual([{ id: 'clara', name: 'Clara' }])
     const audio = await fetch(`${origin}/speech/synthesize`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ parts: [{ text: 'Hello.', voice: 'clara' }] }) })

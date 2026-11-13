@@ -252,7 +252,7 @@ export interface ApiDeps {
   /** Whether any unit is locked. */
   anyLocked?(): boolean
   connection: ApiConnection
-  speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio>; streaming(): boolean }
+  speech: { voices(): Promise<TtsVoice[]>; speak(parts: SpeechPart[]): Promise<SpeechAudio>; streaming(): boolean; synthesis(): boolean; images(): boolean }
 }
 
 /** Build the request handler mounted at `/${API_PREFIX}`. */

@@ -3,6 +3,7 @@ import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots
 import type { Note } from '../../shared/notes.ts'
 import { onPageVisible, pageVisible } from '../visibility.ts'
 import css from './SuggestionsDock.module.css'
+import { useDockFolded } from './dock-fold.ts'
 import { NARRATION_NODE } from './definitions.ts'
 
 /** What the dock does besides showing: put a suggestion into the input box, and ask the host for the notes of the turn. */
@@ -32,6 +33,7 @@ const MESSAGE_POLL_MS = 30_000
  */
 export function SuggestionsDock({ useChat, useSession, pick, notes, t }: SuggestionsDockProps) {
   const running = useSession(session => session.running)
+  const [folded] = useDockFolded()
   const latest = useChat((chat) => {
     const nodes = [...(chat.nodes.values() as Iterable<NodeLike>)]
     const output = nodes.filter(node => node.kind === NARRATION_NODE).reduce<NodeLike | undefined>((best, node) => ((node.anchorSeq ?? 0) >= (best?.anchorSeq ?? -1) ? node : best), undefined)
@@ -89,7 +91,8 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
     return () => { stopped = true; if (timer !== undefined) clearTimeout(timer) }
   }, [latest, notes])
 
-  if (running || (offered.length === 0 && meanwhile.length === 0 && unfinished.length === 0 && unwritten === 0 && messages.length === 0)) return null
+  const shownOffers = folded ? 0 : offered.length
+  if (running || (shownOffers === 0 && meanwhile.length === 0 && unfinished.length === 0 && unwritten === 0 && messages.length === 0)) return null
   return (
     <div className={css.dock} data-testid="roleplay-suggestions" data-rp="suggestions">
       {unwritten > 0 && <span className={css.label} data-testid="roleplay-unwritten">{t('unwritten', { count: unwritten })}</span>}
@@ -111,8 +114,8 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
           <ul className={css.lines}>{meanwhile.map(line => <li key={line}>{line}</li>)}</ul>
         </div>
       )}
-      {offered.length > 0 && <span className={css.label}>{t('suggestions')}</span>}
-      {offered.map(text => (
+      {!folded && offered.length > 0 && <span className={css.label}>{t('suggestions')}</span>}
+      {!folded && offered.map(text => (
         <button key={text} type="button" className={css.chip} data-rp="suggestion" title={t('suggestionHint')} onClick={() => { pick(text) }}>{text}</button>
       ))}
     </div>

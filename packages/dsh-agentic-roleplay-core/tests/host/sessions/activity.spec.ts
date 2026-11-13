@@ -37,11 +37,11 @@ describe('childTrace', () => {
     const filed: ActivityEntry[] = []
     const store = { settings: () => ({ ...DEFAULT_SETTINGS, models: { ...DEFAULT_SETTINGS.models, records: ' localai/small ' } }), recordActivity: (item: ActivityEntry) => { filed.push(item) } }
     childTrace(store, 'records', 'record keeper')({ ms: 1200, calls: 4, detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
-    childTrace(store, 'characters', 'Clara')({ ms: 50, calls: 1, error: 'x'.repeat(400), detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
+    childTrace(store, 'characters', 'Clara')({ ms: 50, calls: 1, error: { key: 'unexpected', message: 'x'.repeat(400) }, detail, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
     expect(filed[0]).toMatchObject({ label: 'record keeper', model: 'localai/small', ms: 1200, calls: 4, turn: 1, tokens: { input: 10, cached: 2, output: 5 } })
     expect(filed[0]).not.toHaveProperty('error')
     expect(filed[1]).toMatchObject({ label: 'Clara', model: '' })
-    expect(filed[1]?.error).toHaveLength(300)
+    expect(filed[1]?.error).toEqual({ key: 'unexpected', message: 'x'.repeat(400) })
   })
 })
 

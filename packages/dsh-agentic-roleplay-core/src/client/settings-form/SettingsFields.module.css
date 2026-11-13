@@ -11,6 +11,11 @@
   width: min(100%, 320px);
 }
 
+/* A row of choices needs more room than a number or a word: the labels wrap inside their segments when it is still not enough. */
+.choiceField {
+  width: min(100%, 480px);
+}
+
 .label {
   font-size: 12px;
   color: var(--dsw-alias-label-secondary);

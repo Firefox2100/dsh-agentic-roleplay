@@ -31,6 +31,19 @@ dsh plugin --profile <profile> add @dsh-agentic-roleplay/core
 
 Microphone input is optional. Install and enable **Voice Input** from DSH's own plugin list if you want it. The roleplay bundle does not install DSH speech packages, so DSH can keep them on the same release as the runtime. You can use its SenseVoice provider, an API speech-to-text provider, or both.
 
+To use only the API recognizer, hide SenseVoice. The Voice Input bundle adds a local SenseVoice provider and makes it the default, although it downloads its model only when you ask it to prepare. Add this to the profile's `cordis.patch.yml`, with `openai` or `localai` being the provider you selected for speech-to-text in the AI providers settings:
+
+```yaml
+- id: speech-to-text
+  name: '@deepseek-ai/dsh-experimental-speech-to-text'
+  config:
+    defaultProvider: openai
+- id: speech-to-text-sensevoice
+  disabled: true
+```
+
+With the SenseVoice row disabled, only the API recognizer is offered and there is no model to prepare. The recognizer sends each recording as a whole to the configured service, so a Whisper model without a live pipeline works.
+
 Keep only one of these layers selected: `@dsh-agentic-roleplay/all` or `@dsh-agentic-roleplay/core`. They add the same plugin rows, and the core layer already includes the state plugin, so a `@dsh-agentic-roleplay/state` layer beside either of them is redundant too. With two selected the profile holds a row twice, and DSH refuses to save **Settings → Role Play** ("this deployment did not accept these values"). If you manage plugins with a plugin manager, deselect the extra layers and keep the packages installed, then restart. The Role Play settings page shows a warning, and the log an error, when it finds this.
 
 ## First-run checklist

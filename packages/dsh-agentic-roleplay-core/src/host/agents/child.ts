@@ -8,7 +8,7 @@ import { requestsOf } from './requests.ts'
 import { briefSections, type BriefSection } from '../diagnostics/estimate.ts'
 import type { RequestStat } from '../../shared/diagnostics.ts'
 import { NO_TOKENS, type TokenCount } from '../../shared/usage.ts'
-import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type RunCall, type RunDetail } from '../../shared/activity.ts'
+import { MAX_RUN_CALLS, MAX_RUN_PROMPT, MAX_RUN_TEXT, type ActivityEntry, type ActivityFailure, type RunCall, type RunDetail } from '../../shared/activity.ts'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, ReasoningEffortId, type ImageBlock } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
@@ -74,9 +74,21 @@ export interface ChildTask {
 
 /** A child ran out of the time it was given; asking again would only spend it again. */
 export class ChildTimeoutError extends Error {
+  readonly failure: ActivityFailure
   constructor(minutes: number) {
     super(`the agent was stopped after ${minutes} minute${minutes === 1 ? '' : 's'} without a result (a model that keeps thinking never answers: lower its thinking level, or raise the limit in the settings)`)
+    this.failure = { key: 'timeout', minutes }
   }
+}
+
+class ChildResultError extends Error {
+  constructor(message: string, readonly failure: ActivityFailure) { super(message) }
+}
+
+function activityFailure(error: unknown): ActivityFailure {
+  if (error instanceof ChildTimeoutError || error instanceof ChildResultError) return error.failure
+  if (error instanceof Error && error.message === ANSWERED_IN_THINKING) return { key: 'answeredInThinking' }
+  return { key: 'unexpected', message: error instanceof Error ? error.message : String(error) }
 }
 
 /** How one run of a child went, for the record of what the helpers did. */
@@ -86,7 +98,7 @@ export interface ChildRun {
   /** Tool calls the child made, `submit_result` included. */
   calls: number
   /** The error message when the run did not end with a result. */
-  error?: string
+  error?: ActivityFailure
   /** What the child was told and did. */
   detail: RunDetail
   /** The turn the run works for (the one the caller named, else the one the game master was in when the run began), and what the run used. */
@@ -126,7 +138,7 @@ export function childTrace(store: { settings(): { models: Record<ChildKind, stri
   return (run) => {
     const keep = store.settings().diagnostics.keepRuns
     const id = keep ? randomUUID() : undefined
-    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...(cause === undefined ? {} : { cause }), ...briefOf(run.detail.prompt), ...run.detail.calls.some(call => call.failed) ? { refused: run.detail.calls.filter(call => call.failed).length } : {}, turn: run.turn, tokens: run.tokens, ...(run.requests ?? []).length === 0 ? {} : { requests: run.requests }, ...(run.error === undefined ? {} : { error: run.error.slice(0, 300) }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
+    store.recordActivity({ at: Date.now(), label, model, ms: run.ms, calls: run.calls, ...(cause === undefined ? {} : { cause }), ...briefOf(run.detail.prompt), ...run.detail.calls.some(call => call.failed) ? { refused: run.detail.calls.filter(call => call.failed).length } : {}, turn: run.turn, tokens: run.tokens, ...(run.requests ?? []).length === 0 ? {} : { requests: run.requests }, ...(run.error === undefined ? {} : { error: run.error }), ...(id === undefined ? {} : { run: id }) }, keep ? { ...run.detail, ...extra } : undefined)
   }
 }
 
@@ -205,7 +217,7 @@ export async function runChild<T>(asked: ChildTask): Promise<T> {
       return result
     } catch (cause) {
       const error = clock.signal.aborted && !task.signal.aborted ? new ChildTimeoutError(minutes) : cause
-      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: error instanceof Error ? error.message : String(error), detail: detail(), turn: turnAtStart, tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
+      task.trace?.({ ms: Date.now() - began, calls: stats.calls, error: activityFailure(error), detail: detail(), turn: turnAtStart, tokens: stats.tokens ?? NO_TOKENS, requests: stats.requests ?? [] })
       if (task.signal.aborted) throw error
       if (task.structured === true && error instanceof Error && error.message === ANSWERED_IN_THINKING) {
         const model = modelOf(task)
@@ -487,15 +499,20 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
     unlink?.()
     span?.end({ ...submitted === undefined ? {} : { output: submitted.value }, metadata: { calls: stats.calls, tokens: stats.tokens ?? NO_TOKENS } })
   }
-  if (signal.aborted) throw new Error('cancelled')
-  if (rambled && submitted === undefined) throw new Error(`the agent wrote text up to the limit of ${task.maxTokens ?? task.sampling?.maxTokens ?? 'its model'} tokens and never called ${SUBMIT_TOOL}, and was stopped`)
+  if (signal.aborted) throw new ChildResultError('cancelled', { key: 'cancelled' })
+  if (rambled && submitted === undefined) { const limit = task.maxTokens ?? task.sampling?.maxTokens; throw new ChildResultError(limit === undefined ? `the agent wrote text up to the limit of its model and never called ${SUBMIT_TOOL}, and was stopped` : `the agent wrote text up to the limit of ${limit} tokens and never called ${SUBMIT_TOOL}, and was stopped`, { key: 'tokenLimit', ...(limit === undefined ? {} : { limit }), tool: SUBMIT_TOOL }) }
   if (hidden && submitted === undefined) throw new Error(ANSWERED_IN_THINKING)
-  if (overran && submitted === undefined) throw new Error(refusals >= MAX_RESULT_REFUSALS ? `the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}` : `the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped`)
+  if (overran && submitted === undefined) {
+    if (refusals >= MAX_RESULT_REFUSALS) throw new ChildResultError(`the result was refused ${refusals} times and the agent was stopped; the last reason: ${lastRefusal}`, { key: 'resultRefused', count: refusals, reason: lastRefusal })
+    const failed = stats.record.findLast(call => call.failed && call.tool !== SUBMIT_TOOL)
+    const why = failed === undefined ? '' : ` The last call that failed was ${failed.tool}: ${failed.outcome.slice(0, 300)}`
+    throw new ChildResultError(`the agent went on past its ${budget} calls, or kept repeating a call that failed, without submitting a result and was stopped${why}`, { key: 'callLimit', budget, ...(failed === undefined ? {} : { tool: failed.tool, outcome: failed.outcome.slice(0, 300) }) })
+  }
   if (submitted === undefined) {
     const ended = entry.agent?.session.snapshotEvents().findLast(event => event.type === 'turn/end')
     const reason = ended?.type === 'turn/end' ? ended.data.reason : undefined
-    if (reason?.kind === 'error') throw new Error(`the agent failed: ${reason.error.message}`)
-    throw new Error(`the agent stopped without submitting a result (${stats.calls} call(s))`)
+    if (reason?.kind === 'error') throw new ChildResultError(`the agent failed: ${reason.error.message}`, { key: 'agentFailed', message: reason.error.message })
+    throw new ChildResultError(`the agent stopped without submitting a result (${stats.calls} call(s))`, { key: 'noResult', calls: stats.calls })
   }
   return submitted.value as T
 }

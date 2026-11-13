@@ -170,10 +170,10 @@ importers:
   packages/dsh-agentic-roleplay:
     dependencies:
       '@dsh-agentic-roleplay/core':
-        specifier: workspace:0.12.4
+        specifier: workspace:0.12.5
         version: link:../dsh-agentic-roleplay-core
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.12.4
+        specifier: workspace:0.12.5
         version: link:../dsh-roleplay-state
 
   packages/dsh-agentic-roleplay-core:
@@ -182,7 +182,7 @@ importers:
         specifier: '>=0.2.2-rc.1 <0.2.3'
         version: 0.2.2-rc.1(aeb10780ceb87dd570f4e2638fb9c420)
       '@dsh-agentic-roleplay/state':
-        specifier: workspace:0.12.4
+        specifier: workspace:0.12.5
         version: link:../dsh-roleplay-state
     devDependencies:
       '@deepseek-ai/cordis':

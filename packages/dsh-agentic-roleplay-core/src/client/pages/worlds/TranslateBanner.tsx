@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '../../ui/Button.tsx'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import { storyLanguageOf, translateWorld, worldLanguages, type StoryLanguage } from './translate-api.ts'
@@ -19,21 +19,23 @@ export function useWorldLanguage(worldId: string): StoryLanguage | undefined {
 }
 
 /** Both languages of a world: the one its words are in, and the one its file declares for its stories. */
-export function useWorldLanguages(worldId: string): { written?: StoryLanguage; declared?: string } {
+export function useWorldLanguages(worldId: string, reload = 0): { written?: StoryLanguage; declared?: string } {
   const [languages, setLanguages] = useState<{ written?: StoryLanguage; declared?: string }>({})
+  const previous = useRef(worldId)
   useEffect(() => {
+    if (worldId !== previous.current) { previous.current = worldId; setLanguages({}) }
+    if (worldId === '') return
     const abort = new AbortController()
-    setLanguages({})
     worldLanguages(worldId, abort.signal).then(setLanguages, () => undefined)
     return () => { abort.abort() }
-  }, [worldId])
-  return languages
+  }, [worldId, reload])
+  return previous.current === worldId ? languages : {}
 }
 
 /** Says that a world is written in another language than the person's, and offers to translate it into a copy. */
-export function TranslateBanner({ t, worldId, worldName, openChat }: { t: Translate; worldId: string; worldName: string; openChat: (chatSessionId: string) => void }) {
+export function TranslateBanner({ t, worldId, worldName, openChat, reload = 0 }: { t: Translate; worldId: string; worldName: string; openChat: (chatSessionId: string) => void; reload?: number }) {
   const own = storyLanguageOf(t('language'))
-  const written = useWorldLanguage(worldId)
+  const { written, declared } = useWorldLanguages(worldId, reload)
   const [busy, setBusy] = useState(false)
   const [failure, setFailure] = useState<string | undefined>()
   if (written === undefined || written === own) return null
@@ -48,7 +50,7 @@ export function TranslateBanner({ t, worldId, worldName, openChat }: { t: Transl
   return (
     <>
       <div className={css.banner} role="status" data-testid="roleplay-translate-banner">
-        <span className={css.text}>{t('translateWarning', { from: languageName(t, written), to: languageName(t, own) })}</span>
+        <span className={css.text}>{declared !== undefined && declared !== '' && declared.trim().toLowerCase().split(/[-_]/)[0] !== own ? t('translateDeclared', { from: languageName(t, written), declared: languageName(t, declared), to: languageName(t, own) }) : t('translateWarning', { from: languageName(t, written), to: languageName(t, own) })}</span>
         <Button variant="outline" size="sm" disabled={busy} onClick={translate}>{busy ? t('translateOpening') : t('translateAction', { to: languageName(t, own) })}</Button>
       </div>
       {failure !== undefined && <p className={css.error} role="alert">{failure}</p>}

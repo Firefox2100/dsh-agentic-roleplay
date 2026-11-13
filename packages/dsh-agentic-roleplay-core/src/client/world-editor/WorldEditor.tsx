@@ -61,7 +61,7 @@ const SECTIONS = [
  * The world as it can be authored: a drawer of its parts and the part that is open. It reads from and saves to a source, so the same
  * editor serves the story of a session and the files of a world.
  */
-export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = true, focus }: { t: Translate; source: WorldSource; notEditable: string; /** Shows just these parts, without the drawer when it is one. */ only?: readonly SectionId[]; warnNoPlayable?: boolean; /** The character that is open first. */ focus?: string }) {
+export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = true, focus, onInfoSaved }: { t: Translate; source: WorldSource; notEditable: string; /** Shows just these parts, without the drawer when it is one. */ only?: readonly SectionId[]; warnNoPlayable?: boolean; /** The character that is open first. */ focus?: string; /** Called after the world's own information was saved. */ onInfoSaved?: () => void }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [section, setSection] = useState<SectionId>(only?.[0] ?? (focus !== undefined || source.worldId === undefined ? 'characters' : 'info'))
   const sections = SECTIONS.filter(entry => (only === undefined || only.includes(entry.id)) && (!('ownFiles' in entry) || source.worldId !== undefined))
@@ -106,7 +106,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
       </nav>}
       <div className={css.content}>
         {warnNoPlayable && !load.world.characters.some(character => character.role === 'playable' || character.control === 'player') && <p className={css.warning} role="status" data-testid="roleplay-no-playable">{t('noPlayableWarning')}</p>}
-        {section === 'info' && source.worldId !== undefined && <InfoPanel t={t} worldId={source.worldId} onSaved={refresh} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'info' && source.worldId !== undefined && <InfoPanel t={t} worldId={source.worldId} onSaved={() => { refresh(); onInfoSaved?.() }} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'prompts' && source.worldId !== undefined && <PromptsPanel t={t} worldId={source.worldId} language={t('language')} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'routines' && source.worldId !== undefined && <RoutinesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'calendar' && source.worldId !== undefined && <CalendarPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}

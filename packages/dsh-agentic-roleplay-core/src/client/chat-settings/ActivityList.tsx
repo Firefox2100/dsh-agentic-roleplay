@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { ActivityEntry, RunDetail, RunRecall } from '../../shared/activity.ts'
+import type { ActivityEntry, ActivityFailure, RunDetail, RunRecall } from '../../shared/activity.ts'
 import { addTokens, totalTokens, type TokenCount, type TurnUsage } from '../../shared/usage.ts'
 import type { RequestStat } from '../../shared/diagnostics.ts'
 import { loadRun } from './settings-api.ts'
@@ -16,6 +16,28 @@ const SHOWN = 20
 const seconds = (ms: number): string => `${(ms / 1000).toFixed(ms < 10_000 ? 1 : 0)} s`
 
 const count = (value: number): string => value.toLocaleString()
+
+function failureText(t: Translate, failure: string | ActivityFailure): string {
+  if (typeof failure === 'string') return failure
+  switch (failure.key) {
+    case 'cancelled': return t('failureCancelled')
+    case 'timeout': return t('failureTimeout', { minutes: failure.minutes })
+    case 'tokenLimit': return failure.limit === undefined
+      ? t('failureModelTokenLimit', { tool: failure.tool })
+      : t('failureTokenLimit', { limit: failure.limit, tool: failure.tool })
+    case 'answeredInThinking': return t('failureAnsweredInThinking')
+    case 'resultRefused': return t('failureResultRefused', { count: failure.count, reason: failure.reason })
+    case 'callLimit': {
+      const reason = t('failureCallLimit', { budget: failure.budget })
+      return failure.tool === undefined || failure.outcome === undefined
+        ? reason
+        : t('failureCallLimitLast', { reason, tool: failure.tool, outcome: failure.outcome })
+    }
+    case 'agentFailed': return t('failureAgent', { message: failure.message })
+    case 'noResult': return t('failureNoResult', { calls: failure.calls })
+    case 'unexpected': return t('failureUnexpected', { message: failure.message })
+  }
+}
 /** Fresh input plus output, and beside it what came from the service's cache, or that the service does not say. */
 const tokenText = (t: Translate, tokens: TokenCount): string => {
   const notes = [...tokens.cached > 0 ? [t('usageCached', { count: count(tokens.cached) })] : [], ...(tokens.unreported ?? 0) > 0 ? [t('usageUnreported')] : []]
@@ -115,7 +137,7 @@ export function ActivityList({ t, session, entries, onRefresh }: { t: Translate;
                   <td>{seconds(entry.ms)}</td>
                   <td>{entry.calls}</td>
                   <td>{entry.tokens === undefined ? '' : tokenText(t, entry.tokens)}<RequestList t={t} requests={entry.requests} /><BriefList t={t} brief={entry.brief} /></td>
-                  <td className={entry.error === undefined ? undefined : css.error} title={entry.error}>{entry.error === undefined ? t('activityDone') : t('activityFailed', { reason: entry.error })}</td>
+                  <td className={entry.error === undefined ? undefined : css.error} title={entry.error === undefined ? undefined : failureText(t, entry.error)}>{entry.error === undefined ? t('activityDone') : t('activityFailed', { reason: failureText(t, entry.error) })}</td>
                   <td>{entry.run === undefined ? null : <button type="button" className={css.link} onClick={() => { toggle(entry.run as string) }}>{open?.run === entry.run ? t('runHide') : t('runShow')}</button>}</td>
                 </tr>,
                 ...(entry.run !== undefined && open?.run === entry.run

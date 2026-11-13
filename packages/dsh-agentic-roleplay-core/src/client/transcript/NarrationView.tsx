@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots'
 import type { NarrationNodeData } from './definitions.ts'
-import css from './NarrationView.module.css'import { IconPlay } from '../ui/icons.tsx'
+import css from './NarrationView.module.css'
+import { IconPlay } from '../ui/icons.tsx'
+import { Button } from '../ui/Button.tsx'
+import { useMediaCapabilities } from '../media-capabilities.ts'
 
 
 /** A steady colour per speaker, so a character looks the same wherever it speaks. */
@@ -11,10 +14,24 @@ function hueOf(name: string): number {
   return hash
 }
 
-/** What the player reads for one turn: the characters' words and the narration between them. */
-export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData; sessionId: string; t: TranslateNS<'roleplay.transcript'> }) {
+/** Characters whose portrait the host has none of, so that each line does not ask again. */
+const withoutPortrait = new Set<string>()
+
+/** The round picture of a speaker: its portrait when it has one (the story's canonical reference image), else the first letter on a colour of its own. */
+function Avatar({ sessionId, character, name }: { sessionId: string; character: string; name: string }) {
+  const story = sessionId.startsWith('session-') ? sessionId.slice(8) : sessionId
+  const key = `${story}/${character}`
+  const [missing, setMissing] = useState(withoutPortrait.has(key))
+  if (!missing) {
+    return <img className={`${css.avatar} ${css.avatarImage}`} data-rp="avatar" src={`roleplay-api/sessions/world/character/portrait/file?id=${encodeURIComponent(story)}&key=${encodeURIComponent(character)}`} alt="" aria-hidden="true" decoding="async" onError={() => { withoutPortrait.add(key); setMissing(true) }} />
+  }
+  return <div className={css.avatar} data-rp="avatar" style={{ background: `hsl(${hueOf(name)} 32% 40%)` }} aria-hidden="true">{Array.from(name)[0]?.toUpperCase()}</div>
+}
+
+/** Plays the segments of a turn as speech, narration and each speaker with its own voice; `playing` is true while the audio is being made or played. */
+export function useNarrationPlayer(sessionId: string): { playing: boolean; play: (segments: NarrationNodeData['segments']) => Promise<void> } {
   const [playing, setPlaying] = useState(false)
-  const play = async (segments: typeof data.segments) => {
+  const play = async (segments: NarrationNodeData['segments']): Promise<void> => {
     setPlaying(true)
     try {
       const id = sessionId.startsWith('session-') ? sessionId.slice(8) : sessionId
@@ -28,9 +45,20 @@ export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData;
       await audio.play()
     } catch (error) { console.warn('roleplay: speech could not be played', error); setPlaying(false) }
   }
+  return { playing, play }
+}
+
+/** The button that plays a whole turn; it sits beside the picture button under the turn. */
+export function PlayTurn({ data, player, t }: { data: NarrationNodeData; player: ReturnType<typeof useNarrationPlayer>; t: TranslateNS<'roleplay.transcript'> }) {
+  return <Button size="sm" disabled={player.playing} title={t('speakAll')} onClick={() => { void player.play(data.segments) }}><IconPlay aria-hidden="true" /> {t(player.playing ? 'speaking' : 'speakAll')}</Button>
+}
+
+/** What the player reads for one turn: the characters' words and the narration between them. */
+export function NarrationView({ data, sessionId, t, player }: { data: NarrationNodeData; sessionId: string; t: TranslateNS<'roleplay.transcript'>; player: ReturnType<typeof useNarrationPlayer> }) {
+  const { playing, play } = player
+  const speech = useMediaCapabilities()?.synthesis === true
   return (
     <div className={css.output} data-testid="roleplay-narration" data-rp="narration">
-      <button type="button" className={css.playAll} disabled={playing} title={t('speakAll')} onClick={() => { void play(data.segments) }}><IconPlay aria-hidden="true" /> {t(playing ? 'speaking' : 'speakAll')}</button>
       {data.ooc !== undefined && (
         <p className={data.ooc.legal ? css.oocNote : css.oocRefused} data-testid="roleplay-ooc" data-rp="ooc">
           <span className={css.oocLabel}>{t(data.ooc.question === true ? 'oocAnswer' : data.ooc.legal ? 'oocDone' : 'oocRefused')}</span> {data.ooc.note}
@@ -40,11 +68,9 @@ export function NarrationView({ data, sessionId, t }: { data: NarrationNodeData;
         ? <p key={index} className={css.narration} data-rp="prose">{segment.text}</p>
         : (
           <div key={index} className={css.line} data-testid="roleplay-utterance" data-rp="utterance">
-            <div className={css.avatar} data-rp="avatar" style={{ background: `hsl(${hueOf(segment.name)} 32% 40%)` }} aria-hidden="true">
-              {Array.from(segment.name)[0]?.toUpperCase()}
-            </div>
+            <Avatar sessionId={sessionId} character={segment.character} name={segment.name} />
             <div className={css.speech}>
-              <span className={css.name} data-rp="speaker">{segment.name}<button type="button" className={css.playLine} disabled={playing} aria-label={t('speakLine')} title={t('speakLine')} onClick={() => { void play([segment]) }}><IconPlay aria-hidden="true" /></button></span>
+              <span className={css.name} data-rp="speaker">{segment.name}{speech && <button type="button" className={css.playLine} disabled={playing} aria-label={t('speakLine')} title={t('speakLine')} onClick={() => { void play([segment]) }}><IconPlay aria-hidden="true" /></button>}</span>
               <span className={css.words} data-rp="words">{segment.text}</span>
             </div>
           </div>

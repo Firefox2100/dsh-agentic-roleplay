@@ -16,7 +16,7 @@ import { CreateWorldDialog } from './CreateWorldDialog.tsx'
 import { StarterWorlds } from './StarterWorlds.tsx'
 import { ImportCard } from '../../widgets/import-card/ImportCard.tsx'
 import { DraftBanner } from './DraftBanner.tsx'
-import { TranslateBanner } from './TranslateBanner.tsx'
+import { TranslateBanner, useWorldLanguages } from './TranslateBanner.tsx'
 import { importStagedToWorld, importVerbatimToWorld, stageFile } from '../../import-selection-api.ts'
 import { ImportSelectionDialog } from '../../widgets/import-selection/ImportSelection.tsx'
 import type { SelectionPreview } from '../../../shared/import-selection.ts'
@@ -42,8 +42,12 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
   const viewport = useRef<HTMLDivElement>(null)
   const { pageSize, scrolls } = pagingFor(useGridFit(viewport))
   const [requestedStart, setRequestedStart] = useState(0)
-  const [assistantLanguage, setAssistantLanguage] = useState(() => primaryLanguage(t('language')))
+  const [chosenAssistant, setChosenAssistant] = useState<{ worldId: string; language: string } | undefined>()
+  const [languageVersion, setLanguageVersion] = useState(0)
   const [editing, setEditing] = useState<{ id: string; name: string } | undefined>()
+  const worldLanguages = useWorldLanguages(editing?.id ?? '', languageVersion)
+  // the assistant works in what the person chose for this world, else in the language the world's stories start in, else in the interface language
+  const assistantLanguage = chosenAssistant?.worldId === editing?.id && chosenAssistant !== undefined ? chosenAssistant.language : primaryLanguage(worldLanguages.declared ?? t('language'))
   const [creating, setCreating] = useState(false)
   const [addingAvatars, setAddingAvatars] = useState(false)
   const [editorVersion, setEditorVersion] = useState(0)
@@ -154,7 +158,7 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
             <Button variant="outline" size="sm" disabled={presetBusy} onClick={() => { presetPicker.current?.click() }}>{presetBusy ? t('presetReading') : t('importPreset')}</Button>
             <Button variant="outline" size="sm" onClick={() => { setPlaytesting(true) }}>{t('playtest')}</Button>
             <Button variant="outline" size="sm" onClick={() => { setAddingAvatars(true) }}>{t('addAvatars')}</Button>
-            <LanguageSelect compact value={assistantLanguage} onChange={setAssistantLanguage} interfaceLanguage={t('language')} label={t('assistantLanguage')} title={t('assistantLanguageHelp')} testId="roleplay-assistant-language" />
+            <LanguageSelect compact value={assistantLanguage} onChange={(language) => { if (editing !== undefined) setChosenAssistant({ worldId: editing.id, language }) }} interfaceLanguage={t('language')} label={t('assistantLanguage')} title={t('assistantLanguageHelp')} testId="roleplay-assistant-language" />
             <Button variant="primary" size="sm" disabled={state.authoring?.worldId === editing.id && state.authoring.error === undefined} onClick={() => { openAuthoring(editing.id, t('authoringChatTitle', { name: editing.name }), assistantLanguage) }}>
               {state.authoring?.worldId === editing.id && state.authoring.error === undefined ? t('openingAuthor') : t('authorWorld')}
             </Button>
@@ -166,12 +170,12 @@ export function WorldsPage({ t, useWorlds, load, refresh, openStartDialog, close
           <ImportSelectionDialog preview={presetStaged.preview} t={t} interfaceLanguage={t('language')} canVerbatim onClose={() => { setPresetStaged(undefined) }} onConfirm={async (choice, options) => { if (options.verbatim) { const made = await importVerbatimToWorld(presetStaged.world, choice); setPresetNotice(t(made.replaced ? 'presetVerbatimReplaced' : 'presetVerbatim', { name: made.preset })); return } const opened = await importStagedToWorld(presetStaged.world, choice, options.language); if (!opened.started) setPresetNotice(t('presetNotStarted', { message: opened.failure ?? '' })); openChat(opened.chatSessionId) }} />
         )}
         <DraftBanner t={t} worldId={editing.id} version={editorVersion} openChat={openChat} onChanged={() => { refresh(); setEditorVersion(version => version + 1) }} onDiscarded={() => { refresh(); setEditing(undefined) }} />
-        <TranslateBanner t={t} worldId={editing.id} worldName={editing.name} openChat={openChat} />
+        <TranslateBanner t={t} worldId={editing.id} worldName={editing.name} openChat={openChat} reload={languageVersion} />
         {reverting && <RevertUpdateDialog t={t} onClose={() => { setReverting(false) }} revert={() => revertUpdate(editing.id)} onDone={(keptIn) => { setReverting(false); setPresetNotice(t('revertDone', { folder: keptIn })); setEditorVersion(version => version + 1); refresh() }} />}
         {playtesting && <PlaytestDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setPlaytesting(false) }} />}
         {addingAvatars && <AddAvatarsDialog t={t} worldId={editing.id} worldName={editing.name} onClose={() => { setAddingAvatars(false) }} onAdded={() => { setAddingAvatars(false); setEditorVersion(version => version + 1) }} />}
         <div className={css.editBody}>
-          <WorldEditor key={editorVersion} t={t} source={source} notEditable={t('worldMissing')} />
+          <WorldEditor key={editorVersion} t={t} source={source} notEditable={t('worldMissing')} onInfoSaved={() => { setLanguageVersion(version => version + 1) }} />
         </div>
       </div>
     )

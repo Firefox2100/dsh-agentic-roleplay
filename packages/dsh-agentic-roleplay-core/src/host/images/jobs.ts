@@ -12,7 +12,8 @@ import { API_PREFIX } from '../../shared/worlds.ts'
 import { chatSessionId, roleplaySessionOf } from '../../shared/chat.ts'
 import { describeGalleryImage, listGallery, updateImage, type ImageUpdate } from './gallery.ts'
 import type { Timelines } from '../timeline/service.ts'
-import { childSampling } from '../agents/child.ts'
+import { childSampling, childTrace } from '../agents/child.ts'
+import { languageOf, translator } from 'dsh-roleplay-model'
 import { runImagePresenter } from './presenter-agent.ts'
 import type { ImagePresenterJob, ImagePresenterResult } from './presenter-agent.ts'
 import { interpretImage, type ImageAttachments } from './interpreter.ts'
@@ -117,11 +118,12 @@ export class ImageJobs {
     this.failures.delete(this.key(id, node))
     const request = output.segments.map(segment => segment.type === 'utterance' ? `${segment.name}: “${segment.text}”` : segment.text).join('\n')
     const reuse = automatic && settings.images.reuse
-    const present = (): Promise<ImagePresenterResult> => (this.deps.presenter ?? runImagePresenter)({
+    const tr = translator(languageOf(settings.prompts.language))
+    const present = (): Promise<ImagePresenterResult> => { const turns = store(); return (this.deps.presenter ?? runImagePresenter)({
       parent, signal: controller.signal, service: withPriority(service, priority, settings.images.highRes), story: this.deps.state.openSession(this.deps.sessionsDir(), id),
       root: sessionFolder(this.deps.sessionsDir(), id), turn, timelineNode: node, request, purpose: 'transient', reuse,
-      language: settings.prompts.language, sampling: childSampling(settings, 'records'), referenceMode: settings.images.references, ...(reuse && this.deps.attachments?.() !== undefined ? { attachments: this.deps.attachments() as ImageAttachments } : {}), ...(reuse && this.deps.embedder?.() !== undefined ? { embedder: this.deps.embedder() as Embedder } : {}), ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }),
-    })
+      language: settings.prompts.language, ...(turns === undefined ? {} : { trace: childTrace(turns, 'records', tr('Scene picture')) }), sampling: childSampling(settings, 'records'), referenceMode: settings.images.references, ...(reuse && this.deps.attachments?.() !== undefined ? { attachments: this.deps.attachments() as ImageAttachments } : {}), ...(reuse && this.deps.embedder?.() !== undefined ? { embedder: this.deps.embedder() as Embedder } : {}), ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }),
+    }) }
     const store = (): TurnStore | undefined => this.deps.turnStore?.(chatSessionId(id))
     const begin = (): Promise<unknown> => {
       const make = (): Promise<unknown> => (reuse && settings.images.interpret && this.deps.attachments?.() !== undefined ? this.describePending(id, controller.signal).then(present) : present())

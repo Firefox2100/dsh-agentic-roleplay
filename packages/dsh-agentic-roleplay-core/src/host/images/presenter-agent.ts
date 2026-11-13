@@ -3,7 +3,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { ImageGenerationService } from '@dsh-ai-providers/core'
 import type { Session } from '@dsh-agentic-roleplay/state'
-import { runChild, type ChildSampling } from '../agents/child.ts'
+import { runChild, type ChildSampling, type ChildTask } from '../agents/child.ts'
 import { imageTools } from './tools.ts'
 import { canReadImages, type ImageAttachments } from './interpreter.ts'
 import type { Embedder } from '../memory/embedding-index.ts'
@@ -31,6 +31,8 @@ export interface ImagePresenterJob {
   language: string
   sampling?: ChildSampling
   referenceMode?: 'text-only' | 'prefer-reference' | 'require-reference'
+  /** Files the run in the story's record of what the helpers did, where the person can read what the agent was told and did. */
+  trace?: NonNullable<ChildTask['trace']>
 }
 
 export interface ImagePresenterResult {
@@ -67,6 +69,7 @@ export async function runImagePresenter(job: ImagePresenterJob): Promise<ImagePr
     tools: imageTools({ root: job.root, story: job.story, service: job.service, turn: job.turn, timelineNode: job.timelineNode, generated, signal: job.signal, ...(job.reuse === true ? { library: true, sees, ...(job.attachments === undefined ? {} : { attachments: job.attachments }), ...(job.embedder === undefined ? {} : { embedder: job.embedder }) } : {}), ...(job.referenceMode === undefined ? {} : { referenceMode: job.referenceMode }) }),
     result: RESULT,
     beforeSubmit: () => generated.length === 0 ? 'you have not shown or generated an image: use the appropriate tool before finishing' : undefined,
+    ...(job.trace === undefined ? {} : { trace: job.trace }),
     maxCalls: 16,
   })
   return { summary: result.summary, images: [...generated] }

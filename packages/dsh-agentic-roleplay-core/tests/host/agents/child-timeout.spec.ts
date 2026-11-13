@@ -26,14 +26,14 @@ describe('a helper that does not finish', () => {
   it('is stopped when its time is up, and the error says why and what to change', async () => {
     vi.useFakeTimers()
     const { parent, disposed } = endless()
-    const seen: string[] = []
-    const run = runChild({ ...task(parent), timeoutMinutes: 2, trace: (ran) => { seen.push(ran.error ?? '') } })
+    const seen: unknown[] = []
+    const run = runChild({ ...task(parent), timeoutMinutes: 2, trace: (ran) => { seen.push(ran.error) } })
     const failed = expect(run).rejects.toBeInstanceOf(ChildTimeoutError)
     await vi.advanceTimersByTimeAsync(2 * 60_000 + 1)
     await failed
     expect(disposed).toEqual(['done'])
     expect(seen).toHaveLength(1)
-    expect(seen[0]).toMatch(/stopped after 2 minutes.*thinking level/)
+    expect(seen[0]).toEqual({ key: 'timeout', minutes: 2 })
   })
 
   it('is not stopped by a time of 0, and a person cancelling it is a cancellation, not a timeout', async () => {

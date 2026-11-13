@@ -38,7 +38,7 @@ export function SettingsFields({ t, drafts, onChange, onPreset, options = [], di
         const { min, max } = field.kind === 'choice' || field.kind === 'text' ? { min: 0, max: 0 } : boundsOf(field)
         return (
           <div key={key} className={css.row}>
-            <label className={css.field}>
+            <label className={field.kind === 'choice' ? `${css.field} ${css.choiceField}` : css.field}>
               <span className={css.label}>{t(field.label)}</span>
               {field.kind === 'flag'
                 ? <Switch checked={drafts[key] === true} label={t(field.label)} disabled={disabled} onChange={(next) => { onChange(key, next) }} />

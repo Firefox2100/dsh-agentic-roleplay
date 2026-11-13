@@ -21,5 +21,6 @@
 .place { fill: var(--dsw-alias-bg-layer-1); stroke: var(--dsw-alias-border-l4); stroke-width: 0.5; }
 .here { fill: var(--dsw-alias-bg-layer-1); stroke: var(--dsw-alias-state-business-primary); stroke-width: 1.5; }
 .placeName { font-size: 12px; fill: var(--dsw-alias-label-primary); }
+.edgeLabel { font-size: 12px; fill: var(--dsw-alias-label-secondary); }
 .journal { display: flex; flex-direction: column; gap: 6px; height: 100%; }
 .notes { box-sizing: border-box; width: 100%; min-height: 220px; flex: 0 0 auto; padding: 8px; font: inherit; font-size: 13px; line-height: 20px; resize: vertical; color: var(--dsw-alias-label-primary); background: var(--dsw-alias-bg-layer-1); border: 0.5px solid var(--dsw-alias-border-l3); border-radius: var(--dsw-radius-sm); }

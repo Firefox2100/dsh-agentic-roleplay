@@ -10,9 +10,12 @@
  * derives its width and offset from them instead of measuring the DOM. */
 .rpControl {
   position: relative;
-  display: inline-grid;
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   grid-auto-flow: column;
-  grid-auto-columns: 1fr;
+  grid-auto-columns: minmax(0, 1fr);
   gap: 2px;
   padding: 4px;
   border-radius: var(--dsw-radius-md);
@@ -38,17 +41,20 @@
   box-sizing: border-box;
   position: relative;
   z-index: 1;
-  height: 28px;
-  padding: 0 16px;
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 8px;
   border: 0;
   border-radius: var(--dsw-radius-sm);
   background: transparent;
   color: var(--dsw-alias-label-secondary);
   font: inherit;
   font-size: 13px;
-  line-height: 20px;
+  line-height: 18px;
   font-weight: 500;
-  white-space: nowrap;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
   cursor: pointer;
   transition: color 120ms ease;
 }

@@ -26,7 +26,7 @@ export function RelationsPage({ t, sessionId, visible }: SectionProps): ReactNod
                 return (
                   <g key={person.key}>
                     <line className={person.label === undefined ? css.closedWay : css.way} x1={layout.centre.x} y1={layout.centre.y} x2={node.x} y2={node.y} />
-                    {person.label !== undefined && <text className={css.meta} x={(layout.centre.x + node.x) / 2} y={(layout.centre.y + node.y) / 2 - 4} textAnchor="middle">{fitLabel(person.label)}</text>}
+                    {person.label !== undefined && <text className={css.edgeLabel} x={(layout.centre.x + node.x) / 2} y={(layout.centre.y + node.y) / 2 - 4} textAnchor="middle">{fitLabel(person.label)}</text>}
                   </g>
                 )
               })}

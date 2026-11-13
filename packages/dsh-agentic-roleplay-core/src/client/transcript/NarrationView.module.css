@@ -125,16 +125,15 @@
 .imageError {
   color: var(--dsw-alias-state-error-primary);
 }
-.playAll, .playLine { align-items: center; justify-content: center; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; }
-.playAll { display: inline-flex; float: right; gap: 4px; min-height: 28px; margin: 0 0 8px 12px; padding: 2px 4px; font-size: 12px; }
+.playLine { align-items: center; justify-content: center; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); cursor: pointer; }
 .playLine { display: inline-flex; width: 28px; height: 28px; margin: -5px -6px -5px 4px; padding: 6px; vertical-align: middle; }
-.playAll svg, .playLine svg { width: 14px; height: 14px; }
-.playAll:disabled, .playLine:disabled { cursor: wait; opacity: .5; }
-.playAll:hover, .playLine:hover { color: var(--dsw-alias-label-primary); }
-.playAll:focus-visible, .playLine:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color); outline-offset: 2px; border-radius: var(--dsw-radius-xs); }
+.playLine svg { width: 14px; height: 14px; }
+.playLine:disabled { cursor: wait; opacity: .5; }
+.playLine:hover { color: var(--dsw-alias-label-primary); }
+.playLine:focus-visible { outline: var(--dsw-focus-ring-width) solid var(--dsw-focus-ring-color); outline-offset: 2px; border-radius: var(--dsw-radius-xs); }
 
 @media (pointer: coarse) {
-  .playAll, .playLine { min-width: 44px; min-height: 44px; }
+  .playLine { min-width: 44px; min-height: 44px; }
   .playLine { width: 44px; height: 44px; margin-block: -13px; }
 }
 
@@ -153,4 +152,15 @@
 .diceList {
   margin: 4px 0 0;
   padding: 0 0 0 18px;
+}
+
+.avatarImage {
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
 }

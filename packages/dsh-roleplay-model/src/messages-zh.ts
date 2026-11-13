@@ -243,6 +243,7 @@ const ZH: Readonly<Record<string, string>> = {
   'The world itself brings in anyone this command calls for, after this turn: do not make them up yourself with expand_world.': '这个指令要求带入的人，由世界自己在本回合之后带入：不要自己用 expand_world 去造。',
   'Passages about making people up:': '关于凭空生成人物的段落：',
   'Cast:': '角色名单：',
+  'Scene picture': '场景图片',
   'Passage:': '文字：',
   'The player used the world\'s command /{word}: {description} It is part of the story, not an out-of-character command: play it in the story. The world raises and lowers the command\'s own flag itself: never change it.': '玩家使用了这个世界的指令 /{word}：{description} 这是故事的一部分，不是角色外的指令：在故事中演绎它。世界会自己升起和放下这个指令的标记：不要去改它。',
   'All the pieces of this card, in order:': '这张卡的所有片段，按顺序：',

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { StoryComparison } from '../../shared/compare.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
+import { Menu } from '../ui/Menu.tsx'
+import { useDockFolded } from './dock-fold.ts'
 import css from './TurnsDock.module.css'
 import { withdrawnKeys, type NodeLike } from './withdrawn.ts'
 
@@ -32,6 +34,7 @@ const escapeAttribute = (value: string): string => value.replace(/["\\]/g, match
  */
 export function TurnsDock({ useChat, useSession, timeline, move, mark, compare, fill, branch, t }: TurnsDockProps) {
   const running = useSession(session => session.running)
+  const [folded, toggleFolded] = useDockFolded()
   const [view, setView] = useState<TimelineView | undefined>()
   const [busy, setBusy] = useState(false)
   const [problem, setProblem] = useState<string | undefined>()
@@ -77,6 +80,8 @@ export function TurnsDock({ useChat, useSession, timeline, move, mark, compare, 
   return (
     <div className={css.dock} data-testid="roleplay-turns" data-rp="turns">
       {style}
+      <button type="button" className={`${css.button ?? ''} ${css.fold ?? ''}`} aria-expanded={!folded} title={folded ? t('dockShow') : t('dockHide')} onClick={toggleFolded}>{folded ? '▸' : '▾'} {t('dockTools')}</button>
+      {folded ? null : <>
       {alternatives.length > 1 && (
         <span className={css.group}>
           <button type="button" className={css.button} disabled={off || at <= 0} title={t('swapPrevious')} onClick={() => { act(alternatives[at - 1]!) }}>◀</button>
@@ -85,15 +90,16 @@ export function TurnsDock({ useChat, useSession, timeline, move, mark, compare, 
         </span>
       )}
       <button type="button" className={css.button} disabled={off || (parent !== START && !view.path.at(-2)?.restorable)} title={t('regenerateHint')} onClick={() => { act(parent, (draft) => { if (draft !== undefined) fill(draft, true) }) }}>{t('regenerate')}</button>
-      <select className={css.select} disabled={off} value="" aria-label={t('rewind')} onChange={(event) => { if (event.target.value !== '') act(event.target.value, (draft) => { if (draft !== undefined) fill(draft, false) }) }}>
-        <option value="">{t('rewind')}</option>
-        {checkpoints.map(turn => <option key={`checkpoint-${turn.id}`} value={turn.id} title={turn.note}>{`◆ ${turn.label!}`}</option>)}
-        {[...view.path].reverse().map((turn, index, list) => {
-          const before = list[index + 1]?.id ?? START
-          const restorable = index === list.length - 1 || list[index + 1]!.restorable
-          return <option key={turn.id} value={before} disabled={!restorable}>{`${t('before')} ${label(turn.player)}`}</option>
-        })}
-      </select>
+      <Menu
+        triggerClassName={css.button ?? ''}
+        label={t('rewind')}
+        disabled={off}
+        onSelect={(key) => { act(key, (draft) => { if (draft !== undefined) fill(draft, false) }) }}
+        entries={[
+          ...checkpoints.map(turn => ({ key: turn.id, label: `◆ ${turn.label!}`, title: turn.note })),
+          ...[...view.path].reverse().map((turn, index, list) => ({ key: list[index + 1]?.id ?? START, label: `${t('before')} ${label(turn.player)}`, disabled: !(index === list.length - 1 || list[index + 1]!.restorable) })),
+        ]}
+      />
       {naming === undefined
         ? <button type="button" className={css.button} disabled={off} title={last.label === undefined ? t('checkpointHint') : t('checkpointNamed', { name: last.label })} onClick={() => { setNaming(last.label ?? '') }}>{t('checkpoint')}</button>
         : (
@@ -104,43 +110,38 @@ export function TurnsDock({ useChat, useSession, timeline, move, mark, compare, 
             <button type="button" className={css.button} onClick={() => { setNaming(undefined) }}>{t('checkpointCancel')}</button>
           </span>
         )}
-      <select
-        className={css.select}
-        disabled={off}
-        value=""
+      <Menu
+        triggerClassName={css.button ?? ''}
+        label={t('branch')}
         title={t('branchHint')}
-        aria-label={t('branch')}
-        onChange={(event) => {
-          const at = Number(event.target.value)
-          if (event.target.value === '' || !Number.isInteger(at)) return
+        disabled={off}
+        onSelect={(key) => {
+          const at = Number(key)
+          if (!Number.isInteger(at)) return
           setBusy(true)
           setProblem(undefined)
           branch(at).catch((error: unknown) => { setProblem(t('branchFailed', { message: error instanceof Error ? error.message : String(error) })) }).finally(() => { setBusy(false) })
         }}
-      >
-        <option value="">{t('branch')}</option>
-        {[...view.path].reverse().map(turn => <option key={turn.id} value={turn.endSeq ?? ''} disabled={turn.endSeq === undefined}>{`${t('after')} ${label(turn.player)}`}</option>)}
-      </select>
-      <select
-        className={css.select}
-        disabled={off}
-        value=""
+        entries={[...view.path].reverse().map(turn => ({ key: String(turn.endSeq ?? ''), label: `${t('after')} ${label(turn.player)}`, disabled: turn.endSeq === undefined }))}
+      />
+      <Menu
+        triggerClassName={css.button ?? ''}
+        label={t('compare')}
         title={t('compareHint')}
-        aria-label={t('compare')}
-        onChange={(event) => {
-          const turn = event.target.value
-          if (turn === '') return
+        disabled={off}
+        onSelect={(turn) => {
           setBusy(true)
           setProblem(undefined)
           compare(turn).then(setComparison).catch((error: unknown) => { setProblem(error instanceof Error ? error.message : String(error)) }).finally(() => { setBusy(false) })
         }}
-      >
-        <option value="">{t('compare')}</option>
-        {checkpoints.map(turn => <option key={`compare-${turn.id}`} value={turn.id} disabled={!turn.restorable}>{`◆ ${turn.label!}`}</option>)}
-        <option value={START} disabled={!view.canStart}>{t('compareStart')}</option>
-        {[...view.path].reverse().map(turn => <option key={`compare-turn-${turn.id}`} value={turn.id} disabled={!turn.restorable}>{`${t('after')} ${label(turn.player)}`}</option>)}
-      </select>
+        entries={[
+          ...checkpoints.map(turn => ({ key: turn.id, label: `◆ ${turn.label!}`, disabled: !turn.restorable })),
+          { key: START, label: t('compareStart'), disabled: !view.canStart },
+          ...[...view.path].reverse().map(turn => ({ key: turn.id, label: `${t('after')} ${label(turn.player)}`, disabled: !turn.restorable })),
+        ]}
+      />
       {view.forward.length > 0 && <button type="button" className={css.button} disabled={off || !view.forward.at(-1)!.restorable} title={t('redoHint')} onClick={() => { act(view.forward.at(-1)!.id, () => { fill('', false) }) }}>{t('redo')}</button>}
+      </>}
       {problem !== undefined && <span className={css.error}>{problem}</span>}
       {comparison !== undefined && (
         <div className={css.comparison} data-testid="roleplay-comparison">

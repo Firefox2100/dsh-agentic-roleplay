@@ -29,6 +29,19 @@ dsh plugin --profile <profile> add @dsh-agentic-roleplay/core
 
 麦克风输入是可选功能。需要时，请从 DSH 自己的插件列表安装并启用 **Voice Input**。角色扮演套件不再安装 DSH 的语音包，因此这些包可以与 DSH 运行时保持同一版本。SenseVoice 提供方、API 语音识别提供方可以任选，也可以同时使用。
 
+如果只想使用 API 识别，可以隐藏 SenseVoice。Voice Input 套件会加入本地 SenseVoice 提供方并把它设为默认，不过它只在你要求准备时才下载模型。把下面的内容加入配置档案的 `cordis.patch.yml`，其中 `openai` 或 `localai` 是你在 AI 提供方设置里为语音转文字选择的提供方：
+
+```yaml
+- id: speech-to-text
+  name: '@deepseek-ai/dsh-experimental-speech-to-text'
+  config:
+    defaultProvider: openai
+- id: speech-to-text-sensevoice
+  disabled: true
+```
+
+禁用 SenseVoice 后，只会提供 API 识别，也没有需要准备的模型。识别器把每段录音整体发送给已配置的服务，所以没有实时管线的 Whisper 模型也可以使用。
+
 这些层只应选中一个：`@dsh-agentic-roleplay/all` 或 `@dsh-agentic-roleplay/core`。它们加入相同的插件行，而且核心层已包含状态插件，所以在任何一层旁边再选 `@dsh-agentic-roleplay/state` 层也是多余的。同时选中两层时，配置档案里同一行会出现两次，DSH 会拒绝保存**设置 → 角色扮演**（提示“此部署未接受这些值”）。若使用插件管理器，请取消多余的层（包保持安装），然后重启。发现这种情况时，角色扮演设置页会显示警告，日志里也会记录错误。
 
 ## 首次运行清单

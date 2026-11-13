@@ -271,6 +271,8 @@ export function apply(ctx: Context, config: Config) {
       voices: async () => await voicesOf(textToSpeechOf(ctx)),
       speak: async parts => await speakParts(textToSpeechOf(ctx), parts),
       streaming: () => streamingSpeechToTextOf(ctx) !== undefined,
+      synthesis: () => (ctx as Context & { get(name: 'textToSpeech'): unknown }).get('textToSpeech') !== undefined,
+      images: () => (ctx as Context & { get(name: 'imageGeneration'): unknown }).get('imageGeneration') !== undefined,
     },
     worlds,
     createWorld: input => createWorld(worlds, input),

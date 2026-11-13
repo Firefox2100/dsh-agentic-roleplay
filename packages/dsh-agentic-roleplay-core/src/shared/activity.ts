@@ -1,5 +1,17 @@
 import type { RequestStat } from './diagnostics.ts'
 
+/** Stable UI copy and parameters for a failed helper run. */
+export type ActivityFailure =
+  | { key: 'cancelled' }
+  | { key: 'timeout'; minutes: number }
+  | { key: 'tokenLimit'; limit?: number; tool: string }
+  | { key: 'answeredInThinking' }
+  | { key: 'resultRefused'; count: number; reason: string }
+  | { key: 'callLimit'; budget: number; tool?: string; outcome?: string }
+  | { key: 'agentFailed'; message: string }
+  | { key: 'noResult'; calls: number }
+  | { key: 'unexpected'; message: string }
+
 /** One run of a helper agent, kept so that the player can see what the story's background work did and how long it took. */
 export interface ActivityEntry {
   /** When the run ended, in milliseconds since 1970. */
@@ -13,7 +25,7 @@ export interface ActivityEntry {
   /** How many tool calls it made. */
   calls: number
   /** Why it did not end with a result; absent when it did. */
-  error?: string
+  error?: string | ActivityFailure
   /** How many of its tool calls were refused, by the tool or by the harness (a repeated call, a result that did not pass the checks). */
   refused?: number
   /** The turn it worked for: the one the game master had begun when it ended. */
