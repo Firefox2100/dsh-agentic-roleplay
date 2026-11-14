@@ -15,6 +15,7 @@ const NAMESPACE = 'roleplay.branch'
 export function registerBranchNaming(ctx: Context): void {
   ctx.effect(() => ctx.locale.register(NAMESPACE, dictionaries), 'roleplay: branch dictionaries')
   const branches = new BranchController()
+  ctx.effect(() => branches.listen(), 'roleplay: branch listener')
   ctx.inject(['sessions'], (inner) => {
     const sessions = inner.get('sessions')
     if (sessions !== undefined) inner.effect(() => branches.watch(sessions.list), 'roleplay: branch watch')

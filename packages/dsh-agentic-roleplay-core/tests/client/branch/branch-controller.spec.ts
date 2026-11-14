@@ -79,4 +79,16 @@ describe('asking for the name of a branch', () => {
     await settle()
     expect(controller.store.getSnapshot()).toMatchObject({ saving: false, error: 'the session needs a name', pending: { id: uuid('b') } })
   })
+
+  it('asks when the Branch control announces a branch, whatever DSH says about its origin', async () => {
+    const target = new EventTarget()
+    vi.stubGlobal('window', target)
+    const stopListening = controller.listen()
+    target.dispatchEvent(new CustomEvent('roleplay:branched', { detail: { chat: chat('b') } }))
+    target.dispatchEvent(new CustomEvent('roleplay:branched', { detail: { chat: 'session-not-a-uuid' } }))
+    await settle()
+    stopListening()
+    expect(controller.store.getSnapshot().pending).toEqual({ id: uuid('b'), name: 'Night 2' })
+    expect(requests.filter(request => request.endsWith('/sessions'))).toHaveLength(1)
+  })
 })

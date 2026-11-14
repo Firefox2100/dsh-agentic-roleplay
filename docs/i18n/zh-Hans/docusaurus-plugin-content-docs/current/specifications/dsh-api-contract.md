@@ -58,7 +58,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 - **预设。** `roleplay-helper` 是 bundle 补丁里的一行 `@deepseek-ai/dsh-agent-preset`（所以单独安装 core 时没有辅助智能体）。它挂载 `core/helper` 插件：按会话 id 读取的系统提示段落给出角色设定，并在公开的 `agent/created` 事件里调用该子智能体的 `setup`。预设由所有使用它的智能体共享，所以每个子智能体自己的内容不放在插件里，而是按会话 id 查找。
 - **专属工具。** spawn 出来的子智能体会继承所有全局工具（故事读取工具、DSH 的 working directory），所以 `setup` 先调用 `agent.ctx.tools.restrict({ allow })`（`allow` 只含任务放行的外部工具），再把子智能体的工具注册到 `agent.ctx` 上，`restrict` 不会影响这些。`submit_result` 工具、调用预算、重复调用保护和提醒也是同样注册的。
 - **代价。** 每次运行都会在旁白主持人的日志里增加一条 `subagent/catalog` 事件（几百字节，回合结束后也可能出现，所以已结束回合的最后一个事件不一定是 `turn/end`）。DSH 同一父智能体最多同时容纳 `maxActiveSubagents` 个子智能体（默认 8），多的会被拒绝，因此 bundle 补丁把它提高到 32，以容纳一轮角色加上记录员、作者和建议。
-- **经过测试的版本、使用范围的依赖。** 软件包声明 DSH `>=0.2.2-rc.1 <0.2.3`（`engines.dsh` 与 peer 依赖），而 `devDependencies` 与 workspace override 里的 DSH 子包使用同一范围，而不是某一个准确版本，这样升级 DSH 时它们会跟着走，而不是被落在后面。`scripts/dsh-compat.mjs` 是这些值唯一来源，同时记录已验证过的版本（`DSH_RELEASES`）：只要安装的版本不在这个清单里，`tests/support/dsh-contract.spec.ts` 就会失败。因此支持后续补丁版本意味着：检查该版本的变更、移植所有受影响的集成、在该版本上完成测试，然后才把它加入 `DSH_RELEASES` 并扩大范围。
+- **经过测试的版本、使用范围的依赖。** 软件包声明 DSH `>=0.2.2-rc.3 <0.2.3`（`engines.dsh` 与 peer 依赖），而 `devDependencies` 与 workspace override 里的 DSH 子包使用同一范围，而不是某一个准确版本，这样升级 DSH 时它们会跟着走，而不是被落在后面。`scripts/dsh-compat.mjs` 是这些值唯一来源，同时记录已验证过的版本（`DSH_RELEASES`）：只要安装的版本不在这个清单里，`tests/support/dsh-contract.spec.ts` 就会失败。因此支持后续补丁版本意味着：检查该版本的变更、移植所有受影响的集成、在该版本上完成测试，然后才把它加入 `DSH_RELEASES` 并扩大范围。
 - **工具执行器。** 从 0.2.2 起 `dsh-tools` 自己不执行任何调用：部署需要挂载一个执行器（`dsh-base` 挂载原生执行器），挂载工具服务的测试要在旁边挂载 `@deepseek-ai/dsh-tool-executor-native`。`ctx.tools.execute` 接受一批调用。
 - **模型选择。** DSH 会在 `agent/request` 之前确定提供方、模型和推理强度。因此，创作预设会在智能体创建时验证所配置的推理强度，并通过 `agent.model.select()` 记录下来，不再改写已弃用的请求 hook。
 - **DSH 变化时**，重新阅读 `docs/subsystems/subagent.md`，让 `runChild` 与之保持一致；`tests/host/orchestration/loop.spec.ts` 中的真实循环测试通过一个替身 `agentPresets` 服务挂载该辅助插件。
@@ -67,7 +67,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 - 替换标记使用公开的 `Session.append('user/message', ..., { surfaceOp: { op: 'replace', startSeq, endSeq }, sourceEventSeqs })`，与 DSH 自己的折叠方式相同。它把一段模型对话排除在后续请求外；`surfaceOp: 'append'` 用于添加提示。中间范围之后即使已有新回合也可替换，下一回合第一步中也可执行。DSH 的 Chat 视图不会隐藏被替换的行，因此客户端的 `TurnsDock` 按 DSH 给出的行键自行过滤。被遮蔽的回合不会重新进入对话，重新前进时只添加说明。
 - 公开事件 `session/event` 指示回合结束，从而确定它在日志中的位置。
-- 客户端通过 `ctx.sessions.fork({ sessionId, atSeq, increaseTitle })` 创建分支，与 DSH 自带分支按钮相同。主机端的公开 `agent/created` 事件串行等待；新智能体的 header 带有 `isSeeded` 和 `parentSession`，会话带有 `inheritedEventCount`。角色扮演会话会在对话首次使用前创建，失败则拒绝分支。
+- 客户端通过 `ctx.sessions.fork({ sessionId, atSeq, increaseTitle })` 创建分支，与 DSH 自带分支按钮相同。自 0.2.2 起，分支的 header 不再带有 `parentSession`，因此“从此处分支”控件会在分支创建后告诉主机它来自哪个对话、切点在哪里（`POST /sessions/branch`），主机据此为这个运行中的分支智能体创建角色扮演会话（切点为分支 `inheritedEventCount` 减一）。仍带有 `parentSession` 的分支则由公开的 `agent/created` 事件（串行等待）接手。失败则拒绝分支。
 - 归档与恢复使用 DSH 的 `workspaceRegistry.archiveSession`（带 `stopActivity`）和 `unarchiveSession`。
 - DSH 没有永久删除对话的公开 API。`host/agent/purge.ts` 在停止并刷新对话后，删除 DSH 保存的目录：`<store>/--<project>--/<session id>/`，包括对话自身及其创建的子智能体会话。子会话通过 `sessionPersistence.list()` 中的 `origin: 'subagent'` 与 `parentSession` 找到。目录名按 DSH JSONL 存储的 `projectKey` 和 `encodeSegment` 规则生成。符号链接、名称不匹配或不含日志的目录会被拒绝。位置由 `sessionStorePath` 配置，默认 `~/.dsh/sessions`。DSH 的工作区计数和投影缓存仍保留该 ID；存在 `delete` 的缓存会收到删除通知，残留条目不会再次列出或读取。操作会发出 DSH 控制器同样使用的 `api-session/removed`。存储布局变化会先由 `tests/host/agent/purge.spec.ts` 和实时删除测试发现。
 

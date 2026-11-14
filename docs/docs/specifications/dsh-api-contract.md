@@ -109,7 +109,7 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 - **Costs.** Each run adds a `subagent/catalog` event to the game master's log (a few hundred bytes, also after the turn ended, so the last event of a finished turn is not always
   `turn/end`). DSH admits at most `maxActiveSubagents` children of one parent at once (default 8) and refuses the rest, so the bundle patch raises it to 32 for a round of
   characters plus the keeper, author and suggestions.
-- **Tested release, ranged dependencies.** The packages declare DSH `>=0.2.2-rc.1 <0.2.3` (`engines.dsh` and the peer dependency), and the DSH sub-packages in
+- **Tested release, ranged dependencies.** The packages declare DSH `>=0.2.2-rc.3 <0.2.3` (`engines.dsh` and the peer dependency), and the DSH sub-packages in
   `devDependencies` and the workspace override use that same range rather than one exact release, so upgrading DSH pulls them along instead of leaving them behind.
   `scripts/dsh-compat.mjs` is the one list these are derived from, and it also records the releases that were verified (`DSH_RELEASES`):
   `tests/support/dsh-contract.spec.ts` fails while the installed release is not on that list. Supporting a later patch tuple therefore means inspecting its changes,
@@ -126,9 +126,9 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
   middle range with newer turns after it, and also inside the first step of the next turn. DSH's Chat view does not hide the rows it replaced, so the client leaves them out
   itself (`TurnsDock`, by the key DSH gives each row). Shadowed turns never come back to the conversation: going forward again is told as a notice.
 - **`session/event`** (a public event) tells when a turn ends, which fixes where it stands in the log.
-- **Branches.** `ctx.sessions.fork({ sessionId, atSeq, increaseTitle })` on the client (`ISessions`, the same call DSH's own branch button makes) makes the chat; on the host the
-  public `agent/created` event (serial, awaited before creation resolves) carries the new agent, whose header has `isSeeded`, `parentSession` and whose session has
-  `inheritedEventCount` (the cut is one before it), so the roleplay session is made before the chat is first used, and a failure refuses the fork.
+- **Branches.** `ctx.sessions.fork({ sessionId, atSeq, increaseTitle })` on the client (`ISessions`, the same call DSH's own branch button makes) makes the chat. Since 0.2.2 the fork's header no longer
+  carries `parentSession`, so the Branch control tells the host which chat it forked from and where (`POST /sessions/branch`), and the host gives the live fork agent its roleplay
+  session (the cut is the fork's `inheritedEventCount` minus one). A fork that does carry `parentSession` is adopted by the public `agent/created` event (serial, awaited before creation resolves) instead. A failure refuses the branch.
 - **Archive and restore** are DSH's own `workspaceRegistry.archiveSession` (with `stopActivity`) and `unarchiveSession`.
 - **Deleting a chat for good is not an API of DSH.** `host/agent/purge.ts` removes the folders DSH keeps (`<store>/--<project>--/<session id>/`, one for the chat and one for each
   sub-agent session it started, found through `origin: 'subagent'` and `parentSession` in `sessionPersistence.list()`) after stopping the chat and flushing it, naming the

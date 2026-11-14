@@ -1,6 +1,7 @@
 import { CommandRefusedError } from '../../commands/registry.ts'
 import { UnknownStateError } from '../../sessions/compare-session.ts'
 import { TimelineError } from '../../timeline/service.ts'
+import { BranchError } from '../../timeline/branch.ts'
 import { InvalidSettingsError } from '../../sessions/settings.ts'
 import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../sessions/errors.ts'
 import { InvalidArchiveError } from '../../sessions/session-archive.ts'
@@ -78,6 +79,21 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
           sendJson(res, 200, sessions.timeline(url.searchParams.get('id') ?? ''))
         } catch (error) {
           if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
+          throw error
+        }
+      },
+    },
+    '/sessions/branch': {
+      POST: async (req, res) => {
+        const body = await readJsonBody(req)
+        const { chat, parent, atSeq } = typeof body === 'object' && body !== null ? body as { chat?: unknown; parent?: unknown; atSeq?: unknown } : {}
+        if (typeof chat !== 'string' || typeof parent !== 'string' || typeof atSeq !== 'number' || !Number.isSafeInteger(atSeq) || atSeq < 0) return sendError(res, 400, 'the request needs "chat", "parent" and a whole number "atSeq"')
+        try {
+          sendJson(res, 200, await sessions.branch(chat, parent, atSeq))
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof BranchError || error instanceof TimelineError) return sendError(res, 409, error.message)
           if (error instanceof AgentUnavailableError) return sendError(res, 503, error.message)
           throw error
         }

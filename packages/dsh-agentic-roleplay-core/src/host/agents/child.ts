@@ -478,12 +478,10 @@ async function execute<T>(task: ChildTask, stats: RunStats): Promise<T> {
       childId,
       delivery: 'caller',
       signal,
-      request: {
-        parent,
-        agentPreset: HELPER_PRESET,
-        ...(options === undefined ? {} : { agentOptions: options }),
-        prompt: [{ type: 'text', text: task.prompt }, ...(task.images ?? []).map((attachment): ImageBlock => ({ type: 'image', attachment }))],
-      },
+      parent,
+      agentPreset: HELPER_PRESET,
+      ...(options === undefined ? {} : { agentOptions: options }),
+      prompt: [{ type: 'text', text: task.prompt }, ...(task.images ?? []).map((attachment): ImageBlock => ({ type: 'image', attachment }))],
     })
     try {
       await Promise.race([activation.result, gaveUp])

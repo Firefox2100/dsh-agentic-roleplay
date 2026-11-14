@@ -259,8 +259,8 @@ state, and forward again; what belongs to turns the story is not at is left out 
 ## Branching a story
 
 A branch is a new session made from the story as it stood after one of its turns, in a chat of its own; the first session is not touched. DSH makes the chat (its own fork: a
-new `session-<uuid>` seeded with the log up to the cut), and the host gives that chat a session: the creation of a chat that is seeded from a roleplay chat (`agent/created`) is
-heard by the orchestration, which makes the session folder from the state at the cut (`Timelines.adopt`, `roleplayState.fork`): the database from the snapshot of the last turn that
+new `session-<uuid>` seeded with the log up to the cut), and the host gives that chat a session: the Branch control tells the host which chat it forked from and where (`POST /sessions/branch`; DSH's fork no longer records its parent), and the host
+makes the session folder from the state at the cut (`Timelines.adopt`, `roleplayState.fork`): the database from the snapshot of the last turn that
 ended at or before the cut (or from the live state when the story stands there and has not kept one yet), the settings, the kept snapshots, the turns it inherits (`branchTimeline`),
 and the identity of the new session (its id is the chat's uuid) and a name counted up from the first. The new chat's conversation is made to carry exactly those turns (markers and
 notices, as for taking the story back). When the state at the cut was not kept the branch is refused and nothing is made. A chat that is loaded again keeps the session it has.

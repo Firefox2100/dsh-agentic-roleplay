@@ -1,0 +1,135 @@
+name: Dependency Analysis with Dependency-Track
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-analysis
+  cancel-in-progress: false
+
+env:
+  # Reached over Tailscale rather than the public hostname: Cloudflare's bot challenge
+  # blocks GitHub-hosted runners. Traffic is encrypted by WireGuard, hence plain http.
+  DT_HOSTNAME: 100.86.189.45
+  DT_PORT: "9080"
+  DT_PROTOCOL: http
+  # Must still match the audience configured on the workload identity provider.
+  DT_AUDIENCE: https://dependency.firefox2100.co.uk
+  DT_PROVIDER: github-actions
+  DT_SERVICE_ACCOUNT: github-dsh-agentic-roleplay
+
+jobs:
+  discover:
+    name: Find public packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.packages.outputs.matrix }}
+      count: ${{ steps.packages.outputs.count }}
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: List public packages
+        id: packages
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const dirs = ['.']
+          if (fs.existsSync('packages')) {
+            for (const entry of fs.readdirSync('packages')) dirs.push(path.join('packages', entry))
+          }
+          const include = []
+          for (const dir of dirs) {
+            const file = path.join(dir, 'package.json')
+            if (!fs.existsSync(file)) continue
+            const pkg = JSON.parse(fs.readFileSync(file, 'utf8'))
+            if (pkg.private || !pkg.name || !pkg.version) continue
+            include.push({ name: pkg.name, version: pkg.version })
+          }
+          fs.appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `matrix=${JSON.stringify({ include })}\ncount=${include.length}\n`,
+          )
+          NODE
+
+  sbom:
+    name: SBOM for ${{ matrix.name }}
+    needs: discover
+    if: needs.discover.outputs.count != '0'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      # Runtime dependencies as locked in pnpm-lock.yaml; no install needed. Peer
+      # dependencies are the DSH host's, not this package's own.
+      - name: Generate SBOM
+        env:
+          PACKAGE: ${{ matrix.name }}
+        run: |
+          pnpm --filter "$PACKAGE" sbom \
+            --sbom-format cyclonedx --sbom-spec-version 1.6 \
+            --lockfile-only --prod --exclude-peers \
+            --out "$GITHUB_WORKSPACE/bom.json"
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sbom-${{ strategy.job-index }}
+          path: bom.json
+
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ secrets.TS_AUDIENCE }}
+          tags: tag:ci
+          ping: ${{ env.DT_HOSTNAME }}
+
+      - name: Upload SBOM to Dependency-Track
+        uses: DependencyTrack/gh-upload-sbom@331f980a6eba119842052f447c54b09e4888b4c6 # v4.3.0
+        with:
+          server-hostname: ${{ env.DT_HOSTNAME }}
+          port: ${{ env.DT_PORT }}
+          protocol: ${{ env.DT_PROTOCOL }}
+          workload-identity-provider: ${{ env.DT_PROVIDER }}
+          service-account: ${{ env.DT_SERVICE_ACCOUNT }}
+          oidc-audience: ${{ env.DT_AUDIENCE }}
+          project-name: ${{ matrix.name }}
+          project-version: ${{ matrix.version }}
+          project-tags: npm,dsh-plugin
+          bom-filename: bom.json
+          auto-create: true
+          is-latest: ${{ github.ref == 'refs/heads/main' }}

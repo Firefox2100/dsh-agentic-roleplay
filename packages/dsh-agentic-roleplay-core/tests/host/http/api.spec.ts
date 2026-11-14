@@ -18,6 +18,7 @@ import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, In
 import { InvalidJournalError } from '../../../src/host/reference/journal.ts'
 import { UnknownSectionError } from '../../../src/host/reference/reference.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
+import { BranchError } from '../../../src/host/timeline/branch.ts'
 import { UnknownStateError } from '../../../src/host/sessions/compare-session.ts'
 import { InvalidArchiveError } from '../../../src/host/sessions/session-archive.ts'
 import type { StartSessionRequest } from '../../../src/shared/sessions.ts'
@@ -399,6 +400,11 @@ beforeEach(async () => {
         if (archiveError !== undefined) return Promise.reject(archiveError)
         archived.push(`rename ${id} ${name}`)
         return Promise.resolve()
+      },
+      branch: (chat, parent, atSeq) => {
+        if (archiveError !== undefined) return Promise.reject(archiveError)
+        archived.push(`branch ${chat} ${parent} ${atSeq}`)
+        return Promise.resolve({ id: chat })
       },
       archive: (id) => {
         if (archiveError !== undefined) return Promise.reject(archiveError)
@@ -1494,6 +1500,25 @@ describe('roleplay API', () => {
       expect((await rename({ name: 'x' }, 'x')).status).toBe(404)
       archiveError = undefined
       expect((await fetch(`${origin}/sessions/rename?id=abc`)).status).toBe(405)
+    })
+  })
+
+  describe('branching a session', () => {
+    const branch = (body: unknown) => fetch(`${origin}/sessions/branch`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+    it('takes the chat DSH forked, the chat it was forked from and the cut; a bad request is 400, an unknown chat 404, a state that was not kept 409, no agent 503', async () => {
+      expect((await branch({ chat: 'b', parent: 'a', atSeq: 12 })).status).toBe(200)
+      expect(archived).toEqual(['branch b a 12'])
+      expect((await branch({ chat: 'b', parent: 'a', atSeq: -1 })).status).toBe(400)
+      expect((await branch({ chat: 'b' })).status).toBe(400)
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await branch({ chat: 'b', parent: 'a', atSeq: 1 })).status).toBe(404)
+      archiveError = new BranchError('the state was not kept')
+      expect((await branch({ chat: 'b', parent: 'a', atSeq: 1 })).status).toBe(409)
+      archiveError = new AgentUnavailableError('no agent')
+      expect((await branch({ chat: 'b', parent: 'a', atSeq: 1 })).status).toBe(503)
+      archiveError = undefined
+      expect((await fetch(`${origin}/sessions/branch`)).status).toBe(405)
     })
   })
 

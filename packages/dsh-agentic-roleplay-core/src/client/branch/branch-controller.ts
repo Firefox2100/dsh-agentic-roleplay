@@ -58,7 +58,19 @@ export class BranchController {
     return list.subscribe(look)
   }
 
+  /** Follows the branches the transcript's Branch control makes: DSH's fork no longer says which chat it came from, so the control says so. */
+  listen(): () => void {
+    const heard = (event: Event): void => {
+      const chat = (event as CustomEvent<{ chat?: unknown }>).detail?.chat
+      if (typeof chat === 'string' && roleplaySessionOf(chat) !== undefined) void this.ask(chat)
+    }
+    const page = (globalThis as { window?: EventTarget }).window
+    page?.addEventListener('roleplay:branched', heard)
+    return () => { page?.removeEventListener('roleplay:branched', heard) }
+  }
+
   private async ask(chat: string): Promise<void> {
+    if (this.store.getSnapshot().pending !== undefined) return
     const response = await fetch(`${API_PREFIX}/sessions`)
     if (!response.ok) return
     const session = (await response.json() as SessionsPayload).sessions.find(candidate => candidate.chatSessionId === chat)

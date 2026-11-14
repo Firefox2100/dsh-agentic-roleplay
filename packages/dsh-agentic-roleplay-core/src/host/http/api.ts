@@ -188,6 +188,8 @@ export interface ApiDeps {
     archive(id: string): Promise<void>
     restore(id: string): Promise<void>
     rename(id: string, name: string): Promise<void>
+    /** Gives the chat DSH forked from `parent` after the event `atSeq` its own session. @returns the new session's id. @throws {BranchError} @throws {AgentUnavailableError} */
+    branch(chat: string, parent: string, atSeq: number): Promise<{ id: string }>
     /** What a helper run was told and did, when the session kept it. @throws {SessionNotFoundError} */
     activityRun(id: string, run: string): RunDetail | undefined
     /** Starts the characters sorting what they took in into what they believe; it runs in the background. @throws {SessionNotFoundError} @throws {ReflectionRefusedError} */
