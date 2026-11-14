@@ -115,12 +115,12 @@ const coreDirectory = resolve(root, 'packages', 'dsh-agentic-roleplay-core')
 const clientBundle = await readText(resolve(coreDirectory, 'lib', 'client.js'))
 const [bundleHead, bundleId] = clientBundle.split('\n')
 if (bundleHead !== 'window.__ModuleLoader__.load({' || bundleId !== '\tid: "@dsh-agentic-roleplay/core",') throw new Error('the client bundle no longer uses the module format the shell loads (see the tsdown banner)')
-const shellProvided = new Set(['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client', '@deepseek-ai/dsh-client-ui-slots'])
+const shellProvided = new Set(['react', 'react/jsx-runtime', 'react-dom', 'react-dom/client'])
 for (const [, name] of clientBundle.matchAll(/require\("([^"]+)"\)/g)) {
   if (!shellProvided.has(name)) throw new Error(`the client bundle requires ${name}, which the shell does not provide: bundle it instead (tsdown SHELL_MODULES) or drop the import`)
 }
-for (const name of ['@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-store', '@deepseek-ai/dsh-client-ui-dockkit']) {
-  if (clientBundle.includes(name)) throw new Error(`the client bundle still mentions ${name}: the plugin owns its controls and its store`)
+for (const name of ['@deepseek-ai/dsh-client-ui-primitives', '@deepseek-ai/dsh-client-store', '@deepseek-ai/dsh-client-ui-dockkit', '@deepseek-ai/dsh-client-ui-slots']) {
+  if (clientBundle.includes(name)) throw new Error(`the client bundle still mentions ${name}: the plugin owns its controls, its store, and reads slots through the service`)
 }
 
 // The host bundle leaves DSH imports for the profile to supply, while the private model package stays inlined.

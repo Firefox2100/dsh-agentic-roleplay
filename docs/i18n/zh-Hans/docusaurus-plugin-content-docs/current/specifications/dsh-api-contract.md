@@ -19,7 +19,8 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 系统提示词 | `ctx.systemPrompt.section` | `orchestration.ts` |
 | 系统提示词 | `ctx.systemPrompt.suppressRuntimeContext`、`ctx.systemPrompt.context` | `helper.ts` |
 | 系统提示词（按作用域） | 在预设自己的作用域里注册同名的 `ctx.systemPrompt.section`/`context` 会遮蔽 profile 的那一条（空文本不贡献内容），各预设因此把 Web bundle 的引导文字挡在故事提示词之外 | `host/prompts/dev-context.ts` |
-| 命令 | `ctx.commands.register`（在预设的插件里，作用于该预设的智能体）、`agent/created` 时的 `agent.ctx.inject(['commands'], ...)`（作用于某个聊天的智能体）、`agent.followup`；命令名只能用 DSH 的字符集（`[a-z][a-z0-9_-]*`），输入提示不能为空 | `host/commands/registry.ts`、`host/orchestration/player-commands.ts`、`host/checks/commands.ts`、`host/import/tools.ts` |
+| 命令 | `ctx.commands.register`（在预设的插件里，作用于该预设的智能体）、`agent/created` 时的 `agent.ctx.inject(['commands'], ...)`（作用于某个聊天的智能体）、`agent.followup`；从输入框之外执行时用 `parseCommand` 加 `ctx.commands.execute`/`find`；命令名只能用 DSH 的字符集（`[a-z][a-z0-9_-]*`），输入提示不能为空 | `host/commands/registry.ts`、`host/orchestration/player-commands.ts`、`host/checks/commands.ts`、`host/import/tools.ts` |
+| 卸载聊天的智能体 | `ReactLoopAgent.scope`（`@deepseek-ai/dsh-agent-loop`），它的 `Scope.rawDispose`/`dispose`（`@deepseek-ai/dsh-scope`）会撤销该智能体注册的一切，`agent/disposed` 表示它已离开注册表。DSH 只把 dispose 句柄交给自己创建的智能体的调用方，而 Web 应用开的聊天不属于这种情况，所以要换掉一个聊天时走这条路 | `host/agent/agent-sessions.ts` |
 | 回合控制 | `agent/pre-step`、`agent/turn-stopping`、`agent.steer`、`exec.concludeTurn()`、`exec.agent`、`exec.signal` | `host/orchestration/hooks.ts`、`tools.ts` |
 | 创作助手的模型选择 | 在 `agent/created` 中调用 `agent.model.current()`、`agent.model.select()` | `host/authoring/turn-guard.ts` |
 | 无自有工具的编年史作者 | 带有自己的 `submit_result` 的 `runChild` 子智能体（见下） | `compaction/chronicler.ts` |
@@ -30,6 +31,10 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 会话事件 | 读取 `turn/start`、`user/message`、`tool/result`；通过 `Session.create` 与 `ctx.sessionPersistence` 写开场回合 | `compaction/range.ts`、`agent/opening.ts` |
 
 预设的插件包括 persona、本项目的两个插件和 `compaction` 组。`BasicCompactionEngine` 是 `@deepseek-ai/dsh-compaction-basic` 的默认导出，只覆盖其文档列出的钩子。
+
+## 从输入框之外来的文本
+
+输入框里的一行会执行该智能体注册过的任何命令，包括 DSH 自带的（`/compact`、`/goal`、`/feedback`）。从别处来的文本——插件的 HTTP API、评测脚本、试玩——范围更窄：`AgentSessions.send` 只有在命令名对那个聊天的智能体解析到**本插件注册的 handler**（玩家命令，或世界定义的命令）时才执行，其余一律当作消息交给模型。判断用 `parseCommand`、`ctx.commands.find` 和 handler 的同一性，所以 DSH 以后新增内置命令不会改变故事的 API 语义。
 
 ## 浏览器端
 

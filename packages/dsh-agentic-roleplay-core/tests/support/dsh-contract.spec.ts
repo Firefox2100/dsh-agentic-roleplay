@@ -79,4 +79,11 @@ describe('the DSH interfaces this bundle is registered against', () => {
     expect(parseCommand('/招募')).toBeUndefined()
     expect(parseCommand('/Recruit')).toBeUndefined()
   })
+
+  it('still exposes the scope an agent\'s registrations hang from, which is how a chat the web app started is unloaded', () => {
+    expect(declaration('dsh-agent-loop', join('lib', 'types', 'agent.d.ts')), 'host/agent/agent-sessions.ts reads live.scope to unload a chat before replacing it').toMatch(/readonly scope: Scope/)
+    const scope = declaration('dsh-scope')
+    expect(scope, 'the unloader races rawDispose, which unwinds exactly what the agent registered').toContain('rawDispose')
+    expect(scope, 'and falls back to dispose()').toMatch(/dispose\(\): Promise<void>/)
+  })
 })

@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
-import { silenceHarnessDevContext } from './host/prompts/dev-context.ts'
+import { silenceHarnessDevContext, silenceRuntimeContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@dsh-agentic-roleplay/state'
 import type { DecisionService, ImageGenerationService } from '@dsh-ai-providers/core'
@@ -52,8 +52,6 @@ import { guarded } from './host/residency/guard.ts'
 import { pictureReuse } from './host/images/reuse.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
-
-const WORKING_DIRECTORY_CONTEXT = 'working-directory:current'
 
 export const name = '@dsh-agentic-roleplay/core/orchestration'
 
@@ -161,8 +159,8 @@ export function apply(ctx: Context): void {
       return resourceHint(ctx.tools.schemas(context.scope).map(tool => tool.name), ctx.tools.schemas().map(tool => tool.name), translator(languageOf(chat?.settings.prompts.language ?? FALLBACK_LANGUAGE)))
     },
   })
-  // The story has no files, so a directory line only tells a character about the machine; a scoped entry of the same name shadows the required one.
-  ctx.systemPrompt.context({ name: WORKING_DIRECTORY_CONTEXT, order: ctx.systemPrompt.getContextOrder('WORKING_DIRECTORY'), interpolate: false, text: '' })
+  // The story has no files and no wall clock of its own: the directory line and DSH's runtime facts would tell a character about the machine and this session instead of the scene.
+  silenceRuntimeContext(ctx)
   const rolls = new RollReplay(chat => stores(chat)?.settings().rewind.rolls ?? 'reroll')
   const turnTraces = new TurnTraces(() => tracerOf(ctx))
   const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, roller: chat => rolls.roller(chat), delivered: (chat, output) => { turnTraces.output(chat, output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: ${segment.text}` : segment.text)).join('\n\n')); const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }

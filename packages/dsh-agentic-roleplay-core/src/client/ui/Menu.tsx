@@ -1,4 +1,3 @@
-import { createPortal } from 'react-dom'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import css from './Menu.module.css'
 
@@ -74,7 +73,7 @@ export function Menu({ label, entries, onSelect, triggerClassName, title, disabl
       <button ref={trigger} type="button" className={triggerClassName} disabled={disabled} {...(title === undefined ? {} : { title })} aria-haspopup="menu" aria-expanded={open} onClick={() => { if (open) close(false); else setOpen(true) }}>
         {label} <span aria-hidden="true" className={css.chevron}>▾</span>
       </button>
-      {open && createPortal(
+      {open && (
         <div
           ref={list}
           className={css.list}
@@ -88,8 +87,7 @@ export function Menu({ label, entries, onSelect, triggerClassName, title, disabl
           {entries.map((entry, index) => 'heading' in entry
             ? <div key={`heading-${index}`} className={css.heading} role="presentation">{entry.heading}</div>
             : <button key={entry.key} type="button" role="menuitem" className={css.item} disabled={entry.disabled === true} {...(entry.title === undefined ? {} : { title: entry.title })} onClick={() => { close(true); onSelect(entry.key) }}>{entry.label}</button>)}
-        </div>,
-        document.body,
+        </div>
       )}
     </>
   )

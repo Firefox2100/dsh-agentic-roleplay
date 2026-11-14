@@ -1,7 +1,12 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { createSnapshotStore, type SnapshotStore } from '../../store.ts'
-import { resolveSlotLabel } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+
+/**
+ * The label of a slot entry, which is either text or a thunk re-evaluated whenever the language changes. DSH exposes the same one-line rule as `resolveSlotLabel`, but reading it would make
+ * the client load a Harness module at run time.
+ */
+const labelOf = (label: string | (() => string) | undefined): string | undefined => (typeof label === 'function' ? label() : label)
 
 export interface ListedEntry {
   id: string
@@ -19,7 +24,7 @@ export function createSlotList(ctx: Context, slot: 'roleplay.page' | 'roleplay.r
       .map(({ options }) => ({
         id: options.id as string,
         order: options.order ?? 0,
-        label: resolveSlotLabel(options.label) ?? (options.id as string),
+        label: labelOf(options.label) ?? (options.id as string),
       }))
       .sort((a, b) => a.order - b.order)
       .map(({ id, label }): ListedEntry => ({ id, label }))

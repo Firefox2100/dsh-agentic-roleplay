@@ -11,10 +11,13 @@ const ID = pkg.name
  * Modules the web shell hands to every client bundle. Anything else must be
  * inlined, because a require the shell cannot answer throws at load time.
  *
- * `@deepseek-ai/dsh-client-store` is deliberately absent: the plugin owns its
- * snapshot stores (`src/client/store.ts`) and a runtime import of the shell's
- * store package is forbidden by the Harness plugin practices, so the boundary
- * check below rejects it.
+ * No Harness Client package is in this set. `@deepseek-ai/dsh-client-store` is
+ * absent because the plugin owns its snapshot stores (`src/client/store.ts`);
+ * `@deepseek-ai/dsh-client-ui-slots` is absent because the plugin owns its
+ * controls and reads slot entries through `ctx.slots` (a Cordis service) with
+ * only type imports from that package. The boundary check below rejects a
+ * runtime import of either, since the Harness plugin practices forbid loading
+ * another Harness Client package as a module.
  */
 const SHELL_MODULES = new Set([
   'react',
@@ -22,7 +25,6 @@ const SHELL_MODULES = new Set([
   'react-dom',
   'react-dom/client',
   '@deepseek-ai/cordis',
-  '@deepseek-ai/dsh-client-ui-slots',
 ])
 
 /**

@@ -159,7 +159,7 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     // The tools are in place before the first request: one registered afterwards changes the request's tool list and with it the start of the prompt, which is what a server's cache is keyed on.
     registerConditionalTools(agent, conditionsOf(agent.session.id))
     applyLimit(agent, store)
-    registerAgentCommands(agent, worldCommands(intents, store.commands?.() ?? []))
+    registerAgentCommands(ctx, agent, worldCommands(intents, store.commands?.() ?? []))
   })
 
   // The turn that ended is where the next one will have to be cut from.

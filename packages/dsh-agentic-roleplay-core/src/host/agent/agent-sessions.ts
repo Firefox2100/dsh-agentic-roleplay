@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Scope } from '@deepseek-ai/dsh-scope'
 import { CommandRefusedError, runCommandLine, type CommandOutcome } from '../commands/registry.ts'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { chatSessionId } from '../../shared/chat.ts'
@@ -95,18 +96,21 @@ export function agentServicesOf(ctx: Context): () => AgentServices {
       throw new AgentUnavailableError('this DSH profile has no session services, so a roleplay chat cannot be opened')
     }
     const persistence = ctx.get('sessionPersistence') as SessionPersistenceLike | undefined
-    const agents = ctx.get('agents') as { get(id: string): LiveAgent | undefined } | undefined
+    const agents = ctx.get('agents')
     const command = agents === undefined ? undefined : async (chat: string, line: string): Promise<CommandOutcome | undefined> => {
-      const live = agents.get(chat) as unknown as Agent | undefined
+      const live = agents.get(SessionId(chat))
       return live === undefined ? undefined : await runCommandLine(ctx, live, line, new AbortController().signal)
     }
     return { controller, registry, ...(persistence === undefined ? {} : { persistence }), ...(agents === undefined ? {} : { unload: unloader(ctx, agents) }), ...(command === undefined ? {} : { command }) }
   }
 }
 
-interface LiveAgent {
-  scope: { rawDispose?: () => Promise<unknown> | void; dispose(): Promise<unknown> | void }
-}
+/**
+ * A live agent as DSH's loop builds it: the public `Agent`, plus the scope its registrations hang from. DSH exposes the scope on `ReactLoopAgent` (declared by
+ * `@deepseek-ai/dsh-agent-loop`) but not on the `Agent` interface, and gives a caller a dispose handle only for an agent it created itself; the scope is how a chat that
+ * the web app started is unloaded. See `docs/specifications/dsh-api-contract.md`.
+ */
+type LiveAgent = Agent & { readonly scope: Scope }
 
 /** How long a disposed chat may take to leave DSH's agent registry before the replacement is refused. */
 const UNLOAD_WAIT_MS = 5000
@@ -116,9 +120,9 @@ const UNLOAD_WAIT_MS = 5000
  * registration) hangs from. `agent/disposed` says when it has left the registry; the bound is only a guard for a
  * teardown that never finishes.
  */
-function unloader(ctx: Context, agents: { get(id: string): LiveAgent | undefined }): (chat: string) => Promise<void> {
+function unloader(ctx: Context, agents: { get(id: SessionId): Agent | undefined }): (chat: string) => Promise<void> {
   return async (chat) => {
-    const live = agents.get(chat)
+    const live = agents.get(SessionId(chat)) as LiveAgent | undefined
     if (live === undefined) return
     let off = (): void => {}
     try {
@@ -134,7 +138,7 @@ function unloader(ctx: Context, agents: { get(id: string): LiveAgent | undefined
         })()
       })
     } finally { off() }
-    if (agents.get(chat) !== undefined) throw new Error(`the chat ${chat} is still loaded and cannot be replaced`)
+    if (agents.get(SessionId(chat)) !== undefined) throw new Error(`the chat ${chat} is still loaded and cannot be replaced`)
   }
 }
 

@@ -23,7 +23,8 @@ below so it can be checked when DSH moves.
 | Prompt | `ctx.systemPrompt.section` | `orchestration.ts` |
 | Prompt | `ctx.systemPrompt.suppressRuntimeContext`, `ctx.systemPrompt.context` | `helper.ts` |
 | Prompt, scoped | `ctx.systemPrompt.section`/`context` registered in a preset's scope shadows the profile's contribution of the same name (empty text contributes nothing), which is how the presets keep the Web bundle's orientation text out of story prompts | `host/prompts/dev-context.ts` |
-| Commands | `ctx.commands.register` (in a preset's plugin for a preset's agents), `agent.ctx.inject(['commands'], ...)` at `agent/created` (for one chat's agent), `agent.followup`, a name in DSH's alphabet (`[a-z][a-z0-9_-]*`) with a non-empty input hint | `host/commands/registry.ts`, `host/orchestration/player-commands.ts`, `host/checks/commands.ts`, `host/import/tools.ts` |
+| Commands | `ctx.commands.register` (in a preset's plugin for a preset's agents), `agent.ctx.inject(['commands'], ...)` at `agent/created` (for one chat's agent), `agent.followup`, `ctx.commands.execute`/`find` with `parseCommand` (to run a line of the plugin's own from outside the input box), a name in DSH's alphabet (`[a-z][a-z0-9_-]*`) with a non-empty input hint | `host/commands/registry.ts`, `host/orchestration/player-commands.ts`, `host/checks/commands.ts`, `host/import/tools.ts` |
+| Unloading a chat's agent | `ReactLoopAgent.scope` (`@deepseek-ai/dsh-agent-loop`), whose `Scope.rawDispose`/`dispose` (`@deepseek-ai/dsh-scope`) unwinds the agent's registrations; `agent/disposed` says when it has left the registry. DSH gives a caller a dispose handle only for an agent it started itself, and a chat started by the web app is not that, so this is how a replacement chat is made | `host/agent/agent-sessions.ts` |
 | Turn control | `agent/pre-step` (waterfall), `agent/turn-stopping`, `agent.steer`, `exec.concludeTurn()`, `exec.agent`, `exec.signal` | `host/orchestration/hooks.ts`, `tools.ts` |
 | Authoring model choice | `agent.model.current()`, `agent.model.select()` from `agent/created` | `host/authoring/turn-guard.ts` |
 | Chronicler (no tools of its own) | a `runChild` child with a `submit_result` of its own (below) | `compaction/chronicler.ts` |
@@ -32,6 +33,16 @@ below so it can be checked when DSH moves.
 | Looking up an agent | `ctx.agents.get` | `orchestration.ts` |
 | Compaction | `BasicCompactionEngine` (`@deepseek-ai/dsh-compaction-basic`, default export): its documented sole hook `summarize()` and `compactRegion()`; `ctx.tokenMeter.measure(session)`; `session.surface.nodes`; `session.snapshotEvents()`; `session.header.origin` | `host/compaction/` |
 | Session events | reading `turn/start`, `user/message`, `tool/result` events; writing the opening turn through `Session.create` and `ctx.sessionPersistence` | `compaction/range.ts`, `agent/opening.ts` |
+
+## Text from outside the input box
+
+A line typed into the input box runs whatever command is registered for that agent, DSH's own
+included (`/compact`, `/goal`, `/feedback`). Text that arrives another way — the plugin's HTTP API, a
+benchmark script, a playtest — is narrower: `AgentSessions.send` runs a slash line only when the name
+resolves, for that chat's agent, to a handler this plugin registered (a player command, or one the
+world defines), and sends anything else to the model as a message. The check is `parseCommand` plus
+`ctx.commands.find` plus the handler's identity, so a later DSH release adding a built-in command
+cannot change what a story's API does.
 
 ## Browser (the client plugins)
 
