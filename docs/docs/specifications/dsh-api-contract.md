@@ -128,7 +128,7 @@ check and fix). `host/agents/child.ts` (`runChild`) does this through public API
 - **`session/event`** (a public event) tells when a turn ends, which fixes where it stands in the log.
 - **Branches.** `ctx.sessions.fork({ sessionId, atSeq, increaseTitle })` on the client (`ISessions`, the same call DSH's own branch button makes) makes the chat. Since 0.2.2 the fork's header no longer
   carries `parentSession`, so the Branch control tells the host which chat it forked from and where (`POST /sessions/branch`), and the host gives the live fork agent its roleplay
-  session (the cut is the fork's `inheritedEventCount` minus one). A fork that does carry `parentSession` is adopted by the public `agent/created` event (serial, awaited before creation resolves) instead. A failure refuses the branch.
+  session (the cut is the fork's `inheritedEventCount` minus one). A fork that does carry `parentSession` is adopted by the public `agent/created` event (serial, awaited before creation resolves) instead. A failure refuses the branch; a failure after the fork removes the copy (`host/sessions/branch-session.ts`), since a chat with no story could never be opened, while an unavailable agent leaves the copy in place so the branch can be tried again.
 - **Archive and restore** are DSH's own `workspaceRegistry.archiveSession` (with `stopActivity`) and `unarchiveSession`.
 - **Deleting a chat for good is not an API of DSH.** `host/agent/purge.ts` removes the folders DSH keeps (`<store>/--<project>--/<session id>/`, one for the chat and one for each
   sub-agent session it started, found through `origin: 'subagent'` and `parentSession` in `sessionPersistence.list()`) after stopping the chat and flushing it, naming the

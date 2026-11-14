@@ -67,7 +67,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 - 替换标记使用公开的 `Session.append('user/message', ..., { surfaceOp: { op: 'replace', startSeq, endSeq }, sourceEventSeqs })`，与 DSH 自己的折叠方式相同。它把一段模型对话排除在后续请求外；`surfaceOp: 'append'` 用于添加提示。中间范围之后即使已有新回合也可替换，下一回合第一步中也可执行。DSH 的 Chat 视图不会隐藏被替换的行，因此客户端的 `TurnsDock` 按 DSH 给出的行键自行过滤。被遮蔽的回合不会重新进入对话，重新前进时只添加说明。
 - 公开事件 `session/event` 指示回合结束，从而确定它在日志中的位置。
-- 客户端通过 `ctx.sessions.fork({ sessionId, atSeq, increaseTitle })` 创建分支，与 DSH 自带分支按钮相同。自 0.2.2 起，分支的 header 不再带有 `parentSession`，因此“从此处分支”控件会在分支创建后告诉主机它来自哪个对话、切点在哪里（`POST /sessions/branch`），主机据此为这个运行中的分支智能体创建角色扮演会话（切点为分支 `inheritedEventCount` 减一）。仍带有 `parentSession` 的分支则由公开的 `agent/created` 事件（串行等待）接手。失败则拒绝分支。
+- 客户端通过 `ctx.sessions.fork({ sessionId, atSeq, increaseTitle })` 创建分支，与 DSH 自带分支按钮相同。自 0.2.2 起，分支的 header 不再带有 `parentSession`，因此“从此处分支”控件会在分支创建后告诉主机它来自哪个对话、切点在哪里（`POST /sessions/branch`），主机据此为这个运行中的分支智能体创建角色扮演会话（切点为分支 `inheritedEventCount` 减一）。仍带有 `parentSession` 的分支则由公开的 `agent/created` 事件（串行等待）接手。失败则拒绝分支：分支已经创建之后才失败时，那份拷贝会被删除（`host/sessions/branch-session.ts`），因为没有故事的对话永远打不开；智能体不可用则保留拷贝，以便重试。
 - 归档与恢复使用 DSH 的 `workspaceRegistry.archiveSession`（带 `stopActivity`）和 `unarchiveSession`。
 - DSH 没有永久删除对话的公开 API。`host/agent/purge.ts` 在停止并刷新对话后，删除 DSH 保存的目录：`<store>/--<project>--/<session id>/`，包括对话自身及其创建的子智能体会话。子会话通过 `sessionPersistence.list()` 中的 `origin: 'subagent'` 与 `parentSession` 找到。目录名按 DSH JSONL 存储的 `projectKey` 和 `encodeSegment` 规则生成。符号链接、名称不匹配或不含日志的目录会被拒绝。位置由 `sessionStorePath` 配置，默认 `~/.dsh/sessions`。DSH 的工作区计数和投影缓存仍保留该 ID；存在 `delete` 的缓存会收到删除通知，残留条目不会再次列出或读取。操作会发出 DSH 控制器同样使用的 `api-session/removed`。存储布局变化会先由 `tests/host/agent/purge.spec.ts` 和实时删除测试发现。
 
