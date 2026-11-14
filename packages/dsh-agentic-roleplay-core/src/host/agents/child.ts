@@ -286,11 +286,18 @@ export function repairedJson(text: string, accepts: (value: unknown) => boolean 
 /** A constrained result was returned only as reasoning, leaving the answer empty. */
 export const ANSWERED_IN_THINKING = 'the reply is empty: the answer was written as thinking, which this endpoint does with a constrained reply while the model thinks'
 
+/** A reply that a model wrapped in a code fence, without the fence: the opening one and the closing one at the end. */
+function unfenced(text: string): string {
+  const open = text.startsWith('```json') ? 7 : text.startsWith('```') ? 3 : 0
+  const body = text.slice(open).trimEnd()
+  return (body.endsWith('```') ? body.slice(0, -3) : body).trim()
+}
+
 /** The result in the last reply of a structured child: its JSON, which must fit the schema; else what is wrong with it. */
 export function structuredReply(child: Agent, schema: ObjectJsonSchema, cut = false): { value: unknown } | { problem: string } {
   const message = child.session.snapshotEvents().findLast(event => event.type === 'assistant/message')
   const content = message?.type === 'assistant/message' ? message.data.message.content : []
-  const text = content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('').trim().replace(/^```(?:json)?\s*|\s*```$/g, '')
+  const text = unfenced(content.flatMap(block => (block.type === 'text' ? [block.text] : [])).join('').trim())
   if (text === '') return { problem: content.some(block => block.type === 'reasoning' && block.text.trim() !== '') ? ANSWERED_IN_THINKING : 'the reply is empty' }
   let value: unknown
   try { value = JSON.parse(text) } catch (error) {

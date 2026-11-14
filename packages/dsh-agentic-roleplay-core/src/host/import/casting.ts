@@ -31,7 +31,7 @@ const CASTING_SCHEMA = {
 
 /** A trigger key is ASCII: the name's own letters when it has any, else the mechanism's number. */
 const asciiKey = (name: string, number: number): string => {
-  const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40)
+  const key = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) // NOSONAR: one class repeated, linear
   return key === '' ? `casting_${number}` : key
 }
 

@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { afterAll, describe, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { shapeOpening } from '../../src/host/import/opening-parts.ts'
 import { LANGUAGES, type Language } from './language.ts'
 import { liveContext, newCounters, type LiveOptions } from './live.ts'
@@ -73,6 +73,7 @@ describe.skipIf(!live)(`the opening-shaping benchmark, live (${label})`, () => {
             trace.state('outcome', { passage: made.passage, shaped, probability })
             trace.expect('the greeting is shaped as a reader would', problems.length === 0, { problems })
             results.push({ trace: trace.file, id: made.id, kind: made.kind, language, mode, run, problems, parts: shaped.parts?.length ?? 0, probability, llmCalls: counters.llmCalls, ms: Date.now() - began })
+            expect(shaped.parts?.length ?? 0, 'the shaping leaves at least one part of the greeting').toBeGreaterThan(0)
           }, 300_000)
         }
       }

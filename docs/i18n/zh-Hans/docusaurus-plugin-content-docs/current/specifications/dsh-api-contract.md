@@ -46,6 +46,8 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 
 这份副本里有两处逻辑值得单独测试，它们是既不含 React 也不碰 DOM 的纯函数：`src/client/ui/place.ts`（气泡落在哪一侧、什么时候翻转、怎么夹紧）与 `src/client/ui/walk.ts`（tablist 的按键落到哪一段）。`tests/client/ui/place.spec.ts` 覆盖两者，改动这些行为不用打开浏览器就能被测试抓住。
 
+**语言。** `@deepseek-ai/dsh-client-locale` 自己注册了六种语言（`ja`、`es`、`fr`、`de`、`ru`、`pt`，都回退到 `en`），加上内置的 `zh` 与 `en`，开箱就有八种可选。`src/client/i18n.ts` 的字典类型要求八种齐全：`Dictionaries<Key> = Record<RoleplayLocaleId, Record<Key, string>>`。所以 DSH 增删内置语言时会在**编译期**失败，而不是运行时让某种语言显示空白；修法是补上或删掉那种语言的字典，不是放松类型。
+
 有一个元素被放在插件自己的组件之外：界面包的背景层，它作为会话正文的第一个子元素插入，并给该正文的滚动元素做标记，使其升到这一层之上。聊天会绘制自己的背景，也没有提供位于背景之后的插槽，所以背景无法从插件的子树里渲染；滚动元素的类名由 `tests/support/dsh-contract.spec.ts` 读取并检查。抬升规则和界面包自己的皮肤是由 dock 组件渲染的 `<style>` 元素，而不是手工追加到文档里的节点。
 
 ## 辅助智能体

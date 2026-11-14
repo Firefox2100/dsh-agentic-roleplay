@@ -1,6 +1,10 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { createSnapshotStore, type SnapshotStore } from '../../store.ts'
 import type {} from '@deepseek-ai/dsh-client-locale/client'
+import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
+import type {} from '@deepseek-ai/dsh-client-ui-slots'
+import type {} from '../../panel/slot-contract.ts'
+import type {} from '../../reference/slot-contract.ts'
 
 /**
  * The label of a slot entry, which is either text or a thunk re-evaluated whenever the language changes. DSH exposes the same one-line rule as `resolveSlotLabel`, but reading it would make

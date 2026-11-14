@@ -14,7 +14,10 @@ for (const name of await readdir(packages)) {
   try {
     const content = await readFile(report, 'utf8')
     reports.push(content.replace(/^SF:(.+)$/gm, (_, source) => {
-      return `SF:${path.relative(root, path.resolve(packageRoot, source))}`
+      // LCOV paths are slash-separated on every platform: Sonar and the other readers take them as written, and a
+      // Windows checkout would otherwise report `packages\alpha\src\alpha.ts` and match no file.
+      const relative = path.relative(root, path.resolve(packageRoot, source))
+      return `SF:${relative.split(path.sep).join('/')}`
     }))
   } catch (error) {
     if (error.code !== 'ENOENT') throw error

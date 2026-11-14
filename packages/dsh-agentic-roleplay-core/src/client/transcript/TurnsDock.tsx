@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { StoryComparison } from '../../shared/compare.ts'
 import type { TimelineView } from '../../shared/timeline.ts'
@@ -40,6 +40,10 @@ export function TurnsDock({ useChat, useSession, timeline, move, mark, compare, 
   const [problem, setProblem] = useState<string | undefined>()
   const [refresh, setRefresh] = useState(0)
   const [naming, setNaming] = useState<string | undefined>()
+  const nameInput = useRef<HTMLInputElement>(null)
+  const editing = naming !== undefined
+  // The name field appears on a press, so it takes the focus itself rather than through autoFocus, which the accessibility rules reserve for pages that open with a form.
+  useEffect(() => { if (editing) nameInput.current?.focus() }, [editing])
   const [comparison, setComparison] = useState<StoryComparison | undefined>()
   const marks = useChat((chat) => {
     const nodes = [...(chat.nodes.values() as Iterable<NodeLike>)]
@@ -104,7 +108,7 @@ export function TurnsDock({ useChat, useSession, timeline, move, mark, compare, 
         ? <button type="button" className={css.button} disabled={off} title={last.label === undefined ? t('checkpointHint') : t('checkpointNamed', { name: last.label })} onClick={() => { setNaming(last.label ?? '') }}>{t('checkpoint')}</button>
         : (
           <span className={css.group}>
-            <input className={css.select} autoFocus maxLength={80} value={naming} placeholder={t('checkpointName')} aria-label={t('checkpointName')} onChange={(event) => { setNaming(event.target.value) }} onKeyDown={(event) => { if (event.key === 'Enter') save(); if (event.key === 'Escape') setNaming(undefined) }} />
+            <input ref={nameInput} className={css.select} maxLength={80} value={naming} placeholder={t('checkpointName')} aria-label={t('checkpointName')} onChange={(event) => { setNaming(event.target.value) }} onKeyDown={(event) => { if (event.key === 'Enter') save(); if (event.key === 'Escape') setNaming(undefined) }} />
             <button type="button" className={css.button} disabled={off || naming.trim() === ''} onClick={save}>{t('checkpointSave')}</button>
             {last.label !== undefined && <button type="button" className={css.button} disabled={off} onClick={() => { setBusy(true); mark(last.id, '').then(() => { setNaming(undefined); setRefresh(count => count + 1) }).catch((error: unknown) => { setProblem(error instanceof Error ? error.message : String(error)) }).finally(() => { setBusy(false) }) }}>{t('checkpointRemove')}</button>}
             <button type="button" className={css.button} onClick={() => { setNaming(undefined) }}>{t('checkpointCancel')}</button>

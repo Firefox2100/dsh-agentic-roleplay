@@ -7,19 +7,70 @@ export interface Split {
   panels: string[]
 }
 
-const FENCE = /```[^\n]*\n[\s\S]*?```/g
 const TAG = /<(\/?)([\p{L}][\p{L}\p{N}_-]*)(?=[\s>/])[^>]*>/gu
 const BLOCKS = new Set(['div', 'table', 'details', 'pre', 'center', 'section', 'aside', 'fieldset'])
 const SEPARATORS = /\s[|｜│]\s|[|｜│]\s*\S+\s*[|｜│]/
-const HEADER = /(?:^|\n)[ \t]*(?:【[^】\n]{1,30}】|\[[^\]\n]{1,30}\]|#+[ \t]*[^\n]{1,30})[ \t]*\n?\s*$/
 const MAX_HTML_TEXT_CHARS = 600
 const MAX_CUSTOM_CHARS = 4000
 /** A block of tags of a card's own invention (not markup) counts as a panel from this many tags: two or three tags are a form of address or an aside, a layout is more. */
 const MIN_CUSTOM_TAGS = 6
 const MAX_PANELS = 6
+/** The most a header line that introduces a panel may say: `【状态】`, `[Status]`, `## Sheet`. */
+const MAX_HEADER_CHARS = 30
+
+/**
+ * The fenced blocks of a message, as offsets from the opening fence to the end of the closing one.
+ * Found by scanning rather than by a regular expression: a lazy `[\s\S]*?` over a long message is quadratic when no closing fence follows.
+ */
+function fencedBlocks(text: string): { from: number; to: number }[] {
+  const blocks: { from: number; to: number }[] = []
+  let from = 0
+  for (;;) {
+    const open = text.indexOf('```', from)
+    if (open === -1) return blocks
+    const lineEnd = text.indexOf('\n', open)
+    const close = lineEnd === -1 ? -1 : text.indexOf('```', lineEnd + 1)
+    if (close === -1) return blocks
+    blocks.push({ from: open, to: close + 3 })
+    from = close + 3
+  }
+}
+
+/** The fenced block's text without its fence lines. */
+const unfenced = (block: string): string => block.replace(/^```[^\n]*\n|```$/g, '').trim()
+
+/** Whether a character is whitespace, without a regular expression to say so. */
+const isSpace = (char: string): boolean => char.trim() === ''
+
+/** Whether a line is a header that introduces a panel: a short bracketed name or a short heading. */
+function headerLine(line: string): boolean {
+  const text = line.trim()
+  if (text === '') return false
+  for (const [open, close] of [['【', '】'], ['[', ']']] as const) {
+    if (!text.startsWith(open) || !text.endsWith(close)) continue
+    const name = text.slice(open.length, text.length - close.length)
+    if (name.length >= 1 && name.length <= MAX_HEADER_CHARS) return true
+  }
+  let hashes = 0
+  while (hashes < text.length && text[hashes] === '#') hashes += 1
+  if (hashes === 0) return false
+  const heading = text.slice(hashes).trim()
+  return heading !== '' && heading.length <= MAX_HEADER_CHARS
+}
+
+/** Where the header line that introduces a panel starts, when the text before the panel ends with one; the panel is taken from there. */
+function headerBefore(before: string): number | undefined {
+  let end = before.length
+  while (end > 0 && isSpace(before[end - 1]!)) end -= 1
+  if (end === 0) return undefined
+  const start = before.lastIndexOf('\n', end - 1) + 1
+  return headerLine(before.slice(start, end)) ? start : undefined
+}
 
 const collapse = (text: string): string => text.replace(/\n{3,}/g, '\n\n').trim()
-const plain = (html: string): string => html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+/** A tag is one class and a closing bracket: linear, so the warning about backtracking does not apply. */
+const withoutTags = (html: string): string => html.replace(/<[^>]*>/g, ' ') // NOSONAR: linear by construction
+const plain = (html: string): string => withoutTags(html).replace(/\s+/g, ' ').trim()
 
 interface Block {
   from: number
@@ -58,8 +109,9 @@ function tagBlocks(text: string): Block[] {
     if (last !== undefined && text.slice(last.to, block.from).trim() === '') { last.to = block.to; last.custom ||= block.custom; last.tags += block.tags } else joined.push({ ...block })
   }
   return joined.map(block => {
-    const header = block.custom ? HEADER.exec(text.slice(0, block.from)) : null
-    return header === null ? block : { ...block, from: header.index + (header[0].startsWith('\n') ? 1 : 0) }
+    if (!block.custom) return block
+    const header = headerBefore(text.slice(0, block.from))
+    return header === undefined ? block : { ...block, from: header }
   })
 }
 
@@ -69,15 +121,22 @@ const statusLine = (line: string): boolean => SEPARATORS.test(line) && /\d/.test
 const CALL = /\b_\.\w+\(|\bstat_data\b|\bJSONPatch\b/
 
 /** The text before a removed panel without its last line when that line only introduces the panel ("end every reply with this:"). */
-const withoutLeadIn = (before: string): string => before.replace(/(?:^|\n)[^\n]*[:：][ \t]*\n?\s*$/, '\n')
+function withoutLeadIn(before: string): string {
+  let end = before.length
+  while (end > 0 && isSpace(before[end - 1]!)) end -= 1
+  if (end === 0 || (before[end - 1] !== ':' && before[end - 1] !== '：')) return before
+  const lineStart = before.lastIndexOf('\n', end - 1)
+  return lineStart === -1 ? '\n' : `${before.slice(0, lineStart)}\n`
+}
 
-function fencesWithoutLeadIn(text: string, panels: string[]): string {
+/** The text with its fenced blocks taken out into `panels`, each gap passed through `gap`. */
+function withoutFences(text: string, panels: string[], gap: (text: string) => string): string {
   let out = ''
   let last = 0
-  for (const match of text.matchAll(FENCE)) {
-    panels.push(match[0].replace(/^```[^\n]*\n|```$/g, '').trim())
-    out += `${withoutLeadIn(text.slice(last, match.index))}\n\n`
-    last = match.index + match[0].length
+  for (const block of fencedBlocks(text)) {
+    panels.push(unfenced(text.slice(block.from, block.to)))
+    out += `${gap(text.slice(last, block.from))}\n\n`
+    last = block.to
   }
   return out + text.slice(last)
 }
@@ -96,7 +155,7 @@ export interface SplitOptions {
  */
 export function splitPanels(text: string, options: SplitOptions = {}): Split {
   const panels: string[] = []
-  let rest = options.leadIn === true ? fencesWithoutLeadIn(text, panels) : text.replace(FENCE, block => { panels.push(block.replace(/^```[^\n]*\n|```$/g, '').trim()); return '\n\n' })
+  let rest = options.leadIn === true ? withoutFences(text, panels, withoutLeadIn) : withoutFences(text, panels, gap => gap)
   const blocks = tagBlocks(rest)
   const outside = blocks.reduceRight((left, { from, to }) => left.slice(0, from) + left.slice(to), rest)
   if (blocks.length > 0 && (options.alone === true || plain(outside) !== '')) {
@@ -119,8 +178,31 @@ export function panelsOfCard(card: NormalizedCard): string[] {
   return [...new Set(texts.flatMap(text => splitPanels(text).panels))].filter(panel => panel.length <= MAX_CUSTOM_CHARS).slice(0, MAX_PANELS)
 }
 
-/** The sentences of one line; a full stop inside a word or a call (`_.set(`) does not end one. */
-const sentencesOf = (line: string): string[] => line.match(/(?:[^.!?。！？]|[.!?](?!\s|$))+(?:[.!?]+(?=\s|$)|[。！？]+|$)\s*/gu) ?? [line]
+const ASCII_STOPS = new Set(['.', '!', '?'])
+const WIDE_STOPS = new Set(['。', '！', '？'])
+
+/**
+ * The sentences of one line; a full stop inside a word or a call (`_.set(`) does not end one: a run of terminal marks ends a sentence only when a space or the end of the line follows it,
+ * except for the wide marks, which end one wherever they are. Found by scanning, so that a line of full stops and letters cannot make the matcher backtrack over itself.
+ */
+function sentencesOf(line: string): string[] {
+  const sentences: string[] = []
+  let from = 0
+  let at = 0
+  while (at < line.length) {
+    if (!ASCII_STOPS.has(line[at]!) && !WIDE_STOPS.has(line[at]!)) { at += 1; continue }
+    let end = at
+    while (end < line.length && (ASCII_STOPS.has(line[end]!) || WIDE_STOPS.has(line[end]!))) end += 1
+    const ends = !ASCII_STOPS.has(line[at]!) || end === line.length || isSpace(line[end]!)
+    if (!ends) { at = end; continue }
+    while (end < line.length && isSpace(line[end]!)) end += 1
+    sentences.push(line.slice(from, end))
+    from = end
+    at = end
+  }
+  if (from < line.length) sentences.push(line.slice(from))
+  return sentences.length === 0 ? [line] : sentences
+}
 
 const MIN_LEFT_OUT_WORDS = 3
 const ECHO_SHARE = 0.6

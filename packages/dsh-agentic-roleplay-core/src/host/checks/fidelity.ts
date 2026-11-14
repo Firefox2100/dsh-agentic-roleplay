@@ -138,7 +138,7 @@ const names: Check = {
     const cardHasLatin = /[a-z]/u.test(text)
     const comparable = (names: readonly string[]): boolean => names.every(name => (wide.test(name) ? cardHasWide : !/[a-z]/iu.test(name) || cardHasLatin))
     const named = (candidate: string): boolean => {
-      const plain = candidate.replace(/\s*[(（][^)）]*[)）]/gu, '').trim()
+      const plain = candidate.replace(/\s*[(（][^)）]*[)）]/gu, '').trim() // NOSONAR: one class repeated between literals, linear
       return [candidate, plain].some(name => folded(name).trim() !== '' && text.includes(folded(name).trim()))
     }
     // a name in Chinese, Japanese or Korean cannot be found in a card that has none of those characters, nor a name in Latin letters in a card that has none: the world is in another language than the card, which is not a name made up
@@ -163,7 +163,7 @@ const NUMBER = /\p{N}{2,}(?:[.,:]\p{N}+)*/gu
 
 /** The numbers of a piece's text, without those inside the card's macros and addresses. */
 export function numbersOf(text: string): string[] {
-  const plain = text.replace(/\{\{[\s\S]*?\}\}/gu, ' ').replace(/https?:\/\/\S+/gu, ' ').normalize('NFKC')
+  const plain = text.replace(/\{\{[\s\S]*?\}\}/gu, ' ').replace(/https?:\/\/\S+/gu, ' ').normalize('NFKC') // NOSONAR: a lazy span and a literal prefix, linear
   return [...new Set(plain.match(NUMBER) ?? [])]
 }
 

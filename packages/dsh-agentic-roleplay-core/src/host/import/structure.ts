@@ -10,17 +10,22 @@ const MAX_EXAMPLES = 8
 /** The summary is the start of the description: a sentence or two. */
 const SUMMARY_CHARS = 280
 
+/** A line an example speaks through: a short name, a colon, and what the character says. */
+function spoken(line: string): { name: string; utterance: string } | undefined {
+  const colon = line.indexOf(':')
+  if (colon < 1 || colon > 100) return undefined
+  return { name: line.slice(0, colon), utterance: line.slice(colon + 1).trimStart() }
+}
+
 /** The lines of the example messages that the character speaks, as written; the markers of the tool that wrote them are taken out. */
 function exampleLines(text: string, name: string): string[] {
   const lines = cleanText(text, name).split('\n').map(line => line.trim()).filter(line => line !== '')
-  const speaker = /^([^:\n]{1,100}):\s*(.*)$/
-  if (!lines.some(line => speaker.test(line))) return lines.slice(0, MAX_EXAMPLES)
+  if (!lines.some(line => spoken(line) !== undefined)) return lines.slice(0, MAX_EXAMPLES)
   const names = new Set([name, name.split(/\s+/)[0] ?? ''].map(part => part.toLocaleLowerCase()))
   return lines.flatMap(line => {
-    const match = speaker.exec(line)
-    if (match?.[1] === undefined || !names.has(match[1].trim().toLocaleLowerCase())) return []
-    const utterance = match[2]?.trim()
-    return utterance === undefined || utterance === '' ? [] : [utterance]
+    const match = spoken(line)
+    if (match === undefined || !names.has(match.name.trim().toLocaleLowerCase())) return []
+    return match.utterance === '' ? [] : [match.utterance]
   }).slice(0, MAX_EXAMPLES)
 }
 

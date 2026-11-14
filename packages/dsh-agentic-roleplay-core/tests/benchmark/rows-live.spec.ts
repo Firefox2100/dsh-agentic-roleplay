@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { afterAll, describe, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 import { loadData } from './framework/index.ts'
 import { playRow, StoryRig, type RowRun } from './rows-run.ts'
 import { byKind, describeKinds, flaky } from './report.ts'
@@ -57,6 +57,7 @@ describe.skipIf(!live)(`the rows played as stories (${label})`, () => {
         const trace = openTrace(folder, `${row.id}-${run}`, { id: row.id, label, language: row.language, run, options: { models: 'the rig\'s' } })
         const result = await playRow(rig, data, row, script, trace, folder === undefined ? undefined : join(folder, `${row.id}-${run}.chat.jsonl.zstd`))
         results.push({ ...result, run })
+        expect(result.turns.length, 'the row played at least one turn of the story').toBeGreaterThan(0)
       }, 60 * 60_000)
     }
   }

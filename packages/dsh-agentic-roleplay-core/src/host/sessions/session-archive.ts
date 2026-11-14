@@ -138,7 +138,7 @@ export async function importSession(deps: ArchiveDeps, bytes: Buffer): Promise<{
 }
 
 /** A name that is safe as a file or folder name on any system: letters, digits and marks of any script, with single hyphens between the rest. */
-export const folderName = (name: string): string => name.normalize('NFKC').replace(/[^\p{L}\p{N}\p{M}]+/gu, '-').replace(/^-+|-+$/gu, '').slice(0, 60)
+export const folderName = (name: string): string => name.normalize('NFKC').replace(/[^\p{L}\p{N}\p{M}]+/gu, '-').replace(/^-+|-+$/gu, '').slice(0, 60) // NOSONAR: one class repeated, linear
 
 /** A folder name under `parent` that is free: the name itself, or with -2, -3... */
 function freeFolder(parent: string, name: string): string {

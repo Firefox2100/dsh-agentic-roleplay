@@ -74,6 +74,13 @@ The two pieces of that copy with logic worth testing are plain functions, free o
 `src/client/ui/walk.ts` (which segment a tablist key moves to). `tests/client/ui/place.spec.ts` covers
 both, so a behavior change there is caught without a browser.
 
+**Languages.** `@deepseek-ai/dsh-client-locale` registers six languages of its own (`ja`, `es`, `fr`,
+`de`, `ru`, `pt`, all falling back to `en`) beside the built-in `zh` and `en`, so eight are offered out
+of the box. `src/client/i18n.ts` types its dictionaries as a record of all eight:
+`Dictionaries<Key> = Record<RoleplayLocaleId, Record<Key, string>>`. A DSH release that adds or removes
+a built-in language therefore fails the client typecheck rather than showing blank text in one language
+at run time; the fix is to add or drop that language's dictionaries, not to loosen the type.
+
 One element is put outside the plugin's own components: an interface pack's backdrop layer, inserted as the first
 child of the conversation body, with that body's scrolling element marked so it is lifted over the layer. The chat
 paints its own background and offers no slot behind it, so a backdrop cannot be rendered from the plugin's subtree;

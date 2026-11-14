@@ -21,15 +21,20 @@ export function mediaCapabilities(): Promise<MediaCapabilities> {
   return value
 }
 
+/**
+ * The capabilities, asked for now and then again, and told to `notify` as they change; the returned function stops the asking. Plain, so that a test can watch it without a page.
+ */
+export function watchMediaCapabilities(notify: (value: MediaCapabilities) => void): () => void {
+  let stopped = false
+  const load = (): void => { mediaCapabilities().then((value) => { if (!stopped) notify(value) }, () => undefined) }
+  load()
+  const timer = setInterval(load, FRESH_MS)
+  return () => { stopped = true; clearInterval(timer) }
+}
+
 /** The capabilities, or nothing until the host has answered, so that a control that may not belong is not shown and taken away again. */
 export function useMediaCapabilities(): MediaCapabilities | undefined {
   const [found, setFound] = useState<MediaCapabilities | undefined>()
-  useEffect(() => {
-    let stopped = false
-    const load = (): void => { mediaCapabilities().then((value) => { if (!stopped) setFound(value) }, () => undefined) }
-    load()
-    const timer = window.setInterval(load, FRESH_MS)
-    return () => { stopped = true; window.clearInterval(timer) }
-  }, [])
+  useEffect(() => watchMediaCapabilities(setFound), [])
   return found
 }

@@ -81,7 +81,7 @@ export function tidyQuotes(text: string): string {
     const inside = result.slice(1, -1)
     if (result.length > 1 && result.startsWith(open) && result.endsWith(close) && !inside.includes(open) && !inside.includes(close)) result = inside.trim()
   }
-  result = result.replace(/^[”’」』»\s]+/u, '').replace(/[“‘「『«„\s]+$/u, '')
+  result = result.replace(/^[”’」』»\s]+/u, '').replace(/[“‘「『«„\s]+$/u, '') // NOSONAR: two anchored classes, linear
   for (const [open, close] of PAIRS) {
     if (result.startsWith(open) && count(result, open) > count(result, close)) result = result.slice(1).trim()
     if (result.endsWith(close) && count(result, close) > count(result, open)) result = result.slice(0, -1).trim()
@@ -91,7 +91,7 @@ export function tidyQuotes(text: string): string {
 }
 
 /** A stretch of the passage without the spacing and the quotation marks at its ends: an opening quote belongs to the line after it, a closing one to the line before. */
-const unquoted = (text: string): string => text.replace(/^[\s"“”‘’「」『』«»„‟]+|[\s"“”‘’「」『』«»„‟]+$/gu, '')
+const unquoted = (text: string): string => text.replace(/^[\s"“”‘’「」『』«»„‟]+|[\s"“”‘’「」『』«»„‟]+$/gu, '') // NOSONAR: two anchored classes, linear
 
 /**
  * Puts back, as narration, the words of the passage that no part holds (a sentence between two spoken lines that the model skipped), when every part can be found in the passage in order.

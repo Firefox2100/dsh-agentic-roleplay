@@ -43,7 +43,7 @@ export function DecisionsSection({ t, session, modes }: { t: Translate; session:
         {payload !== undefined && (
           <>
           <p className={css.description}>{payload.available ? t('decisionsAvailable', { provider: payload.provider ?? '', model: payload.model ?? '' }) : t('decisionsUnavailable')}</p>
-          <div className={css.tableViewport} role="region" aria-label={t('decisionsTableLabel')} tabIndex={0}>
+          <div className={css.tableViewport} role="region" aria-label={t('decisionsTableLabel')} tabIndex={0 /* NOSONAR: a scroll container is focused on purpose, so that a keyboard can scroll the table at all */}>
             <table className={css.table}>
               <thead><tr><th scope="col">{t('decisionsSite')}</th><th scope="col">{t('decisionsMode')}</th><th scope="col">{t('decisionsRuns')}</th><th scope="col">{t('decisionsItems')}</th><th scope="col">{t('decisionsDecided')}</th><th scope="col">{t('decisionsEscalated')}</th><th scope="col">{t('decisionsFallbacks')}</th><th scope="col">{t('decisionsAgreement')}</th><th scope="col">{t('decisionsDecisionTime')}</th><th scope="col">{t('decisionsLlmTime')}</th></tr></thead>
               <tbody>

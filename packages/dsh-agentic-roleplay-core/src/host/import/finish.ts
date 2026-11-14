@@ -68,7 +68,7 @@ export function openingTitle(text: string): string {
   if (first.length <= 40) return first
   const cut = first.slice(0, 40)
   const space = cut.lastIndexOf(' ')
-  return `${(space > 15 ? cut.slice(0, space) : cut).replace(/[,;:.\s]+$/, '')}…`
+  return `${(space > 15 ? cut.slice(0, space) : cut).replace(/[,;:.\s]+$/, '')}…` // NOSONAR: one class with a trailing anchor, linear
 }
 
 /** The card's other greetings, as the other openings a player may start with: the first message and the alternates that were not chosen, each titled by its first words. */

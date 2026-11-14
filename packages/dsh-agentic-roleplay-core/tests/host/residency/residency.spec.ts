@@ -137,10 +137,14 @@ describe('model residency', () => {
     let finish: () => void = () => undefined
     const first = residency.using('image', () => new Promise<void>((resolve) => { finish = resolve }))
     const switched = residency.ensure('main', MAIN)
+    let switchedDone = false
+    void switched.then(() => { switchedDone = true })
     const second = residency.using('image', async () => { await residency.ensure('image') })
     await second
+    expect(switchedDone, 'the call that waited behind the switch ran before the switch finished').toBe(false)
     finish()
     await Promise.all([first, switched])
+    expect(switchedDone).toBe(true)
   })
 
   it('is told about conflicts', () => {

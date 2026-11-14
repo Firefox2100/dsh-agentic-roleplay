@@ -78,6 +78,8 @@ export function Menu({ label, entries, onSelect, triggerClassName, title, disabl
           ref={list}
           className={css.list}
           role="menu"
+          // Focusable so that assistive technology may enter the menu itself; the first item is given the focus once the list is placed.
+          tabIndex={-1}
           style={{ left: place?.left ?? 0, ...(place?.top === undefined ? {} : { top: place.top }), ...(place?.bottom === undefined ? {} : { bottom: place.bottom }), maxHeight: place?.maxHeight ?? 320, visibility: place === undefined ? 'hidden' : 'visible' }}
           onKeyDown={(event) => {
             if (event.key === 'Escape') { event.preventDefault(); close(true) }
