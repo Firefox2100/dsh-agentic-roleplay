@@ -5,6 +5,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { NARRATION_NODE, PREVIEW_NODE, chatNarration, chatPreview, type NarrationNodeData, type PreviewNodeData } from './definitions.ts'
 import { PreviewNode } from './PreviewNode.tsx'
+import { branchAt } from './branching.ts'
 import { facadeOf } from '../chat-input.ts'
 import { narrationNode } from './NarrationNode.tsx'
 import { SuggestionsDock } from './SuggestionsDock.tsx'
@@ -65,26 +66,6 @@ async function compareWith(chat: string, turn: string): Promise<StoryComparison>
   const response = await fetch(`roleplay-api/sessions/compare?id=${encodeURIComponent(id)}&a=${encodeURIComponent(turn)}&b=head`)
   if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { message?: string }).message ?? `the states could not be compared (${response.status})`)
   return await response.json() as StoryComparison
-}
-
-/** Told to the window when a branch has its session, so that the player can be asked to name it; the branch feature listens. */
-const BRANCHED_EVENT = 'roleplay:branched'
-
-/** The slice of the session service and the workspace used to branch a chat: DSH makes the chat, the host gives it its session. */
-interface Branching {
-  fork(options: { sessionId: string; atSeq: number; increaseTitle: boolean }): Promise<string>
-}
-
-/** Branches a roleplay chat after the turn that ended at `atSeq`, and shows the new chat. Resolved on use, so a client without the services fails at the click. */
-async function branchAt(scope: { get(name: string): unknown }, chat: string, atSeq: number): Promise<void> {
-  const sessions = scope.get('sessions') as Branching | undefined
-  const workspace = scope.get('uiWorkspace') as { openSession(sessionId: string): void } | undefined
-  if (sessions === undefined || workspace === undefined) throw new Error('branching is not available in this client')
-  const branch = await sessions.fork({ sessionId: chat, atSeq, increaseTitle: true })
-  const response = await fetch('roleplay-api/sessions/branch', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ chat: branch, parent: chat, atSeq }) })
-  if (!response.ok) throw new Error(((await response.json().catch(() => ({}))) as { message?: string }).message ?? `the branch could not be made (${response.status})`)
-  window.dispatchEvent(new CustomEvent(BRANCHED_EVENT, { detail: { chat: branch } }))
-  workspace.openSession(branch)
 }
 
 /** The notes the host keeps for the player beside the story; none for a chat that is not a roleplay session. */

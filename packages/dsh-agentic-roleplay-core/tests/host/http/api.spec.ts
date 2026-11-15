@@ -1509,7 +1509,7 @@ describe('roleplay API', () => {
   describe('branching a session', () => {
     const branch = (body: unknown) => fetch(`${origin}/sessions/branch`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
-    it('takes the chat DSH forked, the chat it was forked from and the cut; a bad request is 400, an unknown chat 404, a state that was not kept 409, no agent 503', async () => {
+    it('takes the chat DSH forked, the chat it was forked from and the cut; a bad request is 400, an unknown chat 404, a state that was not kept 409, no agent 503, any other failure 500', async () => {
       expect((await branch({ chat: 'b', parent: 'a', atSeq: 12 })).status).toBe(200)
       expect(archived).toEqual(['branch b a 12'])
       expect((await branch({ chat: 'b', parent: 'a', atSeq: -1 })).status).toBe(400)
@@ -1520,6 +1520,8 @@ describe('roleplay API', () => {
       expect((await branch({ chat: 'b', parent: 'a', atSeq: 1 })).status).toBe(409)
       archiveError = new AgentUnavailableError('no agent')
       expect((await branch({ chat: 'b', parent: 'a', atSeq: 1 })).status).toBe(503)
+      archiveError = new Error('disk full')
+      expect((await branch({ chat: 'b', parent: 'a', atSeq: 1 })).status).toBe(500)
       archiveError = undefined
       expect((await fetch(`${origin}/sessions/branch`)).status).toBe(405)
     })
