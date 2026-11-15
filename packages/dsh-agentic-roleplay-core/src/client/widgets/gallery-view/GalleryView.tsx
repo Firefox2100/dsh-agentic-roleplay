@@ -3,9 +3,10 @@ import { Modal } from '../../ui/Modal.tsx'
 import { Button } from '../../ui/Button.tsx'
 import { MediaImage } from '../media-image/MediaImage.tsx'
 import { onPageVisible, pageVisible } from '../../visibility.ts'
-import { imageUrl, loadGallery, updateImage, uploadImage, type GalleryContents, type GalleryImage, type GalleryTarget } from './gallery-api.ts'
+import { describeImage, imageUrl, loadGallery, updateImage, uploadImage, type GalleryContents, type GalleryImage, type GalleryTarget } from './gallery-api.ts'
 import type { GalleryLocaleKey } from './locales.ts'
-import css from './GalleryView.module.css'import { IconRefresh } from '../../ui/icons.tsx'
+import css from './GalleryView.module.css'
+import { IconRefresh } from '../../ui/icons.tsx'
 
 
 export type GalleryText = (key: GalleryLocaleKey, values?: Record<string, string | number>) => string
@@ -32,6 +33,12 @@ function EditDialog({ t, image, onSave, onClose }: { t: GalleryText; image: Gall
       <div className={css.edit}>
         <label className={css.editField}><span className={css.editLabel}>{t('description')}</span><textarea className={css.editArea} rows={6} value={description} onChange={(event) => { setDescription(event.target.value) }} /></label>
         <label className={css.editField}><span className={css.editLabel}>{t('tags')}</span><input className={css.editInput} value={tags} onChange={(event) => { setTags(event.target.value) }} /><span className={css.editHelp}>{t('tagsHelp')}</span></label>
+        {image.cardLinks !== undefined && image.cardLinks.length > 0 && (
+          <div className={css.editField} title={t('cardSourceHelp')}>
+            <span className={css.editLabel}>{t('cardSource')}</span>
+            {image.cardLinks.map(link => <span key={link.url} className={css.editHelp} data-testid="roleplay-gallery-source">{link.url}{link.pieces.length === 0 ? '' : ` (${link.pieces.join(', ')})`}</span>)}
+          </div>
+        )}
         {error !== undefined && <p className={css.error} role="alert">{t('updateFailed', { message: error })}</p>}
       </div>
     </Modal>
@@ -47,6 +54,7 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
   const [notice, setNotice] = useState<string>()
   const picker = useRef<HTMLInputElement>(null)
   const [editing, setEditing] = useState<GalleryImage | undefined>()
+  const [describing, setDescribing] = useState<ReadonlySet<string>>(new Set())
 
   const read = useCallback((signal: AbortSignal) => {
     setRefreshing(true)
@@ -91,6 +99,12 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
     updateImage(target, image.path, { reusable }, new AbortController().signal).then(replace, (failure: unknown) => { setNotice(t('updateFailed', { message: messageOf(failure) })) })
   }
 
+  const describe = (image: GalleryImage): void => {
+    setDescribing(current => new Set(current).add(image.path))
+    setNotice(undefined)
+    describeImage(target, image.path, new AbortController().signal).then(replace, (failure: unknown) => { setNotice(t('describeError', { message: messageOf(failure) })) }).finally(() => { setDescribing((current) => { const next = new Set(current); next.delete(image.path); return next }) })
+  }
+
   const { images, failures } = load.contents
   const labels = { description: t('description') ?? '', prompt: t('prompt') ?? '', subjects: t('subjects') ?? '', reusable: t('reusable') ?? '', uploaded: t('uploaded') ?? '', dialog: t('dialog') ?? '', close: t('close') ?? '' }
   const shown = images.filter(image => filter === 'all' || (filter === 'uploaded' ? image.origin === 'uploaded' : image.purpose === filter))
@@ -125,6 +139,7 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
                     <span className={css.caption}>{name}</span>
                     {image.pending === true && <span className={failed === undefined ? css.status : css.statusError}>{failed === undefined ? t(target.kind === 'worlds' ? 'pendingWorld' : 'pending') : t('describeFailed', { message: failed })}</span>}
                     {image.unreadable !== true && <button type="button" className={css.editButton} onClick={() => { setEditing(image) }}>{t('edit')}</button>}
+                    {image.unreadable !== true && target.kind === 'worlds' && <button type="button" className={css.editButton} disabled={describing.has(image.path)} onClick={() => { describe(image) }}>{describing.has(image.path) ? t('describing') : t('describeNow')}</button>}
                     {image.origin === 'generated' && image.unreadable !== true && (
                       <label className={css.reusable} title={t('reusableHint')}>
                         <input type="checkbox" checked={image.reusable} onChange={(event) => { mark(image, event.target.checked) }} />

@@ -31,7 +31,7 @@ function changes(saved: Draft, draft: Draft): WorldInfoEdit {
   if (JSON.stringify(samplingOfTexts(draft.sampling)) !== JSON.stringify(samplingOfTexts(saved.sampling))) edit['sampling'] = samplingOfTexts(draft.sampling)
   if (JSON.stringify(words(draft.tags)) !== JSON.stringify(words(saved.tags))) edit['tags'] = words(draft.tags)
   if (JSON.stringify(lines(draft.rules)) !== JSON.stringify(lines(saved.rules))) edit['rules'] = lines(draft.rules)
-  const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), ...(entry.parts === undefined ? { text: entry.text.trim() } : { parts: entry.parts }), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => ('text' in entry ? entry.text !== '' : entry.parts.some(part => part.text.trim() !== '')))
+  const cleaned = (list: Draft['alternates']) => list.map(entry => ({ title: entry.title.trim(), ...(entry.parts === undefined ? { text: entry.text.trim() } : { parts: entry.parts }), ...((entry.character ?? '') === '' ? {} : { character: entry.character }) })).filter(entry => ('text' in entry ? entry.text !== '' : entry.parts.some(part => part.type === 'image' || part.text.trim() !== '')))
   if (JSON.stringify(cleaned(draft.alternates)) !== JSON.stringify(cleaned(saved.alternates))) edit['alternateOpenings'] = cleaned(draft.alternates)
   if (JSON.stringify(questionsOfDraft(draft.questions)) !== JSON.stringify(questionsOfDraft(saved.questions))) edit['startQuestions'] = questionsOfDraft(draft.questions)
   return edit as WorldInfoEdit
@@ -105,7 +105,7 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
               {field('rules', 'infoRules', 'infoRulesHelp', { rows: 5 })}
               <div className={`${css.field} ${css.wide}`}>
                 <span className={css.label}>{t('infoOpening')}</span>
-                <OpeningEditor t={t} characters={cast} rows={8} value={{ text: draft.opening, ...(draft.openingParts === undefined ? {} : { parts: draft.openingParts }) }} onChange={(value) => { const { openingParts: _dropped, ...rest } = draft; setDraft({ ...rest, opening: value.text, ...(value.parts === undefined ? {} : { openingParts: value.parts }) }); setStatus({ state: 'idle' }) }} />
+                <OpeningEditor t={t} characters={cast} worldId={worldId} rows={8} value={{ text: draft.opening, ...(draft.openingParts === undefined ? {} : { parts: draft.openingParts }) }} onChange={(value) => { const { openingParts: _dropped, ...rest } = draft; setDraft({ ...rest, opening: value.text, ...(value.parts === undefined ? {} : { openingParts: value.parts }) }); setStatus({ state: 'idle' }) }} />
                 <span className={css.help}>{t('infoOpeningHelp')}</span>
               </div>
             </div>
@@ -121,7 +121,7 @@ export function InfoPanel({ t, worldId, onSaved, actions }: { t: Translate; worl
                 </label>
                 <div className={`${css.field} ${css.wide}`}>
                   <span className={css.label}>{t('infoAlternateText')}</span>
-                  <OpeningEditor t={t} characters={cast} rows={5} value={{ text: entry.text, ...(entry.parts === undefined ? {} : { parts: entry.parts }) }} onChange={(value) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { title: item.title, text: value.text, ...(value.parts === undefined ? {} : { parts: value.parts }), ...(item.character === undefined ? {} : { character: item.character }) } : item))) }} />
+                  <OpeningEditor t={t} characters={cast} worldId={worldId} rows={5} value={{ text: entry.text, ...(entry.parts === undefined ? {} : { parts: entry.parts }) }} onChange={(value) => { setAlternates(draft.alternates.map((item, at) => (at === index ? { title: item.title, text: value.text, ...(value.parts === undefined ? {} : { parts: value.parts }), ...(item.character === undefined ? {} : { character: item.character }) } : item))) }} />
                 </div>
                 <label className={css.field}>
                   <span className={css.label}>{t('infoAlternateFor')}</span>

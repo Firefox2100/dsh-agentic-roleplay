@@ -333,7 +333,7 @@ describe('delivering the output', () => {
       { type: 'narration', text: 'The key glints between them.' },
     ])
     expect(output.repaired).toBe(false)
-    expect(output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}:${segment.text}` : segment.text))).toEqual([
+    expect(output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}:${segment.text}` : segment.type === 'image' ? segment.path : segment.text))).toEqual([
       'Alice:That is not something I expected.', 'Alice stands and walks to the door while Bob stares at you.', 'Carol:Oh, please.', 'Dan:Mine!', 'The key glints between them.',
     ])
     expect(engine.missing(owner)).toBeUndefined()

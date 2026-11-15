@@ -40,12 +40,18 @@ export const newCounters = (trace: Trace = Trace.off): Counters => ({ llmCalls: 
 
 const YES_NO_KEYS = ['same', 'conflict', 'playable', 'covered']
 const ATTEMPTS = 3
+const BACKEND_RETRIES = 6
 
 async function post<T>(url: string, body: unknown, apiKey: string | undefined, timeoutMs: number, trace: Trace = Trace.off, kind = 'llm', summarise: (answer: T) => unknown = answer => answer): Promise<T> {
   const began = Date.now()
   trace.event('request', { service: kind, url, body })
   try {
-    const response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...apiKey === undefined ? {} : { authorization: `Bearer ${apiKey}` } }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) })
+    let response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...apiKey === undefined ? {} : { authorization: `Bearer ${apiKey}` } }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) })
+    // the model server hands a request to one of its backends, and a backend that has died answers 500 "Unavailable" until it is replaced: the same request goes to another
+    for (let again = 0; again < BACKEND_RETRIES && response.status >= 500 && (await response.clone().text()).includes('Unavailable'); again += 1) {
+      await new Promise(resolve => setTimeout(resolve, 3000))
+      response = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json', ...apiKey === undefined ? {} : { authorization: `Bearer ${apiKey}` } }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) })
+    }
     if (!response.ok) {
       const text = await response.text()
       trace.event('error', { service: kind, url, status: response.status, ms: Date.now() - began, body: text })

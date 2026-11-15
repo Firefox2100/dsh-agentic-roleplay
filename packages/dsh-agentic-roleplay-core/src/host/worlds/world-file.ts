@@ -68,7 +68,7 @@ export interface AlternateOpening {
 
 import { parseSampling, type StorySampling } from '../../shared/sampling.ts'
 import { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS, MAX_WORLD_VERSION } from '../../shared/world-info.ts'
-import { MAX_OPENING_PARTS, partsText } from '../../shared/opening.ts'
+import { isImagePath, MAX_OPENING_PARTS, partsText } from '../../shared/opening.ts'
 export { MAX_ALTERNATE_OPENINGS, MAX_OPENING_CHARS }
 
 /** `alternate_openings` is a list of `{ title, text | parts, character? }`: other first messages the player may start with, each for any character or for one playable character. */
@@ -217,12 +217,21 @@ export interface WorldClock {
 export type OpeningSegment =
   | { type: 'narration'; text: string }
   | { type: 'utterance'; character: string; text: string }
+  /** A picture of the world's library, by its path under `images/`. */
+  | { type: 'image'; path: string }
 
 /** The parts of an opening in the order the player reads them, from the list `reader` holds under `key`; a problem is reported for each part that cannot be read. */
 function readParts(reader: Reader, key: string): OpeningSegment[] | undefined {
   const parts: OpeningSegment[] = []
   for (const part of reader.objects(key)) {
-    const type = part.oneOf('type', ['narration', 'utterance'] as const, 'narration')
+    const type = part.oneOf('type', ['narration', 'utterance', 'image'] as const, 'narration')
+    if (type === 'image') {
+      const path = part.string('path', { required: true })?.trim()
+      if (path === undefined) continue
+      if (!isImagePath(path)) part.fail('path', 'must name a picture of the library, like library/dock.png')
+      else parts.push({ type, path })
+      continue
+    }
     const text = part.string('text', { required: true })?.trim()
     if (text === undefined || text === '') continue
     if (type === 'narration') {

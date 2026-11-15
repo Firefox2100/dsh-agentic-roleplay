@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { lintWorld, parseInstant, sessionFolder, systemTimeZone, type RoleplayState } from '@dsh-agentic-roleplay/state'
 import type { CharacterDefinition } from 'dsh-roleplay-model'
@@ -214,6 +215,10 @@ function speakingOf(world: { directory: string; summary: { name: string } }, par
   const problems: WorldProblem[] = []
   const segments = parts.map((segment): NarrationSegment => {
     if (segment.type === 'narration') return segment
+    if (segment.type === 'image') {
+      if (!existsSync(join(world.directory, 'images', segment.path))) problems.push({ path: join(world.directory, WORLD_FILE_NAME), message: `${where}: the picture "${segment.path}" is not in the world's images` })
+      return segment
+    }
     const speaker = characters.find(character => character.id === segment.character)
     if (speaker === undefined) problems.push({ path: join(world.directory, WORLD_FILE_NAME), message: `${where}: "${segment.character}" is not a character of this world` })
     return { type: 'utterance', character: segment.character, name: speaker?.name ?? segment.character, text: segment.text }

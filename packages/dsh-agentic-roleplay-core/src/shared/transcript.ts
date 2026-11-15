@@ -10,7 +10,7 @@ export interface TranscriptOptions {
   annotated: boolean
 }
 
-const segmentLine = (segment: NarrationSegment): string => (segment.type === 'utterance' ? `**${segment.name}:** “${segment.text}”` : segment.text)
+const segmentLine = (segment: NarrationSegment): string => (segment.type === 'image' ? `*(picture: ${segment.path})*` : segment.type === 'utterance' ? `**${segment.name}:** “${segment.text}”` : segment.text)
 
 function outputLines(output: TurnOutput | undefined, annotated: boolean): string[] {
   if (output === undefined) return ['*(nothing was delivered)*']

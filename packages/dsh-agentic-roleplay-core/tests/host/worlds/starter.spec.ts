@@ -57,7 +57,7 @@ describe('the starter worlds', () => {
     await addStarterWorld(catalog, 'blackwater-observatory')
     const local = new RoleplayState(new Context(), { journalMode: 'delete' })
     state = local
-    const ensured: (readonly { type: string; text: string }[] | undefined)[] = []
+    const ensured: (readonly ({ type: string; text: string } | { type: 'image'; path: string })[] | undefined)[] = []
     const world = (await catalog.list()).worlds[0]!
     const started = await startSession({
       worlds: catalog, state: local,
@@ -67,7 +67,7 @@ describe('the starter worlds', () => {
     const session = local.openSession(join(root, 'sessions'), started.id)
     expect(session.characters.list().length).toBeGreaterThanOrEqual(4)
     expect(session.metadata.get().world).toMatchObject({ version: '1.0' })
-    expect(ensured[0]?.[0]?.text).toContain('Blackwater Ridge is loud tonight')
+    expect((ensured[0]?.[0] as { text?: string } | undefined)?.text).toContain('Blackwater Ridge is loud tonight')
     expect(session.metadata.getValue('notes') ?? []).toEqual([])
   })
 

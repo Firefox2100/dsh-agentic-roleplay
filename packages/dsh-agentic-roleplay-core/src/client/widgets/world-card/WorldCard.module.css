@@ -105,8 +105,9 @@
   color: var(--dsw-alias-label-primary);
 }
 
-/* One row of tags; the fade tells the reader that more may follow. */
+/* One row of tags, kept at its height when empty so every cover has the same size; the fade tells the reader that more may follow. */
 .tags {
+  height: 19px;
   display: flex;
   gap: 4px;
   overflow: hidden;

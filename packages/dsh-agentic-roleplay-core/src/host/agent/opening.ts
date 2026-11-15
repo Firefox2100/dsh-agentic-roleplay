@@ -41,7 +41,7 @@ export function appendNarratedTurn(session: Session, turn: number, output: TurnO
   const callId = ToolCallId(player === undefined ? 'opening-narrate' : `narrate-${turn}`)
   const sent = output.segments.map(segment => (segment.type === 'utterance'
     ? { type: 'utterance', character: segment.character, text: segment.text }
-    : { type: 'narration', text: segment.text }))
+    : segment.type === 'image' ? { type: 'image', path: segment.path } : { type: 'narration', text: segment.text }))
   const args = JSON.stringify({ segments: sent })
 
   const started = session.append('turn/start', { turn })

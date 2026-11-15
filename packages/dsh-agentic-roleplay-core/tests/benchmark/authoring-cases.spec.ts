@@ -5,12 +5,14 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { AUTHORING, authoringCases, authoringProblems, seedWorld, type AuthoringId } from './authoring-cases.ts'
 import { LANGUAGES } from './language.ts'
 import { writeFiles } from './write.ts'
+import { updateImage } from '../../src/host/images/gallery.ts'
+import { pictureCard } from './mock-pictures.ts'
 
 /** The offline half of the authoring benchmark: the seed is a world a story could start from, and each case's oracle fails on the seed and holds on a world the request was carried out in. The live half is `authoring.spec.ts`. */
 const made: string[] = []
 afterEach(async () => { for (const folder of made.splice(0)) await rm(folder, { recursive: true, force: true }) })
 
-async function world(language: (typeof LANGUAGES)[number], extra: Record<string, unknown> = {}, over: Record<string, unknown> = {}, planted?: (files: ReturnType<typeof seedWorld>) => void): Promise<string> {
+async function world(language: (typeof LANGUAGES)[number], extra: Record<string, unknown> = {}, over: Record<string, unknown> = {}, planted?: (files: ReturnType<typeof seedWorld>) => void, after?: (directory: string) => Promise<void>): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'authoring-'))
   made.push(directory)
   const files = seedWorld(language)
@@ -18,6 +20,7 @@ async function world(language: (typeof LANGUAGES)[number], extra: Record<string,
   files.set('world.json', { ...(files.get('world.json') as object), ...over })
   await writeFiles(directory, files)
   for (const [path, value] of Object.entries(extra)) { await mkdir(dirname(join(directory, path)), { recursive: true }); await writeFile(join(directory, path), JSON.stringify(value)) }
+  await after?.(directory)
   return directory
 }
 
@@ -35,6 +38,7 @@ const outcome = (id: AuthoringId, language: (typeof LANGUAGES)[number]): [Record
     case 'opening-join': return [{}, { opening_message: p('Water turns the wheel.\n\nFlour dust hangs in the light.', '流水推着水轮转动。\n\n面粉的细尘悬在光里。') }]
     case 'opening-speaker': return [{}, { opening_message: [{ type: 'narration', text: p('Hale the Miller wipes his hands.', '老葛擦了擦手。') }, { type: 'utterance', character: 'miller', text: p('You are late.', '你来晚了。') }] }]
     case 'overreach': return [{}, {}]
+    case 'pictures': return [{}, {}]
     case 'check': return [{ 'characters/miller/character.json': { name: p('Hale the Miller', '老葛'), role: 'npc', summary: p('Runs the mill.', '经营磨坊。'), start: { location: 'mill' } } }, {}]
   }
 }
@@ -54,10 +58,23 @@ describe.each(LANGUAGES)('authoring requests (%s)', (language) => {
 
   it.each(AUTHORING)('%s: fails on the seed unless it asks to leave things alone, and holds once the request is carried out', async (id) => {
     const entry = cases.find(candidate => candidate.kind === id)!
-    const untouched = await authoringProblems(entry.expect, seed(await world(language, {}, {}, entry.seed)))
+    const untouched = await authoringProblems(entry.expect, seed(await world(language, {}, {}, entry.seed, entry.after)))
     expect(untouched.length > 0, 'the oracle sees nothing wrong with the seed').toBe(id !== 'overreach')
     const [files, info] = outcome(id, language)
-    expect(await authoringProblems(entry.expect, seed(await world(language, files, info, entry.seed)))).toEqual([])
+    const directory = await world(language, files, info, entry.seed, entry.after)
+    if (id === 'pictures') for (const wanted of pictureCard(language).pictures) await updateImage(directory, `library/${wanted.name}`, { subjects: wanted.characters.map(name => ({ kind: 'character' as const, name })) })
+    expect(await authoringProblems(entry.expect, seed(directory))).toEqual([])
+  })
+
+  it('sees a picture tagged with someone the card does not name, and one that lost its address', async () => {
+    const entry = cases.find(candidate => candidate.kind === 'pictures')!
+    const directory = await world(language, {}, {}, entry.seed, entry.after)
+    const names = pictureCard(language).pictures
+    await updateImage(directory, 'library/yard.png', { subjects: [{ kind: 'character', name: names[0]!.characters[0]! }] })
+    await updateImage(directory, 'library/group.png', { subjects: [{ kind: 'character', name: 'Somebody Else' }] })
+    const problems = await authoringProblems(entry.expect, seed(directory))
+    expect(problems.some(problem => problem.startsWith('yard.png is tagged with'))).toBe(true)
+    expect(problems.some(problem => problem.startsWith('group.png is tagged with Somebody Else'))).toBe(true)
   })
 
   it('sees an assistant that overreached', async () => {

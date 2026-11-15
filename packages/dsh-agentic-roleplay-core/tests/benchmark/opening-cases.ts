@@ -56,18 +56,18 @@ export function openingCases(language: Language): OpeningCase[] {
 /** What an outcome got wrong about its case; empty when it is right. */
 export function openingProblems(made: OpeningCase, shaped: ShapedOpening, cast: readonly Speaker[] = openingCast(made.language)): string[] {
   const problems: string[] = []
-  const words = shaped.parts === undefined ? shaped.text : shaped.parts.map(part => part.text).join('\n\n')
+  const words = shaped.parts === undefined ? shaped.text : shaped.parts.map(part => (part.type === 'image' ? '' : part.text)).join('\n\n')
   if (lettersOf(words, cast) !== lettersOf(made.passage, cast)) problems.push('the words changed')
   const spoken = shaped.parts?.some(part => part.type === 'utterance') ?? false
   if (made.expect.speech && !spoken) problems.push('no one speaks in the result, but someone should')
   if (!made.expect.speech && spoken && made.kind === 'narration') problems.push('lines were given to characters in a pure narration')
   if (!made.expect.speech && spoken && made.kind === 'unattributed') problems.push('speech nobody can be named for was given to someone')
   for (const line of made.expect.lines ?? []) {
-    const part = shaped.parts?.find(entry => entry.text.includes(line.contains))
+    const part = shaped.parts?.find(entry => entry.type !== 'image' && entry.text.includes(line.contains))
     if (part === undefined || part.type !== 'utterance' || part.character !== line.character) problems.push(`"${line.contains}" is not spoken by ${line.character}`)
   }
   for (const text of made.expect.narrated ?? []) {
-    const part = shaped.parts?.find(entry => entry.text.includes(text))
+    const part = shaped.parts?.find(entry => entry.type !== 'image' && entry.text.includes(text))
     if (part !== undefined && part.type === 'utterance') problems.push(`"${text}" was given to ${part.character}`)
   }
   if (shaped.parts?.some(part => part.type === 'utterance' && part.character === PLAYER_ID) === true) problems.push('the player\'s character speaks')

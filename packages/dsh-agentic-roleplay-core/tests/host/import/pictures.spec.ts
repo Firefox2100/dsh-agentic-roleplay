@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { pictureHash } from '../../../src/host/images/library.ts'
 import { withPngMetadata } from '../../../src/host/images/png-metadata.ts'
 import { urlsOf } from '../../../src/host/import/card.ts'
+import { listGallery, updateImage } from '../../../src/host/images/gallery.ts'
 import { addressesToFetch, candidateUrls, fetchPictures, isPublicAddress, mergeReports, requestOnce, vetUrl, type Fetcher, type Reply } from '../../../src/host/import/pictures.ts'
 
 const PNG = Buffer.concat([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64'), Buffer.alloc(2000)])
@@ -89,6 +90,21 @@ describe('fetching the pictures of a card', () => {
     expect(again.added).toEqual([])
     expect(again.skipped).toEqual([{ url: 'https://mirror.example/other-name.png', reason: 'a copy of another picture', of: first.added[0]!.path }])
     expect(await readdir(join(directory, 'images', 'library'))).toHaveLength(1)
+  })
+})
+
+describe('where a downloaded picture came from', () => {
+  it('writes the address and the card pieces that held it into the picture, and adds a mirror address to the picture it copies', async () => {
+    const directory = await world()
+    const fetcher: Fetcher = async (_url, method) => method === 'HEAD' ? reply({ type: 'image/png' }) : reply({ type: 'image/png', body: PNG })
+    const piecesOf = (url: string): string[] => (url.includes('one') ? ['field:description', 'entry:3'] : [])
+    const first = await fetchPictures(directory, ['https://a.example/one.png'], { fetcher, piecesOf })
+    expect((await listGallery(directory))[0]).toMatchObject({ path: first.added[0]!.path, cardLinks: [{ url: 'https://a.example/one.png', pieces: ['field:description', 'entry:3'] }] })
+    await fetchPictures(directory, ['https://mirror.example/other.png'], { fetcher, piecesOf })
+    expect((await listGallery(directory))[0]!.cardLinks).toEqual([{ url: 'https://a.example/one.png', pieces: ['field:description', 'entry:3'] }, { url: 'https://mirror.example/other.png', pieces: [] }])
+    // describing the picture afterwards keeps where it came from
+    await updateImage(directory, first.added[0]!.path, { description: 'A dock.' })
+    expect((await listGallery(directory))[0]).toMatchObject({ description: 'A dock.', cardLinks: expect.arrayContaining([expect.objectContaining({ url: 'https://a.example/one.png' })]) })
   })
 })
 

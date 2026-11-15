@@ -68,6 +68,7 @@ async function describe(images: string, path: string): Promise<GalleryImage> {
     subjects: (metadata.subjects ?? []).map(subject => ({ kind: subject.kind, name: subject.name })),
     ...(metadata.source === undefined ? {} : { source: metadata.source }),
     ...(metadata.originalName === undefined ? {} : { originalName: metadata.originalName }),
+    ...(metadata.cardLinks === undefined || metadata.cardLinks.length === 0 ? {} : { cardLinks: metadata.cardLinks }),
     ...(origin === 'uploaded' && metadata.description === undefined ? { pending: true } : {}),
   }
 }
@@ -127,6 +128,18 @@ export async function galleryFile(sessionFolder: string, path: string): Promise<
   const real = await realpath(file)
   if (!real.startsWith(`${await realpath(images)}${sep}`)) throw new Error('there is no such image')
   return { file, size: info.size, mediaType }
+}
+
+/** Notes one more address a picture of the library came from, or more pieces of the card for an address it already has. */
+export async function addCardLink(sessionFolder: string, path: string, link: { url: string; pieces: string[] }): Promise<void> {
+  const { file } = await galleryFile(sessionFolder, path)
+  const existing = await readImageFileMetadata(file)
+  if (existing === undefined) return
+  const links = [...(existing.cardLinks ?? [])]
+  const at = links.findIndex(entry => entry.url === link.url)
+  if (at < 0) links.push({ url: link.url, pieces: [...link.pieces] })
+  else links[at] = { url: link.url, pieces: [...new Set([...links[at]!.pieces, ...link.pieces])] }
+  await writeImageFileMetadata(file, { ...existing, cardLinks: links } as VisualImageMetadata)
 }
 
 /** What a person or the interpreter may say about an image afterwards. */

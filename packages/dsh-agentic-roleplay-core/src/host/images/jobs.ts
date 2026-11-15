@@ -7,6 +7,7 @@ import { sessionDatabase, sessionFolder, type RoleplayState } from '@dsh-agentic
 import type { GalleryImage } from '../../shared/gallery.ts'
 import type { SceneImageStatus } from '../../shared/images.ts'
 import type { TurnOutput } from '../../shared/narration.ts'
+import { wordsOf } from '../../shared/narration.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
 import { chatSessionId, roleplaySessionOf } from '../../shared/chat.ts'
@@ -17,6 +18,7 @@ import { languageOf, translator } from 'dsh-roleplay-model'
 import { runImagePresenter } from './presenter-agent.ts'
 import type { ImagePresenterJob, ImagePresenterResult } from './presenter-agent.ts'
 import { interpretImage, type ImageAttachments } from './interpreter.ts'
+import { worthAPicture } from './worth.ts'
 import { addToLibrary } from './library.ts'
 import type { Embedder } from '../memory/embedding-index.ts'
 import type { TurnStore } from '../orchestration/boundaries.ts'
@@ -55,6 +57,8 @@ export interface ImageJobsDeps {
   embedder?: () => Embedder | undefined
   /** Describes one picture of the library; replaced in tests. */
   interpret?: typeof interpretImage
+  /** Says whether a moment is worth a picture, for the `important` mode; replaced in tests. */
+  worth?: typeof worthAPicture
 }
 
 export class ImageJobs {
@@ -82,8 +86,8 @@ export class ImageJobs {
     const id = roleplaySessionOf(chat)
     if (id === undefined) return
     const settings = this.deps.settings(id)
-    if (settings.images.mode !== 'every-turn') return
-    try { this.start(id, node, this.assertNode(id, node).turn, output, settings, 'background', true) } catch (error) {
+    if (settings.images.mode !== 'every-turn' && settings.images.mode !== 'important') return
+    try { this.start(id, node, this.assertNode(id, node).turn, output, settings, 'background', true, settings.images.mode === 'important') } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       this.failures.set(this.key(id, node), message)
       this.deps.problem(`image for ${id}/${node} was not started: ${message}`)
@@ -105,8 +109,9 @@ export class ImageJobs {
   /**
    * @param priority - `foreground` when the player asked for the picture, `background` when it is made on its own after a turn and may wait behind the next one.
    * @param automatic - the picture was not asked for: the library is looked at first, and the pictures the person brought are described before that.
+   * @param selective - a helper first says whether the moment is worth a picture at all; when it is not, nothing is made and nothing is reported.
    */
-  private start(id: string, node: string, turn: number, output: TurnOutput, settings: ChatSettings, priority: RequestPriority, automatic: boolean): void {
+  private start(id: string, node: string, turn: number, output: TurnOutput, settings: ChatSettings, priority: RequestPriority, automatic: boolean, selective = false): void {
     const current = this.active.get(id)
     if (current?.node === node) return
     current?.controller.abort()
@@ -116,7 +121,7 @@ export class ImageJobs {
     if (parent === undefined) throw new Error('the roleplay agent is not loaded')
     const controller = new AbortController()
     this.failures.delete(this.key(id, node))
-    const request = output.segments.map(segment => segment.type === 'utterance' ? `${segment.name}: “${segment.text}”` : segment.text).join('\n')
+    const request = wordsOf(output.segments, segment => `${segment.name}: “${segment.text}”`).join('\n')
     const reuse = automatic && settings.images.reuse
     const tr = translator(languageOf(settings.prompts.language))
     const present = (): Promise<ImagePresenterResult> => { const turns = store(); return (this.deps.presenter ?? runImagePresenter)({
@@ -131,6 +136,7 @@ export class ImageJobs {
       return waiting === undefined ? make() : waiting.then(make)
     }
     const makeOrShow = async (): Promise<unknown> => {
+      if (selective && !await (this.deps.worth ?? worthAPicture)({ parent, signal: controller.signal, language: settings.prompts.language, moment: request, sampling: childSampling(settings, 'records'), ...(settings.reasoning.children === '' ? {} : { reasoningEffort: settings.reasoning.children }) })) return undefined
       const turns = store()
       const picked = automatic && reuse && turns !== undefined && this.deps.reuseExisting !== undefined ? await this.deps.reuseExisting({ chat: chatSessionId(id), store: turns, root: sessionFolder(this.deps.sessionsDir(), id), moment: request }, controller.signal) : undefined
       if (picked === undefined) return await begin()

@@ -8,7 +8,7 @@ import type { ContentBlock, Message } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-token-meter'
 import type {} from '@deepseek-ai/dsh-subagent'
 import { sessionFolder } from '@dsh-agentic-roleplay/state'
-import { decodeOutput } from '../../shared/narration.ts'
+import { decodeOutput, wordsOf } from '../../shared/narration.ts'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { liveSettings } from '../sessions/settings.ts'
 import { composeSummary, foldSummaries, type Chronicler } from './chronicle.ts'
@@ -42,7 +42,7 @@ export function readFolded(messages: readonly Message[]): { playerInputs: string
       told.push(`Player: ${text.trim()}`)
     } else if (message.role === 'tool') {
       const output = decodeOutput(text)
-      if (output !== undefined) told.push(output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: "${segment.text}"` : segment.text)).join('\n'))
+      if (output !== undefined) told.push(wordsOf(output.segments, segment => `${segment.name}: "${segment.text}"`).join('\n'))
     }
   }
   return { playerInputs: player.join('\n'), transcript: told.join('\n\n') }

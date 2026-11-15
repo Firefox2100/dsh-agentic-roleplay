@@ -20,6 +20,8 @@ export interface GalleryImage {
   source?: { turn: number; timelineNode: string; segment?: number }
   /** The name the file had when it was uploaded. */
   originalName?: string
+  /** The web addresses of the character card this picture was downloaded from, each with the ids of the card pieces (`field:description`, `entry:3`) the address was found in; none for a picture that did not come from a card. */
+  cardLinks?: { url: string; pieces: string[] }[]
   /** An uploaded image that has not been described yet. */
   pending?: boolean
   /** The file carries no readable metadata. */

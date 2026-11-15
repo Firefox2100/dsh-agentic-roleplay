@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { decodeOutput, decodePreview, encodeOutput, encodePreview, type TurnOutput } from '../../src/shared/narration.ts'
+import { decodeOutput, decodePreview, encodeOutput, encodePreview, wordsOf, type TurnOutput } from '../../src/shared/narration.ts'
 
 const output: TurnOutput = {
   repaired: true,
@@ -13,6 +13,13 @@ describe('the output carried in a tool result', () => {
   it('is read back exactly, wherever it sits in the text', () => {
     expect(decodeOutput(encodeOutput(output))).toEqual(output)
     expect(decodeOutput(`Delivered.\n${encodeOutput(output)}\nThe turn ends here.`)).toEqual(output)
+  })
+
+  it('carries a picture between the paragraphs, which a reader without pictures skips', () => {
+    const shown: TurnOutput = { repaired: false, segments: [{ type: 'narration', text: 'Dusk.' }, { type: 'image', path: 'library/dock.png' }, { type: 'utterance', character: 'alice', name: 'Alice', text: 'Hello.' }] }
+    expect(decodeOutput(encodeOutput(shown))).toEqual(shown)
+    expect(wordsOf(shown.segments, segment => `${segment.name}: ${segment.text}`)).toEqual(['Dusk.', 'Alice: Hello.'])
+    expect(decodeOutput('<roleplay-output>{"segments":[{"type":"image","path":""}],"repaired":false}</roleplay-output>')).toBeUndefined()
   })
 
   it('is nothing when the text carries none or carries something broken', () => {

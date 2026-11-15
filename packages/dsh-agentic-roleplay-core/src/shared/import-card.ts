@@ -58,6 +58,8 @@ export interface ImportChoices {
   /** The ids of the lorebook entries that are left out. */
   disabledEntries: string[]
   opening: OpeningChoice
+  /** Whether the pictures the card's web addresses point to are downloaded into the world's library; absent means yes. */
+  fetchPictures?: boolean
 }
 
 /** A world of the person's that an uploaded card could update: one that was itself imported from a card. */

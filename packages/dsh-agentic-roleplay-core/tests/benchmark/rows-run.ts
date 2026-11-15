@@ -215,7 +215,7 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
   if (session !== undefined) {
     try {
       const shown = await rig.api<Delivered>(`/sessions/export?id=${session}&format=json&annotated=1`)
-      observation = { ...observation, turns: shown.turns.filter(turn => turn.output !== undefined).map(turn => ({ segments: turn.output!.segments, ...(turn.output!.ooc === undefined ? {} : { ooc: turn.output!.ooc }) })), ...shown.opening === undefined ? {} : { opening: shown.opening.map(segment => segment.text).join('\n') } }
+      observation = { ...observation, turns: shown.turns.filter(turn => turn.output !== undefined).map(turn => ({ segments: turn.output!.segments, ...(turn.output!.ooc === undefined ? {} : { ooc: turn.output!.ooc }) })), ...shown.opening === undefined ? {} : { opening: shown.opening.flatMap(segment => (segment.type === 'image' ? [] : [segment.text])).join('\n') } }
     } catch (error) { trace.note(`the story could not be read back: ${error instanceof Error ? error.message : String(error)}`) }
     try {
       const state = await rig.api<World>(`/sessions/world?id=${session}`)

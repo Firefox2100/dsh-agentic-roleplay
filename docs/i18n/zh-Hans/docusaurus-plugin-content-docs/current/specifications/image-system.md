@@ -60,7 +60,7 @@ description: 视觉身份、媒体路径、嵌入元数据、图库搜索、图�
 - 故事图片生成功能创建的图片使用 `origin: generated`。呈现器会判断场景图是否可复用。地点、角色长期外观或可重复氛围可设为 `true`；一次性事件默认是 `false`。参考图始终可复用。
 - 用户带入的图片使用 `origin: uploaded`。它们可从图库的**添加图片**加入，也可手工放入 `<session>/images/library/`。世界的 `images/library/` 会由会话继承。这些图片始终可复用。系统按文件字节识别 PNG、JPEG、WebP 和 GIF。PNG 在文件内保存元数据，其他格式使用 `<file>.json` 伴随文件。
 
-`dsh-roleplay-image/v3` 在 v2 基础上增加 `origin`、`reusable` 和 `originalName`，用户带入的图片没有提示词。新带入的图片最初没有描述，状态为 `pending`。开启 `images.interpret` 时，能看图的模型通过 `interpretImage` 描述它。该一次性子智能体会看到图片和故事中的名称，并把 `description`、`tags` 及明确出现的 `subjects` 写回文件。
+`dsh-roleplay-image/v3` 在 v2 基础上增加 `origin`、`reusable` 和 `originalName`，用户带入的图片没有提示词；为角色卡下载的图片还带有 `cardLinks`：每个来源网址及包含它的卡片片段 id（如 `field:description`、`entry:3`；只在脚本或设置里出现的网址没有片段）。这些链接写在图片文件自己的元数据里，所以会随世界、各故事的图库副本、同步和卡片更新一起保留；镜像网址下载到的相同图片会把网址加到同一张图片上；编辑描述时也会保留。新带入的图片最初没有描述，状态为 `pending`。开启 `images.interpret` 时，能看图的模型通过 `interpretImage` 描述它。该一次性子智能体会看到图片和故事中的名称，并把 `description`、`tags` 及明确出现的 `subjects` 写回文件。
 
 解释任务在后台逐张运行，触发点包括添加图片、读取图库和自动生成图片前。失败的图片保持 pending，图库会显示原因。默认使用对话模型，但提供方必须把它声明为 `vision`；也可用 `images.interpreterModel` 指定 `provider/model`。未声明看图能力的模型会被拒绝，不能凭空描述。只能生成字幕而不能调用工具的模型可设为 `images.captioner`：它看图并输出纯文本，再由看不到图片的对话模型整理描述、标签和主体。图库中的**编辑**可人工修正描述并写回文件。
 
@@ -87,7 +87,7 @@ description: 视觉身份、媒体路径、嵌入元数据、图库搜索、图�
 
 ## 回合集成
 
-每条已交付输出都携带稳定的时间线节点 ID。对话设置可选 `off`、默认的 `manual` 或 `every-turn`，并决定临时场景图只用文本、优先使用已有规范参考图，还是强制要求参考图。强制模式缺少参考图时，会先生成参考图。已有参考图通过 `ImageGenerationOptions.references` 交给提供方。
+每条已交付输出都携带稳定的时间线节点 ID。对话设置可选 `off`、默认的 `manual`、`important` 或 `every-turn`。`important` 模式下，一个不带工具的助手（`roleplay/image-worth`，`host/images/worth.ts`）读取玩家这一轮读到的内容，判断这一刻是否值得配图：不值得就什么都不做、也不报告；值得则与 `every-turn` 相同（先在已有图片中找，找不到再生成），并决定临时场景图只用文本、优先使用已有规范参考图，还是强制要求参考图。强制模式缺少参考图时，会先生成参考图。已有参考图通过 `ImageGenerationOptions.references` 交给提供方。
 
 OpenAI 兼容提供方在有参考图时调用 `/images/edits`，否则调用 `/images/generations`。LocalAI 没有 `/images/edits`，所以 `dsh-ai-localai` 仍调用 `/images/generations`，并根据 `imageReferences` 设置选择 `files`、`ref_images` 或不发送参考图。`files` 会把第一张参考图用于图生图重绘，`ref_images` 供专门支持参考图的模型使用。默认不发送，因为不接受参考图的模型可能在后端失败。
 

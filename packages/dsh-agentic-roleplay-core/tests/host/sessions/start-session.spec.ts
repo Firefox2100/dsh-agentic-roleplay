@@ -18,7 +18,7 @@ import { WorldCatalog } from '../../../src/host/worlds/catalog.ts'
 let root: string
 let state: RoleplayState
 let deps: StartSessionDeps
-let ensured: [string, string, readonly { type: string; text: string }[] | undefined][]
+let ensured: [string, string, readonly ({ type: string; text: string } | { type: 'image'; path: string })[] | undefined][]
 let retired: string[]
 let ensureError: Error | undefined
 
@@ -160,6 +160,17 @@ describe('startSession', () => {
     await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: ' The festival lanterns sway. ' })
     const started = await startSession(deps, playAsArthur)
     expect(ensured).toEqual([[started.id, 'The Blackwater Observatory', [{ type: 'narration', text: 'The festival lanterns sway.' }]]])
+  })
+
+  it('starts the chat with a picture of the world between the paragraphs of the opening, and refuses one the world does not have', async () => {
+    const opening = [{ type: 'narration', text: 'The lanterns sway.' }, { type: 'image', path: 'library/dock.png' }, { type: 'narration', text: 'You arrive.' }]
+    await write(join(root, 'worlds', 'blackwater folder', 'world.json'), { id: 'blackwater', name: 'The Blackwater Observatory', opening_message: opening })
+    await expect(startSession(deps, playAsArthur)).rejects.toThrow(/problem/)
+    await mkdir(join(root, 'worlds', 'blackwater folder', 'images', 'library'), { recursive: true })
+    await writeFile(join(root, 'worlds', 'blackwater folder', 'images', 'library', 'dock.png'), new Uint8Array([1, 2, 3]))
+    const started = await startSession(deps, playAsArthur)
+    expect(ensured.at(-1)).toEqual([started.id, 'The Blackwater Observatory', opening])
+    expect(existsSync(join(root, 'sessions', started.id, 'images', 'library', 'dock.png'))).toBe(true)
   })
 
   it('applies the answers to the world\'s start questions, lets the dialog\'s own choices come first, and refuses answers that disagree', async () => {

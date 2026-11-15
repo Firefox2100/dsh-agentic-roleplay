@@ -48,7 +48,7 @@ export interface Verdict {
   found?: string
 }
 
-const textOf = (segments: readonly NarrationSegment[]): string => segments.map(segment => segment.text).join('\n')
+const textOf = (segments: readonly NarrationSegment[]): string => segments.flatMap(segment => (segment.type === 'image' ? [] : [segment.text])).join('\n')
 /** What the player reads of a turn: its narration, and what the ruling of an out-of-character command tells them (the answer to a question is only there). */
 const readOf = (turn: Observation['turns'][number]): string => [textOf(turn.segments), turn.ooc?.note ?? ''].filter(part => part !== '').join('\n')
 const has = (text: string, part: string): boolean => text.toLowerCase().includes(part.toLowerCase())
@@ -129,7 +129,7 @@ function judge(expectation: Expectation, observation: Observation, turns: Observ
       const repeated: string[] = []
       for (const turn of turns) {
         const here = new Set<string>()
-        for (const segment of turn.segments) for (const sentence of segment.text.split(/(?<=[.!?。！？])\s*/)) {
+        for (const segment of turn.segments) for (const sentence of (segment.type === 'image' ? '' : segment.text).split(/(?<=[.!?。！？])\s*/)) {
           const text = sentence.trim().toLowerCase()
           if (text.length < 12) continue
           if (seen.has(text)) repeated.push(sentence.trim())

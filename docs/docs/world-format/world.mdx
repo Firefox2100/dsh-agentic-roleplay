@@ -29,7 +29,7 @@ title: world.json
 | `author.name` | Required when `author` exists | Attribution |
 | `author.url` | Optional | Attribution link |
 | `metadata.tags` | Optional list | Catalogue filtering and presentation |
-| `opening_message` | Optional | Plain text (narration only) or ordered narration/utterance parts |
+| `opening_message` | Optional | Plain text (narration only) or ordered parts: narration, utterances and pictures (`{"type": "image", "path": "library/dock.png"}`, a picture of the world's `images/` in its `library`, `characters`, `locations`, `items` or `global` folder; stories start with a copy of those, and a story whose world lacks the picture is refused) |
 | `alternate_openings` | Optional list | Other first messages the player may choose when starting a session: `{title, text or parts, character?}`: `text` is plain narration, `parts` is the same list as `opening_message` (give one, not both); at most 30 of at most 20,000 characters; a missing title is the first words of the text |
 | `start_questions` | Optional list | Questions the start dialog asks before a story begins; see below |
 | `narration_voice` | Optional | Initial TTS voice for narration |

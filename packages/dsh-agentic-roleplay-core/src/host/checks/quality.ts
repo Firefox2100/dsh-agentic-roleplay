@@ -3,6 +3,8 @@ import { CheckSkipped, foundBy, type Check, type Found } from './check.ts'
 import { verdictOf } from './judge.ts'
 import { findPanel } from '../import/panels.ts'
 import { loaded } from './loaded.ts'
+import { access } from 'node:fs/promises'
+import { join } from 'node:path'
 
 /** A place described in fewer letters than this has nothing to play with (a Chinese, Japanese or Korean character counts as three: it says as much as a short word). */
 const THIN_PLACE = 20
@@ -70,6 +72,11 @@ const about: Check = {
     if (text(info.description) === '') found.push({ severity: 'info', code: 'no-description', where: 'world.json', message: 'the world has no description, so the worlds list shows nothing about it' })
     if (info.tags.length === 0) found.push({ severity: 'info', code: 'no-tags', where: 'world.json', message: 'the world has no tags' })
     if (text(info.opening) === '' && info.openingParts === undefined) found.push({ severity: 'info', code: 'no-opening', where: 'world.json', message: 'the world has no opening, so a story starts with "The story begins."' })
+    const shown = [...(info.openingParts ?? []).map(part => ({ where: 'opening_message', part })), ...info.alternateOpenings.flatMap((entry, index) => (entry.parts ?? []).map(part => ({ where: `alternate_openings[${index}]`, part })))]
+    for (const { where, part } of shown) {
+      if (part.type !== 'image') continue
+      if (await access(join(input.world.directory, 'images', part.path)).then(() => false, () => true)) found.push({ severity: 'error', code: 'opening-picture-missing', where, message: `the opening shows "${part.path}", which is not in the world's images, so no story can start with it` })
+    }
     return foundBy('quality-world', found)
   },
 }

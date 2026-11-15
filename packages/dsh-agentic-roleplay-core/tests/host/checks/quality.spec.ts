@@ -32,6 +32,15 @@ describe('the quality kit, decided by the program', () => {
     expect(report.findings.some(finding => finding.code === 'no-playable')).toBe(false)
   })
 
+  it('names a picture the opening shows that the world does not have', async () => {
+    await write(join(directory, 'world.json'), { id: 'harbor', name: 'Harbor', opening_message: [{ type: 'narration', text: 'Fog.' }, { type: 'image', path: 'library/dock.png' }] })
+    const codes = async () => (await quick(['quality-world'])).findings.map(finding => finding.code)
+    expect(await codes()).toContain('opening-picture-missing')
+    await mkdir(join(directory, 'images', 'library'), { recursive: true })
+    await writeFile(join(directory, 'images', 'library', 'dock.png'), new Uint8Array([1]))
+    expect(await codes()).not.toContain('opening-picture-missing')
+  })
+
   it('names a world nobody can play', async () => {
     await write(join(directory, 'characters', 'clara', 'character.json'), { name: 'Clara', role: 'npc', tier: 'principal', summary: 'Innkeeper.', start: { location: 'inn' } })
     expect((await quick(['quality-cast'])).findings.map(finding => finding.code)).toContain('no-playable')

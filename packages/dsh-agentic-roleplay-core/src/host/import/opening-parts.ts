@@ -101,6 +101,7 @@ export function mendParts(source: string, parts: readonly OpeningPart[], speaker
   const mended: OpeningPart[] = []
   let at = 0
   for (const part of parts) {
+    if (part.type === 'image') { mended.push(part); continue }
     const found = source.indexOf(part.text, at)
     if (found < 0) return [...parts]
     const gap = unquoted(source.slice(at, found))

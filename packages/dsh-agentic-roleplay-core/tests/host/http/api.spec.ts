@@ -262,6 +262,7 @@ beforeEach(async () => {
       galleryFile: () => Promise.reject(new Error('there is no such image')),
       uploadImage: (_world, name) => Promise.resolve(`library/${name}`),
       updateImage: () => Promise.reject(new Error('there is no such image')),
+      describeImage: (_world, path) => (path === 'library/dock.png' ? Promise.resolve({ path, purpose: 'uploaded', origin: 'uploaded', reusable: true, createdAt: 'now', description: 'A dock.', tags: [], subjects: [] }) : Promise.reject(new Error('the world\'s authoring chat is not running'))),
     },
     worldEditor: {
       read: (worldId) => {
@@ -559,6 +560,8 @@ describe('roleplay API', () => {
     expect(await upload.json()).toEqual({ path: 'library/dock.png' })
     expect((await fetch(`${origin}/worlds/gallery?id=harbor&path=x`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ reusable: 'yes' }) })).status).toBe(400)
     expect((await fetch(`${origin}/worlds/gallery/file?id=harbor&path=x`)).status).toBe(404)
+    expect(await (await fetch(`${origin}/worlds/gallery/describe?id=harbor&path=library/dock.png`, { method: 'POST' })).json()).toMatchObject({ description: 'A dock.' })
+    expect((await fetch(`${origin}/worlds/gallery/describe?id=harbor&path=library/none.png`, { method: 'POST' })).status).toBe(409)
   })
 
   it('reads and replaces the calendar of a world', async () => {

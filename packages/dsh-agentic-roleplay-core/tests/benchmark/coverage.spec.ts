@@ -16,7 +16,7 @@ import { writeFiles } from './write.ts'
 let root: string
 let state: RoleplayState
 let deps: StartSessionDeps
-let opened: { id: string; title: string; opening: readonly { type: string; text: string }[] | undefined }[]
+let opened: { id: string; title: string; opening: readonly ({ type: string; text: string } | { type: 'image'; path: string })[] | undefined }[]
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'benchmark-start-'))
@@ -220,6 +220,6 @@ describe.each(LANGUAGES)('a story started from the benchmark world (%s)', (langu
   it('opens the chat with the world\'s opening, spoken lines included, and the alternate opening only for its character', async () => {
     await start(language, 'mara')
     expect(opened[0]?.opening?.map(part => part.type)).toEqual(['narration', 'utterance'])
-    expect(opened[0]?.opening?.[1]?.text).toBe(t('You are the keeper\'s girl, aren\'t you? Come in out of the fog before the bell rings.', '你是守塔人的女儿吧？趁钟声响起之前，快进屋避避雾。'))
+    expect((opened[0]?.opening?.[1] as { text?: string } | undefined)?.text).toBe(t('You are the keeper\'s girl, aren\'t you? Come in out of the fog before the bell rings.', '你是守塔人的女儿吧？趁钟声响起之前，快进屋避避雾。'))
   })
 })

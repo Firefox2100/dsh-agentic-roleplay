@@ -38,4 +38,11 @@ export async function updateImage(target: GalleryTarget, path: string, update: {
   return await response.json() as GalleryImage
 }
 
+/** Has a model that reads images describe a picture of a world, replacing its description, tags and subjects. */
+export async function describeImage(target: GalleryTarget, path: string, signal: AbortSignal): Promise<GalleryImage> {
+  const response = await fetch(`${route(target, '/describe')}&path=${encodeURIComponent(path)}`, { method: 'POST', credentials: 'same-origin', signal })
+  if (!response.ok) throw await failure(response)
+  return await response.json() as GalleryImage
+}
+
 export const imageUrl = (target: GalleryTarget, image: GalleryImage): string => `${route(target, '/file')}&path=${encodeURIComponent(image.path)}&v=${encodeURIComponent(image.createdAt)}`

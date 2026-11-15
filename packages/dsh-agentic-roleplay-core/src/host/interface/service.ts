@@ -178,7 +178,7 @@ export class InterfaceService {
     return delivered.map((node, index): HistoryTurn => ({
       turn: index + 1,
       player: node.player,
-      segments: (node.output?.segments ?? []).map(segment => (segment.type === 'utterance' ? { type: 'utterance' as const, name: segment.name, text: segment.text } : { type: 'narration' as const, text: segment.text })),
+      segments: (node.output?.segments ?? []).flatMap(segment => (segment.type === 'image' ? [] : [segment.type === 'utterance' ? { type: 'utterance' as const, name: segment.name, text: segment.text } : { type: 'narration' as const, text: segment.text }])),
       ...(node.output?.ooc === undefined ? {} : { note: node.output.ooc.note }),
     })).slice(-Math.min(Math.max(1, limit), PACK_LIMITS.history.max))
   }

@@ -9,7 +9,7 @@ export async function writeFiles(directory: string, files: Files): Promise<void>
   for (const [path, value] of files) {
     const file = join(directory, path)
     await mkdir(dirname(file), { recursive: true })
-    await writeFile(file, typeof value === 'string' ? value : `${JSON.stringify(value, null, 2)}\n`)
+    await writeFile(file, typeof value === 'string' || value instanceof Uint8Array ? value : `${JSON.stringify(value, null, 2)}\n`)
   }
 }
 

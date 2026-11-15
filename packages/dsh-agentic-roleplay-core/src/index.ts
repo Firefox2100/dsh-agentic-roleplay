@@ -59,6 +59,8 @@ import { editWorldNarrationVoice, editWorldCharacter as editWorldFileCharacter, 
 import { addAvatarsToWorld, avatarsWorld, createAvatar, deleteAvatar } from './host/avatars/avatars.ts'
 import { AVATARS_WORLD_ID } from './shared/avatars.ts'
 import { galleryFile, listGallery, updateImage } from './host/images/gallery.ts'
+import { describeWorldImage } from './host/images/world-describe.ts'
+import type { ImageAttachments } from './host/images/interpreter.ts'
 import { addToLibrary } from './host/images/library.ts'
 import { deleteWorldPrompt, listWorldPrompts, readWorldPrompt, writeWorldPrompt } from './host/prompts/world-prompts.ts'
 import { editWorldInfo, readWorldInfo } from './host/worlds/world-info.ts'
@@ -96,6 +98,7 @@ import { stat } from 'node:fs/promises'
 import { chatSessionId } from './shared/chat.ts'
 import { SessionNotFoundError } from './host/sessions/errors.ts'
 import { AgentUnavailableError } from './host/sessions/errors.ts'
+import { SessionArchivedError } from './host/sessions/errors.ts'
 import { TimelineError, type Timelines } from './host/timeline/service.ts'
 import { WorldCatalog } from './host/worlds/catalog.ts'
 import { Catalogue } from './host/catalogue/service.ts'
@@ -234,7 +237,7 @@ export function apply(ctx: Context, config: Config) {
   const sync = createSync(ctx, {
     config: () => config.sync.get(), root: () => root.path, worlds, orchestration, state: ctx.roleplayState,
     remove: id => deleteSession({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir, purgeChat }, id),
-    rebuild: async (id) => { if (await agent.has(id)) await openSession({ ...deps, replaceChat: (chat, title, events) => agent.replace(chat, title, events, purgeChat) }, id, { rebuild: true }) },
+    rebuild: async (id) => { try { await openSession({ ...deps, replaceChat: (chat, title, events) => agent.replace(chat, title, events, purgeChat) }, id, { rebuild: true }) } catch (error) { if (!(error instanceof SessionArchivedError)) throw error } },
   })
   prompts.frozen = () => sync.gate.isLocked('prompts')
   const playtests = new Playtests({
@@ -377,6 +380,15 @@ export function apply(ctx: Context, config: Config) {
       galleryFile: async (worldId, path) => await galleryFile((await editableWorld(worlds, worldId, root.path)).directory, path),
       uploadImage: async (worldId, name, bytes) => await addToLibrary((await editableWorld(worlds, worldId, root.path)).directory, bytes, name),
       updateImage: async (worldId, path, update) => await updateImage((await editableWorld(worlds, worldId, root.path)).directory, path, update),
+      describeImage: async (worldId, path) => {
+        const world = await editableWorld(worlds, worldId, root.path)
+        const state = await readWorldEditor(world)
+        const chat = await authoring.ensure(world.id, (await worlds.find(world.id))?.summary.name ?? world.id)
+        return await describeWorldImage({
+          directory: world.directory, parent: ctx.get('agents')?.get(SessionId(chat)), attachments: (ctx as Context & { get(name: 'attachments'): ImageAttachments | undefined }).get('attachments'), language: languages.get(world.id),
+          subjects: [...state.characters.map(entry => ({ kind: 'character' as const, name: entry.name })), ...state.places.map(entry => ({ kind: 'location' as const, name: entry.name })), ...state.things.map(entry => ({ kind: 'item' as const, name: entry.name }))],
+        }, path)
+      },
     },
     worldEditor: {
       read: async worldId => await readWorldEditor(await editableWorld(worlds, worldId, root.path)),

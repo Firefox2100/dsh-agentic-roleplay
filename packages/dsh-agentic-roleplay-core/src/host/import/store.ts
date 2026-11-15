@@ -51,8 +51,9 @@ export function parseChoices(value: unknown): ImportChoices {
   if (raw?.['kind'] === 'first') opening = { kind: 'first' }
   else if (raw?.['kind'] === 'alternate' && Number.isInteger(raw['index']) && (raw['index'] as number) >= 0) opening = { kind: 'alternate', index: raw['index'] as number }
   else if (raw?.['kind'] !== 'none') problems.push('opening must be first, alternate with an index, or none')
+  if (input['fetchPictures'] !== undefined && typeof input['fetchPictures'] !== 'boolean') problems.push('fetchPictures must be true or false')
   if (problems.length > 0) throw new InvalidEditProblems(problems)
-  return { name, disabledEntries: [...new Set(disabled)], opening }
+  return { name, disabledEntries: [...new Set(disabled)], opening, ...(input['fetchPictures'] === false ? { fetchPictures: false } : {}) }
 }
 
 async function readJson<T>(file: string): Promise<T> {

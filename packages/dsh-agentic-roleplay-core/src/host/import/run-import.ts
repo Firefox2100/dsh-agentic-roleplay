@@ -9,6 +9,7 @@ import { emptyExtracted, extractEntities, extractStyle, extractVariables, type E
 import { finishImport, type ImportReport } from './finish.ts'
 import { itemise, type SourceItem } from './items.ts'
 import type { ImportContext } from './run.ts'
+import { pieceFinder } from './card-tools.ts'
 import { fetchPictures, type PicturesReport } from './pictures.ts'
 import { IMPORT_FOLDER, PICTURE_FILE, readImportFolder } from './store.ts'
 import { writeSnapshot } from './snapshot.ts'
@@ -47,14 +48,19 @@ const fetching = new Map<string, Promise<PicturesReport>>()
  * Starts fetching the pictures the card points to, next to the work of the agents, once per import; a later call gets the same run or its saved result.
  * A failure is a report of its own: pictures never stop an import.
  */
-function ensurePictures(world: string, urls: readonly string[]): Promise<PicturesReport> {
+/** The addresses to download pictures from: none when the person turned downloading off. */
+function picturesToFetch(card: NormalizedCard, choices: { fetchPictures?: boolean }): string[] {
+  return choices.fetchPictures === false ? [] : card.urls ?? []
+}
+
+function ensurePictures(world: string, urls: readonly string[], piecesOf: (url: string) => string[]): Promise<PicturesReport> {
   const running = fetching.get(world)
   if (running !== undefined) return running
   const run = (async (): Promise<PicturesReport> => {
     try { return await readJson<PicturesReport>(join(folder(world), PICTURES)) } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
     }
-    const report = await fetchPictures(world, urls).catch((error: unknown): PicturesReport => ({ found: 0, added: [], skipped: [{ url: '', reason: error instanceof Error ? error.message : String(error) }] }))
+    const report = await fetchPictures(world, urls, { piecesOf }).catch((error: unknown): PicturesReport => ({ found: 0, added: [], skipped: [{ url: '', reason: error instanceof Error ? error.message : String(error) }] }))
     await writeJson(join(folder(world), PICTURES), report)
     return report
   })()
@@ -150,8 +156,8 @@ export interface SurveySummary {
 /** First step: say what each piece of the card is, and list who and what the world is made of. */
 export async function survey(ctx: ImportContext, world: string): Promise<SurveySummary> {
   await need(world, ['ready', 'surveyed', 'built'], 'the survey')
-  const { card, items } = await load(world)
-  void ensurePictures(world, card.urls ?? [])
+  const { card, items, choices } = await load(world)
+  void ensurePictures(world, picturesToFetch(card, choices), pieceFinder(card, choices))
   const { classified, failures, decided } = await classifyItems(ctx, card, items)
   if (items.length > 0 && failures.length >= items.length && decided === 0) throw new Error(`no piece of the card could be read, so nothing was imported: ${failures[0]}`)
   const { roster, failure } = await buildRoster(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified)
@@ -189,8 +195,8 @@ export interface BuildSummary {
 /** Second step: write every character, place, faction, thing and background entry from the pieces that are about it. */
 export async function build(ctx: ImportContext, world: string): Promise<BuildSummary> {
   await need(world, ['surveyed', 'built'], 'the build')
-  const { card, items } = await load(world)
-  void ensurePictures(world, card.urls ?? [])
+  const { card, items, choices } = await load(world)
+  void ensurePictures(world, picturesToFetch(card, choices), pieceFinder(card, choices))
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
   const roster = await readJson<Roster>(join(folder(world), ROSTER))
   const extracted = await extractEntities(ctx, card, items.filter(item => !isLeftOut(classified[item.id]!)), classified, roster)
@@ -226,7 +232,7 @@ export async function finish(ctx: ImportContext, world: string): Promise<{ ok: t
   const classified = await readJson<Classified>(join(folder(world), CLASSIFICATION))
   const roster = await readJson<Roster>(join(folder(world), ROSTER))
   const extracted = { ...emptyExtracted(), ...await readJson<Partial<Extracted>>(join(folder(world), EXTRACTED)).catch(() => ({})) }
-  const pictures = await ensurePictures(world, card.urls ?? [])
+  const pictures = await ensurePictures(world, picturesToFetch(card, choices), pieceFinder(card, choices))
   const result = await finishImport(ctx, {
     directory: world, card, choices, roster, items, classified, extracted,
     ...(picture ? { picture: await readFile(join(folder(world), PICTURE_FILE)) } : {}), notes: [], pictures: { found: pictures.found, added: pictures.added.length },
@@ -257,7 +263,7 @@ export async function structureImport(world: string, language?: string): Promise
   await need(world, ['ready'], 'the import without a model')
   const { card, choices, items, picture } = await load(world)
   const { classified, roster, extracted } = structureOnly(card, items, choices)
-  const pictures = await ensurePictures(world, card.urls ?? [])
+  const pictures = await ensurePictures(world, picturesToFetch(card, choices), pieceFinder(card, choices))
   const ctx: ImportContext = { noModel: true, run: () => Promise.reject(new Error('this import has no model')), concurrency: 1, text: (id, variables) => shippedText(id, language ?? 'en', variables), say: () => undefined, ...(language === undefined ? {} : { language }) }
   const result = await finishImport(ctx, {
     directory: world, card, choices, roster, items, classified, extracted,

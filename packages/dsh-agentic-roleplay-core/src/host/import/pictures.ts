@@ -4,6 +4,7 @@ import { request as httpsRequest } from 'node:https'
 import { BlockList, isIP, type LookupFunction } from 'node:net'
 import { MEDIA_TYPES } from '../images/image-files.ts'
 import { addToLibraryOnce, imageExtensionOf, libraryHashes } from '../images/library.ts'
+import { addCardLink } from '../images/gallery.ts'
 import { mapLimit } from './run.ts'
 
 /** The address is not one a picture may be fetched from: it names this machine or a private network. */
@@ -161,7 +162,13 @@ export interface PicturesReport {
   skipped: { url: string; reason: string; of?: string }[]
 }
 
-export interface PictureDeps { fetcher?: Fetcher; signal?: AbortSignal; concurrency?: number }
+export interface PictureDeps {
+  fetcher?: Fetcher
+  signal?: AbortSignal
+  concurrency?: number
+  /** The ids of the card pieces that hold an address, written into the picture next to the address. */
+  piecesOf?: (url: string) => string[]
+}
 
 /**
  * Fetches the pictures a card points to into the world's image library, as if the person had added them. Each address is vetted, asked about
@@ -183,8 +190,13 @@ export async function fetchPictures(world: string, urls: readonly string[], deps
       if (reply.status < 200 || reply.status >= 300) { skipped.push({ url: address, reason: `answered ${reply.status}` }); return }
       if (imageExtensionOf(reply.body) === undefined) { skipped.push({ url: address, reason: 'not an image' }); return }
       if (reply.body.length < MIN_BYTES) { skipped.push({ url: address, reason: 'too small' }); return }
-      const { path, added: isNew } = await addToLibraryOnce(world, reply.body, fileNameOf(url), hashes)
-      if (!isNew) { skipped.push({ url: address, reason: 'a copy of another picture', of: path }); return }
+      const link = { url: address, pieces: deps.piecesOf?.(address) ?? [] }
+      const { path, added: isNew } = await addToLibraryOnce(world, reply.body, fileNameOf(url), hashes, link)
+      if (!isNew) {
+        await addCardLink(world, path, link).catch(() => undefined)
+        skipped.push({ url: address, reason: 'a copy of another picture', of: path })
+        return
+      }
       added.push({ url: address, path })
     } catch (error) {
       skipped.push({ url: address, reason: error instanceof Error ? error.message : String(error) })

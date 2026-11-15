@@ -58,6 +58,7 @@ describe.skipIf(!live)(`the world-authoring benchmark, live (${label})`, () => {
           await rm(folder, { recursive: true, force: true })
           await mkdir(folder, { recursive: true })
           await writeFiles(folder, files)
+          await made.after?.(folder)
           const seedInfo = files.get('world.json') as Record<string, unknown>
           trace.state('seed', { files: [...files.keys()], message: made.message })
           try {

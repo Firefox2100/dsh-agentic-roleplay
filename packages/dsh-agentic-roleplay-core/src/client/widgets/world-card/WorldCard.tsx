@@ -2,7 +2,8 @@ import { useState, type CSSProperties } from 'react'
 import { Tooltip } from '../../ui/Tooltip.tsx'
 import { Tag } from '../../ui/Tag.tsx'
 import { worldCoverPath, type WorldSummary } from '../../../shared/worlds.ts'
-import css from './WorldCard.module.css'import { IconPlay } from '../../ui/icons.tsx'
+import css from './WorldCard.module.css'
+import { IconPlay } from '../../ui/icons.tsx'
 
 
 /** Stable hue per name, so a world without a cover keeps the same colour. */
@@ -55,11 +56,9 @@ export function WorldCard({ world, playLabel, openLabel, draftLabel, onPlay, onO
         </div>
         <div className={css.info}>
           <div className={css.name}>{world.name}{draftLabel !== undefined && <Tag tone="warning" className={css.tag} data-testid="world-draft">{draftLabel}</Tag>}</div>
-          {world.tags.length > 0 && (
-            <div className={css.tags}>
-              {world.tags.map(tag => <Tag key={tag} tone="neutral" className={css.tag}>{tag}</Tag>)}
-            </div>
-          )}
+          <div className={css.tags}>
+            {world.tags.map(tag => <Tag key={tag} tone="neutral" className={css.tag}>{tag}</Tag>)}
+          </div>
         </div>
       </div>
     </Tooltip>

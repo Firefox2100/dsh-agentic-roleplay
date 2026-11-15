@@ -1933,7 +1933,7 @@ describe('a turn with the real agent loop', () => {
     const delivered = outputsOf(agent)
     expect(delivered).toHaveLength(1)
     expect(delivered[0]).toMatchObject({ repaired: false })
-    expect(delivered[0]?.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: ${segment.text}` : segment.text))).toEqual([
+    expect(delivered[0]?.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: ${segment.text}` : segment.type === 'image' ? segment.path : segment.text))).toEqual([
       'Alice: That is not something I expected.', 'Alice greets him; Bob frowns.', 'Bob: Why is he here?',
     ])
     expect(masterRequests(adapter).some(request => asText(request).includes('Round 1 is recorded') && asText(request).includes('round(s) are left for this message'))).toBe(true)

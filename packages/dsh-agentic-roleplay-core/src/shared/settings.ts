@@ -250,8 +250,8 @@ export interface ChatSettings {
     count: number
   }
   images: {
-    /** Whether scene illustrations are disabled, requested by the player, or generated after every delivered turn. */
-    mode: 'off' | 'manual' | 'every-turn'
+    /** Whether scene illustrations are disabled, requested by the player, generated after the turns a helper judges worth a picture, or generated after every delivered turn. */
+    mode: 'off' | 'manual' | 'important' | 'every-turn'
     /** Whether transient generation ignores, uses when available, or requires canonical reference images. */
     references: 'text-only' | 'prefer-reference' | 'require-reference'
     /** Whether a picture the story needs on its own (every-turn mode) is first looked for among the images the session already has. */
@@ -350,7 +350,7 @@ export const SETTINGS_SPEC = {
   rules: { own: text(MAX_OWN_RULES, '') },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
-  images: { mode: choice(['off', 'manual', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference'), reuse: flag(true), highRes: flag(false), interpret: flag(true), interpreterModel: text(200, ''), captioner: text(200, '') },
+  images: { mode: choice(['off', 'manual', 'important', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference'), reuse: flag(true), highRes: flag(false), interpret: flag(true), interpreterModel: text(200, ''), captioner: text(200, '') },
   dice: { visibility: choice(['hidden', 'card'], 'card') },
   tools: switchboard(),
   embedding: { options: record() },

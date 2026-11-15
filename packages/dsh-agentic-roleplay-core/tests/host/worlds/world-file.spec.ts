@@ -51,6 +51,12 @@ describe('parseWorldFile', () => {
   })
 
   describe('the opening', () => {
+    it('may hold pictures of the library between its parts, and refuses a path that leaves the copied folders', () => {
+      expect(parse(JSON.stringify({ name: 'W', opening_message: [{ text: 'a' }, { type: 'image', path: ' library/dock.png ' }] })).opening).toEqual([{ type: 'narration', text: 'a' }, { type: 'image', path: 'library/dock.png' }])
+      expect(issues(JSON.stringify({ name: 'W', opening_message: [{ type: 'image', path: '../secret.png' }] })).join(' ')).toMatch(/must name a picture of the library/)
+      expect(issues(JSON.stringify({ name: 'W', opening_message: [{ type: 'image', path: 'scenes/turn-1.png' }] })).join(' ')).toMatch(/must name a picture of the library/)
+    })
+
     it('is plain text read as one narration, trimmed, and left out when there is none', () => {
       expect(parse(JSON.stringify({ name: 'W', opening_message: '  The lanterns sway.\n\nYou arrive.  ' })).opening).toEqual([{ type: 'narration', text: 'The lanterns sway.\n\nYou arrive.' }])
       expect(parse(JSON.stringify({ name: 'W', opening_message: '   ' }))).not.toHaveProperty('opening')

@@ -16,6 +16,7 @@ import type { AuthoredWorldReader } from './read-tools.ts'
 import { WORLD_FILE_KINDS, isWorldFileKind, writeWorldFile } from './world-files.ts'
 import { PACK_MUTATION_TOOLS } from './pack-tools.ts'
 import { PROMPT_MUTATION_TOOLS, PROSE_PROMPTS } from './prompt-tools.ts'
+import { IMAGE_MUTATION_TOOLS } from './image-tools.ts'
 import { changedFields, createdFields, plain, sizeOf, type Summary } from './approval-summary.ts'
 
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
@@ -26,7 +27,7 @@ const keyParameter = { type: 'string' as const, required: true as const, descrip
 /** The fields of `world.json` the assistant changes: what the world says about itself. The name, the preset, the lorebooks, the sampling and the tool switches are the person's choices and stay theirs. */
 export const WORLD_INFO_FIELDS = ['description', 'tags', 'rules', 'opening', 'openingParts', 'alternateOpenings', 'startQuestions', 'startingTime', 'timeZone', 'version', 'authorName', 'authorUrl'] as const
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'reshape_opening', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', 'write_world_file', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS])
+export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'reshape_opening', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', 'write_world_file', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS, ...IMAGE_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -252,6 +253,15 @@ export async function authoringApproval(exec: ToolExecution, next: () => Promise
       kind: 'ask',
       reason: `${remove ? 'delete' : 'write'} authored world ${target}`,
       displayReason: withDetail({ en: `${remove ? 'Delete' : 'Write'} ${target} in the world files`, zh: `${remove ? '删除' : '写入'}世界文件中的${target}` }, remove ? undefined : sizeOf(args['text'])),
+    }
+  }
+  if ((IMAGE_MUTATION_TOOLS as readonly string[]).includes(exec.name)) {
+    const describing = exec.name === 'describe_world_image'
+    const target = `picture “${String(args['path'])}”`
+    return {
+      kind: 'ask',
+      reason: `${describing ? 'have a model describe' : 'change what is said about'} the authored world's ${target}`,
+      displayReason: { en: `${describing ? 'Have a model describe' : 'Change the description, tags or subjects of'} the ${target}?`, zh: `${describing ? '让模型描述' : '修改'}${target.replace('picture', '图片')}${describing ? '' : '的描述、标签或主体'}？` },
     }
   }
   if (exec.name === 'reshape_opening') {

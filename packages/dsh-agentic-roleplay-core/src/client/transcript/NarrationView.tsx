@@ -37,7 +37,7 @@ export function useNarrationPlayer(sessionId: string): { playing: boolean; play:
       const id = sessionId.startsWith('session-') ? sessionId.slice(8) : sessionId
       const state = await (await fetch(`roleplay-api/sessions/world?id=${encodeURIComponent(id)}`)).json() as { narrationVoice?: string; characters: { key: string; voice?: string }[] }
       const voices = new Map(state.characters.map(character => [character.key, character.voice]))
-      const parts = segments.map(segment => ({ text: segment.text, voice: segment.type === 'utterance' ? voices.get(segment.character) : state.narrationVoice }))
+      const parts = segments.flatMap(segment => (segment.type === 'image' ? [] : [{ text: segment.text, voice: segment.type === 'utterance' ? voices.get(segment.character) : state.narrationVoice }]))
       const response = await fetch('roleplay-api/speech/synthesize', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ parts }) })
       if (!response.ok) throw new Error(await response.text())
       const url = URL.createObjectURL(await response.blob()); const audio = new Audio(url)
@@ -64,7 +64,9 @@ export function NarrationView({ data, sessionId, t, player }: { data: NarrationN
           <span className={css.oocLabel}>{t(data.ooc.question === true ? 'oocAnswer' : data.ooc.legal ? 'oocDone' : 'oocRefused')}</span> {data.ooc.note}
         </p>
       )}
-      {data.segments.map((segment, index) => segment.type === 'narration'
+      {data.segments.map((segment, index) => segment.type === 'image'
+        ? <img key={index} className={css.picture} data-rp="picture" data-testid="roleplay-picture" src={`roleplay-api/sessions/gallery/file?id=${encodeURIComponent(sessionId.startsWith('session-') ? sessionId.slice(8) : sessionId)}&path=${encodeURIComponent(segment.path)}`} alt="" loading="lazy" decoding="async" />
+        : segment.type === 'narration'
         ? <p key={index} className={css.narration} data-rp="prose">{segment.text}</p>
         : (
           <div key={index} className={css.line} data-testid="roleplay-utterance" data-rp="utterance">

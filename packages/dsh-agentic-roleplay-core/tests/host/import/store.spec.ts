@@ -39,6 +39,14 @@ describe('choices', () => {
     expect(() => parseChoices(null)).toThrow(InvalidEditProblems)
   })
 
+  it('download pictures unless the body says false', () => {
+    const base = { name: 'W', disabledEntries: [], opening: { kind: 'none' } }
+    expect(parseChoices(base)).toEqual(base)
+    expect(parseChoices({ ...base, fetchPictures: true })).toEqual(base)
+    expect(parseChoices({ ...base, fetchPictures: false })).toEqual({ ...base, fetchPictures: false })
+    expect(() => parseChoices({ ...base, fetchPictures: 'no' })).toThrow(InvalidEditProblems)
+  })
+
   it('cannot be used when the name is blank, an entry is unknown or the opening is empty', () => {
     expect(choiceProblems(card(), { name: 'W', disabledEntries: ['entry:0'], opening: { kind: 'first' } })).toEqual([])
     expect(choiceProblems(card(), { name: ' ', disabledEntries: ['entry:9'], opening: { kind: 'alternate', index: 0 } })).toEqual(['the world needs a name', 'there is no entry "entry:9"', 'the opening chosen is empty or does not exist'])

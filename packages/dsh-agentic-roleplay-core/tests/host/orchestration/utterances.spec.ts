@@ -64,7 +64,7 @@ describe('exactUtterances', () => {
 
     it('repairs by putting a missing line where its round belongs', () => {
       const repaired = exactUtterances.repair([say('alice', 'Welcome back.'), narrate('Time passes.'), say('alice', 'Not now, Bob.')], rounds)
-      expect(repaired.map(segment => (segment.type === 'utterance' ? segment.text : segment.text))).toEqual([
+      expect(repaired.map(segment => (segment.type === 'image' ? segment.path : segment.text))).toEqual([
         'Welcome back.', 'Time passes.', 'Why is he here?', 'Not now, Bob.',
       ])
       expect(exactUtterances.check(repaired, rounds)).toEqual([])

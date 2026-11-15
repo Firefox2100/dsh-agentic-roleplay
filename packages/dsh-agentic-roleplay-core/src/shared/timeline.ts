@@ -1,4 +1,5 @@
 import type { TurnOutput } from './narration.ts'
+import { wordsOf } from './narration.ts'
 
 /**
  * One turn that was played: what the player said, what came out of it, and the log events that carry it.
@@ -97,7 +98,7 @@ export function viewOf(timeline: Timeline): TimelineView {
 
 /** Where a notice stands for a turn that is not told by its own events: the player's words and what was delivered, as plain text. */
 export function noticeText(node: Pick<TimelineNode, 'player' | 'output'>): string {
-  const told = node.output === undefined ? '(nothing was delivered)' : node.output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: "${segment.text}"` : segment.text)).join('\n')
+  const told = node.output === undefined ? '(nothing was delivered)' : wordsOf(node.output.segments, segment => `${segment.name}: "${segment.text}"`).join('\n')
   const ooc = node.output?.ooc
   const ruling = ooc === undefined ? '' : ooc.question === true ? `\nThe question was answered out of character: ${ooc.note}` : `\nThe command was ruled ${ooc.legal ? 'legal' : 'illegal and refused'}: ${ooc.note}`
   return `The story, as it went earlier (restored):\nThe player said: ${node.player}${ruling}\nIt was told to the player:\n${told}`

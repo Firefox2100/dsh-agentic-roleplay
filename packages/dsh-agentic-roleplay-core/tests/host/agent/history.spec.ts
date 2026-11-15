@@ -23,8 +23,14 @@ describe('a chat made again from the session folder', () => {
 
   it('delivers each output as it was delivered, so the transcript shows what the player read', () => {
     const delivered = text('tool/result').map(event => decodeOutput(((event.data as { message: { content: { text: string }[] } }).message.content[0]!.text))!)
-    expect(delivered.map(each => each.segments[0]!.text)).toEqual(['Rain on the glass.', 'It opens.', 'Dark.'])
+    expect(delivered.map(each => (each.segments[0] as { text: string }).text)).toEqual(['Rain on the glass.', 'It opens.', 'Dark.'])
     expect(delivered[1]!.segments[1]).toEqual({ type: 'utterance', character: 'clara', name: 'Clara', text: 'Careful.' })
+  })
+
+  it('keeps a picture of the opening in its place', () => {
+    const shown = rebuildChat([{ type: 'narration', text: 'Fog.' }, { type: 'image', path: 'library/dock.png' }, { type: 'narration', text: 'You arrive.' }], timeline)
+    const first = shown.events.filter(event => event.type === 'tool/result').map(event => decodeOutput(((event.data as unknown as { message: { content: { text: string }[] } }).message.content[0]!.text))!)[0]!
+    expect(first.segments).toEqual([{ type: 'narration', text: 'Fog.' }, { type: 'image', path: 'library/dock.png' }, { type: 'narration', text: 'You arrive.' }])
   })
 
   it('points the turns on the path at the new log and the turns it does not hold at nothing', () => {

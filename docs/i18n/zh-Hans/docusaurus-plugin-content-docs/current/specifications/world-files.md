@@ -26,7 +26,7 @@ worlds/<world folder>/
 | `id` | string | 世界的稳定身份，最多 100 字符，在全部世界中唯一。会话通过它引用世界。缺失时首次读取会生成并写回，之后保持不变。重复 ID 会报告，后出现的世界不列出。 |
 | `name` | string | 必填。 |
 | `description` | string | 世界卡片的提示说明。 |
-| `opening_message` | string 或列表 | 可选开场。纯文本视为一段旁白；列表按阅读顺序包含 `{ "type": "narration", "text": "..." }` 或 `{ "type": "utterance", "character": "<character id>", "text": "..." }`。省略 `type` 表示旁白。角色必须存在。会话在玩家输入前直接写入该内容，不调用模型。 |
+| `opening_message` | string 或列表 | 可选开场。纯文本视为一段旁白；列表按阅读顺序包含 `{ "type": "narration", "text": "..." }` 或 `{ "type": "utterance", "character": "<character id>", "text": "..." }`。省略 `type` 表示旁白。角色必须存在。也可以放图片：`{ "type": "image", "path": "library/dock.png" }`，显示在段落之间；路径相对于世界的 `images/`，必须在 `library`、`characters`、`locations`、`items` 或 `global` 之内（故事开始时会复制这些文件夹）。世界里没有这张图片时，开始故事会被拒绝，质量检查也会报告（`opening-picture-missing`）。世界编辑器从世界的图片库里添加图片；游戏主持人不会放置图片，模型和记忆把图片部分当作空。会话在玩家输入前直接写入该内容，不调用模型。 |
 | `alternate_openings` | 列表 | 其他可选开场，每项为 `{title, text 或 parts, character?}`（`parts` 与 `opening_message` 的列表相同，二者只能给一个）；`character` 是某个可扮演角色的 id，带它的开场只提供给扮演该角色的玩家。开始会话时选择，写为首个完成回合。 |
 | `starting_time` | ISO 8601 字符串 | 模拟故事起点。无偏移或 `Z` 时按 `time_zone` 的墙上时间解释，只有日期时为当天午夜。缺失则从创建会话的时刻开始。 |
 | `rules` | 字符串或字符串列表 | 世界禁止事项，最多 30 条，每条最多 300 字符。开始会话时复制，主持人每回合都能看到；违反规则的玩家行动在故事内失败，违反规则的 OOC 命令被拒绝。 |

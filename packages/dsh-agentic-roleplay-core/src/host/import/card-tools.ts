@@ -63,6 +63,12 @@ export function cardPieces(card: NormalizedCard, choices: ImportChoices): CardPi
   ]
 }
 
+/** The ids of the pieces of the card that hold an address; none for one found only in scripts or other settings of the card. */
+export function pieceFinder(card: NormalizedCard, choices: ImportChoices): (url: string) => string[] {
+  const pieces = cardPieces(card, choices)
+  return url => pieces.filter(piece => piece.text.includes(url)).map(piece => piece.id)
+}
+
 /** What the importer worked out, when it got that far; each part is absent when its file is. */
 export interface Records {
   classified?: Classified | undefined

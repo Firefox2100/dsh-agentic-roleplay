@@ -413,6 +413,7 @@ export const exactUtterances: NarrationChecker = {
     let latest = 0
     segments.forEach((segment, index) => {
       const at = `segment ${index + 1}`
+      if (segment.type === 'image') return
       if (segment.type === 'narration') {
         if (segment.text.trim() === '') problems.push(`${at}: the narration is empty`)
         return
@@ -444,6 +445,7 @@ export const exactUtterances: NarrationChecker = {
     const used = new Set<number>()
     const kept: { segment: NarrationSegment; round: number | undefined }[] = []
     for (const segment of segments) {
+      if (segment.type === 'image') continue
       if (segment.type === 'narration') {
         if (segment.text.trim() !== '') kept.push({ segment, round: undefined })
         continue

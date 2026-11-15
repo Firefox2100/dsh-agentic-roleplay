@@ -22,7 +22,7 @@ class Images extends ImageGenerationService {
   generate(): Promise<ImageGenerationResult> { throw new Error('the fake author does not call the provider') }
 }
 
-async function fixture(mode: 'off' | 'manual' | 'every-turn' = 'manual', extra: Partial<ConstructorParameters<typeof ImageJobs>[0]> = {}) {
+async function fixture(mode: 'off' | 'manual' | 'important' | 'every-turn' = 'manual', extra: Partial<ConstructorParameters<typeof ImageJobs>[0]> = {}) {
   const directory = join(tmpdir(), `image-jobs-${process.pid}-${Date.now()}-${Math.random()}`)
   roots.push(directory)
   const id = '11111111-1111-4111-8111-111111111111'
@@ -53,6 +53,17 @@ describe('scene image jobs', () => {
     expect(author.mock.calls[0]?.[0]).toMatchObject({ turn: 3, timelineNode: 'n1', purpose: 'transient', request: 'Rain crosses the empty street.' })
     release()
     await vi.waitFor(async () => { expect((await jobs.status(id, 'n1')).state).toBe('absent') })
+  })
+
+  it('in important mode asks a helper first and makes a picture only when the moment is worth one', async () => {
+    const no = await fixture('important', { worth: vi.fn(() => Promise.resolve(false)) })
+    no.jobs.afterDelivery(`session-${no.id}`, 'n1', no.output)
+    await vi.waitFor(() => { expect((no.jobs as unknown as { active: Map<string, unknown> }).active.size).toBe(0) })
+    expect(no.author).not.toHaveBeenCalled()
+    const yes = await fixture('important', { worth: vi.fn(() => Promise.resolve(true)) })
+    yes.jobs.afterDelivery(`session-${yes.id}`, 'n1', yes.output)
+    await vi.waitFor(() => { expect(yes.author).toHaveBeenCalledTimes(1) })
+    yes.release()
   })
 
   it('runs automatically only in every-turn mode and cancels with the chat', async () => {

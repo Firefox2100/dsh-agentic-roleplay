@@ -45,7 +45,7 @@ describe('splitting an opening into parts', () => {
     const source = '"Hi," you say. Mira nods without looking up. "Morning. Sit anywhere."'
     const skipped = [{ type: 'narration' as const, text: '"Hi," you say.' }, { type: 'utterance' as const, character: 'mira', text: 'Morning. Sit anywhere.' }]
     const mended = mendParts(source, skipped, cast)
-    expect(mended.map(part => part.text)).toEqual(['"Hi," you say.', 'Mira nods without looking up.', 'Morning. Sit anywhere.'])
+    expect(mended.map(part => (part as { text: string }).text)).toEqual(['"Hi," you say.', 'Mira nods without looking up.', 'Morning. Sit anywhere.'])
     expect(splitProblem(source, mended, cast)).toBeUndefined()
     const invented = [{ type: 'narration' as const, text: 'Something that is not there.' }]
     expect(mendParts(source, invented, cast)).toEqual(invented)

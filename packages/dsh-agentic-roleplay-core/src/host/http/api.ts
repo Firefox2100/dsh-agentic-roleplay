@@ -142,6 +142,8 @@ export interface ApiDeps {
     deletePrompt(worldId: string, language: string, prompt: string): Promise<void>
     gallery(worldId: string): Promise<{ images: GalleryImage[]; failures: Record<string, string> }>
     galleryFile(worldId: string, path: string): Promise<{ file: string; size: number; mediaType: string }>
+    /** Has a model that reads images describe one picture of the world's library, replacing what its file says. */
+    describeImage(worldId: string, path: string): Promise<GalleryImage>
     uploadImage(worldId: string, name: string, bytes: Uint8Array): Promise<string>
     updateImage(worldId: string, path: string, update: ImageUpdate): Promise<GalleryImage>
   }

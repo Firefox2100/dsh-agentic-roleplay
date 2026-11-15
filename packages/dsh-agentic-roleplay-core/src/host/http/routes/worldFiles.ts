@@ -151,6 +151,11 @@ export function worldFilesRoutes({ worldFiles, worldEditor, sessions }: ApiDeps)
         try { sendJson(res, 200, await worldFiles.updateImage(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '', update)) } catch (error) { return sendError(res, 422, error instanceof Error ? error.message : String(error)) }
       },
     },
+    '/worlds/gallery/describe': {
+      POST: async (_req, res, url) => {
+        try { sendJson(res, 200, await worldFiles.describeImage(url.searchParams.get('id') ?? '', url.searchParams.get('path') ?? '')) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 409, error instanceof Error ? error.message : String(error)) }
+      },
+    },
     '/worlds/gallery/upload': {
       POST: async (req, res, url) => {
         const name = decodeURIComponent(String(req.headers['x-file-name'] ?? url.searchParams.get('name') ?? 'image'))

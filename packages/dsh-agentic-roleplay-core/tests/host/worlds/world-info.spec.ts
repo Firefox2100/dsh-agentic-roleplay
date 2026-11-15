@@ -172,3 +172,16 @@ describe('the world\'s own fields', () => {
     expect(() => parseWorldInfoEdit({ name: '', nope: 1, rules: 'x' })).toThrow(/needs a name/)
   })
 })
+
+describe('pictures in an opening', () => {
+  it('are read as parts, written back with the rest of the opening, and refused when the path leaves the copied folders', async () => {
+    const directory = await world({ id: 'w', name: 'W', opening_message: [{ type: 'narration', text: 'Fog.' }, { type: 'image', path: 'library/dock.png' }] })
+    const info = await readWorldInfo(directory)
+    expect(info.openingParts).toEqual([{ type: 'narration', text: 'Fog.' }, { type: 'image', path: 'library/dock.png' }])
+    expect(info.opening).toBe('Fog.')
+    const edited = await editWorldInfo(directory, { openingParts: [{ type: 'image', path: 'library/gate.png' }, { type: 'narration', text: 'Rain.' }] })
+    expect(edited.openingParts).toEqual([{ type: 'image', path: 'library/gate.png' }, { type: 'narration', text: 'Rain.' }])
+    expect(() => parseWorldInfoEdit({ openingParts: [{ type: 'image', path: '../x.png' }] })).toThrow(/must name a picture of the library/)
+    expect(parseWorldInfoEdit({ alternateOpenings: [{ title: 'A', parts: [{ type: 'image', path: 'library/a.png' }, { type: 'narration', text: 'Hi.' }] }] })).toMatchObject({ alternateOpenings: [{ parts: [{ type: 'image', path: 'library/a.png' }, { type: 'narration', text: 'Hi.' }] }] })
+  })
+})

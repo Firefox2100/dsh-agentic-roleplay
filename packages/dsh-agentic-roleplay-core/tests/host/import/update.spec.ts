@@ -250,6 +250,17 @@ describe('the tools of an update', () => {
     expect(outcome.pictures).toEqual({ found: 1, added: 1, droppedFromTheCard: [] })
   })
 
+  it('finishing fetches nothing when the person turned picture downloads off', async () => {
+    const worlds = new WorldCatalog(new Context(), root as RoleplayRoot)
+    const store = new ImportStore(() => root.path)
+    const world = await importedWorld(worlds, store)
+    const fresh = card({ description: 'See https://example.test/new.png for the quay.' })
+    await startUpdate(deps(worlds, store), (await store.create(fresh)).id, { ...choices, fetchPictures: false }, world.id)
+    const asked: string[][] = []
+    await finishUpdate(world.directory, { fetcher: async (_world, urls) => { asked.push([...urls]); return { found: 0, added: [], skipped: [] } } })
+    expect(asked).toEqual([])
+  })
+
   it('does not call a picture dropped when the card now points to it at another address', async () => {
     const worlds = new WorldCatalog(new Context(), root as RoleplayRoot)
     const store = new ImportStore(() => root.path)

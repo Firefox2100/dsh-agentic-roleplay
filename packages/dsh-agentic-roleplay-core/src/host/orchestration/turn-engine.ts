@@ -23,6 +23,7 @@ import { ROLL_FIRST, checkOutcomes, explainPhase, judgeDue, mendRolls, oocBlock,
 import { ReflectionRefusedError } from '../sessions/errors.ts'
 import type { RunRecall } from '../../shared/activity.ts'
 import type { RecallPreview, RecallPreviewCharacter, RecallPreviewRequest } from '../../shared/recall-preview.ts'
+import { wordsOf } from '../../shared/narration.ts'
 
 export type { RawSegment } from './turn-state.ts'
 
@@ -869,7 +870,7 @@ export class TurnEngine {
     if (silent || output.repaired || state.ooc !== undefined || state.refused >= MAX_REFUSALS) return
     const store = this.storeOf(owner)
     const narration = output.segments.flatMap(segment => (segment.type === 'narration' ? [segment.text] : [])).join('\n')
-    const passage = output.segments.map(segment => (segment.type === 'narration' ? segment.text : `${segment.name}: ${segment.text}`)).join('\n')
+    const passage = wordsOf(output.segments, segment => `${segment.name}: ${segment.text}`).join('\n')
     const playing = state.cast.find(member => member.character.control === 'player')?.character
     const player = playing?.name ?? ''
     const secrets = playing === undefined || state.secretsFound === true || store.settings().decisions.secrets === 'off' ? [] : hiddenFrom(store.story, playing.id, passage)
@@ -913,7 +914,7 @@ export class TurnEngine {
     this.afterTurn.start(owner, state.cancel.signal, {
       input: state.input ?? '',
       deeds: state.history.flatMap(entry => [`${entry.name}: ${entry.summary}`, ...(entry.utterance === undefined ? [] : [`${entry.name}: "${entry.utterance}"`])]),
-      narration: output.segments.map(segment => (segment.type === 'narration' ? segment.text : `${segment.name}: ${segment.text}`)).join('\n'),
+      narration: wordsOf(output.segments, segment => `${segment.name}: ${segment.text}`).join('\n'),
     })
     if (run !== undefined) this.offSceneIfDue(owner, state, run)
     return output

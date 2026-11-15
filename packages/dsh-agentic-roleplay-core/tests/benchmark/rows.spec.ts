@@ -21,7 +21,7 @@ const data = loadData()
 let root: string
 let state: RoleplayState
 let deps: StartSessionDeps
-let opening: readonly { type: string; text: string }[] | undefined
+let opening: readonly ({ type: string; text: string } | { type: 'image'; path: string })[] | undefined
 
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), 'benchmark-row-'))

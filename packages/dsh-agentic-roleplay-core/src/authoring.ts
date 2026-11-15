@@ -11,6 +11,8 @@ import type { AuthoredEntityKind } from './host/authoring/documents.ts'
 import { registerPackJail } from './host/authoring/pack-jail.ts'
 import { worldPackTools } from './host/authoring/pack-tools.ts'
 import { worldPromptTools } from './host/authoring/prompt-tools.ts'
+import { worldImageTools } from './host/authoring/image-tools.ts'
+import type { ImageAttachments } from './host/images/interpreter.ts'
 import { importHooks, importTools } from './host/import/tools.ts'
 import { cardTools } from './host/import/card-tools.ts'
 import { updateHooks, updateTools } from './host/import/update-tools.ts'
@@ -46,6 +48,7 @@ export function apply(ctx: Context): void {
   for (const tool of authoredWorldWriteTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPromptTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPackTools(reader)) ctx.tools.register(tool)
+  for (const tool of worldImageTools(reader, { language: world => ctx.roleplayAuthoringLanguages.get(world), attachments: () => (ctx as Context & { get(name: 'attachments'): ImageAttachments | undefined }).get('attachments') })) ctx.tools.register(tool)
   for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of cardTools(ctx.roleplayWorlds)) ctx.tools.register(tool)
   for (const tool of updateTools(ctx.roleplayWorlds)) ctx.tools.register(tool)

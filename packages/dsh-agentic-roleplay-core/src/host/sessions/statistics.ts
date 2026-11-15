@@ -21,6 +21,7 @@ export function speakingOf(timeline: Pick<Timeline, 'nodes' | 'head'>): { speaki
   const narration = { passages: 0, length: 0 }
   for (const node of pathTo(timeline, timeline.head)) {
     for (const segment of node.output?.segments ?? []) {
+      if (segment.type === 'image') continue
       if (segment.type === 'narration') { narration.passages += 1; narration.length += lengthOf(segment.text); continue }
       const voice = voices.get(segment.character) ?? { name: segment.name, lines: 0, length: 0 }
       voice.lines += 1

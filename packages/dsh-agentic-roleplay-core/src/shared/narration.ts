@@ -3,6 +3,13 @@ import type { OocRuling } from './ooc.ts'
 export type NarrationSegment =
   | { type: 'utterance'; character: string; name: string; text: string }
   | { type: 'narration'; text: string }
+  /** A picture of the story's library, by its path under `images/` (`library/…`), shown between the paragraphs. */
+  | { type: 'image'; path: string }
+
+/** What a reader that cannot see pictures is told of the segments: each narration as written, each utterance as `utterance` makes it, a picture nothing. */
+export function wordsOf(segments: readonly NarrationSegment[], utterance: (segment: Extract<NarrationSegment, { type: 'utterance' }>) => string): string[] {
+  return segments.flatMap(segment => (segment.type === 'image' ? [] : [segment.type === 'utterance' ? utterance(segment) : segment.text]))
+}
 
 /** One dice roll of the turn as the player may read it, in a card under the narration. */
 export interface RollView {
@@ -60,6 +67,7 @@ function isSegment(value: unknown): value is NarrationSegment {
   if (typeof value !== 'object' || value === null) return false
   const segment = value as Record<string, unknown>
   if (segment['type'] === 'narration') return typeof segment['text'] === 'string'
+  if (segment['type'] === 'image') return typeof segment['path'] === 'string' && segment['path'] !== ''
   return segment['type'] === 'utterance'
     && typeof segment['character'] === 'string' && typeof segment['name'] === 'string' && typeof segment['text'] === 'string'
 }

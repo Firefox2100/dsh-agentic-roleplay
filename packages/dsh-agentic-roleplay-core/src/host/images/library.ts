@@ -53,10 +53,11 @@ export function libraryName(original: string, extension: string, taken: (name: s
  * Puts a picture into the library unless the library already holds that picture (the same image, whatever metadata the file carries), whatever it came from: an upload, an address, a generation.
  * Metadata says where it came from and that it is reusable; what it shows is not known yet, and the interpreter fills that in.
  * @param known the hashes of the library when the caller has read them (kept up to date here), to avoid reading the library again for each picture.
+ * @param link the address of a card the picture was downloaded for, with the ids of the card pieces that held it; written into the picture.
  * @throws {Error} when the bytes are not a PNG, JPEG, WebP or GIF image.
  * @returns its path under `images/`, and whether it was added or an equal picture was there.
  */
-export async function addToLibraryOnce(sessionFolder: string, bytes: Uint8Array, originalName: string, known?: Map<string, string>): Promise<{ path: string; added: boolean }> {
+export async function addToLibraryOnce(sessionFolder: string, bytes: Uint8Array, originalName: string, known?: Map<string, string>, link?: { url: string; pieces: string[] }): Promise<{ path: string; added: boolean }> {
   const extension = imageExtensionOf(bytes)
   if (extension === undefined || MEDIA_TYPES[extension] === undefined) throw new Error('only PNG, JPEG, WebP and GIF images can be added')
   const hashes = known ?? await libraryHashes(sessionFolder)
@@ -70,7 +71,7 @@ export async function addToLibraryOnce(sessionFolder: string, bytes: Uint8Array,
   await atomicWrite(file, bytes)
   const metadata: VisualImageMetadata = {
     schema: 'dsh-roleplay-image/v3', purpose: 'uploaded', origin: 'uploaded', reusable: true, createdAt: new Date().toISOString(),
-    originalName, subjects: [], tags: [],
+    originalName, subjects: [], tags: [], ...(link === undefined ? {} : { cardLinks: [link] }),
   }
   await writeImageFileMetadata(file, metadata)
   const path = `${LIBRARY_FOLDER}/${name}`

@@ -6,6 +6,7 @@ import { referent } from './referent.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import type { Suggester, SuggestionJob } from './boundaries.ts'
 import { MAX_SUGGESTION, suggestionProblems, tidySuggestions } from './suggestions.ts'
+import { wordsOf } from '../../shared/narration.ts'
 
 
 const RESULT: ObjectJsonSchema = {
@@ -17,7 +18,7 @@ const RESULT: ObjectJsonSchema = {
 
 /** What the player read, as plain text. */
 export function readingOf(job: SuggestionJob): string {
-  return job.output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: "${segment.text}"` : segment.text)).join('\n\n')
+  return wordsOf(job.output.segments, segment => `${segment.name}: "${segment.text}"`).join('\n\n')
 }
 
 function promptOf(job: SuggestionJob): string {

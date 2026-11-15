@@ -10,7 +10,7 @@ import { CHARACTERS_DIR } from '../characters/load.ts'
 import { referenceImagePath } from '../images/storage.ts'
 import { WorldNotFoundError } from '../sessions/errors.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
-import { baseId, cardPieces, UPDATE_FOLDER } from './card-tools.ts'
+import { baseId, cardPieces, pieceFinder, UPDATE_FOLDER } from './card-tools.ts'
 import { matchPieces, worldFieldChanges } from './card-diff.ts'
 import { cardCharacter, writePortrait } from './finish.ts'
 import { addressesToFetch, addressKey, candidateUrls, fetchPictures, mergeReports, type PicturesReport } from './pictures.ts'
@@ -164,7 +164,7 @@ export async function finishUpdate(directory: string, options: { signal?: AbortS
   if (next.hasPicture) await cp(join(waiting, PICTURE_FILE), join(folder, PICTURE_FILE))
   else await rm(join(folder, PICTURE_FILE), { force: true })
   await rm(waiting, { recursive: true, force: true })
-  const pictures = await updatePictures(directory, current.card.urls ?? [], next.card.urls ?? [], options)
+  const pictures = await updatePictures(directory, current.card.urls ?? [], next.choices.fetchPictures === false ? [] : next.card.urls ?? [], pieceFinder(next.card, next.choices), options)
   const portrait = newPicture === undefined ? 'none' : oldPicture !== undefined && oldPicture.equals(newPicture) ? 'kept' : await refreshPortrait(directory, newPicture, next.card.name)
   await recordProvenance(directory, { kind: 'update', card: { name: next.card.name }, language: '' }, await readFile(join(folder, 'card.json'), 'utf8'))
   await writeSnapshot(directory)
@@ -172,11 +172,11 @@ export async function finishUpdate(directory: string, options: { signal?: AbortS
 }
 
 /** Fetches what the newer card points to that the world does not have yet, keeps the record of the fetches, and says which fetched pictures the card no longer points to. */
-async function updatePictures(directory: string, earlier: readonly string[], later: readonly string[], options: { signal?: AbortSignal; fetcher?: typeof fetchPictures }): Promise<UpdateOutcome['pictures']> {
+async function updatePictures(directory: string, earlier: readonly string[], later: readonly string[], piecesOf: (url: string) => string[], options: { signal?: AbortSignal; fetcher?: typeof fetchPictures }): Promise<UpdateOutcome['pictures']> {
   const file = join(directory, IMPORT_FOLDER, 'pictures.json')
   const record = await readFile(file, 'utf8').then(text => JSON.parse(text) as PicturesReport, (): undefined => undefined)
   const ask = addressesToFetch(earlier, later, record)
-  const report = ask.length === 0 ? undefined : await (options.fetcher ?? fetchPictures)(directory, ask, options.signal === undefined ? {} : { signal: options.signal }).catch((): PicturesReport => ({ found: 0, added: [], skipped: [] }))
+  const report = ask.length === 0 ? undefined : await (options.fetcher ?? fetchPictures)(directory, ask, { ...(options.signal === undefined ? {} : { signal: options.signal }), piecesOf }).catch((): PicturesReport => ({ found: 0, added: [], skipped: [] }))
   if (report !== undefined && (record !== undefined || report.found > 0)) await writeFile(file, JSON.stringify(mergeReports(record, report, candidateUrls(later).candidates.length)))
   const merged = report === undefined ? record : mergeReports(record, report, 0)
   const pointedTo = new Set(later.map(addressKey))

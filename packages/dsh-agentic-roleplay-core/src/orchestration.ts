@@ -52,6 +52,7 @@ import { guarded } from './host/residency/guard.ts'
 import { pictureReuse } from './host/images/reuse.ts'
 import type {} from './host/orchestration/service.ts'
 import type {} from './host/storage/roleplay-root.ts'
+import { wordsOf } from './shared/narration.ts'
 
 export const name = '@dsh-agentic-roleplay/core/orchestration'
 
@@ -163,7 +164,7 @@ export function apply(ctx: Context): void {
   silenceRuntimeContext(ctx)
   const rolls = new RollReplay(chat => stores(chat)?.settings().rewind.rolls ?? 'reroll')
   const turnTraces = new TurnTraces(() => tracerOf(ctx))
-  const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, roller: chat => rolls.roller(chat), delivered: (chat, output) => { turnTraces.output(chat, output.segments.map(segment => (segment.type === 'utterance' ? `${segment.name}: ${segment.text}` : segment.text)).join('\n\n')); const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
+  const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, roller: chat => rolls.roller(chat), delivered: (chat, output) => { turnTraces.output(chat, wordsOf(output.segments, segment => `${segment.name}: ${segment.text}`).join('\n\n')); const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
   const [previewTool, ...tools] = [...createTools(toolDeps)].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)
   ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); ctx.roleplayOrchestration.playing = chat => engine.playing(chat); ctx.roleplayOrchestration.recallPreview = (chat, request, signal) => engine.recallPreview(chat, request, signal); return () => { ctx.roleplayOrchestration.recallPreview = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false; ctx.roleplayOrchestration.playing = () => false } }, 'roleplay: reflection control')

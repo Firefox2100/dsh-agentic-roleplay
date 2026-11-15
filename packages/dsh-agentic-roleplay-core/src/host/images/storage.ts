@@ -38,6 +38,8 @@ export interface VisualImageMetadata {
   model?: string
   subjects: VisualImageSubject[]
   source?: { turn: number; timelineNode: string; segment?: number }
+  /** A picture downloaded for a character card: the addresses it came from and the card pieces that held each. */
+  cardLinks?: { url: string; pieces: string[] }[]
 }
 
 const PLURAL: Record<VisualSubjectKind, string> = { character: 'characters', location: 'locations', item: 'items' }

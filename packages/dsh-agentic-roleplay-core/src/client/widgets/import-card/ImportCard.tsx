@@ -66,6 +66,7 @@ export function ImportCard({ t, language, preview, initialUpdate, start: begin, 
   const [name, setName] = useState(preview.choices.name)
   const [off, setOff] = useState(() => new Set(preview.choices.disabledEntries))
   const [opening, setOpening] = useState<OpeningChoice>(preview.choices.opening)
+  const [fetchPictures, setFetchPictures] = useState(preview.choices.fetchPictures !== false)
   const [open, setOpen] = useState<ReadonlySet<string>>(new Set())
   const [update, setUpdate] = useState<string | undefined>(() => initialUpdate ?? defaultTarget(preview.targets))
   const [promptLanguage, setPromptLanguage] = useState(() => primaryLanguage(language))
@@ -79,7 +80,7 @@ export function ImportCard({ t, language, preview, initialUpdate, start: begin, 
   ]
   const toggle = (id: string, on: boolean): void => { const next = new Set(off); if (on) next.delete(id); else next.add(id); setOff(next) }
   const toggleOpen = (id: string): void => { const next = new Set(open); if (next.has(id)) next.delete(id); else next.add(id); setOpen(next) }
-  const choices = (): ImportChoices => ({ name: name.trim(), disabledEntries: [...off], opening })
+  const choices = (): ImportChoices => ({ name: name.trim(), disabledEntries: [...off], opening, ...(fetchPictures ? {} : { fetchPictures: false }) })
 
   const start = (): void => {
     if (name.trim() === '' || starting) return
@@ -191,6 +192,21 @@ export function ImportCard({ t, language, preview, initialUpdate, start: begin, 
             <span className={css.choiceText}><span className={css.fieldTitle}>{t('ic_openingNone')}</span></span>
           </label>
         </section>
+
+        {(card.urls ?? []).length > 0 && (
+          <section className={css.section} data-testid="roleplay-import-links">
+            <h3 className={css.heading}>{t('ic_links')}</h3>
+            <p className={css.note}>{t('ic_linksHelp', { count: (card.urls ?? []).length })}</p>
+            <label className={css.choice}>
+              <input type="checkbox" aria-label={t('ic_fetchPictures')} checked={fetchPictures} disabled={starting} onChange={(event) => { setFetchPictures(event.target.checked) }} />
+              <span className={css.choiceText}><span className={css.fieldTitle}>{t('ic_fetchPictures')}</span></span>
+            </label>
+            <details>
+              <summary className={css.note}>{t('ic_linksShow')}</summary>
+              <ul className={css.note}>{(card.urls ?? []).map(url => <li key={url}>{url}</li>)}</ul>
+            </details>
+          </section>
+        )}
 
         {entries.length > 0 && (
           <section className={css.section}>
