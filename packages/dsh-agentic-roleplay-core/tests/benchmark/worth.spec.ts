@@ -70,6 +70,8 @@ describe.skipIf(!live)(`the worth-a-picture benchmark, live (${label})`, () => {
           const began = Date.now()
           const answer = await context.run({ persona: context.text('roleplay/image-worth'), prompt: worthText(made, language), result: WORTH_RESULT } as never) as { reason: string; worth: boolean }
           results.push({ id: made.id, language, run, worth: made.worth, said: answer.worth, reason: answer.reason, ms: Date.now() - began })
+          expect(typeof answer.worth, 'the child answers whether the moment is worth a picture').toBe('boolean')
+          expect(answer.reason.trim().length, 'the child says in words why it judged the moment so').toBeGreaterThan(0)
         }, 300_000)
       }
     }

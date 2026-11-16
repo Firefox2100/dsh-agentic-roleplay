@@ -25,15 +25,9 @@ export interface WorthJob {
 
 /** Whether a moment of the story is worth a picture, as a helper with no tools judges it from what the player read. */
 export async function worthAPicture(job: WorthJob): Promise<boolean> {
-  const answer = await runChild<{ reason: string; worth: boolean }>({
-    parent: job.parent,
-    signal: job.signal,
-    ...(job.reasoningEffort === undefined ? {} : { reasoningEffort: job.reasoningEffort }),
-    ...(job.sampling === undefined ? {} : { sampling: job.sampling }),
-    persona: promptFor(job.parent, 'roleplay/image-worth', job.language),
-    prompt: job.moment,
-    result: WORTH_RESULT,
-    maxCalls: 2,
-  })
+  const limits: { reasoningEffort?: string; sampling?: ChildSampling } = {}
+  if (job.reasoningEffort !== undefined) limits.reasoningEffort = job.reasoningEffort
+  if (job.sampling !== undefined) limits.sampling = job.sampling
+  const answer = await runChild<{ reason: string; worth: boolean }>({ parent: job.parent, signal: job.signal, ...limits, persona: promptFor(job.parent, 'roleplay/image-worth', job.language), prompt: job.moment, result: WORTH_RESULT, maxCalls: 2 })
   return answer.worth
 }

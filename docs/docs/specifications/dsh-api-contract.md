@@ -33,6 +33,7 @@ below so it can be checked when DSH moves.
 | Looking up an agent | `ctx.agents.get` | `orchestration.ts` |
 | Compaction | `BasicCompactionEngine` (`@deepseek-ai/dsh-compaction-basic`, default export): its documented sole hook `summarize()` and `compactRegion()`; `ctx.tokenMeter.measure(session)`; `session.surface.nodes`; `session.snapshotEvents()`; `session.header.origin` | `host/compaction/` |
 | Session events | reading `turn/start`, `user/message`, `tool/result` events; writing the opening turn through `Session.create` and `ctx.sessionPersistence` | `compaction/range.ts`, `agent/opening.ts` |
+| Media | on the agent's own context: `ctx.llm.resolveModelInfo` (whether a route reads pictures) and `ctx.llm.stream` (the captioner); `ctx.attachments` and its `AttachmentStore.saveImage` keep a picture where a model can see it | `host/images/interpreter.ts`, `host/images/worth.ts` |
 
 ## Text from outside the input box
 

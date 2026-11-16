@@ -1,11 +1,15 @@
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { worldImageTools } from '../../../src/host/authoring/image-tools.ts'
 import { authoringApproval } from '../../../src/host/authoring/write-tools.ts'
 import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 import { addToLibraryOnce } from '../../../src/host/images/library.ts'
+
+// Describing a picture asks a model to read it; what that model says is exercised in the interpreter tests, so here it is a stand-in.
+const { interpretImage } = vi.hoisted(() => ({ interpretImage: vi.fn() }))
+vi.mock('../../../src/host/images/interpreter.ts', () => ({ interpretImage }))
 
 let directory: string
 beforeEach(async () => { directory = await mkdtemp(join(tmpdir(), 'world-images-')) })
@@ -13,10 +17,10 @@ afterEach(async () => { await rm(directory, { recursive: true, force: true }) })
 
 // a minimal PNG: signature, header, one pixel, end
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==', 'base64')
-const state = { characters: [{ name: 'Mara' }, { name: 'Tam' }], places: [{ name: 'Dock' }], things: [] }
+const state = { characters: [{ name: 'Mara' }, { name: 'Tam' }], places: [{ name: 'Dock' }], things: [{ name: 'Lantern' }] }
 const reader = { read: () => Promise.resolve({ record: { directory, summary: { id: 'harbor' } }, state }) } as never
-const call = (name: string, args: Record<string, unknown>) => {
-  const tool = worldImageTools(reader, { language: () => 'en', attachments: () => undefined }).find(candidate => candidate.name === name)!
+const call = (name: string, args: Record<string, unknown>, attachments: unknown = undefined) => {
+  const tool = worldImageTools(reader, { language: () => 'en', attachments: () => attachments as never }).find(candidate => candidate.name === name)!
   return (tool as unknown as { execute(args: unknown, exec: unknown): Promise<unknown> }).execute(args, { agent: { session: { id: 'x' } }, signal: new AbortController().signal })
 }
 const exec = (name: string, args: Record<string, unknown>) => ({ name, arguments: args, agent: { session: { id: authoringChatSessionId('harbor') } } }) as never
@@ -41,6 +45,30 @@ describe('the picture tools of world authoring', () => {
   it('cannot describe a picture without a service that shows pictures to a model', async () => {
     const { path } = await addToLibraryOnce(directory, PNG, 'mara.png')
     await expect(call('describe_world_image', { path })).rejects.toThrow(/no attachment service/)
+  })
+
+  it('describes a picture under the authoring chat, over every name the world has, and passes on what it knows of it', async () => {
+    const { path } = await addToLibraryOnce(directory, PNG, 'mara.png')
+    interpretImage.mockResolvedValueOnce({ path, description: 'Mara at the dock.', tags: ['dock'], subjects: [{ kind: 'character', name: 'Mara' }] })
+
+    const described = await call('describe_world_image', { path, context: 'her card says this is her' }, { saveImage: async () => ({}) }) as { action: string; description: string; subjects: unknown[] }
+
+    expect(described).toMatchObject({ action: 'described', path, description: 'Mara at the dock.', subjects: [{ kind: 'character', name: 'Mara' }] })
+    expect(interpretImage).toHaveBeenCalledTimes(1)
+    expect(interpretImage.mock.calls[0]![0]).toMatchObject({
+      path,
+      context: 'her card says this is her',
+      sessionFolder: directory,
+      language: 'en',
+      subjects: [{ kind: 'character', name: 'Mara' }, { kind: 'character', name: 'Tam' }, { kind: 'location', name: 'Dock' }, { kind: 'item', name: 'Lantern' }],
+    })
+  })
+
+  it('lists pictures without holding the turn, and leaves the describing out of the parallel-safe set', () => {
+    const tools = worldImageTools(reader, { language: () => 'en', attachments: () => undefined })
+    const safeOf = (name: string) => (tools.find(tool => tool.name === name) as unknown as { isConcurrencySafe?: (args: unknown) => boolean }).isConcurrencySafe
+    expect(safeOf('list_world_images')?.({})).toBe(true)
+    expect(safeOf('describe_world_image'), 'describing runs a model, so it does not run beside the turn').toBeUndefined()
   })
 
   it('ask the person before a picture is changed or described, except in the turn that has just imported a card', async () => {

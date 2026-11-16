@@ -1,6 +1,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-subagent'
 import type {} from '@deepseek-ai/dsh-system-prompt'
+// Type-only: declares `ctx.attachments`.
+import type {} from '@deepseek-ai/dsh-attachment'
 import { silenceHarnessDevContext, silenceRuntimeContext } from './host/prompts/dev-context.ts'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@dsh-agentic-roleplay/state'
@@ -46,7 +48,6 @@ import { createCheckNarrateTool } from './host/orchestration/check-tool.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
 import { rerankMemories, type Reranker } from './host/memory/rerank-memories.ts'
 import { TurnEngine } from './host/orchestration/turn-engine.ts'
-import type { ImageAttachments } from './host/images/interpreter.ts'
 import { ImageJobs } from './host/images/jobs.ts'
 import { guarded } from './host/residency/guard.ts'
 import { pictureReuse } from './host/images/reuse.ts'
@@ -190,7 +191,7 @@ export function apply(ctx: Context): void {
     beforeGeneration: async (chat, signal) => { if (residency()?.conflicts('image', 'main') === true) await Promise.race([engine.quiesce(chat), new Promise<void>(resolve => { signal.addEventListener('abort', () => { resolve() }, { once: true }) })]) },
     agentOf: chat => ctx.agents.get(SessionId(chat)),
     settings: id => liveSettings(sessionFolder(sessionsDir(), id), problem),
-    attachments: () => (ctx as Context & { get(name: 'attachments'): ImageAttachments | undefined }).get('attachments'),
+    attachments: () => ctx.get('attachments'),
     embedder: embeddings,
     problem,
   })

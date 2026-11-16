@@ -197,6 +197,9 @@ importers:
       '@deepseek-ai/dsh-agent-loop':
         specifier: '>=0.2.2-rc.3 <0.2.3'
         version: 0.2.2-rc.3(23028fddf852098fca33e9ce9c710368)
+      '@deepseek-ai/dsh-attachment':
+        specifier: '>=0.2.2-rc.3 <0.2.3'
+        version: 0.2.2-rc.3(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-brand@0.2.2-rc.3(@deepseek-ai/cordis@4.1.0))(@deepseek-ai/dsh-error@0.2.2-rc.3(@deepseek-ai/cordis@4.1.0))
       '@deepseek-ai/dsh-client-locale':
         specifier: '>=0.2.2-rc.3 <0.2.3'
         version: 0.2.2-rc.3(@deepseek-ai/cordis@4.1.0)

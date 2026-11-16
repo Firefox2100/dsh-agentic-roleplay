@@ -29,6 +29,7 @@ DSH 尚未进入稳定版。其规则允许公开 API 在不同版本之间变�
 | 查找智能体 | `ctx.agents.get` | `orchestration.ts` |
 | 上下文折叠 | `BasicCompactionEngine` 的 `summarize()` 与 `compactRegion()`，以及 `ctx.tokenMeter.measure(session)`、`session.surface.nodes`、`session.snapshotEvents()`、`session.header.origin` | `host/compaction/` |
 | 会话事件 | 读取 `turn/start`、`user/message`、`tool/result`；通过 `Session.create` 与 `ctx.sessionPersistence` 写开场回合 | `compaction/range.ts`、`agent/opening.ts` |
+| 媒体 | 在智能体自己的 context 上：`ctx.llm.resolveModelInfo`（这条路由能不能读图）与 `ctx.llm.stream`（生成说明文字）；`ctx.attachments` 及其 `AttachmentStore.saveImage` 把图片放到模型能看到的位置 | `host/images/interpreter.ts`、`host/images/worth.ts` |
 
 预设的插件包括 persona、本项目的两个插件和 `compaction` 组。`BasicCompactionEngine` 是 `@deepseek-ai/dsh-compaction-basic` 的默认导出，只覆盖其文档列出的钩子。
 

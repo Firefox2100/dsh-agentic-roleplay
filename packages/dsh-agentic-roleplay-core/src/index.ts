@@ -7,6 +7,8 @@ import { zoneOf } from './host/clock/story-clock.ts'
 import { liveSettings, useChildReasoning } from './host/sessions/settings.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import { SessionId } from '@deepseek-ai/dsh-session'
+// Type-only: declares `ctx.attachments`.
+import type {} from '@deepseek-ai/dsh-attachment'
 import type { DecisionService, ImageGenerationService } from '@dsh-ai-providers/core'
 import { offloadOf } from './shared/offload.ts'
 import { guarded } from './host/residency/guard.ts'
@@ -61,7 +63,6 @@ import { addAvatarsToWorld, avatarsWorld, createAvatar, deleteAvatar } from './h
 import { AVATARS_WORLD_ID } from './shared/avatars.ts'
 import { galleryFile, listGallery, updateImage } from './host/images/gallery.ts'
 import { describeWorldImage } from './host/images/world-describe.ts'
-import type { ImageAttachments } from './host/images/interpreter.ts'
 import { addToLibrary } from './host/images/library.ts'
 import { deleteWorldPrompt, listWorldPrompts, readWorldPrompt, writeWorldPrompt } from './host/prompts/world-prompts.ts'
 import { editWorldInfo, readWorldInfo } from './host/worlds/world-info.ts'
@@ -386,7 +387,7 @@ export function apply(ctx: Context, config: Config) {
         const state = await readWorldEditor(world)
         const chat = await authoring.ensure(world.id, (await worlds.find(world.id))?.summary.name ?? world.id)
         return await describeWorldImage({
-          directory: world.directory, parent: ctx.get('agents')?.get(SessionId(chat)), attachments: (ctx as Context & { get(name: 'attachments'): ImageAttachments | undefined }).get('attachments'), language: languages.get(world.id),
+          directory: world.directory, parent: ctx.get('agents')?.get(SessionId(chat)), attachments: ctx.get('attachments'), language: languages.get(world.id),
           subjects: [...state.characters.map(entry => ({ kind: 'character' as const, name: entry.name })), ...state.places.map(entry => ({ kind: 'location' as const, name: entry.name })), ...state.things.map(entry => ({ kind: 'item' as const, name: entry.name }))],
         }, path)
       },
