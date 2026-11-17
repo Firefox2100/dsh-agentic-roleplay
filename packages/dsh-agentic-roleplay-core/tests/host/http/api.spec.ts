@@ -209,7 +209,7 @@ beforeEach(async () => {
     checkpoints: {
       list: async (id: string) => { if (id === 'missing') throw new WorldNotFoundError('missing world'); return [{ id: 'c1', label: 'x' }] },
       make: async (_id: string, label: string) => ({ id: 'c2', label }),
-      diff: async (_id: string, checkpoint: string) => { if (checkpoint === 'gone') throw new CheckpointNotFoundError('no such checkpoint'); return { changed: ['world.json'], added: [], removed: [] } },
+      diff: async (_id: string, checkpoint: string) => { if (checkpoint === 'gone') throw new CheckpointNotFoundError('no such checkpoint'); if (checkpoint === 'unreadable') throw new Error('the checkpoints folder is unreadable'); return { changed: ['world.json'], added: [], removed: [] } },
       restore: async (_id: string, checkpoint: string) => { if (checkpoint === 'busy') throw new CheckpointBusyError('working'); if (checkpoint === 'broken') throw new CheckpointError('incomplete'); return { restored: { id: checkpoint } } },
     } as never,
     forgetAuthoring: async worldId => { if (worldId === 'missing') throw new WorldNotFoundError('missing world') },
@@ -629,6 +629,7 @@ describe('roleplay API', () => {
     expect((await fetch(`${origin}/worlds/checkpoints?id=harbor`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ label: 3 }) })).status).toBe(400)
     expect(await (await fetch(`${origin}/worlds/checkpoints/diff?id=harbor&checkpoint=c1`)).json()).toEqual({ changed: ['world.json'], added: [], removed: [] })
     expect((await fetch(`${origin}/worlds/checkpoints/diff?id=harbor&checkpoint=gone`)).status).toBe(404)
+    expect((await fetch(`${origin}/worlds/checkpoints/diff?id=harbor&checkpoint=unreadable`)).status, 'a failure that is not about the checkpoint is the server\'s, not the request\'s').toBe(500)
     const restore = (checkpoint: unknown) => fetch(`${origin}/worlds/checkpoints/restore?id=harbor`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ checkpoint }) })
     expect((await restore('c1')).status).toBe(200)
     expect((await restore('busy')).status).toBe(409)

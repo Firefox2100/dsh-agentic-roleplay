@@ -47,8 +47,7 @@ export function checkpointTools(worlds: WorldCatalog, checkpoints: () => WorldCh
 }
 
 /** A checkpoint at the first edit of each authoring turn, and a word to the chat when the person restored the world since it last looked. */
-export function checkpointHooks(ctx: Context, checkpoints: () => WorldCheckpoints, languageOf: (chat: string) => string | undefined): void {
-  ctx.on('tools/pre-execute', async (exec, next) => {
+export function checkpointHooks(ctx: Context, checkpoints: () => WorldCheckpoints, languageOf: (chat: string) => string | undefined): void {  ctx.on('tools/pre-execute', async (exec, next) => {
     if (AUTHORING_MUTATION_TOOLS.has(exec.name) && exec.agent !== undefined && authoredWorldOf(exec.agent.session.id) !== undefined && exec.agent.session.header.origin !== 'subagent') {
       await checkpoints().beforeEdit(exec.agent.session.id, currentTurn(exec.agent), exec.name)
     }
@@ -63,5 +62,14 @@ export function checkpointHooks(ctx: Context, checkpoints: () => WorldCheckpoint
     const tr = translator(storyLanguageOf(languageOf(payload.agent.session.id)))
     const text = tr('The person restored this world to the checkpoint "{label}" ({at}): every file is as it was then, and what you edited since is gone. Read the world again before you edit, and do not rely on what you remember of it.', restored)
     return { ...decision, messages: [...decision.messages, createUserMessage({ content: [{ type: 'text', text }], source: { kind: 'roleplay' } })] }
+  })
+}
+
+/** The checkpoint tools and hooks, registered on the scope of the preset that authors a world. */
+export function registerCheckpointTools(ctx: Context): void {
+  for (const tool of checkpointTools(ctx.roleplayWorlds, () => ctx.roleplayCheckpoints)) ctx.tools.register(tool)
+  checkpointHooks(ctx, () => ctx.roleplayCheckpoints, chat => {
+    const world = authoredWorldOf(chat)
+    return world === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(world)
   })
 }

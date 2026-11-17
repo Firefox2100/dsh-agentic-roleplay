@@ -1,8 +1,18 @@
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CheckpointNotFoundError, diffCheckpoint, lastRestore, listCheckpoints, makeCheckpoint, readCheckpointFile, restoreCheckpoint } from '../../../src/host/worlds/checkpoints.ts'
+
+// A disk that refuses one copy: the way a checkpoint folder is cut short in a real one.
+const failing = vi.hoisted(() => ({ copy: false }))
+vi.mock('node:fs/promises', async importOriginal => {
+  const real = await importOriginal<typeof import('node:fs/promises')>()
+  return {
+    ...real,
+    copyFile: (from: string, to: string) => (failing.copy ? Promise.reject(new Error('disk full')) : real.copyFile(from, to)),
+  }
+})
 
 let world: string
 const write = async (path: string, text: string) => { await mkdir(join(world, path, '..'), { recursive: true }); await writeFile(join(world, path), text) }
@@ -113,5 +123,29 @@ describe('restoring a checkpoint', () => {
     await write('world.json', '{"id":"w1","name":"Third"}')
     await restoreCheckpoint(world, first.checkpoint.id, 2)
     expect(await listCheckpoints(world)).toHaveLength(2)
+  })
+})
+
+describe('a checkpoint that the disk would not take', () => {
+  it('says so when the folder of checkpoints cannot be read', async () => {
+    await writeFile(join(world, '.checkpoints'), 'not a folder at all')
+    await expect(listCheckpoints(world)).rejects.toThrow()
+  })
+
+  it('leaves no half-copied folder behind when a file cannot be copied', async () => {
+    failing.copy = true
+    await expect(makeCheckpoint(world, request)).rejects.toThrow('disk full')
+    failing.copy = false
+    expect(await listCheckpoints(world)).toEqual([])
+    expect(await readdir(join(world, '.checkpoints'))).toEqual([])
+  })
+
+  it('puts the world back when the restore cannot be finished, and says why the note about it cannot be read', async () => {
+    const { checkpoint } = await makeCheckpoint(world, request)
+    await write('world.json', '{"id":"w1","name":"Changed"}')
+    await mkdir(join(world, '.checkpoints', 'restored.json'), { recursive: true })
+    await expect(restoreCheckpoint(world, checkpoint.id, 30)).rejects.toThrow()
+    expect(await read('world.json')).toBe('{"id":"w1","name":"Changed"}')
+    await expect(lastRestore(world)).rejects.toThrow()
   })
 })

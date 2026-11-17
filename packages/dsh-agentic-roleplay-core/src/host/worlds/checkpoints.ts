@@ -139,9 +139,9 @@ export async function diffCheckpoint(world: string, id: string): Promise<Checkpo
   const stored = await readStored(world, id)
   const { manifest } = await scan(world)
   return {
-    changed: Object.keys(manifest).filter(path => stored.manifest[path] !== undefined && stored.manifest[path] !== manifest[path]).sort(),
-    added: Object.keys(manifest).filter(path => stored.manifest[path] === undefined).sort(),
-    removed: Object.keys(stored.manifest).filter(path => manifest[path] === undefined).sort(),
+    changed: Object.keys(manifest).filter(path => stored.manifest[path] !== undefined && stored.manifest[path] !== manifest[path]).sort((a, b) => a.localeCompare(b)),
+    added: Object.keys(manifest).filter(path => stored.manifest[path] === undefined).sort((a, b) => a.localeCompare(b)),
+    removed: Object.keys(stored.manifest).filter(path => manifest[path] === undefined).sort((a, b) => a.localeCompare(b)),
   }
 }
 
