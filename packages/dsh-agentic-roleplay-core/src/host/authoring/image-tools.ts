@@ -2,7 +2,7 @@ import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { DEFAULT_SETTINGS } from '../../shared/settings.ts'
 import { childSampling } from '../agents/child.ts'
 import { describeGalleryImage, listGallery, updateImage } from '../images/gallery.ts'
-import { interpretImage, type ImageAttachments } from '../images/interpreter.ts'
+import { interpretImage, type ImageAttachments, type InterpretJob } from '../images/interpreter.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
 
 export const IMAGE_MUTATION_TOOLS = ['edit_world_image', 'describe_world_image'] as const
@@ -75,10 +75,9 @@ export function worldImageTools(reader: AuthoredWorldReader, deps: WorldImageToo
         if (attachments === undefined) throw new Error('this DSH profile has no attachment service, so a picture cannot be shown to a model')
         const settings = DEFAULT_SETTINGS
         await describeGalleryImage(record.directory, args.path)
-        const image = await interpretImage({
-          parent: agent, signal: exec.signal, attachments, subjects: namesOf(state), sessionFolder: record.directory, path: args.path, language: deps.language(record.summary.id),
-          model: settings.images.interpreterModel, captioner: settings.images.captioner, sampling: childSampling(settings, 'records'), ...(args.context === undefined ? {} : { context: args.context }),
-        })
+        const request: InterpretJob = { parent: agent, signal: exec.signal, attachments, subjects: namesOf(state), sessionFolder: record.directory, path: args.path, language: deps.language(record.summary.id), model: settings.images.interpreterModel, captioner: settings.images.captioner, sampling: childSampling(settings, 'records') }
+        if (args.context !== undefined) request.context = args.context
+        const image = await interpretImage(request)
         return { action: 'described', path: image.path, description: image.description, tags: image.tags, subjects: image.subjects } as never
       },
     }),

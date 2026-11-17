@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { galleryFile, listGallery } from '../../../src/host/images/gallery.ts'
+import { addCardLink } from '../../../src/host/images/gallery.ts'
+import { addToLibraryOnce } from '../../../src/host/images/library.ts'
 import { withPngMetadata } from '../../../src/host/images/png-metadata.ts'
 
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=', 'base64')
@@ -41,5 +43,17 @@ describe('the gallery of a session', () => {
     for (const bad of ['../secret.png', 'scenes/../../secret.png', 'scenes/link.png', 'scenes/missing.png', 'scenes/turn-n1-01.txt', '', '/etc/passwd.png']) {
       await expect(galleryFile(folder, bad)).rejects.toThrow('no such image')
     }
+  })
+
+  it('keeps every address a picture came from, and gathers the pieces of a card under the address they belong to', async () => {
+    const { path } = await addToLibraryOnce(folder, PNG, 'mara.png', undefined, { url: 'https://a.example/mara.png', pieces: ['entry:1'] })
+
+    await addCardLink(folder, path, { url: 'https://a.example/mara.png', pieces: ['entry:2', 'entry:1'] })
+    await addCardLink(folder, path, { url: 'https://b.example/mara.png', pieces: ['entry:7'] })
+
+    expect((await listGallery(folder))[0]!.cardLinks).toEqual([
+      { url: 'https://a.example/mara.png', pieces: ['entry:1', 'entry:2'] },
+      { url: 'https://b.example/mara.png', pieces: ['entry:7'] },
+    ])
   })
 })
