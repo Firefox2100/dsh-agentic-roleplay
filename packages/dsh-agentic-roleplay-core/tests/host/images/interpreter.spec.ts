@@ -21,6 +21,7 @@ type Job = Parameters<typeof interpretImage>[0]
 
 function parentOf(reads: boolean, caption = 'a door, dark'): Job['parent'] {
   return {
+    model: { current: () => ({ provider: 'deepseek', model: 'chat' }) },
     session: { requestHeader: () => ({ config: { provider: 'deepseek', model: 'chat' } }) },
     ctx: {
       llm: {
