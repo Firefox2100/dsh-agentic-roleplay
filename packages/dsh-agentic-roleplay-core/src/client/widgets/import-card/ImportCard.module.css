@@ -7,6 +7,7 @@
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   flex: 0 0 auto;
   gap: 8px;
   align-items: center;
@@ -22,6 +23,7 @@
 
 .space {
   flex: 1 1 auto;
+  min-width: 8px;
 }
 
 .error {
@@ -99,6 +101,11 @@
   font-size: 12px;
   line-height: 18px;
   color: var(--dsw-alias-label-tertiary);
+}
+
+.links {
+  padding-inline-start: 20px;
+  overflow-wrap: anywhere;
 }
 
 .section {
@@ -238,4 +245,17 @@
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--dsw-alias-label-secondary);
+}
+
+.select {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 0.5px solid var(--dsw-alias-border-l4);
+  border-radius: var(--dsw-radius-md);
+  background: var(--dsw-alias-bg-layer-1);
+  color: inherit;
+  font: inherit;
+  font-size: 12px;
 }

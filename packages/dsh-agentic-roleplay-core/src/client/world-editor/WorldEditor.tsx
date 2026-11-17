@@ -8,6 +8,7 @@ import { RelationsPanel } from './RelationsPanel.tsx'
 import { LorePanel } from './LorePanel.tsx'
 import { PlotsPanel } from './PlotsPanel.tsx'
 import { PacksPanel } from './PacksPanel.tsx'
+import { CheckpointsPanel } from './CheckpointsPanel.tsx'
 import { TriggersPanel } from './TriggersPanel.tsx'
 import { InfoPanel } from './InfoPanel.tsx'
 import { PromptsPanel } from './PromptsPanel.tsx'
@@ -55,6 +56,7 @@ const SECTIONS = [
   { id: 'prompts', label: 'sectionPrompts', built: true, ownFiles: true },
   { id: 'interface', label: 'pk_title', built: true, ownFiles: true },
   { id: 'images', label: 'sectionImages', built: true, ownFiles: true },
+  { id: 'checkpoints', label: 'cp_title', built: true, ownFiles: true },
 ] as const satisfies readonly { id: string; label: WorldLocaleKey; built: boolean; ownFiles?: boolean }[]
 
 /**
@@ -115,6 +117,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
         {section === 'tools' && source.worldId !== undefined && <ToolsPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'variables' && source.worldId !== undefined && <VariablesPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'interface' && source.worldId !== undefined && <PacksPanel t={t} worldId={source.worldId} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'checkpoints' && source.worldId !== undefined && <CheckpointsPanel t={t} worldId={source.worldId} onRestored={refresh} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'images' && source.worldId !== undefined && <GalleryView t={galleryText} target={{ kind: 'worlds', id: source.worldId }} />}
         {section === 'characters' && (
           <CharactersPanel

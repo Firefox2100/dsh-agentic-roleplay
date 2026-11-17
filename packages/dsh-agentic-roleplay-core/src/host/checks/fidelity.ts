@@ -1,6 +1,7 @@
 import { diffText, matchPieces } from '../import/card-diff.ts'
 import { baseId, type CardPiece } from '../import/card-tools.ts'
 import { mapLimit, trOf, type ImportContext } from '../import/run.ts'
+import { snapPassage } from '../import/passages.ts'
 import { CheckSkipped, foundBy, type Check, type CheckInput, type Found } from './check.ts'
 import { usedPieces, type CardEvidence } from './card-evidence.ts'
 import { folded, shareOf, squashed, termsOf } from './terms.ts'
@@ -255,7 +256,7 @@ interface Reported { fact: string; quote: string }
 /** Why the comparison cannot be used: a quote that is not in the text it is said to come from is a guess, not a finding. */
 export function comparisonProblem(value: { dropped: Reported[]; invented: Reported[] }, source: string, document: string): string | undefined {
   if (value.dropped.length > MAX_REPORTED || value.invented.length > MAX_REPORTED) return `report at most ${MAX_REPORTED} of each`
-  const missing = (list: Reported[], text: string): boolean => list.some(entry => entry.fact.trim() === '' || !squashed(text).includes(squashed(entry.quote)) || squashed(entry.quote) === '')
+  const missing = (list: Reported[], text: string): boolean => list.some(entry => entry.fact.trim() === '' || snapPassage(entry.quote, text) === undefined)
   if (missing(value.dropped, source)) return 'the quote of every dropped fact must be a passage of the source, exactly as it is written there'
   if (missing(value.invented, document)) return 'the quote of every invented fact must be a passage of the document, exactly as it is written there'
   return undefined

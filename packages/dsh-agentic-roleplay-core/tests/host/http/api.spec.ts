@@ -15,6 +15,8 @@ import { ImportNotFoundError } from '../../../src/host/import/store.ts'
 import type { ImportPreview } from '../../../src/shared/import-card.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { AgentUnavailableError, ReflectionRefusedError, SessionArchivedError, InvalidStartError, InvalidWorldError, SessionNotFoundError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
+import { CheckpointBusyError } from '../../../src/host/worlds/checkpoint-service.ts'
+import { CheckpointError, CheckpointNotFoundError } from '../../../src/host/worlds/checkpoints.ts'
 import { InvalidJournalError } from '../../../src/host/reference/journal.ts'
 import { UnknownSectionError } from '../../../src/host/reference/reference.ts'
 import { TimelineError } from '../../../src/host/timeline/service.ts'
@@ -204,6 +206,12 @@ beforeEach(async () => {
       return { chatSessionId: `world-author-${worldId}`, turns: 2, running: false }
     },
     chatStatus: chat => ({ chatSessionId: chat, turns: 1, running: true }),
+    checkpoints: {
+      list: async (id: string) => { if (id === 'missing') throw new WorldNotFoundError('missing world'); return [{ id: 'c1', label: 'x' }] },
+      make: async (_id: string, label: string) => ({ id: 'c2', label }),
+      diff: async (_id: string, checkpoint: string) => { if (checkpoint === 'gone') throw new CheckpointNotFoundError('no such checkpoint'); return { changed: ['world.json'], added: [], removed: [] } },
+      restore: async (_id: string, checkpoint: string) => { if (checkpoint === 'busy') throw new CheckpointBusyError('working'); if (checkpoint === 'broken') throw new CheckpointError('incomplete'); return { restored: { id: checkpoint } } },
+    } as never,
     forgetAuthoring: async worldId => { if (worldId === 'missing') throw new WorldNotFoundError('missing world') },
     translation: {
       language: async id => { if (id === 'missing') throw new WorldNotFoundError('missing world'); return id === 'harbor' ? 'en' : undefined },
@@ -610,6 +618,22 @@ describe('roleplay API', () => {
     expect((await fetch(`${origin}/worlds/authoring/chat?id=missing`, { method: 'DELETE' })).status).toBe(404)
     const missing = await fetch(`${origin}/worlds/authoring?id=missing`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Missing' }) })
     expect(missing.status).toBe(404)
+  })
+
+  it('lists, makes, compares and restores the checkpoints of a world, and says why a request was refused', async () => {
+    expect(await (await fetch(`${origin}/worlds/checkpoints?id=harbor`)).json()).toEqual({ checkpoints: [{ id: 'c1', label: 'x' }] })
+    expect((await fetch(`${origin}/worlds/checkpoints?id=missing`)).status).toBe(404)
+    const made = await fetch(`${origin}/worlds/checkpoints?id=harbor`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ label: 'by hand' }) })
+    expect(made.status).toBe(201)
+    expect(await made.json()).toEqual({ id: 'c2', label: 'by hand' })
+    expect((await fetch(`${origin}/worlds/checkpoints?id=harbor`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ label: 3 }) })).status).toBe(400)
+    expect(await (await fetch(`${origin}/worlds/checkpoints/diff?id=harbor&checkpoint=c1`)).json()).toEqual({ changed: ['world.json'], added: [], removed: [] })
+    expect((await fetch(`${origin}/worlds/checkpoints/diff?id=harbor&checkpoint=gone`)).status).toBe(404)
+    const restore = (checkpoint: unknown) => fetch(`${origin}/worlds/checkpoints/restore?id=harbor`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ checkpoint }) })
+    expect((await restore('c1')).status).toBe(200)
+    expect((await restore('busy')).status).toBe(409)
+    expect((await restore('broken')).status).toBe(422)
+    expect((await restore(5)).status).toBe(400)
   })
 
   it('re-enumerates on POST refresh', async () => {

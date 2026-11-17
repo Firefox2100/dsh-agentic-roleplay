@@ -14,7 +14,7 @@ export const dictionaries: Dictionaries<GalleryLocaleKey> = {
     pending: 'Waiting to be described…', pendingWorld: 'Not described yet: a session started from this world describes it, or use Describe with AI or write it yourself.', describeFailed: 'Could not be described: {message}', upload: 'Add images', uploading: 'Adding…', uploadFailed: 'Could not add {name}: {message}', updateFailed: 'Could not change the image: {message}',
     edit: 'Edit', editTitle: 'Edit description', editHelp: 'What the picture shows, in words that stand on their own. It is how the image is found for a later scene, so correct it when it is wrong.', tags: 'Tags', tagsHelp: 'Separated by commas.', save: 'Save', saving: 'Saving…', cancel: 'Cancel',
     guideText: 'Scene images, portraits and your own pictures, beside the chat', back: 'Back',
-    describeNow: 'Describe with AI', describing: 'Describing…', describeError: 'Could not describe the picture: {message}',
+    describeNow: 'Describe', describing: 'Describing…', describeError: 'Could not describe the picture: {message}',
     cardSource: 'From the card', cardSourceHelp: 'The address and card piece this picture was downloaded from.',
   },
   zh: {
@@ -25,7 +25,7 @@ export const dictionaries: Dictionaries<GalleryLocaleKey> = {
     pending: '等待描述…', pendingWorld: '尚未描述：由此世界开始的会话会描述它，你也可以自己填写。', describeFailed: '无法描述：{message}', upload: '添加图片', uploading: '正在添加…', uploadFailed: '无法添加 {name}：{message}', updateFailed: '无法修改图片：{message}',
     edit: '编辑', editTitle: '编辑描述', editHelp: '用能独立成立的话说明图片画的是什么。之后的场景就是靠它找到这张图的，所以不准确时请修正。', tags: '标签', tagsHelp: '用逗号分隔。', save: '保存', saving: '正在保存…', cancel: '取消',
     guideText: '场景图、立绘和你自己的图片，与对话并排查看', back: '返回',
-    describeNow: '用 AI 描述', describing: '正在描述…', describeError: '无法描述这张图片：{message}',
+    describeNow: '描述', describing: '正在描述…', describeError: '无法描述这张图片：{message}',
     cardSource: '来自角色卡', cardSourceHelp: '这张图片下载自的网址与角色卡片段。',
   },
   ja: { tab: 'ギャラリー', notRoleplay: 'このチャットはロールプレイセッションではないため、ギャラリーはありません。', loading: '画像を読み込み中…', loadFailed: 'ギャラリーを読み込めませんでした：{message}', empty: '画像はまだありません。このセッションで作った場面画像やポートレートがここに表示され、自分の画像も追加できます。', emptyWorld: 'このワールドにはまだ画像がありません。追加するか、読み込みで取り込んでください。このワールドから始めたすべてのセッションのギャラリーに表示されます。', refresh: '更新', refreshing: '更新中…', countOne: '{count} 枚', countOther: '{count} 枚', all: 'すべて', scenes: '場面', references: '参照画像', uploaded: '自分で追加', close: '閉じる', dialog: '画像', description: '説明', prompt: 'プロンプト', subjects: '被写体', reusable: '再利用可能', reusableHint: '後の場面で再び表示できます。自分で追加した画像は常に再利用できます。', pending: '説明を待っています…', pendingWorld: 'まだ説明がありません。このワールドから始めたセッションで説明するか、自分で入力してください。', describeFailed: '説明を作成できませんでした：{message}', upload: '画像を追加', uploading: '追加中…', uploadFailed: '{name} を追加できませんでした：{message}', updateFailed: '画像を変更できませんでした：{message}', edit: '編集', editTitle: '説明を編集', editHelp: '画像に何が写っているかを、それだけで意味が通じる文章で説明します。後の場面で画像を見つけるために使うので、誤りがあれば直してください。', tags: 'タグ', tagsHelp: 'カンマで区切ります。', save: '保存', saving: '保存中…', cancel: 'キャンセル', guideText: '場面画像、ポートレート、自分の画像をチャットの横で表示', back: '戻る' , describeNow: 'AI で説明', describing: '説明中…', describeError: '画像を説明できませんでした：{message}' , cardSource: 'カードから', cardSourceHelp: 'この画像のダウンロード元のアドレスとカードの箇所。' },

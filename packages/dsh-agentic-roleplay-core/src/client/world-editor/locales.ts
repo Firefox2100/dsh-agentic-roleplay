@@ -4,6 +4,7 @@ import { dictionaries as toolSwitchDictionaries, type ToolSwitchKey } from '../w
 import { dictionaries as galleryDictionaries, type GalleryLocaleKey } from '../widgets/gallery-view/locales.ts'
 import { dictionaries as diceDictionaries, type DiceLocaleKey } from './dice-locales.ts'
 import { dictionaries as packsDictionaries, type PacksLocaleKey } from './packs-locales.ts'
+import { dictionaries as checkpointsDictionaries, type CheckpointsLocaleKey } from './checkpoints-locales.ts'
 import { dictionaries as openingDictionaries, type OpeningLocaleKey } from './opening-locales.ts'
 import { dictionaries as questionsDictionaries, type QuestionsLocaleKey } from './questions-locales.ts'
 import { dictionaries as triggersDictionaries, type TriggersLocaleKey } from './triggers-locales.ts'
@@ -293,8 +294,8 @@ const own: Dictionaries<OwnKey> = {
   },
 }
 
-export type WorldLocaleKey = OwnKey | SamplingFieldsKey | ToolSwitchKey | `dice_${DiceLocaleKey}` | `gallery_${GalleryLocaleKey}` | `trig_${TriggersLocaleKey}` | `pk_${PacksLocaleKey}` | `sq_${QuestionsLocaleKey}` | `op_${OpeningLocaleKey}`
+export type WorldLocaleKey = OwnKey | SamplingFieldsKey | ToolSwitchKey | `dice_${DiceLocaleKey}` | `gallery_${GalleryLocaleKey}` | `trig_${TriggersLocaleKey}` | `pk_${PacksLocaleKey}` | `cp_${CheckpointsLocaleKey}` | `sq_${QuestionsLocaleKey}` | `op_${OpeningLocaleKey}`
 
-const withOpening: Dictionaries<Exclude<WorldLocaleKey, `op_${OpeningLocaleKey}`>> = withDictionaries(withDictionaries(withDictionaries(withDictionaries(withDictionaries(withDictionaries(withDictionaries(own, prefixed(galleryDictionaries, 'gallery_')), prefixed(triggersDictionaries, 'trig_')), prefixed(packsDictionaries, 'pk_')), prefixed(questionsDictionaries, 'sq_')), toolSwitchDictionaries), prefixed(diceDictionaries, 'dice_')), samplingDictionaries)
+const withOpening: Dictionaries<Exclude<WorldLocaleKey, `op_${OpeningLocaleKey}`>> = withDictionaries(withDictionaries(withDictionaries(withDictionaries(withDictionaries(withDictionaries(withDictionaries(withDictionaries(own, prefixed(galleryDictionaries, 'gallery_')), prefixed(triggersDictionaries, 'trig_')), prefixed(packsDictionaries, 'pk_')), prefixed(checkpointsDictionaries, 'cp_')), prefixed(questionsDictionaries, 'sq_')), toolSwitchDictionaries), prefixed(diceDictionaries, 'dice_')), samplingDictionaries)
 
 export const dictionaries: Dictionaries<WorldLocaleKey> = withDictionaries(withOpening, prefixed(openingDictionaries, 'op_'))

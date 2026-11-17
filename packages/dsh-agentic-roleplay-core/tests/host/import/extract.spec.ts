@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readCard } from '../../../src/host/import/card.ts'
-import { characterDocument, completeAwareness, documentProblem, extractEntities, pruneKnowledge, factionDocument, loreDocuments, extractVariables, passageProblem, trackingGroups, placeDocument, pruneLinks, pruneMembers, sourcesFor, thingDocument, variableDocuments, variablesProblem } from '../../../src/host/import/extract.ts'
+import { characterDocument, completeAwareness, documentProblem, extractEntities, pruneKnowledge, factionDocument, loreDocuments, extractVariables, passageProblem, snapPassage, trackingGroups, placeDocument, pruneLinks, pruneMembers, sourcesFor, thingDocument, variableDocuments, variablesProblem } from '../../../src/host/import/extract.ts'
 import type { SourceItem } from '../../../src/host/import/items.ts'
 import type { Classified, Roster } from '../../../src/host/import/survey.ts'
 import { v3Card } from '../../support/cards.ts'
@@ -258,6 +258,34 @@ describe('finding the guidance inside a piece', () => {
     expect(passageProblem({ casting: [], rules: Array.from({ length: 40 }, () => 'Tam keeps the light.') }, source)).toBeUndefined()
   })
 
+  it('takes a passage that differs from the piece only in quotes, markup or punctuation as the piece\'s own words', () => {
+    const marked = 'Boats come in at dawn.\n\n- **Rule:** \"Never\" sail at night; the light is unlit.'
+    expect(snapPassage('Rule: “Never” sail at night — the light is unlit', marked)).toBe('Rule:** \"Never\" sail at night; the light is unlit')
+    expect(snapPassage('Boats come in at dawn.', marked)).toBe('Boats come in at dawn.')
+    expect(snapPassage('Sail at night', marked)).toBeUndefined()
+    expect(snapPassage('Sailors never sail at night, whatever the light', marked)).toBeUndefined()
+    expect(passageProblem({ casting: [], rules: ['Rule: “Never” sail at night — the light is unlit'] }, marked)).toBeUndefined()
+  })
+
+  it('asks once more when a passage is rewritten, and then leaves it out with a note instead of asking again', async () => {
+    const rewritten = { casting: ['A newcomer is given a profile of their own.', 'When a new visitor arrives, write their profile: name, age, job.'], rules: [] }
+    const ctx = fakeContext(() => rewritten)
+    const refusals: string[] = []
+    const run = ctx.run
+    ctx.run = async <T,>(job: Parameters<typeof run<T>>[0]): Promise<T> => {
+      const first = job.check?.(rewritten as never)
+      if (first !== undefined) refusals.push(first)
+      const second = job.check?.(rewritten as never)
+      expect(second).toBeUndefined()
+      return rewritten as T
+    }
+    const made = await extractEntities(ctx, card, [piece], classified, [])
+    expect(refusals).toHaveLength(1)
+    expect(made.lore).toHaveLength(1)
+    expect(made.lore[0]).toMatchObject({ body: 'When a new visitor arrives, write their profile: name, age, job.' })
+    expect(made.notes.some(note => note.includes('1 passage was not in the piece word for word and left out'))).toBe(true)
+  })
+
   it('makes lore of the passages a piece holds, the game master\'s and the author\'s only', async () => {
     const ctx = fakeContext(() => ({ casting: ['When a new visitor arrives, write their profile: name, age, job.'], rules: [] }))
     const long = item('entry:1', 'Short.', 'Short')
@@ -316,6 +344,31 @@ describe('a card that keeps its game state in variables', () => {
     const none = fakeContext(() => ({ variables: [], left_out: [] }))
     await extractVariables(none, card, [lore], classified, [])
     expect(none.asked).toHaveLength(0)
+  })
+})
+
+describe('the background of a world', () => {
+  const text = 'The harbour was founded by net makers who dug the first quay by hand and named every pier after a saint. '.repeat(6)
+  const piece = item('entry:0', text, 'History')
+  const classified: Classified = { 'entry:0': { roles: ['world'], targets: [] } }
+  const entry = (title: string, body: string) => ({ title, kind: 'history', summary: 'x', body, subjects: [] })
+
+  it('is asked for again twice when the entries are unusable, and then goes in as the card wrote it, with a note', async () => {
+    const ctx = fakeContext(() => ({ entries: Array.from({ length: 7 }, (_, index) => entry(`Part ${index}`, text)) }))
+    const loreJobs = (): number => ctx.asked.filter(asked => asked.persona.includes('lore') || asked.prompt.includes('History')).length
+    const made = await extractEntities(ctx, card, [piece], classified, [])
+    expect(loreJobs()).toBeLessThanOrEqual(3)
+    expect(made.lore).toHaveLength(1)
+    expect(made.lore[0]).toMatchObject({ body: expect.stringContaining('founded by net makers') })
+    expect(made.notes.some(note => note.includes('kept as the card wrote it') && note.includes('too many'))).toBe(true)
+  })
+
+  it('keeps the model\'s entries when they are usable at once', async () => {
+    const ctx = fakeContext(() => ({ entries: [entry('Founding', text)] }))
+    const made = await extractEntities(ctx, card, [piece], classified, [])
+    expect(made.lore).toHaveLength(1)
+    expect(made.lore[0]).toMatchObject({ title: 'Founding' })
+    expect(made.notes.some(note => note.includes('kept as the card wrote it'))).toBe(false)
   })
 })
 

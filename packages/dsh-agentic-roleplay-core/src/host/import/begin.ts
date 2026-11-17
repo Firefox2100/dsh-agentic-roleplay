@@ -1,7 +1,7 @@
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
 import { importPhase, startRepair } from './run-import.ts'
-import { importNotice } from './tools.ts'
+import { importNotice, pauseFor } from './tools.ts'
 import type { TextOf } from './run.ts'
 
 /** What the authoring chats know of the imports they are running: the chats whose turn is an import turn, and how often each was sent back. */
@@ -25,6 +25,6 @@ export async function beginImport(deps: { worlds: WorldCatalog; text: (worldId: 
   if (phase === undefined) return { ok: false, reason: 'no card is waiting to be imported in this world' }
   if (phase !== 'done') { deps.state.importing.add(chat); deps.state.objections.delete(chat); deps.state.repairs.delete(chat) }
   if (phase === 'repair') await startRepair(record.directory)
-  const notice = importNotice(phase, deps.text(worldId))
+  const notice = importNotice(phase, deps.text(worldId), await pauseFor(record.directory))
   return { ok: true, message: request.trim() === '' ? notice : `${notice}\n\n${request.trim()}` }
 }

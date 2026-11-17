@@ -33,6 +33,8 @@ export const STOP_GRACE_MS = 15_000
 export const AUTHORING_NUDGES = 6
 /** How often an authoring assistant may make exactly the same call in a turn before it is refused: past this it is looping (found live: one create-and-list pair 47 times in one review), not working. */
 export const AUTHORING_SAME_CALL = 3
+/** Failures of one tool in a row in a turn, whatever the arguments, after which it is refused for the rest of the turn: a model that walks through ids that do not exist never repeats a call, so the identical-call limit never sees it (found live: an import review read entry 132, 133 ... 4000 one after another). */
+export const FAILING_RUN = 6
 /** The same, for the game master: a refused resolution is mended and sent again, so a few repeats are work and many are a loop. */
 export const MASTER_SAME_CALL = 4
 /** Refused repeats after which the turn is ended instead of being refused again: the model is not reading the refusals (found live: one call 442 times in a review turn). */

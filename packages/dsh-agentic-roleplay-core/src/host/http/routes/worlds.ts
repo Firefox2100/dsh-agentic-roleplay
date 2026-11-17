@@ -5,13 +5,23 @@ import { InvalidEditProblems } from '../../../shared/world-state.ts'
 import { AgentUnavailableError, WorldNotFoundError } from '../../sessions/errors.ts'
 import { WorldFolderExistsError } from '../../worlds/create-world.ts'
 import { UnknownStarterError } from '../../worlds/starter.ts'
+import { CheckpointBusyError } from '../../worlds/checkpoint-service.ts'
+import { CheckpointError, CheckpointNotFoundError } from '../../worlds/checkpoints.ts'
 import { readJsonBody } from '../body.ts'
 import { sendError, sendJson } from '../respond.ts'
 import type { ApiDeps } from '../api.ts'
 import { type Routes, languageField } from './shared.ts'
 
+/** Answers a failed checkpoint request with the status that says what was wrong. */
+function checkpointFailure(res: Parameters<typeof sendError>[0], error: unknown): void {
+  if (error instanceof WorldNotFoundError || error instanceof CheckpointNotFoundError) return sendError(res, 404, error.message)
+  if (error instanceof CheckpointBusyError) return sendError(res, 409, error.message)
+  if (error instanceof CheckpointError) return sendError(res, 422, error.message)
+  throw error
+}
+
 /** The routes of the API for worlds. */
-export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToAuthor, authoringStatus, chatStatus, forgetAuthoring, translation, worldCharacters, avatars, playtest }: ApiDeps): Routes {
+export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToAuthor, authoringStatus, chatStatus, checkpoints, forgetAuthoring, translation, worldCharacters, avatars, playtest }: ApiDeps): Routes {
   return {
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
@@ -74,6 +84,29 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToA
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           throw error
         }
+      },
+    },
+    '/worlds/checkpoints': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, { checkpoints: await checkpoints.list(url.searchParams.get('id') ?? '') }) } catch (error) { return checkpointFailure(res, error) }
+      },
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { label?: unknown }
+        if (body.label !== undefined && typeof body.label !== 'string') return sendError(res, 400, 'label must be text')
+        try { sendJson(res, 201, await checkpoints.make(url.searchParams.get('id') ?? '', body.label ?? '')) } catch (error) { return checkpointFailure(res, error) }
+      },
+    },
+    '/worlds/checkpoints/diff': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, await checkpoints.diff(url.searchParams.get('id') ?? '', url.searchParams.get('checkpoint') ?? '')) } catch (error) { return checkpointFailure(res, error) }
+      },
+    },
+    '/worlds/checkpoints/restore': {
+      POST: async (req, res, url) => {
+        const body = await readJsonBody(req) as { checkpoint?: unknown }
+        if (typeof body.checkpoint !== 'string') return sendError(res, 400, 'checkpoint must be text')
+        const id = url.searchParams.get('id') ?? ''
+        try { sendJson(res, 200, await checkpoints.restore(id, body.checkpoint, (await authoringStatus(id)).running)) } catch (error) { return checkpointFailure(res, error) }
       },
     },
     '/worlds/language': {

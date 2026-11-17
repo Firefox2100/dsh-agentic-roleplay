@@ -101,6 +101,7 @@ describe('the comparison with the card', () => {
     expect(comparisonProblem({ dropped: [{ fact: 'age', quote: 'She is 34 years old.' }], invented: [{ fact: 'age', quote: 'Thirty years old.' }] }, source, document)).toBeUndefined()
     expect(comparisonProblem({ dropped: [{ fact: 'age', quote: 'She is 35' }], invented: [] }, source, document)).toMatch(/passage of the source/)
     expect(comparisonProblem({ dropped: [], invented: [{ fact: 'x', quote: 'She is 34 years old.' }] }, source, document)).toMatch(/passage of the document/)
+    expect(comparisonProblem({ dropped: [{ fact: 'age', quote: 'she is “34” years old' }], invented: [] }, source, document)).toBeUndefined()
     expect(comparisonProblem({ dropped: Array(7).fill({ fact: 'f', quote: 'Mara keeps' }), invented: [] }, source, document)).toMatch(/at most/)
   })
 

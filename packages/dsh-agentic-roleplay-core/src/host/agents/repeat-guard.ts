@@ -1,18 +1,24 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type { ToolExecution } from '@deepseek-ai/dsh-tools'
-import { REFUSALS_BEFORE_STOP } from './limits.ts'
+import { FAILING_RUN, REFUSALS_BEFORE_STOP } from './limits.ts'
 import { languageOf as storyLanguageOf, translator } from 'dsh-roleplay-model'
 
+type Chat = { calls: Map<string, number>; failures: Map<string, number>; refused: number }
+
 /**
- * Keeps an agent that is stuck from making the same call again and again (found live: an assistant made one create-and-list pair 47 times in a review, a game master repeated one
- * refused round resolution): past `limit` identical calls in one turn the call is refused with a word that sends it on, and when it goes on regardless the turn is ended. The count starts over at the first step of every turn.
+ * Keeps an agent that is stuck from going on (found live: an assistant made one create-and-list pair 47 times in a review, a game master repeated one refused round resolution,
+ * a review read entry 132, 133 ... 4000 of a card that has fewer):
+ * - past `limit` identical calls in one turn the call is refused with a word that sends it on;
+ * - past `FAILING_RUN` failures of one tool in a row, with whatever arguments, the tool is refused for the rest of the turn;
+ * - when the model goes on regardless the turn is ended.
+ * The counts start over at the first step of every turn.
  * @param languageOf the language of the chat the call belongs to, or nothing when the guard does not apply to it.
  */
 export function guardRepeatedCalls(ctx: Context, languageOf: (exec: ToolExecution) => string | undefined, limit: number): void {
-  const calls = new Map<string, Map<string, number>>()
+  const chats = new Map<string, Chat>()
 
   ctx.on('agent/pre-step', async (payload, next) => {
-    if (payload.step === 1) calls.delete(payload.agent.session.id)
+    if (payload.step === 1) chats.delete(payload.agent.session.id)
     return await next()
   })
 
@@ -20,15 +26,28 @@ export function guardRepeatedCalls(ctx: Context, languageOf: (exec: ToolExecutio
     const chat = exec.agent?.session.id
     const language = chat === undefined || exec.agent?.session.header.origin === 'subagent' ? undefined : languageOf(exec)
     if (chat === undefined || language === undefined) return await next()
+    const state = chats.get(chat) ?? { calls: new Map<string, number>(), failures: new Map<string, number>(), refused: 0 }
+    chats.set(chat, state)
+    const tr = translator(storyLanguageOf(language))
+    const failing = state.failures.get(exec.name) ?? 0
+    if (failing >= FAILING_RUN) {
+      state.refused += 1
+      if (state.refused > REFUSALS_BEFORE_STOP) exec.agent?.cancel({ kind: 'user' }, { keepInbox: true })
+      return { kind: 'deny', reason: tr('`{tool}` failed {count} times in a row in this turn, with different arguments each time, so guessing more will not work. Do not call it again this turn: use another tool to find what you need (a search or an overview), or finish and say what is left.', { tool: exec.name, count: failing }) }
+    }
     const signature = `${exec.name}:${JSON.stringify(exec.arguments)}`
-    const seen = calls.get(chat) ?? new Map<string, number>()
-    calls.set(chat, seen)
-    const count = (seen.get(signature) ?? 0) + 1
-    seen.set(signature, count)
+    const count = (state.calls.get(signature) ?? 0) + 1
+    state.calls.set(signature, count)
     if (count <= limit) return await next()
     // a model that goes on after being refused is not reading the refusals: the turn is ended (found live: one call 442 times in a review turn)
     if (count > limit + REFUSALS_BEFORE_STOP) exec.agent?.cancel({ kind: 'user' }, { keepInbox: true })
-    const tr = translator(storyLanguageOf(language))
     return { kind: 'deny', reason: tr('This exact call was already made {count} times in this turn with the same result. Do not repeat it: go on with the next step, or finish and say what is left.', { count: count - 1 }) }
   }, { prepend: true })
+
+  ctx.on('tools/result', (exec, result) => {
+    const state = exec.agent === undefined ? undefined : chats.get(exec.agent.session.id)
+    if (state === undefined) return
+    const failures = result.isError ? (state.failures.get(exec.name) ?? 0) + 1 : 0
+    state.failures.set(exec.name, failures)
+  })
 }

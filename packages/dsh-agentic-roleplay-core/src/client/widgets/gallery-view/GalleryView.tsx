@@ -1,20 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Modal } from '../../ui/Modal.tsx'
 import { Button } from '../../ui/Button.tsx'
+import { Tooltip } from '../../ui/Tooltip.tsx'
 import { MediaImage } from '../media-image/MediaImage.tsx'
 import { onPageVisible, pageVisible } from '../../visibility.ts'
 import { describeImage, imageUrl, loadGallery, updateImage, uploadImage, type GalleryContents, type GalleryImage, type GalleryTarget } from './gallery-api.ts'
+import { POLL_MS, awaitsDescriptions, sameGallery } from './polling.ts'
 import type { GalleryLocaleKey } from './locales.ts'
 import css from './GalleryView.module.css'
-import { IconRefresh } from '../../ui/icons.tsx'
+import { IconInfo, IconRefresh } from '../../ui/icons.tsx'
 
 
 export type GalleryText = (key: GalleryLocaleKey, values?: Record<string, string | number>) => string
 type Filter = 'all' | 'transient' | 'reference' | 'uploaded'
 type Load = { status: 'loading' } | { status: 'failed'; message: string } | { status: 'ready'; contents: GalleryContents }
-
-/** How often the list is read again while pictures are waiting to be described. */
-const POLL_MS = 3000
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
 
@@ -55,12 +54,13 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
   const picker = useRef<HTMLInputElement>(null)
   const [editing, setEditing] = useState<GalleryImage | undefined>()
   const [describing, setDescribing] = useState<ReadonlySet<string>>(new Set())
+  const [describeFailures, setDescribeFailures] = useState<Readonly<Record<string, string>>>({})
 
-  const read = useCallback((signal: AbortSignal) => {
-    setRefreshing(true)
+  const read = useCallback((signal: AbortSignal, quiet = false) => {
+    if (!quiet) setRefreshing(true)
     loadGallery(target, signal).then(
-      (contents) => { setLoad({ status: 'ready', contents }); setRefreshing(false) },
-      (failure: unknown) => { if (!signal.aborted) { setLoad({ status: 'failed', message: messageOf(failure) }); setRefreshing(false) } },
+      (contents) => { setLoad(current => (quiet && current.status === 'ready' && sameGallery(current.contents, contents) ? current : { status: 'ready', contents })); setRefreshing(false) },
+      (failure: unknown) => { if (!signal.aborted && !quiet) { setLoad({ status: 'failed', message: messageOf(failure) }); setRefreshing(false) } },
     )
   }, [target.kind, target.id])
 
@@ -70,14 +70,14 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
     return () => { abort.abort() }
   }, [read])
 
-  const waiting = load.status === 'ready' && load.contents.images.some(image => image.pending === true && load.contents.failures[image.path] === undefined)
+  const waiting = awaitsDescriptions(target.kind, load.status === 'ready' ? load.contents : undefined)
   useEffect(() => {
     if (!waiting) return
     const abort = new AbortController()
-    const timer = window.setTimeout(() => { if (pageVisible()) read(abort.signal) }, POLL_MS)
-    const off = onPageVisible(() => { read(abort.signal) })
-    return () => { window.clearTimeout(timer); off(); abort.abort() }
-  }, [waiting, read, load])
+    const timer = window.setInterval(() => { if (pageVisible()) read(abort.signal, true) }, POLL_MS)
+    const off = onPageVisible(() => { read(abort.signal, true) })
+    return () => { window.clearInterval(timer); off(); abort.abort() }
+  }, [waiting, read])
 
   if (load.status === 'loading') return <p className={css.message}>{t('loading')}</p>
   if (load.status === 'failed') return <p className={css.message} role="alert">{t('loadFailed', { message: load.message })}</p>
@@ -102,7 +102,8 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
   const describe = (image: GalleryImage): void => {
     setDescribing(current => new Set(current).add(image.path))
     setNotice(undefined)
-    describeImage(target, image.path, new AbortController().signal).then(replace, (failure: unknown) => { setNotice(t('describeError', { message: messageOf(failure) })) }).finally(() => { setDescribing((current) => { const next = new Set(current); next.delete(image.path); return next }) })
+    setDescribeFailures(({ [image.path]: _cleared, ...rest }) => rest)
+    describeImage(target, image.path, new AbortController().signal).then(replace, (failure: unknown) => { setDescribeFailures(current => ({ ...current, [image.path]: messageOf(failure) })); setNotice(t('describeError', { message: messageOf(failure) })) }).finally(() => { setDescribing((current) => { const next = new Set(current); next.delete(image.path); return next }) })
   }
 
   const { images, failures } = load.contents
@@ -131,15 +132,27 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
           <ul className={css.grid}>
             {shown.map((image) => {
               const name = image.subjects.map(subject => subject.name).join(', ') || image.originalName || image.path
-              const failed = failures[image.path]
+              const failed = describeFailures[image.path] ?? failures[image.path]
               return (
                 <li key={image.path} className={css.cell}>
                   <div className={css.thumb}>
                     <MediaImage src={imageUrl(target, image)} alt={name} details={image} labels={labels} className={css.image ?? ''} onOpenClassName={css.open ?? ''} />
                     <span className={css.caption}>{name}</span>
-                    {image.pending === true && <span className={failed === undefined ? css.status : css.statusError}>{failed === undefined ? t(target.kind === 'worlds' ? 'pendingWorld' : 'pending') : t('describeFailed', { message: failed })}</span>}
-                    {image.unreadable !== true && <button type="button" className={css.editButton} onClick={() => { setEditing(image) }}>{t('edit')}</button>}
-                    {image.unreadable !== true && target.kind === 'worlds' && <button type="button" className={css.editButton} disabled={describing.has(image.path)} onClick={() => { describe(image) }}>{describing.has(image.path) ? t('describing') : t('describeNow')}</button>}
+                    {(image.pending === true || image.unreadable !== true) && (
+                      <div className={css.footer}>
+                        {image.pending === true && (
+                          <span role={failed === undefined ? undefined : 'alert'}>
+                            <Tooltip label={failed === undefined ? t(target.kind === 'worlds' ? 'pendingWorld' : 'pending') : t('describeFailed', { message: failed })} openOnClick maxWidth={360}>
+                              <button type="button" className={failed === undefined ? css.status : css.statusError} aria-label={failed === undefined ? t(target.kind === 'worlds' ? 'pendingWorld' : 'pending') : t('describeFailed', { message: failed })}><IconInfo /></button>
+                            </Tooltip>
+                          </span>
+                        )}
+                        <span className={css.buttons}>
+                          {image.unreadable !== true && <Button variant="outline" size="sm" onClick={() => { setEditing(image) }}>{t('edit')}</Button>}
+                          {image.unreadable !== true && target.kind === 'worlds' && <Button variant="outline" size="sm" disabled={describing.has(image.path)} onClick={() => { describe(image) }}>{describing.has(image.path) ? t('describing') : t('describeNow')}</Button>}
+                        </span>
+                      </div>
+                    )}
                     {image.origin === 'generated' && image.unreadable !== true && (
                       <label className={css.reusable} title={t('reusableHint')}>
                         <input type="checkbox" checked={image.reusable} onChange={(event) => { mark(image, event.target.checked) }} />

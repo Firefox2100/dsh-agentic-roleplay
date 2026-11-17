@@ -2,6 +2,7 @@ import type { PlaytestRequest, PlaytestStatus } from '../../shared/playtest.ts'
 import type { StoryStatistics } from '../../shared/statistics.ts'
 import type { StoryComparison } from '../../shared/compare.ts'
 import type { ExternalTool } from '../../shared/tools.ts'
+import type { WorldCheckpoints } from '../worlds/checkpoint-service.ts'
 import { type CommandsDocument } from '../../shared/world-commands.ts'
 import { type DiceDocument } from '../../shared/world-dice.ts'
 import { type CalendarDocument, type VariableDeclaration, type WorldRoutines } from '../../shared/world-daily.ts'
@@ -74,6 +75,7 @@ export interface ApiDeps {
   chatStatus(chat: string): { chatSessionId: string; turns: number; running: boolean }
   /** Deletes a world's authoring chat and what it started, for good; the world itself stays. */
   forgetAuthoring(worldId: string): Promise<void>
+  checkpoints: WorldCheckpoints
   translation: {
     language(worldId: string): Promise<'en' | 'zh' | undefined>
     /** The language the world's file declares for its stories, if it does. */

@@ -190,9 +190,14 @@ export class ImageJobs {
       const attachments = this.deps.attachments?.()
       const parent = this.deps.agentOf(chatSessionId(id))
       const settings = this.deps.settings(id)
-      if (attachments === undefined || parent === undefined) return
       const folder = sessionFolder(this.deps.sessionsDir(), id)
-      for (const image of (await listGallery(folder)).filter(entry => entry.pending)) {
+      const waiting = (await listGallery(folder)).filter(entry => entry.pending)
+      if (attachments === undefined || parent === undefined) {
+        const reason = attachments === undefined ? 'this DSH profile has no attachment service, so a picture cannot be shown to a model' : 'the story\'s chat is not loaded: open the chat once, then refresh'
+        for (const image of waiting) this.interpretFailures.set(image.path, reason)
+        return
+      }
+      for (const image of waiting) {
         if (signal.aborted) return
         try {
           await (this.deps.interpret ?? interpretImage)({

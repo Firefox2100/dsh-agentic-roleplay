@@ -14,6 +14,7 @@ import { MAX_RULE_LENGTH as MAX_RULE_CHARS, MAX_RULES } from '../worlds/world-fi
 import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
 import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { findEntity, isLeftOut, type Classified, type Entity, type Kind, type Roster } from './survey.ts'
+import { snapPassage } from './passages.ts'
 import { mainRole, mayHoldGuidance, playsRole, statesWorldFacts } from './roles.ts'
 
 type Document = Record<string, unknown>
@@ -296,14 +297,12 @@ const MIN_GUIDANCE_CHARS = 120
 const STANDING_MAX_CHARS = 12_000
 export const STANDING_PROMPT = 'roleplay/standing'
 
-const squeezed = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
-/** Why the passages cannot be used, or nothing when each is in the piece word for word: the guidance is the card's, and a rewrite would be the model's. */
+/** Why the passages cannot be used, or nothing when each is in the piece word for word, or differs from it only in spacing, quotes and markup: the guidance is the card's, and a rewrite would be the model's. */
 export function passageProblem(answer: Document, source: string): string | undefined {
-  const whole = squeezed(source)
   for (const field of ['casting', 'rules'] as const) {
     const passages = Array.isArray(answer[field]) ? answer[field] as unknown[] : []
-    const missing = passages.findIndex(passage => typeof passage !== 'string' || squeezed(passage) === '' || !whole.includes(squeezed(passage)))
+    const missing = passages.findIndex(passage => typeof passage !== 'string' || snapPassage(passage, source) === undefined)
     if (missing >= 0) return `${field} passage ${missing + 1} is not in the piece word for word: copy it exactly as written, or leave it out`
   }
   return undefined
@@ -316,6 +315,7 @@ export function guidanceEntry(passages: readonly string[], title: string): Docum
 }
 
 /** What a prompt file cannot hold is changed so that `${` and `{{` in a card's text are not read as variables. */
+export { snapPassage }
 export const inert = (text: string): string => text.replace(/\$\{/g, '$ {').replace(/\{\{/g, '{ {')
 
 const LORE_SCHEMA = {
@@ -373,6 +373,8 @@ export const MAX_LORE_ENTRIES = 4
 /** The entries of a piece must hold at least this share of its text, from a piece of at least `MIN_CHECKED_CHARS` characters: the facts are kept, not summarised away. */
 const MIN_LORE_SHARE = 0.5
 const MIN_CHECKED_CHARS = 300
+/** How often a model that writes unusable entries for a piece is told before the piece goes in as the card wrote it. */
+const LORE_REFUSALS = 2
 
 /** Why the entries made of a piece cannot be used, or nothing when they can. */
 export function loreProblem(answer: Document, roster: Roster, source: string): string | undefined {
@@ -595,11 +597,18 @@ async function startingPlaces(ctx: ImportContext, card: NormalizedCard, items: r
   return made
 }
 
-/** Makes the documents of every entity of the roster, and the lore from the pieces about the world. */
-export async function extractEntities(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
-  const result = emptyExtracted()
-  const entityResults = await mapLimit(roster, ctx.concurrency, async (entity, index): Promise<{ entity: Entity; built?: Built; failure?: string }> => {
-    ctx.say(`writing ${entity.kind} ${index + 1}/${roster.length}: ${entity.name}`)
+type EntityResult = { entity: Entity; built?: Built; failure?: string }
+
+const GROUPS = { character: 'characters', place: 'locations', faction: 'factions', thing: 'items' } as const
+
+/** The stages that make documents, in the order they are made when nothing says otherwise. */
+export type EntityKind = Kind
+
+/** Writes the document of every entity of one kind, one job each. A job that fails leaves a note instead of the entity. */
+async function writeEntities(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster, kind: Kind): Promise<EntityResult[]> {
+  const mine = roster.filter(entity => entity.kind === kind)
+  return await mapLimit(mine, ctx.concurrency, async (entity, index): Promise<EntityResult> => {
+    ctx.say(`writing ${entity.kind} ${index + 1}/${mine.length}: ${entity.name}`)
     const sources = sourcesFor(entity, items, classified)
     try {
       const answer = await ctx.run(jobFor(ctx.text, trOf(ctx), entity, sources, roster, card))
@@ -609,31 +618,65 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
       return { entity, failure: `${entity.kind} ${entity.name}: ${error instanceof Error ? error.message : String(error)}` }
     }
   })
-  entityResults.push(...await startingPlaces(ctx, card, items, classified, roster, entityResults))
-  for (const { entity, built, failure } of entityResults) {
+}
+
+function collect(result: Extracted, written: readonly EntityResult[]): Extracted {
+  for (const { entity, built, failure } of written) {
     if (failure !== undefined || built === undefined) { result.notes.push(failure ?? `${entity.name}: nothing was written`); continue }
     result.notes.push(...built.notes)
     if (entity.kind === 'thing' && built.document['held_by'] === undefined && built.document['location'] === undefined) continue
-    const group = { character: 'characters', place: 'locations', faction: 'factions', thing: 'items' } as const
-    result[group[entity.kind]].push(built.document)
+    result[GROUPS[entity.kind]].push(built.document)
   }
+  return result
+}
+
+/** The places of the roster. */
+export async function extractPlaces(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
+  return collect(emptyExtracted(), await writeEntities(ctx, card, items, classified, roster, 'place'))
+}
+
+/** The organisations of the roster. */
+export async function extractFactions(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
+  return collect(emptyExtracted(), await writeEntities(ctx, card, items, classified, roster, 'faction'))
+}
+
+/** The things of the roster (one nobody holds or keeps anywhere is left out). */
+export async function extractThings(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
+  return collect(emptyExtracted(), await writeEntities(ctx, card, items, classified, roster, 'thing'))
+}
+
+/** The characters of the roster, the places their starts name that the roster lacks, and what each has on them that the roster does not list as a thing. */
+export async function extractCharacters(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
+  const written = await writeEntities(ctx, card, items, classified, roster, 'character')
+  written.push(...await startingPlaces(ctx, card, items, classified, roster, written))
+  const result = collect(emptyExtracted(), written)
   // what a character has on it is a thing of its own, held by it, unless the roster has that thing already (its own job says who holds it)
-  const itemIds = new Set(result.items.map(entry => String(entry['id'])))
-  for (const { entity, built } of entityResults) {
+  const itemIds = new Set(roster.filter(entity => entity.kind === 'thing').map(entity => entity.key))
+  for (const { entity, built } of written) {
     if (entity.kind !== 'character') continue
     for (const name of built?.carried ?? []) {
       if (findEntity(roster, name, 'thing') !== undefined || result.items.some(entry => norm(String(entry['name'])) === norm(name) && entry['held_by'] === entity.key)) continue
       result.items.push({ id: uniqueKey(slug(name, 'thing'), itemIds), name, held_by: entity.key })
     }
   }
+  return result
+}
+
+/** The background of the world: lore from the pieces about it, what a generator piece says, and the passages that lay down rules or how people are made up. */
+export async function extractBackground(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
+  const result = emptyExtracted()
   const worldItems = items.filter(item => statesWorldFacts(classified[item.id] ?? { roles: [] }))
   const taken = new Set<string>()
   const loreResults = await mapLimit(worldItems, ctx.concurrency, async (item, index) => {
     ctx.say(`writing background ${index + 1}/${worldItems.length}: ${item.label}`)
     try {
       const tr = trOf(ctx)
+      let refusals = 0
       const prompt = `${tr('Card: {name}', { name: card.name })}\n${tr('Piece: {label}', { label: item.label })}${item.title === '' ? '' : `\n${tr('Title: {title}', { title: item.title })}`}\n\n${tr('The entities of this world, which are the only ones the entries may name as subjects:')}\n${rosterLines(roster, tr)}\n\n${tr('Source piece:')}\n${item.text.slice(0, MAX_ITEM_CHARS + 500)}`
-      const answer = await ctx.run<Document>({ persona: ctx.text('import/lore', { rules: ctx.text('import/common-rules') }), maxTokens: 1500 + item.text.length, prompt, result: LORE_SCHEMA as never, check: value => loreProblem(value, roster, item.text) })
+      const answer = await ctx.run<Document>({ persona: ctx.text('import/lore', { rules: ctx.text('import/common-rules') }), maxTokens: 1500 + item.text.length, prompt, result: LORE_SCHEMA as never, check: (value) => { const problem = loreProblem(value, roster, item.text); if (problem === undefined || refusals >= LORE_REFUSALS) return undefined; refusals += 1; return problem } })
+      // told twice, a model that still writes too many or too thin entries is not going to; the piece goes in as the card wrote it
+      const still = loreProblem(answer, roster, item.text)
+      if (still !== undefined) return { item, answer: asWritten(item), failure: `${item.label}: kept as the card wrote it, because the model's entries were not usable (${still})` }
       return { item, answer }
     } catch (error) {
       return { item, answer: asWritten(item), failure: `${item.label}: kept as the card wrote it, because the model could not rewrite it (${error instanceof Error ? error.message : String(error)})` }
@@ -653,9 +696,12 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     ctx.say(`looking for guidance on making things up and for standing rules ${index + 1}/${searched.length}: ${item.label}`)
     try {
       const prompt = `${tr('Card: {name}', { name: card.name })}\n${tr('Piece: {label}', { label: item.label })}\n\n${tr('Source piece:')}\n${item.text.slice(0, MAX_ITEM_CHARS + 500)}`
-      const answer = await ctx.run<Document>({ persona: ctx.text('import/generator', { rules: ctx.text('import/common-rules') }), maxTokens: 600 + item.text.length, prompt, result: GUIDANCE_SCHEMA as never, check: value => passageProblem(value, item.text) })
-      const passages = (field: 'casting' | 'rules'): string[] => (answer[field] as string[]).map(withoutOutputMarkup).filter(passage => passage.trim() !== '')
-      return { item, casting: passages('casting'), rules: passages('rules') }
+      // a model that copies a passage badly is told once; asking again only repeats the answer (found live: one reply refused five times), so what still is not the piece's is left out
+      let refused = false
+      const answer = await ctx.run<Document>({ persona: ctx.text('import/generator', { rules: ctx.text('import/common-rules') }), maxTokens: 600 + item.text.length, prompt, result: GUIDANCE_SCHEMA as never, check: (value) => { const problem = passageProblem(value, item.text); if (problem === undefined || refused) return undefined; refused = true; return problem } })
+      const passages = (field: 'casting' | 'rules'): string[] => (answer[field] as string[]).map(passage => snapPassage(passage, item.text)).filter((passage): passage is string => passage !== undefined).map(withoutOutputMarkup).filter(passage => passage.trim() !== '')
+      const lost = (answer['casting'] as string[]).length + (answer['rules'] as string[]).length - passages('casting').length - passages('rules').length
+      return { item, casting: passages('casting'), rules: passages('rules'), ...(lost > 0 ? { failure: `${item.label}: ${lost} passage${lost === 1 ? ' was' : 's were'} not in the piece word for word and left out` } : {}) }
     } catch (error) {
       return { item, casting: [], rules: [], failure: `${item.label}: ${error instanceof Error ? error.message : String(error)}` }
     }
@@ -675,6 +721,23 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
     else addLore(result.lore, { id: uniqueKey(slug(item.label, 'rules'), taken), ...guidanceEntry(rules, tr('{label}: rules and mechanics', { label: name })) })
   }
   if (standing !== '') result.prompts.push({ id: STANDING_PROMPT, text: inert(standing) })
+  return result
+}
+
+/** The documents of several stages as one: what each made, in the order given. */
+export function mergeExtracted(parts: readonly Partial<Extracted>[]): Extracted {
+  const merged = emptyExtracted()
+  for (const part of parts) {
+    for (const key of Object.keys(merged) as (keyof Extracted)[]) {
+      const more = part[key]
+      if (more !== undefined) (merged[key] as unknown[]).push(...more)
+    }
+  }
+  return merged
+}
+
+/** What is left to do once every stage has written its documents: places for characters that start nowhere, links and knowledge that name what does not exist, awareness a relationship implies. */
+export function settleExtracted(result: Extracted, items: readonly SourceItem[], classified: Classified, roster: Roster): Extracted {
   placeAtScenario(result, items, classified, roster)
   pruneLoreSubjects(result)
   pruneMembers(result)
@@ -682,6 +745,16 @@ export async function extractEntities(ctx: ImportContext, card: NormalizedCard, 
   pruneKnowledge(result)
   completeAwareness(result)
   return result
+}
+
+/** Makes the documents of every entity of the roster, and the lore from the pieces about the world. */
+export async function extractEntities(ctx: ImportContext, card: NormalizedCard, items: readonly SourceItem[], classified: Classified, roster: Roster): Promise<Extracted> {
+  const places = await extractPlaces(ctx, card, items, classified, roster)
+  const factions = await extractFactions(ctx, card, items, classified, roster)
+  const things = await extractThings(ctx, card, items, classified, roster)
+  const characters = await extractCharacters(ctx, card, items, classified, roster)
+  const background = await extractBackground(ctx, card, items, classified, roster)
+  return settleExtracted(mergeExtracted([places, factions, things, characters, background]), items, classified, roster)
 }
 
 const STYLE_SCHEMA = {

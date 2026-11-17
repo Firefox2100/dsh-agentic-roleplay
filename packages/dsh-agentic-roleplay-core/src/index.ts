@@ -19,6 +19,7 @@ import { childSamplingOf } from './host/agents/child.ts'
 import { PromptLibrary } from './host/prompts/library.ts'
 import { PromptManager } from './host/prompts/manage.ts'
 import { AuthoringLanguages } from './host/worlds/authoring-language.ts'
+import { WorldCheckpoints } from './host/worlds/checkpoint-service.ts'
 import { RoleplayImport } from './host/import/service.ts'
 import { knownOutputCeiling } from './host/import/output-ceiling.ts'
 import type { ImportChoices, ImportPreview } from './shared/import-card.ts'
@@ -163,6 +164,7 @@ export function apply(ctx: Context, config: Config) {
   installFirstPartyPacks(root.path)
   const languages = new AuthoringLanguages(ctx, () => join(root.path, 'worlds'))
   const authoringTools = new AuthoringTools(ctx, () => config.authoringTools.get())
+  const checkpoints = new WorldCheckpoints(ctx, () => config.worldCheckpointsKept.get(), message => { ctx.logger.warn(message) })
   const agent = new AgentSessions(agentServicesOf(ctx), () => root.path)
   const autonomy = new AutonomyTicker({
     sessions: () => listSessions({ state: ctx.roleplayState, sessionsDir: () => join(root.path, 'sessions') }).sessions.map(session => ({ id: session.id, name: session.name, archived: session.archivedAt !== undefined })),
@@ -299,6 +301,7 @@ export function apply(ctx: Context, config: Config) {
       return chatStatus(authoringChatSessionId(world.summary.id))
     },
     chatStatus,
+    checkpoints,
     forgetAuthoring: async (worldId) => {
       const world = await worlds.find(worldId)
       if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)

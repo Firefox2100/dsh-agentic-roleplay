@@ -3,7 +3,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { defineTool, type ToolDefinition, type ToolExecution } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
 import { authoredWorldOf } from '../../shared/authoring-chat.ts'
-import { IMPORT_COMMAND, importRequestOf } from '../../shared/import-card.ts'
+import { IMPORT_COMMAND, importRequestOf, pauseOf, type ImportPause } from '../../shared/import-card.ts'
 import { registerCommands } from '../commands/registry.ts'
 import { beginImport, type ImportState } from './begin.ts'
 import { currentTurn } from '../orchestration/current-turn.ts'
@@ -12,9 +12,12 @@ import { askYesNo } from '../decisions/route.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
 import type { AuthoringLanguages } from '../worlds/authoring-language.ts'
 import type { WorldCatalog } from '../worlds/catalog.ts'
-import { IMPORT_FOLDER } from './store.ts'
+import { IMPORT_FOLDER, readImportFolder } from './store.ts'
+import { join } from 'node:path'
+import { STAGES, isStage, type Stage } from './stages.ts'
+import { SurveyEditError, type SurveyEdit } from './survey-edit.ts'
 import { NoEmbeddingService, type ImportContext, type RunJob, type TextOf } from './run.ts'
-import { build, endReview, finish, importPhase, isReviewing, settleDraft, survey, type Phase } from './run-import.ts'
+import { auditStage, build, changeSurvey, endReview, finish, importPhase, importStatus, isReviewing, runStage, settleDraft, showStaged, showSurvey, survey, type Phase, type StageReport } from './run-import.ts'
 import { checkWorld } from '../worlds/world-check.ts'
 import type { ImportSettings } from './service.ts'
 import { cachedJobs, forgetJobs } from './job-cache.ts'
@@ -27,6 +30,12 @@ const residencyOf = (agent: Agent): ModelResidency | undefined => agent.ctx.get(
 export const SURVEY_TOOL = 'import_survey'
 export const BUILD_TOOL = 'import_build'
 export const FINISH_TOOL = 'import_finish'
+export const STATUS_TOOL = 'import_status'
+export const STAGE_TOOL = 'import_stage'
+export const SHOW_TOOL = 'import_show'
+export const AUDIT_TOOL = 'import_audit'
+export const SURVEY_SHOW_TOOL = 'import_survey_show'
+export const SURVEY_EDIT_TOOL = 'import_survey_edit'
 
 /** How many times a turn that has not finished the import is sent back to it. */
 const MAX_OBJECTIONS = 3
@@ -117,11 +126,24 @@ export async function worldOf(worlds: WorldCatalog, exec: ToolExecution): Promis
 /** What each step is given besides its tools: the language of the world's authoring, and the texts in it. */
 export interface Prompting { prompts: () => PromptLibrary; languages: () => AuthoringLanguages }
 
-const toolNames = { survey: SURVEY_TOOL, build: BUILD_TOOL, finish: FINISH_TOOL }
+const toolNames = { survey: SURVEY_TOOL, build: BUILD_TOOL, finish: FINISH_TOOL, status: STATUS_TOOL, stage: STAGE_TOOL, show: SHOW_TOOL, audit: AUDIT_TOOL, surveyShow: SURVEY_SHOW_TOOL, surveyEdit: SURVEY_EDIT_TOOL, stages: STAGES.join(', ') }
+
+/** Where the assistant stops in the import of the card waiting in a world: the person's choice, or the default for the card's size. */
+export async function pauseFor(directory: string): Promise<ImportPause> {
+  try {
+    const { card, choices } = await readImportFolder(join(directory, IMPORT_FOLDER))
+    return pauseOf(choices, card.book?.entries.length ?? 0)
+  } catch (error) {
+    // no card is kept (an import that was only marked ready): nothing to pause for
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'never'
+    throw error
+  }
+}
 
 /** The three steps of an import, as tools of the authoring chat. They do their work in agents of their own, one narrow job each. */
 export function importTools(worlds: WorldCatalog, settings: () => ImportSettings, prompting: Prompting): ToolDefinition[] {
   const builds = new Map<string, { turn: number; count: number }>()
+  const stageRuns = new Map<string, { turn: number; count: number }>()
   /** Runs one step for the world of the calling chat; what the model should do next is told in the result, in the person's language. */
   const step = async (exec: ToolExecution, work: (ctx: ImportContext, directory: string) => Promise<object>, next: (text: TextOf, result: object) => string, fresh = false): Promise<never> => {
     const world = await worldOf(worlds, exec)
@@ -139,7 +161,7 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
       parameters: { card: cardParameter },
       output: output(value => JSON.stringify(value, null, 1)),
       isConcurrencySafe: () => false,
-      async execute(args, exec) { checkedCard(args); return await step(exec, survey, text => text('import/next-survey'), true) },
+      async execute(args, exec) { checkedCard(args); const pause = await pauseFor((await worldOf(worlds, exec)).directory); return await step(exec, survey, text => text(pause === 'never' ? 'import/next-survey' : 'import/next-survey-paused'), true) },
     }),
     defineTool({
       name: BUILD_TOOL,
@@ -159,6 +181,120 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
       },
     }),
     defineTool({
+      name: STATUS_TOOL,
+      description: 'Where the import of the card stands: the phase, every stage with whether it is done, still to do or stale (the survey changed after it ran), what each wrote, the person\'s note it was given, and whether the world can be written. Cheap; call it at the start of a turn and whenever you are unsure.',
+      parameters: { card: cardParameter },
+      output: output(value => JSON.stringify(value, null, 1)),
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        checkedCard(args)
+        const { directory } = await worldOf(worlds, exec)
+        return json({ ...await importStatus(directory), pause: await pauseFor(directory) })
+      },
+    }),
+    defineTool({
+      name: SURVEY_SHOW_TOOL,
+      description: 'The survey as it stands: its entities (characters, places, organisations, things) with the pieces of the card each is written from, who the player plays, and what looks doubtful; or, with what "pieces", every piece with what it was taken to be and whom or what it is about. A page at a time.',
+      parameters: { card: cardParameter, what: { type: 'string', enum: ['entities', 'pieces'], description: 'What to list (default entities).' }, offset: { type: 'number', description: 'Where to start in the list (default 0).' } },
+      output: output(value => JSON.stringify(value, null, 1)),
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        checkedCard(args)
+        const { directory } = await worldOf(worlds, exec)
+        const offset = typeof args.offset === 'number' && Number.isFinite(args.offset) ? Math.max(0, Math.floor(args.offset)) : 0
+        return json(await showSurvey(directory, args.what === 'pieces' ? 'pieces' : 'entities', offset))
+      },
+    }),
+    defineTool({
+      name: SURVEY_EDIT_TOOL,
+      description: 'Corrects the survey when the person says it is wrong, all changes or none: rename an entity, merge two (the second becomes an alias of the first), change its kind, add or remove aliases, say which character the player plays, add or remove an entity, or set what a piece is (its roles) and whom it is about (its targets). The stages that already ran on the old survey become stale and are run again. Entities are named by key, name or alias.',
+      parameters: {
+        card: cardParameter,
+        edits: {
+          type: 'array', required: true, description: 'The changes, in order.',
+          items: {
+            type: 'object', additionalProperties: false,
+            properties: {
+              op: { type: 'string', required: true, enum: ['rename', 'merge', 'kind', 'alias', 'player', 'add', 'remove', 'piece'], description: 'What to change.' },
+              entity: { type: 'string', description: 'The entity (rename, merge, kind, alias, player, remove).' },
+              name: { type: 'string', description: 'The new name (rename, add).' },
+              into: { type: 'string', description: 'The entity that stays (merge).' },
+              kind: { type: 'string', enum: ['character', 'place', 'faction', 'thing'], description: 'The kind (kind, add).' },
+              add: { type: 'array', items: { type: 'string' }, description: 'Aliases to add (alias).' },
+              remove: { type: 'array', items: { type: 'string' }, description: 'Aliases to remove (alias).' },
+              aliases: { type: 'array', items: { type: 'string' }, description: 'Aliases of the new entity (add).' },
+              piece: { type: 'string', description: 'A piece id from import_survey_show (piece).' },
+              roles: { type: 'array', items: { type: 'string' }, description: 'What the piece is, the most important first, one to three: character, player, speech, place, faction, thing, world, scenario, instruction, generator, template, irrelevant (piece).' },
+              targets: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { name: { type: 'string', required: true }, kind: { type: 'string', required: true, enum: ['character', 'place', 'faction', 'thing', 'other'] } } }, description: 'Whom or what the piece is about; replaces the list it has (piece).' },
+            },
+          },
+        },
+      },
+      output: output(value => JSON.stringify(value, null, 1)),
+      isConcurrencySafe: () => false,
+      async execute(args, exec) {
+        checkedCard(args)
+        const { directory } = await worldOf(worlds, exec)
+        if (!Array.isArray(args.edits) || args.edits.length === 0) throw new Error('give at least one change in edits')
+        try { return json(await changeSurvey(directory, args.edits as SurveyEdit[])) } catch (error) {
+          if (error instanceof SurveyEditError) throw new Error(`nothing was changed:\n${error.problems.map(problem => `- ${problem}`).join('\n')}`)
+          throw error
+        }
+      },
+    }),
+    defineTool({
+      name: STAGE_TOOL,
+      description: `Writes one part of the world from the survey, in agents of their own, and keeps it staged (the world itself is written by ${FINISH_TOOL}). The stages are ${STAGES.join(', ')}, best run in that order. It takes minutes. It reports what it wrote, what failed or was left out and why, and what is left. Run again, it asks only for what did not finish; a stage whose survey changed is run again in full. The person's note for the stage goes in guidance.`,
+      parameters: {
+        card: cardParameter,
+        stage: { type: 'string', required: true, enum: [...STAGES], description: 'The part to write.' },
+        guidance: { type: 'string', description: 'What the person asked for this stage, in their words ("be mindful that ..."). Part of every job of the stage; leave it out when they said nothing.' },
+      },
+      output: output(value => JSON.stringify(value, null, 1)),
+      isConcurrencySafe: () => false,
+      async execute(args, exec) {
+        checkedCard(args)
+        const stage = args.stage as unknown
+        if (!isStage(stage)) throw new Error(`stage is one of ${STAGES.join(', ')}`)
+        const chat = exec.agent?.session.id ?? ''
+        const turn = exec.agent === undefined ? 0 : currentTurn(exec.agent)
+        const key = `${chat}:${stage}`
+        const seen = stageRuns.get(key)
+        const count = seen?.turn === turn ? seen.count + 1 : 1
+        if (count > MAX_BUILDS_PER_TURN) throw new Error(`the stage "${stage}" has already run ${MAX_BUILDS_PER_TURN} times in this turn: do not run it again, tell the person what is wrong and stop`)
+        stageRuns.set(key, { turn, count })
+        const guidance = typeof args.guidance === 'string' ? args.guidance : undefined
+        return await step(exec, async (ctx, directory) => ({ ...await runStage(ctx, directory, stage, guidance), pause: await pauseFor(directory) }), (text, result) => nextAfterStage(text, result as StageReport & { pause: ImportPause }))
+      },
+    }),
+    defineTool({
+      name: SHOW_TOOL,
+      description: 'What a stage staged: without a name, the list of its documents; with a name (or id), that document in full, as it will be written into the world. Use it to answer the person who wants to see a character, a place or a rule before the world is written.',
+      parameters: { card: cardParameter, stage: { type: 'string', required: true, enum: [...STAGES], description: 'The stage.' }, name: { type: 'string', description: 'The name or id of one document.' } },
+      output: output(value => JSON.stringify(value, null, 1)),
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        checkedCard(args)
+        const stage = args.stage as unknown
+        if (!isStage(stage)) throw new Error(`stage is one of ${STAGES.join(', ')}`)
+        const { directory } = await worldOf(worlds, exec)
+        return json(await showStaged(directory, stage, typeof args.name === 'string' && args.name.trim() !== '' ? args.name : undefined))
+      },
+    }),
+    defineTool({
+      name: AUDIT_TOOL,
+      description: 'What a stage left out, worked out without a model: the entities of its kind that have no staged document, and the notes its run made. Then compare with the card (card_read) when the person asks whether something was lost.',
+      parameters: { card: cardParameter, stage: { type: 'string', required: true, enum: [...STAGES], description: 'The stage.' } },
+      output: output(value => JSON.stringify(value, null, 1)),
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        checkedCard(args)
+        const stage = args.stage as unknown
+        if (!isStage(stage)) throw new Error(`stage is one of ${STAGES.join(', ')}`)
+        return json(await auditStage((await worldOf(worlds, exec)).directory, stage))
+      },
+    }),
+    defineTool({
       name: FINISH_TOOL,
       description: 'Step 3 of importing a character card: write the world together with its description, tags, opening and cover, check whether a story can start from it, and report what was imported. A world that still has problems is kept as a repairable draft. Run after the build.',
       parameters: { card: cardParameter },
@@ -169,11 +305,24 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
   ]
 }
 
+/** What to do after a stage: go on to the next one, or stop and report, as the pause of the import says. */
+export function nextAfterStage(text: TextOf, report: StageReport & { pause: ImportPause }): string {
+  const todo = STAGES.filter(stage => report.left.includes(stage) || report.stale.includes(stage))
+  if (report.pause === 'stages') return text('import/next-stage-paused', { left: todo.length === 0 ? `nothing: the next step is ${FINISH_TOOL}, which writes the world` : todo.join(', ') })
+  const next = report.complete ? FINISH_TOOL : `${STAGE_TOOL} with stage "${todo[0] as Stage}"`
+  return text('import/next-stage-go', { next, card: CARD })
+}
+
+/** Whether the import may hand the turn back after a completed step. A survey-only pause is spent once any stage has started. */
+export const pausesAfterStep = (pause: ImportPause, stages: readonly { state: string }[]): boolean => pause === 'stages' || (pause === 'survey' && stages.every(stage => stage.state === 'todo'))
+
 /** The procedure of an import turn, told to the chat in place of what it does for any other message. */
-export function importNotice(phase: Phase | undefined, text: TextOf): string {
+export function importNotice(phase: Phase | undefined, text: TextOf, pause: ImportPause = 'never'): string {
   if (phase === undefined) return text('import/notice-missing')
   if (phase === 'repair') return text('import/notice-repair')
-  return text('import/notice', { card: CARD, phase, done: phase === 'done' ? text('import/notice-done') : '' })
+  const done = phase === 'done' ? text('import/notice-done') : ''
+  if (pause === 'never' || phase === 'done') return text('import/notice', { card: CARD, phase, done })
+  return text('import/notice-staged', { card: CARD, phase, done, pause, policy: text(pause === 'survey' ? 'import/pause-survey' : 'import/pause-stages') })
 }
 
 /** The text of an import's prompts for a world: in the language of its authoring chat, with the names of the import tools filled in. */
@@ -230,6 +379,12 @@ export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Promp
       return
     }
     if (phase === undefined || phase === 'done') { imports.delete(chat); return }
+    // an import that pauses is done with the person: once the survey exists the turn may end after any step, with a report and a question
+    if ((phase === 'surveyed' || phase === 'built') && record !== undefined) {
+      const pause = await pauseFor(record.directory)
+      const stages = pause === 'survey' ? (await importStatus(record.directory)).stages : []
+      if (pausesAfterStep(pause, stages)) { imports.delete(chat); objections.delete(chat); return }
+    }
     const told = objections.get(chat) ?? 0
     if (told >= MAX_OBJECTIONS) { imports.delete(chat); return }
     objections.set(chat, told + 1)

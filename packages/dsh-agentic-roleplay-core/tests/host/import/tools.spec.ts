@@ -23,8 +23,8 @@ afterEach(async () => { await rm(directory, { recursive: true, force: true }) })
 describe('the tools of an import', () => {
   const tools = () => importTools(worlds, settings, prompting)
 
-  it('are three steps, each with nothing to ask for', () => {
-    expect(tools().map(tool => tool.name)).toEqual(['import_survey', 'import_build', 'import_finish'])
+  it('are the steps of an import and the tools to look at it and steer it, each naming the card', () => {
+    expect(tools().map(tool => tool.name)).toEqual(['import_survey', 'import_build', 'import_status', 'import_survey_show', 'import_survey_edit', 'import_stage', 'import_show', 'import_audit', 'import_finish'])
   })
 
   it('work only in a world authoring chat, and say so otherwise', async () => {

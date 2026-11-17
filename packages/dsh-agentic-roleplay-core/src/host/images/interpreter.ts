@@ -54,7 +54,7 @@ const RESULT: ObjectJsonSchema = {
 /** A model given as `provider/model`, or the one the chat runs on when `chosen` is empty. */
 function modelOf(parent: Agent, chosen: string): { provider: string; model: string } {
   const named = chosen.trim()
-  const config = parent.session.requestHeader()?.config
+  const config = parent.model.current() ?? parent.session.requestHeader()?.config
   const [provider, ...rest] = named === '' ? [config?.provider, config?.model] : named.split('/')
   const model = named === '' ? config?.model : rest.join('/')
   if (provider === undefined || provider === '' || model === undefined || model === '') throw new Error(named === '' ? 'this chat has no model selected' : `"${named}" is not provider/model`)

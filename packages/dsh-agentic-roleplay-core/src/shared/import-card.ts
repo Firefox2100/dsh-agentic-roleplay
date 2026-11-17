@@ -60,7 +60,18 @@ export interface ImportChoices {
   opening: OpeningChoice
   /** Whether the pictures the card's web addresses point to are downloaded into the world's library; absent means yes. */
   fetchPictures?: boolean
+  /** Where the assistant stops to report and to ask: never (the whole import in one turn), after the survey, or after the survey and after every stage. Absent means the default for the card's size. */
+  pause?: ImportPause
 }
+
+export const IMPORT_PAUSES = ['never', 'survey', 'stages'] as const
+export type ImportPause = typeof IMPORT_PAUSES[number]
+
+/** A card with at least this many lorebook entries is imported a stage at a time unless the person chose otherwise: a long import in one go leaves no way to see or steer it. */
+export const PAUSE_FROM_ENTRIES = 30
+
+/** What the pause is for a card: the choice, or the default for its size. */
+export const pauseOf = (choices: Pick<ImportChoices, 'pause'>, entries: number): ImportPause => choices.pause ?? (entries >= PAUSE_FROM_ENTRIES ? 'stages' : 'never')
 
 /** A world of the person's that an uploaded card could update: one that was itself imported from a card. */
 export interface UpdateTarget {

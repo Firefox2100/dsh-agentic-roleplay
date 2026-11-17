@@ -29,6 +29,7 @@ function installed(language: string | null = 'zh', level = '') {
   guardAuthoringTurns(ctx, () => ({ text: (id: string, lang: string) => `${id}:${lang}` }) as never, () => language ?? undefined, () => level)
   return {
     call: async (agent: never, name: string, args: object) => await handlers['tools/pre-execute']!({ agent, name, arguments: args } as never, () => Promise.resolve({ kind: 'allow' })) as { kind: string; reason?: string },
+    result: (agent: never, name: string, isError: boolean) => { handlers['tools/result']!({ agent, name } as never, { isError } as never) },
     step: async (agent: never, step: number) => await handlers['agent/pre-step']!({ agent, step } as never, () => Promise.resolve({ kind: 'enter' })),
     stop: (agent: never, turn = 1) => { handlers['agent/turn-stopping']!({ agent, turn } as never) },
     created: async (agent: never) => await handlers['agent/created']!({ agent, signal: new AbortController().signal } as never),
@@ -103,6 +104,37 @@ describe('a call made again and again', () => {
     expect((await call(agent, 'edit_world_relationship', same)).kind).toBe('deny')
     await step(agent, 1)
     expect((await call(agent, 'edit_world_relationship', same)).kind).toBe('allow')
+  })
+
+  it('is refused for the rest of the turn once it failed six times in a row, whatever the arguments (a model walking through ids that do not exist)', async () => {
+    const { call, result, step } = installed('en')
+    const { agent, cancelled } = agentOf([])
+    for (let id = 132; id < 138; id += 1) {
+      expect((await call(agent, 'card_read', { piece: `entry:${id}` })).kind).toBe('allow')
+      result(agent, 'card_read', true)
+    }
+    const refused = await call(agent, 'card_read', { piece: 'entry:138' })
+    expect(refused.kind).toBe('deny')
+    expect(refused.reason).toContain('card_read')
+    expect((await call(agent, 'card_search', { query: 'x' })).kind).toBe('allow')
+    expect(cancelled).toEqual([])
+    for (let n = 0; n < 4; n += 1) await call(agent, 'card_read', { piece: `entry:${200 + n}` })
+    expect(cancelled).toEqual([])
+    await call(agent, 'card_read', { piece: 'entry:999' })
+    expect(cancelled).toEqual([{ kind: 'user' }])
+    await step(agent, 1)
+    expect((await call(agent, 'card_read', { piece: 'entry:1' })).kind).toBe('allow')
+  })
+
+  it('does not count failures a success breaks up, or those of other tools', async () => {
+    const { call, result } = installed('en')
+    const { agent } = agentOf([])
+    for (let id = 0; id < 30; id += 1) {
+      expect((await call(agent, 'card_read', { piece: `entry:${id}` })).kind).toBe('allow')
+      result(agent, 'card_read', id % 4 !== 3)
+    }
+    for (let id = 0; id < 10; id += 1) { await call(agent, 'card_search', { query: `q${id}` }); result(agent, 'card_search', true) }
+    expect((await call(agent, 'card_read', { piece: 'entry:1000' })).kind).toBe('allow')
   })
 
   it('ends the turn when the assistant goes on after being refused five times', async () => {

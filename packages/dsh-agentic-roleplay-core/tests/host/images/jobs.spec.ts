@@ -144,6 +144,18 @@ describe('pictures the person brings', () => {
     expect((await without.jobs.gallery(without.id)).images.find(image => image.path === other)).toMatchObject({ pending: true })
   })
 
+  it('say why when nothing can describe them: no attachment service, or a chat that is not loaded', async () => {
+    const noService = await fixture('manual')
+    const first = await noService.jobs.upload(noService.id, 'a.png', PNG)
+    await noService.jobs.describePending(noService.id, new AbortController().signal)
+    expect((await noService.jobs.gallery(noService.id)).failures[first]).toMatch(/no attachment service/)
+
+    const noChat = await fixture('manual', { attachments: () => ({}) as never, agentOf: () => undefined })
+    const second = await noChat.jobs.upload(noChat.id, 'a.png', PNG)
+    await noChat.jobs.describePending(noChat.id, new AbortController().signal)
+    expect((await noChat.jobs.gallery(noChat.id)).failures[second]).toMatch(/chat is not loaded/)
+  })
+
   it('that fail to be described are listed with the reason and tried again by the next run', async () => {
     let fail = true
     const interpret = vi.fn(async (job: { sessionFolder: string; path: string }) => { if (fail) throw new Error('the model cannot read images'); return updateImage(job.sessionFolder, job.path, { description: 'ok' }) })

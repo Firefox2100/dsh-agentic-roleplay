@@ -2,7 +2,7 @@ import { atomicWrite } from '../atomic-write.ts'
 import { randomUUID } from 'node:crypto'
 import { cp, mkdir, readFile, readdir, rename, rm, stat, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { MAX_IMPORT_NAME, type ImportChoices, type ImportPreview, type NormalizedCard, type OpeningChoice } from '../../shared/import-card.ts'
+import { IMPORT_PAUSES, MAX_IMPORT_NAME, pauseOf, type ImportChoices, type ImportPause, type ImportPreview, type NormalizedCard, type OpeningChoice } from '../../shared/import-card.ts'
 import { dialectOf } from './dialect.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 
@@ -19,7 +19,7 @@ export class ImportNotFoundError extends Error {}
 /** What the person importing is offered to begin with: the card's own name, the entries it left switched on, and its first message (an alternate greeting when it has none). */
 export function defaultChoices(card: NormalizedCard): ImportChoices {
   const opening: OpeningChoice = card.firstMessage.trim() !== '' ? { kind: 'first' } : card.alternateGreetings.some(greeting => greeting.trim() !== '') ? { kind: 'alternate', index: card.alternateGreetings.findIndex(greeting => greeting.trim() !== '') } : { kind: 'none' }
-  return { name: card.name.slice(0, MAX_IMPORT_NAME), disabledEntries: (card.book?.entries ?? []).filter(entry => !entry.enabled).map(entry => entry.id), opening }
+  return { name: card.name.slice(0, MAX_IMPORT_NAME), disabledEntries: (card.book?.entries ?? []).filter(entry => !entry.enabled).map(entry => entry.id), opening, pause: pauseOf({}, (card.book?.entries ?? []).length) }
 }
 
 /** The text of the opening a choice names; nothing when the choice is none or names nothing. */
@@ -52,8 +52,9 @@ export function parseChoices(value: unknown): ImportChoices {
   else if (raw?.['kind'] === 'alternate' && Number.isInteger(raw['index']) && (raw['index'] as number) >= 0) opening = { kind: 'alternate', index: raw['index'] as number }
   else if (raw?.['kind'] !== 'none') problems.push('opening must be first, alternate with an index, or none')
   if (input['fetchPictures'] !== undefined && typeof input['fetchPictures'] !== 'boolean') problems.push('fetchPictures must be true or false')
+  if (input['pause'] !== undefined && !(IMPORT_PAUSES as readonly unknown[]).includes(input['pause'])) problems.push(`pause must be one of ${IMPORT_PAUSES.join(', ')}`)
   if (problems.length > 0) throw new InvalidEditProblems(problems)
-  return { name, disabledEntries: [...new Set(disabled)], opening, ...(input['fetchPictures'] === false ? { fetchPictures: false } : {}) }
+  return { name, disabledEntries: [...new Set(disabled)], opening, ...(input['fetchPictures'] === false ? { fetchPictures: false } : {}), ...(input['pause'] === undefined ? {} : { pause: input['pause'] as ImportPause }) }
 }
 
 async function readJson<T>(file: string): Promise<T> {

@@ -42,6 +42,16 @@ Ask for outcomes rather than file operations, for example:
 
 Use the shared World tab to inspect the result. The chat and editor operate on the same workspace folder.
 
+## Checkpoints
+
+Before the assistant's first edit in each turn, the plugin copies the world's files into `.checkpoints` inside the world folder. These copies are neither synced nor published. You can also create a checkpoint yourself. Pictures are excluded, and stories that have already started keep their own world copies.
+
+The world editor lists checkpoints from newest to oldest. You can compare each one with the current world to see changed, added and removed files, or restore it. Before a restore, the plugin saves the current files as another checkpoint, so the restore can be undone. It refuses to restore while the assistant is working on that world. On its next turn, the assistant is told about the restore and reads the world again before editing.
+
+The assistant can inspect checkpoints with `list_world_checkpoints`, `diff_world_checkpoint` and `read_world_checkpoint_file`. This supports a request such as "undo what you did to Mara but keep the rest": the assistant reads Mara's old file and writes only that content back with its editing tools. Restoring a whole checkpoint remains a user action.
+
+**Settings > Role Play > Imports and authoring assistants > Checkpoints kept per world** controls how many of the newest checkpoints are retained. The default is 30. If a world's text and interface packs exceed 64 MB, no checkpoint is made and the assistant's edit continues.
+
 ## A productive workflow
 
 1. State the desired outcome and any facts that must remain unchanged.

@@ -5,6 +5,7 @@ import type { DiceDocument } from '../../shared/world-dice.ts'
 import type { CalendarDocument, VariableDeclaration, WorldRoutines } from '../../shared/world-daily.ts'
 import type { WorldInfo, WorldInfoEdit } from '../../shared/world-info.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
+import type { CheckpointDiff, CheckpointInfo } from '../../shared/checkpoints.ts'
 import { RefusedEditError } from './source.ts'
 
 export interface PromptEntry { id: string; kind: 'prose' | 'rules'; carried: boolean }
@@ -56,3 +57,8 @@ export const loadPackFile = async (world: string, pack: string, path: string, si
 export const savePackFile = async (world: string, pack: string, path: string, text: string, signal: AbortSignal): Promise<PackProblem[]> => (await read<{ problems: PackProblem[] }>(await fetch(`${API_PREFIX}/worlds/interface/file?${packQuery(world, pack, path)}`, init('PUT', signal, { text })))).problems
 export const removePackFile = async (world: string, pack: string, path: string, signal: AbortSignal): Promise<PackProblem[]> => (await read<{ problems: PackProblem[] }>(await fetch(`${API_PREFIX}/worlds/interface/file?${packQuery(world, pack, path)}`, init('DELETE', signal)))).problems
 export const createPack = async (world: string, pack: string, name: string, signal: AbortSignal): Promise<PackProblem[]> => (await read<{ problems: PackProblem[] }>(await fetch(`${API_PREFIX}/worlds/interface/pack?${packQuery(world, pack)}`, init('POST', signal, { name })))).problems
+
+export const loadCheckpoints = async (world: string, signal: AbortSignal): Promise<CheckpointInfo[]> => (await read<{ checkpoints: CheckpointInfo[] }>(await fetch(`${API_PREFIX}/worlds/checkpoints?${query(world)}`, init('GET', signal)))).checkpoints
+export const makeCheckpoint = async (world: string, label: string, signal: AbortSignal): Promise<CheckpointInfo> => await read(await fetch(`${API_PREFIX}/worlds/checkpoints?${query(world)}`, init('POST', signal, { label })))
+export const compareCheckpoint = async (world: string, checkpoint: string, signal: AbortSignal): Promise<CheckpointDiff> => await read(await fetch(`${API_PREFIX}/worlds/checkpoints/diff?${query(world)}&checkpoint=${encodeURIComponent(checkpoint)}`, init('GET', signal)))
+export const restoreCheckpoint = async (world: string, checkpoint: string, signal: AbortSignal): Promise<void> => { await read(await fetch(`${API_PREFIX}/worlds/checkpoints/restore?${query(world)}`, init('POST', signal, { checkpoint }))) }

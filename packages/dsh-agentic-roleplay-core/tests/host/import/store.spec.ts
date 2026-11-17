@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { readCard } from '../../../src/host/import/card.ts'
 import { ImportNotFoundError, ImportStore, choiceProblems, defaultChoices, openingText, parseChoices, readImportFolder } from '../../../src/host/import/store.ts'
+import { PAUSE_FROM_ENTRIES, pauseOf } from '../../../src/shared/import-card.ts'
 import { InvalidEditProblems } from '../../../src/shared/world-state.ts'
 import { pngWithCard, v3Card } from '../../support/cards.ts'
 
@@ -16,7 +17,16 @@ afterEach(async () => { await rm(root, { recursive: true, force: true }) })
 
 describe('what is offered to begin with', () => {
   it('is the name of the card, the entries the card left off, and its first message', () => {
-    expect(defaultChoices(card())).toEqual({ name: 'Test Harbour', disabledEntries: ['entry:1'], opening: { kind: 'first' } })
+    expect(defaultChoices(card())).toEqual({ name: 'Test Harbour', disabledEntries: ['entry:1'], opening: { kind: 'first' }, pause: 'never' })
+  })
+
+  it('pauses the import at every stage for a card with many lorebook entries, and the person\'s choice always wins', () => {
+    const entries = Array.from({ length: PAUSE_FROM_ENTRIES }, (_, index) => ({ id: `entry:${index}`, title: '', keys: [], secondaryKeys: [], content: 'x', enabled: true, constant: false, selective: false, position: '' }))
+    const big = { ...card(), book: { name: '', description: '', entries } }
+    expect(defaultChoices(big).pause).toBe('stages')
+    expect(pauseOf({ pause: 'never' }, PAUSE_FROM_ENTRIES)).toBe('never')
+    expect(parseChoices({ name: 'x', disabledEntries: [], opening: { kind: 'none' }, pause: 'survey' }).pause).toBe('survey')
+    expect(() => parseChoices({ name: 'x', disabledEntries: [], opening: { kind: 'none' }, pause: 'sometimes' })).toThrow()
   })
 
   it('falls back to the first alternate greeting that says something, or to none', () => {

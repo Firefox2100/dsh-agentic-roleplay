@@ -18,6 +18,7 @@ import { cardTools } from './host/import/card-tools.ts'
 import { updateHooks, updateTools } from './host/import/update-tools.ts'
 import { presetTools } from './host/import/preset-tools.ts'
 import { openingTools } from './host/import/opening-tools.ts'
+import { checkpointHooks, checkpointTools } from './host/authoring/checkpoint-tools.ts'
 import { isReviewing } from './host/import/run-import.ts'
 import { checkTools } from './host/checks/tools.ts'
 import { checkCommands } from './host/checks/commands.ts'
@@ -32,7 +33,7 @@ import type { WorldInfo } from './shared/world-info.ts'
 import { FALLBACK_LANGUAGE } from './host/prompts/library.ts'
 
 export const name = '@dsh-agentic-roleplay/core/authoring'
-export const inject = ['roleplayWorlds', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'roleplayAuthoringTools', 'tools', 'systemPrompt']
+export const inject = ['roleplayWorlds', 'roleplayImport', 'roleplayPrompts', 'roleplayAuthoringLanguages', 'roleplayAuthoringTools', 'roleplayCheckpoints', 'tools', 'systemPrompt']
 
 export function apply(ctx: Context): void {
   silenceHarnessDevContext(ctx)
@@ -56,6 +57,11 @@ export function apply(ctx: Context): void {
   for (const tool of openingTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of translateTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of checkTools(reader, { settings: () => ctx.roleplayImport.settings, prompting })) ctx.tools.register(tool)
+  for (const tool of checkpointTools(ctx.roleplayWorlds, () => ctx.roleplayCheckpoints)) ctx.tools.register(tool)
+  checkpointHooks(ctx, () => ctx.roleplayCheckpoints, chat => {
+    const world = authoredWorldOf(chat)
+    return world === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(world)
+  })
   importHooks(ctx, ctx.roleplayWorlds, prompting, ctx.roleplayImport.state)
   checkCommands(ctx, prompting)
   updateHooks(ctx, ctx.roleplayWorlds, world => ctx.roleplayAuthoringLanguages.get(world))
