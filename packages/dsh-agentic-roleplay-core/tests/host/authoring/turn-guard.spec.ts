@@ -55,6 +55,18 @@ describe('a reply that ran out of room', () => {
     expect(steered).toEqual(['import/cut-off:zh', 'import/cut-off:zh'])
   })
 
+  it('is told differently, and then stopped, when the cut-off reply went round in circles', () => {
+    const { stop } = installed()
+    const { agent, steered, cancelled, events } = agentOf(['max-tokens'])
+    const lap = Array.from({ length: 14 }, (_, n) => `Let me check entry ${n % 3} once more to be sure.`).join('\n')
+    events[0] = { type: 'assistant/message', data: { message: { content: [{ type: 'text', text: lap }] }, stream: [finish('max-tokens')] } } as never
+    stop(agent)
+    expect(steered).toEqual(['import/repeating:zh'])
+    stop(agent)
+    expect(steered).toHaveLength(1)
+    expect(cancelled).toHaveLength(1)
+  })
+
   it('gives up after a few tries', () => {
     const { stop } = installed()
     const { agent, steered } = agentOf(['max-tokens'])

@@ -7,7 +7,7 @@ import { dialectOf } from './dialect.ts'
 import { InvalidEditProblems } from '../../shared/world-state.ts'
 
 export const IMPORT_FOLDER = '.import'
-const CARD_FILE = 'card.json'
+export const CARD_FILE = 'card.json'
 const CHOICES_FILE = 'choices.json'
 export const PICTURE_FILE = 'picture.png'
 const IMPORT_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/

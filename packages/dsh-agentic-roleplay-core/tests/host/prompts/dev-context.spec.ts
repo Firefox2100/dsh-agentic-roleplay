@@ -3,7 +3,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { silenceHarnessDevContext, silenceRuntimeContext } from '../../../src/host/prompts/dev-context.ts'
 
 /** The order tables `SystemPrompt` publishes, as the harness itself numbers them. */
-const SECTION_ORDERS: Record<string, number> = { HARNESS_SOURCE: 10000, WEB_SURFACE: 10100 }
+const SECTION_ORDERS: Record<string, number> = { HARNESS_SOURCE: 10000, WEB_SURFACE: 10100, DELIVERABLE_FILE_REFERENCES: 10200 }
 const CONTEXT_ORDERS: Record<string, number> = { WORKING_DIRECTORY: 100, HARNESS_SOURCE: 200, WEB_SURFACE: 210 }
 
 interface Contribution {
@@ -45,6 +45,7 @@ describe('silencing the harness orientation text', () => {
       'context:harness:source',
       'section:app:web-surface',
       'context:app:web-surface',
+      'section:ui:deliverable-file-references',
     ])
   })
 
@@ -57,7 +58,7 @@ describe('silencing the harness orientation text', () => {
   it('keeps the order the harness gave those contributions, so the shadow lands in their place', () => {
     const { ctx, contributions } = recorder()
     silenceHarnessDevContext(ctx)
-    expect(contributions.map(entry => entry.order)).toEqual([10000, 200, 10100, 210])
+    expect(contributions.map(entry => entry.order)).toEqual([10000, 200, 10100, 210, 10200])
   })
 
   it('does not interpolate the empty text', () => {

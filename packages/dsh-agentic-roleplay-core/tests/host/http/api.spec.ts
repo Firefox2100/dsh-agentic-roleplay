@@ -205,6 +205,10 @@ beforeEach(async () => {
       if (worldId === 'missing') throw new WorldNotFoundError('missing world')
       return { chatSessionId: `world-author-${worldId}`, turns: 2, running: false }
     },
+    authoringSettings: {
+      get: async (worldId: string) => { if (worldId === 'missing') throw new WorldNotFoundError('missing world'); return { toolHiding: 'card' as const, keepResultTurns: 2 } },
+      change: async (worldId: string, settings: { toolHiding?: 'off' | 'card' | 'phase'; keepResultTurns?: number }) => { if (worldId === 'missing') throw new WorldNotFoundError('missing world'); return { toolHiding: settings.toolHiding ?? 'card', keepResultTurns: settings.keepResultTurns ?? 2 } },
+    },
     chatStatus: chat => ({ chatSessionId: chat, turns: 1, running: true }),
     checkpoints: {
       list: async (id: string) => { if (id === 'missing') throw new WorldNotFoundError('missing world'); return [{ id: 'c1', label: 'x' }] },
@@ -651,6 +655,15 @@ describe('roleplay API', () => {
     expect((await say('missing', { text: 'hi' })).status).toBe(404)
     expect(await (await fetch(`${origin}/worlds/authoring/status?id=harbor`)).json()).toEqual({ chatSessionId: 'world-author-harbor', turns: 2, running: false })
     expect((await fetch(`${origin}/worlds/authoring/status?id=missing`)).status).toBe(404)
+    const setting = (id: string, body: unknown) => fetch(`${origin}/worlds/authoring/settings?id=${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+    expect(await (await fetch(`${origin}/worlds/authoring/settings?id=harbor`)).json()).toEqual({ toolHiding: 'card', keepResultTurns: 2 })
+    expect(await (await setting('harbor', { toolHiding: 'phase' })).json()).toEqual({ toolHiding: 'phase', keepResultTurns: 2 })
+    expect(await (await setting('harbor', { keepResultTurns: 0 })).json()).toEqual({ toolHiding: 'card', keepResultTurns: 0 })
+    expect((await setting('harbor', { keepResultTurns: 99 })).status).toBe(422)
+    expect((await setting('harbor', { keepResultTurns: 1.5 })).status).toBe(422)
+    expect((await setting('harbor', { toolHiding: 'sometimes' })).status).toBe(422)
+    expect((await setting('harbor', { other: 1 })).status).toBe(422)
+    expect((await setting('missing', { toolHiding: 'off' })).status).toBe(404)
     expect(await (await fetch(`${origin}/authoring/status?chat=preset-author-x`)).json()).toEqual({ chatSessionId: 'preset-author-x', turns: 1, running: true })
     expect((await fetch(`${origin}/worlds/authoring/chat?id=harbor`, { method: 'DELETE' })).status).toBe(200)
     expect((await fetch(`${origin}/worlds/authoring/chat?id=missing`, { method: 'DELETE' })).status).toBe(404)

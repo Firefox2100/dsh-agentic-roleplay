@@ -10,6 +10,7 @@ import { CheckpointError, CheckpointNotFoundError } from '../../worlds/checkpoin
 import { readSource, baseId, rolesOf, SourceCardMissingError } from '../../import/card-tools.ts'
 import type { CardView, CardPieceText } from '../../../shared/card-view.ts'
 import { readJsonBody } from '../body.ts'
+import { parseAuthoringSettings } from '../../../shared/authoring-settings.ts'
 import { sendError, sendJson } from '../respond.ts'
 import type { ApiDeps } from '../api.ts'
 import { type Routes, languageField } from './shared.ts'
@@ -23,7 +24,7 @@ function checkpointFailure(res: Parameters<typeof sendError>[0], error: unknown)
 }
 
 /** The routes of the API for worlds. */
-export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToAuthor, authoringStatus, chatStatus, checkpoints, forgetAuthoring, translation, worldCharacters, avatars, playtest }: ApiDeps): Routes {
+export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToAuthor, authoringStatus, authoringSettings, chatStatus, checkpoints, forgetAuthoring, translation, worldCharacters, avatars, playtest }: ApiDeps): Routes {
   return {
     '/worlds': {
       GET: async (_req, res) => { sendJson(res, 200, await worlds.list()) },
@@ -83,6 +84,25 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToA
     '/worlds/authoring/status': {
       GET: async (_req, res, url) => {
         try { sendJson(res, 200, await authoringStatus(url.searchParams.get('id') ?? '')) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/worlds/authoring/settings': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, await authoringSettings.get(url.searchParams.get('id') ?? '')) } catch (error) {
+          if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+      PUT: async (req, res, url) => {
+        let change: ReturnType<typeof parseAuthoringSettings>
+        try { change = parseAuthoringSettings(await readJsonBody(req)) } catch (error) {
+          if (error instanceof TypeError) return sendError(res, 422, error.message)
+          throw error
+        }
+        try { sendJson(res, 200, await authoringSettings.change(url.searchParams.get('id') ?? '', change)) } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
           throw error
         }

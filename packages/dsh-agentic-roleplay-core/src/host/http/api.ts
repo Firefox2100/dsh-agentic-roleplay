@@ -71,6 +71,8 @@ export interface ApiDeps {
   sayToAuthor(worldId: string, text: string, language?: string): Promise<{ chatSessionId: string }>
   /** Whether the world's authoring assistant is working, and how many of its turns have ended: a caller reads the count before it speaks and waits for it to grow and the assistant to be idle. */
   authoringStatus(worldId: string): Promise<{ chatSessionId: string; turns: number; running: boolean }>
+  /** The settings of a world's authoring conversations; a change applies from the next step of a chat that is running. */
+  authoringSettings: { get(worldId: string): Promise<import('../../shared/authoring-settings.ts').AuthoringSettings>; change(worldId: string, settings: Partial<import('../../shared/authoring-settings.ts').AuthoringSettings>): Promise<import('../../shared/authoring-settings.ts').AuthoringSettings> }
   /** The same for any authoring chat by its DSH id (a preset's or a lorebook's assistant). */
   chatStatus(chat: string): { chatSessionId: string; turns: number; running: boolean }
   /** Deletes a world's authoring chat and what it started, for good; the world itself stays. */

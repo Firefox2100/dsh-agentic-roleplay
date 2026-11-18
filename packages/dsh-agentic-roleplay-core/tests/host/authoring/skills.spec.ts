@@ -11,6 +11,9 @@ import { parseDiceFile } from '../../../src/host/dice/load.ts'
 import { parseCommandsFile } from '../../../src/host/commands/load.ts'
 import { parseCalendarFile } from '../../../src/host/calendar/load.ts'
 import { parsePlotsFile } from '../../../src/host/plots/load.ts'
+import { parseStartQuestionsEdit } from '../../../src/shared/start-questions.ts'
+import { parseWorldInfoEdit } from '../../../src/shared/world-info.ts'
+import { WORLD_INFO_FIELDS } from '../../../src/host/authoring/write-tools.ts'
 import { parseTriggerDefinition } from '@dsh-agentic-roleplay/state'
 
 const skills = loadShippedSkills()
@@ -56,6 +59,16 @@ describe('the format guides the world assistant loads as skills', () => {
     expect(missing, `fields of ${name} the guide does not name`).toEqual([])
   })
 
+  it('give the start questions and openings of the world-info guide in the form the parser reads, and name every field edit_world_info takes', () => {
+    const blocks = [...skill('world-info').content.matchAll(/```json\n([\s\S]*?)\n```/g)].map(match => JSON.parse(match[1]!) as unknown)
+    const problems: string[] = []
+    const questions = parseStartQuestionsEdit(blocks[1], problems)
+    expect(problems).toEqual([])
+    expect(questions?.[0]?.options).toHaveLength(2)
+    expect(parseWorldInfoEdit({ openingParts: blocks[0] })).toHaveProperty('openingParts')
+    for (const field of WORLD_INFO_FIELDS) expect(skill('world-info').content, field).toContain(`\`${field}\``)
+  })
+
   it('give the whole-world files and plots examples the real parsers accept', () => {
     expect(parseVariablesFile(example('world-variables')).ok).toBe(true)
     expect(parseDiceFile(example('world-dice')).ok).toBe(true)
@@ -71,6 +84,6 @@ describe('the format guides the world assistant loads as skills', () => {
 
   it('tell the assistant where things go, and name every guide the procedure points to', () => {
     const names = skills.map(each => each.name)
-    for (const name of ['world-characters', 'world-places', 'world-items', 'world-factions', 'world-lore', 'world-triggers', 'world-plots', 'world-variables', 'world-dice', 'world-commands', 'world-calendar', 'world-where-things-go']) expect(names).toContain(name)
+    for (const name of ['world-characters', 'world-places', 'world-items', 'world-factions', 'world-lore', 'world-triggers', 'world-plots', 'world-variables', 'world-dice', 'world-commands', 'world-calendar', 'world-info', 'world-where-things-go']) expect(names).toContain(name)
   })
 })

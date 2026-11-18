@@ -31,7 +31,7 @@ export class AuthoringSessions {
 
   async ensure(worldId: string, worldName: string, title?: string, language?: string): Promise<string> {
     return await ensureAuthoringChat(this.services(), this.roleplayRoot(), this.prompts, this.languages, KIND, {
-      chatId: authoringChatSessionId(worldId), languageKey: worldId, title: title ?? authoringTitle(worldName, language), language, welcome: { world: worldName }, renameExisting: true,
+      chatId: authoringChatSessionId(worldId, this.languages.generation(worldId)), languageKey: worldId, title: title ?? authoringTitle(worldName, language), language, welcome: { world: worldName }, renameExisting: true,
     })
   }
 

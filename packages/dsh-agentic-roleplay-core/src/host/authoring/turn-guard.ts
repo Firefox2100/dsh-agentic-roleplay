@@ -1,7 +1,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
-import { cutOff, finishOf } from '../agents/cut-off.ts'
-import { AUTHORING_NUDGES, AUTHORING_SAME_CALL } from '../agents/limits.ts'
+import { cutOff, finishOf, goingRoundInCircles, lastReplyText } from '../agents/cut-off.ts'
+import { AUTHORING_CIRCLE_NUDGES, AUTHORING_NUDGES, AUTHORING_SAME_CALL } from '../agents/limits.ts'
 import { guardRepeatedCalls } from '../agents/repeat-guard.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
 
@@ -14,6 +14,7 @@ import type { PromptLibrary } from '../prompts/library.ts'
  */
 export function guardAuthoringTurns(ctx: Context, prompts: () => PromptLibrary, languageOf: (chat: string) => string | undefined, reasoning: () => string = () => ''): void {
   const nudged = new Map<string, number>()
+  const circled = new Map<string, number>()
   guardRepeatedCalls(ctx, exec => (exec.agent === undefined ? undefined : languageOf(exec.agent.session.id)), AUTHORING_SAME_CALL)
 
   ctx.on('agent/created', async ({ agent, signal }) => {
@@ -35,9 +36,15 @@ export function guardAuthoringTurns(ctx: Context, prompts: () => PromptLibrary, 
     const told = nudged.get(key) ?? 0
     // after a cut-off the turn ends at every stop unless it is steered; the assistant's own last word (`stop`) ends it for good
     const goOn = cutOff(agent) || (told > 0 && finishOf(agent) !== 'stop')
-    if (!goOn) { nudged.delete(key); return }
-    if (told >= AUTHORING_NUDGES) return
+    if (!goOn) { nudged.delete(key); circled.delete(key); return }
+    const circling = goingRoundInCircles(lastReplyText(agent))
+    if (circling) circled.set(key, (circled.get(key) ?? 0) + 1)
+    // a second lap after being told is not worked out by a third telling: the turn is ended so that the person can say what they want
+    if (told >= AUTHORING_NUDGES || (circled.get(key) ?? 0) > AUTHORING_CIRCLE_NUDGES) {
+      if ((circled.get(key) ?? 0) > AUTHORING_CIRCLE_NUDGES) agent.cancel({ kind: 'user' }, { keepInbox: true })
+      return
+    }
     nudged.set(key, told + 1)
-    agent.steer(createUserMessage({ content: [{ type: 'text', text: prompts().text('import/cut-off', language) }], source: { kind: 'roleplay' } }))
+    agent.steer(createUserMessage({ content: [{ type: 'text', text: prompts().text(circling ? 'import/repeating' : 'import/cut-off', language) }], source: { kind: 'roleplay' } }))
   })
 }

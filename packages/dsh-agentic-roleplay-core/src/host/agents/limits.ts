@@ -31,6 +31,8 @@ export const STOP_GRACE_MS = 15_000
 
 /** Times an authoring assistant is steered back in one turn after a reply was cut off: a model that rambles again after being told not to will not stop because it is told once more. */
 export const AUTHORING_NUDGES = 6
+/** Cut-off replies that went round in circles an assistant is steered back after: one more ends the turn (found live: six laps of the same re-checking, each as long as the output cap). */
+export const AUTHORING_CIRCLE_NUDGES = 1
 /** How often an authoring assistant may make exactly the same call in a turn before it is refused: past this it is looping (found live: one create-and-list pair 47 times in one review), not working. */
 export const AUTHORING_SAME_CALL = 3
 /** Failures of one tool in a row in a turn, whatever the arguments, after which it is refused for the rest of the turn: a model that walks through ids that do not exist never repeats a call, so the identical-call limit never sees it (found live: an import review read entry 132, 133 ... 4000 one after another). */

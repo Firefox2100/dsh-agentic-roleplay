@@ -3,6 +3,7 @@ import type { DecisionsPayload } from '../../shared/decisions.ts'
 import type { InterfaceStatus, InterfaceSync } from '../../shared/interface-pack.ts'
 import type { ChatSettings, SettingsPayload } from '../../shared/settings.ts'
 import { API_PREFIX } from '../../shared/worlds.ts'
+import type { AuthoringSettings } from '../../shared/authoring-settings.ts'
 
 /** The chat is not a roleplay session, so it has no settings. */
 export class NotRoleplayError extends Error {}
@@ -92,4 +93,23 @@ export async function loadDecisions(id: string, signal: AbortSignal): Promise<De
     throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
   }
   return await response.json() as DecisionsPayload
+}
+
+const authoringUrl = (world: string): string => `${API_PREFIX}/worlds/authoring/settings?id=${encodeURIComponent(world)}`
+
+async function receiveAuthoring(response: Response): Promise<AuthoringSettings> {
+  if (!response.ok) {
+    const body = await response.json().catch(() => undefined) as { message?: unknown } | undefined
+    throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
+  }
+  return await response.json() as AuthoringSettings
+}
+
+/** The settings of a world's authoring conversations. */
+export async function loadAuthoringSettings(world: string, signal: AbortSignal): Promise<AuthoringSettings> {
+  return await receiveAuthoring(await fetch(authoringUrl(world), { credentials: 'same-origin', signal }))
+}
+
+export async function saveAuthoringSettings(world: string, settings: Partial<AuthoringSettings>, signal: AbortSignal): Promise<AuthoringSettings> {
+  return await receiveAuthoring(await fetch(authoringUrl(world), { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(settings), signal }))
 }

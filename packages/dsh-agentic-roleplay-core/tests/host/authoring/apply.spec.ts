@@ -56,7 +56,7 @@ describe('the world-authoring preset', () => {
   it('shadows the harness and the runtime facts of the profile it is loaded into', () => {
     const { ctx, sections, contexts } = made()
     apply(ctx)
-    expect(sections.map(section => section.name)).toEqual(expect.arrayContaining(['WORLD_AUTHORING_PERSONA', 'WORLD_AUTHORING_PROCEDURE', 'harness:source', 'app:web-surface']))
+    expect(sections.map(section => section.name)).toEqual(expect.arrayContaining(['WORLD_AUTHORING_PERSONA', 'WORLD_AUTHORING_PROCEDURE', 'harness:source', 'app:web-surface', 'ui:deliverable-file-references']))
     expect(contexts.map(context => context.name)).toEqual(expect.arrayContaining(['harness:source', 'app:web-surface', 'working-directory:current']))
     const persona = sections.find(section => section.name === 'WORLD_AUTHORING_PERSONA')
     expect(typeof persona?.text, 'the persona is asked for in the language of the chat').toBe('function')

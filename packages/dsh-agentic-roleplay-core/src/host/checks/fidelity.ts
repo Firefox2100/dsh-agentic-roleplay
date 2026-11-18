@@ -160,6 +160,14 @@ const names: Check = {
   },
 }
 
+/** The words around the first place a number stands in a text, so a finding can be checked without searching the card for it. */
+function around(text: string, number: string): string {
+  const flat = text.replace(/\s+/gu, ' ').normalize('NFKC')
+  const at = flat.indexOf(number)
+  return at < 0 ? number : snippet(flat.slice(Math.max(0, at - NUMBER_CONTEXT), at + number.length + NUMBER_CONTEXT))
+}
+
+const NUMBER_CONTEXT = 24
 const NUMBER = /\p{N}{2,}(?:[.,:]\p{N}+)*/gu
 
 /** The numbers of a piece's text, without those inside the card's macros and addresses. */
@@ -186,7 +194,7 @@ const facts: Check = {
       if (into === undefined) continue
       const said = into.map(where => world.texts.get(where) ?? '').join('\n').normalize('NFKC')
       const lost = numbersOf(piece.text).filter(number => !said.includes(number))
-      if (lost.length > 0) found.push({ severity: 'info', code: 'number-lost', where: `card:${piece.id}`, message: `${piece.label} gives ${lost.slice(0, NUMBERS_LISTED).join(', ')}${lost.length > NUMBERS_LISTED ? ` and ${lost.length - NUMBERS_LISTED} more` : ''}, which ${into.slice(0, PARTS_LISTED).join(', ')}${into.length > PARTS_LISTED ? ` and ${into.length - PARTS_LISTED} more` : ''} do not have`, hint: 'Read the piece with card_read: a number that matters to the story belongs in the world as the card has it.' })
+      if (lost.length > 0) found.push({ severity: 'info', code: 'number-lost', where: `card:${piece.id}`, message: `${piece.label} gives ${lost.slice(0, NUMBERS_LISTED).map(number => `${number} (“${around(piece.text, number)}”)`).join(', ')}${lost.length > NUMBERS_LISTED ? ` and ${lost.length - NUMBERS_LISTED} more` : ''}, which ${into.slice(0, PARTS_LISTED).join(', ')}${into.length > PARTS_LISTED ? ` and ${into.length - PARTS_LISTED} more` : ''} do not have`, hint: 'The words around each number are quoted: judge from them whether it matters to the story, and if it does, put it in the world as the card has it. If it does not, leave it; there is no need to search the card for it.' })
     }
     return foundBy('card-numbers', found)
   },

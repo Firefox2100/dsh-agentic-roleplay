@@ -8,7 +8,7 @@ import type { AgentServices } from '../../../src/host/agent/agent-sessions.ts'
 import type { PromptLibrary } from '../../../src/host/prompts/library.ts'
 import type { AuthoringLanguages } from '../../../src/host/worlds/authoring-language.ts'
 
-const languagesOf = (): AuthoringLanguages => { const kept = new Map<string, string>(); return { set: (key: string, value?: string) => { if (value !== undefined) kept.set(key, value) }, get: (key: string) => kept.get(key) ?? 'en' } as unknown as AuthoringLanguages }
+const languagesOf = (): AuthoringLanguages => { const kept = new Map<string, string>(); return { set: (key: string, value?: string) => { if (value !== undefined) kept.set(key, value) }, get: (key: string) => kept.get(key) ?? 'en', generation: () => 1 } as unknown as AuthoringLanguages }
 
 function fakes(known: string[] = [], stored: string[] = known) {
   const calls: unknown[][] = []

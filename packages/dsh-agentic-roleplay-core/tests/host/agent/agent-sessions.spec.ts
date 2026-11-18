@@ -55,9 +55,19 @@ describe('authoring chat identity', () => {
     expect(authoredWorldOf('session-abc')).toBeUndefined()
     expect(authoredWorldOf('world-author-%zz')).toBeUndefined()
   })
+
+  it('keeps the first conversation of a world on its old id and marks the later ones, whatever the world id holds', () => {
+    expect(authoringChatSessionId('harbor', 1)).toBe(authoringChatSessionId('harbor'))
+    expect(authoringChatSessionId('harbor', 3)).toBe('world-author-harbor@3')
+    for (const world of ['harbor', '港口 / night', 'a@2', 'x@1@2', '12']) {
+      for (const generation of [1, 2, 10]) expect(authoredWorldOf(authoringChatSessionId(world, generation)), `${world} ${generation}`).toBe(world)
+    }
+    expect(new Set([1, 2, 3].map(generation => authoringChatSessionId('a@2', generation))).size).toBe(3)
+    expect(() => authoringChatSessionId('harbor', 0)).toThrow('generation')
+  })
 })
 
-const authoringSessions = (services: AgentServices, root: string): AuthoringSessions => new AuthoringSessions(() => services, () => root, { text: () => 'Welcome' } as unknown as PromptLibrary, { get: () => 'en', set: () => undefined } as unknown as AuthoringLanguages)
+const authoringSessions = (services: AgentServices, root: string): AuthoringSessions => new AuthoringSessions(() => services, () => root, { text: () => 'Welcome' } as unknown as PromptLibrary, { get: () => 'en', set: () => undefined, generation: () => 1 } as unknown as AuthoringLanguages)
 
 describe('AuthoringSessions', () => {
   it('creates one specially named preset chat in the shared authoring workspace', async () => {

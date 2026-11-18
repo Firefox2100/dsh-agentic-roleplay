@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Button } from '../ui/Button.tsx'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { roleplaySessionOf } from '../../shared/chat.ts'
+import { authoredWorldOf } from '../../shared/authoring-chat.ts'
+import { AuthoringSettingsView } from './AuthoringSettingsView.tsx'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import css from './ChatSettingsView.module.css'
 import { NotRoleplayError, loadSettings, openDoctor, resetVectors, saveSettings, startReflection } from './settings-api.ts'
@@ -36,7 +38,12 @@ type Load =
   | { status: 'ready'; payload: SettingsPayload }
 
 /** The settings of one chat. Ordinary DSH chats have ids of the same shape, so the host decides whether this one is a roleplay session. */
-export function ChatSettingsView({ t, sessionId, openChat }: ChatSettingsViewProps) {
+export function ChatSettingsView(props: ChatSettingsViewProps) {
+  const world = authoredWorldOf(props.sessionId)
+  return world === undefined ? <RoleplaySettingsView {...props} /> : <AuthoringSettingsView t={props.t} world={world} />
+}
+
+function RoleplaySettingsView({ t, sessionId, openChat }: ChatSettingsViewProps) {
   const session = roleplaySessionOf(sessionId)
   const [load, setLoad] = useState<Load>(session === undefined ? { status: 'not-roleplay' } : { status: 'loading' })
   const [drafts, setDrafts] = useState<Drafts>({})

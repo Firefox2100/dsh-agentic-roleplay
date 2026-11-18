@@ -8,6 +8,7 @@ export type ChatSettingsLocaleKey =
   | ToolSwitchKey
   | TraceKey
   | 'tab' | 'title' | 'description' | 'loading' | 'loadFailed' | 'notRoleplay'
+  | 'authoringTitle' | 'authoringDescription' | 'authoringHideTitle' | 'authoringHideOff' | 'authoringHideOffHelp' | 'authoringHideCard' | 'authoringHideCardHelp' | 'authoringHidePhase' | 'authoringHidePhaseHelp' | 'authoringCacheNote' | 'authoringKeepTitle' | 'authoringKeepHelp'
   | 'statsTitle' | 'statsHelp' | 'statsFailed' | 'statsTurns' | 'statsWaited' | 'statsStoryTime' | 'statsMinutes' | 'statsHours' | 'statsDays' | 'statsScenes' | 'statsNarration' | 'statsVoice' | 'statsThreads' | 'statsRelationships' | 'statsBranches' | 'statsUsage' | 'briefCount' | 'briefOpening' | 'briefTokens' | 'causeOffStage' | 'activityTitle' | 'activityHelp' | 'activityRefresh' | 'activityEmpty' | 'activityWhen' | 'activityHelper' | 'activityModel' | 'activityTook' | 'activityCalls' | 'activityTokens' | 'usageTitle' | 'usageHelp' | 'usageTurn' | 'usageMaster' | 'usageHelpers' | 'usageRuns' | 'usageTotal' | 'usageCached' | 'usageUnreported' | 'usageMasterTime' | 'reqPrompt' | 'reqWait' | 'reqTook' | 'reqCutOff' | 'reqError' | 'reqCount' | 'usageEmpty' | 'activityResult' | 'activityOwnModel' | 'activityDone' | 'activityFailed' | 'runShow' | 'runHide' | 'runGone' | 'runFailed' | 'runPersona' | 'runPrompt' | 'runRefused' | 'runResult' | 'runNoResult'
   | 'failureCancelled' | 'failureTimeout' | 'failureTokenLimit' | 'failureModelTokenLimit' | 'failureAnsweredInThinking' | 'failureResultRefused' | 'failureCallLimit' | 'failureCallLimitLast' | 'failureAgent' | 'failureNoResult' | 'failureUnexpected'
   | 'runRecalled' | 'whyCues' | 'whyIndex' | 'whyMeaning' | 'whyRerank' | 'whyMatters' | 'whyAge' | 'whyKept' | 'whyScore' | 'whyLinked' | 'whyLinkedPlace' | 'vectorsTitle' | 'vectorsUnavailable' | 'vectorsNone' | 'vectorsStored' | 'vectorsReset' | 'vectorsConfirm' | 'vectorsCancel' | 'vectorsHelp' | 'vectorsFailed' | 'reflectTitle' | 'reflectNone' | 'reflectLast' | 'reflectTurns' | 'reflectScene' | 'reflectManual' | 'reflectOutcome' | 'reflectNothing' | 'reflectRunning' | 'reflectNow' | 'reflectHelp' | 'reflectFailed' | 'reflectError'
@@ -30,6 +31,18 @@ const base = {
     loading: 'Loading settings…',
     loadFailed: 'Could not load the settings: {message}',
     notRoleplay: 'This chat is not a roleplay session, so it has no roleplay settings.',
+    authoringTitle: 'Authoring assistant settings',
+    authoringDescription: 'These apply to every authoring conversation of this world and take effect from the assistant\'s next step, with no restart.',
+    authoringHideTitle: 'Tools left out of the assistant\'s requests',
+    authoringHideOff: 'Offer every tool',
+    authoringHideOffHelp: 'The tool list never changes, so the model server\'s cache keeps working. Each request is longer, because it carries the tools for importing a card even in a world with none.',
+    authoringHideCard: 'Leave out the card tools of a world with no card (default)',
+    authoringHideCardHelp: 'A world made from scratch has no card, so the import, card and update tools are not offered. The list changes once if a card is imported into the world.',
+    authoringHidePhase: 'Also follow the import',
+    authoringHidePhaseHelp: 'While a card is imported the world is still empty, so the writing tools wait until it is written; the import tools go once it is finished; the update tools are only offered while a newer card waits. The shortest requests, and the list changes a few times during an import.',
+    authoringKeepTitle: 'Turns that keep their tool results',
+    authoringKeepHelp: 'The results of the assistant\'s tool calls (a character sheet it read, a document it wrote back) are sent again with every request. From the start of each turn, results of turns older than this many (counting the one being played) are replaced by a short note; the assistant calls the tool again if it needs one. Calls and messages stay. 0 keeps every result; at most {max}.',
+    authoringCacheNote: 'Changing the tool list makes the model server read the whole conversation again once, which is slow on a long conversation. After a long break, when the cache is gone anyway, leaving tools out costs nothing and makes the first request shorter.',
     decisionsTitle: 'Decision model',
     decisionsHelp: 'How the sites that can use a decision model have done in this story. Judgements made by the decision model are counted under "decided"; "escalated" went to the language model because the decision model was not sure; "fell back" went to it because the decision model could not be used. In the comparing mode, agreement is how often the decision model, with the confidence set above, said what the language model said. The counts stay when the story is taken back.',
     decisionsLoading: 'Loading decision statistics…',
@@ -234,6 +247,18 @@ const base = {
     loading: '正在加载设置…',
     loadFailed: '无法加载设置：{message}',
     notRoleplay: '此对话不是角色扮演存档，没有角色扮演设置。',
+    authoringTitle: '创作助手设置',
+    authoringDescription: '适用于这个世界的所有创作对话，从助手的下一步起生效，无需重启。',
+    authoringHideTitle: '从助手的请求中省去的工具',
+    authoringHideOff: '提供所有工具',
+    authoringHideOffHelp: '工具列表始终不变，模型服务器的缓存因此一直有效。代价是每次请求都更长：即使世界里没有角色卡，也会带上导入角色卡的工具。',
+    authoringHideCard: '没有角色卡的世界省去角色卡工具（默认）',
+    authoringHideCardHelp: '从零创作的世界没有角色卡，所以不提供导入、角色卡和更新工具。之后若把角色卡导入这个世界，列表会变动一次。',
+    authoringHidePhase: '同时跟随导入进度',
+    authoringHidePhaseHelp: '导入角色卡期间世界仍是空的，写入类工具要等写入完成后才提供；导入完成后导入类工具随即撤下；更新工具只在有更新的角色卡等待时提供。请求最短，但一次导入中列表会变动几次。',
+    authoringKeepTitle: '保留工具结果的轮数',
+    authoringKeepHelp: '助手调用工具得到的结果（读到的角色卡、写回的文档）会随每次请求重新发送。从每一轮开始起，早于这个轮数（含正在进行的一轮）的结果会换成一句简短的说明；助手需要时会重新调用工具。调用和消息本身保留。0 表示保留所有结果，最大 {max}。',
+    authoringCacheNote: '工具列表一变，模型服务器就要把整段对话重新读一遍，对话很长时会很慢。隔了很久再回来、缓存本来就已失效时，省去工具不会有任何代价，还能让第一次请求更短。',
     decisionsTitle: '决策模型',
     decisionsHelp: '在本故事中，可以使用决策模型的各个环节表现如何。由决策模型做出的判断计入“已决策”；“已升级”表示决策模型没有把握而交给了语言模型；“已回退”表示决策模型无法使用而交给了语言模型。在对比模式下，一致率是指决策模型（按上方设置的把握程度）与语言模型给出相同答案的比例。故事回退时，这些计数不会改变。',
     decisionsLoading: '正在加载决策统计…',

@@ -26,7 +26,7 @@ The tools exist while the card does. `card_diff` and `card_update_finish` serve 
 
 ## Format guides
 
-The assistant writes documents in the world file format. Before it writes a kind of document, it loads a guide for that kind through DSH's `skill` tool: `world-characters`, `world-places`, `world-items`, `world-factions`, `world-lore`, `world-triggers`, `world-plots`, `world-variables`, `world-dice`, `world-commands` and `world-calendar`. Each lists the fields with their types and allowed values, what the part is for, what belongs in it and what does not, and an example the file parser accepts. A twelfth guide, `world-where-things-go`, helps it decide whether something is a personality trait, a secret, a rule, a style instruction or guidance for one situation.
+The assistant writes documents in the world file format. Before it writes a kind of document, it loads a guide for that kind through DSH's `skill` tool: `world-characters`, `world-places`, `world-items`, `world-factions`, `world-lore`, `world-triggers`, `world-plots`, `world-variables`, `world-dice`, `world-commands`, `world-calendar` and `world-info` (what `world.json` says about the world: description, tags, rules, openings, start questions, time). Each lists the fields with their types and allowed values, what the part is for, what belongs in it and what does not, and an example the file parser accepts. A further guide, `world-where-things-go`, helps it decide whether something is a personality trait, a secret, a rule, a style instruction or guidance for one situation.
 
 The guides ship with the plugin and are offered only to the world assistant. The world-authoring preset mounts DSH's `skill` tool for this, and the registry that holds the guides comes with the standard `dsh-base` bundle. Without the registry the assistant works from its tool descriptions and from the error messages a refused write returns, which list every problem in the document.
 
@@ -49,6 +49,22 @@ Ask for outcomes rather than file operations, for example:
 - “Review the first plot and reduce the pressure to advance it.”
 
 Use the shared World tab to inspect the result. The chat and editor operate on the same workspace folder.
+
+## Tools left out of requests
+
+Every tool the assistant is offered is described in every request it sends, so a long tool list makes each request slower to start. The **Chat settings** tab of an authoring chat chooses how many tools are left out while they cannot be used:
+
+- **Leave out the card tools of a world with no card** (the default): a world made from scratch is not offered the tools for importing and reading a card. If a card is imported into the world, they appear from the next step.
+- **Also follow the import**: while a card is imported the world is empty, so the writing tools wait until it is written; the import tools go once it is finished and reviewed; the update tools are offered only while a newer card waits.
+- **Offer every tool**: the list never changes.
+
+A change to the tool list makes the model server read the whole conversation again once, so a server that caches the conversation is slowest right after one. Keep the list steady (the default, or **Offer every tool**) for a long working session, and leave more tools out when you come back after a long break, because the cache has expired by then anyway. The setting belongs to the world and applies from the assistant's next step.
+
+## Keeping long conversations short
+
+The results of the assistant's tool calls, such as a character sheet it read or a document it wrote back, are sent again with every request, so a long working session grows quickly and the first request after a break (when the model server's cache has expired) can take minutes. From the start of each turn the results of older turns are replaced by a one-line note ("the result of `get_character` was left out"), and the assistant calls the tool again if it needs one. Its calls, its messages and yours stay, and the full results stay in the chat's log. The **Chat settings** tab sets how many turns keep their results, counting the one being played: 2 by default (this turn and the one before), 0 keeps every result.
+
+The arguments of a call, for example the whole document of a replaced character, cannot be shortened this way, so a request that replaces many large documents stays large until those turns are no longer in the conversation. Ask for one change per turn when a document is large, and start a new conversation (delete the old one in the chat list) when a session has grown too big.
 
 ## Checkpoints
 

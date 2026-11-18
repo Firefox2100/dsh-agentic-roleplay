@@ -17,11 +17,15 @@ const SILENCED = [
   { name: 'app:web-surface', section: 'WEB_SURFACE', context: 'WEB_SURFACE' },
 ] as const
 
+/** The desktop's guidance on linking files and presenting deliverables: a long paragraph in every request of an agent that never presents a file. */
+const SILENCED_SECTIONS = [{ name: 'ui:deliverable-file-references', section: 'DELIVERABLE_FILE_REFERENCES' }] as const
+
 export function silenceHarnessDevContext(ctx: Context): void {
   for (const entry of SILENCED) {
     ctx.systemPrompt.section({ name: entry.name, order: ctx.systemPrompt.getSectionOrder(entry.section), interpolate: false, text: '' })
     ctx.systemPrompt.context({ name: entry.name, order: ctx.systemPrompt.getContextOrder(entry.context), interpolate: false, text: '' })
   }
+  for (const entry of SILENCED_SECTIONS) ctx.systemPrompt.section({ name: entry.name, order: ctx.systemPrompt.getSectionOrder(entry.section), interpolate: false, text: '' })
 }
 
 /** Removes DSH runtime facts from agents that receive their working context elsewhere. */

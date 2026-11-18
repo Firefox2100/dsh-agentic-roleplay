@@ -10,6 +10,9 @@ import type {} from './host/worlds/catalog.ts'
 import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/read-tools.ts'
 import { authoredWorldWriteTools, authoringApproval, readAuthoredEntityDocument, validateMutation } from './host/authoring/write-tools.ts'
 import type { AuthoredEntityKind } from './host/authoring/documents.ts'
+import { trimOldResults } from './host/agent/history-trim.ts'
+import type {} from '@deepseek-ai/dsh-token-meter'
+import { registerWithVisibility } from './host/authoring/tool-visibility.ts'
 import { registerPackJail } from './host/authoring/pack-jail.ts'
 import { registerAuthoringSkills } from './host/authoring/skills.ts'
 import { worldPackTools } from './host/authoring/pack-tools.ts'
@@ -48,14 +51,16 @@ export function apply(ctx: Context): void {
   }
   const reader = new AuthoredWorldReader(ctx.roleplayWorlds)
   for (const tool of authoredWorldReadTools(reader)) ctx.tools.register(tool)
-  for (const tool of authoredWorldWriteTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPromptTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPackTools(reader)) ctx.tools.register(tool)
   for (const tool of worldImageTools(reader, { language: world => ctx.roleplayAuthoringLanguages.get(world), attachments: () => ctx.get('attachments') })) ctx.tools.register(tool)
-  for (const tool of importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
-  for (const tool of cardTools(ctx.roleplayWorlds)) ctx.tools.register(tool)
-  for (const tool of updateTools(ctx.roleplayWorlds)) ctx.tools.register(tool)
-  for (const tool of presetTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
+  registerWithVisibility(ctx, [
+    ...authoredWorldWriteTools(reader),
+    ...importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting),
+    ...cardTools(ctx.roleplayWorlds),
+    ...updateTools(ctx.roleplayWorlds),
+    ...presetTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting),
+  ], { worldDirectory: async world => (await ctx.roleplayWorlds.find(world))?.directory, hiding: world => ctx.roleplayAuthoringLanguages.toolHiding(world) })
   for (const tool of openingTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of translateTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of checkTools(reader, { settings: () => ctx.roleplayImport.settings, prompting })) ctx.tools.register(tool)
@@ -85,6 +90,15 @@ export function apply(ctx: Context): void {
     const directory = await worldDirectory(chat)
     return directory === undefined ? undefined : await readWorldInfo(directory)
   }
+  ctx.on('agent/pre-step', async (payload, next) => {
+    const decision = await next()
+    if (decision.kind !== 'enter' || payload.step !== 1 || payload.agent.session.header.origin === 'subagent') return decision
+    const world = authoredWorldOf(payload.agent.session.id)
+    if (world === undefined) return decision
+    const meter = ctx.get('tokenMeter')
+    trimOldResults(payload.agent.session, payload.turn, ctx.roleplayAuthoringLanguages.keepResultTurns(world), meter === undefined ? undefined : message => meter.estimateMessage(message))
+    return decision
+  })
   ctx.on('session/event', (session, event) => {
     if (event.type === 'turn/end' && session.header.origin !== 'subagent' && authoredWorldOf(session.id) !== undefined) ctx.roleplayImport.turnEnded(session.id)
   })

@@ -299,17 +299,30 @@ export function apply(ctx: Context, config: Config) {
     authoringStatus: async (worldId) => {
       const world = await worlds.find(worldId)
       if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
-      return chatStatus(authoringChatSessionId(world.summary.id))
+      return chatStatus(authoringChatSessionId(world.summary.id, languages.generation(world.summary.id)))
+    },
+    authoringSettings: {
+      get: async (worldId) => {
+        const world = await worlds.find(worldId)
+        if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
+        return languages.settings(world.summary.id)
+      },
+      change: async (worldId, settings) => {
+        const world = await worlds.find(worldId)
+        if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
+        return languages.change(world.summary.id, settings)
+      },
     },
     chatStatus,
     checkpoints,
     forgetAuthoring: async (worldId) => {
       const world = await worlds.find(worldId)
       if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
-      const chat = authoringChatSessionId(world.summary.id)
-      // the chat's name is fixed, so the project must stop listing it or the next chat of this world is taken for the deleted one
+      const chat = authoringChatSessionId(world.summary.id, languages.generation(world.summary.id))
       await retireChat(agentServicesOf(ctx)(), chat)
       await purgeChat(chat)
+      // DSH keeps the deleted chat's agent loaded under its id until it restarts, so the world's next conversation gets an id of its own
+      languages.advance(world.summary.id)
     },
     translation: {
       language: id => worldLanguage(worlds, id),
