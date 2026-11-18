@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -32,5 +32,13 @@ describe('what the authoring assistant keeps of a world', () => {
     expect(kept.advance('a')).toBe(2)
     expect(kept.generation('b')).toBe(1)
     expect(kept.get('a')).toBe('en')
+  })
+
+  it('says so when what it kept of a world cannot be read, rather than starting over', () => {
+    const folder = mkdtempSync(join(tmpdir(), 'authoring-language-'))
+    folders.push(folder)
+    const kept = new AuthoringLanguages(new Context(), () => folder)
+    mkdirSync(join(folder, '.authoring', 'w1.json'), { recursive: true })
+    expect(() => kept.get('w1'), 'a folder where the file should be is not an empty file').toThrow(/EISDIR/)
   })
 })

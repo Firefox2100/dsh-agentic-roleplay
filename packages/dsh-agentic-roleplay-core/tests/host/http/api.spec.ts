@@ -56,6 +56,7 @@ let settingsError: Error | undefined
 let notesError: Error | undefined
 let decisionsError: Error | undefined
 let timelineError: Error | undefined
+let authoringSettingsError: Error | undefined
 const playtested: string[] = []
 let marked: unknown[] | undefined
 let archiveError: Error | undefined
@@ -145,6 +146,7 @@ beforeEach(async () => {
   settingsError = undefined
   notesError = undefined
   timelineError = undefined
+  authoringSettingsError = undefined
   moved = undefined
   archiveError = undefined
   importError = undefined
@@ -206,8 +208,8 @@ beforeEach(async () => {
       return { chatSessionId: `world-author-${worldId}`, turns: 2, running: false }
     },
     authoringSettings: {
-      get: async (worldId: string) => { if (worldId === 'missing') throw new WorldNotFoundError('missing world'); return { toolHiding: 'card' as const, keepResultTurns: 2 } },
-      change: async (worldId: string, settings: { toolHiding?: 'off' | 'card' | 'phase'; keepResultTurns?: number }) => { if (worldId === 'missing') throw new WorldNotFoundError('missing world'); return { toolHiding: settings.toolHiding ?? 'card', keepResultTurns: settings.keepResultTurns ?? 2 } },
+      get: async (worldId: string) => { if (authoringSettingsError !== undefined) throw authoringSettingsError; if (worldId === 'missing') throw new WorldNotFoundError('missing world'); return { toolHiding: 'card' as const, keepResultTurns: 2 } },
+      change: async (worldId: string, settings: { toolHiding?: 'off' | 'card' | 'phase'; keepResultTurns?: number }) => { if (authoringSettingsError !== undefined) throw authoringSettingsError; if (worldId === 'missing') throw new WorldNotFoundError('missing world'); return { toolHiding: settings.toolHiding ?? 'card', keepResultTurns: settings.keepResultTurns ?? 2 } },
     },
     chatStatus: chat => ({ chatSessionId: chat, turns: 1, running: true }),
     checkpoints: {
@@ -669,6 +671,16 @@ describe('roleplay API', () => {
     expect((await fetch(`${origin}/worlds/authoring/chat?id=missing`, { method: 'DELETE' })).status).toBe(404)
     const missing = await fetch(`${origin}/worlds/authoring?id=missing`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title: 'Missing' }) })
     expect(missing.status).toBe(404)
+  })
+
+  it('says which side a failure of the authoring settings belongs to', async () => {
+    const settings = (id: string) => fetch(`${origin}/worlds/authoring/settings?id=${id}`)
+    expect((await settings('missing')).status, 'an unknown world is the request\'s').toBe(404)
+    authoringSettingsError = new Error('the settings file cannot be read')
+    expect((await settings('harbor')).status, 'a file that cannot be read is the server\'s').toBe(500)
+    const put = (body: string) => fetch(`${origin}/worlds/authoring/settings?id=harbor`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body })
+    expect((await put('{')).status, 'a body that is not JSON is the request\'s').toBe(400)
+    expect((await put(JSON.stringify({ toolHiding: 'off' }))).status, 'so is a failure it could not name').toBe(500)
   })
 
   it('lists, makes, compares and restores the checkpoints of a world, and says why a request was refused', async () => {

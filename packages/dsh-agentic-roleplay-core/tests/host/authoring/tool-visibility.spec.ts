@@ -2,8 +2,9 @@ import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { groupOf, visible, worldFacts, type ToolGroup, type WorldFacts } from '../../../src/host/authoring/tool-visibility.ts'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { groupOf, registerWithVisibility, visible, worldFacts, type ToolGroup, type WorldFacts } from '../../../src/host/authoring/tool-visibility.ts'
+import { authoringChatSessionId } from '../../../src/shared/authoring-chat.ts'
 import { importTools } from '../../../src/host/import/tools.ts'
 import { cardTools } from '../../../src/host/import/card-tools.ts'
 import { updateTools } from '../../../src/host/import/update-tools.ts'
@@ -77,6 +78,77 @@ describe('the groups name the tools that exist', () => {
     expect(grouped.filter(each => each.startsWith('preset:')).length).toBe(1)
     expect(grouped.filter(each => each.startsWith('write:')).length).toBe(9)
     expect(all.filter(tool => tool.name.startsWith('import_') || tool.name.startsWith('card_')).filter(tool => groupOf(tool.name) === undefined).map(tool => tool.name)).toEqual([])
+  })
+})
+
+describe('the condition DSH asks for at every step', () => {
+  const chat = authoringChatSessionId('harbor')
+  const agent = (id: string, origin: 'user' | 'subagent' = 'user') => ({ session: { id, header: { origin } } })
+  const made = (hiding: ToolHiding, directory: () => Promise<string | undefined>) => {
+    const registered: { name: string; when?: (input: { agent: unknown }) => Promise<boolean> }[] = []
+    const ctx = { tools: { register: (tool: { name: string }, options?: { when?: (input: { agent: unknown }) => Promise<boolean> }) => { registered.push(options?.when === undefined ? { name: tool.name } : { name: tool.name, when: options.when }) } } } as never
+    registerWithVisibility(ctx, [{ name: 'import_status' }, { name: 'list_worlds' }] as never, { worldDirectory: directory, hiding: () => hiding })
+    return registered
+  }
+
+  it('offers a tool of a group to a subagent and to a chat that is not an authoring chat', async () => {
+    const registered = made('card', async () => '/nowhere')
+    const when = registered[0]?.when
+    expect(when, 'a tool of a group is offered only when it is of use').toBeDefined()
+    expect(await when!({ agent: agent(chat, 'subagent') })).toBe(true)
+    expect(await when!({ agent: agent('session-00000000-0000-4000-8000-000000000000') })).toBe(true)
+    expect(registered[1]?.when, 'a tool of no group is offered without a condition').toBeUndefined()
+  })
+
+  it('offers every tool when the setting is off, and everything of a world that is gone', async () => {
+    const off = made('off', async () => undefined)
+    expect(await off[0]?.when!({ agent: agent(chat) })).toBe(true)
+    const phased = made('phase', async () => undefined)
+    expect(await phased[0]?.when!({ agent: agent(chat) })).toBe(true)
+  })
+
+  it('follows the import of the world, and reads its facts once for the step rather than once for each tool', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'when-'))
+    const now = vi.spyOn(Date, 'now')
+    try {
+      now.mockReturnValue(1_000)
+      const registered = made('card', async () => directory)
+      const when = registered[0]!.when!
+      expect(await when({ agent: agent(chat) }), 'a world with no card leaves out the import tools').toBe(false)
+      await mkdir(join(directory, '.import'), { recursive: true })
+      await writeFile(join(directory, '.import', 'card.json'), '{}')
+      expect(await when({ agent: agent(chat) }), 'the card that appeared is seen at the next step').toBe(false)
+      now.mockReturnValue(1_000 + 400)
+      expect(await when({ agent: agent(chat) })).toBe(true)
+    } finally {
+      now.mockRestore()
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('says so when the import folder cannot be looked into', async () => {
+    vi.resetModules()
+    vi.doMock('node:fs/promises', async importOriginal => {
+      const real = await importOriginal<typeof import('node:fs/promises')>()
+      return {
+        ...real,
+        stat: async (path: string) => {
+          if (path.endsWith('card.json')) {
+            const error = new Error(`EACCES: permission denied, stat '${path}'`) as NodeJS.ErrnoException
+            error.code = 'EACCES'
+            throw error
+          }
+          return await real.stat(path)
+        },
+      }
+    })
+    try {
+      const { worldFacts: fresh } = await import('../../../src/host/authoring/tool-visibility.ts')
+      await expect(fresh('/world'), 'a folder that cannot be read is not a folder that is not there').rejects.toThrow(/EACCES/)
+    } finally {
+      vi.doUnmock('node:fs/promises')
+      vi.resetModules()
+    }
   })
 })
 

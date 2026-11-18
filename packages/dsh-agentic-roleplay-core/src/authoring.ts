@@ -54,13 +54,12 @@ export function apply(ctx: Context): void {
   for (const tool of worldPromptTools(reader)) ctx.tools.register(tool)
   for (const tool of worldPackTools(reader)) ctx.tools.register(tool)
   for (const tool of worldImageTools(reader, { language: world => ctx.roleplayAuthoringLanguages.get(world), attachments: () => ctx.get('attachments') })) ctx.tools.register(tool)
-  registerWithVisibility(ctx, [
-    ...authoredWorldWriteTools(reader),
-    ...importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting),
-    ...cardTools(ctx.roleplayWorlds),
-    ...updateTools(ctx.roleplayWorlds),
-    ...presetTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting),
-  ], { worldDirectory: async world => (await ctx.roleplayWorlds.find(world))?.directory, hiding: world => ctx.roleplayAuthoringLanguages.toolHiding(world) })
+  const writeTools = authoredWorldWriteTools(reader)
+  const stagedTools = importTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)
+  const sourceTools = cardTools(ctx.roleplayWorlds)
+  const newerCardTools = updateTools(ctx.roleplayWorlds)
+  const presetKitTools = presetTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)
+  registerWithVisibility(ctx, [...writeTools, ...stagedTools, ...sourceTools, ...newerCardTools, ...presetKitTools], { worldDirectory: async world => (await ctx.roleplayWorlds.find(world))?.directory, hiding: world => ctx.roleplayAuthoringLanguages.toolHiding(world) })
   for (const tool of openingTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of translateTools(ctx.roleplayWorlds, () => ctx.roleplayImport.settings, prompting)) ctx.tools.register(tool)
   for (const tool of checkTools(reader, { settings: () => ctx.roleplayImport.settings, prompting })) ctx.tools.register(tool)
