@@ -567,7 +567,16 @@ describe('roleplay API', () => {
     try {
       const response = await fetch(`${origin}/worlds/card?id=harbor`)
       expect(response.status).toBe(500)
+      expect((await fetch(`${origin}/worlds/card/piece?id=harbor&piece=entry:0`)).status).toBe(500)
     } finally { await rm(folder, { recursive: true, force: true }) }
+  })
+
+  it('says a world has no source card when the import folder holds none', async () => {
+    const folder = join(base, 'worlds', 'harbor', '.import')
+    await rm(folder, { recursive: true, force: true })
+    const piece = await fetch(`${origin}/worlds/card/piece?id=harbor&piece=entry:0`)
+    expect(piece.status).toBe(404)
+    expect((await piece.json() as { message: string }).message).toContain('source card')
   })
 
   it('reads and changes what a world says about itself, with the problems of a refused change', async () => {

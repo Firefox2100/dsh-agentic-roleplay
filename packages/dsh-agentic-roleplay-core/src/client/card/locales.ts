@@ -1,5 +1,11 @@
 import type { Dictionaries } from '../i18n.ts'
 
+declare module '@deepseek-ai/dsh-client-ui-slots' {
+  interface LocaleNamespaceMap {
+    'roleplay.card': CardLocaleKey
+  }
+}
+
 export type CardLocaleKey = 'tab' | 'notAuthoring' | 'none' | 'loading' | 'failed' | 'help' | 'search' | 'count' | 'used' | 'unused' | 'off' | 'keys' | 'noKeys' | 'readFailed' | 'chars' | 'by' | 'back' | 'guideText'
 
 export const dictionaries: Dictionaries<CardLocaleKey> = {
