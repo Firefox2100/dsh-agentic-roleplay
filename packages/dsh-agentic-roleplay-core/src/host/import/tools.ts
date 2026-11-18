@@ -182,7 +182,7 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
     }),
     defineTool({
       name: STATUS_TOOL,
-      description: 'Where the import of the card stands: the phase, every stage with whether it is done, still to do or stale (the survey changed after it ran), what each wrote, the person\'s note it was given, and whether the world can be written. Cheap; call it at the start of a turn and whenever you are unsure.',
+      description: 'Where the import of the card stands: the phase, every stage with whether it is done, still to do or stale (the survey changed after it ran), what each staged (nothing is in the world until the import is finished), the person\'s note it was given, and whether the world can be written. Cheap; call it at the start of a turn and whenever you are unsure.',
       parameters: { card: cardParameter },
       output: output(value => JSON.stringify(value, null, 1)),
       isConcurrencySafe: () => true,
@@ -244,7 +244,7 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
     }),
     defineTool({
       name: STAGE_TOOL,
-      description: `Writes one part of the world from the survey, in agents of their own, and keeps it staged (the world itself is written by ${FINISH_TOOL}). The stages are ${STAGES.join(', ')}, best run in that order. It takes minutes. It reports what it wrote, what failed or was left out and why, and what is left. Run again, it asks only for what did not finish; a stage whose survey changed is run again in full. The person's note for the stage goes in guidance.`,
+      description: `Prepares one part of the world from the survey, in agents of their own, and keeps it staged: it is not in the world yet, only ${FINISH_TOOL} writes the world. The stages are ${STAGES.join(', ')}, best run in that order. It takes minutes. It reports what it staged, what failed or was left out and why, and what is left. Run again, it asks only for what did not finish; a stage whose survey changed is run again in full. The person's note for the stage goes in guidance.`,
       parameters: {
         card: cardParameter,
         stage: { type: 'string', required: true, enum: [...STAGES], description: 'The part to write.' },
@@ -308,13 +308,22 @@ export function importTools(worlds: WorldCatalog, settings: () => ImportSettings
 /** What to do after a stage: go on to the next one, or stop and report, as the pause of the import says. */
 export function nextAfterStage(text: TextOf, report: StageReport & { pause: ImportPause }): string {
   const todo = STAGES.filter(stage => report.left.includes(stage) || report.stale.includes(stage))
-  if (report.pause === 'stages') return text('import/next-stage-paused', { left: todo.length === 0 ? `nothing: the next step is ${FINISH_TOOL}, which writes the world` : todo.join(', ') })
+  if (report.pause === 'stages' && !quietStage(report)) return text('import/next-stage-paused', { left: todo.length === 0 ? `nothing: the next step is ${FINISH_TOOL}, which writes the world` : todo.join(', ') })
   const next = report.complete ? FINISH_TOOL : `${STAGE_TOOL} with stage "${todo[0] as Stage}"`
-  return text('import/next-stage-go', { next, card: CARD })
+  return text(report.pause === 'stages' ? 'import/next-stage-quiet' : 'import/next-stage-go', { next, card: CARD })
 }
 
 /** Whether the import may hand the turn back after a completed step. A survey-only pause is spent once any stage has started. */
-export const pausesAfterStep = (pause: ImportPause, stages: readonly { state: string }[]): boolean => pause === 'stages' || (pause === 'survey' && stages.every(stage => stage.state === 'todo'))
+export const pausesAfterStep = (pause: ImportPause, stages: readonly { state: string; at?: string; counts?: Record<string, number>; notes?: number }[]): boolean => {
+  if (pause === 'survey') return stages.every(stage => stage.state === 'todo')
+  if (pause !== 'stages') return false
+  const last = stages.filter(stage => stage.state === 'done' && stage.at !== undefined).sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''))[0]
+  const empty = last?.counts !== undefined && Object.keys(last.counts).length === 0 && last.notes === 0
+  return !(empty && stages.some(stage => stage.state === 'todo'))
+}
+
+/** A stage that staged nothing and had nothing go wrong, with stages still to run: it needs no report of its own. */
+const quietStage = (report: StageReport): boolean => Object.keys(report.counts).length === 0 && report.notesTotal === 0 && report.left.length > 0
 
 /** The procedure of an import turn, told to the chat in place of what it does for any other message. */
 export function importNotice(phase: Phase | undefined, text: TextOf, pause: ImportPause = 'never'): string {
@@ -382,7 +391,7 @@ export function importHooks(ctx: Context, worlds: WorldCatalog, prompting: Promp
     // an import that pauses is done with the person: once the survey exists the turn may end after any step, with a report and a question
     if ((phase === 'surveyed' || phase === 'built') && record !== undefined) {
       const pause = await pauseFor(record.directory)
-      const stages = pause === 'survey' ? (await importStatus(record.directory)).stages : []
+      const stages = pause === 'never' ? [] : (await importStatus(record.directory)).stages
       if (pausesAfterStep(pause, stages)) { imports.delete(chat); objections.delete(chat); return }
     }
     const told = objections.get(chat) ?? 0

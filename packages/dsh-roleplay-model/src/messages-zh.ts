@@ -242,6 +242,7 @@ const ZH: Readonly<Record<string, string>> = {
   'This exact call was already made {count} times in this turn with the same result. Do not repeat it: go on with the next step, or finish and say what is left.': '这个完全相同的调用在本回合内已经执行了 {count} 次，结果相同。不要再重复：继续下一步，或者结束并说明还剩什么。',
   '{label}: how people are made up': '{label}：人物如何生成',
   '{label}: rules and mechanics': '{label}：规则与机制',
+  '{label}: left to the sheet of the person it is about, which is made from it: how a person acts is not a rule of the world': '{label}：留给它所描述的人物的角色卡（角色卡就是据此生成的）：人物如何行事不是世界的规则',
   'Already declared (do not declare them again):': '已经声明过的（不要重复声明）：',
   'The world itself brings in anyone this command calls for, after this turn: do not make them up yourself with expand_world.': '这个指令要求带入的人，由世界自己在本回合之后带入：不要自己用 expand_world 去造。',
   'Passages about making people up:': '关于凭空生成人物的段落：',

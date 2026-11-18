@@ -40,11 +40,18 @@ export async function ensureAuthoringChat(services: AgentServices, roleplayRoot:
   const language = subject.languageKey === undefined ? subject.language : languages?.get(subject.languageKey)
   const projectPath = join(roleplayRoot, kind.folder)
   const project = await services.registry.create(projectPath, kind.projectTitle)
-  const existed = project.sessionIds.includes(subject.chatId)
-  const stored = !existed && await isStored(services.persistence, subject.chatId)
-  if (!existed && !stored) {
+  const listed = project.sessionIds.includes(subject.chatId)
+  const stored = await isStored(services.persistence, subject.chatId)
+  // The project may still list a chat that was deleted (its name is fixed, so the list is all that remembers it): that one is made again.
+  const deleted = listed && !stored && services.persistence !== undefined
+  if ((!listed || deleted) && !stored) {
+    // A live agent that outlived its log (the chat was deleted under it) still holds the chat's fixed name.
+    await services.unload?.(subject.chatId)
     if (services.persistence === undefined) throw new AgentUnavailableError('this DSH profile cannot store the opening of an authoring chat')
     await storeAuthoringOpening(services.persistence, { id: subject.chatId, cwd: project.path, agentPreset: kind.agentPreset }, prompts.text(kind.welcome, language, subject.welcome), kind.openingSource)
+  }
+  if (deleted) {
+    try { await services.registry.unarchiveSession(subject.chatId) } catch (error) { if (!(error instanceof Error && error.name === 'WorkspaceUnknownSessionError')) throw error }
   }
   return await ensureAgentChat(services, { projectPath, projectTitle: kind.projectTitle, sessionId: subject.chatId, agentPreset: kind.agentPreset, title: subject.title, renameExisting: subject.renameExisting }, project)
 }

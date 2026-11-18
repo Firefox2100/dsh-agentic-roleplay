@@ -77,10 +77,11 @@ describe('AuthoringSessions', () => {
   })
 
   it('reopens an existing authoring chat and applies the requested localized name', async () => {
-    const { calls, services } = fakes(['world-author-harbor'])
+    const { calls, services } = fakes(['world-author-harbor'], ['world-author-harbor'])
     await authoringSessions(services, '/data').ensure('harbor', 'New name')
     expect(calls).toEqual([
       ['project', native('/data/worlds'), AUTHORING_PROJECT_TITLE],
+      ['stat', 'world-author-harbor'],
       ['rename', { sessionId: 'world-author-harbor', title: 'Authoring New name' }],
     ])
   })

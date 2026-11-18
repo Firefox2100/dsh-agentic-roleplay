@@ -200,7 +200,7 @@ export interface StageReport {
   /** What the stage staged, by kind of document. */
   counts: Record<string, number>
   /** The names of what it staged (the first ones). */
-  written: string[]
+  staged: string[]
   /** Why something was left out or failed, and what the stage was unsure of (the first ones). */
   notes: string[]
   notesTotal: number
@@ -221,11 +221,11 @@ async function stageReport(world: string, stage: Stage): Promise<StageReport> {
   const record = await readStage(world, stage)
   const extracted = record?.extracted ?? {}
   const documents = [extracted.locations, extracted.characters, extracted.factions, extracted.items, extracted.lore, extracted.variables, extracted.commands, extracted.triggers].flatMap(group => group ?? [])
-  const written = [...documents.map(nameOf), ...(extracted.prompts ?? []).map(prompt => prompt.id)].filter(name => name !== '')
+  const staged = [...documents.map(nameOf), ...(extracted.prompts ?? []).map(prompt => prompt.id)].filter(name => name !== '')
   const notes = extracted.notes ?? []
   const entry = status.find(each => each.stage === stage)!
   return {
-    stage, counts: entry.counts, written: written.slice(0, REPORT_NAMES), notes: notes.slice(0, REPORT_NOTES), notesTotal: notes.length,
+    stage, counts: entry.counts, staged: staged.slice(0, REPORT_NAMES), notes: notes.slice(0, REPORT_NOTES), notesTotal: notes.length,
     ...(record?.guidance === undefined ? {} : { guidance: record.guidance }),
     left: status.filter(each => each.state === 'todo').map(each => each.stage), stale: status.filter(each => each.state === 'stale').map(each => each.stage), complete: complete(status),
   }

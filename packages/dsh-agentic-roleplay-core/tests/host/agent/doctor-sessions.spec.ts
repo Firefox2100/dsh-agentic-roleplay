@@ -14,7 +14,7 @@ function fakes(known: string[] = []) {
   const calls: unknown[][] = []
   const services: AgentServices = {
     persistence: {
-      stat: () => Promise.resolve(undefined),
+      stat: (id: string) => Promise.resolve(known.includes(id) ? {} : undefined),
       create: header => { calls.push(['store', header.id, header.cwd, header.agentPreset]); return Promise.resolve({ append: () => Promise.resolve(), flush: () => Promise.resolve(), close: () => Promise.resolve() }) },
     },
     registry: {

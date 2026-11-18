@@ -5,6 +5,7 @@ import type { Context } from '@deepseek-ai/cordis'
 /** A stand-in for the services and registries the world-authoring preset writes into. */
 function made() {
   const tools: { name: string }[] = []
+  const skills: { name: string; description: string; invocation: { modelInvocable: boolean; userInvocable: boolean } }[] = []
   const sections: { name: string; order: number; text: unknown }[] = []
   const contexts: { name: string; order: number; text: unknown }[] = []
   const listeners = new Map<string, (first: never, second?: never) => unknown>()
@@ -20,7 +21,7 @@ function made() {
     tools: { register: (tool: { name: string }) => { tools.push(tool) } },
     on: (name: string, listener: (first: never, second?: never) => unknown) => { listeners.set(name, listener); return () => undefined },
     effect: (run: () => unknown) => run(),
-    inject: (_names: string[], run: (scope: unknown) => unknown) => run({ commands: { register: () => () => undefined }, effect: (job: () => unknown) => { job() } }),
+    inject: (_names: string[], run: (scope: unknown) => unknown) => run({ commands: { register: () => () => undefined }, skills: { register: (skill: (typeof skills)[number]) => { skills.push(skill); return () => undefined } }, effect: (job: () => unknown) => { job() } }),
     get: () => undefined,
     roleplayPrompts: { text: () => 'text' },
     roleplayAuthoringLanguages: { get: () => 'en' },
@@ -29,7 +30,7 @@ function made() {
     roleplayCheckpoints: { list: async () => [] },
     roleplayImport: { settings: { maxUploadBytes: 1, concurrency: 1, reasoning: '', model: '', maxTokens: 1000, variablesPerRequest: 25, structured: 'tool', temperature: 0.2, timeoutMinutes: 0, decisions: 'llm', confidence: 0.7, approval: 'ask' }, state: { importing: new Map(), objections: new Map(), repairs: new Map() }, turnEnded },
   } as unknown as Context
-  return { ctx, tools, sections, contexts, listeners, turnEnded }
+  return { ctx, tools, skills, sections, contexts, listeners, turnEnded }
 }
 
 describe('the world-authoring preset', () => {
@@ -43,6 +44,13 @@ describe('the world-authoring preset', () => {
     expect(tools.length, 'the authoring chat gets the editing tools and the import tools').toBeGreaterThan(30)
     expect(tools.map(tool => tool.name)).toContain('list_world_checkpoints')
     expect([...listeners.keys()].sort()).toEqual(['agent/created', 'agent/pre-step', 'agent/turn-stopping', 'session/event', 'tools/pre-execute', 'tools/result'])
+  })
+
+  it('offers its format guides to the model through the skill registry, and to nobody as a command', () => {
+    const { ctx, skills } = made()
+    apply(ctx)
+    expect(skills.map(skill => skill.name)).toEqual(expect.arrayContaining(['world-lore', 'world-characters', 'world-triggers', 'world-where-things-go']))
+    expect(skills.every(skill => skill.description !== '' && skill.invocation.modelInvocable && !skill.invocation.userInvocable)).toBe(true)
   })
 
   it('shadows the harness and the runtime facts of the profile it is loaded into', () => {

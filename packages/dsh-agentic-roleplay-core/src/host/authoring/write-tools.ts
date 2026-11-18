@@ -93,7 +93,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
   return [
     defineTool({
       name: 'create_world_element',
-      description: 'Create a character, location, item, faction or lore entry from a complete authored JSON document. The key becomes its stable id. A character that is somewhere in the story needs start.location, the key of an existing place (start: {"location": "yard"}); one without it is in no place. Requires user approval.',
+      description: 'Create a character, location, item, faction or lore entry from a complete authored JSON document. Load the skill for its kind first (world-characters, world-places, world-items, world-factions, world-lore): it lists the fields, their types and allowed values. The key becomes its stable id. A character that is somewhere in the story needs start.location, the key of an existing place (start: {"location": "yard"}); one without it is in no place. Requires user approval.',
       parameters: { kind: kindParameter, key: keyParameter, document: { type: 'json', required: true, description: 'Complete snake_case document in the world file format.' } },
       output: jsonOutput,
       async execute(args, exec) {

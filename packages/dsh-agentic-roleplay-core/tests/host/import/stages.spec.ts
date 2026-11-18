@@ -36,7 +36,7 @@ describe('the stages of the build', () => {
   it('each write their own part, and the import is built when every stage has run on the survey as it is', async () => {
     await survey(fakeContext(answers), world)
     const places = await runStage(fakeContext(answers), world, 'places')
-    expect(places).toMatchObject({ stage: 'places', counts: { places: 1 }, written: ['The Lighthouse'], complete: false })
+    expect(places).toMatchObject({ stage: 'places', counts: { places: 1 }, staged: ['The Lighthouse'], complete: false })
     expect(places.left).toEqual(['characters', 'factions', 'things', 'background', 'style', 'variables', 'casting'])
     expect(await importPhase(world)).toBe('surveyed')
     for (const stage of STAGES.filter(each => each !== 'places')) await runStage(fakeContext(answers), world, stage)
@@ -198,11 +198,26 @@ describe('what the assistant is told', () => {
   })
 
   it('goes on to the next stage unless the import pauses at every stage', () => {
-    const report = { stage: 'places', counts: {}, written: [], notes: [], notesTotal: 0, left: ['characters', 'things'], stale: ['factions'], complete: false } as never
+    const report = { stage: 'places', counts: { places: 2 }, staged: [], notes: [], notesTotal: 0, left: ['characters', 'things'], stale: ['factions'], complete: false } as never
     expect(nextAfterStage(text, { ...(report as object), pause: 'survey' } as never)).toContain('import_stage with stage "characters"')
     expect(nextAfterStage(text, { ...(report as object), pause: 'stages' } as never)).toContain('characters, factions, things')
     expect(nextAfterStage(text, { ...(report as object), left: [], stale: [], complete: true, pause: 'survey' } as never)).toContain('import_finish')
     expect(nextAfterStage(text, { ...(report as object), left: [], stale: [], complete: true, pause: 'stages' } as never)).toContain('nothing: the next step is import_finish')
+  })
+
+  it('does not stop at a stage that staged nothing and went wrong nowhere, while stages are still to run', () => {
+    const quiet = { stage: 'factions', counts: {}, staged: [], notes: [], notesTotal: 0, left: ['things'], stale: [], complete: false, pause: 'stages' } as never
+    const quietText = nextAfterStage(text, quiet)
+    expect(quietText).toContain('do not stop')
+    expect(quietText).toContain('import_stage with stage "things"')
+    expect(nextAfterStage(text, { ...(quiet as object), notesTotal: 1 } as never)).toContain('Do not run the next stage')
+    expect(nextAfterStage(text, { ...(quiet as object), counts: { factions: 2 } } as never)).toContain('Do not run the next stage')
+    expect(nextAfterStage(text, { ...(quiet as object), left: [], complete: true } as never)).toContain('Do not run the next stage')
+    const done = (at: string, counts: Record<string, number>, notes = 0) => ({ state: 'done', at, counts, notes })
+    expect(pausesAfterStep('stages', [done('1', { places: 2 }), done('2', {}), { state: 'todo' }])).toBe(false)
+    expect(pausesAfterStep('stages', [done('1', { places: 2 }), done('2', {}, 1), { state: 'todo' }])).toBe(true)
+    expect(pausesAfterStep('stages', [done('1', { places: 2 }), done('2', {})])).toBe(true)
+    expect(pausesAfterStep('stages', [done('1', {}), done('2', { places: 2 }), { state: 'todo' }])).toBe(true)
   })
 
   it('uses the survey-only pause once, before any stage has started', () => {

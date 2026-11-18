@@ -235,11 +235,16 @@ export class AgentSessions {
 
   /** Hide the chat and stop its work; a chat that was never created is nothing to retire. */
   async retire(sessionId: string): Promise<void> {
-    try {
-      await this.services().registry.archiveSession(chatSessionId(sessionId), { stopActivity: true })
-    } catch (error) {
-      if (!(error instanceof Error && error.name === 'WorkspaceUnknownSessionError')) throw error
-    }
+    await retireChat(this.services(), chatSessionId(sessionId))
+  }
+}
+
+/** Hides a chat in DSH's project list and stops its work; a chat the project does not know is nothing to retire. */
+export async function retireChat(services: AgentServices, chat: string): Promise<void> {
+  try {
+    await services.registry.archiveSession(chat, { stopActivity: true })
+  } catch (error) {
+    if (!(error instanceof Error && error.name === 'WorkspaceUnknownSessionError')) throw error
   }
 }
 

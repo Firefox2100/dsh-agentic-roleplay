@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ROLES, ROLE_TABLE, isGeneratorOnly, isLeftOut, kindOfRole, mainRole, mayHoldGuidance, playsRole, statesWorldFacts } from '../../../src/host/import/roles.ts'
+import { isAboutPerson, ROLES, ROLE_TABLE, isGeneratorOnly, isLeftOut, kindOfRole, mainRole, mayHoldGuidance, playsRole, statesWorldFacts } from '../../../src/host/import/roles.ts'
 
 const of = (...roles: (typeof ROLES)[number][]) => ({ roles })
 
@@ -23,6 +23,10 @@ describe('what the import makes of a role', () => {
     expect(statesWorldFacts(of('world'))).toBe(true)
     expect(statesWorldFacts(of('world', 'instruction'))).toBe(false)
     expect(statesWorldFacts(of('world', 'generator'))).toBe(false)
+    expect(isAboutPerson(of('character', 'generator'))).toBe(true)
+    expect(isAboutPerson(of('player'))).toBe(true)
+    expect(isAboutPerson(of('world', 'character'))).toBe(false)
+    expect(isAboutPerson(of('place', 'world'))).toBe(false)
     expect(mayHoldGuidance(of('world'))).toBe(true)
     expect(mayHoldGuidance(of('speech'))).toBe(false)
     expect(mayHoldGuidance(of('template', 'irrelevant'))).toBe(false)

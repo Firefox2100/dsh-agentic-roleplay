@@ -11,7 +11,7 @@ import { IMPORT_COMMAND } from '../../../src/shared/import-card.ts'
 // own bookkeeping (the per-turn limit, the pause it reports, the next step it names) is what the test drives.
 vi.mock('../../../src/host/import/run-import.ts', async importOriginal => ({
   ...await importOriginal<typeof import('../../../src/host/import/run-import.ts')>(),
-  runStage: async (_ctx: unknown, _directory: string, stage: string) => ({ stage, left: [], stale: [], complete: false, counts: { places: 1 }, written: ['Pier'], notes: 0 }),
+  runStage: async (_ctx: unknown, _directory: string, stage: string) => ({ stage, left: [], stale: [], complete: false, counts: { places: 1 }, staged: ['Pier'], notes: 0 }),
 }))
 
 const ENVIRONMENT = { maxUploadBytes: 1, concurrency: 1, reasoning: '', model: '', maxTokens: 16000, variablesPerRequest: 25, structured: 'tool' as const, temperature: 0.2, timeoutMinutes: 0, decisions: 'llm' as const, confidence: 0.7 }

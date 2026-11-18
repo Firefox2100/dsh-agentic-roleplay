@@ -10,11 +10,11 @@ import type { AuthoringLanguages } from '../../../src/host/worlds/authoring-lang
 
 const languagesOf = (): AuthoringLanguages => { const kept = new Map<string, string>(); return { set: (key: string, value?: string) => { if (value !== undefined) kept.set(key, value) }, get: (key: string) => kept.get(key) ?? 'en' } as unknown as AuthoringLanguages }
 
-function fakes(known: string[] = []) {
+function fakes(known: string[] = [], stored: string[] = known) {
   const calls: unknown[][] = []
   const services: AgentServices = {
     persistence: {
-      stat: () => Promise.resolve(undefined),
+      stat: (id: string) => Promise.resolve(stored.includes(id) ? {} : undefined),
       create: (header: { id: string; cwd: string; agentPreset: string }) => { calls.push(['store', header.id, header.cwd, header.agentPreset]); return Promise.resolve({ append: () => Promise.resolve(), flush: () => Promise.resolve(), close: () => Promise.resolve() } as never) },
     } as never,
     registry: {
@@ -59,5 +59,15 @@ describe('the authoring chats of a world, a preset and a lorebook', () => {
     await new PresetAuthoringSessions(() => known, () => '/root', prompts, languagesOf()).ensure('quiet', 'Quiet', 'en')
     expect(again.map(call => call[0])).not.toContain('store')
     expect(calls.length).toBeGreaterThan(0)
+  })
+
+  it('make a chat again that the project still lists after it was deleted, with a stale agent asked to leave first', async () => {
+    const { calls, services } = fakes(['world-author-w1'], [])
+    const unloaded: string[] = []
+    services.unload = (chat) => { unloaded.push(chat); return Promise.resolve() }
+    const chat = await new AuthoringSessions(() => services, () => '/root', prompts, languagesOf()).ensure('w1', 'Harbour')
+    expect(chat).toBe('world-author-w1')
+    expect(unloaded).toEqual(['world-author-w1'])
+    expect(calls.map(call => call[0])).toContain('store')
   })
 })

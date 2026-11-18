@@ -45,5 +45,8 @@ export const isGeneratorOnly = <T extends HasRoles>(piece: T): boolean => playsR
 /** A piece that states facts of the world, for the lore: not a rule for the narrator, not guidance on making things up. */
 export const statesWorldFacts = <T extends HasRoles>(piece: T): boolean => playsRole(piece, 'world') && !playsRole(piece, 'instruction') && !playsRole(piece, 'generator')
 
+/** A piece that is mainly about a person: that person's sheet is made from it, so what it says of how they act is not the world's. */
+export const isAboutPerson = <T extends HasRoles>(piece: T): boolean => kindOfRole(mainRole(piece) ?? 'world') === 'character'
+
 /** A piece that may hold guidance on making things up or a standing rule (the generator pieces are read whole by their own step). */
 export const mayHoldGuidance = <T extends HasRoles>(piece: T): boolean => !playsRole(piece, 'generator') && piece.roles.some(role => ROLE_TABLE[role].guidance)

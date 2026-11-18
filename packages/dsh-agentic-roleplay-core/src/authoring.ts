@@ -11,6 +11,7 @@ import { AuthoredWorldReader, authoredWorldReadTools } from './host/authoring/re
 import { authoredWorldWriteTools, authoringApproval, readAuthoredEntityDocument, validateMutation } from './host/authoring/write-tools.ts'
 import type { AuthoredEntityKind } from './host/authoring/documents.ts'
 import { registerPackJail } from './host/authoring/pack-jail.ts'
+import { registerAuthoringSkills } from './host/authoring/skills.ts'
 import { worldPackTools } from './host/authoring/pack-tools.ts'
 import { worldPromptTools } from './host/authoring/prompt-tools.ts'
 import { worldImageTools } from './host/authoring/image-tools.ts'
@@ -72,6 +73,7 @@ export function apply(ctx: Context): void {
     return id === undefined ? undefined : (await ctx.roleplayWorlds.find(id))?.directory
   }
   registerPackJail(ctx, { worldDirectory, reviewing })
+  registerAuthoringSkills(ctx)
   limitAuthoringAgents(ctx, chat => (authoredWorldOf(chat) === undefined ? undefined : 'worldAuthoring'))
   guardAuthoringTurns(ctx, () => ctx.roleplayPrompts, (chat) => { const world = authoredWorldOf(chat); return world === undefined ? undefined : ctx.roleplayAuthoringLanguages.get(world) }, () => ctx.roleplayImport.settings.reasoning)
   const current = async (chat: string, kind: AuthoredEntityKind, key: string): Promise<unknown> => {

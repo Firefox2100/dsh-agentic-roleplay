@@ -15,7 +15,7 @@ import { PROSE_PROMPTS } from '../prompts/world-prompts.ts'
 import { mapLimit, norm, slug, trOf, uniqueKey, type ChildJob, type ImportContext, type TextOf } from './run.ts'
 import { findEntity, isLeftOut, type Classified, type Entity, type Kind, type Roster } from './survey.ts'
 import { snapPassage } from './passages.ts'
-import { mainRole, mayHoldGuidance, playsRole, statesWorldFacts } from './roles.ts'
+import { isAboutPerson, mainRole, mayHoldGuidance, playsRole, statesWorldFacts } from './roles.ts'
 
 type Document = Record<string, unknown>
 
@@ -687,11 +687,12 @@ export async function extractBackground(ctx: ImportContext, card: NormalizedCard
     if (answer === undefined) { result.notes.push('a background piece produced nothing'); continue }
     for (const built of loreDocuments(answer, roster, taken)) { result.notes.push(...built.notes); addLore(result.lore, built.document) }
   }
-  for (const item of items.filter(item => playsRole(classified[item.id] ?? { roles: [] }, 'generator'))) {
+  // a piece mainly about a person is that person's sheet; only the passages in it that say how to make people up are the world's (found below)
+  for (const item of items.filter(item => playsRole(classified[item.id] ?? { roles: [] }, 'generator') && !isAboutPerson(classified[item.id] ?? { roles: [] }))) {
     for (const built of loreDocuments(asWritten(item), roster, taken)) addLore(result.lore, { ...built.document, kind: 'custom', scope: 'listed' })
   }
   const tr = trOf(ctx)
-  const searched = items.filter(item => item.text.length >= MIN_GUIDANCE_CHARS && mayHoldGuidance(classified[item.id] ?? { roles: ['world'] }))
+  const searched = items.filter(item => item.text.length >= MIN_GUIDANCE_CHARS && (mayHoldGuidance(classified[item.id] ?? { roles: ['world'] }) || (playsRole(classified[item.id] ?? { roles: [] }, 'generator') && isAboutPerson(classified[item.id] ?? { roles: [] }))))
   const found = await mapLimit(searched, ctx.concurrency, async (item, index) => {
     ctx.say(`looking for guidance on making things up and for standing rules ${index + 1}/${searched.length}: ${item.label}`)
     try {
@@ -710,11 +711,13 @@ export async function extractBackground(ctx: ImportContext, card: NormalizedCard
   for (const { item, casting, rules, failure } of found) {
     if (failure !== undefined) result.notes.push(failure)
     const name = item.title === '' ? item.label : item.title
+    const person = isAboutPerson(classified[item.id] ?? { roles: [] })
+    if (person && rules.length > 0) result.notes.push(tr('{label}: left to the sheet of the person it is about, which is made from it: how a person acts is not a rule of the world', { label: name }))
     result.casting.push(...casting)
     if (casting.length > 0) result.derived.push({ kind: 'command', name: '', pieces: [baseOf(item.id)] })
-    if (rules.length > 0) result.derived.push({ kind: 'rules', name, pieces: [baseOf(item.id)] })
+    if (rules.length > 0 && !person) result.derived.push({ kind: 'rules', name, pieces: [baseOf(item.id)] })
     if (casting.length > 0) addLore(result.lore, { id: uniqueKey(slug(item.label, 'guidance'), taken), ...guidanceEntry(casting, tr('{label}: how people are made up', { label: name })) })
-    if (rules.length === 0) continue
+    if (rules.length === 0 || person) continue
     // what the card always sends is carried on every turn, up to a limit; the rest is lore the game master finds by search
     const block = `## ${name}\n${rules.map(passage => passage.trim()).join('\n\n')}`
     if (item.constant === true && standing.length + block.length <= STANDING_MAX_CHARS) standing += `${standing === '' ? '' : '\n\n'}${block}`

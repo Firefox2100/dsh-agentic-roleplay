@@ -15,7 +15,7 @@ import { guarded } from './host/residency/guard.ts'
 import { ModelResidency, type ModelAdmin } from './host/residency/residency.ts'
 // Type-only: declares `ctx.roleplayState`.
 import type {} from '@dsh-agentic-roleplay/state'
-import { AgentSessions, agentServicesOf } from './host/agent/agent-sessions.ts'
+import { AgentSessions, agentServicesOf, retireChat } from './host/agent/agent-sessions.ts'
 import { isPng, pictureOf, readCard } from './host/import/card.ts'
 import { childSamplingOf } from './host/agents/child.ts'
 import { PromptLibrary } from './host/prompts/library.ts'
@@ -306,7 +306,10 @@ export function apply(ctx: Context, config: Config) {
     forgetAuthoring: async (worldId) => {
       const world = await worlds.find(worldId)
       if (world === undefined) throw new WorldNotFoundError(`there is no world with id "${worldId}"`)
-      await purgeChat(authoringChatSessionId(world.summary.id))
+      const chat = authoringChatSessionId(world.summary.id)
+      // the chat's name is fixed, so the project must stop listing it or the next chat of this world is taken for the deleted one
+      await retireChat(agentServicesOf(ctx)(), chat)
+      await purgeChat(chat)
     },
     translation: {
       language: id => worldLanguage(worlds, id),
