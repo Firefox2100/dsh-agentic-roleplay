@@ -14,6 +14,7 @@ import { registerInterface } from './interface/index.ts'
 import { registerRecall } from './recall/index.ts'
 import { registerReference } from './reference/index.ts'
 import { registerWorld } from './world/index.ts'
+import { registerCard } from './card/index.ts'
 import { registerChatSettings } from './chat-settings/index.ts'
 import { registerSettings } from './settings/index.ts'
 import { registerTranscript } from './transcript/index.ts'
@@ -35,6 +36,7 @@ export function apply(ctx: Context): void {
   registerTranscript(ctx)
   registerChatSettings(ctx)
   registerWorld(ctx)
+  registerCard(ctx)
   registerGallery(ctx)
   registerInterface(ctx)
   registerRecall(ctx)

@@ -541,6 +541,35 @@ describe('roleplay API', () => {
     expect(body.worlds[0]?.coverVersion).toBeTruthy()
   })
 
+  it('shows the card a world was imported from, piece by piece, and one piece whole', async () => {
+    const folder = join(base, 'worlds', 'harbor', '.import')
+    expect(await (await fetch(`${origin}/worlds/card?id=harbor`)).json()).toEqual({ present: false, pieces: [] })
+    await mkdir(folder, { recursive: true })
+    const card = { sourceSpec: 'chara_card_v3', name: 'Quay', description: 'Mara keeps the ferry.', personality: '', scenario: '', firstMessage: '', alternateGreetings: [], messageExample: '', creatorNotes: '', systemPrompt: '', postHistoryInstructions: '', tags: [], creator: 'someone', characterVersion: '1', ignored: { scripts: 0, extensions: [] }, book: { name: 'b', description: '', entries: [{ id: 'entry:0', title: 'The boat', keys: ['boat'], secondaryKeys: [], content: 'Grey and old.', enabled: true, constant: false, selective: false, position: 'before_char' }] } }
+    await writeFile(join(folder, 'card.json'), JSON.stringify(card))
+    await writeFile(join(folder, 'choices.json'), JSON.stringify({ name: 'Quay', disabledEntries: [], opening: { kind: 'none' } }))
+    try {
+      const view = await (await fetch(`${origin}/worlds/card?id=harbor`)).json() as { present: boolean; creator: string; pieces: { id: string; used: boolean; length: number; keys: string[] }[] }
+      expect(view).toMatchObject({ present: true, creator: 'someone' })
+      expect(view.pieces.map(piece => piece.id)).toEqual(['field:description', 'entry:0'])
+      expect(view.pieces[1]).toMatchObject({ used: true, length: 13, keys: ['boat'] })
+      expect(await (await fetch(`${origin}/worlds/card/piece?id=harbor&piece=entry:0`)).json()).toEqual({ id: 'entry:0', label: 'entry “The boat”', text: 'Grey and old.' })
+      expect((await fetch(`${origin}/worlds/card/piece?id=harbor&piece=entry:9`)).status).toBe(404)
+      expect((await fetch(`${origin}/worlds/card?id=missing`)).status).toBe(404)
+    } finally { await rm(folder, { recursive: true, force: true }) }
+  })
+
+  it('reports a broken source card instead of treating it as absent', async () => {
+    const folder = join(base, 'worlds', 'harbor', '.import')
+    await mkdir(folder, { recursive: true })
+    await writeFile(join(folder, 'card.json'), '{broken')
+    await writeFile(join(folder, 'choices.json'), JSON.stringify({ name: 'Broken', disabledEntries: [], opening: { kind: 'none' } }))
+    try {
+      const response = await fetch(`${origin}/worlds/card?id=harbor`)
+      expect(response.status).toBe(500)
+    } finally { await rm(folder, { recursive: true, force: true }) }
+  })
+
   it('reads and changes what a world says about itself, with the problems of a refused change', async () => {
     expect(await (await fetch(`${origin}/worlds/info?id=harbor`)).json()).toMatchObject({ name: 'harbor' })
     const put = (body: unknown) => fetch(`${origin}/worlds/info?id=harbor`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })

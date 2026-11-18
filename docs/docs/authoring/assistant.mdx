@@ -20,6 +20,8 @@ A world made by importing a character card keeps that card in its `.import` fold
 
 The world's own files remain the canon: the card is evidence of where they came from. When the two differ the assistant says so and does not change the world unless you ask. What the import's records say it did is its own judgement and can be wrong, so the assistant is told to check it against the card's text.
 
+Open **Source card** from the right sidebar's new-tab menu to read the card beside the world and the chat. This page is offered only in the authoring chat of a world that has a source card. It lists every field, greeting and lorebook entry with the id the assistant uses (`field:description`, `entry:23`), whether the import read it, the roles assigned by the import, and the full text on demand. When the assistant mentions "entry 23", you can find it there.
+
 The tools exist while the card does. `card_diff` and `card_update_finish` serve [updating a world from a newer version of its card](./avatars-import#a-newer-version-of-a-card); while an update is waiting, `card_read` and `card_search` also take `version: new` to read the newer card. Delete the world's `.import` folder and they report that the world has no source card. The card is licensed content: it stays in the world folder and travels with it when you sync your devices, but nothing the plugin exports or translates carries it.
 
 ## Research tools

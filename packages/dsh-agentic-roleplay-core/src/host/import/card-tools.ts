@@ -90,12 +90,14 @@ export interface Source {
   records: Records
 }
 
+export class SourceCardMissingError extends Error {}
+
 /** The card kept in a world's import folder, and what the import made of it. The tools exist as long as the card does. */
 export async function readSource(directory: string, withRecords: boolean, version: CardVersion = 'current'): Promise<Source> {
   const folder = join(directory, IMPORT_FOLDER)
   let read: Awaited<ReturnType<typeof readImportFolder>>
   try { read = await readImportFolder(version === 'new' ? join(folder, UPDATE_FOLDER) : folder) } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new Error(version === 'new' ? 'no newer version of the card is waiting to update this world' : 'this world has no source card: it was not imported from one, or its .import folder was removed')
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') throw new SourceCardMissingError(version === 'new' ? 'no newer version of the card is waiting to update this world' : 'this world has no source card: it was not imported from one, or its .import folder was removed')
     throw error
   }
   const records: Records = withRecords && version === 'current' ? { classified: await optional<Classified>(join(folder, 'classification.json')), roster: await optional<Roster>(join(folder, 'roster.json')), report: await optional<ImportReport>(join(folder, 'report.json')) } : {}

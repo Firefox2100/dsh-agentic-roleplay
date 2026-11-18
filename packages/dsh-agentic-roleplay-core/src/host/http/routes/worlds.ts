@@ -7,6 +7,8 @@ import { WorldFolderExistsError } from '../../worlds/create-world.ts'
 import { UnknownStarterError } from '../../worlds/starter.ts'
 import { CheckpointBusyError } from '../../worlds/checkpoint-service.ts'
 import { CheckpointError, CheckpointNotFoundError } from '../../worlds/checkpoints.ts'
+import { readSource, baseId, rolesOf, SourceCardMissingError } from '../../import/card-tools.ts'
+import type { CardView, CardPieceText } from '../../../shared/card-view.ts'
 import { readJsonBody } from '../body.ts'
 import { sendError, sendJson } from '../respond.ts'
 import type { ApiDeps } from '../api.ts'
@@ -82,6 +84,49 @@ export function worldsRoutes({ worlds, createWorld, starter, authorWorld, sayToA
       GET: async (_req, res, url) => {
         try { sendJson(res, 200, await authoringStatus(url.searchParams.get('id') ?? '')) } catch (error) {
           if (error instanceof WorldNotFoundError) return sendError(res, 404, error.message)
+          throw error
+        }
+      },
+    },
+    '/worlds/card': {
+      GET: async (_req, res, url) => {
+        const record = await worlds.find(url.searchParams.get('id') ?? '')
+        if (record === undefined) return sendError(res, 404, 'there is no such world')
+        let source: Awaited<ReturnType<typeof readSource>>
+        try { source = await readSource(record.directory, true) } catch (error) {
+          if (error instanceof SourceCardMissingError) return sendJson(res, 200, { present: false, pieces: [] } satisfies CardView)
+          throw error
+        }
+        const view: CardView = {
+          present: true,
+          name: source.card.name,
+          creator: source.card.creator,
+          pieces: source.pieces.map(piece => ({
+            id: piece.id,
+            label: piece.label,
+            title: piece.title,
+            keys: piece.keys,
+            length: piece.text.length,
+            start: piece.text.slice(0, 200),
+            used: piece.used,
+            ...(piece.enabled === undefined ? {} : { enabled: piece.enabled }),
+            roles: rolesOf(source.records.classified, baseId(piece.id)),
+          })),
+        }
+        sendJson(res, 200, view)
+      },
+    },
+    '/worlds/card/piece': {
+      GET: async (_req, res, url) => {
+        const record = await worlds.find(url.searchParams.get('id') ?? '')
+        if (record === undefined) return sendError(res, 404, 'there is no such world')
+        const id = url.searchParams.get('piece') ?? ''
+        try {
+          const piece = (await readSource(record.directory, false)).pieces.find(each => each.id === id)
+          if (piece === undefined) return sendError(res, 404, `the card has no piece "${id}"`)
+          sendJson(res, 200, { id: piece.id, label: piece.label, text: piece.text } satisfies CardPieceText)
+        } catch (error) {
+          if (error instanceof SourceCardMissingError) return sendError(res, 404, error.message)
           throw error
         }
       },
