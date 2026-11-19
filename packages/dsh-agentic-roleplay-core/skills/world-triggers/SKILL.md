@@ -1,7 +1,7 @@
 ---
 name: world-triggers
 description: The trigger format: conditions, effects (edit, beat, cue), repetition, announcements; when a trigger is the right tool and when it is not.
-when_to_use: Before you write or replace a trigger with write_world_trigger, or when something in a world has to happen whenever a condition holds.
+when_to_use: Before you write, change or replace a trigger with write_world_trigger or update_world_trigger, or when something in a world has to happen whenever a condition holds.
 ---
 
 # Triggers (`write_world_trigger`)

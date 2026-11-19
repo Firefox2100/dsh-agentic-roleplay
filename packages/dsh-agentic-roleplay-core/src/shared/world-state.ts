@@ -456,7 +456,12 @@ export function parseRelationEdit(value: unknown): RelationChange {
   if (!['character', 'knowledge', 'membership', 'social', 'exit'].includes(String(kind))) problems.push('kind is not a relation kind')
   const creating = input['create'] === true
   if (!creating && (typeof key !== 'string' || key.trim() === '' || key.length > 500)) problems.push('key is needed')
-  if (!creating && typeof key === 'string' && key.trim() !== '' && typeof input['from'] === 'string' && typeof input['to'] === 'string' && input['remove'] !== true) problems.push('to make a new relationship send create: true with from and to and no key; a key names one that exists, exactly as list_relationships shows it')
+  if (!creating && typeof key === 'string' && key.trim() !== '' && input['remove'] !== true) {
+    // from and to beside a key are harmless when they name what the key names (an edit that repeats them), and a mistake when they name something else
+    const named = key.split(':').map((part) => { try { return decodeURIComponent(part) } catch { return part } })
+    const stray = (['from', 'to'] as const).filter(field => typeof input[field] === 'string' && !named.includes(input[field]))
+    if (stray.length > 0) problems.push(`${stray.join(' and ')} does not match the key. A key names one relationship exactly as list_relationships shows it, and its ends cannot be changed: to change the label, summary or numbers send {kind, key, label}. To point a relationship somewhere else, remove it and create the new one (create: true with from and to and no key)`)
+  }
   if ('create' in input && typeof input['create'] !== 'boolean') problems.push('create must be true or false')
   const allowedByKind: Record<string, string[]> = {
     character: ['kind', 'key', 'create', 'from', 'to', 'remove', 'label', 'summary', 'familiarity', 'trust', 'affinity', 'tension'],

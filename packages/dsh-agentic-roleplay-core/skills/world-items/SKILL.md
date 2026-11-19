@@ -1,7 +1,7 @@
 ---
 name: world-items
 description: The item.json format: things that matter by identity, possession or condition; where they start; containers, wearables, slots.
-when_to_use: Before you create or replace a thing with create_world_element or replace_world_element (kind item).
+when_to_use: Before you create, change or replace a thing with create_world_element, update_world_element or replace_world_element (kind item).
 ---
 
 # Items (`kind: "item"`)

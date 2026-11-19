@@ -76,7 +76,7 @@ describe('the groups name the tools that exist', () => {
     expect(grouped.filter(each => each.startsWith('card:')).length).toBe(4)
     expect(grouped.filter(each => each.startsWith('update:')).length).toBe(2)
     expect(grouped.filter(each => each.startsWith('preset:')).length).toBe(1)
-    expect(grouped.filter(each => each.startsWith('write:')).length).toBe(9)
+    expect(grouped.filter(each => each.startsWith('write:')).length).toBe(13)
     expect(all.filter(tool => tool.name.startsWith('import_') || tool.name.startsWith('card_')).filter(tool => groupOf(tool.name) === undefined).map(tool => tool.name)).toEqual([])
   })
 })

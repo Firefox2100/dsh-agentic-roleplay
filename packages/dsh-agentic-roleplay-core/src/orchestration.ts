@@ -199,10 +199,12 @@ export function apply(ctx: Context): void {
   ctx.effect(() => {
     ctx.roleplayOrchestration.halt = async (chat) => { images.cancel(chat); engine.stop(chat); await engine.quiesce(chat); engine.forget(chat) }
     ctx.roleplayOrchestration.quiesce = chat => engine.quiesce(chat)
+    ctx.roleplayOrchestration.reindex = (chat) => { index.schedule(chat) }
     // The agent services this plugin depends on unload after it does, and a helper still starting then would wait for them forever.
     return async () => {
       ctx.roleplayOrchestration.halt = () => Promise.resolve()
       ctx.roleplayOrchestration.quiesce = () => Promise.resolve()
+      ctx.roleplayOrchestration.reindex = () => undefined
       images.cancelAll()
       engine.stopAll()
       await engine.quiesceAll()

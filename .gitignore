@@ -5,6 +5,12 @@ lib/
 coverage/
 .env
 .dsh-acl-recovery/
+**/.impeccable/
+**/DESIGN.md
+**/PRODUCT.md
+**/UI_INVENTORY.md
+**/AGENTS.md
+**/PLANS.md
 
 # Copyrighted sample cards, local only
 samples/

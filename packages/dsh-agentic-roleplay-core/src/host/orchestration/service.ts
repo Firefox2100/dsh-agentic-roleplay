@@ -47,6 +47,9 @@ export class RoleplayOrchestration extends Service {
   /** One look at a story that goes on while its player is away (the characters' days, and perhaps a message); there while the orchestration is. */
   autonomy: (chat: string, signal: AbortSignal) => Promise<{ outcome: string; moved: number; message?: string }> = () => Promise.resolve({ outcome: 'off', moved: 0 })
 
+  /** Embeds in the background whatever of the chat's story has no vector yet, with the model now selected; there while the orchestration is. */
+  reindex: (chat: string) => void = () => undefined
+
   /** Whether a reflection of the chat is running; there while the orchestration is. */
   reflecting: (chat: string) => boolean = () => false
 

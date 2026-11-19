@@ -14,7 +14,7 @@ import { expandWorld, introduceThing, type ThingInput } from './world-making.ts'
 import { MAX_REFUSALS, checkedOutput } from './delivery.ts'
 import { toolEnabled } from '../../shared/tools.ts'
 import { rollView } from '../dice/view.ts'
-import { runOffScene } from './off-stage.ts'
+import { OFFSTAGE_ROUND, runOffScene } from './off-stage.ts'
 import { whereabouts } from './whereabouts.ts'
 import { hiddenFrom } from '../decisions/extras.ts'
 import { foldSpeakerLabels, repeatsEarlier } from './turn-text.ts'
@@ -304,7 +304,9 @@ export class TurnEngine {
     })
     const woken = sleeping.filter(entry => input.wakes?.includes(entry.key) === true)
     const sleepers = sleeping.filter(entry => !woken.includes(entry))
-    if (sleepers.length > 0 && input.characters !== undefined && input.characters.length > 0) throw new Error(`${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep: asleep characters take part only if what the player does wakes them. If it does, name them in wakes and show them waking in your narration; otherwise leave them out`)
+    // someone the game master meant to ask who is asleep answers when they wake, in a story that goes on while the player is away
+    const queued = sleepers.length > 0 && input.characters !== undefined && input.characters.length > 0 && this.queueForSleepers(owner, sleepers, situation)
+    if (sleepers.length > 0 && input.characters !== undefined && input.characters.length > 0) throw new Error(`${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep: asleep characters take part only if what the player does wakes them. If it does, name them in wakes and show them waking in your narration; otherwise leave them out${queued ? '. Nothing is lost: what was said stays for them and they answer, as a message to the player, once they are awake' : ''}`)
     const keys = planned.filter(key => !sleepers.some(entry => entry.key === key))
     if (keys.length === 0) throw new Error(sleepers.length > 0 ? `${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep, so nobody here can act: narrate the quiet, or wake them with wakes` : 'there is no character to activate')
     if (woken.length > 0) state.woken = new Set([...(state.woken ?? []), ...woken.map(entry => entry.key)])
@@ -575,11 +577,11 @@ export class TurnEngine {
       .finally(() => { this.offstage.delete(owner.chat) }))
   }
 
-  private runOffScene(owner: TurnOwner, state: TurnState, store: TurnStore, due: readonly OffSceneItem[], limit: number, run: RunCharacter): Promise<void> {
+  private runOffScene(owner: TurnOwner, state: TurnState, store: TurnStore, due: readonly OffSceneItem[], limit: number, run: RunCharacter, stillThis: () => boolean = () => this.states.get(owner.chat) === state): Promise<void> {
     return runOffScene({
       ask: (group, cast, asked, summary) => this.ask(owner, 1, group, cast, asked, run, state.cancel.signal, summary),
       write: () => { this.write(owner, state) },
-      stillThis: () => this.states.get(owner.chat) === state,
+      stillThis,
     }, owner, state, store, due, limit)
   }
 
@@ -753,6 +755,44 @@ export class TurnEngine {
 
   private blankState(chat: string, turn: number): TurnState {
     return { turn, phase: 'idle', cast: [], rounds: 0, situations: [], asked: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], cited: new Set(), reported: new Set(), refused: 0, previewed: false, previewRefusals: 0, previewWanted: this.stores(chat)?.settings().preview.enabled ?? false, focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map(), cues: new Map(), addressed: [] }
+  }
+
+  /** What was said to characters who are asleep is kept for when they wake, in a story that goes on while the player is away; whether it was kept. */
+  private queueForSleepers(owner: TurnOwner, sleepers: readonly { key: string; name: string }[], situation: string): boolean {
+    const store = this.storeOf(owner)
+    const { autonomy, clock } = store.settings()
+    if (store.autonomy === undefined || !autonomy.enabled || !autonomy.messages || clock.mode !== 'real') return false
+    for (const sleeper of sleepers) store.autonomy.queueReply({ character: sleeper.key, name: sleeper.name, situation, at: Date.now() })
+    return true
+  }
+
+  /**
+   * What the story does after a turn, for a story whose player is away and which goes on by itself: characters away from the player, for whom something fell due, are
+   * asked what they do about it (the same asks as after a turn, within the same allowance), and made-up characters and places waiting to be fitted in are fitted in.
+   * @returns how many things that fell due were dealt with.
+   */
+  async idleWork(chat: string, run: RunCharacter, signal: AbortSignal): Promise<number> {
+    const store = this.stores(chat)
+    if (store === undefined || this.playing(chat) || signal.aborted) return 0
+    const turn = store.story.metadata.get().turns
+    this.afterTurn.consolidate({ chat, turn }, signal, true)
+    const { perTurn: limit } = store.settings().offstage
+    const due = limit === 0 || this.offstage.has(chat) ? [] : store.dueOffScene(turn)
+    if (due.length === 0) return 0
+    const state = this.blankState(chat, turn)
+    state.offstage = store.pendingCommits().filter(round => round.turn === turn && round.round > OFFSTAGE_ROUND).length
+    const stop = (): void => { state.cancel.abort() }
+    signal.addEventListener('abort', stop, { once: true })
+    this.offstage.add(chat)
+    try {
+      await this.runOffScene({ chat, turn }, state, store, due, limit, run, () => !this.playing(chat))
+    } catch (error) {
+      if (!signal.aborted) this.problem(`characters away from the player were not asked about what fell due: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      this.offstage.delete(chat)
+      signal.removeEventListener('abort', stop)
+    }
+    return due.length
   }
 
   /**

@@ -93,7 +93,7 @@ export function presetAuthorTools(reader: PresetReader, settings: () => ImportSe
       output: jsonOutput,
       async execute(args, exec) {
         const { directory } = reader.directory(exec)
-        if (!args.id.startsWith('roleplay/')) throw new Error(`"${args.id}" is not a prompt of the story`)
+        if (!args.id.startsWith('roleplay/')) throw new Error(`"${args.id}" is not a prompt of the story: a preset carries prompts whose ids start with roleplay/ (list_preset_prompts shows them)`)
         await writeWorldPrompt(directory, args.language, args.id, args.text, shipped)
         return json({ action: 'written', id: args.id, language: languageOf(args.language) })
       },

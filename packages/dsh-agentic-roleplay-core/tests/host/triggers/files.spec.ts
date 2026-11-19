@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { deleteTriggerDocument, readTriggerDocuments, writeTriggerDocument } from '../../../src/host/triggers/files.ts'
+import { updateTrigger } from '../../../src/host/authoring/partial.ts'
 import { loadWorldParts } from '../../../src/host/triggers/parts.ts'
 
 let directory: string
@@ -64,5 +65,19 @@ describe('removing a trigger of a world', () => {
     await deleteTriggerDocument(directory, 'knock')
     expect(await stored()).toEqual([])
     await expect(deleteTriggerDocument(directory, 'knock')).rejects.toMatchObject({ problems: ['there is no trigger "knock"'] })
+  })
+})
+
+describe('changing some fields of a trigger', () => {
+  const update = async (key: string, changes: unknown) => await updateTrigger(directory, await loadWorldParts(directory), key, changes)
+
+  it('changes the fields named, keeps the rest and the other triggers, and refuses what the world lacks', async () => {
+    await write('knock', knock)
+    await write('smoke', { ...knock, name: 'Smoke', when: { type: 'fired', trigger: 'knock' } })
+    await update('knock', { repeat: true, name: 'Knock, knock' })
+    expect(await stored()).toMatchObject([{ key: 'knock', name: 'Knock, knock', repeat: true, effects: knock.effects }, { key: 'smoke', name: 'Smoke' }])
+    await expect(update('knock', { when: { type: 'place', character: 'zed', location: 'inn' } })).rejects.toMatchObject({ problems: expect.arrayContaining(['when: there is no character "zed"']) })
+    await expect(update('missing', { name: 'x' })).rejects.toThrow('the keys are: knock, smoke')
+    expect((await stored())[0]).toMatchObject({ repeat: true })
   })
 })

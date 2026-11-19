@@ -68,6 +68,8 @@ function expand(path: string): string {
  */
 export class SyncService {
   private active = false
+  /** Why the last run or choice failed, kept for the status because a run that outlasts its request has no one to tell. */
+  private failure: string | undefined
 
   constructor(private readonly deps: SyncDeps) {}
 
@@ -99,7 +101,7 @@ export class SyncService {
       units.push(store.ignored.includes(id) ? { id, kind, state: 'ignored', message: 'deleted here and kept on the remote; it is not brought back' } : await this.describe(root, id, kind, store.units[id]))
     }
     const problem = this.problem()
-    return { ...(problem === undefined ? {} : { problem }), running: this.active, ...(store.lastRun === undefined ? {} : { lastRun: store.lastRun }), units }
+    return { ...(problem === undefined ? {} : { problem }), running: this.active, ...(this.failure === undefined ? {} : { failure: this.failure }), ...(store.lastRun === undefined ? {} : { lastRun: store.lastRun }), units }
   }
 
   private async describe(root: string, id: string, kind: SyncKind, record: UnitRecord | undefined): Promise<SyncUnitStatus> {
@@ -134,6 +136,7 @@ export class SyncService {
     if (problem !== undefined) throw new SyncRefusedError(problem)
     if (this.active) throw new SyncRefusedError('a sync is already running')
     this.active = true
+    this.failure = undefined
     try {
       const rclone = await this.client()
       const root = this.deps.root()
@@ -151,6 +154,9 @@ export class SyncService {
       after.lastRun = this.now()
       writeStore(root, after)
       return { units: (await this.status()).units.filter(unit => ids.includes(unit.id)) }
+    } catch (error) {
+      this.failure = error instanceof Error ? error.message : String(error)
+      throw error
     } finally {
       this.active = false
     }
@@ -185,6 +191,7 @@ export class SyncService {
       if (reason !== undefined) throw new SyncRefusedError(`"${id}" cannot be changed now: ${reason}`)
     }
     this.active = true
+    this.failure = undefined
     try {
       const rclone = await this.client()
       await this.guard(id, kind, async () => {
@@ -202,6 +209,9 @@ export class SyncService {
           }
         } else await this.bring(rclone, id, kind, side)
       })
+    } catch (error) {
+      this.failure = error instanceof Error ? error.message : String(error)
+      throw error
     } finally {
       this.active = false
     }

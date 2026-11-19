@@ -17,7 +17,7 @@ export function vectorStatus(session: VectorSession): VectorStatus {
   return { available: session.recallIndex.vectors.available, ...(info === undefined ? { embedded: 0, pending: session.recallIndex.pending(MAX_COUNTED).length } : { model: info.model, dimensions: info.dimensions, embedded: info.embedded, pending: info.pending }) }
 }
 
-/** Forgets the stored vectors; the texts stay and are embedded again, by the model now selected, the next time the story searches. */
+/** Forgets the stored vectors; the texts stay and are embedded again, by the model now selected (the caller starts it, and a search starts it too). */
 export function resetVectors(session: VectorSession): void {
   session.recallIndex.reset()
 }

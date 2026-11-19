@@ -1,7 +1,7 @@
 ---
 name: world-lore
 description: The lore.json format: canonical facts of the setting, who knows them, how they link to entities; what to put in lore and what not.
-when_to_use: Before you create or replace a lore entry with create_world_element or replace_world_element (kind lore).
+when_to_use: Before you create, change or replace a lore entry with create_world_element, update_world_element or replace_world_element (kind lore).
 ---
 
 # Lore (`kind: "lore"`)

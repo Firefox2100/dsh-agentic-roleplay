@@ -4,7 +4,7 @@ import type { ActivityEntry, RunDetail } from '../../shared/activity.ts'
 import type { SceneSelection, TurnTrace } from '../../shared/trace.ts'
 import type { TokenCount } from '../../shared/usage.ts'
 import type { Note } from '../../shared/notes.ts'
-import type { AutonomyMessage, AutonomyState } from '../sessions/autonomy.ts'
+import type { AutonomyMessage, AutonomyState, AutonomyWaiting } from '../sessions/autonomy.ts'
 import type { ReflectionOutcome, ReflectionReason } from '../../shared/reflection.ts'
 import type { ChatSettings } from '../../shared/settings.ts'
 import type { DecisionSite, SiteReport } from '../../shared/decisions.ts'
@@ -350,6 +350,8 @@ export interface CreateJob {
   need: AuthoringNeed
   /** What the game master says is needed, from what the story has established. */
   what: string
+  /** The player asked for it in a legal out-of-character command: a decree, not a judgement of the story's need. */
+  decreed?: boolean
   store: TurnStore
 }
 
@@ -615,6 +617,10 @@ export interface TurnStore {
     said(turn: number, message: AutonomyMessage): void
     /** A character was asked and did not want to write. */
     asked(character: string, at: number): void
+    /** Something was said to a sleeper: kept, to be answered when it wakes. */
+    queueReply(waiting: AutonomyWaiting): void
+    /** These replies are done with. */
+    dropWaiting(characters: readonly string[]): void
     /** The player writes: what the story was not told of yet, and the count of things done without a reply starts again. */
     inbox(): AutonomyMessage[]
     /** How the last look ended, kept in the story so that a story that stays quiet can say why. */

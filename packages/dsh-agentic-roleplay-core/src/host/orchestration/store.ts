@@ -15,7 +15,7 @@ import { forgetRunDetails, keepRunDetail, recordActivity } from '../sessions/act
 import { recordDecisions } from '../decisions/stats.ts'
 import { addUsage } from '../sessions/usage.ts'
 import { addToNote, clearNotes, putNote, readNotes } from '../sessions/notes.ts'
-import { lastPlayerAt, readAutonomy, recordAsk, recordMessage, takeInbox } from '../sessions/autonomy.ts'
+import { dropWaiting, lastPlayerAt, queueReply, readAutonomy, recordAsk, recordMessage, takeInbox } from '../sessions/autonomy.ts'
 import { catchUpRoutines, holdCharacter, sleepersNow, sleepingNow, takeShifts } from '../clock/agenda.ts'
 import { storyRoots } from '../workspace/service.ts'
 import { dirname } from 'node:path'
@@ -271,12 +271,14 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     recordTrace: (turn, patch, merge) => { updateTrace(session, turn, patch, merge) },
     folders: async () => await storyRoots(dirname(dirname(folder)), folder),
     autonomy: {
-      catchUp: (turn) => { if (!settings().schedule.enabled) return []; const { now, zone } = readTime(session, settings().clock, turn, wall()); return catchUpRoutines(session, zone, now, turn, false) },
+      catchUp: (turn) => { if (!settings().schedule.enabled) return []; const { now, zone } = readTime(session, settings().clock, turn, wall()); return catchUpRoutines(session, zone, now, turn, settings().authoring.enabled) },
       shifts: () => takeShifts(session),
       state: () => readAutonomy(session),
       lastPlayerAt: () => lastPlayerAt(session),
       said: (turn, message) => { session.transaction(() => { recordMessage(session, message); addToNote(session, 'message', turn, [`${message.name}: ${message.text}`]) }) },
       asked: (character, at) => { recordAsk(session, character, at) },
+      queueReply: (waiting) => { queueReply(session, waiting) },
+      dropWaiting: (characters) => { dropWaiting(session, characters) },
       inbox: () => takeInbox(session),
       looked: (outcome, at) => { session.metadata.setValue('autonomy.look', { outcome, at } as never) },
     },

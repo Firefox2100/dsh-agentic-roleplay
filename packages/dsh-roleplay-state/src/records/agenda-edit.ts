@@ -79,7 +79,7 @@ export function prepareAgenda(target: RecordsTarget, edit: RecordsEdit, context:
     const where = `intent_edits[${index}]`
     if (target.intents.get(change.id) === undefined) problems.push(`${where}: there is no goal ${change.id} (read_records shows the ids)`)
     if (change.status !== undefined && !INTENT_STATUSES.includes(change.status)) problems.push(`${where}: unknown status "${String(change.status)}" (${INTENT_STATUSES.join(', ')})`)
-    if (change.horizon !== undefined && !INTENT_HORIZONS.includes(change.horizon)) problems.push(`${where}: unknown horizon "${String(change.horizon)}"`)
+    if (change.horizon !== undefined && !INTENT_HORIZONS.includes(change.horizon)) problems.push(`${where}: unknown horizon "${String(change.horizon)}" (${INTENT_HORIZONS.join(', ')})`)
     unit(change.priority, `${where}.priority`)
     unit(change.urgency, `${where}.urgency`)
     const plan = steps(change.plan, `${where}.plan`)

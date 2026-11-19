@@ -31,13 +31,15 @@ interface World {
   lastPlayed?: number
   playing?: boolean
   report?: Partial<CharacterReport> | null
+  /** How many things that fell due the idle work deals with. */
+  dealt?: number
 }
 
 function setup(world: World = {}) {
-  const log = { said: [] as AutonomyMessage[], asked: [] as string[], caught: 0, askedAlone: [] as string[] }
+  const log = { said: [] as AutonomyMessage[], asked: [] as string[], caught: 0, askedAlone: [] as string[], dropped: [] as string[], idle: 0 }
   const cast = world.cast ?? [member('me', { control: 'player', place: 1 }), member('ann', { place: 2 }), member('bob', { place: 3 })]
   const autonomy = { ...DEFAULT_SETTINGS.autonomy, enabled: true, ...world.settings }
-  const state: AutonomyState = { unanswered: 0, sent: {}, inbox: [], ...world.state }
+  const state: AutonomyState = { unanswered: 0, sent: {}, inbox: [], waiting: [], ...world.state }
   const store = {
     text: (id: string) => id,
     recordDecisions: () => undefined,
@@ -54,11 +56,13 @@ function setup(world: World = {}) {
       lastPlayerAt: () => world.lastPlayed ?? NOW - 5 * HOUR,
       said: (_turn: number, message: AutonomyMessage) => { log.said.push(message) },
       asked: (character: string) => { log.asked.push(character) },
+      dropWaiting: (characters: string[]) => { log.dropped.push(...characters) },
       inbox: () => [],
     },
   } as unknown as TurnStore
   const engine = {
     playing: () => world.playing === true,
+    idleWork: () => { log.idle += 1; return Promise.resolve(world.dealt ?? 0) },
     askAlone: (_owner: unknown, key: string) => { log.askedAlone.push(key); return Promise.resolve(world.report === null ? undefined : { character: key, name: key, intent: 'writes', commitment: 'medium', utterance: 'Thinking of you. Come by when you can.', ...world.report }) },
   } as unknown as TurnEngine
   const service = world.reason === undefined ? undefined : ({ decide: async () => { if (world.reason === 'fails') throw new Error('down'); return { answers: { write: { type: 'noul', probability: world.reason } }, model: 'decide-1' } } }) as unknown as DecisionService
@@ -171,5 +175,31 @@ describe('who could write', () => {
     const distant = chance({ related: { ann: 0 } }, member('ann', { place: 2 }), HOUR)!
     expect(close).toBeGreaterThan(distant)
     expect(close).toBeLessThanOrEqual(0.9)
+  })
+
+  it('deals with what fell due and fits in what was made up, even when nobody writes, and not while a turn is played or the switch is off', async () => {
+    const quiet = await tick({ settings: { messages: false }, dealt: 2 })
+    expect(quiet.run).toEqual({ outcome: 'quiet', moved: 1, dealt: 2 })
+    expect(quiet.log.idle).toBe(1)
+    expect((await tick({ settings: { enabled: false } })).log.idle).toBe(0)
+    expect((await tick({ playing: true })).log.idle).toBe(0)
+  })
+
+  it('has a character who was asleep answer what was said to it once it is awake, and keeps it while it sleeps', async () => {
+    const waiting = [{ character: 'ann', name: 'Ann', situation: 'Me knocked and asked whether she was coming.', at: NOW - HOUR }]
+    const woke = await tick({ state: { waiting } })
+    expect(woke.run.outcome).toBe('wrote')
+    expect(woke.log.askedAlone).toEqual(['ann'])
+    expect(woke.log.dropped).toEqual(['ann'])
+    expect(woke.log.said).toHaveLength(1)
+    const asleep = await tick({ state: { waiting }, sleeping: ['ann'], settings: { chance: 0 } })
+    expect(asleep.log.dropped).toEqual([])
+    expect(asleep.log.askedAlone).toEqual([])
+  })
+
+  it('lets go of a reply that waited longer than the player may be away', async () => {
+    const stale = await tick({ state: { waiting: [{ character: 'ann', name: 'Ann', situation: 'x', at: NOW - 100 * HOUR }] }, settings: { chance: 0 } })
+    expect(stale.log.dropped).toEqual(['ann'])
+    expect(stale.log.askedAlone).toEqual([])
   })
 })

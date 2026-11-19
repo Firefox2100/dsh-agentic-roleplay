@@ -37,6 +37,8 @@ export const AUTHORING_CIRCLE_NUDGES = 1
 export const AUTHORING_SAME_CALL = 3
 /** Failures of one tool in a row in a turn, whatever the arguments, after which it is refused for the rest of the turn: a model that walks through ids that do not exist never repeats a call, so the identical-call limit never sees it (found live: an import review read entry 132, 133 ... 4000 one after another). */
 export const FAILING_RUN = 6
+/** Failures in a row after which a tool that has a format guide is refused once, with the guide named, unless the guide was loaded: the failures that follow are mistakes in the document, not bad luck. */
+export const GUIDE_AFTER_FAILURES = 2
 /** The same, for the game master: a refused resolution is mended and sent again, so a few repeats are work and many are a loop. */
 export const MASTER_SAME_CALL = 4
 /** Refused repeats after which the turn is ended instead of being refused again: the model is not reading the refusals (found live: one call 442 times in a review turn). */

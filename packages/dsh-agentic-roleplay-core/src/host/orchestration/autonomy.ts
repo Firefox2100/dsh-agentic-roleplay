@@ -51,7 +51,7 @@ export function writingChance(store: TurnStore, member: CastMember, player: Cast
  * the limits of the chat, one character who is awake and knows the player may write to them. Nothing runs for a chat that has not switched it on, that
  * is not on the real clock, whose turn is being played, or that has done `maxUnanswered` things with no message from the player in between.
  */
-export async function tickAutonomy(deps: AutonomyDeps, chat: string, signal: AbortSignal): Promise<{ outcome: AutonomyOutcome; moved: number; message?: string }> {
+export async function tickAutonomy(deps: AutonomyDeps, chat: string, signal: AbortSignal): Promise<{ outcome: AutonomyOutcome; moved: number; dealt?: number; message?: string }> {
   const store = deps.stores(chat)
   const autonomy = store?.autonomy
   if (store === undefined || autonomy === undefined) return { outcome: 'off', moved: 0 }
@@ -61,11 +61,17 @@ export async function tickAutonomy(deps: AutonomyDeps, chat: string, signal: Abo
   const turn = store.story.metadata.get().turns
   const moved = autonomy.catchUp(turn).length
   const shifted = autonomy.shifts()
-  if (!settings.autonomy.messages) return { outcome: 'quiet', moved }
+  const keeping = deps.agentOf(chat)
+  // what fell due for characters away from the player is dealt with now, and what was made up is fitted in, as after a turn
+  const dealt = keeping === undefined ? 0 : await deps.engine.idleWork(chat, characterRunner({ parent: keeping, boundaries: deps.boundaries, store }), signal)
+  if (!settings.autonomy.messages) return { outcome: 'quiet', moved, ...dealt > 0 ? { dealt } : {} }
   const config = settings.autonomy
   const now = deps.wall()
   const state = autonomy.state()
   const last = autonomy.lastPlayerAt()
+  const language = languageOf(settings.prompts.language) === 'zh' ? 'zh' : 'en'
+  const replied = await answerSleepers(deps, chat, store, keeping, language, now, signal)
+  if (replied !== undefined) return { outcome: 'wrote', moved, ...dealt > 0 ? { dealt } : {}, message: replied }
   if (state.unanswered >= config.maxUnanswered) return { outcome: 'limit', moved }
   if (last === undefined || now - last < config.idleMinutes * MINUTE) return { outcome: 'recent', moved }
   if (now - last > config.awayHours * 60 * MINUTE) return { outcome: 'away', moved }
@@ -101,7 +107,6 @@ export async function tickAutonomy(deps: AutonomyDeps, chat: string, signal: Abo
   }
   const parent = deps.agentOf(chat)
   if (parent === undefined) return { outcome: 'off', moved }
-  const language = languageOf(settings.prompts.language) === 'zh' ? 'zh' : 'en'
   const tr = translator(language)
   const time = store.time(turn)
   const situation = [
@@ -120,4 +125,35 @@ export async function tickAutonomy(deps: AutonomyDeps, chat: string, signal: Abo
   }
   autonomy.said(turn, { at: now, character: speaker.key, name: speaker.character.name, text })
   return { outcome: 'wrote', moved, message: text }
+}
+
+/**
+ * Characters who were asleep when something was said to them answer it once they are awake: one reply a look, as a message beside the story, whatever the chance
+ * of writing, the gap and the count of unanswered things say (it is an answer, not a reason to write). What waited longer than the player may be away is dropped.
+ */
+async function answerSleepers(deps: AutonomyDeps, chat: string, store: TurnStore, parent: Agent | undefined, language: 'en' | 'zh', now: number, signal: AbortSignal): Promise<string | undefined> {
+  const autonomy = store.autonomy
+  if (autonomy === undefined || parent === undefined) return undefined
+  const { waiting } = autonomy.state()
+  if (waiting.length === 0) return undefined
+  const settings = store.settings()
+  const turn = store.story.metadata.get().turns
+  const cast = store.cast()
+  const stale = waiting.filter(entry => now - entry.at > settings.autonomy.awayHours * 60 * MINUTE || !cast.some(member => member.key === entry.character))
+  if (stale.length > 0) autonomy.dropWaiting(stale.map(entry => entry.character))
+  const ready = waiting.find(entry => !stale.includes(entry) && store.asleep(turn, cast.find(member => member.key === entry.character)!.character.id) === undefined)
+  if (ready === undefined) return undefined
+  const tr = translator(language)
+  const time = store.time(turn)
+  const situation = [
+    tr('While you were asleep this happened, and you could not answer: {what} It is {now} for you, and you are awake.', { what: ready.situation, now: describeInstant(time.now, time.zone, language) }),
+    tr('Answer them with a short message, in your own voice, in a line or two: the utterance, with nothing around it. If you have nothing to say, answer with commitment low and no utterance.'),
+  ].join(' ')
+  const speaker = cast.find(member => member.key === ready.character)!
+  autonomy.dropWaiting([ready.character])
+  const report = await deps.engine.askAlone({ chat, turn }, speaker.key, situation, characterRunner({ parent, boundaries: deps.boundaries, store }), signal)
+  const text = report?.utterance?.trim().replace(/^["“「]|["”」]$/g, '').trim()
+  if (report === undefined || report.commitment === 'low' || text === undefined || text === '' || text.length > MAX_MESSAGE_CHARS || wrongLanguage(language, { message: text }, { strays: true }) !== undefined) return undefined
+  autonomy.said(turn, { at: now, character: speaker.key, name: speaker.character.name, text })
+  return text
 }

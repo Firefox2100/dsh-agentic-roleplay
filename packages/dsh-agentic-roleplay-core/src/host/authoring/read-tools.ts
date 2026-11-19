@@ -8,6 +8,7 @@ import { readWorldEditor } from '../worlds/world-editor.ts'
 import { readTriggerDocuments } from '../triggers/files.ts'
 import { readWorldInfo } from '../worlds/world-info.ts'
 import { WORLD_FILE_KINDS, isWorldFileKind, readWorldFile } from './world-files.ts'
+import { worldFileKeys } from './partial.ts'
 import { AUTHORED_ENTITY_KINDS, readAuthoredEntityDocument, type AuthoredEntityKind } from './documents.ts'
 
 type AgentExec = { agent?: { session: { id: string } } }
@@ -75,7 +76,7 @@ export function authoredWorldReadTools(reader: AuthoredWorldReader): ToolDefinit
   return [
     defineTool({
       name: 'get_world_overview',
-      description: 'Read the authored world’s top-level identity, description, rules, opening, tags, author and element counts.',
+      description: 'Read the authored world’s top-level identity, description, rules, opening, tags, author, element counts, and what its whole-world files hold: the keys of its tracked values (variables), dice checks, slash commands and holidays, which get_world_file reads and update_world_file changes, and of its triggers.',
       parameters: {},
       output: jsonOutput,
       isConcurrencySafe: () => true,
@@ -91,6 +92,7 @@ export function authoredWorldReadTools(reader: AuthoredWorldReader): ToolDefinit
           rules: document['rules'] ?? [],
           opening_message: document['opening_message'],
           counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length },
+          whole_world_files: Object.fromEntries(await Promise.all(WORLD_FILE_KINDS.map(async kind => [kind, worldFileKeys(kind, await readWorldFile(record.directory, kind))] as const))),
         })
       },
     }),

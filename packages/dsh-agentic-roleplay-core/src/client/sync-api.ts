@@ -1,4 +1,4 @@
-import { SYNC_CHANGED, type SyncRunResult, type SyncSide, type SyncStatus, type SyncUnitStatus } from '../shared/sync.ts'
+import { SYNC_CHANGED, type SyncDetached, type SyncRunResult, type SyncSide, type SyncStatus, type SyncUnitStatus } from '../shared/sync.ts'
 import { API_PREFIX } from '../shared/worlds.ts'
 
 async function reply<T>(response: Response): Promise<T> {
@@ -22,12 +22,15 @@ export async function loadSyncStatus(signal: AbortSignal): Promise<SyncStatus> {
   return await reply(await fetch(`${API_PREFIX}/sync/status`, { credentials: 'same-origin', signal }))
 }
 
-/** Syncs every unit, or only the named ones; resolves when the run is over. */
-export async function runSync(units: readonly string[] | undefined, signal: AbortSignal): Promise<SyncRunResult> {
+/** Whether the host answered before the work was over: then the status says when it is. */
+export const isDetached = (value: unknown): value is SyncDetached => typeof value === 'object' && value !== null && (value as { running?: unknown }).running === true
+
+/** Syncs every unit, or only the named ones; resolves with the result, or as `running` when the host answered before the run was over. */
+export async function runSync(units: readonly string[] | undefined, signal: AbortSignal): Promise<SyncRunResult | SyncDetached> {
   return await reply(await fetch(`${API_PREFIX}/sync/run`, { ...json('POST', units === undefined ? {} : { units }), signal }))
 }
 
-export async function resolveSync(unit: string, side: SyncSide, signal: AbortSignal): Promise<SyncUnitStatus | null> {
+export async function resolveSync(unit: string, side: SyncSide, signal: AbortSignal): Promise<SyncUnitStatus | SyncDetached | null> {
   return await reply(await fetch(`${API_PREFIX}/sync/resolve`, { ...json('POST', { unit, side }), signal }))
 }
 

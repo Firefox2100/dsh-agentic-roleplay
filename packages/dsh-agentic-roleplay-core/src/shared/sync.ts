@@ -40,6 +40,8 @@ export interface SyncStatus {
   /** Why sync cannot run, if it cannot. */
   problem?: string
   running: boolean
+  /** Why the last run or choice failed, until the next one starts. */
+  failure?: string
   lastRun?: string
   units: SyncUnitStatus[]
 }
@@ -48,6 +50,11 @@ export type SyncSide = 'local' | 'remote'
 
 export interface SyncRunResult {
   units: SyncUnitStatus[]
+}
+
+/** The answer to a run or a choice that was still going when the request had to be answered: the page reads the status until it is over. */
+export interface SyncDetached {
+  running: true
 }
 
 export const SYNC_CHANGED = 'roleplay-sync-changed'

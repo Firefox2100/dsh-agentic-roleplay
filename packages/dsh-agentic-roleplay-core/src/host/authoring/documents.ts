@@ -54,6 +54,26 @@ async function find(world: EditableWorld, kind: AuthoredEntityKind, key: string)
   return undefined
 }
 
+const LISTED_KEYS = 12
+
+/** The refusal for a key that names nothing: it lists the keys there are, since a model that wrote a display name for a key needs the real ones. */
+async function missing(world: EditableWorld, kind: AuthoredEntityKind, key: string): Promise<InvalidEditProblems> {
+  const format = formats[kind]
+  const root = join(world.directory, format.directory)
+  const keys: string[] = []
+  for (const folder of await subfolders(root)) {
+    try {
+      const parsed = format.parse(await readFile(join(root, folder, format.file), 'utf8'), folder)
+      if (parsed.ok) keys.push(parsed.value.id)
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
+  }
+  const shown = keys.slice(0, LISTED_KEYS).join(', ')
+  const known = keys.length === 0 ? `the world has no ${kind} yet` : `the ${kind} keys are: ${shown}${keys.length > LISTED_KEYS ? `, and ${keys.length - LISTED_KEYS} more` : ''}`
+  return new InvalidEditProblems([`there is no ${kind} "${key}": a key is the stable id, not the display name; ${known} (list_${kind === 'location' ? 'locations' : kind === 'lore' ? 'lore' : `${kind}s`} shows them all)`])
+}
+
 /** What a write may do with fields the format does not read: they never reach a story, so the assistant is told to put the words where they are read (`unread-fields` finds them in a world that has them). */
 export interface WriteOptions {
   refuseUnread?: boolean
@@ -82,13 +102,13 @@ function serializeDocument(kind: AuthoredEntityKind, key: string, value: unknown
 
 export async function readAuthoredEntityDocument(world: EditableWorld, kind: AuthoredEntityKind, key: string): Promise<unknown> {
   const found = await find(world, kind, key)
-  if (found === undefined) throw new InvalidEditProblems([`there is no ${kind} "${key}"`])
+  if (found === undefined) throw await missing(world, kind, key)
   return JSON.parse((await readFile(found.file, 'utf8')).replace(/^﻿/, '')) as unknown
 }
 
 export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown, options: WriteOptions = {}): Promise<void> {
   if (!validNewKey(key)) throw new InvalidEditProblems(['key must be letters (any script), digits, ".", "_" or "-", starting with a letter or digit, at most 100 characters (no brackets, spaces or slashes)'])
-  if (await find(world, kind, key) !== undefined) throw new InvalidEditProblems([`the ${kind} "${key}" already exists`])
+  if (await find(world, kind, key) !== undefined) throw new InvalidEditProblems([`the ${kind} "${key}" already exists: change it with update_world_element (only the fields that change) or replace_world_element (the whole document)`])
   const format = formats[kind]
   const root = join(world.directory, format.directory)
   const folder = join(root, key)
@@ -106,16 +126,37 @@ export async function createAuthoredEntity(world: EditableWorld, kind: AuthoredE
 
 export async function replaceAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, document: unknown, options: WriteOptions = {}): Promise<void> {
   const found = await find(world, kind, key)
-  if (found === undefined) throw new InvalidEditProblems([`there is no ${kind} "${key}"`])
+  if (found === undefined) throw await missing(world, kind, key)
   const text = serializeDocument(kind, key, document, options)
   if (options.dryRun === true) return
   await atomicWrite(found.file, text)
 }
 
+/**
+ * A change written as the fields that differ (JSON merge patch): an object is merged into the stored one field by field, `null` removes a field, and a list or a value replaces what was there whole.
+ * @throws {InvalidEditProblems} when the change is not an object.
+ */
+export function mergeChanges(stored: unknown, changes: unknown): unknown {
+  if (typeof changes !== 'object' || changes === null || Array.isArray(changes)) return changes
+  const base: Record<string, unknown> = typeof stored === 'object' && stored !== null && !Array.isArray(stored) ? { ...stored as Record<string, unknown> } : {}
+  for (const [field, value] of Object.entries(changes as Record<string, unknown>)) {
+    if (value === null) delete base[field]
+    else base[field] = mergeChanges(base[field], value)
+  }
+  return base
+}
+
+/** Changes some fields of an entity's document and checks the result as a replacement is checked. */
+export async function updateAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string, changes: unknown, options: WriteOptions = {}): Promise<void> {
+  if (typeof changes !== 'object' || changes === null || Array.isArray(changes) || Object.keys(changes).length === 0) throw new InvalidEditProblems(['changes must be an object holding the fields to change (null removes a field)'])
+  const stored = await readAuthoredEntityDocument(world, kind, key)
+  await replaceAuthoredEntity(world, kind, key, mergeChanges(stored, changes), options)
+}
+
 /** Deletions remain recoverable without making the trash visible to the world loaders. */
 export async function deleteAuthoredEntity(world: EditableWorld, kind: AuthoredEntityKind, key: string): Promise<string> {
   const found = await find(world, kind, key)
-  if (found === undefined) throw new InvalidEditProblems([`there is no ${kind} "${key}"`])
+  if (found === undefined) throw await missing(world, kind, key)
   const trash = join(world.directory, '.trash', formats[kind].directory)
   await mkdir(trash, { recursive: true })
   const destination = join(trash, `${found.folder}-${Date.now()}-${randomUUID()}`)

@@ -1,7 +1,7 @@
 ---
 name: world-factions
 description: The faction.json format: organisations with public and private state, goals, members and relationships.
-when_to_use: Before you create or replace a faction with create_world_element or replace_world_element (kind faction).
+when_to_use: Before you create, change or replace a faction with create_world_element, update_world_element or replace_world_element (kind faction).
 ---
 
 # Factions (`kind: "faction"`)

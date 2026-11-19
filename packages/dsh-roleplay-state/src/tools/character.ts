@@ -44,7 +44,7 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
       name: 'recall_my_known_entities',
       description: 'Recall the people, places, things and routes you know exist. This says only that you know them, not where they are now or their current state.',
       parameters: { about: { type: 'string', description: 'Optional name or word to narrow the result.' } },
-      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { kind: { type: 'string', required: true }, key: { type: 'string', required: true }, name: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You know of nothing matching that.' : value.map(entry => `- ${entry.kind}: ${entry.name}`).join('\n') }] },
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { kind: { type: 'string', required: true }, key: { type: 'string', required: true }, name: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You know of nothing matching that, and there is nothing more to find: go on with what you know.' : value.map(entry => `- ${entry.kind}: ${entry.name}`).join('\n') }] },
       isConcurrencySafe: () => true,
       async execute(args) {
         const { session } = link()
@@ -63,7 +63,7 @@ export function createCharacterTools(link: () => AgentLink, characterId: Charact
       name: 'recall_my_lore',
       description: 'Recall established lore that you know: history, customs, legends, places and other background knowledge. Unknown lore is never returned.',
       parameters: { about: { type: 'string', required: true, description: 'A name, subject or phrase to look for in what you know.' } },
-      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: { type: 'string', required: true }, title: { type: 'string', required: true }, kind: { type: 'string', required: true }, text: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You do not know any lore matching that.' : value.map(entry => `- ${entry.title} [${entry.kind}] (${entry.key}): ${entry.text}`).join('\n') }] },
+      output: { schema: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { key: { type: 'string', required: true }, title: { type: 'string', required: true }, kind: { type: 'string', required: true }, text: { type: 'string', required: true } } } }, render: (_args, value) => [{ type: 'text', text: value.length === 0 ? 'You do not know any lore matching that, and there is nothing more to find: go on with what you know.' : value.map(entry => `- ${entry.title} [${entry.kind}] (${entry.key}): ${entry.text}`).join('\n') }] },
       isConcurrencySafe: () => true,
       async execute(args) {
         const needle = args.about.trim().toLowerCase()

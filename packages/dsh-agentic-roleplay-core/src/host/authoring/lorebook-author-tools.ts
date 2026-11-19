@@ -101,7 +101,7 @@ export function lorebookAuthorTools(reader: LorebookReader, settings: () => Impo
       async execute(args, exec) {
         const { name, directory } = reader.directory(exec)
         const found = entriesOf(await readLorebook(directory, name)).find(entry => entry.id === args.id)
-        if (found === undefined) throw new Error(`the lorebook has no entry "${args.id}"`)
+        if (found === undefined) throw new Error(`the lorebook has no entry "${args.id}" (list_lorebook_entries shows the ids)`)
         return json(found)
       },
     }),
@@ -199,7 +199,7 @@ export function lorebookAuthorTools(reader: LorebookReader, settings: () => Impo
       async execute(args, exec) {
         const { name, directory } = reader.directory(exec)
         const file = join(directory, IMPORT_FOLDER, STEERING_FILE)
-        if (!existsSync(file)) throw new Error('there is no guidance waiting')
+        if (!existsSync(file)) throw new Error('there is no guidance waiting: it exists only after import_lorebook found instructions in an uploaded file (read_waiting_guidance says what it holds)')
         const pending = JSON.parse(await readFile(file, 'utf8')) as Pending
         const made = await createPresetFromGuidance(reader.library, { name: args.preset?.trim() || name, title: args.title ?? pending.source }, pending.guidance, shipped)
         await rm(file, { force: true })

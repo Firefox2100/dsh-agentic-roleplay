@@ -8,6 +8,8 @@ import { draftProblems, editOf, isDirty, toDraft, type CharacterDraft } from './
 import { RefusedEditError, type WorldSource } from './source.ts'
 import type { Translate } from './WorldEditor.tsx'
 import css from './CharactersPanel.module.css'
+import { PictureActions } from './PictureActions.tsx'
+import type { GalleryTarget } from '../widgets/gallery-view/gallery-api.ts'
 import { navigateEditorTabs } from './EditorTabs.tsx'
 
 /** A steady colour per name, for a portrait that does not exist yet. */
@@ -17,17 +19,20 @@ function hueOf(name: string): number {
   return hash
 }
 
-function Portrait({ character, t, generating, disabled, onGenerate }: { character: WorldCharacter; t: Translate; generating: boolean; disabled: boolean; onGenerate: () => void }) {
+function Portrait({ character, t, generating, disabled, onGenerate, gallery, onFile }: { character: WorldCharacter; t: Translate; generating: boolean; disabled: boolean; onGenerate: () => void; gallery?: GalleryTarget | undefined; onFile: (file: File) => void }) {
   const action = generating ? t('portraitGenerating') : character.portrait === undefined ? t('portraitGenerate') : t('portraitRetry')
-  return <button className={css.portraitBox} type="button" disabled={disabled || generating} aria-label={action} title={action} onClick={onGenerate}>
-    {character.portrait !== undefined
-      ? <img className={css.portrait} src={character.portrait} alt="" loading="lazy" decoding="async" />
-      : <div className={`${css.portrait} ${css.placeholder}`} style={{ background: `hsl(${hueOf(character.name)} 22% 88%)` }} role="img" aria-label={t('portraitMissing')}>
-          <span className={css.initial} aria-hidden="true">{Array.from(character.name)[0]?.toUpperCase()}</span>
-          <span className={css.missing}>{t('portraitMissing')}</span>
-        </div>}
-    <span className={css.portraitAction}>{action}</span>
-  </button>
+  return <div className={css.portraitColumn}>
+    <button className={css.portraitBox} type="button" disabled={disabled || generating} aria-label={action} title={action} onClick={onGenerate}>
+      {character.portrait !== undefined
+        ? <img className={css.portrait} src={character.portrait} alt="" loading="lazy" decoding="async" />
+        : <div className={`${css.portrait} ${css.placeholder}`} style={{ background: `hsl(${hueOf(character.name)} 22% 88%)` }} role="img" aria-label={t('portraitMissing')}>
+            <span className={css.initial} aria-hidden="true">{Array.from(character.name)[0]?.toUpperCase()}</span>
+            <span className={css.missing}>{t('portraitMissing')}</span>
+          </div>}
+      <span className={css.portraitAction}>{action}</span>
+    </button>
+    <PictureActions t={t} disabled={disabled || generating} gallery={gallery} onFile={onFile} />
+  </div>
 }
 
 function Field({ label, help, error, wide, children }: { label: string; help?: string; error?: string | undefined; wide?: boolean; children: React.ReactNode }) {
@@ -63,14 +68,14 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 }
 
 /** One character as an editable page, like a CV: the portrait and the short facts above, what is written about it below. */
-function Sheet({ t, character, places, voices, draft, onChange, generating, portraitDisabled, onGenerate }: { t: Translate; character: WorldCharacter; places: WorldState['places']; voices: { id: string; name?: string }[]; draft: CharacterDraft; onChange: (draft: CharacterDraft) => void; generating: boolean; portraitDisabled: boolean; onGenerate: () => void }) {
+function Sheet({ t, character, places, voices, draft, onChange, generating, portraitDisabled, onGenerate, gallery, onFile }: { gallery?: GalleryTarget | undefined; onFile: (file: File) => void; t: Translate; character: WorldCharacter; places: WorldState['places']; voices: { id: string; name?: string }[]; draft: CharacterDraft; onChange: (draft: CharacterDraft) => void; generating: boolean; portraitDisabled: boolean; onGenerate: () => void }) {
   const set = <K extends keyof CharacterDraft>(key: K, value: CharacterDraft[K]): void => { onChange({ ...draft, [key]: value }) }
   const problems = draftProblems(draft)
   const known = places.some(place => place.key === draft.place)
   return (
     <article className={css.sheet} data-testid="roleplay-character">
       <header className={css.head}>
-        <Portrait character={character} t={t} generating={generating} disabled={portraitDisabled} onGenerate={onGenerate} />
+        <Portrait character={character} t={t} generating={generating} disabled={portraitDisabled} onGenerate={onGenerate} gallery={gallery} onFile={onFile} />
         <div className={css.meta}>
           <Input value={draft.name} aria-label={t('name')} aria-invalid={problems.has('name')} onChange={(event) => { set('name', event.target.value) }} />
           {problems.has('name') && <span className={css.error} role="alert">{t('invalidName')}</span>}
@@ -236,11 +241,10 @@ export function CharactersPanel({ t, world, source, onChanged, actions, initial 
         </div>
       )}
       <div className={css.body} ref={body}>
-        <div><label className={css.portraitHint}><input type="file" accept="image/png" hidden disabled={dirty || portrait.key === current.key} onChange={(event) => { uploadPortrait(event.target.files?.[0]); event.target.value = '' }} /><span role="button" tabIndex={0}>{t('portraitUpload')}</span></label></div>
         {portrait.error !== undefined && <p className={css.portraitError} role="alert">{t('portraitFailed', { message: portrait.error })}</p>}
         {draft.visualDescription.trim() === '' && <p className={css.portraitHint}>{t('portraitIdentityRequired')}</p>}
         {dirty && draft.visualDescription.trim() !== '' && <p className={css.portraitHint}>{t('portraitSaveFirst')}</p>}
-        <Sheet t={t} character={current} places={world.places} voices={voices} draft={draft} generating={portrait.key === current.key} portraitDisabled={dirty} onGenerate={generatePortrait} onChange={(next) => { setDrafts({ ...drafts, [current.key]: next }); setPortrait({}); if (saving.status !== 'saving') setSaving({ status: 'idle' }) }} />
+        <Sheet t={t} character={current} places={world.places} voices={voices} draft={draft} generating={portrait.key === current.key} portraitDisabled={dirty} onGenerate={generatePortrait} gallery={source.gallery} onFile={uploadPortrait} onChange={(next) => { setDrafts({ ...drafts, [current.key]: next }); setPortrait({}); if (saving.status !== 'saving') setSaving({ status: 'idle' }) }} />
       </div>
     </div>
   )

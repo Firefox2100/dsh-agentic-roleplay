@@ -1,7 +1,7 @@
 ---
 name: world-calendar
 description: The calendar.json format and the day tokens used by holidays, routines and time conditions.
-when_to_use: Before you replace the world's calendar with write_world_file (kind calendar), and whenever you write an "on" list in a routine, holiday or time condition.
+when_to_use: Before you change or replace the world's calendar with write_world_file or update_world_file (kind calendar), and whenever you write an "on" list in a routine, holiday or time condition.
 ---
 
 # Calendar and day tokens (`write_world_file`, kind `calendar`)
@@ -19,9 +19,9 @@ Used in a holiday's `on`, a character routine's `on` and a time trigger's `on`:
 | `mon` to `sun` | A weekday |
 | `jan` to `dec` | A whole month |
 | `12-24` | That date every year |
-| `1912-09-21` | That date once |
+| `1912-05-14` | That date once |
 | `12-20..01-05` | An annual span, including across New Year |
-| `1912-09-21..1912-09-22` | A one-time span |
+| `1912-05-14..1912-05-15` | A one-time span |
 | `dom:1`, `dom:last` | A numbered or final day of the month |
 | `nth:mon:1`, `nth:fri:last` | An occurrence of a weekday in the month |
 | `season:winter` | A season, by `hemisphere` |
@@ -36,7 +36,7 @@ Positive entries are alternatives: one must match. Any matching `!` entry exclud
 {
   "hemisphere": "north",
   "holidays": [
-    { "id": "founders-day", "name": "Founder's Day", "on": ["09-21"] },
+    { "id": "founders-day", "name": "Founder's Day", "on": ["05-14"] },
     { "id": "winter-market", "name": "Winter Market", "on": ["nth:fri:last"] }
   ]
 }

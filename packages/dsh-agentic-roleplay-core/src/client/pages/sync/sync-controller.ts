@@ -1,6 +1,6 @@
 import { createSnapshotStore, type SnapshotStore } from '../../store.ts'
 import type { SyncSide, SyncStatus } from '../../../shared/sync.ts'
-import { forgetSync, loadSyncStatus, resolveSync, restoreSync, runSync } from '../../sync-api.ts'
+import { forgetSync, isDetached, loadSyncStatus, resolveSync, restoreSync, runSync } from '../../sync-api.ts'
 import { onPageVisible, pageVisible } from '../../visibility.ts'
 
 export interface SyncState {
@@ -24,6 +24,8 @@ export interface SyncFace {
   /** Syncs a unit that was forgotten again. */
   restore: (unit: string) => void
 }
+
+const MAX_LOOKS = 1800
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
 
@@ -59,7 +61,9 @@ export class SyncController {
     // The run keeps going while the page is away; coming back should show how far it got.
     this.off ??= onPageVisible(() => { void this.read(false) })
     try {
-      await action()
+      const outcome = await action()
+      // the host answered before the work was over (a request that stays open is cut by a proxy): the status says when it is, and why if it failed
+      if (isDetached(outcome)) await this.untilIdle()
     } catch (error) {
       if (this.abort.signal.aborted) return
       this.store.update((draft) => { draft.error = messageOf(error) })
@@ -70,6 +74,18 @@ export class SyncController {
         await this.read(false)
       }
     }
+  }
+
+  private async untilIdle(): Promise<void> {
+    // an hour at most: a host that cannot be read any more must not keep the page waiting for ever
+    for (let look = 0; look < MAX_LOOKS; look += 1) {
+      await new Promise<void>((resolve) => { setTimeout(resolve, 2000) })
+      if (this.abort.signal.aborted) return
+      await this.read(false)
+      if (this.store.getSnapshot().sync?.running !== true) break
+    }
+    const failure = this.store.getSnapshot().sync?.failure
+    if (failure !== undefined) this.store.update((draft) => { draft.error = failure })
   }
 
   private stopPolling(): void {

@@ -63,7 +63,10 @@ export function storySubjects(story: ImageStory): Subject[] {
 
 function findSubject(story: ImageStory, kind: VisualSubjectKind, key: string): Subject {
   const found = storySubjects(story).find(subject => subject.kind === kind && subject.key === key)
-  if (found === undefined) throw new Error(`there is no ${kind} "${key}"`)
+  if (found === undefined) {
+    const keys = storySubjects(story).filter(subject => subject.kind === kind).map(subject => subject.key)
+    throw new Error(`there is no ${kind} "${key}": ${keys.length === 0 ? `the story has no ${kind} to depict` : `the keys are ${keys.slice(0, 12).join(', ')}${keys.length > 12 ? `, and ${keys.length - 12} more` : ''}`} (list_visual_subjects shows them all)`)
+  }
   return found
 }
 

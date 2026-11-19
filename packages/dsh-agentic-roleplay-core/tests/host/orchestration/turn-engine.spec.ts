@@ -881,6 +881,23 @@ describe('making up what the story needs', () => {
     await expect(engine.expand({ chat: 'session-1', turn: 2 }, { need: 'arrival', what: 'Tom' }, signal)).resolves.toBeDefined()
   })
 
+  it('lets a legal out-of-character command make someone in a closed world and past the allowance, and says so to the author', async () => {
+    const decrees: (boolean | undefined)[] = []
+    boundaries.author = { ...boundaries.author, create: (job) => { decrees.push(job.decreed); return Promise.resolve({ created: [{ kind: 'character', key: 'mira', name: 'Mira' }] }) } }
+    store.settings = settingsWith({ enabled: false, perTurn: 1 })
+    store.story.consolidation.enqueue({ kind: 'character', subjectId: 1, note: 'x', turn: 1 })
+    engine.beginOoc(owner, 'bring in Mira')
+    await expect(engine.expand(owner, { need: 'introduction', what: 'Mira' }, signal)).rejects.toThrow(/out-of-character command: rule on it first/)
+    engine.rule(owner, true, 'Allowed.')
+    await expect(engine.expand(owner, { need: 'introduction', what: 'Mira' }, signal)).resolves.toBeDefined()
+    expect(decrees).toEqual([true])
+  })
+
+  it('does not tell the author an ordinary request is a decree', async () => {
+    await engine.expand(owner, { need: 'scene_change', what: 'An attic' }, signal)
+    expect(created).toHaveLength(1)
+  })
+
   it('fits what was made up into the world in the background once enough waits, and the turn does not wait for it', async () => {
     store.settings = settingsWith({ consolidateAfter: 2 })
     store.story.consolidation.enqueue({ kind: 'location', subjectId: 1, note: 'x', turn: 1 })
@@ -1212,6 +1229,16 @@ describe('characters away from the player', () => {
     ])
     expect(offstage()).toMatchObject({ turn: 1, round: 101, situation: 'You were to meet at the Street. Decide.', offstage: true })
     expect(offstage()?.entries.map(entry => [entry.character, entry.intent, entry.commitment, entry.spoken, entry.moved?.key])).toEqual([['bob', 'Bob goes to the street to wait', 'high', false, 'street'], ['carol', 'Carol stays in', 'low', false, undefined]])
+  })
+
+  it('are asked while the player is away too, with no turn being played: what fell due is dealt with and handled', async () => {
+    store.dueOffScene = () => [item()]
+    const runner = scriptedRunner({ bob: { intent: 'Bob goes to the street to wait', commitment: 'high' }, carol: { intent: 'Carol stays in', commitment: 'low' } })
+    await expect(engine.idleWork(owner.chat, runner.run, signal)).resolves.toBe(1)
+    expect(handled).toEqual(['e1'])
+    expect(offstage()).toMatchObject({ round: 101, offstage: true })
+    store.dueOffScene = () => []
+    await expect(engine.idleWork(owner.chat, runner.run, signal)).resolves.toBe(0)
   })
 
   it('are not asked when the chat turns it off, when the turn gave no way to ask, or when nothing is due', async () => {
@@ -1995,6 +2022,25 @@ describe('sleepers and the days of the characters', () => {
     expect(requests).toEqual([])
     await engine.activate(owner, { situation, characters: ['bob', 'alice'], wakes: ['bob'] }, run, signal)
     expect(requests.map(request => request.member.key).sort()).toEqual(['alice', 'bob'])
+  })
+
+  it('keeps what was said to a sleeper to be answered at waking, in a story that goes on while the player is away, and says so', async () => {
+    asleep(bob)
+    const kept: unknown[] = []
+    store.autonomy = { queueReply: (entry: unknown) => { kept.push(entry) } } as never
+    store.settings = () => ({ ...QUIET, autonomy: { ...QUIET.autonomy, enabled: true, messages: true }, clock: { ...QUIET.clock, mode: 'real' } })
+    const { run } = scriptedRunner(only)
+    await expect(engine.activate(owner, { situation, characters: ['bob'] }, run, signal)).rejects.toThrow(/Nothing is lost.*once they are awake/)
+    expect(kept).toEqual([expect.objectContaining({ character: 'bob', name: 'Bob', situation })])
+  })
+
+  it('keeps nothing for a sleeper when the story does not go on by itself', async () => {
+    asleep(bob)
+    const kept: unknown[] = []
+    store.autonomy = { queueReply: (entry: unknown) => { kept.push(entry) } } as never
+    const { run } = scriptedRunner(only)
+    await expect(engine.activate(owner, { situation, characters: ['bob'] }, run, signal)).rejects.not.toThrow(/Nothing is lost/)
+    expect(kept).toEqual([])
   })
 
   it('leaves out the sleepers when nobody is named, and says so when nobody else is left', async () => {

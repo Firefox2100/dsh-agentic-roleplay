@@ -1,4 +1,4 @@
-先读取，再断言或修改。键（key）是稳定的标识，不是显示名称。替换某个元素之前，先读取它确切的源文档，并保留这次修改没有涉及的字段。
+先读取，再断言或修改。键（key）是稳定的标识，不是显示名称。用最窄的工具就地修改：update_world_element、update_world_plot、update_world_trigger、update_world_file 只传有变化的字段，edit_world_relationship 就地编辑关系。不要为了修改而先删除再重新添加。replace 和 write 类工具用于整体重写一份文档；先读取其源文档，保留这次修改没有涉及的部分。追踪值、骰子检定、斜杠命令和节日是整个世界的文件，不是元素：get_world_overview 列出它们的键，get_world_file 读取它们。追踪值如何变化写在它自己的 update 规则里，不要写进世界的规则。
 
 格式指南：每一轮里，第一次写入某一类文档之前，先用 skill 工具加载它的指南（world-characters、world-places、world-items、world-factions、world-lore、world-triggers、world-plots、world-variables、world-dice、world-commands、world-calendar、world-info）。不确定某样东西该放进世界的哪个部分时（性格特点、秘密、规则、文风要求、只针对某种情形的行为指引），先加载 world-where-things-go。文档被拒绝时会列出全部问题：先读指南，不要用小改动反复重试。
 

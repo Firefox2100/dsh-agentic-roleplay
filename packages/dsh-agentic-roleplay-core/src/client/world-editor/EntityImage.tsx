@@ -3,6 +3,7 @@ import type { Translate } from './WorldEditor.tsx'
 import type { WorldSource } from './source.ts'
 import type { WorldState } from '../../shared/world-state.ts'
 import css from './CharactersPanel.module.css'
+import { PictureActions } from './PictureActions.tsx'
 
 /** A steady colour per name, for a picture that does not exist yet. */
 function hueOf(name: string): number {
@@ -44,10 +45,7 @@ export function EntityImage({ t, kind, entry, hasIdentity, dirty, source, onChan
             </div>}
         <span className={css.portraitAction}>{action}</span>
       </button>
-      <label className={css.portraitHint}>
-        <input type="file" accept="image/png" hidden disabled={dirty || busy} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ''; if (file !== undefined) run(() => source.uploadImage(kind, entry.key, file, new AbortController().signal)) }} />
-        <span role="button" tabIndex={0}>{t('imageUpload')}</span>
-      </label>
+      <PictureActions t={t} disabled={dirty || busy} gallery={source.gallery} onFile={(file) => { run(() => source.uploadImage(kind, entry.key, file, new AbortController().signal)) }} />
       {error !== undefined && <p className={css.portraitError} role="alert">{t('imageFailed', { message: error })}</p>}
       {!hasIdentity && <p className={css.portraitHint}>{t('imageIdentityRequired')}</p>}
       {dirty && hasIdentity && <p className={css.portraitHint}>{t('portraitSaveFirst')}</p>}

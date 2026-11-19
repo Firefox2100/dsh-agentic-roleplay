@@ -99,14 +99,14 @@ export class AfterTurnJobs {
       .finally(() => { this.reflecting.delete(owner.chat) }), true)
   }
 
-  /** Fit what was made up into the rest of the world, when enough of it is waiting or some has waited long. */
-  private consolidate(owner: { chat: string; turn: number }, cancel: AbortSignal): void {
+  /** Fit what was made up into the rest of the world, when enough of it is waiting or some has waited long; with `idle` (the player is away and no turn will come to age it) whatever waits. */
+  consolidate(owner: { chat: string; turn: number }, cancel: AbortSignal, idle = false): void {
     const store = this.deps.stores(owner.chat)
     if (store === undefined || this.consolidating.has(owner.chat)) return
     const { authoring } = store.settings()
     const pending = store.story.consolidation.pending()
     if (!authoring.enabled || pending.length === 0) return
-    if (pending.length < authoring.consolidateAfter && !pending.some(item => owner.turn - item.createdTurn >= STALE_AFTER_TURNS)) return
+    if (!idle && pending.length < authoring.consolidateAfter && !pending.some(item => owner.turn - item.createdTurn >= STALE_AFTER_TURNS)) return
     this.consolidating.add(owner.chat)
     this.deps.track(owner.chat, this.deps.boundaries().author.consolidate({ chat: owner.chat, turn: owner.turn, store }, cancel)
       .then(() => { this.deps.written(owner.chat) })

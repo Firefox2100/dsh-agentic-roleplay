@@ -6,6 +6,7 @@ export function worldSource(worldId: string): WorldSource {
   const id = encodeURIComponent(worldId)
   return {
     worldId,
+    gallery: { kind: 'worlds', id: worldId },
     load: async signal => await answer(await fetch(`${API_PREFIX}/worlds/state?id=${id}`, { credentials: 'same-origin', signal })),
     saveCharacter: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/character?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     savePlace: async (key, edit, signal) => await put(`${API_PREFIX}/worlds/state/place?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),

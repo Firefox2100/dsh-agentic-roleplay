@@ -2,6 +2,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import { createUserMessage, ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { cutOff, finishOf, goingRoundInCircles, lastReplyText } from '../agents/cut-off.ts'
 import { AUTHORING_CIRCLE_NUDGES, AUTHORING_NUDGES, AUTHORING_SAME_CALL } from '../agents/limits.ts'
+import { guideOf } from './guides.ts'
 import { guardRepeatedCalls } from '../agents/repeat-guard.ts'
 import type { PromptLibrary } from '../prompts/library.ts'
 
@@ -15,7 +16,7 @@ import type { PromptLibrary } from '../prompts/library.ts'
 export function guardAuthoringTurns(ctx: Context, prompts: () => PromptLibrary, languageOf: (chat: string) => string | undefined, reasoning: () => string = () => ''): void {
   const nudged = new Map<string, number>()
   const circled = new Map<string, number>()
-  guardRepeatedCalls(ctx, exec => (exec.agent === undefined ? undefined : languageOf(exec.agent.session.id)), AUTHORING_SAME_CALL)
+  guardRepeatedCalls(ctx, exec => (exec.agent === undefined ? undefined : languageOf(exec.agent.session.id)), AUTHORING_SAME_CALL, guideOf)
 
   ctx.on('agent/created', async ({ agent, signal }) => {
     const level = reasoning()

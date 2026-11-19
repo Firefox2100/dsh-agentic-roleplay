@@ -4,7 +4,7 @@ import { loadCharacters } from '../characters/load.ts'
 
 /**
  * Refuses an opening whose lines are spoken by someone the world does not have, and lists the ids it does have: a model asked to change who speaks writes a name's initials or an
- * invented id unless it is told the real ones (found live: "hale" and "oldge" for a character whose id was "miller").
+ * invented id unless it is told the real ones.
  * @throws {InvalidEditProblems}
  */
 export async function checkOpeningSpeakers(directory: string, edit: WorldInfoEdit): Promise<void> {

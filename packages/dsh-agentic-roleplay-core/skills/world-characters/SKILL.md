@@ -1,7 +1,7 @@
 ---
 name: world-characters
 description: The character.json format: required and optional fields, allowed values, what each field is for, what to leave out.
-when_to_use: Before you create or replace a character with create_world_element or replace_world_element (kind character).
+when_to_use: Before you create, change or replace a character with create_world_element, update_world_element or replace_world_element (kind character).
 ---
 
 # Characters (`kind: "character"`)

@@ -16,6 +16,19 @@ export interface AutonomyMessage {
   text: string
 }
 
+/** Something said to a character who was asleep, which it answers once it wakes. */
+export interface AutonomyWaiting {
+  character: string
+  name: string
+  /** What happened where the character could not answer, as the game master described it to them. */
+  situation: string
+  /** When it was said, in UTC milliseconds. */
+  at: number
+}
+
+/** The most replies kept waiting for sleepers. */
+const MAX_WAITING = 10
+
 /** What the story did on its own since the player last wrote. */
 export interface AutonomyState {
   /** How many things the characters did on their own with no message from the player in between. */
@@ -24,6 +37,8 @@ export interface AutonomyState {
   sent: Record<string, number>
   /** What the story has not been told of yet. */
   inbox: AutonomyMessage[]
+  /** What was said to characters who were asleep, to be answered when they wake: one per character. */
+  waiting: AutonomyWaiting[]
 }
 
 const isMessage = (value: unknown): value is AutonomyMessage => {
@@ -31,16 +46,21 @@ const isMessage = (value: unknown): value is AutonomyMessage => {
   return typeof entry === 'object' && entry !== null && typeof entry['at'] === 'number' && typeof entry['character'] === 'string' && typeof entry['name'] === 'string' && typeof entry['text'] === 'string'
 }
 
+const isWaiting = (value: unknown): value is AutonomyWaiting => {
+  const entry = value as Record<string, unknown> | null
+  return typeof entry === 'object' && entry !== null && typeof entry['at'] === 'number' && typeof entry['character'] === 'string' && typeof entry['name'] === 'string' && typeof entry['situation'] === 'string'
+}
+
 export function readAutonomy(session: AutonomySession): AutonomyState {
   const stored = session.metadata.getValue(KEY) as Partial<AutonomyState> | undefined
   const sent = typeof stored?.sent === 'object' && stored.sent !== null && !Array.isArray(stored.sent) ? Object.fromEntries(Object.entries(stored.sent).filter(([, value]) => typeof value === 'number')) : {}
-  return { unanswered: typeof stored?.unanswered === 'number' ? stored.unanswered : 0, sent, inbox: Array.isArray(stored?.inbox) ? stored.inbox.filter(isMessage) : [] }
+  return { unanswered: typeof stored?.unanswered === 'number' ? stored.unanswered : 0, sent, inbox: Array.isArray(stored?.inbox) ? stored.inbox.filter(isMessage) : [], waiting: Array.isArray(stored?.waiting) ? stored.waiting.filter(isWaiting) : [] }
 }
 
 /** A character wrote to the player: it counts as one more thing done without a reply, and waits to be told to the story. */
 export function recordMessage(session: AutonomySession, message: AutonomyMessage): AutonomyState {
   const state = readAutonomy(session)
-  const next: AutonomyState = { unanswered: state.unanswered + 1, sent: { ...state.sent, [message.character]: message.at }, inbox: [...state.inbox, message].slice(-MAX_INBOX) }
+  const next: AutonomyState = { ...state, unanswered: state.unanswered + 1, sent: { ...state.sent, [message.character]: message.at }, inbox: [...state.inbox, message].slice(-MAX_INBOX) }
   session.metadata.setValue(KEY, next as never)
   return next
 }
@@ -49,6 +69,19 @@ export function recordMessage(session: AutonomySession, message: AutonomyMessage
 export function recordAsk(session: AutonomySession, character: string, at: number): void {
   const state = readAutonomy(session)
   session.metadata.setValue(KEY, { ...state, sent: { ...state.sent, [character]: at } } as never)
+}
+
+/** Something was said to a sleeper: it is kept, replacing what was waiting for the same character, to be answered when the character wakes. */
+export function queueReply(session: AutonomySession, waiting: AutonomyWaiting): void {
+  const state = readAutonomy(session)
+  session.metadata.setValue(KEY, { ...state, waiting: [...state.waiting.filter(entry => entry.character !== waiting.character), waiting].slice(-MAX_WAITING) } as never)
+}
+
+/** These replies are no longer waiting: they were answered, or the character did not want to. */
+export function dropWaiting(session: AutonomySession, characters: readonly string[]): void {
+  const state = readAutonomy(session)
+  if (!state.waiting.some(entry => characters.includes(entry.character))) return
+  session.metadata.setValue(KEY, { ...state, waiting: state.waiting.filter(entry => !characters.includes(entry.character)) } as never)
 }
 
 /** The player wrote: what the story was not told of yet, and the count of things done without a reply starts again. */

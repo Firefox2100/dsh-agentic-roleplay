@@ -14,7 +14,7 @@ import { loreSet, thingsSet, valuesSet, type PairSet } from './pairs.ts'
  */
 const live = process.env['BENCH_LIVE'] !== undefined
 const url = process.env['BENCH_LLM_URL'] ?? 'http://localhost:8081/v1'
-const embedModel = process.env['BENCH_EMBED_MODEL'] ?? 'bge-m3'
+const embedModel = process.env['BENCH_EMBED_MODEL'] ?? 'qwen3-embedding-8b'
 const rerankModel = process.env['BENCH_RERANK_MODEL'] ?? 'bge-reranker-v2-m3'
 const out = process.env['BENCH_OUT'] ?? join(import.meta.dirname, '..', '..', '..', '..', 'eval', 'results')
 const LIMIT = 12

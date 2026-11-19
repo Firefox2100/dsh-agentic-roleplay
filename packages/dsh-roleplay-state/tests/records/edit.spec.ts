@@ -50,7 +50,7 @@ describe('what a belief rests on', () => {
     expect(problemsOf(edit({ beliefs: [{ character: 'alice', kind: 'belief', text: 'x', importance: 2, confidence: 'certain' as never, evidenceFor: [bobs, 999] }] }))).toEqual([
       'beliefs[0]: confidence is one of doubtful, likely, sure',
       `beliefs[0].evidence_for: perception ${bobs} is not one the character took in`,
-      'beliefs[0].evidence_for: there is no perception 999',
+      'beliefs[0].evidence_for: there is no perception 999 (read_records shows the ids)',
     ])
   })
 
@@ -111,14 +111,14 @@ describe('applying an edit', () => {
       'events[0]: importance must be a whole number from 1 to 5',
       'events[0].involves: there is no character "dan" (the characters are: alice, bob)',
       'events[0].perceived_by[1]: alice is listed twice',
-      'events[0].perceived_by[2]: unknown mode "dreamt"',
-      'event_edits[0]: there is no event 99',
-      'event_retractions: there is no event 98',
-      'beliefs[0]: unknown kind "rumour"',
+      'events[0].perceived_by[2]: unknown mode "dreamt" (witnessed, heard, told, inferred)',
+      'event_edits[0]: there is no event 99 (read_records shows the ids)',
+      'event_retractions: there is no event 98 (read_records shows the ids)',
+      'beliefs[0]: unknown kind "rumour" (belief, relationship, knowledge)',
       'beliefs[0]: say what the character believes or knows',
       'beliefs[0]: importance must be a whole number from 1 to 5',
-      'belief_edits[0]: there is no belief 97',
-      'belief_retractions: there is no belief 96',
+      'belief_edits[0]: there is no belief 97 (read_records shows the ids)',
+      'belief_retractions: there is no belief 96 (read_records shows the ids)',
       'threads_opened[0]: say what is unsettled',
       'threads_resolved: there is no thread 95',
     ])

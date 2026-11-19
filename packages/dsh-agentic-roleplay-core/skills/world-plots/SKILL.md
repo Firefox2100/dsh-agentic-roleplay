@@ -1,7 +1,7 @@
 ---
 name: world-plots
 description: The plot format: optional story structures with a premise, hooks, developments and pacing; what a good plot is.
-when_to_use: Before you replace the world's plots with replace_world_plots, or when the person asks for story hooks and longer arcs.
+when_to_use: Before you change or replace the world's plots with update_world_plot or replace_world_plots, or when the person asks for story hooks and longer arcs.
 ---
 
 # Plots (`replace_world_plots`)

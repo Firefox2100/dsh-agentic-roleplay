@@ -49,4 +49,21 @@ describe('the sync page controller', () => {
     await settle()
     expect(controller.store.getSnapshot().working).toBe(true)
   })
+
+  it('keeps working until the status says the run is over when the host answered before it was, and shows why it failed', async () => {
+    vi.useFakeTimers()
+    let reads = 0
+    vi.stubGlobal('fetch', vi.fn((url: string) => {
+      if (url.endsWith('/sync/run')) return Promise.resolve(new Response(JSON.stringify({ running: true }), { status: 202 }))
+      reads += 1
+      return Promise.resolve(new Response(JSON.stringify(reads < 3 ? { running: true, units: [] } : { running: false, failure: 'the remote went away', units: [] })))
+    }))
+    const controller = new SyncController()
+    controller.inject().run()
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(controller.store.getSnapshot().working).toBe(true)
+    await vi.advanceTimersByTimeAsync(10_000)
+    expect(controller.store.getSnapshot()).toMatchObject({ working: false, error: 'the remote went away' })
+    controller.dispose()
+  })
 })

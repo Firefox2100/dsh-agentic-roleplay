@@ -22,7 +22,7 @@ const worlds = (process.env['BENCH_WORLDS'] ?? '').split(',').filter(entry => en
 
 const options: LiveOptions = {
   llm: { url: env('BENCH_LLM_URL', 'http://localhost:8081/v1'), model: env('BENCH_LLM_MODEL', 'qwen3.6-35b-a3b-uncensored-1m'), temperature: 0.2, reasoning: env('BENCH_REASONING', 'none') },
-  embed: { url: env('BENCH_LLM_URL', 'http://localhost:8081/v1'), model: env('BENCH_EMBED_MODEL', 'bge-m3') },
+  embed: { url: env('BENCH_LLM_URL', 'http://localhost:8081/v1'), model: env('BENCH_EMBED_MODEL', 'qwen3-embedding-8b') },
   ...mode === 'llm' ? {} : { decision: { url: env('BENCH_DECISION_URL', 'http://localhost:8083/v1'), model: env('BENCH_DECISION_MODEL', 'kev-9b'), mode, confidence: Number(env('BENCH_CONFIDENCE', '0.7')) } },
   concurrency: Number(env('BENCH_CONCURRENCY', '2')),
 }

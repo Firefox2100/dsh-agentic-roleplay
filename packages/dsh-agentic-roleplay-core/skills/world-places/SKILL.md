@@ -1,7 +1,7 @@
 ---
 name: world-places
 description: The location.json format: places, features, exits, containment, travel and locks.
-when_to_use: Before you create or replace a place with create_world_element or replace_world_element (kind location).
+when_to_use: Before you create, change or replace a place with create_world_element, update_world_element or replace_world_element (kind location).
 ---
 
 # Places (`kind: "location"`)

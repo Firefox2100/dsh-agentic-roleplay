@@ -23,12 +23,14 @@ export async function expandWorld(boundaries: Boundaries, store: TurnStore, stat
   const what = input.what.trim()
   if (what === '') throw new Error('say what is needed, from what the story has established: who or where, and why now')
   const { authoring } = store.settings()
-  if (!authoring.enabled) throw new Error('this world is closed: nothing can be made up in it')
+  // a legal out-of-character command is the player's decree as the story's author: it outranks the setting that closes the world and the turn's allowance
+  const decreed = state.ooc?.ruling?.legal === true
+  if (!authoring.enabled && !decreed) throw new Error('this world is closed: nothing can be made up in it')
   // people and places have an allowance each: a turn that moved the story to a new place must still be able to bring someone into it
   const kind = need === 'scene_change' ? 'location' : need === 'arrival' || need === 'introduction' ? 'character' : undefined
   const made = store.story.consolidation.createdIn(owner.turn).filter(entry => kind === undefined || entry.kind === kind).length
-  if (made >= authoring.perTurn) throw new Error(`${made} new ${kind === 'location' ? (made === 1 ? 'place was' : 'places were') : kind === 'character' ? (made === 1 ? 'character was' : 'characters were') : (made === 1 ? 'thing was' : 'things were')} already made up this turn, which is the most this chat allows: work with what exists, and do not ask again this turn`)
-  return await boundaries.author.create({ chat: owner.chat, turn: owner.turn, need, what, store }, signal)
+  if (made >= authoring.perTurn && !decreed) throw new Error(`${made} new ${kind === 'location' ? (made === 1 ? 'place was' : 'places were') : kind === 'character' ? (made === 1 ? 'character was' : 'characters were') : (made === 1 ? 'thing was' : 'things were')} already made up this turn, which is the most this chat allows: work with what exists, and do not ask again this turn`)
+  return await boundaries.author.create({ chat: owner.chat, turn: owner.turn, need, what, store, ...decreed ? { decreed } : {} }, signal)
 }
 
 /**

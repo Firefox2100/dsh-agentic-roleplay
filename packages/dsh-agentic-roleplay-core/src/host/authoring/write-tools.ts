@@ -11,12 +11,13 @@ import { deleteTriggerDocument, writeTriggerDocument } from '../triggers/files.t
 import { loadWorldParts } from '../triggers/parts.ts'
 import { checkWorld } from '../worlds/world-check.ts'
 import { formatIssue } from '../validation.ts'
-import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, readAuthoredEntityDocument, replaceAuthoredEntity, type AuthoredEntityKind } from './documents.ts'
+import { AUTHORED_ENTITY_KINDS, createAuthoredEntity, deleteAuthoredEntity, readAuthoredEntityDocument, replaceAuthoredEntity, updateAuthoredEntity, type AuthoredEntityKind } from './documents.ts'
 import type { AuthoredWorldReader } from './read-tools.ts'
 import { WORLD_FILE_KINDS, isWorldFileKind, writeWorldFile } from './world-files.ts'
 import { PACK_MUTATION_TOOLS } from './pack-tools.ts'
 import { PROMPT_MUTATION_TOOLS, PROSE_PROMPTS } from './prompt-tools.ts'
 import { IMAGE_MUTATION_TOOLS } from './image-tools.ts'
+import { updatePlot, updateTrigger, updateWorldFileEntry } from './partial.ts'
 import { changedFields, createdFields, plain, sizeOf, type Summary } from './approval-summary.ts'
 
 const output = (value: unknown) => [{ type: 'text' as const, text: JSON.stringify(value, null, 2) }]
@@ -27,7 +28,7 @@ const keyParameter = { type: 'string' as const, required: true as const, descrip
 /** The fields of `world.json` the assistant changes: what the world says about itself. The name, the preset, the lorebooks, the sampling and the tool switches are the person's choices and stay theirs. */
 export const WORLD_INFO_FIELDS = ['description', 'tags', 'rules', 'opening', 'openingParts', 'alternateOpenings', 'startQuestions', 'startingTime', 'timeZone', 'version', 'authorName', 'authorUrl'] as const
 
-export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'reshape_opening', 'edit_world_info', 'create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'delete_world_trigger', 'write_world_file', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS, ...IMAGE_MUTATION_TOOLS])
+export const AUTHORING_MUTATION_TOOLS = new Set(['import_preset', 'reshape_opening', 'edit_world_info', 'create_world_element', 'replace_world_element', 'update_world_element', 'delete_world_element', 'edit_world_relationship', 'replace_world_plots', 'update_world_plot', 'write_world_trigger', 'update_world_trigger', 'delete_world_trigger', 'write_world_file', 'update_world_file', ...PROMPT_MUTATION_TOOLS, ...PACK_MUTATION_TOOLS, ...IMAGE_MUTATION_TOOLS])
 
 function result(action: string, kind: string, key: string, state: Awaited<ReturnType<typeof readWorldEditor>>, extra: Record<string, unknown> = {}): unknown {
   return { action, kind, key, counts: { characters: state.characters.length, locations: state.places.length, items: state.things.length, factions: state.factions.length, lore: state.lore?.length ?? 0, plots: state.plots.length, relationships: state.relations.length }, ...extra }
@@ -48,12 +49,16 @@ function plotDocument(value: unknown) {
 export async function validateMutation(reader: AuthoredWorldReader, exec: ToolExecution): Promise<void> {
   const args = exec.arguments as Record<string, unknown>
   if (exec.name === 'edit_world_info') { const { record } = await reader.read(exec); await checkOpeningSpeakers(record.directory, parseWorldInfoEdit(args['changes'])); return }
-  if (exec.name !== 'create_world_element' && exec.name !== 'replace_world_element' && exec.name !== 'write_world_trigger' && exec.name !== 'write_world_file') return
+  if (!['create_world_element', 'replace_world_element', 'update_world_element', 'write_world_trigger', 'update_world_trigger', 'write_world_file', 'update_world_file', 'update_world_plot'].includes(exec.name)) return
   const { record } = await reader.read(exec)
+  if (exec.name === 'update_world_plot') { await updatePlot({ id: record.summary.id, directory: record.directory }, String(args['key']), args['changes'], { dryRun: true }); return }
+  if (exec.name === 'update_world_trigger') { await updateTrigger(record.directory, await loadWorldParts(record.directory), String(args['key']), args['changes'], { dryRun: true }); return }
+  if (exec.name === 'update_world_file') { await updateWorldFileEntry({ id: record.summary.id, directory: record.directory }, fileKind(args['kind']), String(args['key']), args['changes'], { dryRun: true }); return }
   if (exec.name === 'write_world_file') { await writeWorldFile({ id: record.summary.id, directory: record.directory }, fileKind(args['kind']), args['document'], { dryRun: true }); return }
   const world = { id: record.summary.id, directory: record.directory }
   const key = String(args['key'])
   if (exec.name === 'write_world_trigger') { await writeTriggerDocument(record.directory, await loadWorldParts(record.directory), key, args['document'], { dryRun: true }); return }
+  if (exec.name === 'update_world_element') { await updateAuthoredEntity(world, args['kind'] as AuthoredEntityKind, key, args['changes'], { refuseUnread: true, dryRun: true }); return }
   const write = exec.name === 'create_world_element' ? createAuthoredEntity : replaceAuthoredEntity
   await write(world, args['kind'] as AuthoredEntityKind, key, args['document'], { refuseUnread: true, dryRun: true })
 }
@@ -93,7 +98,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
   return [
     defineTool({
       name: 'create_world_element',
-      description: 'Create a character, location, item, faction or lore entry from a complete authored JSON document. Load the skill for its kind first (world-characters, world-places, world-items, world-factions, world-lore): it lists the fields, their types and allowed values. The key becomes its stable id. A character that is somewhere in the story needs start.location, the key of an existing place (start: {"location": "yard"}); one without it is in no place. Requires user approval.',
+      description: 'Create a character, location, item, faction or lore entry from a complete authored JSON document. Load the skill for its kind first (world-characters, world-places, world-items, world-factions, world-lore): it lists the fields, their types and allowed values. The key becomes its stable id. A character that is somewhere in the story needs start.location, the key of an existing place (start: {"location": "<place key>"}); one without it is in no place. Requires user approval.',
       parameters: { kind: kindParameter, key: keyParameter, document: { type: 'json', required: true, description: 'Complete snake_case document in the world file format.' } },
       output: jsonOutput,
       async execute(args, exec) {
@@ -113,6 +118,18 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
         const world = { id: record.summary.id, directory: record.directory }
         await replaceAuthoredEntity(world, args.kind as AuthoredEntityKind, args.key, args.document, { refuseUnread: true })
         return result('replaced', args.kind, args.key, await readWorldEditor(world)) as never
+      },
+    }),
+    defineTool({
+      name: 'update_world_element',
+      description: 'Change some fields of a character, location, item, faction or lore entry and leave everything else as it is: send only the fields that change, in the world file format (the same names the entry\'s source shows), and they are merged into the stored document. An object is merged field by field (start: {"location": "<place key>"} changes only the place); null removes a field; a list or a text replaces what was there whole, so a list you change must be sent complete. The stable id cannot be changed. Prefer this to replace_world_element for any change that is not a rewrite. Requires user approval.',
+      parameters: { kind: kindParameter, key: keyParameter, changes: { type: 'json', required: true, description: 'The fields to change, as a snake_case object in the world file format.' } },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        const world = { id: record.summary.id, directory: record.directory }
+        await updateAuthoredEntity(world, args.kind as AuthoredEntityKind, args.key, args.changes, { refuseUnread: true })
+        return result('updated', args.kind, args.key, await readWorldEditor(world)) as never
       },
     }),
     defineTool({
@@ -147,7 +164,7 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
     }),
     defineTool({
       name: 'edit_world_relationship',
-      description: 'Create, update or remove one authored character relationship, knowledge edge, faction membership, faction social tie or map exit. To create: {"create": true, "kind", "from", "to", and the fields the kind needs (label for character and social, role for membership, description for exit, toKind for knowledge)}, with no key. To change: {"kind", "key", the fields to change}, the key copied exactly from list_relationships. To remove: {"kind", "key", "remove": true}. Requires user approval.',
+      description: 'Create, update or remove one authored character relationship, knowledge edge, faction membership, faction social tie or map exit. To create: {"create": true, "kind", "from", "to", and the fields the kind needs (label for character and social, role for membership, description for exit, toKind for knowledge)}, with no key. To change (the label and summary of a character or social relationship, the numbers, a role, the description of a route): {"kind", "key", the fields to change}, the key copied exactly from list_relationships; no from or to, and nothing is deleted or re-created, so nothing else changes. The ends of a relationship cannot be changed: remove it and create the new one. To remove: {"kind", "key", "remove": true}. Requires user approval.',
       parameters: { change: { type: 'json', required: true, description: 'Relationship change accepted by the world editor.' } },
       output: jsonOutput,
       async execute(args, exec) {
@@ -171,6 +188,18 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
       },
     }),
     defineTool({
+      name: 'update_world_plot',
+      description: 'Change some fields of one plot and leave the other fields and the other plots as they are: send only what changes, in the plot file format (see get_plot). An object is merged field by field, null removes a field, and a list (hooks, developments, participants) replaces what was there whole, so a changed list must be sent complete. The whole list is checked as replace_world_plots checks it. Prefer this to replace_world_plots for any change to one plot. Requires user approval.',
+      parameters: { key: keyParameter, changes: { type: 'json', required: true, description: 'The fields to change, as a snake_case object in the plot file format.' } },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        const world = { id: record.summary.id, directory: record.directory }
+        await updatePlot(world, args.key, args.changes)
+        return result('updated', 'plot', args.key, await readWorldEditor(world)) as never
+      },
+    }),
+    defineTool({
       name: 'write_world_trigger',
       description: 'Create or replace one trigger (something the world does by itself) in triggers.json, from a complete document in the file format, by its key. It is read as a story start reads it and refused, with every problem, when it is malformed or names a character, place, item, variable or trigger the world does not have; read get_world_trigger first when replacing. Requires user approval.',
       parameters: { key: keyParameter, document: { type: 'json', required: true, description: 'Complete snake_case trigger: name, when (condition), effects (one to six: edit, beat, cue), and optionally repeat, cooldown_seconds, chance, priority, expires, announce. A beat or cue may have a while condition and names such as {where:character}.' } },
@@ -179,6 +208,28 @@ export function authoredWorldWriteTools(reader: AuthoredWorldReader): ToolDefini
         const { record } = await reader.read(exec)
         const action = await writeTriggerDocument(record.directory, await loadWorldParts(record.directory), args.key, args.document)
         return result(action, 'trigger', args.key, await readWorldEditor({ id: record.summary.id, directory: record.directory })) as never
+      },
+    }),
+    defineTool({
+      name: 'update_world_trigger',
+      description: 'Change some fields of one trigger and leave the rest as it is: send only what changes, in the trigger file format (see get_world_trigger). An object is merged field by field, null removes a field, and a list (effects) or a condition replaces what was there whole, so send a changed effects list complete. The result is checked as write_world_trigger checks it. Prefer this to write_world_trigger for any change that is not a rewrite. Requires user approval.',
+      parameters: { key: keyParameter, changes: { type: 'json', required: true, description: 'The fields to change, as a snake_case object in the trigger file format.' } },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        await updateTrigger(record.directory, await loadWorldParts(record.directory), args.key, args.changes)
+        return result('updated', 'trigger', args.key, await readWorldEditor({ id: record.summary.id, directory: record.directory })) as never
+      },
+    }),
+    defineTool({
+      name: 'update_world_file',
+      description: 'Change some fields of one entry of a whole-world file and leave every other entry as it is: a tracked value (kind variables, by its key), a dice check (dice, by key), a slash command (commands, by key or word) or a holiday (calendar, by id). Send only what changes, in the format the guide of the kind shows; null removes a field, a list replaces whole. The whole file is checked as write_world_file checks it. The calendar\'s hemisphere is changed with write_world_file. Prefer this to write_world_file for a change to one entry. Requires user approval.',
+      parameters: { kind: { type: 'string', required: true, enum: WORLD_FILE_KINDS }, key: { type: 'string', required: true, description: 'The key of the entry (the id of a holiday).' }, changes: { type: 'json', required: true, description: 'The fields to change, as a snake_case object in the file format.' } },
+      output: jsonOutput,
+      async execute(args, exec) {
+        const { record } = await reader.read(exec)
+        await updateWorldFileEntry({ id: record.summary.id, directory: record.directory }, fileKind(args.kind), args.key, args.changes)
+        return result('updated', args.kind, args.key, await readWorldEditor({ id: record.summary.id, directory: record.directory })) as never
       },
     }),
     defineTool({
@@ -310,6 +361,7 @@ async function detailOf(exec: ToolExecution, kind: string, key: string, current:
       const before = exec.agent === undefined ? undefined : await current?.(exec.agent.session.id, kind as AuthoredEntityKind, key)
       return before === undefined ? createdFields(args['document']) : changedFields(before, args['document'])
     }
+    case 'update_world_element': case 'update_world_plot': case 'update_world_trigger': case 'update_world_file': return plain(args['changes'])
     case 'edit_world_relationship': return plain(args['change'])
     case 'replace_world_plots': return Array.isArray(args['plots']) ? { en: `${args['plots'].length} plots`, zh: `${args['plots'].length} 条剧情` } : undefined
     case 'write_world_trigger': return createdFields(args['document'])

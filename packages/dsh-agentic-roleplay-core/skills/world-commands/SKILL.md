@@ -1,7 +1,7 @@
 ---
 name: world-commands
 description: The commands.json format: the world's own slash commands, the flag each raises, and how triggers use it.
-when_to_use: Before you replace the world's commands with write_world_file (kind commands), or when the player should be able to start something with a slash word.
+when_to_use: Before you change or replace the world's commands with write_world_file or update_world_file (kind commands), or when the player should be able to start something with a slash word.
 ---
 
 # Slash commands (`write_world_file`, kind `commands`)

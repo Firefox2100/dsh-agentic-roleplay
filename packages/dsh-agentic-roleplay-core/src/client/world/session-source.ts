@@ -5,6 +5,7 @@ import { answer, listVoices, post, postFile, put, type WorldSource } from '../wo
 export function sessionSource(session: string): WorldSource {
   const id = encodeURIComponent(session)
   return {
+    gallery: { kind: 'sessions', id: session },
     load: async signal => await answer(await fetch(`${API_PREFIX}/sessions/world?id=${id}`, { credentials: 'same-origin', signal })),
     saveCharacter: async (key, edit, signal) => await put(`${API_PREFIX}/sessions/world/character?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     savePlace: async (key, edit, signal) => await put(`${API_PREFIX}/sessions/world/place?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),

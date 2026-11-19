@@ -1,7 +1,7 @@
 ---
 name: world-dice
 description: The dice.json format: the world's own checks, dice notation, comparison, bands and what a roll means.
-when_to_use: Before you replace the world's dice checks with write_world_file (kind dice), or when a world needs uncertain attempts settled by rolls.
+when_to_use: Before you change or replace the world's dice checks with write_world_file or update_world_file (kind dice), or when a world needs uncertain attempts settled by rolls.
 ---
 
 # Dice checks (`write_world_file`, kind `dice`)

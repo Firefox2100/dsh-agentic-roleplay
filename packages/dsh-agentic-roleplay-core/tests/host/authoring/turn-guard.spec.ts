@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { cutOff, finishOf } from '../../../src/host/agents/cut-off.ts'
+import { guideOf } from '../../../src/host/authoring/guides.ts'
 import { guardAuthoringTurns } from '../../../src/host/authoring/turn-guard.ts'
 
 const finish = (kind: string) => ({ chunk: { type: 'finish', reason: { kind } } })
@@ -164,5 +165,54 @@ describe('a call made again and again', () => {
     for (let n = 0; n < 6; n += 1) expect((await none.call(agentOf([]).agent, 'x', {})).kind).toBe('allow')
     const helper = installed('zh')
     for (let n = 0; n < 6; n += 1) expect((await helper.call(agentOf([], 'subagent').agent, 'x', {})).kind).toBe('allow')
+  })
+})
+
+describe('a tool that keeps failing and has a format guide', () => {
+  const fail = async (guard: ReturnType<typeof installed>, agent: never, args: object, name = 'create_world_element') => {
+    const decision = await guard.call(agent, name, args)
+    if (decision.kind === 'allow') guard.result(agent, name, true)
+    return decision
+  }
+
+  it('is refused once, with the guide named, until the guide is loaded', async () => {
+    const guard = installed()
+    const { agent } = agentOf([])
+    await guard.step(agent, 1)
+    expect((await fail(guard, agent, { kind: 'location', key: 'a' })).kind).toBe('allow')
+    expect((await fail(guard, agent, { kind: 'location', key: 'b' })).kind).toBe('allow')
+    const pointed = await fail(guard, agent, { kind: 'location', key: 'c' })
+    expect(pointed.kind).toBe('deny')
+    expect(pointed.reason).toContain('world-places')
+    expect((await fail(guard, agent, { kind: 'location', key: 'd' })).kind).toBe('allow')
+  })
+
+  it('is not pointed at the guide when the guide was loaded', async () => {
+    const guard = installed()
+    const { agent } = agentOf([])
+    await guard.step(agent, 1)
+    await guard.call(agent, 'skill', { name: 'world-places' })
+    for (const key of ['a', 'b', 'c']) expect((await fail(guard, agent, { kind: 'location', key })).kind).toBe('allow')
+  })
+
+  it('names the guide when it is stopped for the rest of the turn', async () => {
+    const guard = installed()
+    const { agent } = agentOf([])
+    await guard.step(agent, 1)
+    await guard.call(agent, 'skill', { name: 'world-places' })
+    for (let n = 0; n < 6; n += 1) await fail(guard, agent, { kind: 'location', key: `k${n}` })
+    const stopped = await fail(guard, agent, { kind: 'location', key: 'z' })
+    expect(stopped.kind).toBe('deny')
+    expect(stopped.reason).toContain('world-places')
+  })
+})
+
+describe('guideOf', () => {
+  it('names the guide of the kind a tool writes, and nothing for a tool no guide covers', () => {
+    expect(guideOf({ name: 'create_world_element', arguments: { kind: 'location' } })).toBe('world-places')
+    expect(guideOf({ name: 'write_world_file', arguments: { kind: 'dice' } })).toBe('world-dice')
+    expect(guideOf({ name: 'write_world_trigger', arguments: {} })).toBe('world-triggers')
+    expect(guideOf({ name: 'list_characters', arguments: {} })).toBeUndefined()
+    expect(guideOf({ name: 'create_world_element', arguments: { kind: 'unknown' } })).toBeUndefined()
   })
 })

@@ -21,6 +21,12 @@ describe('world authoring approval gate', () => {
     expect(next).not.toHaveBeenCalled()
   })
 
+  it('asks before part of an element is changed, showing the fields', async () => {
+    const next = vi.fn()
+    await expect(authoringApproval(exec('update_world_element', undefined, { kind: 'character', key: 'clara', changes: { summary: 'New.' } }), next)).resolves.toMatchObject({ kind: 'ask', reason: 'edit authored world character “clara”' })
+    expect(next).not.toHaveBeenCalled()
+  })
+
   it('asks before a trigger is written or removed', async () => {
     const next = vi.fn()
     await expect(authoringApproval(exec('write_world_trigger', undefined, { key: 'knock', document: {} }), next)).resolves.toMatchObject({ kind: 'ask', reason: 'write authored world trigger “knock”', displayReason: { en: 'Write trigger “knock” in the world files?', zh: '写入世界文件中的trigger “knock”？' } })

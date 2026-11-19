@@ -125,6 +125,7 @@ export function createPrompt(job: CreateJob, perTurn: number): string {
   return [
     `The game master asks for something to be made up. Reason given: ${job.need}.`,
     `What it says is needed: ${job.what}`,
+    ...job.decreed === true ? ['The player decreed this as the author of the story, in an out-of-character command. It outranks the tests above and the allowance below: do not decline for lack of need or because something that exists could serve. Make what was asked and nothing else; decline only when it cannot be made consistent with the world, and say why.'] : [],
     '',
     `It is turn ${job.turn}. At most ${perTurn} new character${perTurn === 1 ? '' : 's'} and ${perTurn} new place${perTurn === 1 ? '' : 's'} may be made in a turn (each kind has its own allowance); already made this turn: ${store.story.consolidation.createdIn(job.turn).filter(entry => entry.kind === 'character').length} character(s), ${store.story.consolidation.createdIn(job.turn).filter(entry => entry.kind === 'location').length} place(s).`,
     here === undefined ? 'The story is not in any place yet.' : `The story is in ${here.name} (${locationKey(here)}). With the player's character: ${present.filter(member => member.character.control !== 'player').map(member => `${member.character.name} (${member.key})`).join(', ') || 'no one else'}.`,

@@ -1,7 +1,7 @@
 ---
 name: world-variables
 description: The variables.json format: tracked numbers, flags and choices, their update rules, and when something should be a variable.
-when_to_use: Before you replace the world's variables with write_world_file (kind variables), or when you are deciding whether something should be tracked.
+when_to_use: Before you change or replace the world's variables with write_world_file or update_world_file (kind variables), or when you are deciding whether something should be tracked.
 ---
 
 # Variables (`write_world_file`, kind `variables`)

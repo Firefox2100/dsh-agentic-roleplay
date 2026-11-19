@@ -18,7 +18,7 @@ const IMPORT_TOOLS = ['import_survey', 'import_build', 'import_finish', 'import_
 const CARD_TOOLS = ['card_overview', 'card_search', 'card_read', 'card_origin']
 const UPDATE_TOOLS = ['card_diff', 'card_update_finish']
 const PRESET_TOOLS = ['import_preset']
-const WRITE_TOOLS = ['create_world_element', 'replace_world_element', 'delete_world_element', 'edit_world_info', 'edit_world_relationship', 'replace_world_plots', 'write_world_trigger', 'write_world_file', 'delete_world_trigger']
+const WRITE_TOOLS = ['create_world_element', 'replace_world_element', 'update_world_element', 'delete_world_element', 'edit_world_info', 'edit_world_relationship', 'replace_world_plots', 'update_world_plot', 'write_world_trigger', 'update_world_trigger', 'write_world_file', 'update_world_file', 'delete_world_trigger']
 
 const GROUPS = new Map<string, ToolGroup>([
   ...IMPORT_TOOLS.map(name => [name, 'import'] as const),

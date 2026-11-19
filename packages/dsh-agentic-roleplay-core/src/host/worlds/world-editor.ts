@@ -123,12 +123,13 @@ export async function readWorldEditor(world: EditableWorld): Promise<WorldState>
   }
 }
 
-export async function editWorldPlots(world: EditableWorld, edit: PlotsEdit): Promise<WorldState> {
+export async function editWorldPlots(world: EditableWorld, edit: PlotsEdit, options: { dryRun?: boolean } = {}): Promise<WorldState> {
   const parsed = parsePlotsFile(JSON.stringify(edit.plots))
   if (!parsed.ok) throw new InvalidEditProblems(parsed.issues.map(formatIssue))
   const state = await readWorldEditor(world)
   const references = plotReferenceProblems(parsed.value, [...state.characters.map(entry => entry.key), ...state.factions.map(entry => entry.key), ...state.places.map(entry => entry.key), ...state.things.map(entry => entry.key), ...(state.lore ?? []).map(entry => entry.key)])
   if (references.length > 0) throw new InvalidEditProblems(references)
+  if (options.dryRun === true) return state
   const document = parsed.value.map(plot => ({ ...plot, pacing: { quiet_turns: plot.pacing.quietTurns, cooldown_turns: plot.pacing.cooldownTurns, cooldown_days: plot.pacing.cooldownDays } }))
   await replaceFile(join(world.directory, PLOTS_FILE_NAME), JSON.stringify(document, null, 2) + '\n')
   return await readWorldEditor(world)
@@ -338,7 +339,7 @@ async function createWorldRelation(world: EditableWorld, edit: NewRelationEdit):
     return await editEntityFile(world, CHARACTERS_DIR, CHARACTER_FILE_NAME, edit.from, parseCharacterFile, document => {
       if (edit.kind === 'character') {
         const relationships = Array.isArray(document['relationships']) ? document['relationships'] as Json[] : []
-        if (relationships.some(entry => entry?.['to'] === edit.to)) throw new InvalidEditProblems(['that relationship already exists'])
+        if (relationships.some(entry => entry?.['to'] === edit.to)) throw new InvalidEditProblems(['that relationship already exists: to change it send {kind, key, the fields to change}, with the key from list_relationships'])
         relationships.push({ to: edit.to, label: edit.label, summary: edit.summary ?? '', familiarity: edit.familiarity ?? 0, trust: edit.trust ?? 0, affinity: edit.affinity ?? 0, tension: edit.tension ?? 0 }); document['relationships'] = relationships
       } else {
         const knowledge = object(document, 'knowledge')
@@ -356,7 +357,7 @@ async function createWorldRelation(world: EditableWorld, edit: NewRelationEdit):
   }
   if (edit.kind === 'exit') return await editEntityFile(world, LOCATIONS_DIR, LOCATION_FILE_NAME, edit.from, parseLocationFile, document => {
     const exits = Array.isArray(document['exits']) ? document['exits'] as Json[] : []
-    if (exits.some(entry => entry?.['to'] === edit.to)) throw new InvalidEditProblems(['that route already exists'])
+    if (exits.some(entry => entry?.['to'] === edit.to)) throw new InvalidEditProblems(['that route already exists: to change it send {kind, key, the fields to change}, with the key from list_relationships'])
     exits.push({ to: edit.to, description: edit.description, ...(edit.travelSeconds === undefined ? {} : { travel_time_seconds: edit.travelSeconds }), state: edit.state ?? 'open', note: edit.note ?? '' }); document['exits'] = exits
   })
   const faction = edit.kind === 'membership' ? edit.to : edit.from
@@ -364,11 +365,11 @@ async function createWorldRelation(world: EditableWorld, edit: NewRelationEdit):
   return await editEntityFile(world, FACTIONS_DIR, FACTION_FILE_NAME, faction, parseFactionFile, document => {
     if (edit.kind === 'membership') {
       const members = Array.isArray(document['members']) ? document['members'] as Json[] : []
-      if (members.some(entry => entry?.['character'] === edit.from)) throw new InvalidEditProblems(['that membership already exists'])
+      if (members.some(entry => entry?.['character'] === edit.from)) throw new InvalidEditProblems(['that membership already exists: to change it send {kind, key, the fields to change}, with the key from list_relationships'])
       members.push({ character: edit.from, role: edit.role, rank: edit.rank ?? '', status: edit.status ?? 'active', public: edit.public ?? true, commitment: edit.commitment ?? 0.5 }); document['members'] = members
     } else {
       const relationships = Array.isArray(document['relationships']) ? document['relationships'] as Json[] : []
-      if (relationships.some(entry => typeof entry?.['to'] === 'object' && entry['to'] !== null && (entry['to'] as Json)['kind'] === edit.toKind && (entry['to'] as Json)['id'] === edit.to)) throw new InvalidEditProblems(['that relationship already exists'])
+      if (relationships.some(entry => typeof entry?.['to'] === 'object' && entry['to'] !== null && (entry['to'] as Json)['kind'] === edit.toKind && (entry['to'] as Json)['id'] === edit.to)) throw new InvalidEditProblems(['that relationship already exists: to change it send {kind, key, the fields to change}, with the key from list_relationships'])
       relationships.push({ to: { kind: edit.toKind, id: edit.to }, label: edit.label, summary: edit.summary ?? '', familiarity: edit.familiarity ?? 0, trust: edit.trust ?? 0, affinity: edit.affinity ?? 0, tension: edit.tension ?? 0 }); document['relationships'] = relationships
     }
   })
@@ -390,7 +391,7 @@ export async function editWorldRelation(world: EditableWorld, edit: RelationChan
         const target = parts[2]
         const relationships = Array.isArray(document['relationships']) ? document['relationships'] as Json[] : []
         const index = relationships.findIndex(entry => entry?.['to'] === target)
-        if (index < 0) throw new InvalidEditProblems(['the relationship no longer exists'])
+        if (index < 0) throw new InvalidEditProblems(['the relationship no longer exists: list_relationships shows the keys there are now'])
         if (edit.remove === true) relationships.splice(index, 1)
         else for (const field of ['label', 'summary', 'familiarity', 'trust', 'affinity', 'tension'] as const) if (edit[field] !== undefined) relationships[index]![field] = edit[field]
         document['relationships'] = relationships
@@ -400,7 +401,7 @@ export async function editWorldRelation(world: EditableWorld, edit: RelationChan
         const field = subjectKind === 'location' ? 'locations' : subjectKind === 'item' ? 'items' : 'exits'
         const entries = Array.isArray(knowledge[field]) ? knowledge[field] as unknown[] : []
         const index = subjectKind === 'exit' ? entries.findIndex(entry => typeof entry === 'object' && entry !== null && (entry as Json)['from'] === one && (entry as Json)['to'] === two) : entries.indexOf(one)
-        if (index < 0) throw new InvalidEditProblems(['the knowledge relation no longer exists'])
+        if (index < 0) throw new InvalidEditProblems(['the knowledge relation no longer exists: list_relationships shows the keys there are now'])
         entries.splice(index, 1); knowledge[field] = entries
       }
     })
@@ -411,7 +412,7 @@ export async function editWorldRelation(world: EditableWorld, edit: RelationChan
     return await editEntityFile(world, LOCATIONS_DIR, LOCATION_FILE_NAME, from, parseLocationFile, document => {
       const exits = Array.isArray(document['exits']) ? document['exits'] as Json[] : []
       const index = exits.findIndex(entry => entry?.['to'] === to)
-      if (index < 0) throw new InvalidEditProblems(['the exit no longer exists'])
+      if (index < 0) throw new InvalidEditProblems(['the exit no longer exists: list_relationships shows the keys there are now'])
       if (edit.remove === true) exits.splice(index, 1)
       else {
         for (const field of ['description', 'state', 'note'] as const) if (edit[field] !== undefined) exits[index]![field] = edit[field]
@@ -428,7 +429,7 @@ export async function editWorldRelation(world: EditableWorld, edit: RelationChan
       const character = parts[2]
       const members = Array.isArray(document['members']) ? document['members'] as Json[] : []
       const index = members.findIndex(entry => entry?.['character'] === character)
-      if (index < 0) throw new InvalidEditProblems(['the membership no longer exists'])
+      if (index < 0) throw new InvalidEditProblems(['the membership no longer exists: list_relationships shows the keys there are now'])
       if (edit.remove === true) members.splice(index, 1)
       else for (const field of ['role', 'rank', 'status', 'public', 'commitment'] as const) if (edit[field] !== undefined) members[index]![field] = edit[field]
       document['members'] = members
@@ -436,7 +437,7 @@ export async function editWorldRelation(world: EditableWorld, edit: RelationChan
       const targetKind = parts[3]; const target = parts[4]
       const relationships = Array.isArray(document['relationships']) ? document['relationships'] as Json[] : []
       const index = relationships.findIndex(entry => typeof entry?.['to'] === 'object' && entry['to'] !== null && (entry['to'] as Json)['kind'] === targetKind && (entry['to'] as Json)['id'] === target)
-      if (index < 0) throw new InvalidEditProblems(['the relationship no longer exists'])
+      if (index < 0) throw new InvalidEditProblems(['the relationship no longer exists: list_relationships shows the keys there are now'])
       if (edit.remove === true) relationships.splice(index, 1)
       else for (const field of ['label', 'summary', 'familiarity', 'trust', 'affinity', 'tension'] as const) if (edit[field] !== undefined) relationships[index]![field] = edit[field]
       document['relationships'] = relationships

@@ -48,7 +48,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   }
   const ids = (keys: readonly string[] | undefined, where: string): CharacterId[] => list(keys).flatMap(key => idOf(key, where) ?? [])
   const factionByKey = new Map(target.factions.list().map(faction => [faction.sourceId ?? String(faction.id), faction]))
-  const factionIdOf = (key: string, where: string): number | undefined => { const found = factionByKey.get(key); if (found === undefined) problems.push(`${where}: there is no faction "${key}"`); return found?.id }
+  const factionIdOf = (key: string, where: string): number | undefined => { const found = factionByKey.get(key); if (found === undefined) problems.push(`${where}: there is no faction "${key}" (list_factions shows the keys)`); return found?.id }
   const socialIdOf = (kind: 'character' | 'faction', key: string, where: string): number | undefined => kind === 'character' ? idOf(key, where) : factionIdOf(key, where)
   const importance = (value: number | undefined, where: string): void => {
     if (value !== undefined && (!Number.isInteger(value) || value < IMPORTANCE_MIN || value > IMPORTANCE_MAX)) problems.push(`${where}: importance must be a whole number from ${IMPORTANCE_MIN} to ${IMPORTANCE_MAX}`)
@@ -60,8 +60,8 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
       const characterId = idOf(entry.character, at)
       if (seen.has(entry.character)) problems.push(`${at}: ${entry.character} is listed twice`)
       seen.add(entry.character)
-      if (!PERCEPTION_MODES.includes(entry.mode)) problems.push(`${at}: unknown mode "${String(entry.mode)}"`)
-      if (entry.accuracy !== undefined && !ACCURACIES.includes(entry.accuracy)) problems.push(`${at}: unknown accuracy "${String(entry.accuracy)}"`)
+      if (!PERCEPTION_MODES.includes(entry.mode)) problems.push(`${at}: unknown mode "${String(entry.mode)}" (${PERCEPTION_MODES.join(', ')})`)
+      if (entry.accuracy !== undefined && !ACCURACIES.includes(entry.accuracy)) problems.push(`${at}: unknown accuracy "${String(entry.accuracy)}" (${ACCURACIES.join(', ')})`)
       if (characterId === undefined) return []
       const content = present(entry.content) ? entry.content!.trim() : text
       const gist = present(entry.gist) ? entry.gist!.trim() : content.length <= 80 ? content : `${content.slice(0, 77).trimEnd()}…`
@@ -87,7 +87,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     for (const [at, exit] of list(place.exits).entries()) {
       if (!existingPlaces.has(exit.to) && !placeKeys.has(exit.to)) problems.push(`${where}.exits[${at}]: there is no place "${exit.to}"`)
       if (exit.to === place.key) problems.push(`${where}.exits[${at}]: an exit must lead to another place`)
-      if (exit.state !== undefined && !EXIT_STATES.includes(exit.state)) problems.push(`${where}.exits[${at}]: unknown state "${String(exit.state)}"`)
+      if (exit.state !== undefined && !EXIT_STATES.includes(exit.state)) problems.push(`${where}.exits[${at}]: unknown state "${String(exit.state)}" (${EXIT_STATES.join(', ')})`)
     }
   })
   list(edit.placeEdits).forEach((change, index) => {
@@ -100,7 +100,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     const where = `exit_changes[${index}]`
     placeKnown(change.from, `${where}.from`)
     placeKnown(change.to, `${where}.to`)
-    if (change.state !== undefined && !EXIT_STATES.includes(change.state)) problems.push(`${where}: unknown state "${String(change.state)}"`)
+    if (change.state !== undefined && !EXIT_STATES.includes(change.state)) problems.push(`${where}: unknown state "${String(change.state)}" (${EXIT_STATES.join(', ')})`)
     const from = existingPlaces.get(change.from)
     const to = existingPlaces.get(change.to)
     if (from !== undefined && to !== undefined && target.locations.getExit(from.id, to.id) === undefined) problems.push(`${where}: there is no exit from "${change.from}" to "${change.to}"`)
@@ -115,7 +115,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     placeKnown(wanted.from, `${where}.from`)
     placeKnown(wanted.to, `${where}.to`)
     if (wanted.from === wanted.to) problems.push(`${where}: an exit must lead to another place`)
-    if (wanted.state !== undefined && !EXIT_STATES.includes(wanted.state)) problems.push(`${where}: unknown state "${String(wanted.state)}"`)
+    if (wanted.state !== undefined && !EXIT_STATES.includes(wanted.state)) problems.push(`${where}: unknown state "${String(wanted.state)}" (${EXIT_STATES.join(', ')})`)
     const from = existingPlaces.get(wanted.from)
     const to = existingPlaces.get(wanted.to)
     if (from !== undefined && to !== undefined && target.locations.getExit(from.id, to.id) !== undefined && wanted.oneWay === true) problems.push(`${where}: there already is an exit from "${wanted.from}" to "${wanted.to}" (change it with exit_changes)`)
@@ -141,7 +141,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   })
   const itemFor = (key: string) => target.items.getBySourceId(key) ?? (Number.isInteger(Number(key)) ? target.items.get(Number(key)) : undefined)
   const knowledgeSubject = (entry: { kind: string; subject?: string; from?: string; to?: string }, where: string): { kind: 'location' | 'item' | 'exit'; id: number } | undefined => {
-    if (!KNOWLEDGE_KINDS.includes(entry.kind as never)) { problems.push(`${where}: unknown kind "${entry.kind}"`); return undefined }
+    if (!KNOWLEDGE_KINDS.includes(entry.kind as never)) { problems.push(`${where}: unknown kind "${entry.kind}" (${KNOWLEDGE_KINDS.join(', ')})`); return undefined }
     if (entry.kind === 'location') {
       const place = entry.subject === undefined ? undefined : existingPlaces.get(entry.subject)
       if (place === undefined) problems.push(`${where}.subject: there is no place "${entry.subject ?? ''}"`)
@@ -174,7 +174,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     const where = `faction_memberships[${index}]`
     const faction = factionIdOf(entry.faction, `${where}.faction`)
     const character = idOf(entry.character, `${where}.character`)
-    if (entry.status !== undefined && !MEMBERSHIP_STATUSES.includes(entry.status)) problems.push(`${where}: unknown status "${String(entry.status)}"`)
+    if (entry.status !== undefined && !MEMBERSHIP_STATUSES.includes(entry.status)) problems.push(`${where}: unknown status "${String(entry.status)}" (${MEMBERSHIP_STATUSES.join(', ')})`)
     if (entry.commitment !== undefined && (!Number.isFinite(entry.commitment) || entry.commitment < 0 || entry.commitment > 1)) problems.push(`${where}: commitment must be a number from 0 to 1`)
     return { entry, faction, character }
   })
@@ -192,8 +192,8 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   const factionIntents = list(edit.factionIntentsAdded).map((entry, index) => {
     const where = `faction_intents_added[${index}]`
     const faction = factionIdOf(entry.faction, `${where}.faction`)
-    if (!INTENT_TYPES.includes(entry.type)) problems.push(`${where}: unknown type "${String(entry.type)}"`)
-    if (!INTENT_HORIZONS.includes(entry.horizon)) problems.push(`${where}: unknown horizon "${String(entry.horizon)}"`)
+    if (!INTENT_TYPES.includes(entry.type)) problems.push(`${where}: unknown type "${String(entry.type)}" (${INTENT_TYPES.join(', ')})`)
+    if (!INTENT_HORIZONS.includes(entry.horizon)) problems.push(`${where}: unknown horizon "${String(entry.horizon)}" (${INTENT_HORIZONS.join(', ')})`)
     if (!present(entry.name)) problems.push(`${where}: give the goal a name`)
     for (const [key, value] of [['priority', entry.priority], ['urgency', entry.urgency]] as const) if (!Number.isFinite(value) || value < 0 || value > 1) problems.push(`${where}.${key}: must be a number from 0 to 1`)
     return { entry, faction }
@@ -240,7 +240,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   const eventEdits = list(edit.eventEdits).map((change, index) => {
     const where = `event_edits[${index}]`
     const current = target.events.get(change.id)
-    if (current === undefined) problems.push(`${where}: there is no event ${change.id}`)
+    if (current === undefined) problems.push(`${where}: there is no event ${change.id} (read_records shows the ids)`)
     else if (current.sealed) problems.push(`${where}: event ${change.id} is sealed and cannot change; what a character took in of it can be revised with perception_edits, and later knowledge added with perceptions_added`)
     if (change.text !== undefined && !present(change.text)) problems.push(`${where}: say what happened`)
     importance(change.importance, where)
@@ -248,23 +248,23 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   })
   for (const id of list(edit.eventRetractions)) {
     const current = target.events.get(id)
-    if (current === undefined) problems.push(`event_retractions: there is no event ${id}`)
+    if (current === undefined) problems.push(`event_retractions: there is no event ${id} (read_records shows the ids)`)
     else if (current.sealed) problems.push(`event_retractions: event ${id} is sealed and cannot be removed`)
   }
 
   const perceptionEdits = list(edit.perceptionEdits).map((change, index) => {
     const where = `perception_edits[${index}]`
     const current = target.events.getPerception(change.id)
-    if (current === undefined) problems.push(`${where}: there is no perception ${change.id}`)
-    if (change.mode !== undefined && !PERCEPTION_MODES.includes(change.mode)) problems.push(`${where}: unknown mode "${String(change.mode)}"`)
-    if (change.accuracy !== undefined && !ACCURACIES.includes(change.accuracy)) problems.push(`${where}: unknown accuracy "${String(change.accuracy)}"`)
+    if (current === undefined) problems.push(`${where}: there is no perception ${change.id} (read_records shows the ids)`)
+    if (change.mode !== undefined && !PERCEPTION_MODES.includes(change.mode)) problems.push(`${where}: unknown mode "${String(change.mode)}" (${PERCEPTION_MODES.join(', ')})`)
+    if (change.accuracy !== undefined && !ACCURACIES.includes(change.accuracy)) problems.push(`${where}: unknown accuracy "${String(change.accuracy)}" (${ACCURACIES.join(', ')})`)
     if (change.content !== undefined && !present(change.content)) problems.push(`${where}: content cannot be empty`)
     return change
   })
   const perceptionsAdded = list(edit.perceptionsAdded).flatMap((added, index) => {
     const where = `perceptions_added[${index}]`
     const event = target.events.get(added.event)
-    if (event === undefined) { problems.push(`${where}: there is no event ${added.event}`); return [] }
+    if (event === undefined) { problems.push(`${where}: there is no event ${added.event} (read_records shows the ids)`); return [] }
     const [one] = perceptions(event.text, [added], where)
     const characterId = byKey.get(added.character)?.id
     if (characterId !== undefined && target.events.perceptionsOf(added.event).some(entry => entry.characterId === characterId)) problems.push(`${where}: ${added.character} already has a perception of event ${added.event}: revise it with perception_edits`)
@@ -277,14 +277,14 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   /** Perceptions a belief of one character is said to rest on, or to be contradicted by: they must be the character's own. */
   const evidence = (value: readonly number[] | undefined, characterId: CharacterId | undefined, where: string): number[] => (value ?? []).flatMap((id) => {
     const seen = target.events.getPerception(id)
-    if (seen === undefined) { problems.push(`${where}: there is no perception ${id}`); return [] }
+    if (seen === undefined) { problems.push(`${where}: there is no perception ${id} (read_records shows the ids)`); return [] }
     if (characterId !== undefined && seen.characterId !== characterId) { problems.push(`${where}: perception ${id} is not one the character took in`); return [] }
     return [id]
   })
   const beliefs = list(edit.beliefs).flatMap((belief, index) => {
     const where = `beliefs[${index}]`
     const character = idOf(belief.character, where)
-    if (!MEMORY_KINDS.includes(belief.kind)) problems.push(`${where}: unknown kind "${String(belief.kind)}"`)
+    if (!MEMORY_KINDS.includes(belief.kind)) problems.push(`${where}: unknown kind "${String(belief.kind)}" (${MEMORY_KINDS.join(', ')})`)
     if (!present(belief.text)) problems.push(`${where}: say what the character believes or knows`)
     importance(belief.importance, where)
     confidence(belief.confidence, where)
@@ -293,13 +293,13 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
   const beliefEdits = list(edit.beliefEdits).map((change, index) => {
     const where = `belief_edits[${index}]`
     const current = target.memories.get(change.id)
-    if (current === undefined) problems.push(`${where}: there is no belief ${change.id}`)
+    if (current === undefined) problems.push(`${where}: there is no belief ${change.id} (read_records shows the ids)`)
     if (change.text !== undefined && !present(change.text)) problems.push(`${where}: say what the character believes or knows`)
     importance(change.importance, where)
     confidence(change.confidence, where)
     return { change, about: change.about === undefined ? undefined : ids(change.about, `${where}.about`), evidenceFor: evidence(change.evidenceFor, current?.characterId, `${where}.evidence_for`), evidenceAgainst: evidence(change.evidenceAgainst, current?.characterId, `${where}.evidence_against`) }
   })
-  for (const id of list(edit.beliefRetractions)) if (target.memories.get(id) === undefined) problems.push(`belief_retractions: there is no belief ${id}`)
+  for (const id of list(edit.beliefRetractions)) if (target.memories.get(id) === undefined) problems.push(`belief_retractions: there is no belief ${id} (read_records shows the ids)`)
   for (const [index, text] of list(edit.threadsOpened).entries()) if (!present(text)) problems.push(`threads_opened[${index}]: say what is unsettled`)
   for (const [index, text] of list(edit.threadsDistinct).entries()) if (!present(text)) problems.push(`threads_distinct[${index}]: say what is unsettled`)
   for (const [index, text] of list(edit.threadsOpenedKnown).entries()) if (!present(text)) problems.push(`threads_opened_known[${index}]: say what is unsettled`)
@@ -585,8 +585,8 @@ function createCharacters(target: RecordsTarget, edit: RecordsEdit): { keys: str
       if (taken.has(found)) problems.push(`${where}: "${name}" is already the name of a character: reuse that one instead of making another`)
       taken.add(found)
     }
-    if (spec.kind !== undefined && !CHARACTER_KINDS.includes(spec.kind)) problems.push(`${where}: unknown kind "${String(spec.kind)}"`)
-    if (spec.tier !== undefined && !CHARACTER_TIERS.includes(spec.tier)) problems.push(`${where}: unknown tier "${String(spec.tier)}"`)
+    if (spec.kind !== undefined && !CHARACTER_KINDS.includes(spec.kind)) problems.push(`${where}: unknown kind "${String(spec.kind)}" (${CHARACTER_KINDS.join(', ')})`)
+    if (spec.tier !== undefined && !CHARACTER_TIERS.includes(spec.tier)) problems.push(`${where}: unknown tier "${String(spec.tier)}" (${CHARACTER_TIERS.join(', ')})`)
     if (spec.place !== undefined) {
       const place = placeFor(spec.place.location)
       if (place === undefined) problems.push(`${where}.place: there is no place "${spec.place.location}" (list_locations shows the keys)`)
@@ -640,7 +640,7 @@ function createItems(target: RecordsTarget, edit: RecordsEdit): { keys: string[]
     if (spec.quantity !== undefined && (!Number.isInteger(spec.quantity) || spec.quantity < 1)) problems.push(`${where}: the quantity must be a whole number from 1`)
     if (spec.unique === true && (spec.quantity ?? 1) > 1) problems.push(`${where}: a unique item is one thing`)
     if (spec.wearable !== undefined && !slotIds.has(spec.wearable)) problems.push(`${where}: there is no slot "${spec.wearable}" (the slots are: ${[...slotIds].join(', ')}; make a new one in slots when the world needs it)`)
-    if (spec.container?.state !== undefined && !CONTAINER_STATES.includes(spec.container.state)) problems.push(`${where}: unknown container state "${String(spec.container.state)}"`)
+    if (spec.container?.state !== undefined && !CONTAINER_STATES.includes(spec.container.state)) problems.push(`${where}: unknown container state "${String(spec.container.state)}" (${CONTAINER_STATES.join(', ')})`)
     for (const key of list(spec.container?.openedBy)) if (!known(key)) problems.push(`${where}.container.opened_by: there is no item "${key}"`)
     if (spec.owner !== undefined && characterFor(spec.owner) === undefined) problems.push(`${where}.owner: there is no character "${spec.owner}"`)
     const holders = [spec.at, spec.heldBy, spec.wornBy, spec.inside].filter(holder => holder !== undefined).length
