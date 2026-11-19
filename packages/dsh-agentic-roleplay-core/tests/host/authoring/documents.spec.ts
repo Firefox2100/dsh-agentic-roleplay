@@ -68,4 +68,9 @@ describe('changing some fields of an entity', () => {
     await expect(updateAuthoredEntity(world(), 'character', 'Clara Voss', { name: 'X' })).rejects.toThrow('the character keys are: clara')
     await expect(createAuthoredEntity(world(), 'character', 'clara', { name: 'Clara' })).rejects.toThrow('update_world_element')
   })
+
+  it('says a document folder cannot be read when it holds something other than a document', async () => {
+    await mkdir(join(directory, 'characters', 'broken', 'character.json'), { recursive: true })
+    await expect(deleteAuthoredEntity(world(), 'character', 'nobody')).rejects.toThrow(/EISDIR/)
+  })
 })

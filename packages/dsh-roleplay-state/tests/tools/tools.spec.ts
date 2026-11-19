@@ -4,7 +4,7 @@ import LlmRuntime from '@deepseek-ai/dsh-llm'
 import DshSessions from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime from '@deepseek-ai/dsh-tools'
+import ToolRuntime, { type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as plugin from '../../src/plugin.ts'
 import { InvalidEditError, createCharacterTools, createTools, type AgentLink, type SessionStore } from '../../src/index.ts'
@@ -186,6 +186,8 @@ describe('the tools of one character', () => {
     const tool = createCharacterTools(() => link!, id)[0]!
     return async (about: string) => tool.execute({ about } as never, exec() as never) as Promise<{ text: string }[]>
   }
+  const shown = (tool: ToolDefinition, value: unknown): string =>
+    (tool.output.render({} as never, value as never) as { type: string; text?: string }[]).map(block => block.text ?? '').join('')
 
   it('bring back only what that character itself took in, though the others are asked at the same time', async () => {
     store.edit({ turn: 1, events: [
@@ -225,6 +227,9 @@ describe('the tools of one character', () => {
       { kind: 'location', key: 'street', name: 'High Street' },
       { kind: 'route', key: 'bar -> street', name: 'The Bar to High Street' },
     ])
+    expect(shown(tool, [])).toBe('You know of nothing matching that, and there is nothing more to find: go on with what you know.')
+    expect(shown(tool, [{ kind: 'location', key: 'street', name: 'High Street' }, { kind: 'route', key: 'bar -> street', name: 'The Bar to High Street' }]))
+      .toBe('- location: High Street\n- route: The Bar to High Street')
   })
 
   it('recalls the lore a character has a knowledge edge to and the lore everyone knows, never the rest', async () => {
@@ -235,6 +240,8 @@ describe('the tools of one character', () => {
     const tool = createCharacterTools(() => link!, alice).find(candidate => candidate.name === 'recall_my_lore')!
     const titles = ((await tool.execute({ about: 'text' } as never, exec() as never)) as { title: string }[]).map(found => found.title).sort()
     expect(titles).toEqual(['Common law', 'Secret rite'])
+    expect(shown(tool, [])).toBe('You do not know any lore matching that, and there is nothing more to find: go on with what you know.')
+    expect(shown(tool, [{ key: 'rite', title: 'Secret rite', kind: 'history', text: 'Secret rite text' }])).toBe('- Secret rite [history] (rite): Secret rite text')
   })
 })
 

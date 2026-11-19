@@ -235,3 +235,20 @@ describe('who knows a lore entry of a world', () => {
     expect(await readLore()).not.toHaveProperty('known_by')
   })
 })
+
+describe('a relation the world no longer has', () => {
+  it('is not created twice', async () => {
+    await expect(editWorldRelation(world, { create: true, kind: 'exit', from: 'bar', to: 'cellar', description: 'the stairs again' })).rejects.toThrow('that route already exists')
+    await editWorldRelation(world, { create: true, kind: 'social', fromKind: 'faction', from: 'watch', toKind: 'character', to: 'clara', label: 'watched' })
+    await expect(editWorldRelation(world, { create: true, kind: 'social', fromKind: 'faction', from: 'watch', toKind: 'character', to: 'clara', label: 'watched' })).rejects.toThrow('that relationship already exists')
+  })
+
+  it('says so when its key names something that is not there any more', async () => {
+    const state = await readWorldEditor(world)
+    expect(state.relations.map(relation => relation.key)).toEqual(expect.arrayContaining(['knowledge:clara:location:bar', 'exit:bar:cellar', 'membership:watch:clara', 'character:clara:arthur']))
+    await expect(editWorldRelation(world, { kind: 'knowledge', key: 'knowledge:clara:location:cellar', remove: true })).rejects.toThrow('the knowledge relation no longer exists')
+    await expect(editWorldRelation(world, { kind: 'membership', key: 'membership:watch:arthur', role: 'informant' })).rejects.toThrow('the membership no longer exists')
+    await expect(editWorldRelation(world, { kind: 'social', key: 'social:faction:watch:character:arthur', label: 'watched' })).rejects.toThrow('the relationship no longer exists')
+    await expect(editWorldRelation(world, { kind: 'exit', key: 'exit:bar:attic', remove: true })).rejects.toThrow('the exit no longer exists')
+  })
+})

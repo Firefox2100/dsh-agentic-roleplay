@@ -1241,6 +1241,18 @@ describe('characters away from the player', () => {
     await expect(engine.idleWork(owner.chat, runner.run, signal)).resolves.toBe(0)
   })
 
+  it('says what went wrong when what fell due could not be asked while the player is away', async () => {
+    const said: string[] = []
+    const local = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined), (message) => { said.push(message) })
+    store.dueOffScene = () => [item()]
+    store.commit = () => { throw new Error('the records could not be written') }
+    const runner = scriptedRunner({ bob: { intent: 'Bob goes to the street to wait', commitment: 'high' }, carol: { intent: 'Carol stays in', commitment: 'low' } })
+    await expect(local.idleWork(owner.chat, runner.run, signal)).resolves.toBe(1)
+    expect(said.at(-1)).toBe('characters away from the player were not asked about what fell due: the records could not be written')
+    expect(written.filter(record => record.offstage === true)).toHaveLength(0)
+    expect(handled).toEqual([])
+  })
+
   it('are not asked when the chat turns it off, when the turn gave no way to ask, or when nothing is due', async () => {
     store.dueOffScene = () => [item()]
     store.settings = () => ({ ...QUIET, offstage: { ...QUIET.offstage, perTurn: 0 } })

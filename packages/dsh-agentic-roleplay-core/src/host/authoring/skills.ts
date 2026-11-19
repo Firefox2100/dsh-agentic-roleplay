@@ -43,7 +43,7 @@ export function readSkill(text: string, where: string): ShippedSkill {
   if (!SKILL_NAME.test(name)) throw new Error(`${where}: the name "${name}" is not kebab-case`)
   if (description === '') throw new Error(`${where} has no description`)
   const whenToUse = fields.get('when_to_use')
-  return { name, description, ...(whenToUse === undefined || whenToUse === '' ? {} : { whenToUse }), content: match[2]!.trim() }
+  return { name, description, ...(whenToUse === undefined || whenToUse === '' ? {} : { whenToUse }), content: match[2]!.replace(/\r\n/g, '\n').trim() }
 }
 
 /** Every skill the package ships: one folder each, holding a `SKILL.md`. */

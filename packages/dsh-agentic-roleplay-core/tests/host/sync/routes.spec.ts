@@ -41,3 +41,31 @@ describe('a sync run that outlasts its request', () => {
     expect(out.status).toBe(409)
   })
 })
+
+describe('choosing a side of a conflict', () => {
+  it('answers with the unit, or that it is still being chosen', async () => {
+    const { res, out } = respond()
+    const resolve = async (unit: string) => ({ id: unit, kind: 'world' as const, state: 'synced' as const })
+    await syncRoutes({ run: async () => ({ units: [] }), status: async () => ({ running: false, units: [] }), resolve } as unknown as SyncApi, 50)
+      ['/sync/resolve']!['POST']!(request({ unit: 'worlds/harbor', side: 'local' }), res, new URL('http://x/sync/resolve'))
+    expect(out.status).toBe(200)
+    expect(JSON.parse(out.body)).toMatchObject({ id: 'worlds/harbor' })
+  })
+
+  it('reports a refusal to choose at once, since there is no answer to wait for', async () => {
+    const { res, out } = respond()
+    const { SyncRefusedError } = await import('../../../src/host/sync/errors.ts')
+    const resolve = async (): Promise<unknown> => { throw new SyncRefusedError('the folder is gone') }
+    await syncRoutes({ run: async () => ({ units: [] }), status: async () => ({ running: false, units: [] }), resolve } as unknown as SyncApi, 50)
+      ['/sync/resolve']!['POST']!(request({ unit: 'worlds/harbor', side: 'remote' }), res, new URL('http://x/sync/resolve'))
+    expect(out.status).toBe(409)
+    expect(JSON.parse(out.body).message).toBe('the folder is gone')
+  })
+
+  it('refuses a choice that names no side', async () => {
+    const { res, out } = respond()
+    await syncRoutes({ run: async () => ({ units: [] }), status: async () => ({ running: false, units: [] }) } as unknown as SyncApi, 50)
+      ['/sync/resolve']!['POST']!(request({ unit: 'worlds/harbor' }), res, new URL('http://x/sync/resolve'))
+    expect(out.status).toBe(400)
+  })
+})

@@ -77,6 +77,14 @@ describe('image author tools', () => {
     const { tools } = await fixture()
     await expect(call(tools, 'generate_reference_image', { kind: 'character', key: 'mira' })).rejects.toThrow(/no visual identity/)
   })
+
+  it('says which subjects there are, or that the story has none of that kind', async () => {
+    const { tools } = await fixture()
+    await expect(call(tools, 'set_visual_identity', { kind: 'character', key: 'nobody', description: 'A tall stranger.', tags: [], negative_tags: [] }))
+      .rejects.toThrow('there is no character "nobody": the keys are mira (list_visual_subjects shows them all)')
+    await expect(call(tools, 'set_visual_identity', { kind: 'item', key: 'lantern', description: 'A brass lantern.', tags: [], negative_tags: [] }))
+      .rejects.toThrow('there is no item "lantern": the story has no item to depict (list_visual_subjects shows them all)')
+  })
 })
 
 describe('the tools that look in the library', () => {

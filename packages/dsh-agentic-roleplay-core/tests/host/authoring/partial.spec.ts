@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -55,6 +55,15 @@ describe('changing one plot', () => {
   it('lists the plots there are when the key names nothing', async () => {
     await writeFile(join(directory, 'plots.json'), JSON.stringify([plot('a', 'One.'), plot('b', 'Two.')]))
     await expect(updatePlot(world(), 'c', { premise: 'X' })).rejects.toThrow('the keys are: a, b')
+  })
+
+  it('says there are no plots yet when the world has no plots file', async () => {
+    await expect(updatePlot(world(), 'a', { premise: 'X' })).rejects.toThrow('the world has no plot yet')
+  })
+
+  it('says the plots file cannot be read when it is something other than a file', async () => {
+    await mkdir(join(directory, 'plots.json'), { recursive: true })
+    await expect(updatePlot(world(), 'a', { premise: 'X' })).rejects.toThrow(/EISDIR/)
   })
 })
 

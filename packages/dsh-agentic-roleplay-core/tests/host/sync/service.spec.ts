@@ -7,7 +7,7 @@ import { DEFAULT_SYNC } from '../../../src/shared/sync.ts'
 import { UnitLockedError } from '../../../src/host/sync/errors.ts'
 import { UnitGate } from '../../../src/host/sync/gate.ts'
 import { SyncService } from '../../../src/host/sync/service.ts'
-import { readStore } from '../../../src/host/sync/state.ts'
+import { readStore, writeStore } from '../../../src/host/sync/state.ts'
 
 const hasRclone = spawnSync('rclone', ['version']).status === 0
 const SESSION = '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b'
@@ -346,5 +346,58 @@ describe.skipIf(!hasRclone)('SyncService with rclone', () => {
     await running
     await waiting
     expect(gate.isLocked('worlds/harbor')).toBe(false)
+  })
+})
+
+describe('SyncService when rclone cannot start at all', () => {
+  let base: string
+  let remote: string
+  let config: string
+  let root: string
+
+  const broken = (): never => { throw new Error('rclone is not installed') }
+
+  const made = (): SyncService => new SyncService({
+    root: () => root,
+    config: () => ({ ...DEFAULT_SYNC, remote, configFile: config }),
+    password: async () => undefined,
+    gate: new UnitGate(),
+    busy: () => undefined,
+    idle: async () => undefined,
+    release: async () => undefined,
+    remove: async () => undefined,
+    pulled: async () => undefined,
+    changed: async () => undefined,
+    problem: () => undefined,
+    rclone: broken,
+  })
+
+  beforeEach(async () => {
+    base = await mkdtemp(join(tmpdir(), 'roleplay-sync-broken-'))
+    root = join(base, 'root')
+    remote = join(base, 'remote')
+    config = join(base, 'rclone.conf')
+    await mkdir(join(root, 'worlds', 'harbor'), { recursive: true })
+    await mkdir(join(root, 'sessions'), { recursive: true })
+    await mkdir(remote)
+    await writeFile(config, '')
+  })
+  afterEach(async () => { await rm(base, { recursive: true, force: true }) })
+
+  it('keeps why a run failed for the status, and lets go of the run', async () => {
+    const service = made()
+    await expect(service.run()).rejects.toThrow('rclone is not installed')
+    expect(service.running).toBe(false)
+    expect((await service.status()).failure).toBe('rclone is not installed')
+  })
+
+  it('keeps why choosing a side failed for the status, and lets go of the choice', async () => {
+    const store = readStore(root)
+    store.units['worlds/harbor'] = { diverged: 'both' }
+    writeStore(root, store)
+    const service = made()
+    await expect(service.resolve('worlds/harbor', 'local')).rejects.toThrow('rclone is not installed')
+    expect(service.running).toBe(false)
+    expect((await service.status()).failure).toBe('rclone is not installed')
   })
 })

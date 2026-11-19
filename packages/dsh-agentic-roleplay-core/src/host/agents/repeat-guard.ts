@@ -39,8 +39,7 @@ export function guardRepeatedCalls(ctx: Context, languageOf: (exec: ToolExecutio
     const guide = guideOf(exec)
     if (guide !== undefined && failing >= GUIDE_AFTER_FAILURES && failing < FAILING_RUN && !state.guides.has(guide) && !state.pointed.has(exec.name)) {
       state.pointed.add(exec.name)
-      if (guide !== undefined) return { kind: 'deny', reason: tr('`{tool}` failed {count} times in a row in this turn, with different arguments each time, so guessing more will not work. Do not call it again this turn: finish, say what is left, and name the guide `{guide}` as the reference for the form of the document.', { tool: exec.name, count: failing, guide }) }
-      return { kind: 'deny', reason: tr('`{tool}` failed {count} times in a row. Before you call it again, load the guide `{guide}` with the skill tool and write the document the way it shows: it lists the fields, their types and the allowed values.', { tool: exec.name, count: failing, guide }) }
+      return { kind: 'deny', reason: tr('`{tool}` failed {count} times in a row in this turn, with different arguments each time, so guessing more will not work. Do not call it again this turn: finish, say what is left, and name the guide `{guide}` as the reference for the form of the document.', { tool: exec.name, count: failing, guide }) }
     }
     if (failing >= FAILING_RUN) {
       state.refused += 1
