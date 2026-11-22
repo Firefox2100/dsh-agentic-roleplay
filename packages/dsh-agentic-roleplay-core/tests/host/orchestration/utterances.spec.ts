@@ -15,6 +15,8 @@ describe('sameWords', () => {
     expect(sameWords('“That is   not something I expected.”', 'That is not something I expected.')).toBe(true)
     expect(sameWords('"Easy now."', ' Easy now. ')).toBe(true)
     expect(sameWords('Easy now', 'Easy now.')).toBe(false)
+    expect(sameWords('It’s been this way since your father’s time.', "It's been this way since your father's time.")).toBe(true)
+    expect(sameWords('He said “no”.', 'He said "no".')).toBe(true)
     expect(sameWords('Easy, now.', 'Easy now.')).toBe(false)
   })
 })

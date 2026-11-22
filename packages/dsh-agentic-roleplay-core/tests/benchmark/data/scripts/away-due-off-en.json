@@ -1,0 +1,29 @@
+{
+  "id": "away-due-off-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "activity-changed",
+          "character": "okafor",
+          "not": true
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 9,
+      "expect": [
+        {
+          "type": "activity-changed",
+          "character": "okafor",
+          "not": true
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

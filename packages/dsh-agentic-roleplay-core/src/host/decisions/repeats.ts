@@ -14,7 +14,8 @@ const EARLIER_CHARS = 1500
 const REASON_CHARS = 300
 const GATE_BAND = 0.15
 
-const sentencesOf = (text: string): string[] => text.split(/\n+|(?<=[.!?。！？…])\s*/).map(sentence => sentence.trim()).filter(sentence => sentence !== '')
+const OPENING_QUOTES = /^["“‘'「『]+/
+const sentencesOf = (text: string): string[] => text.split(/\n+|(?<=[.!?。！？…]["”’'」』]?)\s*|(?<=[:：])\s*(?=["“‘'「『])/).map(sentence => sentence.trim().replace(OPENING_QUOTES, '')).filter(sentence => sentence !== '')
 const keyOf = (sentence: string): string => sentence.toLowerCase().replace(/\s+/g, ' ')
 
 /** The sentences of the narration that an earlier turn, or an earlier place in the same narration, already told, as written now and once each. */
@@ -30,7 +31,7 @@ export function repeatedSentences(narration: string, earlier: readonly string[],
   return [...found.values()]
 }
 
-const RESULT: ObjectJsonSchema = {
+export const REPEAT_RESULT: ObjectJsonSchema = {
   type: 'object',
   properties: {
     reason: { type: 'string', description: 'One short sentence, written first: which of the numbered sentences are stock lines used again for want of something new, and which are meant.' },
@@ -70,7 +71,7 @@ export async function repeatFindings(job: GateJob, deps: RepeatDeps, signal: Abo
   const shown = (sentence: string): string => earlier.filter(text => text.toLowerCase().includes(sentence.toLowerCase())).join('\n').slice(-EARLIER_CHARS)
   try {
     const routed = await routeVerdicts<string>({
-      mode, yesAt: settings.decisions.gateThreshold, noAt: Math.max(0, settings.decisions.gateThreshold - GATE_BAND), turn: job.turn, keys,
+      mode, yesAt: settings.decisions.repeatThreshold, noAt: Math.max(0, settings.decisions.repeatThreshold - GATE_BAND), turn: job.turn, keys,
       what: key => candidates[Number(key.slice('repeat'.length))]!,
       probabilities: async () => {
         const service = deps.decisions?.()
@@ -85,7 +86,7 @@ export async function repeatFindings(job: GateJob, deps: RepeatDeps, signal: Abo
           parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([REASON_CHARS, 0], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(job.store, 'records', 'repeats check'),
           persona: `${promptFor(parent, PROMPT, settings.prompts.language, { sentence: 'each numbered sentence' })}\n\nGive your reason in one short sentence first, then the numbers of the sentences that are stale filler.`,
           prompt: `The narration:\n${job.narration}\n\nThe sentences told in an earlier turn:\n${candidates.map((sentence, index) => `${index + 1}. ${sentence}\n   Earlier: ${shown(sentence).slice(-300)}`).join('\n')}`,
-          result: RESULT,
+          result: REPEAT_RESULT,
           maxCalls: 2,
         })
         return new Map(keys.map((key, index) => [key, answer.stale.includes(index + 1)]))

@@ -102,11 +102,14 @@ title: 配置参考
 | `reflection.minTurns` / `reflection.perRun` | 5 / 3 | 两次反思的最少间隔，以及一次自动处理的角色数 |
 | `reflection.minNew` | 4 | 自动反思所需的新感知数；手动反思只需一条 |
 | `decisions.triggers` / `decisions.reflection` | `hybrid` / `llm` | 用 `llm`、`decision`、`hybrid` 或 `shadow` 判断触发条件和信念证据。`hybrid` 接受决策模型有把握的答案，其余交给语言模型。没有配置决策模型时，会直接使用语言模型，不显示提示 |
-| `decisions.agency` / `decisions.refusal` | `off` / `off` | 可选的输出检查，除上述四种模式外也可关闭 |
+| `decisions.agency` / `decisions.refusal` | `off` / `off` | 可选的输出检查，除上述四种模式外也可关闭；`hybrid` 下，未选择决策模型时不会发起检查 |
+| `decisions.situation` | `hybrid` | 可选的检查：游戏主持人告诉角色的情境里是否带有玩家的内心想法或角色无从知道的内容，除上述四种模式外也可关闭 |
+| `decisions.situationThreshold` | `0.3` | 决策模型认为情境带有私下想法时，从这个概率起算作“是”（0.1 到 0.95）；有自己的阈值，因为模型对这种毛病给的概率偏低 |
 | `decisions.repeats` | `off` | 旁白在最近 `decisions.repeatTurns` 个回合（6，取值 1 到 30）里已经讲过的句子（至少 `decisions.repeatChars` 个字符，12，取值 6 到 60）。模式同上，另加 `strict`：不用任何模型，把每个重复都退回 |
 | `decisions.reuse` | `off` | 回合结束后自动生成场景图之前，先让决策模型判断每张相近的已存图片的描述是否表现了这一刻，并展示第一张符合的图片，不再生成新图。仅由决策服务执行：`off` 或 `on` |
 | `decisions.variables` | `llm` | 每个回合之后检查所有被追踪的数值（世界变量，以及在场角色的角色变量）：对每个数值提一个问题，即刚才发生的事是否改变了它，交给语言模型、决策模型或两者；之后由语言模型给出改变了的数值的新值。请填写每个数值的 **何时、如何变化** 字段。模式与上述四种相同，另可关闭 |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | 仅由决策服务执行的规则复查和隐藏背景检查 |
+| `decisions.repeatThreshold` | 0.7 | 决策答案从此概率起算作“重复句子只是套话”（0.1 到 0.95）。在 72 个已标注的重复上实测：0.7 没有拒掉有意的重复，也没有漏掉套话；0.5 拒掉了 36 个有意重复中的 15 个 |
 | `decisions.reuseThreshold` | 0.85 | 决策答案从此概率起算作“已存图片表现了这一刻”（0.1 到 0.95） |
 | `decisions.gateThreshold` | 0.5 | 决策答案从此概率起算作问题；低于它 0.15 以内视为不确定 |
 | `decisions.confidence` | 0.7 | 决策答案被采用而非交给语言模型所需的把握程度 |
@@ -137,6 +140,7 @@ title: 配置参考
 | `interface.pack` | 空 | 留空使用世界中的第一个界面包，`none` 表示不用，填写名称则选中该包 |
 | `rewind.keepSnapshots` | 30 | 为回退故事保留的近期状态快照数 |
 | `rules.own` | 空 | 玩家为本故事补充的规则 |
+| `pins.own` | 空 | 玩家为本故事固定的事实，每行一条；游戏主持和记录员必须遵守且不能改动 |
 | `preview.enabled` | `true` | 完整回合仍在生成时先显示场景预览 |
 | `suggestions.count` | 3 | 回合结束后显示的行动建议数 |
 | `dice.visibility` | `card` | `card` 在折叠卡片中显示骰子，`hidden` 不显示 |

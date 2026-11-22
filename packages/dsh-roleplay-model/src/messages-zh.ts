@@ -1,5 +1,8 @@
 /** The Chinese of the texts built in code, by the English that stands in the code. A `{name}` is filled in and must stand in both. */
 const ZH: Readonly<Record<string, string>> = {
+  '(soft: keep to it where the story allows, and tell the player when it has to give)': '（软固定：故事允许时遵守，必须让步时告诉玩家）',
+  'Runs into a pin: {text}': '与固定事实冲突：{text}',
+  'Worth pinning: {text}': '值得固定：{text}',
   // words a text is built from
   ', ': '，', '; ': '；', ': ': '：', '.': '。', ' and ': '和',
   'doubtful': '存疑', 'likely': '较有把握', 'sure': '确信',
@@ -38,6 +41,7 @@ const ZH: Readonly<Record<string, string>> = {
   ' (you)': '（你）',
   'What you know is coming:': '你知道即将发生的事：',
   'Just now you notice:': '此刻你注意到：',
+  'This reaches you through: {how}. You are not where it happens, and you take in only what that carries.': '这件事通过以下方式传到你这里：{how}。你不在事情发生的地方，只能感知到它所传递的内容。',
   'How you are (what you can tell of yourself):': '你的状态（你自己能感觉到的）：',
   'What you can tell of the others here:': '你能看出在场其他人的情况：',
   'What you have on you:': '你身上带着：',
@@ -236,8 +240,9 @@ const ZH: Readonly<Record<string, string>> = {
   '(none: write only what the name itself implies, and leave the rest empty)': '（无：只写名字本身能推出的内容，其余留空）',
   'The entities of this world, which are the only ones the entries may name as subjects:': '这个世界里的对象，条目只能以它们作为主题：',
   'Source piece:': '来源片段：',
+  '{name} (until {until}; {count} left for them)': '{name}（到{until}；已为其留下 {count} 条）',
   'While you were asleep this happened, and you could not answer: {what} It is {now} for you, and you are awake.': '你睡着的时候发生了这件事，你没法回应：{what} 现在对你来说是{now}，你已经醒了。',
-  'Answer them with a short message, in your own voice, in a line or two: the utterance, with nothing around it. If you have nothing to say, answer with commitment low and no utterance.': '用你自己的口吻回他们一条简短的消息，一两句话：只写台词，不要附带别的内容。如果没什么想说的，就把投入度设为低，不写台词。',
+  'Answer them with a short message, in your own voice, in a line or two: the utterance, with nothing around it. If you have nothing to say, leave the utterance empty.': '用你自己的口吻回他们一条简短的消息，一两句话：只写台词，不要附带别的内容。如果没什么想说的，台词就留空。',
   '`{tool}` failed {count} times in a row in this turn, with different arguments each time, so guessing more will not work. Do not call it again this turn: finish, say what is left, and name the guide `{guide}` as the reference for the form of the document.': '`{tool}` 在本回合内已连续失败 {count} 次，每次参数都不同，继续猜测不会奏效。本回合不要再调用它：结束并说明还剩什么，同时指出文档的写法应参照指南 `{guide}`。',
   '`{tool}` failed {count} times in a row in this turn, with different arguments each time, so guessing more will not work. Do not call it again this turn: use another tool to find what you need (a search or an overview), or finish and say what is left.': '`{tool}` 在本回合内已连续失败 {count} 次，每次参数都不同，继续猜测不会奏效。本回合不要再调用它：改用别的工具（搜索或总览）查找所需内容，或者结束并说明还剩什么。',
   'A note from the person importing the card, for this step. Follow it where the card allows; it never overrides the rules above:': '导入卡片的用户为这一步写的要求。卡片允许的范围内请照做；它不会覆盖上面的规则：',
@@ -260,7 +265,7 @@ const ZH: Readonly<Record<string, string>> = {
   'The player\'s character has not been with you for {away}, and you are not with them now. It is {now} for you.': '玩家的角色已经有 {away} 没和你在一起了，你现在也不在他身边。对你来说现在是 {now}。',
   'You may write them a short message, in your own voice, as someone who knows them would: what you are doing, what is on your mind, something you want them to know or do. Say it in the utterance, in a line or two, with nothing around it.': '你可以用自己的口吻给他写一条简短的消息，就像熟悉他的人那样：你在做什么、心里想着什么、想让他知道或去做的事。把它写在台词里，一两句话，前后不要加任何东西。',
   'You and others have already written to them since they were last here and they have not answered: do not press, and never complain about it.': '自从他上次来过之后，你和别人已经给他写过消息而他没有回复：不要催促，也绝不要为此抱怨。',
-  'If nothing makes you want to write now, answer with commitment low and no utterance.': '如果现在没有什么让你想写的，就把决心填为 low，并且不写台词。',
+  'If nothing makes you want to write now, leave the utterance empty.': '如果现在没有什么让你想写的，台词就留空。',
   'While the player was away, these messages reached their character, who has read them: {messages}. Refer to them only if the player does.': '玩家不在的时候，这些消息送到了他的角色手里，他已经读过：{messages}。只有玩家提起时才提到它们。',
   ' Given for this story: {folders}.': '本故事另外给了：{folders}。',
   '{path} (read only)': '{path}（只读）',

@@ -1,0 +1,38 @@
+{
+  "id": "away-simulated-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "alley"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 7,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "alley"
+        },
+        {
+          "type": "activity-changed",
+          "character": "laozhou",
+          "not": true
+        },
+        {
+          "type": "messages-at-most",
+          "count": 0
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

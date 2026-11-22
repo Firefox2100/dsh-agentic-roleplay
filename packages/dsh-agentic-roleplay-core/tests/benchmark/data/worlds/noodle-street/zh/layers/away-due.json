@@ -1,0 +1,43 @@
+{
+  "id": "away-due",
+  "description": "Gives the delivery rider one active goal whose time falls due three minutes after the row starts, while he waits in the alley away from the player; his day is one long window that matches what he is doing, so that only the goal can change it.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/xiaoyu/character.json": {
+      "start": {
+        "location": "alley",
+        "position": "电动车旁",
+        "activity": "在巷口等单",
+        "public_state": "靠在电动车旁看手机。",
+        "intents": [
+          {
+            "name": "把外卖送到面馆",
+            "description": "和陈姨约好，到点把一份外卖送去面馆交给她。",
+            "type": "agenda",
+            "priority": 0.8,
+            "urgency": 0.9,
+            "deadline": "{utc+3}"
+          }
+        ]
+      },
+      "routine": [
+        {
+          "from": "{in-600}",
+          "to": "{in+600}",
+          "activity": "在巷口等单",
+          "location": "alley"
+        },
+        {
+          "from": "{in+600}",
+          "to": "{in-600}",
+          "activity": "在巷口等单",
+          "location": "alley"
+        }
+      ]
+    }
+  }
+}

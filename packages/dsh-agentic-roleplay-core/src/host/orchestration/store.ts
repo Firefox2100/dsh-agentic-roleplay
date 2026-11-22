@@ -3,6 +3,7 @@ import { shippedText } from '../prompts/library.ts'
 import { changeVariable, planVariableChange, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from '@dsh-agentic-roleplay/state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { COMMANDS_KEY, commandFlagKey, commandsOf } from '../../shared/commands.ts'
+import { parsePins, pinsOf, ruledPinsOf } from '../../shared/pins.ts'
 import { WORLD_RULES_KEY, rulesOf } from '../../shared/rules.ts'
 import type { MoveRequest } from './protocol.ts'
 import type { ItemChangeSpec } from '@dsh-agentic-roleplay/state'
@@ -44,7 +45,7 @@ function placeOf(session: Session, characterId: number): CastPlace | undefined {
   return { location, position: placement.position, ...(feature === undefined ? {} : { feature }) }
 }
 
-function castOf(session: Session): CastMember[] {
+export function castOf(session: Session): CastMember[] {
   return session.characters.list().map((character) => {
     const state = session.characterStates.get(character.id)
     const place = placeOf(session, character.id)
@@ -68,7 +69,7 @@ function viewOf(session: Session, id: number, where?: string): ItemView | undefi
 }
 
 /** What lies in a place, notable things first; hidden things are included only when asked for. */
-function itemsIn(session: Session, locationId: number, withHidden: boolean): ItemView[] {
+export function itemsIn(session: Session, locationId: number, withHidden: boolean): ItemView[] {
   return session.items.contents({ kind: 'location', id: locationId })
     .filter(entry => withHidden || !entry.item.hidden)
     .sort((a, b) => Number(b.item.notable) - Number(a.item.notable) || a.item.id - b.item.id)
@@ -81,7 +82,7 @@ function itemsIn(session: Session, locationId: number, withHidden: boolean): Ite
     })
 }
 
-function carriedBy(session: Session, characterId: number): ItemView[] {
+export function carriedBy(session: Session, characterId: number): ItemView[] {
   return session.items.contents({ kind: 'character', id: characterId })
     .sort((a, b) => Number(b.item.notable) - Number(a.item.notable) || a.item.id - b.item.id)
     .flatMap((entry) => {
@@ -123,7 +124,7 @@ function affiliationsOf(session: Session, characterId: number): FactionAffiliati
   })
 }
 
-function placeViewOf(session: Session, locationId: number): PlaceView | undefined {
+export function placeViewOf(session: Session, locationId: number): PlaceView | undefined {
   const location = session.locations.get(locationId)
   if (location === undefined) return undefined
   const here = new Set(session.placements.at(locationId, 'character').map(placement => placement.entityId))
@@ -233,8 +234,16 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     settings,
     text: (id, variables) => prompt(settings().prompts.language, id, variables),
     rules: () => rulesOf(worldRules(session), settings().rules.own),
+    pins: () => pinsOf(settings().pins.own),
+    ruledPins: () => ruledPinsOf(settings().pins.own),
+    softPins: () => parsePins(settings().pins.own).filter(pin => pin.soft).map(pin => pin.text),
     time: turn => readTime(session, settings().clock, turn, wall()),
-    beginTurn: (turn) => { observeAsPlayer(session, turn); return startTurn(session, settings().clock, turn, wall(), settings().schedule.enabled) },
+    beginTurn: (turn) => {
+      observeAsPlayer(session, turn)
+      const started = startTurn(session, settings().clock, turn, wall(), settings().schedule.enabled)
+      const waiting = readAutonomy(session).waiting
+      return waiting.length === 0 ? started : { ...started, agenda: { ...started.agenda, asleep: started.agenda.asleep.map(entry => { const kept = waiting.find(item => item.character === entry.key); return kept === undefined ? entry : { ...entry, waiting: kept.situations.length } }) } }
+    },
     endRound: (turn, round, stated, minimum) => passRound(session, settings().clock, turn, round, wall(), stated, minimum, settings().schedule.enabled),
     skipTime: (turn, round, request) => skipAhead(session, settings().clock, turn, round, wall(), request, settings().schedule.enabled),
     checkVariableChanges: changes => changes.flatMap((spec) => { const planned = planVariableChange(session, spec); return planned.ok ? [] : planned.problems }),

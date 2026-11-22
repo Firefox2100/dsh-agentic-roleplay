@@ -7,7 +7,7 @@ import { SessionNotFoundError, WorldNotFoundError } from '../../sessions/errors.
 import { readBinaryBody, readJsonBody } from '../body.ts'
 import { sendError, sendJson } from '../respond.ts'
 import type { ApiDeps } from '../api.ts'
-import { MAX_UPLOAD_BYTES, Routes, imageUpdateOf, sendImage } from './shared.ts'
+import { MAX_UPLOAD_BYTES, Routes, galleryAnswer, imageUpdateOf, sendImage } from './shared.ts'
 
 /** The routes of the API for worldFiles. */
 export function worldFilesRoutes({ worldFiles, worldEditor, sessions }: ApiDeps): Routes {
@@ -144,7 +144,7 @@ export function worldFilesRoutes({ worldFiles, worldEditor, sessions }: ApiDeps)
       DELETE: async (_req, res, url) => { try { await worldFiles.deletePrompt(url.searchParams.get('id') ?? '', url.searchParams.get('language') ?? 'en', url.searchParams.get('prompt') ?? ''); sendJson(res, 200, {}) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 422, error instanceof Error ? error.message : String(error)) } },
     },
     '/worlds/gallery': {
-      GET: async (_req, res, url) => { try { sendJson(res, 200, await worldFiles.gallery(url.searchParams.get('id') ?? '')) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 409, error instanceof Error ? error.message : String(error)) } },
+      GET: async (_req, res, url) => { try { sendJson(res, 200, galleryAnswer(url, await worldFiles.gallery(url.searchParams.get('id') ?? ''))) } catch (error) { return sendError(res, error instanceof WorldNotFoundError ? 404 : 409, error instanceof Error ? error.message : String(error)) } },
       PUT: async (req, res, url) => {
         const update = imageUpdateOf(await readJsonBody(req))
         if (typeof update === 'string') return sendError(res, 400, update)

@@ -1,0 +1,43 @@
+{
+  "id": "away-sleeper-late",
+  "description": "Has the owner asleep upstairs until 14 minutes after the row starts (her sleep is the day's current window, not to be interrupted), then awake in the same room, and later at the shop. She starts in the room, in bed, with the activity her sleep window gives, so that nothing changes until she wakes.",
+  "requires": [],
+  "conflicts": [
+    "away-sleeper"
+  ],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/chen/character.json": {
+      "start": {
+        "location": "rooftop-room",
+        "position": "床上",
+        "activity": "睡觉",
+        "public_state": "在楼上睡着了。"
+      },
+      "routine": [
+        {
+          "from": "{in-300}",
+          "to": "{in+14}",
+          "activity": "睡觉",
+          "location": "rooftop-room",
+          "interruptible": false,
+          "sleep": true
+        },
+        {
+          "from": "{in+14}",
+          "to": "{in+240}",
+          "activity": "起床后在楼上收拾东西",
+          "location": "rooftop-room"
+        },
+        {
+          "from": "{in+240}",
+          "to": "{in-300}",
+          "activity": "在面馆煮面招呼客人",
+          "location": "noodle-shop"
+        }
+      ]
+    }
+  }
+}

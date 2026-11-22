@@ -47,6 +47,7 @@ export async function askCharacters(deps: AskDeps, owner: TurnOwner, number: 1 |
       ...(agenda === undefined ? {} : { agenda }),
       ...(state.dreaming === key ? { dreaming: true as const } : {}),
       ...(cues.length === 0 ? {} : { cues }),
+      ...(state.reaches?.get(key) === undefined ? {} : { reach: state.reaches.get(key)! }),
       ...(upcoming.length === 0 ? {} : { upcoming }),
       ...(tracked === undefined || (tracked.self === '' && tracked.others.length === 0) ? {} : { tracked }),
       ...(place === undefined ? {} : { place }),

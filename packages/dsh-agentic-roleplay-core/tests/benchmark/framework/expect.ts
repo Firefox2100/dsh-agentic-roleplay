@@ -4,6 +4,12 @@ import type { NarrationSegment } from '../../../src/shared/narration.ts'
 import type { Language } from '../language.ts'
 import type { Expectation, Script } from './types.ts'
 
+/** How the story stood at one moment of the run: who was where and doing what, and the messages beside it. */
+export interface Snapshot {
+  characters?: NonNullable<Observation['characters']>
+  notes?: NonNullable<Observation['notes']>
+}
+
 /** What a run saw: the narration of each turn and, when it could read the story, who is in it. */
 export interface Observation {
   language: Language
@@ -11,12 +17,14 @@ export interface Observation {
   player: string
   /** What the story shows now, from its first turn to its head. */
   turns: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean }; scene?: string[] }[]
-  /** What each of the script's steps delivered when it was played, kept even where the story was taken back after it. */
-  played?: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean }; scene?: string[] }[]
+  /** What each of the script's steps delivered when it was played, kept even where the story was taken back after it. A wait has no narration, and the story as it stood when it was over. */
+  played?: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean }; scene?: string[]; snapshot?: Snapshot }[]
   /** Absent when the run could not read the story's records. */
   characters?: { key: string; name?: string; placed: boolean; place?: string; /** What the story says it is doing. */ activity?: string }[]
   /** How many of each character's lines the decision model found in its voice, when one was asked. */
   voice?: { character: string; lines: number; fits: number }[]
+  /** The characters as the story had them when it began: where they stood and what they were doing. */
+  initialCharacters?: NonNullable<Observation['characters']>
   /** How many characters the story began with. */
   castAtStart?: number
   things?: { key: string; holder: string }[]
@@ -147,6 +155,40 @@ function judge(expectation: Expectation, observation: Observation, turns: Observ
       const found = names === undefined ? lines : lines.filter(line => line.startsWith(`${names}:`))
       return { held: found.length > 0, found: found.length === 0 ? 'no message' : found.join(' | ').slice(0, 300) }
     }
+    case 'activity-changed': {
+      if (observation.characters === undefined || observation.initialCharacters === undefined) return { held: undefined }
+      const now = observation.characters.find(character => character.key === expectation.character)
+      const before = observation.initialCharacters.find(character => character.key === expectation.character)
+      if (now?.activity === undefined || before?.activity === undefined) return { held: undefined }
+      const changed = now.activity !== before.activity
+      return { held: expectation.not === true ? !changed : changed, found: `${before.activity} -> ${now.activity}` }
+    }
+    case 'messages-at-most': {
+      if (observation.notes === undefined) return { held: undefined }
+      const lines = observation.notes.filter(note => note.kind === 'message').flatMap(note => note.lines)
+      return { held: lines.length <= expectation.count, found: `${lines.length} message${lines.length === 1 ? '' : 's'}` }
+    }
+    case 'message-has': {
+      if (observation.notes === undefined) return { held: undefined }
+      const lines = observation.notes.filter(note => note.kind === 'message').flatMap(note => note.lines)
+      const name = expectation.character === undefined ? undefined : observation.characters?.find(character => character.key === expectation.character)?.name
+      if (expectation.character !== undefined && name === undefined) return { held: undefined }
+      const mine = name === undefined ? lines : lines.filter(line => line.startsWith(`${name}:`))
+      return { held: mine.some(line => has(line, expectation.text)), found: mine.join(' | ').slice(0, 300) || 'no message' }
+    }
+    case 'message-lacks': {
+      if (observation.notes === undefined) return { held: undefined }
+      const exempt = (expectation.unless ?? []).flatMap(key => observation.characters?.find(character => character.key === key)?.name ?? [])
+      const leaked = observation.notes.filter(note => note.kind === 'message').flatMap(note => note.lines).filter(line => !exempt.some(name => line.startsWith(`${name}:`))).filter(line => has(line, expectation.text))
+      return leaked.length === 0 ? { held: true } : { held: false, found: leaked.join(' | ').slice(0, 300) }
+    }
+    case 'message-language': {
+      if (observation.notes === undefined) return { held: undefined }
+      const lines = observation.notes.filter(note => note.kind === 'message').flatMap(note => note.lines)
+      if (lines.length === 0) return { held: undefined }
+      const wrong = lines.map(line => wrongLanguage(observation.language, { message: line.slice(line.indexOf(':') + 1) }, { strays: true })).find(found => found !== undefined)
+      return wrong === undefined ? { held: true } : { held: false, found: wrong }
+    }
     case 'opening-has': return observation.opening === undefined ? { held: undefined } : { held: has(observation.opening, expectation.text), found: observation.opening.slice(0, 120) }
     case 'setting-is': {
       if (observation.settings === undefined) return { held: undefined }
@@ -212,8 +254,10 @@ function judge(expectation: Expectation, observation: Observation, turns: Observ
 export function evaluate(script: Script, observation: Observation): Verdict[] {
   const verdicts: Verdict[] = []
   script.turns.forEach((turn, index) => {
-    const seen = (observation.played ?? observation.turns)[index]
-    for (const expectation of turn.expect) verdicts.push({ where: `turn ${index + 1}`, expectation, ...seen === undefined ? { held: undefined, found: 'the turn was not played' } : judge(expectation, observation, [seen]) })
+    const seen = (observation.played ?? observation.turns)[index] as NonNullable<Observation['played']>[number] | undefined
+    // a wait is judged on how the story stood when it was over, not on how it stands at the end
+    const here = seen?.snapshot === undefined ? observation : { ...observation, ...seen.snapshot.characters === undefined ? {} : { characters: seen.snapshot.characters }, ...seen.snapshot.notes === undefined ? {} : { notes: seen.snapshot.notes } }
+    for (const expectation of turn.expect) verdicts.push({ where: `turn ${index + 1}`, expectation, ...seen === undefined ? { held: undefined, found: 'the turn was not played' } : judge(expectation, here, [seen]) })
   })
   for (const expectation of script.expect) verdicts.push({ where: 'story', expectation, ...judge(expectation, observation, observation.turns) })
   return verdicts

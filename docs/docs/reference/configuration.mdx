@@ -103,10 +103,13 @@ These defaults are copied into a new story's `settings.json`. A world or preset 
 | `reflection.minNew` | 4 | New perceptions needed for an automatic pass; a manual pass needs one |
 | `decisions.triggers` / `decisions.reflection` | `hybrid` / `llm` | Judge trigger statements and belief evidence with `llm`, `decision`, `hybrid` or `shadow`. `hybrid` accepts confident decision-model answers and sends the rest to the language model. Without a configured decision model, it quietly uses the language model alone |
 | `decisions.agency` / `decisions.refusal` | `off` / `off` | Optional output checks, using the same four modes plus `off` |
+| `decisions.situation` | `hybrid` | Check of the situation the game master gives the characters, for the player's private thoughts and what they cannot know, using the same four modes plus `off`. In `hybrid` nothing is asked while no decision model is selected |
+| `decisions.situationThreshold` | `0.3` | The probability from which a decision model's answer that the situation carries a private thought counts as a yes (0.1 to 0.95); its own cut because the model rates this fault low |
 | `decisions.repeats` | `off` | Sentences the narration already told in one of the last `decisions.repeatTurns` turns (6, from 1 to 30; sentences of at least `decisions.repeatChars` characters, 12, from 6 to 60). The same modes plus `strict`, which sends back every repeat with no model |
 | `decisions.reuse` | `off` | Before a scene picture is made on its own after a turn, asks the decision model whether each close stored picture's description shows the moment, and shows the first that does instead of making a new one. Decision-service-only: `off` or `on` |
 | `decisions.variables` | `llm` | After each turn, looks at every tracked value (world variables, and character variables for the people in the scene): one question for each value, whether what happened changed it, put to the language model, the decision model or both; the language model then gives the new value of those that did. Fill in each value's **When and how it changes** field. Same four modes plus `off` |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | Decision-service-only checks of allowed actions against rules, and outputs against hidden lore |
+| `decisions.repeatThreshold` | 0.7 | Probability at which a decision answer counts as a repeated sentence being stale filler (0.1 to 0.95). Measured on 72 labelled repeats: 0.7 refused no meant repeat and missed no stale one; 0.5 refused 15 of 36 meant repeats |
 | `decisions.reuseThreshold` | 0.85 | Probability at which a decision answer counts as a stored picture that shows the moment (0.1 to 0.95) |
 | `decisions.gateThreshold` | 0.5 | Probability at which a decision answer counts as a fault; the 0.15 below it is uncertain |
 | `decisions.confidence` | 0.7 | Confidence required before a decision answer is accepted instead of handed to the language model |
@@ -137,6 +140,7 @@ The modes and fallback rules are explained in [Optional capability integration](
 | `interface.pack` | empty | Empty uses the world's first pack, `none` disables packs, and a name selects one |
 | `rewind.keepSnapshots` | 30 | Recent state snapshots retained for taking the story back |
 | `rules.own` | empty | Additional rules supplied by the player for this story |
+| `pins.own` | empty | Facts the player fixes for this story, one per line; the game master and record keeper keep to them and cannot change them |
 | `preview.enabled` | `true` | Show an early scene preview while the full turn runs |
 | `suggestions.count` | 3 | Suggested next actions shown after a turn |
 | `dice.visibility` | `card` | `card` shows rolls in a collapsed card; `hidden` shows no roll card |

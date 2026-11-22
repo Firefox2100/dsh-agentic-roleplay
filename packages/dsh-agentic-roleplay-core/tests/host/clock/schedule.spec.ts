@@ -102,6 +102,16 @@ describe('what the story makes of a character against its day', () => {
     expect(placeOf('marcus')).toBe('street')
   })
 
+  it('takes a day made for a character that had none up at once, wherever the day has it, instead of at the next change of window', () => {
+    session.routines.replace(id('clara'), [])
+    startTurn(session, config, 1, wall)
+    expect(placeOf('clara')).toBe('street')
+    session.routines.replace(id('clara'), [{ days: [], start: 8 * 60, end: 22 * 60, activity: 'drinks at the bar', locationId: session.locations.getBySourceId('bar')!.id, interruptible: true }])
+    skipAhead(session, config, 1, 1, wall, { untilTime: '21:55', reason: 'time passes' })
+    expect(placeOf('clara')).toBe('bar')
+    expect(activityOf('clara')).toBe('drinks at the bar')
+  })
+
   it('lets a character waiting for the player go after a day', () => {
     startTurn(session, config, 1, wall)
     session.edit({ turn: 1, moves: [{ character: 'marcus', to: 'street', ignoreExits: true }] })

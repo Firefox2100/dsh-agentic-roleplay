@@ -36,15 +36,17 @@ describe('what a story did on its own since the player last wrote', () => {
     expect(lastPlayerAt(fake('2026-01-01T10:00:00.000Z', '2026-01-02T08:00:00.000Z'))).toBe(Date.parse('2026-01-02T08:00:00.000Z'))
   })
 
-  it('keeps one reply waiting for each sleeper, keeps it when a message is written, and drops it once it is done with', () => {
+  it('keeps what was left for each sleeper together, keeps it when a message is written, reads what an older version kept, and drops it once it is done with', () => {
     const session = fake()
-    queueReply(session, { character: 'ann', name: 'Ann', situation: 'first', at: 1 })
-    queueReply(session, { character: 'bob', name: 'Bob', situation: 'second', at: 2 })
-    queueReply(session, { character: 'ann', name: 'Ann', situation: 'again', at: 3 })
-    expect(readAutonomy(session).waiting.map(entry => [entry.character, entry.situation])).toEqual([['bob', 'second'], ['ann', 'again']])
+    queueReply(session, { character: 'ann', name: 'Ann', situations: ['first'], at: 1 })
+    queueReply(session, { character: 'bob', name: 'Bob', situations: ['second'], at: 2 })
+    queueReply(session, { character: 'ann', name: 'Ann', situations: ['again', 'first'], at: 3 })
+    expect(readAutonomy(session).waiting.map(entry => [entry.character, entry.situations])).toEqual([['bob', ['second']], ['ann', ['first', 'again']]])
     recordMessage(session, { at: 4, character: 'cy', name: 'Cy', text: 'Hi.' })
     expect(readAutonomy(session).waiting).toHaveLength(2)
     dropWaiting(session, ['bob'])
     expect(readAutonomy(session).waiting.map(entry => entry.character)).toEqual(['ann'])
+    ;(session as { metadata: { setValue(key: string, value: unknown): void } }).metadata.setValue('autonomy', { unanswered: 0, sent: {}, inbox: [], waiting: [{ character: 'dee', name: 'Dee', situation: 'kept by an older version', at: 5 }] })
+    expect(readAutonomy(session).waiting).toEqual([{ character: 'dee', name: 'Dee', situations: ['kept by an older version'], at: 5 }])
   })
 })

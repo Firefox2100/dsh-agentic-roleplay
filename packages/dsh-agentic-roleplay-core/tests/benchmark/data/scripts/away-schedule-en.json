@@ -1,0 +1,66 @@
+{
+  "id": "away-schedule-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "high-street"
+        },
+        {
+          "type": "character-doing",
+          "character": "dev",
+          "text": "chatting"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 5,
+      "expect": [
+        {
+          "type": "character-doing",
+          "character": "dev",
+          "text": "strolling"
+        },
+        {
+          "type": "activity-changed",
+          "character": "dev"
+        },
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "park",
+          "not": true
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 4,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "park"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 2,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "park"
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

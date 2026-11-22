@@ -1,0 +1,39 @@
+{
+  "id": "away-schedule",
+  "description": "Lets the delivery rider start on the high street, away from the player, with a day that changes three minutes after the row starts: the high street until then, the park for the next hour and a half, the high street again after. Hours are written for the moment the row starts, so that the real clock the story follows turns the day over inside a short wait.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/dev/character.json": {
+      "start": {
+        "location": "high-street",
+        "position": "by the lamp-post",
+        "activity": "Chatting with a passer-by",
+        "public_state": "Leaning on his scooter, chatting."
+      },
+      "routine": [
+        {
+          "from": "{in-90}",
+          "to": "{in+3}",
+          "activity": "Chatting with a passer-by",
+          "location": "high-street"
+        },
+        {
+          "from": "{in+3}",
+          "to": "{in+90}",
+          "activity": "Strolling through the park",
+          "location": "park"
+        },
+        {
+          "from": "{in+90}",
+          "to": "{in-90}",
+          "activity": "Chatting with a passer-by",
+          "location": "high-street"
+        }
+      ]
+    }
+  }
+}

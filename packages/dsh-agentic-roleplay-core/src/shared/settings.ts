@@ -6,6 +6,7 @@ import type { Intervention } from './interventions.ts'
 import type { ReflectionStatus } from './reflection.ts'
 import { DECISION_MODES, EXTRA_MODES, GATE_MODES, REPEAT_MODES, type DecisionMode, type ExtraMode, type GateMode, type RepeatMode } from './decisions.ts'
 import type { VectorStatus } from './vectors.ts'
+import { MAX_OWN_PINS } from './pins.ts'
 import { MAX_OWN_RULES } from './rules.ts'
 
 /** What can be set for one chat. Stored as a file next to the chat's database: it is configuration, not story state. */
@@ -199,16 +200,22 @@ export interface ChatSettings {
     triggers: DecisionMode
     /** Who checks a belief against what a character took in since. */
     reflection: DecisionMode
-    /** Whether the narration is checked for speaking, acting or thinking for the player's character beyond what the player wrote, and by whom; off by default. A narration that fails is sent back to the game master (at most twice, then it is delivered as it is). */
+    /** Whether the narration is checked for speaking, acting or thinking for the player's character beyond what the player wrote, and by whom; `hybrid` by default, which asks only while a decision model is selected. A narration that fails is sent back to the game master (at most twice, then it is delivered as it is). */
     agency: GateMode
-    /** Whether the output is checked for stepping out of the story (a refusal, a warning, a disclaimer, a remark to the player), and by whom; off by default. */
+    /** Whether the output is checked for stepping out of the story (a refusal, a warning, a disclaimer, a remark to the player), and by whom; `hybrid` by default, which asks only while a decision model is selected. */
     refusal: GateMode
-    /** Whether the narration is checked for a sentence it already used in one of the last turns, and by whom; off by default. Only a repeat found by code is asked about: the decision model or the language model says whether it is meant (a refrain, a catchphrase, a ritual) or stale filler, and filler is sent back to the game master (at most twice, then it is delivered as it is). `strict` sends back every repeat with no model at all, for a world that has nothing meant to repeat: it is the cheapest and may refuse a repeat that was meant. */
+    /** Whether the situation the game master gives the characters is checked for the private thoughts of the player's character and for anything the characters have no way of knowing, and by whom; `hybrid` by default, which asks only while a decision model is selected. A situation that fails is sent back to the game master once. Names a character does not know are always checked, by code. */
+    situation: GateMode
+    /** Whether the narration is checked for a sentence it already used in one of the last turns, and by whom; `hybrid` by default, which asks only while a decision model is selected. Only a repeat found by code is asked about: the decision model or the language model says whether it is meant (a refrain, a catchphrase, a ritual) or stale filler, and filler is sent back to the game master (at most twice, then it is delivered as it is). `strict` sends back every repeat with no model at all, for a world that has nothing meant to repeat: it is the cheapest and may refuse a repeat that was meant. */
     repeats: RepeatMode
     /** How many of the turns before this one a sentence is compared against, from 1 to 30. */
     repeatTurns: number
     /** The shortest sentence, in characters, that counts as a repeat, from 6 to 60; shorter ones (a name, "Yes.") are allowed to come back. */
     repeatChars: number
+    /** The probability from which the decision model's answer that a repeated sentence is stale filler counts as a yes, from 0.1 to 0.95. The repeat gate has its own cut: a meant repeat (a refrain, a formula) is rated well above the cut the other gates use. */
+    repeatThreshold: number
+    /** The probability from which the decision model's answer that the situation carries what only a thought holds counts as a yes, from 0.1 to 0.95. Its own cut: a decision model rates this fault low even when it sees it. */
+    situationThreshold: number
     /** Whether the player's action is also checked against every rule of the world and of the player in one pass of the decision model, when the game master judges it allowed; off by default. A rule it finds likely broken is put to the game master once, to judge again. Needs a decision model: without one nothing is checked. */
     rules: ExtraMode
     /** Whether the output is also checked, by the decision model, for giving away hidden lore the player's character does not know (lore listed for others only); off by default. A passage that fails is sent back to the game master like the other gates' (at most twice). Needs a decision model: without one nothing is checked. */
@@ -239,6 +246,10 @@ export interface ChatSettings {
   }
   rules: {
     /** What is not allowed in this story besides what the world itself rules out, in your own words, one rule per line ("No one can fly"). The game master holds the player's actions and out-of-character commands to the world's rules and these. */
+    own: string
+  }
+  pins: {
+    /** Facts you fix for this story, one per line ("The cellar door stays locked"). The game master and the record keeper hold to them and cannot change or remove them; only you can. A pin is also checked against your actions when a decision model is selected, unless its line starts with ~ (a soft pin). They may flag a pin the story is running into, or suggest one, in a note for you. */
     own: string
   }
   preview: {
@@ -344,10 +355,11 @@ export const SETTINGS_SPEC = {
   reflection: { auto: flag(true), everyTurns: integer(0, 500, 20), onSceneChange: flag(true), sceneDays: integer(0, 365, 1), minTurns: integer(1, 100, 5), perRun: integer(1, 6, 3), minNew: integer(1, 50, 4) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
-  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), repeats: choice(REPEAT_MODES, 'off'), repeatTurns: integer(1, 30, 6), repeatChars: integer(6, 60, 12), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), messages: choice(EXTRA_MODES, 'off'), errands: choice(EXTRA_MODES, 'on'), variables: choice(GATE_MODES, 'llm'), reuse: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), reuseThreshold: ratio(0.1, 0.95, 0.85), confidence: ratio(0, 1, 0.7) },
+  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), situation: choice(GATE_MODES, 'hybrid'), repeats: choice(REPEAT_MODES, 'off'), repeatTurns: integer(1, 30, 6), repeatChars: integer(6, 60, 12), repeatThreshold: ratio(0.1, 0.95, 0.7), situationThreshold: ratio(0.1, 0.95, 0.3), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), messages: choice(EXTRA_MODES, 'off'), errands: choice(EXTRA_MODES, 'on'), variables: choice(GATE_MODES, 'llm'), reuse: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), reuseThreshold: ratio(0.1, 0.95, 0.85), confidence: ratio(0, 1, 0.7) },
   interface: { pack: text(60, '') },
   rewind: { keepSnapshots: integer(0, 500, 30), rolls: choice(['reroll', 'keep'], 'reroll') },
   rules: { own: text(MAX_OWN_RULES, '') },
+  pins: { own: text(MAX_OWN_PINS, '') },
   preview: { enabled: flag(true) },
   suggestions: { count: integer(0, 5, 3) },
   images: { mode: choice(['off', 'manual', 'important', 'every-turn'], 'manual'), references: choice(['text-only', 'prefer-reference', 'require-reference'], 'prefer-reference'), reuse: flag(true), highRes: flag(false), interpret: flag(true), interpreterModel: text(200, ''), captioner: text(200, '') },

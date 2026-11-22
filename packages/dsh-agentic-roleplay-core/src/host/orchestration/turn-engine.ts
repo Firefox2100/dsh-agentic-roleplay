@@ -16,6 +16,7 @@ import { toolEnabled } from '../../shared/tools.ts'
 import { rollView } from '../dice/view.ts'
 import { OFFSTAGE_ROUND, runOffScene } from './off-stage.ts'
 import { whereabouts } from './whereabouts.ts'
+import { unknownNames, unknownProblem } from './situation-check.ts'
 import { hiddenFrom } from '../decisions/extras.ts'
 import { foldSpeakerLabels, repeatsEarlier } from './turn-text.ts'
 import type { Attempt, RawSegment, TurnState } from './turn-state.ts'
@@ -47,6 +48,8 @@ export interface AttemptReport {
   attempt: 1 | 2
   reports: CharacterReport[]
   failures: CharacterFailure[]
+  /** The sleepers something was left for, who answer once they are awake. */
+  left?: string[]
 }
 
 export interface ResolveReport {
@@ -252,7 +255,7 @@ export class TurnEngine {
     const state = this.stateFor(owner)
     if (!allowed || state.rulesChecked === true || state.ooc !== undefined || state.phase !== 'idle' || state.judgement !== undefined) return
     const store = this.storeOf(owner)
-    if (store.settings().decisions.rules === 'off') return
+    if (store.settings().decisions.rules === 'off' && (store.ruledPins?.() ?? []).length === 0) return
     state.rulesChecked = true
     const player = store.cast().find(member => member.character.control === 'player')?.character.name ?? ''
     const broken = await this.boundaries().ruleCheck.check({ chat: owner.chat, turn: owner.turn, store, input: state.input ?? '', player }, state.cancel.signal)
@@ -278,7 +281,7 @@ export class TurnEngine {
    * Ask the characters to act: the first round of a turn, or the next one.
    * @throws {Error} when a round is still open, the limit of rounds is reached, a character cannot be activated or no store exists.
    */
-  async activate(owner: TurnOwner, input: { situation: string; characters?: readonly string[]; wakes?: readonly string[] }, run: RunCharacter, signal: AbortSignal): Promise<AttemptReport> {
+  async activate(owner: TurnOwner, input: { situation: string; characters?: readonly string[]; reaches?: readonly { character: string; how: string }[]; wakes?: readonly string[]; leaves?: readonly string[] }, run: RunCharacter, signal: AbortSignal): Promise<AttemptReport> {
     const state = this.stateFor(owner)
     if (state.dreamed === true) throw new Error(DREAM_ASKED)
     if (state.ooc !== undefined) throw new Error(state.ooc.question === true ? 'a question asks nobody to act and changes nothing: answer it with ooc_answer' : 'an out-of-character command asks nobody to act: decree what happens with resolve_round, or narrate')
@@ -295,6 +298,8 @@ export class TurnEngine {
     const situation = input.situation.trim()
     if (situation === '') throw new Error('describe the situation: the characters are told nothing else')
     const cast = store.cast()
+    const left = this.leaveForSleepers(owner, input.leaves ?? [], situation, cast, state)
+    if (left.length > 0 && (input.characters?.length ?? 0) === 0) return { attempt: 1, reports: [], failures: [], left: left.map(entry => entry.name) }
     const most = store.settings().maxCharacters
     const planned = this.boundaries().planner.plan({ cast, ...(input.characters === undefined ? {} : { requested: input.characters }) })
     const sleeping = planned.flatMap((key) => {
@@ -304,27 +309,44 @@ export class TurnEngine {
     })
     const woken = sleeping.filter(entry => input.wakes?.includes(entry.key) === true)
     const sleepers = sleeping.filter(entry => !woken.includes(entry))
-    // someone the game master meant to ask who is asleep answers when they wake, in a story that goes on while the player is away
-    const queued = sleepers.length > 0 && input.characters !== undefined && input.characters.length > 0 && this.queueForSleepers(owner, sleepers, situation)
-    if (sleepers.length > 0 && input.characters !== undefined && input.characters.length > 0) throw new Error(`${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep: asleep characters take part only if what the player does wakes them. If it does, name them in wakes and show them waking in your narration; otherwise leave them out${queued ? '. Nothing is lost: what was said stays for them and they answer, as a message to the player, once they are awake' : ''}`)
+    if (sleepers.length > 0 && input.characters !== undefined && input.characters.length > 0) throw new Error(`${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep: asleep characters take part only if what the player does wakes them. If it does, name them in wakes and show them waking in your narration; otherwise leave them out${this.canLeaveForSleepers(store) ? ', or name them in leaves_message_for to leave it for them: they answer, as a message to the player, once they are awake' : ''}`)
     const keys = planned.filter(key => !sleepers.some(entry => entry.key === key))
     if (keys.length === 0) throw new Error(sleepers.length > 0 ? `${sleepers.map(entry => entry.name).join(', ')} ${sleepers.length === 1 ? 'is' : 'are'} asleep, so nobody here can act: narrate the quiet, or wake them with wakes` : 'there is no character to activate')
     if (woken.length > 0) state.woken = new Set([...(state.woken ?? []), ...woken.map(entry => entry.key)])
     if (keys.length > most) throw new Error(`${keys.length} characters were asked, which is more than one round allows (${most}): ask only those the moment actually reaches, and the others in a later round if the story comes to them`)
+    const unknown = unknownNames(situation, keys.flatMap(key => cast.filter(member => member.key === key)), cast, store, state.unknownRefused ?? new Map())
+    if (unknown.length > 0) {
+      state.unknownRefused ??= new Map()
+      for (const entry of unknown) for (const other of entry.names) state.unknownRefused.set(`${entry.recipient}|${other}`, (state.unknownRefused.get(`${entry.recipient}|${other}`) ?? 0) + 1)
+      throw new Error(unknownProblem(unknown, cast))
+    }
+    const hereKey = cast.find(member => member.character.control === 'player')?.place?.location.id
+    const reached = new Map((input.reaches ?? []).filter(entry => entry.how.trim() !== '').map(entry => [entry.character, entry.how.trim()]))
+    const remote = hereKey === undefined ? [] : keys.flatMap(key => { const member = cast.find(candidate => candidate.key === key); return member?.place !== undefined && member.place.location.id !== hereKey ? [member] : [] })
+    const unreached = remote.filter(member => !reached.has(member.key))
+    if (unreached.length > 0) throw new Error(`${unreached.map(member => `${member.character.name} (${member.key})`).join(', ')} ${unreached.length === 1 ? 'is' : 'are'} not where the player's character is: ask them only if the moment really reaches them through something the world has (a call, a message, a shout across a distance, a spell), and say how in reaches; otherwise leave them out`)
     const signature = `${[...keys].sort((a, b) => a.localeCompare(b)).join(',')}|${situation.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()}`
     if (repeatsEarlier(signature, state.asked)) throw new Error('the same characters were already asked about the same situation in this message, so nothing new would come of it: say what changed, ask others, or deliver the output with narrate')
+    if (state.rounds === 0 && state.situationRefused !== true) {
+      const refused = await this.boundaries().situationGate.check({ chat: owner.chat, turn: owner.turn, store, input: state.input ?? '', player: cast.find(member => member.character.control === 'player')?.character.name ?? '', situation }, signal)
+      if (refused !== undefined) {
+        state.situationRefused = true
+        throw new Error(refused)
+      }
+    }
     state.situation = situation
+    state.reaches = new Map(remote.map(member => [member.key, reached.get(member.key)!]))
     state.cast = cast
     state.recalled.clear()
     state.cues.clear()
     delete state.first
     delete state.second
     const attempt = await this.ask(owner, 1, keys, cast, state, run, signal)
-    if (attempt.reports.length === 0) return { attempt: 1, reports: [], failures: attempt.failures }
+    if (attempt.reports.length === 0) return { attempt: 1, reports: [], failures: attempt.failures, ...left.length === 0 ? {} : { left: left.map(entry => entry.name) } }
     state.asked.push(signature)
     state.first = attempt
     state.phase = 'resolving'
-    return { attempt: 1, reports: attempt.reports, failures: attempt.failures }
+    return { attempt: 1, reports: attempt.reports, failures: attempt.failures, ...left.length === 0 ? {} : { left: left.map(entry => entry.name) } }
   }
 
   /**
@@ -757,13 +779,25 @@ export class TurnEngine {
     return { turn, phase: 'idle', cast: [], rounds: 0, situations: [], asked: [], situation: '', history: [], reports: [], outcomes: [], utterances: [], cited: new Set(), reported: new Set(), refused: 0, previewed: false, previewRefusals: 0, previewWanted: this.stores(chat)?.settings().preview.enabled ?? false, focus: [], requested: false, offstage: 0, cancel: new AbortController(), recalled: new Map(), cues: new Map(), addressed: [] }
   }
 
-  /** What was said to characters who are asleep is kept for when they wake, in a story that goes on while the player is away; whether it was kept. */
-  private queueForSleepers(owner: TurnOwner, sleepers: readonly { key: string; name: string }[], situation: string): boolean {
-    const store = this.storeOf(owner)
+  /** Whether what is left for a sleeper can be answered: the story goes on by itself, on the real clock, and its characters write to the player. */
+  private canLeaveForSleepers(store: TurnStore): boolean {
     const { autonomy, clock } = store.settings()
-    if (store.autonomy === undefined || !autonomy.enabled || !autonomy.messages || clock.mode !== 'real') return false
-    for (const sleeper of sleepers) store.autonomy.queueReply({ character: sleeper.key, name: sleeper.name, situation, at: Date.now() })
-    return true
+    return store.autonomy !== undefined && autonomy.enabled && autonomy.messages && clock.mode === 'real'
+  }
+
+  /** What the game master leaves for characters who are asleep is kept, and they answer it once they are awake. @throws {Error} for someone who is not in the story or not asleep, or when it cannot be answered. */
+  private leaveForSleepers(owner: TurnOwner, keys: readonly string[], situation: string, cast: readonly CastMember[], state: TurnState): { key: string; name: string }[] {
+    if (keys.length === 0) return []
+    const store = this.storeOf(owner)
+    if (!this.canLeaveForSleepers(store)) throw new Error('a message left for someone asleep is only answered in a story that goes on while the player is away (switched on, on the real clock, with messages): wake them with wakes or leave them out')
+    const left = keys.map((key) => {
+      const member = cast.find(candidate => candidate.key === key)
+      if (member === undefined) throw new Error(`there is no character "${key}": use a key from the scene`)
+      if (state.dreaming === key || store.asleep(owner.turn, member.character.id) === undefined) throw new Error(`${member.character.name} is not asleep: ask them in characters`)
+      return { key, name: member.character.name }
+    })
+    for (const sleeper of left) store.autonomy!.queueReply({ character: sleeper.key, name: sleeper.name, situations: [situation], at: Date.now() })
+    return left
   }
 
   /**

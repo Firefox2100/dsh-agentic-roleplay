@@ -1,0 +1,49 @@
+{
+  "id": "away-told-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 9,
+      "expect": [
+        {
+          "type": "message-arrived"
+        },
+        {
+          "type": "message-lacks",
+          "text": "拆迁",
+          "unless": [
+            "chen",
+            "laozhou",
+            "wangjie"
+          ]
+        },
+        {
+          "type": "message-lacks",
+          "text": "开发商",
+          "unless": [
+            "chen",
+            "laozhou",
+            "wangjie"
+          ]
+        }
+      ]
+    },
+    {
+      "say": "我拿起手机，看看有没有人给我发消息。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "scene-has",
+          "section": "messages"
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

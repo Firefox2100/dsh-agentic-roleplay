@@ -70,6 +70,8 @@ export function recordRound(store: TurnStore, owner: TurnOwner, state: TurnState
     ...(loose.length === 0 ? {} : { rolls: loose.map(roll => `${roll.reason}: ${roll.expression} came to ${roll.total}${roll.readout === undefined ? '' : `: ${roll.readout.label}${roll.readout.critical ? ' (critical)' : ''} (${roll.readout.result})`}${roll.by === 'player' ? ' (rolled by the player)' : ''}`) }),
     ...(playerPlace === undefined ? {} : { place: { key: placeKey(playerPlace), name: playerPlace.name } }),
     present: state.cast.flatMap(member => (member.place === undefined ? [] : [{ character: member.key, place: placeKey(member.place.location) }])),
+    ...(state.reaches === undefined || state.reaches.size === 0 ? {} : { reaches: [...state.reaches].map(([character, how]) => ({ character, how })) }),
+    ...(state.cast.find(candidate => candidate.character.control === 'player') === undefined ? {} : { player: state.cast.find(candidate => candidate.character.control === 'player')!.key }),
     time: { from: time.from, to: time.to, zone: time.zone },
     entries: [...decided.values()].map(({ outcome, report }) => {
       const at = state.cast.find(candidate => candidate.key === report.character)?.place?.location

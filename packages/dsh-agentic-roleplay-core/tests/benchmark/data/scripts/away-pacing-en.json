@@ -1,0 +1,41 @@
+{
+  "id": "away-pacing-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 12,
+      "expect": [
+        {
+          "type": "message-arrived"
+        },
+        {
+          "type": "messages-at-most",
+          "count": 3
+        },
+        {
+          "type": "message-language"
+        },
+        {
+          "type": "message-lacks",
+          "text": "sell",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        },
+        {
+          "type": "message-lacks",
+          "text": "landlord",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

@@ -5,6 +5,7 @@ type AgendaSession = Pick<Session, 'characters' | 'characterStates' | 'placement
 
 const CURSOR = 'agenda.cursor'
 const ASKED = 'agenda.asked'
+const BARE = 'agenda.bare'
 /** Characters on their way to the place their day has them at, by character id: they get there when the way has taken as long as it takes. */
 const TRAVEL = 'agenda.travel'
 /** The characters whose day changed since the autonomy last looked, by key: what makes a character likelier to write to the player (work is over, it woke up). */
@@ -135,6 +136,9 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
     }
     const holds = readHolds(session)
     const alreadyAsked = new Set(Array.isArray(session.metadata.getValue(ASKED)) ? session.metadata.getValue(ASKED) as number[] : [])
+    // a character that had no day at the last look and has one now takes up the window it is in, instead of waiting for the next change of window
+    const bareBefore = new Set(Array.isArray(session.metadata.getValue(BARE)) ? session.metadata.getValue(BARE) as number[] : [])
+    const bare: number[] = []
     const asked: number[] = []
     for (const character of session.characters.list()) {
       if (character.control === 'player') continue
@@ -144,6 +148,7 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
       const away = playerPlace === undefined || here?.locationId !== playerPlace
       // Someone who matters and has been away while time passed is given a day by the world author, once.
       if (window.length === 0) {
+        bare.push(characterId)
         if (ask && playerPlace !== undefined && away && cursor !== undefined && asked.length < MAX_ASKED && character.kind === 'person' && character.tier !== 'background' && !alreadyAsked.has(characterId)) {
           session.consolidation.enqueue({ kind: 'character', subjectId: characterId, note: 'has no routine: give it a day (routines), as far as its role and the story imply', turn })
           asked.push(characterId)
@@ -172,7 +177,7 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
         if (same) { arrive(character, current.window); continue }
       }
       if (current === undefined) continue
-      const before = cursor === undefined ? undefined : occurrenceAt(window, cursor, zone)
+      const before = cursor === undefined || bareBefore.has(characterId) ? undefined : occurrenceAt(window, cursor, zone)
       if (!rejoin && before !== undefined && before.window.id === current.window.id && before.startsAt === current.startsAt) continue
       const target = current.window
       const goesTo = target.locationId !== undefined && (here?.locationId !== target.locationId || (target.position !== undefined && here.position !== target.position))
@@ -193,6 +198,7 @@ export function catchUpRoutines(session: AgendaSession, zone: string, now: numbe
         if (session.characterStates.get(characterId)?.activity !== target.activity) session.characterStates.update(characterId, { activity: target.activity })
       }
     }
+    session.metadata.setValue(BARE, bare as never)
     session.metadata.setValue(CURSOR, now)
     session.metadata.setValue(TRAVEL, journeys as never)
     session.metadata.setValue(HOLDS, holds as never)
@@ -239,7 +245,7 @@ export interface SceneAgenda {
   /** Characters with the player's character whose day expects them elsewhere, or soon will. */
   here: { name: string; note: string }[]
   /** Who is asleep now, anywhere: they take no part in the story unless what the player does wakes them. */
-  asleep: { key: string; name: string; until: number }[]
+  asleep: { key: string; name: string; until: number; /** How many things were left for them, to answer once they are awake. */ waiting?: number }[]
   /** Commitments due soon or overdue, whoever they are of. */
   engagements: { title: string; at: number; place?: string; with: string[]; overdue: boolean }[]
 }

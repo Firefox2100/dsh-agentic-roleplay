@@ -1,7 +1,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import type { DecisionService } from '@dsh-ai-providers/core'
-import { GATE_SITES, type GateSite } from '../../shared/decisions.ts'
+import { GATE_SITES, type DecisionMode, type DecisionSite, type GateMode, type GateSite } from '../../shared/decisions.ts'
 import { estimateAnswer } from '../agents/budget.ts'
 import { childModel, childSampling, childTrace, runChild } from '../agents/child.ts'
 import { promptFor } from '../prompts/access.ts'
@@ -64,6 +64,44 @@ const GATES: Record<GateSite, Gate> = {
   },
 }
 
+
+/** What a gate needs of its surroundings to ask. */
+export interface GateDeps { agentOf: (chat: string) => Agent | undefined; decisions?: () => DecisionService | undefined; seen: Map<string, string>; problem?: (message: string) => void }
+
+/** What is asked of a passage, as the decision model's state and as the language model's brief; the same wording (`prompt`) serves both. */
+export interface Question<Job> { prompt: string; state: (job: Job) => Record<string, unknown>; brief: (job: Job) => string; what: (job: Job) => string }
+
+/** Whether a passage has the fault a gate asks about, by the language model, the decision model or both, as the site's mode says (`decisions.<site>`); recorded for the settings page. */
+export async function faultOf<Job extends { chat: string; turn: number; store: GateJob['store'] }>(site: DecisionSite, gate: Question<Job>, job: Job, deps: GateDeps, signal: AbortSignal): Promise<boolean> {
+  const settings = job.store.settings()
+  const mode = settings.decisions[site as GateSite] as GateMode
+  const parent = deps.agentOf(job.chat)
+  const cut = site === 'situation' ? settings.decisions.situationThreshold : settings.decisions.gateThreshold
+  const routed = await routeVerdicts<string>({
+    mode: mode as DecisionMode, yesAt: cut, noAt: Math.max(0, cut - GATE_BAND), turn: job.turn, keys: ['fault'], what: () => gate.what(job),
+    probabilities: async () => {
+      const service = deps.decisions?.()
+      if (service === undefined) throw new Error('no decision service is selected, or the selected one is not loaded')
+      const asked = await askYesNo(service, gate.state(job), [{ key: 'fault', instructions: job.store.text(gate.prompt) }], signal)
+      return new Map([['fault', asked.get('fault')!]])
+    },
+    llm: async () => {
+      if (parent === undefined) throw new Error(`no agent for chat ${job.chat}`)
+      const answer = await runChild<{ reason: string; fault: boolean }>({
+        parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([REASON_CHARS, 0], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(job.store, 'records', `${site} check`),
+        persona: `${promptFor(parent, gate.prompt, settings.prompts.language)}\n\n${ANSWER}`,
+        prompt: gate.brief(job),
+        result: RESULT,
+        maxCalls: 2,
+      })
+      return new Map([['fault', answer.fault]])
+    },
+  }, signal)
+  announceProblem(deps.seen, `${job.chat}:${site}`, routed.report, deps.problem)
+  job.store.recordDecisions?.(site, routed.report)
+  return routed.verdicts.get('fault') === true
+}
+
 /**
  * Checks the output of a turn for the faults the chat's settings switch on (`decisions.agency`, `decisions.refusal`), each by the language model, a
  * decision model, or both, as the setting says. A check that cannot be made never stops the turn: it is reported once, and the output goes on as it is.
@@ -73,35 +111,12 @@ export function outputGates(deps: { agentOf: (chat: string) => Agent | undefined
   return {
     async check(job, signal): Promise<GateFinding[]> {
       const settings = job.store.settings()
-      const parent = deps.agentOf(job.chat)
       const found = await Promise.all(GATE_SITES.map(async (site): Promise<GateFinding[]> => {
         const mode = settings.decisions[site]
         const gate = GATES[site]
         if (mode === 'off' || !gate.applies(job)) return []
         try {
-          const routed = await routeVerdicts<string>({
-            mode, yesAt: settings.decisions.gateThreshold, noAt: Math.max(0, settings.decisions.gateThreshold - GATE_BAND), turn: job.turn, keys: ['fault'], what: () => gate.what(job),
-            probabilities: async () => {
-              const service = deps.decisions?.()
-              if (service === undefined) throw new Error('no decision service is selected, or the selected one is not loaded')
-              const asked = await askYesNo(service, gate.state(job), [{ key: 'fault', instructions: job.store.text(gate.prompt) }], signal)
-              return new Map([['fault', asked.get('fault')!]])
-            },
-            llm: async () => {
-              if (parent === undefined) throw new Error(`no agent for chat ${job.chat}`)
-              const answer = await runChild<{ reason: string; fault: boolean }>({
-                parent, signal, reasoningEffort: settings.reasoning.children, sampling: childSampling(settings, 'records', estimateAnswer([REASON_CHARS, 0], settings.prompts.language)), ...childModel(settings, 'records'), trace: childTrace(job.store, 'records', `${site} check`),
-                persona: `${promptFor(parent, gate.prompt, settings.prompts.language)}\n\n${ANSWER}`,
-                prompt: gate.brief(job),
-                result: RESULT,
-                maxCalls: 2,
-              })
-              return new Map([['fault', answer.fault]])
-            },
-          }, signal)
-          announceProblem(seen, `${job.chat}:${site}`, routed.report, deps.problem)
-          job.store.recordDecisions?.(site, routed.report)
-          return routed.verdicts.get('fault') === true ? [{ gate: site, message: gate.message(job) }] : []
+          return await faultOf(site, gate, job, { agentOf: deps.agentOf, ...deps.decisions === undefined ? {} : { decisions: deps.decisions }, seen, ...deps.problem === undefined ? {} : { problem: deps.problem } }, signal) ? [{ gate: site, message: gate.message(job) }] : []
         } catch (error) {
           if (signal.aborted) throw error
           deps.problem?.(`the ${site} check of turn ${job.turn} could not be made, the output goes on as it is: ${error instanceof Error ? error.message : String(error)}`)

@@ -5,6 +5,7 @@ import { waitArguments } from '../../../src/shared/wait.ts'
 import type { Files, Language } from '../language.ts'
 import { parseSettings } from '../../../src/shared/settings.ts'
 import { compose, ComposeError } from './compose.ts'
+import { resolveClock } from './clock.ts'
 import { castOf, featuresOf } from './features.ts'
 import { layersOf } from './load.ts'
 import { sheetsOf } from '../voice.ts'
@@ -22,12 +23,15 @@ export function resolveLayers(data: BenchData, row: Row): { layers: Layer[]; pro
   return { layers, problems }
 }
 
+/** The instant the offline checks write clock tokens for: a fixed one, so that a world is the same every time it is checked. */
+export const REFERENCE_TIME = Date.parse('2026-01-05T12:00:00')
+
 /** The files of a row's world: the bare world with its layers. */
-export function worldOfRow(data: BenchData, row: Row): { files: ReturnType<typeof compose>; problems: string[] } {
+export function worldOfRow(data: BenchData, row: Row, now: number = REFERENCE_TIME): { files: ReturnType<typeof compose>; problems: string[] } {
   const base = data.worlds[row.world]?.files[row.language]
   if (base === undefined) return { files: new Map(), problems: [`${row.id}: ${row.world} has no ${row.language} world`] }
   const { layers, problems } = resolveLayers(data, row)
-  try { return { files: compose(base, layers), problems } } catch (error) {
+  try { return { files: resolveClock(compose(base, layers), now), problems } } catch (error) {
     if (!(error instanceof ComposeError)) throw error
     return { files: new Map(), problems: [...problems, `${row.id}: ${error.message}`] }
   }
@@ -35,6 +39,8 @@ export function worldOfRow(data: BenchData, row: Row): { files: ReturnType<typeo
 
 const KNOWN = new Set<string>(EXPECTATION_TYPES)
 /** What can be judged on one turn's narration; the rest is about the story as a whole and belongs at the end of the script. */
+/** What can be judged on how the story stands when a wait is over: where and what each character is, and what arrived. */
+const PER_WAIT = new Set<string>(['character-at', 'character-doing', 'activity-changed', 'message-arrived', 'message-has', 'message-lacks', 'message-language', 'messages-at-most'])
 const PER_TURN = new Set<string>(['narration-clean', 'narration-language', 'narration-has', 'command-ruled', 'scene-has', 'narration-lacks', 'speaks', 'character-silent', 'player-silent'])
 
 /** The commands every story has, and the names the commands a world defines are offered under: the word, or the key of its flag when the word is not a name DSH takes. */
@@ -73,9 +79,10 @@ function scriptProblems(script: Script, row: Row, cast: readonly string[], files
     if (turn.say !== undefined) { const refused = commandProblem(turn.say, row, files); if (refused !== undefined) problems.push(`${here}: ${refused}`) }
     if (turn.action === 'rewind' && (!Number.isInteger(turn.to) || (turn.to ?? -1) < 0 || (turn.to ?? 0) >= index)) problems.push(`${here} rewinds to a turn that is not before it`)
     if (turn.action === 'wait' && (!Number.isInteger(turn.minutes) || (turn.minutes ?? 0) < 1 || (turn.minutes ?? 0) > 240)) problems.push(`${here} waits for a whole number of minutes from 1 to 240`)
-    if ((turn.action === 'wait' || turn.action === 'rewind') && turn.expect.length > 0) problems.push(`${here} delivers nothing to expect`)
+    if (turn.action === 'rewind' && turn.expect.length > 0) problems.push(`${here} delivers nothing to expect`)
+    if (turn.action === 'wait') for (const expectation of turn.expect) if (KNOWN.has(expectation.type) && !PER_WAIT.has(expectation.type)) problems.push(`${here} expects ${expectation.type} after a wait, which is not about how the story stands then`)
     if (turn.action === 'regenerate' && index === 0) problems.push(`${here} regenerates a turn that was never played`)
-    for (const expectation of turn.expect) if (KNOWN.has(expectation.type) && !PER_TURN.has(expectation.type)) problems.push(`${here} expects ${expectation.type}, which is about the whole story: put it at the end`)
+    if (turn.action !== 'wait') for (const expectation of turn.expect) if (KNOWN.has(expectation.type) && !PER_TURN.has(expectation.type) ) problems.push(`${here} expects ${expectation.type}, which is about the whole story: put it at the end`)
   })
   const folders = new Set((row.folders ?? []).map(folder => folder.name))
   for (const { expectation, where } of all) {
@@ -90,7 +97,7 @@ function scriptProblems(script: Script, row: Row, cast: readonly string[], files
   for (const { expectation, where } of all) {
     if (!KNOWN.has(expectation.type)) { problems.push(`${at}: ${where} expects "${expectation.type}", which is not in the vocabulary`); continue }
     if (expectation.type === 'scene-has' && where === 'the end') problems.push(`${at}: the end expects scene-has, which is about one turn: put it in the turn`)
-    if (expectation.type === 'scene-has' && !['roll', 'wait', 'dream', 'command'].includes(expectation.section)) problems.push(`${at}: ${where} expects the scene section "${String(expectation.section)}", which is not one of roll, wait, dream and command`)
+    if (expectation.type === 'scene-has' && !['roll', 'wait', 'dream', 'command', 'messages'].includes(expectation.section)) problems.push(`${at}: ${where} expects the scene section "${String(expectation.section)}", which is not one of roll, wait, dream and command`)
     const character = 'character' in expectation ? expectation.character : undefined
     if (character !== undefined && !cast.includes(character)) problems.push(`${at}: ${where} names ${character}, who is not in the row`)
     if (expectation.type === 'speaks-in-voice' && !sheetsOf(files).has(expectation.character)) problems.push(`${at}: ${where} names ${expectation.character}, whose sheet has no speech style to judge by`)
@@ -99,6 +106,8 @@ function scriptProblems(script: Script, row: Row, cast: readonly string[], files
     if (expectation.type === 'item-held-by' && !has(files, `items/${expectation.item}/item.json`)) problems.push(`${at}: ${where} names the thing ${expectation.item}, which the world does not have`)
     if (expectation.type === 'character-at' && !has(files, `locations/${expectation.place}/location.json`)) problems.push(`${at}: ${where} names the place ${expectation.place}, which the world does not have`)
     if (expectation.type === 'trigger-fired' && !(Array.isArray(files.get('triggers.json')) && (files.get('triggers.json') as { key?: string }[]).some(trigger => trigger.key === expectation.key))) problems.push(`${at}: ${where} names the trigger ${expectation.key}, which the world does not have`)
+    if (expectation.type === 'message-lacks') for (const key of expectation.unless ?? []) if (!cast.includes(key)) problems.push(`${at}: ${where} exempts ${key}, who is not in the row`)
+    if (expectation.type === 'messages-at-most' && !(Number.isInteger(expectation.count) && expectation.count >= 0)) problems.push(`${at}: ${where} wants a count that is not a whole number of zero or more`)
     if ('text' in expectation && expectation.text.trim() === '') problems.push(`${at}: ${where} expects an empty text`)
   }
   return problems

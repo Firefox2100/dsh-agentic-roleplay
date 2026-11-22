@@ -1,5 +1,5 @@
 /** The DSH releases the packages are tested against, oldest first: the one list every constraint is derived from. */
-export const DSH_RELEASES = ['0.2.2-rc.3']
+export const DSH_RELEASES = ['0.2.2-rc.3', '0.2.2-rc.5']
 
 /** For each patch tuple, from its oldest tested release up to the next patch: a prerelease never stands for a later patch. */
 function enginesOf(releases) {

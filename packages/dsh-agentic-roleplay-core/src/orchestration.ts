@@ -18,6 +18,8 @@ import { triggerJudge } from './host/triggers/judge.ts'
 import { outputGates } from './host/decisions/gates.ts'
 import { variableTracker } from './host/variables/tracker.ts'
 import { ruleChecks } from './host/decisions/extras.ts'
+import { createTriggerTools } from './host/orchestration/trigger-tools.ts'
+import { situationChecks } from './host/decisions/situation.ts'
 import { errandChecks } from './host/decisions/errands.ts'
 import { factionStrategist } from './host/factions/strategist.ts'
 import { memoryReflector } from './host/memory/reflection.ts'
@@ -94,6 +96,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: trigger judge')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ outputGate: outputGates({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, earlier: (chat, count) => timelines.narrationBefore(chat, count), problem }) }), 'roleplay: output gates')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ ruleCheck: ruleChecks({ decisions, problem }) }), 'roleplay: rule check')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ situationGate: situationChecks({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: situation check')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: reflection')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)), external: parent => ctx.get('roleplayAuthoringTools')?.given(parent.ctx.tools, 'worldAuthor') ?? [] }) }), 'roleplay: world author')
@@ -218,5 +221,5 @@ export function apply(ctx: Context): void {
     return store === undefined || agent === undefined ? undefined : { session: store.story, turn: currentTurn(agent) }
   }
   registerFoldersJail(ctx, { roots: async session => await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)), workspace: () => workspaceOf(ctx.roleplayRoot.path) })
-  installHooks(ctx, { traces: turnTraces, engine, boundaries, stores, timelines, rolls, folders: async chat => { const session = roleplaySessionOf(chat); return session === undefined ? undefined : await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)) }, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink, { rollerFor: chat => rolls.roller(chat) }), createCheckNarrateTool(toolDeps)] })
+  installHooks(ctx, { traces: turnTraces, engine, boundaries, stores, timelines, rolls, folders: async chat => { const session = roleplaySessionOf(chat); return session === undefined ? undefined : await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)) }, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink, { rollerFor: chat => rolls.roller(chat) }), createCheckNarrateTool(toolDeps), ...createTriggerTools(toolDeps)] })
 }

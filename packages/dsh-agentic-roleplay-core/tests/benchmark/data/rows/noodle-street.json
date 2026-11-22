@@ -359,5 +359,545 @@
       "theme"
     ],
     "script": "command-noodle-zh"
+  },
+  {
+    "id": "noodle-street-away-schedule-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-schedule"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A character away from the player whose day turns over while nobody plays: it is where its day has it before and where its day has it after, with no message and no model asked, and it stays there.",
+    "script": "away-schedule-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-schedule-off-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-schedule"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the chat's days switched off the same character stays where the story put it.",
+    "script": "away-schedule-off-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      },
+      "schedule": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-simulated-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-schedule"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: the same day on the simulated clock, with the switch for stories that go on on: nothing runs, because a story that goes on needs the real clock.",
+    "script": "away-simulated-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "simulated"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "chance": 0,
+        "transitionChance": 1,
+        "messages": true
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-sleep-wake-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-sleeper"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A character asleep away from the player wakes when its window ends: it is asleep and silent before, awake after, and a character whose day just changed may write (the chance for that is raised to one so that the row tests the writing and not the draw).",
+    "script": "away-sleep-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 1,
+        "messages": true
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-sleep-wake-quiet-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-sleeper"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: the same waking with messages off: the character wakes and nobody writes.",
+    "script": "away-sleep-quiet-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-reply-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-sleeper-late"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "What is sent to a character who is asleep somewhere else is kept, and she answers it as a message once she wakes (nothing else can produce a message here: chance and the chance for a changed day are zero). Whether the game master tries to ask the sleeper is its own choice, so the rate over repeats is the result.",
+    "script": "away-reply-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": true
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-reply-off-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-sleeper-late"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the story not going on by itself nothing is kept for the sleeper and nothing arrives after she wakes.",
+    "script": "away-reply-off-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-due-goal-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-due"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A goal whose time falls due for a character away from the player is dealt with while nobody plays: before its time nothing changed, and after it the character is doing what it decided.",
+    "script": "away-due-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-due-goal-off-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [
+      "away-due"
+    ],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the allowance for characters away set to none the goal is left alone.",
+    "script": "away-due-off-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      },
+      "offstage": {
+        "perTurn": 0
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-fit-in-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A character with no day, away from the player, is given one by the world author while nobody plays and takes it up at once.",
+    "script": "away-fit-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-fit-in-off-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the world closed to making things up nobody is given a day and the character stays as it was.",
+    "script": "away-fit-off-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      },
+      "authoring": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-pacing-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A story left alone with every chance raised: messages arrive, no more than the limit of things done without a reply, in the story's language, and none gives away what the player has not been told.",
+    "script": "away-pacing-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 1,
+        "transitionChance": 0,
+        "messages": true,
+        "decay": 1
+      }
+    }
+  },
+  {
+    "id": "noodle-street-away-told-zh",
+    "world": "noodle-street",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "xiaoman",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A message that arrived while the player was away is told to the story at their next message: the game master is given it in that turn's scene.",
+    "script": "away-told-zh",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 1,
+        "transitionChance": 0,
+        "messages": true,
+        "decay": 1
+      }
+    }
   }
 ]

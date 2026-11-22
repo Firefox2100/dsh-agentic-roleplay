@@ -29,6 +29,8 @@ export interface ItemChangeSpec {
   exit?: string
   /** For open, lock and unlock: the story breaks it open or shut instead (picked, smashed). */
   forced?: boolean
+  /** For take: the character it is taken from, when the story has it taken out of their hands or pockets (a theft, a snatch, a confiscation) instead of given. */
+  from?: string
 }
 
 export interface ItemContext {
@@ -135,8 +137,16 @@ export function planItemChange(ctx: ItemContext, actorId: CharacterId, spec: Ite
       const problems = [...blocked(), ...countProblems()]
       const direct = ctx.items.holding(item.id)?.holder
       if (reachable.kind === 'held' && direct?.kind === 'character') problems.push(`${actor.name} already has ${item.name}`)
-      if (reachable.kind === 'other') problems.push(`${item.name} is held by ${reachable.by}, who has to give it`)
-      return problems.length > 0 ? fail(...problems) : moving({ kind: 'character', characterId: actorId, mode: 'held' }, `now carried by ${actor.name}`)
+      let taken: string | undefined
+      if (reachable.kind === 'other') {
+        const from = spec.from === undefined ? undefined : resolveCharacter(ctx, spec.from)
+        if (spec.from !== undefined && from === undefined) problems.push(`there is no character "${spec.from}" to take it from`)
+        else if (from === undefined) problems.push(`${item.name} is held by ${reachable.by}, who has to give it (when the story has it taken from them, name them in from)`)
+        else if (from.name !== reachable.by) problems.push(`${item.name} is held by ${reachable.by}, not ${from.name}`)
+        else if (ctx.placements.get('character', from.id)?.locationId !== place) problems.push(`${from.name} is not here`)
+        else taken = from.name
+      } else if (spec.from !== undefined) problems.push(`${item.name} is not held by anyone else: take it without from`)
+      return problems.length > 0 ? fail(...problems) : moving({ kind: 'character', characterId: actorId, mode: 'held' }, `now carried by ${actor.name}${taken === undefined ? '' : `, taken from ${taken}`}`)
     }
     case 'drop': {
       const problems = [...blocked(), ...countProblems()]

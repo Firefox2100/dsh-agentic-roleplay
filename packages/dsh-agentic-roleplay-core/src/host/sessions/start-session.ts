@@ -29,6 +29,7 @@ import { broughtAvatars, copyPortrait } from '../avatars/avatars.ts'
 import { parseCharacterFile } from '../characters/character-file.ts'
 import type { EditableWorld } from '../worlds/world-editor.ts'
 import { loadValidatedWorld } from '../worlds/validated-world.ts'
+import { shareWorldImages } from '../images/shared-media.ts'
 
 export const MAX_NAME_LENGTH = 200
 
@@ -167,7 +168,7 @@ export async function startSession(deps: StartSessionDeps, request: StartSession
       if (storyRules.length > 0) session.metadata.setValue(WORLD_RULES_KEY, storyRules)
       if (world.narrationVoice !== undefined) session.metadata.setValue('roleplay.tts.narrationVoice', world.narrationVoice)
     })
-    await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])
+    if (!await shareWorldImages(sessionFolder(sessionsDir, id), world.directory)) await inheritImages(world.directory, sessionFolder(sessionsDir, id), [])
     if (avatars !== undefined) for (const entry of brought) await copyPortrait(avatars, entry.from, entry.document, sessionFolder(sessionsDir, id), entry.id)
     const folder = sessionFolder(sessionsDir, id)
     // A preset the person chose outranks the world's own prompts; the one the world suggests is below them.

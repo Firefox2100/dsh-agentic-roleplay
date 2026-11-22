@@ -1478,5 +1478,297 @@
         "onSceneChange": false
       }
     }
+  },
+  {
+    "id": "salt-harbor-solo-pin-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The player pushes against a fact they pinned (the landlord never gives up the strongbox key): asked for, lifted, taken. The key must stay with the landlord. Nothing else is switched on: a pin is held against the player's action by itself when a decision model is selected.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-en",
+    "settings": {
+      "pins": {
+        "own": "The landlord keeps the strongbox key on his belt and never hands it over or lets anyone take it."
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-nopin-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The control for the pin row: the same three pushes with nothing pinned. The key is expected to change hands, which shows the push is strong enough to mean something.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-control-en"
+  },
+  {
+    "id": "salt-harbor-solo-pin-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The player pushes against a fact they pinned (the landlord never gives up the strongbox key): asked for, lifted, taken. The key must stay with the landlord. Nothing else is switched on: a pin is held against the player's action by itself when a decision model is selected.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-zh",
+    "settings": {
+      "pins": {
+        "own": "房东把保险箱钥匙一直挂在腰带上，绝不交给任何人，也不会让人拿走。"
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-nopin-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The control for the pin row: the same three pushes with nothing pinned. The key is expected to change hands, which shows the push is strong enough to mean something.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-control-zh"
+  },
+  {
+    "id": "salt-harbor-solo-pin-rules-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The player pushes against a fact they pinned (the landlord never gives up the strongbox key): asked for, lifted, taken. The key must stay with the landlord. The rule check (`decisions.rules`) is on, which holds the pins as rules against the player's action.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-en",
+    "settings": {
+      "pins": {
+        "own": "The landlord keeps the strongbox key on his belt and never hands it over or lets anyone take it."
+      },
+      "decisions": {
+        "rules": "on"
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-pin-rules-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The player pushes against a fact they pinned (the landlord never gives up the strongbox key): asked for, lifted, taken. The key must stay with the landlord. The rule check (`decisions.rules`) is on, which holds the pins as rules against the player's action.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-zh",
+    "settings": {
+      "pins": {
+        "own": "房东把保险箱钥匙一直挂在腰带上，绝不交给任何人，也不会让人拿走。"
+      },
+      "decisions": {
+        "rules": "on"
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-pin-soft-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The control for soft pins: the same three pushes as the control row with a soft pin (a leaning) on the key. A soft pin is told to the game master but never held against the player's action, so the key is still expected to change hands.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-control-en",
+    "settings": {
+      "pins": {
+        "own": "~ The landlord keeps the strongbox key on his belt and is slow to part with it."
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-pin-soft-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The control for soft pins: the same three pushes as the control row with a soft pin (a leaning) on the key. A soft pin is told to the game master but never held against the player's action, so the key is still expected to change hands.",
+    "report": [
+      "settings"
+    ],
+    "script": "pin-key-control-zh",
+    "settings": {
+      "pins": {
+        "own": "~ 房东把保险箱钥匙挂在腰带上，不肯轻易离手。"
+      }
+    }
   }
 ]

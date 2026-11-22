@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { evaluate, held, type Script } from './index.ts'
+import { evaluate, followsClock, held, resolveClock, resolveClockText, type Script } from './index.ts'
 import { compose, ComposeError, coverage, describeCoverage, featuresOf, loadData, mergePatch, tierOf, validateData, worldOfRow, type Layer, type Row } from './index.ts'
 
 /** The framework itself, on a small world made up here: the data under `data/` is checked by `data.spec.ts`. */
@@ -271,7 +271,7 @@ describe('what the data validation refuses in waits, folders and their tokens', 
   it('refuses a wait that is not 1 to 240 whole minutes or that expects something', () => {
     expect(check(script({ turns: [{ say: 'Hi.', expect: [] }, { action: 'wait', minutes: 15, expect: [] }] }))).toEqual([])
     expect(check(script({ turns: [{ say: 'Hi.', expect: [] }, { action: 'wait', minutes: 0, expect: [] }] }))[0]).toMatch(/whole number of minutes/)
-    expect(check(script({ turns: [{ say: 'Hi.', expect: [] }, { action: 'wait', minutes: 5, expect: [{ type: 'narration-clean' }] }] }))[0]).toMatch(/delivers nothing/)
+    expect(check(script({ turns: [{ say: 'Hi.', expect: [] }, { action: 'wait', minutes: 5, expect: [{ type: 'narration-clean' }] }] }))[0]).toMatch(/after a wait/)
   })
 
   it('refuses a folder or a token the row does not have, and bad folder names', () => {
@@ -416,5 +416,65 @@ describe('judging what a command made of its turn', () => {
     expect(run([{ say: '/wait 2 hours', expect: [{ type: 'scene-has', section: 'wait' }] }])).toEqual([])
     expect(run([{ say: 'Hi.', expect: [] }], [{ type: 'scene-has', section: 'wait' }])[0]).toMatch(/about one turn/)
     expect(run([{ say: '/wait 2 hours', expect: [{ type: 'scene-has', section: 'weather' as never }] }])[0]).toMatch(/not one of roll, wait, dream and command/)
+  })
+})
+
+describe('clock tokens in a world that follows the real clock', () => {
+  const now = Date.parse('2026-03-10T23:50:00')
+
+  it('writes the time of day, the local date and time and the UTC instant for the moment a row starts, across midnight', () => {
+    expect(resolveClockText('{in+0}', now)).toBe('23:50')
+    expect(resolveClockText('{in+15}', now)).toBe('00:05')
+    expect(resolveClockText('{in-60}', now)).toBe('22:50')
+    expect(resolveClockText('{at+15}', now)).toBe('2026-03-11T00:05')
+    expect(resolveClockText('{utc+10}', now)).toBe(new Date(now + 10 * 60_000).toISOString().slice(0, 19) + 'Z')
+  })
+
+  it('writes tokens wherever they are in the files, and leaves everything else alone', () => {
+    const files = resolveClock(new Map<string, unknown>([['a.json', { routine: [{ from: '{in+3}', to: '{in+30}', activity: 'rests' }], n: 1 }], ['b.json', 'text']]), now)
+    expect(files.get('a.json')).toEqual({ routine: [{ from: '23:53', to: '00:20', activity: 'rests' }], n: 1 })
+    expect(files.get('b.json')).toBe('text')
+    expect(followsClock(new Map([['a.json', { from: '{in+3}' }]]))).toBe(true)
+    expect(followsClock(new Map([['a.json', { from: '08:00' }]]))).toBe(false)
+  })
+})
+
+describe('judging how the story stood after a wait', () => {
+  const script: Script = {
+    id: 's', language: 'en',
+    turns: [
+      { action: 'wait', minutes: 3, expect: [{ type: 'character-at', character: 'bob', place: 'home' }, { type: 'messages-at-most', count: 0 }] },
+      { action: 'wait', minutes: 3, expect: [{ type: 'character-at', character: 'bob', place: 'park' }, { type: 'activity-changed', character: 'bob' }, { type: 'message-arrived', character: 'bob' }, { type: 'message-has', text: 'morning', character: 'bob' }, { type: 'message-lacks', text: 'secret' }, { type: 'message-lacks', text: 'morning', unless: ['bob'] }, { type: 'message-language' }] },
+    ],
+    expect: [],
+  }
+  const at = (place: string, activity: string, lines: string[] = []) => ({ segments: [], snapshot: { characters: [{ key: 'bob', name: 'Bob', placed: true, place, activity }], notes: lines.length === 0 ? [] : [{ kind: 'message', lines }] } })
+  const base = { language: 'en' as const, player: 'ann', turns: [], initialCharacters: [{ key: 'bob', name: 'Bob', placed: true, place: 'home', activity: 'Sleeps' }], characters: [{ key: 'bob', name: 'Bob', placed: true, place: 'park', activity: 'Walks' }] }
+
+  it('judges each wait on how the story stood when it was over, not on how it stands at the end', () => {
+    const verdicts = evaluate(script, { ...base, played: [at('home', 'Sleeps'), at('park', 'Walks', ['Bob: Good morning, are you up?'])], notes: [] })
+    expect(verdicts.map(verdict => verdict.held)).toEqual([true, true, true, true, true, true, true, true, true])
+  })
+
+  it('finds a character that had not moved, one whose day did not change, a flood of messages and a message that gives away a secret or is in the wrong language', () => {
+    const verdicts = evaluate(script, { ...base, played: [at('park', 'Sleeps', ['Bob: hello']), at('home', 'Sleeps', ['Bob: 早上好，你起床了吗？我今天去了市场，买了很多新鲜的蔬菜和水果，回来的路上还遇到了很多年没见的老朋友，我知道那个 secret'])] })
+    expect(verdicts.filter(verdict => verdict.held === false).map(verdict => `${verdict.where}: ${verdict.expectation.type}`)).toEqual([
+      'turn 1: character-at', 'turn 1: messages-at-most', 'turn 2: character-at', 'turn 2: activity-changed', 'turn 2: message-has', 'turn 2: message-lacks', 'turn 2: message-language',
+    ])
+  })
+
+  it('does not judge what the run could not read', () => {
+    const verdicts = evaluate(script, { language: 'en', player: 'ann', turns: [], played: [{ segments: [] }, { segments: [] }] })
+    expect(verdicts.every(verdict => verdict.held === undefined)).toBe(true)
+  })
+
+  it('accepts these expectations after a wait and refuses the ones about narration there', () => {
+    const data = loadData(root)
+    data.scripts.push({ id: 'waits', language: 'en', turns: [{ action: 'wait', minutes: 2, expect: [{ type: 'character-at', character: 'bob', place: 'home' }] }], expect: [] })
+    data.rows.push(row({ id: 'w', script: 'waits' }))
+    expect(validateData(data)).toEqual([])
+    data.scripts.push({ id: 'bad', language: 'en', turns: [{ action: 'wait', minutes: 2, expect: [{ type: 'narration-clean' }] }], expect: [] })
+    data.rows.push(row({ id: 'x', script: 'bad' }))
+    expect(validateData(data).some(problem => problem.includes('expects narration-clean after a wait'))).toBe(true)
   })
 })

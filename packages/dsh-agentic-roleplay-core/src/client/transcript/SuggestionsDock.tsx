@@ -43,6 +43,7 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
   })
   const [offered, setOffered] = useState<readonly string[]>([])
   const [meanwhile, setMeanwhile] = useState<readonly string[]>([])
+  const [pinNotes, setPinNotes] = useState<readonly string[]>([])
   const [unfinished, setUnfinished] = useState<readonly string[]>([])
   const [unwritten, setUnwritten] = useState(0)
   const [messages, setMessages] = useState<readonly string[]>([])
@@ -66,6 +67,7 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
   useEffect(() => {
     setOffered([])
     setMeanwhile([])
+    setPinNotes([])
     setUnfinished([])
     setUnwritten(0)
     if (latest === undefined) return undefined
@@ -78,6 +80,8 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
         if (stopped) return
         const away = found.find(note => note.kind === 'away')?.lines ?? []
         setMeanwhile(previous => (previous.join('\n') === away.join('\n') ? previous : away))
+        const pinned = found.find(note => note.kind === 'pins')?.lines ?? []
+        setPinNotes(previous => (previous.join('\n') === pinned.join('\n') ? previous : pinned))
         const world = found.find(note => note.kind === 'world')?.lines ?? []
         setUnfinished(previous => (previous.join('\n') === world.join('\n') ? previous : world))
         const waiting = found.find(note => note.kind === 'unwritten')?.count ?? 0
@@ -92,7 +96,7 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
   }, [latest, notes])
 
   const shownOffers = folded ? 0 : offered.length
-  if (running || (shownOffers === 0 && meanwhile.length === 0 && unfinished.length === 0 && unwritten === 0 && messages.length === 0)) return null
+  if (running || (shownOffers === 0 && meanwhile.length === 0 && pinNotes.length === 0 && unfinished.length === 0 && unwritten === 0 && messages.length === 0)) return null
   return (
     <div className={css.dock} data-testid="roleplay-suggestions" data-rp="suggestions">
       {unwritten > 0 && <span className={css.label} data-testid="roleplay-unwritten">{t('unwritten', { count: unwritten })}</span>}
@@ -106,6 +110,12 @@ export function SuggestionsDock({ useChat, useSession, pick, notes, t }: Suggest
         <div className={css.card} data-testid="roleplay-messages">
           <span className={css.label}>{t('messagesAway')}</span>
           <ul className={css.lines}>{messages.map(line => <li key={line}>{line}</li>)}</ul>
+        </div>
+      )}
+      {pinNotes.length > 0 && (
+        <div className={css.card} data-testid="roleplay-pin-notes">
+          <span className={css.label}>{t('pinNotes')}</span>
+          <ul className={css.lines}>{pinNotes.map(line => <li key={line}>{line}</li>)}</ul>
         </div>
       )}
       {meanwhile.length > 0 && (

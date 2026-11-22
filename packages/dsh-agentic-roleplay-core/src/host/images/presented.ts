@@ -1,6 +1,7 @@
 import { atomicWrite } from '../atomic-write.ts'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { materialize } from './shared-media.ts'
 
 export const PRESENTED_FOLDER = 'presented'
 
@@ -27,6 +28,7 @@ export async function presentedFor(sessionFolder: string, node: string): Promise
 export async function present(sessionFolder: string, node: string, image: Omit<Presented, 'at'>): Promise<void> {
   const current = await presentedFor(sessionFolder, node)
   if (current.some(entry => entry.path === image.path)) return
+  await materialize(sessionFolder, image.path)
   const file = fileOf(sessionFolder, node)
   await atomicWrite(file, JSON.stringify({ images: [...current, { ...image, at: new Date().toISOString() }] }, null, 2), { createDirectory: true })
 }

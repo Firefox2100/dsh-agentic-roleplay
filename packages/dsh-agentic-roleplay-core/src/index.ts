@@ -101,7 +101,7 @@ import { stat } from 'node:fs/promises'
 import { chatSessionId } from './shared/chat.ts'
 import { SessionNotFoundError } from './host/sessions/errors.ts'
 import { AgentUnavailableError } from './host/sessions/errors.ts'
-import { SessionArchivedError } from './host/sessions/errors.ts'
+import { matchPulledSession } from './host/sessions/pulled-session.ts'
 import { TimelineError, type Timelines } from './host/timeline/service.ts'
 import { WorldCatalog } from './host/worlds/catalog.ts'
 import { Catalogue } from './host/catalogue/service.ts'
@@ -241,7 +241,7 @@ export function apply(ctx: Context, config: Config) {
   const sync = createSync(ctx, {
     config: () => config.sync.get(), root: () => root.path, worlds, orchestration, state: ctx.roleplayState,
     remove: id => deleteSession({ state: ctx.roleplayState, sessionsDir: deps.sessionsDir, purgeChat }, id),
-    rebuild: async (id) => { try { await openSession({ ...deps, replaceChat: (chat, title, events) => agent.replace(chat, title, events, purgeChat) }, id, { rebuild: true }) } catch (error) { if (!(error instanceof SessionArchivedError)) throw error } },
+    rebuild: id => matchPulledSession({ agent, sessionsDir: deps.sessionsDir, rebuild: chat => openSession({ ...deps, replaceChat: (chatId, title, events) => agent.replace(chatId, title, events, purgeChat) }, chat, { rebuild: true }) }, id).then(() => undefined),
   })
   prompts.frozen = () => sync.gate.isLocked('prompts')
   const playtests = new Playtests({

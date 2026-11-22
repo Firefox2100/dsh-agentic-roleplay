@@ -30,3 +30,18 @@ export interface GalleryImage {
 
 /** The folder of images the person brought, inside a session's `images/`. */
 export const LIBRARY_FOLDER = 'library'
+
+export type GalleryFilter = 'all' | 'transient' | 'reference' | 'uploaded'
+
+/** One page of a gallery, newest first, with the counts the whole gallery has. */
+export interface GalleryPage {
+  images: GalleryImage[]
+  /** How many images match the filter, all pages together. */
+  total: number
+  /** How many images each filter matches, so the choice can say what it holds before it is made. */
+  counts: Record<GalleryFilter, number>
+  /** Pictures waiting to be described that did not fail, in the whole gallery, not only on this page. */
+  waiting: number
+  /** Why a picture that was added could not be described, by its path. */
+  failures: Record<string, string>
+}

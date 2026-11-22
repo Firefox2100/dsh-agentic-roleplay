@@ -30,9 +30,11 @@ export function skeletonEvents(round: RoundRecord): NewEvent[] {
       involves: [entry.character], perceivedBy: act,
     }]
     if (entry.utterance !== undefined && entry.spoken) {
+      // What someone elsewhere says over the channel the moment reached it by is heard by the player's character too.
+      const over = round.reaches?.some(reach => reach.character === entry.character) === true && round.player !== undefined ? [round.player] : []
       events.push({
         ...base, text: `${entry.name}: "${entry.utterance}"`, importance: PLAIN_IMPORTANCE, involves: [entry.character],
-        perceivedBy: seen.map(character => ({ character, mode: character === entry.character ? 'witnessed' : 'heard' })),
+        perceivedBy: [...new Set([...seen, ...over])].map(character => ({ character, mode: character === entry.character ? 'witnessed' : 'heard' })),
       })
     }
     return events

@@ -1,0 +1,69 @@
+{
+  "id": "away-reply-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I text Mags, who is asleep upstairs: Mags, there is something important I need to ask you, so tell me as soon as you are up. Then I go on wiping the tables.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "mags"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 5,
+      "expect": [
+        {
+          "type": "messages-at-most",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 10,
+      "expect": [
+        {
+          "type": "message-arrived",
+          "character": "mags"
+        },
+        {
+          "type": "message-language"
+        },
+        {
+          "type": "character-doing",
+          "character": "mags",
+          "text": "asleep",
+          "not": true
+        },
+        {
+          "type": "message-lacks",
+          "text": "sell",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        },
+        {
+          "type": "message-lacks",
+          "text": "landlord",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

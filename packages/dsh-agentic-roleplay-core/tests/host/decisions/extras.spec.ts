@@ -56,6 +56,18 @@ describe('the rule check', () => {
     expect(recorded.map(entry => [entry.site, entry.report.mode, entry.report.items, entry.report.decided])).toEqual([['rules', 'decision', 2, 2]])
   })
 
+  it('holds the player\'s pins as rules too, and checks when there are only pins', async () => {
+    const withPins = (pins: string[], rules: string[] = []): RuleJob => { const job = ruleJob({ rules: 'on' }, rules); return { ...job, store: { ...job.store, pins: () => pins, ruledPins: () => pins } as unknown as TurnStore } }
+    const service = decider(instructions => (instructions.includes('never leaves') ? 0.9 : 0.05))
+    expect(await ruleChecks({ decisions: () => service }).check(withPins(['The cat never leaves the house.'], ['There is no magic.']), signal)).toEqual(['The cat never leaves the house.'])
+    expect(await ruleChecks({ decisions: () => service }).check(withPins(['The cat never leaves the house.']), signal)).toEqual(['The cat never leaves the house.'])
+    const alone = ruleJob({ rules: 'off' }, ['There is no magic.'])
+    const pinned = { ...alone, store: { ...alone.store, ruledPins: () => ['The cat never leaves the house.'] } as unknown as TurnStore }
+    expect(await ruleChecks({ decisions: () => service }).check(pinned, signal)).toEqual(['The cat never leaves the house.'])
+    const soft = { ...alone, store: { ...alone.store, pins: () => ['The cat is shy.'], ruledPins: () => [] } as unknown as TurnStore }
+    expect(await ruleChecks({ decisions: () => service }).check(soft, signal)).toEqual([])
+  })
+
   it('finds nothing and says why, once, when no decision service can be used', async () => {
     const said: string[] = []
     const check = ruleChecks({ problem: message => said.push(message) })

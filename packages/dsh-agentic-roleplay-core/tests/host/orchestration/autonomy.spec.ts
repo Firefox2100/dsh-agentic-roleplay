@@ -105,8 +105,14 @@ describe('a story that goes on while the player is away', () => {
     expect(log.said).toEqual([{ at: NOW, character: 'ann', name: 'Ann', text: 'Thinking of you. Come by when you can.' }])
   })
 
-  it('notes a character that would not write so that it is not asked again before the gap, and writes nothing for an empty, low or wrong-language answer', async () => {
-    for (const report of [{ commitment: 'low' as const }, { utterance: '' }, { utterance: '这是一条很长的中文消息，但是这个故事是用英文写的，所以不应该被接受。' }, null]) {
+  it('takes a message a character gave with little commitment: what it wrote is the message, and an empty answer is the way to say nothing', async () => {
+    const { run, log } = await tick({ related: { ann: 0.8 }, report: { commitment: 'low', utterance: 'Still up? Come down, there is soup.' } })
+    expect(run.outcome).toBe('wrote')
+    expect(log.said.map(message => message.text)).toEqual(['Still up? Come down, there is soup.'])
+  })
+
+  it('notes a character that would not write so that it is not asked again before the gap, and writes nothing for an empty or wrong-language answer', async () => {
+    for (const report of [{ utterance: '' }, { utterance: '这是一条很长的中文消息，但是这个故事是用英文写的，所以不应该被接受。' }, null]) {
       const { run, log } = await tick({ related: { ann: 0.8 }, report })
       expect(run.outcome, JSON.stringify(report)).toBe('quiet')
       expect(log.said).toEqual([])
@@ -186,7 +192,7 @@ describe('who could write', () => {
   })
 
   it('has a character who was asleep answer what was said to it once it is awake, and keeps it while it sleeps', async () => {
-    const waiting = [{ character: 'ann', name: 'Ann', situation: 'Me knocked and asked whether she was coming.', at: NOW - HOUR }]
+    const waiting = [{ character: 'ann', name: 'Ann', situations: ['Me knocked and asked whether she was coming.'], at: NOW - HOUR }]
     const woke = await tick({ state: { waiting } })
     expect(woke.run.outcome).toBe('wrote')
     expect(woke.log.askedAlone).toEqual(['ann'])
@@ -198,7 +204,7 @@ describe('who could write', () => {
   })
 
   it('lets go of a reply that waited longer than the player may be away', async () => {
-    const stale = await tick({ state: { waiting: [{ character: 'ann', name: 'Ann', situation: 'x', at: NOW - 100 * HOUR }] }, settings: { chance: 0 } })
+    const stale = await tick({ state: { waiting: [{ character: 'ann', name: 'Ann', situations: ['x'], at: NOW - 100 * HOUR }] }, settings: { chance: 0 } })
     expect(stale.log.dropped).toEqual(['ann'])
     expect(stale.log.askedAlone).toEqual([])
   })

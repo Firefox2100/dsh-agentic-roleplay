@@ -6,7 +6,7 @@ import type { SessionStore } from '@dsh-agentic-roleplay/state'
 import type { GalleryImage } from '../../shared/gallery.ts'
 import { runChild, type ChildSampling } from '../agents/child.ts'
 import { promptFor } from '../prompts/access.ts'
-import { galleryFile, updateImage } from './gallery.ts'
+import { describeWhereHeld, galleryFile } from './gallery.ts'
 import { storySubjects } from './tools.ts'
 
 /** The attachment service of DSH, which stores an image durably and hands back what a model message cites. */
@@ -112,6 +112,6 @@ export async function interpretImage(job: InterpretJob): Promise<GalleryImage> {
     },
     maxCalls: 4,
   })
-  return await updateImage(job.sessionFolder, job.path, { description: answer.description.trim(), tags: answer.tags.map(tag => tag.trim()).filter(tag => tag !== ''), subjects: answer.subjects })
+  return await describeWhereHeld(job.sessionFolder, job.path, { description: answer.description.trim(), tags: answer.tags.map(tag => tag.trim()).filter(tag => tag !== ''), subjects: answer.subjects })
 }
 

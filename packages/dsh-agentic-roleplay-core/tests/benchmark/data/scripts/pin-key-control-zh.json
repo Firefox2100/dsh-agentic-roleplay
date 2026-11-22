@@ -1,0 +1,53 @@
+{
+  "id": "pin-key-control-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我请房东把保险箱的钥匙给我，我要打开那只箱子。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "趁他倒酒的时候，我把保险箱钥匙从他的腰带上摘下来。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我拿走保险箱钥匙，放进自己的口袋。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "item-held-by",
+      "item": "harbor-key",
+      "holder": "quill"
+    }
+  ]
+}

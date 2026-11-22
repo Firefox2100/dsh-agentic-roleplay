@@ -8,6 +8,8 @@ import { RoleplayState, isSessionId } from '@dsh-agentic-roleplay/state'
 import { removeTemp } from '../../support/temp.ts'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
+import { galleryFile } from '../../../src/host/images/gallery.ts'
+import { sharedFile } from '../../../src/host/images/shared-media.ts'
 import { readNotes } from '../../../src/host/sessions/notes.ts'
 import { readSettings } from '../../../src/host/sessions/settings.ts'
 import { InvalidStartError, InvalidWorldError, WorldNotFoundError } from '../../../src/host/sessions/errors.ts'
@@ -112,7 +114,7 @@ describe('startSession', () => {
     expect(isSessionId(started.id)).toBe(true)
     expect(started).toEqual({ id: started.id, chatSessionId: `session-${started.id}`, name: 'The Blackwater Observatory', worldId: 'blackwater', worldName: 'The Blackwater Observatory', characterCount: 3 })
     expect(await readdir(join(root, 'sessions'))).toEqual([started.id])
-    expect((await readdir(join(root, 'sessions', started.id))).sort()).toEqual(['opening.json', 'session.sqlite', 'settings.json'])
+    expect((await readdir(join(root, 'sessions', started.id))).sort()).toEqual(['images', 'opening.json', 'session.sqlite', 'settings.json'])
 
     const session = state.openSession(join(root, 'sessions'), started.id)
     expect(session.metadata.get()).toMatchObject({
@@ -131,7 +133,7 @@ describe('startSession', () => {
     expect(session.intents.list(arthur?.id ?? 0).map(intent => intent.name)).toEqual(['Investigate'])
   })
 
-  it('copies authored visual identity and its canonical portrait into the independent session', async () => {
+  it('copies authored visual identity into the session and reads its canonical portrait from the world until the story changes it', async () => {
     const characterFile = join(root, 'worlds', 'blackwater folder', 'characters', 'arthur', 'character.json')
     await write(characterFile, { name: 'Arthur Moore', role: 'playable', visual_identity: { description: 'A weathered face.', tags: ['grey coat'], negative_tags: ['hat'], global_id: 'person-arthur' } })
     const portrait = join(root, 'worlds', 'blackwater folder', 'images', 'global', 'person-arthur', 'reference.png')
@@ -140,7 +142,9 @@ describe('startSession', () => {
     const session = state.openSession(join(root, 'sessions'), started.id)
     const arthur = session.characters.getBySourceId('arthur')!
     expect(session.visualIdentities.get('character', arthur.id)).toMatchObject({ description: 'A weathered face.', tags: ['grey coat'], negativeTags: ['hat'], globalId: 'person-arthur', version: 1 })
-    expect(await readFile(join(root, 'sessions', started.id, 'images', 'global', 'person-arthur', 'reference.png'), 'utf8')).toBe('portrait')
+    const own = join(root, 'sessions', started.id, 'images', 'global', 'person-arthur', 'reference.png')
+    expect(existsSync(own)).toBe(false)
+    expect(await readFile(sharedFile(join(root, 'sessions', started.id), own), 'utf8')).toBe('portrait')
   })
 
   it('records the version of the world in the session', async () => {
@@ -170,7 +174,8 @@ describe('startSession', () => {
     await writeFile(join(root, 'worlds', 'blackwater folder', 'images', 'library', 'dock.png'), new Uint8Array([1, 2, 3]))
     const started = await startSession(deps, playAsArthur)
     expect(ensured.at(-1)).toEqual([started.id, 'The Blackwater Observatory', opening])
-    expect(existsSync(join(root, 'sessions', started.id, 'images', 'library', 'dock.png'))).toBe(true)
+    expect(existsSync(join(root, 'sessions', started.id, 'images', 'library', 'dock.png'))).toBe(false)
+    expect((await galleryFile(join(root, 'sessions', started.id), 'library/dock.png')).size).toBe(3)
   })
 
   it('applies the answers to the world\'s start questions, lets the dialog\'s own choices come first, and refuses answers that disagree', async () => {

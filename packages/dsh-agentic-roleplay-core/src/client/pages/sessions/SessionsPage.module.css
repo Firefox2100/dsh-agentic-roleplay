@@ -69,7 +69,7 @@
 
 /* Fixed width: the other columns share what is left. */
 .actionsColumn {
-  width: 104px;
+  width: 156px;
 }
 
 .nameColumn {
@@ -127,6 +127,7 @@
 
 .table .actions {
   padding: 0 8px;
+  overflow: visible;
   text-align: center;
   white-space: nowrap;
 }

@@ -1,0 +1,125 @@
+---
+title: State of the art
+description: How other roleplay, companion and persona projects are designed, what their communities report, and how that compares with this bundle.
+---
+
+This page surveys projects that sit near this bundle: roleplay front ends, tabletop and storytelling tools, memory plugins, digital-persona projects, fan-world platforms and commercial companion apps. For each it records what the design does and what its users say about it, then compares that with how this bundle works today.
+
+## How to read this page
+
+- **We study designs. We do not copy code.** Every entry is read for its published behaviour (documentation, READMEs, public issue trackers, articles). No source code, prompt text, card or asset from these projects is used here. Several of them carry licences that do not allow reuse in this project, and the point of the survey is to learn what problems exist, not to borrow their answers.
+- **Community feedback is secondhand.** Complaints come from public issue trackers, plugin FAQs and articles. Issue counts and single anecdotes are weak signals, and they are marked as such. Product claims by vendors are labelled as claims.
+- **Dated and partial.** The survey was made in November 2026. Many of the projects are small and change quickly; Chinese community forums are poorly indexed, and Reddit and a few forums could not be read, so those voices are underrepresented. Bilibili could be searched for titles only, not comments.
+- **No plan lives here.** This page holds comparisons only. What to build, if anything, is decided elsewhere.
+
+## Roleplay front ends and tabletop tools
+
+| Project | What it is | Design points worth noting |
+|---|---|---|
+| [SillyTavern](https://github.com/SillyTavern/SillyTavern) | The common roleplay front end; the source of the card and preset formats this bundle can import. | Memory and vector recall are optional extras rather than defaults. Lorebooks match keywords against a short window of recent messages and compete for a token budget. |
+| [Talemate](https://github.com/vegu-ai/talemate) | A story and roleplay engine with agents. | A "perspectives" pass records what each character perceived of a passage before generation, with effort presets from off to thorough. It has a decision model with a visible log. A settings assistant explains and changes options. |
+| [Luker](https://luker.cups.moe/) | A SillyTavern fork. | A team of agents runs before generation, and its result is bound to the triggering message so alternative replies reuse it; one mode keeps a single growing conversation so the provider's prompt cache survives. Skills are on-demand knowledge packs scoped to global, preset or character, exported with the card. Variables written in replies become a per-message operation log, so swipes and deletes roll them back. A diagnosis button opens an editor pre-filled with an orchestrator run, and a request inspector shows token use per generation. |
+| [Project Lunar](https://github.com/horizonfps/project-lunar) | A world-simulation roleplay project. | A world-reaction step scales off-screen change to elapsed story time, from nothing under an hour to large events after a month. Combat has no stat sheet; outcomes are scored on creativity, coherence and context. |
+| [RisuAI](https://github.com/kwaroran/RisuAI) | A roleplay front end popular with the Chinese-speaking community. | Character portraits can change with an emotion label. |
+| [Agnaistic](https://github.com/agnaistic/agnai) | A roleplay front end that can be self-hosted. | Included for its multi-user and hosted model; no feature was singled out. |
+| [AI Dungeon](https://aidungeon.com/) | A hosted text-adventure service. | "Story cards" inject world facts when their trigger name appears in context. |
+| Tabletop language-model game masters | Research and hobby projects ([for example](https://arxiv.org/html/2409.06949v1)). | The usual remedy for drift from the rules is to give the model functions for dice and state updates instead of trusting it to calculate. |
+
+## Memory and state plugins (mostly Chinese-speaking community)
+
+| Project | Design points |
+|---|---|
+| [Smart-Memory](https://github.com/senjinthedragon/Smart-Memory) | Per-character knowledge in five states (knows, suspects, believes falsely, unaware, hiding); memories tagged as secondhand; a graph that shows which memory superseded which. Its own documentation lists known gaps: editing a message does not update memories extracted from it, branches do not roll back long-term memory, and repeated runs create near-duplicates. |
+| [st-memory-enhancement](https://github.com/muyoou/st-memory-enhancement) | Memory kept as visible, editable tables with shareable templates. |
+| [MVU (MagVarUpdate)](https://github.com/MagicalAstrogy/MagVarUpdate) | The model writes an update block in its reply; author-built HTML status bars display the resulting variables. |
+| [Tavern Helper](https://n0vi028.github.io/JS-Slash-Runner-Doc/) | Lets cards run scripts and front-end code in the chat, including status bars. Its FAQ is a catalogue of how such displays fail. |
+
+## Digital persona and companion-bot projects
+
+| Project | Design points |
+|---|---|
+| [InkSpirit](https://github.com/Airliny/InkSpirit) | Separates a persona into soul (identity, memory, personality, emotion, relationship), brain (any model) and body (sprite, Live2D or VRM). Personality and relationship changes are event-sourced so a change can be traced, imported archives are checked with a continuity fingerprint, and proactive behaviour has a daily budget and do-not-disturb handling. |
+| [immortal-skill](https://github.com/agenmod/immortal-skill) | Distils a persona from chat logs along four dimensions, grades each fact by provenance (verbatim, artifact, impression), and keeps contradictions in a separate file instead of resolving them. It has consent rules per kind of person (self, colleague, deceased relative, former partner). |
+| [MaiBot](https://github.com/Mai-with-u/MaiBot) | A group-chat bot that aims to be lifelike rather than better, with a casual style and a decision about when to speak. |
+| [AIRI](https://github.com/moeru-ai/airi) and [Open-LLM-VTuber](https://github.com/Open-LLM-VTuber/Open-LLM-VTuber) | Voice companions with interruption handling, Live2D expressions mapped from emotion, proactive speaking and screen vision. Both are early-stage; memory is missing or in progress. |
+
+## Fan and licensed worlds
+
+| Project | Design points |
+|---|---|
+| [Mantella](https://github.com/art-from-the-machine/Mantella) | Talking game characters for Skyrim, built from wiki articles under a share-alike licence, with awareness of in-game events. |
+| [Hidden Door](https://www.hiddendoor.co/platform) | A platform for licensed worlds. Its own description (a vendor claim) says every planned beat is checked against canon before the player sees it, that starting knowledge is kept apart from secrets revealed in play, that content rating and death settings are per world, and that it runs many narrow tasks on small tuned models. |
+| Disney and Character.AI | In 2025 Disney sent a cease-and-desist letter and Character.AI removed Disney characters ([Axios](https://www.axios.com/2025/09/30/disney-characterai-cease-desist), [NBC](https://www.nbcnews.com/business/business-news/characterai-removes-disney-characters-from-platform-after-request-rcna234827)). The characters had been described by the platform as being like interactive fan fiction. |
+
+## Commercial companion apps
+
+[Character.AI](https://character.ai/), [Kindroid](https://kindroid.ai/), [Replika](https://replika.com/) and the Chinese apps 星野, 猫箱 and 筑梦岛 are closed products, so only their public behaviour and press coverage can be assessed.
+
+- **Pinned memory.** Kindroid has user-editable "key memories" that the model sees every turn ([overview](https://aicompanionpick.com/ai-companion-memory-kindroid-nomi-replika-long-term-2026)).
+- **Retention.** Chinese press reports that three-day retention for 筑梦岛 and 星野 fell under 20%, and that a user spends roughly five to seven days with one character ([ifeng](https://tech.ifeng.com/c/8kfDCmQkqSO)). One article says characters feel "mined out" after one to two thousand turns for lack of plot guidance. Another says proactive messages are what players value ([huxiu](https://www.huxiu.com/article/4840220.html)).
+- **Fidelity.** 猫箱 characters reportedly changed behaviour after model downgrades ([jiemian](https://www.jiemian.com/article/12484390.html)).
+
+## What users report
+
+Grouped by theme, with where each report comes from.
+
+**Memory is missing, shallow or silent.**
+SillyTavern ships memory off by default and lorebooks fail without a visible sign when entries lose the token budget ([roborhythms](https://www.roborhythms.com/sillytavern-memory/)). AI Dungeon story cards do not load if the name is not mentioned and are dropped when context is short ([AI Dungeon help](https://help.aidungeon.com/faq/why-does-the-ai-forget-or-mix-things-up)). Character.AI is reported to forget the player's details and repeat questions ([roborhythms](https://www.roborhythms.com/why-character-ai-memory-broken/)).
+
+**Memory is attributed to the wrong person.**
+MaiBot's tracker has several reports of facts written against the wrong speaker in group chats. Replika is reported to have credited a user with a friend's wedding for months ([source](https://cave.co.nl/blog/replika-alternatives/)). Two unrelated products, the same failure.
+
+**Automatic memory is noisy and does not follow edits or branches.**
+Smart-Memory documents the gaps above. One user anecdote (unverified) describes six hundred extracted entries pruned by hand to about three hundred.
+
+**Players want to lock what must not change.**
+A user of the memory-table plugin asked for a table lock so the model cannot overwrite protected data. Kindroid's key memories and Hidden Door's rights-holder canon locks answer the same need from different sides.
+
+**Strict formats are brittle.**
+The most discussed issue on MVU asks for a more lenient version. Tavern Helper's FAQ lists many causes of blank or vanishing status bars: regex ordering, renderer limits, safety filters truncating output, and resellers swapping in weaker models. The memory-table plugin reports failures when a table grows large and tables that stop matching the chat.
+
+**Stock phrases and out-of-character drift.**
+Chinese players complain about stock gestures repeating across replies and about characters losing their voice, especially in voice calls and after model changes. Players work around it by rerolling and hand-editing replies.
+
+**Novelty runs out.**
+The retention figures above, and the "mined out" description, point at plot guidance rather than memory.
+
+**Characters disappear.**
+Characters are removed by moderation or sold with their creator. The 猫箱 buyout set off a wave of grief posts, and the Disney case shows a legal route to the same loss.
+
+**Limits and cost.**
+A 100-messages-a-day cap on free chat on 筑梦岛 drew strong objections. Luker added a request inspector because SillyTavern does not systematically show token use.
+
+**Setup and data safety.**
+Talemate's busiest issue is installation. A SillyTavern report describes the client overwriting a healthy chat with its greeting ([#5941](https://github.com/SillyTavern/SillyTavern/issues)).
+
+**Requested features.**
+A different model per character (SillyTavern [#3139](https://github.com/SillyTavern/SillyTavern/issues)), several lorebooks per chat, an image lorebook, tool calling and a mobile layout.
+
+**Tabletop drift.**
+Language-model game masters forget dice rules in long fights; a Bilibili player reports re-sending a rulebook prompt after each death.
+
+## How this bundle compares today
+
+This table states the current behaviour of this bundle, not intentions.
+
+| Topic | Seen elsewhere | This bundle |
+|---|---|---|
+| What each character knows | Perspective passes (Talemate); five knowledge states (Smart-Memory) | A missing edge means a character does not know something exists. Events are immutable and perceptions are per character. Knowledge is present or absent; "suspects", "believes falsely" and "hiding" are not separate states. Beliefs are held separately and can be revised. |
+| Rolling back state | Per-message operation log (Luker); a listed gap in Smart-Memory | Whole-story snapshots per turn. Rewind, swap, regenerate and branch restore the state with the conversation. |
+| Dice and rules | Give the model functions (tabletop research) | The code rolls and reads the result. A world defines its own checks and the game master does not interpret a number. |
+| Status displays | Model-written update blocks and HTML (MVU, Tavern Helper) | Values are tracked in the story state and decided after each turn; interface packs read a player view. A status page exists. A pack that draws the display from the values is not built. |
+| Pinned or locked facts | Key memories (Kindroid), table locks, canon locks (Hidden Door) | Authored lore cannot be written by the record keeper. There is no per-fact pin on the story's own records. |
+| Editing a reply | Hand-editing as a steering technique | Regenerate and rewind exist. Editing a delivered reply in place is not offered. |
+| Repetition | Complaints about stock phrases | A gate finds repeated sentences against recent turns and decides whether the repeat is meant. It does not track recurring gestures or phrases beyond exact sentences. |
+| Per-character model | A requested feature | The characters, background characters, record keeper, suggestions and authoring can each have a model. |
+| Cost and diagnosis | Request inspector and a diagnosis button (Luker) | A per-turn trace of what each agent was told and did, token use per turn, optional tracing to Langfuse. The session doctor is a separate chat and is not opened from a turn. |
+| Effort | Presets from off to thorough (Talemate) | Many separate settings for decisions, reflection, gates and background work. |
+| Off-screen change | Scaled to elapsed time (Project Lunar) | Characters' days are caught up to the clock, due commitments are handled off stage, factions have a strategist, and stories can go on while the player is away. |
+| Expressions and voice | Emotion-driven portraits and voice (RisuAI, AIRI, Open-LLM-VTuber) | Feelings are tracked as values, portraits and scene images are generated, and speech is supported. Portraits do not change with feeling. |
+| Fan and licensed worlds | Wiki-based characters (Mantella), canon checks (Hidden Door) | Worlds are local files; characters can be imported from cards; the catalogue lets people share worlds. There is no wiki importer. The catalogue is a protocol rather than a service: whoever runs one decides its content policy, and this project sets none. |
+| Ownership | Characters vanish on hosted services | Characters and worlds are local files the person owns. |
+
+## Sources and attribution
+
+Projects are named and linked above so readers can inspect them directly. Their names, code and content belong to their authors and are used here only to identify and discuss them. Statements about their behaviour come from their own documentation, public issue trackers and the articles linked; where a statement is a vendor claim or a single report, it is labelled. If an entry misdescribes a project, please open an issue so it can be corrected.

@@ -1,7 +1,7 @@
 import { languageOf, translator, type Character, type Language, type Translate } from 'dsh-roleplay-model'
 import type {
   ItemView, KnownRelationship, SceneItems,
-  ActivationPlanner, Author, Boundaries, OutputGate, VariableTracker, ErrandKeeper, RuleCheck, Reflector, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
+  ActivationPlanner, Author, Boundaries, OutputGate, VariableTracker, ErrandKeeper, RuleCheck, SituationGate, Reflector, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
   InputValidator, PlaceView, NarrationChecker, Narrator, Recaller, RetryPolicy, SceneContextProvider,
 } from './boundaries.ts'
 import { describeDuration, locationKey, mentioned, overlap, tokens, MINUTE, type Recalled } from '@dsh-agentic-roleplay/state'
@@ -121,7 +121,7 @@ export function describeSceneAgenda(agenda: SceneAgenda, now: number, tr: Transl
   const join = (entries: readonly string[]): string => entries.join(tr('; '))
   if (agenda.moved.length > 0) lines.push(tr('By their routines since you last looked: {moves}.', { moves: join(agenda.moved.map(move => tr('{name} went to {place} ({activity})', { name: move.name, place: move.to, activity: move.activity }))) }))
   if (agenda.here.length > 0) lines.push(tr('With the player\'s character, and their days: {days}. The characters decide for themselves whether to keep to their day; the moment may keep them.', { days: join(agenda.here.map(entry => `${entry.name}${tr(': ')}${entry.note}`)) }))
-  if (agenda.asleep.length > 0) lines.push(tr('Asleep now: {names}. An asleep character takes part only if what the player does wakes them: name them in wakes when you ask them, and show them waking.', { names: join(agenda.asleep.map(entry => tr('{name} (until {until})', { name: `${entry.name} [${entry.key}]`, until: describeWhen(entry.until, now, agenda.zone, language) }))) }))
+  if (agenda.asleep.length > 0) lines.push(tr('Asleep now: {names}. An asleep character takes part only if what the player does wakes them: name them in wakes when you ask them, and show them waking.', { names: join(agenda.asleep.map(entry => (entry.waiting === undefined ? tr('{name} (until {until})', { name: `${entry.name} [${entry.key}]`, until: describeWhen(entry.until, now, agenda.zone, language) }) : tr('{name} (until {until}; {count} left for them)', { name: `${entry.name} [${entry.key}]`, until: describeWhen(entry.until, now, agenda.zone, language), count: entry.waiting })))) }))
   if (agenda.engagements.length > 0) {
     const entries = agenda.engagements.map((engagement) => {
       const values = { title: engagement.title, with: engagement.with.join(tr(', ')), place: engagement.place === undefined ? '' : tr(', at {place}', { place: engagement.place }), when: describeWhen(engagement.at, now, agenda.zone, language) }
@@ -213,6 +213,7 @@ export const sharedContext: CharacterContextProvider = {
     // In a place, a character perceives who is there with it; in a story without places, everyone is present.
     const company = place === undefined ? cast : place.here
     const sections = [`${tr('Situation:')}\n${situation}`, ...(time === undefined ? [] : [tr('Now: {time}.', { time: describeTime(time, language) })]), ...(place === undefined ? [] : [`${tr('Where you are:')}\n${describePlace(place, { withKeys: false }, tr).join('\n')}`]), `${tr('Present:')}\n${present(company, member.key, tr)}`]
+    if (request.reach !== undefined) sections.push(tr('This reaches you through: {how}. You are not where it happens, and you take in only what that carries.', { how: request.reach }))
     if (request.upcoming !== undefined && request.upcoming.length > 0) sections.push(`${tr('What you know is coming:')}\n${request.upcoming.map(entry => `- ${entry.text}${entry.when === undefined ? '' : ` (${entry.when})`}`).join('\n')}`)
     if (request.cues !== undefined && request.cues.length > 0) sections.push(`${tr('Just now you notice:')}\n${request.cues.map(cue => `- ${cue}`).join('\n')}`)
     if (request.tracked !== undefined && request.tracked.self !== '') sections.push(`${tr('How you are (what you can tell of yourself):')}\n${request.tracked.self}`)
@@ -310,9 +311,9 @@ export const acceptsAnyInput: InputValidator = { validate: () => ({ ok: true }) 
 /** The game master narrates. */
 export const gameMasterNarrates: Narrator = { narrate: () => Promise.resolve(undefined) }
 
-/** Compares what was said, ignoring the quotes around it and the way whitespace is laid out. */
+/** Compares what was said, ignoring the quotes around it, whether an apostrophe or a quotation mark is straight or curly, and the way whitespace is laid out. */
 export function sameWords(a: string, b: string): boolean {
-  const plain = (text: string): string => trimCharacters(text.trim(), '"“”„«»\'‘’').replace(/\s+/g, ' ').trim()
+  const plain = (text: string): string => trimCharacters(text.trim().replace(/[\u2018\u2019\u02BC]/g, "'").replace(/[\u201C\u201D\u201E]/g, '"'), '"«»\'').replace(/\s+/g, ' ').trim()
   return plain(a) === plain(b)
 }
 
@@ -501,6 +502,8 @@ export const passesEverything: OutputGate = { check: () => Promise.resolve([]) }
 /** Finds no broken rule: without a check the game master's judgement of an action stands as it is. */
 export const breaksNoRule: RuleCheck = { check: () => Promise.resolve([]) }
 
+export const tellsNothingPrivate: SituationGate = { check: () => Promise.resolve(undefined) }
+
 /** Judges nothing: without a judge a trigger that waits on a statement never sees it hold. */
 export const judgesNothing: TriggerJudge = { judge: () => Promise.resolve({ judged: 0 }) }
 
@@ -523,6 +526,7 @@ export function defaultBoundaries(): Boundaries {
     judge: judgesNothing,
     outputGate: passesEverything,
     ruleCheck: breaksNoRule,
+    situationGate: tellsNothingPrivate,
     variableTracker: tracksNothing,
     errandKeeper: keepsNoErrands,
     suggester: offersNothing,

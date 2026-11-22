@@ -280,3 +280,10 @@
     grid-template-columns: repeat(auto-fill, minmax(136px, 1fr));
   }
 }
+
+.more {
+  display: flex;
+  flex: none;
+  justify-content: center;
+  padding: 12px 0 4px;
+}

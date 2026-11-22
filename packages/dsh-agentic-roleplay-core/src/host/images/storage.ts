@@ -1,5 +1,6 @@
 import { copyFile, link, mkdir, readFile, readdir, rename, unlink, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { existsSync } from 'node:fs'
 import type { VisualSubjectKind } from 'dsh-roleplay-model'
 import { readPngMetadata, withPngMetadata } from './png-metadata.ts'
 
@@ -119,11 +120,13 @@ export async function inheritImages(fromRoot: string, toRoot: string, nodes: rea
     }
   }
   for (const name of ['global', 'characters', 'locations', 'items', 'library']) await walk(join(source, name), join(target, name))
+  if (existsSync(join(source, '.base.json'))) await mkdir(target, { recursive: true })
+  if (existsSync(join(source, '.base.json'))) await linkOrCopy(join(source, '.base.json'), join(target, '.base.json'))
   await walk(join(source, 'scenes'), join(target, 'scenes'), file => [...allowedScenes].some(node => file.startsWith(`turn-${node}-`)))
   await walk(join(source, 'presented'), join(target, 'presented'), file => allowedScenes.has(file.replace(/\.json$/, '')))
 }
 
-async function linkOrCopy(from: string, to: string): Promise<void> {
+export async function linkOrCopy(from: string, to: string): Promise<void> {
   try { await link(from, to) } catch (error) {
     const code = (error as NodeJS.ErrnoException).code
     if (code !== 'EXDEV' && code !== 'EPERM') throw error

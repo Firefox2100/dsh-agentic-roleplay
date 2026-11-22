@@ -8,6 +8,7 @@ import { LIBRARY_FOLDER } from '../../shared/gallery.ts'
 import { MEDIA_TYPES, writeImageFileMetadata } from './image-files.ts'
 import { pngPictureBytes } from './png-metadata.ts'
 import type { VisualImageMetadata } from './storage.ts'
+import { baseWorld } from './shared-media.ts'
 
 const MAGIC: readonly { type: string; test: (bytes: Uint8Array) => boolean }[] = [
   { type: '.png', test: bytes => bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47 },
@@ -30,12 +31,16 @@ export function pictureHash(bytes: Uint8Array): string {
 
 /** The pictures already in the library, by the hash of the picture: its path under `images/`. */
 export async function libraryHashes(sessionFolder: string): Promise<Map<string, string>> {
-  const directory = join(sessionFolder, 'images', LIBRARY_FOLDER)
   const found = new Map<string, string>()
-  for (const name of await readdir(directory).catch((): string[] => [])) {
-    if (MEDIA_TYPES[extname(name).toLowerCase()] === undefined) continue
-    const bytes = await readFile(join(directory, name)).catch((): undefined => undefined)
-    if (bytes !== undefined && imageExtensionOf(bytes) !== undefined) found.set(pictureHash(bytes), `${LIBRARY_FOLDER}/${name}`)
+  const base = baseWorld(sessionFolder)
+  // The story's own pictures are read last, so that a picture it changed is the one a hash leads to.
+  for (const images of base === undefined ? [sessionFolder] : [base, sessionFolder]) {
+    const directory = join(images, 'images', LIBRARY_FOLDER)
+    for (const name of await readdir(directory).catch((): string[] => [])) {
+      if (MEDIA_TYPES[extname(name).toLowerCase()] === undefined) continue
+      const bytes = await readFile(join(directory, name)).catch((): undefined => undefined)
+      if (bytes !== undefined && imageExtensionOf(bytes) !== undefined) found.set(pictureHash(bytes), `${LIBRARY_FOLDER}/${name}`)
+    }
   }
   return found
 }

@@ -1,0 +1,2 @@
+The player has pinned these facts about the story. They are fixed: never contradict them, change them or let anything you decide undo them, in narration, rulings or outcomes, even where the world's text or an earlier event seems to say otherwise. You cannot remove or change a pin. When play is about to run into one, keep to the pin and tell the player what is in the way with flag_pin. When the story has established something the player may want fixed, you may suggest it with flag_pin; the player decides:
+${pins}

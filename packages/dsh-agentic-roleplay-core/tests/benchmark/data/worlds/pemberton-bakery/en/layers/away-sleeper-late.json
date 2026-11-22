@@ -1,0 +1,43 @@
+{
+  "id": "away-sleeper-late",
+  "description": "Has the baker asleep in the flat above until 14 minutes after the row starts (her sleep is the day's current window, not to be interrupted), then awake in the same flat, and later in the bakery. She starts in bed with the activity her sleep window gives, so that nothing changes until she wakes.",
+  "requires": [],
+  "conflicts": [
+    "away-sleeper"
+  ],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/mags/character.json": {
+      "start": {
+        "location": "flat",
+        "position": "in bed",
+        "activity": "Asleep",
+        "public_state": "Asleep in the flat upstairs."
+      },
+      "routine": [
+        {
+          "from": "{in-300}",
+          "to": "{in+14}",
+          "activity": "Asleep",
+          "location": "flat",
+          "interruptible": false,
+          "sleep": true
+        },
+        {
+          "from": "{in+14}",
+          "to": "{in+240}",
+          "activity": "Getting dressed upstairs",
+          "location": "flat"
+        },
+        {
+          "from": "{in+240}",
+          "to": "{in-300}",
+          "activity": "Shaping rolls behind the counter",
+          "location": "bakery"
+        }
+      ]
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { Button } from '../../ui/Button.tsx'
 import { Tooltip } from '../../ui/Tooltip.tsx'
 import { MediaImage } from '../media-image/MediaImage.tsx'
 import { onPageVisible, pageVisible } from '../../visibility.ts'
-import { describeImage, imageUrl, loadGallery, updateImage, uploadImage, type GalleryContents, type GalleryImage, type GalleryTarget } from './gallery-api.ts'
+import { describeImage, imageUrl, loadGalleryPage, updateImage, uploadImage, type GalleryFilter, type GalleryImage, type GalleryPage, type GalleryTarget } from './gallery-api.ts'
 import { POLL_MS, awaitsDescriptions, sameGallery } from './polling.ts'
 import type { GalleryLocaleKey } from './locales.ts'
 import css from './GalleryView.module.css'
@@ -12,8 +12,11 @@ import { IconInfo, IconRefresh } from '../../ui/icons.tsx'
 
 
 export type GalleryText = (key: GalleryLocaleKey, values?: Record<string, string | number>) => string
-type Filter = 'all' | 'transient' | 'reference' | 'uploaded'
-type Load = { status: 'loading' } | { status: 'failed'; message: string } | { status: 'ready'; contents: GalleryContents }
+type Filter = GalleryFilter
+type Load = { status: 'loading' } | { status: 'failed'; message: string } | { status: 'ready'; contents: GalleryPage }
+
+/** How many pictures a page holds: the grid draws and loads these, not the whole gallery, which may hold thousands. */
+const PAGE = 48
 
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
 
@@ -56,17 +59,23 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
   const [describing, setDescribing] = useState<ReadonlySet<string>>(new Set())
   const [describeFailures, setDescribeFailures] = useState<Readonly<Record<string, string>>>({})
 
-  const read = useCallback((signal: AbortSignal, quiet = false) => {
+  const shownCount = useRef(PAGE)
+  const read = useCallback((signal: AbortSignal, quiet = false, more = false) => {
     if (!quiet) setRefreshing(true)
-    loadGallery(target, signal).then(
+    if (more) shownCount.current += PAGE
+    loadGalleryPage(target, { offset: 0, limit: shownCount.current, filter }, signal).then(
       (contents) => { setLoad(current => (quiet && current.status === 'ready' && sameGallery(current.contents, contents) ? current : { status: 'ready', contents })); setRefreshing(false) },
       (failure: unknown) => { if (!signal.aborted && !quiet) { setLoad({ status: 'failed', message: messageOf(failure) }); setRefreshing(false) } },
     )
-  }, [target.kind, target.id])
+  }, [target.kind, target.id, filter])
+
+  useEffect(() => {
+    shownCount.current = PAGE
+  }, [target.kind, target.id, filter])
 
   useEffect(() => {
     const abort = new AbortController()
-    read(abort.signal)
+    read(abort.signal, load.status === 'ready')
     return () => { abort.abort() }
   }, [read])
 
@@ -106,19 +115,19 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
     describeImage(target, image.path, new AbortController().signal).then(replace, (failure: unknown) => { setDescribeFailures(current => ({ ...current, [image.path]: messageOf(failure) })); setNotice(t('describeError', { message: messageOf(failure) })) }).finally(() => { setDescribing((current) => { const next = new Set(current); next.delete(image.path); return next }) })
   }
 
-  const { images, failures } = load.contents
+  const { images, failures, total, counts } = load.contents
   const labels = { description: t('description') ?? '', prompt: t('prompt') ?? '', subjects: t('subjects') ?? '', reusable: t('reusable') ?? '', uploaded: t('uploaded') ?? '', dialog: t('dialog') ?? '', close: t('close') ?? '' }
-  const shown = images.filter(image => filter === 'all' || (filter === 'uploaded' ? image.origin === 'uploaded' : image.purpose === filter))
+  const shown = images
   return (
     <div className={css.page} data-testid="roleplay-gallery">
       <div className={css.toolbar}>
-        <span className={css.count}>{t(shown.length === 1 ? 'countOne' : 'countOther', { count: shown.length })}</span>
+        <span className={css.count}>{t(total === 1 ? 'countOne' : 'countOther', { count: total })}</span>
         <div className={css.actions}>
           <select className={css.select} value={filter} aria-label={t('tab')} onChange={(event) => { setFilter(event.target.value as Filter) }}>
-            <option value="all">{t('all')}</option>
-            <option value="transient">{t('scenes')}</option>
-            <option value="reference">{t('references')}</option>
-            <option value="uploaded">{t('uploaded')}</option>
+            <option value="all">{`${t('all')} (${counts.all})`}</option>
+            <option value="transient">{`${t('scenes')} (${counts.transient})`}</option>
+            <option value="reference">{`${t('references')} (${counts.reference})`}</option>
+            <option value="uploaded">{`${t('uploaded')} (${counts.uploaded})`}</option>
           </select>
           <Button variant="outline" size="sm" disabled={uploading} onClick={() => { picker.current?.click() }}>{uploading ? t('uploading') : t('upload')}</Button>
           <input ref={picker} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden onChange={(event) => { void add(event.target.files); event.target.value = '' }} />
@@ -165,6 +174,7 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
             })}
           </ul>
         )}
+      {shown.length < total && <div className={css.more}><Button variant="outline" size="sm" disabled={refreshing} onClick={() => { read(new AbortController().signal, true, true) }}>{`${t('more')} (${shown.length}/${total})`}</Button></div>}
       {editing !== undefined && <EditDialog t={t} image={editing} onClose={() => { setEditing(undefined) }} onSave={async (update) => { replace(await updateImage(target, editing.path, update, new AbortController().signal)) }} />}
     </div>
   )

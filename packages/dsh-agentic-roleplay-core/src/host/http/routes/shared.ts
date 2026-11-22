@@ -4,7 +4,8 @@ import { pipeline } from 'node:stream/promises'
 import { languageOf } from '../../prompts/library.ts'
 import { InvalidEditProblems } from '../../../shared/world-state.ts'
 import { AgentUnavailableError } from '../../sessions/errors.ts'
-import type { ImageUpdate } from '../../images/gallery.ts'
+import { pageOf, type ImageUpdate } from '../../images/gallery.ts'
+import type { GalleryFilter, GalleryImage } from '../../../shared/gallery.ts'
 import { CatalogueError, type CatalogueFailure } from '../../catalogue/errors.ts'
 import { ImportCardError } from '../../import/card.ts'
 import { ImportNotFoundError } from '../../import/store.ts'
@@ -65,3 +66,18 @@ export function languageField(value: unknown): string | undefined {
   try { return languageOf(value) } catch (error) { throw new InvalidEditProblems([error instanceof Error ? error.message : String(error)]) }
 }
 
+
+const GALLERY_FILTERS: readonly GalleryFilter[] = ['all', 'transient', 'reference', 'uploaded']
+const MAX_GALLERY_PAGE = 500
+
+/** A gallery as asked for: the whole of it, or, when the request names a `limit`, one page of the pictures that match `filter`. */
+export function galleryAnswer(url: URL, gallery: { images: GalleryImage[]; failures: Record<string, string> }): unknown {
+  const limit = url.searchParams.get('limit')
+  if (limit === null) return gallery
+  const filter = url.searchParams.get('filter') ?? 'all'
+  return pageOf(gallery.images, gallery.failures, {
+    offset: Math.max(0, Math.trunc(Number(url.searchParams.get('offset') ?? 0)) || 0),
+    limit: Math.min(MAX_GALLERY_PAGE, Math.max(1, Math.trunc(Number(limit)) || 1)),
+    filter: GALLERY_FILTERS.find(known => known === filter) ?? 'all',
+  })
+}

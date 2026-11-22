@@ -55,8 +55,9 @@ export function ruleChecks(deps: { decisions?: () => DecisionService | undefined
   return {
     async check(job, signal): Promise<string[]> {
       const settings = job.store.settings()
-      const rules = job.store.rules()
-      if (settings.decisions.rules === 'off' || rules.length === 0 || job.input.trim() === '') return []
+      // A pin the player set is held as a rule whatever `decisions.rules` says (unless it is soft): an action that would do what it forbids is put to the game master to judge again.
+      const rules = [...settings.decisions.rules === 'off' ? [] : job.store.rules(), ...job.store.ruledPins?.() ?? []]
+      if (rules.length === 0 || job.input.trim() === '') return []
       const asks = rules.map((rule, index) => ({ key: `rule${index}`, instructions: job.store.text(RULE_PROMPT, { rule }) }))
       const { found, report } = await askExtra(deps.decisions?.(), { player_character: job.player, player_message: job.input }, asks, settings.decisions.gateThreshold, signal)
       noteExtra('rules', job.chat, job.store, report, seen, deps.problem)

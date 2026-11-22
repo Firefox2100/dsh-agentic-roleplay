@@ -114,12 +114,12 @@ export async function tickAutonomy(deps: AutonomyDeps, chat: string, signal: Abo
     tr('You may write them a short message, in your own voice, as someone who knows them would: what you are doing, what is on your mind, something you want them to know or do. Say it in the utterance, in a line or two, with nothing around it.'),
     because ? tr('Something in your own day has just changed, and it may have made you think of them.') : '',
     state.unanswered > 0 ? tr('You and others have already written to them since they were last here and they have not answered: do not press, and never complain about it.') : '',
-    tr('If nothing makes you want to write now, answer with commitment low and no utterance.'),
+    tr('If nothing makes you want to write now, leave the utterance empty.'),
   ].filter(line => line !== '').join(' ')
   const run = characterRunner({ parent, boundaries: deps.boundaries, store })
   const report = await deps.engine.askAlone({ chat, turn }, speaker.key, situation, run, signal)
   const text = report?.utterance?.trim().replace(/^["“「]|["”」]$/g, '').trim()
-  if (report === undefined || report.commitment === 'low' || text === undefined || text === '' || text.length > MAX_MESSAGE_CHARS || wrongLanguage(language, { message: text }, { strays: true }) !== undefined) {
+  if (report === undefined || text === undefined || text === '' || text.length > MAX_MESSAGE_CHARS || wrongLanguage(language, { message: text }, { strays: true }) !== undefined) {
     autonomy.asked(speaker.key, now)
     return { outcome: 'quiet', moved }
   }
@@ -146,14 +146,14 @@ async function answerSleepers(deps: AutonomyDeps, chat: string, store: TurnStore
   const tr = translator(language)
   const time = store.time(turn)
   const situation = [
-    tr('While you were asleep this happened, and you could not answer: {what} It is {now} for you, and you are awake.', { what: ready.situation, now: describeInstant(time.now, time.zone, language) }),
-    tr('Answer them with a short message, in your own voice, in a line or two: the utterance, with nothing around it. If you have nothing to say, answer with commitment low and no utterance.'),
+    tr('While you were asleep this happened, and you could not answer: {what} It is {now} for you, and you are awake.', { what: ready.situations.join(' '), now: describeInstant(time.now, time.zone, language) }),
+    tr('Answer them with a short message, in your own voice, in a line or two: the utterance, with nothing around it. If you have nothing to say, leave the utterance empty.'),
   ].join(' ')
   const speaker = cast.find(member => member.key === ready.character)!
   autonomy.dropWaiting([ready.character])
   const report = await deps.engine.askAlone({ chat, turn }, speaker.key, situation, characterRunner({ parent, boundaries: deps.boundaries, store }), signal)
   const text = report?.utterance?.trim().replace(/^["“「]|["”」]$/g, '').trim()
-  if (report === undefined || report.commitment === 'low' || text === undefined || text === '' || text.length > MAX_MESSAGE_CHARS || wrongLanguage(language, { message: text }, { strays: true }) !== undefined) return undefined
+  if (report === undefined || text === undefined || text === '' || text.length > MAX_MESSAGE_CHARS || wrongLanguage(language, { message: text }, { strays: true }) !== undefined) return undefined
   autonomy.said(turn, { at: now, character: speaker.key, name: speaker.character.name, text })
   return text
 }

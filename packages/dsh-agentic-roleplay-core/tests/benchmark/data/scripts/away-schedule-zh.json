@@ -1,0 +1,66 @@
+{
+  "id": "away-schedule-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "alley"
+        },
+        {
+          "type": "character-doing",
+          "character": "laozhou",
+          "text": "下棋"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 5,
+      "expect": [
+        {
+          "type": "character-doing",
+          "character": "laozhou",
+          "text": "公园"
+        },
+        {
+          "type": "activity-changed",
+          "character": "laozhou"
+        },
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "park",
+          "not": true
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 4,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "park"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 2,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "park"
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

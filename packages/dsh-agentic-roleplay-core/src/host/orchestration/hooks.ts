@@ -283,6 +283,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     if (arrived.length > 0) addLine('messages', tr('While the player was away, these messages reached their character, who has read them: {messages}. Refer to them only if the player does.', { messages: arrived.map(message => `${message.name}: "${message.text}"`).join(' ') }))
     const rules = store.rules()
     if (rules.length > 0) addLine('rules', store.text('roleplay/rules', { rules: rules.map(rule => `- ${rule}`).join('\n') }))
+    const pins = store.pins?.() ?? []
+    if (pins.length > 0) addLine('pins', store.text('roleplay/pins', { pins: pins.map(pin => (store.softPins?.() ?? []).includes(pin) ? `- ${pin} ${tr('(soft: keep to it where the story allows, and tell the player when it has to give)')}` : `- ${pin}`).join('\n') }))
     const wanted = intent?.kind === 'roll' ? intent : undefined
     if (wanted !== undefined) {
       try {

@@ -35,6 +35,10 @@ Reference images are stable and replaceable. Scene images are immutable and numb
 
 The session **Gallery** shows generated and uploaded images together with their subjects, origin and other metadata. Reuse lets the image author search this library before requesting a new generation. This is useful for recurring rooms, establishing shots and other material that should not consume another generation whenever it appears.
 
+The gallery shows 48 pictures at a time, newest first; **Show more** loads the next page, and the filter counts cover the whole gallery. Reading a picture's description does not load the picture itself, so a gallery of thousands opens at the speed of its first page.
+
+A story does not copy the pictures its world came with. It reads them from the world and keeps its own file only for a picture it makes, edits, shows in a scene or uploads. A picture the world has not described yet is described in the world, once for every story, and the story still has no copy of it. Changing a world picture afterwards therefore reaches stories that have not used it yet; a story keeps what it has made or changed. A branch shares the same world pictures.
+
 An uploaded picture can become searchable after a vision-capable model describes it. Without image understanding, it can still be stored and viewed, but semantic reuse has less information to work with.
 
 ## Fitting the models in memory

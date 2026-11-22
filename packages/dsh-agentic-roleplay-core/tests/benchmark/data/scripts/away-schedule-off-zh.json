@@ -1,0 +1,34 @@
+{
+  "id": "away-schedule-off-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "alley"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 8,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "laozhou",
+          "place": "alley"
+        },
+        {
+          "type": "activity-changed",
+          "character": "laozhou",
+          "not": true
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

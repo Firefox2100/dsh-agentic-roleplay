@@ -1,0 +1,18 @@
+{
+  "id": "away-fit-off-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 14,
+      "expect": [
+        {
+          "type": "activity-changed",
+          "character": "wangjie",
+          "not": true
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

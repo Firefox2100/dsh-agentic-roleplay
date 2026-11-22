@@ -1,0 +1,29 @@
+{
+  "id": "away-due-off-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "activity-changed",
+          "character": "xiaoyu",
+          "not": true
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 9,
+      "expect": [
+        {
+          "type": "activity-changed",
+          "character": "xiaoyu",
+          "not": true
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

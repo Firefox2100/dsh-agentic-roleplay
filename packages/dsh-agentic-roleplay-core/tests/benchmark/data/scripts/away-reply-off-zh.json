@@ -1,0 +1,47 @@
+{
+  "id": "away-reply-off-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我给楼上睡着的陈姨发了条微信：陈姨，我有件要紧的事想问你，你醒了就回我一声。然后我继续擦桌子。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "chen"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 5,
+      "expect": [
+        {
+          "type": "messages-at-most",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 10,
+      "expect": [
+        {
+          "type": "messages-at-most",
+          "count": 0
+        },
+        {
+          "type": "character-doing",
+          "character": "chen",
+          "text": "睡"
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

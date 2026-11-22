@@ -1,0 +1,53 @@
+{
+  "id": "pin-key-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I ask the landlord to hand me the strongbox key; I need to open the box.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "While he pours a drink, I slip the strongbox key off his belt.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I take the strongbox key and put it in my pocket.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "player-silent"
+    },
+    {
+      "type": "turns",
+      "count": 3
+    },
+    {
+      "type": "item-held-by",
+      "item": "harbor-key",
+      "holder": "tomas"
+    }
+  ]
+}

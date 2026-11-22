@@ -9,6 +9,7 @@ import { referenceImagePath } from '../images/storage.ts'
 import { generateReferenceImage, uploadReferenceImage } from '../images/generator.ts'
 import { PLOTS_METADATA_KEY, plotProgressOf, populatePlots } from '../pacing/director.ts'
 import { parsePlotsFile, plotReferenceProblems } from '../plots/load.ts'
+import { sharedFile } from '../images/shared-media.ts'
 
 export interface WorldStateDeps {
   state: Pick<RoleplayState, 'openSession'>
@@ -30,7 +31,7 @@ function worldOf(session: Session, sessionsDir: string): WorldState {
     const placement = session.placements.get('character', character.id)
     const location = placement === undefined ? undefined : session.locations.get(placement.locationId)
     const visualIdentity = session.visualIdentities.get('character', character.id)
-    const portrait = referenceImagePath(sessionFolder(sessionsDir, session.metadata.get().id), { kind: 'character', localId: character.sourceId ?? character.id, ...(visualIdentity?.globalId === undefined ? {} : { globalId: visualIdentity.globalId }) })
+    const portrait = sharedFile(sessionFolder(sessionsDir, session.metadata.get().id), referenceImagePath(sessionFolder(sessionsDir, session.metadata.get().id), { kind: 'character', localId: character.sourceId ?? character.id, ...(visualIdentity?.globalId === undefined ? {} : { globalId: visualIdentity.globalId }) }))
     return {
       key: keyOf(character),
       name: character.name,
@@ -316,7 +317,7 @@ function addressOf(session: Session, kind: EntityImageKind, entity: Pictured) {
 
 function imageOf(session: Session, sessionsDir: string, kind: EntityImageKind, entity: Pictured): { image?: string } {
   const id = session.metadata.get().id
-  const file = referenceImagePath(sessionFolder(sessionsDir, id), addressOf(session, kind, entity))
+  const file = sharedFile(sessionFolder(sessionsDir, id), referenceImagePath(sessionFolder(sessionsDir, id), addressOf(session, kind, entity)))
   return existsSync(file) ? { image: `/${API_PREFIX}/sessions/world/${kind}/image/file?id=${encodeURIComponent(id)}&key=${encodeURIComponent(entity.sourceId ?? String(entity.id))}&v=${statSync(file).mtimeMs}` } : {}
 }
 
@@ -349,7 +350,7 @@ export async function uploadSessionEntityImage(deps: WorldStateDeps, id: string,
 /** Resolve the picture through session state so request parameters cannot select arbitrary files. */
 export async function sessionEntityImageFile(deps: WorldStateDeps, id: string, kind: EntityImageKind, key: string): Promise<{ file: string; size: number }> {
   const session = sessionOf(deps, id)
-  const file = referenceImagePath(sessionFolder(deps.sessionsDir(), id), addressOf(session, kind, entityOf(session, kind, key)))
+  const file = sharedFile(sessionFolder(deps.sessionsDir(), id), referenceImagePath(sessionFolder(deps.sessionsDir(), id), addressOf(session, kind, entityOf(session, kind, key))))
   return { file, size: (await stat(file)).size }
 }
 
@@ -383,6 +384,6 @@ export async function sessionCharacterPortraitFile(deps: WorldStateDeps, id: str
   const session = sessionOf(deps, id)
   const character = characterOf(session, key)
   const identity = session.visualIdentities.get('character', character.id)
-  const file = referenceImagePath(sessionFolder(deps.sessionsDir(), id), { kind: 'character', localId: character.sourceId ?? character.id, ...(identity?.globalId === undefined ? {} : { globalId: identity.globalId }) })
+  const file = sharedFile(sessionFolder(deps.sessionsDir(), id), referenceImagePath(sessionFolder(deps.sessionsDir(), id), { kind: 'character', localId: character.sourceId ?? character.id, ...(identity?.globalId === undefined ? {} : { globalId: identity.globalId }) }))
   return { file, size: (await stat(file)).size }
 }

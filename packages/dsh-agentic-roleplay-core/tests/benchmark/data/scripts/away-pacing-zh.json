@@ -1,0 +1,41 @@
+{
+  "id": "away-pacing-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 12,
+      "expect": [
+        {
+          "type": "message-arrived"
+        },
+        {
+          "type": "messages-at-most",
+          "count": 3
+        },
+        {
+          "type": "message-language"
+        },
+        {
+          "type": "message-lacks",
+          "text": "拆迁",
+          "unless": [
+            "chen",
+            "laozhou",
+            "wangjie"
+          ]
+        },
+        {
+          "type": "message-lacks",
+          "text": "开发商",
+          "unless": [
+            "chen",
+            "laozhou",
+            "wangjie"
+          ]
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

@@ -1,0 +1,34 @@
+{
+  "id": "away-schedule-off-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "high-street"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 8,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "high-street"
+        },
+        {
+          "type": "activity-changed",
+          "character": "dev",
+          "not": true
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

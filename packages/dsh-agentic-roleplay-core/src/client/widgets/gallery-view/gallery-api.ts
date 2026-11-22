@@ -1,7 +1,7 @@
-import type { GalleryImage } from '../../../shared/gallery.ts'
+import type { GalleryFilter, GalleryImage, GalleryPage } from '../../../shared/gallery.ts'
 import { API_PREFIX } from '../../../shared/worlds.ts'
 
-export type { GalleryImage }
+export type { GalleryFilter, GalleryImage, GalleryPage }
 
 /** Whose pictures: a session's, or a world's. */
 export interface GalleryTarget { kind: 'sessions' | 'worlds'; id: string }
@@ -23,6 +23,13 @@ export async function loadGallery(target: GalleryTarget, signal: AbortSignal): P
   const response = await fetch(route(target), { credentials: 'same-origin', signal })
   if (!response.ok) throw await failure(response)
   return await response.json() as GalleryContents
+}
+
+/** The newest pictures that match `filter`, `limit` of them from `offset`, with the counts of the whole gallery. */
+export async function loadGalleryPage(target: GalleryTarget, query: { offset: number; limit: number; filter: GalleryFilter }, signal: AbortSignal): Promise<GalleryPage> {
+  const response = await fetch(`${route(target)}&offset=${query.offset}&limit=${query.limit}&filter=${query.filter}`, { credentials: 'same-origin', signal })
+  if (!response.ok) throw await failure(response)
+  return await response.json() as GalleryPage
 }
 
 /** Adds a picture to the library. @returns its path. */

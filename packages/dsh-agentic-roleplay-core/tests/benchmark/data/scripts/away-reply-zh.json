@@ -1,0 +1,69 @@
+{
+  "id": "away-reply-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "我给楼上睡着的陈姨发了条微信：陈姨，我有件要紧的事想问你，你醒了就回我一声。然后我继续擦桌子。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "character-silent",
+          "character": "chen"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 5,
+      "expect": [
+        {
+          "type": "messages-at-most",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 10,
+      "expect": [
+        {
+          "type": "message-arrived",
+          "character": "chen"
+        },
+        {
+          "type": "message-language"
+        },
+        {
+          "type": "character-doing",
+          "character": "chen",
+          "text": "睡",
+          "not": true
+        },
+        {
+          "type": "message-lacks",
+          "text": "拆迁",
+          "unless": [
+            "chen",
+            "laozhou",
+            "wangjie"
+          ]
+        },
+        {
+          "type": "message-lacks",
+          "text": "开发商",
+          "unless": [
+            "chen",
+            "laozhou",
+            "wangjie"
+          ]
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

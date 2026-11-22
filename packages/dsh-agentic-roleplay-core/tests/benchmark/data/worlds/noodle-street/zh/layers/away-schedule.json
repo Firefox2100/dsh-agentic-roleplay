@@ -1,0 +1,39 @@
+{
+  "id": "away-schedule",
+  "description": "Lets the retired teacher start in the alley, away from the player, with a day that changes three minutes after the row starts: the alley until then, the park for the next hour and a half, the alley again after. Hours are written for the moment the row starts, so that the real clock the story follows turns the day over inside a short wait.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/laozhou/character.json": {
+      "start": {
+        "location": "alley",
+        "position": "巷口的石凳旁",
+        "activity": "在巷口和人下棋",
+        "public_state": "坐在巷口的石凳上下棋。"
+      },
+      "routine": [
+        {
+          "from": "{in-90}",
+          "to": "{in+3}",
+          "activity": "在巷口和人下棋",
+          "location": "alley"
+        },
+        {
+          "from": "{in+3}",
+          "to": "{in+90}",
+          "activity": "在公园里遛弯",
+          "location": "park"
+        },
+        {
+          "from": "{in+90}",
+          "to": "{in-90}",
+          "activity": "在巷口和人下棋",
+          "location": "alley"
+        }
+      ]
+    }
+  }
+}

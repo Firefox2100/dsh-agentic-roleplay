@@ -39,6 +39,8 @@ Role Play does not merge. The **Sync** page shows the unit as **Needs a choice**
 
 When a story is pulled from another device, its chat is made again from what the story's folder keeps, so the chat on this device shows every turn played elsewhere. Turns of a branch you rewound away from are not in the chat's log; swapping to them works from the saved state.
 
+A story put away (archived) syncs like any other. The pulled story carries its status: if it was archived on the other device it is archived here too, its chat is hidden and stopped, and no chat is made for it. Bringing it back there shows it again here after the next sync.
+
 ## Deleting
 
 When sync is set up, deleting a story on the Sessions page asks where:
@@ -53,6 +55,7 @@ If the remote cannot be reached, nothing is deleted.
 ## Limits
 
 - A story started before the opening was kept has no opening to rebuild its chat from: its chat is made again from its turns, under the opening "The story begins."
+- A story does not hold a copy of its world's pictures; it reads them from the world, which syncs as its own unit. Only the pictures the story made or changed are in the story. A device that has the story but not its world cannot show those world pictures.
 - World authoring, preset, lorebook and session doctor chats are not synced; they belong to the device.
 - rclone keeps records per pair of paths in `.sync` inside the data folder, which is never synced. A very long data folder path or remote path is refused with a message.
 

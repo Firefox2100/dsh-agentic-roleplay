@@ -1,0 +1,63 @@
+{
+  "id": "away-sleep-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-doing",
+          "character": "mags",
+          "text": "asleep"
+        },
+        {
+          "type": "messages-at-most",
+          "count": 0
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 6,
+      "expect": [
+        {
+          "type": "character-doing",
+          "character": "mags",
+          "text": "asleep",
+          "not": true
+        },
+        {
+          "type": "activity-changed",
+          "character": "mags"
+        },
+        {
+          "type": "message-arrived",
+          "character": "mags"
+        },
+        {
+          "type": "message-language"
+        },
+        {
+          "type": "message-lacks",
+          "text": "sell",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        },
+        {
+          "type": "message-lacks",
+          "text": "landlord",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

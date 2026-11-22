@@ -126,7 +126,7 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     slots: array('slots').map((entry): Slot => ({ id: text(entry, 'id') ?? '', name: text(entry, 'name') ?? '', capacity: num(entry, 'capacity') ?? 0 })),
     itemChanges: array('item_changes').map((entry): ItemChange => defined<ItemChange>({
       character: text(entry, 'character') ?? '', item: text(entry, 'item') ?? '', action: (text(entry, 'action') ?? '') as ItemAction, to: text(entry, 'to'), slot: text(entry, 'slot'),
-      quantity: num(entry, 'quantity'), position: text(entry, 'position'), feature: text(entry, 'feature'), with: text(entry, 'with'), exit: text(entry, 'exit'), forced: bool(entry, 'forced'),
+      quantity: num(entry, 'quantity'), position: text(entry, 'position'), feature: text(entry, 'feature'), with: text(entry, 'with'), exit: text(entry, 'exit'), forced: bool(entry, 'forced'), from: text(entry, 'from'),
     })),
     itemEdits: array('item_edits').map((entry): ItemEditSpec => defined<ItemEditSpec>({
       item: text(entry, 'item') ?? '', description: text(entry, 'description'), quality: text(entry, 'quality'), quantity: num(entry, 'quantity'), notable: bool(entry, 'notable'),
@@ -384,6 +384,7 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
           with: { type: 'string', description: 'For lock and unlock: the key item used.' },
           exit: { type: 'string', description: 'For lock and unlock of a way instead of an item: the key of the place it leads to.' },
           forced: { type: 'boolean' },
+          from: { type: 'string', description: 'For take: the character it is taken from, when the story has it taken out of their hands or pockets.' },
         },
         required: ['character', 'item', 'action'],
         additionalProperties: false,

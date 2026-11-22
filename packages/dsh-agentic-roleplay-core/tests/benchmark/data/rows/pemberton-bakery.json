@@ -107,5 +107,600 @@
       "cast"
     ],
     "script": "sleeper-bakery-en"
+  },
+  {
+    "id": "pemberton-bakery-away-schedule-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-schedule"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A character away from the player whose day turns over while nobody plays: it is where its day has it before and where its day has it after, with no message and no model asked, and it stays there.",
+    "script": "away-schedule-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-schedule-off-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-schedule"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the chat's days switched off the same character stays where the story put it.",
+    "script": "away-schedule-off-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      },
+      "schedule": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-simulated-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-schedule"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: the same day on the simulated clock, with the switch for stories that go on on: nothing runs, because a story that goes on needs the real clock.",
+    "script": "away-simulated-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "simulated"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "chance": 0,
+        "transitionChance": 1,
+        "messages": true
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-sleep-wake-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-sleeper"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A character asleep away from the player wakes when its window ends: it is asleep and silent before, awake after, and a character whose day just changed may write (the chance for that is raised to one so that the row tests the writing and not the draw).",
+    "script": "away-sleep-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 1,
+        "messages": true
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-sleep-wake-quiet-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-sleeper"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: the same waking with messages off: the character wakes and nobody writes.",
+    "script": "away-sleep-quiet-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-reply-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-sleeper-late"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "What is sent to a character who is asleep somewhere else is kept, and she answers it as a message once she wakes (nothing else can produce a message here: chance and the chance for a changed day are zero). Whether the game master tries to ask the sleeper is its own choice, so the rate over repeats is the result.",
+    "script": "away-reply-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": true
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-reply-off-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-sleeper-late"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the story not going on by itself nothing is kept for the sleeper and nothing arrives after she wakes.",
+    "script": "away-reply-off-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-due-goal-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-due"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A goal whose time falls due for a character away from the player is dealt with while nobody plays: before its time nothing changed, and after it the character is doing what it decided.",
+    "script": "away-due-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-due-goal-off-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [
+      "away-due"
+    ],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the allowance for characters away set to none the goal is left alone.",
+    "script": "away-due-off-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      },
+      "offstage": {
+        "perTurn": 0
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-fit-in-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A character with no day, away from the player, is given one by the world author while nobody plays and takes it up at once.",
+    "script": "away-fit-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-fit-in-off-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "Control: with the world closed to making things up nobody is given a day and the character stays as it was.",
+    "script": "away-fit-off-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 0,
+        "transitionChance": 0,
+        "messages": false
+      },
+      "authoring": {
+        "enabled": false
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-pacing-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A story left alone with every chance raised: messages arrive, no more than the limit of things done without a reply, in the story's language, and none gives away what the player has not been told.",
+    "script": "away-pacing-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 1,
+        "transitionChance": 0,
+        "messages": true,
+        "decay": 1
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-away-told-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A message that arrived while the player was away is told to the story at their next message: the game master is given it in that turn's scene.",
+    "script": "away-told-en",
+    "report": [
+      "away"
+    ],
+    "settings": {
+      "clock": {
+        "mode": "real"
+      },
+      "autonomy": {
+        "enabled": true,
+        "idleMinutes": 1,
+        "messageGapMinutes": 5,
+        "maxUnanswered": 3,
+        "awayHours": 12,
+        "chance": 1,
+        "transitionChance": 0,
+        "messages": true,
+        "decay": 1
+      }
+    }
+  },
+  {
+    "id": "pemberton-bakery-full-thought-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "A player's move that mixes speech with a thought about Dev, who is elsewhere and whom Mr Okafor, who is with the player, has no way of knowing. Dev's name must not reach the narration. The situation check by code and the instructions are on; the decision model's check is off.",
+    "script": "bakery-thought-en",
+    "report": [
+      "theme"
+    ]
+  },
+  {
+    "id": "pemberton-bakery-full-thought-gate-en",
+    "world": "pemberton-bakery",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "jo",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "items",
+      "lore",
+      "variables",
+      "triggers",
+      "routines",
+      "calendar",
+      "rules"
+    ],
+    "why": "The same moves with the decision model's situation check on (`decisions.situation`: decision, cut 0.3).",
+    "script": "bakery-thought-en",
+    "report": [
+      "theme"
+    ],
+    "settings": {
+      "decisions": {
+        "situation": "decision"
+      }
+    }
   }
 ]

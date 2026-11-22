@@ -5,7 +5,7 @@ import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import type { NarrationSegment } from '../../src/shared/narration.ts'
-import { chatLanguage, evaluate, held, worldOfRow, type BenchData, type Observation, type Row, type Script, type Verdict } from './framework/index.ts'
+import { chatLanguage, evaluate, held, worldOfRow, type BenchData, type Observation, type Row, type Snapshot, type Script, type Verdict } from './framework/index.ts'
 import type { TimelineView } from '../../src/shared/timeline.ts'
 import { liveDecisionService, newCounters } from './live.ts'
 import { judgeVoice, sheetsOf } from './voice.ts'
@@ -105,6 +105,24 @@ async function valuesOf(rig: StoryRig, session: string): Promise<NonNullable<Obs
 
 interface World { characters: { key: string; name: string; control: string; place?: { key: string }; state?: { activity?: string } }[]; things: { key: string; holder: string }[]; triggers?: { key: string; status?: string; fireCount?: number }[] }
 
+/** The characters of a story as a run sees them: who stands where and what each is doing. */
+function charactersOf(state: World): NonNullable<Observation['characters']> {
+  return state.characters.map(character => ({ key: character.key, name: character.name, placed: character.place !== undefined, ...character.state?.activity === undefined ? {} : { activity: character.state.activity }, ...character.place === undefined ? {} : { place: character.place.key } }))
+}
+
+/** The characters and the messages beside the story at this moment, or nothing when the story cannot be read. */
+async function snapshotOf(rig: StoryRig, session: string, trace: Trace): Promise<Snapshot | undefined> {
+  try {
+    const [state, notes] = await Promise.all([rig.api<World>(`/sessions/world?id=${session}`), rig.api<{ kind: string; lines: string[] }[]>(`/sessions/notes?id=${session}`)])
+    const snapshot = { characters: charactersOf(state), notes }
+    trace.state('after a wait', snapshot)
+    return snapshot
+  } catch (error) {
+    trace.note(`the story could not be read after a wait: ${error instanceof Error ? error.message : String(error)}`)
+    return undefined
+  }
+}
+
 /** How many of each wanted character's lines the decision model finds in its voice, when the script asks and `BENCH_DECISION_URL` names a decision model; otherwise nothing is judged. */
 async function voicesOf(script: Script, files: ReadonlyMap<string, unknown>, observation: Observation, trace: Trace): Promise<Observation['voice']> {
   const url = process.env['BENCH_DECISION_URL']
@@ -128,7 +146,7 @@ async function voicesOf(script: Script, files: ReadonlyMap<string, unknown>, obs
  */
 export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: Script, trace: Trace, keepLogTo?: string): Promise<RowRun> {
   const began = Date.now()
-  const composed = worldOfRow(data, row)
+  const composed = worldOfRow(data, row, Date.now())
   if (composed.problems.length > 0) throw new Error(composed.problems.join('; '))
   const worldId = `bench-${row.id}`
   const folder = join(rig.root, 'worlds', worldId)
@@ -148,10 +166,11 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
   trace.state('row', { row, script, settings: settingsOf(row), files: [...composed.files.keys()], places })
   let session: string | undefined
   const played: RowRun['turns'] = []
-  const steps: { segments: NarrationSegment[]; ooc?: { legal: boolean; note?: string; question?: boolean }; scene?: string[] }[] = []
+  const steps: NonNullable<Observation['played']> = []
   let failure: string | undefined
   let initialValues: Observation['initialValues']
   let castAtStart: number | undefined
+  let initialCharacters: Observation['characters']
   const nameOf = new Map<string, string>()
   try {
     await rig.api('/worlds/refresh', { method: 'POST' })
@@ -160,7 +179,9 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
     trace.note(`started ${started.id}`)
     initialValues = await valuesOf(rig, session).catch(() => undefined)
     if ((row.folders ?? []).length > 0) await rig.api(`/sessions/folders?id=${session}`, { method: 'PUT', body: JSON.stringify({ folders: row.folders!.map(entry => ({ path: places[entry.name], access: entry.access })) }) })
-    castAtStart = (await rig.api<World>(`/sessions/world?id=${session}`).catch(() => undefined))?.characters.length
+    const opening = await rig.api<World>(`/sessions/world?id=${session}`).catch(() => undefined)
+    castAtStart = opening?.characters.length
+    initialCharacters = opening === undefined ? undefined : charactersOf(opening)
     trace.state('values at the start', initialValues)
     let last = ''
     for (const [index, turn] of script.turns.entries()) {
@@ -168,7 +189,9 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
       if (turn.action === 'wait') {
         trace.event('request', { service: 'story', action: 'wait', minutes: turn.minutes })
         await sleep((turn.minutes ?? 1) * 60_000)
-        steps.push({ segments: [] })
+        // how the story stands now: a wait is judged on this, since the story goes on and it will not look like this at the end
+        const snapshot = await snapshotOf(rig, session, trace)
+        steps.push({ segments: [], ...snapshot === undefined ? {} : { snapshot } })
         played.push({ say: `(wait ${turn.minutes} minutes)`, seconds: (turn.minutes ?? 1) * 60, segments: [] })
         continue
       }
@@ -224,6 +247,7 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
         ...observation,
         characters: state.characters.map(character => ({ key: character.key, name: character.name, placed: character.place !== undefined, ...character.state?.activity === undefined ? {} : { activity: character.state.activity }, ...character.place === undefined ? {} : { place: character.place.key } })),
         ...castAtStart === undefined ? {} : { castAtStart },
+        ...initialCharacters === undefined ? {} : { initialCharacters },
         things: state.things.map(thing => ({ key: thing.key, holder: nameOf.get(thing.holder) ?? thing.holder })),
         ...state.triggers === undefined ? {} : { triggers: state.triggers.map(trigger => ({ key: trigger.key, fired: trigger.status === 'fired' || (trigger.fireCount ?? 0) > 0 })) },
         places: row.features.includes('places'),

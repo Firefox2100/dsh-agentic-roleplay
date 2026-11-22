@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { GalleryContents, GalleryImage } from '../../../../src/client/widgets/gallery-view/gallery-api.ts'
+import type { GalleryImage, GalleryPage } from '../../../../src/client/widgets/gallery-view/gallery-api.ts'
 import { awaitsDescriptions, sameGallery } from '../../../../src/client/widgets/gallery-view/polling.ts'
 
 const image = (path: string, pending: boolean): GalleryImage => ({ path, pending, subjects: [], tags: [] }) as unknown as GalleryImage
-const contents = (images: GalleryImage[], failures: Record<string, string> = {}): GalleryContents => ({ images, failures }) as GalleryContents
+const contents = (images: GalleryImage[], failures: Record<string, string> = {}): GalleryPage => ({ images, failures, waiting: images.filter(entry => entry.pending === true && failures[entry.path] === undefined).length }) as GalleryPage
 
 describe('when a gallery reads its list again by itself', () => {
   it('does while a session\'s picture is being described, and not for a world\'s, a described one, one that failed, or a gallery not read yet', () => {

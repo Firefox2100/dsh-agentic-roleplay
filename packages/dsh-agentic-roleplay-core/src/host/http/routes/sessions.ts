@@ -13,7 +13,7 @@ import { sendError, sendJson } from '../respond.ts'
 import { RcloneError, SyncRefusedError } from '../../sync/errors.ts'
 import { failure as syncFailure } from '../../sync/routes.ts'
 import type { ApiDeps } from '../api.ts'
-import { MAX_UPLOAD_BYTES, Routes, imageUpdateOf, languageField, sendImage } from './shared.ts'
+import { MAX_UPLOAD_BYTES, Routes, galleryAnswer, imageUpdateOf, languageField, sendImage } from './shared.ts'
 
 /** The routes of the API for sessions. */
 export function sessionsRoutes({ sessions, externalTools, redundantLayers }: ApiDeps): Routes {
@@ -241,7 +241,7 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
     },
     '/sessions/gallery': {
       GET: async (_req, res, url) => {
-        try { sendJson(res, 200, await sessions.gallery(url.searchParams.get('id') ?? '')) }
+        try { sendJson(res, 200, galleryAnswer(url, await sessions.gallery(url.searchParams.get('id') ?? ''))) }
         catch (error) { return sendError(res, 409, error instanceof Error ? error.message : String(error)) }
       },
       PUT: async (req, res, url) => {

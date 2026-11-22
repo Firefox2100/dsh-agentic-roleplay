@@ -1,3 +1,4 @@
+import { open } from 'node:fs/promises'
 const SIGNATURE = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])
 const KEYWORD = 'dsh-roleplay'
 
@@ -83,4 +84,31 @@ export function readPngMetadata(png: Uint8Array): unknown | undefined {
     offset = end + 1
   }
   try { return JSON.parse(entry.data.subarray(offset).toString('utf8')) as unknown } catch { return undefined }
+}
+
+/**
+ * The same as {@link readPngMetadata} for a file, without reading the picture: it walks the chunk headers and reads only the chunk that
+ * carries the metadata, so what it costs does not grow with the size of the image.
+ */
+export async function readPngFileMetadata(file: string): Promise<unknown | undefined> {
+  const handle = await open(file, 'r')
+  try {
+    const head = Buffer.alloc(8)
+    if ((await handle.read(head, 0, 8, 0)).bytesRead < 8 || !head.equals(SIGNATURE)) throw new Error('not a PNG')
+    let offset = SIGNATURE.length
+    for (;;) {
+      if ((await handle.read(head, 0, 8, offset)).bytesRead < 8) return undefined
+      const length = head.readUInt32BE(0)
+      const type = head.toString('ascii', 4, 8)
+      if (type === 'IEND') return undefined
+      if (type === 'iTXt' && length >= KEYWORD.length + 1) {
+        const data = Buffer.alloc(length)
+        await handle.read(data, 0, length, offset + 8)
+        if (isOurText({ type, data, bytes: data })) return readPngMetadata(Buffer.concat([SIGNATURE, chunk('iTXt', data), chunk('IEND', Buffer.alloc(0))]))
+      }
+      offset += 12 + length
+    }
+  } finally {
+    await handle.close()
+  }
 }

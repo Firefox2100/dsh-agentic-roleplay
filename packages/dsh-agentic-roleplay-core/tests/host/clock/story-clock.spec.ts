@@ -99,6 +99,12 @@ describe('time that follows the wall clock', () => {
     expect(beginTurn(session, real, 2, wall)).toEqual({ time: { mode: 'real', now: wall, zone: 'UTC' } })
   })
 
+  it('reads the time it really is without letting any pass, so a story left alone does not stand still', () => {
+    expect(readTime(session, real, 1, wall + 2 * HOUR).now).toBe(wall + 2 * HOUR)
+    expect(readTime(session, real, 1, wall - 10 * HOUR).now).toBe(wall - 3 * HOUR)
+    expect(beginTurn(session, real, 1, wall + 2 * HOUR).away).toBe(5 * HOUR)
+  })
+
   it('takes a round as long as it really took', () => {
     beginTurn(session, real, 1, wall)
     expect(endRound(session, real, 1, 1, wall + 45_000, 99, 9999)).toEqual({ from: wall, to: wall + 45_000, zone: 'UTC' })

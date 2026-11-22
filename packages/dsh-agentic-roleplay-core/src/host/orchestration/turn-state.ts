@@ -89,6 +89,12 @@ export interface TurnState {
   rulesChecked?: true
   /** The output was sent back once for giving away hidden lore; the same revelation, delivered again, is the game master's choice. */
   secretsFound?: true
+  /** How the round's moment reaches each character asked that is not where the player's character is. */
+  reaches?: Map<string, string>
+  /** How many times a situation was sent back for naming a person (the key after the recipient's) the recipient does not know. */
+  unknownRefused?: Map<string, number>
+  /** The situation was sent back once for telling what the characters could not have perceived; the repeat goes through. */
+  situationRefused?: true
   /** The judgement found the attempt uncertain and the game master has dice: it has to roll before anyone is asked to act. */
   rollWanted?: true
 }

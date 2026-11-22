@@ -1,7 +1,7 @@
 import { atomicWrite } from '../atomic-write.ts'
 import { readFile } from 'node:fs/promises'
 import { extname } from 'node:path'
-import { readPngMetadata, withPngMetadata } from './png-metadata.ts'
+import { readPngFileMetadata, withPngMetadata } from './png-metadata.ts'
 import type { VisualImageMetadata } from './storage.ts'
 
 /** Raster formats a person may bring. Only PNG can carry its metadata inside; the others have a sidecar `<file>.json`. */
@@ -14,7 +14,7 @@ export const sidecarOf = (file: string): string => `${file}.json`
 /** What an image file says about itself: inside a PNG, beside any other format. Nothing when it says nothing readable. */
 export async function readImageFileMetadata(file: string): Promise<Partial<VisualImageMetadata> | undefined> {
   if (extname(file).toLowerCase() === '.png') {
-    try { return readPngMetadata(await readFile(file)) as Partial<VisualImageMetadata> | undefined } catch { return undefined }
+    try { return await readPngFileMetadata(file) as Partial<VisualImageMetadata> | undefined } catch { return undefined }
   }
   try { return JSON.parse(await readFile(sidecarOf(file), 'utf8')) as Partial<VisualImageMetadata> } catch { return undefined }
 }

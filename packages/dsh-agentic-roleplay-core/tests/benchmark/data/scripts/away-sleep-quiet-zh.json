@@ -1,0 +1,38 @@
+{
+  "id": "away-sleep-quiet-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-doing",
+          "character": "chen",
+          "text": "睡"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 6,
+      "expect": [
+        {
+          "type": "character-doing",
+          "character": "chen",
+          "text": "睡",
+          "not": true
+        },
+        {
+          "type": "activity-changed",
+          "character": "chen"
+        },
+        {
+          "type": "messages-at-most",
+          "count": 0
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

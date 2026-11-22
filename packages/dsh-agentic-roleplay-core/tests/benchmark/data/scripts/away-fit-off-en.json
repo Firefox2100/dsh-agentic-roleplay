@@ -1,0 +1,18 @@
+{
+  "id": "away-fit-off-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 14,
+      "expect": [
+        {
+          "type": "activity-changed",
+          "character": "lena",
+          "not": true
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

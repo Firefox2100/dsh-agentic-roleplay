@@ -31,6 +31,53 @@ const keys = ['alice', 'bob', 'carol', 'dan']
 const calm = Object.fromEntries(keys.map(key => [key, { intent: `${key} waits`, commitment: 'low' as const }]))
 const narration = (text = 'Time passes.'): RawSegment[] => [{ type: 'narration', text }]
 
+describe('what the characters are told', () => {
+  const room = location(1, 'Room')
+  const away = location(2, 'Away')
+  const own = (...members: ReturnType<typeof placed>[]) => { store = fakeStore(members); engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined)) }
+
+  it('refuses twice a situation that names someone the recipient has no way of knowing, and lets the third through', async () => {
+    own(placed(arthur, room), placed(alice, room), placed(carol, away))
+    const { run, requests } = scriptedRunner({ alice: { intent: 'a', commitment: 'low' } })
+    await expect(engine.activate(owner, { situation: 'Arthur agrees while thinking of Carol.', characters: ['alice'] }, run, signal)).rejects.toThrow(/Alice has no way of knowing Carol/)
+    await expect(engine.activate(owner, { situation: 'Arthur agrees; Carol was named.', characters: ['alice'] }, run, signal)).rejects.toThrow(/no way of knowing Carol/)
+    await engine.activate(owner, { situation: 'Arthur agrees; Carol is named again.', characters: ['alice'] }, run, signal)
+    expect(requests.map(request => request.member.key)).toEqual(['alice'])
+  })
+
+  it('does not count the player\'s character, who is what the moment is about', async () => {
+    own(placed(arthur, away), placed(alice, room))
+    const { run } = scriptedRunner({ alice: { intent: 'a', commitment: 'low' } })
+    await expect(engine.activate(owner, { situation: 'Arthur calls out.', characters: ['alice'], reaches: [{ character: 'alice', how: 'a shout' }] }, run, signal)).resolves.toMatchObject({ attempt: 1 })
+  })
+
+  it('asks a character that is elsewhere only when the game master says how the moment reaches it, and tells that character how', async () => {
+    own(placed(arthur, room), placed(alice, room), placed(carol, away))
+    const { run, requests } = scriptedRunner({ carol: { intent: 'c', commitment: 'low' } })
+    await expect(engine.activate(owner, { situation: 'Arthur rings.', characters: ['carol'] }, run, signal)).rejects.toThrow(/Carol \(carol\) is not where the player's character is.*say how in reaches/)
+    await engine.activate(owner, { situation: 'Arthur rings.', characters: ['carol'], reaches: [{ character: 'carol', how: 'a phone call' }] }, run, signal)
+    expect(requests.map(request => [request.member.key, request.reach])).toEqual([['carol', 'a phone call']])
+  })
+
+  it('needs no reach for characters in the same place or in a world without places', async () => {
+    own(placed(arthur, room), placed(alice, room))
+    const { run, requests } = scriptedRunner({ alice: { intent: 'a', commitment: 'low' } })
+    await engine.activate(owner, { situation: 'Arthur speaks.', characters: ['alice'] }, run, signal)
+    expect(requests[0]!.reach).toBeUndefined()
+    own(arthur, alice)
+    const again = scriptedRunner({ alice: { intent: 'a', commitment: 'low' } })
+    await engine.activate({ ...owner, turn: 2 }, { situation: 'Arthur speaks.', characters: ['alice'] }, again.run, signal)
+  })
+
+  it('sends a situation back once when the situation check finds what the characters could not have perceived', async () => {
+    boundaries = { ...boundaries, situationGate: { check: async () => 'rewrite it' } }
+    engine = new TurnEngine(() => boundaries, chat => (chat === 'session-1' ? store : undefined))
+    const { run } = scriptedRunner(calm)
+    await expect(engine.activate(owner, { situation }, run, signal)).rejects.toThrow('rewrite it')
+    await expect(engine.activate(owner, { situation: moment(2) }, run, signal)).resolves.toMatchObject({ attempt: 1 })
+  })
+})
+
 describe('activating the characters', () => {
   it('asks every character the player does not control, all with the same situation', async () => {
     const { run, requests } = scriptedRunner({
@@ -2036,23 +2083,48 @@ describe('sleepers and the days of the characters', () => {
     expect(requests.map(request => request.member.key).sort()).toEqual(['alice', 'bob'])
   })
 
-  it('keeps what was said to a sleeper to be answered at waking, in a story that goes on while the player is away, and says so', async () => {
+  const real = () => ({ ...QUIET, autonomy: { ...QUIET.autonomy, enabled: true, messages: true }, clock: { ...QUIET.clock, mode: 'real' as const } })
+
+  it('leaves what the game master says for a sleeper to be answered at waking, asks nobody else for it, and says so', async () => {
     asleep(bob)
-    const kept: unknown[] = []
-    store.autonomy = { queueReply: (entry: unknown) => { kept.push(entry) } } as never
-    store.settings = () => ({ ...QUIET, autonomy: { ...QUIET.autonomy, enabled: true, messages: true }, clock: { ...QUIET.clock, mode: 'real' } })
-    const { run } = scriptedRunner(only)
-    await expect(engine.activate(owner, { situation, characters: ['bob'] }, run, signal)).rejects.toThrow(/Nothing is lost.*once they are awake/)
-    expect(kept).toEqual([expect.objectContaining({ character: 'bob', name: 'Bob', situation })])
+    const kept: { character: string; name: string; situations: string[] }[] = []
+    store.autonomy = { queueReply: (entry: (typeof kept)[number]) => { kept.push(entry) } } as never
+    store.settings = real
+    const { run, requests } = scriptedRunner(only)
+    const result = await engine.activate(owner, { situation, characters: [], leaves: ['bob'] }, run, signal)
+    expect(result).toEqual({ attempt: 1, reports: [], failures: [], left: ['Bob'] })
+    expect(kept).toEqual([expect.objectContaining({ character: 'bob', name: 'Bob', situations: [situation] })])
+    expect(requests).toEqual([])
   })
 
-  it('keeps nothing for a sleeper when the story does not go on by itself', async () => {
+  it('asks the others and leaves a message for the sleeper in the same call', async () => {
     asleep(bob)
-    const kept: unknown[] = []
-    store.autonomy = { queueReply: (entry: unknown) => { kept.push(entry) } } as never
+    store.autonomy = { queueReply: () => undefined } as never
+    store.settings = real
+    const { run, requests } = scriptedRunner(only)
+    const result = await engine.activate(owner, { situation, characters: ['alice'], leaves: ['bob'] }, run, signal)
+    expect(result.left).toEqual(['Bob'])
+    expect(requests.map(request => request.member.key)).toEqual(['alice'])
+  })
+
+  it('refuses to leave something for someone who is awake, who is not there, or when the story does not go on by itself', async () => {
     const { run } = scriptedRunner(only)
-    await expect(engine.activate(owner, { situation, characters: ['bob'] }, run, signal)).rejects.not.toThrow(/Nothing is lost/)
-    expect(kept).toEqual([])
+    store.autonomy = { queueReply: () => undefined } as never
+    store.settings = real
+    await expect(engine.activate(owner, { situation, characters: [], leaves: ['bob'] }, run, signal)).rejects.toThrow(/Bob is not asleep/)
+    await expect(engine.activate(owner, { situation, characters: [], leaves: ['nobody'] }, run, signal)).rejects.toThrow(/no character "nobody"/)
+    asleep(bob)
+    store.settings = () => QUIET
+    await expect(engine.activate(owner, { situation, characters: [], leaves: ['bob'] }, run, signal)).rejects.toThrow(/only answered in a story that goes on while the player is away/)
+  })
+
+  it('tells a sleeper named without a way out how to leave a message, when that can be answered, and not otherwise', async () => {
+    asleep(bob)
+    store.autonomy = { queueReply: () => undefined } as never
+    const { run } = scriptedRunner(only)
+    await expect(engine.activate(owner, { situation, characters: ['bob'] }, run, signal)).rejects.not.toThrow(/leaves_message_for/)
+    store.settings = real
+    await expect(engine.activate(owner, { situation, characters: ['bob'] }, run, signal)).rejects.toThrow(/leaves_message_for/)
   })
 
   it('leaves out the sleepers when nobody is named, and says so when nobody else is left', async () => {

@@ -13,6 +13,7 @@ import { RESULTS, type CharacterFailure, type Outcome, type TurnOutput, type Utt
 import type { AttemptReport, RawSegment, ResolveReport, TurnEngine, TurnOwner } from './turn-engine.ts'
 import { plotAuthorNeeded, updatePlotProgress } from '../pacing/director.ts'
 import { authorPlot } from '../pacing/author.ts'
+import { languageOf, translator } from 'dsh-roleplay-model'
 
 export const ACTIVATE_TOOL = 'activate_characters'
 export const RESOLVE_TOOL = 'resolve_round'
@@ -25,6 +26,7 @@ export const PREVIEW_TOOL = 'preview_scene'
 export const RULING_TOOL = 'ooc_ruling'
 export const ANSWER_TOOL = 'ooc_answer'
 export const JUDGE_TOOL = 'judge_action'
+export const PIN_TOOL = 'flag_pin'
 export const PLOT_TOOL = 'record_plot_progress'
 export const AUTHOR_PLOT_TOOL = 'author_plot'
 
@@ -56,12 +58,15 @@ export function renderAttempt(attempt: AttemptReport): string {
     ? 'The characters acted. Their intents may conflict with each other; you decide what actually happens.'
     : 'These characters failed but were highly committed, so each tried once more, knowing what just happened.'
   const lines = attempt.reports.map(report => `- ${report.character} (${report.name}): ${report.utterance === undefined ? 'says nothing' : `says "${report.utterance}"`}; does: ${report.intent} [commitment: ${report.commitment}]`)
-  const next = attempt.reports.length === 0
+  const left = attempt.left === undefined || attempt.left.length === 0 ? [] : [`Left for ${attempt.left.join(', ')}, who answer once awake.`]
+  const next = attempt.reports.length === 0 && left.length > 0
+    ? ['', 'Nobody was asked now. Go on without them: resolve what the player\'s character does with resolve_round, or deliver with narrate.']
+    : attempt.reports.length === 0
     ? ['', 'Nobody could act. Fix the problem or call activate_characters again with a different set.']
     : attempt.attempt === 1
       ? ['', `Now call ${RESOLVE_TOOL} with one outcome for each of: ${attempt.reports.map(report => report.character).join(', ')}.`]
       : ['', `Call ${RESOLVE_TOOL} once more with one outcome for each of: ${attempt.reports.map(report => report.character).join(', ')}. There are no further retries: what you decide now is final.`]
-  return [heading, ...lines, ...failures(attempt.failures), ...next].join('\n')
+  return [attempt.reports.length === 0 && left.length > 0 ? left[0]! : heading, ...(attempt.reports.length === 0 && left.length > 0 ? [] : lines), ...(attempt.reports.length > 0 ? left : []), ...failures(attempt.failures), ...next].join('\n')
 }
 
 /** Who went where because their day says so. */
@@ -142,10 +147,20 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         required: true,
         description: 'An objective description of the moment: in the first round what the player\'s character just did or said; in a later round what is happening now, following from the rounds before (they are told those too). Every character is told this and nothing more, so leave out anyone\'s private thoughts.',
       },
+      reaches: {
+        type: 'array',
+        items: { type: 'object', additionalProperties: false, properties: { character: { type: 'string', required: true, description: 'The key of a character that is not where the player\'s character is.' }, how: { type: 'string', required: true, description: 'How the moment reaches that character, in a few words: what the world has that carries it (a call, a message, a shout across a distance, a spell).' } } },
+        description: 'For each character asked that is not where the player\'s character is: how the moment reaches it. It takes in only what that carries. Leave out when everyone asked is there.',
+      },
       wakes: {
         type: 'array',
         items: { type: 'string' },
         description: 'Keys of the characters asleep (the scene says who) that what the player did wakes: only those you list take part, and your narration must show them waking. A sleeper you do not list cannot be asked. Leave out when nobody is woken.',
+      },
+      leaves_message_for: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Keys of the characters asleep that what the player did is meant for and does not wake (a message sent to someone asleep elsewhere): they are not asked now, they answer once they are awake. With no one else to ask, pass an empty characters list. Leave out when nobody is left a message.',
       },
     },
     output: { schema: { type: 'json' }, render: (_args, value) => [{ type: 'text', text: renderAttempt(value as unknown as AttemptReport) }] },
@@ -154,7 +169,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       const { agent, owner } = ownerOf(exec.agent)
       await deps.engine.settle(owner.chat, owner.turn)
       const run = characterRunner({ parent: agent, boundaries: deps.boundaries, store: storeOf(owner.chat) })
-      return record(await deps.engine.activate(owner, { situation: args.situation, characters: args.characters, ...(args.wakes === undefined ? {} : { wakes: args.wakes }) }, run, exec.signal))
+      return record(await deps.engine.activate(owner, { situation: args.situation, characters: args.characters, ...(args.reaches === undefined ? {} : { reaches: args.reaches }), ...(args.wakes === undefined ? {} : { wakes: args.wakes }), ...(args.leaves_message_for === undefined ? {} : { leaves: args.leaves_message_for }) }, run, exec.signal))
     },
   })
 
@@ -193,6 +208,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
                   with: { type: 'string', description: 'For lock and unlock: the key item used. It has to be in hand and fit the lock.' },
                   exit: { type: 'string', description: 'For lock and unlock of a way instead of an item: the key of the place it leads to.' },
                   forced: { type: 'boolean', description: 'Only when the story breaks the lock (picked, smashed): no key is needed.' },
+                  from: { type: 'string', description: 'For take: the character it is taken from, when this outcome has it taken out of their hands, pockets or belt (a theft, a snatch, a confiscation) and not given: a thing someone holds changes hands in the records only this way or by give.' },
                 },
               },
             },
@@ -245,7 +261,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
         ...(outcome.roll === undefined ? {} : { roll: outcome.roll }),
         ...(outcome.waits_for_player === true ? { waitsForPlayer: true as const } : {}),
         ...(outcome.off_routine_minutes === undefined ? {} : { offRoutineMinutes: outcome.off_routine_minutes }),
-        ...(outcome.item_changes === undefined || outcome.item_changes.length === 0 ? {} : { itemChanges: outcome.item_changes.map(change => ({ item: change.item, action: change.action as ItemAction, ...(change.to === undefined ? {} : { to: change.to }), ...(change.quantity === undefined ? {} : { quantity: change.quantity }), ...(change.position === undefined ? {} : { position: change.position }), ...(change.feature === undefined ? {} : { feature: change.feature }), ...(change.with === undefined ? {} : { with: change.with }), ...(change.exit === undefined ? {} : { exit: change.exit }), ...(change.forced === true ? { forced: true } : {}) })) }),
+        ...(outcome.item_changes === undefined || outcome.item_changes.length === 0 ? {} : { itemChanges: outcome.item_changes.map(change => ({ item: change.item, action: change.action as ItemAction, ...(change.to === undefined ? {} : { to: change.to }), ...(change.quantity === undefined ? {} : { quantity: change.quantity }), ...(change.position === undefined ? {} : { position: change.position }), ...(change.feature === undefined ? {} : { feature: change.feature }), ...(change.with === undefined ? {} : { with: change.with }), ...(change.exit === undefined ? {} : { exit: change.exit }), ...(change.forced === true ? { forced: true } : {}), ...(change.from === undefined ? {} : { from: change.from }) })) }),
         ...(outcome.variable_changes === undefined || outcome.variable_changes.length === 0 ? {} : { variableChanges: outcome.variable_changes.map(change => ({ variable: change.variable, subject: change.subject, ...(change.to === undefined ? {} : { to: change.to }), ...(change.by === undefined ? {} : { by: change.by }), ...(change.baseline === undefined ? {} : { baseline: change.baseline }) })) }),
         ...(outcome.moves_to === undefined ? {} : { moveTo: { location: outcome.moves_to.location, ...(outcome.moves_to.position === undefined ? {} : { position: outcome.moves_to.position }), ...(outcome.moves_to.feature === undefined ? {} : { feature: outcome.moves_to.feature }), ...(outcome.moves_to.ignore_exits === true ? { ignoreExits: true } : {}) } }),
       }))
@@ -327,6 +343,26 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     execute(args, exec) {
       const { owner } = ownerOf(exec.agent)
       return Promise.resolve(record(updatePlotProgress(storeOf(owner.chat), args.plot, args.development, args.action)))
+    },
+  })
+
+  const flagPin = defineTool({
+    name: PIN_TOOL,
+    description: 'Tell the player about a pin: say that play is running into one (conflict) or suggest a fact worth pinning (suggest). It is shown to the player beside the story and changes nothing: only the player pins, unpins or edits a pin, and a pin stays as it is.',
+    parameters: {
+      kind: { type: 'string', required: true, enum: ['conflict', 'suggest'], description: 'conflict: the story is running into a pin. suggest: the story has established something the player may want to fix.' },
+      text: { type: 'string', required: true, description: 'One sentence: for a conflict, which pin and what is in the way; for a suggestion, the fact as it would be pinned.' },
+    },
+    output: { schema: { type: 'json' }, render: () => [{ type: 'text', text: 'The player has been told. Carry on with the turn, keeping to the pins.' }] },
+    isConcurrencySafe: () => false,
+    execute(args, exec) {
+      const { owner } = ownerOf(exec.agent)
+      const text = args.text.trim()
+      if (text === '') throw new Error('say what the pin and the problem are')
+      const store = storeOf(owner.chat)
+      const tr = translator(languageOf(store.settings().prompts.language))
+      store.addNote('pins', owner.turn, [args.kind === 'conflict' ? tr('Runs into a pin: {text}', { text }) : tr('Worth pinning: {text}', { text })])
+      return Promise.resolve(record({ told: true }))
     },
   })
 
@@ -489,5 +525,5 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
     },
   })
 
-  return [judge, preview, ruling, answer, activate, resolve, skip, remember, expand, introduce, makePlot, plot, narrate]
+  return [judge, preview, ruling, answer, activate, resolve, skip, remember, expand, introduce, flagPin, makePlot, plot, narrate]
 }

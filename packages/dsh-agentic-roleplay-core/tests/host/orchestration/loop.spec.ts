@@ -124,6 +124,10 @@ interface Script {
    */
   /** The game master introduces things itself: how many it brings in before delivering. */
   introduce?: number
+  /** The game master tells the player about a pin before it delivers. */
+  pin?: 'conflict' | 'suggest'
+  /** The game master plans a trigger before it records: a valid one, or one that names a character the story does not have. */
+  trigger?: 'set' | 'bad' | 'cancel'
   expand?: { author: 'creates' | 'incomplete' | 'declines' | 'pointless' | 'greedy' | 'object' | 'loops' | 'repeats' | 'unfitting' | 'refused'; need?: string }
   /** What Alice and Bob do with things as a result of the round: Alice takes the lantern; both try to take it and the second is refused; Bob unlocks the chest with his key and opens it. */
   things?: 'take' | 'conflict' | 'unlock'
@@ -349,7 +353,7 @@ function answerWithoutSuggestions(script: Script) {
     if (thisTurn(request).includes('input is refused')) return text('I cannot do that.')
     if (script.lookup === true && timesCalled(request, 'search_events') === 0) return call('m0', 'search_events', { text: 'key' })
     if (script.twoRounds === true) return twoRounds(request, activated, resolved, script.skipRecord !== true)
-    if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.', characters: ['alice', 'bob', 'carol', 'dan'] })
+    if (activated === 0) return call('m1', 'activate_characters', { situation: 'Arthur opens the vault door. A key lies inside.', characters: ['alice', 'bob', 'carol', 'dan'], reaches: [{ character: 'carol', how: 'a shout down the hatch' }, { character: 'dan', how: 'a shout from the door' }] })
     const withMove = (key: string) => round1.map(outcome => (outcome.character === 'bob' ? { ...outcome, moves_to: { location: key, position: 'by the barrels' } } : outcome))
     const handling = (): object[] => round1.map((outcome) => {
       if (script.things === 'take' && outcome.character === 'alice') return { ...outcome, item_changes: [{ item: 'lantern', action: 'take' }] }
@@ -374,6 +378,11 @@ function answerWithoutSuggestions(script: Script) {
     if (script.time === 'skip' && timesCalled(request, 'advance_time') === 0) return call('m-time', 'advance_time', { until_time: '07:00', reason: 'they sleep' })
     if (script.expand !== undefined && timesCalled(request, 'expand_world') === 0) return call('m-exp', 'expand_world', { need: script.expand.need ?? 'arrival', what: script.expand.author === 'object' ? 'A folded note was just handed to Arthur by a stranger at the door.' : 'A ferry pilot named Mira Voss has just come up the lane to the bar with news.' })
     if (script.introduce !== undefined && timesCalled(request, 'introduce_thing') < script.introduce) return call(`m-intro-${timesCalled(request, 'introduce_thing')}`, 'introduce_thing', { name: `Plank barricade ${timesCalled(request, 'introduce_thing') + 1}`, description: 'Heavy planks, nailed across the door.' })
+    if (script.trigger === 'cancel' && timesCalled(request, 'set_trigger') > 0 && timesCalled(request, 'cancel_trigger') === 0) return call('m-cx', 'cancel_trigger', { key: 'storm-arrives' })
+    if (script.trigger !== undefined && timesCalled(request, 'set_trigger') === 0) return call('m-trg', 'set_trigger', script.trigger !== 'bad'
+      ? { key: 'storm-arrives', name: 'The storm', when: { type: 'time', from: '1912-10-05T21:00' }, effects: [{ type: 'beat', text: 'A storm breaks over the town.' }] }
+      : { key: 'ghost-walks', name: 'A ghost', when: { type: 'place', character: 'ghost', location: 'bar' }, effects: [{ type: 'beat', text: 'Something walks.' }] })
+    if (script.pin !== undefined && timesCalled(request, 'flag_pin') === 0) return call('m-pin', 'flag_pin', { kind: script.pin, text: 'The cellar door is locked, and Bob is at it with a crowbar.' })
     if (script.skipRecord !== true && timesCalled(request, 'record_memory') === 0) return call('m-rec', 'record_memory', { focus: 'The key changed hands.' })
     const delivery = script.delivery ?? 'good'
     if (thisTurn(request).includes('has been delivered to the player')) return text('')
@@ -508,7 +517,7 @@ describe('a turn with the real agent loop', () => {
   describe('the world author', () => {
     async function playAuthored(author: NonNullable<Script['expand']>['author'], settings?: object) {
       const { session, id } = await addSession('Vault', true)
-      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', situation: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', expand: { author } }))
       const agent = await chat(`session-${id}`, adapter)
       agent.followup(say('I wait for the ferry.'))
@@ -679,7 +688,7 @@ describe('a turn with the real agent loop', () => {
   describe('time', () => {
     async function playTime(time?: Script['time'], settings?: object) {
       const { session, id } = await addSession('Vault', true)
-      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', situation: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...(time === undefined ? {} : { time }) }))
       const agent = await chat(`session-${id}`, adapter)
       agent.followup(say('I open the vault door.'))
@@ -933,7 +942,7 @@ describe('a turn with the real agent loop', () => {
       }
       const play = async (mode: string) => {
         const { session, id } = await addSession('Vault', true)
-        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { triggers: mode, errands: 'off' } })
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { triggers: mode, errands: 'off', situation: 'off' } })
         session.triggers.add({ key: 'trust', name: 'Trust broken', condition: { type: 'judged', text: STATEMENT }, effects: [{ type: 'beat', text: 'Alice keeps her distance from Bob.' }], repeat: false, priority: 0 }, 'world', 0)
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
         const agent = await chat(`session-${id}`, adapter)
@@ -980,7 +989,7 @@ describe('a turn with the real agent loop', () => {
       }
       const play = async (settings: object, message = 'I open the vault door.', script: Script = {}) => {
         const { id } = await addSession('Vault')
-        writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', situation: 'off', ...(settings as { decisions?: object }).decisions } })
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', ...script }))
         const agent = await chat(`session-${id}`, adapter)
         await sayLine(agent, message)
@@ -1054,7 +1063,7 @@ describe('a turn with the real agent loop', () => {
       it('sends the output back once for hidden lore the decision model finds given away, names it, and lets a revelation the game master repeats go through', async () => {
         const { session, id } = await addSession('Vault', true)
         session.lore.add({ sourceId: 'vault-secret', title: 'The vault key', kind: 'other', scope: 'listed', summary: 'The key to the vault is hidden under the third stone.', body: '', subjects: [], related: [], sources: [] })
-        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { secrets: 'on', errands: 'off' } })
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { decisions: { secrets: 'on', errands: 'off', situation: 'off' } })
         const seen = answering([0.9])
         const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
         const agent = await chat(`session-${id}`, adapter)
@@ -1537,6 +1546,58 @@ describe('a turn with the real agent loop', () => {
         expect(characterRequests(adapter).length).toBeGreaterThan(0)
       })
 
+      it('tells the game master and the record keeper the player\'s pins every turn, and a pin the game master flags reaches the player as a note while the pin stays as it was', async () => {
+        const { session, id } = await addSession('Vault', true)
+        writeSettings(sessionFolder(join(root, 'sessions'), id), { pins: { own: 'The cellar door stays locked.\n\nNobody has a gun.' } })
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', pin: 'conflict' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        expect(thisTurn(masterRequests(adapter)[0]!)).toContain('The player has pinned these facts about the story.')
+        expect(thisTurn(masterRequests(adapter)[0]!)).toContain(JSON.stringify('- The cellar door stays locked.\n- Nobody has a gun.').slice(1, -1))
+        const keeper = adapter.requests.find(request => systemOf(request).includes('record keeper of an interactive story'))
+        expect(keeper === undefined ? '' : briefOf(keeper)).toContain('## Fixed by the player (never contradict, change or retract)\n- The cellar door stays locked.')
+        expect((session.metadata.getValue('notes') as { kind: string; lines: string[] }[]).find(note => note.kind === 'pins')).toEqual({ kind: 'pins', turn: 1, lines: ['Runs into a pin: The cellar door is locked, and Bob is at it with a crowbar.'] })
+      })
+
+      it('lets the game master plan a trigger that the story then carries as its own', async () => {
+        const { session, id } = await addSession('Vault', true)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', trigger: 'set' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        expect(session.triggers.getByKey('storm-arrives')).toMatchObject({ origin: 'story', status: 'dormant', createdTurn: 1, name: 'The storm' })
+        expect(toolNames(masterRequests(adapter)[0]!)).toEqual(expect.arrayContaining(['set_trigger', 'cancel_trigger', 'list_triggers']))
+      })
+
+      it('lets the game master cancel a trigger it made that has not fired', async () => {
+        const { session, id } = await addSession('Vault', true)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', trigger: 'cancel' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        expect(session.triggers.getByKey('storm-arrives')).toMatchObject({ status: 'expired' })
+      })
+
+      it('refuses a planned trigger that names what the story does not have, and makes nothing of it', async () => {
+        const { session, id } = await addSession('Vault', true)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful', trigger: 'bad' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        expect(session.triggers.getByKey('ghost-walks')).toBeUndefined()
+        expect(JSON.stringify(adapter.requests.map(request => thisTurn(request)))).toMatch(/the trigger was not made/)
+      })
+
+      it('says nothing about pins when there are none', async () => {
+        const { id } = await addSession('Vault', true)
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        expect(thisTurn(masterRequests(adapter)[0]!)).not.toContain('pinned')
+      })
+
       it('answers a question with /ask as a turn of its own that changes nothing, and the player reads the answer', async () => {
         const { session, adapter, agent } = await playOoc('question', '/ask Does Alice know where Bob went?')
         expect(characterRequests(adapter)).toEqual([])
@@ -1965,7 +2026,7 @@ describe('a turn with the real agent loop', () => {
 
     async function play(keeper: NonNullable<Script['keeper']>, settings?: object) {
       const { session, id } = await addSession('Vault')
-      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
+      if (settings !== undefined) writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', situation: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ keeper }))
       const agent = await chat(`session-${id}`, adapter)
       agent.followup(say('I open the vault door.'))
@@ -2310,7 +2371,7 @@ describe('a turn with the real agent loop', () => {
     async function playLong(turns: number, settings: object) {
       withCompaction = true
       const { session, id } = await addSession('Vault')
-      writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', ...(settings as { decisions?: object }).decisions } })
+      writeSettings(sessionFolder(join(root, 'sessions'), id), { ...settings, decisions: { errands: 'off', situation: 'off', ...(settings as { decisions?: object }).decisions } })
       const adapter = new ScriptedAdapter(answerFor({ padding: 7000 }))
       const agent = await chat(`session-${id}`, adapter)
       for (let turn = 1; turn <= turns; turn++) {

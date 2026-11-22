@@ -65,9 +65,12 @@ function timeOf(session: ClockSession, state: { mode: ClockMode; now: number }, 
   return { mode: state.mode, now: state.now, zone: zoneOf(config), ...(calendar === undefined || (calendar.holidays.length === 0 && calendar.hemisphere === 'north') ? {} : { calendar }) }
 }
 
-/** What time it is, without letting any pass. */
+/** What time it is, without letting any pass: following the wall clock it is the wall clock's, so a story left alone reads the time it really is. */
 export function readTime(session: ClockSession, config: ClockSettings, turn: number, wall: number): StoryTime {
-  return session.transaction(() => timeOf(session, ensure(session, config, turn, wall), config))
+  return session.transaction(() => {
+    const state = ensure(session, config, turn, wall)
+    return timeOf(session, state.mode === 'real' ? { mode: 'real', now: Math.max(state.now, wall) } : state, config)
+  })
 }
 
 /**

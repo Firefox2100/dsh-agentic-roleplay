@@ -131,7 +131,7 @@ export type Expectation =
   /** The turn was an out-of-character command and was ruled on as one (`/ooc`, or with `question` true `/ask`): its output carries the ruling's note, which a move never does. Turns only. */
   | { type: 'command-ruled'; question?: boolean }
   /** The game master was given this part of the scene in the turn: `roll`, `wait`, `dream` (a command that was played as itself: the player's roll, the time moved on, a dream entered) or `command` (a command of the world). It is the program's own record, in no language. Turns only. */
-  | { type: 'scene-has'; section: 'roll' | 'wait' | 'dream' | 'command' }
+  | { type: 'scene-has'; section: 'roll' | 'wait' | 'dream' | 'command' | 'messages' }
   /** The narration does not hold the text: a secret, a name the player has not been told. */
   | { type: 'narration-lacks'; text: string }
   /** The named character speaks (an utterance of its own). */
@@ -168,6 +168,16 @@ export type Expectation =
   | { type: 'no-repeats' }
   /** A character wrote to the player while they were away (a message note beside the story), the named one or any. */
   | { type: 'message-arrived'; character?: string }
+  /** What the story shows the character doing is not what it showed when the story began: something moved it, a day that turned over or a decision made while the player was away. */
+  | { type: 'activity-changed'; character: string; not?: true }
+  /** No more than this many messages have arrived (a message is a line of a message note): the limit on a story left alone. */
+  | { type: 'messages-at-most'; count: number }
+  /** A message holds the text (case does not matter), from the named character or any. */
+  | { type: 'message-has'; text: string; character?: string }
+  /** No message holds the text: a secret, a name the player has not been told. Messages from the characters in `unless` are not held to it: they know it, and what a character tells the player of what it knows is its own choice. */
+  | { type: 'message-lacks'; text: string; unless?: string[] }
+  /** Every message is written in the row's language. */
+  | { type: 'message-language' }
   /** The story's opening message holds the text: what a start question's answer chose. */
   | { type: 'opening-has'; text: string }
   /** A setting of the story has this value (`clock.mode`, `autonomy.enabled`): what a start question's answer or a world's flag set. Written as the text of the value. */
@@ -183,7 +193,7 @@ export type Expectation =
   /** No file of this name is in the folder. */
   | { type: 'file-lacks'; in: string; name: string }
 
-export const EXPECTATION_TYPES = ['narration-clean', 'narration-language', 'narration-has', 'command-ruled', 'scene-has', 'narration-lacks', 'speaks', 'speaks-in-voice', 'character-silent', 'character-doing', 'player-silent', 'turns', 'character-exists', 'value-changed', 'value-is', 'trigger-fired', 'character-at', 'item-held-by', 'cast-grew', 'cast-distinct', 'cast-placed', 'no-repeats', 'message-arrived', 'opening-has', 'setting-is', 'pack-active', 'file-has', 'html-sane', 'file-exists', 'file-lacks'] as const
+export const EXPECTATION_TYPES = ['narration-clean', 'narration-language', 'narration-has', 'command-ruled', 'scene-has', 'narration-lacks', 'speaks', 'speaks-in-voice', 'character-silent', 'character-doing', 'player-silent', 'turns', 'character-exists', 'value-changed', 'value-is', 'trigger-fired', 'character-at', 'item-held-by', 'cast-grew', 'cast-distinct', 'cast-placed', 'no-repeats', 'message-arrived', 'activity-changed', 'messages-at-most', 'message-has', 'message-lacks', 'message-language', 'opening-has', 'setting-is', 'pack-active', 'file-has', 'html-sane', 'file-exists', 'file-lacks'] as const
 
 export interface ScriptTurn {
   /** What the player writes: a command such as `/ooc`, `/wait` or `/roll` is written as the player would. */
@@ -191,7 +201,7 @@ export interface ScriptTurn {
   /** Instead of writing: take the story back (`rewind`, to the state after turn `to`, 0 for the start) or `regenerate` the last turn, which plays the same words again. */
   action?: 'rewind' | 'regenerate' | 'wait'
   to?: number
-  /** For `wait`: how many minutes of real time pass with nobody writing, so that a story that goes on without its player can act. */
+  /** For `wait`: how many minutes of real time pass with nobody writing, so that a story that goes on without its player can act. What the story shows when the wait is over (who stands where and does what, the messages that arrived) is judged by this step's own expectations. */
   minutes?: number
   expect: Expectation[]
 }

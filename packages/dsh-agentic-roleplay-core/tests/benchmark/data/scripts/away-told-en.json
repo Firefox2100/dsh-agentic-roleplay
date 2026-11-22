@@ -1,0 +1,49 @@
+{
+  "id": "away-told-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 9,
+      "expect": [
+        {
+          "type": "message-arrived"
+        },
+        {
+          "type": "message-lacks",
+          "text": "sell",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        },
+        {
+          "type": "message-lacks",
+          "text": "landlord",
+          "unless": [
+            "mags",
+            "okafor",
+            "lena"
+          ]
+        }
+      ]
+    },
+    {
+      "say": "I pick up my phone and check whether anyone has messaged me.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "scene-has",
+          "section": "messages"
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

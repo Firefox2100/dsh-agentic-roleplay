@@ -111,9 +111,17 @@ describe('what a character can do with a thing', () => {
     expect(holder('lantern')).toMatchObject({ kind: 'location', featureKey: 'counter', position: 'by the taps' })
   })
 
+  it('takes a thing out of the hands of someone here when the story says so, and only from the one who holds it', () => {
+    expect(planProblems('alice', { item: 'brass-key', action: 'take', from: 'carol' })).toEqual(['Brass key is held by Bob, not Carol'])
+    expect(planProblems('alice', { item: 'brass-key', action: 'take', from: 'nobody' })).toEqual(['there is no character "nobody" to take it from'])
+    expect(planProblems('alice', { item: 'lantern', action: 'take', from: 'bob' })).toEqual(['Brass lantern is not held by anyone else: take it without from'])
+    store.edit({ turn: 3, itemChanges: [{ character: 'alice', item: 'brass-key', action: 'take', from: 'bob' }] })
+    expect(holder('brass-key')).toEqual({ kind: 'character', characterId: idOf('alice'), mode: 'held' })
+  })
+
   it('cannot take what is hidden, held by someone else, in a closed container, out of reach, or already its own, and says why', () => {
     expect(planProblems('alice', { item: 'letter', action: 'take' })).toEqual(['Sealed letter cannot be seen'])
-    expect(planProblems('alice', { item: 'brass-key', action: 'take' })).toEqual(['Brass key is held by Bob, who has to give it'])
+    expect(planProblems('alice', { item: 'brass-key', action: 'take' })).toEqual(['Brass key is held by Bob, who has to give it (when the story has it taken from them, name them in from)'])
     expect(planProblems('bob', { item: 'coins', action: 'take' })).toEqual(['Silver coin is inside Satchel, which is closed'])
     expect(planProblems('carol', { item: 'lantern', action: 'take' })).toEqual(['Brass lantern is not here, and Carol does not have it'])
     expect(planProblems('alice', { item: 'coat', action: 'take' })).toEqual(['Alice already has Wool coat'])
@@ -283,7 +291,7 @@ describe('the edit', () => {
     store.edit({ turn: 3, itemChanges: [{ character: 'bob', item: 'lantern', action: 'take' }, { character: 'bob', item: 'lantern', action: 'give', to: 'alice' }] })
     expect(holder('lantern')).toMatchObject({ kind: 'character', characterId: idOf('alice') })
     const problems = problemsOf({ turn: 3, threadsOpened: ['must not stay'], itemChanges: [{ character: 'bob', item: 'coat', action: 'take' }] })
-    expect(problems).toEqual(['item_changes[0]: Wool coat is held by Alice, who has to give it'])
+    expect(problems).toEqual(['item_changes[0]: Wool coat is held by Alice, who has to give it (when the story has it taken from them, name them in from)'])
     expect(store.threads.list('open')).toEqual([])
     expect(problemsOf({ turn: 3, itemChanges: [{ character: 'ghost', item: 'nothing', action: 'fly' as never }] }).join('\n')).toMatch(/there is no character "ghost"[\s\S]*unknown action "fly"[\s\S]*there is no item "nothing"/)
   })

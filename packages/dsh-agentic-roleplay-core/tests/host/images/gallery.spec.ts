@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { galleryFile, listGallery } from '../../../src/host/images/gallery.ts'
+import { galleryFile, listGallery, pageOf } from '../../../src/host/images/gallery.ts'
 import { addCardLink } from '../../../src/host/images/gallery.ts'
 import { addToLibraryOnce } from '../../../src/host/images/library.ts'
 import { withPngMetadata } from '../../../src/host/images/png-metadata.ts'
@@ -55,5 +55,29 @@ describe('the gallery of a session', () => {
       { url: 'https://a.example/mara.png', pieces: ['entry:1', 'entry:2'] },
       { url: 'https://b.example/mara.png', pieces: ['entry:7'] },
     ])
+  })
+})
+
+describe('a page of the gallery', () => {
+  it('holds the pictures that match the filter from the offset, with the counts of the whole gallery and how many wait for a description', async () => {
+    for (const number of [1, 2, 3]) await put(`scenes/turn-n${number}-01.png`, { schema: 'dsh-roleplay-image/v3', purpose: 'transient', origin: 'generated', createdAt: `2026-02-0${number}T00:00:00.000Z`, subjects: [] })
+    await put('characters/4/reference.png', { schema: 'dsh-roleplay-image/v3', purpose: 'reference', origin: 'generated', createdAt: '2026-01-01T00:00:00.000Z', subjects: [] })
+    await put('library/a.png', { schema: 'dsh-roleplay-image/v3', purpose: 'uploaded', origin: 'uploaded', createdAt: '2026-03-01T00:00:00.000Z', subjects: [] })
+    const images = await listGallery(folder)
+    const page = pageOf(images, {}, { offset: 1, limit: 2, filter: 'transient' })
+    expect(page.images.map(image => image.path)).toEqual(['scenes/turn-n2-01.png', 'scenes/turn-n1-01.png'])
+    expect(page).toMatchObject({ total: 3, counts: { all: 5, transient: 3, reference: 1, uploaded: 1 }, waiting: 1 })
+    expect(pageOf(images, { 'library/a.png': 'no model' }, { offset: 0, limit: 10, filter: 'uploaded' }).waiting).toBe(0)
+    expect(pageOf(images, {}, { offset: 10, limit: 10, filter: 'all' }).images).toEqual([])
+  })
+
+  it('finds the metadata of a picture with a large body between its header and its end', async () => {
+    const body = Buffer.alloc(2_000_000)
+    const length = Buffer.alloc(4)
+    length.writeUInt32BE(body.length)
+    const big = Buffer.concat([PNG.subarray(0, 33), length, Buffer.from('prVt'), body, Buffer.alloc(4), PNG.subarray(33)])
+    await mkdir(join(folder, 'images', 'library'), { recursive: true })
+    await writeFile(join(folder, 'images', 'library', 'big.png'), withPngMetadata(big, { schema: 'dsh-roleplay-image/v3', purpose: 'uploaded', origin: 'uploaded', createdAt: '2026-03-01T00:00:00.000Z', description: 'A pier.', subjects: [] }))
+    expect(await listGallery(folder)).toMatchObject([{ path: 'library/big.png', description: 'A pier.' }])
   })
 })

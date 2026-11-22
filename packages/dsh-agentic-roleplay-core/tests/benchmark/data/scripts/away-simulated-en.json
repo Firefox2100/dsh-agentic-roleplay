@@ -1,0 +1,38 @@
+{
+  "id": "away-simulated-en",
+  "language": "en",
+  "turns": [
+    {
+      "action": "wait",
+      "minutes": 1,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "high-street"
+        }
+      ]
+    },
+    {
+      "action": "wait",
+      "minutes": 7,
+      "expect": [
+        {
+          "type": "character-at",
+          "character": "dev",
+          "place": "high-street"
+        },
+        {
+          "type": "activity-changed",
+          "character": "dev",
+          "not": true
+        },
+        {
+          "type": "messages-at-most",
+          "count": 0
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

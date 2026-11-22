@@ -1,12 +1,14 @@
+import { existsSync } from 'node:fs'
 import { atomicWrite } from '../atomic-write.ts'
 import { lstat, readFile, readdir, realpath, stat } from 'node:fs/promises'
 import { join, sep } from 'node:path'
-import { LIBRARY_FOLDER, type GalleryImage } from '../../shared/gallery.ts'
+import { LIBRARY_FOLDER, type GalleryFilter, type GalleryImage, type GalleryPage } from '../../shared/gallery.ts'
 import { mapLimit } from '../import/run.ts'
 import { mediaTypeOf, readImageFileMetadata, sidecarOf, writeImageFileMetadata } from './image-files.ts'
 import type { VisualImageMetadata } from './storage.ts'
+import { baseWorld, isSharedPath, materialize } from './shared-media.ts'
 
-export type { GalleryImage }
+export type { GalleryImage, GalleryPage }
 
 const READ_AT_ONCE = 8
 const SEGMENT = /^[\p{L}\p{N}][\p{L}\p{N}\p{M}._-]{0,199}$/u
@@ -73,8 +75,16 @@ async function describe(images: string, path: string): Promise<GalleryImage> {
   }
 }
 
+/** The `images/` folder that holds a picture of a story: its own, or the world's when the story reads it from there. */
+function imagesHolding(sessionFolder: string, path: string): string {
+  const own = join(sessionFolder, 'images')
+  if (existsSync(join(own, ...path.split('/'))) || !isSharedPath(path)) return own
+  const base = baseWorld(sessionFolder)
+  return base !== undefined && existsSync(join(base, 'images', ...path.split('/'))) ? join(base, 'images') : own
+}
+
 export async function describeGalleryImage(sessionFolder: string, path: string): Promise<GalleryImage> {
-  return await describe(join(sessionFolder, 'images'), path)
+  return await describe(imagesHolding(sessionFolder, path), path)
 }
 
 async function readCache(images: string): Promise<Cache> {
@@ -90,10 +100,19 @@ async function writeCache(images: string, cache: Cache): Promise<void> {
 }
 
 /**
- * Every image of a session folder with what its file says, newest first. The files are the truth; `images/.index.json` only remembers what
+ * Every image of a session folder, and those of its world it has not made or changed, with what the file says, newest first. The files are the truth; `images/.index.json` only remembers what
  * was read from each, keyed by its size and time, so that a listing reads just the files that are new or changed. It can be deleted at any time.
  */
 export async function listGallery(sessionFolder: string): Promise<GalleryImage[]> {
+  const own = await listOwn(sessionFolder)
+  const base = baseWorld(sessionFolder)
+  if (base === undefined) return own
+  const held = new Set(own.map(image => image.path))
+  const inherited = (await listOwn(base)).filter(image => isSharedPath(image.path) && !held.has(image.path))
+  return [...own, ...inherited].sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.path.localeCompare(b.path))
+}
+
+async function listOwn(sessionFolder: string): Promise<GalleryImage[]> {
   const images = join(sessionFolder, 'images')
   const paths = await imageFiles(images)
   if (paths.length === 0) return []
@@ -113,15 +132,32 @@ export async function listGallery(sessionFolder: string): Promise<GalleryImage[]
   return described.sort((a, b) => b.createdAt.localeCompare(a.createdAt) || a.path.localeCompare(b.path))
 }
 
+const matches = (image: GalleryImage, filter: GalleryFilter): boolean => filter === 'all' || (filter === 'uploaded' ? image.origin === 'uploaded' : image.purpose === filter)
+
+/** The part of a gallery a page shows: pictures that match `filter`, from `offset`, at most `limit` of them. */
+export function pageOf(images: readonly GalleryImage[], failures: Record<string, string>, query: { offset: number; limit: number; filter: GalleryFilter }): GalleryPage {
+  const matching = images.filter(image => matches(image, query.filter))
+  const count = (filter: GalleryFilter): number => images.filter(image => matches(image, filter)).length
+  return {
+    images: matching.slice(query.offset, query.offset + query.limit),
+    total: matching.length,
+    counts: { all: images.length, transient: count('transient'), reference: count('reference'), uploaded: count('uploaded') },
+    waiting: images.filter(image => image.pending === true && failures[image.path] === undefined).length,
+    failures,
+  }
+}
+
 /**
- * The file of a gallery image by its path, which must be one the listing gives: a raster image inside the session's images, not reached through a link.
+ * The file of a gallery image by its path, which must be one the listing gives: a raster image inside the session's images, or inside the world's
+ * when the story has not made or changed it, not reached through a link. `edit` gives the story a file of its own first, for a caller that is about to change it.
  * @throws {Error} when the path names no such image.
  */
-export async function galleryFile(sessionFolder: string, path: string): Promise<{ file: string; size: number; mediaType: string }> {
+export async function galleryFile(sessionFolder: string, path: string, options: { edit?: boolean } = {}): Promise<{ file: string; size: number; mediaType: string }> {
   const parts = path.split('/')
   const mediaType = mediaTypeOf(path)
   if (parts.length === 0 || mediaType === undefined || (mediaType !== 'image/png' && parts[0] !== LIBRARY_FOLDER) || parts.some(part => !SEGMENT.test(part) || part === '.' || part === '..')) throw new Error('there is no such image')
-  const images = join(sessionFolder, 'images')
+  if (options.edit === true) await materialize(sessionFolder, path)
+  const images = imagesHolding(sessionFolder, path)
   const file = join(images, ...parts)
   const info = await lstat(file).catch(() => undefined)
   if (info === undefined || !info.isFile()) throw new Error('there is no such image')
@@ -130,9 +166,20 @@ export async function galleryFile(sessionFolder: string, path: string): Promise<
   return { file, size: info.size, mediaType }
 }
 
+/**
+ * Changes what a picture says about itself where the picture lives: in the world, when the story only reads it from there, so that the description is made once
+ * for every story of that world and the story still has no copy; otherwise in the story, as `updateImage`.
+ */
+export async function describeWhereHeld(sessionFolder: string, path: string, update: ImageUpdate): Promise<GalleryImage> {
+  const held = imagesHolding(sessionFolder, path)
+  if (held === join(sessionFolder, 'images')) return await updateImage(sessionFolder, path, update)
+  await updateImage(join(held, '..'), path, update)
+  return await describeGalleryImage(sessionFolder, path)
+}
+
 /** Notes one more address a picture of the library came from, or more pieces of the card for an address it already has. */
 export async function addCardLink(sessionFolder: string, path: string, link: { url: string; pieces: string[] }): Promise<void> {
-  const { file } = await galleryFile(sessionFolder, path)
+  const { file } = await galleryFile(sessionFolder, path, { edit: true })
   const existing = await readImageFileMetadata(file)
   if (existing === undefined) return
   const links = [...(existing.cardLinks ?? [])]
@@ -156,7 +203,7 @@ export interface ImageUpdate {
  * @throws {Error} when the path names no image of the session, or an uploaded image is made not reusable.
  */
 export async function updateImage(sessionFolder: string, path: string, update: ImageUpdate): Promise<GalleryImage> {
-  const { file } = await galleryFile(sessionFolder, path)
+  const { file } = await galleryFile(sessionFolder, path, { edit: true })
   const current = await describe(join(sessionFolder, 'images'), path)
   if (update.reusable === false && current.origin === 'uploaded') throw new Error('an image you brought is always reusable: otherwise it would only sit there')
   const existing = await readImageFileMetadata(file)

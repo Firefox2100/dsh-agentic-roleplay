@@ -1,0 +1,44 @@
+{
+  "id": "bakery-thought-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "I say good morning to Mr Okafor and ask what he would like today.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "\"Meet someone nice? A date?\" My mind drifted to Dev. Are we actually together, or is it only physical? The draught from the door pulled me back. \"Sure, Mr Okafor,\" I said, \"if it helps you feel better.\"",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "narration-lacks",
+          "text": "Dev"
+        }
+      ]
+    },
+    {
+      "say": "I pick up the bag of rolls and ask Mags if she needs anything from the high street.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": []
+}

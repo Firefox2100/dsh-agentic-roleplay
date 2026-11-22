@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const runChild = vi.fn(async (_task: Record<string, unknown>) => ({ description: ' A door in the dark. ', tags: ['door', ' '], subjects: [{ kind: 'character', name: 'Mara' }] }))
 const readFile = vi.fn(async () => new Uint8Array([1, 2, 3]))
 const galleryFile = vi.fn(async (_folder: string, path: string) => ({ file: `C:/images/${path}`, mediaType: 'image/png', size: 3 }))
-const updateImage = vi.fn(async (_folder: string, path: string, update: Record<string, unknown>) => ({ path, ...update }))
+const describeWhereHeld = vi.fn(async (_folder: string, path: string, update: Record<string, unknown>) => ({ path, ...update }))
 const storySubjects = vi.fn(() => [
   { kind: 'character' as const, name: 'Mara', hidden: false },
   { kind: 'location' as const, name: 'The vault', hidden: true },
@@ -12,7 +12,7 @@ const storySubjects = vi.fn(() => [
 vi.mock('node:fs/promises', () => ({ readFile }))
 vi.mock('../../../src/host/agents/child.ts', () => ({ runChild }))
 vi.mock('../../../src/host/prompts/access.ts', () => ({ promptFor: (_agent: unknown, id: string, language: string) => `${id}/${language}` }))
-vi.mock('../../../src/host/images/gallery.ts', () => ({ galleryFile, updateImage }))
+vi.mock('../../../src/host/images/gallery.ts', () => ({ galleryFile, describeWhereHeld }))
 vi.mock('../../../src/host/images/tools.ts', () => ({ storySubjects }))
 
 const { interpretImage } = await import('../../../src/host/images/interpreter.ts')
@@ -49,7 +49,7 @@ function jobOf(extra: Record<string, unknown> = {}): Job {
 beforeEach(() => {
   runChild.mockClear()
   galleryFile.mockClear()
-  updateImage.mockClear()
+  describeWhereHeld.mockClear()
 })
 
 describe('turning a picture into words a story can use', () => {
@@ -61,7 +61,7 @@ describe('turning a picture into words a story can use', () => {
     expect(prompt, 'a hidden subject must not be named to the model').not.toContain('The vault')
     expect(runChild.mock.calls[0]![0]).toMatchObject({ model: { provider: 'deepseek', model: 'chat' }, maxCalls: 4 })
     expect((runChild.mock.calls[0]![0] as { images: unknown[] }).images).toHaveLength(1)
-    expect(updateImage).toHaveBeenCalledWith('C:/roleplay/sessions/one', 'library/door.png', expect.objectContaining({ description: 'A door in the dark.', tags: ['door'] }))
+    expect(describeWhereHeld).toHaveBeenCalledWith('C:/roleplay/sessions/one', 'library/door.png', expect.objectContaining({ description: 'A door in the dark.', tags: ['door'] }))
     expect(image).toMatchObject({ description: 'A door in the dark.' })
   })
 

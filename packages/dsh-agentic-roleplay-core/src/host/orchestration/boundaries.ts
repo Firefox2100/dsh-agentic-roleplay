@@ -142,6 +142,8 @@ export interface CharacterRequest {
   agenda?: AgendaView
   /** What the world made it notice just now. */
   cues?: readonly string[]
+  /** How the moment reaches this character when it is not where the player's character is. */
+  reach?: string
   /** What it knows is coming, soonest first. */
   upcoming?: readonly { text: string; when?: string }[]
   /** What is tracked of the character that it can tell (its feelings and whatever else is its own or public), and what it can tell of those here. */
@@ -283,6 +285,10 @@ export interface RoundRecord {
   place?: PlaceRef
   /** Where everyone who had a place stood when the round began (keys): who could see what happened. */
   present?: { character: string; place: string }[]
+  /** The characters asked from elsewhere and how the moment reached each (a call, a message, a shout): they perceived the player's words and each other's words over it, nothing else of what happened where the others were. */
+  reaches?: { character: string; how: string }[]
+  /** The key of the player's character. */
+  player?: string
   /** A round of characters away from the player's character, asked after the turn what they do about something that fell due: only they perceive it. */
   offstage?: true
   /** When the round began and ended in the story (UTC milliseconds), and the zone they are read in. */
@@ -468,6 +474,24 @@ export interface OutputGate {
   check(job: GateJob, signal: AbortSignal): Promise<GateFinding[]>
 }
 
+/** What a situation is checked for before the characters are told it. */
+export interface SituationJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  /** What the player wrote this turn. */
+  input: string
+  /** The name of the player's character. */
+  player: string
+  /** What the game master wrote to tell the characters. */
+  situation: string
+}
+
+/** Finds what a situation tells the characters that they could not have perceived: the words to send the game master back with, none when it is fine. */
+export interface SituationGate {
+  check(job: SituationJob, signal: AbortSignal): Promise<string | undefined>
+}
+
 /** What the player's action is checked against the rules for. */
 export interface RuleJob {
   chat: string
@@ -522,6 +546,7 @@ export interface Boundaries {
   judge: TriggerJudge
   outputGate: OutputGate
   ruleCheck: RuleCheck
+  situationGate: SituationGate
   variableTracker: VariableTracker
   errandKeeper: ErrandKeeper
   suggester: Suggester
@@ -553,6 +578,12 @@ export interface TurnStore {
   text(id: string, variables?: Readonly<Record<string, string | number>>): string
   /** What is not allowed in the story: the world's rules and the player's own. */
   rules(): string[]
+  /** What the player has pinned: facts nothing in the story may contradict, change or remove. */
+  pins?(): string[]
+  /** The pins held against the player's actions (the ones not marked soft). */
+  ruledPins?(): string[]
+  /** The pins marked soft. */
+  softPins?(): string[]
   /** What time it is in the story. */
   time(turn: number): StoryTime
   /** The start of a turn: what time it is, and how long passed outside the story when time follows the wall clock. */

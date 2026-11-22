@@ -27,6 +27,12 @@ describe('the plain events of a round', () => {
     expect(events[1]?.perceivedBy).toEqual([{ character: 'a', mode: 'witnessed' }, { character: 'b', mode: 'heard' }])
   })
 
+  it('has the player\'s character hear what someone elsewhere says over the channel the moment reached it by, and no one else', () => {
+    const events = skeletonEvents(round([entry('c', { at: { key: 'cellar', name: 'Cellar' }, utterance: 'Can you hear me?' })], { reaches: [{ character: 'c', how: 'a phone call' }], player: 'a' }))
+    expect(events[1]?.perceivedBy).toEqual([{ character: 'c', mode: 'witnessed' }, { character: 'a', mode: 'heard' }])
+    expect(events[0]?.perceivedBy?.map(seen => seen.character)).toEqual(['c'])
+  })
+
   it('leaves out words that were not said', () => {
     expect(skeletonEvents(round([entry('a', { utterance: 'Never said.', spoken: false })]))).toHaveLength(1)
   })

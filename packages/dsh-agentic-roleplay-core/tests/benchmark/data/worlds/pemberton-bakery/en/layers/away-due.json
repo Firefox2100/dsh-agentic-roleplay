@@ -1,0 +1,43 @@
+{
+  "id": "away-due",
+  "description": "Gives the regular one active goal whose time falls due three minutes after the row starts, while he sits on the high street away from the player; his day is one long window that matches what he is doing, so that only the goal can change it.",
+  "requires": [],
+  "conflicts": [],
+  "fits": [],
+  "remove": [],
+  "add": {},
+  "patch": {
+    "characters/okafor/character.json": {
+      "start": {
+        "location": "high-street",
+        "position": "on a bench",
+        "activity": "Reading the paper on a bench",
+        "public_state": "Reading a newspaper on a bench.",
+        "intents": [
+          {
+            "name": "Return the cake tin",
+            "description": "He borrowed a cake tin from the bakery and promised to bring it back by now.",
+            "type": "agenda",
+            "priority": 0.8,
+            "urgency": 0.9,
+            "deadline": "{utc+3}"
+          }
+        ]
+      },
+      "routine": [
+        {
+          "from": "{in-600}",
+          "to": "{in+600}",
+          "activity": "Reading the paper on a bench",
+          "location": "high-street"
+        },
+        {
+          "from": "{in+600}",
+          "to": "{in-600}",
+          "activity": "Reading the paper on a bench",
+          "location": "high-street"
+        }
+      ]
+    }
+  }
+}

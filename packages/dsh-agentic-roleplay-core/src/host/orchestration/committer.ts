@@ -28,6 +28,7 @@ function describeRound(round: RoundRecord, known: ReadonlyMap<string, string>): 
     round.offstage === true ? `Off stage (away from the player's character; only the characters named here perceive it, and only those who were together perceive each other): ${round.situation}` : `The moment (includes what the player's character did or said): ${round.situation}`,
     ...(round.place === undefined ? [] : [`Place of the moment: ${round.place.name} (${round.place.key})`]),
     ...(round.time === undefined ? [] : [`When: ${describeInstant(round.time.from, round.time.zone)} (${dayPart(localTime(round.time.from, round.time.zone).minuteOfDay)})${round.time.to > round.time.from ? `; the round took ${describeDuration(round.time.to - round.time.from)}` : ''}`]),
+    ...(round.reaches === undefined ? [] : [`Asked from elsewhere, reached by what is given: ${round.reaches.map(reach => `${known.get(reach.character) ?? reach.character} (${reach.character}) by ${reach.how}`).join('; ')}. Such a character perceived the player's words and what the others it was in contact with said, over that, and nothing else of what happened where the others were; and the player's character and its company heard what it said only as that carries it.`]),
     ...(round.rolls === undefined ? [] : ['Dice rolled this round, which are facts (not interpreted by anyone):', ...round.rolls.map(line => `- ${line}`)]),
     'What each character did, and what became of it:',
     ...round.entries.map(entry => [
@@ -89,6 +90,7 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     '## What is tracked now (values that are not the default; list_variables shows everything tracked)',
     ...(records.variables.length === 0 ? ['- nothing'] : records.variables.slice(0, 30).map(entry => `- ${entry.about} (${entry.subject}): ${entry.variable} ${entry.described}${entry.baseline === null ? '' : ` (usually ${entry.baseline})`}`)),
     '',
+    ...((job.store.pins?.() ?? []).length === 0 ? [] : ['## Fixed by the player (never contradict, change or retract)', ...job.store.pins!().map(pin => `- ${pin}`), '']),
     '## Open story threads',
     ...(records.open_threads.length === 0 ? ['- none'] : records.open_threads.map(thread => `- id ${thread.id}: ${thread.text}`)),
   ].join('\n')

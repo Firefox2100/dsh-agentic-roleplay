@@ -23,6 +23,7 @@ const sidebars: SidebarsConfig = {
       'concepts/orchestration', 'concepts/memory-knowledge',
       'concepts/time-pacing', 'concepts/images-context',
     ]},
+    {type: 'category', label: 'Background', items: ['background/state-of-the-art']},
     {type: 'category', label: 'Plugin development', items: [
       'developers/architecture', 'developers/state',
       'developers/extensions', 'developers/dsh-integration',

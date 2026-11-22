@@ -15,6 +15,7 @@ import { galleryFile } from './gallery.ts'
 import type { ImageAttachments } from './interpreter.ts'
 import type { Embedder } from '../memory/embedding-index.ts'
 import { nextSceneSerial, referenceImagePath, type EntityImageAddress, type VisualImageSubject } from './storage.ts'
+import { sharedFile } from './shared-media.ts'
 
 export interface Subject {
   kind: VisualSubjectKind
@@ -156,7 +157,7 @@ export function imageTools(deps: ImageToolDeps): ToolDefinition[] {
         return { ...imageSubject(subject, identity), identity, transient: entry.transient }
       })
       const referenceMode = deps.referenceMode ?? 'prefer-reference'
-      const referencePaths = selected.map(subject => ({ subject, path: referenceImagePath(deps.root, subject) }))
+      const referencePaths = selected.map(subject => ({ subject, path: sharedFile(deps.root, referenceImagePath(deps.root, subject)) }))
       if (referenceMode === 'require-reference') {
         const missing = referencePaths.filter(entry => !existsSync(entry.path))
         if (missing.length > 0) throw new Error(`canonical reference images are required; generate these first: ${missing.map(entry => `${entry.subject.kind} ${entry.subject.name}`).join(', ')}`)

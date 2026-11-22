@@ -1,5 +1,5 @@
 /** The places where a language model's closed-choice judgement can be given to a decision model instead, or, for the gates, a check can be made at all. */
-export const DECISION_SITES = ['triggers', 'reflection', 'agency', 'refusal', 'repeats', 'rules', 'secrets', 'messages', 'errands', 'variables', 'reuse'] as const
+export const DECISION_SITES = ['triggers', 'reflection', 'agency', 'refusal', 'situation', 'repeats', 'rules', 'secrets', 'messages', 'errands', 'variables', 'reuse'] as const
 export type DecisionSite = (typeof DECISION_SITES)[number]
 
 /** The sites that check what the game master delivers to the player. They are off unless a chat turns one on: a check costs a request, or at least a call, in every turn. */
