@@ -409,6 +409,32 @@ export interface Strategist {
   strategize(job: StrategyJob, signal: AbortSignal): Promise<StrategyReport>
 }
 
+export interface PlanJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  /** Why the plan is looked at now, in words for the planner. */
+  reason: string
+}
+
+export interface PlanReport {
+  /** Whether the plan was rewritten; false when it stood as it was. */
+  changed: boolean
+  /** The keys of the triggers made, and why any that could not be made were refused. */
+  made: string[]
+  failed: string[]
+  /** The keys of the triggers withdrawn because the story had overtaken them. */
+  cancelled: string[]
+}
+
+/**
+ * Keeps the story's plan, the private list of what it is heading toward, which only beats and cues carry out. It changes no record and no
+ * character is told it; the game master sees a short direction in its scene.
+ */
+export interface PlanKeeper {
+  keep(job: PlanJob, signal: AbortSignal): Promise<PlanReport>
+}
+
 export interface ReflectionJob {
   chat: string
   turn: number
@@ -508,6 +534,20 @@ export interface RuleCheck {
   check(job: RuleJob, signal: AbortSignal): Promise<string[]>
 }
 
+/** A hook of a plot the plot author wrote, with the recorded events it must not contradict. */
+export interface HookJob {
+  chat: string
+  turn: number
+  store: TurnStore
+  events: readonly string[]
+  hook: string
+}
+
+/** Whether a plot's hook contradicts the recorded events or states as past what they do not record. */
+export interface HookCheck {
+  faulty(job: HookJob, signal: AbortSignal): Promise<boolean>
+}
+
 /** What a turn came to, for looking at the values the story tracks once it is over. */
 export interface TrackJob {
   chat: string
@@ -542,10 +582,12 @@ export interface Boundaries {
   committer: Committer
   author: Author
   strategist: Strategist
+  planKeeper: PlanKeeper
   reflector: Reflector
   judge: TriggerJudge
   outputGate: OutputGate
   ruleCheck: RuleCheck
+  hookCheck: HookCheck
   situationGate: SituationGate
   variableTracker: VariableTracker
   errandKeeper: ErrandKeeper

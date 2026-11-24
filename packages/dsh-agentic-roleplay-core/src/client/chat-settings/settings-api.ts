@@ -50,6 +50,15 @@ export async function startReflection(id: string, signal: AbortSignal): Promise<
   }
 }
 
+/** Asks for a look at the story's plan; it is made in the background. */
+export async function startPlan(id: string, signal: AbortSignal): Promise<void> {
+  const response = await fetch(`${API_PREFIX}/sessions/plan?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', signal })
+  if (!response.ok) {
+    const body = await response.json().catch(() => undefined) as { message?: unknown } | undefined
+    throw new Error(typeof body?.message === 'string' ? body.message : `${response.status} ${response.statusText}`.trim())
+  }
+}
+
 /** Opens the session doctor chat of the story, made when it is first asked for. */
 export async function openDoctor(id: string, title: string, language: string, signal: AbortSignal): Promise<string> {
   const response = await fetch(`${API_PREFIX}/sessions/doctor?id=${encodeURIComponent(id)}`, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, language }), signal })

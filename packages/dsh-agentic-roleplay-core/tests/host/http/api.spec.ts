@@ -409,6 +409,7 @@ beforeEach(async () => {
       },
       doctor: (id, title, language) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`doctor ${id} ${title} ${language}`); return Promise.resolve({ chatSessionId: `doctor-${id}` }) },
       recallPreview: (id, request) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`recall ${id} ${request.situation} ${request.character ?? ''}`); return Promise.resolve({ turn: 1, situation: request.situation, byMeaning: false, limit: 6, characters: [] }) },
+      plan: (id) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`plan ${id}`); return Promise.resolve() },
       reflect: (id) => { if (archiveError !== undefined) return Promise.reject(archiveError); archived.push(`reflect ${id}`); return Promise.resolve() },
       resetVectors: (id) => { if (archiveError !== undefined) throw archiveError; archived.push(`reset ${id}`) },
       rename: (id, name) => {
@@ -1536,6 +1537,18 @@ describe('roleplay API', () => {
       expect((await ask({ situation: 'x' }, 'x')).status).toBe(404)
       archiveError = undefined
       expect((await fetch(`${origin}/sessions/recall?id=abc`)).status).toBe(405)
+    })
+  })
+
+  describe('asking for a look at the story plan', () => {
+    it('is a POST that is accepted and runs behind; an unknown session is 404, a refusal is 409', async () => {
+      expect((await fetch(`${origin}/sessions/plan?id=abc`, { method: 'POST' })).status).toBe(202)
+      expect(archived).toEqual(['plan abc'])
+      archiveError = new SessionNotFoundError('no session "x"')
+      expect((await fetch(`${origin}/sessions/plan?id=x`, { method: 'POST' })).status).toBe(404)
+      archiveError = new ReflectionRefusedError('a turn is being played')
+      expect((await fetch(`${origin}/sessions/plan?id=abc`, { method: 'POST' })).status).toBe(409)
+      archiveError = undefined
     })
   })
 

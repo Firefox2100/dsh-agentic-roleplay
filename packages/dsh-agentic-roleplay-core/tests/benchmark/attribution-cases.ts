@@ -7,9 +7,12 @@ export const PLAYER = 'mara'
 export const CAST = ['mara', 'elias', 'odile', 'pavel'] as const
 export type Who = (typeof CAST)[number]
 
+/** The held-out set tells other stories with other names; the roles stay (the player, a keeper, a neighbour, a collector). */
+const HELD_OUT = process.env['BENCH_CAST'] === 'held'
+
 export const castName = (key: Who, language: Language): string => pick(language)(
-  { mara: 'Mara', elias: 'Elias', odile: 'Odile', pavel: 'Pavel' }[key],
-  { mara: '林夏', elias: '陈远', odile: '周婉', pavel: '吴峰' }[key],
+  (HELD_OUT ? { mara: 'Rowan', elias: 'Bryn', odile: 'Sable', pavel: 'Lorcan' } : { mara: 'Mara', elias: 'Elias', odile: 'Odile', pavel: 'Pavel' })[key],
+  (HELD_OUT ? { mara: '沈岚', elias: '袁松', odile: '顾蕊', pavel: '贺铮' } : { mara: '林夏', elias: '陈远', odile: '周婉', pavel: '吴峰' })[key],
 )
 
 /**

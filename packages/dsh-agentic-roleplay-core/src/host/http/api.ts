@@ -200,6 +200,8 @@ export interface ApiDeps {
     activityRun(id: string, run: string): RunDetail | undefined
     /** Starts the characters sorting what they took in into what they believe; it runs in the background. @throws {SessionNotFoundError} @throws {ReflectionRefusedError} */
     reflect(id: string): Promise<void>
+    /** Starts a look at the story's plan, made by a helper in the background. @throws {SessionNotFoundError} @throws {ReflectionRefusedError} */
+    plan(id: string): Promise<void>
     recallPreview(id: string, request: RecallPreviewRequest, signal: AbortSignal): Promise<RecallPreview>
     doctor(id: string, title: string, language: string): Promise<{ chatSessionId: string }>
     /** Forgets the session's stored search vectors. */

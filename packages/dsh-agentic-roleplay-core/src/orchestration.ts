@@ -17,11 +17,12 @@ import { suggestionWriter } from './host/orchestration/suggester.ts'
 import { triggerJudge } from './host/triggers/judge.ts'
 import { outputGates } from './host/decisions/gates.ts'
 import { variableTracker } from './host/variables/tracker.ts'
-import { ruleChecks } from './host/decisions/extras.ts'
+import { hookChecks, ruleChecks } from './host/decisions/extras.ts'
 import { createTriggerTools } from './host/orchestration/trigger-tools.ts'
 import { situationChecks } from './host/decisions/situation.ts'
 import { errandChecks } from './host/decisions/errands.ts'
 import { factionStrategist } from './host/factions/strategist.ts'
+import { storyPlanner } from './host/plan/planner.ts'
 import { memoryReflector } from './host/memory/reflection.ts'
 import { worldAuthor } from './host/authoring/author-agent.ts'
 import type {} from './host/tools/authoring-tools.ts'
@@ -96,8 +97,10 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.roleplayOrchestration.replace({ judge: triggerJudge({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: trigger judge')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ outputGate: outputGates({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, earlier: (chat, count) => timelines.narrationBefore(chat, count), problem }) }), 'roleplay: output gates')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ ruleCheck: ruleChecks({ decisions, problem }) }), 'roleplay: rule check')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ hookCheck: hookChecks({ decisions, problem }) }), 'roleplay: hook check')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ situationGate: situationChecks({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: situation check')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ strategist: factionStrategist({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: faction strategist')
+  ctx.effect(() => ctx.roleplayOrchestration.replace({ planKeeper: storyPlanner({ agentOf: chat => ctx.agents.get(SessionId(chat)) }) }), 'roleplay: story plan')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ reflector: memoryReflector({ agentOf: chat => ctx.agents.get(SessionId(chat)), decisions, problem }) }), 'roleplay: reflection')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ author: worldAuthor({ agentOf: chat => ctx.agents.get(SessionId(chat)), external: parent => ctx.get('roleplayAuthoringTools')?.given(parent.ctx.tools, 'worldAuthor') ?? [] }) }), 'roleplay: world author')
   ctx.effect(() => ctx.roleplayOrchestration.replace({ errandKeeper: errandChecks({ decisions, problem }) }), 'roleplay: errands')
@@ -171,7 +174,7 @@ export function apply(ctx: Context): void {
   const toolDeps: ToolDeps = { engine, boundaries, stores, turnOf: currentTurn, roller: chat => rolls.roller(chat), delivered: (chat, output) => { turnTraces.output(chat, wordsOf(output.segments, segment => `${segment.name}: ${segment.text}`).join('\n\n')); const node = timelines.delivered(chat, output); if (node !== undefined) images.afterDelivery(chat, node, output); return node } }
   const [previewTool, ...tools] = [...createTools(toolDeps)].sort((a, b) => Number(b.name === PREVIEW_TOOL) - Number(a.name === PREVIEW_TOOL))
   for (const tool of tools) ctx.tools.register(tool)
-  ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); ctx.roleplayOrchestration.playing = chat => engine.playing(chat); ctx.roleplayOrchestration.recallPreview = (chat, request, signal) => engine.recallPreview(chat, request, signal); return () => { ctx.roleplayOrchestration.recallPreview = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false; ctx.roleplayOrchestration.playing = () => false } }, 'roleplay: reflection control')
+  ctx.effect(() => { ctx.roleplayOrchestration.reflect = chat => engine.reflect(chat); ctx.roleplayOrchestration.plan = chat => engine.plan(chat); ctx.roleplayOrchestration.reflecting = chat => engine.reflecting(chat); ctx.roleplayOrchestration.playing = chat => engine.playing(chat); ctx.roleplayOrchestration.recallPreview = (chat, request, signal) => engine.recallPreview(chat, request, signal); return () => { ctx.roleplayOrchestration.recallPreview = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflect = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.plan = () => Promise.reject(new Error('the orchestration is not running')); ctx.roleplayOrchestration.reflecting = () => false; ctx.roleplayOrchestration.playing = () => false } }, 'roleplay: reflection control')
   ctx.effect(() => { ctx.roleplayOrchestration.autonomy = async (chat, signal) => { const started = Date.now(); const run = await tickAutonomy({ engine, stores, boundaries, agentOf: id => ctx.agents.get(SessionId(id)), wall: Date.now, problem, decisions }, chat, signal); stores(chat)?.autonomy?.looked?.(run.outcome, Date.now()); const tracer = tracerOf(ctx); if (tracer !== undefined && (run.moved > 0 || run.outcome === 'wrote' || run.outcome === 'declined')) tracer.start({ name: 'autonomy look', kind: 'span', metadata: { outcome: run.outcome, moved: run.moved, seconds: (Date.now() - started) / 1000 }, trace: { name: 'autonomy look', sessionId: sessionOfChat(chat), tags: ['roleplay', 'autonomy'] } }).end({ output: run }); return run }; return () => { ctx.roleplayOrchestration.autonomy = () => Promise.resolve({ outcome: 'off', moved: 0 }) } }, 'roleplay: autonomy')
   ctx.effect(() => { ctx.roleplayOrchestration.settle = chat => engine.idle(chat); return () => { ctx.roleplayOrchestration.settle = () => Promise.resolve() } }, 'roleplay: settle records')
   let imageJobs: ImageJobs | undefined

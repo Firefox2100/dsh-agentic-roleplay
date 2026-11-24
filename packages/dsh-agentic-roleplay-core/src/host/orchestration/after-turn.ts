@@ -1,4 +1,5 @@
 import { dueReflection, recordFailure } from '../memory/reflection.ts'
+import { planDue, type PlanReason } from '../plan/plan.ts'
 import { AUTHORING_NEEDS, type Boundaries, type TurnStore } from './boundaries.ts'
 import type { ReflectionReason } from '../../shared/reflection.ts'
 import { ReflectionRefusedError } from '../sessions/errors.ts'
@@ -16,6 +17,13 @@ export interface AfterTurnDeps {
   written: (chat: string) => void
 }
 
+const PLAN_REASONS: Record<PlanReason, string> = {
+  first: 'the story has begun and has no plan yet',
+  changed: 'something the plan counted on has happened or been settled',
+  periodic: 'a few turns have passed since the plan was last looked at',
+  manual: 'the player asked for a look at the plan',
+}
+
 const messageOf = (error: unknown): string => (error instanceof Error ? error.message : String(error))
 
 /**
@@ -31,6 +39,7 @@ export class AfterTurnJobs {
   private readonly casting = new Set<string>()
   private readonly tracking = new Set<string>()
   private readonly erranding = new Set<string>()
+  private readonly planning = new Set<string>()
 
   constructor(private readonly deps: AfterTurnDeps) {}
 
@@ -39,6 +48,7 @@ export class AfterTurnJobs {
     if (facts !== undefined) this.keepErrands(owner, cancel, facts)
     this.consolidate(owner, cancel)
     this.strategize(owner, cancel)
+    this.plan(owner, cancel)
     this.judge(owner, cancel)
     this.cast(owner, cancel)
     const reason = this.reflectionDue(owner)
@@ -144,6 +154,37 @@ export class AfterTurnJobs {
         }
       }
     })().finally(() => { this.casting.delete(owner.chat) }))
+  }
+
+  /** The story's plan is looked at when the records say it needs it (or every few turns), in the background: it only ever sets beats and cues. */
+  private plan(owner: { chat: string; turn: number }, cancel: AbortSignal): void {
+    const store = this.deps.stores(owner.chat)
+    if (store === undefined || this.planning.has(owner.chat)) return
+    const { plan } = store.settings()
+    if (!plan.auto) return
+    const reason = planDue(store.story, owner.turn, plan)
+    if (reason === undefined) return
+    this.look(owner, reason, cancel)
+  }
+
+  /** Starts a look at the plan the player asked for, without waiting for it. @throws {ReflectionRefusedError} when one is already running. */
+  planNow(owner: { chat: string; turn: number }, cancel: AbortSignal): void {
+    if (this.deps.stores(owner.chat) === undefined) throw new Error(`no story for chat ${owner.chat}`)
+    if (this.planning.has(owner.chat)) throw new ReflectionRefusedError('the plan is already being looked at')
+    this.look(owner, 'manual', cancel)
+  }
+
+  private look(owner: { chat: string; turn: number }, reason: PlanReason, cancel: AbortSignal): void {
+    const store = this.deps.stores(owner.chat)
+    if (store === undefined) return
+    this.planning.add(owner.chat)
+    this.deps.track(owner.chat, this.deps.boundaries().planKeeper.keep({ chat: owner.chat, turn: owner.turn, store, reason: PLAN_REASONS[reason] }, cancel)
+      .then((report) => {
+        for (const failure of report.failed) this.deps.problem(`a trigger the plan asked for was not made: ${failure}`)
+        if (report.changed || report.made.length > 0 || report.cancelled.length > 0) this.deps.written(owner.chat)
+      })
+      .catch((error: unknown) => { if (!cancel.aborted) this.deps.problem(`the story's plan was not looked at: ${messageOf(error)}`) })
+      .finally(() => { this.planning.delete(owner.chat) }), true)
   }
 
   /** The statements that triggers wait on are judged; a trigger fires from the verdict at the next look. */

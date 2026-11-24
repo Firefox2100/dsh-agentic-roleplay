@@ -108,6 +108,8 @@ The summaries are written from the events, not from the earlier summary text. A
   digests condensed, with the important events of those turns as the authority,
 - a merged chapter when the chapters exceed `context.longTermTokens`.
 
+Each passage is asked for at most the length its material supports (about 0.7 of its words, with a floor of 40, counting each character of a script written without spaces as a word), whatever the budget of the chat, so a short stretch of events is not padded to the limit.
+
 They are stored in `summaries`, so each is written once and the account is rebuilt from
 the database. The head of the conversation is the long-term account, then the short-term
 one. Between folds the conversation only grows at its tail, so the provider's prefix
@@ -146,6 +148,7 @@ settings stay in force, so a typo cannot stop a story in the middle.
 | `context.retainRatio` | 0.5 | share of the limit kept as it is |
 | `context.shortTermTokens` | 1500 | size of the short-term account |
 | `context.longTermTokens` | 2500 | size of the long-term account |
+| `context.account` | `events` | `events` makes every digest, chapter and condensed chapter out of the recorded events themselves, the least important dropped to fit, with no helper asked (a span the events do not cover is still written) |
 | `embedding.options` | none | what the embedding provider lets a request set for this chat, by its own option names (the OpenAI provider: `dimensions`, `user`); offered in the settings tab from what the provider describes, and the start dialog shows only what must be chosen before the first request |
 
 ## The search index and vectors

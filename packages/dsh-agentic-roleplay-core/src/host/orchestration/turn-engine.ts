@@ -116,6 +116,7 @@ export class TurnEngine {
   private readonly afterTurn: AfterTurnJobs
   /** What a reflection the player asked for is cancelled with, as `stop` does for the turn. */
   private readonly reflectionCancels = new Map<string, AbortController>()
+  private readonly planCancels = new Map<string, AbortController>()
   /** Chats whose characters away from the player are being asked about what fell due: one run at a time. */
   private readonly offstage = new Set<string>()
   /** Told when a round of characters begins; the function it returns is told how the round went. Used to trace rounds, never to decide anything. */
@@ -654,6 +655,19 @@ export class TurnEngine {
     this.afterTurn.reflectNow({ chat, turn: store.story.metadata.get().turns }, cancel.signal)
   }
 
+  /** Starts a look at the story's plan the player asked for, in the background. @throws {ReflectionRefusedError} while a turn is being played, or when a look is already running. */
+  async plan(chat: string): Promise<void> {
+    const store = this.stores(chat)
+    if (store === undefined) throw new Error(`no story for chat ${chat}`)
+    if (this.playing(chat)) throw new ReflectionRefusedError('a turn is being played; ask for the plan when it is over')
+    const delivered = this.delivered.get(chat)
+    if (delivered !== undefined && store.pendingCommits().length > 0) this.write({ chat, turn: delivered.turn }, delivered)
+    await this.chains.get(chat)
+    const cancel = new AbortController()
+    this.planCancels.set(chat, cancel)
+    this.afterTurn.planNow({ chat, turn: store.story.metadata.get().turns }, cancel.signal)
+  }
+
   /**
    * What a moment would bring back for the characters, as a turn would ask for it and without changing anything the story keeps: nothing is counted as recalled
    * and no turn begins. @throws {Error} when the chat has no story, or names a character that is not in it.
@@ -733,11 +747,12 @@ export class TurnEngine {
   stop(chat: string): void {
     this.states.get(chat)?.cancel.abort()
     this.reflectionCancels.get(chat)?.abort()
+    this.planCancels.get(chat)?.abort()
   }
 
   /** The same for every chat the engine has seen; used when the plugin unloads. */
   stopAll(): void {
-    for (const chat of new Set([...this.states.keys(), ...this.working.keys(), ...this.reflectionCancels.keys()])) this.stop(chat)
+    for (const chat of new Set([...this.states.keys(), ...this.working.keys(), ...this.reflectionCancels.keys(), ...this.planCancels.keys()])) this.stop(chat)
   }
 
   async quiesceAll(): Promise<void> {
@@ -758,6 +773,8 @@ export class TurnEngine {
     this.states.get(chat)?.cancel.abort()
     this.reflectionCancels.get(chat)?.abort()
     this.reflectionCancels.delete(chat)
+    this.planCancels.get(chat)?.abort()
+    this.planCancels.delete(chat)
     this.states.delete(chat)
     this.chains.delete(chat)
     this.delivered.delete(chat)

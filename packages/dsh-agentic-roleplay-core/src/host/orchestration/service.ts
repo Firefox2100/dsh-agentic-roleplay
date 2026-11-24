@@ -38,6 +38,9 @@ export class RoleplayOrchestration extends Service {
   /** Starts a reflection of a chat's characters on what they have taken in, in the background; there while the orchestration is. */
   reflect: (chat: string) => Promise<void> = () => Promise.reject(new Error('the orchestration is not running'))
 
+  /** Starts a look at a chat's story plan, in the background; there while the orchestration is. */
+  plan: (chat: string) => Promise<void> = () => Promise.reject(new Error('the orchestration is not running'))
+
   /** What a moment would bring back for the chat's characters, without playing it or changing the story; there while the orchestration is. */
   recallPreview: (chat: string, request: RecallPreviewRequest, signal: AbortSignal) => Promise<RecallPreview> = () => Promise.reject(new Error('the orchestration is not running'))
 

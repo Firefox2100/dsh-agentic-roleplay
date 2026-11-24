@@ -1,3 +1,4 @@
+import { writePlan } from '../../../src/host/plan/plan.ts'
 import { readTraces } from '../../../src/host/sessions/trace.ts'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { AuthoringTools } from '../../../src/host/tools/authoring-tools.ts'
@@ -1598,6 +1599,28 @@ describe('a turn with the real agent loop', () => {
         expect(thisTurn(masterRequests(adapter)[0]!)).not.toContain('pinned')
       })
 
+      const sceneWithPlan = async (made: boolean) => {
+        const { session, id } = await addSession('Vault', true)
+        if (made) writePlan(session, { turn: 0, note: 'Let the closing of the harbor be felt.', items: [{ text: 'The guild means to close the harbor.', overturnedBy: '', triggers: [] }] })
+        const adapter = new ScriptedAdapter(answerFor({ keeper: 'careful' }))
+        const agent = await chat(`session-${id}`, adapter)
+        agent.followup(say('I open the vault door.'))
+        await agent.whenIdle()
+        for (const request of characterRequests(adapter)) expect(JSON.stringify(request)).not.toContain('close the harbor')
+        return thisTurn(masterRequests(adapter)[0]!)
+      }
+
+      it('gives the game master its private plan, whether it was made by hand or by itself, and keeps it from every character', async () => {
+        const scene = await sceneWithPlan(true)
+        expect(scene).toContain('private plan')
+        expect(scene).toContain('Let the closing of the harbor be felt.')
+        expect(scene).toContain('- The guild means to close the harbor.')
+      })
+
+      it('says nothing of a plan while there is none', async () => {
+        expect(await sceneWithPlan(false)).not.toContain('private plan')
+      })
+
       it('answers a question with /ask as a turn of its own that changes nothing, and the player reads the answer', async () => {
         const { session, adapter, agent } = await playOoc('question', '/ask Does Alice know where Bob went?')
         expect(characterRequests(adapter)).toEqual([])
@@ -2383,7 +2406,7 @@ describe('a turn with the real agent loop', () => {
     const chronicleRequests = (adapter: ScriptedAdapter) => adapter.requests.filter(request => systemOf(request).includes('chronicler of an interactive story'))
 
     it('is sent whole until the limit, then the oldest turns are folded into summaries written from the events', async () => {
-      const { session, adapter } = await playLong(6, { context: { limitTokens: 4000, retainRatio: 0.3 } })
+      const { session, adapter } = await playLong(6, { context: { limitTokens: 4000, retainRatio: 0.3, account: 'written' } })
       const summaries = session.summaries.list()
       expect(summaries.length).toBeGreaterThan(0)
       expect(summaries[0]).toMatchObject({ level: 'digest', fromTurn: 1 })

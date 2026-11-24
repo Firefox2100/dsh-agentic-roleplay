@@ -110,7 +110,7 @@ export class RoleplayCompaction extends BasicCompactionEngine {
     const { context, prompts } = settings
     const chronicler: Chronicler = childChronicler(agent, settings)
     const { playerInputs, transcript } = readFolded(input.messages)
-    await foldSummaries({ story, settings: context, uptoTurn: fold.uptoTurn, playerInputs, transcript, chronicler, text: (id, variables) => promptFor(agent, `roleplay/chronicle-${id}`, prompts.language, variables), signal: signal ?? new AbortController().signal })
+    await foldSummaries({ story, settings: context, uptoTurn: fold.uptoTurn, playerInputs, transcript, chronicler, account: context.account, text: (id, variables) => promptFor(agent, `roleplay/chronicle-${id}`, prompts.language, variables), signal: signal ?? new AbortController().signal })
     const config = agent.session.requestHeader()?.config
     return {
       summary: [{ type: 'text', text: composeSummary(story) }],

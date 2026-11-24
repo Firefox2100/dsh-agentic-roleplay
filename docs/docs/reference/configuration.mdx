@@ -66,6 +66,7 @@ These defaults are copied into a new story's `settings.json`. A world or preset 
 | `context.limitTokens` / `context.limitRatio` | 0 / 0.6 | Explicit folding limit, or share of the model context used to derive it |
 | `context.workingTokens` / `context.retainRatio` | 0 / 0.5 | Optional cap on the derived limit, and its verbatim share |
 | `context.shortTermTokens` / `context.longTermTokens` | 1500 / 2500 | Short-term and long-term summary targets |
+| `context.account` | `events` | `written`: a helper writes the digests and chapters. `events`: they are the recorded events themselves |
 
 ### World activity and time
 
@@ -89,6 +90,8 @@ These defaults are copied into a new story's `settings.json`. A world or preset 
 | `decisions.errands` | `on` | A decision model looks after each turn at the awake characters it named and says whether any is waiting for the player (sent on an errand, told to stay or watch); such a character is kept off its day until you are with it again. Decision-service-only: `off` or `on`; without a service nothing is held by this site |
 | `decisions.messages` | `off` | A decision model says whether a character picked by chance has a reason to write; without one chance alone decides |
 | `factions.perTurn` / `factions.everyDays` | 1 / 3 | Due factions advanced per turn, and their default story-time interval |
+| `plan.auto` | `false` | Whether the story's private plan of what lies ahead is made and revised by itself in the background; a look can always be asked for by hand, and the game master reads whatever plan exists |
+| `plan.minTurns` / `plan.everyTurns` / `plan.perPass` | 1 / 8 / 2 | Turns before the first automatic plan, the most turns without a look at it, and the most triggers one look may set |
 | `triggers.enabled` / `triggers.maxFires` | `true` / 3 | Whether triggers run, and how many may fire per turn |
 | `triggers.beatTurns` / `triggers.cueTurns` | 3 / 2 | Turns a game-master beat or character cue waits to be used |
 | `triggers.judgedPerTurn` | 2 | Trigger conditions that may require model judgement per turn |
@@ -109,6 +112,7 @@ These defaults are copied into a new story's `settings.json`. A world or preset 
 | `decisions.reuse` | `off` | Before a scene picture is made on its own after a turn, asks the decision model whether each close stored picture's description shows the moment, and shows the first that does instead of making a new one. Decision-service-only: `off` or `on` |
 | `decisions.variables` | `llm` | After each turn, looks at every tracked value (world variables, and character variables for the people in the scene): one question for each value, whether what happened changed it, put to the language model, the decision model or both; the language model then gives the new value of those that did. Fill in each value's **When and how it changes** field. Same four modes plus `off` |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | Decision-service-only checks of allowed actions against rules, and outputs against hidden lore |
+| `decisions.hooks` | `off` | The decision model checks the hook of a plot the plot author wrote against the recorded events, once; a hook that contradicts them or states as past what they do not record has the plot written again once, and a second such hook is not shipped. Nothing is checked without a decision model |
 | `decisions.repeatThreshold` | 0.7 | Probability at which a decision answer counts as a repeated sentence being stale filler (0.1 to 0.95). Measured on 72 labelled repeats: 0.7 refused no meant repeat and missed no stale one; 0.5 refused 15 of 36 meant repeats |
 | `decisions.reuseThreshold` | 0.85 | Probability at which a decision answer counts as a stored picture that shows the moment (0.1 to 0.95) |
 | `decisions.gateThreshold` | 0.5 | Probability at which a decision answer counts as a fault; the 0.15 below it is uncertain |

@@ -6,7 +6,7 @@ import { authoredWorldOf } from '../../shared/authoring-chat.ts'
 import { AuthoringSettingsView } from './AuthoringSettingsView.tsx'
 import type { SettingsPayload } from '../../shared/settings.ts'
 import css from './ChatSettingsView.module.css'
-import { NotRoleplayError, loadSettings, openDoctor, resetVectors, saveSettings, startReflection } from './settings-api.ts'
+import { NotRoleplayError, loadSettings, openDoctor, resetVectors, saveSettings, startPlan, startReflection } from './settings-api.ts'
 import { fromDrafts, problemsOf, toDrafts, type Drafts } from '../settings-form/fields.ts'
 import { useEmbeddingOptions } from '../settings-form/embedding-options.ts'
 import { DecisionsSection } from './DecisionsSection.tsx'
@@ -14,6 +14,7 @@ import { InterfaceSection } from './InterfaceSection.tsx'
 import { LorebookSection } from './LorebookSection.tsx'
 import { FoldersSection } from './FoldersSection.tsx'
 import { PresetSection } from './PresetSection.tsx'
+import { PlanSection } from './PlanSection.tsx'
 import { ReflectionSection } from './ReflectionSection.tsx'
 import { VectorsSection } from './VectorsSection.tsx'
 import { ToolSwitches } from '../widgets/tool-switches/ToolSwitches.tsx'
@@ -104,6 +105,15 @@ function RoleplaySettingsView({ t, sessionId, openChat }: ChatSettingsViewProps)
     )
   }
 
+  const plan = (): void => {
+    if (session === undefined) return
+    setError(undefined)
+    startPlan(session, new AbortController().signal).then(
+      refreshActivity,
+      (failure: unknown) => { setError(t('planFailed', { message: failure instanceof Error ? failure.message : String(failure) })) },
+    )
+  }
+
   const askDoctor = (): void => {
     if (session === undefined) return
     setError(undefined)
@@ -155,6 +165,7 @@ function RoleplaySettingsView({ t, sessionId, openChat }: ChatSettingsViewProps)
       {session !== undefined && <FoldersSection t={t} session={session} disabled={saving} />}
       <ToolSwitches board={payload.settings.tools} onChange={setTools} disabled={saving} external={external} {...(toolsError === undefined ? {} : { error: toolsError })} t={t} />
       {session !== undefined && <DecisionsSection t={t} session={session} modes={payload.settings.decisions} />}
+      <PlanSection t={t} disabled={saving} onStart={plan} />
       <ReflectionSection t={t} status={payload.reflection} disabled={saving} onStart={reflect} onRefresh={refreshActivity} />
       <section className={css.activity} data-testid="roleplay-doctor">
         <strong>{t('doctorTitle')}</strong>

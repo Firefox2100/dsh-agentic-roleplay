@@ -19,9 +19,27 @@ export function estimateTokens(text: string): number {
 
 const WORDS_PER_TOKEN = 0.7
 
+/** The length of a text in the units the account is counted in: words, and each character of a script written without spaces. */
+const unitsOf = (text: string): number => (text.match(CJK) ?? []).length + text.replace(CJK, ' ').split(/\s+/).filter(word => word !== '').length
+
+/** A passage is never asked to be longer than its material supports: a limit that is a ceiling of the chat's budget alone is filled with atmosphere. */
+const fitted = (budget: number, body: string): number => Math.max(40, Math.min(budget, Math.round(unitsOf(body) * 0.7)))
+
 const eventLine = (event: StoryEvent, names: ReadonlyMap<number, string>): string => {
   const who = event.involves.map(id => names.get(id)).filter(name => name !== undefined).join(', ')
   return `- [turn ${event.turn}] (importance ${event.importance}) ${event.text}${who === '' ? '' : ` — involves ${who}`}`
+}
+
+/** The events themselves as the account, in order: when they exceed the size, the least important go first. Nothing is written that the keeper did not record. */
+export function accountFromEvents(events: readonly StoryEvent[], units: number): string {
+  const kept = [...events]
+  let total = kept.reduce((sum, event) => sum + unitsOf(event.text), 0)
+  while (total > units && kept.length > 1) {
+    const least = kept.reduce((worst, event, index) => (event.importance < kept[worst]!.importance || (event.importance === kept[worst]!.importance && event.turn < kept[worst]!.turn) ? index : worst), 0)
+    total -= unitsOf(kept[least]!.text)
+    kept.splice(least, 1)
+  }
+  return kept.map(event => event.text.trim()).reduce((text, line) => (text === '' ? line : `${text}${CJK.test(line.slice(0, 1)) ? '' : ' '}${line}`), '')
 }
 
 function material(sections: readonly [string, string][]): string {
@@ -46,30 +64,36 @@ export async function foldSummaries(input: {
   /** What happened, as the conversation told it; used where the events do not cover the turns. */
   transcript: string
   chronicler: Chronicler
+  /** `events`: the accounts are made of the recorded events themselves and the chronicler is not asked where the events cover the turns. */
+  account?: 'written' | 'events'
   /** The instruction texts, in the language of the chat. */
   text: (id: 'digest' | 'chapter' | 'condense', variables: Record<string, string | number>) => string
   signal: AbortSignal
 }): Promise<void> {
   const { story, settings, chronicler, signal, text: instruction } = input
+  const fromRecords = input.account === 'events'
+  const budget = (tokens: number): number => Math.round(tokens * WORDS_PER_TOKEN)
   const names = new Map(story.characters.list().map(character => [character.id, character.name]))
   const known = story.summaries.list()
   const coveredTo = known.reduce((latest, summary) => Math.max(latest, summary.toTurn), 0)
+
+  const add = (level: 'digest' | 'chapter', fromTurn: number, toTurn: number, text: string): void => { story.summaries.add({ level, fromTurn, toTurn, text: text.trim() }) }
 
   if (input.uptoTurn > coveredTo) {
     const events = story.events.list({ fromTurn: coveredTo + 1, toTurn: input.uptoTurn })
     const turns = new Set(events.map(event => event.turn))
     const complete = [...Array(input.uptoTurn - coveredTo).keys()].every(offset => turns.has(coveredTo + 1 + offset))
-    const words = Math.round(Math.min(600, settings.shortTermTokens / 2) * WORDS_PER_TOKEN)
-    const text = await chronicler.write({
-      task: instruction('digest', { from: coveredTo + 1, to: input.uptoTurn, words }),
-      material: material([
+    if (fromRecords && complete) {
+      add('digest', coveredTo + 1, input.uptoTurn, accountFromEvents(events, budget(Math.min(600, settings.shortTermTokens / 2))))
+    } else {
+      const body = material([
         ['Events (authoritative)', events.map(event => eventLine(event, names)).join('\n')],
         ['What the player did', input.playerInputs],
         [complete ? '' : 'The conversation as it was told (use it for what the events do not cover)', complete ? '' : input.transcript],
-      ]),
-      words,
-    }, signal)
-    story.summaries.add({ level: 'digest', fromTurn: coveredTo + 1, toTurn: input.uptoTurn, text: text.trim() })
+      ])
+      const words = fitted(budget(Math.min(600, settings.shortTermTokens / 2)), body)
+      add('digest', coveredTo + 1, input.uptoTurn, await chronicler.write({ task: instruction('digest', { from: coveredTo + 1, to: input.uptoTurn, words }), material: body, words }, signal))
+    }
   }
 
   const size = (summaries: readonly Summary[]): number => summaries.reduce((total, summary) => total + estimateTokens(summary.text), 0)
@@ -84,16 +108,18 @@ export async function foldSummaries(input: {
     }
     const fromTurn = absorbed[0]!.fromTurn
     const toTurn = absorbed.at(-1)!.toTurn
-    const words = Math.round(Math.max(60, Math.min(400, settings.longTermTokens / 4)) * WORDS_PER_TOKEN)
-    const text = await chronicler.write({
-      task: instruction('chapter', { from: fromTurn, to: toTurn, words }),
-      material: material([
+    const important = story.events.list({ fromTurn, toTurn, minImportance: 3 })
+    const ceiling = budget(Math.max(60, Math.min(400, settings.longTermTokens / 4)))
+    if (fromRecords && important.length > 0) {
+      add('chapter', fromTurn, toTurn, accountFromEvents(important, ceiling))
+    } else {
+      const body = material([
         ['Digests to condense', absorbed.map(summary => summary.text).join('\n\n')],
-        ['Important events of these turns (authoritative)', story.events.list({ fromTurn, toTurn, minImportance: 3 }).map(event => eventLine(event, names)).join('\n')],
-      ]),
-      words,
-    }, signal)
-    story.summaries.add({ level: 'chapter', fromTurn, toTurn, text: text.trim() })
+        ['Important events of these turns (authoritative)', important.map(event => eventLine(event, names)).join('\n')],
+      ])
+      const words = fitted(ceiling, body)
+      add('chapter', fromTurn, toTurn, await chronicler.write({ task: instruction('chapter', { from: fromTurn, to: toTurn, words }), material: body, words }, signal))
+    }
     story.summaries.remove(absorbed.map(summary => summary.id))
     digests = story.summaries.list('digest')
   }
@@ -101,16 +127,18 @@ export async function foldSummaries(input: {
   let chapters = story.summaries.list('chapter')
   while (size(chapters) > settings.longTermTokens && chapters.length > 1) {
     const [older, newer] = chapters as [Summary, Summary, ...Summary[]]
-    const words = Math.round(Math.max(60, settings.longTermTokens / 3) * WORDS_PER_TOKEN)
-    const text = await chronicler.write({
-      task: instruction('condense', { from: older.fromTurn, to: newer.toTurn, words }),
-      material: material([
+    const major = story.events.list({ fromTurn: older.fromTurn, toTurn: newer.toTurn, minImportance: 4 })
+    const ceiling = budget(Math.max(60, settings.longTermTokens / 3))
+    if (fromRecords && major.length > 0) {
+      add('chapter', older.fromTurn, newer.toTurn, accountFromEvents(major, ceiling))
+    } else {
+      const body = material([
         ['Chapters', `${older.text}\n\n${newer.text}`],
-        ['Important events of these turns (authoritative; correct the chapters where they disagree)', story.events.list({ fromTurn: older.fromTurn, toTurn: newer.toTurn, minImportance: 4 }).map(event => eventLine(event, names)).join('\n')],
-      ]),
-      words,
-    }, signal)
-    story.summaries.add({ level: 'chapter', fromTurn: older.fromTurn, toTurn: newer.toTurn, text: text.trim() })
+        ['Important events of these turns (authoritative; correct the chapters where they disagree)', major.map(event => eventLine(event, names)).join('\n')],
+      ])
+      const words = fitted(ceiling, body)
+      add('chapter', older.fromTurn, newer.toTurn, await chronicler.write({ task: instruction('condense', { from: older.fromTurn, to: newer.toTurn, words }), material: body, words }, signal))
+    }
     story.summaries.remove([older.id, newer.id])
     chapters = story.summaries.list('chapter')
   }

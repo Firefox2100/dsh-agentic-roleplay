@@ -1770,5 +1770,85 @@
         "own": "~ 房东把保险箱钥匙挂在腰带上，不肯轻易离手。"
       }
     }
+  },
+  {
+    "id": "salt-harbor-solo-plan-en",
+    "world": "salt-harbor",
+    "language": "en",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The story keeps a private plan (the story plan is on, first look after the first turn, then every two turns). It runs as a background helper, sets only beats and cues, and the plan stays out of the narration: the script never asks about the guild's secret, so anything of it that reaches the narration is a leak, and the story must play as it does without the plan.",
+    "report": [
+      "settings"
+    ],
+    "script": "solo-quiet-en",
+    "settings": {
+      "plan": {
+        "auto": true,
+        "minTurns": 1,
+        "everyTurns": 2,
+        "perPass": 2
+      }
+    }
+  },
+  {
+    "id": "salt-harbor-solo-plan-zh",
+    "world": "salt-harbor",
+    "language": "zh",
+    "layers": [
+      "cast-solo"
+    ],
+    "cast": {
+      "player": "quill",
+      "npcs": 1
+    },
+    "features": [
+      "places",
+      "items",
+      "factions",
+      "lore",
+      "variables",
+      "triggers",
+      "dice",
+      "routines",
+      "calendar",
+      "plots",
+      "rules",
+      "tools",
+      "prompts"
+    ],
+    "why": "The story keeps a private plan (the story plan is on, first look after the first turn, then every two turns). It runs as a background helper, sets only beats and cues, and the plan stays out of the narration: the script never asks about the guild's secret, so anything of it that reaches the narration is a leak, and the story must play as it does without the plan.",
+    "report": [
+      "settings"
+    ],
+    "script": "solo-quiet-zh",
+    "settings": {
+      "plan": {
+        "auto": true,
+        "minTurns": 1,
+        "everyTurns": 2,
+        "perPass": 2
+      }
+    }
   }
 ]

@@ -1,7 +1,7 @@
 import type { DecisionService } from '@dsh-ai-providers/core'
 import type { CharacterId } from 'dsh-roleplay-model'
 import type { ExtraSite, SiteReport } from '../../shared/decisions.ts'
-import type { RuleCheck, Secret, TurnStore } from '../orchestration/boundaries.ts'
+import type { HookCheck, RuleCheck, Secret, TurnStore } from '../orchestration/boundaries.ts'
 import { announceProblem, askYesNo } from './route.ts'
 
 /** The most hidden facts one output is checked against, and how much of each the decision model is shown. */
@@ -62,6 +62,22 @@ export function ruleChecks(deps: { decisions?: () => DecisionService | undefined
       const { found, report } = await askExtra(deps.decisions?.(), { player_character: job.player, player_message: job.input }, asks, settings.decisions.gateThreshold, signal)
       noteExtra('rules', job.chat, job.store, report, seen, deps.problem)
       return found.map(key => rules[Number(key.slice('rule'.length))]!)
+    },
+  }
+}
+
+const HOOK_PROMPT = 'roleplay/check-hook'
+
+/** Asks the decision model whether the hook of a plot contradicts the recorded events or states as past what they do not record, when the chat has `decisions.hooks` on. */
+export function hookChecks(deps: { decisions?: () => DecisionService | undefined; problem?: (message: string) => void }): HookCheck {
+  const seen = new Map<string, string>()
+  return {
+    async faulty(job, signal): Promise<boolean> {
+      const settings = job.store.settings()
+      if (settings.decisions.hooks === 'off' || job.hook.trim() === '') return false
+      const { found, report } = await askExtra(deps.decisions?.(), { events: job.events, hook: job.hook }, [{ key: 'hook', instructions: job.store.text(HOOK_PROMPT) }], settings.decisions.gateThreshold, signal)
+      noteExtra('hooks', job.chat, job.store, report, seen, deps.problem)
+      return found.length > 0
     },
   }
 }

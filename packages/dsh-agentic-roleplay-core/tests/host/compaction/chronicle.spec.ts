@@ -1,7 +1,7 @@
 import { shippedText } from '../../../src/host/prompts/library.ts'
 import { createSessionStore, type SessionStore } from '@dsh-agentic-roleplay/state'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { composeSummary, estimateTokens, foldSummaries, type Chronicler } from '../../../src/host/compaction/chronicle.ts'
+import { accountFromEvents, composeSummary, estimateTokens, foldSummaries, type Chronicler } from '../../../src/host/compaction/chronicle.ts'
 import { readFolded } from '../../../src/host/compaction/engine.ts'
 import { encodeOutput } from '../../../src/shared/narration.ts'
 import { DEFAULT_SETTINGS } from '../../../src/shared/settings.ts'
@@ -134,5 +134,57 @@ describe('readFolded', () => {
     ] as never)
     expect(folded.playerInputs).toBe('- I greet Bob.')
     expect(folded.transcript).toBe('Player: I greet Bob.\n\nBob: "Hi."\nHe waves.')
+  })
+})
+
+describe('how long a passage may be', () => {
+  const fold = async (text: string) => {
+    event(1, text)
+    const writer = chronicler()
+    await foldSummaries({ story: store, settings: context(), uptoTurn: 1, playerInputs: '', transcript: '', chronicler: writer, text: chronicleText, signal })
+    return writer.requests[0]!.words
+  }
+
+  it('is no more than the material supports, whatever the budget of the chat', async () => {
+    const short = await fold('Alice paid Bob forty coins.')
+    expect(short).toBeLessThan(DEFAULT_SETTINGS.context.shortTermTokens / 2)
+    expect(short).toBeGreaterThanOrEqual(40)
+  })
+
+  it('counts each character of a script without spaces as a word', async () => {
+    const words = await fold('你好'.repeat(100))
+    expect(words).toBeGreaterThan(await (async () => { store.close(); store = createSessionStore(':memory:', { id: 's2', name: 'S', world: { id: 'w', name: 'W' } }); return fold('Alice paid Bob forty coins.') })())
+  })
+})
+
+const recorded = (turn: number, text: string, importance = 3) => ({ turn, text, importance }) as Parameters<typeof accountFromEvents>[0][number]
+
+describe('accounts made of the recorded events', () => {
+  it('keeps the events in order and drops the least important, oldest first, when they do not fit', () => {
+    const events = [recorded(1, 'Bob took the key.', 4), recorded(2, 'The band played a long old song.', 1), recorded(3, 'Alice saw Bob with the key.', 3), recorded(4, 'Bob hid the key.', 4)]
+    expect(accountFromEvents(events, 100)).toBe('Bob took the key. The band played a long old song. Alice saw Bob with the key. Bob hid the key.')
+    expect(accountFromEvents(events, 14)).toBe('Bob took the key. Alice saw Bob with the key. Bob hid the key.')
+    expect(accountFromEvents(events, 1)).toBe('Bob hid the key.')
+  })
+
+  it('joins sentences of a script without word spaces with none', () => {
+    expect(accountFromEvents([recorded(1, '鲍勃拿了钥匙。'), recorded(2, '爱丽丝看见了。')], 100)).toBe('鲍勃拿了钥匙。爱丽丝看见了。')
+  })
+
+  it('folds a digest, a chapter and a condensed chapter without asking the chronicler when the events cover the turns', async () => {
+    for (let turn = 1; turn <= 6; turn++) event(turn, `Event ${turn} happened in the lane.`, turn % 2 === 0 ? 4 : 3)
+    const writer = chronicler()
+    const tight = context({ shortTermTokens: 200, longTermTokens: 200, account: 'events' })
+    for (let to = 1; to <= 6; to++) await foldSummaries({ story: store, settings: tight, uptoTurn: to, playerInputs: '', transcript: '', chronicler: writer, account: 'events', text: chronicleText, signal })
+    expect(writer.requests).toHaveLength(0)
+    expect(store.summaries.list().length).toBeGreaterThan(0)
+    for (const summary of store.summaries.list()) expect(summary.text).toMatch(/^Event \d happened in the lane\./)
+  })
+
+  it('asks the chronicler for a digest of turns the events do not cover', async () => {
+    event(1, 'Bob took the key.', 4)
+    const writer = chronicler()
+    await foldSummaries({ story: store, settings: context(), uptoTurn: 2, playerInputs: '', transcript: 'Turn 2 happened off record.', chronicler: writer, account: 'events', text: chronicleText, signal })
+    expect(writer.requests).toHaveLength(1)
   })
 })

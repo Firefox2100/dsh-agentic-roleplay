@@ -66,6 +66,7 @@ title: 配置参考
 | `context.limitTokens` / `context.limitRatio` | 0 / 0.6 | 明确的折叠上限，或用于计算上限的模型上下文比例 |
 | `context.workingTokens` / `context.retainRatio` | 0 / 0.5 | 计算结果的可选上限，以及保留原文的比例 |
 | `context.shortTermTokens` / `context.longTermTokens` | 1500 / 2500 | 短期和长期摘要的目标大小 |
+| `context.account` | `events` | `written`：由辅助模型写摘要和章节。`events`：摘要就是已记录的事件本身 |
 
 ### 世界活动与时间
 
@@ -89,6 +90,8 @@ title: 配置参考
 | `offstage.perTurn` / `offstage.perCharacter` | 2 / 1 | 每回合处理的离场角色数，以及每个角色的行动上限 |
 | `offstage.joint` / `offstage.summary` | `true` / `true` | 一起处理重叠情境，并生成“与此同时”摘要 |
 | `factions.perTurn` / `factions.everyDays` | 1 / 3 | 每回合推进的派系数，以及默认故事时间间隔 |
+| `plan.auto` | `false` | 故事面前之事的私密计划是否由后台自动制定和修订；随时可以手动要求查看一次，游戏主持会读取现有的任何计划 |
+| `plan.minTurns` / `plan.everyTurns` / `plan.perPass` | 1 / 8 / 2 | 第一份自动计划之前的回合数、不查看计划的最长回合数，以及一次查看最多可设置的触发器数 |
 | `triggers.enabled` / `triggers.maxFires` | `true` / 3 | 是否运行触发器，以及每回合最多触发数 |
 | `triggers.beatTurns` / `triggers.cueTurns` | 3 / 2 | 主持人节拍和角色提示等待采用的回合数 |
 | `triggers.judgedPerTurn` | 2 | 每回合最多由模型判断的触发条件数 |
@@ -109,6 +112,7 @@ title: 配置参考
 | `decisions.reuse` | `off` | 回合结束后自动生成场景图之前，先让决策模型判断每张相近的已存图片的描述是否表现了这一刻，并展示第一张符合的图片，不再生成新图。仅由决策服务执行：`off` 或 `on` |
 | `decisions.variables` | `llm` | 每个回合之后检查所有被追踪的数值（世界变量，以及在场角色的角色变量）：对每个数值提一个问题，即刚才发生的事是否改变了它，交给语言模型、决策模型或两者；之后由语言模型给出改变了的数值的新值。请填写每个数值的 **何时、如何变化** 字段。模式与上述四种相同，另可关闭 |
 | `decisions.rules` / `decisions.secrets` | `off` / `off` | 仅由决策服务执行的规则复查和隐藏背景检查 |
+| `decisions.hooks` | `off` | 决策模型对照已记录事件检查剧情作者写的引子一次；引子与事件矛盾，或把事件没有记录的内容写成已发生，则重写一次，第二次仍如此则不采用。没有决策模型时不检查 |
 | `decisions.repeatThreshold` | 0.7 | 决策答案从此概率起算作“重复句子只是套话”（0.1 到 0.95）。在 72 个已标注的重复上实测：0.7 没有拒掉有意的重复，也没有漏掉套话；0.5 拒掉了 36 个有意重复中的 15 个 |
 | `decisions.reuseThreshold` | 0.85 | 决策答案从此概率起算作“已存图片表现了这一刻”（0.1 到 0.95） |
 | `decisions.gateThreshold` | 0.5 | 决策答案从此概率起算作问题；低于它 0.15 以内视为不确定 |

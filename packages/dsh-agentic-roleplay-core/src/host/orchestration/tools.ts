@@ -376,7 +376,7 @@ export function createTools(deps: ToolDeps): ToolDefinition[] {
       const { agent, owner } = ownerOf(exec.agent)
       const store = storeOf(owner.chat)
       if (!plotAuthorNeeded(store, owner.turn)) throw new Error('the story does not currently need a plot author; continue with its existing plots, threads and character goals')
-      return record(await authorPlot(agent, store, owner.turn, exec.signal))
+      return record(await authorPlot(agent, store, owner.turn, exec.signal, { chat: owner.chat, check: deps.boundaries().hookCheck }))
     },
   })
 

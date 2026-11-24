@@ -366,6 +366,19 @@ export function sessionsRoutes({ sessions, externalTools, redundantLayers }: Api
         res.end()
       },
     },
+    '/sessions/plan': {
+      POST: async (_req, res, url) => {
+        try {
+          await sessions.plan(url.searchParams.get('id') ?? '')
+        } catch (error) {
+          if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message)
+          if (error instanceof ReflectionRefusedError) return sendError(res, 409, error.message)
+          throw error
+        }
+        res.statusCode = 202
+        res.end()
+      },
+    },
     '/sessions/recall': {
       POST: async (req, res, url) => {
         const body = await readJsonBody(req) as { situation?: unknown; character?: unknown }

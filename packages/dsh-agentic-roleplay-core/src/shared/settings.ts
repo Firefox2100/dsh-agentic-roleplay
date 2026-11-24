@@ -49,6 +49,8 @@ export interface ChatSettings {
     shortTermTokens: number
     /** The size of the long-term summary, in tokens, before its oldest part is condensed further. */
     longTermTokens: number
+    /** `written`: a helper writes the digests and chapters from the recorded events. `events`: they are the recorded events themselves, the least important dropped to fit, so nothing is added to what was recorded. */
+    account: 'written' | 'events'
   }
   authoring: {
     /** Whether the game master may have new characters and places made up when the story genuinely needs them. Off for a closed world. */
@@ -155,6 +157,16 @@ export interface ChatSettings {
     /** How many days of story time pass between one organisation's decisions. */
     everyDays: number
   }
+  plan: {
+    /** Whether the plan is made and revised by itself, in the background, when the records say it needs a look; off by default, because each look is a request. A look can always be asked for by hand, and the game master reads whatever plan there is. */
+    auto: boolean
+    /** The turns of story before the first automatic plan is made. */
+    minTurns: number
+    /** The most turns that pass without a look at the plan, whatever the records say. */
+    everyTurns: number
+    /** The most triggers one look may make. */
+    perPass: number
+  }
   reflection: {
     /** Whether the story reflects on its own: characters sort what they have taken in into what they believe, now and then (see `everyTurns`, `onSceneChange`). A pass can always be started by hand. */
     auto: boolean
@@ -220,6 +232,8 @@ export interface ChatSettings {
     rules: ExtraMode
     /** Whether the output is also checked, by the decision model, for giving away hidden lore the player's character does not know (lore listed for others only); off by default. A passage that fails is sent back to the game master like the other gates' (at most twice). Needs a decision model: without one nothing is checked. */
     secrets: ExtraMode
+    /** Whether the hook of a plot the plot author wrote is checked against the recorded events by the decision model, which sends the plot back once when it contradicts them. */
+    hooks: ExtraMode
     /** Whether a decision model also says whether a character has a reason to write to the player now, when chance has picked one (without one, chance alone decides). */
     messages: ExtraMode
     errands: ExtraMode
@@ -340,6 +354,7 @@ export const SETTINGS_SPEC = {
     retainRatio: ratio(0.1, 0.9, 0.5),
     shortTermTokens: integer(200, 20_000, 1500),
     longTermTokens: integer(200, 40_000, 2500),
+    account: choice(['written', 'events'], 'events'),
   },
   authoring: { enabled: flag(true), perTurn: integer(1, 5, 2), thingsPerTurn: integer(0, 20, 4), consolidateAfter: integer(1, 20, 3) },
   clock: { mode: choice(CLOCK_MODES, 'simulated'), timeZone: text(64, ''), roundSeconds: integer(0, 3600, 30), maxSkipDays: integer(1, 3650, 30) },
@@ -352,10 +367,11 @@ export const SETTINGS_SPEC = {
   prompts: { language: text(8, 'en') },
   reasoning: { children: text(40, '') },
   factions: { perTurn: integer(0, 3, 1), everyDays: integer(1, 365, 3) },
+  plan: { auto: flag(false), minTurns: integer(1, 50, 1), everyTurns: integer(2, 100, 8), perPass: integer(0, 4, 2) },
   reflection: { auto: flag(true), everyTurns: integer(0, 500, 20), onSceneChange: flag(true), sceneDays: integer(0, 365, 1), minTurns: integer(1, 100, 5), perRun: integer(1, 6, 3), minNew: integer(1, 50, 4) },
   models: { characters: text(200, ''), background: text(200, ''), records: text(200, ''), suggestions: text(200, ''), authoring: text(200, '') },
   triggers: { enabled: flag(true), maxFires: integer(1, 10, 3), beatTurns: integer(1, 20, 3), cueTurns: integer(1, 20, 2), judgedPerTurn: integer(0, 5, 2) },
-  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), situation: choice(GATE_MODES, 'hybrid'), repeats: choice(REPEAT_MODES, 'off'), repeatTurns: integer(1, 30, 6), repeatChars: integer(6, 60, 12), repeatThreshold: ratio(0.1, 0.95, 0.7), situationThreshold: ratio(0.1, 0.95, 0.3), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), messages: choice(EXTRA_MODES, 'off'), errands: choice(EXTRA_MODES, 'on'), variables: choice(GATE_MODES, 'llm'), reuse: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), reuseThreshold: ratio(0.1, 0.95, 0.85), confidence: ratio(0, 1, 0.7) },
+  decisions: { triggers: choice(DECISION_MODES, 'hybrid'), reflection: choice(DECISION_MODES, 'llm'), agency: choice(GATE_MODES, 'off'), refusal: choice(GATE_MODES, 'off'), situation: choice(GATE_MODES, 'hybrid'), repeats: choice(REPEAT_MODES, 'off'), repeatTurns: integer(1, 30, 6), repeatChars: integer(6, 60, 12), repeatThreshold: ratio(0.1, 0.95, 0.7), situationThreshold: ratio(0.1, 0.95, 0.3), rules: choice(EXTRA_MODES, 'off'), secrets: choice(EXTRA_MODES, 'off'), hooks: choice(EXTRA_MODES, 'off'), messages: choice(EXTRA_MODES, 'off'), errands: choice(EXTRA_MODES, 'on'), variables: choice(GATE_MODES, 'llm'), reuse: choice(EXTRA_MODES, 'off'), gateThreshold: ratio(0.1, 0.95, 0.5), reuseThreshold: ratio(0.1, 0.95, 0.85), confidence: ratio(0, 1, 0.7) },
   interface: { pack: text(60, '') },
   rewind: { keepSnapshots: integer(0, 500, 30), rolls: choice(['reroll', 'keep'], 'reroll') },
   rules: { own: text(MAX_OWN_RULES, '') },

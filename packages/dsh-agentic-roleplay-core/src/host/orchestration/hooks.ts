@@ -1,3 +1,4 @@
+import { readPlan } from '../plan/plan.ts'
 import { TurnTraces, tracerOf } from '../observability/trace.ts'
 import type { Context } from '@deepseek-ai/cordis'
 import { languageOf, translator } from 'dsh-roleplay-model'
@@ -285,6 +286,8 @@ export function installHooks(ctx: Context, deps: HookDeps): void {
     if (rules.length > 0) addLine('rules', store.text('roleplay/rules', { rules: rules.map(rule => `- ${rule}`).join('\n') }))
     const pins = store.pins?.() ?? []
     if (pins.length > 0) addLine('pins', store.text('roleplay/pins', { pins: pins.map(pin => (store.softPins?.() ?? []).includes(pin) ? `- ${pin} ${tr('(soft: keep to it where the story allows, and tell the player when it has to give)')}` : `- ${pin}`).join('\n') }))
+    const plan = readPlan(store.story)
+    if (plan !== undefined && (plan.note !== '' || plan.items.length > 0)) addLine('plan', store.text('roleplay/plan', { note: plan.note === '' ? '-' : plan.note, items: plan.items.map(item => `- ${item.text}`).join('\n') }))
     const wanted = intent?.kind === 'roll' ? intent : undefined
     if (wanted !== undefined) {
       try {

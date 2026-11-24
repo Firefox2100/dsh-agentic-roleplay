@@ -8,7 +8,7 @@ vi.mock('../../../src/host/agents/child.ts', () => ({ runChild: async () => { th
 vi.mock('../../../src/host/prompts/access.ts', () => ({ promptFor: (_agent: unknown, id: string) => `persona of ${id}` }))
 
 const { outputGates } = await import('../../../src/host/decisions/gates.ts')
-const { ruleChecks, hiddenFrom, MAX_SECRETS } = await import('../../../src/host/decisions/extras.ts')
+const { ruleChecks, hookChecks, hiddenFrom, MAX_SECRETS } = await import('../../../src/host/decisions/extras.ts')
 
 let recorded: { site: DecisionSite; report: SiteReport }[]
 let states: { state: Record<string, unknown>; questions: Record<string, { instructions: string }> }[]
@@ -23,8 +23,8 @@ const decider = (probability: (instructions: string) => number): DecisionService
 
 beforeEach(() => { recorded = []; states = [] })
 
-const store = (extras: { rules?: ExtraMode; secrets?: ExtraMode }, rules: string[] = []): TurnStore => ({
-  settings: () => ({ ...DEFAULT_SETTINGS, decisions: { ...DEFAULT_SETTINGS.decisions, rules: extras.rules ?? 'off', secrets: extras.secrets ?? 'off' } }),
+const store = (extras: { rules?: ExtraMode; secrets?: ExtraMode; hooks?: ExtraMode }, rules: string[] = []): TurnStore => ({
+  settings: () => ({ ...DEFAULT_SETTINGS, decisions: { ...DEFAULT_SETTINGS.decisions, rules: extras.rules ?? 'off', secrets: extras.secrets ?? 'off', hooks: extras.hooks ?? 'on' } }),
   text: (id: string, variables?: Record<string, string>) => `${id} ${JSON.stringify(variables ?? {})}`,
   rules: () => rules,
   recordDecisions: (site: DecisionSite, report: SiteReport) => { recorded.push({ site, report }) },
@@ -138,5 +138,25 @@ describe('the hidden lore of a character', () => {
   it('shows only the first 300 characters of a fact', () => {
     const found = hiddenFrom(story([entry(1, 'Long', 'listed', 'x'.repeat(500))], []), 9 as never, '')
     expect(found[0]!.text).toHaveLength(300)
+  })
+})
+
+describe('the hook check', () => {
+  const job = (hooks: ExtraMode, hook = 'Pavel comes by on Thursday.') => ({ chat: 'c', turn: 3, store: store({ hooks }), events: ['Mara promised to pay by Friday.'], hook })
+
+  it('puts the hook against the recorded events in one request and says whether the decision model finds it at fault', async () => {
+    const check = hookChecks({ decisions: () => decider(() => 0.8) })
+    expect(await check.faulty(job('on'), signal)).toBe(true)
+    expect(states[0]!.state).toEqual({ events: ['Mara promised to pay by Friday.'], hook: 'Pavel comes by on Thursday.' })
+    expect(await hookChecks({ decisions: () => decider(() => 0.2) }).faulty(job('on'), signal)).toBe(false)
+    expect(recorded.map(entry => entry.site)).toEqual(['hooks', 'hooks'])
+  })
+
+  it('finds no fault while it is off, for an empty hook, and when no decision model can be asked', async () => {
+    const service = decider(() => 0.99)
+    expect(await hookChecks({ decisions: () => service }).faulty(job('off'), signal)).toBe(false)
+    expect(await hookChecks({ decisions: () => service }).faulty(job('on', ' '), signal)).toBe(false)
+    expect(states).toEqual([])
+    expect(await hookChecks({}).faulty(job('on'), signal)).toBe(false)
   })
 })

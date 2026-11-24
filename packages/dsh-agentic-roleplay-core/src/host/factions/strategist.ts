@@ -15,7 +15,7 @@ const STRATEGY_ROUND = 200
 const MAX_ACTIVE_GOALS = 8
 const MAX_TEXT = 400
 /** What a decision may hold: the summary, both states, a new goal with its plan, and the status of each active goal. */
-const DECISION_LIMITS = [MAX_TEXT, MAX_TEXT, MAX_TEXT, 120, MAX_TEXT, ...Array.from({ length: 6 }, () => 200), ...Array.from({ length: MAX_ACTIVE_GOALS }, () => 10)]
+const DECISION_LIMITS = [MAX_TEXT, MAX_TEXT, MAX_TEXT, 120, MAX_TEXT, ...Array.from({ length: 6 }, () => 200), ...Array.from({ length: MAX_ACTIVE_GOALS }, () => 10), ...Array.from({ length: MAX_ACTIVE_GOALS }, () => 120)]
 
 type StrategySession = Pick<Session, 'factions' | 'factionStates' | 'factionIntents' | 'factionMemberships' | 'factionRelationships' | 'characters' | 'events' | 'metadata' | 'edit' | 'transaction'>
 
@@ -56,8 +56,8 @@ const RESULT: ObjectJsonSchema = {
     inner_state: { type: 'string', description: 'Its private state afterwards, only when its inner position moved.' },
     goal_updates: {
       type: 'array',
-      items: { type: 'object', properties: { id: { type: 'integer', description: 'The number of the goal, as listed.' }, status: { type: 'string', enum: [...INTENT_STATUSES] } }, required: ['id', 'status'], additionalProperties: false },
-      description: 'Goals whose status changed.',
+      items: { type: 'object', properties: { id: { type: 'integer', description: 'The number of the goal, as listed.' }, reason: { type: 'string', description: 'What has happened lately that bears on this goal, in a few words, or that nothing does. Written first: the status follows from it.' }, status: { type: 'string', enum: [...INTENT_STATUSES] } }, required: ['id', 'reason', 'status'], additionalProperties: false },
+      description: 'Goals whose status changed: completed when what has happened fulfils it, failed or abandoned when what has happened makes it impossible or pointless. Leave out a goal that still stands.',
     },
     new_goal: {
       type: 'object',
@@ -75,7 +75,7 @@ export interface Strategy {
   summary: string
   public_state?: string
   inner_state?: string
-  goal_updates?: { id: number; status: (typeof INTENT_STATUSES)[number] }[]
+  goal_updates?: { id: number; reason?: string; status: (typeof INTENT_STATUSES)[number] }[]
   new_goal?: { name: string; description: string; plan: string[] }
 }
 
@@ -105,6 +105,8 @@ function brief(session: StrategySession, faction: Faction, now: number, zone: st
     'Decide what the organisation does.',
   ].filter(line => line !== '').join('\n')
 }
+
+export { RESULT as STRATEGY_RESULT }
 
 export function applyStrategy(job: Pick<StrategyJob, 'turn'>, session: StrategySession, faction: Faction, strategy: Strategy, now: number): void {
   const active = session.factionIntents.list(faction.id, { status: 'active' })

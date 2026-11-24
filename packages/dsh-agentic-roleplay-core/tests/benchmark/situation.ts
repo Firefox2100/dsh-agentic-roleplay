@@ -24,7 +24,7 @@ export const ACTIVATION_SCHEMA = {
 /** The sentence added to the game master's instructions for this benchmark, which the `old` variant leaves out. */
 const ADDED = { en: /The characters are told it as fact and know nothing else:.*?a character has no way of knowing\. /s, zh: /角色会把它当作事实，并且除此之外一无所知：.*?角色没有途径知道的人、地点或物品。/s }
 
-type Story = Parameters<typeof castOf>[0]
+export type Story = Parameters<typeof castOf>[0]
 export interface Built { session: Story; cast: CastMember[]; store: TurnStore; persona: string; prompt: string }
 
 export function build(made: SituationCase, language: Language, variant: 'old' | 'new'): Built {
