@@ -6,7 +6,7 @@ import type { CardPieceView, CardView } from '../../shared/card-view.ts'
 import { Tag } from '../ui/Tag.tsx'
 import { Input } from '../ui/Input.tsx'
 import { Button } from '../ui/Button.tsx'
-import { IconBrowse } from '../ui/icons.tsx'
+import { IconBrowse, IconChevronLeft } from '../ui/icons.tsx'
 import { SidebarGuideEntry } from '../widgets/sidebar-guide/SidebarGuideEntry.tsx'
 import { loadCard, loadPiece } from './card-api.ts'
 import css from './CardTab.module.css'
@@ -88,7 +88,7 @@ export function CardBody({ t, sessionId, useTabInfo }: CardBodyProps): ReactNode
     const needle = query.trim().toLowerCase()
     return needle === '' ? card.pieces : card.pieces.filter(piece => [piece.id, piece.title, piece.label, piece.start, ...piece.keys, ...piece.roles].some(text => text.toLowerCase().includes(needle)))
   }, [card, query])
-  const back = <div className={css.top}><Button variant="ghost" size="sm" onClick={() => { tab.actions.openTab('guide', { replaceTab: true }) }}>← {t('back')}</Button></div>
+  const back = <div className={css.top}><Button variant="ghost" size="sm" icon={<IconChevronLeft />} onClick={() => { tab.actions.openTab('guide', { replaceTab: true }) }}>{t('back')}</Button></div>
   const message = (text: string, error = false): ReactNode => <div className={css.frame}>{back}{error ? <p className={css.error} role="alert">{text}</p> : <p className={css.note}>{text}</p>}</div>
 
   if (world === undefined) return message(t('notAuthoring'))

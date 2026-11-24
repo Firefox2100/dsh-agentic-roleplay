@@ -89,7 +89,7 @@ export function apply(ctx: Context): void {
     const directory = await worldDirectory(chat)
     return directory === undefined ? undefined : await readWorldInfo(directory)
   }
-  ctx.on('agent/pre-step', async (payload, next) => {
+  ctx.on('agent/pre-step', async (payload, next) => { // NOSONAR -- middleware must preserve the downstream step decision after trimming its session context.
     const decision = await next()
     if (decision.kind !== 'enter' || payload.step !== 1 || payload.agent.session.header.origin === 'subagent') return decision
     const world = authoredWorldOf(payload.agent.session.id)

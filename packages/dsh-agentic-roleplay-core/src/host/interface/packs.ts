@@ -13,7 +13,7 @@ const packsIn = (base: string): string => join(base, PACKS_FOLDER)
 export function packIds(base: string): string[] {
   const folder = packsIn(base)
   if (!existsSync(folder)) return []
-  return readdirSync(folder, { withFileTypes: true }).filter(entry => entry.isDirectory() && isPackId(entry.name)).map(entry => entry.name).sort()
+  return readdirSync(folder, { withFileTypes: true }).filter(entry => entry.isDirectory() && isPackId(entry.name)).map(entry => entry.name).sort((left, right) => left.localeCompare(right))
 }
 
 /** Checks every pack a world carries. @returns the ids of the packs, and the problems found, each with the file. */

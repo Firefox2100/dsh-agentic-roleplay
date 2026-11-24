@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { MAX_KEEP_RESULT_TURNS, TOOL_HIDING, isKeepResultTurns, type AuthoringSettings, type ToolHiding } from '../../shared/authoring-settings.ts'
 import type { ChatSettingsLocaleKey } from './locales.ts'
 import { loadAuthoringSettings, saveAuthoringSettings } from './settings-api.ts'
+import { Input } from '../ui/Input.tsx'
 import css from './ChatSettingsView.module.css'
 
 type Translate = (key: ChatSettingsLocaleKey, values?: Record<string, string | number>) => string
@@ -42,8 +43,8 @@ export function AuthoringSettingsView({ t, world }: { t: Translate; world: strin
         <fieldset className={css.choices} disabled={saving}>
           <legend className={css.label}>{t('authoringHideTitle')}</legend>
           {TOOL_HIDING.map(mode => (
-            <label key={mode} className={css.choice}>
-              <input type="radio" name="tool-hiding" value={mode} checked={settings.toolHiding === mode} onChange={() => { choose({ toolHiding: mode }) }} />
+            <label key={mode} className={css.choice} htmlFor={`tool-hiding-${mode}`}>
+              <input id={`tool-hiding-${mode}`} type="radio" name="tool-hiding" value={mode} checked={settings.toolHiding === mode} onChange={() => { choose({ toolHiding: mode }) }} />
               <span className={css.choiceText}>
                 <span>{t(LABELS[mode])}</span>
                 <span className={css.help}>{t(HELPS[mode])}</span>
@@ -55,7 +56,7 @@ export function AuthoringSettingsView({ t, world }: { t: Translate; world: strin
       {settings !== undefined && (
         <label className={css.field}>
           <span className={css.label}>{t('authoringKeepTitle')}</span>
-          <input
+          <Input
             type="number" min={0} max={MAX_KEEP_RESULT_TURNS} step={1} disabled={saving} defaultValue={settings.keepResultTurns} key={settings.keepResultTurns}
             onBlur={(event) => { const value = Number(event.target.value); if (event.target.value.trim() !== '' && isKeepResultTurns(value) && value !== settings.keepResultTurns) choose({ keepResultTurns: value }); else event.target.value = String(settings.keepResultTurns) }}
           />

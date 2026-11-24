@@ -28,7 +28,7 @@ function fileOf(directory: string, language: string, id: string, shipped: string
 export function listWorldPrompts(directory: string, language: string, shipped: string = shippedPromptsDirectory()): WorldPromptEntry[] {
   const tag = languageOf(language)
   const ids = readdirSync(join(shipped, 'en'), { withFileTypes: true }).filter(entry => entry.isDirectory() && entry.name === 'roleplay').flatMap(entry => listFiles(join(shipped, 'en', entry.name), `${entry.name}/`))
-  return ids.sort().map(id => ({ id, kind: PROSE_PROMPTS.includes(id) ? 'prose' as const : 'rules' as const, carried: existsSync(join(directory, PROMPTS_FOLDER, tag, `${id}.md`)) }))
+  return ids.sort((left, right) => left.localeCompare(right)).map(id => ({ id, kind: PROSE_PROMPTS.includes(id) ? 'prose' as const : 'rules' as const, carried: existsSync(join(directory, PROMPTS_FOLDER, tag, `${id}.md`)) }))
 }
 
 /** A prompt as sessions of the world get it: the world's own version, else the shipped text. */

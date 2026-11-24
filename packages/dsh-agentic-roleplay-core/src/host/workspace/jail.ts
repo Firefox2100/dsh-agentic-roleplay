@@ -47,7 +47,7 @@ const MOST_LISTED = 30
 export function folderListing(path: string): string | undefined {
   try {
     if (!statSync(path).isDirectory()) return undefined
-    const names = readdirSync(path, { withFileTypes: true }).map(entry => (entry.isDirectory() ? `${entry.name}/` : entry.name)).sort()
+    const names = readdirSync(path, { withFileTypes: true }).map(entry => (entry.isDirectory() ? `${entry.name}/` : entry.name)).sort((left, right) => left.localeCompare(right))
     const shown = names.slice(0, MOST_LISTED).join(', ')
     return `${path} is a folder, not a file, so it cannot be read. It holds: ${names.length === 0 ? 'nothing' : shown}${names.length > MOST_LISTED ? ` and ${names.length - MOST_LISTED} more` : ''}. Read one of those files by its whole path (${path}/<name>)`
   } catch { return undefined }

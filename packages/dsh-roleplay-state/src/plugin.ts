@@ -68,7 +68,7 @@ export class RoleplayState extends Service {
       }
       return undefined
     }
-    ctx.inject(['tools'], (scope) => {
+    ctx.inject(['tools'], (scope) => { // NOSONAR -- Cordis owns this deferred lifecycle registration and disposes it with the context.
       for (const tool of createTools(resolve, { write: config.writeTools ?? false })) scope.tools.register(tool)
       if (config.diceTools === true) for (const tool of createDiceTools(resolve)) scope.tools.register(tool)
     })

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '../ui/Button.tsx'
 import { Modal } from '../ui/Modal.tsx'
 import { imageUrl, loadGallery, type GalleryImage, type GalleryTarget } from '../widgets/gallery-view/gallery-api.ts'
@@ -9,8 +9,8 @@ const messageOf = (error: unknown): string => (error instanceof Error ? error.me
 const isPng = (image: GalleryImage): boolean => image.path.toLowerCase().endsWith('.png') && image.unreadable !== true
 
 /** A picture of the world's gallery as the file an upload would have sent, so the one path that checks and stores a picture serves both ways of bringing one. */
-async function fileOf(target: GalleryTarget, image: GalleryImage): Promise<File> {
-  const response = await fetch(imageUrl(target, image), { credentials: 'same-origin' })
+async function fileOf(target: GalleryTarget, image: GalleryImage, signal: AbortSignal): Promise<File> {
+  const response = await fetch(imageUrl(target, image), { credentials: 'same-origin', signal })
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
   return new File([await response.blob()], image.path.split('/').at(-1) ?? 'picture.png', { type: 'image/png' })
 }
@@ -19,17 +19,24 @@ async function fileOf(target: GalleryTarget, image: GalleryImage): Promise<File>
 function PicturePicker({ t, target, onPick, onClose }: { t: Translate; target: GalleryTarget; onPick: (file: File) => void; onClose: () => void }) {
   const [state, setState] = useState<{ status: 'loading' } | { status: 'ready'; images: GalleryImage[] } | { status: 'failed'; message: string }>({ status: 'loading' })
   const [error, setError] = useState<string>()
-  const started = useRef(false)
-  if (!started.current) {
-    started.current = true
-    loadGallery(target, new AbortController().signal).then(
+  const [choosing, setChoosing] = useState<string>()
+  const download = useRef<AbortController>()
+  useEffect(() => {
+    const abort = new AbortController()
+    loadGallery(target, abort.signal).then(
       (contents) => { setState({ status: 'ready', images: contents.images.filter(isPng) }) },
-      (failure: unknown) => { setState({ status: 'failed', message: messageOf(failure) }) },
+      (failure: unknown) => { if (!abort.signal.aborted) setState({ status: 'failed', message: messageOf(failure) }) },
     )
-  }
+    return () => { abort.abort(); download.current?.abort() }
+  }, [target.kind, target.id])
   const choose = (image: GalleryImage): void => {
     setError(undefined)
-    fileOf(target, image).then(onPick, (failure: unknown) => { setError(messageOf(failure)) })
+    setChoosing(image.path)
+    const abort = new AbortController()
+    download.current = abort
+    fileOf(target, image, abort.signal).then(onPick, (failure: unknown) => {
+      if (!abort.signal.aborted) { setChoosing(undefined); setError(messageOf(failure)) }
+    })
   }
   return (
     <Modal open onClose={onClose} title={t('galleryPickTitle')} description={t('galleryPickHelp')} closeLabel={t('gallery_close')}>
@@ -40,8 +47,8 @@ function PicturePicker({ t, target, onPick, onClose }: { t: Translate; target: G
       {state.status === 'ready' && state.images.length > 0 && (
         <div className={css.grid}>
           {state.images.map(image => (
-            <button key={image.path} type="button" className={css.tile} title={image.description ?? image.path} onClick={() => { choose(image) }}>
-              <img className={css.thumb} src={imageUrl(target, image)} alt={image.description ?? ''} loading="lazy" decoding="async" />
+            <button key={image.path} type="button" className={css.tile} title={image.description ?? image.path} aria-label={image.description ?? image.path} aria-busy={choosing === image.path} disabled={choosing !== undefined} onClick={() => { choose(image) }}>
+              <img className={css.thumb} src={imageUrl(target, image)} alt="" loading="lazy" decoding="async" />
             </button>
           ))}
         </div>

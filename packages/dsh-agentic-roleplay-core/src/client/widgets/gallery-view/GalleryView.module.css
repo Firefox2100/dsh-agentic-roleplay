@@ -11,6 +11,7 @@
 .toolbar {
   display: flex;
   flex: none;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -72,7 +73,6 @@
   font: inherit;
   text-align: left;
   color: inherit;
-  cursor: pointer;
 }
 
 .open {

@@ -171,7 +171,7 @@ export function takeSnapshot(sessionsDir: string, id: string, name: string, stor
 /** The names of a session's snapshots. */
 export function snapshotNames(sessionsDir: string, id: string): string[] {
   try {
-    return readdirSync(join(sessionFolder(sessionsDir, id), SNAPSHOT_FOLDER)).filter(file => file.endsWith('.sqlite')).map(file => file.slice(0, -'.sqlite'.length)).sort()
+    return readdirSync(join(sessionFolder(sessionsDir, id), SNAPSHOT_FOLDER)).filter(file => file.endsWith('.sqlite')).map(file => file.slice(0, -'.sqlite'.length)).sort((left, right) => left.localeCompare(right))
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return []
     throw error

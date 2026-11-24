@@ -125,7 +125,7 @@
   font-size: 12px;
 }
 
-.portraitError { color: var(--dsw-alias-state-danger-primary); }
+.portraitError { color: var(--dsw-alias-state-error-primary); }
 .portraitHint { color: var(--dsw-alias-label-secondary); }
 
 .placeholder {
@@ -240,7 +240,7 @@
 .tabsSpace {
   flex: 1 1 auto;
 }
-.voiceInline { display: flex; gap: 6px; align-items: center; min-width: 220px; font-size: 12px; color: var(--dsw-alias-label-tertiary); }
+.voiceInline { display: flex; flex: 0 0 auto; gap: 6px; align-items: center; min-width: 220px; font-size: 12px; white-space: nowrap; color: var(--dsw-alias-label-tertiary); }
 
 .bar {
   display: flex;

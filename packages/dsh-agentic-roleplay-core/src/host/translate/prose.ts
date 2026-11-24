@@ -121,7 +121,7 @@ export async function readWorldDocuments(directory: string): Promise<WorldDocume
   for (const [folder, name, kind] of ENTITIES) {
     let entries: string[]
     try {
-      entries = (await readdir(join(directory, folder), { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => entry.name).sort()
+      entries = (await readdir(join(directory, folder), { withFileTypes: true })).filter(entry => entry.isDirectory()).map(entry => entry.name).sort((left, right) => left.localeCompare(right))
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue
       throw error

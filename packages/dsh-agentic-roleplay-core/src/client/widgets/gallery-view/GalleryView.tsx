@@ -51,6 +51,7 @@ function EditDialog({ t, image, onSave, onClose }: { t: GalleryText; image: Gall
 export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarget }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [refreshing, setRefreshing] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<Filter>('all')
   const [uploading, setUploading] = useState(false)
   const [notice, setNotice] = useState<string>()
@@ -62,12 +63,24 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
   const shownCount = useRef(PAGE)
   const read = useCallback((signal: AbortSignal, quiet = false, more = false) => {
     if (!quiet) setRefreshing(true)
-    if (more) shownCount.current += PAGE
-    loadGalleryPage(target, { offset: 0, limit: shownCount.current, filter }, signal).then(
-      (contents) => { setLoad(current => (quiet && current.status === 'ready' && sameGallery(current.contents, contents) ? current : { status: 'ready', contents })); setRefreshing(false) },
-      (failure: unknown) => { if (!signal.aborted && !quiet) { setLoad({ status: 'failed', message: messageOf(failure) }); setRefreshing(false) } },
+    if (more) { setLoadingMore(true); setNotice(undefined) }
+    const limit = more ? shownCount.current + PAGE : shownCount.current
+    loadGalleryPage(target, { offset: 0, limit, filter }, signal).then(
+      (contents) => {
+        if (limit < shownCount.current) return
+        shownCount.current = limit
+        setLoad(current => (quiet && current.status === 'ready' && sameGallery(current.contents, contents) ? current : { status: 'ready', contents }))
+        if (!quiet) setRefreshing(false)
+        if (more) setLoadingMore(false)
+      },
+      (failure: unknown) => {
+        if (!signal.aborted && more) setNotice(t('loadFailed', { message: messageOf(failure) }))
+        if (!signal.aborted && !quiet) setLoad({ status: 'failed', message: messageOf(failure) })
+        if (!quiet) setRefreshing(false)
+        if (more) setLoadingMore(false)
+      },
     )
-  }, [target.kind, target.id, filter])
+  }, [target.kind, target.id, filter, t])
 
   useEffect(() => {
     shownCount.current = PAGE
@@ -131,7 +144,7 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
           </select>
           <Button variant="outline" size="sm" disabled={uploading} onClick={() => { picker.current?.click() }}>{uploading ? t('uploading') : t('upload')}</Button>
           <input ref={picker} type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden onChange={(event) => { void add(event.target.files); event.target.value = '' }} />
-          <Button variant="outline" size="sm" icon={<IconRefresh />} disabled={refreshing} aria-busy={refreshing} onClick={() => { read(new AbortController().signal) }}>{refreshing ? t('refreshing') : t('refresh')}</Button>
+          <Button variant="outline" size="sm" icon={<IconRefresh />} disabled={refreshing || loadingMore} aria-busy={refreshing} onClick={() => { read(new AbortController().signal) }}>{refreshing ? t('refreshing') : t('refresh')}</Button>
         </div>
       </div>
       {notice !== undefined && <p className={css.error} role="alert">{notice}</p>}
@@ -174,7 +187,7 @@ export function GalleryView({ t, target }: { t: GalleryText; target: GalleryTarg
             })}
           </ul>
         )}
-      {shown.length < total && <div className={css.more}><Button variant="outline" size="sm" disabled={refreshing} onClick={() => { read(new AbortController().signal, true, true) }}>{`${t('more')} (${shown.length}/${total})`}</Button></div>}
+      {shown.length < total && <div className={css.more}><Button variant="outline" size="sm" disabled={refreshing || loadingMore} aria-busy={loadingMore} onClick={() => { read(new AbortController().signal, true, true) }}>{`${t('more')} (${shown.length}/${total})`}</Button></div>}
       {editing !== undefined && <EditDialog t={t} image={editing} onClose={() => { setEditing(undefined) }} onSave={async (update) => { replace(await updateImage(target, editing.path, update, new AbortController().signal)) }} />}
     </div>
   )
