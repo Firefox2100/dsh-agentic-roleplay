@@ -1,0 +1,29 @@
+{
+  "expected_verdicts": {
+    "c-sick": "disputed",
+    "c-better": "disputed",
+    "c-queer-house": "unresolved",
+    "c-woman": "unresolved",
+    "c-woman-outside": "unresolved",
+    "c-jj-study-paper": "unresolved",
+    "c-jane-is-narrator": "unresolved"
+  },
+  "accepted_differences": {},
+  "exempt_paragraphs": {
+    "P18": "transition to a new topic, no content"
+  },
+  "fact_map": {
+    "f-forbidden-work": "s14",
+    "f-lease": "s15",
+    "f-paper-stains": "s16",
+    "f-smooch": "s17",
+    "f-key-under-leaf": "s11",
+    "f-sick": "c-sick",
+    "f-better": "c-better",
+    "f-queer-house": "c-queer-house",
+    "f-woman": "c-woman",
+    "f-woman-outside": "c-woman-outside",
+    "f-jj-study-paper": "c-jj-study-paper",
+    "f-jane-is-narrator": "c-jane-is-narrator"
+  }
+}

@@ -1,0 +1,586 @@
+[
+ {
+  "ref": "P01-P02",
+  "quote": "ACT 2, SCENE II. The same. [Enter DON JOHN and BORACHIO]",
+  "v2": {
+   "class": "E",
+   "where": "e-john-sulks (place house, who)"
+  },
+  "note": "the heading gives only 'the same' place; it is the house of Act 2 scene 1, outside the excerpt"
+ },
+ {
+  "ref": "P03",
+  "quote": "It is so; the Count Claudio shall marry the daughter of Leonato.",
+  "v2": {
+   "class": "E",
+   "where": "e-john-sulks; s-wedding"
+  }
+ },
+ {
+  "ref": "P04",
+  "quote": "Yea, my lord; but I can cross it.",
+  "v2": {
+   "class": "E",
+   "where": "e-borachio-offers"
+  }
+ },
+ {
+  "ref": "P05",
+  "quote": "Any bar, any cross, any impediment will be medicinable to me: I am sick in displeasure to him ... How canst thou cross this marriage?",
+  "v2": {
+   "class": "E",
+   "where": "e-john-sulks; s-john-displeasure; c-john-spite (asserted)"
+  }
+ },
+ {
+  "ref": "P06-P07",
+  "quote": "Not honestly, my lord; but so covertly that no dishonesty shall appear in me.",
+  "v2": {
+   "class": "E",
+   "where": "e-borachio-offers; e-plot-concealed (conceal, from four people)"
+  }
+ },
+ {
+  "ref": "P08-P09",
+  "quote": "I think I told your lordship a year since, how much I am in the favour of Margaret ... I remember.",
+  "v2": {
+   "class": "E",
+   "where": "b-borachio-margaret (backfilled, established in e-borachio-margaret)"
+  },
+  "note": "Don John's 'I remember' does not bear on the claim of capability"
+ },
+ {
+  "ref": "P10-P11",
+  "quote": "I can, at any unseasonable instant of the night, appoint her to look out at her lady's chamber window.",
+  "v2": {
+   "class": "E",
+   "where": "e-borachio-margaret; c-margaret-window (unresolved: nothing in the excerpt tests it)"
+  }
+ },
+ {
+  "ref": "P12-P14",
+  "quote": "The poison of that lies in you to temper. Go you to the prince ... Proof enough to misuse the prince, to vex Claudio, to undo Hero and kill Leonato.",
+  "v2": {
+   "class": "E",
+   "where": "e-borachio-plans (kind plan, intent deceive)"
+  },
+  "note": "the plan's four aims are text inside the event"
+ },
+ {
+  "ref": "P15",
+  "quote": "Only to despite them, I will endeavour any thing.",
+  "v2": {
+   "class": "E",
+   "where": "e-john-agrees; c-john-spite (confirmed)"
+  }
+ },
+ {
+  "ref": "P16",
+  "quote": "Go, then; find me a meet hour to draw Don Pedro and the Count Claudio alone ... that jealousy shall be called assurance and all the preparation overthrown.",
+  "v2": {
+   "class": "E",
+   "where": "e-borachio-plans; h-window-staging; the false report is c-hero-disloyal (asserted later)"
+  },
+  "note": "the staged scene is a future event: held, not an event"
+ },
+ {
+  "ref": "P17-P18",
+  "quote": "Grow this to what adverse issue it can, I will put it in practise ... thy fee is a thousand ducats. Be you constant in the accusation",
+  "v2": {
+   "class": "E",
+   "where": "e-john-agrees; h-fee (held, waits on h-window-staging)"
+  },
+  "note": "the amount (a thousand ducats) is text"
+ },
+ {
+  "ref": "P19-P20",
+  "quote": "I will presently go learn their day of marriage. [Exeunt]",
+  "v2": {
+   "class": "E",
+   "where": "e-john-goes; h-john-learn-day (fulfilled by e-john-asks-day)"
+  }
+ },
+ {
+  "ref": "P21-P22",
+  "quote": "ACT 2, SCENE III. LEONATO'S orchard. [Enter BENEDICK]",
+  "v2": {
+   "class": "E",
+   "where": "e-boy-sent (place orchard)"
+  }
+ },
+ {
+  "ref": "P23-P29",
+  "quote": "Boy! ... In my chamber-window lies a book ... I am here already, sir. ... I would have thee hence, and here again.",
+  "v2": {
+   "class": "E",
+   "where": "e-boy-sent; person boy (unnamed)"
+  },
+  "note": "the book is never used again; no thing made for it"
+ },
+ {
+  "ref": "P30.1",
+  "quote": "I do much wonder that one man ... such a man is Claudio ... now is he turned orthography",
+  "v2": {
+   "class": "S",
+   "where": "e-benedick-soliloquy; the account of Claudio's changes is text"
+  },
+  "note": "a description of someone else's change, with no event for it"
+ },
+ {
+  "ref": "P30.2",
+  "quote": "May I be so converted ... till he have made an oyster of me, he shall never make me such a fool.",
+  "v2": {
+   "class": "E",
+   "where": "c-benedick-never-love; s-benedick-stance"
+  }
+ },
+ {
+  "ref": "P30.3",
+  "quote": "One woman is fair, yet I am well; ... Rich she shall be ... her hair shall be of what colour it please God.",
+  "v2": {
+   "class": "S",
+   "where": "e-benedick-soliloquy; the list of requirements is text"
+  },
+  "note": "a list of conditions on his love, never tested in the excerpt"
+ },
+ {
+  "ref": "P30.4",
+  "quote": "Ha! the prince and Monsieur Love! I will hide me in the arbour. [Withdraws]",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-hides (conceal, from four); s-benedick-hidden"
+  }
+ },
+ {
+  "ref": "P31-P32",
+  "quote": "[Withdraws] [Enter DON PEDRO, CLAUDIO, and LEONATO]",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-hides; e-pedro-spots (who)"
+  }
+ },
+ {
+  "ref": "P33-P36",
+  "quote": "Come, shall we hear this music? ... See you where Benedick hath hid himself? ... We'll fit the kid-fox with a pennyworth.",
+  "v2": {
+   "class": "E",
+   "where": "e-pedro-spots (manner within hearing, intent to be overheard); knowledge don-pedro/claudio know he is hidden"
+  },
+  "note": "the intent is a free-text field on the event"
+ },
+ {
+  "ref": "P37-P44",
+  "quote": "Come, Balthasar, we'll hear that song again ... Note, notes, forsooth, and nothing.",
+  "v2": {
+   "class": "S",
+   "where": "e-balthasar-sings (the reluctance and the pun on 'noting')"
+  },
+  "note": "the wordplay is text"
+ },
+ {
+  "ref": "P45-P48",
+  "quote": "[Air] ... [The Song] Sigh no more, ladies, sigh no more ...",
+  "v2": {
+   "class": "P",
+   "where": "e-balthasar-sings (an event; the lyric is not stored)"
+  },
+  "note": "the song's words are voice and not held"
+ },
+ {
+  "ref": "P46",
+  "quote": "Now, divine air! now is his soul ravished! ... a horn for my money",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-mocks-song"
+  }
+ },
+ {
+  "ref": "P49-P51",
+  "quote": "By my troth, a good song. And an ill singer, my lord. Ha, no, no, faith",
+  "v2": {
+   "class": "E",
+   "where": "e-pedro-arranges-serenade"
+  }
+ },
+ {
+  "ref": "P52",
+  "quote": "An he had been a dog that should have howled thus, they would have hanged him ... the night-raven",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-mocks-song"
+  }
+ },
+ {
+  "ref": "P53-P56",
+  "quote": "I pray thee, get us some excellent music; for to-morrow night we would have it at the Lady Hero's chamber-window. ... [Exit BALTHASAR]",
+  "v2": {
+   "class": "E",
+   "where": "e-pedro-arranges-serenade; h-serenade (open)"
+  }
+ },
+ {
+  "ref": "P57",
+  "quote": "Come hither, Leonato. What was it you told me of to-day, that your niece Beatrice was in love with Signior Benedick?",
+  "v2": {
+   "class": "E",
+   "where": "e-pedro-opens; b-leonato-told-pedro (backfilled, established in e-pedro-opens)"
+  },
+  "note": "'staged question' is intent, a free-text field"
+ },
+ {
+  "ref": "P58",
+  "quote": "O, ay: stalk on. stalk on; the fowl sits. I did never think that lady would have loved any man.",
+  "v2": {
+   "class": "E",
+   "where": "e-claudio-stalk (audience: Don Pedro); bears undermines on c-beatrice-loves-benedick"
+  },
+  "note": "no stage direction marks it as an aside; the encoder set the audience"
+ },
+ {
+  "ref": "P59",
+  "quote": "No, nor I neither; but most wonderful that she should so dote on Signior Benedick, whom she hath in all outward behaviors seemed ever to abhor.",
+  "v2": {
+   "class": "E",
+   "where": "e-leonato-asserts; c-beatrice-loves-benedick"
+  }
+ },
+ {
+  "ref": "P60",
+  "quote": "Is't possible? Sits the wind in that corner?",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-doubts; knowledge benedick doubts"
+  }
+ },
+ {
+  "ref": "P61",
+  "quote": "By my troth, my lord, I cannot tell what to think of it but that she loves him with an enraged affection",
+  "v2": {
+   "class": "E",
+   "where": "e-leonato-asserts"
+  }
+ },
+ {
+  "ref": "P62-P64",
+  "quote": "May be she doth but counterfeit. ... Faith, like enough. ... O God, counterfeit! There was never counterfeit of passion",
+  "v2": {
+   "class": "E",
+   "where": "e-pedro-counterfeit"
+  },
+  "note": "the devil's advocate turn is staged to make the claim credible; only the intent field says so"
+ },
+ {
+  "ref": "P65-P66",
+  "quote": "Why, what effects of passion shows she? ... Bait the hook well; this fish will bite.",
+  "v2": {
+   "class": "E",
+   "where": "e-claudio-bait (audience: Don Pedro); bears undermines"
+  }
+ },
+ {
+  "ref": "P67-P70",
+  "quote": "What effects, my lord? She will sit you, you heard my daughter tell you how. ... I would have sworn it had, my lord; especially against Benedick.",
+  "v2": {
+   "class": "E",
+   "where": "e-letter-story"
+  }
+ },
+ {
+  "ref": "P71",
+  "quote": "I should think this a gull, but that the white-bearded fellow speaks it: knavery cannot, sure, hide himself in such reverence.",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-doubts; knowledge benedick doubts, source leonato"
+  },
+  "note": "the reasoning for trusting the source is text; the stance carries the doubt"
+ },
+ {
+  "ref": "P72",
+  "quote": "He hath ta'en the infection: hold it up.",
+  "v2": {
+   "class": "E",
+   "where": "e-claudio-infection (audience: Don Pedro)"
+  }
+ },
+ {
+  "ref": "P73-P82",
+  "quote": "Hath she made her affection known to Benedick? ... she tore the letter into a thousand halfpence ... she will do a desperate outrage to herself",
+  "v2": {
+   "class": "E",
+   "where": "e-letter-story; c-letter-story (compound claim, one verdict); the letter itself is not a thing"
+  },
+  "note": "Hero is named as the source of every detail but is not there; nothing records whether she said any of it"
+ },
+ {
+  "ref": "P83-P90",
+  "quote": "It were good that Benedick knew of it by some other ... To what end? He would make but a sport of it ... Were it good, think you?",
+  "v2": {
+   "class": "E",
+   "where": "e-staged-debate"
+  }
+ },
+ {
+  "ref": "P91-P99",
+  "quote": "Hero thinks surely she will die ... He is a very proper man ... As Hector, I assure you ... Christian-like fear",
+  "v2": {
+   "class": "S",
+   "where": "e-praise-benedick; the irony is in the wording"
+  },
+  "note": "the praise is flattery with edges: whether each remark is meant is not stored"
+ },
+ {
+  "ref": "P100-P105",
+  "quote": "Shall we go seek Benedick, and tell him of her love? ... Never tell him ... let it cool the while",
+  "v2": {
+   "class": "E",
+   "where": "e-staged-debate"
+  }
+ },
+ {
+  "ref": "P106",
+  "quote": "Let there be the same net spread for her; and that must your daughter and her gentlewomen carry. The sport will be, when they hold one an opinion of another's dotage, and no such matter",
+  "v2": {
+   "class": "E",
+   "where": "e-pedro-sport (audience: Claudio and Leonato); h-net-for-beatrice; contradicts c-beatrice-loves-benedick, c-letter-story, c-benedick-loves-beatrice, c-no-trick"
+  },
+  "note": "the strongest bearing in the excerpt is one line, spoken so that Benedick does not hear"
+ },
+ {
+  "ref": "P107",
+  "quote": "[Exeunt DON PEDRO, CLAUDIO, and LEONATO]",
+  "v2": {
+   "class": "E",
+   "where": "e-party-leaves"
+  }
+ },
+ {
+  "ref": "P108.1",
+  "quote": "This can be no trick: the conference was sadly borne. They have the truth of this from Hero.",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-resolves; c-no-trick (false); knowledge benedick believes"
+  }
+ },
+ {
+  "ref": "P108.2",
+  "quote": "I did never think to marry ... I will be horribly in love with her ... the world must be peopled.",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-resolves; s-benedick-stance ends; h-benedick-woo; c-benedick-never-love undermined"
+  }
+ },
+ {
+  "ref": "P108.3",
+  "quote": "Here comes Beatrice. By this day! she's a fair lady: I do spy some marks of love in her.",
+  "v2": {
+   "class": "E",
+   "where": "r-benedick-sees-love (a misreading), e-beatrice-dinner-scorn"
+  }
+ },
+ {
+  "ref": "P109-P115",
+  "quote": "[Enter BEATRICE] Against my will I am sent to bid you come in to dinner ... a daw ... You have no stomach, signior: fare you well. [Exit]",
+  "v2": {
+   "class": "E",
+   "where": "e-beatrice-dinner-scorn; s-beatrice-stance; c-beatrice-scornful supported"
+  },
+  "note": "the double sense of 'pains' and 'stomach' is voice"
+ },
+ {
+  "ref": "P116-P118",
+  "quote": "ACT 3, SCENE I. LEONATO'S garden. ... run thee to the parlor; There shalt thou find my cousin Beatrice ... bid her steal into the pleached bower",
+  "v2": {
+   "class": "E",
+   "where": "e-hero-instructs-margaret (intent deceive); e-margaret-fetches (offscreen)"
+  },
+  "note": "'say that thou overheard'st us' is an instruction to lie, held as intent"
+ },
+ {
+  "ref": "P119-P120",
+  "quote": "I'll make her come, I warrant you, presently. [Exit]",
+  "v2": {
+   "class": "E",
+   "where": "e-margaret-fetches (offscreen, established in e-beatrice-enters-bower)"
+  }
+ },
+ {
+  "ref": "P121",
+  "quote": "Now, Ursula, when Beatrice doth come ... Benedick Is sick in love with Beatrice. Of this matter Is little Cupid's crafty arrow made",
+  "v2": {
+   "class": "E",
+   "where": "e-hero-plans (intent deceive)"
+  },
+  "note": "the Cupid figure is voice"
+ },
+ {
+  "ref": "P122-P125",
+  "quote": "[Enter BEATRICE, behind] ... like a lapwing, runs Close by the ground ... the false sweet bait that we lay for it.",
+  "v2": {
+   "class": "E",
+   "where": "e-beatrice-enters-bower; s-beatrice-hidden; e-hero-baits; knowledge hero/ursula know she is there"
+  },
+  "note": "the lapwing and the angling figures are voice"
+ },
+ {
+  "ref": "P126-P145",
+  "quote": "[Approaching the bower] No, truly, Ursula, she is too disdainful ... Benedick loves Beatrice so entirely ... They did entreat me to acquaint her of it ... honest slanders ... Why, every day, to-morrow.",
+  "v2": {
+   "class": "E",
+   "where": "e-hero-garden-talk; c-beatrice-scornful; c-benedick-loves-beatrice; c-entreaty"
+  },
+  "note": "'honest slanders' (P139) is a promise to defame Beatrice to Benedick: not held as an act"
+ },
+ {
+  "ref": "P146-P148",
+  "quote": "She's limed, I warrant you: we have caught her, madam. ... [Exeunt HERO and URSULA]",
+  "v2": {
+   "class": "E",
+   "where": "e-ursula-limed; c-beatrice-caught"
+  }
+ },
+ {
+  "ref": "P149-P150",
+  "quote": "What fire is in mine ears? ... Contempt, farewell! ... Benedick, love on; I will requite thee ... [Exit]",
+  "v2": {
+   "class": "E",
+   "where": "e-beatrice-soliloquy; r-beatrice-condemned; s-beatrice-stance ends; knowledge beatrice believes"
+  },
+  "note": "the rhymed couplets are voice; the 'wild heart' tamed is a figure"
+ },
+ {
+  "ref": "P151-P155",
+  "quote": "ACT 3, SCENE II. A room in LEONATO'S house ... I will only be bold with Benedick for his company; for ... his tongue is the clapper",
+  "v2": {
+   "class": "E",
+   "where": "e-pedro-stays; s-wedding"
+  },
+  "note": "the room is not tied to a time; see the order note in the README"
+ },
+ {
+  "ref": "P156-P157",
+  "quote": "Gallants, I am not as I have been. So say I methinks you are sadder.",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-admits; bears supports on c-benedick-in-love"
+  }
+ },
+ {
+  "ref": "P158-P167",
+  "quote": "I hope he be in love. ... I have the toothache. Draw it. Hang it! ... every one can master a grief but he that has it. Yet say I, he is in love.",
+  "v2": {
+   "class": "E",
+   "where": "e-claudio-says-love; e-benedick-toothache; e-benedick-conceals-cause (conceal, from three)"
+  },
+  "note": "the puns on hanging and drawing are voice"
+ },
+ {
+  "ref": "P168-P183",
+  "quote": "There is no appearance of fancy in him ... a' brushes his hat o' mornings ... the old ornament of his cheek hath already stuffed tennis-balls ... his jesting spirit ... now governed by stops ... one that knows him not",
+  "v2": {
+   "class": "E",
+   "where": "e-teasing-benedick (an observation of five signs); s-benedick-looks"
+  },
+  "note": "the five signs are text inside one event, not five"
+ },
+ {
+  "ref": "P182-P183",
+  "quote": "Yes, and his ill conditions; and, in despite of all, dies for him. She shall be buried with her face upwards.",
+  "v2": {
+   "class": "S",
+   "where": "e-teasing-benedick (the allusion to Beatrice)"
+  },
+  "note": "a hint to the audience of the staged scene: not a claim or event"
+ },
+ {
+  "ref": "P184-P185",
+  "quote": "Yet is this no charm for the toothache. Old signior, walk aside with me ... which these hobby-horses must not hear. [Exeunt BENEDICK and LEONATO]",
+  "v2": {
+   "class": "E",
+   "where": "e-benedick-walks-aside (conceal, from two); h-benedick-speaks (open)"
+  }
+ },
+ {
+  "ref": "P186-P187",
+  "quote": "For my life, to break with him about Beatrice. 'Tis even so. Hero and Margaret have by this played their parts with Beatrice; and then the two bears will not bite one another",
+  "v2": {
+   "class": "E",
+   "where": "e-claudio-says-played; c-hero-played-parts (likely: Hero in the garden, Margaret as courier); r-bears"
+  },
+  "note": "Ursula also played a part and is not named: a claim is not exhaustive"
+ },
+ {
+  "ref": "P188-P194",
+  "quote": "[Enter DON JOHN] My lord and brother, God save you! ... In private? ... yet Count Claudio may hear",
+  "v2": {
+   "class": "E",
+   "where": "e-john-enters"
+  }
+ },
+ {
+  "ref": "P195-P197",
+  "quote": "Means your lordship to be married to-morrow? ... You know he does. ... I know not that, when he knows what I know.",
+  "v2": {
+   "class": "E",
+   "where": "e-john-asks-day (fulfils h-john-learn-day); h-wedding"
+  },
+  "note": "he asks what he already knows; the irony is not stored"
+ },
+ {
+  "ref": "P198-P199",
+  "quote": "If there be any impediment, I pray you discover it. You may think I love you not: let that appear hereafter ... in dearness of heart hath holp to effect your ensuing marriage",
+  "v2": {
+   "class": "E",
+   "where": "e-john-feigns-zeal (conceal, from two); c-john-zeal (false by rival: c-john-spite is true)"
+  }
+ },
+ {
+  "ref": "P200-P205",
+  "quote": "Why, what's the matter? ... the lady is disloyal. ... Leonato's Hero, your Hero, every man's Hero ... you shall see her chamber-window entered, even the night before her wedding-day",
+  "v2": {
+   "class": "E",
+   "where": "e-john-accuses; c-hero-disloyal (false); h-john-shows"
+  },
+  "note": "P203 is given to Don Pedro by the transcription; sense and the next lines make it Don John's"
+ },
+ {
+  "ref": "P206-P210",
+  "quote": "May this be so? I will not think it. ... If I see any thing to-night why I should not marry her ... there will I shame her. ... I will join with thee to disgrace her.",
+  "v2": {
+   "class": "E",
+   "where": "e-claudio-doubts; e-claudio-vows; h-claudio-shame (waits on h-john-shows); knowledge claudio, don-pedro doubt"
+  }
+ },
+ {
+  "ref": "P208",
+  "quote": "If you dare not trust that you see, confess not that you know: if you will follow me, I will show you enough",
+  "v2": {
+   "class": "E",
+   "where": "e-john-accuses; h-john-shows"
+  }
+ },
+ {
+  "ref": "P211",
+  "quote": "I will disparage her no farther till you are my witnesses: bear it coldly but till midnight",
+  "v2": {
+   "class": "E",
+   "where": "e-john-sets-terms"
+  }
+ },
+ {
+  "ref": "P212-P214",
+  "quote": "O day untowardly turned! O mischief strangely thwarting! O plague right well prevented! so will you say when you have seen the sequel.",
+  "v2": {
+   "class": "E",
+   "where": "e-lament; r-john-irony (a reading held by the reader)"
+  },
+  "note": "the same line is sympathy to two hearers and triumph to the third, which the text says nowhere"
+ },
+ {
+  "ref": "P215",
+  "quote": "[Exeunt]",
+  "v2": {
+   "class": "E",
+   "where": "e-lament"
+  }
+ }
+]

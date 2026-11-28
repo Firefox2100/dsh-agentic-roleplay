@@ -1,0 +1,8 @@
+{
+  "id": "cannon",
+  "name": "The brass cannon",
+  "description": "Commands the bridge from the fort.",
+  "location": "fort",
+  "feature": "embrasure",
+  "unique": true
+}

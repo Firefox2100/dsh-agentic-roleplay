@@ -1,0 +1,85 @@
+{
+  "id": "claims-honglou-off-zh",
+  "language": "zh",
+  "turns": [
+    {
+      "say": "紫鹃姐姐，窗台上那盆兰花的叶子被人碰断了一片。你觉得是谁碰的：是猫，还是别的什么人？说出你怀疑的人。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "zijuan"
+        }
+      ]
+    },
+    {
+      "say": "宝玉，你听见紫鹃的看法了。你同意吗，还是你怀疑另有其人？",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我走到窗边，仔细看那片断叶和窗台上的痕迹。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我回过身，把看到的一五一十告诉黛玉。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "我把窗推开一些，让屋里透透气。",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 5
+    },
+    {
+      "type": "claim-recorded",
+      "text": "兰花",
+      "by": "zijuan"
+    },
+    {
+      "type": "claim-absent",
+      "text": "推开"
+    },
+    {
+      "type": "claim-status",
+      "text": "兰花",
+      "status": "proposed"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "id": "mathilde",
+  "name": "Mathilde Loisel",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A pretty, charming woman born into a family of clerks, married to a little clerk; she suffers for want of luxury.",
+  "start": {
+    "public_state": "At home in a shabby flat.",
+    "activity": "Doing nothing, dreaming of luxury.",
+    "inner_state": "Tortured by what she lacks.",
+    "location": "loisel-flat",
+    "variables": {
+      "francs": 0
+    }
+  },
+  "aliases": [
+    "Mme. Loisel"
+  ],
+  "gender": "female",
+  "pronouns": "she/her",
+  "personality": "Discontent, proud, dreamy; capable of sudden heroism once the debt is real.",
+  "background": "No dowry, no expectations; let herself be married to a clerk at the Ministry of Public Instruction. Has a rich convent friend she avoids.",
+  "appearance": "Pretty, graceful; later aged, with frowsy hair and red hands.",
+  "relationships": [
+    {
+      "to": "loisel",
+      "label": "husband",
+      "summary": "A little clerk who loves a plain life.",
+      "familiarity": 0.9,
+      "trust": 0.5,
+      "affinity": 0.4,
+      "tension": 0.4
+    },
+    {
+      "to": "forestier",
+      "label": "convent schoolmate, rich",
+      "familiarity": 0.7,
+      "trust": 0.6,
+      "affinity": 0.5,
+      "tension": 0.3
+    }
+  ]
+}

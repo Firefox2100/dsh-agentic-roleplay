@@ -1,0 +1,16 @@
+{
+  "id": "sergeant",
+  "name": "The sergeant",
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Directs the two privates; in civil life may have been a deputy sheriff.",
+  "start": {
+    "public_state": "At his post.",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "bridge-platform"
+  }
+}

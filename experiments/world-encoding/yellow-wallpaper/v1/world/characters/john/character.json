@@ -1,0 +1,28 @@
+{
+  "id": "john",
+  "name": "John",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A physician of high standing, practical to the extreme, who treats his wife with the rest cure.",
+  "start": {
+    "public_state": "Beside her.",
+    "activity": "Looking after her.",
+    "inner_state": "Anxious that she keep calm.",
+    "location": "nursery"
+  },
+  "gender": "male",
+  "pronouns": "he/him",
+  "personality": "Practical, loving in a managing way, impatient with fancy and faith.",
+  "relationships": [
+    {
+      "to": "narrator",
+      "label": "wife and patient",
+      "summary": "He loves her dearly and hates to have her sick; he does not believe she is sick.",
+      "familiarity": 0.9,
+      "trust": 0.7,
+      "affinity": 0.9,
+      "tension": 0.1
+    }
+  ]
+}

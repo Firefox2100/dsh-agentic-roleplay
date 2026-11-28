@@ -1,0 +1,14 @@
+{
+  "id": "sentinels",
+  "name": "The two sentinels",
+  "role": "npc",
+  "kind": "group",
+  "tier": "background",
+  "summary": "One at each end of the bridge, rifles at support.",
+  "start": {
+    "public_state": "At their posts.",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "south-approach"
+  }
+}

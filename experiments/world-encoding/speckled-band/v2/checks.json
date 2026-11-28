@@ -1,0 +1,247 @@
+{
+ "independent": true,
+ "note": "Written from the text before the derivation was run. This book was encoded directly in v3, so there is no v2 to compare with: the answer key is my reading of the story's own resolution.",
+ "expected_verdicts": {
+  "c-julia-fear": "unlikely",
+  "c-band-gypsies": "false",
+  "c-gypsies-involved": "unlikely",
+  "c-whistle-julia": "likely",
+  "c-whistle-last-night": "likely",
+  "c-room-sealed": "false",
+  "c-repairs-pretext": "likely",
+  "c-roylott-motive": "true",
+  "c-bruise-roylott": "likely",
+  "c-journey": "true",
+  "c-armitage-fancies": "unresolved",
+  "c-roylott-traced": "true",
+  "c-ventilator-expected": "true",
+  "c-roylott-installed": "likely",
+  "c-snake-method": "likely",
+  "c-snake-trained": "likely",
+  "c-clang-safe": "likely",
+  "c-band-snake": "true",
+  "c-roylott-killed-by-snake": "true",
+  "c-official-finding": "mixed",
+  "c-hideous-child": "unlikely",
+  "c-baboon": "likely",
+  "c-roylott-away": "true",
+  "c-clang-bar": "unlikely"
+ },
+ "verdict_at": [
+  [
+   "c-gypsies-involved",
+   "e-holmes-theory",
+   "unresolved"
+  ],
+  [
+   "c-gypsies-involved",
+   "e-holmes-tests-shutters",
+   "unlikely"
+  ],
+  [
+   "c-band-gypsies",
+   "e-holmes-tests-shutters",
+   "unlikely"
+  ],
+  [
+   "c-band-gypsies",
+   "e-band-is-snake",
+   "false"
+  ],
+  [
+   "c-room-sealed",
+   "e-helen-tells",
+   "unresolved"
+  ],
+  [
+   "c-room-sealed",
+   "e-ventilator-found",
+   "false"
+  ],
+  [
+   "c-hideous-child",
+   "e-baboon-dart",
+   "unresolved"
+  ],
+  [
+   "c-hideous-child",
+   "e-baboon-named",
+   "unlikely"
+  ],
+  [
+   "c-ventilator-expected",
+   "e-holmes-deduces-vent",
+   "unresolved"
+  ],
+  [
+   "c-ventilator-expected",
+   "e-ventilator-found",
+   "true"
+  ],
+  [
+   "c-snake-method",
+   "e-bed-reasoning",
+   "likely"
+  ],
+  [
+   "c-band-snake",
+   "e-roylott-found",
+   "unresolved"
+  ],
+  [
+   "c-band-snake",
+   "e-band-is-snake",
+   "true"
+  ],
+  [
+   "c-julia-fear",
+   "e-helen-tells",
+   "unresolved"
+  ],
+  [
+   "c-julia-fear",
+   "e-helen-asks-cause",
+   "unlikely"
+  ],
+  [
+   "c-snake-method",
+   "e-holmes-suspects-snake",
+   "likely"
+  ],
+  [
+   "c-clang-bar",
+   "e-holmes-theory",
+   "unresolved"
+  ],
+  [
+   "c-julia-fear",
+   "e-holmes-suspects-snake",
+   "unlikely"
+  ],
+  [
+   "c-julia-fear",
+   "e-holmes-theory",
+   "unresolved"
+  ]
+ ],
+ "held_outcomes": {
+  "h-helen-marry": "open",
+  "h-julia-wedding": "prevented",
+  "h-roylott-town": "fulfilled",
+  "h-helen-twelve": "fulfilled",
+  "h-holmes-commons": "fulfilled",
+  "h-helen-signal": "fulfilled",
+  "h-holmes-night": "fulfilled"
+ },
+ "simultaneous": [
+  [
+   "e-vigil",
+   "e-roylott-sends-snake",
+   true
+  ],
+  [
+   "e-roylott-in-town",
+   "e-holmes-doctors-commons",
+   true
+  ],
+  [
+   "e-holmes-doctors-commons",
+   "e-helen-returns",
+   true
+  ],
+  [
+   "e-whistle-watson",
+   "e-holmes-lashes",
+   true
+  ],
+  [
+   "e-roylott-cry",
+   "e-roylott-dies",
+   true
+  ],
+  [
+   "e-signal",
+   "e-roylott-light-out",
+   false
+  ],
+  [
+   "e-roylott-bursts-in",
+   "e-helen-returns",
+   false
+  ]
+ ],
+ "told_late": [
+  "e-holmes-deduces-vent",
+  "e-holmes-drops-gypsies",
+  "e-holmes-suspects-snake"
+ ],
+ "exempt_paragraphs": {
+  "P194": "page-heading artefact of the transcription"
+ },
+ "verdict_for": [
+  [
+   "c-gypsies-involved",
+   "holmes",
+   "e-lash-seen",
+   "unlikely"
+  ],
+  [
+   "c-julia-fear",
+   "roylott",
+   "e-roylott-found",
+   "unlikely"
+  ],
+  [
+   "c-clang-safe",
+   "helen",
+   "e-holmes-tests-shutters",
+   "unresolved"
+  ],
+  [
+   "c-band-snake",
+   "helen",
+   "e-holmes-tests-shutters",
+   "unresolved"
+  ],
+  [
+   "c-snake-method",
+   "helen",
+   "e-holmes-tests-shutters",
+   "unresolved"
+  ]
+ ],
+ "post_hoc_verdict_for": "verdict_for entries added after the rival adjustment was built for a person's own view (not blind): the reasoning was written down first (a rival that is likely undermines, one that is only unlikely never lifts), then pinned.",
+ "due_outcomes": [
+  [
+   "h-helen-twelve",
+   "e-helen-arrives",
+   "record",
+   "open"
+  ],
+  [
+   "h-helen-twelve",
+   "e-holmes-returns",
+   "record",
+   "overdue"
+  ],
+  [
+   "h-helen-twelve",
+   "e-holmes-returns",
+   "world",
+   "fulfilled"
+  ],
+  [
+   "h-helen-twelve",
+   "e-helen-returns",
+   "record",
+   "fulfilled"
+  ]
+ ],
+ "timeliness": [
+  [
+   "h-helen-twelve",
+   "on-time"
+  ]
+ ],
+ "post_hoc_due": "due_outcomes and timeliness were added after the deadline mechanism was built (round four); the expectations were written from the text first: Helen was to come by the twelve o'clock train and the events put her return at minute 720."
+}

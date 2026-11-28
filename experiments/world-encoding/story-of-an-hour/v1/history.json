@@ -1,0 +1,763 @@
+[
+  {
+    "clock": {
+      "at": "1894-04-10T07:00",
+      "note": "invented time: the text gives none; the accident precedes the news"
+    },
+    "edit": {
+      "turn": 1,
+      "events": [
+        {
+          "turn": 1,
+          "round": 1,
+          "text": "A railroad disaster occurred and killed passengers.",
+          "importance": 4,
+          "tags": [
+            "railroad",
+            "accident",
+            "disaster"
+          ],
+          "involves": [],
+          "perceived_by": [],
+          "location": "disaster-site"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1894-04-10T08:30",
+      "note": "invented time; Richards is in the newspaper office when the dispatch arrives"
+    },
+    "edit": {
+      "turn": 1,
+      "events": [
+        {
+          "turn": 1,
+          "round": 2,
+          "text": "Intelligence of the railroad disaster reached the newspaper office, with Brently Mallard's name leading the list of killed.",
+          "importance": 5,
+          "tags": [
+            "telegram",
+            "newspaper",
+            "list-of-killed"
+          ],
+          "involves": [
+            "richards",
+            "brently"
+          ],
+          "perceived_by": [
+            {
+              "character": "richards",
+              "mode": "witnessed",
+              "content": "He read the dispatch: Brently Mallard's name led the list of killed."
+            }
+          ],
+          "location": "newspaper-office",
+          "items": [
+            "list-of-killed"
+          ]
+        },
+        {
+          "turn": 1,
+          "round": 3,
+          "text": "Richards took the time to assure himself of the news by a second telegram, which confirmed that Brently Mallard was among the killed.",
+          "importance": 5,
+          "tags": [
+            "telegram",
+            "confirmation"
+          ],
+          "involves": [
+            "richards",
+            "brently"
+          ],
+          "perceived_by": [
+            {
+              "character": "richards",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "newspaper-office",
+          "items": [
+            "second-telegram"
+          ]
+        },
+        {
+          "turn": 1,
+          "round": 4,
+          "text": "Brently Mallard was far from the railroad disaster and did not know there had been one.",
+          "importance": 5,
+          "tags": [
+            "brently",
+            "absent",
+            "truth"
+          ],
+          "involves": [
+            "brently"
+          ],
+          "perceived_by": [],
+          "location": "away"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "richards",
+          "kind": "belief",
+          "text": "Brently Mallard is dead; the telegrams say so twice.",
+          "about": [
+            "brently"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        }
+      ],
+      "intents_added": [
+        {
+          "character": "richards",
+          "type": "agenda",
+          "name": "Bring the sad news to Mrs. Mallard before a less careful friend does",
+          "horizon": "immediate",
+          "priority": 0.9,
+          "urgency": 0.9,
+          "plan": [
+            "Go to the Mallard house at once."
+          ]
+        }
+      ],
+      "moves": [
+        {
+          "character": "richards",
+          "to": "house-downstairs"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1894-04-10T09:15",
+      "note": "invented time; 'an hour' is only in the title"
+    },
+    "edit": {
+      "turn": 2,
+      "events": [
+        {
+          "turn": 2,
+          "round": 1,
+          "text": "Josephine told Louise that Brently had been killed, in broken sentences and veiled hints that half concealed what they revealed, with Richards near her.",
+          "importance": 5,
+          "tags": [
+            "news",
+            "death",
+            "brently"
+          ],
+          "involves": [
+            "josephine",
+            "louise",
+            "richards",
+            "brently"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "told",
+              "content": "Her sister told her, in broken sentences and veiled hints, that her husband was dead."
+            },
+            {
+              "character": "josephine",
+              "mode": "witnessed"
+            },
+            {
+              "character": "richards",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        },
+        {
+          "turn": 2,
+          "round": 2,
+          "text": "Louise wept at once, with sudden wild abandonment, in her sister's arms.",
+          "importance": 4,
+          "tags": [
+            "grief",
+            "weeping"
+          ],
+          "involves": [
+            "louise",
+            "josephine"
+          ],
+          "perceived_by": [
+            {
+              "character": "josephine",
+              "mode": "witnessed"
+            },
+            {
+              "character": "richards",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        },
+        {
+          "turn": 2,
+          "round": 3,
+          "text": "When the storm of grief had spent itself, Louise went away to her room alone and would have no one follow her.",
+          "importance": 3,
+          "tags": [
+            "alone",
+            "withdrawal"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "josephine",
+              "mode": "witnessed"
+            },
+            {
+              "character": "richards",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "louise",
+          "kind": "belief",
+          "text": "My husband Brently is dead, killed in the railroad disaster.",
+          "about": [
+            "brently"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        },
+        {
+          "character": "josephine",
+          "kind": "belief",
+          "text": "Brently is dead; Louise is shattered and may make herself ill.",
+          "about": [
+            "brently",
+            "louise"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        }
+      ],
+      "moves": [
+        {
+          "character": "louise",
+          "to": "louise-room"
+        }
+      ],
+      "states": [
+        {
+          "character": "louise",
+          "public_state": "Alone in her room, grieving.",
+          "activity": "Withdrawing to her room.",
+          "inner_state": "Grief and exhaustion."
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1894-04-10T09:25",
+      "note": "invented time"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [
+        {
+          "turn": 3,
+          "round": 1,
+          "text": "Louise sank into the armchair facing the open window, pressed down by exhaustion.",
+          "importance": 2,
+          "tags": [
+            "armchair",
+            "exhaustion"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [],
+          "location": "louise-room"
+        },
+        {
+          "turn": 3,
+          "round": 2,
+          "text": "From the window Louise saw the tops of trees aquiver with new spring life and patches of blue sky among the piled clouds in the west.",
+          "importance": 2,
+          "tags": [
+            "spring",
+            "window",
+            "sky"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "louise-room"
+        },
+        {
+          "turn": 3,
+          "round": 3,
+          "text": "A peddler cried his wares in the street, a distant song reached Louise faintly, and sparrows twittered in the eaves.",
+          "importance": 2,
+          "tags": [
+            "spring",
+            "sound"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "heard"
+            }
+          ],
+          "location": "louise-room"
+        },
+        {
+          "turn": 3,
+          "round": 4,
+          "text": "Louise sat motionless with her head thrown back, sobbing now and then, staring at a patch of blue sky with a dull, unthinking gaze.",
+          "importance": 2,
+          "tags": [
+            "stillness",
+            "stare"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [],
+          "location": "louise-room"
+        },
+        {
+          "turn": 3,
+          "round": 5,
+          "text": "Louise felt something approaching, tried to beat it back with her will, then abandoned herself and whispered over and over: free, free, free.",
+          "importance": 5,
+          "tags": [
+            "freedom",
+            "turning-point"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "inferred",
+              "content": "She recognised the thing as a monstrous, exalted joy of freedom."
+            }
+          ],
+          "location": "louise-room"
+        },
+        {
+          "turn": 3,
+          "round": 6,
+          "text": "Louise saw beyond the funeral a long procession of years that would belong to her absolutely, and welcomed them with open arms.",
+          "importance": 5,
+          "tags": [
+            "freedom",
+            "future",
+            "imagined"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "inferred"
+            }
+          ],
+          "location": "louise-room"
+        },
+        {
+          "turn": 3,
+          "round": 7,
+          "text": "Louise whispered 'Free! Body and soul free!'",
+          "importance": 4,
+          "tags": [
+            "freedom",
+            "whisper"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [],
+          "location": "louise-room"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "louise",
+          "kind": "belief",
+          "text": "I will weep when I see his kind hands folded in death, but beyond that the coming years will be mine alone; no one will bend my will.",
+          "about": [
+            "brently"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        },
+        {
+          "character": "louise",
+          "kind": "relationship",
+          "text": "I loved him sometimes; often I did not. Love counts for nothing against self-assertion.",
+          "about": [
+            "brently"
+          ],
+          "importance": 4,
+          "confidence": "sure"
+        }
+      ],
+      "states": [
+        {
+          "character": "louise",
+          "public_state": "Sitting motionless in the armchair, staring at the sky.",
+          "activity": "Sitting at the window.",
+          "inner_state": "A fierce, exalted joy of freedom she does not dare name."
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1894-04-10T09:40",
+      "note": "invented time"
+    },
+    "edit": {
+      "turn": 4,
+      "events": [
+        {
+          "turn": 4,
+          "round": 1,
+          "text": "Josephine knelt at the closed door of Louise's room, lips to the keyhole, imploring her to open it for fear she would make herself ill; Louise answered 'Go away. I am not making myself ill.'",
+          "importance": 3,
+          "tags": [
+            "door",
+            "plea"
+          ],
+          "involves": [
+            "josephine",
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "josephine",
+              "mode": "heard",
+              "content": "Louise says she is not making herself ill: she must be grief-stricken and is shutting herself in.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "louise",
+              "mode": "heard"
+            }
+          ],
+          "location": "landing"
+        },
+        {
+          "turn": 4,
+          "round": 2,
+          "text": "Louise breathed a quick prayer that life might be long, though only the day before she had thought with a shudder that it might be.",
+          "importance": 4,
+          "tags": [
+            "prayer",
+            "life"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "inferred"
+            }
+          ],
+          "location": "louise-room"
+        }
+      ],
+      "moves": [
+        {
+          "character": "josephine",
+          "to": "landing"
+        }
+      ],
+      "states": [
+        {
+          "character": "louise",
+          "public_state": "Behind her closed door.",
+          "activity": "Drinking in the air at the open window.",
+          "inner_state": "Joy at the days ahead: spring days, summer days, all her own."
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1894-04-10T09:55",
+      "note": "invented time"
+    },
+    "edit": {
+      "turn": 5,
+      "events": [
+        {
+          "turn": 5,
+          "round": 1,
+          "text": "Louise opened the door to her sister's pleas, with a feverish triumph in her eyes; she and Josephine went down the stairs, where Richards stood waiting.",
+          "importance": 3,
+          "tags": [
+            "door",
+            "stairs"
+          ],
+          "involves": [
+            "louise",
+            "josephine",
+            "richards"
+          ],
+          "perceived_by": [
+            {
+              "character": "josephine",
+              "mode": "witnessed"
+            },
+            {
+              "character": "richards",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        }
+      ],
+      "moves": [
+        {
+          "character": "louise",
+          "to": "house-downstairs"
+        },
+        {
+          "character": "josephine",
+          "to": "house-downstairs"
+        }
+      ],
+      "states": [
+        {
+          "character": "louise",
+          "public_state": "Carrying herself like a goddess of victory, her eyes feverishly triumphant.",
+          "activity": "Going downstairs with her sister."
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1894-04-10T10:10",
+      "note": "invented time"
+    },
+    "edit": {
+      "turn": 6,
+      "events": [
+        {
+          "turn": 6,
+          "round": 1,
+          "text": "Brently Mallard entered by the front door with a latchkey, travel-stained, carrying his grip-sack and umbrella, having been far from the accident and not knowing there had been one.",
+          "importance": 5,
+          "tags": [
+            "return",
+            "husband"
+          ],
+          "involves": [
+            "brently",
+            "louise",
+            "josephine",
+            "richards"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "witnessed"
+            },
+            {
+              "character": "josephine",
+              "mode": "witnessed"
+            },
+            {
+              "character": "richards",
+              "mode": "witnessed"
+            },
+            {
+              "character": "brently",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs",
+          "items": [
+            "latchkey",
+            "grip-sack",
+            "umbrella"
+          ]
+        },
+        {
+          "turn": 6,
+          "round": 2,
+          "text": "Josephine gave a piercing cry and Richards moved quickly to screen Brently from his wife's view; Brently stood amazed.",
+          "importance": 4,
+          "tags": [
+            "cry",
+            "screening"
+          ],
+          "involves": [
+            "josephine",
+            "richards",
+            "brently"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "witnessed"
+            },
+            {
+              "character": "brently",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        },
+        {
+          "turn": 6,
+          "round": 3,
+          "text": "Louise saw her husband alive; Richards was too late to screen her from the sight.",
+          "importance": 5,
+          "tags": [
+            "sight",
+            "implied"
+          ],
+          "involves": [
+            "louise",
+            "brently"
+          ],
+          "perceived_by": [
+            {
+              "character": "louise",
+              "mode": "witnessed"
+            },
+            {
+              "character": "brently",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        }
+      ],
+      "moves": [
+        {
+          "character": "brently",
+          "to": "house-downstairs"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "louise",
+          "kind": "belief",
+          "text": "Brently is alive.",
+          "about": [
+            "brently"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1894-04-10T10:20",
+      "note": "invented time; the death itself is not narrated"
+    },
+    "edit": {
+      "turn": 7,
+      "events": [
+        {
+          "turn": 7,
+          "round": 1,
+          "text": "Louise died.",
+          "importance": 5,
+          "tags": [
+            "death",
+            "heart"
+          ],
+          "involves": [
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "josephine",
+              "mode": "witnessed"
+            },
+            {
+              "character": "richards",
+              "mode": "witnessed"
+            },
+            {
+              "character": "brently",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        },
+        {
+          "turn": 7,
+          "round": 2,
+          "text": "When the doctors came they said Louise had died of heart disease, of the joy that kills.",
+          "importance": 5,
+          "tags": [
+            "doctors",
+            "diagnosis",
+            "interpretation"
+          ],
+          "involves": [
+            "doctors",
+            "louise"
+          ],
+          "perceived_by": [
+            {
+              "character": "doctors",
+              "mode": "inferred",
+              "content": "Heart disease: the joy that kills.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "josephine",
+              "mode": "heard"
+            },
+            {
+              "character": "richards",
+              "mode": "heard"
+            },
+            {
+              "character": "brently",
+              "mode": "heard"
+            }
+          ],
+          "location": "house-downstairs"
+        }
+      ],
+      "states": [
+        {
+          "character": "louise",
+          "public_state": "Dead.",
+          "activity": "-",
+          "inner_state": "-"
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,35 @@
+{
+  "id": "flat",
+  "name": "The flat",
+  "parent": "building",
+  "description": "A furnished flat at $8 per week, shabby, with a worn red carpet and a gas light; the window looks out over a grey backyard.",
+  "features": [
+    {
+      "id": "couch",
+      "name": "Shabby couch",
+      "description": "Where Della flops to cry."
+    },
+    {
+      "id": "pier-glass",
+      "name": "Pier-glass",
+      "description": "A narrow glass between the windows."
+    },
+    {
+      "id": "window",
+      "name": "Window",
+      "description": "Looks onto a grey cat on a grey fence in a grey backyard."
+    },
+    {
+      "id": "table",
+      "name": "Table near the door",
+      "description": "Where Della sits to wait."
+    }
+  ],
+  "exits": [
+    {
+      "to": "vestibule",
+      "description": "the stairs down",
+      "travel_time_seconds": 30
+    }
+  ]
+}

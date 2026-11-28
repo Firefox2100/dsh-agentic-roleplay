@@ -1,0 +1,262 @@
+[
+ {
+  "id": "q01",
+  "question": "What actually happened to Farquhar when the plank tilted?",
+  "answer": "He fell through the bridge, the rope broke his neck and he died.",
+  "needs": [
+   "the real event behind a vision"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "turn 3 r5 and r10"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e12, e13, e14; fact f-dead"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e12, e13, e14 are actual; e13 the death"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "Which of the events of section III really occurred?",
+  "answer": "None; it is a vision, apart from the fall and the neck's breaking.",
+  "needs": [
+   "events kept out of the actual story"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "turn 3 r6..r9 are events with perception accuracy 'mistaken', but a query for events returns them like any others"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "events with frame farquhar-vision"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "events with frame farquhar-vision are not actual"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "How long did the escape last, for him and in fact?",
+  "answer": "A day and a night for him; an instant in fact.",
+  "needs": [
+   "felt time against real time"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "no field; the clock sidecar would say the same instant for both"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "frame felt_duration / real_duration; time.spans"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "frame felt_duration / real_duration; time.spans"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "Was the rider a Confederate soldier, and when does the reader learn?",
+  "answer": "No, a Federal scout; at the last sentence of the scene.",
+  "needs": [
+   "a hidden identity and when it is revealed"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "event turn 1 r5 and lore the-trap hold the truth; nothing says when the reader learns it"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "fact f-scout-federal; telling s05 reveals; knowledge reader unaware until s05"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-scout-confederate derived false by e06; knowledge reader unaware of e06 until para:"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "What did Farquhar believe about the rider, and was he right?",
+  "answer": "That he was a Confederate soldier; wrong.",
+  "needs": [
+   "a false belief linked to its subject"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "a mistaken perception of the rider; the belief row cannot say false"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge farquhar believes f-scout-confederate accuracy false"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge farquhar believes c-scout-confederate; verdict derived false"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "Did Farquhar ever try to burn the bridge?",
+  "answer": "Presumably yes; it is never narrated.",
+  "needs": [
+   "an implied event"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "invented events tagged implied; no field says so"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e07, e08 status implied; f-attempt"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e07, e08 basis implied; e08 is the attempt"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "Was there really driftwood against the pier?",
+  "answer": "Unknown: only the rider says so.",
+  "needs": [
+   "unknown truth of a claim"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "item driftwood exists at the pier as fact"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "fact f-driftwood truth unknown; e04 claim"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-driftwood has nothing bearing on it: derived unresolved; e04 claims it"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "Why did the ticking of Farquhar's watch sound slow and loud?",
+  "answer": "His sense of time was bending in his last minutes; it was his watch.",
+  "needs": [
+   "a distorted perception with its true source"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "perception accuracy partial; the watch item"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e11 distortion; things watch"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e11 distortion; things watch"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "Which parts of the vision come from real sensations?",
+  "answer": "The throat's pain (the noose), the swollen neck and the final blow (the neck breaking).",
+  "needs": [
+   "links from a vision to real events"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "v01, v03, v09, v10 grounded_in e12, e13"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "v01, v03, v09, v10 grounded_in e12, e13"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "When does the story tell us the condemned man's name?",
+  "answer": "In section II, at P09.",
+  "needs": [
+   "what the telling withholds"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "telling s01 (man unnamed), s04"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "first paragraph of an event naming him in who; whether the text names or only shows him is not stored"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "Which section is earlier in time than which?",
+  "answer": "Section II (the scout's visit) is earlier than section I; section III is simultaneous with the drop.",
+  "needs": [
+   "telling order against event order"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "chronological history only"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "telling s04, s05 order analepsis; frame starts_at/ends_at"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "event src paragraph order against when.seq; frame starts_at/ends_at"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "What was the commandant's order, and who knew of it?",
+  "answer": "Any civilian interfering with the railroad is to be hanged; Farquhar by the rider, the Federals by the order.",
+  "needs": [
+   "a rule that characters know about"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "lore commandants-order scope everyone"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "fact f-order; knowledge farquhar knows"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e02 (the order); knowledge farquhar knows e02"
+  }
+ },
+ {
+  "id": "q13",
+  "question": "Who knew the rider's real identity?",
+  "answer": "The rider (and, by implication, those he served).",
+  "needs": [
+   "who knew what"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "lore the-trap lists scout and commandant: the commandant is added by the encoder"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge scout knows f-trap (implied)"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge scout knows claim c-trap; reader reading r-bait"
+  }
+ }
+]

@@ -1,3 +1,4 @@
+import type { EditorClaims } from '../../shared/claims.ts'
 import type { PlaytestRequest, PlaytestStatus } from '../../shared/playtest.ts'
 import type { StoryStatistics } from '../../shared/statistics.ts'
 import type { StoryComparison } from '../../shared/compare.ts'
@@ -213,6 +214,12 @@ export interface ApiDeps {
     editFaction(id: string, key: string, edit: FactionEdit): WorldState
     editLore(id: string, key: string, edit: LoreEdit): WorldState
     editPlots(id: string, edit: PlotsEdit): WorldState
+    /** What people assert in the story and what the events say of each, for the person who settles the proposed ones. @throws {SessionNotFoundError} */
+    claims(id: string): EditorClaims
+    /** @throws {SessionNotFoundError} @throws {ClaimNotFoundError} */
+    setClaimStatus(id: string, claim: number, status: 'proposed' | 'confirmed'): EditorClaims
+    /** @throws {SessionNotFoundError} @throws {ClaimNotFoundError} */
+    removeClaim(id: string, claim: number): EditorClaims
     editRelation(id: string, edit: RelationChange): WorldState
     editNarrationVoice(id: string, voice: string): WorldState
     generatePortrait(id: string, key: string): Promise<WorldState>

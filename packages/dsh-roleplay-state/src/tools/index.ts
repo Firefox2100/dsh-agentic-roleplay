@@ -3,6 +3,7 @@ import { IMPORTANCE_MAX, IMPORTANCE_MIN, MEMORY_KINDS, PERCEPTION_MODES, ACCURAC
 import { NotFoundError } from '../errors.ts'
 import type { MemoryPolicy } from '../memory/recall.ts'
 import { characterKey, locationKey, parseRecordsEdit, recordsEditSchema } from '../records/edit.ts'
+import { knowsEvent } from '../records/claims.ts'
 import { lintWorld } from '../records/lint.ts'
 import { describeHolder } from '../records/read.ts'
 import { agendaAt } from '../records/agenda.ts'
@@ -13,7 +14,7 @@ import type { Session } from '../plugin.ts'
 
 /** The roleplay session an agent works in, as the plugin that runs the agent knows it. */
 export interface AgentLink {
-  session: Pick<Session, 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock' | 'dice'>
+  session: Pick<Session, 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'records' | 'recallRanked' | 'searchEvents' | 'edit' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'items' | 'slots' | 'variables' | 'intents' | 'routines' | 'engagements' | 'clock' | 'dice' | 'claims' | 'concealment' | 'groups'>
   /** The time zone the story's times are written and read in; UTC when not given. */
   timeZone?: string
   /** The turn the agent is playing, which is what the age of a memory is counted from. */
@@ -426,6 +427,35 @@ export function createTools(resolve: AgentResolver, options: {
         return link(resolve, exec.agent).session.records().open_threads
       },
     }),
+    defineTool({
+      name: 'list_claims',
+      description: 'List what people assert, believe or suspect in the story, with the events that bear on each and what they say of it so far (true, false, likely, unlikely, open, disputed, unresolved or mixed). A proposed claim is a keeper\'s suggestion that nobody has settled: do not treat its verdict as fact. Claims and their verdicts are for the game master, never to be told to a character as settled.',
+      parameters: { status: { type: 'string', enum: ['proposed', 'confirmed'], description: 'Only claims in this state.' } },
+      output: { schema: { type: 'array', items: { type: 'json' } }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const claims = link(resolve, exec.agent).session.records({ only: ['claims'] }).claims
+        return (args.status === undefined ? claims : claims.filter(claim => claim.status === args.status)) as never
+      },
+    }),
+    defineTool({
+      name: 'who_knows',
+      description: 'Who took an event in: each character as knows, possibly (part of a group that took it in, with nothing saying they did) or no, and who it was kept from.',
+      parameters: { event: { type: 'integer', required: true, description: 'The number of an event.' } },
+      output: { schema: { type: 'object', additionalProperties: false, properties: { event: int, characters: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { character: str, knows: str } } }, hidden_from: strs } }, render: pretty },
+      isConcurrencySafe: () => true,
+      async execute(args, exec) {
+        const { session } = link(resolve, exec.agent)
+        if (session.events.get(args.event) === undefined) throw new Error(`there is no event ${args.event}`)
+        const people = session.characters.list()
+        const key = (id: number): string => { const found = people.find(person => person.id === id); return found === undefined ? String(id) : characterKey(found) }
+        return {
+          event: args.event,
+          characters: people.map(person => ({ character: characterKey(person), knows: knowsEvent(session, person.id, args.event) })),
+          hidden_from: session.concealment.hiddenFrom(args.event).map(key),
+        } as never
+      },
+    }),
   ]
   const authoringReads: ToolDefinition[] = options.authoring !== true ? [] : [
     defineTool({
@@ -480,18 +510,28 @@ export function createTools(resolve: AgentResolver, options: {
       name: options.authoring === true ? 'edit_world' : 'edit_records',
       description: options.authoring === true
         ? 'Make up characters and places and fit them into the world, in one call, together or not at all: new characters (with their state and where they are), new places with their features and ways, new ways between places, relationship profiles between characters (one per direction), changes to places and ways, and corrections. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.'
-        : 'Change the story\'s records in one call, together or not at all: character states, new events (with where they happened and who took them in), corrections and retractions of draft events, revisions of what characters took in, changes to places and the ways between them, how characters stand towards each other, beliefs, and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
+        : 'Change the story\'s records in one call, together or not at all: character states, new events (with where they happened and who took them in), corrections and retractions of draft events, revisions of what characters took in, changes to places and the ways between them, how characters stand towards each other, beliefs, claims with the events that bear on them (always proposed), and story threads. If anything in it is refused, nothing is written and the reasons are returned: correct them and call again.',
       parameters: editSchema as unknown as Record<string, unknown>,
       output: {
-        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } }, character_keys: { type: 'array', items: { type: 'string' } }, place_keys: { type: 'array', items: { type: 'string' } }, item_keys: { type: 'array', items: { type: 'string' } }, variable_keys: { type: 'array', items: { type: 'string' } }, trigger_keys: { type: 'array', items: { type: 'string' } } }, required: ['writes', 'event_ids', 'belief_ids', 'character_keys', 'place_keys', 'item_keys', 'variable_keys', 'trigger_keys'], additionalProperties: false },
+        schema: { type: 'object', properties: { writes: { type: 'integer' }, event_ids: { type: 'array', items: { type: 'integer' } }, belief_ids: { type: 'array', items: { type: 'integer' } }, claim_ids: { type: 'array', items: { type: 'integer' } }, character_keys: { type: 'array', items: { type: 'string' } }, place_keys: { type: 'array', items: { type: 'string' } }, item_keys: { type: 'array', items: { type: 'string' } }, variable_keys: { type: 'array', items: { type: 'string' } }, trigger_keys: { type: 'array', items: { type: 'string' } } }, required: ['writes', 'event_ids', 'belief_ids', 'claim_ids', 'character_keys', 'place_keys', 'item_keys', 'variable_keys', 'trigger_keys'], additionalProperties: false },
         render: (_args, value) => summary(options.authoring === true ? 'World changed' : 'Records changed')(_args, value as { writes: number }),
       },
       async execute(args, exec) {
         const { session, timeZone } = link(resolve, exec.agent)
         const result = session.edit({ ...parseRecordsEdit(args), ...(timeZone === undefined ? {} : { timeZone }) })
-        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [], item_keys: result.itemKeys ?? [], variable_keys: result.variableKeys ?? [], trigger_keys: result.triggerKeys ?? [] }
+        return { writes: result.writes, event_ids: result.eventIds, belief_ids: result.beliefIds, claim_ids: result.claimIds ?? [], character_keys: result.characterKeys ?? [], place_keys: result.placeKeys ?? [], item_keys: result.itemKeys ?? [], variable_keys: result.variableKeys ?? [], trigger_keys: result.triggerKeys ?? [] }
       },
     },
+    ...(options.authoring === true ? [] : [defineTool({
+      name: 'confirm_claim',
+      description: 'Settle a proposed claim: its wording and the events linked to it are right, so its standing may be relied on. Check it with list_claims first; a claim that is wrong is retracted with edit_records, not confirmed.',
+      parameters: { id: { type: 'integer', required: true, description: 'The id list_claims gives.' }, status: { type: 'string', enum: ['confirmed', 'proposed'], description: 'confirmed by default; proposed puts it back for review.' } },
+      output: { schema: done, render: summary('Claim settled') },
+      async execute(args, exec) {
+        const { session, turn } = link(resolve, exec.agent)
+        return written(session.edit({ turn, claimStatuses: [{ claim: args.id, status: args.status ?? 'confirmed' }] }))
+      },
+    })]),
     ...(options.authoring !== true ? [] : [defineTool({
       name: 'resolve_consolidation',
       description: 'Say that something made up in play has been fitted into the world, and how: what you connected it to, or why nothing more is needed. Only after you have done it.',

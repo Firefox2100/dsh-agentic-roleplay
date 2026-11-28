@@ -1,0 +1,434 @@
+[
+  {
+    "clock": {
+      "at": "1913-10-14T09:00",
+      "note": "invented day and hour; the text says only 'October', 'afternoon', and the tale's 'three years ago to a day'"
+    },
+    "edit": {
+      "turn": 1,
+      "events": [
+        {
+          "turn": 1,
+          "round": 1,
+          "text": "Mr. Sappleton and his wife's two young brothers, with a brown spaniel, went out through the French window to shoot snipe in the marshes.",
+          "importance": 2,
+          "tags": [
+            "shooting",
+            "offstage",
+            "reported-later"
+          ],
+          "involves": [
+            "mr-sappleton",
+            "ronnie",
+            "brother",
+            "spaniel"
+          ],
+          "perceived_by": [
+            {
+              "character": "mr-sappleton",
+              "mode": "witnessed"
+            },
+            {
+              "character": "ronnie",
+              "mode": "witnessed"
+            },
+            {
+              "character": "brother",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "marshes",
+          "items": [
+            "gun-husband",
+            "gun-ronnie",
+            "gun-brother"
+          ]
+        }
+      ],
+      "moves": [
+        {
+          "character": "mr-sappleton",
+          "to": "marshes"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1913-10-14T15:00",
+      "note": "invented afternoon"
+    },
+    "edit": {
+      "turn": 2,
+      "events": [
+        {
+          "turn": 2,
+          "round": 1,
+          "text": "Framton Nuttel called on Mrs. Sappleton with a letter of introduction from his sister, and was received by her niece Vera, who said her aunt would be down presently.",
+          "importance": 2,
+          "tags": [
+            "call",
+            "introduction"
+          ],
+          "involves": [
+            "framton",
+            "vera"
+          ],
+          "perceived_by": [
+            {
+              "character": "framton",
+              "mode": "witnessed"
+            },
+            {
+              "character": "vera",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sitting-room",
+          "items": [
+            "letter"
+          ]
+        },
+        {
+          "turn": 2,
+          "round": 2,
+          "text": "Framton told Vera he knew hardly a soul in the district, that his sister had stayed at the rectory four years before and given him letters of introduction, and that he knew only Mrs. Sappleton's name and address.",
+          "importance": 3,
+          "tags": [
+            "knowledge",
+            "ignorance"
+          ],
+          "involves": [
+            "framton",
+            "vera"
+          ],
+          "perceived_by": [
+            {
+              "character": "vera",
+              "mode": "heard",
+              "content": "He knows nothing about my aunt: he does not know her husband, her family or her history."
+            },
+            {
+              "character": "framton",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sitting-room"
+        },
+        {
+          "turn": 2,
+          "round": 3,
+          "text": "Vera told Framton an invented story: three years ago to the day, her aunt's husband and two young brothers went out through the open window to shoot, were swallowed by a bog, and were never found; her aunt still waits for them and keeps the window open every evening till dusk; Vera herself sometimes feels they will walk in.",
+          "importance": 5,
+          "tags": [
+            "fabrication",
+            "ghost-story",
+            "hoax"
+          ],
+          "involves": [
+            "vera",
+            "framton"
+          ],
+          "perceived_by": [
+            {
+              "character": "framton",
+              "mode": "told",
+              "content": "Mrs. Sappleton's husband and brothers drowned in a bog three years ago and she still waits for them at the open window; the window is open for the dead.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "vera",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sitting-room"
+        }
+      ],
+      "moves": [
+        {
+          "character": "framton",
+          "to": "sitting-room"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "framton",
+          "kind": "belief",
+          "text": "Mrs. Sappleton lost her husband and brothers in a bog three years ago and grieves by keeping the window open.",
+          "about": [
+            "mrs-sappleton"
+          ],
+          "importance": 4,
+          "confidence": "sure"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1913-10-14T16:30",
+      "note": "invented; 'deepening twilight' comes after tea-time"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [
+        {
+          "turn": 3,
+          "round": 1,
+          "text": "Mrs. Sappleton bustled in with apologies; she hoped Framton did not mind the open window, since her husband and brothers would be home directly from the marshes and always came in that way.",
+          "importance": 4,
+          "tags": [
+            "window",
+            "expectation"
+          ],
+          "involves": [
+            "mrs-sappleton",
+            "framton",
+            "vera"
+          ],
+          "perceived_by": [
+            {
+              "character": "framton",
+              "mode": "heard",
+              "content": "Mrs. Sappleton believes her dead husband and brothers will walk in at the window: the story is true and she is deranged.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "vera",
+              "mode": "heard"
+            }
+          ],
+          "location": "sitting-room"
+        },
+        {
+          "turn": 3,
+          "round": 2,
+          "text": "Mrs. Sappleton chattered cheerfully about shooting while her eyes strayed to the window; Framton found it horrible, tried to change the subject, and told her at length about his doctors' orders for rest and diet, to which she gave little attention.",
+          "importance": 3,
+          "tags": [
+            "conversation",
+            "inattention"
+          ],
+          "involves": [
+            "mrs-sappleton",
+            "framton"
+          ],
+          "perceived_by": [
+            {
+              "character": "framton",
+              "mode": "witnessed",
+              "content": "His hostess is obsessed and hardly hears him.",
+              "accuracy": "partial"
+            },
+            {
+              "character": "mrs-sappleton",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sitting-room"
+        },
+        {
+          "turn": 3,
+          "round": 3,
+          "text": "In the deepening twilight Mrs. Sappleton cried 'Here they are at last!' as her husband and brothers and the spaniel crossed the lawn with guns, the husband with a white coat on his shoulders, and a hoarse young voice sang 'I said, Bertie, why do you bound?'; Vera stared out of the window with a look of dazed horror.",
+          "importance": 5,
+          "tags": [
+            "return",
+            "twilight",
+            "song"
+          ],
+          "involves": [
+            "mr-sappleton",
+            "ronnie",
+            "brother",
+            "spaniel",
+            "mrs-sappleton",
+            "vera"
+          ],
+          "perceived_by": [
+            {
+              "character": "framton",
+              "mode": "witnessed",
+              "content": "Three ghosts with guns, a white coat and a dog, silently walking up from the dusk, singing the song the girl said they sang.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "mrs-sappleton",
+              "mode": "witnessed"
+            },
+            {
+              "character": "vera",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "lawn",
+          "items": [
+            "white-coat"
+          ]
+        },
+        {
+          "turn": 3,
+          "round": 4,
+          "text": "Framton grabbed his stick and hat and fled through the hall, down the drive and out of the gate, nearly colliding with a cyclist on the road.",
+          "importance": 4,
+          "tags": [
+            "flight",
+            "panic"
+          ],
+          "involves": [
+            "framton",
+            "cyclist"
+          ],
+          "perceived_by": [
+            {
+              "character": "cyclist",
+              "mode": "witnessed"
+            },
+            {
+              "character": "mr-sappleton",
+              "mode": "witnessed"
+            },
+            {
+              "character": "mrs-sappleton",
+              "mode": "witnessed"
+            },
+            {
+              "character": "vera",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "road",
+          "items": [
+            "stick",
+            "hat"
+          ]
+        }
+      ],
+      "moves": [
+        {
+          "character": "mrs-sappleton",
+          "to": "sitting-room"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1913-10-14T16:40",
+      "note": "the same turn: the men enter and Framton leaves"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [
+        {
+          "turn": 3,
+          "round": 5,
+          "text": "Mr. Sappleton, Ronnie and the other brother came in through the window, fairly muddy, and Mr. Sappleton asked who had bolted out as they came up.",
+          "importance": 3,
+          "tags": [
+            "return",
+            "question"
+          ],
+          "involves": [
+            "mr-sappleton",
+            "ronnie",
+            "brother",
+            "mrs-sappleton"
+          ],
+          "perceived_by": [
+            {
+              "character": "mr-sappleton",
+              "mode": "witnessed"
+            },
+            {
+              "character": "mrs-sappleton",
+              "mode": "witnessed"
+            },
+            {
+              "character": "vera",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sitting-room"
+        },
+        {
+          "turn": 3,
+          "round": 6,
+          "text": "Mrs. Sappleton said it was a most extraordinary Mr. Nuttel who could talk only about his illnesses and dashed off without a word of good-bye, as if he had seen a ghost.",
+          "importance": 3,
+          "tags": [
+            "gossip",
+            "irony"
+          ],
+          "involves": [
+            "mrs-sappleton",
+            "framton"
+          ],
+          "perceived_by": [
+            {
+              "character": "mr-sappleton",
+              "mode": "heard"
+            },
+            {
+              "character": "vera",
+              "mode": "heard"
+            }
+          ],
+          "location": "sitting-room"
+        },
+        {
+          "turn": 3,
+          "round": 7,
+          "text": "Vera said calmly that she expected it was the spaniel, because Mr. Nuttel had told her of a horror of dogs after being hunted into a cemetery by pariah dogs on the banks of the Ganges and spending the night in a newly dug grave; no such thing was said to her: she made it up on the spot.",
+          "importance": 4,
+          "tags": [
+            "fabrication",
+            "hoax",
+            "cover-up"
+          ],
+          "involves": [
+            "vera",
+            "framton"
+          ],
+          "perceived_by": [
+            {
+              "character": "mrs-sappleton",
+              "mode": "told",
+              "content": "Mr. Nuttel has a horror of dogs because of a night in a grave on the Ganges.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "mr-sappleton",
+              "mode": "told",
+              "content": "Mr. Nuttel has a horror of dogs because of a night in a grave on the Ganges.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "vera",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sitting-room"
+        }
+      ],
+      "moves": [
+        {
+          "character": "mr-sappleton",
+          "to": "sitting-room"
+        },
+        {
+          "character": "ronnie",
+          "to": "sitting-room"
+        },
+        {
+          "character": "brother",
+          "to": "sitting-room"
+        },
+        {
+          "character": "spaniel",
+          "to": "sitting-room"
+        }
+      ]
+    }
+  }
+]

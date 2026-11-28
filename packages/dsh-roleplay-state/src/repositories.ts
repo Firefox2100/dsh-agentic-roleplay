@@ -1,4 +1,11 @@
 import type {
+  Claim,
+  ClaimId,
+  ClaimLink,
+  ClaimQuestion,
+  ClaimQuestionId,
+  ClaimStatus,
+  NewClaim,
   CharacterPatch,
   DiceCheck, DiceCheckDefinition, DiceRoll, NewDiceRoll,
   NewTriggerNote, Trigger, TriggerDefinition, TriggerId, TriggerNote, TriggerNoteKind, TriggerStatus,
@@ -240,6 +247,41 @@ export interface ThreadRepository {
   resolve(id: ThreadId, turn: number): StoryThread
   /** Whether a thread was removed. */
   remove(id: ThreadId): boolean
+}
+
+export interface ClaimRepository {
+  /** @throws {NotFoundError} when the character, the event or a linked event does not exist. @throws {InvalidValueError} for empty words or a link to a part the claim lacks. */
+  add(claim: NewClaim): Claim
+  get(id: ClaimId): Claim | undefined
+  list(filter?: { status?: ClaimStatus }): Claim[]
+  /** A claim has one link per event and part: the later replaces the earlier. @throws {NotFoundError} */
+  link(id: ClaimId, link: ClaimLink): Claim
+  /** @throws {NotFoundError} */
+  unlink(id: ClaimId, eventId: EventId, part?: string): Claim
+  /** @throws {NotFoundError} */
+  setStatus(id: ClaimId, status: ClaimStatus): Claim
+  remove(id: ClaimId): boolean
+  /** A question names two to four claims that cannot all be true. @throws {InvalidValueError} @throws {NotFoundError} */
+  addQuestion(text: string, rivals: readonly ClaimId[]): ClaimQuestion
+  questions(): ClaimQuestion[]
+  removeQuestion(id: ClaimQuestionId): boolean
+}
+
+export interface ConcealmentRepository {
+  /** Record that an event was kept from a character. @throws {NotFoundError} */
+  hide(eventId: EventId, characterId: CharacterId): void
+  reveal(eventId: EventId, characterId: CharacterId): boolean
+  hiddenFrom(eventId: EventId): CharacterId[]
+  hiddenEvents(characterId: CharacterId): EventId[]
+}
+
+export interface GroupRepository {
+  /** A person who may have been part of a group when it took something in. @throws {NotFoundError} @throws {ConflictError} when it would make a circle. */
+  include(groupId: CharacterId, memberId: CharacterId): void
+  exclude(groupId: CharacterId, memberId: CharacterId): boolean
+  members(groupId: CharacterId): CharacterId[]
+  /** Every group the character is in, directly or through another group. */
+  groupsOf(memberId: CharacterId): CharacterId[]
 }
 
 export interface SummaryRepository {

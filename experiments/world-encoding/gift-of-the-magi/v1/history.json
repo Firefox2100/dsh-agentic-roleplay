@@ -1,0 +1,786 @@
+[
+  {
+    "clock": {
+      "at": "1905-12-24T14:00",
+      "note": "invented: the text gives only 'the day before Christmas'; the hour and year are made up"
+    },
+    "edit": {
+      "turn": 1,
+      "events": [
+        {
+          "turn": 1,
+          "round": 1,
+          "text": "Della counted her savings three times: one dollar and eighty-seven cents, sixty cents of it in pennies, and the next day was Christmas.",
+          "importance": 3,
+          "tags": [
+            "money",
+            "christmas",
+            "savings"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [],
+          "location": "flat"
+        },
+        {
+          "turn": 1,
+          "round": 2,
+          "text": "Della flopped on the shabby couch and howled, then powdered her cheeks and stood at the window looking at a grey cat on a grey fence.",
+          "importance": 3,
+          "tags": [
+            "despair",
+            "crying"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [],
+          "location": "flat"
+        },
+        {
+          "turn": 1,
+          "round": 3,
+          "text": "Della turned suddenly from the window to the pier-glass, her eyes shining and her face pale, and let her hair fall to its full length; a tear or two fell on the carpet as she did it up again.",
+          "importance": 4,
+          "tags": [
+            "hair",
+            "decision",
+            "mirror"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "inferred",
+              "content": "She has decided to sell her hair."
+            }
+          ],
+          "location": "flat",
+          "items": [
+            "hair"
+          ]
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "della",
+          "kind": "belief",
+          "text": "I can sell my hair to buy Jim a present worthy of him.",
+          "about": [
+            "jim"
+          ],
+          "importance": 4,
+          "confidence": "sure"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1905-12-24T14:35",
+      "note": "invented; a move must be its own edit before an exchange, because the sale needs both people in the room"
+    },
+    "edit": {
+      "turn": 2,
+      "events": [
+        {
+          "turn": 2,
+          "round": 1,
+          "text": "Della put on her old brown jacket and hat and hurried out and down to the street, to Mme. Sofronie's up one flight.",
+          "importance": 2,
+          "tags": [
+            "errand"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [],
+          "location": "street"
+        }
+      ],
+      "moves": [
+        {
+          "character": "della",
+          "to": "sofronie-shop"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1905-12-24T14:40",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 2,
+      "events": [
+        {
+          "turn": 2,
+          "round": 2,
+          "text": "Della asked Madame Sofronie to buy her hair; Madame looked at it, lifting the brown mass with a practised hand, and offered twenty dollars; Della said 'Give it to me quick.'",
+          "importance": 4,
+          "tags": [
+            "hair",
+            "sale",
+            "money"
+          ],
+          "involves": [
+            "della",
+            "sofronie"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sofronie",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sofronie-shop",
+          "items": [
+            "hair"
+          ]
+        },
+        {
+          "turn": 2,
+          "round": 3,
+          "text": "Madame Sofronie cut off Della's hair and paid her twenty dollars.",
+          "importance": 4,
+          "tags": [
+            "hair",
+            "sale",
+            "implied"
+          ],
+          "involves": [
+            "della",
+            "sofronie"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sofronie",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "sofronie-shop",
+          "items": [
+            "hair"
+          ]
+        }
+      ],
+      "relationships": [
+        {
+          "from": "della",
+          "to": "sofronie",
+          "label": "buyer of her hair",
+          "familiarity": 0.1,
+          "trust": 0.3,
+          "affinity": 0.1,
+          "tension": 0.1
+        },
+        {
+          "from": "sofronie",
+          "to": "della",
+          "label": "a girl selling her hair",
+          "familiarity": 0.1,
+          "trust": 0.4,
+          "affinity": 0.1,
+          "tension": 0
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "della",
+          "item": "hair",
+          "action": "remove",
+          "slot": "head"
+        },
+        {
+          "character": "della",
+          "item": "hair",
+          "action": "give",
+          "to": "sofronie"
+        }
+      ],
+      "variable_changes": [
+        {
+          "variable": "cash",
+          "subject": "della",
+          "by": 2000
+        },
+        {
+          "variable": "cash",
+          "subject": "sofronie",
+          "by": -2000
+        },
+        {
+          "variable": "hair",
+          "subject": "della",
+          "to": "cut off"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1905-12-24T15:00",
+      "note": "Jim's strand runs in the same hours as Della's shopping but v1 only has rounds in a row: both move first"
+    },
+    "edit": {
+      "turn": 3,
+      "moves": [
+        {
+          "character": "della",
+          "to": "stores"
+        },
+        {
+          "character": "jim",
+          "to": "jim-errands"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1905-12-24T15:05",
+      "note": "the shopping lasts two hours"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [
+        {
+          "turn": 3,
+          "round": 1,
+          "text": "Della spent the next two hours ransacking the stores for Jim's present.",
+          "importance": 2,
+          "tags": [
+            "shopping"
+          ],
+          "involves": [
+            "della",
+            "clerks"
+          ],
+          "perceived_by": [],
+          "location": "stores"
+        },
+        {
+          "turn": 3,
+          "round": 2,
+          "text": "Della found a platinum fob chain, worthy of Jim's watch, and paid twenty-one dollars for it; she had eighty-seven cents left.",
+          "importance": 4,
+          "tags": [
+            "chain",
+            "purchase",
+            "money"
+          ],
+          "involves": [
+            "della",
+            "clerks"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed"
+            },
+            {
+              "character": "clerks",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "stores",
+          "items": [
+            "chain"
+          ]
+        },
+        {
+          "turn": 3,
+          "round": 3,
+          "text": "Jim sold his gold watch, the one that was his father's and his grandfather's, to get money for a present for Della.",
+          "importance": 5,
+          "tags": [
+            "watch",
+            "sale",
+            "offstage",
+            "reported-later"
+          ],
+          "involves": [
+            "jim",
+            "buyer"
+          ],
+          "perceived_by": [
+            {
+              "character": "jim",
+              "mode": "witnessed"
+            },
+            {
+              "character": "buyer",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "jim-errands",
+          "items": [
+            "watch"
+          ]
+        },
+        {
+          "turn": 3,
+          "round": 4,
+          "text": "Jim bought the set of tortoise-shell combs that Della had long wanted from a Broadway window.",
+          "importance": 5,
+          "tags": [
+            "combs",
+            "purchase",
+            "offstage",
+            "reported-later"
+          ],
+          "involves": [
+            "jim",
+            "clerks"
+          ],
+          "perceived_by": [
+            {
+              "character": "jim",
+              "mode": "witnessed"
+            },
+            {
+              "character": "clerks",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "jim-errands",
+          "items": [
+            "combs"
+          ]
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "della",
+          "item": "chain",
+          "action": "take"
+        },
+        {
+          "character": "jim",
+          "item": "watch",
+          "action": "give",
+          "to": "buyer"
+        },
+        {
+          "character": "jim",
+          "item": "combs",
+          "action": "take"
+        }
+      ],
+      "variable_changes": [
+        {
+          "variable": "cash",
+          "subject": "della",
+          "by": -2100
+        },
+        {
+          "variable": "cash",
+          "subject": "clerks",
+          "by": 2100
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "jim",
+          "kind": "belief",
+          "text": "Della will love the combs, though they are expensive and I sold my watch for them.",
+          "about": [
+            "della"
+          ],
+          "importance": 4,
+          "confidence": "sure"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1905-12-24T17:15",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 4,
+      "events": [
+        {
+          "turn": 4,
+          "round": 1,
+          "text": "Della came home, lit the gas and spent forty minutes with her curling irons until her head was covered with tiny close-lying curls, like a truant schoolboy's.",
+          "importance": 3,
+          "tags": [
+            "hair",
+            "curls"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [],
+          "location": "flat"
+        },
+        {
+          "turn": 4,
+          "round": 2,
+          "text": "Della looked long at her reflection and said to herself that Jim might say she looked like a Coney Island chorus girl, and asked what she could have done with a dollar and eighty-seven cents.",
+          "importance": 3,
+          "tags": [
+            "fear",
+            "mirror"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [],
+          "location": "flat"
+        }
+      ],
+      "moves": [
+        {
+          "character": "della",
+          "to": "flat"
+        },
+        {
+          "character": "jim",
+          "to": "jim-work"
+        }
+      ],
+      "variable_changes": [
+        {
+          "variable": "hair",
+          "subject": "della",
+          "to": "close-lying curls"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1905-12-24T19:00",
+      "note": "'7 o'clock' is stated"
+    },
+    "edit": {
+      "turn": 5,
+      "events": [
+        {
+          "turn": 5,
+          "round": 1,
+          "text": "At seven the coffee was made and the frying-pan was ready on the back of the stove to cook the chops.",
+          "importance": 1,
+          "tags": [
+            "evening",
+            "supper"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [],
+          "location": "flat"
+        },
+        {
+          "turn": 5,
+          "round": 2,
+          "text": "Della doubled the fob chain in her hand and sat on the corner of the table near the door; hearing Jim's step on the stair she turned white and whispered: 'Please God, make him think I am still pretty.'",
+          "importance": 3,
+          "tags": [
+            "prayer",
+            "waiting"
+          ],
+          "involves": [
+            "della"
+          ],
+          "perceived_by": [],
+          "location": "flat"
+        }
+      ],
+      "moves": [
+        {
+          "character": "jim",
+          "to": "flat"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1905-12-24T19:05",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 6,
+      "events": [
+        {
+          "turn": 6,
+          "round": 1,
+          "text": "Jim came in and closed the door: thin, serious, in need of a new overcoat, and without gloves.",
+          "importance": 2,
+          "tags": [
+            "jim",
+            "entrance"
+          ],
+          "involves": [
+            "jim"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat"
+        },
+        {
+          "turn": 6,
+          "round": 2,
+          "text": "Jim stopped inside the door and stared fixedly at Della with an expression she could not read; it terrified her, though it was not anger, surprise, disapproval or horror.",
+          "importance": 5,
+          "tags": [
+            "stare",
+            "expression"
+          ],
+          "involves": [
+            "jim",
+            "della"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed",
+              "content": "Jim looks at her with an expression she cannot read and fears.",
+              "accuracy": "partial"
+            }
+          ],
+          "location": "flat"
+        },
+        {
+          "turn": 6,
+          "round": 3,
+          "text": "Della went to him and told him she had had her hair cut off and sold it because she could not live through Christmas without giving him a present, and that it would grow out again.",
+          "importance": 4,
+          "tags": [
+            "hair",
+            "confession"
+          ],
+          "involves": [
+            "della",
+            "jim"
+          ],
+          "perceived_by": [
+            {
+              "character": "jim",
+              "mode": "told",
+              "content": "Della says she has had her hair cut off and sold it because she could not live through Christmas without giving him a present, and that it will grow out again."
+            },
+            {
+              "character": "della",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat"
+        },
+        {
+          "turn": 6,
+          "round": 4,
+          "text": "Jim asked, as if dazed, whether she had cut off her hair and whether it was gone; Della said it was sold and gone, and asked if she should put the chops on.",
+          "importance": 3,
+          "tags": [
+            "hair",
+            "daze"
+          ],
+          "involves": [
+            "jim",
+            "della"
+          ],
+          "perceived_by": [
+            {
+              "character": "jim",
+              "mode": "told",
+              "content": "Della says the hair is sold and gone, and that she did it for him; she asks if she should put the chops on."
+            },
+            {
+              "character": "della",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat"
+        },
+        {
+          "turn": 6,
+          "round": 5,
+          "text": "Jim came out of his trance and embraced Della.",
+          "importance": 4,
+          "tags": [
+            "embrace"
+          ],
+          "involves": [
+            "jim",
+            "della"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed"
+            },
+            {
+              "character": "jim",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat"
+        },
+        {
+          "turn": 6,
+          "round": 6,
+          "text": "Jim took a package from his overcoat pocket, threw it on the table and told her he would not love her less for any haircut, but that unwrapping it would show why he had stared.",
+          "importance": 4,
+          "tags": [
+            "package",
+            "reassurance"
+          ],
+          "involves": [
+            "jim",
+            "della"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed"
+            },
+            {
+              "character": "jim",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat"
+        },
+        {
+          "turn": 6,
+          "round": 7,
+          "text": "Della unwrapped the combs, screamed with joy, then burst into hysterical tears; Jim comforted her.",
+          "importance": 5,
+          "tags": [
+            "combs",
+            "joy",
+            "tears"
+          ],
+          "involves": [
+            "della",
+            "jim"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "witnessed"
+            },
+            {
+              "character": "jim",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat",
+          "items": [
+            "combs"
+          ]
+        },
+        {
+          "turn": 6,
+          "round": 8,
+          "text": "Della hugged the combs to her and said 'My hair grows so fast, Jim!', then leapt up and held out the chain on her palm, asking Jim for his watch to see how it looked.",
+          "importance": 4,
+          "tags": [
+            "combs",
+            "chain",
+            "gift"
+          ],
+          "involves": [
+            "della",
+            "jim"
+          ],
+          "perceived_by": [
+            {
+              "character": "jim",
+              "mode": "witnessed"
+            },
+            {
+              "character": "della",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat",
+          "items": [
+            "chain"
+          ]
+        },
+        {
+          "turn": 6,
+          "round": 9,
+          "text": "Jim tumbled down on the couch, put his hands under his head, smiled, and said he had sold the watch to buy her combs, and suggested they put the presents away and put the chops on.",
+          "importance": 5,
+          "tags": [
+            "watch",
+            "revelation",
+            "reported"
+          ],
+          "involves": [
+            "jim",
+            "della"
+          ],
+          "perceived_by": [
+            {
+              "character": "della",
+              "mode": "told",
+              "content": "Jim sold his watch to get the money to buy my combs."
+            },
+            {
+              "character": "jim",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "flat",
+          "items": [
+            "watch"
+          ]
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "jim",
+          "item": "combs",
+          "action": "give",
+          "to": "della"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "jim",
+          "kind": "knowledge",
+          "text": "Della cut off her hair and sold it to buy me a present.",
+          "about": [
+            "della"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        },
+        {
+          "character": "della",
+          "kind": "knowledge",
+          "text": "Jim sold his watch to buy me the combs.",
+          "about": [
+            "jim"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        }
+      ]
+    }
+  }
+]

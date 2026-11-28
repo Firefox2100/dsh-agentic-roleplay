@@ -222,6 +222,26 @@ story movement retains the omniscient authoritative planner.
 
 Lore differs from a physical-entity edge only in what lookup returns: `recall_my_lore` may return the canonical text of the entries the character knows, which are those it has a knowledge edge to and those whose `scope` is `everyone` (migration 9 adds `lore.scope`, `listed` by default). It never searches unknown lore. A character's brief lists only the titles of that lore, never its text, and a character that has such lore is asked once, when it first submits its answer, whether the moment touches its background; it reads the entries itself if so. The game master's `search_lore` searches the full canonical lore repository. A lorebook can be added to or removed from a story that is being played (`GET`/`POST`/`DELETE /sessions/lorebooks`): the entries are copied or deleted in one transaction with the ids `<book>:<id>`, the knowledge edges of the entries follow, the metadata `roleplay.lorebooks` is updated, and both are refused during a turn and, for removal, while other lore or a plot refers to one of the entries.
 
+## Claims, concealment and groups
+
+A claim is something a person asserts, believes or suspects that the events do not simply settle: a theory, an accusation, a rumour, a testimony that may be mistaken. It has no truth of its own. Its standing is worked out, never stored, from the recorded events linked to it (`claim_links`: `confirms` or `contradicts` for an event that itself shows the claim true or false, `supports` or `undermines` for one that only weighs on it). Migration 13 adds `claims`, `claim_links`, `claim_questions` and `claim_question_members`.
+
+| Links | Standing |
+|---|---|
+| confirms and contradicts | disputed |
+| contradicts only | false |
+| confirms only | true |
+| supports and undermines | open |
+| supports only | likely |
+| undermines only | unlikely |
+| none | unresolved |
+
+A claim with `parts` is `mixed` when its parts differ. A link counts only once the claim is made (`asserted_in`) and the event is known. A question (`claim_questions`) names two to four claims that are rival answers and cannot all be true: a rival that is true on its own links counts as a `contradicts` for the others, one that is likely as an `undermines`, and only a rival's own links count, so there is no circle; a larger set is refused. A character's own view (`verdictFor`) is the same rule over the events that character took in.
+
+A claim is `proposed` when a model wrote it and `confirmed` when a person settled it. The record keeper only proposes. Two things settle a claim: the person, in the story editor, and the game master, with `confirm_claim`, an optional game master tool that is on by default and can be switched off in the story's tool settings (`tools.gameMaster`), which leaves the choice to the person. Proposed claims are shown with their standing as the keeper's view, never as settled, and are for the game master and the editor: never told to a character as fact and never shown in the chat or the sidebar. A settled claim reaches a character only through the events that character took in: its brief lists the settled claims it heard that bear on the moment (they share words with it or name someone present, four at most, latest first), each with the standing `verdictFor` gives that character, so a character that saw the proof says so and one that saw nothing says it cannot tell. `read_records` and `list_claims` show them; `edit_records` writes them (`claims`, `claim_links`, `claim_unlinks`, `claim_retractions`, `claim_questions`).
+
+`concealments` records an event kept from a character on purpose: the character is `no` in `who_knows` whatever a group it belongs to took in, and an event that was both hidden from a character and perceived by it is reported as a problem. `group_members` records who may have been part of a group (a crowd, a household) when it took something in: a member of a group that perceived an event is `possibly` aware of it, which is a third answer between knowing and not knowing; nothing is inferred about who stood in a crowd.
+
 ## Growing the world
 
 The world is extended only when the story genuinely needs it, and only by one agent, the **world author**

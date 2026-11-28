@@ -1,0 +1,230 @@
+[
+ {
+  "id": "q01",
+  "question": "What does Benedick believe when he comes out of the arbour, and is it true?",
+  "answer": "That Beatrice loves him, on Leonato's word; it is false by the prince's own account of the sport.",
+  "needs": [
+   "a belief held on a staged report, checked against the stager's later words"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge benedick believes c-beatrice-loves-benedick from e-benedick-resolves; verdict false (e-pedro-sport); false_beliefs check"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "Who could hear Claudio's 'Bait the hook well; this fish will bite'?",
+  "answer": "Don Pedro only: it is an aside, though Benedick is hidden a few steps away.",
+  "needs": [
+   "who hears a line, given where people hide and how it is said"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "heard_by derived from the concealment state and the event's manner; the aside is the encoder's reading, the transcription has no marker"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "Who knows that Benedick is hiding, and how do they know?",
+  "answer": "Don Pedro (he sees him), Claudio (told), Leonato (not said; his playing along implies it); not Balthasar.",
+  "needs": [
+   "a hidden state and who knows of it"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge rows for e-benedick-hides; Leonato's row is `believes`, inferred"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "Did Benedick keep his hiding from anyone?",
+  "answer": "From no one who matters: the prince and Claudio see him at once; he hides from the music-makers and Leonato.",
+  "needs": [
+   "concealment that fails"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "e-benedick-hides has from four people; the knowledge rows say two of them see through it; nothing records whether the concealment was meant to work"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "What did Hero tell the prince about Beatrice's night-writing?",
+  "answer": "Not told: Leonato and Claudio say she did, but Hero is not there and never says it.",
+  "needs": [
+   "a source named but never heard"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "e-letter-story is Leonato and Claudio's testimony; c-letter-story cites Hero and the check derives that Hero never speaks before it: no one heard her say it; what she did say offstage is not recorded"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "Was Beatrice's scorn at the dinner message real?",
+  "answer": "Her speech is scornful; whether it hides feeling is not said. Hero says she is scornful, and her later soliloquy accepts the charge.",
+  "needs": [
+   "a stated behaviour and its meaning"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "e-beatrice-dinner-scorn and c-beatrice-scornful (likely); the question 'real' has no field"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "Does Beatrice love Benedick?",
+  "answer": "The stagers say not ('no such matter'); the excerpt ends before she says otherwise, though she vows to requite him once told.",
+  "needs": [
+   "a claim about a hidden feeling, and a feeling caused by a false claim"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "c-beatrice-loves-benedick derives false for the claim as stated by the stagers; her state after P149 is not a claim"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "Why does Don John speak, and does he tell the truth about his motive?",
+  "answer": "Out of displeasure and spite, by his own account to Borachio; to Don Pedro and Claudio he claims regard for them, which is false.",
+  "needs": [
+   "rival motives, one admitted in private"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "c-john-spite true (e-john-agrees); c-john-zeal false by the rival rule alone (it has no bearings of its own); questions q-john-motive"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "Is Hero disloyal?",
+  "answer": "No by the story's plan (the staged proof is Borachio's); false in the excerpt.",
+  "needs": [
+   "a claim made by someone whose earlier plan is on the record"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "c-hero-disloyal false, contradicts e-borachio-plans (recorded before the claim is made)"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "Who knows Borachio's plan when Don John accuses Hero?",
+  "answer": "Don John, Borachio and the reader; not Don Pedro, Claudio, Leonato or Hero.",
+  "needs": [
+   "the knowledge of an ensemble at a moment"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge rows for e-borachio-plans: three knows (Don John, Borachio, the reader); that the others do not know is derived (not a party, not told), the knows_at check"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "Did Claudio believe Don John's accusation?",
+  "answer": "He doubted it at first and made a conditional vow: if he sees it tonight he will shame her.",
+  "needs": [
+   "a doubt with a conditional commitment"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge claudio doubts; h-claudio-shame is held with `if` h-john-shows: derived waiting, not open"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "What is still undecided when the excerpt ends?",
+  "answer": "Whether the window scene is staged and seen, whether the wedding happens, whether the serenade is played, and what Benedick says to Leonato.",
+  "needs": [
+   "held items with no outcome"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "held_outcomes: open (window staging, serenade, wedding, speech), waiting (Claudio's vow and the fee, on conditions that are themselves open); a closed-world rule would be wrong"
+  }
+ },
+ {
+  "id": "q13",
+  "question": "Which came first, Hero's garden scene or the men teasing Benedick?",
+  "answer": "Not told. Hero's scene is done before Claudio says so (P187); the teasing begins at P153 with no link either way.",
+  "needs": [
+   "order in time that the text leaves open"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "order check: e-hero-garden-talk and e-teasing-benedick are unordered; the text order is only a linearisation"
+  }
+ },
+ {
+  "id": "q14",
+  "question": "How long between Act 2 scene 3 and Act 3 scene 2?",
+  "answer": "Not told: 'to-morrow night' for the serenade, 'to-morrow' for the wedding, 'to-night' for the window; no hour is given.",
+  "needs": [
+   "a timeline with no clock"
+  ],
+  "v2": {
+   "answerable": "no",
+   "how": "no when.t anywhere: simultaneity cannot be derived, and the days are text"
+  }
+ },
+ {
+  "id": "q15",
+  "question": "Who told Margaret to lie, and about what?",
+  "answer": "Hero, to say she had overheard Hero and Ursula speaking of Beatrice.",
+  "needs": [
+   "an instruction to deceive"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "e-hero-instructs-margaret with intent; knowledge margaret knows e-hero-baits"
+  }
+ },
+ {
+  "id": "q16",
+  "question": "Who knew the garden talk was bait?",
+  "answer": "Hero, Ursula, Margaret and (by the prince's briefing) Hero's side; not Beatrice.",
+  "needs": [
+   "a performance with a hidden audience"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge rows for e-hero-baits; Beatrice unaware, then believes"
+  }
+ },
+ {
+  "id": "q17",
+  "question": "How much is Borachio to be paid, and on what condition?",
+  "answer": "A thousand ducats, for the plot working.",
+  "needs": [
+   "a sum with a condition"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "h-fee waits on h-window-staging (derived waiting); the amount is text, not a number"
+  }
+ },
+ {
+  "id": "q18",
+  "question": "What does the audience know that the people in the room do not at the end?",
+  "answer": "That Don John's 'plague prevented' is triumph, and that the proof is staged.",
+  "needs": [
+   "dramatic irony"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "reader knows e-borachio-plans from P16; r-john-irony is the reader's reading of P214"
+  }
+ },
+ {
+  "id": "q19",
+  "question": "Is Claudio right that Hero and Margaret have played their parts with Beatrice?",
+  "answer": "Yes, as far as it goes: Hero in the garden, Margaret as courier; Ursula played a part too and is not named.",
+  "needs": [
+   "a claim that is true but not exhaustive"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "c-hero-played-parts derives likely (e-hero-garden-talk, e-margaret-fetches support it)"
+  }
+ }
+]

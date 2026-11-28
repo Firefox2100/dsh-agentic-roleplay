@@ -1,11 +1,13 @@
 import type { JsonSchemaNode, ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
 import {
   ACCURACIES, CHARACTER_KINDS, CHARACTER_TIERS, CONTAINER_STATES, ENGAGEMENT_STATUSES, EXIT_STATES, IMPORTANCE_MAX, IMPORTANCE_MIN, INTENT_HORIZONS, INTENT_STATUSES, INTENT_TYPES, KNOWLEDGE_KINDS, MEMORY_CONFIDENCES, MEMORY_KINDS, PERCEPTION_MODES, WEEKDAY_NAMES,
-  VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES,
+  VARIABLE_KINDS, VARIABLE_SUBJECTS, VARIABLE_VISIBILITIES, BEARINGS, CLAIM_STATUSES,
+  type Bearing, type ClaimStatus,
   type VariableDefinitionInput, type VariableKind, type VariableSubject, type VariableValue, type VariableVisibility,
   type TriggerDefinition, type Accuracy, type CharacterKind, type CharacterTier, type ContainerState, type EngagementStatus, type ExitState, type IntentHorizon, type IntentStatus, type IntentType, type KnowledgeKind, type MemoryConfidence, type MemoryKind, type PerceptionMode, type Slot,
 } from 'dsh-roleplay-model'
 import { InvalidEditError } from '../errors.ts'
+import type { ClaimLinkChange, ClaimLinkSpec, ClaimStatusChange, ClaimUnlink, ConcealmentSpec, GroupMemberSpec, NewClaimQuestionSpec, NewClaimSpec } from './claims-edit.ts'
 import type {
   BeliefEdit, CharacterMove, EngagementEditSpec, EventEdit, ExitChange, IntentEditSpec, ItemChange, NewEngagementSpec, NewIntentSpec, RoutineExceptionSpec, RoutineSet, RoutineWindowSpec, ItemEditSpec, NewBelief, NewCharacterSpec, NewEvent, NewExit, NewExitBetween, NewItemSpec, NewPlace,
   FactionMembershipSet, FactionRelationshipSet, FactionStateSet, KnowledgeRetraction, KnowledgeSet, NewFactionIntentSpec, PerceivedBy, PerceptionAddition, PerceptionEdit, PlaceEdit, RecordsEdit, RelationshipRetraction, RelationshipSet, StatePatch,
@@ -173,6 +175,19 @@ export function parseRecordsEdit(value: unknown): RecordsEdit {
     threadsOpenedKnown: Array.isArray(value['threads_opened_known']) ? (value['threads_opened_known'] as unknown[]).filter((entry): entry is string => typeof entry === 'string') : [],
     threadsKnown: numbers('threads_known'),
     threadsResolved: numbers('threads_resolved'),
+    claims: array('claims').map((entry): NewClaimSpec => defined<NewClaimSpec>({
+      text: text(entry, 'text') ?? '', byCharacter: text(entry, 'by_character'), byLabel: text(entry, 'by_label'), assertedIn: num(entry, 'asserted_in'), assertedInNew: num(entry, 'asserted_in_new'),
+      status: text(entry, 'status') as ClaimStatus | undefined,
+      parts: Array.isArray(entry['parts']) ? (entry['parts'] as unknown[]).filter(isObject).map(part => ({ key: text(part, 'key') ?? '', text: text(part, 'text') ?? '' })) : undefined,
+      links: Array.isArray(entry['links']) ? (entry['links'] as unknown[]).filter(isObject).map((link): ClaimLinkSpec => defined<ClaimLinkSpec>({ event: num(link, 'event'), eventNew: num(link, 'event_new'), as: (text(link, 'as') ?? '') as Bearing, part: text(link, 'part') })) : undefined,
+    })),
+    claimLinks: array('claim_links').map((entry): ClaimLinkChange => defined<ClaimLinkChange>({ claim: num(entry, 'claim') ?? 0, event: num(entry, 'event') ?? 0, as: (text(entry, 'as') ?? '') as Bearing, part: text(entry, 'part') })),
+    claimUnlinks: array('claim_unlinks').map((entry): ClaimUnlink => defined<ClaimUnlink>({ claim: num(entry, 'claim') ?? 0, event: num(entry, 'event') ?? 0, part: text(entry, 'part') })),
+    claimStatuses: array('claim_statuses').map((entry): ClaimStatusChange => ({ claim: num(entry, 'claim') ?? 0, status: (text(entry, 'status') ?? '') as ClaimStatus })),
+    claimRetractions: numbers('claim_retractions'),
+    claimQuestions: array('claim_questions').map((entry): NewClaimQuestionSpec => defined<NewClaimQuestionSpec>({ text: text(entry, 'text') ?? '', rivals: numbersOf(entry, 'rivals'), rivalsNew: numbersOf(entry, 'rivals_new') })),
+    concealments: array('concealments').map((entry): ConcealmentSpec => defined<ConcealmentSpec>({ event: num(entry, 'event') ?? 0, from: text(entry, 'from') ?? '', lift: bool(entry, 'lift') })),
+    groupMembers: array('group_members').map((entry): GroupMemberSpec => defined<GroupMemberSpec>({ group: text(entry, 'group') ?? '', member: text(entry, 'member') ?? '', remove: bool(entry, 'remove') })),
     variableChanges: array('variable_changes').map((entry): VariableChangeSpec => defined<VariableChangeSpec>({
       variable: text(entry, 'variable') ?? '', subject: text(entry, 'subject') ?? '', to: scalar(entry, 'to'), by: num(entry, 'by'), baseline: scalar(entry, 'baseline'),
     })),
@@ -230,7 +245,7 @@ const IMPORTANCE: JsonSchemaNode = { type: 'integer', enum: [1, 2, 3, 4, 5], des
  * The JSON schema of the wire format, for a model's structured output or a tool's parameters.
  * With `characters`, a character can only be named by one of those keys.
  */
-export function recordsEditSchema(options: { characters?: readonly string[]; changes?: boolean; /** Offer the making of characters, places and ways: only for the agent whose work that is. */ authoring?: boolean } = {}): ObjectJsonSchema {
+export function recordsEditSchema(options: { characters?: readonly string[]; changes?: boolean; /** Offer the making of characters, places and ways: only for the agent whose work that is. */ authoring?: boolean; /** Offer the settling of a claim: only for the agent or person whose work that is. */ confirming?: boolean } = {}): ObjectJsonSchema {
   const character: JsonSchemaNode = options.characters === undefined || options.characters.length === 0
     ? { type: 'string', description: 'The key of a character.' }
     : { type: 'string', enum: [...options.characters], description: 'The key of a character.' }
@@ -554,6 +569,65 @@ export function recordsEditSchema(options: { characters?: readonly string[]; cha
     threads_opened_known: { type: 'array', items: { type: 'string' }, description: 'Like threads_opened, for a thread the player\'s character already knows of because they were told it, saw it, or took it on: one sentence each. A thread that only the story knows (a secret, something the player\'s character has not met) goes in threads_opened.' },
     threads_known: { type: 'array', items: { type: 'integer' }, description: 'The ids of open threads the player\'s character has now learned of: told, shown or seen in an event, not merely hinted at.' },
     threads_resolved: { type: 'array', items: { type: 'integer' }, description: 'The ids of open threads that are now settled.' },
+    claims: {
+      type: 'array',
+      description: 'What someone asserts, believes or suspects that the events do not simply settle: a theory, a testimony that may be mistaken, a rumour. Not a plain fact. A claim has no truth of its own: say which recorded events bear on it and how, and its standing is worked out from them. Use confirms or contradicts only for an event that itself shows the claim true or false; an event where someone only says or argues something supports or undermines. Your claims are proposals until a person confirms them.',
+      items: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'The claim as the one who makes it would put it, in one sentence.' },
+          by_character: { ...character, description: 'The key of the character who makes it.' },
+          by_label: { type: 'string', description: 'Who makes it when it is not a character: an inquiry, a rumour, the narrator.' },
+          asserted_in: { type: 'integer', description: 'The number of the recorded event where it is first made.' },
+          asserted_in_new: { type: 'integer', description: 'Or the position (from 0) of an event recorded in this same edit.' },
+          parts: { type: 'array', description: 'Only when the claim has separate halves that may turn out differently.', items: { type: 'object', properties: { key: { type: 'string' }, text: { type: 'string' } }, required: ['key', 'text'], additionalProperties: false } },
+          links: {
+            type: 'array',
+            description: 'The events that bear on it. Link only events that really do; a related event is not evidence.',
+            items: {
+              type: 'object',
+              properties: {
+                event: { type: 'integer', description: 'The number of a recorded event.' },
+                event_new: { type: 'integer', description: 'Or the position (from 0) of an event recorded in this same edit.' },
+                as: { type: 'string', enum: [...BEARINGS], description: 'Whether the event shows the claim true (confirms) or false (contradicts), or only makes it more likely (supports) or less (undermines). An event that replaces the claim with another contradicts it.' },
+                part: { type: 'string', description: 'The key of the part it bears on, when the claim has parts.' },
+              },
+              required: ['as'],
+              additionalProperties: false,
+            },
+          },
+          ...(options.confirming === true ? { status: { type: 'string', enum: [...CLAIM_STATUSES], description: 'confirmed when you settle it; proposed otherwise.' } } : {}),
+        },
+        required: ['text'],
+        additionalProperties: false,
+      },
+    },
+    claim_links: {
+      type: 'array',
+      description: 'More events that bear on a claim already recorded, or a changed bearing (the later replaces the earlier for the same event and part).',
+      items: { type: 'object', properties: { claim: { type: 'integer' }, event: { type: 'integer' }, as: { type: 'string', enum: [...BEARINGS] }, part: { type: 'string' } }, required: ['claim', 'event', 'as'], additionalProperties: false },
+    },
+    claim_unlinks: {
+      type: 'array',
+      description: 'Links that do not bear on the claim after all.',
+      items: { type: 'object', properties: { claim: { type: 'integer' }, event: { type: 'integer' }, part: { type: 'string' } }, required: ['claim', 'event'], additionalProperties: false },
+    },
+    claim_retractions: { type: 'array', items: { type: 'integer' }, description: 'The numbers of claims recorded by mistake.' },
+    claim_questions: {
+      type: 'array',
+      description: 'Two to four claims that are answers to one question and cannot all be true (what killed her: fear, a poison, a snake). Only claims that exclude each other; never a loose group of related claims.',
+      items: { type: 'object', properties: { text: { type: 'string' }, rivals: { type: 'array', items: { type: 'integer' }, description: 'Numbers of recorded claims.' }, rivals_new: { type: 'array', items: { type: 'integer' }, description: 'Positions (from 0) of claims made in this same edit.' } }, required: ['text'], additionalProperties: false },
+    },
+    concealments: {
+      type: 'array',
+      description: 'An event that was kept from a character: hidden on purpose from them, who must not learn of it from what they take in.',
+      items: { type: 'object', properties: { event: { type: 'integer' }, from: character, lift: { type: 'boolean', description: 'True when it is no longer hidden from them.' } }, required: ['event', 'from'], additionalProperties: false },
+    },
+    group_members: {
+      type: 'array',
+      description: 'Who may have been part of a group (a crowd, a household) when it took something in, so that it is not known whether they did.',
+      items: { type: 'object', properties: { group: character, member: character, remove: { type: 'boolean' } }, required: ['group', 'member'], additionalProperties: false },
+    },
   }
   if (options.authoring === true) {
     Object.assign(properties, {

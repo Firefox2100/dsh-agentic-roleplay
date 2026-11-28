@@ -1,0 +1,14 @@
+{
+  "id": "the-ball",
+  "title": "The ministerial ball",
+  "kind": "politics",
+  "scope": "everyone",
+  "summary": "The Minister of Public Instruction gives a ball on Monday evening, January 18th; few clerks are invited.",
+  "body": "The Minister of Public Instruction and Mme. Georges Ramponneau give a ball at the palace of the Ministry on Monday evening, January 18th. Invitations to clerks are rare; the whole official world is there.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "ministry-palace"
+    }
+  ]
+}

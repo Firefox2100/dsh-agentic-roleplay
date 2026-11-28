@@ -1,0 +1,12 @@
+{
+  "id": "police-hq",
+  "name": "Police Headquarters",
+  "description": "Where Loisel reports the loss (with the newspaper offices and the cab companies).",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "the street",
+      "travel_time_seconds": 30
+    }
+  ]
+}

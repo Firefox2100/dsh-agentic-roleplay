@@ -1,0 +1,15 @@
+{
+  "id": "encoding-necklace",
+  "name": "The Necklace",
+  "description": "An encoding of Maupassant's story (1884, translated 1898): a clerk's wife borrows a diamond necklace for a ball, loses it, spends ten years repaying its replacement, and learns it was paste.",
+  "starting_time": "1875-01-05T19:00",
+  "time_zone": "Europe/Paris",
+  "metadata": {
+    "tags": [
+      "encoding",
+      "short-story",
+      "paris",
+      "debt"
+    ]
+  }
+}

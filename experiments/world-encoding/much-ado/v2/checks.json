@@ -1,0 +1,337 @@
+{
+ "independent": true,
+ "blind": true,
+ "note": "Written from reading the text, before any bears_on link or event was written. Verdicts are my reading of what the excerpt (Act 2 scene 2 to Act 3 scene 2) establishes, not of the whole play.",
+ "expected_verdicts": {
+  "c-benedick-never-love": "unlikely",
+  "c-beatrice-loves-benedick": "false",
+  "c-letter-story": "false",
+  "c-benedick-loves-beatrice": "false",
+  "c-entreaty": "false",
+  "c-no-trick": "false",
+  "c-benedick-in-love": "likely",
+  "c-beatrice-caught": "likely",
+  "c-beatrice-scornful": "likely",
+  "c-john-zeal": "false",
+  "c-john-spite": "true",
+  "c-hero-disloyal": "false",
+  "c-margaret-window": "unresolved",
+  "c-hero-played-parts": "likely"
+ },
+ "verdict_at": [
+  [
+   "c-beatrice-loves-benedick",
+   "e-pedro-opens",
+   "unresolved"
+  ],
+  [
+   "c-beatrice-loves-benedick",
+   "e-leonato-asserts",
+   "unlikely"
+  ],
+  [
+   "c-beatrice-loves-benedick",
+   "e-claudio-bait",
+   "unlikely"
+  ],
+  [
+   "c-beatrice-loves-benedick",
+   "e-pedro-sport",
+   "false"
+  ],
+  [
+   "c-benedick-never-love",
+   "e-benedick-soliloquy",
+   "unresolved"
+  ],
+  [
+   "c-benedick-never-love",
+   "e-benedick-resolves",
+   "unlikely"
+  ],
+  [
+   "c-no-trick",
+   "e-benedick-resolves",
+   "false"
+  ],
+  [
+   "c-john-zeal",
+   "e-john-feigns-zeal",
+   "false"
+  ],
+  [
+   "c-hero-disloyal",
+   "e-john-accuses",
+   "false"
+  ],
+  [
+   "c-benedick-in-love",
+   "e-claudio-says-love",
+   "likely"
+  ],
+  [
+   "c-benedick-in-love",
+   "e-benedick-resolves",
+   "unresolved"
+  ]
+ ],
+ "held_outcomes": {
+  "h-window-staging": "open",
+  "h-serenade": "open",
+  "h-claudio-shame": "waiting",
+  "h-wedding": "open",
+  "h-john-learn-day": "fulfilled",
+  "h-fee": "waiting",
+  "h-net-for-beatrice": "fulfilled",
+  "h-benedick-speaks": "open"
+ },
+ "order": [
+  [
+   "e-hero-garden-talk",
+   "e-teasing-benedick",
+   "unordered"
+  ],
+  [
+   "e-hero-garden-talk",
+   "e-claudio-says-played",
+   "before"
+  ],
+  [
+   "e-pedro-sport",
+   "e-hero-garden-talk",
+   "before"
+  ],
+  [
+   "e-benedick-resolves",
+   "e-beatrice-dinner-scorn",
+   "before"
+  ]
+ ],
+ "heard_by": [
+  [
+   "e-leonato-asserts",
+   "benedick",
+   true
+  ],
+  [
+   "e-hero-garden-talk",
+   "beatrice",
+   true
+  ],
+  [
+   "e-john-accuses",
+   "benedick",
+   false
+  ],
+  [
+   "e-pedro-sport",
+   "benedick",
+   false
+  ],
+  [
+   "e-balthasar-sings",
+   "benedick",
+   true
+  ],
+  [
+   "e-claudio-bait",
+   "benedick",
+   false
+  ]
+ ],
+ "false_beliefs": [
+  [
+   "e-benedick-resolves",
+   "benedick",
+   "c-beatrice-loves-benedick",
+   true
+  ],
+  [
+   "e-beatrice-soliloquy",
+   "beatrice",
+   "c-benedick-loves-beatrice",
+   true
+  ],
+  [
+   "e-john-accuses",
+   "claudio",
+   "c-hero-disloyal",
+   false
+  ],
+  [
+   "e-benedick-doubts",
+   "benedick",
+   "c-beatrice-loves-benedick",
+   false
+  ]
+ ],
+ "key_corrections": [
+  "c-beatrice-loves-benedick after e-leonato-asserts: was unresolved, now unlikely. I had missed that Claudio's 'stalk on, the fowl sits' (P58) comes just before Leonato's claim (P59), so evidence for it being a sham is already in hand when the claim is made. e-pedro-opens now carries the 'unresolved' entry.",
+  "heard_by e-claudio-bait/benedick: was true, now false. I had assumed a hidden listener hears everything said in front of him; Claudio's line is an aside."
+ ],
+ "post_hoc": {
+  "note": "Added after the first pass, with the model changes of the second round (audience, conditions on held items, derived knowledge, bad faith, unheard source, rests on an untrue claim). Not blind: I wrote them knowing the encoding.",
+  "held_outcomes_changed": {
+   "h-claudio-shame": "open -> waiting on h-john-shows",
+   "h-fee": "open -> waiting on h-window-staging"
+  }
+ },
+ "knows_at": [
+  [
+   "e-john-accuses",
+   "hero",
+   "e-john-accuses",
+   false
+  ],
+  [
+   "e-john-accuses",
+   "claudio",
+   "e-borachio-plans",
+   false
+  ],
+  [
+   "e-john-accuses",
+   "don-john",
+   "e-borachio-plans",
+   true
+  ],
+  [
+   "e-benedick-resolves",
+   "benedick",
+   "e-pedro-sport",
+   false
+  ],
+  [
+   "e-benedick-resolves",
+   "benedick",
+   "e-leonato-asserts",
+   true
+  ],
+  [
+   "e-hero-garden-talk",
+   "beatrice",
+   "e-hero-baits",
+   false
+  ],
+  [
+   "e-hero-garden-talk",
+   "beatrice",
+   "e-pedro-sport",
+   false
+  ],
+  [
+   "e-claudio-vows",
+   "leonato",
+   "e-john-accuses",
+   false
+  ],
+  [
+   "e-claudio-vows",
+   "leonato",
+   "c-hero-disloyal",
+   false
+  ],
+  [
+   "e-claudio-vows",
+   "claudio",
+   "c-hero-disloyal",
+   true
+  ]
+ ],
+ "lies": [
+  [
+   "c-beatrice-loves-benedick",
+   true
+  ],
+  [
+   "c-letter-story",
+   true
+  ],
+  [
+   "c-benedick-loves-beatrice",
+   true
+  ],
+  [
+   "c-entreaty",
+   true
+  ],
+  [
+   "c-john-zeal",
+   true
+  ],
+  [
+   "c-hero-disloyal",
+   true
+  ],
+  [
+   "c-no-trick",
+   false
+  ],
+  [
+   "c-beatrice-scornful",
+   false
+  ],
+  [
+   "c-john-spite",
+   false
+  ],
+  [
+   "c-benedick-never-love",
+   false
+  ]
+ ],
+ "cites_unheard": [
+  [
+   "c-letter-story",
+   "hero",
+   true
+  ]
+ ],
+ "rests_on_untrue": [
+  [
+   "e-benedick-resolves",
+   "c-beatrice-loves-benedick",
+   true
+  ],
+  [
+   "e-benedick-admits",
+   "c-beatrice-loves-benedick",
+   true
+  ],
+  [
+   "e-teasing-benedick",
+   "c-beatrice-loves-benedick",
+   true
+  ],
+  [
+   "e-beatrice-soliloquy",
+   "c-benedick-loves-beatrice",
+   true
+  ],
+  [
+   "e-john-accuses",
+   "c-beatrice-loves-benedick",
+   false
+  ]
+ ],
+ "owed": [
+  [
+   "e-john-agrees",
+   "don-john",
+   [
+    [
+     "h-fee",
+     1000,
+     "ducats",
+     "conditional"
+    ]
+   ]
+  ],
+  [
+   "e-john-agrees",
+   "borachio",
+   []
+  ]
+ ],
+ "post_hoc_owed": "owed added in round four with the amount field on h-fee: the text has Don John promise a thousand ducats if the plot works, paid only when the staging happens."
+}

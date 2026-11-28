@@ -7,6 +7,7 @@ import { InvalidEditError, InvalidMoveError } from '../errors.ts'
 import { lookupKey } from '../sqlite/support.ts'
 import { characterKey, locationKey, type EditResult, type NewExit, type NewPlace, type PerceivedBy, type RecordsEdit, type RecordsTarget } from './edit-types.ts'
 import { prepareAgenda, writeAgenda } from './agenda-edit.ts'
+import { prepareClaims } from './claims-edit.ts'
 import { ITEM_ACTIONS, changeItem } from './items.ts'
 import { moveCharacter } from './movement.ts'
 import { triggerReferenceProblems } from './trigger-rules.ts'
@@ -327,6 +328,7 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
     if (!planned.ok) problems.push(...planned.problems.map(problem => `${where}: ${problem}`))
   })
   const agenda = prepareAgenda(target, edit, { idOf, placeKnown, places: existingPlaces, problems })
+  const claims = prepareClaims(target, edit, { idOf, problems })
 
   if (problems.length > 0) throw new InvalidEditError(problems)
 
@@ -534,6 +536,9 @@ function applyChanges(target: RecordsTarget, edit: RecordsEdit): EditResult {
       result.writes += 1
     }
     for (const id of list(edit.beliefRetractions)) { target.memories.remove(id); result.writes += 1 }
+    const written = claims.apply(result.eventIds)
+    result.writes += written.writes
+    if (written.claimIds.length > 0) result.claimIds = written.claimIds
     for (const text of [...list(edit.threadsOpened), ...list(edit.threadsDistinct)]) { target.threads.open(text.trim(), edit.turn); result.writes += 1 }
     for (const text of list(edit.threadsOpenedKnown)) { target.threads.open(text.trim(), edit.turn, true); result.writes += 1 }
     for (const id of list(edit.threadsKnown)) { target.threads.tell(id); result.writes += 1 }
@@ -710,7 +715,7 @@ export function applyRecordsEdit(target: RecordsTarget, edit: RecordsEdit): Edit
     const things = list(edit.items).length === 0 && list(edit.slots).length === 0 ? { keys: [] as string[], writes: 0 } : createItems(target, edit)
     const rest = applyChanges(target, { ...edit, places: [], characters: [], items: [], slots: [] })
     return {
-      eventIds: rest.eventIds, beliefIds: rest.beliefIds, writes: placesFirst.writes + people.writes + things.writes + rest.writes,
+      eventIds: rest.eventIds, beliefIds: rest.beliefIds, ...(rest.claimIds === undefined ? {} : { claimIds: rest.claimIds }), writes: placesFirst.writes + people.writes + things.writes + rest.writes,
       characterKeys: people.keys, placeKeys: placesFirst.placeKeys ?? [], itemKeys: things.keys,
     }
   })

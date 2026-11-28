@@ -46,6 +46,7 @@ import { FALLBACK_LANGUAGE, shippedText } from './host/prompts/library.ts'
 import { COMMANDS_KEY, commandFlagKey, commandsOf } from './shared/commands.ts'
 import { STANDING_PROMPT } from './host/import/extract.ts'
 import { currentTurn } from './host/orchestration/current-turn.ts'
+import { createClaimTools } from './host/orchestration/claim-tools.ts'
 import { createTools, PREVIEW_TOOL, type ToolDeps } from './host/orchestration/tools.ts'
 import { createCheckNarrateTool } from './host/orchestration/check-tool.ts'
 import { EmbeddingIndex, type Embedder } from './host/memory/embedding-index.ts'
@@ -224,5 +225,5 @@ export function apply(ctx: Context): void {
     return store === undefined || agent === undefined ? undefined : { session: store.story, turn: currentTurn(agent) }
   }
   registerFoldersJail(ctx, { roots: async session => await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)), workspace: () => workspaceOf(ctx.roleplayRoot.path) })
-  installHooks(ctx, { traces: turnTraces, engine, boundaries, stores, timelines, rolls, folders: async chat => { const session = roleplaySessionOf(chat); return session === undefined ? undefined : await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)) }, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink, { rollerFor: chat => rolls.roller(chat) }), createCheckNarrateTool(toolDeps), ...createTriggerTools(toolDeps)] })
+  installHooks(ctx, { traces: turnTraces, engine, boundaries, stores, timelines, rolls, folders: async chat => { const session = roleplaySessionOf(chat); return session === undefined ? undefined : await storyRoots(ctx.roleplayRoot.path, sessionFolder(sessionsDir(), session)) }, previewTool: previewTool!, optionalTools: [...createDiceTools(diceLink, { rollerFor: chat => rolls.roller(chat) }), createCheckNarrateTool(toolDeps), ...createTriggerTools(toolDeps), ...createClaimTools(toolDeps)] })
 }

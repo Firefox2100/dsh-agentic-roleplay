@@ -1,0 +1,14 @@
+{
+  "id": "encoding-story-of-an-hour",
+  "name": "The Story of an Hour",
+  "description": "An encoding of Kate Chopin's story (1894): a woman with a weak heart is told her husband died in a railroad accident.",
+  "starting_time": "1894-04-10T07:00",
+  "time_zone": "UTC",
+  "metadata": {
+    "tags": [
+      "encoding",
+      "short-story",
+      "1894"
+    ]
+  }
+}

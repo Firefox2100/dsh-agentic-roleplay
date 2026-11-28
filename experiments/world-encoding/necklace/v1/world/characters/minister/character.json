@@ -1,0 +1,19 @@
+{
+  "id": "minister",
+  "name": "The Minister of Public Instruction",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "Gives the ball; notices Mathilde.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "ministry-palace",
+    "variables": {
+      "francs": 100000
+    }
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

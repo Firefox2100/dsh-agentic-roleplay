@@ -328,6 +328,9 @@ beforeEach(async () => {
       editLore: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       editPlots: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
       editRelation: () => { if (archiveError !== undefined) throw archiveError; return { characters: [], places: [], things: [], factions: [], relations: [], plots: [] } },
+      claims: () => { if (archiveError !== undefined) throw archiveError; return { claims: [], questions: [] } },
+      setClaimStatus: (_id: string, claim: number, status: string) => { if (archiveError !== undefined) throw archiveError; return { claims: [{ id: claim, status }], questions: [] } as never },
+      removeClaim: () => { if (archiveError !== undefined) throw archiveError; return { claims: [], questions: [] } },
       editNarrationVoice: () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       generatePortrait: async () => ({ characters: [], places: [], things: [], factions: [], relations: [], plots: [] }),
       portraitFile: async () => ({ file: join(base, 'worlds', 'secret.png'), size: 6 }),
@@ -1300,6 +1303,19 @@ describe('roleplay API', () => {
       expect((await put('/sessions/world/plots?id=abc', { plots: 'none' })).status).toBe(400)
       expect((await put('/sessions/world/relation?id=abc', { kind: 'character' })).status).toBe(422)
       expect((await put('/sessions/world/narration-voice?id=abc', { voice: 4 })).status).toBe(400)
+    })
+
+    it('lists the claims of a story, settles one and removes one, with a missing session or claim told apart', async () => {
+      expect(await (await fetch(`${origin}/sessions/world/claims?id=abc`)).json()).toEqual({ claims: [], questions: [] })
+      const settled = await put('/sessions/world/claims/status?id=abc&claim=4', { status: 'confirmed' })
+      expect(settled.status).toBe(200)
+      expect(await settled.json()).toEqual({ claims: [{ id: 4, status: 'confirmed' }], questions: [] })
+      expect((await put('/sessions/world/claims/status?id=abc&claim=4', { status: 'settled' })).status).toBe(400)
+      expect((await fetch(`${origin}/sessions/world/claims?id=abc&claim=4`, { method: 'DELETE' })).status).toBe(200)
+      archiveError = new SessionNotFoundError('no session "gone"')
+      expect((await fetch(`${origin}/sessions/world/claims?id=gone`)).status).toBe(404)
+      expect((await put('/sessions/world/claims/status?id=gone&claim=1', { status: 'confirmed' })).status).toBe(404)
+      archiveError = undefined
     })
 
     it('distinguishes a missing session from an edit that would make its world invalid', async () => {

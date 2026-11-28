@@ -1,0 +1,16 @@
+{
+  "id": "mr-sappleton",
+  "name": "Mr. Sappleton",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Mrs. Sappleton's husband, out snipe-shooting.",
+  "start": {
+    "public_state": "Out shooting.",
+    "activity": "Shooting snipe.",
+    "inner_state": "-",
+    "location": "marshes"
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

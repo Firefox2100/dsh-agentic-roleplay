@@ -1,0 +1,7 @@
+{
+  "id": "plank",
+  "name": "The plank",
+  "description": "The plank the condemned man and the sergeant stand on; it tilts when one end is no longer held.",
+  "location": "bridge-platform",
+  "unique": true
+}

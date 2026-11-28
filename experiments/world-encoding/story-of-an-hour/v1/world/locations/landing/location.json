@@ -1,0 +1,13 @@
+{
+  "id": "landing",
+  "name": "The landing",
+  "parent": "house",
+  "description": "The passage outside Louise's room, with its closed door.",
+  "exits": [
+    {
+      "to": "louise-room",
+      "description": "the door to Louise's room",
+      "travel_time_seconds": 5
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "scout",
+  "name": "The gray-clad rider",
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "A dusty horseman in gray who asks for water and gives news; in truth a Federal scout, which Farquhar never learns.",
+  "personality": "Ceremonious, patient; tells a civilian exactly enough to lead him on.",
+  "start": {
+    "public_state": "A dusty gray-clad soldier on a horse.",
+    "activity": "Riding.",
+    "inner_state": "Setting a trap for a civilian who may rise to the bait.",
+    "location": "road"
+  }
+}

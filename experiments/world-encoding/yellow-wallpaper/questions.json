@@ -1,0 +1,262 @@
+[
+ {
+  "id": "q01",
+  "question": "When was each diary entry written?",
+  "answer": "No dates; only by remarks: two weeks in, just after the Fourth of July, three weeks before the lease ends, a week before, two days before, the last day.",
+  "needs": [
+   "undated entries placed relative to anchors"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "the clock sidecar holds invented dates"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "telling.entries written; time.anchors july-4, lease-end"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "events w-n01..w-n03 (writes) with when anchors july-4, lease-end and approximate times"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "Who knew she was keeping a diary?",
+  "answer": "Nobody in the house; she hides it from John and Jennie.",
+  "needs": [
+   "who is unaware of an act"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "item diary; hidden is a single flag for everyone, not a per-person secret"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge john, jennie unaware of e02; state concealment"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge john, jennie unaware of e02; state concealment"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "Is there a woman in the wallpaper?",
+  "answer": "The text never says; only the narrator sees her.",
+  "needs": [
+   "a perception with unsettled truth"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "perceptions marked mistaken, which settles it more than the text does"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "fact f-woman unknown; frame wallpaper-woman perceived-unsettled"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-woman has nothing bearing on it: derived unresolved; narrator's events e11, e14, e18, e19 are actual perceptions"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "What did John say was wrong with her, and did she agree?",
+  "answer": "Temporary nervous depression; she disagreed and thought work and company would help.",
+  "needs": [
+   "two people's opposed beliefs"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "lore john-treatment; her view is background text"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "fact f-sick disputed; knowledge john believes, narrator doubts"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-sick: derived disputed by reading r-john; knowledge john believes, narrator doubts"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "How does her vision of the woman develop across the entries?",
+  "answer": "From a figure behind the pattern, to bars at night, to many women, to a woman creeping outside, to herself creeping.",
+  "needs": [
+   "a sequence of perceptions"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "turn 4 r2 to turn 11 as events with perceptions"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e11, e14, e18, e19, e21, e23 in frame wallpaper-woman; state identity"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "events e11, e14, e18, e19, e23 are perceptions and acts; state identity"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "Who made the rubbed streak on the wall?",
+  "answer": "Not said; it was there before her.",
+  "needs": [
+   "a trace of an unnamed past"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "partly",
+   "how": "f-smooch true; reading r-prior implied"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "s-smooch circumstance; reading r-prior implied"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "What did Jennie say about the paper?",
+  "answer": "That it stains everything it touches.",
+  "needs": [
+   "a character's stated explanation"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "perception content of one event"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e15 claims f-paper-stains"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e15 claims s of wallpaper stains (state circumstance)"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "Where is the key at the end?",
+  "answer": "By the front steps under a plantain leaf; John fetches it.",
+  "needs": [
+   "an item's real place after a throw"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "hidden, with the real place only in text"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "state key location front-path; f-key-under-leaf"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "state key location front-path; knowledge john knows from e24"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "Whom does 'Jane' mean?",
+  "answer": "It cannot be told: herself, or a slip for Jennie.",
+  "needs": [
+   "an ambiguity that must stay"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "the event text assumes an answer"
+  },
+  "draft": {
+   "answerable": "partly",
+   "how": "f-jane-is-narrator unknown; reading r-jane ambiguous"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "claim c-jane-is-narrator unresolved; reading r-jane ambiguous"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "What does she conceal, and from whom?",
+  "answer": "Her writing, her wakefulness, the woman and her creeping, from John and Jennie.",
+  "needs": [
+   "concealment as a relation"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "state concealment; knowledge unaware rows"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "state concealment; knowledge unaware rows"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "How does her trust in John change over the summer?",
+  "answer": "It falls from 0.6 to 0.2.",
+  "needs": [
+   "a quantity that changes"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "relationship edits narrator -> john trust across turns 2, 4, 5, 6"
+  },
+  "draft": {
+   "answerable": "no",
+   "how": "only text states: v2 has no numeric relationship values yet"
+  },
+  "v2": {
+   "answerable": "no",
+   "how": "only text states: v2 has no numeric relationship values yet"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "How much of the lease remained at the moonlit night, the 'week more' and the last day?",
+  "answer": "Three weeks, a week, a day.",
+  "needs": [
+   "time left relative to a deadline"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "text and invented dates"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e12 gap P21D; e16; e21; anchor lease-end"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e12 gap P21D; e16; e21; anchor lease-end"
+  }
+ },
+ {
+  "id": "q13",
+  "question": "Which entries were written before the Fourth of July?",
+  "answer": "The first two.",
+  "needs": [
+   "entries ordered against a date"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "entries n01, n02 before; n03 after anchor july-4"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "events w-n01, w-n02 before anchor july-4; w-n03 after"
+  }
+ }
+]

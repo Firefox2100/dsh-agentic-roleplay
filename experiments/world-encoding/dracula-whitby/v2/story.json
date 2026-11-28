@@ -1,0 +1,3028 @@
+{
+ "model": "history/2",
+ "work": {
+  "title": "Dracula, Chapter VII (the Whitby storm and the log of the Demeter)",
+  "author": "Bram Stoker",
+  "published": "1897",
+  "source": "source/text.txt"
+ },
+ "time": {
+  "note": "Four time bases, because the chapter dates its pieces in two incompatible ways. `voyage`: minutes from 6 July 00:00 (the log). `storm`: minutes from the Saturday midnight before the storm. `aug9` and `aug10`: minutes from midnight of those dates. Overlap is only derived inside one base. The text puts the storm 'last night' on 8 August (Mina's journal) and the ship's arrival 'last night' on 9 August (the dispatch), so which night is unresolved: see c-storm-night-7 and c-storm-night-8.",
+  "anchors": [],
+  "spans": [],
+  "ties": [
+   {
+    "id": "tie-storm-8",
+    "a": {
+     "epoch": "storm",
+     "t": 0
+    },
+    "b": {
+     "epoch": "aug9",
+     "t": -1440
+    },
+    "under": "c-storm-night-8",
+    "note": "the storm night is the night before 9 August, so Saturday midnight is 9 August 00:00 minus 24 h"
+   },
+   {
+    "id": "tie-storm-7",
+    "a": {
+     "epoch": "storm",
+     "t": 0
+    },
+    "b": {
+     "epoch": "aug9",
+     "t": -2880
+    },
+    "under": "c-storm-night-7",
+    "note": "the storm night is the night before 8 August, so Saturday midnight is 9 August 00:00 minus 48 h"
+   }
+  ]
+ },
+ "entities": {
+  "people": [
+   {
+    "id": "captain",
+    "name": "The captain of the Demeter",
+    "unnamed": true,
+    "src": [
+     "P24",
+     "P58"
+    ]
+   },
+   {
+    "id": "mate",
+    "name": "The first mate (a Roumanian)",
+    "unnamed": true,
+    "src": [
+     "P32",
+     "P50"
+    ]
+   },
+   {
+    "id": "second-mate",
+    "name": "The second mate",
+    "unnamed": true,
+    "src": [
+     "P44",
+     "P46"
+    ]
+   },
+   {
+    "id": "olgaren",
+    "name": "Olgaren",
+    "src": [
+     "P36"
+    ]
+   },
+   {
+    "id": "petrofsky",
+    "name": "Petrofsky",
+    "src": [
+     "P34"
+    ]
+   },
+   {
+    "id": "abramoff",
+    "name": "Abramoff",
+    "src": [
+     "P34"
+    ]
+   },
+   {
+    "id": "crew",
+    "name": "The crew",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P24",
+     "P30"
+    ]
+   },
+   {
+    "id": "stranger",
+    "name": "The tall thin man (It, Him)",
+    "unnamed": true,
+    "src": [
+     "P36",
+     "P54",
+     "P58"
+    ],
+    "note": "seen by three people; never confirmed"
+   },
+   {
+    "id": "customs",
+    "name": "Turkish customs officers",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P26",
+     "P28"
+    ]
+   },
+   {
+    "id": "correspondent",
+    "name": "The Dailygraph's correspondent",
+    "unnamed": true,
+    "src": [
+     "P04",
+     "P13"
+    ]
+   },
+   {
+    "id": "coastguard",
+    "name": "The coastguard on duty",
+    "unnamed": true,
+    "src": [
+     "P13"
+    ]
+   },
+   {
+    "id": "chief-boatman",
+    "name": "The chief boatman",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P13"
+    ]
+   },
+   {
+    "id": "surgeon",
+    "name": "Surgeon J. M. Caffyn",
+    "src": [
+     "P14"
+    ]
+   },
+   {
+    "id": "billington",
+    "name": "Mr S. F. Billington, solicitor",
+    "src": [
+     "P17"
+    ]
+   },
+   {
+    "id": "russian-consul",
+    "name": "The Russian consul",
+    "unnamed": true,
+    "src": [
+     "P17"
+    ]
+   },
+   {
+    "id": "consul-clerk",
+    "name": "A clerk of the Russian consul",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P19"
+    ]
+   },
+   {
+    "id": "inspector",
+    "name": "The Board of Trade inspector",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P19"
+    ]
+   },
+   {
+    "id": "coroner",
+    "name": "The coroner and inquest",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P60"
+    ]
+   },
+   {
+    "id": "mina",
+    "name": "Mina Murray",
+    "src": [
+     "P62"
+    ]
+   },
+   {
+    "id": "lucy",
+    "name": "Lucy Westenra",
+    "src": [
+     "P63"
+    ]
+   },
+   {
+    "id": "swales",
+    "name": "Old Mr Swales",
+    "src": [
+     "P66"
+    ]
+   },
+   {
+    "id": "doctor",
+    "name": "The doctor who examined Mr Swales",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P66"
+    ]
+   },
+   {
+    "id": "coal-merchant",
+    "name": "The coal merchant",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P17"
+    ]
+   },
+   {
+    "id": "old-fisherman",
+    "name": "The old fisherman",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P06"
+    ]
+   },
+   {
+    "id": "gossips",
+    "name": "The gossips on the East Cliff",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P06"
+    ]
+   },
+   {
+    "id": "crowd",
+    "name": "The crowd on the cliffs and piers",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P06",
+     "P13"
+    ],
+    "may_include": [
+     "boat-captains"
+    ],
+    "may_include_note": "e-sunset-watch names the crowd and the boat captains together; nothing else says who stood in the crowd at night"
+   },
+   {
+    "id": "holidaymakers",
+    "name": "The holiday-makers",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P06"
+    ]
+   },
+   {
+    "id": "boat-captains",
+    "name": "The captains of Whitby boats",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P06"
+    ]
+   },
+   {
+    "id": "searchlight-crew",
+    "name": "The men working the searchlight",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P10",
+     "P13"
+    ]
+   },
+   {
+    "id": "folk",
+    "name": "The folk of Whitby",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P60"
+    ]
+   },
+   {
+    "id": "captains",
+    "name": "The captains who carry the coffin",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P66"
+    ]
+   },
+   {
+    "id": "men",
+    "name": "The men who found Mr Swales",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P66"
+    ]
+   },
+   {
+    "id": "spca",
+    "name": "Members of the S. P. C. A.",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P17"
+    ]
+   },
+   {
+    "id": "dog",
+    "name": "The immense dog",
+    "kind": "animal",
+    "src": [
+     "P12"
+    ]
+   },
+   {
+    "id": "mastiff",
+    "name": "The coal merchant's mastiff",
+    "kind": "animal",
+    "src": [
+     "P17"
+    ]
+   },
+   {
+    "id": "schooner",
+    "name": "The Demeter, as an agent in the storm",
+    "kind": "animal",
+    "unnamed": false,
+    "src": [
+     "P11"
+    ],
+    "note": "a ship as a mover; a place and a thing below"
+   }
+  ],
+  "places": [
+   {
+    "id": "whitby",
+    "name": "Whitby",
+    "src": [
+     "P05"
+    ]
+   },
+   {
+    "id": "east-cliff",
+    "name": "The East Cliff and its churchyard walk",
+    "parent": "whitby",
+    "src": [
+     "P06"
+    ]
+   },
+   {
+    "id": "harbour",
+    "name": "Whitby harbour and its piers",
+    "parent": "whitby",
+    "src": [
+     "P09",
+     "P11"
+    ]
+   },
+   {
+    "id": "tate-hill-pier",
+    "name": "Tate Hill Pier",
+    "parent": "whitby",
+    "src": [
+     "P11",
+     "P13"
+    ]
+   },
+   {
+    "id": "mortuary",
+    "name": "The mortuary",
+    "parent": "whitby",
+    "src": [
+     "P14"
+    ]
+   },
+   {
+    "id": "churchyard",
+    "name": "The churchyard on the cliff",
+    "parent": "whitby",
+    "src": [
+     "P12",
+     "P66"
+    ]
+   },
+   {
+    "id": "seat",
+    "name": "Mina's seat in the churchyard",
+    "parent": "churchyard",
+    "src": [
+     "P66"
+    ]
+   },
+   {
+    "id": "mina-rooms",
+    "name": "Mina and Lucy's rooms",
+    "parent": "whitby",
+    "src": [
+     "P63"
+    ]
+   },
+   {
+    "id": "at-sea",
+    "name": "At sea aboard the Demeter, Varna to Whitby",
+    "src": [
+     "P21"
+    ]
+   },
+   {
+    "id": "demeter-deck",
+    "name": "The deck of the Demeter at Tate Hill Pier",
+    "parent": "tate-hill-pier",
+    "src": [
+     "P13"
+    ]
+   },
+   {
+    "id": "hold",
+    "name": "The forward hold of the Demeter",
+    "parent": "at-sea",
+    "src": [
+     "P54"
+    ]
+   },
+   {
+    "id": "demeter-hold",
+    "name": "The hold of the Demeter",
+    "src": [
+     "P17",
+     "P54"
+    ]
+   }
+  ],
+  "things": []
+ },
+ "frames": [],
+ "claims": [
+  {
+   "id": "c-stranger-aboard",
+   "text": "A tall thin stranger, unlike any of the crew, was aboard the Demeter.",
+   "by": "olgaren",
+   "asserted_in": "b-olgaren-confides",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "b-search-ship",
+     "as": "undermines"
+    },
+    {
+     "ref": "b-mate-sees-it",
+     "as": "supports"
+    },
+    {
+     "ref": "b-mate-screams",
+     "as": "supports"
+    },
+    {
+     "ref": "b-captain-sees-it",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P36"
+   ]
+  },
+  {
+   "id": "c-mate-killed-crew",
+   "text": "The mad mate got rid of the men one by one and then followed them into the sea.",
+   "by": "captain",
+   "asserted_in": "b-mate-jumps",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "b-mate-sees-it",
+     "as": "supports"
+    },
+    {
+     "ref": "b-captain-sees-it",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P56"
+   ]
+  },
+  {
+   "id": "c-stranger-killed-crew",
+   "text": "The stranger ('It', 'Him') got rid of the crew.",
+   "by": "captain",
+   "asserted_in": "b-captain-sees-it",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "b-search-ship",
+     "as": "undermines"
+    },
+    {
+     "ref": "b-mate-sees-it",
+     "as": "supports"
+    },
+    {
+     "ref": "b-captain-sees-it",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P54",
+    "P58"
+   ]
+  },
+  {
+   "id": "c-captain-killed-crew",
+   "text": "The captain himself committed the murders.",
+   "by": "correspondent",
+   "asserted_in": "e-inquest",
+   "about": [],
+   "bears_on": [],
+   "src": [
+    "P60"
+   ]
+  },
+  {
+   "id": "c-captain-tied-himself",
+   "text": "The dead man tied up his own hands, fastening the knots with his teeth.",
+   "by": "coastguard",
+   "asserted_in": "e-coastguard-says",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "b-captain-resolves",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P14"
+   ]
+  },
+  {
+   "id": "c-dead-two-days",
+   "text": "The man must have been dead for quite two days.",
+   "by": "surgeon",
+   "asserted_in": "e-corpse-examined",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "b-captain-sees-it",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P14"
+   ]
+  },
+  {
+   "id": "c-ship-varna",
+   "text": "The schooner is the Russian Demeter, from Varna.",
+   "by": "correspondent",
+   "asserted_in": "e-ship-identified",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-log-read",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P17"
+   ]
+  },
+  {
+   "id": "c-cargo-clay",
+   "text": "The boxes are harmless: invoiced as clay, there is nothing in them to hurt the mate's pulling them about.",
+   "by": "captain",
+   "asserted_in": "b-mate-searches-hold",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "b-mate-screams",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-dog-leaps",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P54",
+    "P17"
+   ]
+  },
+  {
+   "id": "c-swales-fright",
+   "text": "Old Mr Swales fell back dead in some sort of fright.",
+   "by": "doctor",
+   "asserted_in": "e-swales-found",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-swales-found",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P66"
+   ]
+  },
+  {
+   "id": "c-lucy-walked",
+   "text": "Lucy got up and dressed herself twice in the night without waking.",
+   "by": "mina",
+   "asserted_in": "e-mina-night",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-lucy-walk-1",
+     "as": "confirms"
+    },
+    {
+     "ref": "e-lucy-walk-2",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P63"
+   ]
+  },
+  {
+   "id": "c-jonathan-on-land",
+   "text": "Jonathan was on land, not on the sea, last night.",
+   "by": "mina",
+   "asserted_in": "e-mina-harbour",
+   "about": [],
+   "bears_on": [],
+   "src": [
+    "P64"
+   ]
+  },
+  {
+   "id": "c-storm-night-7",
+   "text": "The storm was last night: the night before 8 August.",
+   "by": "mina",
+   "asserted_in": "e-mina-night",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-cutting-written",
+     "as": "supports"
+    },
+    {
+     "ref": "e-ship-identified",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P63"
+   ]
+  },
+  {
+   "id": "c-storm-night-8",
+   "text": "The derelict came in during the storm last night: the night before 9 August.",
+   "by": "correspondent",
+   "asserted_in": "e-ship-identified",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-ship-identified",
+     "as": "supports"
+    },
+    {
+     "ref": "e-cutting-written",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P17"
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "id": "q-crew-deaths",
+   "text": "Who got rid of the crew?",
+   "rivals": [
+    "c-mate-killed-crew",
+    "c-stranger-killed-crew",
+    "c-captain-killed-crew"
+   ]
+  },
+  {
+   "id": "q-storm-date",
+   "text": "On which night did the storm and the beaching happen?",
+   "rivals": [
+    "c-storm-night-7",
+    "c-storm-night-8"
+   ]
+  }
+ ],
+ "events": [
+  {
+   "id": "b-loaded",
+   "when": {
+    "seq": -990,
+    "t": [
+     720,
+     721
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "departure",
+   "place": "at-sea",
+   "text": "On 6 July the Demeter finished taking in cargo, silver sand and boxes of earth, and at noon sailed from Varna: five hands, two mates, cook and the captain.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "agent"
+    },
+    {
+     "id": "mate",
+     "role": "agent"
+    },
+    {
+     "id": "second-mate",
+     "role": "agent"
+    },
+    {
+     "id": "crew",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P20",
+    "P21",
+    "P22",
+    "P23",
+    "P24",
+    "P25"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-bosphorus",
+   "when": {
+    "seq": -980,
+    "t": [
+     7560,
+     8160
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "passage",
+   "place": "at-sea",
+   "text": "On 11 July at dawn the Demeter entered the Bosphorus, was boarded by Turkish Customs officers (backsheesh, all correct) and under way at four.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "agent"
+    },
+    {
+     "id": "customs",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P26",
+    "P27"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-dardanelles",
+   "when": {
+    "seq": -970,
+    "t": [
+     9000,
+     9840
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "passage",
+   "place": "at-sea",
+   "text": "On 12 July the Dardanelles: more customs officers and backsheesh; at dark into the Archipelago.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "agent"
+    },
+    {
+     "id": "customs",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P28",
+    "P29"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-crew-withholds",
+   "when": {
+    "seq": -960,
+    "t": [
+     10080,
+     11520
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "conceal",
+   "place": "at-sea",
+   "text": "On 13 July off Cape Matapan the crew seemed scared and dissatisfied but would not speak out; on 14 July they told the mate only that there was something wrong and crossed themselves.",
+   "who": [
+    {
+     "id": "crew",
+     "role": "agent"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    },
+    {
+     "id": "mate",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P30",
+    "P31",
+    "P32",
+    "P33"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read",
+   "from": [
+    "captain"
+   ]
+  },
+  {
+   "id": "b-mate-strikes",
+   "when": {
+    "seq": -950,
+    "t": [
+     11520,
+     12240
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "violence",
+   "place": "at-sea",
+   "text": "On 14 July the mate lost his temper with one of the crew and struck him; a quarrel was expected but all was quiet.",
+   "who": [
+    {
+     "id": "mate",
+     "role": "agent"
+    },
+    {
+     "id": "crew",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P32",
+    "P33"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-petrofsky-missing",
+   "when": {
+    "seq": -940,
+    "t": [
+     14160,
+     14880
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "disappearance",
+   "place": "at-sea",
+   "text": "On 16 July the mate reported Petrofsky missing: he took the larboard watch, was relieved by Abramoff and did not go to his bunk.",
+   "who": [
+    {
+     "id": "petrofsky",
+     "role": "patient"
+    },
+    {
+     "id": "abramoff",
+     "role": "witness"
+    },
+    {
+     "id": "mate",
+     "role": "witness"
+    },
+    {
+     "id": "captain",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P34",
+    "P35"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-olgaren-sees",
+   "when": {
+    "seq": -930,
+    "t": [
+     14400,
+     14640
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "perception",
+   "place": "at-sea",
+   "text": "In his watch on the night of 16 July, sheltering behind the deck-house from rain, Olgaren saw a tall thin man, unlike any of the crew, come up the companion-way, go forward and vanish; the bows were empty and the hatchways closed.",
+   "who": [
+    {
+     "id": "olgaren",
+     "role": "experiencer"
+    },
+    {
+     "id": "stranger",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P36"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-olgaren-confides",
+   "when": {
+    "seq": -920,
+    "t": [
+     14880,
+     14940
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "speech",
+   "place": "at-sea",
+   "text": "On 17 July Olgaren confided to the captain, awestruck, that he thought there was a strange man aboard.",
+   "who": [
+    {
+     "id": "olgaren",
+     "role": "speaker"
+    },
+    {
+     "id": "captain",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P36"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-search-ship",
+   "when": {
+    "seq": -910,
+    "t": [
+     15000,
+     15300
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "act",
+   "place": "at-sea",
+   "text": "The same day the captain got the whole crew together and searched the ship stem to stern with lanterns; only the big wooden boxes, no corner where a man could hide; the men were relieved. The mate called it folly and scowled.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "agent"
+    },
+    {
+     "id": "crew",
+     "role": "agent"
+    },
+    {
+     "id": "mate",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P37",
+    "P38",
+    "P39"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-calm",
+   "when": {
+    "seq": -900,
+    "t": [
+     21600,
+     23040
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "state-change",
+   "place": "at-sea",
+   "text": "On 22 July after three days of rough weather and passing Gibraltar, the men forgot their dread and all were on good terms.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "agent"
+    },
+    {
+     "id": "crew",
+     "role": "agent"
+    },
+    {
+     "id": "mate",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P40",
+    "P41"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-second-lost",
+   "when": {
+    "seq": -890,
+    "t": [
+     25480,
+     26400
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "disappearance",
+   "place": "at-sea",
+   "text": "On 24 July another man was lost, after coming off his watch like the first; the men sent a round robin asking for a double watch, as they feared to be alone; the mate was angry.",
+   "who": [
+    {
+     "id": "crew",
+     "role": "patient"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    },
+    {
+     "id": "mate",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P42",
+    "P43"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-maelstrom",
+   "when": {
+    "seq": -880,
+    "t": [
+     25920,
+     31680
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "event",
+   "place": "at-sea",
+   "text": "From 24 to 28 July, four days of storm in a sort of maelstrom; no one slept; the second mate volunteered to steer and watch.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "agent"
+    },
+    {
+     "id": "second-mate",
+     "role": "agent"
+    },
+    {
+     "id": "crew",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P44",
+    "P45"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-second-mate-lost",
+   "when": {
+    "seq": -870,
+    "t": [
+     32880,
+     33480
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "disappearance",
+   "place": "at-sea",
+   "text": "On the night of 29 July, on a single watch, the morning watch found no one but the steersman; a thorough search found no one; the ship was now without a second mate.",
+   "who": [
+    {
+     "id": "second-mate",
+     "role": "patient"
+    },
+    {
+     "id": "crew",
+     "role": "witness"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    },
+    {
+     "id": "mate",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P46",
+    "P47"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-two-lost",
+   "when": {
+    "seq": -860,
+    "t": [
+     34320,
+     34920
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "disappearance",
+   "place": "at-sea",
+   "text": "On the night of 30 July both the man of the watch and the steersman were missing; only the captain, the mate and two hands were left to work the ship.",
+   "who": [
+    {
+     "id": "crew",
+     "role": "patient"
+    },
+    {
+     "id": "mate",
+     "role": "witness"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P48",
+    "P49"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-fog",
+   "when": {
+    "seq": -850,
+    "t": [
+     37440,
+     38880
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "state-change",
+   "place": "at-sea",
+   "text": "On 1 August, after two days of fog, the ship ran before the wind with nobody able to work the sails; the mate was more demoralised than the men (Russians; he a Roumanian).",
+   "who": [
+    {
+     "id": "captain",
+     "role": "agent"
+    },
+    {
+     "id": "mate",
+     "role": "agent"
+    },
+    {
+     "id": "crew",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P50",
+    "P51"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-another-gone",
+   "when": {
+    "seq": -840,
+    "t": [
+     38880,
+     38910
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "disappearance",
+   "place": "at-sea",
+   "text": "At midnight on 2 August a cry was heard outside the captain's port; the mate, running, had heard it too; the man on watch was gone; the mate saw North Foreland as the fog lifted for a moment.",
+   "who": [
+    {
+     "id": "crew",
+     "role": "patient"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    },
+    {
+     "id": "mate",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P52",
+    "P53"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-mate-sees-it",
+   "when": {
+    "seq": -830,
+    "t": [
+     40320,
+     40340
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "speech",
+   "place": "at-sea",
+   "text": "At midnight on 3 August the mate, haggard and wild-eyed, whispered in the captain's ear: on his watch last night he saw It, tall and thin and ghastly pale, in the bows; he crept behind It and gave It his knife, which went through It, empty as the air; It must be in the hold, in one of the boxes.",
+   "who": [
+    {
+     "id": "mate",
+     "role": "speaker"
+    },
+    {
+     "id": "captain",
+     "role": "addressee"
+    },
+    {
+     "id": "stranger",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P54"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-mate-whispers",
+   "when": {
+    "seq": -820,
+    "t": [
+     40320,
+     40340
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "conceal",
+   "place": "at-sea",
+   "text": "The mate whispers hoarsely, his mouth to the captain's ear, as though fearing the very air might hear.",
+   "who": [
+    {
+     "id": "mate",
+     "role": "agent"
+    },
+    {
+     "id": "captain",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P54"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read",
+   "from": [
+    "stranger"
+   ]
+  },
+  {
+   "id": "b-mate-searches-hold",
+   "when": {
+    "seq": -810,
+    "t": [
+     40340,
+     40380
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "act",
+   "place": "hold",
+   "text": "The mate takes a tool-chest and a lantern and goes down the forward hatchway to unscrew the boxes one by one, while the captain holds the helm and writes; the boxes are invoiced as 'clay'.",
+   "who": [
+    {
+     "id": "mate",
+     "role": "agent"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P54",
+    "P55"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read",
+   "fulfils": "h-mate-opens-boxes"
+  },
+  {
+   "id": "b-mate-screams",
+   "when": {
+    "seq": -800,
+    "t": [
+     40380,
+     40390
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "event",
+   "place": "at-sea",
+   "text": "A startled scream comes up the hatchway and the mate comes up on deck as if shot from a gun, raging, eyes rolling and face convulsed: 'Save me!'.",
+   "who": [
+    {
+     "id": "mate",
+     "role": "agent"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P56"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-mate-jumps",
+   "when": {
+    "seq": -790,
+    "t": [
+     40390,
+     40395
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "act",
+   "place": "at-sea",
+   "text": "Seeing the fog, the mate says 'He is there. I know the secret now. The sea will save me from Him', springs on the bulwark and throws himself into the sea.",
+   "who": [
+    {
+     "id": "mate",
+     "role": "agent"
+    },
+    {
+     "id": "captain",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P56"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-captain-sees-it",
+   "when": {
+    "seq": -780,
+    "t": [
+     41760,
+     42240
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "perception",
+   "place": "at-sea",
+   "text": "On 4 August, all night at the helm in the dimness, the captain saw It, Him; he thinks the mate was right to jump.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "experiencer"
+    },
+    {
+     "id": "stranger",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P57",
+    "P58"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "b-captain-resolves",
+   "when": {
+    "seq": -770,
+    "t": [
+     42240,
+     42300
+    ],
+    "epoch": "voyage"
+   },
+   "kind": "speech",
+   "place": "at-sea",
+   "text": "The captain writes that he will tie his hands to the wheel when his strength begins to fail, and with them that which It dare not touch, and save his soul and his honour as a captain; the paper may be found in the bottle.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P58"
+   ],
+   "scene": "voyage",
+   "origin": "backfilled",
+   "established_in": "e-log-read"
+  },
+  {
+   "id": "e-captain-dies",
+   "when": {
+    "seq": 10,
+    "before": [
+     "e-demeter-beaches"
+    ]
+   },
+   "kind": "death",
+   "place": "at-sea",
+   "text": "The captain dies tied to the wheel, at least two days before the schooner is examined.",
+   "who": [
+    {
+     "id": "captain",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P14"
+   ],
+   "origin": "offscreen",
+   "established_in": "e-corpse-examined"
+  },
+  {
+   "id": "e-cutting-written",
+   "when": {
+    "seq": 20
+   },
+   "kind": "document",
+   "place": "whitby",
+   "text": "A correspondent of The Dailygraph writes from Whitby, dated 8 August, an account of a sudden storm.",
+   "who": [
+    {
+     "id": "correspondent",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-saturday-fine",
+   "when": {
+    "seq": 30,
+    "t": [
+     480,
+     1080
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "whitby",
+   "text": "Saturday was as fine as ever known; holiday-makers took trips to Mulgrave Woods, Robin Hood's Bay, Staithes and the steamers made trips up and down the coast.",
+   "who": [
+    {
+     "id": "holidaymakers",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P06"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-mares-tails",
+   "when": {
+    "seq": 40,
+    "t": [
+     900,
+     960
+    ],
+    "epoch": "storm"
+   },
+   "kind": "observation",
+   "place": "east-cliff",
+   "text": "In the afternoon gossips on the East Cliff called attention to mares'-tails high in the sky to the north-west; the coastguard on duty made report; an old fisherman foretold a sudden storm.",
+   "who": [
+    {
+     "id": "gossips",
+     "role": "agent"
+    },
+    {
+     "id": "coastguard",
+     "role": "agent"
+    },
+    {
+     "id": "old-fisherman",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P06"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-sunset-watch",
+   "when": {
+    "seq": 50,
+    "t": [
+     1080,
+     1230
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "east-cliff",
+   "text": "An assemblage gathered on the cliff walk to see the sunset's colours behind Kettleness; more than one captain decided his boat would stay in harbour.",
+   "who": [
+    {
+     "id": "crowd",
+     "role": "agent"
+    },
+    {
+     "id": "boat-captains",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P06",
+    "P07"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-schooner-seen-early",
+   "when": {
+    "seq": 60,
+    "t": [
+     1200,
+     1400
+    ],
+    "epoch": "storm"
+   },
+   "kind": "observation",
+   "place": "east-cliff",
+   "text": "A foreign schooner with all sails set, seemingly going westwards, was commented on for the officers' foolhardiness; efforts were made to signal her to reduce sail; before night she was seen with sails flapping on the swell.",
+   "who": [
+    {
+     "id": "crowd",
+     "role": "witness"
+    },
+    {
+     "id": "schooner",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P06"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-stillness",
+   "when": {
+    "seq": 70,
+    "t": [
+     1300,
+     1450
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "whitby",
+   "text": "Before ten the air grew oppressive and the silence so marked that a sheep inland and a dog in the town were heard; the pier band's lively French air was a discord; at midnight a dead calm.",
+   "who": [
+    {
+     "id": "crowd",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P08"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-mina-night",
+   "when": {
+    "seq": 80,
+    "t": [
+     1320,
+     1700
+    ],
+    "epoch": "storm"
+   },
+   "kind": "state-change",
+   "place": "mina-rooms",
+   "text": "Lucy was very restless all night and Mina could not sleep; the storm was fearful and boomed among the chimney-pots like a distant gun.",
+   "who": [
+    {
+     "id": "mina",
+     "role": "experiencer"
+    },
+    {
+     "id": "lucy",
+     "role": "experiencer"
+    }
+   ],
+   "src": [
+    "P63"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-storm-breaks",
+   "when": {
+    "seq": 90,
+    "t": [
+     1450,
+     1500
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "harbour",
+   "text": "A little after midnight a strange hollow booming came from over the sea; then without warning the tempest broke, the sea rose in minutes, the piers had to be cleared of onlookers, and sea-fog drifted inland.",
+   "who": [
+    {
+     "id": "crowd",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P08",
+    "P09"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-lucy-walk-1",
+   "when": {
+    "seq": 100,
+    "within": [
+     "e-mina-night"
+    ]
+   },
+   "kind": "act",
+   "place": "mina-rooms",
+   "text": "Lucy got up and dressed herself without waking; Mina woke in time, undressed her without waking her and got her back to bed.",
+   "who": [
+    {
+     "id": "lucy",
+     "role": "agent"
+    },
+    {
+     "id": "mina",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P63"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-lucy-walk-2",
+   "when": {
+    "seq": 110,
+    "within": [
+     "e-mina-night"
+    ]
+   },
+   "kind": "act",
+   "place": "mina-rooms",
+   "text": "Lucy got up and dressed herself a second time; Mina again undressed her without waking her and got her back to bed.",
+   "who": [
+    {
+     "id": "lucy",
+     "role": "agent"
+    },
+    {
+     "id": "mina",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P63"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-searchlight-sweeps",
+   "when": {
+    "seq": 120,
+    "t": [
+     1470,
+     1520
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "east-cliff",
+   "text": "The new searchlight on the East Cliff, untried before, swept the sea in the pauses of the mist and guided a fishing-boat into the harbour; the crowd shouted for joy at each boat's safety.",
+   "who": [
+    {
+     "id": "searchlight-crew",
+     "role": "agent"
+    },
+    {
+     "id": "crowd",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P10"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-schooner-in-danger",
+   "when": {
+    "seq": 130,
+    "t": [
+     1500,
+     1515
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "east-cliff",
+   "text": "The searchlight found the schooner, all sails set, with the wind backed to the east and the reef between her and the port; watchers shuddered; a fresh bank of fog closed over her; the wind shifted to the north-east.",
+   "who": [
+    {
+     "id": "searchlight-crew",
+     "role": "agent"
+    },
+    {
+     "id": "crowd",
+     "role": "witness"
+    },
+    {
+     "id": "schooner",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P11"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-demeter-beaches",
+   "when": {
+    "seq": 140,
+    "t": [
+     1515,
+     1520
+    ],
+    "epoch": "storm"
+   },
+   "kind": "arrival",
+   "place": "tate-hill-pier",
+   "text": "The schooner leaps from wave to wave between the piers, a corpse lashed to the helm, crosses the harbour and pitches herself onto the sand of Tate Hill Pier; no other form is seen on deck.",
+   "who": [
+    {
+     "id": "schooner",
+     "role": "agent"
+    },
+    {
+     "id": "crowd",
+     "role": "witness"
+    },
+    {
+     "id": "searchlight-crew",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P11",
+    "P12"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-dog-leaps",
+   "when": {
+    "seq": 150,
+    "t": [
+     1520,
+     1521
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "tate-hill-pier",
+   "text": "The instant the ship touches, an immense dog springs from below, runs forward, jumps from the bow onto the sand, makes for the steep cliff and the churchyard and vanishes in the dark beyond the searchlight.",
+   "who": [
+    {
+     "id": "dog",
+     "role": "agent"
+    },
+    {
+     "id": "crowd",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P12"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-coastguard-boards",
+   "when": {
+    "seq": 160,
+    "t": [
+     1522,
+     1530
+    ],
+    "epoch": "storm"
+   },
+   "kind": "act",
+   "place": "demeter-deck",
+   "text": "The coastguard on the east side runs down to the little pier, the first to climb aboard; the searchlight men turn their light on the derelict; he runs aft, bends to the wheel and recoils.",
+   "who": [
+    {
+     "id": "coastguard",
+     "role": "agent"
+    },
+    {
+     "id": "searchlight-crew",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P13"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-correspondent-runs",
+   "when": {
+    "seq": 170,
+    "t": [
+     1525,
+     1545
+    ],
+    "epoch": "storm"
+   },
+   "kind": "act",
+   "place": "tate-hill-pier",
+   "text": "Crowds begin to run; the correspondent, a good runner, comes ahead of them from the West Cliff by the drawbridge, finds a crowd held back by the coastguard and police, and by the chief boatman's courtesy is let on deck with a small group.",
+   "who": [
+    {
+     "id": "correspondent",
+     "role": "agent"
+    },
+    {
+     "id": "chief-boatman",
+     "role": "agent"
+    },
+    {
+     "id": "coastguard",
+     "role": "witness"
+    },
+    {
+     "id": "crowd",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P13"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-corpse-examined",
+   "when": {
+    "seq": 180,
+    "t": [
+     1545,
+     1570
+    ],
+    "epoch": "storm"
+   },
+   "kind": "observation",
+   "place": "demeter-deck",
+   "text": "The man is fastened by his hands, one over the other, to a spoke of the wheel, a crucifix with its beads between inner hand and wood; the cords have cut the flesh to the bone; the surgeon, Caffyn, says he must have been dead quite two days; a corked bottle in his pocket holds a roll of paper, the addendum to the log.",
+   "who": [
+    {
+     "id": "correspondent",
+     "role": "witness"
+    },
+    {
+     "id": "surgeon",
+     "role": "agent"
+    },
+    {
+     "id": "coastguard",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P14"
+   ],
+   "scene": "storm",
+   "fulfils": "h-captain-ties"
+  },
+  {
+   "id": "e-coastguard-says",
+   "when": {
+    "seq": 190,
+    "t": [
+     1550,
+     1552
+    ],
+    "epoch": "storm"
+   },
+   "kind": "speech",
+   "place": "demeter-deck",
+   "text": "The coastguard says the man must have tied up his own hands, fastening the knots with his teeth.",
+   "who": [
+    {
+     "id": "coastguard",
+     "role": "speaker"
+    },
+    {
+     "id": "correspondent",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P14"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-corpse-removed",
+   "when": {
+    "seq": 200,
+    "t": [
+     1570,
+     1590
+    ],
+    "epoch": "storm"
+   },
+   "kind": "act",
+   "place": "mortuary",
+   "text": "The dead steersman is reverently removed and placed in the mortuary to await the inquest; the first-aboard point for salvage is noted for the Admiralty Court.",
+   "who": [
+    {
+     "id": "coastguard",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P14"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-storm-abates",
+   "when": {
+    "seq": 210,
+    "t": [
+     1590,
+     1650
+    ],
+    "epoch": "storm"
+   },
+   "kind": "event",
+   "place": "whitby",
+   "text": "The storm passes, crowds scatter homeward, the sky reddens over the Yorkshire wolds; the correspondent promises further details.",
+   "who": [
+    {
+     "id": "crowd",
+     "role": "agent"
+    },
+    {
+     "id": "correspondent",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P15",
+    "P16"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-mina-harbour",
+   "when": {
+    "seq": 220,
+    "t": [
+     1700,
+     1780
+    ],
+    "epoch": "storm"
+   },
+   "kind": "act",
+   "place": "harbour",
+   "text": "Early in the morning Mina and Lucy go down to the harbour to see if anything happened; very few people about; big grim waves forced through the narrow mouth; Mina is glad Jonathan was not on the sea last night, and anxious where he is.",
+   "who": [
+    {
+     "id": "mina",
+     "role": "agent"
+    },
+    {
+     "id": "lucy",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P64",
+    "P65"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-cutting-pasted",
+   "when": {
+    "seq": 230,
+    "after": [
+     "e-mina-harbour"
+    ]
+   },
+   "kind": "act",
+   "place": "mina-rooms",
+   "text": "Mina pastes the cutting in her journal.",
+   "who": [
+    {
+     "id": "mina",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P03",
+    "P62"
+   ],
+   "scene": "storm"
+  },
+  {
+   "id": "e-mastiff-found",
+   "when": {
+    "seq": 240,
+    "t": [
+     330,
+     420
+    ],
+    "epoch": "aug9"
+   },
+   "kind": "event",
+   "place": "whitby",
+   "text": "Early on 9 August a large half-bred mastiff belonging to a coal merchant close to Tate Hill Pier is found dead in the road opposite its master's yard, fighting-torn: throat torn away, belly slit as if with a savage claw.",
+   "who": [
+    {
+     "id": "mastiff",
+     "role": "patient"
+    },
+    {
+     "id": "coal-merchant",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P17",
+    "P18"
+   ],
+   "scene": "aug9"
+  },
+  {
+   "id": "e-ship-identified",
+   "when": {
+    "seq": 250,
+    "t": [
+     420,
+     480
+    ],
+    "epoch": "aug9"
+   },
+   "kind": "document",
+   "place": "whitby",
+   "text": "The dispatch of 9 August: the schooner is a Russian from Varna, the Demeter, nearly all in ballast of silver sand with a small cargo of great wooden boxes of mould; the sequel to last night's strange arrival.",
+   "who": [
+    {
+     "id": "correspondent",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P17"
+   ],
+   "scene": "aug9",
+   "fulfils": "h-sequel"
+  },
+  {
+   "id": "e-billington-takes-cargo",
+   "when": {
+    "seq": 260,
+    "t": [
+     480,
+     720
+    ],
+    "epoch": "aug9"
+   },
+   "kind": "act",
+   "place": "demeter-deck",
+   "text": "This morning the consignee, Mr Billington, a Whitby solicitor, goes aboard and takes formal possession of the boxes; the Russian consul takes the ship for the charter-party and pays harbour dues; the Board of Trade officials are exacting.",
+   "who": [
+    {
+     "id": "billington",
+     "role": "agent"
+    },
+    {
+     "id": "russian-consul",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P17"
+   ],
+   "scene": "aug9"
+  },
+  {
+   "id": "e-dog-missing",
+   "when": {
+    "seq": 270,
+    "t": [
+     480,
+     900
+    ],
+    "epoch": "aug9"
+   },
+   "kind": "event",
+   "place": "whitby",
+   "text": "The dog which landed cannot be found; S. P. C. A. members who tried to befriend it find it gone from the town; it may be hiding on the moors; some dread it as a fierce brute.",
+   "who": [
+    {
+     "id": "spca",
+     "role": "agent"
+    },
+    {
+     "id": "dog",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P17"
+   ],
+   "scene": "aug9"
+  },
+  {
+   "id": "e-log-read",
+   "when": {
+    "seq": 280,
+    "t": [
+     900,
+     1000
+    ],
+    "epoch": "aug9"
+   },
+   "kind": "act",
+   "place": "whitby",
+   "text": "By kindness of the Board of Trade inspector the correspondent reads the log-book (in order up to within three days of the end, with nothing but missing men) and, produced at the inquest, the paper from the bottle; he sends a rescript from a clerk of the Russian consul's dictation, omitting technical details; it almost seems the captain was seized with mania.",
+   "who": [
+    {
+     "id": "correspondent",
+     "role": "agent"
+    },
+    {
+     "id": "inspector",
+     "role": "agent"
+    },
+    {
+     "id": "consul-clerk",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P19",
+    "P20",
+    "P21",
+    "P22"
+   ],
+   "scene": "aug9"
+  },
+  {
+   "id": "e-inquest",
+   "when": {
+    "seq": 290,
+    "t": [
+     1000,
+     1100
+    ],
+    "epoch": "aug9"
+   },
+   "kind": "inquiry",
+   "place": "whitby",
+   "text": "The verdict at the inquest is an open one: no evidence, and whether or not the captain himself committed the murders no one can say; the folk hold the captain a hero and his body is to have a public funeral up the Esk and the abbey steps; a hundred boat-owners have given their names.",
+   "who": [
+    {
+     "id": "coroner",
+     "role": "agent"
+    },
+    {
+     "id": "folk",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P59",
+    "P60"
+   ],
+   "scene": "aug9"
+  },
+  {
+   "id": "e-dog-never-found",
+   "when": {
+    "seq": 300
+   },
+   "kind": "event",
+   "place": "whitby",
+   "text": "No trace has ever been found of the great dog, which causes much mourning; the funeral is tomorrow, ending 'one more mystery of the sea'.",
+   "who": [
+    {
+     "id": "folk",
+     "role": "agent"
+    },
+    {
+     "id": "dog",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P61"
+   ],
+   "scene": "aug9",
+   "prevents": "h-dog-found"
+  },
+  {
+   "id": "e-swales-found",
+   "when": {
+    "seq": 310,
+    "t": [
+     360,
+     420
+    ],
+    "epoch": "aug10"
+   },
+   "kind": "death",
+   "place": "seat",
+   "text": "On the morning of 10 August old Mr Swales is found dead on Mina and Lucy's seat, his neck broken, with a look of fear and horror on his face that made the men shudder; the doctor says he fell back in some sort of fright.",
+   "who": [
+    {
+     "id": "swales",
+     "role": "patient"
+    },
+    {
+     "id": "doctor",
+     "role": "agent"
+    },
+    {
+     "id": "men",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P66"
+   ],
+   "scene": "aug10"
+  },
+  {
+   "id": "e-funeral",
+   "when": {
+    "seq": 320,
+    "t": [
+     600,
+     900
+    ],
+    "epoch": "aug10"
+   },
+   "kind": "ceremony",
+   "place": "churchyard",
+   "text": "The funeral of the captain: every boat in the harbour follows up the river and back; the coffin is carried by captains from Tate Hill Pier up to the churchyard and laid near Mina's seat; Lucy and Mina watch from the seat; Lucy seems much upset.",
+   "who": [
+    {
+     "id": "folk",
+     "role": "agent"
+    },
+    {
+     "id": "captains",
+     "role": "agent"
+    },
+    {
+     "id": "mina",
+     "role": "witness"
+    },
+    {
+     "id": "lucy",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P66"
+   ],
+   "scene": "aug10",
+   "fulfils": "h-funeral"
+  },
+  {
+   "id": "e-lucy-upset",
+   "when": {
+    "seq": 330,
+    "t": [
+     800,
+     900
+    ],
+    "epoch": "aug10"
+   },
+   "kind": "reaction",
+   "place": "churchyard",
+   "text": "Lucy is restless and uneasy; she will not admit any cause; she is quite upset by a man's dog that follows him up to look for the boats.",
+   "who": [
+    {
+     "id": "lucy",
+     "role": "experiencer"
+    },
+    {
+     "id": "mina",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P66"
+   ],
+   "scene": "aug10"
+  },
+  {
+   "id": "e-mina-plans-walk",
+   "when": {
+    "seq": 340,
+    "t": [
+     900,
+     960
+    ],
+    "epoch": "aug10"
+   },
+   "kind": "plan",
+   "place": "churchyard",
+   "text": "Mina thinks it best to tire Lucy out and will take her for a long walk by the cliffs to Robin Hood's Bay and back, so she has no inclination to sleep-walk.",
+   "who": [
+    {
+     "id": "mina",
+     "role": "agent"
+    },
+    {
+     "id": "lucy",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P67"
+   ],
+   "scene": "aug10"
+  }
+ ],
+ "held": [
+  {
+   "id": "h-mate-opens-boxes",
+   "who": "mate",
+   "kind": "anticipates",
+   "text": "The mate will unscrew the boxes one by one and find It.",
+   "from": "b-mate-sees-it",
+   "src": [
+    "P54"
+   ]
+  },
+  {
+   "id": "h-captain-ties",
+   "who": "captain",
+   "kind": "anticipates",
+   "text": "The captain will tie his hands to the wheel with the crucifix when his strength fails.",
+   "from": "b-captain-resolves",
+   "src": [
+    "P58"
+   ]
+  },
+  {
+   "id": "h-sequel",
+   "who": "correspondent",
+   "kind": "anticipates",
+   "text": "The correspondent will send further details of the derelict for the next issue.",
+   "from": "e-storm-abates",
+   "src": [
+    "P15"
+   ]
+  },
+  {
+   "id": "h-funeral",
+   "who": "folk",
+   "kind": "anticipates",
+   "text": "The captain will have a public funeral tomorrow, with a train of boats and burial in the churchyard.",
+   "from": "e-inquest",
+   "src": [
+    "P60",
+    "P61"
+   ]
+  },
+  {
+   "id": "h-dog-found",
+   "who": "spca",
+   "kind": "anticipates",
+   "text": "The dog will be found and befriended.",
+   "from": "e-dog-missing",
+   "src": [
+    "P17"
+   ]
+  },
+  {
+   "id": "h-mina-walk",
+   "who": "mina",
+   "kind": "anticipates",
+   "text": "Mina will walk Lucy to Robin Hood's Bay and back so that she sleeps without walking.",
+   "from": "e-mina-plans-walk",
+   "src": [
+    "P67"
+   ]
+  },
+  {
+   "id": "h-jonathan-news",
+   "who": "mina",
+   "kind": "anticipates",
+   "text": "Mina hopes to learn where Jonathan is.",
+   "from": "e-mina-harbour",
+   "src": [
+    "P64"
+   ]
+  }
+ ],
+ "knowledge": [
+  {
+   "who": "captain",
+   "of": "b-olgaren-sees",
+   "stance": "knows",
+   "from": "b-olgaren-confides",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P36"
+   ],
+   "source": "olgaren"
+  },
+  {
+   "who": "captain",
+   "of": "c-stranger-aboard",
+   "stance": "doubts",
+   "from": "b-olgaren-confides",
+   "until": "b-captain-sees-it",
+   "how": "told",
+   "src": [
+    "P36",
+    "P37",
+    "P38"
+   ],
+   "source": "olgaren",
+   "note": "he searches to allay a panic"
+  },
+  {
+   "who": "captain",
+   "of": "c-stranger-aboard",
+   "stance": "believes",
+   "from": "b-captain-sees-it",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P58"
+   ]
+  },
+  {
+   "who": "captain",
+   "of": "c-mate-killed-crew",
+   "stance": "believes",
+   "from": "b-mate-jumps",
+   "until": "b-captain-sees-it",
+   "how": "reasoned",
+   "src": [
+    "P56"
+   ],
+   "note": "'I suppose I know the secret too, now'"
+  },
+  {
+   "who": "captain",
+   "of": "c-stranger-killed-crew",
+   "stance": "believes",
+   "from": "b-captain-sees-it",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P58"
+   ]
+  },
+  {
+   "who": "mate",
+   "of": "c-stranger-aboard",
+   "stance": "believes",
+   "from": "b-mate-sees-it",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P54",
+    "P56"
+   ]
+  },
+  {
+   "who": "olgaren",
+   "of": "c-stranger-aboard",
+   "stance": "believes",
+   "from": "b-olgaren-sees",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P36"
+   ]
+  },
+  {
+   "who": "captain",
+   "of": "b-mate-searches-hold",
+   "stance": "knows",
+   "from": "b-mate-searches-hold",
+   "until": null,
+   "how": "heard",
+   "src": [
+    "P54",
+    "P55",
+    "P56"
+   ],
+   "note": "heard the knocking, never saw inside the hold"
+  },
+  {
+   "who": "correspondent",
+   "of": "b-mate-jumps",
+   "stance": "knows",
+   "from": "e-log-read",
+   "until": null,
+   "how": "read",
+   "src": [
+    "P56",
+    "P19"
+   ],
+   "source": "captain",
+   "note": "through a clerk's translation and dictation"
+  },
+  {
+   "who": "correspondent",
+   "of": "b-captain-sees-it",
+   "stance": "knows",
+   "from": "e-log-read",
+   "until": null,
+   "how": "read",
+   "src": [
+    "P58",
+    "P19"
+   ],
+   "source": "captain"
+  },
+  {
+   "who": "correspondent",
+   "of": "b-olgaren-sees",
+   "stance": "knows",
+   "from": "e-log-read",
+   "until": null,
+   "how": "read",
+   "src": [
+    "P36",
+    "P19"
+   ],
+   "source": "captain"
+  },
+  {
+   "who": "correspondent",
+   "of": "c-captain-tied-himself",
+   "stance": "believes",
+   "from": "e-coastguard-says",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P14"
+   ],
+   "source": "coastguard"
+  },
+  {
+   "who": "correspondent",
+   "of": "c-captain-killed-crew",
+   "stance": "doubts",
+   "from": "e-inquest",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P60"
+   ],
+   "source": "coroner"
+  },
+  {
+   "who": "coastguard",
+   "of": "e-corpse-examined",
+   "stance": "knows",
+   "from": "e-coastguard-boards",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P13"
+   ]
+  },
+  {
+   "who": "lucy",
+   "of": "e-lucy-walk-1",
+   "stance": "unaware",
+   "from": "e-lucy-walk-1",
+   "until": null,
+   "how": "asleep",
+   "src": [
+    "P63"
+   ]
+  },
+  {
+   "who": "lucy",
+   "of": "e-lucy-walk-2",
+   "stance": "unaware",
+   "from": "e-lucy-walk-2",
+   "until": null,
+   "how": "asleep",
+   "src": [
+    "P63"
+   ]
+  },
+  {
+   "who": "mina",
+   "of": "e-demeter-beaches",
+   "stance": "knows",
+   "from": "e-cutting-pasted",
+   "until": null,
+   "how": "read",
+   "src": [
+    "P03",
+    "P62"
+   ],
+   "source": "correspondent",
+   "note": "she pastes the cutting into her journal"
+  },
+  {
+   "who": "mina",
+   "of": "c-lucy-walked",
+   "stance": "knows",
+   "from": "e-lucy-walk-2",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P63"
+   ]
+  },
+  {
+   "who": "mina",
+   "of": "c-jonathan-on-land",
+   "stance": "doubts",
+   "from": "e-mina-harbour",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P64"
+   ],
+   "note": "'is he on land or sea? Where is he, and how?'"
+  },
+  {
+   "who": "mina",
+   "of": "s-lucy-sleepwalking",
+   "stance": "believes",
+   "from": "e-lucy-walk-2",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P63",
+    "P66"
+   ]
+  },
+  {
+   "who": "lucy",
+   "of": "s-lucy-sleepwalking",
+   "stance": "doubts",
+   "from": "e-lucy-upset",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P66"
+   ],
+   "note": "will not admit a cause, or does not understand it herself"
+  },
+  {
+   "who": "reader",
+   "of": "e-demeter-beaches",
+   "stance": "knows",
+   "from": "para:P11",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P11",
+    "P12"
+   ],
+   "source": "correspondent"
+  },
+  {
+   "who": "reader",
+   "of": "b-mate-jumps",
+   "stance": "knows",
+   "from": "para:P56",
+   "until": null,
+   "how": "read",
+   "src": [
+    "P56"
+   ],
+   "source": "captain"
+  },
+  {
+   "who": "reader",
+   "of": "c-storm-night-7",
+   "stance": "doubts",
+   "from": "para:P17",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P17",
+    "P63"
+   ],
+   "note": "the dispatch of 9 August says 'last night', Mina's journal of 8 August says the storm was 'last night'"
+  }
+ ],
+ "states": [
+  {
+   "id": "s-schooner-aground",
+   "of": "schooner",
+   "kind": "location",
+   "value": "Aground on the sand of Tate Hill Pier, no steerage but a dead man.",
+   "src": [
+    "P11",
+    "P12",
+    "P14"
+   ],
+   "from": "e-demeter-beaches"
+  },
+  {
+   "id": "s-dog-loose",
+   "of": "dog",
+   "kind": "location",
+   "value": "Gone into the churchyard dark, afterwards not found; its whereabouts unknown.",
+   "src": [
+    "P12",
+    "P17",
+    "P61"
+   ],
+   "from": "e-dog-leaps"
+  },
+  {
+   "id": "s-corpse-at-wheel",
+   "of": "captain",
+   "kind": "appearance",
+   "value": "Hands tied one over the other to a spoke of the wheel with a crucifix and its beads; cords cut to the bone.",
+   "src": [
+    "P11",
+    "P14"
+   ],
+   "from": "e-demeter-beaches",
+   "until": "e-corpse-removed"
+  },
+  {
+   "id": "s-fog",
+   "of": "at-sea",
+   "kind": "circumstance",
+   "value": "Fog around the ship, moving with it; no sail sighted, nothing to steer by.",
+   "src": [
+    "P50",
+    "P52",
+    "P58"
+   ],
+   "from": "b-fog"
+  },
+  {
+   "id": "s-crew-fear",
+   "of": "crew",
+   "kind": "feeling",
+   "value": "Scared and dissatisfied, crossing themselves; then 'beyond fear' as they thin out.",
+   "src": [
+    "P30",
+    "P32",
+    "P34",
+    "P42",
+    "P50"
+   ],
+   "from": "b-crew-withholds"
+  },
+  {
+   "id": "s-mate-mad",
+   "of": "mate",
+   "kind": "feeling",
+   "value": "Wild-eyed, haggard, his reason gone by the captain's account.",
+   "src": [
+    "P54",
+    "P56"
+   ],
+   "from": "b-mate-sees-it",
+   "until": "b-mate-jumps"
+  },
+  {
+   "id": "s-mina-anxious",
+   "of": "mina",
+   "kind": "feeling",
+   "value": "Fearfully anxious about Jonathan.",
+   "src": [
+    "P64"
+   ],
+   "from": "e-mina-harbour"
+  },
+  {
+   "id": "s-lucy-sleepwalking",
+   "of": "lucy",
+   "kind": "habit",
+   "value": "Sleep-walks; her intention disappears if thwarted physically and she yields to the routine of her life; she will not admit a cause for her restlessness.",
+   "src": [
+    "P63",
+    "P66"
+   ],
+   "from": "e-mina-night"
+  },
+  {
+   "id": "s-storm",
+   "of": "whitby",
+   "kind": "circumstance",
+   "value": "A tempest with sea-fog, lightning and thunder.",
+   "src": [
+    "P09",
+    "P10",
+    "P15"
+   ],
+   "from": "e-storm-breaks",
+   "until": "e-storm-abates"
+  },
+  {
+   "id": "s-boxes",
+   "of": "demeter-hold",
+   "kind": "circumstance",
+   "value": "Great wooden boxes of mould, consigned to a Whitby solicitor; invoiced as clay.",
+   "src": [
+    "P17",
+    "P54"
+   ],
+   "from": "b-loaded"
+  },
+  {
+   "id": "s-crew-count",
+   "of": "schooner",
+   "kind": "circumstance",
+   "value": "Five hands, two mates, a cook and the captain at the start; by 3 August only the captain, the mate and two hands.",
+   "src": [
+    "P24",
+    "P48"
+   ],
+   "from": "b-loaded",
+   "until": "b-mate-jumps"
+  }
+ ],
+ "readings": [
+  {
+   "id": "r-doom",
+   "holder": "captain",
+   "text": "There seems some doom over this ship.",
+   "status": "stated",
+   "src": [
+    "P42"
+   ]
+  },
+  {
+   "id": "r-mania",
+   "holder": "correspondent",
+   "text": "It almost seems as though the captain had been seized with some kind of mania before he got well into blue water.",
+   "status": "stated",
+   "src": [
+    "P19"
+   ],
+   "note": "the correspondent writes from the dictation of a clerk of the Russian consul who translated for him, time being short"
+  },
+  {
+   "id": "r-captain-hero",
+   "holder": "folk",
+   "text": "The captain is simply a hero.",
+   "status": "stated",
+   "src": [
+    "P60"
+   ],
+   "supports": [
+    "b-captain-resolves"
+   ]
+  },
+  {
+   "id": "r-lucy-feels",
+   "holder": "mina",
+   "text": "Lucy is sweet and sensitive and feels influences more acutely than others.",
+   "status": "stated",
+   "src": [
+    "P66"
+   ]
+  },
+  {
+   "id": "r-swales-saw-death",
+   "holder": "mina",
+   "text": "Perhaps Mr Swales had seen Death with his dying eyes.",
+   "status": "stated",
+   "src": [
+    "P66"
+   ]
+  }
+ ],
+ "gaps_found": [
+  "two clocks: the record learns the whole voyage at once (when the log is read), but the captain judged each claim from what he knew then; a verdict has to be read for a person (verdict_for), not only for the record (verdict_at)",
+  "four time bases (the log's dates, the storm night, 9 August, 10 August) cannot be tied to each other; the text's own dates conflict (the storm is 'last night' on 8 August and the arrival 'last night' on 9 August), so the conflict is held as two open claims and not resolved",
+  "overlap has three answers: definite (both dated and overlapping), possible (one is only 'somewhere in' an interval that overlaps) and none; Lucy's two walks are possible against the beaching",
+  "a sleeper is a party to her own act but does not know it: the party rule needs an unaware row to override it",
+  "a crowd is one group entity: who in it saw the dog cannot be asked; only the coastguard and the correspondent are individuals",
+  "three layers of provenance (log inside dispatch inside journal) are held as knowledge rows with a source and a note, not as a chain; 'translated by a clerk' and 'dictated' are text of a reading",
+  "the stranger is an entity with no kind of being: three people say they saw It, a search found no one, and the knife went through It; the model carries a person-kind entity and an open claim, nothing about what It is",
+  "a death whose cause the reader links to the ship (Mr Swales, the mastiff) has no causes: the text implies and never says",
+  "the captain's log is written after the fact from 18 July; the earlier dated entries are recollections the date line does not show",
+  "the dating of storm and ship cannot be derived at all: 'dead for quite two days' ties the last log entry to the arrival only loosely, and the two bases do not meet"
+ ]
+}

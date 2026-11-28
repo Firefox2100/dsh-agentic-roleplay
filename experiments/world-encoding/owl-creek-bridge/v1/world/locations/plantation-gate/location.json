@@ -1,0 +1,25 @@
+{
+  "id": "plantation-gate",
+  "name": "The gate of the grounds",
+  "parent": "plantation",
+  "description": "A rustic bench near the entrance to the grounds, and the gate.",
+  "features": [
+    {
+      "id": "bench",
+      "name": "Rustic bench",
+      "description": "Where Farquhar and his wife sit."
+    }
+  ],
+  "exits": [
+    {
+      "to": "road",
+      "description": "the road",
+      "travel_time_seconds": 10
+    },
+    {
+      "to": "farquhar-home",
+      "description": "the wide white walk",
+      "travel_time_seconds": 60
+    }
+  ]
+}

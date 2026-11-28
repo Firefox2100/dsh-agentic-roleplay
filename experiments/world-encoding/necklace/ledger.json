@@ -1,0 +1,1063 @@
+[
+ {
+  "ref": "P01.1",
+  "quote": "She was one of those pretty and charming girls ... born in a family of clerks. She had no dowry, no expectations ... she let herself be married to a little clerk at the Ministry of Public Instruction.",
+  "v1": {
+   "class": "E",
+   "where": "mathilde, loisel summaries and background"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b01; people mathilde, loisel"
+  },
+  "v2": {
+   "class": "E",
+   "where": "b01; people mathilde, loisel"
+  }
+ },
+ {
+  "ref": "P01.2",
+  "quote": "She dressed plainly because she could not dress well, but she was as unhappy as though she had really fallen from her proper station; since with women there is neither caste nor rank ...",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-rank holder narrator"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-rank holder narrator"
+  }
+ },
+ {
+  "ref": "P02.1",
+  "quote": "She suffered ceaselessly, feeling herself born for all the delicacies and all the luxuries. She suffered from the poverty of her dwelling ...",
+  "v1": {
+   "class": "S",
+   "where": "mathilde personality and start inner_state"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b02 iterative; states feeling"
+  },
+  "v2": {
+   "class": "E",
+   "where": "b02 iterative; states feeling"
+  }
+ },
+ {
+  "ref": "P02.2",
+  "quote": "The sight of the little Breton peasant who did her humble housework aroused in her regrets which were despairing",
+  "v1": {
+   "class": "E",
+   "where": "character servant"
+  },
+  "draft": {
+   "class": "E",
+   "where": "people servant; b02 witness"
+  },
+  "v2": {
+   "class": "E",
+   "where": "people servant; b02 witness"
+  }
+ },
+ {
+  "ref": "P02.3",
+  "quote": "She thought of the silent ante-chambers hung with Oriental tapestry ... the long salons fitted up with ancient silk ... the coquettish perfumed boudoirs",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "d01 in frame mathilde-daydreams, realised false, iterative"
+  },
+  "note": "A repeated fantasy: neither a belief nor an event in v1.",
+  "v2": {
+   "class": "E",
+   "where": "h-d01 as held (not realised), iterative"
+  }
+ },
+ {
+  "ref": "P03.1",
+  "quote": "When she sat down to dinner ... opposite her husband, who uncovered the soup-tureen and declared with an enchanted air, 'Ah, the good pot-au-feu!'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A repeated evening, told as one.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P03.2",
+  "quote": "she thought of dainty dinners, of shining silverware ... the pink flesh of a trout or the wings of a quail.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "d01"
+  },
+  "v2": {
+   "class": "E",
+   "where": "h-d01"
+  }
+ },
+ {
+  "ref": "P04.1",
+  "quote": "She had no dresses, no jewels, nothing. And she loved nothing but that; she felt made for that. She would so have liked to please, to be envied, to be charming, to be sought after.",
+  "v1": {
+   "class": "S",
+   "where": "mathilde personality text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states feeling text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states feeling text"
+  }
+ },
+ {
+  "ref": "P05.1",
+  "quote": "She had a friend, a former schoolmate at the convent, who was rich, and whom she did not like to go and see any more, because she suffered so much when she came back.",
+  "v1": {
+   "class": "E",
+   "where": "relationship mathilde -> forestier"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b03 iterative; people forestier"
+  },
+  "v2": {
+   "class": "E",
+   "where": "b03 iterative; people forestier"
+  }
+ },
+ {
+  "ref": "P06-P09",
+  "quote": "one evening, her husband returned home with a triumphant air ... a printed card ... 'request the honor of M. and Mme. Loisel's company at the palace of the Ministry on Monday evening, January 18th.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r1; item invitation; lore the-ball"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e01; thing invitation; time.anchors ball-night"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e01; thing invitation; time.anchors ball-night"
+  }
+ },
+ {
+  "ref": "P09.2",
+  "quote": "(Monday, January 18th, no year)",
+  "v1": {
+   "class": "S",
+   "where": "starting_time needed a year: 1875 was invented to make 18 January a Monday"
+  },
+  "draft": {
+   "class": "E",
+   "where": "time.anchors ball-night weekday Mon"
+  },
+  "v2": {
+   "class": "E",
+   "where": "time.anchors ball-night weekday Mon"
+  }
+ },
+ {
+  "ref": "P10-P12",
+  "quote": "Instead of being delighted ... she threw the invitation on the table with disdain ... 'I had awful trouble to get it. Every one wants to go; it is very select, and they are not giving many invitations to clerks.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r2 text; lore the-ball"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02; the exclusivity in lore-like text only"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02; the exclusivity in lore-like text only"
+  }
+ },
+ {
+  "ref": "P13-P20",
+  "quote": "'And what do you want me to put on my back?' ... he stopped, distracted, seeing that his wife was crying ... 'Nothing. Only I have no dress, and therefore I can't go to this ball.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02 says"
+  }
+ },
+ {
+  "ref": "P21-P25",
+  "quote": "'How much would it cost, a suitable dress ...?' She reflected several seconds, making her calculations and wondering also what sum she could ask without ... a frightened exclamation ... 'four hundred francs.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r3 text; her calculation is only prose"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e03 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e03 text"
+  }
+ },
+ {
+  "ref": "P26",
+  "quote": "He had grown a little pale, because he was laying aside just that amount to buy a gun and treat himself to a little shooting next summer on the plain of Nanterre",
+  "v1": {
+   "class": "S",
+   "where": "loisel background text and event text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 foregoes; thing gun-fund"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 foregoes; thing gun-fund"
+  }
+ },
+ {
+  "ref": "P27-P28",
+  "quote": "'All right. I will give you four hundred francs. And try to have a pretty dress.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r3 variable_changes francs -400, +400"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 effects"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 effects"
+  }
+ },
+ {
+  "ref": "P29-P30",
+  "quote": "The day of the ball drew near, and Mme. Loisel seemed sad, uneasy, anxious. Her dress was ready, however.",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r1; francs -400 (dress paid for)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e04; thing dress; state feeling"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e04; thing dress; state feeling"
+  }
+ },
+ {
+  "ref": "P31-P40",
+  "quote": "'It annoys me not to have a single jewel ... I shall look like distress.' ... 'You might wear natural flowers ... For ten francs you can get two or three magnificent roses.' ... 'How stupid you are! Go look up your friend Mme. Forestier'",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e04 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e04 says"
+  }
+ },
+ {
+  "ref": "P41-P43",
+  "quote": "The next day she went to her friend and told of her distress. Mme. Forestier went to a wardrobe with a glass door, took out a large jewel-box ... 'Choose, my dear.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 (move) r1"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e05"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e05"
+  }
+ },
+ {
+  "ref": "P44-P46",
+  "quote": "She saw first of all some bracelets, then a pearl necklace, then a Venetian cross ... 'Have n't you any more?' 'Why, yes. Look.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r1 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e05 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e05 text"
+  }
+ },
+ {
+  "ref": "P47.1",
+  "quote": "All of a sudden she discovered, in a black satin box, a superb necklace of diamonds; and her heart began to beat with an immoderate desire.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r1 perception content, accuracy mistaken; item description says paste"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e05 claims f-necklace-diamond (false); facts f-necklace-paste; state feeling"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e05 claims c-necklace-diamond (false); s14; state feeling"
+  }
+ },
+ {
+  "ref": "P47.2",
+  "quote": "Her hands trembled as she took it. She fastened it around her throat, outside her high-necked dress, and remained lost in ecstasy at the sight of herself.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r1 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e05 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e05 text"
+  }
+ },
+ {
+  "ref": "P48-P51",
+  "quote": "'Can you lend me that, only that?' 'Why, yes, certainly.' She sprang upon the neck of her friend, kissed her passionately, then fled with her treasure.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 give (a loan is recorded as a gift: the item action has no 'lend')"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e05 effects transfer note 'a loan'"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e05 effects transfer note 'a loan'"
+  }
+ },
+ {
+  "ref": "P52-P53",
+  "quote": "The day of the ball arrived. Mme. Loisel made a great success. She was prettier than them all ... remarked by the minister himself. ... a sort of cloud of happiness",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 r1 text; the hour and day from the clock sidecar"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e06 summarised; state feeling; time.anchors ball-night"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e06 summarised; state feeling; time.anchors ball-night"
+  }
+ },
+ {
+  "ref": "P54.1",
+  "quote": "She went away about four o'clock in the morning.",
+  "v1": {
+   "class": "E",
+   "where": "turn 4 r3"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e08"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e08"
+  }
+ },
+ {
+  "ref": "P54.2",
+  "quote": "Her husband had been sleeping since mid-night, in a little deserted ante-room, with three other gentlemen whose wives were having a very good time.",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 r2; the three gentlemen are not characters"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e07; people three-gentlemen"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e07; people three-gentlemen"
+  }
+ },
+ {
+  "ref": "P55-P58",
+  "quote": "He threw over her shoulders the wraps ... She felt this and wanted to escape ... 'Wait a bit. You will catch cold outside. I will go and call a cab.' ... they did not find a carriage",
+  "v1": {
+   "class": "S",
+   "where": "turn 5 r1 text; the wraps are not an item"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e08; thing wraps"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e08; thing wraps"
+  }
+ },
+ {
+  "ref": "P59",
+  "quote": "They went down towards the Seine; in despair, shivering with cold. At last they found on the quay one of those ancient noctambulant coupés",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e09; place streets-quay"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e09; place streets-quay"
+  }
+ },
+ {
+  "ref": "P59.2",
+  "quote": "(the cabs 'ashamed to show their misery during the day')",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "P",
+   "where": "-"
+  },
+  "v2": {
+   "class": "P",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P60.1",
+  "quote": "It took them to their door in the Rue des Martyrs, and once more, sadly, they climbed up homeward. All was ended, for her.",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 r2; moves"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e09"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e09"
+  }
+ },
+ {
+  "ref": "P60.2",
+  "quote": "And as to him, he reflected that he must be at the Ministry at ten o'clock.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states loisel obligation text only"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states loisel obligation text only"
+  }
+ },
+ {
+  "ref": "P61-P65",
+  "quote": "She removed the wraps ... so as once more to see herself in all her glory. But suddenly she uttered a cry. She had no longer the necklace around her neck! ... 'I've lost Mme. Forestier's necklace.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 r3"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e10"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e10"
+  }
+ },
+ {
+  "ref": "P61.2",
+  "quote": "(when and where it was lost: unknown)",
+  "v1": {
+   "class": "S",
+   "where": "turn 5 r1: item dropped in the streets and hidden: both an invention"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e-loss status implied, place null with place_note"
+  },
+  "note": "v1 needs a place and a moment for the loss.",
+  "v2": {
+   "class": "E",
+   "where": "e-loss basis implied, origin offscreen, place null with place_note"
+  }
+ },
+ {
+  "ref": "P66-P68",
+  "quote": "'What!—how?—Impossible!' And they looked in the folds of her dress, in the folds of her cloak, in her pockets, everywhere. They did not find it.",
+  "v1": {
+   "class": "S",
+   "where": "turn 5 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e10 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e10 text"
+  }
+ },
+ {
+  "ref": "P69-P71",
+  "quote": "'You're sure you had it on when you left the ball?' 'Yes, I felt it in the vestibule of the palace.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 5 r4 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-last-seen; knowledge mathilde knows"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e08; knowledge mathilde knows"
+  }
+ },
+ {
+  "ref": "P72-P75",
+  "quote": "'But if you had lost it in the street we should have heard it fall. It must be in the cab.' ... 'Did you take his number?' 'No.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 r4"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 says"
+  }
+ },
+ {
+  "ref": "P76-P77",
+  "quote": "They looked, thunderstruck, at one another. At last Loisel put on his clothes. 'I shall go back on foot over the whole route'",
+  "v1": {
+   "class": "S",
+   "where": "turn 5 r4 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e11 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e11 text"
+  }
+ },
+ {
+  "ref": "P78",
+  "quote": "She sat waiting on a chair in her ball dress, without strength to go to bed, overwhelmed, without fire, without a thought.",
+  "v1": {
+   "class": "S",
+   "where": "turn 6 r2 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e12 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e12 text"
+  }
+ },
+ {
+  "ref": "P79",
+  "quote": "Her husband came back about seven o'clock. He had found nothing.",
+  "v1": {
+   "class": "E",
+   "where": "turn 6 r1"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12"
+  }
+ },
+ {
+  "ref": "P80",
+  "quote": "He went to Police Headquarters, to the newspaper offices, to offer a reward; he went to the cab companies",
+  "v1": {
+   "class": "S",
+   "where": "turn 6 r1; one place police-hq stands for all three"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12 place police-etc"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12 place police-etc"
+  }
+ },
+ {
+  "ref": "P81-P82",
+  "quote": "She waited all day, in the same condition of mad fear ... Loisel returned at night with a hollow, pale face; he had discovered nothing.",
+  "v1": {
+   "class": "S",
+   "where": "turn 6 r2 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12; state feeling"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12; state feeling"
+  }
+ },
+ {
+  "ref": "P83-P84",
+  "quote": "'You must write to your friend that you have broken the clasp of her necklace and that you are having it mended. That will give us time to turn round.' She wrote at his dictation.",
+  "v1": {
+   "class": "S",
+   "where": "turn 6 r3: the lie is in the event text; Forestier's perception is marked mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e13 claims f-clasp-broken false; intent; thing letter-clasp"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e13 claims c-clasp-broken false; intent; thing letter-clasp"
+  }
+ },
+ {
+  "ref": "P85-P87",
+  "quote": "At the end of a week they had lost all hope. And Loisel, who had aged five years, declared: 'We must consider how to replace that ornament.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 r1; 'aged five years' is text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e14; states loisel appearance"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e14; states loisel appearance"
+  }
+ },
+ {
+  "ref": "P88-P89",
+  "quote": "The next day they took the box ... to the jeweller whose name was found within. He consulted his books. 'It was not I, madame, who sold that necklace; I must simply have furnished the case.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 7 (move) r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e15 says; thing case"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e15 says; thing case"
+  }
+ },
+ {
+  "ref": "P90-P91",
+  "quote": "Then they went from jeweller to jeweller ... They found, in a shop at the Palais Royal, a string of diamonds ... worth forty thousand francs. They could have it for thirty-six.",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 r3 text; item necklace-copy; days between are in the sidecar"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e16; fact f-replacement-real"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e16; e16"
+  }
+ },
+ {
+  "ref": "P92.1",
+  "quote": "they begged the jeweller not to sell it for three days yet. And they made a bargain that he should buy it back for thirty-four thousand francs, in case they found the other one before the end of February.",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 engagement: the condition 'if found' is in its title"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e16 terms, expires; time.anchors buy-back-deadline"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e16 terms, expires; time.anchors buy-back-deadline"
+  }
+ },
+ {
+  "ref": "P92.2",
+  "quote": "(the deadline passes unused)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "Nothing says the buy-back lapsed; both leave the engagement open.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P93",
+  "quote": "Loisel possessed eighteen thousand francs which his father had left him. He would borrow the rest.",
+  "v1": {
+   "class": "E",
+   "where": "variable francs 18400 at start; debt +18000"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states loisel francs; e17 effects"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states loisel francs; e17 effects"
+  }
+ },
+ {
+  "ref": "P94",
+  "quote": "He did borrow, asking a thousand francs of one, five hundred of another, five louis here, three louis there. He gave notes, took up ruinous obligations ... he went to get the new necklace, putting down upon the merchant's counter thirty-six thousand francs.",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 r4 text; the lenders are one group character"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e17 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e17 text"
+  }
+ },
+ {
+  "ref": "P95-P96",
+  "quote": "When Mme. Loisel took back the necklace Mme. Forestier said to her, with a chilly manner: 'You should have returned it sooner, I might have needed it.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 8 r1"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e18"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e18"
+  }
+ },
+ {
+  "ref": "P97.1",
+  "quote": "She did not open the case, as her friend had so much feared.",
+  "v1": {
+   "class": "S",
+   "where": "turn 8 r1 perception (forestier) marked mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-forestier-never-noticed; knowledge"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e18; knowledge"
+  }
+ },
+ {
+  "ref": "P97.2",
+  "quote": "If she had detected the substitution, what would she have thought, what would she have said? Would she not have taken Mme. Loisel for a thief?",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "f01 in frame mathilde-fear, realised false"
+  },
+  "v2": {
+   "class": "E",
+   "where": "h-f01 as held (not realised)"
+  }
+ },
+ {
+  "ref": "P98",
+  "quote": "Mme. Loisel now knew the horrible existence of the needy. She took her part ... with heroism. ... They dismissed their servant; they changed their lodgings; they rented a garret under the roof.",
+  "v1": {
+   "class": "E",
+   "where": "turn 9 moves; servant moved away"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e19; states residence; people servant"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e19; states residence; people servant"
+  }
+ },
+ {
+  "ref": "P99",
+  "quote": "She came to know what heavy house-work meant ... She washed the dishes ... carried the slops ... bargaining, insulted, defending her miserable money sou by sou.",
+  "v1": {
+   "class": "S",
+   "where": "turn 9 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e19 iterative"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e19 iterative"
+  }
+ },
+ {
+  "ref": "P100-P101",
+  "quote": "Each month they had to meet some notes, renew others, obtain more time. Her husband worked in the evening making a fair copy of some tradesman's accounts, and late at night he often copied manuscript for five sous a page.",
+  "v1": {
+   "class": "S",
+   "where": "turn 9 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e19 iterative"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e19 iterative"
+  }
+ },
+ {
+  "ref": "P102",
+  "quote": "And this life lasted ten years.",
+  "v1": {
+   "class": "S",
+   "where": "the clock sidecar jumps ten years"
+  },
+  "draft": {
+   "class": "E",
+   "where": "time.spans span-ten-years; e19 duration P10Y"
+  },
+  "v2": {
+   "class": "E",
+   "where": "time.spans span-ten-years; e19 duration P10Y"
+  }
+ },
+ {
+  "ref": "P103",
+  "quote": "At the end or ten years they had paid everything, everything, with the rates of usury, and the accumulations of the compound interest.",
+  "v1": {
+   "class": "E",
+   "where": "turn 9 r2; variable debt to 0"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e20; f-debt-paid"
+  },
+  "note": "The total paid is never given, and neither model can hold 'paid in full, amount unknown'.",
+  "v2": {
+   "class": "E",
+   "where": "e20; e20"
+  }
+ },
+ {
+  "ref": "P104",
+  "quote": "Mme. Loisel looked old now ... With frowsy hair, skirts askew, and red hands ... she sat down near the window, and she thought of that gay evening of long ago",
+  "v1": {
+   "class": "S",
+   "where": "turn 9 r3; mathilde states"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e21; states appearance"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e21; states appearance"
+  }
+ },
+ {
+  "ref": "P105",
+  "quote": "What would have happened if she had not lost that necklace? Who knows? who knows? How life is strange and changeful!",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "c01 in frame narrator-what-if; reading r-strange"
+  },
+  "v2": {
+   "class": "S",
+   "where": "reading r-c01 (narrator counterfactual, text only)"
+  }
+ },
+ {
+  "ref": "P106-P108",
+  "quote": "one Sunday, having gone to take a walk in the Champs Elysées ... she suddenly perceived a woman who was leading a child. It was Mme. Forestier, still young, still beautiful ... she was going to tell her all about it.",
+  "v1": {
+   "class": "E",
+   "where": "turn 10 (move) r1"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e22; people child"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e22; people child"
+  }
+ },
+ {
+  "ref": "P109-P114",
+  "quote": "'Good-day, Jeanne.' The other, astonished ... did not recognize her at all ... 'Oh, my poor Mathilde! How you are changed!'",
+  "v1": {
+   "class": "S",
+   "where": "turn 10 r1 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e22 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e22 text"
+  }
+ },
+ {
+  "ref": "P115-P121",
+  "quote": "'I lost it.' ... 'You brought it back.' 'I brought you back another just like it. And for this we have been ten years paying.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 10 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e23 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e23 says"
+  }
+ },
+ {
+  "ref": "P122-P125",
+  "quote": "'You say that you bought a necklace of diamonds to replace mine?' 'Yes. You never noticed it, then! They were very like.' And she smiled with a joy which was proud and naive at once.",
+  "v1": {
+   "class": "S",
+   "where": "turn 10 r2 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e23; reading r-pride"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e23; reading r-pride"
+  }
+ },
+ {
+  "ref": "P126",
+  "quote": "Mme. Forestier, strongly moved, took her two hands.",
+  "v1": {
+   "class": "S",
+   "where": "turn 10 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e24 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e24 text"
+  }
+ },
+ {
+  "ref": "P127.1",
+  "quote": "'Oh, my poor Mathilde! Why, my necklace was paste. It was worth at most five hundred francs!'",
+  "v1": {
+   "class": "E",
+   "where": "turn 10 r3; lore necklace-is-paste; item description; belief of mathilde"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e24 claims f-necklace-paste true; knowledge mathilde knows from e24"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e24 claims s14 true; knowledge mathilde knows from e24"
+  }
+ },
+ {
+  "ref": "P127.2",
+  "quote": "(this last line changes what every earlier line was about)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-irony; telling s14 reveals f-necklace-paste; knowledge reader believes f-necklace-diamond until s14"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-irony; knowledge reader believes c-necklace-diamond until s14"
+  }
+ }
+]

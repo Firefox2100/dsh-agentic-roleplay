@@ -1,0 +1,17 @@
+{
+  "id": "drive",
+  "name": "The gravel drive and gate",
+  "description": "A gravel drive from the front gate to the hall door.",
+  "exits": [
+    {
+      "to": "hall",
+      "description": "the hall door",
+      "travel_time_seconds": 20
+    },
+    {
+      "to": "road",
+      "description": "the front gate",
+      "travel_time_seconds": 20
+    }
+  ]
+}

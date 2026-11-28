@@ -15,11 +15,13 @@ export async function questionRequest(boundaries: Boundaries, store: TurnStore, 
   const carrying = store.carried(member.character.id)
   const affiliations = store.affiliations(member.character.id)
   const tracked = store.trackedFor(member.character.id, company.map(entry => entry.character.id))
+  const heard = store.heardBy?.(member.character.id, question, company.map(entry => entry.character.id)) ?? []
   return {
     member, cast, situation: question, attempt: 1, language: store.settings().prompts.language, turn: owner.turn, lookup: false, text: (id, variables) => store.text(id, variables),
     time: store.time(owner.turn),
     knowledge: store.knowledge(member.character.id, owner.turn, company.map(entry => entry.character.id)),
     ...(tracked.self === '' && tracked.others.length === 0 ? {} : { tracked }),
+    ...(heard.length === 0 ? {} : { heard }),
     ...(place === undefined ? {} : { place }),
     ...(relationships.length === 0 ? {} : { relationships }),
     ...(carrying.length === 0 ? {} : { carrying }),

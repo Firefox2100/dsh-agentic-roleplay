@@ -1,0 +1,12 @@
+{
+  "id": "champs-elysees",
+  "name": "The Champs Elysées",
+  "description": "Where Mathilde walks on a Sunday and meets her friend.",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "the street",
+      "travel_time_seconds": 300
+    }
+  ]
+}

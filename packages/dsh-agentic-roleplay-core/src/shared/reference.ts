@@ -1,5 +1,5 @@
 /** The pages of the reference: what the player may look up about the story, never what only the story knows. */
-export const REFERENCE_SECTIONS = ['status', 'profile', 'people', 'places', 'things', 'quests'] as const
+export const REFERENCE_SECTIONS = ['status', 'profile', 'people', 'places', 'things', 'quests', 'claims'] as const
 export type ReferenceSection = (typeof REFERENCE_SECTIONS)[number]
 
 /** The tracked values of one subject the player may read, all of them, defaults included. */
@@ -118,6 +118,18 @@ export interface ReferenceProfile {
   totals?: { recollections: number; beliefs: number }
 }
 
+/**
+ * Something said, believed or suspected that the player's character has heard, with what they themselves have to go on. The standing is the character's own view, worked out only from what
+ * they took in: never whether it is true.
+ */
+export interface ReferenceClaim {
+  text: string
+  /** Who makes it: a person's name, or the body that does (an inquiry, a rumour). */
+  by?: string
+  standing: 'true' | 'false' | 'likely' | 'unlikely' | 'open' | 'disputed' | 'unresolved' | 'mixed'
+  turn: number
+}
+
 export const PROFILE_MEMORY_LIMIT = 100
 
 export interface ReferenceReplies {
@@ -127,6 +139,7 @@ export interface ReferenceReplies {
   places: ReferencePlace[]
   things: ReferenceThing[]
   quests: ReferenceQuest[]
+  claims: ReferenceClaim[]
 }
 
 export type ReferenceReply<K extends ReferenceSection = ReferenceSection> = { section: K; entries: ReferenceReplies[K] }

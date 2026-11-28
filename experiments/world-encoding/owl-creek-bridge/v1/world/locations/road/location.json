@@ -1,0 +1,11 @@
+{
+  "id": "road",
+  "name": "The road",
+  "description": "The road past the plantation, running north to the Federal lines.",
+  "exits": [
+    {
+      "to": "south-approach",
+      "description": "about thirty miles to the south end of Owl Creek bridge"
+    }
+  ]
+}

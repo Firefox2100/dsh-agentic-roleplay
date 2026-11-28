@@ -1,0 +1,7 @@
+{
+  "id": "driftwood",
+  "name": "The driftwood",
+  "description": "A great quantity of driftwood lodged against the wooden pier at the south end of the bridge, said to be dry and to burn like tow.",
+  "location": "bridge-platform",
+  "feature": "pier"
+}

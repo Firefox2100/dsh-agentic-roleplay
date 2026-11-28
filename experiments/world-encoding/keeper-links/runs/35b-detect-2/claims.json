@@ -1,0 +1,444 @@
+{
+ "claims": [
+  {
+   "asserted_in": "e-holmes-deduces-journey",
+   "by": "holmes",
+   "id": "c-journey-details",
+   "text": "Helen Stoner arrived by train after a dog-cart drive, sitting on the driver's left.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-holmes-deduces-journey"
+    },
+    {
+     "as": "confirms",
+     "ref": "e-helen-confirms-journey"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-unsatisfied",
+   "by": "holmes",
+   "id": "c-deep-waters",
+   "text": "The mystery of Julia's death involves very deep waters.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-unsatisfied"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-theory"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-sees-bruise"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-sees-bruise",
+   "by": "holmes",
+   "id": "c-cruelly-used",
+   "text": "Helen Stoner has been cruelly used by her stepfather.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-holmes-sees-bruise"
+    },
+    {
+     "as": "supports",
+     "ref": "e-helen-excuses"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-theory",
+   "by": "holmes",
+   "id": "c-ventilator",
+   "text": "There is a small communication (ventilator) between Julia's room and Dr. Roylott's room.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-holmes-deduces-vent"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-theory"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-theory",
+   "by": "holmes",
+   "id": "c-alone-in-room",
+   "text": "Julia Stoner must have been alone in her room when she died.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-theory"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-deduces-vent"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-theory",
+   "by": "holmes",
+   "id": "c-band-theory",
+   "text": "The mystery of the 'speckled band' may be cleared along the lines of the whistles, the gypsies, and Roylott's motive.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-theory"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-deduces-vent"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-notes-repairs",
+   "by": "helen",
+   "id": "c-repair-excuse",
+   "text": "The end wall needs no pressing repair, so the scaffolding is an excuse to move her out of the middle bedroom.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-notes-repairs"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-conceals-purpose"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-tests-shutters",
+   "by": "holmes",
+   "id": "c-shutter-theory",
+   "text": "The shutters are the primary point of entry or exit, presenting difficulties for the theory that the danger comes from outside.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-tests-shutters"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-drops-gypsies"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-drops-gypsies",
+   "by": "holmes",
+   "id": "c-no-gypsies",
+   "text": "The danger does not come from the gypsies, as neither the window nor the door can be passed.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-tests-shutters"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-drops-gypsies"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-bell-asked",
+   "by": "helen",
+   "id": "c-bell-age",
+   "text": "The bell-rope was put up a couple of years ago.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-bell-asked"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-bell-asked",
+   "by": "helen",
+   "id": "c-julia-no-bell",
+   "text": "Julia never used the bell-rope.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-bell-asked"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-bell-rope-dummy",
+   "by": "holmes",
+   "id": "c-dummy-rope",
+   "text": "The bell-rope is a dummy, tied to a hook just above the ventilator rather than the call bell.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-bell-rope-dummy"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-ventilator-found",
+   "by": "holmes",
+   "id": "c-ventilator-age",
+   "text": "The ventilator is new, put in about the same time as the rope, and opens into the next room instead of the outside air.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-ventilator-found"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-suspects-snake",
+   "by": "holmes",
+   "id": "c-snake-theory",
+   "text": "The combination of the dummy rope, the ventilator, and the clamped bed suggests a snake is the source of danger.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-suspects-snake"
+    },
+    {
+     "as": "supports",
+     "ref": "e-bell-rope-dummy"
+    },
+    {
+     "as": "supports",
+     "ref": "e-ventilator-found"
+    },
+    {
+     "as": "supports",
+     "ref": "e-bed-clamped-seen"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-roylott-room-search",
+   "by": "helen",
+   "id": "c-safe-access",
+   "text": "Helen Stoner has seen inside Dr. Roylott's iron safe at least once.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-roylott-room-search"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-roylott-room-search",
+   "by": "holmes",
+   "id": "c-no-cat",
+   "text": "There is no cat in the house, only a cheetah and a baboon.",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-milk-seen"
+    },
+    {
+     "as": "supports",
+     "ref": "e-roylott-room-search"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-lash-seen",
+   "by": "holmes",
+   "id": "c-uncommon-lash",
+   "text": "The small dog-lash curled and tied into a loop of whipcord is an uncommon object.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-lash-seen"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-grim"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-instructs",
+   "by": "holmes",
+   "id": "c-holmes-watson-night",
+   "text": "Holmes and Watson will spend the night in Helen's room.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-instructs"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-conceals-plan"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-conceals-plan",
+   "by": "holmes",
+   "id": "c-clearer-proof-needed",
+   "text": "Holmes has concluded something but prefers clearer proof before stating it.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-conceals-plan"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-instructs"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-helen-asks-cause",
+   "by": "holmes",
+   "id": "c-tangible-cause",
+   "text": "Julia Stoner's death was probably caused by something more tangible than fright.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-asks-cause"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-instructs"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-ventilator-explained",
+   "by": "holmes",
+   "id": "c-coincidence-of-dates",
+   "text": "The ventilator was made, the cord hung, and the lady died in that bed around the same time.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-ventilator-explained"
+    },
+    {
+     "as": "supports",
+     "ref": "e-bed-reasoning"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-bed-reasoning",
+   "by": "watson",
+   "id": "c-subtle-horrible-crime",
+   "text": "The combination of the clamped bed, the dummy rope, and the ventilator hints at a subtle and horrible crime.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-bed-reasoning"
+    },
+    {
+     "as": "supports",
+     "ref": "e-ventilator-explained"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-explains",
+   "by": "holmes",
+   "id": "c-snake-training",
+   "text": "The snake was trained to come back to the safe by the sound of milk being poured and the clang of the door.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-explains"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-self-blame"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-explains",
+   "by": "holmes",
+   "id": "c-snake-calling",
+   "text": "The snake was called back through the ventilator by a whistle.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-explains"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-self-blame"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-explains",
+   "by": "holmes",
+   "id": "c-band-meaning",
+   "text": "The 'speckled band' referred to the yellow band of the swamp adder, not the gypsies or the whipcord.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-explains"
+    },
+    {
+     "as": "supports",
+     "ref": "e-band-is-snake"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-explains",
+   "by": "holmes",
+   "id": "c-roylott-mistake",
+   "text": "Dr. Roylott died because he played with his dangerous pet snake in the dark.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-explains"
+    },
+    {
+     "as": "supports",
+     "ref": "e-roylott-found"
+    }
+   ]
+  },
+  {
+   "asserted_in": "e-holmes-self-blame",
+   "by": "holmes",
+   "id": "c-holmes-responsibility",
+   "text": "Holmes is indirectly responsible for Roylott's death because his blows drove the snake back onto its master.",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-self-blame"
+    }
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "id": "q-julia-death",
+   "rivals": [
+    "c-band-theory",
+    "c-alone-in-room",
+    "c-snake-theory"
+   ],
+   "text": "How did Julia Stoner die?"
+  },
+  {
+   "id": "q-roylott-death",
+   "rivals": [
+    "c-snake-bites",
+    "c-roylott-dead",
+    "c-speckled-band"
+   ],
+   "text": "What caused Dr. Roylott's death?"
+  }
+ ]
+}

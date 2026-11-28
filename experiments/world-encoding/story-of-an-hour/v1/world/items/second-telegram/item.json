@@ -1,0 +1,7 @@
+{
+  "id": "second-telegram",
+  "name": "The second telegram",
+  "description": "A second dispatch that Richards waited for, confirming the first.",
+  "location": "newspaper-office",
+  "unique": true
+}

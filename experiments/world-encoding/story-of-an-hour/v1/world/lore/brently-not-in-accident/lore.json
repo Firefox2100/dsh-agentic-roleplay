@@ -1,0 +1,15 @@
+{
+  "id": "brently-not-in-accident",
+  "title": "Brently was not in the accident",
+  "kind": "history",
+  "scope": "listed",
+  "known_by": [],
+  "summary": "The report that Brently Mallard was killed is false. He was far from the scene and did not know of any accident.",
+  "body": "The railroad disaster was real and the list of killed headed by Brently Mallard's name was received and confirmed by a second telegram, but he was far from the scene and did not even know there had been an accident. The text does not say why his name was listed.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "disaster-site"
+    }
+  ]
+}

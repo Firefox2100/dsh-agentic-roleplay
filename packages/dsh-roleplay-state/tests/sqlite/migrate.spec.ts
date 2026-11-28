@@ -38,6 +38,10 @@ describe('migrate', () => {
       7: '6f8bfc5b6c513dc9444ef65ba4a298df8243fe80fb47f2f148070d7f8817eda5',
       8: 'b911afaa49f5ecbf1f64f90a72fa39e69f0ba4db090b730d1357ff4e12fac255',
       9: '29ed6d37cfde558af259e4ae2c9e97c057547e79e295552365e21db3c1ef11c9',
+      10: '96df4506f65a62be7669db4d5a363deacdb7e533f1b3ec21f60bf3f7b03a8844',
+      11: '77fdb370a11df3420bbc64a99452561048237e57e55415751f3ca97faa00f48b',
+      12: '3f1a57bf61304deb30d625f2e095408fefbd239879303563bb0f13613dbd38ed',
+      13: '470b9ac889c6027f0e04108cd8e99b28db3e388d7a76d5a6335a06de8aa5fa2b',
     }
     for (const [version, hash] of Object.entries(released)) {
       const migration = MIGRATIONS.find(candidate => candidate.version === Number(version))
@@ -142,6 +146,22 @@ describe('migrate', () => {
     expect(inspect(db).version).toBe(LATEST_VERSION)
     expect(db.get<{ player_knows: number }>('SELECT player_knows FROM story_threads')?.player_knows).toBe(0)
     expect(() => db.run("INSERT INTO story_threads (text, status, opened_turn, player_knows, created_at) VALUES ('X', 'open', 1, 2, 'now')")).toThrow()
+    db.close()
+  })
+
+  it('adds claims, concealment and groups to a version 12 session without touching its events', () => {
+    const db = nodeSqliteDriver.open(':memory:')
+    for (const migration of MIGRATIONS.slice(0, 12)) db.exec(migration.sql)
+    db.exec(`PRAGMA application_id = ${APPLICATION_ID}`)
+    db.exec('PRAGMA user_version = 12')
+    db.run("INSERT INTO events (turn, round, text, importance, tags, created_at) VALUES (1, 1, 'Old', 3, '[]', 'now')")
+    migrate(db)
+    expect(inspect(db).version).toBe(LATEST_VERSION)
+    expect(db.get<{ text: string }>('SELECT text FROM events')?.text).toBe('Old')
+    for (const table of ['claims', 'claim_links', 'claim_questions', 'claim_question_members', 'event_concealment', 'character_members']) {
+      expect(db.get<{ name: string }>('SELECT name FROM sqlite_master WHERE type = ? AND name = ?', ['table', table])?.name).toBe(table)
+    }
+    expect(() => db.run("INSERT INTO claims (text, status, created_turn, created_at) VALUES ('x', 'settled', 1, 'now')")).toThrow()
     db.close()
   })
 

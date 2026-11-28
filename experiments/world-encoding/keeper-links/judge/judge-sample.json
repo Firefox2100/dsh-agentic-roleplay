@@ -1,0 +1,272 @@
+[
+ {
+  "n": 0,
+  "claim_id": "c-julia-fear",
+  "ref": "e-bed-reasoning",
+  "as": "supports"
+ },
+ {
+  "n": 1,
+  "claim_id": "c-bruise-roylott",
+  "ref": "e-holmes-sees-bruise",
+  "as": "supports"
+ },
+ {
+  "n": 2,
+  "claim_id": "c-official-finding",
+  "ref": "e-holmes-explains",
+  "as": "supports"
+ },
+ {
+  "n": 3,
+  "claim_id": "c-snake-method",
+  "ref": "e-bed-reasoning",
+  "as": "supports"
+ },
+ {
+  "n": 4,
+  "claim_id": "c-baboon",
+  "ref": "e-holmes-suspects-snake",
+  "as": "supports"
+ },
+ {
+  "n": 5,
+  "claim_id": "c-band-gypsies",
+  "ref": "e-holmes-attends",
+  "as": "supports"
+ },
+ {
+  "n": 6,
+  "claim_id": "c-whistle-julia",
+  "ref": "e-holmes-attends",
+  "as": "supports"
+ },
+ {
+  "n": 7,
+  "claim_id": "c-roylott-installed",
+  "ref": "e-bed-reasoning",
+  "as": "supports"
+ },
+ {
+  "n": 8,
+  "claim_id": "c-band-gypsies",
+  "ref": "e-holmes-explains",
+  "as": "undermines"
+ },
+ {
+  "n": 9,
+  "claim_id": "c-julia-fear",
+  "ref": "e-holmes-theory",
+  "as": "supports"
+ },
+ {
+  "n": 10,
+  "claim_id": "c-roylott-installed",
+  "ref": "e-ventilator-explained",
+  "as": "supports"
+ },
+ {
+  "n": 11,
+  "claim_id": "c-band-gypsies",
+  "ref": "e-bed-reasoning",
+  "as": "supports"
+ },
+ {
+  "n": 12,
+  "claim_id": "c-roylott-away",
+  "ref": "e-holmes-attends",
+  "as": "supports"
+ },
+ {
+  "n": 13,
+  "claim_id": "c-clang-safe",
+  "ref": "e-holmes-explains",
+  "as": "supports"
+ },
+ {
+  "n": 14,
+  "claim_id": "c-baboon",
+  "ref": "e-baboon-named",
+  "as": "confirms"
+ },
+ {
+  "n": 15,
+  "claim_id": "c-band-gypsies",
+  "ref": "e-holmes-explains",
+  "as": "supports"
+ },
+ {
+  "n": 16,
+  "claim_id": "c-room-sealed",
+  "ref": "e-bed-reasoning",
+  "as": "supports"
+ },
+ {
+  "n": 17,
+  "claim_id": "c-repairs-pretext",
+  "ref": "e-holmes-theory",
+  "as": "supports"
+ },
+ {
+  "n": 18,
+  "claim_id": "c-band-gypsies",
+  "ref": "e-helen-tells",
+  "as": "supports"
+ },
+ {
+  "n": 19,
+  "claim_id": "c-gypsies-involved",
+  "ref": "e-holmes-drops-gypsies",
+  "as": "supports"
+ },
+ {
+  "n": 20,
+  "claim_id": "c-ventilator-expected",
+  "ref": "e-holmes-deduces-vent",
+  "as": "supports"
+ },
+ {
+  "n": 21,
+  "claim_id": "c-roylott-installed",
+  "ref": "e-holmes-drops-gypsies",
+  "as": "supports"
+ },
+ {
+  "n": 22,
+  "claim_id": "c-repairs-pretext",
+  "ref": "e-ventilator-explained",
+  "as": "supports"
+ },
+ {
+  "n": 23,
+  "claim_id": "c-whistle-julia",
+  "ref": "e-hiss-heard",
+  "as": "confirms"
+ },
+ {
+  "n": 24,
+  "claim_id": "c-roylott-installed",
+  "ref": "e-holmes-suspects-snake",
+  "as": "supports"
+ },
+ {
+  "n": 25,
+  "claim_id": "c-band-snake",
+  "ref": "e-holmes-explains",
+  "as": "confirms"
+ },
+ {
+  "n": 26,
+  "claim_id": "c-gypsies-involved",
+  "ref": "e-bed-reasoning",
+  "as": "supports"
+ },
+ {
+  "n": 27,
+  "claim_id": "c-roylott-traced",
+  "ref": "e-holmes-attends",
+  "as": "supports"
+ },
+ {
+  "n": 28,
+  "claim_id": "c-snake-method",
+  "ref": "e-holmes-explains",
+  "as": "supports"
+ },
+ {
+  "n": 29,
+  "claim_id": "c-whistle-julia",
+  "ref": "e-ventilator-explained",
+  "as": "supports"
+ },
+ {
+  "n": 30,
+  "claim_id": "c-snake-method",
+  "ref": "e-roylott-sends-snake",
+  "as": "supports"
+ },
+ {
+  "n": 31,
+  "claim_id": "c-roylott-installed",
+  "ref": "e-holmes-theory",
+  "as": "supports"
+ },
+ {
+  "n": 32,
+  "claim_id": "c-snake-method",
+  "ref": "e-holmes-drops-gypsies",
+  "as": "supports"
+ },
+ {
+  "n": 33,
+  "claim_id": "c-whistle-last-night",
+  "ref": "e-holmes-explains",
+  "as": "supports"
+ },
+ {
+  "n": 34,
+  "claim_id": "c-whistle-last-night",
+  "ref": "e-hiss-heard",
+  "as": "confirms"
+ },
+ {
+  "n": 35,
+  "claim_id": "c-snake-method",
+  "ref": "e-holmes-suspects-snake",
+  "as": "supports"
+ },
+ {
+  "n": 36,
+  "claim_id": "c-baboon",
+  "ref": "e-baboon-named",
+  "as": "supports"
+ },
+ {
+  "n": 37,
+  "claim_id": "c-roylott-installed",
+  "ref": "e-holmes-explains",
+  "as": "supports"
+ },
+ {
+  "n": 38,
+  "claim_id": "c-bruise-roylott",
+  "ref": "e-holmes-attends",
+  "as": "supports"
+ },
+ {
+  "n": 39,
+  "claim_id": "c-hideous-child",
+  "ref": "e-holmes-suspects-snake",
+  "as": "supports"
+ },
+ {
+  "n": 40,
+  "claim_id": "c-snake-trained",
+  "ref": "e-holmes-explains",
+  "as": "supports"
+ },
+ {
+  "n": 41,
+  "claim_id": "c-bruise-roylott",
+  "ref": "e-holmes-sees-bruise",
+  "as": "confirms"
+ },
+ {
+  "n": 42,
+  "claim_id": "c-roylott-installed",
+  "ref": "e-holmes-attends",
+  "as": "supports"
+ },
+ {
+  "n": 43,
+  "claim_id": "c-snake-method",
+  "ref": "e-holmes-theory",
+  "as": "supports"
+ },
+ {
+  "n": 44,
+  "claim_id": "c-journey",
+  "ref": "e-holmes-deduces-journey",
+  "as": "confirms"
+ }
+]

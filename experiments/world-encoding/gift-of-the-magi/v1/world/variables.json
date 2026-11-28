@@ -1,0 +1,46 @@
+[
+  {
+    "key": "cash",
+    "name": "Cash (cents)",
+    "description": "Money in hand, in cents. Changes when someone is paid or pays.",
+    "kind": "number",
+    "subject": "character",
+    "integer": true,
+    "min": 0,
+    "max": 1000000,
+    "default": 0,
+    "visibility": "public"
+  },
+  {
+    "key": "hair",
+    "name": "Hair",
+    "description": "What Della's hair is like.",
+    "kind": "choice",
+    "subject": "character",
+    "only": [
+      "della"
+    ],
+    "options": [
+      "below the knee",
+      "cut off",
+      "close-lying curls"
+    ],
+    "default": "below the knee",
+    "visibility": "public"
+  },
+  {
+    "key": "weekly_pay",
+    "name": "Weekly pay (cents)",
+    "description": "What Jim earns a week now.",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "jim"
+    ],
+    "integer": true,
+    "min": 0,
+    "max": 100000,
+    "default": 2000,
+    "visibility": "public"
+  }
+]

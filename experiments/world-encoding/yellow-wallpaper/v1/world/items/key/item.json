@@ -1,0 +1,7 @@
+{
+  "id": "key",
+  "name": "The key to the nursery door",
+  "description": "She locks the door and throws the key into the front path under a plantain leaf.",
+  "held_by": "narrator",
+  "unique": true
+}

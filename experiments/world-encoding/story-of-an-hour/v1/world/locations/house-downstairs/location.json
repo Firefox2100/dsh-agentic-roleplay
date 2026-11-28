@@ -1,0 +1,20 @@
+{
+  "id": "house-downstairs",
+  "name": "Downstairs and the front door",
+  "parent": "house",
+  "description": "The rooms and hall below, and the front door; the bottom of the stairs.",
+  "features": [
+    {
+      "id": "front-door",
+      "name": "Front door",
+      "description": "Opened with a latchkey."
+    }
+  ],
+  "exits": [
+    {
+      "to": "landing",
+      "description": "the stairs",
+      "travel_time_seconds": 20
+    }
+  ]
+}

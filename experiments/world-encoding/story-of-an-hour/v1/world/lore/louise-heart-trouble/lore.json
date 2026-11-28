@@ -1,0 +1,13 @@
+{
+  "id": "louise-heart-trouble",
+  "title": "Louise's heart trouble",
+  "kind": "custom",
+  "scope": "listed",
+  "known_by": [
+    "josephine",
+    "richards"
+  ],
+  "summary": "Louise Mallard has a heart condition; shocks are dangerous to her.",
+  "body": "Louise Mallard is afflicted with a heart trouble. For this reason great care was taken to break the news to her as gently as possible.",
+  "subjects": []
+}

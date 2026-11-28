@@ -1,0 +1,242 @@
+[
+ {
+  "id": "q01",
+  "question": "Did Mrs. Sappleton's husband and brothers die in a bog three years ago?",
+  "answer": "No; they are alive and come in from shooting.",
+  "needs": [
+   "an invented story and the truth it contradicts"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "lore no-tragedy (hidden, listed) says so; the event says the story was invented; nothing marks which statements of the tale are false"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "fact f-men-died false; frame vera-tale"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-men-died: e10 and s11 (men alive) contradict it; derived false"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "Which details of Vera's story were true?",
+  "answer": "The open window (kept open for the men's return), the white coat, the spaniel, Ronnie's song, the men's shooting; not their deaths.",
+  "needs": [
+   "parts of a told fiction that are true"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "claims of e04 against facts: f-window-for-return, f-ronnie-song true; f-coat-arm contradicted; f-men-died false"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e04 claims: c-men-died and c-anniversary derived false; s10, s12 and c-coat-arm (confirmed by s08) derived true"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "What did Framton believe, and what made him believe it?",
+  "answer": "That the aunt waits for ghosts; the tale plus the aunt's true words and then the sight of the three men.",
+  "needs": [
+   "a belief and its evidence"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "perception accuracy 'mistaken' on three events; no belief row says false"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge framton believes f-men-died, f-aunt-deluded, f-ghosts, with misreading_of"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge framton believes c-men-died, c-aunt-deluded, c-ghosts, with misread_by on e10"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "When did Vera learn that Framton knew nothing about her aunt?",
+  "answer": "At the start, when he told her.",
+  "needs": [
+   "when a person learned the fact they exploit"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "turn 2 r2 perception content"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge vera knows f-framton-ignorant from e03"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge vera knows s13 from e03"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "Why did Framton flee?",
+  "answer": "Believing he saw the dead men, after a tale he trusted and an aunt he thought deranged.",
+  "needs": [
+   "a cause chain through a false belief"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "no causes"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e11 causes e10 stated, e04 implied"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e11 causes e10 stated, e04 implied"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "Was Vera's horror real?",
+  "answer": "No; it was acted (implied by the end).",
+  "needs": [
+   "a performance against a feeling"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "event text says 'dazed horror'; nothing says acted"
+  },
+  "draft": {
+   "answerable": "partly",
+   "how": "e09 note acted, status implied: an annotation, not a field for performances"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "e09 note acted, status implied: an annotation, not a field for performances"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "When does the narration make clear that Vera lies?",
+  "answer": "In the last sentence.",
+  "needs": [
+   "when the reader learns it"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "telling s15 reveals f-vera-invents"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge reader unaware of s00 (Vera invents) until para:"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "Who believed that Framton fears dogs, and why?",
+  "answer": "Mr. and Mrs. Sappleton, because Vera said so.",
+  "needs": [
+   "beliefs created by a lie"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "perceptions marked mistaken for both"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge both believe f-nuttel-dog-horror false, source vera"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge both believe c-nuttel-dog-horror (derived false by reading r-vera), source vera"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "Where were the men while Framton was in the room?",
+  "answer": "Out shooting in the marshes, then crossing the lawn at dusk.",
+  "needs": [
+   "offstage positions over time"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "move events exist only from the lawn on; the earlier offstage shoot is an invented event"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "b03 reported_by mrs-sappleton; e10 on the lawn"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "b03 reported_by mrs-sappleton; e10 on the lawn"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "What time of day does the story run from and to?",
+  "answer": "An October afternoon to deepening twilight.",
+  "needs": [
+   "time of day without a clock"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "the sidecar holds invented clock times"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "time.anchors the-day; time.spans span-visit"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "time.anchors the-day; time.spans span-visit"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "What had Framton's sister said when he left for the country?",
+  "answer": "That he would bury himself and moping would worsen his nerves; she gave him letters of introduction.",
+  "needs": [
+   "a quoted past speech"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "b01 says"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "b01 says"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "Whom does the narrator's viewpoint follow after Framton runs out?",
+  "answer": "The people in the room, ending with a comment on Vera.",
+  "needs": [
+   "viewpoint changes"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "telling s13..s15 (focalizer unset after s12)"
+  },
+  "v2": {
+   "answerable": "no",
+   "how": "focalisation is narration voice: projection, not stored"
+  }
+ }
+]

@@ -1,0 +1,14 @@
+{
+  "id": "cyclist",
+  "name": "A cyclist",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "Runs into the hedge to avoid Framton.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "road"
+  }
+}

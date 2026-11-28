@@ -1,0 +1,28 @@
+{
+  "id": "brently",
+  "name": "Brently Mallard",
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Louise's husband, away from home on a journey.",
+  "appearance": "Travel-stained when he returns, with a grip-sack and an umbrella.",
+  "start": {
+    "public_state": "Away on a journey.",
+    "activity": "Travelling home.",
+    "inner_state": "Unaware of any accident.",
+    "location": "away"
+  },
+  "relationships": [
+    {
+      "to": "louise",
+      "label": "wife",
+      "summary": "He has never looked at her but with love.",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.9,
+      "tension": 0.1
+    }
+  ]
+}

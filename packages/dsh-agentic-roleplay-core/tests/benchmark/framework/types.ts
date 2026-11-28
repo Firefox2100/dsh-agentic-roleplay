@@ -144,6 +144,14 @@ export type Expectation =
   | { type: 'character-doing'; character: string; text: string; not?: true }
   /** The player's character is given no words of its own. */
   | { type: 'player-silent' }
+  /** The records hold a claim (something a person asserts that the events do not settle) whose text has these words in it, by the named character when given. */
+  | { type: 'claim-recorded'; text: string; by?: string }
+  /** No claim of the records has these words: what is only a fact of the story is an event, never a claim. */
+  | { type: 'claim-absent'; text: string }
+  /** The claim with these words stands so in the record's view, derived from the events linked to it (`true`, `false`, `likely`, `unlikely`, `open`, `disputed`, `unresolved` or `mixed`). */
+  | { type: 'claim-standing'; text: string; standing: string }
+  /** The claim with these words is `proposed` (a model's suggestion) or `confirmed` (settled by a person or by the game master). */
+  | { type: 'claim-status'; text: string; status: 'proposed' | 'confirmed' }
   /** The story has at least this many turns. */
   | { type: 'turns'; count: number }
   /** The character is in the story, and placed when the world has places. */
@@ -193,7 +201,7 @@ export type Expectation =
   /** No file of this name is in the folder. */
   | { type: 'file-lacks'; in: string; name: string }
 
-export const EXPECTATION_TYPES = ['narration-clean', 'narration-language', 'narration-has', 'command-ruled', 'scene-has', 'narration-lacks', 'speaks', 'speaks-in-voice', 'character-silent', 'character-doing', 'player-silent', 'turns', 'character-exists', 'value-changed', 'value-is', 'trigger-fired', 'character-at', 'item-held-by', 'cast-grew', 'cast-distinct', 'cast-placed', 'no-repeats', 'message-arrived', 'activity-changed', 'messages-at-most', 'message-has', 'message-lacks', 'message-language', 'opening-has', 'setting-is', 'pack-active', 'file-has', 'html-sane', 'file-exists', 'file-lacks'] as const
+export const EXPECTATION_TYPES = ['narration-clean', 'narration-language', 'narration-has', 'command-ruled', 'scene-has', 'narration-lacks', 'speaks', 'speaks-in-voice', 'character-silent', 'character-doing', 'player-silent', 'turns', 'character-exists', 'value-changed', 'value-is', 'trigger-fired', 'character-at', 'item-held-by', 'cast-grew', 'cast-distinct', 'cast-placed', 'no-repeats', 'message-arrived', 'activity-changed', 'messages-at-most', 'message-has', 'message-lacks', 'message-language', 'opening-has', 'setting-is', 'pack-active', 'file-has', 'html-sane', 'file-exists', 'file-lacks', 'claim-recorded', 'claim-absent', 'claim-standing', 'claim-status'] as const
 
 export interface ScriptTurn {
   /** What the player writes: a command such as `/ooc`, `/wait` or `/roll` is written as the player would. */

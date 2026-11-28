@@ -1,0 +1,18 @@
+{
+  "id": "the-trap",
+  "title": "The rider was a Federal scout",
+  "kind": "history",
+  "scope": "listed",
+  "known_by": [
+    "scout",
+    "commandant"
+  ],
+  "summary": "The gray-clad rider was a Federal scout who gave Farquhar the means and the wish to attack the bridge.",
+  "body": "The rider who asked for water at Farquhar's gate wore gray but was a Federal scout. The text says no more than that he was; that he meant to lure Farquhar is implied by what followed and is not stated.",
+  "subjects": [
+    {
+      "kind": "location",
+      "id": "plantation-gate"
+    }
+  ]
+}

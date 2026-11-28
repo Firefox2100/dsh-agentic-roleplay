@@ -1,0 +1,1342 @@
+[
+ {
+  "ref": "P01.1",
+  "quote": "A man stood upon a railroad bridge in northern Alabama, looking down into the swift water twenty feet below.",
+  "v1": {
+   "class": "E",
+   "where": "place bridge-platform (description)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "place bridge-platform; states bridge description"
+  },
+  "v2": {
+   "class": "E",
+   "where": "place bridge-platform; states bridge description"
+  }
+ },
+ {
+  "ref": "P01.1",
+  "quote": "(the man is not named)",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling s01; s04 gives the name at P09"
+  },
+  "v2": {
+   "class": "E",
+   "where": "s04 gives the name at P09"
+  }
+ },
+ {
+  "ref": "P01.2",
+  "quote": "The man's hands were behind his back, the wrists bound with a cord. A rope closely encircled his neck... attached to a stout cross-timber",
+  "v1": {
+   "class": "S",
+   "where": "item rope; the cord only in turn 3 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states restraint; thing rope"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states restraint; thing rope"
+  }
+ },
+ {
+  "ref": "P01.3",
+  "quote": "Some loose boards laid upon the sleepers ... supplied a footing for him and his executioners—two private soldiers ... directed by a sergeant",
+  "v1": {
+   "class": "E",
+   "where": "characters privates, sergeant; place description"
+  },
+  "draft": {
+   "class": "E",
+   "where": "people privates, sergeant"
+  },
+  "v2": {
+   "class": "E",
+   "where": "people privates, sergeant"
+  }
+ },
+ {
+  "ref": "P01.3",
+  "quote": "(a sergeant who in civil life may have been a deputy sheriff)",
+  "v1": {
+   "class": "S",
+   "where": "sergeant summary"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states sergeant background status conjecture"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states sergeant background status conjecture"
+  }
+ },
+ {
+  "ref": "P01.4",
+  "quote": "an officer in the uniform of his rank, armed. He was a captain.",
+  "v1": {
+   "class": "E",
+   "where": "character captain"
+  },
+  "draft": {
+   "class": "E",
+   "where": "people captain"
+  },
+  "v2": {
+   "class": "E",
+   "where": "people captain"
+  }
+ },
+ {
+  "ref": "P01.5",
+  "quote": "A sentinel at each end of the bridge stood with his rifle in the position known as 'support' ... a formal and unnatural position",
+  "v1": {
+   "class": "S",
+   "where": "group sentinels; posture is not stored"
+  },
+  "draft": {
+   "class": "S",
+   "where": "people sentinels; posture not stored"
+  },
+  "v2": {
+   "class": "S",
+   "where": "people sentinels; posture not stored"
+  }
+ },
+ {
+  "ref": "P01.6",
+  "quote": "It did not appear to be the duty of these two men to know what was occurring at the centre of the bridge; they merely blockaded the two ends",
+  "v1": {
+   "class": "S",
+   "where": "sentinels summary"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A duty stated as a rule about what they need not know.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P02.1",
+  "quote": "Beyond one of the sentinels nobody was in sight; the railroad ran straight away into a forest for a hundred yards, then, curving, was lost to view.",
+  "v1": {
+   "class": "E",
+   "where": "place south-approach description"
+  },
+  "draft": {
+   "class": "E",
+   "where": "places south-approach"
+  },
+  "v2": {
+   "class": "E",
+   "where": "places south-approach"
+  }
+ },
+ {
+  "ref": "P02.1",
+  "quote": "Doubtless there was an outpost farther along.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A conjecture by the narrator.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P02.2",
+  "quote": "The other bank of the stream was open ground—a gentle acclivity topped with a stockade ... a brass cannon commanding the bridge.",
+  "v1": {
+   "class": "E",
+   "where": "places north-bank, fort; item cannon"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states north-bank description; thing cannon"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states north-bank description; thing cannon"
+  }
+ },
+ {
+  "ref": "P02.3",
+  "quote": "Midway of the slope between bridge and fort were the spectators—a single company of infantry in line, at 'parade rest' ... A lieutenant stood at the right of the line",
+  "v1": {
+   "class": "E",
+   "where": "characters company, lieutenant at north-bank"
+  },
+  "draft": {
+   "class": "E",
+   "where": "people company, lieutenant"
+  },
+  "v2": {
+   "class": "E",
+   "where": "people company, lieutenant"
+  }
+ },
+ {
+  "ref": "P02.4",
+  "quote": "Excepting the group of four at the centre of the bridge, not a man moved. ... The captain stood with folded arms, silent",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r1 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e09 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e09 text"
+  }
+ },
+ {
+  "ref": "P02.5",
+  "quote": "Death is a dignitary who when he comes announced is to be received with formal manifestations of respect ... In the code of military etiquette silence and fixity are forms of deference.",
+  "v1": {
+   "class": "E",
+   "where": "lore military-etiquette"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-etiquette holder narrator"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-etiquette holder narrator"
+  }
+ },
+ {
+  "ref": "P03.1",
+  "quote": "The man who was engaged in being hanged was apparently about thirty-five years of age. He was a civilian, if one might judge from his habit, which was that of a planter.",
+  "v1": {
+   "class": "E",
+   "where": "farquhar age 'about thirty-five'; role"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states appearance; people farquhar"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states appearance; people farquhar"
+  }
+ },
+ {
+  "ref": "P03.2",
+  "quote": "His features were good ... well-fitting frock-coat. He wore a mustache and pointed beard ... eyes large and dark gray, and had a kindly expression",
+  "v1": {
+   "class": "E",
+   "where": "farquhar appearance"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states appearance"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states appearance"
+  }
+ },
+ {
+  "ref": "P03.3",
+  "quote": "Evidently this was no vulgar assassin. The liberal military code makes provision for hanging many kinds of persons, and gentlemen are not excluded.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-gentleman holder narrator"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-gentleman holder narrator"
+  }
+ },
+ {
+  "ref": "P04.1",
+  "quote": "The preparations being complete, the two private soldiers stepped aside and each drew away the plank ... the sergeant ... captain ... one pace ... the plank would tilt",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text; item plank"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e10 text; thing plank"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e10 text; thing plank"
+  }
+ },
+ {
+  "ref": "P04.2",
+  "quote": "The arrangement commended itself to his judgment as simple and effective. His face had not been covered nor his eyes bandaged.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "His opinion of the device and a missing blindfold.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P04.3",
+  "quote": "He looked a moment at his 'unsteadfast footing,' then let his gaze wander to the swirling water ... a piece of dancing driftwood ... How slowly it appeared to move! What a sluggish stream!",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e11 text"
+  },
+  "note": "The first sign that his sense of time is bending.",
+  "v2": {
+   "class": "S",
+   "where": "e11 text"
+  }
+ },
+ {
+  "ref": "P05.1",
+  "quote": "He closed his eyes in order to fix his last thoughts upon his wife and children.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r3; relationships"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 who wife, children"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 who wife, children"
+  }
+ },
+ {
+  "ref": "P05.2",
+  "quote": "The water, touched to gold by the early sun, the brooding mists ... the fort, the soldiers, the piece of drift—all had distracted him.",
+  "v1": {
+   "class": "S",
+   "where": "the hour only in the clock sidecar"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e09 when approx early morning"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e09 when approx early morning"
+  }
+ },
+ {
+  "ref": "P05.3",
+  "quote": "a sharp, distinct, metallic percussion like the stroke of a blacksmith's hammer ... slow as the tolling of a death knell ... they hurt his ear like the thrust of a knife",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r3 perception content, accuracy partial"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 distortion"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 distortion"
+  }
+ },
+ {
+  "ref": "P05.4",
+  "quote": "What he heard was the ticking of his watch.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text; item watch"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 things watch"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 things watch"
+  }
+ },
+ {
+  "ref": "P06.1",
+  "quote": "'If I could free my hands ... I might throw off the noose and spring into the stream. By diving I could evade the bullets ... reach the bank, take to the woods and get away home.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r4 text and a perception 'inferred'"
+  },
+  "draft": {
+   "class": "E",
+   "where": "p01 in frame farquhar-plan, realised false"
+  },
+  "v2": {
+   "class": "E",
+   "where": "h-p01 as held (not realised)"
+  }
+ },
+ {
+  "ref": "P06.2",
+  "quote": "'My home, thank God, is as yet outside their lines; my wife and little ones are still beyond the invader's farthest advance.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r4 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "p01 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "h-p01 text"
+  }
+ },
+ {
+  "ref": "P07.1",
+  "quote": "As these thoughts, which have here to be set down in words, were flashed into the doomed man's brain rather than evolved from it",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "P",
+   "where": "-"
+  },
+  "note": "The narrator on how fast thought is.",
+  "v2": {
+   "class": "P",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P07.2",
+  "quote": "the captain nodded to the sergeant. The sergeant stepped aside.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r5"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12"
+  }
+ },
+ {
+  "ref": "P08",
+  "quote": "II",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling s03 mode marker"
+  },
+  "v2": {
+   "class": "P",
+   "where": "telling: projection, not stored (the turn order is the telling)"
+  }
+ },
+ {
+  "ref": "P09.1",
+  "quote": "Peyton Farquhar was a well-to-do planter, of an old and highly respected Alabama family.",
+  "v1": {
+   "class": "S",
+   "where": "farquhar background text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states background text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states background text"
+  }
+ },
+ {
+  "ref": "P09.2",
+  "quote": "Being a slave owner and like other slave owners a politician he was naturally an original secessionist and ardently devoted to the Southern cause.",
+  "v1": {
+   "class": "S",
+   "where": "farquhar background text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states background text"
+  },
+  "note": "Allegiance is prose; there is no affiliation field.",
+  "v2": {
+   "class": "S",
+   "where": "states background text"
+  }
+ },
+ {
+  "ref": "P09.3",
+  "quote": "Circumstances of an imperious nature, which it is unnecessary to relate here, had prevented him from taking service with the gallant army",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "event b01 note: withheld"
+  },
+  "note": "The narrator declines to say why; neither model has 'cause withheld'.",
+  "v2": {
+   "class": "S",
+   "where": "event b01 note: withheld"
+  }
+ },
+ {
+  "ref": "P09.4",
+  "quote": "he chafed under the inglorious restraint, longing for the release of his energies ... That opportunity, he felt, would come",
+  "v1": {
+   "class": "S",
+   "where": "start inner_state"
+  },
+  "draft": {
+   "class": "S",
+   "where": "event b01 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "event b01 text"
+  }
+ },
+ {
+  "ref": "P09.5",
+  "quote": "No service was too humble ... no adventure too perilous ... a civilian who was at heart a soldier ... the frankly villainous dictum that all is fair in love and war.",
+  "v1": {
+   "class": "S",
+   "where": "personality text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "b01 text"
+  },
+  "note": "A disposition; the irony is the narrator's.",
+  "v2": {
+   "class": "S",
+   "where": "b01 text"
+  }
+ },
+ {
+  "ref": "P10.1",
+  "quote": "One evening while Farquhar and his wife were sitting on a rustic bench near the entrance to his grounds, a gray-clad soldier rode up to the gate and asked for a drink of water.",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r1; feature bench"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e01"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e01"
+  }
+ },
+ {
+  "ref": "P10.1",
+  "quote": "(one evening: no date; after Corinth)",
+  "v1": {
+   "class": "S",
+   "where": "starting_time had to be invented"
+  },
+  "draft": {
+   "class": "E",
+   "where": "time.anchors corinth; e01 when unknown"
+  },
+  "v2": {
+   "class": "E",
+   "where": "time.anchors corinth; e01 when unknown"
+  }
+ },
+ {
+  "ref": "P10.2",
+  "quote": "Mrs. Farquhar was only too happy to serve him with her own white hands.",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r1"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e01 who wife"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e01 who wife"
+  }
+ },
+ {
+  "ref": "P10.3",
+  "quote": "While she was fetching the water her husband approached the dusty horseman and inquired eagerly for news from the front.",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02"
+  }
+ },
+ {
+  "ref": "P10.4",
+  "quote": "(the rider is taken for a Confederate soldier)",
+  "v1": {
+   "class": "S",
+   "where": "perception content 'mistaken' on turn 1 r1; a belief cannot carry accuracy"
+  },
+  "draft": {
+   "class": "E",
+   "where": "knowledge farquhar believes f-scout-confederate (false), status implied"
+  },
+  "v2": {
+   "class": "E",
+   "where": "knowledge farquhar believes c-scout-confederate (false), basis implied, origin offscreen"
+  }
+ },
+ {
+  "ref": "P11.1",
+  "quote": "'The Yanks are repairing the railroads ... getting ready for another advance. They have reached the Owl Creek bridge, put it in order and built a stockade on the north bank.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r2 perception content (told)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02 says"
+  }
+ },
+ {
+  "ref": "P11.2",
+  "quote": "'The commandant has issued an order ... any civilian caught interfering with the railroad, its bridges, tunnels or trains will be summarily hanged. I saw the order.'",
+  "v1": {
+   "class": "E",
+   "where": "lore commandants-order; character commandant"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-order; thing order; knowledge farquhar knows"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02; thing order; knowledge farquhar knows"
+  }
+ },
+ {
+  "ref": "P12-P15",
+  "quote": "'How far is it to the Owl Creek bridge?' ... 'About thirty miles.' ... 'Is there no force on this side the creek?' ... 'Only a picket post half a mile out ... and a single sentinel at this end of the bridge.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r2 perception content"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02 says"
+  }
+ },
+ {
+  "ref": "P16.1",
+  "quote": "'Suppose a man—a civilian and student of hanging—should elude the picket post and perhaps get the better of the sentinel,' said Farquhar, smiling, 'what could he accomplish?'",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r3 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 poses h01 in frame dialogue-hypothetical, realised 'attempted'"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 poses e03 says in frame dialogue-hypothetical, realised 'attempted'"
+  }
+ },
+ {
+  "ref": "P17.1",
+  "quote": "'I observed that the flood of last winter had lodged a great quantity of driftwood against the wooden pier at this end of the bridge. It is now dry and would burn like tow.'",
+  "v1": {
+   "class": "S",
+   "where": "item driftwood stated as real; perception 'accurate' is a guess"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-driftwood truth unknown; e04 claim"
+  },
+  "note": "Only the rider says so; v1 accuracy has no 'unknown'.",
+  "v2": {
+   "class": "E",
+   "where": "c-driftwood truth unknown; e04 claim"
+  }
+ },
+ {
+  "ref": "P17.2",
+  "quote": "'I was there a month ago'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A past visit that is itself a claim.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P18.1",
+  "quote": "The lady had now brought the water, which the soldier drank. He thanked her ceremoniously, bowed to her husband and rode away.",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r4"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e05"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e05"
+  }
+ },
+ {
+  "ref": "P18.2",
+  "quote": "An hour later, after nightfall, he repassed the plantation, going northward in the direction from which he had come.",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r4 text; no one is recorded as seeing it"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e05 when after e04 gap PT1H"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e05 when after e04 gap PT1H"
+  }
+ },
+ {
+  "ref": "P18.3",
+  "quote": "He was a Federal scout.",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r5; lore the-trap known_by scout"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-scout-federal; event e06"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e06; event e06"
+  }
+ },
+ {
+  "ref": "P18.3",
+  "quote": "(this sentence reframes the scene: the news was bait)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-bait, status implied; telling s05 reveals f-scout-federal"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-bait, basis implied, origin offscreen"
+  }
+ },
+ {
+  "ref": "P18.4",
+  "quote": "(never narrated: Farquhar acts on it, is caught, is condemned)",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r1, r2 invented events, tagged 'implied'"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e07, e08 status implied; fact f-attempt"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e07, e08 basis implied, origin offscreen; e08"
+  }
+ },
+ {
+  "ref": "P19",
+  "quote": "III",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling s06 mode marker"
+  },
+  "v2": {
+   "class": "P",
+   "where": "telling: projection, not stored (the turn order is the telling)"
+  }
+ },
+ {
+  "ref": "P20.1",
+  "quote": "As Peyton Farquhar fell straight downward through the bridge he lost consciousness and was as one already dead.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r5 (the fall) + r6 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12; v01 in frame farquhar-vision"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12; v01 in frame farquhar-vision"
+  }
+ },
+ {
+  "ref": "P20.2",
+  "quote": "awakened—ages later, it seemed to him—by the pain of a sharp pressure upon his throat",
+  "v1": {
+   "class": "N",
+   "where": "felt time has no field"
+  },
+  "draft": {
+   "class": "E",
+   "where": "frame farquhar-vision felt_duration; v01 grounded_in e12, e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "frame farquhar-vision felt_duration; v01 grounded_in e12, e13"
+  }
+ },
+ {
+  "ref": "P20.3",
+  "quote": "Keen, poignant agonies ... streams of pulsating fire ... swung through unthinkable arcs of oscillation, like a vast pendulum.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v01 sensation grounded_in the noose"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v01 sensation grounded_in the noose"
+  }
+ },
+ {
+  "ref": "P20.4",
+  "quote": "The power of thought was restored; he knew that the rope had broken and he had fallen into the stream.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r6 text: a vision event that says the rope broke"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v02 in frame farquhar-vision, realised false"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v02 in frame farquhar-vision, realised false"
+  }
+ },
+ {
+  "ref": "P20.5",
+  "quote": "There was no additional strangulation; the noose ... kept the water from his lungs. To die of hanging at the bottom of a river!—the idea seemed to him ludicrous.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v02 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v02 text"
+  }
+ },
+ {
+  "ref": "P20.6",
+  "quote": "He opened his eyes in the darkness ... he was now very comfortable. 'To be hanged and drowned ... that is not so bad; but I do not wish to be shot. No; I will not be shot; that is not fair.'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v02 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v02 text"
+  }
+ },
+ {
+  "ref": "P21.1",
+  "quote": "a sharp pain in his wrist apprised him that he was trying to free his hands ... The cord fell away ... They tore it away and thrust it fiercely aside",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r6 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v03 fulfils p01"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v03 fulfils h-p01"
+  }
+ },
+ {
+  "ref": "P21.2",
+  "quote": "'Put it back, put it back!' He thought he shouted these words to his hands ... his disobedient hands gave no heed",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A mind at odds with its own body.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P21.3",
+  "quote": "They beat the water vigorously ... forcing him to the surface ... his lungs engulfed a great draught of air, which instantly he expelled in a shriek!",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r6 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v03"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v03"
+  }
+ },
+ {
+  "ref": "P22.1",
+  "quote": "He was now in full possession of his physical senses. ... He felt the ripples ... saw the individual trees, the leaves ... A fish slid along beneath his eyes and he heard the rush of its body",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r6 text ('senses preternaturally keen')"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v04 perceive"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v04 perceive"
+  }
+ },
+ {
+  "ref": "P23.1",
+  "quote": "the visible world seemed to wheel slowly round ... he saw the bridge, the fort, the soldiers ... They shouted and gesticulated, pointing at him. The captain had drawn his pistol, but did not fire",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v05; who captain"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v05; who captain"
+  }
+ },
+ {
+  "ref": "P24.1",
+  "quote": "he heard a sharp report and something struck the water ... saw one of the sentinels with his rifle at his shoulder ... a gray eye ... Nevertheless, this one had missed.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v05 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v05 text"
+  }
+ },
+ {
+  "ref": "P25.1",
+  "quote": "The sound of a clear, high voice in a monotonous singsong ... the lieutenant on shore was taking a part in the morning's work.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v06 who lieutenant"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v06 who lieutenant"
+  }
+ },
+ {
+  "ref": "P26.1",
+  "quote": "'Attention, company! . . . Shoulder arms! . . . Ready! . . . Aim! . . . Fire!'",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text ('ordered a volley')"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v06 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v06 says"
+  }
+ },
+ {
+  "ref": "P27.1",
+  "quote": "Farquhar dived ... the dulled thunder of the volley ... shining bits of metal, singularly flattened ... One lodged between his collar and neck",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v06 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v06 text"
+  }
+ },
+ {
+  "ref": "P28.1",
+  "quote": "he had been a long time under water ... The soldiers had almost finished reloading ... The two sentinels fired again, independently and ineffectually.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v06 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v06 text"
+  }
+ },
+ {
+  "ref": "P29.1",
+  "quote": "The hunted man ... was now swimming vigorously with the current. His brain was as energetic as his arms and legs; he thought with the rapidity of lightning.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P30.1",
+  "quote": "'The officer will not make that martinet's error a second time ... I cannot dodge them all!'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A reasoning inside the vision.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P31.1",
+  "quote": "An appalling plash within two yards of him ... The cannon had taken a hand in the game.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text ('and the cannon fired')"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v06 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v06 text"
+  }
+ },
+ {
+  "ref": "P32.1",
+  "quote": "'They will not do that again; the next time they will use a charge of grape. I must keep my eye upon the gun ...'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P33.1",
+  "quote": "Suddenly he felt himself whirled round and round—spinning like a top ... flung upon the gravel at the foot of the left bank of the stream—the southern bank",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v07"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v07"
+  }
+ },
+ {
+  "ref": "P33.2",
+  "quote": "he wept with delight ... It looked like diamonds, rubies, emeralds ... The trees upon the bank were giant garden plants ... He had no wish to perfect his escape",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v07 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v07 text"
+  }
+ },
+ {
+  "ref": "P34.1",
+  "quote": "A whiz and rattle of grapeshot ... roused him from his dream. ... He sprang to his feet, rushed up the sloping bank, and plunged into the forest.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r8 text ('ran into the forest')"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v07"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v07"
+  }
+ },
+ {
+  "ref": "P35.1",
+  "quote": "All that day he traveled, laying his course by the rounding sun. The forest seemed interminable ... There was something uncanny in the revelation.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r8 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v08"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v08"
+  }
+ },
+ {
+  "ref": "P36.1",
+  "quote": "By nightfall he was fatigued ... a road ... as wide and straight as a city street, yet it seemed untraveled ... great golden stars looking unfamiliar ... whispers in an unknown tongue.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r8 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "v08 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "v08 text"
+  }
+ },
+ {
+  "ref": "P37.1",
+  "quote": "His neck was in pain ... horribly swollen ... a circle of black where the rope had bruised it. ... tongue swollen with thirst ... he could no longer feel the roadway beneath his feet!",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r8 text ('swollen neck and thirst')"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v09 grounded_in e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v09 grounded_in e13"
+  }
+ },
+ {
+  "ref": "P38.1",
+  "quote": "Doubtless, despite his suffering, he had fallen asleep while walking, for now he sees another scene—perhaps he has merely recovered from a delirium.",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling s08: present tense; the narrator's hedge"
+  },
+  "v2": {
+   "class": "P",
+   "where": "telling: projection, not stored (the turn order is the telling)"
+  }
+ },
+ {
+  "ref": "P38.2",
+  "quote": "He stands at the gate of his own home ... his wife ... steps down from the veranda ... a smile of ineffable joy ... He springs forward with extended arms.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r9 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v10"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v10"
+  }
+ },
+ {
+  "ref": "P38.3",
+  "quote": "he feels a stunning blow upon the back of the neck; a blinding white light blazes all about him with a sound like the shock of a cannon—then all is darkness and silence!",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r9 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "v10 grounded_in e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "v10 grounded_in e13"
+  }
+ },
+ {
+  "ref": "P39.1",
+  "quote": "Peyton Farquhar was dead; his body, with a broken neck, swung gently from side to side beneath the timbers of the Owl Creek bridge.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r5 (the breaking) and r10"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e13, e14; fact f-dead; telling s09 reveals"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e13, e14; e13"
+  }
+ },
+ {
+  "ref": "P39.2",
+  "quote": "(section III was what his mind did in the instant of the fall)",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r6..r9 tagged hallucination, same turn as r5; nothing says they are simultaneous"
+  },
+  "draft": {
+   "class": "E",
+   "where": "frame farquhar-vision from e12 to e13; reading r-vision"
+  },
+  "v2": {
+   "class": "E",
+   "where": "frame farquhar-vision from e12 to e13; reading r-vision"
+  }
+ },
+ {
+  "ref": "P39.3",
+  "quote": "(a day and a night of felt time inside an instant)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "frame felt_duration, real_duration; time.spans"
+  },
+  "v2": {
+   "class": "E",
+   "where": "frame felt_duration, real_duration; time.spans"
+  }
+ }
+]

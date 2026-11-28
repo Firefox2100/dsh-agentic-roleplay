@@ -1,0 +1,14 @@
+{
+  "id": "company",
+  "name": "The company of infantry",
+  "role": "npc",
+  "kind": "group",
+  "tier": "background",
+  "summary": "The spectators at parade rest on the slope between bridge and fort.",
+  "start": {
+    "public_state": "At parade rest.",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "north-bank"
+  }
+}

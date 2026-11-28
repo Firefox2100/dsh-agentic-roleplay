@@ -1,0 +1,36 @@
+{
+  "id": "jim",
+  "name": "James Dillingham Young",
+  "aliases": [
+    "Jim"
+  ],
+  "age": 22,
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "Della's husband, young, thin and serious, who works for twenty dollars a week.",
+  "personality": "Quiet and steady; keeps his feelings to himself.",
+  "background": "Once paid thirty dollars a week; now twenty. Owns a gold watch that was his father's and grandfather's.",
+  "appearance": "Thin and serious; needs a new overcoat; has no gloves.",
+  "start": {
+    "public_state": "Away at his work.",
+    "activity": "Working.",
+    "inner_state": "Wants to give Della something for Christmas.",
+    "location": "jim-work",
+    "variables": {
+      "cash": 0
+    }
+  },
+  "relationships": [
+    {
+      "to": "della",
+      "label": "wife",
+      "familiarity": 1,
+      "trust": 1,
+      "affinity": 1,
+      "tension": 0
+    }
+  ]
+}

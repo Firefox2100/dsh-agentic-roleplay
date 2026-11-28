@@ -1,0 +1,12 @@
+{
+  "id": "loisel-flat",
+  "name": "The Loisels' flat in the Rue des Martyrs",
+  "description": "A poor flat: worn-out chairs, ugly curtains, a round table with a three-day-old cloth, up some stairs.",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "the street door",
+      "travel_time_seconds": 60
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "id": "jeweller2",
+  "name": "The jeweller at the Palais Royal",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Sells the Loisels a diamond string like the lost one.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "palais-royal-shop",
+    "variables": {
+      "francs": 1000000
+    }
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

@@ -1,0 +1,8 @@
+{
+  "id": "rope",
+  "name": "The rope",
+  "description": "A rope she keeps hidden, which even Jennie did not find.",
+  "location": "nursery",
+  "hidden": true,
+  "unique": true
+}

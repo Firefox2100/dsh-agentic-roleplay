@@ -1,0 +1,48 @@
+{
+  "id": "della",
+  "name": "Della Dillingham Young",
+  "aliases": [
+    "Dell",
+    "Mrs. James Dillingham Young"
+  ],
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A poor young wife who wants to buy her husband a present worthy of him.",
+  "personality": "Impulsive, loving, quick to tears and quick to recover.",
+  "background": "Has saved pennies for months, bargaining with grocer, vegetable man and butcher until her cheeks burned.",
+  "appearance": "Slender; a cascade of brown hair reaching below her knee.",
+  "start": {
+    "public_state": "In the flat, counting her money.",
+    "activity": "Counting $1.87 for the third time.",
+    "inner_state": "Despairing: tomorrow is Christmas and she can buy nothing worthy of Jim.",
+    "location": "flat",
+    "intents": [
+      {
+        "type": "quest",
+        "name": "Find Jim a present worthy of him",
+        "status": "active",
+        "horizon": "day",
+        "priority": 0.9,
+        "urgency": 0.9,
+        "plan": []
+      }
+    ],
+    "variables": {
+      "cash": 187
+    }
+  },
+  "relationships": [
+    {
+      "to": "jim",
+      "label": "husband",
+      "summary": "Her Jim. She hugs him whenever he comes home.",
+      "familiarity": 1,
+      "trust": 1,
+      "affinity": 1,
+      "tension": 0
+    }
+  ]
+}

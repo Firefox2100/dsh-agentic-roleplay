@@ -1,0 +1,7 @@
+{
+  "id": "diary",
+  "name": "The diary",
+  "description": "'This dead paper': a secret record she writes whenever John and Jennie are out of sight, and puts away when they come.",
+  "held_by": "narrator",
+  "unique": true
+}

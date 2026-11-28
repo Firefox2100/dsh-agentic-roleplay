@@ -25,6 +25,13 @@ function event(turn: number, text: string, tags: string[] = []) {
 const scene = (input: string, queryVector?: readonly number[]) => castSummary.scene({ cast: [arthur, alice, bob], turn: 6, input, story: withRanking(story), ...(queryVector === undefined ? {} : { queryVector }) })
 
 describe('the scene the game master is told', () => {
+  it('says how many proposed claims wait for its word, and nothing when none do or it cannot settle them', () => {
+    const asked = (unsettled?: number) => castSummary.scene({ cast: [arthur, alice, bob], turn: 6, input: 'I wait', story: withRanking(story), ...(unsettled === undefined ? {} : { unsettled }) })
+    expect(asked(2)).toContain('2 claims the record keeper proposed wait for your word')
+    expect(asked(2)).toContain('confirm_claim')
+    expect(asked()).not.toContain('proposed wait')
+  })
+
   it('reminds it of folded events that match the player\'s move by words', () => {
     event(1, 'Bob hid the brass key under the floor.', ['key'])
     event(2, 'The band played a march.')

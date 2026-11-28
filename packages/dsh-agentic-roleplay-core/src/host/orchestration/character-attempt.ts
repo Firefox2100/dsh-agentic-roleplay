@@ -41,6 +41,7 @@ export async function askCharacters(deps: AskDeps, owner: TurnOwner, number: 1 |
     const cues = cuesOf(state, key, member, store, number)
     const upcoming = store?.upcomingFor(member.character.id, owner.turn) ?? []
     const tracked = store?.trackedFor(member.character.id, (place === undefined ? cast : place.here).map(entry => entry.character.id))
+    const heard = store?.heardBy?.(member.character.id, state.situation, (place === undefined ? cast : place.here).map(entry => entry.character.id)) ?? []
     const request: CharacterRequest = {
       member, cast, situation: state.situation, attempt: number, language: store?.settings().prompts.language ?? 'en', turn: owner.turn, ...(away ? { away: true as const } : {}), lookup: store === undefined ? false : store.settings().memory.lookup && toolEnabled(store.settings().tools, 'characters', 'recall_my_memories'), text: (id, variables) => deps.storeOf(owner).text(id, variables),
       ...(time === undefined ? {} : { time }),
@@ -50,6 +51,7 @@ export async function askCharacters(deps: AskDeps, owner: TurnOwner, number: 1 |
       ...(state.reaches?.get(key) === undefined ? {} : { reach: state.reaches.get(key)! }),
       ...(upcoming.length === 0 ? {} : { upcoming }),
       ...(tracked === undefined || (tracked.self === '' && tracked.others.length === 0) ? {} : { tracked }),
+      ...(heard.length === 0 ? {} : { heard }),
       ...(place === undefined ? {} : { place }),
       ...(relationships.length === 0 ? {} : { relationships }),
       ...(carrying.length === 0 ? {} : { carrying }),

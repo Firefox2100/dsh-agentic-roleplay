@@ -1,0 +1,26 @@
+{
+  "id": "wife",
+  "name": "Mrs. Farquhar",
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Farquhar's wife, beautiful in his eyes, who serves a stranger water with her own white hands.",
+  "start": {
+    "public_state": "Sitting beside her husband on the bench.",
+    "activity": "Resting.",
+    "inner_state": "Content.",
+    "location": "plantation-gate"
+  },
+  "relationships": [
+    {
+      "to": "farquhar",
+      "label": "husband",
+      "familiarity": 1,
+      "trust": 1,
+      "affinity": 1,
+      "tension": 0
+    }
+  ]
+}

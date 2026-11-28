@@ -1,0 +1,28 @@
+{
+  "id": "sofronie",
+  "name": "Madame Sofronie",
+  "aliases": [
+    "Mme. Sofronie"
+  ],
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "A hair-goods dealer, large, too white, chilly, who hardly looks the name.",
+  "speech": {
+    "style": "Blunt trade talk.",
+    "examples": [
+      "I buy hair."
+    ]
+  },
+  "start": {
+    "public_state": "In her shop.",
+    "activity": "Waiting for customers.",
+    "inner_state": "-",
+    "location": "sofronie-shop",
+    "variables": {
+      "cash": 100000
+    }
+  }
+}

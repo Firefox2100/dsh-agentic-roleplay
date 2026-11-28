@@ -1,0 +1,13 @@
+{
+  "id": "front-path",
+  "name": "The front path",
+  "parent": "house",
+  "description": "The path to the front steps, with plantain leaves.",
+  "exits": [
+    {
+      "to": "house-downstairs",
+      "description": "the front door",
+      "travel_time_seconds": 10
+    }
+  ]
+}

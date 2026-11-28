@@ -1,0 +1,19 @@
+{
+  "expected_verdicts": {
+    "c-bm-dead": "false",
+    "c-doc-cause": "disputed"
+  },
+  "accepted_differences": {},
+  "exempt_paragraphs": {},
+  "fact_map": {
+    "f-accident": "e02",
+    "f-list": "e03",
+    "f-heart": "s01",
+    "f-bm-away": "s07",
+    "f-free": "s05",
+    "f-bm-dead": "c-bm-dead",
+    "f-doc-cause": "c-doc-cause",
+    "a01": "h-a01",
+    "a02": "h-a02"
+  }
+}

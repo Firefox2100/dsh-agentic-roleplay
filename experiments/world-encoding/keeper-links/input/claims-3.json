@@ -1,0 +1,110 @@
+[
+ {
+  "id": "c-julia-fear",
+  "text": "Julia died of pure fear and nervous shock.",
+  "by": "helen",
+  "asserted_in": "e-helen-tells"
+ },
+ {
+  "id": "c-band-gypsies",
+  "text": "The 'speckled band' Julia named meant the gypsies, perhaps their spotted handkerchiefs.",
+  "by": "helen",
+  "asserted_in": "e-helen-tells"
+ },
+ {
+  "id": "c-gypsies-involved",
+  "text": "The gypsies in the plantation had a hand in Julia's death.",
+  "by": "holmes",
+  "asserted_in": "e-holmes-theory"
+ },
+ {
+  "id": "c-whistle-julia",
+  "text": "A low whistle and a metallic clang sounded just before Julia came out of her room.",
+  "by": "helen",
+  "asserted_in": "e-helen-tells"
+ },
+ {
+  "id": "c-whistle-last-night",
+  "text": "A low whistle sounded in Julia's old room the night before the visit.",
+  "by": "helen",
+  "asserted_in": "e-helen-tells"
+ },
+ {
+  "id": "c-room-sealed",
+  "text": "Nothing and no one could have got into Julia's room from outside, and the rooms have no communication with each other.",
+  "by": "helen",
+  "asserted_in": "e-helen-tells"
+ },
+ {
+  "id": "c-repairs-pretext",
+  "text": "The repairs to the end wall were an excuse to move Helen out of her room.",
+  "by": "helen",
+  "asserted_in": "e-holmes-notes-repairs"
+ },
+ {
+  "id": "c-roylott-motive",
+  "text": "Roylott has the strongest motive for preventing either daughter's marriage: it would cut his income by \u00a3250 each.",
+  "by": "holmes",
+  "asserted_in": "e-holmes-returns"
+ },
+ {
+  "id": "c-bruise-roylott",
+  "text": "Roylott made the marks on Helen's wrist.",
+  "by": "holmes",
+  "asserted_in": "e-holmes-sees-bruise"
+ },
+ {
+  "id": "c-journey",
+  "text": "Helen came by dog-cart (seated on the driver's left) and the first train.",
+  "by": "holmes",
+  "asserted_in": "e-holmes-deduces-journey"
+ },
+ {
+  "id": "c-armitage-fancies",
+  "text": "The man she looks to for help (named only later, Armitage) takes Helen's fears for a nervous woman's fancies.",
+  "by": "helen",
+  "asserted_in": "e-helen-fears"
+ },
+ {
+  "id": "c-roylott-traced",
+  "text": "Roylott traced his stepdaughter to Baker Street.",
+  "by": "roylott",
+  "asserted_in": "e-roylott-bursts-in"
+ },
+ {
+  "id": "c-ventilator-expected",
+  "text": "There is a ventilator joining Julia's room to Roylott's.",
+  "by": "holmes",
+  "asserted_in": "e-holmes-deduces-vent"
+ },
+ {
+  "id": "c-roylott-installed",
+  "text": "Roylott had the ventilator cut, the dummy rope hung and the bed clamped, so that something could pass to the bed.",
+  "by": "holmes",
+  "asserted_in": "e-bed-reasoning"
+ },
+ {
+  "id": "c-snake-method",
+  "text": "Roylott killed Julia with a trained snake sent through the ventilator.",
+  "by": "holmes",
+  "asserted_in": "e-holmes-suspects-snake"
+ },
+ {
+  "id": "c-hideous-child",
+  "text": "A hideous distorted child ran across the lawn.",
+  "by": "watson",
+  "asserted_in": "e-baboon-dart"
+ },
+ {
+  "id": "c-clang-bar",
+  "text": "The metallic clang Helen heard was one of the metal bars of the shutters falling back into place.",
+  "by": "holmes",
+  "asserted_in": "e-holmes-theory"
+ },
+ {
+  "id": "c-roylott-away",
+  "text": "Roylott will not be back from town before evening.",
+  "by": "helen",
+  "asserted_in": "e-helen-returns"
+ }
+]

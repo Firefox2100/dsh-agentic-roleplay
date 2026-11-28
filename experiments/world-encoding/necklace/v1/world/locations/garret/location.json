@@ -1,0 +1,12 @@
+{
+  "id": "garret",
+  "name": "The garret under the roof",
+  "description": "The cheap lodging they take after the debt: heavy housework, water carried up landing by landing.",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "down the stairs",
+      "travel_time_seconds": 300
+    }
+  ]
+}

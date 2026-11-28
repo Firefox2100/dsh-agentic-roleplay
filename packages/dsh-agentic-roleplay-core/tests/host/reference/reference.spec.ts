@@ -143,6 +143,43 @@ describe('the reference pages', () => {
     expect(referencePage(session, 'quests', { zone: 'Asia/Shanghai', language: 'zh' }).entries).toEqual([{ kind: 'commitment', text: '见面', status: 'open', when: '2026年1月5日 星期一 20:00', turn: 1 }])
   })
 
+  describe('the claims page', () => {
+    const ids = () => ({ arthur: session.characters.getBySourceId('arthur')!.id, clara: session.characters.getBySourceId('clara')!.id, dora: session.characters.getBySourceId('dora')!.id })
+    const happen = (text: string, ...seen: number[]): number => session.events.add({ turn: 2, round: 1, text, importance: 3, tags: [], involves: seen }, seen.map(characterId => ({ characterId, mode: 'witnessed' as const, content: text, gist: text, accuracy: 'accurate' as const }))).event.id
+
+    it('shows a settled claim the player\'s character heard, by the standing their own knowledge gives, and nothing else', () => {
+      const { arthur, clara, dora } = ids()
+      const said = happen('Clara says the vault was emptied by Dora.', clara, arthur)
+      const proof = happen('SECRET: Dora is seen leaving the vault with the money.', dora)
+      const doubt = happen('Arthur sees Dora asleep at the time.', arthur)
+      const claim = session.claims.add({ text: 'Dora emptied the vault.', byCharacterId: clara, assertedEventId: said, status: 'confirmed', createdTurn: 2, links: [{ eventId: proof, bearing: 'confirms', part: '' }, { eventId: doubt, bearing: 'undermines', part: '' }] })
+      expect(referencePage(session, 'claims').entries).toEqual([{ text: 'Dora emptied the vault.', by: 'Clara', standing: 'unlikely', turn: 2 }])
+      expect(session.claims.get(claim.id)).toBeDefined()
+      expect(JSON.stringify(referencePage(session, 'claims'))).not.toMatch(/SECRET|confirms|proposed/)
+    })
+
+    it('leaves out a proposed claim, one the character never heard, and the record\'s standing', () => {
+      const { arthur, clara, dora } = ids()
+      const heard = happen('Clara says Dora took the key.', clara, arthur)
+      const unheard = happen('SECRET: Clara tells Dora the plan.', clara, dora)
+      session.claims.add({ text: 'Proposed by the keeper.', byCharacterId: clara, assertedEventId: heard, createdTurn: 2 })
+      session.claims.add({ text: 'SECRET: Never told to Arthur.', byCharacterId: clara, assertedEventId: unheard, status: 'confirmed', createdTurn: 2 })
+      expect(referencePage(session, 'claims').entries).toEqual([])
+    })
+
+    it('shows a claim the player\'s character made, and a claim by a body that is not a character', () => {
+      const { arthur } = ids()
+      const own = happen('Arthur accuses the baker.', arthur)
+      const rumour = happen('The street talks, and Arthur hears it.', arthur)
+      session.claims.add({ text: 'The baker did it.', byCharacterId: arthur, assertedEventId: own, status: 'confirmed', createdTurn: 2 })
+      session.claims.add({ text: 'The baker has a second family.', byLabel: 'the street', assertedEventId: rumour, status: 'confirmed', createdTurn: 3 })
+      expect(referencePage(session, 'claims').entries).toEqual([
+        { text: 'The baker has a second family.', by: 'the street', standing: 'unresolved', turn: 3 },
+        { text: 'The baker did it.', by: 'Arthur', standing: 'unresolved', turn: 2 },
+      ])
+    })
+  })
+
   it('refuses a page that does not exist', () => {
     expect(() => referencePage(session, 'secrets')).toThrow(UnknownSectionError)
   })

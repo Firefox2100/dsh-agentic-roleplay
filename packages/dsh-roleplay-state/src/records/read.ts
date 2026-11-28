@@ -1,4 +1,5 @@
 import type { CharacterId } from 'dsh-roleplay-model'
+import { readClaims } from './claims.ts'
 import { characterKey, locationKey, type RecordsTarget } from './edit-types.ts'
 import { itemKey } from './items.ts'
 import { localIso } from './time.ts'
@@ -47,6 +48,14 @@ export interface RecordsView {
   }[]
   beliefs: { id: number; character: string; kind: string; text: string; about: string[]; importance: number; confidence: string; evidence_for: number[]; evidence_against: number[]; turn: number }[]
   open_threads: { id: number; text: string; opened_turn: number }[]
+  /** What people assert, with what the events say of each. A proposed claim's verdict is a keeper's view, not settled. */
+  claims: { id: number; text: string; by: string | null; asserted_in: number | null; status: string; verdict: string; parts: { key: string; text: string }[]; links: { event: number; as: string; part: string }[]; turn: number }[]
+  /** Sets of claims that cannot all be true. */
+  claim_questions: { id: number; text: string; rivals: number[] }[]
+  /** Events kept from a character. */
+  concealments: { event: number; from: string }[]
+  /** Who may have been part of each group. */
+  groups: { group: string; members: string[] }[]
   /** How characters stand towards each other, most recently changed first (at most 80). */
   /** Things, notable first (at most 100), each with where it is. */
   items: { key: string; name: string; quantity: number; quality: string; state: string | null; hidden: boolean; notable: boolean; owner: string | null; holder: string }[]
@@ -123,6 +132,13 @@ export function readRecords(target: Omit<RecordsTarget, 'transaction'>, scope: R
     beliefs: characters.flatMap(character => target.memories.list(character.id)
       .filter(belief => inScope(belief.turn))
       .map(belief => { const evidence = target.memories.evidenceOf(belief.id); return { id: belief.id, character: characterKey(character), kind: belief.kind, text: belief.text, about: belief.about.map(keyOf), importance: belief.importance, confidence: belief.confidence, evidence_for: evidence.filter(entry => entry.relation === 'supports').map(entry => entry.perceptionId), evidence_against: evidence.filter(entry => entry.relation === 'contradicts').map(entry => entry.perceptionId), turn: belief.turn } })),
+    claims: readClaims(target).map(({ claim, verdict }) => ({
+      id: claim.id, text: claim.text, by: claim.byCharacterId !== undefined ? keyOf(claim.byCharacterId) : claim.byLabel === '' ? null : claim.byLabel, asserted_in: claim.assertedEventId ?? null,
+      status: claim.status, verdict, parts: claim.parts, links: claim.links.map(link => ({ event: link.eventId, as: link.bearing, part: link.part })), turn: claim.createdTurn,
+    })),
+    claim_questions: target.claims.questions(),
+    concealments: target.events.list().flatMap(event => target.concealment.hiddenFrom(event.id).map(characterId => ({ event: event.id, from: keyOf(characterId) }))),
+    groups: characters.flatMap(character => { const members = target.groups.members(character.id); return members.length === 0 ? [] : [{ group: characterKey(character), members: members.map(keyOf) }] }),
     open_threads: target.threads.list('open').map(thread => ({ id: thread.id, text: thread.text, opened_turn: thread.openedTurn, player_knows: thread.playerKnows })),
     items: [...target.items.list()].sort((a, b) => Number(b.notable) - Number(a.notable) || a.id - b.id).slice(0, MAX_ITEMS_SHOWN).map(item => ({
       key: itemKey(item), name: item.name, quantity: item.quantity, quality: item.quality, state: item.container?.state ?? null, hidden: item.hidden, notable: item.notable,

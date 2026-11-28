@@ -1,0 +1,13 @@
+{
+  "id": "farquhar-home",
+  "name": "Farquhar's house",
+  "parent": "plantation",
+  "description": "A house with a veranda and steps; a wide white walk leads to it from the gate.",
+  "features": [
+    {
+      "id": "veranda",
+      "name": "Veranda",
+      "description": "Steps lead down from it."
+    }
+  ]
+}

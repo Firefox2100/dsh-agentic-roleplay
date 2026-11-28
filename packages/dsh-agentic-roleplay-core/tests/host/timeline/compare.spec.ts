@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { RecordsView } from '@dsh-agentic-roleplay/state'
 import { compareStates, type StateSide } from '../../../src/host/timeline/compare.ts'
 
-const view = (data: Partial<RecordsView>): RecordsView => ({ factions: [], faction_relationships: [], characters: [], events: [], beliefs: [], open_threads: [], items: [], variable_defs: [], variables: [], engagements: [], relationships: [], knowledge: [], ...data })
+const view = (data: Partial<RecordsView>): RecordsView => ({ factions: [], faction_relationships: [], characters: [], events: [], beliefs: [], open_threads: [], claims: [], claim_questions: [], concealments: [], groups: [], items: [], variable_defs: [], variables: [], engagements: [], relationships: [], knowledge: [], ...data })
 const character = (key: string, location: string | null, activity = 'waiting'): RecordsView['characters'][number] => ({ character: key, name: key.toUpperCase(), controlled_by: 'an agent', public_state: '', inner_state: '', activity, location, position: '', goals: [] })
 const side = (label: string, data: Partial<RecordsView>, turns = 1, now = '2030-01-01T00:00:00.000Z'): StateSide => ({ label, turns, now, view: view(data) })
 

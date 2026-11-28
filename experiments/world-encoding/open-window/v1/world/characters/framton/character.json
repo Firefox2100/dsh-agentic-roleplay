@@ -1,0 +1,28 @@
+{
+  "id": "framton",
+  "name": "Framton Nuttel",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A nervous man sent to the country to rest his nerves, paying calls with letters of introduction.",
+  "start": {
+    "public_state": "Walking up to the Sappletons' house.",
+    "activity": "Going to pay a call.",
+    "inner_state": "Doubts whether these visits will help his nerves.",
+    "location": "road"
+  },
+  "gender": "male",
+  "pronouns": "he/him",
+  "personality": "Self-absorbed about his ailments, polite, easily alarmed.",
+  "background": "Under a nerve cure; his doctors order complete rest and no excitement. His sister stayed at the rectory four years ago.",
+  "relationships": [
+    {
+      "to": "sister",
+      "label": "sister",
+      "familiarity": 0.9,
+      "trust": 0.6,
+      "affinity": 0.6,
+      "tension": 0.2
+    }
+  ]
+}

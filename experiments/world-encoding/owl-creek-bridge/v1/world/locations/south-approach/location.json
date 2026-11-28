@@ -1,0 +1,11 @@
+{
+  "id": "south-approach",
+  "name": "The south end of the bridge",
+  "description": "The railroad runs straight into a forest for a hundred yards, then curves out of sight; a sentinel stands at the bridge's end; a picket post is half a mile out.",
+  "exits": [
+    {
+      "to": "bridge-platform",
+      "description": "the foot planking of the bridge"
+    }
+  ]
+}

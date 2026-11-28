@@ -1,0 +1,9 @@
+{
+  "id": "hair",
+  "name": "Della's hair",
+  "description": "A cascade of brown hair reaching below her knee; Della's pride.",
+  "wearable": "head",
+  "worn_by": "della",
+  "unique": true,
+  "notable": true
+}

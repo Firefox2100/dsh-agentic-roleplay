@@ -1,0 +1,45 @@
+{
+  "id": "nursery",
+  "name": "The nursery at the top of the house",
+  "parent": "house",
+  "description": "A big airy room, nearly the whole floor, with barred windows that look all ways, rings in the walls, a heavy bed nailed to the floor, a scratched and gouged floor and a torn yellow wallpaper.",
+  "features": [
+    {
+      "id": "wallpaper",
+      "name": "The wallpaper",
+      "description": "A smouldering, unclean yellow, a sprawling pattern of curves that commit suicide, with a sub-pattern behind it like a woman stooping and creeping; torn in patches."
+    },
+    {
+      "id": "bed",
+      "name": "The great bed",
+      "description": "Heavy, nailed down, gnawed at the corners."
+    },
+    {
+      "id": "smooch",
+      "name": "The smooch",
+      "description": "A long, even rubbed streak low on the wall that runs round the room behind everything but the bed."
+    },
+    {
+      "id": "window-garden",
+      "name": "Window to the garden",
+      "description": "Looks at arbors and old flowers."
+    },
+    {
+      "id": "window-bay",
+      "name": "Window to the bay",
+      "description": "Looks to the bay and a private wharf."
+    },
+    {
+      "id": "window-road",
+      "name": "Window to the road",
+      "description": "Commands the road."
+    }
+  ],
+  "exits": [
+    {
+      "to": "house-downstairs",
+      "description": "the stairs, with a gate at the head",
+      "travel_time_seconds": 60
+    }
+  ]
+}

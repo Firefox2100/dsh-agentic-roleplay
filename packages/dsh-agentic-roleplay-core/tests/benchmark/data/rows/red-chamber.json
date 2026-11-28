@@ -115,5 +115,68 @@
         "maxUnanswered": 2
       }
     }
+  },
+  {
+    "id": "red-chamber-claims-zh",
+    "world": "red-chamber",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "Claims in Chinese and a second theme than the detective's: a maid is asked who broke the orchid's leaf and names a suspect; the record keeper writes it as a claim, an ordinary action never becomes one, and the game master may settle the claim with confirm_claim (on unless switched off).",
+    "script": "claims-honglou-zh",
+    "report": [
+      "fan"
+    ],
+    "settings": {
+      "memory": {
+        "backlogRounds": 1
+      }
+    }
+  },
+  {
+    "id": "red-chamber-claims-off-zh",
+    "world": "red-chamber",
+    "language": "zh",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The control: confirm_claim is switched off, so the voiced suspicion is recorded but stays proposed for the person to settle in the editor.",
+    "script": "claims-honglou-off-zh",
+    "report": [
+      "fan"
+    ],
+    "settings": {
+      "memory": {
+        "backlogRounds": 1
+      },
+      "tools": {
+        "gameMaster": {
+          "confirm_claim": false
+        }
+      }
+    }
   }
 ]

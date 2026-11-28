@@ -14,6 +14,7 @@ import type { CommitJob, CommitReport, Committer, RoundRecord } from './boundari
 
 
 /** How many of the tags in use a brief lists. */
+const CLAIMS_LISTED = 12
 const TAGS_LISTED = 60
 const LABELS_LISTED = 30
 
@@ -70,7 +71,7 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     ...records.characters.map(entry => `- ${entry.character} (${known.get(entry.character) ?? entry.name}, ${entry.controlled_by}): public: ${entry.public_state || '-'}; inner: ${entry.inner_state || '-'}; doing: ${entry.activity || '-'}${entry.location === null ? '' : `; in: ${entry.location}${entry.position === '' ? '' : ` (${entry.position})`}`}`),
     '',
     '## Recorded before these rounds (do not repeat)',
-    ...(before.length === 0 ? ['- nothing'] : before.map(event => `- [turn ${event.turn}] ${event.text}`)),
+    ...(before.length === 0 ? ['- nothing'] : before.map(event => `- id ${event.id}, [turn ${event.turn}] ${event.text}`)),
     '',
     '## Already recorded for these rounds (the actions and words of the round, written when it was decided, and anything an earlier attempt added: improve them with event_edits, do not repeat them)',
     ...(own.length === 0 ? ['- nothing'] : own.map(event => `- id ${event.id}, ${label(event)}: ${event.text}`)),
@@ -91,6 +92,9 @@ export function describePrompt(job: CommitJob, memory: { flaky: boolean; verify:
     ...(records.variables.length === 0 ? ['- nothing'] : records.variables.slice(0, 30).map(entry => `- ${entry.about} (${entry.subject}): ${entry.variable} ${entry.described}${entry.baseline === null ? '' : ` (usually ${entry.baseline})`}`)),
     '',
     ...((job.store.pins?.() ?? []).length === 0 ? [] : ['## Fixed by the player (never contradict, change or retract)', ...job.store.pins!().map(pin => `- ${pin}`), '']),
+    '## Claims so far (ids for claim_links; their standing is the keeper\'s view, never settled)',
+    ...(records.claims.length === 0 ? ['- none'] : records.claims.slice(-CLAIMS_LISTED).map(claim => `- id ${claim.id}, ${claim.by ?? 'nobody in particular'}: ${claim.text} [${claim.verdict}${claim.status === 'proposed' ? ', proposed' : ''}; linked: ${claim.links.length === 0 ? 'none' : claim.links.map(link => `${link.as} ${link.event}`).join(', ')}]`)),
+    '',
     '## Open story threads',
     ...(records.open_threads.length === 0 ? ['- none'] : records.open_threads.map(thread => `- id ${thread.id}: ${thread.text}`)),
   ].join('\n')

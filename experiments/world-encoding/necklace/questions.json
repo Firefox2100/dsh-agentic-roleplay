@@ -1,0 +1,262 @@
+[
+ {
+  "id": "q01",
+  "question": "How much did the replacement cost and how was it paid for?",
+  "answer": "36,000 francs: 18,000 inherited, the rest borrowed.",
+  "needs": [
+   "arithmetic across events"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "variables francs and debt through turn 7 r4"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e17 effects; states loisel francs"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e17 effects; states loisel francs"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "What was the original worth, and who knew?",
+  "answer": "At most 500 francs; Mme. Forestier, until she told Mathilde.",
+  "needs": [
+   "a hidden value and who knew it"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "lore and item description hold the truth; Mathilde's and Loisel's false belief is only the accuracy of a perception"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "f-necklace-paste; knowledge forestier knows, mathilde unaware until e24"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "state s14 (original is paste); knowledge forestier knows, mathilde unaware until e24"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "Where was the necklace when its loss was noticed?",
+  "answer": "Unknown: lost between the palace vestibule and the flat; never found.",
+  "needs": [
+   "a gap in the source"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "the model puts it in the streets, hidden: an invention"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e-loss place null, place_note; state holder unknown"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e-loss place null, place_note; state holder unknown"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "When was it lost?",
+  "answer": "After leaving the palace vestibule and before the discovery at home.",
+  "needs": [
+   "an unknown moment with bounds"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "the clock sidecar has no such bound"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e-loss when after e08 before e10; f-last-seen"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e-loss when after e08 before e10; e08 is the last time she felt it"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "What did Mme. Forestier believe about the delay in getting her necklace back?",
+  "answer": "That the clasp was being mended.",
+  "needs": [
+   "a belief created by a lie"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "perception accuracy mistaken on the letter event"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge forestier believes f-clasp-broken false, source letter"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge forestier believes c-clasp-broken, source letter; derived false by e-loss"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "What was the deal with the Palais Royal jeweller?",
+  "answer": "Hold for three days; buy back at 34,000 if the original is found before the end of February.",
+  "needs": [
+   "a conditional agreement with a deadline"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "an engagement whose condition is in its title"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e16 terms, expires; anchors buy-back-deadline"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e16 terms, expires; anchors buy-back-deadline"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "How long did the poverty last and what was it like?",
+  "answer": "Ten years of heavy housework, copying and renewing notes.",
+  "needs": [
+   "a long stretch told as a summary"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "one event with a ten-year clock jump in the sidecar"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e19 iterative, duration P10Y; time.spans span-ten-years"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e19 iterative, duration P10Y; time.spans span-ten-years"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "What did Loisel give up to pay for the dress?",
+  "answer": "A gun and the Sunday shooting he had planned.",
+  "needs": [
+   "a sacrificed alternative"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "text"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e03 foregoes; thing gun-fund"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e03 foregoes; thing gun-fund"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "On what weekday and date was the ball?",
+  "answer": "A Monday, January 18th; no year is given.",
+  "needs": [
+   "a date without a year"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "the year was invented to fit; the card text is in an item description"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "time.anchors ball-night weekday Mon"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "time.anchors ball-night weekday Mon"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "At the end of the text, who knows the necklace was paste?",
+  "answer": "Mme. Forestier and Mathilde; Loisel is not said to be told.",
+  "needs": [
+   "who knows what at a point in the telling"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "belief of mathilde plus lore known_by forestier; Loisel has no row either way"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge rows with until/from; loisel unaware until null"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge rows with until/from; loisel unaware until null"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "What did Mathilde dream of, and did any of it happen?",
+  "answer": "Luxury; the ball is a single night of it.",
+  "needs": [
+   "a fantasy and its partial fulfilment"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "partly",
+   "how": "d01 realised false; e06 is not linked to it"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "held h-d01 (imagines); e06 is not linked to it"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "Which part is told in the least space but covers the most time?",
+  "answer": "The ten years.",
+  "needs": [
+   "telling duration against story duration"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "telling s12 mode summary against time.spans span-ten-years"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "event src paragraph count against when.duration: e19, e20 against e06"
+  }
+ },
+ {
+  "id": "q13",
+  "question": "What does the narrator invite the reader to wonder about?",
+  "answer": "What would have happened had she not lost the necklace.",
+  "needs": [
+   "a counterfactual"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "-"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "c01 in frame narrator-what-if"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "reading r-c01 (counterfactual) holds the narrator's invitation as text only"
+  }
+ }
+]

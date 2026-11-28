@@ -1,0 +1,11 @@
+{
+  "id": "north-bank",
+  "name": "The north bank",
+  "description": "Open ground, a gentle slope topped with a loop-holed stockade, the fort, with a brass cannon through an embrasure commanding the bridge.",
+  "exits": [
+    {
+      "to": "fort",
+      "description": "up the slope"
+    }
+  ]
+}

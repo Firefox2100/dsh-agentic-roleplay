@@ -1,11 +1,22 @@
 import { API_PREFIX } from '../../shared/worlds.ts'
+import type { EditorClaims } from '../../shared/claims.ts'
 import { answer, listVoices, post, postFile, put, type WorldSource } from '../world-editor/source.ts'
+
+async function claimsAnswer(response: Response): Promise<EditorClaims> {
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`.trim())
+  return await response.json() as EditorClaims
+}
 
 /** The story of a roleplay session, as the World tab reads and edits it. */
 export function sessionSource(session: string): WorldSource {
   const id = encodeURIComponent(session)
   return {
     gallery: { kind: 'sessions', id: session },
+    claims: {
+      list: async signal => await claimsAnswer(await fetch(`${API_PREFIX}/sessions/world/claims?id=${id}`, { credentials: 'same-origin', signal })),
+      setStatus: async (claim, status, signal) => await claimsAnswer(await fetch(`${API_PREFIX}/sessions/world/claims/status?id=${id}&claim=${claim}`, { method: 'PUT', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status }), signal })),
+      remove: async (claim, signal) => await claimsAnswer(await fetch(`${API_PREFIX}/sessions/world/claims?id=${id}&claim=${claim}`, { method: 'DELETE', credentials: 'same-origin', signal })),
+    },
     load: async signal => await answer(await fetch(`${API_PREFIX}/sessions/world?id=${id}`, { credentials: 'same-origin', signal })),
     saveCharacter: async (key, edit, signal) => await put(`${API_PREFIX}/sessions/world/character?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),
     savePlace: async (key, edit, signal) => await put(`${API_PREFIX}/sessions/world/place?id=${id}&key=${encodeURIComponent(key)}`, edit, signal),

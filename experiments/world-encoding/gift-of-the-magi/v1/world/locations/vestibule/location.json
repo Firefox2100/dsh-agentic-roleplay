@@ -1,0 +1,20 @@
+{
+  "id": "vestibule",
+  "name": "The vestibule",
+  "parent": "building",
+  "description": "Below the flat: a letter-box no letter would go into, an electric button that would not ring, a card reading Mr. James Dillingham Young.",
+  "features": [
+    {
+      "id": "card",
+      "name": "Name card",
+      "description": "Mr. James Dillingham Young; the 'Dillingham' is blurred from the years of lower pay."
+    }
+  ],
+  "exits": [
+    {
+      "to": "street",
+      "description": "the street door",
+      "travel_time_seconds": 10
+    }
+  ]
+}

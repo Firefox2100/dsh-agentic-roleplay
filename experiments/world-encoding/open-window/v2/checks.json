@@ -1,0 +1,27 @@
+{
+  "expected_verdicts": {
+    "c-men-died": "false",
+    "c-anniversary": "false",
+    "c-coat-arm": "disputed",
+    "c-ghosts": "false",
+    "c-aunt-deluded": "false",
+    "c-nuttel-dog-horror": "false"
+  },
+  "accepted_differences": {
+    "c-coat-arm": "true"
+  },
+  "exempt_paragraphs": {},
+  "fact_map": {
+    "f-window-for-return": "s10",
+    "f-men-alive": "s11",
+    "f-ronnie-song": "s12",
+    "f-vera-invents": "s00",
+    "f-framton-ignorant": "s13",
+    "f-men-died": "c-men-died",
+    "f-anniversary": "c-anniversary",
+    "f-coat-arm": "c-coat-arm",
+    "f-ghosts": "c-ghosts",
+    "f-aunt-deluded": "c-aunt-deluded",
+    "f-nuttel-dog-horror": "c-nuttel-dog-horror"
+  }
+}

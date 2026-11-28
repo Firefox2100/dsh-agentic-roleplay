@@ -1,0 +1,831 @@
+[
+  {
+    "clock": {
+      "at": "1891-06-20T12:00",
+      "note": "invented: only 'the summer' and, later, 'three months' rental' are given"
+    },
+    "edit": {
+      "turn": 1,
+      "events": [
+        {
+          "turn": 1,
+          "round": 1,
+          "text": "John and the narrator took a colonial mansion for the summer, let cheaply because it had stood untenanted for years over a legal quarrel about heirs; the narrator felt something queer about it and told John, who said what she felt was a draught and shut the window.",
+          "importance": 3,
+          "tags": [
+            "house",
+            "rental",
+            "strangeness"
+          ],
+          "involves": [
+            "john",
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            },
+            {
+              "character": "john",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        },
+        {
+          "turn": 1,
+          "round": 2,
+          "text": "John refused the narrator's wish for a room downstairs with a window on the piazza and chose the nursery at the top of the house, saying it was airy and had room for two beds; she disliked the room, its barred windows and its torn yellow wallpaper, and wrote this in secret, putting the diary away when John came.",
+          "importance": 4,
+          "tags": [
+            "nursery",
+            "wallpaper",
+            "diary",
+            "john"
+          ],
+          "involves": [
+            "john",
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            },
+            {
+              "character": "john",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery",
+          "items": [
+            "diary"
+          ]
+        }
+      ],
+      "moves": [
+        {
+          "character": "narrator",
+          "to": "nursery"
+        },
+        {
+          "character": "john",
+          "to": "nursery"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "narrator",
+          "kind": "belief",
+          "text": "There is something queer about this house, and I am not getting better with so little society and no work.",
+          "about": [
+            "john"
+          ],
+          "importance": 3,
+          "confidence": "likely"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-07-04T12:00",
+      "note": "'two weeks' after arrival, so about 4 July: the entry is written before the Fourth"
+    },
+    "edit": {
+      "turn": 2,
+      "events": [
+        {
+          "turn": 2,
+          "round": 1,
+          "text": "John, away all day and some nights on serious cases, refused to repaper the room, saying it would be indulging a fancy and then there would be the bedstead, the barred windows and the gate at the stairs; he said he did not wish to renovate for a three months' rental, and called her a blessed little goose.",
+          "importance": 3,
+          "tags": [
+            "wallpaper",
+            "refusal",
+            "rental"
+          ],
+          "involves": [
+            "john",
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "heard",
+              "content": "John thinks my dislike of the paper is nervous fancy and will not spend on a short rental.",
+              "accuracy": "accurate"
+            },
+            {
+              "character": "john",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 2,
+          "round": 2,
+          "text": "Jennie, John's sister, came to keep house; the narrator hid her writing from her, thinking she believed that writing had made her sick.",
+          "importance": 2,
+          "tags": [
+            "jennie",
+            "writing",
+            "concealment"
+          ],
+          "involves": [
+            "jennie",
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            },
+            {
+              "character": "jennie",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        },
+        {
+          "turn": 2,
+          "round": 3,
+          "text": "The narrator, lying in the nursery, found the wallpaper provoking: a recurrent spot like a broken neck with two bulbous eyes, and a sub-pattern visible only in certain lights, a formless figure sulking behind the front design.",
+          "importance": 3,
+          "tags": [
+            "wallpaper",
+            "eyes",
+            "sub-pattern"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "A pattern that stares and a figure behind it.",
+              "accuracy": "partial"
+            }
+          ],
+          "location": "nursery"
+        }
+      ],
+      "moves": [
+        {
+          "character": "jennie",
+          "to": "nursery"
+        }
+      ],
+      "relationships": [
+        {
+          "from": "narrator",
+          "to": "jennie",
+          "label": "sister-in-law",
+          "summary": "A dear girl, careful of me, who may think my writing made me sick.",
+          "trust": 0.5
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-07-11T12:00",
+      "note": "after the Fourth of July and a week's visit"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [
+        {
+          "turn": 3,
+          "round": 1,
+          "text": "Mother, Nellie and the children stayed a week for the Fourth of July; the narrator did nothing and was tired out.",
+          "importance": 2,
+          "tags": [
+            "visit",
+            "july-4"
+          ],
+          "involves": [
+            "visitors",
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "house-downstairs"
+        },
+        {
+          "turn": 3,
+          "round": 2,
+          "text": "John said that if she did not pick up faster he would send her to Weir Mitchell in the fall; she did not want to go.",
+          "importance": 3,
+          "tags": [
+            "weir-mitchell",
+            "threat"
+          ],
+          "involves": [
+            "john",
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "heard"
+            },
+            {
+              "character": "john",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 3,
+          "round": 3,
+          "text": "Alone a good deal, with John kept in town and Jennie leaving her be, the narrator cried most of the time when no one was by, and lay on the nailed bed following the wallpaper's pattern for hours.",
+          "importance": 3,
+          "tags": [
+            "crying",
+            "wallpaper",
+            "obsession"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-07-25T12:00",
+      "note": "invented; 'the other day' and later"
+    },
+    "edit": {
+      "turn": 4,
+      "events": [
+        {
+          "turn": 4,
+          "round": 1,
+          "text": "The narrator tried to talk reasonably with John and ask to visit Cousin Henry and Julia; he said she was not able, she cried before she finished, and he carried her upstairs, laid her on the bed and read to her until her head tired.",
+          "importance": 4,
+          "tags": [
+            "john",
+            "talk",
+            "refusal",
+            "crying"
+          ],
+          "involves": [
+            "narrator",
+            "john"
+          ],
+          "perceived_by": [
+            {
+              "character": "john",
+              "mode": "witnessed",
+              "content": "My wife is overwrought and fanciful and needs rest and self-control."
+            },
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 4,
+          "round": 2,
+          "text": "The narrator told herself it was lucky she and not the baby had the nursery; she stopped mentioning the wallpaper to the others and kept watch of it, and began to see in it a woman stooping and creeping behind the pattern.",
+          "importance": 4,
+          "tags": [
+            "wallpaper",
+            "woman",
+            "secret",
+            "vision"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "A woman stooping and creeping about behind the pattern, more clearly every day.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "nursery"
+        }
+      ],
+      "relationships": [
+        {
+          "from": "narrator",
+          "to": "john",
+          "trust": 0.5,
+          "tension": 0.5
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-08-27T23:00",
+      "note": "invented: 'our lease will be up in three weeks' with a three-month rental puts this near the end of the summer"
+    },
+    "edit": {
+      "turn": 5,
+      "events": [
+        {
+          "turn": 5,
+          "round": 1,
+          "text": "By moonlight the narrator watched the figure behind the wallpaper shake the pattern as if wanting to get out, rose to touch the paper, and found John awake; she told him she was not gaining and wished to leave, and he said the lease ran three more weeks, that she was gaining flesh and colour, and, when she said 'better in body, perhaps', gave her a stern reproachful look and begged her never to let the idea enter her mind.",
+          "importance": 5,
+          "tags": [
+            "moonlight",
+            "wallpaper",
+            "request",
+            "refusal"
+          ],
+          "involves": [
+            "narrator",
+            "john"
+          ],
+          "perceived_by": [
+            {
+              "character": "john",
+              "mode": "witnessed",
+              "content": "My wife has a dangerous fancy; she must be kept from it for her own and our child's sake."
+            },
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 5,
+          "round": 2,
+          "text": "The narrator lay awake for hours, pretending to sleep, wondering whether the front pattern and the back pattern moved together or separately.",
+          "importance": 3,
+          "tags": [
+            "insomnia",
+            "pretence"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        }
+      ],
+      "relationships": [
+        {
+          "from": "narrator",
+          "to": "john",
+          "trust": 0.3,
+          "tension": 0.7
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-09-01T12:00",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 6,
+      "events": [
+        {
+          "turn": 6,
+          "round": 1,
+          "text": "The narrator found that the wallpaper changed with the light, that by moonlight and lamplight it became bars with a woman plainly behind it, and that she was a woman who by day was subdued and quiet; she lay down much and slept little, hiding her wakefulness from John and Jennie.",
+          "importance": 4,
+          "tags": [
+            "wallpaper",
+            "bars",
+            "woman",
+            "deceit"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "The paper turns to bars at night and a woman is behind them.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 6,
+          "round": 2,
+          "text": "The narrator grew a little afraid of John and Jennie, whom she caught looking at the paper; Jennie, caught with her hand on it, said it stained everything it touched, that she had found yellow smooches on John's clothes and the narrator's.",
+          "importance": 4,
+          "tags": [
+            "fear",
+            "suspicion",
+            "wallpaper",
+            "stains"
+          ],
+          "involves": [
+            "narrator",
+            "john",
+            "jennie"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "Jennie and John study the pattern secretly; they too are caught by it.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "jennie",
+              "mode": "witnessed",
+              "content": "The paper stains our clothes."
+            }
+          ],
+          "location": "nursery"
+        }
+      ],
+      "relationships": [
+        {
+          "from": "narrator",
+          "to": "john",
+          "trust": 0.2,
+          "tension": 0.8
+        },
+        {
+          "from": "narrator",
+          "to": "jennie",
+          "trust": 0.2,
+          "tension": 0.6
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-09-08T12:00",
+      "note": "'a week more': invented"
+    },
+    "edit": {
+      "turn": 7,
+      "events": [
+        {
+          "turn": 7,
+          "round": 1,
+          "text": "The narrator, more excited and eating better, hid from John that it was the wallpaper she wanted to see through, and decided to stay until she had found it out; she noticed a smell of the paper that crept through the whole house and a long rubbed streak low on the wall that ran behind every piece of furniture except the bed.",
+          "importance": 4,
+          "tags": [
+            "wallpaper",
+            "smell",
+            "smooch",
+            "secret"
+          ],
+          "involves": [
+            "narrator",
+            "john"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "A yellow smell, and a track round the room as though something had crept there over and over."
+            }
+          ],
+          "location": "nursery"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-09-10T23:00",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 8,
+      "events": [
+        {
+          "turn": 8,
+          "round": 1,
+          "text": "The narrator found at night that the front pattern moves because a woman behind it shakes it, that sometimes there are many women and sometimes one, crawling and trying to climb through, strangled by the pattern, which is why it has so many heads.",
+          "importance": 5,
+          "tags": [
+            "wallpaper",
+            "discovery",
+            "women",
+            "vision"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "A woman, or many women, shake the paper's bars and are strangled when they climb through.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "nursery"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-09-12T14:00",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 9,
+      "events": [
+        {
+          "turn": 9,
+          "round": 1,
+          "text": "The narrator saw a woman creeping in the lane, the arbors and on the road, hiding under the blackberry vines when a carriage came, and concluded that the woman gets out of the paper by day; she locked the door when she crept by daylight and did not creep at night for fear John would suspect.",
+          "importance": 5,
+          "tags": [
+            "vision",
+            "creeping",
+            "concealment",
+            "garden"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "A woman creeping everywhere outside.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "nursery"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-09-16T12:00",
+      "note": "'two more days'"
+    },
+    "edit": {
+      "turn": 10,
+      "events": [
+        {
+          "turn": 10,
+          "round": 1,
+          "text": "The narrator planned to get the top pattern off the under one and felt that John was beginning to notice; she heard him question Jennie in professional terms and thought he and Jennie were secretly affected by sleeping under the paper for three months.",
+          "importance": 4,
+          "tags": [
+            "plan",
+            "suspicion",
+            "wallpaper"
+          ],
+          "involves": [
+            "narrator",
+            "john",
+            "jennie"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "heard",
+              "content": "They are watching me and are affected by the paper.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "john",
+              "mode": "witnessed",
+              "content": "My wife sleeps in the day, is quiet and cunning; I must watch her."
+            },
+            {
+              "character": "jennie",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-09-18T20:00",
+      "note": "'the last day'; the three months are nearly up"
+    },
+    "edit": {
+      "turn": 11,
+      "events": [
+        {
+          "turn": 11,
+          "round": 1,
+          "text": "John stayed in town overnight; Jennie wanted to sleep with the narrator and she refused; at moonlight the narrator pulled at the paper, believing she and the woman pulled and shook together, and by morning yards of it were peeled in a strip as high as her head and half around the room.",
+          "importance": 5,
+          "tags": [
+            "wallpaper",
+            "peeling",
+            "night",
+            "woman"
+          ],
+          "involves": [
+            "narrator",
+            "jennie"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "The woman and I pulled and shook, and we peeled off yards.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "jennie",
+              "mode": "witnessed",
+              "content": "The wallpaper is torn; she says it is spite.",
+              "accuracy": "partial"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 11,
+          "round": 2,
+          "text": "In the morning the narrator went on peeling, telling Jennie she did it from spite at the vicious thing; when Jennie tried to coax her out she lay down and sent everyone away; the furniture was carried downstairs, leaving only the nailed bed and a canvas mattress.",
+          "importance": 4,
+          "tags": [
+            "wallpaper",
+            "peeling",
+            "isolation"
+          ],
+          "involves": [
+            "narrator",
+            "jennie"
+          ],
+          "perceived_by": [
+            {
+              "character": "jennie",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 11,
+          "round": 3,
+          "text": "The narrator locked the nursery door, threw the key into the front path under a plantain leaf, produced a hidden rope, and tried in vain to move the bed, biting a corner of it, and peeled all the paper she could reach.",
+          "importance": 5,
+          "tags": [
+            "door",
+            "key",
+            "rope",
+            "bed",
+            "wallpaper"
+          ],
+          "involves": [
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery",
+          "items": [
+            "key",
+            "rope"
+          ]
+        }
+      ],
+      "item_edits": [
+        {
+          "item": "rope",
+          "hidden": false
+        },
+        {
+          "item": "key",
+          "hidden": true,
+          "description": "Thrown into the front path under a plantain leaf. v1 has no way to throw a thing to another place, so it is hidden instead; where it really lies is only in this text."
+        }
+      ],
+      "states": [
+        {
+          "character": "narrator",
+          "public_state": "Alone behind a locked door among the torn paper.",
+          "activity": "Creeping around the room with her shoulder in the smooch.",
+          "inner_state": "Triumphant: she is the woman who has got out of the paper."
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1891-09-19T09:00",
+      "note": "the next day: John returns"
+    },
+    "edit": {
+      "turn": 11,
+      "events": [
+        {
+          "turn": 11,
+          "round": 4,
+          "text": "John came to the door and called and pounded and asked for an axe; the narrator told him gently, many times, that the key was by the front steps under a plantain leaf, until he went and got it and came in.",
+          "importance": 5,
+          "tags": [
+            "john",
+            "door",
+            "key"
+          ],
+          "involves": [
+            "john",
+            "narrator"
+          ],
+          "perceived_by": [
+            {
+              "character": "john",
+              "mode": "witnessed"
+            },
+            {
+              "character": "narrator",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "nursery"
+        },
+        {
+          "turn": 11,
+          "round": 5,
+          "text": "The narrator, creeping around the room, told John over her shoulder that she had got out at last in spite of him and 'Jane', and pulled off most of the paper so that he could not put her back; John fainted across her path and she crept over him every time she came round.",
+          "importance": 5,
+          "tags": [
+            "john",
+            "faint",
+            "creeping",
+            "ending"
+          ],
+          "involves": [
+            "narrator",
+            "john"
+          ],
+          "perceived_by": [
+            {
+              "character": "john",
+              "mode": "witnessed",
+              "content": "My wife has lost her mind."
+            },
+            {
+              "character": "narrator",
+              "mode": "witnessed",
+              "content": "I got out; he fainted; I have to creep over him.",
+              "accuracy": "partial"
+            }
+          ],
+          "location": "nursery"
+        }
+      ],
+      "moves": [
+        {
+          "character": "john",
+          "to": "nursery"
+        }
+      ],
+      "states": [
+        {
+          "character": "john",
+          "public_state": "Fainted across the floor.",
+          "activity": "Unconscious.",
+          "inner_state": "-"
+        }
+      ]
+    }
+  }
+]

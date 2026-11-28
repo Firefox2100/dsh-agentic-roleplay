@@ -1,0 +1,8 @@
+{
+  "id": "list-of-killed",
+  "name": "The list of killed",
+  "description": "The dispatch listing the dead of the railroad disaster; Brently Mallard's name leads it.",
+  "location": "newspaper-office",
+  "unique": true,
+  "notable": true
+}

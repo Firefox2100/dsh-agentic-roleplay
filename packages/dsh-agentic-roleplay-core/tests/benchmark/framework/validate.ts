@@ -107,6 +107,9 @@ function scriptProblems(script: Script, row: Row, cast: readonly string[], files
     if (expectation.type === 'character-at' && !has(files, `locations/${expectation.place}/location.json`)) problems.push(`${at}: ${where} names the place ${expectation.place}, which the world does not have`)
     if (expectation.type === 'trigger-fired' && !(Array.isArray(files.get('triggers.json')) && (files.get('triggers.json') as { key?: string }[]).some(trigger => trigger.key === expectation.key))) problems.push(`${at}: ${where} names the trigger ${expectation.key}, which the world does not have`)
     if (expectation.type === 'message-lacks') for (const key of expectation.unless ?? []) if (!cast.includes(key)) problems.push(`${at}: ${where} exempts ${key}, who is not in the row`)
+    if (expectation.type === 'claim-recorded' && expectation.by !== undefined && !cast.some(key => key.toLowerCase() === expectation.by!.toLowerCase())) problems.push(`${at}: ${where} names ${expectation.by}, who is not in the row`)
+    if (expectation.type === 'claim-standing' && !['true', 'false', 'likely', 'unlikely', 'open', 'disputed', 'unresolved', 'mixed'].includes(expectation.standing)) problems.push(`${at}: ${where} expects the standing "${expectation.standing}", which is not one a claim has`)
+    if (expectation.type === 'claim-status' && !['proposed', 'confirmed'].includes(expectation.status)) problems.push(`${at}: ${where} expects the status "${expectation.status}", which is not one a claim has`)
     if (expectation.type === 'messages-at-most' && !(Number.isInteger(expectation.count) && expectation.count >= 0)) problems.push(`${at}: ${where} wants a count that is not a whole number of zero or more`)
     if ('text' in expectation && expectation.text.trim() === '') problems.push(`${at}: ${where} expects an empty text`)
   }

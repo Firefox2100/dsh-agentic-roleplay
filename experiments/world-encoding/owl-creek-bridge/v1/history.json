@@ -1,0 +1,577 @@
+[
+  {
+    "clock": {
+      "at": "1862-07-10T19:00",
+      "note": "invented: 'one evening'; the day is unknown; the war date is only 'after the fall of Corinth'"
+    },
+    "edit": {
+      "turn": 1,
+      "events": [
+        {
+          "turn": 1,
+          "round": 1,
+          "text": "A gray-clad rider stopped at the gate and asked for water; Mrs. Farquhar served him with her own white hands.",
+          "importance": 2,
+          "tags": [
+            "rider",
+            "gate",
+            "water"
+          ],
+          "involves": [
+            "scout",
+            "wife",
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed",
+              "content": "A dusty Confederate soldier in gray asks for a drink.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "wife",
+              "mode": "witnessed",
+              "content": "A dusty Confederate soldier in gray asks for a drink.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "scout",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "plantation-gate"
+        },
+        {
+          "turn": 1,
+          "round": 2,
+          "text": "While she fetched the water Farquhar asked the rider for news from the front, and the rider said the Yankees were repairing the railroads and preparing another advance, had put the Owl Creek bridge in order and built a stockade on the north bank, and that a posted order said any civilian caught interfering with the railroad would be summarily hanged; the bridge was about thirty miles off with only a picket post half a mile out and a single sentinel at the near end.",
+          "importance": 4,
+          "tags": [
+            "news",
+            "order",
+            "bridge"
+          ],
+          "involves": [
+            "farquhar",
+            "scout"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "told",
+              "content": "The Yankees have taken the Owl Creek bridge, thirty miles away, guarded by a picket post and one sentinel at this end; civilians who interfere will be hanged.",
+              "accuracy": "accurate"
+            },
+            {
+              "character": "scout",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "plantation-gate"
+        },
+        {
+          "turn": 1,
+          "round": 3,
+          "text": "Farquhar asked, smiling, what a civilian could accomplish who eluded the picket and got the better of the sentinel; the rider recalled that a month ago the flood of last winter had lodged a great quantity of driftwood against the wooden pier at the near end of the bridge, now dry and likely to burn like tow.",
+          "importance": 5,
+          "tags": [
+            "driftwood",
+            "plan",
+            "bait"
+          ],
+          "involves": [
+            "farquhar",
+            "scout"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "told",
+              "content": "A pile of dry driftwood against the near pier would burn like tow.",
+              "accuracy": "accurate"
+            },
+            {
+              "character": "scout",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "plantation-gate",
+          "items": [
+            "driftwood"
+          ]
+        },
+        {
+          "turn": 1,
+          "round": 4,
+          "text": "The rider drank, thanked the lady ceremoniously, bowed to her husband and rode away; an hour later, after nightfall, he passed the plantation again, going north.",
+          "importance": 2,
+          "tags": [
+            "departure"
+          ],
+          "involves": [
+            "scout"
+          ],
+          "perceived_by": [
+            {
+              "character": "wife",
+              "mode": "witnessed"
+            },
+            {
+              "character": "farquhar",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "road"
+        },
+        {
+          "turn": 1,
+          "round": 5,
+          "text": "The rider was a Federal scout.",
+          "importance": 5,
+          "tags": [
+            "scout",
+            "truth"
+          ],
+          "involves": [
+            "scout"
+          ],
+          "perceived_by": [
+            {
+              "character": "scout",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "road"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "farquhar",
+          "kind": "belief",
+          "text": "The rider is a Confederate soldier bringing news; the bridge lies open to a determined civilian.",
+          "about": [
+            "scout"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        }
+      ],
+      "moves": [
+        {
+          "character": "scout",
+          "to": "plantation-gate"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1862-07-12T23:00",
+      "note": "invented and implied: nothing in the text narrates the attempt, the capture or the sentence"
+    },
+    "edit": {
+      "turn": 2,
+      "events": [
+        {
+          "turn": 2,
+          "round": 1,
+          "text": "Farquhar set out to burn the Owl Creek bridge and was caught by the Federals while interfering with it.",
+          "importance": 5,
+          "tags": [
+            "attempt",
+            "capture",
+            "implied"
+          ],
+          "involves": [
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "bridge-platform"
+        },
+        {
+          "turn": 2,
+          "round": 2,
+          "text": "Under the commandant's order Farquhar was condemned to be hanged from the bridge.",
+          "importance": 5,
+          "tags": [
+            "sentence",
+            "order",
+            "implied"
+          ],
+          "involves": [
+            "farquhar",
+            "commandant",
+            "captain"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "told"
+            },
+            {
+              "character": "captain",
+              "mode": "told"
+            },
+            {
+              "character": "commandant",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "fort"
+        }
+      ],
+      "moves": [
+        {
+          "character": "farquhar",
+          "to": "bridge-platform",
+          "ignore_exits": true
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1862-07-13T05:30",
+      "note": "early sun on the water; the day and time are invented"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [
+        {
+          "turn": 3,
+          "round": 1,
+          "text": "Farquhar stood on the bridge with his wrists bound behind him and a rope around his neck, watched by the captain, the sergeant and two privates, a sentinel at each end of the bridge and a company of infantry at parade rest on the north slope; no one moved or spoke.",
+          "importance": 5,
+          "tags": [
+            "execution",
+            "bridge",
+            "silence"
+          ],
+          "involves": [
+            "farquhar",
+            "captain",
+            "sergeant",
+            "privates",
+            "sentinels",
+            "company",
+            "lieutenant"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed"
+            },
+            {
+              "character": "captain",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sergeant",
+              "mode": "witnessed"
+            },
+            {
+              "character": "privates",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sentinels",
+              "mode": "witnessed"
+            },
+            {
+              "character": "company",
+              "mode": "witnessed"
+            },
+            {
+              "character": "lieutenant",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "bridge-platform",
+          "items": [
+            "rope"
+          ]
+        },
+        {
+          "turn": 3,
+          "round": 2,
+          "text": "The preparations complete, the two privates stepped aside and drew away their planks; the sergeant stood with Farquhar on the one plank, which the captain's weight had held and the sergeant's now held; at the captain's signal the sergeant would step aside and the plank would tilt.",
+          "importance": 4,
+          "tags": [
+            "plank",
+            "preparations"
+          ],
+          "involves": [
+            "privates",
+            "sergeant",
+            "captain",
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sergeant",
+              "mode": "witnessed"
+            },
+            {
+              "character": "captain",
+              "mode": "witnessed"
+            },
+            {
+              "character": "privates",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "bridge-platform",
+          "items": [
+            "plank"
+          ]
+        },
+        {
+          "turn": 3,
+          "round": 3,
+          "text": "Farquhar watched the swirling water and a piece of driftwood going by, then closed his eyes to think of his wife and children, and heard a slow ringing like a hammer on an anvil that was the ticking of his watch.",
+          "importance": 3,
+          "tags": [
+            "last-thoughts",
+            "watch",
+            "time"
+          ],
+          "involves": [
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "heard",
+              "content": "A sharp, slow, metallic stroke, as slow as a death knell, hurting his ear.",
+              "accuracy": "partial"
+            }
+          ],
+          "location": "bridge-platform",
+          "items": [
+            "watch"
+          ]
+        },
+        {
+          "turn": 3,
+          "round": 4,
+          "text": "Farquhar thought that if he could free his hands he might throw off the noose, dive, swim under the bullets to the bank and reach his home, still outside the invader's lines.",
+          "importance": 4,
+          "tags": [
+            "plan",
+            "escape",
+            "thought"
+          ],
+          "involves": [
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "inferred"
+            }
+          ],
+          "location": "bridge-platform"
+        },
+        {
+          "turn": 3,
+          "round": 5,
+          "text": "The captain nodded; the sergeant stepped aside; the plank tilted and Farquhar fell through the bridge until the rope stopped him and broke his neck.",
+          "importance": 5,
+          "tags": [
+            "drop",
+            "death",
+            "hanging"
+          ],
+          "involves": [
+            "farquhar",
+            "captain",
+            "sergeant"
+          ],
+          "perceived_by": [
+            {
+              "character": "captain",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sergeant",
+              "mode": "witnessed"
+            },
+            {
+              "character": "privates",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sentinels",
+              "mode": "witnessed"
+            },
+            {
+              "character": "company",
+              "mode": "witnessed"
+            },
+            {
+              "character": "lieutenant",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "bridge-platform",
+          "items": [
+            "rope",
+            "plank"
+          ]
+        },
+        {
+          "turn": 3,
+          "round": 6,
+          "text": "In the instant he fell, Farquhar's mind lived a long vision in which the rope broke, he fell into the stream, freed his hands underwater, tore away the noose and swam to the surface, his senses preternaturally keen.",
+          "importance": 5,
+          "tags": [
+            "vision",
+            "hallucination",
+            "escape"
+          ],
+          "involves": [
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed",
+              "content": "The rope broke and I fell into the stream; I freed my hands, tore off the noose and rose into the sunlight, hearing every ripple and insect.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "bridge-platform"
+        },
+        {
+          "turn": 3,
+          "round": 7,
+          "text": "In the vision the soldiers on the bridge shouted, the sentinels fired and missed, the lieutenant ordered a volley and the cannon fired; Farquhar dived and swam downstream until a vortex threw him on the south bank.",
+          "importance": 5,
+          "tags": [
+            "vision",
+            "hallucination",
+            "gunfire"
+          ],
+          "involves": [
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed",
+              "content": "Shots and a volley and a cannon ball missed me; I dived, swam with the current, was whirled in a vortex and flung upon the gravel of the south bank.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "bridge-platform"
+        },
+        {
+          "turn": 3,
+          "round": 8,
+          "text": "In the vision Farquhar ran into the forest and traveled all day and into the night along a straight, untraveled road under unfamiliar stars, with a swollen neck and thirst, hearing whispers.",
+          "importance": 4,
+          "tags": [
+            "vision",
+            "hallucination",
+            "forest"
+          ],
+          "involves": [
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed",
+              "content": "I fled all day through an endless forest and at nightfall found a road under strange stars; my neck is swollen and I hear whispers in an unknown tongue.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "bridge-platform"
+        },
+        {
+          "turn": 3,
+          "round": 9,
+          "text": "In the vision Farquhar came at morning to his own gate and saw his wife come down from the veranda to meet him, and as he sprang forward to embrace her he felt a stunning blow on the back of the neck and a blinding light, then darkness.",
+          "importance": 5,
+          "tags": [
+            "vision",
+            "hallucination",
+            "home",
+            "death"
+          ],
+          "involves": [
+            "farquhar",
+            "wife"
+          ],
+          "perceived_by": [
+            {
+              "character": "farquhar",
+              "mode": "witnessed",
+              "content": "I am home, my wife smiles at the foot of the steps, and I spring to her arms.",
+              "accuracy": "mistaken"
+            }
+          ],
+          "location": "bridge-platform"
+        },
+        {
+          "turn": 3,
+          "round": 10,
+          "text": "Peyton Farquhar's body, its neck broken, swung gently from side to side beneath the timbers of the bridge.",
+          "importance": 5,
+          "tags": [
+            "body",
+            "death"
+          ],
+          "involves": [
+            "farquhar"
+          ],
+          "perceived_by": [
+            {
+              "character": "captain",
+              "mode": "witnessed"
+            },
+            {
+              "character": "sergeant",
+              "mode": "witnessed"
+            },
+            {
+              "character": "company",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "bridge-platform"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "farquhar",
+          "kind": "belief",
+          "text": "I have escaped the hanging and I am nearly home to my wife.",
+          "about": [
+            "wife"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        }
+      ],
+      "states": [
+        {
+          "character": "farquhar",
+          "public_state": "Hanging dead from the bridge.",
+          "activity": "-",
+          "inner_state": "-"
+        }
+      ]
+    }
+  }
+]

@@ -1,0 +1,16 @@
+{
+  "id": "jeweller1",
+  "name": "The jeweller whose name was in the case",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "Furnished the case but did not sell the necklace.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "jeweller-shop"
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

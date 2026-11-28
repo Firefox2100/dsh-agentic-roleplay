@@ -1,0 +1,34 @@
+{
+  "id": "josephine",
+  "name": "Josephine",
+  "gender": "female",
+  "pronouns": "she/her",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Louise's sister, who breaks the news.",
+  "start": {
+    "public_state": "At home with her sister.",
+    "activity": "Waiting.",
+    "inner_state": "Anxious about Louise's heart.",
+    "location": "house-downstairs"
+  },
+  "relationships": [
+    {
+      "to": "louise",
+      "label": "sister",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.8,
+      "tension": 0.1
+    },
+    {
+      "to": "richards",
+      "label": "her brother-in-law's friend",
+      "familiarity": 0.5,
+      "trust": 0.6,
+      "affinity": 0.5,
+      "tension": 0.0
+    }
+  ]
+}

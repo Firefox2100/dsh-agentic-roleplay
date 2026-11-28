@@ -1,0 +1,13 @@
+{
+  "id": "garden",
+  "name": "The garden, lane and arbors",
+  "parent": "house",
+  "description": "A large shady garden of box-bordered paths, grape arbors, broken greenhouses, a shaded lane to the bay and the private wharf.",
+  "exits": [
+    {
+      "to": "house-downstairs",
+      "description": "the house door",
+      "travel_time_seconds": 30
+    }
+  ]
+}

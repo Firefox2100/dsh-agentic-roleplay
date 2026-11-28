@@ -1,0 +1,16 @@
+{
+  "id": "servant",
+  "name": "The little Breton servant",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "Does the Loisels' humble housework until they dismiss her.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "loisel-flat"
+  },
+  "gender": "female",
+  "pronouns": "she/her"
+}

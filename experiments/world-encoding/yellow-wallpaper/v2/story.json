@@ -1,0 +1,2072 @@
+{
+  "model": "history/2",
+  "work": {
+    "title": "The Yellow Wall Paper",
+    "author": "Charlotte Perkins Gilman",
+    "published": "1892",
+    "source": "source/text.txt"
+  },
+  "time": {
+    "note": "A summer of three months' rental. The diary has eleven entries, undated; their places in the summer come only from things the narrator says: two weeks in; just after the Fourth of July; a lease with three weeks left; a week left; two days; the last day. No year.",
+    "anchors": [
+      {
+        "id": "july-4",
+        "at": "--07-04",
+        "precision": "day",
+        "src": [
+          "P84"
+        ]
+      },
+      {
+        "id": "lease-end",
+        "at": null,
+        "precision": "unknown",
+        "approx": "three months after arrival",
+        "src": [
+          "P54",
+          "P135"
+        ]
+      }
+    ],
+    "spans": [
+      {
+        "id": "span-summer",
+        "from": "e01",
+        "to": "e23",
+        "approx": "P3M",
+        "src": [
+          "P54",
+          "P216"
+        ]
+      },
+      {
+        "id": "span-visit",
+        "from": "e05",
+        "approx": "P7D",
+        "src": [
+          "P84"
+        ]
+      }
+    ]
+  },
+  "entities": {
+    "people": [
+      {
+        "id": "narrator",
+        "name": "The narrator (unnamed)",
+        "aliases": [],
+        "name_note": "'Jane' at P266 may be her or a slip for Jennie",
+        "src": [
+          "P01",
+          "P266"
+        ]
+      },
+      {
+        "id": "john",
+        "name": "John",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "jennie",
+        "name": "Jennie (John's sister)",
+        "src": [
+          "P76",
+          "P84"
+        ]
+      },
+      {
+        "id": "mary",
+        "name": "Mary",
+        "tier": "background",
+        "src": [
+          "P49"
+        ]
+      },
+      {
+        "id": "baby",
+        "name": "The baby",
+        "tier": "background",
+        "src": [
+          "P49"
+        ]
+      },
+      {
+        "id": "brother",
+        "name": "The narrator's brother, a physician",
+        "tier": "background",
+        "src": [
+          "P11"
+        ]
+      },
+      {
+        "id": "visitors",
+        "name": "Mother, Nellie and the children",
+        "kind": "group",
+        "tier": "background",
+        "src": [
+          "P84"
+        ]
+      },
+      {
+        "id": "henry-julia",
+        "name": "Cousin Henry and Julia",
+        "kind": "group",
+        "tier": "background",
+        "src": [
+          "P64"
+        ]
+      },
+      {
+        "id": "weir-mitchell",
+        "name": "Weir Mitchell",
+        "tier": "background",
+        "src": [
+          "P86"
+        ]
+      },
+      {
+        "id": "woman",
+        "name": "The woman behind the pattern",
+        "kind": "perceived",
+        "reality": "unsettled",
+        "src": [
+          "P125",
+          "P154"
+        ]
+      }
+    ],
+    "places": [
+      {
+        "id": "house",
+        "name": "The colonial mansion and grounds",
+        "src": [
+          "P01",
+          "P19"
+        ]
+      },
+      {
+        "id": "nursery",
+        "name": "The nursery at the top of the house",
+        "part_of": "house",
+        "src": [
+          "P31",
+          "P32"
+        ]
+      },
+      {
+        "id": "downstairs",
+        "name": "The rooms below (dining-room, parlor, hall, stairs, piazza)",
+        "part_of": "house",
+        "src": [
+          "P27",
+          "P177"
+        ]
+      },
+      {
+        "id": "garden-lane",
+        "name": "The garden, lane, arbors and road",
+        "part_of": "house",
+        "src": [
+          "P20",
+          "P199"
+        ]
+      },
+      {
+        "id": "front-path",
+        "name": "The front path and steps",
+        "part_of": "house",
+        "src": [
+          "P236",
+          "P259"
+        ]
+      },
+      {
+        "id": "town",
+        "name": "In town (John's cases)",
+        "src": [
+          "P42",
+          "P92"
+        ]
+      }
+    ],
+    "things": [
+      {
+        "id": "wallpaper",
+        "name": "The wallpaper",
+        "in": "nursery",
+        "src": [
+          "P33",
+          "P36"
+        ]
+      },
+      {
+        "id": "bed",
+        "name": "The nailed-down bed",
+        "in": "nursery",
+        "src": [
+          "P96",
+          "P241"
+        ]
+      },
+      {
+        "id": "smooch",
+        "name": "The rubbed streak low on the wall",
+        "in": "nursery",
+        "src": [
+          "P185"
+        ]
+      },
+      {
+        "id": "diary",
+        "name": "The diary ('this dead paper')",
+        "src": [
+          "P07",
+          "P39"
+        ]
+      },
+      {
+        "id": "rope",
+        "name": "The hidden rope",
+        "src": [
+          "P239"
+        ]
+      },
+      {
+        "id": "key",
+        "name": "The nursery door key",
+        "src": [
+          "P236",
+          "P259"
+        ]
+      }
+    ]
+  },
+  "frames": [],
+  "claims": [
+    {
+      "id": "c-sick",
+      "text": "The narrator has only temporary nervous depression and a slight hysterical tendency.",
+      "about": [
+        "narrator"
+      ],
+      "bears_on": [
+        {
+          "ref": "r-john",
+          "as": "disputes"
+        }
+      ],
+      "src": [
+        "P10",
+        "P11",
+        "P17",
+        "P43"
+      ]
+    },
+    {
+      "id": "c-better",
+      "text": "The narrator is gaining flesh and colour and is better.",
+      "about": [
+        "narrator"
+      ],
+      "bears_on": [
+        {
+          "ref": "r-john",
+          "as": "disputes"
+        }
+      ],
+      "src": [
+        "P136",
+        "P168"
+      ]
+    },
+    {
+      "id": "c-queer-house",
+      "text": "There is something queer about the house.",
+      "about": [],
+      "bears_on": [],
+      "src": [
+        "P03",
+        "P23"
+      ]
+    },
+    {
+      "id": "c-woman",
+      "text": "There is a woman behind the wallpaper, who creeps and shakes the pattern.",
+      "about": [],
+      "bears_on": [],
+      "src": [
+        "P125",
+        "P189"
+      ]
+    },
+    {
+      "id": "c-woman-outside",
+      "text": "Women creep in the lane, garden and road.",
+      "about": [],
+      "bears_on": [],
+      "src": [
+        "P197",
+        "P246"
+      ]
+    },
+    {
+      "id": "c-jj-study-paper",
+      "text": "John and Jennie are secretly studying the wallpaper and are affected by it.",
+      "about": [],
+      "bears_on": [],
+      "src": [
+        "P163",
+        "P217"
+      ]
+    },
+    {
+      "id": "c-jane-is-narrator",
+      "text": "'Jane' is the narrator's name.",
+      "about": [
+        "narrator"
+      ],
+      "bears_on": [],
+      "src": [
+        "P266"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "b01",
+      "when": {
+        "seq": -30,
+        "approx": "the start of the summer, before the first entry"
+      },
+      "kind": "arrive",
+      "place": "house",
+      "text": "John and the narrator took a colonial mansion and hereditary estate for the summer, let cheaply because it had long stood untenanted over a legal dispute about heirs.",
+      "who": [
+        {
+          "id": "john",
+          "role": "agent"
+        },
+        {
+          "id": "narrator",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P01",
+        "P02",
+        "P03",
+        "P04",
+        "P19",
+        "P22"
+      ]
+    },
+    {
+      "id": "b02",
+      "when": {
+        "seq": -29,
+        "approx": "before the summer"
+      },
+      "kind": "state-change",
+      "place": null,
+      "text": "John and her brother, both physicians of high standing, told friends and relatives she has only temporary nervous depression; she takes tonics and journeys, has a prescribed schedule for each hour, and is absolutely forbidden to work.",
+      "who": [
+        {
+          "id": "john",
+          "role": "agent"
+        },
+        {
+          "id": "brother",
+          "role": "agent"
+        },
+        {
+          "id": "narrator",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P07",
+        "P08",
+        "P09",
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P29",
+        "P30"
+      ],
+      "claims": [
+        "c-sick",
+        "s14"
+      ]
+    },
+    {
+      "id": "e00",
+      "when": {
+        "seq": 0,
+        "approx": "before the first entry"
+      },
+      "kind": "speech",
+      "place": "nursery",
+      "text": "One moonlit evening she told John there was something strange about the house; he said what she felt was a draught and shut the window.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "speaker"
+        },
+        {
+          "id": "john",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P23",
+        "P24"
+      ],
+      "claims": [
+        "c-queer-house"
+      ]
+    },
+    {
+      "id": "e01",
+      "when": {
+        "seq": 1,
+        "approx": "the first day",
+        "precision": "day"
+      },
+      "kind": "act",
+      "place": "nursery",
+      "text": "They took the nursery at the top of the house, not the downstairs room she wanted: John would not hear of it, saying the nursery had air and room, with its barred windows, rings in the walls and torn paper.",
+      "who": [
+        {
+          "id": "john",
+          "role": "agent"
+        },
+        {
+          "id": "narrator",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33"
+      ],
+      "says": "Your exercise depends on your strength, my dear, and your food somewhat on your appetite; but air you can absorb all the time."
+    },
+    {
+      "id": "e02",
+      "when": {
+        "seq": 2
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "The narrator found the wallpaper hateful, a sprawling yellow pattern whose curves commit suicide, and began her diary, putting it away when John came, since he hates to have her write.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38",
+        "P39",
+        "P16"
+      ],
+      "things": [
+        "wallpaper",
+        "diary"
+      ]
+    },
+    {
+      "id": "e03",
+      "when": {
+        "seq": 3,
+        "approx": "two weeks after the first entry",
+        "after": [
+          "e02"
+        ],
+        "gap": "P14D"
+      },
+      "kind": "speech",
+      "place": "nursery",
+      "text": "John was away all day and some nights on serious cases; he refused to repaper the room, saying she was letting it get the better of her, and called her a blessed little goose; she said it was silly to make him uncomfortable for a whim.",
+      "who": [
+        {
+          "id": "john",
+          "role": "speaker"
+        },
+        {
+          "id": "narrator",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P41",
+        "P42",
+        "P51",
+        "P52",
+        "P53",
+        "P54",
+        "P55",
+        "P56",
+        "P57",
+        "P58"
+      ],
+      "says": "You know the place is doing you good, and really, dear, I don't care to renovate the house just for a three months' rental."
+    },
+    {
+      "id": "e04",
+      "when": {
+        "seq": 4
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "The narrator saw people walking in the arbors and paths from her windows, which John cautioned her not to fancy; she could not write much and felt a comparative burden.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        },
+        {
+          "id": "john",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48",
+        "P49",
+        "P50",
+        "P60",
+        "P61",
+        "P62",
+        "P63",
+        "P64",
+        "P65"
+      ]
+    },
+    {
+      "id": "e05",
+      "when": {
+        "seq": 5
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "The wallpaper had a recurrent spot like a broken neck with two bulbous eyes, and a sub-pattern visible only in certain lights, a sulking formless figure behind the front design.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P66",
+        "P67",
+        "P68",
+        "P69",
+        "P70",
+        "P71",
+        "P72",
+        "P73",
+        "P74",
+        "P75",
+        "P80",
+        "P81"
+      ],
+      "things": [
+        "wallpaper"
+      ]
+    },
+    {
+      "id": "e06",
+      "when": {
+        "seq": 6
+      },
+      "kind": "arrive",
+      "place": "downstairs",
+      "text": "John's sister Jennie came, a perfect housekeeper whom the narrator thought believed that writing had made her sick; the narrator hid her writing from her.",
+      "who": [
+        {
+          "id": "jennie",
+          "role": "agent"
+        },
+        {
+          "id": "narrator",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P76",
+        "P77",
+        "P78",
+        "P79",
+        "P82"
+      ],
+      "things": [
+        "diary"
+      ]
+    },
+    {
+      "id": "e07",
+      "when": {
+        "seq": 7,
+        "after": [
+          "july-4"
+        ],
+        "approx": "the week of the Fourth",
+        "duration": "P7D"
+      },
+      "kind": "state",
+      "place": "downstairs",
+      "text": "Mother, Nellie and the children stayed a week for the Fourth of July; the narrator did nothing, Jennie saw to everything, and she was tired out.",
+      "who": [
+        {
+          "id": "visitors",
+          "role": "agent"
+        },
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        },
+        {
+          "id": "jennie",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P84",
+        "P85"
+      ]
+    },
+    {
+      "id": "e08",
+      "when": {
+        "seq": 8
+      },
+      "kind": "speech",
+      "place": "nursery",
+      "text": "John said he would send her to Weir Mitchell in the fall if she did not pick up faster; she did not want to go, having a friend who had been in his hands.",
+      "who": [
+        {
+          "id": "john",
+          "role": "speaker"
+        },
+        {
+          "id": "narrator",
+          "role": "addressee"
+        },
+        {
+          "id": "weir-mitchell",
+          "role": "subject"
+        }
+      ],
+      "src": [
+        "P86",
+        "P87",
+        "P88"
+      ]
+    },
+    {
+      "id": "e09",
+      "when": {
+        "seq": 9
+      },
+      "kind": "habit",
+      "place": "nursery",
+      "text": "She was fretful and wept alone most of the time, with John in town and Jennie letting her be; she lay on the nailed bed and followed the pattern for hours.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        },
+        {
+          "id": "john",
+          "role": "agent"
+        },
+        {
+          "id": "jennie",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P89",
+        "P90",
+        "P91",
+        "P92",
+        "P93",
+        "P94",
+        "P95",
+        "P96",
+        "P97",
+        "P98",
+        "P99",
+        "P100",
+        "P101",
+        "P102",
+        "P103",
+        "P104"
+      ],
+      "frequency": "iterative"
+    },
+    {
+      "id": "e10",
+      "when": {
+        "seq": 10
+      },
+      "kind": "speech",
+      "place": "nursery",
+      "text": "The narrator asked John to let her visit Cousin Henry and Julia; he said she was not able, she cried before she finished, and he carried her upstairs and read to her; he said she must use her will and self-control.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "speaker"
+        },
+        {
+          "id": "john",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P106",
+        "P107",
+        "P108",
+        "P109",
+        "P110",
+        "P111",
+        "P112",
+        "P113",
+        "P114",
+        "P115",
+        "P116",
+        "P117"
+      ],
+      "says": "No one but myself can help me out of it: I must use my will and self-control and not let my silly fancies run away with me."
+    },
+    {
+      "id": "e11",
+      "when": {
+        "seq": 11
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "She told herself it was lucky she and not the baby had the nursery; she stopped mentioning the paper to the others and watched it, and saw behind the pattern the shape of a woman stooping and creeping, clearer every day.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P118",
+        "P119",
+        "P120",
+        "P121",
+        "P122",
+        "P123",
+        "P124",
+        "P125"
+      ],
+      "claims": [
+        "c-woman"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e12",
+      "when": {
+        "seq": 12,
+        "approx": "three weeks before the lease ends",
+        "before": [
+          "lease-end"
+        ],
+        "gap": "P21D"
+      },
+      "kind": "speech",
+      "place": "nursery",
+      "text": "By moonlight the figure seemed to shake the pattern as if to get out; the narrator rose to feel the paper and found John awake; she said she was not gaining and wished to go; he said the lease had three weeks to run, that she was gaining flesh and colour, and, when she began 'Better in body, perhaps', gave her a stern reproachful look and begged her never to let that idea enter her mind.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "speaker"
+        },
+        {
+          "id": "john",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P127",
+        "P128",
+        "P129",
+        "P130",
+        "P131",
+        "P132",
+        "P133",
+        "P134",
+        "P135",
+        "P136",
+        "P137",
+        "P138",
+        "P139",
+        "P140",
+        "P141",
+        "P142"
+      ],
+      "says": "Our lease will be up in three weeks, and I can't see how to leave before. ... You are gaining flesh and color ... There is nothing so dangerous, so fascinating, to a temperament like yours.",
+      "claims": [
+        "c-better",
+        "s15"
+      ],
+      "causes": [
+        {
+          "event": "e11",
+          "status": "implied"
+        }
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e13",
+      "when": {
+        "seq": 13
+      },
+      "kind": "state",
+      "place": "nursery",
+      "text": "She lay awake for hours pretending to sleep, wondering whether the front and back patterns moved together or separately.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P143",
+        "P156",
+        "P157",
+        "P158",
+        "P159"
+      ],
+      "note": "she does not tell them she is awake: 'that cultivates deceit'",
+      "frequency": "iterative"
+    },
+    {
+      "id": "e14",
+      "when": {
+        "seq": 14
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "The narrator found that the paper changed with the light, that at night it became bars with a woman plainly behind them, and that by day the woman was subdued and quiet.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P145",
+        "P146",
+        "P147",
+        "P148",
+        "P149",
+        "P150",
+        "P151",
+        "P152",
+        "P153",
+        "P154",
+        "P155"
+      ],
+      "claims": [
+        "c-woman"
+      ]
+    },
+    {
+      "id": "e15",
+      "when": {
+        "seq": 15
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "She began to fear John, who seemed queer, and Jennie, who had an inexplicable look; she caught them looking at the paper, and Jennie, found with a hand on it, said it stained everything it touched, including John's clothes and hers.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        },
+        {
+          "id": "john",
+          "role": "agent"
+        },
+        {
+          "id": "jennie",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P160",
+        "P161",
+        "P162",
+        "P163",
+        "P164",
+        "P165",
+        "P166"
+      ],
+      "claims": [
+        "s16",
+        "c-jj-study-paper"
+      ],
+      "causes": [
+        {
+          "event": "e14",
+          "status": "implied"
+        }
+      ]
+    },
+    {
+      "id": "e16",
+      "when": {
+        "seq": 16,
+        "approx": "a week before the lease ends"
+      },
+      "kind": "state-change",
+      "place": "nursery",
+      "text": "She felt better and more excited, eating more and sleeping by day; she laughed off John's remark and hid from him that the paper was the reason, resolving to stay until she had found it out, with a week to go.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "agent"
+        },
+        {
+          "id": "john",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P168",
+        "P169",
+        "P170",
+        "P171",
+        "P172",
+        "P173",
+        "P174"
+      ],
+      "claims": [
+        "c-better"
+      ],
+      "intent": "to see the paper through to its meaning"
+    },
+    {
+      "id": "e17",
+      "when": {
+        "seq": 17
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "She noticed a smell that crept through the house, a yellow smell, and a long rubbed streak low on the wall that ran around the room behind everything but the bed, as if rubbed over and over.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P175",
+        "P176",
+        "P177",
+        "P178",
+        "P179",
+        "P180",
+        "P181",
+        "P182",
+        "P183",
+        "P184",
+        "P185",
+        "P186"
+      ],
+      "claims": [
+        "s17"
+      ],
+      "things": [
+        "smooch"
+      ]
+    },
+    {
+      "id": "e18",
+      "when": {
+        "seq": 18
+      },
+      "kind": "perceive",
+      "place": "nursery",
+      "text": "At night she discovered that the front pattern moves because the woman behind it shakes it; sometimes there are many women and sometimes one; they are strangled by the pattern, which is why it has so many heads.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P188",
+        "P189",
+        "P190",
+        "P191",
+        "P192",
+        "P193",
+        "P194"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e19",
+      "when": {
+        "seq": 19
+      },
+      "kind": "perceive",
+      "place": "garden-lane",
+      "text": "She saw the woman out of every window creeping in the lane, the arbors and on the road, hiding under the blackberry vines when a carriage came; she locked the door when she crept by daylight and did not creep at night for fear John would suspect.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P196",
+        "P197",
+        "P198",
+        "P199",
+        "P200",
+        "P201",
+        "P202",
+        "P203",
+        "P204",
+        "P205",
+        "P206",
+        "P207"
+      ],
+      "claims": [
+        "c-woman-outside"
+      ],
+      "importance": 5,
+      "causes": [
+        {
+          "event": "e18",
+          "status": "implied"
+        }
+      ]
+    },
+    {
+      "id": "e20",
+      "when": {
+        "seq": 20,
+        "approx": "two days before the lease ends"
+      },
+      "kind": "state",
+      "place": "nursery",
+      "text": "With two days to go she planned to get the top pattern off the under one, kept a second discovery to herself, thought John was beginning to notice and heard him question Jennie, and decided that John and Jennie were affected by sleeping under the paper.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "agent"
+        },
+        {
+          "id": "john",
+          "role": "agent"
+        },
+        {
+          "id": "jennie",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P209",
+        "P210",
+        "P211",
+        "P212",
+        "P213",
+        "P214",
+        "P215",
+        "P216",
+        "P217"
+      ],
+      "claims": [
+        "c-jj-study-paper"
+      ],
+      "intent": "to peel the paper off before they leave"
+    },
+    {
+      "id": "e21",
+      "when": {
+        "seq": 21,
+        "approx": "the night before they leave"
+      },
+      "kind": "act",
+      "place": "nursery",
+      "text": "On the last day John stayed in town overnight; Jennie wanted to sleep with her and she refused; at moonlight she believed the woman crawled and shook the pattern while she pulled, and by morning yards of paper were peeled, as high as her head and half around the room.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "agent"
+        },
+        {
+          "id": "jennie",
+          "role": "patient"
+        },
+        {
+          "id": "woman",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P219",
+        "P220",
+        "P221",
+        "P222"
+      ],
+      "things": [
+        "wallpaper"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "of": "wallpaper",
+          "what": "condition",
+          "to": "peeled in a strip head-high, half around the room"
+        }
+      ]
+    },
+    {
+      "id": "e22",
+      "when": {
+        "seq": 22
+      },
+      "kind": "act",
+      "place": "nursery",
+      "text": "In the morning she declared she would finish it, told Jennie she was tearing it out of spite, sent Jennie and everyone away, and the furniture was taken downstairs; she locked the door and threw the key into the front path.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "agent"
+        },
+        {
+          "id": "jennie",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P223",
+        "P224",
+        "P225",
+        "P226",
+        "P227",
+        "P228",
+        "P229",
+        "P230",
+        "P231",
+        "P232",
+        "P233",
+        "P234",
+        "P235",
+        "P236",
+        "P237",
+        "P238"
+      ],
+      "things": [
+        "key",
+        "bed"
+      ],
+      "effects": [
+        {
+          "kind": "move",
+          "thing": "key",
+          "to": "front-path"
+        }
+      ]
+    },
+    {
+      "id": "e23",
+      "when": {
+        "seq": 23
+      },
+      "kind": "act",
+      "place": "nursery",
+      "text": "She brought out a rope that Jennie never found, in case the woman should get out, tried in vain to move the bed, bit a corner of it, peeled all the paper she could reach, and began to creep around the room in the rubbed streak, feeling that she was one of the women who come out of the paper.",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P239",
+        "P240",
+        "P241",
+        "P242",
+        "P243",
+        "P244",
+        "P245",
+        "P246",
+        "P247",
+        "P248",
+        "P249",
+        "P250",
+        "P251",
+        "P252",
+        "P253"
+      ],
+      "things": [
+        "rope",
+        "bed",
+        "smooch",
+        "wallpaper"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e24",
+      "when": {
+        "seq": 24,
+        "approx": "that evening",
+        "after": [
+          "e23"
+        ]
+      },
+      "kind": "speech",
+      "place": "nursery",
+      "text": "John came to the door and pounded, asked for an axe; she told him gently, again and again, that the key was by the front steps under a plantain leaf, until he fetched it and came in.",
+      "who": [
+        {
+          "id": "john",
+          "role": "agent"
+        },
+        {
+          "id": "narrator",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P254",
+        "P255",
+        "P256",
+        "P257",
+        "P258",
+        "P259",
+        "P260",
+        "P261",
+        "P262",
+        "P263"
+      ],
+      "says": "(John) Open the door, my darling! (Narrator) I can't. The key is down by the front door, under a plantain leaf!",
+      "claims": [
+        "s11"
+      ],
+      "causes": [
+        {
+          "event": "e22",
+          "status": "stated"
+        }
+      ]
+    },
+    {
+      "id": "e25",
+      "when": {
+        "seq": 25
+      },
+      "kind": "speech",
+      "place": "nursery",
+      "text": "John stopped by the door and cried 'What is the matter? For God's sake, what are you doing?'; she crept on, looking over her shoulder, and said she had got out at last in spite of him and Jane, and pulled off most of the paper so he could not put her back; he fainted across her path and she crept over him each time she came round.",
+      "who": [
+        {
+          "id": "john",
+          "role": "experiencer"
+        },
+        {
+          "id": "narrator",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P264",
+        "P265",
+        "P266",
+        "P267"
+      ],
+      "says": "I've got out at last, in spite of you and Jane! And I've pulled off most of the paper, so you can't put me back!",
+      "claims": [
+        "c-jane-is-narrator"
+      ],
+      "importance": 5,
+      "note": "the diary ends here; whether it is written during or after is not said"
+    },
+    {
+      "id": "w-n01",
+      "when": {
+        "after": [
+          "b01"
+        ],
+        "approx": "the first day"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P01 to P39).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P01",
+        "P39"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n02",
+      "when": {
+        "approx": "two weeks after arrival"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P41 to P82).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P41",
+        "P82"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n03",
+      "when": {
+        "after": [
+          "july-4"
+        ],
+        "approx": "just after the week of the Fourth"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P84 to P104).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P84",
+        "P104"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n04",
+      "when": {
+        "approx": "mid-summer, undated"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P106 to P125).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P106",
+        "P125"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n05",
+      "when": {
+        "before": [
+          "lease-end"
+        ],
+        "approx": "three weeks before the lease ends, the morning after the moonlit night"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P127 to P143).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P127",
+        "P143"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n06",
+      "when": {
+        "approx": "the following days"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P145 to P166).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P145",
+        "P166"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n07",
+      "when": {
+        "approx": "a week before the lease ends"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P168 to P186).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P168",
+        "P186"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n08",
+      "when": {
+        "approx": "undated, later"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P188 to P194).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P188",
+        "P194"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n09",
+      "when": {
+        "approx": "undated, later"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P196 to P207).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P196",
+        "P207"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n10",
+      "when": {
+        "approx": "two days before the lease ends"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P209 to P217).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P209",
+        "P217"
+      ],
+      "src": []
+    },
+    {
+      "id": "w-n11",
+      "when": {
+        "approx": "the last day and the next evening",
+        "note": "a day and a half in one entry"
+      },
+      "kind": "writes",
+      "place": null,
+      "text": "The narrator writes a diary entry (the text's paragraphs P219 to P267).",
+      "who": [
+        {
+          "id": "narrator",
+          "role": "author"
+        }
+      ],
+      "things": [
+        "diary"
+      ],
+      "wrote_paras": [
+        "P219",
+        "P267"
+      ],
+      "src": []
+    }
+  ],
+  "held": [],
+  "knowledge": [
+    {
+      "who": "john",
+      "of": "c-sick",
+      "stance": "believes",
+      "from": "start",
+      "until": "e25",
+      "how": "inferred",
+      "src": [
+        "P10"
+      ]
+    },
+    {
+      "who": "narrator",
+      "of": "c-sick",
+      "stance": "doubts",
+      "from": "start",
+      "until": "e25",
+      "src": [
+        "P13",
+        "P14"
+      ],
+      "note": "she disagrees with their ideas and believes work and company would help"
+    },
+    {
+      "who": "john",
+      "of": "c-woman",
+      "stance": "unaware",
+      "from": "e11",
+      "until": "e24",
+      "src": [
+        "P121",
+        "P169"
+      ],
+      "note": "she conceals it: 'I never mention it to them any more'"
+    },
+    {
+      "who": "jennie",
+      "of": "c-woman",
+      "stance": "unaware",
+      "from": "e11",
+      "until": null,
+      "src": [
+        "P122",
+        "P166"
+      ]
+    },
+    {
+      "who": "narrator",
+      "of": "c-woman",
+      "stance": "believes",
+      "from": "e11",
+      "until": null,
+      "how": "witnessed",
+      "src": [
+        "P125",
+        "P189",
+        "P197"
+      ]
+    },
+    {
+      "who": "narrator",
+      "of": "c-woman-outside",
+      "stance": "believes",
+      "from": "e19",
+      "until": null,
+      "how": "witnessed",
+      "src": [
+        "P197",
+        "P246"
+      ]
+    },
+    {
+      "who": "narrator",
+      "of": "c-jj-study-paper",
+      "stance": "believes",
+      "from": "e15",
+      "until": null,
+      "how": "inferred",
+      "src": [
+        "P163",
+        "P166",
+        "P217"
+      ]
+    },
+    {
+      "who": "john",
+      "of": "c-better",
+      "stance": "believes",
+      "from": "e12",
+      "until": "e25",
+      "how": "inferred",
+      "src": [
+        "P136",
+        "P168"
+      ]
+    },
+    {
+      "who": "john",
+      "of": "s11",
+      "stance": "knows",
+      "from": "e24",
+      "until": "e24",
+      "how": "told",
+      "source": "narrator",
+      "src": [
+        "P259",
+        "P263"
+      ]
+    },
+    {
+      "who": "john",
+      "of": "s14",
+      "stance": "knows",
+      "from": "start",
+      "src": [
+        "P12",
+        "P39"
+      ]
+    },
+    {
+      "who": "john",
+      "of": "e02",
+      "stance": "unaware",
+      "from": "e02",
+      "until": null,
+      "src": [
+        "P39",
+        "P78"
+      ],
+      "note": "of her diary: she hides it from him and from Jennie"
+    },
+    {
+      "who": "jennie",
+      "of": "e02",
+      "stance": "unaware",
+      "from": "e02",
+      "until": null,
+      "src": [
+        "P76",
+        "P78"
+      ]
+    },
+    {
+      "who": "reader",
+      "of": "c-woman",
+      "stance": "doubts",
+      "from": "para:P168",
+      "until": "para:P254",
+      "src": [
+        "P125",
+        "P253"
+      ],
+      "note": "the narrator's account is the only evidence; clues of her state build through the entries"
+    }
+  ],
+  "states": [
+    {
+      "of": "narrator",
+      "kind": "feeling",
+      "value": "irritable, easily angry at John, controls herself in front of him",
+      "from": "e00",
+      "until": "e08",
+      "src": [
+        "P25",
+        "P26"
+      ],
+      "id": "s00"
+    },
+    {
+      "of": "narrator",
+      "kind": "feeling",
+      "value": "fretful and querulous, crying alone, tired",
+      "from": "e08",
+      "until": "e11",
+      "src": [
+        "P89",
+        "P90",
+        "P91"
+      ],
+      "id": "s01"
+    },
+    {
+      "of": "narrator",
+      "kind": "feeling",
+      "value": "afraid of John, then excited, secret, triumphant",
+      "from": "e15",
+      "until": "e25",
+      "src": [
+        "P160",
+        "P168",
+        "P223",
+        "P250"
+      ],
+      "id": "s02"
+    },
+    {
+      "of": "narrator",
+      "kind": "identity",
+      "value": "has begun to identify with the creeping woman: 'as I did'",
+      "from": "e23",
+      "src": [
+        "P247",
+        "P253",
+        "P266"
+      ],
+      "status": "implied",
+      "id": "s03"
+    },
+    {
+      "of": "narrator",
+      "kind": "location",
+      "value": "nursery",
+      "from": "e01",
+      "src": [
+        "P31"
+      ],
+      "id": "s04"
+    },
+    {
+      "of": "john",
+      "kind": "location",
+      "value": "town",
+      "from": "start",
+      "until": "e24",
+      "src": [
+        "P42",
+        "P92"
+      ],
+      "note": "away all day and some nights, and overnight at the last",
+      "id": "s05"
+    },
+    {
+      "of": "john",
+      "kind": "manner",
+      "value": "loving, practical, managing, laughs at her, never believes she is sick",
+      "from": "start",
+      "src": [
+        "P05",
+        "P06",
+        "P29",
+        "P56"
+      ],
+      "id": "s06"
+    },
+    {
+      "of": "nursery",
+      "kind": "description",
+      "value": "once a nursery, playroom and gymnasium: windows barred, rings in the walls, floor scratched, plaster dug out, bed nailed down and gnawed",
+      "from": "start",
+      "src": [
+        "P32",
+        "P72",
+        "P74",
+        "P96"
+      ],
+      "id": "s07"
+    },
+    {
+      "of": "wallpaper",
+      "kind": "description",
+      "value": "stripped in patches; sprawling pattern; a smouldering, unclean yellow; a sub-pattern visible in certain lights; at night it becomes bars; a smell; it stains",
+      "from": "start",
+      "src": [
+        "P33",
+        "P35",
+        "P36",
+        "P80",
+        "P153",
+        "P175"
+      ],
+      "id": "s08"
+    },
+    {
+      "of": "wallpaper",
+      "kind": "condition",
+      "value": "peeled in a strip head-high, half around the room",
+      "from": "e21",
+      "until": "e23",
+      "src": [
+        "P222"
+      ],
+      "id": "s09"
+    },
+    {
+      "of": "wallpaper",
+      "kind": "condition",
+      "value": "peeled everywhere she could reach",
+      "from": "e23",
+      "src": [
+        "P243",
+        "P266"
+      ],
+      "id": "s10"
+    },
+    {
+      "of": "key",
+      "kind": "location",
+      "value": "front-path",
+      "from": "e22",
+      "src": [
+        "P236",
+        "P259"
+      ],
+      "id": "s11"
+    },
+    {
+      "of": "narrator",
+      "kind": "habit",
+      "value": "rests an hour after each meal on John's orders; does not sleep; pretends to",
+      "from": "e13",
+      "src": [
+        "P157",
+        "P158",
+        "P159"
+      ],
+      "id": "s12"
+    },
+    {
+      "of": "narrator",
+      "kind": "concealment",
+      "value": "hides her writing, her wakefulness, the woman and her creeping from John and Jennie",
+      "from": "e02",
+      "until": "e25",
+      "src": [
+        "P16",
+        "P39",
+        "P121",
+        "P159",
+        "P169",
+        "P202"
+      ],
+      "id": "s13"
+    },
+    {
+      "id": "s14",
+      "of": "narrator",
+      "kind": "circumstance",
+      "value": "Forbidden by John and her brother to work or to write",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P02"
+      ]
+    },
+    {
+      "id": "s15",
+      "of": "narrator",
+      "kind": "circumstance",
+      "value": "The house is let for three months",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P01"
+      ]
+    },
+    {
+      "id": "s16",
+      "of": "wallpaper",
+      "kind": "circumstance",
+      "value": "Stains everything it touches",
+      "from": "e13",
+      "until": null,
+      "src": [
+        "P165"
+      ]
+    },
+    {
+      "id": "s17",
+      "of": "smooch",
+      "kind": "circumstance",
+      "value": "A long rubbed streak runs round the wall at shoulder height, behind everything",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P185"
+      ]
+    },
+    {
+      "id": "s18",
+      "of": "garden-lane",
+      "kind": "description",
+      "value": "A large shady garden of box-bordered paths and grape-covered arbors with seats; the greenhouses are broken",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P20",
+        "P21"
+      ]
+    },
+    {
+      "id": "s19",
+      "of": "narrator",
+      "kind": "feeling",
+      "value": "Getting fond of the big room, all but the paper",
+      "from": "e03",
+      "until": null,
+      "src": [
+        "P59"
+      ]
+    }
+  ],
+  "readings": [
+    {
+      "id": "r-john",
+      "holder": "reader",
+      "text": "John's care is also control: he decides her room, her hours, her visitors and her work, and calls her fears a fancy.",
+      "status": "implied",
+      "supports": [
+        "e01",
+        "e03",
+        "e10",
+        "e12"
+      ],
+      "src": [
+        "P29",
+        "P30",
+        "P56",
+        "P117",
+        "P142"
+      ]
+    },
+    {
+      "id": "r-woman-is-her",
+      "holder": "reader",
+      "text": "The woman behind the pattern is a projection of the narrator's own confinement; by the end she is the woman.",
+      "status": "implied",
+      "supports": [
+        "e11",
+        "e23",
+        "e25"
+      ],
+      "against": [
+        "c-woman"
+      ],
+      "src": [
+        "P125",
+        "P247",
+        "P266"
+      ]
+    },
+    {
+      "id": "r-prior",
+      "holder": "reader",
+      "text": "Someone before her crept around the room: the streak, the barred windows, the nailed bed and the gnawed bedstead predate her stay.",
+      "status": "implied",
+      "supports": [
+        "e17"
+      ],
+      "src": [
+        "P74",
+        "P185",
+        "P234"
+      ]
+    },
+    {
+      "id": "r-concealment",
+      "holder": "narrator",
+      "text": "Her concealment 'cultivates deceit'; the diary is the one place she tells the truth, and it also hides the truth from the others.",
+      "status": "stated",
+      "supports": [
+        "e13"
+      ],
+      "src": [
+        "P108",
+        "P159",
+        "P169"
+      ]
+    },
+    {
+      "id": "r-jane",
+      "holder": "reader",
+      "text": "The word 'Jane' at the end may be the narrator's own name or a slip for Jennie; the text offers no way to choose.",
+      "status": "ambiguous",
+      "supports": [
+        "e25"
+      ],
+      "src": [
+        "P266"
+      ]
+    }
+  ],
+  "gaps_found": [
+    "v1: the woman behind the pattern is a perception marked 'mistaken'; that is stronger than the text, which never says she is not there",
+    "v1: eleven undated entries have no place in the summer except by the narrator's own remarks, which are text; the clock sidecar had to invent dates",
+    "v1: concealment (hiding the diary, the wakefulness, the woman) is the story's engine and is only text; there is no 'conceals from' relation",
+    "v1: the key was thrown into the front path; no item action throws a thing to another place",
+    "v1: the narrator's identification with the woman ('as I did') and the ambiguous 'Jane' have no place",
+    "v1: a diary is both what is told and the narrator's one private act; v1 holds it as an item"
+  ]
+}

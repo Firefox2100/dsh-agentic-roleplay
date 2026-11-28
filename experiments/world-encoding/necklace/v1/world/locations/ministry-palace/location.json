@@ -1,0 +1,12 @@
+{
+  "id": "ministry-palace",
+  "name": "The palace of the Ministry",
+  "description": "The Minister's palace where the ball is given; a vestibule, stairs, a ballroom and a small deserted ante-room.",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "down the stairs",
+      "travel_time_seconds": 120
+    }
+  ]
+}

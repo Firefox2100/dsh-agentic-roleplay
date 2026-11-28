@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import type { PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import type { ReferencePerson, ReferencePlace, ReferenceProfile, ReferenceQuest, ReferenceStatus, ReferenceThing } from '../../../shared/reference.ts'
+import type { ReferenceClaim, ReferencePerson, ReferencePlace, ReferenceProfile, ReferenceQuest, ReferenceStatus, ReferenceThing } from '../../../shared/reference.ts'
 import { useReference } from '../use-reference.ts'
 import type {} from '../slot-contract.ts'
 import { Page, type Shown } from './Page.tsx'
@@ -121,6 +121,32 @@ export function QuestsPage({ t, sessionId, visible }: SectionProps): ReactNode {
                 {quest.when !== undefined && <p className={css.meta}>{quest.until === undefined ? quest.when : t('questSpan', { from: quest.when, to: quest.until })}{quest.place === undefined ? '' : ` · ${quest.place}`}</p>}
                 {quest.with !== undefined && <p className={css.meta}>{t('questWith', { list: quest.with.join(', ') })}</p>}
                 {quest.note !== undefined && <p className={css.text}>{quest.note}</p>}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </Page>
+  )
+}
+
+/** What the player's character has heard said, believed or suspected, with what they themselves have to go on: never whether it is true. */
+export function ClaimsPage({ t, sessionId, visible }: SectionProps): ReactNode {
+  const { reading } = useReference(sessionId, 'claims', visible)
+  const words = { true: 'claimTrue', false: 'claimFalse', likely: 'claimLikely', unlikely: 'claimUnlikely', open: 'claimOpen', disputed: 'claimDisputed', unresolved: 'claimUnresolved', mixed: 'claimMixed' } as const
+  return (
+    <Page<ReferenceClaim> reading={reading} className={css.message ?? ''} loading={t('loading')} failed={message => t('failed', { message })} empty={t('noClaims')}>
+      {claims => (
+        <>
+          <p className={css.meta}>{t('claimsHint')}</p>
+          <ul className={css.list}>
+            {claims.map((claim, index) => (
+              <li key={`${index}-${claim.text}`} className={css.entry}>
+                <div className={css.head}>
+                  <span className={css.name}>{claim.text}</span>
+                  {claim.by !== undefined && <span className={css.sub}>{t('claimBy', { name: claim.by })}</span>}
+                </div>
+                <p className={css.meta}>{t(words[claim.standing])}</p>
               </li>
             ))}
           </ul>

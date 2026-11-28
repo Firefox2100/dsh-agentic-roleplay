@@ -1,4 +1,5 @@
 import { InvalidEditProblems, parseCharacterEdit, parseFactionEdit, parseLoreEdit, parsePlaceEdit, parseRelationEdit, parseThingEdit, type PlotsEdit } from '../../../shared/world-state.ts'
+import { ClaimNotFoundError } from '../../sessions/claims-editor.ts'
 import { SessionNotFoundError } from '../../sessions/errors.ts'
 import { readBinaryBody, readJsonBody } from '../body.ts'
 import { sendError, sendJson } from '../respond.ts'
@@ -44,6 +45,23 @@ export function sessionWorldRoutes({ sessions }: ApiDeps): Routes {
     '/sessions/world/faction': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editFaction(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseFactionEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/lore': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editLore(url.searchParams.get('id') ?? '', url.searchParams.get('key') ?? '', parseLoreEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/plots': { PUT: async (req, res, url) => { try { const body = await readJsonBody(req) as { plots?: unknown }; if (!Array.isArray(body.plots)) return sendError(res, 400, 'plots must be a list'); sendJson(res, 200, sessions.editPlots(url.searchParams.get('id') ?? '', { plots: body.plots as PlotsEdit['plots'] })) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
+    '/sessions/world/claims': {
+      GET: async (_req, res, url) => {
+        try { sendJson(res, 200, sessions.claims(url.searchParams.get('id') ?? '')) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); throw error }
+      },
+      DELETE: async (_req, res, url) => {
+        try { sendJson(res, 200, sessions.removeClaim(url.searchParams.get('id') ?? '', Number(url.searchParams.get('claim')))) } catch (error) { if (error instanceof SessionNotFoundError || error instanceof ClaimNotFoundError) return sendError(res, 404, error.message); throw error }
+      },
+    },
+    '/sessions/world/claims/status': {
+      PUT: async (req, res, url) => {
+        try {
+          const body = await readJsonBody(req) as { status?: unknown }
+          if (body.status !== 'proposed' && body.status !== 'confirmed') return sendError(res, 400, 'status must be proposed or confirmed')
+          sendJson(res, 200, sessions.setClaimStatus(url.searchParams.get('id') ?? '', Number(url.searchParams.get('claim')), body.status))
+        } catch (error) { if (error instanceof SessionNotFoundError || error instanceof ClaimNotFoundError) return sendError(res, 404, error.message); throw error }
+      },
+    },
     '/sessions/world/relation': { PUT: async (req, res, url) => { try { sendJson(res, 200, sessions.editRelation(url.searchParams.get('id') ?? '', parseRelationEdit(await readJsonBody(req)))) } catch (error) { if (error instanceof SessionNotFoundError) return sendError(res, 404, error.message); if (error instanceof InvalidEditProblems) return sendJson(res, 422, { message: error.message, problems: error.problems }); throw error } } },
     '/sessions/world/narration-voice': { PUT: async (req, res, url) => { const body = await readJsonBody(req) as { voice?: unknown }; if (typeof body.voice !== 'string') return sendError(res, 400, 'voice must be text'); sendJson(res, 200, sessions.editNarrationVoice(url.searchParams.get('id') ?? '', body.voice)) } },
     '/sessions/world/character/portrait': {

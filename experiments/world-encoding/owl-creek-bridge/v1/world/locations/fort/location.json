@@ -1,0 +1,12 @@
+{
+  "id": "fort",
+  "name": "The fort",
+  "description": "A stockade of vertical tree trunks, loop-holed for rifles.",
+  "features": [
+    {
+      "id": "embrasure",
+      "name": "Embrasure",
+      "description": "A single opening through which the brass cannon protrudes."
+    }
+  ]
+}

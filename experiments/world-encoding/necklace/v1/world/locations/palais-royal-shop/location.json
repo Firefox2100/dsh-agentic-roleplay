@@ -1,0 +1,12 @@
+{
+  "id": "palais-royal-shop",
+  "name": "A jeweller's at the Palais Royal",
+  "description": "Where a string of diamonds like the lost one is for sale.",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "the shop door",
+      "travel_time_seconds": 30
+    }
+  ]
+}

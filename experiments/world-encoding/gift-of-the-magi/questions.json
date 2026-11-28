@@ -1,0 +1,244 @@
+[
+ {
+  "id": "q01",
+  "question": "How much money did Della have when she left the flat to sell her hair, and how much after buying the chain?",
+  "answer": "187 cents; 87 cents.",
+  "needs": [
+   "amounts over time"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "variable cash: 187 at start; changes +2000 and -2100"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "states della cash"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "states della cash"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "What had Jim done in the afternoon, and when did Della learn of it?",
+  "answer": "Sold the watch and bought the combs; she learns at the end, from Jim.",
+  "needs": [
+   "an offstage event",
+   "when someone learned it"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "turn 3 r3 and r4 are events with the tag 'reported-later'; Della's belief is written at the end; nothing says when the reader or Della learned it as a rule"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e-w1/e-w2 reported_by jim; knowledge della unaware until e21"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e-w1/e-w2 reported_by jim; knowledge della unaware until e21"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "Who knew about Della's hair before Jim came in?",
+  "answer": "Della and Madame Sofronie (and any who saw her); not Jim.",
+  "needs": [
+   "who perceived an event"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "turn 2 r2/r3 perceived by della, sofronie"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge jim unaware of f-della-sold-hair until e14"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge jim unaware of e05 until e14"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "Where was the watch at 7 pm?",
+  "answer": "With whoever bought it; the text does not say who.",
+  "needs": [
+   "an object's holder over time, with a gap"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "held by the invented placeholder character 'buyer', which looks like a fact the text does not give"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "states watch holder buyer-of-watch (unnamed:true)"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "states watch holder buyer-of-watch (unnamed:true)"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "Why did Jim stare at Della in the doorway?",
+  "answer": "He saw her cut hair, having bought combs for it.",
+  "needs": [
+   "an explanation told later for an earlier event"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "text in turn 6 r6; no link to the earlier event"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e17 explains e13; reading r-stare"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e17 explains e13; reading r-stare"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "What did Della fear Jim's reaction would be, and did it happen?",
+  "answer": "That he would call her a chorus girl or be angry; it did not.",
+  "needs": [
+   "an anticipation that does not occur"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "the fear is in event text; there is no way to say it did not occur"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "a01, a02 realised false"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "held h-a01, h-a02 (anticipates); whether it happened is only absence of a realising event"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "What did Jim's father own that Jim sold?",
+  "answer": "The gold watch (his father's and grandfather's).",
+  "needs": [
+   "an object's history"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "the watch description text says it"
+  },
+  "draft": {
+   "answerable": "partly",
+   "how": "state meaning text; no provenance chain"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "state meaning text; no provenance chain"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "At what time was supper ready, and how long did Della spend on her hair at home?",
+  "answer": "Seven o'clock; forty minutes.",
+  "needs": [
+   "a stated clock time and a stated duration"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "the hour is in the sidecar and the invented starting_time; the duration only in text"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e10 at 19:00; e08 duration PT40M"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e10 at 19:00; e08 duration PT40M"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "Did Della know what the combs were before she opened them?",
+  "answer": "She knew them from a shop window and longed for them, without expecting to have them.",
+  "needs": [
+   "a desire without possession",
+   "knowledge before the event"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "item combs in the lore of the shop; no record of her longing except text"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "state desire; knowledge della unaware of e-w2 until e18"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "state desire; knowledge della unaware of e-w2 until e18"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "How often had Della hugged Jim at the door?",
+  "answer": "Whenever he came home.",
+  "needs": [
+   "an iterative event"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "a relationship summary says so"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "b02 iterative"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "b02 iterative"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "What does the narrator say the couple are?",
+  "answer": "The wisest of givers: the magi.",
+  "needs": [
+   "a narrator's judgement, not a world fact"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "lore magi holds the legend; the judgement is dropped"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "reading r-wise holder narrator"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "reading r-wise holder narrator"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "What happened in the hair shop between 'Give it to me quick' and the next two hours?",
+  "answer": "The hair was cut and paid for; the text does not show it.",
+  "needs": [
+   "an elided event"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "an event was invented to carry it; nothing marks it as implied"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e05 status partly implied"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e05 basis implied, effects transfer hair"
+  }
+ }
+]

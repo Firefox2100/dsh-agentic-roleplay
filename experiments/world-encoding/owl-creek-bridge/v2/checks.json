@@ -1,0 +1,24 @@
+{
+  "expected_verdicts": {
+    "c-driftwood": "unresolved",
+    "c-scout-confederate": "false",
+    "c-trap": "unresolved",
+    "c-escaped": "false"
+  },
+  "accepted_differences": {},
+  "exempt_paragraphs": {
+    "P08": "section number",
+    "P19": "section number"
+  },
+  "fact_map": {
+    "f-order": "e02",
+    "f-scout-federal": "e06",
+    "f-dead": "e13",
+    "f-attempt": "e08",
+    "f-driftwood": "c-driftwood",
+    "f-scout-confederate": "c-scout-confederate",
+    "f-trap": "c-trap",
+    "f-escaped": "c-escaped",
+    "p01": "h-p01"
+  }
+}

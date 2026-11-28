@@ -1,0 +1,12 @@
+{
+  "id": "jeweller-shop",
+  "name": "The first jeweller's",
+  "description": "Whose name was inside the necklace's case.",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "the shop door",
+      "travel_time_seconds": 30
+    }
+  ]
+}

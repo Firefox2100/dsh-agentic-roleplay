@@ -1,0 +1,249 @@
+[
+ {
+  "id": "q01",
+  "question": "What can Mina know about the Demeter's arrival on the morning of 8 August, and what changes when she pastes the cutting?",
+  "answer": "Nothing on her walk to the harbour; she learns it by reading the cutting.",
+  "needs": [
+   "what a character knows at a moment, by a document read later"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "yes",
+   "how": "knows_at: mina does not know e-demeter-beaches at e-mina-harbour, does at e-cutting-pasted (row how read, source correspondent)"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "Could Lucy have been sleep-walking while the Demeter beached?",
+  "answer": "Possibly: her two walks are somewhere in a night that overlaps it.",
+  "needs": [
+   "an alibi: a possible overlap when only the night is known"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "yes",
+   "how": "overlap3 'possible': e-lucy-walk-1 is within e-mina-night, which definitely overlaps e-demeter-beaches"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "Does Lucy know she walked?",
+  "answer": "No: she was asleep both times; Mina saw it.",
+  "needs": [
+   "a participant who does not know her own act"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "yes",
+   "how": "unaware rows how asleep (they override the party rule); Mina knows via e-lucy-walk-2"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "Was there a stranger aboard the Demeter?",
+  "answer": "Unresolved: three people say they saw It, a thorough search found no one.",
+  "needs": [
+   "a claim with evidence both ways"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "yes",
+   "how": "c-stranger-aboard open (one undermining, three supporting); unlikely right after the search (verdict_at)"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "Who got rid of the crew?",
+  "answer": "Unresolved: the mate (the captain's first belief), the stranger (the captain's second), or the captain himself (the inquest cannot say).",
+  "needs": [
+   "rival explanations, none confirmed"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "yes",
+   "how": "q-crew-deaths: c-mate-killed-crew open, c-stranger-killed-crew open, c-captain-killed-crew unresolved; the rival rule leaves open claims alone"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "When did the captain stop believing the mate was the killer, and why?",
+  "answer": "On the night of 4 August, when he saw It himself.",
+  "needs": [
+   "a belief that changes, with its cause"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge captain believes c-mate-killed-crew from b-mate-jumps until b-captain-sees-it; verdict_at open after it"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "Did the captain tie himself to the wheel?",
+  "answer": "Yes: the coastguard says so on the pier, but only the log read the next day confirms it.",
+  "needs": [
+   "a claim and the evidence that arrives later"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "yes",
+   "how": "c-captain-tied-himself unresolved at e-coastguard-says, true after e-log-read (verdict_at)"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "On which night did the storm and the beaching happen?",
+  "answer": "The text gives two: the night before 8 August (Mina) and the night before 9 August (the dispatch).",
+  "needs": [
+   "a contradiction inside the source"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "yes",
+   "how": "q-storm-date: c-storm-night-7 and c-storm-night-8, each open, with bearings that cut both ways; flagged rather than resolved"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "Which events are told after later events in the chapter?",
+  "answer": "Mina's storm night and her morning at the harbour, and nothing else.",
+  "needs": [
+   "telling order against story order"
+  ],
+  "play": "analysis",
+  "v2": {
+   "answerable": "yes",
+   "how": "told_late: e-mina-night, e-mina-harbour"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "What did the correspondent know of the voyage, and when did he learn it?",
+  "answer": "Everything the log says, from the afternoon of 9 August, through a clerk's translation; nothing when the ship beached.",
+  "needs": [
+   "a chain of provenance"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "partly",
+   "how": "knowledge correspondent read from e-log-read, source captain; the clerk's translation is only in r-mania's note"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "How many of the crew were lost, and in what order?",
+  "answer": "Petrofsky, one man on 24 July, the second mate, two on 30 July, one on 2 August, the mate: eight in all.",
+  "needs": [
+   "events about a group member each, in order"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "partly",
+   "how": "events in order with 'crew' as patient; the count is not stored"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "Who stayed silent about their fear, and from whom?",
+  "answer": "The crew, from the captain, on 13 and 14 July; they told the mate only that there was something.",
+  "needs": [
+   "concealment among several people"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "yes",
+   "how": "b-crew-withholds (conceal from captain); knowledge captain told by olgaren later"
+  }
+ },
+ {
+  "id": "q13",
+  "question": "Where was everyone when the Demeter beached?",
+  "answer": "The crowd on the cliffs, the searchlight crew on the East Cliff, the coastguard on the east side, the correspondent on the West Cliff running.",
+  "needs": [
+   "several places at one moment"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "partly",
+   "how": "places on events; the crowd is a group, so no one in it has a row of their own; only the coastguard and correspondent are individuals"
+  }
+ },
+ {
+  "id": "q14",
+  "question": "Where is the dog?",
+  "answer": "Unknown: it ran into the churchyard dark and was never found.",
+  "needs": [
+   "an unknown location, with a held search that is prevented"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "yes",
+   "how": "s-dog-loose (unknown); h-dog-found prevented by e-dog-never-found"
+  }
+ },
+ {
+  "id": "q15",
+  "question": "What is unresolved for Mina at the end?",
+  "answer": "Where Jonathan is, and whether the walk keeps Lucy from sleep-walking.",
+  "needs": [
+   "hooks: open held items of one character"
+  ],
+  "play": "needed",
+  "v2": {
+   "answerable": "yes",
+   "how": "h-jonathan-news and h-mina-walk both open (held_outcomes); c-jonathan-on-land unresolved"
+  }
+ },
+ {
+  "id": "q16",
+  "question": "Why did the weather change, in order?",
+  "answer": "Mares'-tails in the afternoon, a calm at midnight, a storm after midnight, fog and lightning, abating before dawn.",
+  "needs": [
+   "a weather sequence"
+  ],
+  "play": "analysis",
+  "v2": {
+   "answerable": "partly",
+   "how": "events and the state s-storm; the order is the scene's; no cause"
+  }
+ },
+ {
+  "id": "q17",
+  "question": "Whose cargo was it?",
+  "answer": "Consigned to a Whitby solicitor, Mr Billington, who takes possession; the Russian consul takes the ship.",
+  "needs": [
+   "ownership and custody"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "partly",
+   "how": "s-boxes (text) and e-billington-takes-cargo; ownership is not a field"
+  }
+ },
+ {
+  "id": "q18",
+  "question": "How reliable is the log as it comes to us?",
+  "answer": "Written by a captain in fear, read through a clerk's dictation, in a cutting pasted by someone who did not see the ship.",
+  "needs": [
+   "layers of telling"
+  ],
+  "play": "analysis",
+  "v2": {
+   "answerable": "partly",
+   "how": "r-mania's note, knowledge rows how read; no field says 'translated' or 'dictated'"
+  }
+ },
+ {
+  "id": "q19",
+  "question": "What links Mr Swales's death to the ship?",
+  "answer": "Nothing the text says; the reader links them.",
+  "needs": [
+   "an implied cause"
+  ],
+  "play": "helpful",
+  "v2": {
+   "answerable": "no",
+   "how": "e-swales-found has no causes; r-swales-saw-death is Mina's reading"
+  }
+ }
+]

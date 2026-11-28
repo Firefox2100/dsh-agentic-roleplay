@@ -1,10 +1,10 @@
 import { existsSync } from 'node:fs'
-import { describeInstant, describeValue, isSessionId, itemKey, locationKey, sessionDatabase, shownVariables, type Session } from '@dsh-agentic-roleplay/state'
+import { describeInstant, describeValue, isSessionId, itemKey, knowsEvent, locationKey, sessionDatabase, shownVariables, verdictFor, type Session } from '@dsh-agentic-roleplay/state'
 import { SessionNotFoundError } from '../sessions/errors.ts'
 import { keyOf, profileOf, type ProfileSession } from './profile.ts'
-import { isReferenceSection, type ReferenceProfile, type ReferencePerson, type ReferencePlace, type ReferenceQuest, type ReferenceReplies, type ReferenceStatus, type ReferenceReply, type ReferenceSection, type ReferenceThing } from '../../shared/reference.ts'
+import { isReferenceSection, type ReferenceProfile, type ReferencePerson, type ReferencePlace, type ReferenceClaim, type ReferenceQuest, type ReferenceReplies, type ReferenceStatus, type ReferenceReply, type ReferenceSection, type ReferenceThing } from '../../shared/reference.ts'
 
-export type ReferenceSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'items' | 'knowledge' | 'relationships' | 'threads' | 'engagements'> & ProfileSession
+export type ReferenceSession = Pick<Session, 'characters' | 'characterStates' | 'placements' | 'locations' | 'items' | 'knowledge' | 'relationships' | 'threads' | 'engagements' | 'claims' | 'events' | 'groups' | 'concealment'> & ProfileSession
 
 export class UnknownSectionError extends Error {}
 
@@ -127,6 +127,21 @@ function quests(session: ReferenceSession, options: PageOptions): ReferenceQuest
 }
 
 /**
+ * What has been said, believed or suspected that the player's character heard (they took in the event where it was said, or they said it), as settled claims only and by the standing their own knowledge gives
+ * them. A claim a model proposed and nobody has settled, one the character never heard, and what the events say beyond what the character took in, are not shown.
+ */
+function claims(session: ReferenceSession): ReferenceClaim[] {
+  const stand = standpoint(session)
+  if (stand === undefined) return []
+  return session.claims.list({ status: 'confirmed' }).flatMap((claim): ReferenceClaim[] => {
+    const heard = claim.byCharacterId === stand.player.id || (claim.assertedEventId !== undefined && knowsEvent(session, stand.player.id, claim.assertedEventId) === 'knows')
+    if (!heard) return []
+    const by = claim.byCharacterId === undefined ? claim.byLabel : session.characters.get(claim.byCharacterId)?.name ?? ''
+    return [{ text: claim.text, ...by === '' ? {} : { by }, standing: verdictFor(session, claim.id, stand.player.id) ?? 'unresolved', turn: claim.createdTurn }]
+  }).sort((a, b) => b.turn - a.turn)
+}
+
+/**
  * Every tracked value the player may read, by subject: the world's, their own (private ones too), the place's, those of the people they have met or are with, and of the things they carry
  * or see lying about, without the feelings every story has (the profile tells those in words). What is hidden, and what is private to someone else, is not read.
  */
@@ -153,7 +168,7 @@ function status(session: ReferenceSession): ReferenceStatus[] {
 }
 
 /** One page per section; a new page is a new entry here and in `REFERENCE_SECTIONS`. */
-const PAGES: { [K in ReferenceSection]: (session: ReferenceSession, options: PageOptions) => ReferenceReplies[K] } = { status, profile, people, places, things, quests }
+const PAGES: { [K in ReferenceSection]: (session: ReferenceSession, options: PageOptions) => ReferenceReplies[K] } = { status, profile, people, places, things, quests, claims }
 
 export interface ReferenceDeps {
   sessionsDir(): string

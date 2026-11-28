@@ -1,0 +1,12 @@
+{
+  "id": "forestier-home",
+  "name": "Mme. Forestier's home",
+  "description": "A rich friend's house with a wardrobe with a glass door and a large jewel-box.",
+  "exits": [
+    {
+      "to": "streets",
+      "description": "the street door",
+      "travel_time_seconds": 60
+    }
+  ]
+}

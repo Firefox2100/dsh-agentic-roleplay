@@ -255,6 +255,11 @@ export async function playRow(rig: StoryRig, data: BenchData, row: Row, script: 
       trace.state('story', { characters: state.characters.map(character => ({ key: character.key, place: character.place?.key })), things: state.things.map(thing => ({ key: thing.key, holder: thing.holder })), triggers: state.triggers?.map(trigger => ({ key: trigger.key, status: trigger.status, fireCount: trigger.fireCount })) })
     } catch (error) { trace.note(`the story's records could not be read: ${error instanceof Error ? error.message : String(error)}`) }
     try {
+      const kept = await rig.api<{ claims: { text: string; by: string | null; status: string; verdict: string }[] }>(`/sessions/world/claims?id=${session}`)
+      observation = { ...observation, claims: kept.claims.map(claim => ({ text: claim.text, ...claim.by === null ? {} : { by: nameOf.get(claim.by) ?? claim.by }, status: claim.status, verdict: claim.verdict })) }
+      trace.state('claims', kept.claims.map(claim => ({ text: claim.text, by: claim.by, status: claim.status, verdict: claim.verdict })))
+    } catch (error) { trace.note(`the claims could not be read: ${error instanceof Error ? error.message : String(error)}`) }
+    try {
       const read = await rig.api<{ settings: Record<string, unknown> }>(`/sessions/settings?id=${session}`)
       observation = { ...observation, settings: read.settings }
     } catch (error) { trace.note(`the settings could not be read: ${error instanceof Error ? error.message : String(error)}`) }

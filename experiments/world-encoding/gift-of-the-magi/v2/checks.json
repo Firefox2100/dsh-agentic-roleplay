@@ -1,0 +1,15 @@
+{
+  "expected_verdicts": {},
+  "accepted_differences": {},
+  "exempt_paragraphs": {},
+  "fact_map": {
+    "f-della-sold-hair": "e05",
+    "f-jim-sold-watch": "e-w1",
+    "f-cash-della-start": "s02",
+    "f-gifts-useless": "s24",
+    "a01": "h-a01",
+    "a02": "h-a02",
+    "h01": "r-h01",
+    "h02": "r-h02"
+  }
+}

@@ -1,0 +1,1412 @@
+{
+  "model": "history/2",
+  "work": {
+    "title": "The Gift of the Magi",
+    "author": "O. Henry",
+    "published": "1905",
+    "source": "source/text.txt"
+  },
+  "time": {
+    "note": "Christmas Eve, year not given. Evening anchor: seven o'clock. Everything earlier is relative to it.",
+    "anchors": [
+      {
+        "id": "christmas-eve",
+        "at": "--12-24",
+        "precision": "day",
+        "src": [
+          "P33"
+        ]
+      },
+      {
+        "id": "seven",
+        "at": "--12-24T19:00",
+        "precision": "hour",
+        "src": [
+          "P23"
+        ]
+      }
+    ],
+    "spans": [
+      {
+        "id": "span-shopping",
+        "from": "e06",
+        "approx": "PT2H",
+        "src": [
+          "P18"
+        ]
+      },
+      {
+        "id": "span-curls",
+        "from": "e08",
+        "approx": "PT40M",
+        "src": [
+          "P21"
+        ]
+      }
+    ]
+  },
+  "entities": {
+    "people": [
+      {
+        "id": "della",
+        "name": "Della Dillingham Young",
+        "aliases": [
+          "Dell",
+          "Mrs. James Dillingham Young"
+        ],
+        "src": [
+          "P05"
+        ]
+      },
+      {
+        "id": "jim",
+        "name": "James Dillingham Young",
+        "aliases": [
+          "Jim"
+        ],
+        "age": 22,
+        "src": [
+          "P04",
+          "P25"
+        ]
+      },
+      {
+        "id": "sofronie",
+        "name": "Madame Sofronie",
+        "src": [
+          "P12"
+        ]
+      },
+      {
+        "id": "buyer-of-watch",
+        "name": "Whoever bought the watch",
+        "unnamed": true,
+        "src": [
+          "P44"
+        ]
+      },
+      {
+        "id": "clerks",
+        "name": "The sellers of the chain and the combs",
+        "kind": "group",
+        "unnamed": true,
+        "src": [
+          "P19",
+          "P38"
+        ]
+      },
+      {
+        "id": "grocer-etc",
+        "name": "The grocer, the vegetable man and the butcher",
+        "kind": "group",
+        "tier": "background",
+        "src": [
+          "P01"
+        ]
+      }
+    ],
+    "places": [
+      {
+        "id": "flat",
+        "name": "The flat",
+        "src": [
+          "P03"
+        ]
+      },
+      {
+        "id": "vestibule",
+        "name": "The vestibule",
+        "part_of": "building",
+        "src": [
+          "P04"
+        ]
+      },
+      {
+        "id": "building",
+        "name": "The building",
+        "src": [
+          "P03"
+        ]
+      },
+      {
+        "id": "street",
+        "name": "The street",
+        "src": [
+          "P11"
+        ]
+      },
+      {
+        "id": "sofronie-shop",
+        "name": "Mme. Sofronie's",
+        "src": [
+          "P12"
+        ]
+      },
+      {
+        "id": "stores",
+        "name": "The stores",
+        "src": [
+          "P18"
+        ]
+      },
+      {
+        "id": "jim-errands",
+        "name": "Where Jim sold the watch and bought the combs",
+        "unnamed": true,
+        "src": [
+          "P44"
+        ]
+      }
+    ],
+    "things": [
+      {
+        "id": "watch",
+        "name": "Jim's gold watch",
+        "src": [
+          "P09"
+        ]
+      },
+      {
+        "id": "hair",
+        "name": "Della's hair",
+        "src": [
+          "P09",
+          "P10"
+        ]
+      },
+      {
+        "id": "chain",
+        "name": "Platinum fob chain",
+        "src": [
+          "P19"
+        ]
+      },
+      {
+        "id": "combs",
+        "name": "The Combs",
+        "src": [
+          "P38"
+        ]
+      },
+      {
+        "id": "strap",
+        "name": "Jim's old leather strap",
+        "src": [
+          "P19"
+        ]
+      }
+    ]
+  },
+  "frames": [],
+  "claims": [
+    {
+      "id": "c-stare-hostile",
+      "text": "Jim's stare at the shorn Della means displeasure or anger.",
+      "bears_on": [
+        {
+          "ref": "e17",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P13"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "e00",
+      "when": {
+        "seq": 0,
+        "approx": "a former period; the drop is undated"
+      },
+      "kind": "state-change",
+      "place": null,
+      "text": "Jim was paid $30 a week during a former period of prosperity; his pay shrank to $20.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P05"
+      ],
+      "note": "see states weekly_pay"
+    },
+    {
+      "id": "b01",
+      "when": {
+        "seq": -3,
+        "approx": "the months before Christmas Eve",
+        "before": [
+          "e01"
+        ]
+      },
+      "kind": "habit",
+      "place": null,
+      "text": "For months Della saved pennies one and two at a time by bargaining hard with the grocer, the vegetable man and the butcher, until her cheeks burned at the thought of seeming stingy.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        },
+        {
+          "id": "grocer-etc",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P01",
+        "P06"
+      ],
+      "frequency": "iterative"
+    },
+    {
+      "id": "b02",
+      "when": {
+        "seq": -2,
+        "approx": "every evening"
+      },
+      "kind": "habit",
+      "place": "flat",
+      "text": "Whenever Jim came home and reached the flat, Della called him Jim and hugged him greatly.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        },
+        {
+          "id": "jim",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P05"
+      ],
+      "frequency": "iterative"
+    },
+    {
+      "id": "b03",
+      "when": {
+        "seq": -1,
+        "approx": "on many occasions before Christmas Eve"
+      },
+      "kind": "habit",
+      "place": null,
+      "text": "Jim sometimes looked at his watch on the sly because of the old leather strap he used in place of a chain.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P19"
+      ],
+      "frequency": "iterative",
+      "things": [
+        "watch",
+        "strap"
+      ]
+    },
+    {
+      "id": "e01",
+      "when": {
+        "seq": 1,
+        "approx": "Christmas Eve afternoon",
+        "before": [
+          "e10"
+        ]
+      },
+      "kind": "act",
+      "place": "flat",
+      "text": "Della counted her savings, $1.87, three times; the next day was Christmas.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P01"
+      ],
+      "things": []
+    },
+    {
+      "id": "e02",
+      "when": {
+        "seq": 2
+      },
+      "kind": "feeling",
+      "place": "flat",
+      "text": "Della flopped on the couch and howled; then powdered her cheeks and looked out at a grey cat on a grey fence, thinking of a present for Jim.",
+      "who": [
+        {
+          "id": "della",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P02",
+        "P06"
+      ]
+    },
+    {
+      "id": "e03",
+      "when": {
+        "seq": 3
+      },
+      "kind": "act",
+      "place": "flat",
+      "text": "Della turned to the pier-glass, her eyes shining and her face pale, and let down her hair; a tear fell on the carpet as she did it up again.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P07",
+        "P08",
+        "P10"
+      ],
+      "things": [
+        "hair"
+      ],
+      "intent": "sell her hair to buy Jim a present",
+      "importance": 4
+    },
+    {
+      "id": "e04",
+      "when": {
+        "seq": 4
+      },
+      "kind": "depart",
+      "place": "sofronie-shop",
+      "text": "Della put on jacket and hat, went down to the street and up a flight to Mme. Sofronie's.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P11",
+        "P12"
+      ],
+      "effects": [
+        {
+          "kind": "move",
+          "of": "della",
+          "to": "sofronie-shop"
+        }
+      ]
+    },
+    {
+      "id": "e05",
+      "when": {
+        "seq": 5
+      },
+      "kind": "exchange",
+      "place": "sofronie-shop",
+      "text": "Della sold her hair to Mme. Sofronie for twenty dollars (the cutting itself is not narrated).",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        },
+        {
+          "id": "sofronie",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17"
+      ],
+      "things": [
+        "hair"
+      ],
+      "importance": 4,
+      "effects": [
+        {
+          "kind": "transfer",
+          "thing": "hair",
+          "from": "della",
+          "to": "sofronie"
+        },
+        {
+          "kind": "adjust",
+          "of": "della",
+          "what": "cash",
+          "by": 2000,
+          "unit": "cent"
+        }
+      ],
+      "note": "'Give it to me quick' ends the scene; that the hair was cut and paid for is learned from P28, P30",
+      "basis": "implied"
+    },
+    {
+      "id": "e06",
+      "when": {
+        "seq": 6,
+        "after": [
+          "e05"
+        ],
+        "gap": "PT2H",
+        "duration": "PT2H"
+      },
+      "kind": "act",
+      "place": "stores",
+      "text": "Della spent two hours ransacking the stores for a present for Jim.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P18"
+      ],
+      "mode": "summarised"
+    },
+    {
+      "id": "e07",
+      "when": {
+        "seq": 7
+      },
+      "kind": "exchange",
+      "place": "stores",
+      "text": "Della found the platinum fob chain, paid twenty-one dollars for it and hurried home with 87 cents.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        },
+        {
+          "id": "clerks",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P19"
+      ],
+      "things": [
+        "chain"
+      ],
+      "importance": 4,
+      "effects": [
+        {
+          "kind": "transfer",
+          "thing": "chain",
+          "from": "clerks",
+          "to": "della"
+        },
+        {
+          "kind": "adjust",
+          "of": "della",
+          "what": "cash",
+          "by": -2100,
+          "unit": "cent"
+        }
+      ]
+    },
+    {
+      "id": "e08",
+      "when": {
+        "seq": 8,
+        "after": [
+          "e07"
+        ],
+        "duration": "PT40M"
+      },
+      "kind": "act",
+      "place": "flat",
+      "text": "Della repaired the ravages with her curling irons for forty minutes until her head was covered with tiny close-lying curls.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P20",
+        "P21"
+      ]
+    },
+    {
+      "id": "e09",
+      "when": {
+        "seq": 9
+      },
+      "kind": "thought",
+      "place": "flat",
+      "text": "Della told herself Jim would say she looked like a Coney Island chorus girl, and asked what she could have done with $1.87.",
+      "who": [
+        {
+          "id": "della",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P22"
+      ]
+    },
+    {
+      "id": "e10",
+      "when": {
+        "seq": 10,
+        "at": "--12-24T19:00",
+        "precision": "hour"
+      },
+      "kind": "state",
+      "place": "flat",
+      "text": "At seven the coffee was made and the pan was ready for the chops.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P23"
+      ]
+    },
+    {
+      "id": "e11",
+      "when": {
+        "seq": 11
+      },
+      "kind": "speech",
+      "place": "flat",
+      "text": "Della doubled the chain in her hand and sat on the table by the door; hearing Jim's step she turned white and prayed 'Please God, make him think I am still pretty.'",
+      "who": [
+        {
+          "id": "della",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P24"
+      ],
+      "says": "Please God, make him think I am still pretty."
+    },
+    {
+      "id": "e12",
+      "when": {
+        "seq": 12
+      },
+      "kind": "arrive",
+      "place": "flat",
+      "text": "Jim entered and closed the door, thin and serious, without gloves or a new overcoat.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "agent"
+        },
+        {
+          "id": "della",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P25"
+      ],
+      "effects": [
+        {
+          "kind": "move",
+          "of": "jim",
+          "to": "flat"
+        }
+      ]
+    },
+    {
+      "id": "e13",
+      "when": {
+        "seq": 13
+      },
+      "kind": "perceive",
+      "place": "flat",
+      "text": "Jim stopped inside the door and stared at Della with an expression she could not read; it terrified her.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "agent"
+        },
+        {
+          "id": "della",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P26"
+      ],
+      "importance": 5,
+      "note": "the cause of the stare is explained at P36"
+    },
+    {
+      "id": "e14",
+      "when": {
+        "seq": 14
+      },
+      "kind": "speech",
+      "place": "flat",
+      "text": "Della went to him and said she had cut off and sold her hair because she could not live through Christmas without giving him a present.",
+      "who": [
+        {
+          "id": "della",
+          "role": "speaker"
+        },
+        {
+          "id": "jim",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P27",
+        "P28"
+      ],
+      "says": "Don't look at me that way; I had my hair cut off and sold it because I couldn't have lived through Christmas without giving you a present. It will grow out again. Say Merry Christmas and let's be happy; you don't know what a beautiful, nice gift I've got for you."
+    },
+    {
+      "id": "e15",
+      "when": {
+        "seq": 15
+      },
+      "kind": "speech",
+      "place": "flat",
+      "text": "Jim asked, as if dazed, whether she had cut off her hair and whether it was gone; Della said it was sold and gone.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "speaker"
+        },
+        {
+          "id": "della",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33"
+      ],
+      "causes": [
+        {
+          "event": "e14",
+          "status": "stated"
+        }
+      ],
+      "says": "(Jim) You've cut off your hair? You say your hair is gone? (Della) Cut off and sold, and gone; don't you like me just as well? Be good to me, it went for you; nobody could ever count my love for you. Shall I put the chops on?"
+    },
+    {
+      "id": "e16",
+      "when": {
+        "seq": 16,
+        "duration": "PT10S"
+      },
+      "kind": "act",
+      "place": "flat",
+      "text": "Jim woke from his trance and embraced Della.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "agent"
+        },
+        {
+          "id": "della",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P34"
+      ]
+    },
+    {
+      "id": "e17",
+      "when": {
+        "seq": 17
+      },
+      "kind": "speech",
+      "place": "flat",
+      "text": "Jim threw a package on the table and told her no haircut could make him like her less, but that unwrapping it would show why he had stared.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "speaker"
+        },
+        {
+          "id": "della",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P35",
+        "P36"
+      ],
+      "things": [
+        "combs"
+      ],
+      "explains": [
+        "e13"
+      ],
+      "causes": [
+        {
+          "event": "e-w2",
+          "status": "stated"
+        }
+      ],
+      "says": "Don't make any mistake about me; nothing about a haircut could make me like my girl any less. But unwrap that package and you may see why you had me going a while at first."
+    },
+    {
+      "id": "e18",
+      "when": {
+        "seq": 18
+      },
+      "kind": "feeling",
+      "place": "flat",
+      "text": "Della unwrapped the combs: a scream of joy, then hysterical tears; Jim comforted her.",
+      "who": [
+        {
+          "id": "della",
+          "role": "experiencer"
+        },
+        {
+          "id": "jim",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P37",
+        "P38"
+      ],
+      "things": [
+        "combs"
+      ],
+      "importance": 5,
+      "effects": [
+        {
+          "kind": "transfer",
+          "thing": "combs",
+          "from": "jim",
+          "to": "della"
+        }
+      ]
+    },
+    {
+      "id": "e19",
+      "when": {
+        "seq": 19
+      },
+      "kind": "speech",
+      "place": "flat",
+      "text": "Della hugged the combs and said 'My hair grows so fast, Jim!'",
+      "who": [
+        {
+          "id": "della",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P39"
+      ],
+      "says": "My hair grows so fast, Jim!"
+    },
+    {
+      "id": "e20",
+      "when": {
+        "seq": 20
+      },
+      "kind": "act",
+      "place": "flat",
+      "text": "Della leapt up and held out the chain, asking for Jim's watch to see how it looked.",
+      "who": [
+        {
+          "id": "della",
+          "role": "agent"
+        },
+        {
+          "id": "jim",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P40",
+        "P41",
+        "P42"
+      ],
+      "things": [
+        "chain"
+      ],
+      "says": "Isn't it a dandy? I hunted all over town to find it. You'll have to look at the time a hundred times a day now. Give me your watch; I want to see how it looks on it."
+    },
+    {
+      "id": "e21",
+      "when": {
+        "seq": 21
+      },
+      "kind": "speech",
+      "place": "flat",
+      "text": "Jim sat on the couch, smiling, and said he had sold the watch to buy her combs.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "speaker"
+        },
+        {
+          "id": "della",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P43",
+        "P44"
+      ],
+      "importance": 5,
+      "says": "Let's put our Christmas presents away and keep them a while; they're too nice to use just at present. I sold the watch to get the money to buy your combs. And now suppose you put the chops on."
+    },
+    {
+      "id": "e-w1",
+      "when": {
+        "seq": 5.5,
+        "before": [
+          "e-w2"
+        ],
+        "order_known": false,
+        "note": "only that it happened before Jim came home; how it relates to Della's afternoon is not stated"
+      },
+      "kind": "exchange",
+      "place": "jim-errands",
+      "text": "Jim sold his gold watch, the one that was his father's and grandfather's.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "agent"
+        },
+        {
+          "id": "buyer-of-watch",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P44"
+      ],
+      "things": [
+        "watch"
+      ],
+      "reported_by": "jim",
+      "importance": 5,
+      "effects": [
+        {
+          "kind": "transfer",
+          "thing": "watch",
+          "from": "jim",
+          "to": "buyer-of-watch"
+        },
+        {
+          "kind": "adjust",
+          "of": "jim",
+          "what": "cash",
+          "by": null,
+          "unit": "cent",
+          "note": "the price is never given"
+        }
+      ],
+      "basis": "reported",
+      "origin": "offscreen"
+    },
+    {
+      "id": "e-w2",
+      "when": {
+        "seq": 5.6,
+        "before": [
+          "e12"
+        ],
+        "order_known": false
+      },
+      "kind": "exchange",
+      "place": "jim-errands",
+      "text": "Jim bought the set of combs with the money.",
+      "who": [
+        {
+          "id": "jim",
+          "role": "agent"
+        },
+        {
+          "id": "clerks",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P38",
+        "P44"
+      ],
+      "things": [
+        "combs"
+      ],
+      "reported_by": "jim",
+      "importance": 5,
+      "effects": [
+        {
+          "kind": "transfer",
+          "thing": "combs",
+          "from": "clerks",
+          "to": "jim"
+        }
+      ],
+      "basis": "reported",
+      "origin": "offscreen"
+    }
+  ],
+  "held": [
+    {
+      "id": "h-a01",
+      "who": "della",
+      "stance": "anticipates",
+      "content": "Jim might say she looked like a Coney Island chorus girl.",
+      "when": {
+        "seq": 32
+      },
+      "src": [
+        "P22"
+      ]
+    },
+    {
+      "id": "h-a02",
+      "who": "della",
+      "stance": "anticipates",
+      "content": "Jim might kill her before taking a second look at her.",
+      "when": {
+        "seq": 33
+      },
+      "src": [
+        "P22"
+      ]
+    }
+  ],
+  "knowledge": [
+    {
+      "who": "della",
+      "of": "e-w1",
+      "stance": "unaware",
+      "from": "e-w1",
+      "until": "e21",
+      "src": [
+        "P42",
+        "P44"
+      ],
+      "note": "she asks for the watch, expecting to put the chain on it"
+    },
+    {
+      "who": "della",
+      "of": "e-w1",
+      "stance": "knows",
+      "from": "e21",
+      "how": "told",
+      "source": "jim",
+      "src": [
+        "P44"
+      ]
+    },
+    {
+      "who": "jim",
+      "of": "e05",
+      "stance": "unaware",
+      "from": "e05",
+      "until": "e14",
+      "src": [
+        "P26",
+        "P29"
+      ]
+    },
+    {
+      "who": "jim",
+      "of": "e05",
+      "stance": "knows",
+      "from": "e14",
+      "how": "told",
+      "source": "della",
+      "src": [
+        "P28"
+      ]
+    },
+    {
+      "who": "della",
+      "of": "c-stare-hostile",
+      "stance": "believes",
+      "from": "e13",
+      "until": "e17",
+      "content": "Jim's look may mean anger, horror or disapproval; she cannot tell which",
+      "src": [
+        "P26"
+      ]
+    },
+    {
+      "who": "della",
+      "of": "e-w2",
+      "stance": "unaware",
+      "from": "e03",
+      "until": "e18",
+      "src": [
+        "P38"
+      ],
+      "note": "she wanted the combs without hope of having them"
+    },
+    {
+      "who": "jim",
+      "of": "e07",
+      "stance": "unaware",
+      "from": "e07",
+      "until": "e20",
+      "src": [
+        "P42"
+      ],
+      "note": "he has not yet seen the chain"
+    },
+    {
+      "who": "reader",
+      "of": "e-w1",
+      "stance": "unaware",
+      "from": "start",
+      "until": "e21",
+      "src": [
+        "P44"
+      ],
+      "note": "the reader sees the watch only as Jim's pride (P09, P19)"
+    }
+  ],
+  "states": [
+    {
+      "of": "jim",
+      "kind": "weekly_pay",
+      "value": 3000,
+      "unit": "cent",
+      "from": "start",
+      "until": "e00",
+      "src": [
+        "P05"
+      ],
+      "id": "s00"
+    },
+    {
+      "of": "jim",
+      "kind": "weekly_pay",
+      "value": 2000,
+      "unit": "cent",
+      "from": "e00",
+      "src": [
+        "P05"
+      ],
+      "note": "when it dropped is not given",
+      "id": "s01"
+    },
+    {
+      "of": "della",
+      "kind": "cash",
+      "value": 187,
+      "unit": "cent",
+      "from": "start",
+      "until": "e05",
+      "src": [
+        "P01"
+      ],
+      "id": "s02"
+    },
+    {
+      "of": "della",
+      "kind": "cash",
+      "value": 2187,
+      "unit": "cent",
+      "from": "e05",
+      "until": "e07",
+      "src": [
+        "P16",
+        "P19"
+      ],
+      "status": "derived",
+      "id": "s03"
+    },
+    {
+      "of": "della",
+      "kind": "cash",
+      "value": 87,
+      "unit": "cent",
+      "from": "e07",
+      "src": [
+        "P19"
+      ],
+      "id": "s04"
+    },
+    {
+      "of": "della",
+      "kind": "hair",
+      "value": "below the knee, brown",
+      "from": "start",
+      "until": "e05",
+      "src": [
+        "P10"
+      ],
+      "id": "s05"
+    },
+    {
+      "of": "della",
+      "kind": "hair",
+      "value": "cut off",
+      "from": "e05",
+      "until": "e08",
+      "src": [
+        "P28"
+      ],
+      "id": "s06"
+    },
+    {
+      "of": "della",
+      "kind": "hair",
+      "value": "tiny close-lying curls",
+      "from": "e08",
+      "src": [
+        "P21"
+      ],
+      "id": "s07"
+    },
+    {
+      "of": "watch",
+      "kind": "holder",
+      "value": "jim",
+      "from": "start",
+      "until": "e-w1",
+      "src": [
+        "P09"
+      ],
+      "id": "s08"
+    },
+    {
+      "of": "watch",
+      "kind": "holder",
+      "value": "buyer-of-watch",
+      "from": "e-w1",
+      "src": [
+        "P44"
+      ],
+      "id": "s09"
+    },
+    {
+      "of": "watch",
+      "kind": "attachment",
+      "value": "an old leather strap instead of a chain",
+      "from": "start",
+      "until": "e-w1",
+      "src": [
+        "P19"
+      ],
+      "id": "s10"
+    },
+    {
+      "of": "combs",
+      "kind": "location",
+      "value": "a Broadway window",
+      "from": "start",
+      "until": "e-w2",
+      "src": [
+        "P38"
+      ],
+      "id": "s11"
+    },
+    {
+      "of": "combs",
+      "kind": "holder",
+      "value": "jim",
+      "from": "e-w2",
+      "until": "e18",
+      "src": [
+        "P35"
+      ],
+      "id": "s12"
+    },
+    {
+      "of": "combs",
+      "kind": "holder",
+      "value": "della",
+      "from": "e18",
+      "src": [
+        "P38"
+      ],
+      "id": "s13"
+    },
+    {
+      "of": "chain",
+      "kind": "holder",
+      "value": "della",
+      "from": "e07",
+      "src": [
+        "P19",
+        "P24"
+      ],
+      "id": "s14"
+    },
+    {
+      "of": "della",
+      "kind": "desire",
+      "value": "the combs, worshipped in a window for long, without hope of possession",
+      "from": "start",
+      "until": "e18",
+      "src": [
+        "P38"
+      ],
+      "id": "s15"
+    },
+    {
+      "of": "della",
+      "kind": "intent",
+      "value": "find Jim a present worthy of him; she has planned for months",
+      "from": "start",
+      "until": "e07",
+      "src": [
+        "P06"
+      ],
+      "id": "s16"
+    },
+    {
+      "of": "jim",
+      "kind": "appearance",
+      "value": "thin, serious, no gloves, needs a new overcoat",
+      "from": "e12",
+      "src": [
+        "P25"
+      ],
+      "id": "s17"
+    },
+    {
+      "of": "vestibule",
+      "kind": "description",
+      "value": "a letter-box no letter would go into and an electric button no finger could make ring; a card reading Mr. James Dillingham Young, the 'Dillingham' blurred since the pay dropped",
+      "src": [
+        "P04",
+        "P05"
+      ],
+      "id": "s18"
+    },
+    {
+      "of": "jim",
+      "kind": "habit",
+      "value": "never late",
+      "src": [
+        "P24"
+      ],
+      "id": "s19"
+    },
+    {
+      "of": "della",
+      "kind": "habit",
+      "value": "says little silent prayers about the simplest everyday things",
+      "src": [
+        "P24"
+      ],
+      "id": "s20"
+    },
+    {
+      "of": "watch",
+      "kind": "meaning",
+      "value": "heirloom: Jim's father's and grandfather's; one of the couple's two prides",
+      "src": [
+        "P09"
+      ],
+      "id": "s21"
+    },
+    {
+      "of": "hair",
+      "kind": "meaning",
+      "value": "Della's pride, rippling like brown waters, reaching below her knee",
+      "src": [
+        "P09",
+        "P10"
+      ],
+      "id": "s22"
+    },
+    {
+      "of": "flat",
+      "kind": "description",
+      "value": "furnished, $8 a week, shabby; letter-box and bell broken; card 'Mr. James Dillingham Young', 'Dillingham' blurred",
+      "src": [
+        "P03",
+        "P04",
+        "P05"
+      ],
+      "id": "s23"
+    },
+    {
+      "id": "s24",
+      "of": "della",
+      "kind": "circumstance",
+      "value": "Each gift is useless for what it was bought for until the hair grows or the watch is redeemed",
+      "from": "e18",
+      "until": null,
+      "src": [
+        "P01"
+      ]
+    }
+  ],
+  "readings": [
+    {
+      "id": "r-wise",
+      "text": "The couple's foolish sacrifices make them wiser givers than anyone: they are the magi.",
+      "holder": "narrator",
+      "status": "stated",
+      "supports": [
+        "e05",
+        "e-w1",
+        "e18"
+      ],
+      "src": [
+        "P34",
+        "P45"
+      ]
+    },
+    {
+      "id": "r-stare",
+      "text": "Jim's stare is not anger or horror: it is the shock of seeing her hair gone when he has bought the combs.",
+      "holder": "jim",
+      "status": "stated",
+      "supports": [
+        "e13",
+        "e17"
+      ],
+      "src": [
+        "P36"
+      ]
+    },
+    {
+      "id": "r-h01",
+      "holder": "narrator",
+      "kind": "hypothetical",
+      "text": "Had the Queen of Sheba lived in the flat across the airshaft, Della would have hung her hair out the window to dry to depreciate Her Majesty's jewels.",
+      "status": "stated",
+      "src": [
+        "P09"
+      ]
+    },
+    {
+      "id": "r-h02",
+      "holder": "narrator",
+      "kind": "hypothetical",
+      "text": "Had King Solomon been the janitor, Jim would have pulled out his watch every time he passed to make him pluck his beard from envy.",
+      "status": "stated",
+      "src": [
+        "P09"
+      ]
+    }
+  ],
+  "gaps_found": [
+    "v1: Jim's offstage afternoon is chronological and simultaneous with Della's; v1 can only put it in a round of its own and cannot say it was learned only later from his own mouth",
+    "v1: the haircut is elided in the text; v1 has to invent an event and an item change",
+    "v1: placeholders had to be invented for the unnamed buyer, the unnamed shops and the unnamed place Jim went to, so that things can change hands",
+    "v1: the year had to be invented; the price of the watch and of the combs is unknown and cannot be left unknown in a cash variable",
+    "v1: pay history ($30 then $20) is a variable's current value only; the earlier value is lost"
+  ]
+}

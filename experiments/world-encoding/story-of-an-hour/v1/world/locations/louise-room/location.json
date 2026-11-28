@@ -1,0 +1,18 @@
+{
+  "id": "louise-room",
+  "name": "Louise's room",
+  "parent": "house",
+  "description": "A room above, with an open window onto the square, tree-tops and sky.",
+  "features": [
+    {
+      "id": "armchair",
+      "name": "Armchair",
+      "description": "A comfortable, roomy armchair facing the open window."
+    },
+    {
+      "id": "window",
+      "name": "Open window",
+      "description": "Looks onto the square: trees in new leaf, a street below, patches of blue sky in the west."
+    }
+  ]
+}

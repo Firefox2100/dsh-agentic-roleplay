@@ -1,0 +1,16 @@
+{
+  "id": "brother",
+  "name": "The narrator's brother",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "A physician of high standing who agrees with John; offstage.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "town"
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

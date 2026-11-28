@@ -1,4 +1,4 @@
-import { languageOf, translator, type Character, type Language, type Translate } from 'dsh-roleplay-model'
+import { languageOf, translator, type Verdict as ClaimVerdict, type Character, type Language, type Translate } from 'dsh-roleplay-model'
 import type {
   ItemView, KnownRelationship, SceneItems,
   ActivationPlanner, Author, Boundaries, OutputGate, VariableTracker, ErrandKeeper, RuleCheck, HookCheck, SituationGate, PlanKeeper, Reflector, Strategist, Suggester, TriggerJudge, TurnStore, CastMember, CharacterContextProvider, Committer, CharacterOutputValidator, CharacterRequest,
@@ -218,6 +218,10 @@ export const sharedContext: CharacterContextProvider = {
     if (request.cues !== undefined && request.cues.length > 0) sections.push(`${tr('Just now you notice:')}\n${request.cues.map(cue => `- ${cue}`).join('\n')}`)
     if (request.tracked !== undefined && request.tracked.self !== '') sections.push(`${tr('How you are (what you can tell of yourself):')}\n${request.tracked.self}`)
     if (request.tracked !== undefined && request.tracked.others.length > 0) sections.push(`${tr('What you can tell of the others here:')}\n${request.tracked.others.map(other => `- ${other.name}: ${other.text}`).join('\n')}`)
+    if (request.heard !== undefined && request.heard.length > 0) {
+      const how: Record<ClaimVerdict, string> = { true: tr('what you saw says it is so'), false: tr('what you saw says it is not so'), likely: tr('what you saw makes it likely'), unlikely: tr('what you saw makes it unlikely'), open: tr('what you saw points both ways'), disputed: tr('what you saw both bears out and refutes'), unresolved: tr('you saw nothing that bears on it, so you cannot say whether it is so'), mixed: tr('what you saw bears out only part of it') }
+      sections.push(`${tr('What you have heard said, and how it stands by what you yourself saw (your own view, not necessarily the truth; never claim to know more than the note on each says):')}\n${request.heard.map(entry => `- ${entry.by === undefined ? '' : `${entry.by}: `}${entry.text} (${how[entry.standing]})`).join('\n')}`)
+    }
     const day = agenda === undefined || time === undefined ? [] : describeAgenda(agenda, time.now, tr, language)
     if (day.length > 0) sections.push(`${tr('Your day and what you are after (plans, not orders: keep them, put them off or drop them as the moment and your character suggest):')}\n${day.join('\n')}`)
     if (request.dreaming === true) sections.push(tr('You are asleep and dreaming, and the player\'s character is in your dream. What you intend and say is the dream\'s: it may shift, blur and be odd, and it is not something you do awake. Answer from what the dream would make of the moment, out of your own fears, wants and what you have not said.'))
@@ -346,7 +350,7 @@ function placedScene(cast: readonly CastMember[], player: CastMember | undefined
 }
 
 export const castSummary: SceneContextProvider = {
-  scene({ tracked, time, world, cast, turn, input, queryVector, story, items, language: code, report }) {
+  scene({ tracked, unsettled, time, world, cast, turn, input, queryVector, story, items, language: code, report }) {
     const language = languageOf(code)
     const tr = translator(language)
     const join = (entries: readonly string[]): string => entries.join(tr('; '))
@@ -365,6 +369,7 @@ export const castSummary: SceneContextProvider = {
     if (time !== undefined) add('time', timeNotice(time, language, tr))
     if (days !== '') add('agenda', days)
     add('scene', `${tr('Scene before turn {turn}:', { turn })}\n${scene}`)
+    if (unsettled !== undefined && unsettled > 0) add('claims', tr('{count} claims the record keeper proposed wait for your word: read them with list_claims, settle the ones whose wording and evidence are right with confirm_claim and leave the doubtful ones.', { count: unsettled }))
     const activation = describeActivationCandidates(cast, input, story, tr)
     if (activation !== '') add('activation', activation)
     if (items !== undefined) {

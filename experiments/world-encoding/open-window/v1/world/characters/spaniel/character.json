@@ -1,0 +1,14 @@
+{
+  "id": "spaniel",
+  "name": "The little brown spaniel",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "PLACEHOLDER: a dog; there is no animal kind, so it is a background person.",
+  "start": {
+    "public_state": "Following the men.",
+    "activity": "Out shooting.",
+    "inner_state": "-",
+    "location": "marshes"
+  }
+}

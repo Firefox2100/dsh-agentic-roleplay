@@ -1,0 +1,85 @@
+{
+  "id": "claims-baker-off-en",
+  "language": "en",
+  "turns": [
+    {
+      "say": "Mrs Hudson, there are muddy bootprints all the way up the stairs this morning. Who do you think tramped them in: the milk boy, or someone else? Name your suspect.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        },
+        {
+          "type": "speaks",
+          "character": "hudson"
+        }
+      ]
+    },
+    {
+      "say": "Mr Holmes, you heard Mrs Hudson. Do you agree with her, or do you suspect someone else?",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I go down to the street door and look hard at the scraper and the step.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I come back up and tell Holmes exactly what I found down there.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    },
+    {
+      "say": "I open the window to let the smoke out.",
+      "expect": [
+        {
+          "type": "narration-language"
+        },
+        {
+          "type": "narration-clean"
+        }
+      ]
+    }
+  ],
+  "expect": [
+    {
+      "type": "turns",
+      "count": 5
+    },
+    {
+      "type": "claim-absent",
+      "text": "window"
+    },
+    {
+      "type": "claim-recorded",
+      "text": "bootprints",
+      "by": "holmes"
+    },
+    {
+      "type": "claim-status",
+      "text": "bootprints",
+      "status": "proposed"
+    }
+  ]
+}

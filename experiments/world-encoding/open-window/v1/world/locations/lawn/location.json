@@ -1,0 +1,18 @@
+{
+  "id": "lawn",
+  "name": "The lawn",
+  "parent": "house",
+  "description": "A lawn beyond the French window, where the men cross in the dusk.",
+  "exits": [
+    {
+      "to": "sitting-room",
+      "description": "the French window",
+      "travel_time_seconds": 5
+    },
+    {
+      "to": "marshes",
+      "description": "across the grounds to the marshes",
+      "travel_time_seconds": 1800
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "id": "watch",
+  "name": "Farquhar's watch",
+  "description": "His watch, which he hears ticking in his last minutes.",
+  "held_by": "farquhar",
+  "unique": true
+}

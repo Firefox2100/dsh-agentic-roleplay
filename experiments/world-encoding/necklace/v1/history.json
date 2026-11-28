@@ -1,0 +1,1144 @@
+[
+  {
+    "clock": {
+      "at": "1875-01-05T19:00",
+      "note": "invented year and day: 'one evening'; the card gives only Monday, January 18th"
+    },
+    "edit": {
+      "turn": 1,
+      "events": [
+        {
+          "turn": 1,
+          "round": 1,
+          "text": "Loisel came home triumphantly with an invitation to the Minister's ball at the palace on Monday evening, January 18th, and gave it to his wife.",
+          "importance": 4,
+          "tags": [
+            "invitation",
+            "ball"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "loisel-flat",
+          "items": [
+            "invitation"
+          ]
+        },
+        {
+          "turn": 1,
+          "round": 2,
+          "text": "Mathilde threw the invitation on the table with disdain, saying she had nothing to wear; she cried, then composed herself and told him to give the card to a colleague whose wife was better equipped.",
+          "importance": 4,
+          "tags": [
+            "dress",
+            "tears",
+            "disdain"
+          ],
+          "involves": [
+            "mathilde",
+            "loisel"
+          ],
+          "perceived_by": [
+            {
+              "character": "loisel",
+              "mode": "witnessed",
+              "content": "She will not go, since she has no dress."
+            }
+          ],
+          "location": "loisel-flat"
+        },
+        {
+          "turn": 1,
+          "round": 3,
+          "text": "Loisel asked what a suitable dress would cost; Mathilde, calculating what she could ask without a refusal, said about four hundred francs; he grew pale, since it was the sum he was saving for a gun, but agreed.",
+          "importance": 4,
+          "tags": [
+            "money",
+            "dress",
+            "sacrifice"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde"
+          ],
+          "perceived_by": [
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            },
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "loisel-flat"
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "loisel",
+          "item": "invitation",
+          "action": "give",
+          "to": "mathilde"
+        }
+      ],
+      "variable_changes": [
+        {
+          "variable": "francs",
+          "subject": "loisel",
+          "by": -400
+        },
+        {
+          "variable": "francs",
+          "subject": "mathilde",
+          "by": 400
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-14T20:00",
+      "note": "invented: 'the day of the ball drew near'"
+    },
+    "edit": {
+      "turn": 2,
+      "events": [
+        {
+          "turn": 2,
+          "round": 1,
+          "text": "As the ball drew near Mathilde, her dress ready, grew sad and anxious because she had no jewel to wear; Loisel suggested natural flowers at ten francs, and she refused, then he told her to ask her friend Mme. Forestier for jewels.",
+          "importance": 4,
+          "tags": [
+            "jewels",
+            "humiliation",
+            "advice"
+          ],
+          "involves": [
+            "mathilde",
+            "loisel",
+            "forestier"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "loisel-flat"
+        }
+      ],
+      "variable_changes": [
+        {
+          "variable": "francs",
+          "subject": "mathilde",
+          "by": -400
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-15T11:00",
+      "note": "invented: 'the next day'"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "forestier-home"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-15T11:30",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 3,
+      "events": [
+        {
+          "turn": 3,
+          "round": 1,
+          "text": "Mathilde told Mme. Forestier of her distress; Mme. Forestier brought a large jewel-box and let her choose; Mathilde tried on bracelets, a pearl necklace and a Venetian cross, then found in a black satin box a superb diamond necklace, fastened it on, and asked to borrow it; Mme. Forestier agreed.",
+          "importance": 5,
+          "tags": [
+            "necklace",
+            "loan",
+            "diamonds"
+          ],
+          "involves": [
+            "mathilde",
+            "forestier"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed",
+              "content": "A superb necklace of diamonds, a loan from a rich friend.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "forestier",
+              "mode": "witnessed",
+              "content": "A paste necklace lent to a friend for a party."
+            }
+          ],
+          "location": "forestier-home",
+          "items": [
+            "necklace-original"
+          ]
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "forestier",
+          "item": "necklace-original",
+          "action": "give",
+          "to": "mathilde"
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "mathilde",
+          "kind": "belief",
+          "text": "I have borrowed a superb diamond necklace worth a fortune.",
+          "about": [
+            "forestier"
+          ],
+          "importance": 4,
+          "confidence": "sure"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-18T21:00",
+      "note": "the ball is a Monday evening in January; the year is invented (a year in which 18 January is a Monday)"
+    },
+    "edit": {
+      "turn": 4,
+      "events": [],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "ministry-palace"
+        },
+        {
+          "character": "loisel",
+          "to": "ministry-palace"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-18T22:00",
+      "note": "the ball: summary in the text, no times given except that she left about four in the morning"
+    },
+    "edit": {
+      "turn": 4,
+      "events": [
+        {
+          "turn": 4,
+          "round": 1,
+          "text": "At the ball Mme. Loisel was prettier than all, elegant, gracious and crazy with joy; all the men asked her name, the Cabinet attaches wanted to waltz with her, and the Minister remarked her.",
+          "importance": 4,
+          "tags": [
+            "ball",
+            "success",
+            "triumph"
+          ],
+          "involves": [
+            "mathilde",
+            "minister"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "minister",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "ministry-palace"
+        },
+        {
+          "turn": 4,
+          "round": 2,
+          "text": "Loisel slept from midnight in a little deserted ante-room with three other gentlemen whose wives were enjoying themselves.",
+          "importance": 1,
+          "tags": [
+            "loisel",
+            "waiting"
+          ],
+          "involves": [
+            "loisel"
+          ],
+          "perceived_by": [],
+          "location": "ministry-palace"
+        },
+        {
+          "turn": 4,
+          "round": 3,
+          "text": "She went away about four o'clock in the morning.",
+          "importance": 2,
+          "tags": [
+            "leaving"
+          ],
+          "involves": [
+            "mathilde"
+          ],
+          "perceived_by": [
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "ministry-palace"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-19T04:15",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 5,
+      "events": [
+        {
+          "turn": 5,
+          "round": 1,
+          "text": "Loisel threw over her shoulders the modest wraps he had brought; ashamed before the furs, she hurried downstairs and out, and they found no carriage, so they walked toward the Seine shouting after passing cabmen.",
+          "importance": 2,
+          "tags": [
+            "wraps",
+            "shame",
+            "cab"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde",
+            "cabmen"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "streets"
+        }
+      ],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "streets"
+        },
+        {
+          "character": "loisel",
+          "to": "streets"
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "mathilde",
+          "item": "necklace-original",
+          "action": "drop"
+        }
+      ],
+      "item_edits": [
+        {
+          "item": "necklace-original",
+          "hidden": true,
+          "description": "Lost between the palace vestibule and the Loisels' door, in the street or in the cab; never found. The moment and place of the loss are invented."
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-19T05:15",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 5,
+      "events": [
+        {
+          "turn": 5,
+          "round": 2,
+          "text": "On the quay they found an ancient night coupé that took them to their door in the Rue des Martyrs.",
+          "importance": 2,
+          "tags": [
+            "cab",
+            "quay"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde",
+            "cabmen"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "streets"
+        },
+        {
+          "turn": 5,
+          "round": 3,
+          "text": "Before the glass Mathilde removed her wraps to see herself once more in her glory and found the necklace gone from her neck; she told Loisel she had lost it, and they searched her dress, cloak and pockets in vain.",
+          "importance": 5,
+          "tags": [
+            "necklace",
+            "loss",
+            "search"
+          ],
+          "involves": [
+            "mathilde",
+            "loisel",
+            "forestier"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "loisel-flat"
+        },
+        {
+          "turn": 5,
+          "round": 4,
+          "text": "Mathilde had felt the necklace in the vestibule of the palace; they had not noted the cab's number; Loisel reasoned that it must be in the cab, and put on his clothes to retrace their route on foot.",
+          "importance": 3,
+          "tags": [
+            "necklace",
+            "reasoning",
+            "cab"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "loisel-flat"
+        }
+      ],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "loisel-flat"
+        },
+        {
+          "character": "loisel",
+          "to": "loisel-flat"
+        }
+      ],
+      "item_changes": []
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-19T06:00",
+      "note": "the search lasts the day"
+    },
+    "edit": {
+      "turn": 6,
+      "events": [
+        {
+          "turn": 6,
+          "round": 1,
+          "text": "Loisel retraced the whole route on foot, returned about seven having found nothing, and spent the day at Police Headquarters, the newspaper offices offering a reward, and the cab companies, returning pale at night with nothing.",
+          "importance": 4,
+          "tags": [
+            "search",
+            "reward",
+            "police"
+          ],
+          "involves": [
+            "loisel"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "told"
+            }
+          ],
+          "location": "police-hq"
+        },
+        {
+          "turn": 6,
+          "round": 2,
+          "text": "Mathilde waited all day in her ball dress in mad fear of the calamity.",
+          "importance": 3,
+          "tags": [
+            "waiting",
+            "fear"
+          ],
+          "involves": [
+            "mathilde"
+          ],
+          "perceived_by": [],
+          "location": "loisel-flat"
+        },
+        {
+          "turn": 6,
+          "round": 3,
+          "text": "On Loisel's advice Mathilde wrote to Mme. Forestier at his dictation that she had broken the clasp of the necklace and was having it mended, to gain time.",
+          "importance": 4,
+          "tags": [
+            "lie",
+            "letter",
+            "stalling"
+          ],
+          "involves": [
+            "mathilde",
+            "loisel",
+            "forestier"
+          ],
+          "perceived_by": [
+            {
+              "character": "forestier",
+              "mode": "told",
+              "content": "Mme. Loisel has broken the clasp of my necklace and is having it mended.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "loisel-flat"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-26T10:00",
+      "note": "'at the end of a week'"
+    },
+    "edit": {
+      "turn": 7,
+      "events": [
+        {
+          "turn": 7,
+          "round": 1,
+          "text": "At the end of a week they had lost all hope; Loisel, who had aged five years, said they must replace the ornament.",
+          "importance": 4,
+          "tags": [
+            "hope",
+            "replacement",
+            "aging"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "loisel-flat"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-27T10:00",
+      "note": "'the next day'"
+    },
+    "edit": {
+      "turn": 7,
+      "events": [],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "jeweller-shop"
+        },
+        {
+          "character": "loisel",
+          "to": "jeweller-shop"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-27T10:30",
+      "note": "invented hours"
+    },
+    "edit": {
+      "turn": 7,
+      "events": [
+        {
+          "turn": 7,
+          "round": 2,
+          "text": "They took the case to the jeweller whose name was inside it; he consulted his books and said he had only furnished the case, not sold the necklace.",
+          "importance": 3,
+          "tags": [
+            "jeweller",
+            "case",
+            "clue"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde",
+            "jeweller1"
+          ],
+          "perceived_by": [
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            },
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "jeweller1",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "jeweller-shop"
+        }
+      ],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "palais-royal-shop"
+        },
+        {
+          "character": "loisel",
+          "to": "palais-royal-shop"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-01-30T11:00",
+      "note": "after going from jeweller to jeweller; days unspecified"
+    },
+    "edit": {
+      "turn": 7,
+      "events": [
+        {
+          "turn": 7,
+          "round": 3,
+          "text": "After going from jeweller to jeweller they found at the Palais Royal a string of diamonds that seemed exactly like the lost one, worth forty thousand francs and offered at thirty-six; they begged him not to sell it for three days and agreed that he would buy it back for thirty-four thousand if the original were found before the end of February.",
+          "importance": 5,
+          "tags": [
+            "necklace",
+            "replacement",
+            "bargain",
+            "buy-back"
+          ],
+          "involves": [
+            "loisel",
+            "mathilde",
+            "jeweller2"
+          ],
+          "perceived_by": [
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            },
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "jeweller2",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "palais-royal-shop",
+          "items": [
+            "necklace-copy"
+          ]
+        }
+      ],
+      "engagements": [
+        {
+          "title": "The jeweller will buy the replacement back for 34,000 francs if the original necklace is found before the end of February",
+          "at": "1875-01-30T11:00",
+          "until": "1875-02-28T23:59",
+          "location": "palais-royal-shop",
+          "participants": [
+            "loisel",
+            "jeweller2"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-02-02T10:00",
+      "note": "invented: the three days"
+    },
+    "edit": {
+      "turn": 7,
+      "events": [
+        {
+          "turn": 7,
+          "round": 4,
+          "text": "Loisel, who had eighteen thousand francs from his father, borrowed the rest from a dozen lenders on notes and ruinous terms, risking his signature, and paid thirty-six thousand francs for the new necklace.",
+          "importance": 5,
+          "tags": [
+            "debt",
+            "borrowing",
+            "purchase",
+            "usury"
+          ],
+          "involves": [
+            "loisel",
+            "lenders",
+            "jeweller2"
+          ],
+          "perceived_by": [
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            },
+            {
+              "character": "lenders",
+              "mode": "witnessed"
+            },
+            {
+              "character": "jeweller2",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "palais-royal-shop",
+          "items": [
+            "necklace-copy"
+          ]
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "jeweller2",
+          "item": "necklace-copy",
+          "action": "give",
+          "to": "loisel"
+        }
+      ],
+      "variable_changes": [
+        {
+          "variable": "debt",
+          "subject": "loisel",
+          "by": 18000
+        },
+        {
+          "variable": "francs",
+          "subject": "loisel",
+          "by": 18000
+        },
+        {
+          "variable": "francs",
+          "subject": "loisel",
+          "by": -36000
+        },
+        {
+          "variable": "francs",
+          "subject": "jeweller2",
+          "by": 36000
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-02-04T11:00",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 8,
+      "events": [],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "forestier-home"
+        },
+        {
+          "character": "loisel",
+          "to": "forestier-home"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-02-04T11:30",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 8,
+      "events": [
+        {
+          "turn": 8,
+          "round": 1,
+          "text": "Mathilde gave Mme. Forestier the replacement necklace; Mme. Forestier said, chilly, that she should have returned it sooner, since she might have needed it, and did not open the case.",
+          "importance": 5,
+          "tags": [
+            "necklace",
+            "return",
+            "substitution"
+          ],
+          "involves": [
+            "mathilde",
+            "forestier"
+          ],
+          "perceived_by": [
+            {
+              "character": "forestier",
+              "mode": "witnessed",
+              "content": "Mathilde brings back my necklace, late, in its case: she has had it mended.",
+              "accuracy": "mistaken"
+            },
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "forestier-home",
+          "items": [
+            "necklace-copy"
+          ]
+        }
+      ],
+      "item_changes": [
+        {
+          "character": "mathilde",
+          "item": "necklace-copy",
+          "action": "take",
+          "from": "loisel"
+        },
+        {
+          "character": "mathilde",
+          "item": "necklace-copy",
+          "action": "give",
+          "to": "forestier"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1875-02-10T09:00",
+      "note": "the following ten years"
+    },
+    "edit": {
+      "turn": 9,
+      "events": [],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "garret"
+        },
+        {
+          "character": "loisel",
+          "to": "garret"
+        },
+        {
+          "character": "servant",
+          "to": "streets"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1885-02-10T09:00",
+      "note": "'this life lasted ten years': all of this is one summarised stretch"
+    },
+    "edit": {
+      "turn": 9,
+      "events": [
+        {
+          "turn": 9,
+          "round": 1,
+          "text": "Mme. Loisel took her part with heroism: they dismissed their servant, changed their lodgings and rented a garret; she did the heavy house-work, washed dishes and linen, carried water and slops, and bargained with the shopkeepers sou by sou, while each month they met notes and Loisel copied accounts in the evening and manuscripts at night for five sous a page.",
+          "importance": 5,
+          "tags": [
+            "poverty",
+            "labour",
+            "housework",
+            "ten-years"
+          ],
+          "involves": [
+            "mathilde",
+            "loisel",
+            "servant",
+            "lenders"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "garret"
+        },
+        {
+          "turn": 9,
+          "round": 2,
+          "text": "At the end of ten years they had paid everything, with usurers' rates and compound interest.",
+          "importance": 5,
+          "tags": [
+            "debt",
+            "paid",
+            "ten-years"
+          ],
+          "involves": [
+            "mathilde",
+            "loisel",
+            "lenders"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "loisel",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "garret"
+        },
+        {
+          "turn": 9,
+          "round": 3,
+          "text": "Mme. Loisel looked old now, strong and hard and rough; sometimes, when her husband was at the office, she sat by the window and thought of that evening, and of what might have happened if she had not lost the necklace.",
+          "importance": 4,
+          "tags": [
+            "aging",
+            "memory",
+            "what-if"
+          ],
+          "involves": [
+            "mathilde"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "garret"
+        }
+      ],
+      "variable_changes": [
+        {
+          "variable": "debt",
+          "subject": "loisel",
+          "to": 0
+        }
+      ],
+      "states": [
+        {
+          "character": "mathilde",
+          "public_state": "Old before her time, with frowsy hair and red hands.",
+          "activity": "Washing the floor.",
+          "inner_state": "Remembering the ball."
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1885-03-15T14:00",
+      "note": "'one Sunday': the date is invented"
+    },
+    "edit": {
+      "turn": 10,
+      "events": [],
+      "moves": [
+        {
+          "character": "mathilde",
+          "to": "champs-elysees"
+        },
+        {
+          "character": "forestier",
+          "to": "champs-elysees"
+        },
+        {
+          "character": "child",
+          "to": "champs-elysees"
+        }
+      ]
+    }
+  },
+  {
+    "clock": {
+      "at": "1885-03-15T14:10",
+      "note": "invented"
+    },
+    "edit": {
+      "turn": 10,
+      "events": [
+        {
+          "turn": 10,
+          "round": 1,
+          "text": "Mathilde, walking in the Champs Elysées to refresh herself, saw Mme. Forestier leading a child, still young and charming; Mme. Forestier did not recognise her at first, and Mathilde told her who she was.",
+          "importance": 4,
+          "tags": [
+            "meeting",
+            "recognition"
+          ],
+          "involves": [
+            "mathilde",
+            "forestier",
+            "child"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            },
+            {
+              "character": "forestier",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "champs-elysees"
+        },
+        {
+          "turn": 10,
+          "round": 2,
+          "text": "Mathilde told Mme. Forestier that she had lost the necklace, replaced it with another just like it and spent ten years paying for it, and smiled with a proud and naive joy.",
+          "importance": 5,
+          "tags": [
+            "confession",
+            "debt",
+            "pride"
+          ],
+          "involves": [
+            "mathilde",
+            "forestier"
+          ],
+          "perceived_by": [
+            {
+              "character": "forestier",
+              "mode": "told",
+              "content": "Mathilde lost my necklace and replaced it with a real one at the cost of ten years of misery."
+            },
+            {
+              "character": "mathilde",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "champs-elysees"
+        },
+        {
+          "turn": 10,
+          "round": 3,
+          "text": "Mme. Forestier, strongly moved, took her two hands and told her that her necklace had been paste, worth at most five hundred francs.",
+          "importance": 5,
+          "tags": [
+            "revelation",
+            "paste",
+            "irony"
+          ],
+          "involves": [
+            "forestier",
+            "mathilde"
+          ],
+          "perceived_by": [
+            {
+              "character": "mathilde",
+              "mode": "told",
+              "content": "The necklace I paid ten years for was worth five hundred francs."
+            },
+            {
+              "character": "forestier",
+              "mode": "witnessed"
+            }
+          ],
+          "location": "champs-elysees",
+          "items": [
+            "necklace-original"
+          ]
+        }
+      ],
+      "beliefs": [
+        {
+          "character": "mathilde",
+          "kind": "knowledge",
+          "text": "The original necklace was paste worth five hundred francs; all those years were spent for nothing.",
+          "about": [
+            "forestier"
+          ],
+          "importance": 5,
+          "confidence": "sure"
+        }
+      ]
+    }
+  }
+]

@@ -7,7 +7,7 @@ import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime, { type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as plugin from '../../src/plugin.ts'
-import { InvalidEditError, createCharacterTools, createTools, type AgentLink, type SessionStore } from '../../src/index.ts'
+import { InvalidEditError, parseRecordsEdit, recordsEditSchema, createCharacterTools, createTools, type AgentLink, type SessionStore } from '../../src/index.ts'
 import { memoryStore, newCharacter } from '../helpers.ts'
 
 let store: SessionStore
@@ -108,6 +108,32 @@ describe('the reading tools', () => {
     expect((await run('list_threads', {})).value).toEqual([{ id: 1, text: 'Who has the key?', opened_turn: 2, player_knows: false }])
   })
 
+  it('list what people claim with what the events say of it, and who took an event in', async () => {
+    const result = store.edit({
+      turn: 1,
+      events: [{ turn: 1, round: 1, text: 'Alice says Arthur took the key.', importance: 3, perceivedBy: [{ character: 'alice', mode: 'witnessed' }] }, { turn: 1, round: 2, text: 'Arthur shows the key is where it was.', importance: 3, perceivedBy: [{ character: 'arthur', mode: 'witnessed' }] }],
+      claims: [{ text: 'Arthur took the key.', byCharacter: 'alice', assertedInNew: 0, links: [{ eventNew: 1, as: 'contradicts' }] }],
+    })
+    const claims = (await run('list_claims', {})).value as { id: number; status: string; verdict: string; by: string }[]
+    expect(claims).toMatchObject([{ id: result.claimIds![0], by: 'alice', status: 'proposed', verdict: 'false' }])
+    expect(((await run('list_claims', { status: 'confirmed' })).value as unknown[])).toEqual([])
+    const knows = (await run('who_knows', { event: result.eventIds[1] })).value as { characters: { character: string; knows: string }[]; hidden_from: string[] }
+    expect(knows.characters.find(entry => entry.character === 'arthur')?.knows).toBe('knows')
+    expect(knows.characters.find(entry => entry.character === 'alice')?.knows).toBe('no')
+    expect(knows.hidden_from).toEqual([])
+    await expect(run('who_knows', { event: 99 })).rejects.toThrow('there is no event 99')
+  })
+
+  it('settle a proposed claim only through the tool made for it', async () => {
+    const claim = store.edit({ turn: 1, claims: [{ text: 'Arthur took the key.', byCharacter: 'alice' }] }).claimIds![0]!
+    expect(() => parseRecordsEdit({ turn: 1, claims: [{ text: 'x', status: 'confirmed' }] })).not.toThrow()
+    expect(((recordsEditSchema().properties as Record<string, any>)['claims'].items.properties)).not.toHaveProperty('status')
+    expect((await run('confirm_claim', { id: claim }, true)).value).toMatchObject({ writes: 1 })
+    expect(store.claims.get(claim)?.status).toBe('confirmed')
+    expect((await run('confirm_claim', { id: claim, status: 'proposed' }, true)).value).toMatchObject({ writes: 1 })
+    expect(store.claims.get(claim)?.status).toBe('proposed')
+  })
+
   it('say so when the agent works in no roleplay session', async () => {
     await expect(run('list_characters', {}, true, 'someone-else')).rejects.toThrow('this agent is not working in a roleplay session')
   })
@@ -154,7 +180,7 @@ describe('the writing tools', () => {
   })
 
   it('are not there unless the plugin is configured for them', () => {
-    expect(Object.keys(tools(false))).toEqual(['search_lore', 'list_characters', 'get_character', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads'])
+    expect(Object.keys(tools(false))).toEqual(['search_lore', 'list_characters', 'get_character', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads', 'list_claims', 'who_knows'])
     expect(Object.keys(tools(true))).toContain('record_event')
   })
 })
@@ -169,7 +195,7 @@ describe('reading and editing the records in one call', () => {
 
   it('changes everything or nothing, and returns the reasons for a refusal so that the agent can correct and call again', async () => {
     const ok = await run('edit_records', { turn: 4, states: [{ character: 'alice', activity: 'x' }], events: [{ turn: 4, round: 1, text: 'e', importance: 2, tags: [], involves: ['alice'], perceived_by: [{ character: 'alice', mode: 'witnessed' }] }] })
-    expect(ok.value).toEqual({ writes: 2, event_ids: [1], belief_ids: [], character_keys: [], place_keys: [], item_keys: [], variable_keys: [], trigger_keys: [] })
+    expect(ok.value).toEqual({ writes: 2, event_ids: [1], belief_ids: [], claim_ids: [], character_keys: [], place_keys: [], item_keys: [], variable_keys: [], trigger_keys: [] })
     await expect(run('edit_records', { turn: 4, states: [{ character: 'alice', activity: 'y' }], events: [{ turn: 4, round: 1, text: 'f', importance: 9, tags: [], involves: [], perceived_by: [] }] })).rejects.toThrow(InvalidEditError)
     expect(store.characterStates.get(store.characters.getBySourceId('alice')!.id)?.activity).toBe('x')
   })
@@ -262,7 +288,7 @@ describe('the plugin', () => {
   }
 
   it('registers the reading tools, and the writing ones when asked, with the tool registry present', async () => {
-    expect(await names({})).toEqual(['search_lore', 'list_characters', 'get_character', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads'])
+    expect(await names({})).toEqual(['search_lore', 'list_characters', 'get_character', 'list_factions', 'get_faction', 'list_relationships', 'list_items', 'get_item', 'list_slots', 'list_locations', 'get_location', 'search_events', 'recall_memories', 'read_records', 'list_variables', 'get_agenda', 'list_threads', 'list_claims', 'who_knows'])
     expect(await names({ writeTools: true })).toContain('open_thread')
   })
 

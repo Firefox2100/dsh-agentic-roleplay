@@ -1,0 +1,1152 @@
+{
+  "model": "history/2",
+  "work": {
+    "title": "The Story of an Hour",
+    "author": "Kate Chopin",
+    "published": "1894",
+    "source": "source/text.txt"
+  },
+  "time": {
+    "note": "No clock time or date is given. The title says the span is about an hour. Spring (new leaves, rain in the air). 'Yesterday' is mentioned once.",
+    "spans": [
+      {
+        "id": "span-hour",
+        "from": "e07",
+        "to": "e22",
+        "approx": "PT1H",
+        "src": "title"
+      }
+    ]
+  },
+  "entities": {
+    "people": [
+      {
+        "id": "louise",
+        "name": "Louise Mallard",
+        "aliases": [
+          "Mrs. Mallard"
+        ],
+        "summary": "Young wife, heart trouble, repressed face.",
+        "src": [
+          "P01",
+          "P07",
+          "P13"
+        ]
+      },
+      {
+        "id": "josephine",
+        "name": "Josephine",
+        "summary": "Louise's sister.",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "richards",
+        "name": "Richards",
+        "summary": "Brently's friend; in the newspaper office when the news came.",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "brently",
+        "name": "Brently Mallard",
+        "summary": "Louise's husband.",
+        "src": [
+          "P01",
+          "P16"
+        ]
+      },
+      {
+        "id": "doctors",
+        "name": "The doctors",
+        "kind": "group",
+        "src": [
+          "P18"
+        ]
+      },
+      {
+        "id": "peddler",
+        "name": "A peddler",
+        "tier": "background",
+        "note": "only heard",
+        "src": [
+          "P05"
+        ]
+      },
+      {
+        "id": "singer",
+        "name": "Someone singing",
+        "tier": "background",
+        "note": "only heard",
+        "src": [
+          "P05"
+        ]
+      }
+    ],
+    "places": [
+      {
+        "id": "newspaper-office",
+        "name": "The newspaper office",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "disaster-site",
+        "name": "The railroad disaster",
+        "src": [
+          "P02",
+          "P16"
+        ]
+      },
+      {
+        "id": "away",
+        "name": "Far from the accident (unnamed)",
+        "note": "the text names no place",
+        "src": [
+          "P16"
+        ]
+      },
+      {
+        "id": "house",
+        "name": "The Mallard house",
+        "src": [
+          "P05"
+        ]
+      },
+      {
+        "id": "house-downstairs",
+        "name": "Downstairs: hall and front door",
+        "part_of": "house",
+        "src": [
+          "P03",
+          "P15",
+          "P16"
+        ]
+      },
+      {
+        "id": "louise-room",
+        "name": "Louise's room",
+        "part_of": "house",
+        "src": [
+          "P03",
+          "P04"
+        ]
+      },
+      {
+        "id": "landing",
+        "name": "Outside Louise's door",
+        "part_of": "house",
+        "src": [
+          "P13"
+        ]
+      }
+    ],
+    "things": [
+      {
+        "id": "list-of-killed",
+        "name": "The list of killed",
+        "carries": "f-list",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "second-telegram",
+        "name": "The second telegram",
+        "carries": "f-list",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "latchkey",
+        "name": "Latchkey",
+        "src": [
+          "P16"
+        ]
+      },
+      {
+        "id": "grip-sack",
+        "name": "Grip-sack",
+        "src": [
+          "P16"
+        ]
+      },
+      {
+        "id": "umbrella",
+        "name": "Umbrella",
+        "src": [
+          "P16"
+        ]
+      },
+      {
+        "id": "armchair",
+        "name": "Armchair facing the window",
+        "in": "louise-room",
+        "src": [
+          "P04"
+        ]
+      }
+    ]
+  },
+  "frames": [],
+  "claims": [
+    {
+      "id": "c-bm-dead",
+      "text": "Brently Mallard was killed in the railroad disaster.",
+      "about": [
+        "brently"
+      ],
+      "bears_on": [
+        {
+          "ref": "e19",
+          "as": "contradicts"
+        },
+        {
+          "ref": "s07",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P02",
+        "P16"
+      ]
+    },
+    {
+      "id": "c-doc-cause",
+      "text": "Louise died of heart disease, of the joy of seeing her husband alive.",
+      "about": [
+        "louise"
+      ],
+      "bears_on": [
+        {
+          "ref": "r-cause",
+          "as": "disputes"
+        }
+      ],
+      "src": [
+        "P18"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "e01",
+      "when": {
+        "seq": 1,
+        "precision": "unknown",
+        "approx": "the day before e07",
+        "before": [
+          "e07"
+        ],
+        "gap": "P1D"
+      },
+      "kind": "thought",
+      "place": null,
+      "text": "The day before, Louise had thought with a shudder that life might be long.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P14"
+      ]
+    },
+    {
+      "id": "e02",
+      "when": {
+        "seq": 2,
+        "precision": "unknown"
+      },
+      "kind": "happening",
+      "place": "disaster-site",
+      "text": "A railroad disaster occurred.",
+      "who": [],
+      "src": [
+        "P02"
+      ],
+      "note": "its time and extent are not given"
+    },
+    {
+      "id": "e03",
+      "when": {
+        "seq": 3,
+        "precision": "unknown"
+      },
+      "kind": "report",
+      "place": "newspaper-office",
+      "text": "Intelligence of the disaster reached the newspaper office with Brently Mallard's name leading the list of killed.",
+      "who": [
+        {
+          "id": "richards",
+          "role": "recipient"
+        },
+        {
+          "id": "brently",
+          "role": "subject"
+        }
+      ],
+      "src": [
+        "P02"
+      ],
+      "things": [
+        "list-of-killed"
+      ],
+      "causes": [
+        {
+          "event": "e02",
+          "status": "stated"
+        }
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e04",
+      "when": {
+        "seq": 4,
+        "precision": "unknown"
+      },
+      "kind": "report",
+      "place": "newspaper-office",
+      "text": "Richards assured himself of the news by a second telegram.",
+      "who": [
+        {
+          "id": "richards",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P02"
+      ],
+      "things": [
+        "second-telegram"
+      ],
+      "causes": [
+        {
+          "event": "e03",
+          "status": "stated"
+        }
+      ]
+    },
+    {
+      "id": "e05",
+      "when": {
+        "seq": 5,
+        "precision": "unknown"
+      },
+      "kind": "depart",
+      "place": "newspaper-office",
+      "text": "Richards hastened to the Mallard house to forestall any less careful friend in bearing the message.",
+      "who": [
+        {
+          "id": "richards",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P02"
+      ],
+      "causes": [
+        {
+          "event": "e04",
+          "status": "stated"
+        }
+      ],
+      "intent": "bring the news tenderly before others do"
+    },
+    {
+      "id": "e07",
+      "when": {
+        "seq": 7,
+        "precision": "unknown",
+        "approx": "start of the hour"
+      },
+      "kind": "speech",
+      "place": "house-downstairs",
+      "text": "Josephine told Louise of her husband's death, in broken sentences and veiled hints; Richards was near.",
+      "who": [
+        {
+          "id": "josephine",
+          "role": "speaker"
+        },
+        {
+          "id": "louise",
+          "role": "addressee"
+        },
+        {
+          "id": "richards",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P01",
+        "P02"
+      ],
+      "importance": 5,
+      "says": null,
+      "says_note": "the words are not given: broken sentences and veiled hints",
+      "causes": [
+        {
+          "event": "e05",
+          "status": "implied"
+        }
+      ],
+      "manner": "in broken sentences and veiled hints that half concealed what they revealed; great care taken because of f-heart"
+    },
+    {
+      "id": "e08",
+      "when": {
+        "seq": 8,
+        "precision": "unknown"
+      },
+      "kind": "feeling",
+      "place": "house-downstairs",
+      "text": "Louise wept at once, with wild abandonment, in her sister's arms.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        },
+        {
+          "id": "josephine",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P03"
+      ],
+      "causes": [
+        {
+          "event": "e07",
+          "status": "stated"
+        }
+      ],
+      "note": "she did not react with the paralysed inability to accept it that many women show"
+    },
+    {
+      "id": "e09",
+      "when": {
+        "seq": 9,
+        "precision": "unknown"
+      },
+      "kind": "depart",
+      "place": "louise-room",
+      "text": "Louise went away to her room alone and would have no one follow her.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P03"
+      ]
+    },
+    {
+      "id": "e10",
+      "when": {
+        "seq": 10,
+        "precision": "unknown"
+      },
+      "kind": "act",
+      "place": "louise-room",
+      "text": "Louise sank into the armchair facing the open window.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P04"
+      ],
+      "things": [
+        "armchair"
+      ]
+    },
+    {
+      "id": "e11",
+      "when": {
+        "seq": 11,
+        "precision": "season",
+        "approx": "spring"
+      },
+      "kind": "perceive",
+      "place": "louise-room",
+      "text": "Louise took in the spring scene: tree-tops, rain in the air, a peddler's cry, a distant song, sparrows, blue sky in the west.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        },
+        {
+          "id": "peddler",
+          "role": "source"
+        },
+        {
+          "id": "singer",
+          "role": "source"
+        }
+      ],
+      "src": [
+        "P05"
+      ]
+    },
+    {
+      "id": "e12",
+      "when": {
+        "seq": 12,
+        "precision": "unknown",
+        "until": "e13",
+        "approx": "a stretch while she sits"
+      },
+      "kind": "state",
+      "place": "louise-room",
+      "text": "Louise sat motionless, sobbing now and then, staring at a patch of blue sky.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P06",
+        "P07"
+      ]
+    },
+    {
+      "id": "e13",
+      "when": {
+        "seq": 13,
+        "precision": "unknown"
+      },
+      "kind": "feeling",
+      "place": "louise-room",
+      "text": "Louise felt something approaching, struggled against it, abandoned herself and whispered 'free, free, free!'; fear gave way to bright eyes and quick pulse.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P08",
+        "P09"
+      ],
+      "importance": 5,
+      "says": "free, free, free!",
+      "causes": [
+        {
+          "event": "e07",
+          "status": "implied"
+        }
+      ]
+    },
+    {
+      "id": "e14",
+      "when": {
+        "seq": 14,
+        "precision": "unknown"
+      },
+      "kind": "thought",
+      "place": "louise-room",
+      "text": "Louise reflected: she would weep at his dead hands, yet beyond that lay years belonging to her alone, with no will bending hers; she had loved him sometimes, often not.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        },
+        {
+          "id": "brently",
+          "role": "subject"
+        }
+      ],
+      "src": [
+        "P10",
+        "P11"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e15",
+      "when": {
+        "seq": 15,
+        "precision": "unknown"
+      },
+      "kind": "speech",
+      "place": "louise-room",
+      "text": "Louise kept whispering 'Free! Body and soul free!'",
+      "who": [
+        {
+          "id": "louise",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P12"
+      ],
+      "says": "Free! Body and soul free!"
+    },
+    {
+      "id": "e16",
+      "when": {
+        "seq": 16,
+        "precision": "unknown"
+      },
+      "kind": "speech",
+      "place": "landing",
+      "text": "Josephine knelt at the closed door, imploring; Louise answered 'Go away. I am not making myself ill.'",
+      "who": [
+        {
+          "id": "josephine",
+          "role": "speaker"
+        },
+        {
+          "id": "louise",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P13",
+        "P14"
+      ],
+      "says": "(Josephine) Louise, open the door! I beg, open the door; you will make yourself ill. What are you doing, Louise? For heaven's sake open the door. (Louise) Go away. I am not making myself ill."
+    },
+    {
+      "id": "e17",
+      "when": {
+        "seq": 17,
+        "precision": "unknown"
+      },
+      "kind": "thought",
+      "place": "louise-room",
+      "text": "Louise breathed a quick prayer that life might be long and let her fancy run over spring and summer days to come.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P14"
+      ],
+      "contrasts": [
+        "e01"
+      ]
+    },
+    {
+      "id": "e18",
+      "when": {
+        "seq": 18,
+        "precision": "unknown"
+      },
+      "kind": "act",
+      "place": "house-downstairs",
+      "text": "Louise opened the door, with feverish triumph in her eyes; she and Josephine descended the stairs, where Richards waited.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "agent"
+        },
+        {
+          "id": "josephine",
+          "role": "agent"
+        },
+        {
+          "id": "richards",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P15"
+      ]
+    },
+    {
+      "id": "e19",
+      "when": {
+        "seq": 19,
+        "precision": "unknown"
+      },
+      "kind": "arrive",
+      "place": "house-downstairs",
+      "text": "Brently Mallard entered with a latchkey, travel-stained, carrying grip-sack and umbrella, not knowing there had been an accident.",
+      "who": [
+        {
+          "id": "brently",
+          "role": "agent"
+        },
+        {
+          "id": "louise",
+          "role": "witness"
+        },
+        {
+          "id": "josephine",
+          "role": "witness"
+        },
+        {
+          "id": "richards",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P16"
+      ],
+      "things": [
+        "latchkey",
+        "grip-sack",
+        "umbrella"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e20",
+      "when": {
+        "seq": 20,
+        "precision": "unknown"
+      },
+      "kind": "act",
+      "place": "house-downstairs",
+      "text": "Josephine cried out piercingly; Richards moved to screen Brently from his wife's view; Brently stood amazed.",
+      "who": [
+        {
+          "id": "josephine",
+          "role": "agent"
+        },
+        {
+          "id": "richards",
+          "role": "agent"
+        },
+        {
+          "id": "brently",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P16"
+      ],
+      "causes": [
+        {
+          "event": "e19",
+          "status": "stated"
+        }
+      ]
+    },
+    {
+      "id": "e21",
+      "when": {
+        "seq": 21,
+        "precision": "unknown"
+      },
+      "kind": "perceive",
+      "place": "house-downstairs",
+      "text": "Louise saw her husband alive; Richards was too late to prevent it.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        },
+        {
+          "id": "brently",
+          "role": "subject"
+        },
+        {
+          "id": "richards",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P17"
+      ],
+      "importance": 5,
+      "basis": "implied",
+      "origin": "offscreen"
+    },
+    {
+      "id": "e22",
+      "when": {
+        "seq": 22,
+        "precision": "unknown"
+      },
+      "kind": "death",
+      "place": "house-downstairs",
+      "text": "Louise died.",
+      "who": [
+        {
+          "id": "louise",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P18"
+      ],
+      "importance": 5,
+      "causes": [
+        {
+          "event": "e21",
+          "status": "implied"
+        }
+      ],
+      "note": "the moment is elided; only the aftermath is stated",
+      "origin": "backfilled"
+    },
+    {
+      "id": "e23",
+      "when": {
+        "seq": 23,
+        "precision": "unknown"
+      },
+      "kind": "speech",
+      "place": "house-downstairs",
+      "text": "The doctors came and said she had died of heart disease, of the joy that kills.",
+      "who": [
+        {
+          "id": "doctors",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P18"
+      ],
+      "importance": 4,
+      "claims": [
+        "c-doc-cause"
+      ],
+      "says": "She died of heart disease, of the joy that kills."
+    }
+  ],
+  "held": [
+    {
+      "id": "h-a01",
+      "who": "louise",
+      "stance": "anticipates",
+      "content": "Louise would weep when she saw the kind tender hands folded in death and the face fixed, gray and dead.",
+      "when": {
+        "precision": "unknown",
+        "approx": "at the funeral, a future that does not occur",
+        "seq": 24
+      },
+      "src": [
+        "P10"
+      ]
+    },
+    {
+      "id": "h-a02",
+      "who": "louise",
+      "stance": "anticipates",
+      "content": "A long procession of years would belong to Louise absolutely; she would live for herself with no powerful will bending hers.",
+      "when": {
+        "precision": "unknown",
+        "seq": 25
+      },
+      "src": [
+        "P10",
+        "P14"
+      ]
+    }
+  ],
+  "knowledge": [
+    {
+      "who": "richards",
+      "of": "e03",
+      "stance": "knows",
+      "from": "e03",
+      "how": "read",
+      "src": [
+        "P02"
+      ]
+    },
+    {
+      "who": "richards",
+      "of": "c-bm-dead",
+      "stance": "believes",
+      "from": "e04",
+      "until": "e21",
+      "how": "read",
+      "source": "second-telegram",
+      "src": [
+        "P02"
+      ]
+    },
+    {
+      "who": "josephine",
+      "of": "c-bm-dead",
+      "stance": "believes",
+      "from": "e05",
+      "until": "e21",
+      "how": "told",
+      "source": "richards",
+      "src": [
+        "P02"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "louise",
+      "of": "c-bm-dead",
+      "stance": "believes",
+      "from": "e07",
+      "until": "e21",
+      "how": "told",
+      "source": "josephine",
+      "src": [
+        "P02",
+        "P03"
+      ],
+      "note": "accepted at once, not with paralysed inability"
+    },
+    {
+      "who": "louise",
+      "of": "s07",
+      "stance": "unaware",
+      "from": "start",
+      "until": "e21",
+      "src": [
+        "P16"
+      ]
+    },
+    {
+      "who": "brently",
+      "of": "e02",
+      "stance": "unaware",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P16"
+      ],
+      "note": "still unaware when the text ends; when he learns is not told"
+    },
+    {
+      "who": "josephine",
+      "of": "s05",
+      "stance": "unaware",
+      "from": "e13",
+      "src": [
+        "P13"
+      ],
+      "note": "believes Louise is grieving to the point of illness",
+      "believes_instead": "Louise is shattered by grief and may make herself ill"
+    },
+    {
+      "who": "richards",
+      "of": "s05",
+      "stance": "unaware",
+      "from": "e13",
+      "src": [
+        "P15"
+      ]
+    },
+    {
+      "who": "josephine",
+      "of": "s01",
+      "stance": "knows",
+      "from": "start",
+      "src": [
+        "P01"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "richards",
+      "of": "s01",
+      "stance": "knows",
+      "from": "start",
+      "src": [
+        "P01"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "doctors",
+      "of": "c-doc-cause",
+      "stance": "believes",
+      "from": "e23",
+      "how": "inferred",
+      "src": [
+        "P18"
+      ]
+    },
+    {
+      "who": "louise",
+      "of": "s07",
+      "stance": "knows",
+      "from": "e21",
+      "how": "witnessed",
+      "src": [
+        "P17"
+      ],
+      "status": "implied"
+    }
+  ],
+  "states": [
+    {
+      "of": "louise",
+      "kind": "relation",
+      "to": "brently",
+      "value": "married; he looked on her only with love; she loved him sometimes, often not; his will weighed on hers",
+      "from": "start",
+      "until": "e22",
+      "src": [
+        "P10",
+        "P11"
+      ],
+      "id": "s00"
+    },
+    {
+      "of": "louise",
+      "kind": "health",
+      "value": "heart trouble",
+      "from": "start",
+      "until": "e22",
+      "src": [
+        "P01"
+      ],
+      "id": "s01"
+    },
+    {
+      "of": "louise",
+      "kind": "feeling",
+      "value": "grief",
+      "from": "e08",
+      "until": "e12",
+      "src": [
+        "P03",
+        "P06"
+      ],
+      "id": "s02"
+    },
+    {
+      "of": "louise",
+      "kind": "body",
+      "value": "physically exhausted, a weariness that seems to reach into her soul",
+      "from": "e10",
+      "until": "e13",
+      "src": [
+        "P04"
+      ],
+      "id": "s03"
+    },
+    {
+      "of": "louise",
+      "kind": "feeling",
+      "value": "fearful waiting for something she cannot name",
+      "from": "e12",
+      "until": "e13",
+      "src": [
+        "P08"
+      ],
+      "id": "s04"
+    },
+    {
+      "of": "louise",
+      "kind": "feeling",
+      "value": "exalted joy of freedom, with feverish triumph",
+      "from": "e13",
+      "until": "e21",
+      "src": [
+        "P09",
+        "P14",
+        "P15"
+      ],
+      "id": "s05"
+    },
+    {
+      "of": "louise",
+      "kind": "location",
+      "value": "louise-room",
+      "from": "e09",
+      "until": "e18",
+      "src": [
+        "P03"
+      ],
+      "id": "s06"
+    },
+    {
+      "of": "brently",
+      "kind": "location",
+      "value": "away",
+      "from": "start",
+      "until": "e19",
+      "src": [
+        "P16"
+      ],
+      "id": "s07"
+    },
+    {
+      "of": "louise",
+      "kind": "appearance",
+      "value": "young, fair calm face, lines of repression and strength; later a stare, then bright keen eyes",
+      "from": "start",
+      "src": [
+        "P07",
+        "P09"
+      ],
+      "id": "s08"
+    },
+    {
+      "of": "louise",
+      "kind": "life",
+      "value": "dead",
+      "from": "e22",
+      "src": [
+        "P18"
+      ],
+      "id": "s09"
+    }
+  ],
+  "readings": [
+    {
+      "id": "r-cause",
+      "text": "Louise's death is caused by the sight of her husband alive, which ends the freedom she has just discovered, not by joy at his survival as the doctors say.",
+      "status": "implied",
+      "supports": [
+        "e13",
+        "e14",
+        "e21",
+        "e22"
+      ],
+      "against": [
+        "c-doc-cause"
+      ],
+      "src": [
+        "P18"
+      ],
+      "note": "the narrator states only the doctors' words; the irony is the author's reading cue"
+    },
+    {
+      "id": "r-will",
+      "holder": "louise",
+      "text": "Imposing one's will on another is a crime, whether the intention is kind or cruel.",
+      "status": "stated",
+      "supports": [
+        "e14"
+      ],
+      "src": [
+        "P10"
+      ]
+    },
+    {
+      "id": "r-joy",
+      "text": "Her joy at freedom is 'monstrous' by social standards but she dismisses the suggestion as trivial.",
+      "status": "stated",
+      "supports": [
+        "e13"
+      ],
+      "src": [
+        "P09"
+      ]
+    }
+  ],
+  "gaps_found": [
+    "v1: events have no time of their own, so the unknown date and the 'about an hour' were stuffed into clock notes and an invented starting_time",
+    "v1: no way to say a report was false (the list); the truth went into a hidden lore entry and a 'negative' event",
+    "v1: a character's false belief cannot be linked to its source or to the truth it contradicts",
+    "v1: the anticipated futures (the funeral, the years of freedom) are stored as beliefs or events that look as if they happened",
+    "v1: the death moment is elided in the text; nothing says an event is implied rather than stated",
+    "v1: the doctors' cause of death is an accuracy label on a perception, which is the encoder's judgement, not canon"
+  ]
+}

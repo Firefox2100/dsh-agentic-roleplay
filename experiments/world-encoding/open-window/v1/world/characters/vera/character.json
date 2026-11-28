@@ -1,0 +1,34 @@
+{
+  "id": "vera",
+  "name": "Vera",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A self-possessed fifteen-year-old, Mrs. Sappleton's niece, who invents stories at a moment's notice.",
+  "start": {
+    "public_state": "Sitting in the sitting-room waiting for her aunt.",
+    "activity": "Waiting.",
+    "inner_state": "Ready to entertain herself with the visitor.",
+    "location": "sitting-room"
+  },
+  "gender": "female",
+  "pronouns": "she/her",
+  "age": 15,
+  "personality": "Calm, observant, inventive; 'romance at short notice was her speciality'.",
+  "speech": {
+    "style": "Composed and polite, with a deliberate falter when she wants to be believed.",
+    "examples": [
+      "My aunt will be down presently."
+    ]
+  },
+  "relationships": [
+    {
+      "to": "mrs-sappleton",
+      "label": "aunt",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.7,
+      "tension": 0.1
+    }
+  ]
+}

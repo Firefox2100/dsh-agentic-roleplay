@@ -1,0 +1,7 @@
+{
+  "id": "latchkey",
+  "name": "Latchkey",
+  "description": "Brently's key to the front door.",
+  "held_by": "brently",
+  "unique": true
+}

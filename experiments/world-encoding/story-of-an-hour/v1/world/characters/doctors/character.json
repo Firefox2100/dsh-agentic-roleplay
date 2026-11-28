@@ -1,0 +1,15 @@
+{
+  "id": "doctors",
+  "name": "The doctors",
+  "gender": "male",
+  "role": "npc",
+  "kind": "group",
+  "tier": "background",
+  "summary": "The physicians who come after Louise collapses.",
+  "start": {
+    "public_state": "Not yet called.",
+    "activity": "At their practice.",
+    "inner_state": "-",
+    "location": "away"
+  }
+}

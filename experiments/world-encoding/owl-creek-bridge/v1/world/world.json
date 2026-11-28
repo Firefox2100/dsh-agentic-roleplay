@@ -1,0 +1,18 @@
+{
+  "id": "encoding-owl-creek-bridge",
+  "name": "An Occurrence at Owl Creek Bridge",
+  "description": "An encoding of Ambrose Bierce's story (1890): during the American Civil War a planter is hanged from a railroad bridge in Alabama; in the instant of falling his mind lives an escape.",
+  "starting_time": "1862-07-10T19:00",
+  "time_zone": "UTC",
+  "metadata": {
+    "tags": [
+      "encoding",
+      "short-story",
+      "civil-war",
+      "1862"
+    ]
+  },
+  "rules": [
+    "The story is set in northern Alabama during the American Civil War, after the fall of Corinth."
+  ]
+}

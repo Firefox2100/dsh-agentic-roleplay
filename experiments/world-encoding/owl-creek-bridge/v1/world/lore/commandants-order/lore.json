@@ -1,0 +1,9 @@
+{
+  "id": "commandants-order",
+  "title": "The commandant's order",
+  "kind": "politics",
+  "scope": "everyone",
+  "summary": "Any civilian caught interfering with the railroad, its bridges, tunnels or trains will be summarily hanged.",
+  "body": "The Federal commandant has issued, and posted everywhere, an order that any civilian caught interfering with the railroad, its bridges, tunnels or trains shall be summarily hanged.",
+  "subjects": []
+}

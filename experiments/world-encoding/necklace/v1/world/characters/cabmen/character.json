@@ -1,0 +1,14 @@
+{
+  "id": "cabmen",
+  "name": "The cabmen",
+  "role": "npc",
+  "kind": "group",
+  "tier": "background",
+  "summary": "Those who pass in the night, and the one who drives them home.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "streets"
+  }
+}

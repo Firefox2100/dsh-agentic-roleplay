@@ -1,0 +1,196 @@
+[
+ {
+  "id": "holmes",
+  "name": "Sherlock Holmes",
+  "src": [
+   "P01"
+  ]
+ },
+ {
+  "id": "watson",
+  "name": "Dr Watson",
+  "role": "narrator",
+  "src": [
+   "P01"
+  ]
+ },
+ {
+  "id": "helen",
+  "name": "Helen Stoner",
+  "src": [
+   "P21"
+  ]
+ },
+ {
+  "id": "julia",
+  "name": "Julia Stoner",
+  "src": [
+   "P24",
+   "P27"
+  ]
+ },
+ {
+  "id": "roylott",
+  "name": "Dr Grimesby Roylott",
+  "src": [
+   "P21",
+   "P97"
+  ]
+ },
+ {
+  "id": "mrs-stoner",
+  "name": "Mrs Stoner, the twins' mother",
+  "src": [
+   "P24"
+  ]
+ },
+ {
+  "id": "armitage",
+  "name": "Percy Armitage",
+  "src": [
+   "P66"
+  ]
+ },
+ {
+  "id": "farintosh",
+  "name": "Mrs Farintosh",
+  "tier": "background",
+  "src": [
+   "P16",
+   "P18"
+  ]
+ },
+ {
+  "id": "honoria",
+  "name": "Miss Honoria Westphail",
+  "src": [
+   "P29"
+  ]
+ },
+ {
+  "id": "major",
+  "name": "The half-pay major of marines",
+  "unnamed": true,
+  "src": [
+   "P29"
+  ]
+ },
+ {
+  "id": "coroner",
+  "name": "The county coroner",
+  "unnamed": true,
+  "tier": "background",
+  "src": [
+   "P51",
+   "P55"
+  ]
+ },
+ {
+  "id": "blacksmith",
+  "name": "The local blacksmith",
+  "unnamed": true,
+  "tier": "background",
+  "src": [
+   "P26"
+  ]
+ },
+ {
+  "id": "correspondent",
+  "name": "Roylott's correspondent in India",
+  "unnamed": true,
+  "tier": "background",
+  "src": [
+   "P26"
+  ]
+ },
+ {
+  "id": "boy",
+  "name": "The lad who drives Roylott",
+  "unnamed": true,
+  "tier": "background",
+  "src": [
+   "P195"
+  ]
+ },
+ {
+  "id": "driver",
+  "name": "The Leatherhead driver",
+  "unnamed": true,
+  "tier": "background",
+  "src": [
+   "P119",
+   "P121"
+  ]
+ },
+ {
+  "id": "landlord",
+  "name": "The landlord of the Crown",
+  "unnamed": true,
+  "tier": "background",
+  "src": [
+   "P221"
+  ]
+ },
+ {
+  "id": "doctors",
+  "name": "The doctors who examined Julia",
+  "kind": "group",
+  "tier": "background",
+  "src": [
+   "P57"
+  ]
+ },
+ {
+  "id": "gypsies",
+  "name": "The gypsies in the plantation",
+  "kind": "group",
+  "tier": "background",
+  "src": [
+   "P26",
+   "P61"
+  ]
+ },
+ {
+  "id": "villagers",
+  "name": "The villagers",
+  "kind": "group",
+  "tier": "background",
+  "src": [
+   "P25",
+   "P238"
+  ]
+ },
+ {
+  "id": "inquiry",
+  "name": "The official inquiry",
+  "kind": "group",
+  "tier": "background",
+  "src": [
+   "P247"
+  ]
+ },
+ {
+  "id": "cheetah",
+  "name": "The cheetah",
+  "kind": "animal",
+  "src": [
+   "P26"
+  ]
+ },
+ {
+  "id": "baboon",
+  "name": "The baboon",
+  "kind": "animal",
+  "src": [
+   "P26"
+  ]
+ },
+ {
+  "id": "snake",
+  "name": "The swamp adder",
+  "kind": "animal",
+  "src": [
+   "P244-P245"
+  ]
+ }
+]

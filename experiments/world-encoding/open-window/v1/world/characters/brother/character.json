@@ -1,0 +1,16 @@
+{
+  "id": "brother",
+  "name": "Mrs. Sappleton's other brother",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "PLACEHOLDER: the second brother, unnamed in the text.",
+  "start": {
+    "public_state": "Out shooting.",
+    "activity": "Shooting snipe.",
+    "inner_state": "-",
+    "location": "marshes"
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

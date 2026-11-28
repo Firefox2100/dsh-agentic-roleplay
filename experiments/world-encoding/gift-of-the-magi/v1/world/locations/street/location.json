@@ -1,0 +1,27 @@
+{
+  "id": "street",
+  "name": "The street",
+  "description": "The city street outside.",
+  "exits": [
+    {
+      "to": "sofronie-shop",
+      "description": "to Madame Sofronie's",
+      "travel_time_seconds": 300
+    },
+    {
+      "to": "stores",
+      "description": "to the stores",
+      "travel_time_seconds": 300
+    },
+    {
+      "to": "jim-work",
+      "description": "to where Jim works",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "jim-errands",
+      "description": "to where Jim sells and buys",
+      "travel_time_seconds": 600
+    }
+  ]
+}

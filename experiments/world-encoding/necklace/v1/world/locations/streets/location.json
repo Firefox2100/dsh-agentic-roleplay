@@ -1,0 +1,47 @@
+{
+  "id": "streets",
+  "name": "The streets of Paris",
+  "description": "The streets and quays between the places of the story.",
+  "exits": [
+    {
+      "to": "loisel-flat",
+      "description": "to the Loisels' home in the Rue des Martyrs",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "forestier-home",
+      "description": "to Mme. Forestier's",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "ministry-palace",
+      "description": "to the palace of the Ministry",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "jeweller-shop",
+      "description": "to the first jeweller",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "palais-royal-shop",
+      "description": "to the shop at the Palais Royal",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "garret",
+      "description": "to the garret",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "champs-elysees",
+      "description": "to the Champs Elysées",
+      "travel_time_seconds": 900
+    },
+    {
+      "to": "police-hq",
+      "description": "to Police Headquarters",
+      "travel_time_seconds": 900
+    }
+  ]
+}

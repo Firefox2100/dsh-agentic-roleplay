@@ -183,6 +183,32 @@ describe('a character that is not at a place', () => {
   })
 })
 
+describe('claims in the story\'s records', () => {
+  const claims = [
+    { text: 'The figure in the garden was Pavel.', by: 'odile', status: 'proposed', verdict: 'false' },
+    { text: 'The cellar is flooded.', by: 'arthur', status: 'confirmed', verdict: 'unresolved' },
+  ]
+  const observation = { language: 'en' as const, player: 'ann', turns: [], claims }
+  const held = (expectation: Script['expect'][number], seen: typeof observation | Omit<typeof observation, 'claims'> = observation) => evaluate({ id: 's', language: 'en', turns: [], expect: [expectation] }, seen as never)[0]!.held
+
+  it('reads whether a claim was made, by whom, how it stands and whether anyone settled it', () => {
+    expect(held({ type: 'claim-recorded', text: 'the figure in the garden', by: 'odile' })).toBe(true)
+    expect(held({ type: 'claim-recorded', text: 'the figure in the garden', by: 'pavel' })).toBe(false)
+    expect(held({ type: 'claim-absent', text: 'the cellar is empty' })).toBe(true)
+    expect(held({ type: 'claim-absent', text: 'cellar' })).toBe(false)
+    expect(held({ type: 'claim-standing', text: 'the figure', standing: 'false' })).toBe(true)
+    expect(held({ type: 'claim-standing', text: 'the figure', standing: 'true' })).toBe(false)
+    expect(held({ type: 'claim-status', text: 'cellar', status: 'confirmed' })).toBe(true)
+    expect(held({ type: 'claim-status', text: 'figure', status: 'confirmed' })).toBe(false)
+  })
+
+  it('does not judge what the run could not read', () => {
+    const { claims: _c, ...bare } = observation
+    expect(held({ type: 'claim-recorded', text: 'cellar' }, bare)).toBeUndefined()
+    expect(held({ type: 'claim-absent', text: 'cellar' }, bare)).toBeUndefined()
+  })
+})
+
 describe('judging the story\'s state', () => {
   const script: Script = { id: 's', language: 'en', turns: [], expect: [
     { type: 'value-changed', name: 'Weather' }, { type: 'value-changed', name: 'Fatigue', of: 'bob' }, { type: 'value-is', name: 'Weather', value: 'rain' },
@@ -214,6 +240,12 @@ describe('what the data validation refuses in the new script features', () => {
     expect(check(script({ turns: [{ say: 'Hi.', expect: [] }, { action: 'rewind', to: 1, expect: [] }] }))[0]).toMatch(/not before it/)
     expect(check(script({ turns: [{ say: 'Hi.', expect: [{ type: 'turns', count: 1 }] }] }))[0]).toMatch(/about the whole story/)
     expect(check(script({ turns: [{ say: 'Hi.', expect: [] }, { action: 'rewind', to: 0, expect: [] }, { action: 'regenerate', expect: [] }] }))).toEqual([])
+  })
+
+  it('refuses a claim expectation that names someone outside the row or a standing or status a claim does not have', () => {
+    expect(check(script({ expect: [{ type: 'claim-recorded', text: 'x', by: 'nobody' }] }))[0]).toMatch(/nobody, who is not in the row/)
+    expect(check(script({ expect: [{ type: 'claim-standing', text: 'x', standing: 'certain' }] }))[0]).toMatch(/standing "certain"/)
+    expect(check(script({ expect: [{ type: 'claim-status', text: 'x', status: 'settled' as never }] }))[0]).toMatch(/status "settled"/)
   })
 
   it('refuses a thing, place or trigger the world does not have, unacceptable settings and a plant its script cannot see', () => {

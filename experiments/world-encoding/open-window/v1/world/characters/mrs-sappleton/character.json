@@ -1,0 +1,27 @@
+{
+  "id": "mrs-sappleton",
+  "name": "Mrs. Sappleton",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "Vera's aunt, brisk and cheerful, who expects her husband and brothers home from shooting.",
+  "start": {
+    "public_state": "Upstairs or in another room.",
+    "activity": "Making ready for tea.",
+    "inner_state": "Expecting her menfolk home for tea.",
+    "location": "rest-of-house"
+  },
+  "gender": "female",
+  "pronouns": "she/her",
+  "personality": "Brisk, hospitable, inattentive to bores.",
+  "relationships": [
+    {
+      "to": "vera",
+      "label": "niece",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.7,
+      "tension": 0
+    }
+  ]
+}

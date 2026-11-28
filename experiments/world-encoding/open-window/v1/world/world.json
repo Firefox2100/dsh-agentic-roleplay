@@ -1,0 +1,15 @@
+{
+  "id": "encoding-open-window",
+  "name": "The Open Window",
+  "description": "An encoding of Saki's story (1914): a nervous visitor is told a ghost story by a teenager, and the 'ghosts' walk in at tea-time.",
+  "starting_time": "1913-10-14T09:00",
+  "time_zone": "UTC",
+  "metadata": {
+    "tags": [
+      "encoding",
+      "short-story",
+      "ghosts",
+      "hoax"
+    ]
+  }
+}

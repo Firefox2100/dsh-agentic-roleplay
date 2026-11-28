@@ -1,0 +1,1693 @@
+{
+  "model": "history/2",
+  "work": {
+    "title": "The Necklace (La Parure)",
+    "author": "Guy de Maupassant, tr. Jonathan Sturges",
+    "published": "1884; translation 1898",
+    "source": "source/text.txt"
+  },
+  "time": {
+    "note": "No year. The ball is 'Monday evening, January 18th' (a weekday and date that fit some years only: the encoding does not choose one). The ball night is a few weeks after the invitation. 'A week' later they give up; the replacement is bought within about a month of the loss; then 'ten years'; the last scene is 'one Sunday'.",
+    "anchors": [
+      {
+        "id": "ball-night",
+        "at": "--01-18",
+        "weekday": "Mon",
+        "precision": "day",
+        "src": [
+          "P09"
+        ]
+      },
+      {
+        "id": "buy-back-deadline",
+        "at": "--02-28",
+        "precision": "day",
+        "approx": "end of February",
+        "src": [
+          "P92"
+        ]
+      }
+    ],
+    "spans": [
+      {
+        "id": "span-ten-years",
+        "from": "e19",
+        "to": "e20",
+        "approx": "P10Y",
+        "src": [
+          "P102",
+          "P103"
+        ]
+      },
+      {
+        "id": "span-search",
+        "from": "e12",
+        "to": "e14",
+        "approx": "P7D",
+        "src": [
+          "P85"
+        ]
+      }
+    ]
+  },
+  "entities": {
+    "people": [
+      {
+        "id": "mathilde",
+        "name": "Mathilde Loisel",
+        "aliases": [
+          "Mme. Loisel"
+        ],
+        "src": [
+          "P01",
+          "P112"
+        ]
+      },
+      {
+        "id": "loisel",
+        "name": "M. Loisel",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "forestier",
+        "name": "Mme. Forestier",
+        "aliases": [
+          "Jeanne"
+        ],
+        "src": [
+          "P05",
+          "P109"
+        ]
+      },
+      {
+        "id": "minister",
+        "name": "The Minister of Public Instruction",
+        "tier": "background",
+        "src": [
+          "P09",
+          "P52"
+        ]
+      },
+      {
+        "id": "servant",
+        "name": "The little Breton servant",
+        "tier": "background",
+        "src": [
+          "P02",
+          "P98"
+        ]
+      },
+      {
+        "id": "jeweller1",
+        "name": "The jeweller named in the case",
+        "tier": "background",
+        "src": [
+          "P88",
+          "P89"
+        ]
+      },
+      {
+        "id": "jeweller2",
+        "name": "The jeweller at the Palais Royal",
+        "src": [
+          "P91",
+          "P92"
+        ]
+      },
+      {
+        "id": "lenders",
+        "name": "The lenders and usurers",
+        "kind": "group",
+        "tier": "background",
+        "src": [
+          "P94"
+        ]
+      },
+      {
+        "id": "cabmen",
+        "name": "The cabmen",
+        "kind": "group",
+        "tier": "background",
+        "src": [
+          "P58",
+          "P59"
+        ]
+      },
+      {
+        "id": "three-gentlemen",
+        "name": "Three gentlemen whose wives were enjoying themselves",
+        "kind": "group",
+        "tier": "background",
+        "src": [
+          "P54"
+        ]
+      },
+      {
+        "id": "child",
+        "name": "The child with Mme. Forestier",
+        "tier": "background",
+        "src": [
+          "P106"
+        ]
+      }
+    ],
+    "places": [
+      {
+        "id": "loisel-flat",
+        "name": "The flat in the Rue des Martyrs",
+        "src": [
+          "P02",
+          "P60"
+        ]
+      },
+      {
+        "id": "forestier-home",
+        "name": "Mme. Forestier's home",
+        "src": [
+          "P41",
+          "P42"
+        ]
+      },
+      {
+        "id": "ministry-palace",
+        "name": "The palace of the Ministry",
+        "src": [
+          "P09",
+          "P52"
+        ]
+      },
+      {
+        "id": "streets-quay",
+        "name": "The streets and the quay by the Seine",
+        "src": [
+          "P58",
+          "P59"
+        ]
+      },
+      {
+        "id": "police-etc",
+        "name": "Police Headquarters, newspaper offices, cab companies",
+        "src": [
+          "P80"
+        ]
+      },
+      {
+        "id": "jeweller-shops",
+        "name": "The jewellers, including the shop at the Palais Royal",
+        "src": [
+          "P88",
+          "P90",
+          "P91"
+        ]
+      },
+      {
+        "id": "garret",
+        "name": "The garret under the roof",
+        "src": [
+          "P98"
+        ]
+      },
+      {
+        "id": "champs-elysees",
+        "name": "The Champs Elysées",
+        "src": [
+          "P106"
+        ]
+      },
+      {
+        "id": "ministry-office",
+        "name": "The Ministry (Loisel's office)",
+        "src": [
+          "P60",
+          "P104"
+        ]
+      }
+    ],
+    "things": [
+      {
+        "id": "invitation",
+        "name": "The invitation card",
+        "src": [
+          "P08",
+          "P09"
+        ]
+      },
+      {
+        "id": "dress",
+        "name": "The ball dress",
+        "src": [
+          "P29"
+        ]
+      },
+      {
+        "id": "necklace-original",
+        "name": "Mme. Forestier's diamond necklace (paste)",
+        "src": [
+          "P47"
+        ]
+      },
+      {
+        "id": "necklace-copy",
+        "name": "The replacement necklace (real diamonds)",
+        "src": [
+          "P91"
+        ]
+      },
+      {
+        "id": "case",
+        "name": "The necklace's case",
+        "src": [
+          "P88",
+          "P97"
+        ]
+      },
+      {
+        "id": "wraps",
+        "name": "Loisel's modest wraps",
+        "src": [
+          "P55"
+        ]
+      },
+      {
+        "id": "letter-clasp",
+        "name": "The letter about the broken clasp",
+        "src": [
+          "P83",
+          "P84"
+        ]
+      },
+      {
+        "id": "gun-fund",
+        "name": "The 400 francs set aside for a gun",
+        "src": [
+          "P26"
+        ]
+      }
+    ]
+  },
+  "frames": [],
+  "claims": [
+    {
+      "id": "c-necklace-diamond",
+      "text": "Mme. Forestier's necklace was a superb diamond necklace worth tens of thousands.",
+      "about": [
+        "necklace-original"
+      ],
+      "bears_on": [
+        {
+          "ref": "s14",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P47",
+        "P91"
+      ]
+    },
+    {
+      "id": "c-clasp-broken",
+      "text": "Mathilde broke the clasp of the necklace and is having it mended.",
+      "about": [],
+      "bears_on": [
+        {
+          "ref": "e-loss",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P83"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "b01",
+      "when": {
+        "seq": -20,
+        "approx": "years before"
+      },
+      "kind": "state-change",
+      "place": null,
+      "text": "Mathilde let herself be married to a little clerk at the Ministry of Public Instruction, having no dowry and no expectations.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "loisel",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P01"
+      ]
+    },
+    {
+      "id": "b02",
+      "when": {
+        "seq": -19,
+        "approx": "every day of the marriage"
+      },
+      "kind": "habit",
+      "place": "loisel-flat",
+      "text": "Mathilde suffered ceaselessly from the poverty of her dwelling and imagined silent ante-chambers, long salons, dainty dinners.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "experiencer"
+        },
+        {
+          "id": "servant",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P02",
+        "P03"
+      ],
+      "frequency": "iterative"
+    },
+    {
+      "id": "b03",
+      "when": {
+        "seq": -18,
+        "approx": "a long time"
+      },
+      "kind": "habit",
+      "place": null,
+      "text": "Mathilde stopped visiting a rich schoolmate from the convent because she suffered so when she came back.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "forestier",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P05"
+      ],
+      "frequency": "iterative"
+    },
+    {
+      "id": "e01",
+      "when": {
+        "seq": 1,
+        "approx": "a few weeks before the ball",
+        "before": [
+          "e06"
+        ]
+      },
+      "kind": "act",
+      "place": "loisel-flat",
+      "text": "One evening Loisel came home with a large envelope containing an invitation to the Minister's ball on Monday evening, January 18th, and gave it to his wife.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "mathilde",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P06",
+        "P07",
+        "P08",
+        "P09"
+      ],
+      "things": [
+        "invitation"
+      ]
+    },
+    {
+      "id": "e02",
+      "when": {
+        "seq": 2
+      },
+      "kind": "speech",
+      "place": "loisel-flat",
+      "text": "Mathilde threw the invitation down with disdain and said she had nothing to wear; Loisel, who had had trouble getting it, stammered about her theatre dress; she cried, then composed herself and said he should give the card to a better-equipped colleague's wife.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "speaker"
+        },
+        {
+          "id": "loisel",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P15",
+        "P16",
+        "P17",
+        "P18",
+        "P19",
+        "P20"
+      ],
+      "says": "What do you want me to put on my back? ... Nothing. Only I have no dress, and therefore I can't go to this ball.",
+      "causes": [
+        {
+          "event": "e01",
+          "status": "stated"
+        }
+      ]
+    },
+    {
+      "id": "e03",
+      "when": {
+        "seq": 3
+      },
+      "kind": "exchange",
+      "place": "loisel-flat",
+      "text": "Loisel asked what a suitable dress would cost; Mathilde, calculating what she could ask without a refusal, said four hundred francs; he grew pale, since he was saving that sum for a gun, but agreed.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "mathilde",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P21",
+        "P22",
+        "P23",
+        "P24",
+        "P25",
+        "P26",
+        "P27",
+        "P28"
+      ],
+      "effects": [
+        {
+          "kind": "adjust",
+          "of": "loisel",
+          "what": "francs",
+          "by": -400,
+          "unit": "franc"
+        },
+        {
+          "kind": "adjust",
+          "of": "mathilde",
+          "what": "francs",
+          "by": 400,
+          "unit": "franc"
+        }
+      ],
+      "foregoes": "a gun and Sunday lark-shooting at Nanterre with friends next summer",
+      "importance": 4
+    },
+    {
+      "id": "e04",
+      "when": {
+        "seq": 4
+      },
+      "kind": "speech",
+      "place": "loisel-flat",
+      "text": "As the ball drew near, her dress ready, Mathilde grew sad because she had no jewel; Loisel suggested natural flowers at ten francs, she found that humiliating, and he told her to ask Mme. Forestier for jewels.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "speaker"
+        },
+        {
+          "id": "loisel",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P29",
+        "P30",
+        "P31",
+        "P32",
+        "P33",
+        "P34",
+        "P35",
+        "P36",
+        "P37",
+        "P38",
+        "P39",
+        "P40"
+      ],
+      "things": [
+        "dress"
+      ],
+      "causes": [
+        {
+          "event": "e03",
+          "status": "stated"
+        }
+      ]
+    },
+    {
+      "id": "e05",
+      "when": {
+        "seq": 5,
+        "after": [
+          "e04"
+        ],
+        "gap": "P1D"
+      },
+      "kind": "exchange",
+      "place": "forestier-home",
+      "text": "The next day Mathilde told Mme. Forestier of her distress; Mme. Forestier brought out a jewel-box and let her choose; Mathilde tried bracelets, a pearl necklace and a Venetian cross, then found in a black satin box a superb diamond necklace and asked to borrow it, and Mme. Forestier agreed.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "forestier",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P41",
+        "P42",
+        "P43",
+        "P44",
+        "P45",
+        "P46",
+        "P47",
+        "P48",
+        "P49",
+        "P50",
+        "P51"
+      ],
+      "things": [
+        "necklace-original"
+      ],
+      "importance": 5,
+      "claims": [
+        "c-necklace-diamond"
+      ],
+      "effects": [
+        {
+          "kind": "transfer",
+          "thing": "necklace-original",
+          "from": "forestier",
+          "to": "mathilde",
+          "note": "a loan"
+        }
+      ]
+    },
+    {
+      "id": "e06",
+      "when": {
+        "seq": 6,
+        "at": "--01-18",
+        "precision": "day",
+        "until_approx": "four in the morning"
+      },
+      "kind": "state",
+      "place": "ministry-palace",
+      "text": "At the ball Mathilde was prettier than all, gracious and crazy with joy; all the men asked her name, the attaches wanted to waltz with her, and the Minister remarked her.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "minister",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P52",
+        "P53"
+      ],
+      "mode": "summarised",
+      "importance": 4
+    },
+    {
+      "id": "e07",
+      "when": {
+        "seq": 7,
+        "approx": "from midnight until four",
+        "within": [
+          "e06"
+        ]
+      },
+      "kind": "state",
+      "place": "ministry-palace",
+      "text": "Loisel slept from midnight in a little deserted ante-room with three other gentlemen whose wives were enjoying themselves.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "experiencer"
+        },
+        {
+          "id": "three-gentlemen",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P54"
+      ]
+    },
+    {
+      "id": "e08",
+      "when": {
+        "seq": 8,
+        "approx": "four in the morning"
+      },
+      "kind": "depart",
+      "place": "ministry-palace",
+      "text": "At about four in the morning Mathilde left; Loisel threw modest wraps over her shoulders and she, ashamed before the furs, hurried down the stairs; they found no carriage in the street.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "loisel",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P54",
+        "P55",
+        "P56",
+        "P57",
+        "P58"
+      ],
+      "things": [
+        "wraps"
+      ]
+    },
+    {
+      "id": "e09",
+      "when": {
+        "seq": 9
+      },
+      "kind": "depart",
+      "place": "streets-quay",
+      "text": "They went down toward the Seine, shivering, found on the quay an ancient night coupé that took them to their door in the Rue des Martyrs; Loisel reflected he must be at the Ministry at ten.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "cabmen",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P58",
+        "P59",
+        "P60"
+      ]
+    },
+    {
+      "id": "e-loss",
+      "when": {
+        "seq": 9.5,
+        "after": [
+          "e08"
+        ],
+        "before": [
+          "e10"
+        ],
+        "order_known": true
+      },
+      "kind": "loss",
+      "place": null,
+      "text": "The necklace was lost somewhere between the palace vestibule and the flat.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P61",
+        "P71",
+        "P72"
+      ],
+      "things": [
+        "necklace-original"
+      ],
+      "place_note": "the palace stairs, the street, the quay or the cab: never found",
+      "importance": 5,
+      "basis": "implied",
+      "origin": "offscreen"
+    },
+    {
+      "id": "e10",
+      "when": {
+        "seq": 10
+      },
+      "kind": "perceive",
+      "place": "loisel-flat",
+      "text": "Before the glass Mathilde removed her wraps to see herself once more in her glory and found the necklace gone; she told Loisel, and they searched her dress, cloak and pockets in vain.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "experiencer"
+        },
+        {
+          "id": "loisel",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P61",
+        "P62",
+        "P63",
+        "P64",
+        "P65",
+        "P66",
+        "P67",
+        "P68"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e11",
+      "when": {
+        "seq": 11
+      },
+      "kind": "speech",
+      "place": "loisel-flat",
+      "text": "Mathilde said she had felt it in the vestibule of the palace; Loisel reasoned it must be in the cab, but neither had noted its number; he put on his clothes and went back over the route on foot.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "speaker"
+        },
+        {
+          "id": "mathilde",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P69",
+        "P70",
+        "P71",
+        "P72",
+        "P73",
+        "P74",
+        "P75",
+        "P76",
+        "P77"
+      ],
+      "says": "You're sure you had it on when you left the ball? ... Yes, I felt it in the vestibule of the palace. ... It must be in the cab. Did you take his number?"
+    },
+    {
+      "id": "e12",
+      "when": {
+        "seq": 12,
+        "after": [
+          "e11"
+        ],
+        "gap": "P1D"
+      },
+      "kind": "act",
+      "place": "police-etc",
+      "text": "Mathilde waited in her ball dress all day in mad fear; Loisel returned about seven with nothing, went to Police Headquarters, the newspaper offices (offering a reward) and the cab companies, and came back that night pale and empty-handed.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "mathilde",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P78",
+        "P79",
+        "P80",
+        "P81",
+        "P82"
+      ]
+    },
+    {
+      "id": "e13",
+      "when": {
+        "seq": 13
+      },
+      "kind": "speech",
+      "place": "loisel-flat",
+      "text": "At Loisel's suggestion Mathilde wrote to Mme. Forestier, at his dictation, that she had broken the clasp of the necklace and was having it mended.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "speaker"
+        },
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "forestier",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P83",
+        "P84"
+      ],
+      "things": [
+        "letter-clasp"
+      ],
+      "claims": [
+        "c-clasp-broken"
+      ],
+      "intent": "to gain time",
+      "importance": 4
+    },
+    {
+      "id": "e14",
+      "when": {
+        "seq": 14,
+        "after": [
+          "e12"
+        ],
+        "gap": "P7D"
+      },
+      "kind": "state-change",
+      "place": "loisel-flat",
+      "text": "At the end of a week they had lost all hope; Loisel, who had aged five years, said they must replace the ornament.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "mathilde",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P85",
+        "P86",
+        "P87"
+      ]
+    },
+    {
+      "id": "e15",
+      "when": {
+        "seq": 15
+      },
+      "kind": "speech",
+      "place": "jeweller-shops",
+      "text": "They took the case to the jeweller named in it, who consulted his books and said he had not sold the necklace but must only have furnished the case.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "jeweller1",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P88",
+        "P89"
+      ],
+      "things": [
+        "case"
+      ],
+      "says": "It was not I, madame, who sold that necklace; I must simply have furnished the case."
+    },
+    {
+      "id": "e16",
+      "when": {
+        "seq": 16
+      },
+      "kind": "agreement",
+      "place": "jeweller-shops",
+      "text": "After going from jeweller to jeweller they found at the Palais Royal a string of diamonds that seemed exactly like the lost one, worth forty thousand and offered at thirty-six; they agreed that he would hold it three days and buy it back for thirty-four thousand if the original were found before the end of February.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "jeweller2",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P90",
+        "P91",
+        "P92"
+      ],
+      "things": [
+        "necklace-copy"
+      ],
+      "terms": "hold for three days; buy back at 34,000 francs if the original is found",
+      "expires": "end of February",
+      "importance": 5,
+      "claims": [
+        "e16"
+      ]
+    },
+    {
+      "id": "e17",
+      "when": {
+        "seq": 17,
+        "after": [
+          "e16"
+        ],
+        "gap": "P3D"
+      },
+      "kind": "exchange",
+      "place": "jeweller-shops",
+      "text": "Loisel, who had eighteen thousand francs from his father, borrowed the rest from many lenders, giving notes and dealing with usurers and risking his signature, and paid thirty-six thousand francs for the new necklace.",
+      "who": [
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "lenders",
+          "role": "agent"
+        },
+        {
+          "id": "jeweller2",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P93",
+        "P94"
+      ],
+      "things": [
+        "necklace-copy"
+      ],
+      "effects": [
+        {
+          "kind": "adjust",
+          "of": "loisel",
+          "what": "debt",
+          "by": 18000,
+          "unit": "franc"
+        },
+        {
+          "kind": "adjust",
+          "of": "loisel",
+          "what": "francs",
+          "by": -36000,
+          "unit": "franc",
+          "note": "18,000 from his father plus 18,000 borrowed"
+        },
+        {
+          "kind": "transfer",
+          "thing": "necklace-copy",
+          "from": "jeweller2",
+          "to": "loisel"
+        }
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e18",
+      "when": {
+        "seq": 18
+      },
+      "kind": "exchange",
+      "place": "forestier-home",
+      "text": "Mathilde took the necklace back; Mme. Forestier said, chilly, that she should have returned it sooner, and did not open the case, as Mathilde had feared.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "forestier",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P95",
+        "P96",
+        "P97"
+      ],
+      "things": [
+        "necklace-copy",
+        "case"
+      ],
+      "effects": [
+        {
+          "kind": "transfer",
+          "thing": "necklace-copy",
+          "from": "mathilde",
+          "to": "forestier"
+        }
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e19",
+      "when": {
+        "seq": 19,
+        "after": [
+          "e18"
+        ],
+        "duration": "P10Y"
+      },
+      "kind": "habit",
+      "place": "garret",
+      "text": "Mme. Loisel took her part with heroism: they dismissed the servant, rented a garret, she did heavy housework and bargained sou by sou, they met or renewed notes each month, and Loisel copied accounts in the evening and manuscripts at night for five sous a page.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "loisel",
+          "role": "agent"
+        },
+        {
+          "id": "servant",
+          "role": "patient"
+        },
+        {
+          "id": "lenders",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P98",
+        "P99",
+        "P100",
+        "P101"
+      ],
+      "frequency": "iterative",
+      "importance": 5
+    },
+    {
+      "id": "e20",
+      "when": {
+        "seq": 20,
+        "after": [
+          "e18"
+        ],
+        "gap": "P10Y"
+      },
+      "kind": "state-change",
+      "place": "garret",
+      "text": "At the end of ten years they had paid everything, with usurers' rates and compound interest.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "loisel",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P102",
+        "P103"
+      ],
+      "effects": [
+        {
+          "kind": "set",
+          "of": "loisel",
+          "what": "debt",
+          "to": 0
+        }
+      ]
+    },
+    {
+      "id": "e21",
+      "when": {
+        "seq": 21
+      },
+      "kind": "thought",
+      "place": "garret",
+      "text": "Mme. Loisel looked old, strong and hard and rough, with frowsy hair and red hands; sometimes at the window she thought of the evening of the ball and wondered what would have happened had she not lost the necklace.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P104",
+        "P105"
+      ]
+    },
+    {
+      "id": "e22",
+      "when": {
+        "seq": 22,
+        "approx": "one Sunday after the ten years"
+      },
+      "kind": "meeting",
+      "place": "champs-elysees",
+      "text": "One Sunday Mathilde, walking in the Champs Elysées, saw Mme. Forestier, still young and charming, leading a child, and went up to her; Mme. Forestier did not recognise her at first, then cried out at how she was changed.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "agent"
+        },
+        {
+          "id": "forestier",
+          "role": "agent"
+        },
+        {
+          "id": "child",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P106",
+        "P107",
+        "P108",
+        "P109",
+        "P110",
+        "P111",
+        "P112",
+        "P113",
+        "P114"
+      ]
+    },
+    {
+      "id": "e23",
+      "when": {
+        "seq": 23
+      },
+      "kind": "speech",
+      "place": "champs-elysees",
+      "text": "Mathilde told her that she had lost the necklace, brought back another just like it, and spent ten years paying for it, and smiled with a proud and naive joy.",
+      "who": [
+        {
+          "id": "mathilde",
+          "role": "speaker"
+        },
+        {
+          "id": "forestier",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P115",
+        "P116",
+        "P117",
+        "P118",
+        "P119",
+        "P120",
+        "P121",
+        "P122",
+        "P123",
+        "P124",
+        "P125"
+      ],
+      "says": "I lost it. I brought you back another just like it. And for this we have been ten years paying. At last it is ended, and I am very glad.",
+      "importance": 5
+    },
+    {
+      "id": "e24",
+      "when": {
+        "seq": 24
+      },
+      "kind": "speech",
+      "place": "champs-elysees",
+      "text": "Mme. Forestier, strongly moved, took her hands and said her necklace had been paste, worth at most five hundred francs.",
+      "who": [
+        {
+          "id": "forestier",
+          "role": "speaker"
+        },
+        {
+          "id": "mathilde",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P126",
+        "P127"
+      ],
+      "says": "Oh, my poor Mathilde! Why, my necklace was paste. It was worth at most five hundred francs!",
+      "claims": [
+        "s14"
+      ],
+      "importance": 5
+    }
+  ],
+  "held": [
+    {
+      "id": "h-d01",
+      "who": "mathilde",
+      "stance": "imagines",
+      "content": "Mathilde dreamed of ante-chambers hung with Oriental tapestry, footmen asleep in armchairs, salons of ancient silk, perfumed boudoirs, dinners on marvellous plates with whispered gallantries.",
+      "when": {
+        "seq": 200
+      },
+      "src": [
+        "P02",
+        "P03",
+        "P04"
+      ]
+    },
+    {
+      "id": "h-f01",
+      "who": "mathilde",
+      "stance": "anticipates",
+      "content": "Mathilde feared that if Mme. Forestier detected the substitution she would take her for a thief.",
+      "when": {
+        "seq": 201
+      },
+      "src": [
+        "P97"
+      ]
+    }
+  ],
+  "knowledge": [
+    {
+      "who": "forestier",
+      "of": "s14",
+      "stance": "knows",
+      "from": "start",
+      "src": [
+        "P127"
+      ],
+      "status": "implied",
+      "note": "she never says so before the end; that she knew is implied by her words"
+    },
+    {
+      "who": "mathilde",
+      "of": "c-necklace-diamond",
+      "stance": "believes",
+      "from": "e05",
+      "until": "e24",
+      "how": "witnessed",
+      "source": "forestier",
+      "src": [
+        "P47",
+        "P91"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "loisel",
+      "of": "c-necklace-diamond",
+      "stance": "believes",
+      "from": "e10",
+      "until": null,
+      "how": "inferred",
+      "src": [
+        "P91",
+        "P94"
+      ],
+      "note": "he never learns otherwise in the text"
+    },
+    {
+      "who": "mathilde",
+      "of": "s14",
+      "stance": "unaware",
+      "from": "start",
+      "until": "e24",
+      "src": [
+        "P127"
+      ]
+    },
+    {
+      "who": "mathilde",
+      "of": "s14",
+      "stance": "knows",
+      "from": "e24",
+      "how": "told",
+      "source": "forestier",
+      "src": [
+        "P127"
+      ]
+    },
+    {
+      "who": "loisel",
+      "of": "s14",
+      "stance": "unaware",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P127"
+      ],
+      "note": "the text does not say Mathilde tells him"
+    },
+    {
+      "who": "forestier",
+      "of": "c-clasp-broken",
+      "stance": "believes",
+      "from": "e13",
+      "until": "e23",
+      "how": "read",
+      "source": "letter-clasp",
+      "src": [
+        "P83",
+        "P95"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "forestier",
+      "of": "e-loss",
+      "stance": "unaware",
+      "from": "e-loss",
+      "until": "e23",
+      "src": [
+        "P96",
+        "P120"
+      ]
+    },
+    {
+      "who": "forestier",
+      "of": "e18",
+      "stance": "unaware",
+      "from": "e18",
+      "until": "e23",
+      "src": [
+        "P97",
+        "P124"
+      ],
+      "note": "she did not open the case"
+    },
+    {
+      "who": "mathilde",
+      "of": "e08",
+      "stance": "knows",
+      "from": "e08",
+      "how": "witnessed",
+      "src": [
+        "P71"
+      ]
+    },
+    {
+      "who": "jeweller1",
+      "of": "e15",
+      "stance": "knows",
+      "from": "e15",
+      "src": [
+        "P89"
+      ],
+      "note": "that he sold only the case"
+    },
+    {
+      "who": "reader",
+      "of": "c-necklace-diamond",
+      "stance": "believes",
+      "from": "para:P41",
+      "until": "para:P106",
+      "src": [
+        "P47",
+        "P127"
+      ],
+      "note": "told 'superb necklace of diamonds'; nothing hints otherwise until the last line"
+    },
+    {
+      "who": "reader",
+      "of": "s14",
+      "stance": "unaware",
+      "from": "start",
+      "until": "para:P106",
+      "src": [
+        "P127"
+      ]
+    }
+  ],
+  "states": [
+    {
+      "of": "mathilde",
+      "kind": "feeling",
+      "value": "ceaseless suffering from lack of luxury; feels born for delicacies",
+      "from": "start",
+      "until": "e05",
+      "src": [
+        "P01",
+        "P02"
+      ],
+      "id": "s00"
+    },
+    {
+      "of": "mathilde",
+      "kind": "feeling",
+      "value": "ecstasy at the necklace; triumph at the ball",
+      "from": "e05",
+      "until": "e10",
+      "src": [
+        "P47",
+        "P53"
+      ],
+      "id": "s01"
+    },
+    {
+      "of": "mathilde",
+      "kind": "feeling",
+      "value": "mad fear and despair",
+      "from": "e10",
+      "until": "e17",
+      "src": [
+        "P65",
+        "P81"
+      ],
+      "id": "s02"
+    },
+    {
+      "of": "mathilde",
+      "kind": "appearance",
+      "value": "pretty and charming; later old, hard, rough, with frowsy hair and red hands",
+      "from": "start",
+      "src": [
+        "P01",
+        "P104"
+      ],
+      "id": "s03"
+    },
+    {
+      "of": "loisel",
+      "kind": "appearance",
+      "value": "aged five years",
+      "from": "e14",
+      "src": [
+        "P86"
+      ],
+      "id": "s04"
+    },
+    {
+      "of": "mathilde",
+      "kind": "residence",
+      "value": "loisel-flat",
+      "from": "start",
+      "until": "e19",
+      "src": [
+        "P02",
+        "P60"
+      ],
+      "id": "s05"
+    },
+    {
+      "of": "mathilde",
+      "kind": "residence",
+      "value": "garret",
+      "from": "e19",
+      "src": [
+        "P98"
+      ],
+      "id": "s06"
+    },
+    {
+      "of": "loisel",
+      "kind": "francs",
+      "value": "18400 (18000 inheritance plus 400 saved for a gun)",
+      "unit": "franc",
+      "from": "start",
+      "until": "e03",
+      "src": [
+        "P26",
+        "P93"
+      ],
+      "status": "partly-implied",
+      "note": "the inheritance is only told at P93; its date is not given",
+      "id": "s07"
+    },
+    {
+      "of": "loisel",
+      "kind": "debt",
+      "value": 18000,
+      "unit": "franc",
+      "from": "e17",
+      "until": "e20",
+      "src": [
+        "P93",
+        "P94"
+      ],
+      "note": "grows with usury and interest; the figure at the end is not given",
+      "id": "s08"
+    },
+    {
+      "of": "necklace-original",
+      "kind": "holder",
+      "value": "forestier",
+      "from": "start",
+      "until": "e05",
+      "src": [
+        "P42"
+      ],
+      "id": "s09"
+    },
+    {
+      "of": "necklace-original",
+      "kind": "holder",
+      "value": "mathilde",
+      "from": "e05",
+      "until": "e-loss",
+      "src": [
+        "P51"
+      ],
+      "id": "s10"
+    },
+    {
+      "of": "necklace-original",
+      "kind": "holder",
+      "value": null,
+      "unknown": true,
+      "from": "e-loss",
+      "src": [
+        "P79",
+        "P82"
+      ],
+      "note": "never found",
+      "id": "s11"
+    },
+    {
+      "of": "necklace-copy",
+      "kind": "holder",
+      "value": "forestier",
+      "from": "e18",
+      "src": [
+        "P95"
+      ],
+      "id": "s12"
+    },
+    {
+      "of": "loisel",
+      "kind": "obligation",
+      "value": "must be at the Ministry at ten o'clock",
+      "from": "e09",
+      "until": "e12",
+      "src": [
+        "P60"
+      ],
+      "status": "text only",
+      "note": "whether he went is not said",
+      "id": "s13"
+    },
+    {
+      "id": "s14",
+      "of": "necklace-original",
+      "kind": "material",
+      "value": "paste worth at most five hundred francs",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P05"
+      ]
+    }
+  ],
+  "readings": [
+    {
+      "id": "r-rank",
+      "holder": "narrator",
+      "text": "For women, natural fineness and charm replace caste and family; a pretty girl of a clerk's family can be as unhappy as a fallen lady.",
+      "status": "stated",
+      "supports": [
+        "b01"
+      ],
+      "src": [
+        "P01"
+      ]
+    },
+    {
+      "id": "r-strange",
+      "holder": "narrator",
+      "text": "How strange and changeful life is: how little a thing is needed for us to be lost or to be saved.",
+      "status": "stated",
+      "supports": [
+        "r-c01"
+      ],
+      "src": [
+        "P105"
+      ]
+    },
+    {
+      "id": "r-irony",
+      "holder": "reader",
+      "text": "Ten years' labour repaid a loan for an imitation; the loss that ruined them was a loss of paste.",
+      "status": "implied",
+      "supports": [
+        "e24",
+        "e19"
+      ],
+      "against": [
+        "c-necklace-diamond"
+      ],
+      "src": [
+        "P127"
+      ]
+    },
+    {
+      "id": "r-pride",
+      "holder": "reader",
+      "text": "Mathilde's pride in the repayment is the last thing she says before learning it was unnecessary.",
+      "status": "implied",
+      "supports": [
+        "e23"
+      ],
+      "src": [
+        "P125"
+      ]
+    },
+    {
+      "id": "r-c01",
+      "holder": "narrator",
+      "kind": "counterfactual",
+      "text": "If she had not lost the necklace, her life might have been different.",
+      "status": "stated",
+      "src": [
+        "P105"
+      ]
+    }
+  ],
+  "gaps_found": [
+    "v1: the necklace's loss has no moment or place; it has to be dropped somewhere and hidden",
+    "v1: the replacement's buy-back deal has an expiry and a condition; an engagement has a time but no condition",
+    "v1: the ten years are one event with a clock jump in the sidecar; the price of the final debt is not given anywhere",
+    "v1: a character's belief cannot be marked false; Mathilde's belief that it was diamonds lives only as the accuracy of a perception",
+    "v1: no way to say a deadline passed unused",
+    "v1: no year; an invented year was chosen to fit a weekday"
+  ]
+}

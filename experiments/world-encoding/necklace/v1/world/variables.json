@@ -1,0 +1,29 @@
+[
+  {
+    "key": "francs",
+    "name": "Francs in hand",
+    "description": "Money in hand, in francs. Falls when something is paid for.",
+    "kind": "number",
+    "subject": "character",
+    "integer": true,
+    "min": 0,
+    "max": 10000000,
+    "default": 0,
+    "visibility": "public"
+  },
+  {
+    "key": "debt",
+    "name": "Debt (francs)",
+    "description": "What Loisel owes lenders.",
+    "kind": "number",
+    "subject": "character",
+    "only": [
+      "loisel"
+    ],
+    "integer": true,
+    "min": 0,
+    "max": 10000000,
+    "default": 0,
+    "visibility": "public"
+  }
+]

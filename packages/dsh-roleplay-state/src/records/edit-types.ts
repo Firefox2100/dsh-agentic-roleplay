@@ -6,7 +6,9 @@ import type {
   CharacterRepository, CharacterStateRepository, ConsolidationRepository, EngagementRepository, EventRepository, IntentRepository, ItemRepository, LocationRepository, MemoryRepository,
   KnowledgeRepository, MetadataRepository, PlacementRepository, RelationshipRepository, RoutineRepository, SlotRepository, ThreadRepository, TriggerRepository, VariableRepository,
   FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
+  ClaimRepository, ConcealmentRepository, GroupRepository,
 } from '../repositories.ts'
+import type { ClaimLinkChange, ClaimStatusChange, ClaimUnlink, ConcealmentSpec, GroupMemberSpec, NewClaimQuestionSpec, NewClaimSpec } from './claims-edit.ts'
 import type { ItemChangeSpec } from './items.ts'
 import type { VariableChangeSpec } from './variables.ts'
 
@@ -24,6 +26,9 @@ export interface RecordsTarget {
   events: EventRepository
   memories: MemoryRepository
   threads: ThreadRepository
+  claims: ClaimRepository
+  concealment: ConcealmentRepository
+  groups: GroupRepository
   locations: LocationRepository
   placements: PlacementRepository
   relationships: RelationshipRepository
@@ -432,6 +437,16 @@ export interface RecordsEdit {
   /** Open threads the player's character has now learned of. */
   threadsKnown?: number[]
   threadsResolved?: number[]
+  /** What people assert, with the events that bear on it; a model's claims stay proposed until a person confirms them. */
+  claims?: NewClaimSpec[]
+  claimLinks?: ClaimLinkChange[]
+  claimUnlinks?: ClaimUnlink[]
+  claimStatuses?: ClaimStatusChange[]
+  claimRetractions?: number[]
+  claimQuestions?: NewClaimQuestionSpec[]
+  /** Events kept from a character, and who may have been part of a group that took something in. */
+  concealments?: ConcealmentSpec[]
+  groupMembers?: GroupMemberSpec[]
 }
 
 export interface EditResult {
@@ -445,6 +460,8 @@ export interface EditResult {
   /** The keys of the variables the edit declared. */
   variableKeys?: string[]
   beliefIds: number[]
+  /** The ids of the claims the edit added, in order. */
+  claimIds?: number[]
   /** How many rows were added, changed or removed. */
   writes: number
 }

@@ -1,10 +1,20 @@
+import type { EditorClaims } from '../../shared/claims.ts'
 import type { GalleryTarget } from '../widgets/gallery-view/gallery-api.ts'
 import type { CharacterEdit, FactionEdit, LoreEdit, PlaceEdit, PlotsEdit, RelationChange, ThingEdit, WorldState } from '../../shared/world-state.ts'
+
+/** The claims of a story, for the person who settles what a keeper proposed. */
+export interface ClaimsApi {
+  list(signal: AbortSignal): Promise<EditorClaims>
+  setStatus(claim: number, status: 'proposed' | 'confirmed', signal: AbortSignal): Promise<EditorClaims>
+  remove(claim: number, signal: AbortSignal): Promise<EditorClaims>
+}
 
 /** Where the editor reads a world from and writes its changes to: a session's story, or a world's files. */
 export interface WorldSource {
   /** The authored world this source reads, when it is one: only a world's files have fields, prompts and pictures of their own. */
   worldId?: string
+  /** Only a story has claims to settle. */
+  claims?: ClaimsApi
   /** Whose gallery pictures can be chosen as a character's, a place's or a thing's picture, when it has one. */
   gallery?: GalleryTarget
   load(signal: AbortSignal): Promise<WorldState>

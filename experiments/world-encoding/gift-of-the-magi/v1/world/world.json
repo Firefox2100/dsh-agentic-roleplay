@@ -1,0 +1,14 @@
+{
+  "id": "encoding-gift-of-the-magi",
+  "name": "The Gift of the Magi",
+  "description": "An encoding of O. Henry's story (1905): on Christmas Eve a poor young couple each sell their dearest possession to buy a present for the other.",
+  "starting_time": "1905-12-24T14:00",
+  "time_zone": "UTC",
+  "metadata": {
+    "tags": [
+      "encoding",
+      "short-story",
+      "christmas"
+    ]
+  }
+}

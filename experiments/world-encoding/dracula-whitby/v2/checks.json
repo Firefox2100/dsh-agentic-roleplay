@@ -1,0 +1,244 @@
+{
+ "independent": true,
+ "blind": true,
+ "note": "Written from reading the chapter, before any event, claim or link was written. Verdicts are what the chapter establishes, not what the novel later reveals.",
+ "expected_verdicts": {
+  "c-stranger-aboard": "open",
+  "c-mate-killed-crew": "open",
+  "c-stranger-killed-crew": "open",
+  "c-captain-killed-crew": "unresolved",
+  "c-captain-tied-himself": "true",
+  "c-dead-two-days": "likely",
+  "c-ship-varna": "true",
+  "c-cargo-clay": "unlikely",
+  "c-swales-fright": "likely",
+  "c-lucy-walked": "true",
+  "c-jonathan-on-land": "unresolved",
+  "c-storm-night-7": "open",
+  "c-storm-night-8": "open"
+ },
+ "verdict_at": [
+  [
+   "c-stranger-aboard",
+   "e-log-read",
+   "open"
+  ],
+  [
+   "c-mate-killed-crew",
+   "e-log-read",
+   "open"
+  ],
+  [
+   "c-captain-tied-himself",
+   "e-coastguard-says",
+   "unresolved"
+  ],
+  [
+   "c-captain-tied-himself",
+   "e-log-read",
+   "true"
+  ]
+ ],
+ "held_outcomes": {
+  "h-captain-ties": "fulfilled",
+  "h-funeral": "fulfilled",
+  "h-sequel": "fulfilled",
+  "h-mina-walk": "open",
+  "h-jonathan-news": "open",
+  "h-dog-found": "prevented"
+ },
+ "order": [
+  [
+   "e-storm-breaks",
+   "e-demeter-beaches",
+   "before"
+  ],
+  [
+   "e-demeter-beaches",
+   "e-coastguard-boards",
+   "before"
+  ],
+  [
+   "b-mate-jumps",
+   "b-captain-sees-it",
+   "before"
+  ],
+  [
+   "e-lucy-walk-1",
+   "e-lucy-walk-2",
+   "before"
+  ]
+ ],
+ "overlap3": [
+  [
+   "e-demeter-beaches",
+   "e-mina-night",
+   "definite"
+  ],
+  [
+   "e-lucy-walk-1",
+   "e-demeter-beaches",
+   "possible"
+  ],
+  [
+   "e-demeter-beaches",
+   "e-swales-found",
+   "none"
+  ],
+  [
+   "e-storm-breaks",
+   "e-demeter-beaches",
+   "none"
+  ],
+  [
+   "e-searchlight-sweeps",
+   "e-demeter-beaches",
+   "definite"
+  ]
+ ],
+ "knows_at": [
+  [
+   "e-mina-harbour",
+   "mina",
+   "e-demeter-beaches",
+   false
+  ],
+  [
+   "e-cutting-pasted",
+   "mina",
+   "e-demeter-beaches",
+   true
+  ],
+  [
+   "b-olgaren-sees",
+   "captain",
+   "b-olgaren-sees",
+   false
+  ],
+  [
+   "b-olgaren-confides",
+   "captain",
+   "b-olgaren-sees",
+   true
+  ],
+  [
+   "e-demeter-beaches",
+   "correspondent",
+   "b-mate-jumps",
+   false
+  ],
+  [
+   "e-log-read",
+   "correspondent",
+   "b-mate-jumps",
+   true
+  ],
+  [
+   "b-captain-sees-it",
+   "captain",
+   "b-mate-jumps",
+   true
+  ],
+  [
+   "e-lucy-walk-1",
+   "lucy",
+   "e-lucy-walk-1",
+   false
+  ]
+ ],
+ "told_late": [
+  "e-mina-night",
+  "e-mina-harbour"
+ ],
+ "key_corrections": [
+  "told_late: was [], now [e-mina-night, e-mina-harbour]. I forgot that Mina's night and morning of the storm happen before the 9 August dispatch but are told after it (P63-P64 against P16-P17). The text order is not the story order here, which is the point of the check.",
+  "A second mismatch was my encoding, not the key: the dateline 'Whitby' (P16) sat in the dispatch event, so the mastiff, told in P17, looked late. The dateline now belongs to the event before.",
+  "verdict_at for c-stranger-aboard and c-mate-killed-crew: my four entries were the captain's view in the voyage, but verdict_at is the record's view, and every voyage event enters the record when the log is read (e-log-read). They are now two sets: verdict_at (record time: both open once the log is read) and verdict_for (the captain's own, from what he knew then). The model gained verdict_for because of this."
+ ],
+ "post_hoc": {
+  "note": "The last knows_at entry (the sleepwalker does not know her own walk) was added after the encoding, because the party rule said she did. Not blind."
+ },
+ "verdict_for": [
+  [
+   "c-stranger-aboard",
+   "captain",
+   "b-search-ship",
+   "unlikely"
+  ],
+  [
+   "c-stranger-aboard",
+   "captain",
+   "b-mate-sees-it",
+   "open"
+  ],
+  [
+   "c-mate-killed-crew",
+   "captain",
+   "b-mate-jumps",
+   "likely"
+  ],
+  [
+   "c-mate-killed-crew",
+   "captain",
+   "b-captain-sees-it",
+   "open"
+  ]
+ ],
+ "knows3": [
+  [
+   "e-dog-leaps",
+   "crowd",
+   "e-dog-leaps",
+   "knows"
+  ],
+  [
+   "e-dog-leaps",
+   "boat-captains",
+   "e-dog-leaps",
+   "possibly"
+  ],
+  [
+   "e-dog-leaps",
+   "old-fisherman",
+   "e-dog-leaps",
+   "no"
+  ],
+  [
+   "e-dog-leaps",
+   "coal-merchant",
+   "e-dog-leaps",
+   "no"
+  ]
+ ],
+ "post_hoc_knows3": "knows3 (knows / possibly / no) added after the crowd problem was found in round three (nobody in a crowd could be asked individually); written from the text before pinning: the boat captains are in the sunset assemblage with the crowd, the fisherman was with the afternoon gossips, the coal merchant appears only the next morning.",
+ "gaps": [
+  [
+   "e-dog-leaps",
+   "e-mastiff-found",
+   [
+    [
+     250,
+     "c-storm-night-8",
+     "open"
+    ],
+    [
+     1690,
+     "c-storm-night-7",
+     "open"
+    ]
+   ]
+  ],
+  [
+   "e-searchlight-sweeps",
+   "e-demeter-beaches",
+   [
+    [
+     45,
+     null,
+     null
+    ]
+   ]
+  ]
+ ],
+ "post_hoc_gaps": "gaps added in round four with time.ties. Written from the text first: under the 9 August reading the dog is found about four hours after the leap (330-80 minutes after midnight), under the 8 August reading about 28 hours; the same-epoch pair needs no tie."
+}

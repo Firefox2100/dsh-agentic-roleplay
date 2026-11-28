@@ -1,0 +1,886 @@
+[
+ {
+  "ref": "P01.1",
+  "quote": "In glancing over my notes of the seventy odd cases ... I cannot recall any which presented more singular features",
+  "v2": {
+   "class": "S",
+   "where": "e-watson-writes (when about 1891); the survey of his cases is text"
+  }
+ },
+ {
+  "ref": "P01.2",
+  "quote": "a promise of secrecy was made at the time, from which I have only been freed during the last month by the untimely death of the lady",
+  "v2": {
+   "class": "E",
+   "where": "s-promise (until e-helen-dies); e-helen-dies offscreen"
+  }
+ },
+ {
+  "ref": "P01.3",
+  "quote": "wide-spread rumors as to the death of Dr. Grimesby Roylott which tend to make the matter even more terrible than the truth",
+  "v2": {
+   "class": "E",
+   "where": "s-rumours; r-rumours"
+  },
+  "note": "the rumours' content is not given; only that they exaggerate"
+ },
+ {
+  "ref": "P01.4",
+  "quote": "It was early in April in the year '83 that I woke one morning to find Sherlock Holmes standing ... a quarter past seven",
+  "v2": {
+   "class": "E",
+   "where": "e-watson-woken (when.t 435); anchor d0"
+  }
+ },
+ {
+  "ref": "P02",
+  "quote": "Very sorry to knock you up, Watson ... Mrs. Hudson has been knocked up, she retorted upon me, and I on you.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "Mrs Hudson's retort is an offstage exchange never recorded as an event"
+ },
+ {
+  "ref": "P03-P05",
+  "quote": "What is it, then, a fire? ... a client ... I would not miss it for anything",
+  "v2": {
+   "class": "E",
+   "where": "e-watson-woken; held none; the client's urgency is text"
+  }
+ },
+ {
+  "ref": "P06.1",
+  "quote": "I had no keener pleasure than in following Holmes ... rapid deductions, as swift as intuitions",
+  "v2": {
+   "class": "E",
+   "where": "r-method (narrator reading)"
+  }
+ },
+ {
+  "ref": "P06.2",
+  "quote": "A lady dressed in black and heavily veiled, who had been sitting in the window, rose as we entered.",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-prepares; e-helen-arrives"
+  }
+ },
+ {
+  "ref": "P07.1",
+  "quote": "Good-morning, madam ... My name is Sherlock Holmes. This is my intimate friend and associate",
+  "v2": {
+   "class": "E",
+   "where": "e-helen-arrives"
+  }
+ },
+ {
+  "ref": "P07.2",
+  "quote": "Ha! I am glad to see that Mrs. Hudson has had the good sense to light the fire ... a cup of hot coffee",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "a fire lit and coffee offered: ordinary things with no field"
+ },
+ {
+  "ref": "P08-P09",
+  "quote": "It is not cold which makes me shiver ... It is fear, Mr. Holmes. It is terror.",
+  "v2": {
+   "class": "E",
+   "where": "s-helen-fear (until e-helen-leaves); says"
+  }
+ },
+ {
+  "ref": "P10.1",
+  "quote": "her face all drawn and gray, with restless, frightened eyes, like those of some hunted animal ... hair shot with premature gray",
+  "v2": {
+   "class": "S",
+   "where": "s-helen-looks (appearance text)"
+  },
+  "note": "a simile inside a description"
+ },
+ {
+  "ref": "P11-P15",
+  "quote": "You have come in by train this morning ... the second half of a return ticket ... mud in no less than seven places",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-deduces-journey; c-journey (confirmed by e-helen-confirms-journey)"
+  },
+  "note": "an inference confirmed by the person it is about"
+ },
+ {
+  "ref": "P16.1",
+  "quote": "I started from home before six, reached Leatherhead at twenty past, and came in by the first train",
+  "v2": {
+   "class": "E",
+   "where": "b-helen-leaves (when.t 350-440); e-helen-confirms-journey"
+  }
+ },
+ {
+  "ref": "P16.2",
+  "quote": "I have heard of you from Mrs. Farintosh, whom you helped in the hour of her sore need",
+  "v2": {
+   "class": "E",
+   "where": "b-farintosh (backfilled, established in e-holmes-casebook)"
+  }
+ },
+ {
+  "ref": "P16.3",
+  "quote": "At present it is out of my power to reward you ... in a month or six weeks I shall be married, with the control of my own income",
+  "v2": {
+   "class": "S",
+   "where": "h-helen-marry (the wedding); the promise to pay is not held"
+  },
+  "note": "an obligation with a condition and a date has no home"
+ },
+ {
+  "ref": "P17-P18",
+  "quote": "Holmes turned to his desk ... case-book ... Farintosh ... an opal tiara ... my profession is its own reward",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-casebook; b-farintosh"
+  }
+ },
+ {
+  "ref": "P19-P20",
+  "quote": "my fears are so vague ... he to whom of all others I have a right to look for help ... looks upon all that I tell him as the fancies of a nervous woman",
+  "v2": {
+   "class": "E",
+   "where": "e-helen-fears; c-armitage-fancies (unresolved); knowledge helen believes"
+  },
+  "note": "who 'he' is, is the encoder's inference from P66"
+ },
+ {
+  "ref": "P21-P22",
+  "quote": "My name is Helen Stoner, and I am living with my stepfather ... the Roylotts of Stoke Moran",
+  "v2": {
+   "class": "E",
+   "where": "e-helen-tells; people helen, roylott"
+  }
+ },
+ {
+  "ref": "P23.1",
+  "quote": "The family was at one time among the richest in England ... four successive heirs ... a gambler in the days of the Regency",
+  "v2": {
+   "class": "S",
+   "where": "s-estate; s-lawn-hist (circumstance text)"
+  },
+  "note": "the squandering is told as a sentence, not as events"
+ },
+ {
+  "ref": "P23.2",
+  "quote": "his only son, my step-father ... took a medical degree, and went out to Calcutta ... a large practice",
+  "v2": {
+   "class": "E",
+   "where": "b-roylott-india (summarised)"
+  }
+ },
+ {
+  "ref": "P23.3",
+  "quote": "he beat his native butler to death, and narrowly escaped a capital sentence ... a long term of imprisonment",
+  "v2": {
+   "class": "E",
+   "where": "b-butler"
+  },
+  "note": "the butler is not an entity"
+ },
+ {
+  "ref": "P24.1",
+  "quote": "When Dr. Roylott was in India he married my mother ... My sister Julia and I were twins ... two years old",
+  "v2": {
+   "class": "E",
+   "where": "b-marries; s-twins"
+  }
+ },
+ {
+  "ref": "P24.2",
+  "quote": "She had a considerable sum of money ... bequeathed to Dr. Roylott entirely while we resided with him ... a certain annual sum to each of us in the event of our marriage",
+  "v2": {
+   "class": "S",
+   "where": "b-bequest; s-will; e-holmes-returns (the sums)"
+  },
+  "note": "terms as text and figures; nothing sums them"
+ },
+ {
+  "ref": "P24.3",
+  "quote": "my mother died, she was killed eight years ago in a railway accident near Crewe",
+  "v2": {
+   "class": "E",
+   "where": "b-mother-dies"
+  }
+ },
+ {
+  "ref": "P24.4",
+  "quote": "Dr. Roylott then abandoned his attempts to establish himself in practice in London, and took us to live with him in the old ancestral house",
+  "v2": {
+   "class": "E",
+   "where": "b-moves-in"
+  }
+ },
+ {
+  "ref": "P25",
+  "quote": "a terrible change came over our step-father ... ferocious quarrels ... the terror of the village",
+  "v2": {
+   "class": "E",
+   "where": "b-withdraws (iterative); s-roylott-nature; r-roylott-heredity"
+  }
+ },
+ {
+  "ref": "P26",
+  "quote": "Last week he hurled the local blacksmith over a parapet ... the wandering gypsies ... a cheetah and a baboon",
+  "v2": {
+   "class": "E",
+   "where": "b-blacksmith; b-gypsies; b-pets-arrive; s-roylott-pets; s-roylott-friends"
+  }
+ },
+ {
+  "ref": "P27",
+  "quote": "my poor sister Julia and I had no great pleasure in our lives. No servant would stay ... She was but thirty at the time of her death",
+  "v2": {
+   "class": "S",
+   "where": "s-servants; s-twins (circumstance text)"
+  }
+ },
+ {
+  "ref": "P28",
+  "quote": "Your sister is dead, then?",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-attends"
+  }
+ },
+ {
+  "ref": "P29",
+  "quote": "She died just two years ago ... an aunt ... Miss Honoria Westphail ... Julia went there at Christmas ... a half-pay major of marines ... within a fortnight of the day which had been fixed for the wedding",
+  "v2": {
+   "class": "E",
+   "where": "b-julia-engaged; b-no-objection; h-julia-wedding (prevented by b-julia-dies); s-julia-engaged"
+  }
+ },
+ {
+  "ref": "P30-P31",
+  "quote": "Sherlock Holmes had been leaning back in his chair with his eyes closed ... Pray be precise as to details",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-attends"
+  },
+  "note": "his posture is text"
+ },
+ {
+  "ref": "P32-P33",
+  "quote": "The manor-house is very old, and only one wing is now inhabited ... three bedrooms ... Do I make myself plain?",
+  "v2": {
+   "class": "E",
+   "where": "s-layout; claim c-room-sealed (no communication)"
+  },
+  "note": "'there is no communication between them' is a claim, later contradicted"
+ },
+ {
+  "ref": "P34",
+  "quote": "That fatal night Dr. Roylott had gone to his room early ... the smell of the strong Indian cigars ... She left her room ... At eleven o'clock she rose to leave me",
+  "v2": {
+   "class": "E",
+   "where": "b-roylott-retires; b-julia-visits (epoch julia-night)"
+  }
+ },
+ {
+  "ref": "P35-P43",
+  "quote": "have you ever heard any one whistle in the dead of the night? ... Because during the last few nights I have always, about three in the morning, heard a low, clear whistle",
+  "v2": {
+   "class": "E",
+   "where": "b-julia-asks; b-julia-whistles (iterative, reported by Julia); b-julia-locks"
+  }
+ },
+ {
+  "ref": "P44-P48",
+  "quote": "Was it your custom always to lock yourselves in at night? ... the doctor kept a cheetah and a baboon",
+  "v2": {
+   "class": "E",
+   "where": "s-lock-habit (until b-julia-dies)"
+  }
+ },
+ {
+  "ref": "P49.1",
+  "quote": "I could not sleep that night. A vague feeling of impending misfortune ... twins ... subtle are the links which bind two souls",
+  "v2": {
+   "class": "S",
+   "where": "b-helen-wakeful; r-twins (reading)"
+  },
+  "note": "a feeling presented as a link between the twins"
+ },
+ {
+  "ref": "P49.2",
+  "quote": "there burst forth the wild scream of a terrified woman ... I seemed to hear a low whistle ... a clanging sound",
+  "v2": {
+   "class": "E",
+   "where": "b-julia-screams; c-whistle-julia (a claim: the hearing is hers and doubted)"
+  }
+ },
+ {
+  "ref": "P49.3",
+  "quote": "my sister appear at the opening ... she fell to the ground ... 'Oh, my God! Helen! It was the band! The speckled band!' ... she stabbed with her finger into the air in the direction of the doctor's room",
+  "v2": {
+   "class": "E",
+   "where": "b-julia-emerges; b-julia-words; knowledge reader (Julia's words); c-band-snake"
+  }
+ },
+ {
+  "ref": "P49.4",
+  "quote": "I met him hastening from his room in his dressing-gown ... poured brandy ... she slowly sank and died without having recovered her consciousness",
+  "v2": {
+   "class": "E",
+   "where": "b-roylott-comes; b-julia-dies"
+  }
+ },
+ {
+  "ref": "P50-P51",
+  "quote": "are you sure about this whistle and metallic sound? ... I may possibly have been deceived",
+  "v2": {
+   "class": "E",
+   "where": "c-whistle-julia with knowledge helen doubts"
+  },
+  "note": "the doubt is the holder's stance, not a bearing event"
+ },
+ {
+  "ref": "P52-P54",
+  "quote": "Was your sister dressed? ... the charred stump of a match, and in her left a matchbox",
+  "v2": {
+   "class": "E",
+   "where": "s-julia-last; things match-stump, matchbox"
+  }
+ },
+ {
+  "ref": "P55-P57",
+  "quote": "The coroner ... unable to find any satisfactory cause of death ... the door had been fastened upon the inner side ... The doctors examined her for [poison], but without success",
+  "v2": {
+   "class": "E",
+   "where": "b-inquiry; c-room-sealed (false)"
+  }
+ },
+ {
+  "ref": "P58-P59",
+  "quote": "What do you think that this unfortunate lady died of? ... pure fear and nervous shock",
+  "v2": {
+   "class": "E",
+   "where": "c-julia-fear; knowledge helen believes"
+  }
+ },
+ {
+  "ref": "P60-P63",
+  "quote": "Were there gypsies in the plantation at the time? ... the spotted handkerchiefs ... delirium",
+  "v2": {
+   "class": "E",
+   "where": "c-band-gypsies; s-gypsy-camp; r-delirium"
+  }
+ },
+ {
+  "ref": "P64-P65",
+  "quote": "Holmes shook his head like a man who is far from being satisfied. 'These are very deep waters'",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-unsatisfied"
+  }
+ },
+ {
+  "ref": "P66.1",
+  "quote": "Two years have passed ... A month ago ... Percy Armitage ... we are to be married in the course of the spring",
+  "v2": {
+   "class": "E",
+   "where": "b-armitage; s-helen-engaged; h-helen-marry (open)"
+  }
+ },
+ {
+  "ref": "P66.2",
+  "quote": "Two days ago some repairs were started in the west wing ... I have had to move into the chamber in which my sister died",
+  "v2": {
+   "class": "E",
+   "where": "b-repairs-begin"
+  }
+ },
+ {
+  "ref": "P66.3",
+  "quote": "last night ... I suddenly heard ... the low whistle ... I sprang up and lit the lamp, but nothing was to be seen",
+  "v2": {
+   "class": "E",
+   "where": "b-night-whistle; c-whistle-last-night"
+  }
+ },
+ {
+  "ref": "P67-P73",
+  "quote": "You are screening your step-father ... Five little livid spots ... He is a hard man",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-sees-bruise; e-helen-excuses; s-helen-bruise; c-bruise-roylott"
+  },
+  "note": "the admission is in the blush and excuse, not in words"
+ },
+ {
+  "ref": "P74",
+  "quote": "There was a long silence, during which Holmes leaned his chin upon his hands and stared into the crackling fire.",
+  "v2": {
+   "class": "S",
+   "where": "folded into e-holmes-asks-visit"
+  }
+ },
+ {
+  "ref": "P75-P82",
+  "quote": "would it be possible for us to see over these rooms without the knowledge of your step-father? ... I shall return by the twelve o'clock train",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-asks-visit; h-roylott-town; h-helen-twelve; e-helen-leaves"
+  }
+ },
+ {
+  "ref": "P83-P88",
+  "quote": "what do you think of it all, Watson? ... then her sister must have been undoubtedly alone",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-theory"
+  },
+  "note": "Watson's opinion is not recorded"
+ },
+ {
+  "ref": "P89-P93",
+  "quote": "When you combine the ideas of whistles at night, the presence of a band of gypsies ... I think that there is good ground to think that the mystery may be cleared along those lines",
+  "v2": {
+   "class": "E",
+   "where": "c-gypsies-involved; c-clang-bar; knowledge holmes believes (until e-holmes-drops-gypsies)"
+  },
+  "note": "a compound theory held as two claims"
+ },
+ {
+  "ref": "P94",
+  "quote": "a huge man had framed himself in the aperture ... a fierce old bird of prey",
+  "v2": {
+   "class": "S",
+   "where": "s-roylott-looks"
+  },
+  "note": "a figure of speech inside a description"
+ },
+ {
+  "ref": "P95-P108",
+  "quote": "Which of you is Holmes? ... Holmes, the busybody! ... a decided draught",
+  "v2": {
+   "class": "S",
+   "where": "e-roylott-bursts-in; e-holmes-baits-roylott; c-roylott-traced"
+  },
+  "note": "Holmes's irrelevant replies (cold, crocuses) are the wit of the scene and sit in the text"
+ },
+ {
+  "ref": "P109-P111",
+  "quote": "seized the poker, and bent it into a curve ... Holmes ... straightened it out again",
+  "v2": {
+   "class": "E",
+   "where": "e-poker-bent; e-holmes-straightens-poker"
+  }
+ },
+ {
+  "ref": "P112",
+  "quote": "Fancy his having the insolence to confound me with the official detective force! ... Doctors' Commons",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-straightens-poker; h-holmes-commons"
+  }
+ },
+ {
+  "ref": "P113-P114",
+  "quote": "I have seen the will of the deceased wife ... not more than ₤750. Each daughter can claim an income of ₤250",
+  "v2": {
+   "class": "S",
+   "where": "e-holmes-doctors-commons (offscreen); e-holmes-returns; c-roylott-motive (confirmed)"
+  },
+  "note": "no arithmetic: 750 less 250 or 500 is not derived"
+ },
+ {
+  "ref": "P115.1",
+  "quote": "At Waterloo we were fortunate in catching a train for Leatherhead ... drove for four or five miles through the lovely Surrey lanes",
+  "v2": {
+   "class": "E",
+   "where": "e-train-to-leatherhead; s-spring-day"
+  }
+ },
+ {
+  "ref": "P115.2",
+  "quote": "To me at least there was a strange contrast between the sweet promise of the spring and this sinister quest",
+  "v2": {
+   "class": "P",
+   "where": "r-contrast (text only)"
+  },
+  "note": "a figure"
+ },
+ {
+  "ref": "P116-P123",
+  "quote": "Stoke Moran? ... the house of Dr. Grimesby Roylott ... the lady is Miss Stoner",
+  "v2": {
+   "class": "E",
+   "where": "e-train-to-leatherhead; s-estate-wing; e-arrive-stoke-moran"
+  }
+ },
+ {
+  "ref": "P124",
+  "quote": "I thought it as well that this fellow should think we had come here as architects ... It may stop his gossip.",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-conceals-purpose (kind conceal, from roylott); knowledge roylott unaware"
+  },
+  "note": "whether Roylott believes it is never shown"
+ },
+ {
+  "ref": "P125-P130",
+  "quote": "Our client of the morning had hurried forward ... Dr. Roylott has gone to town ... he has followed me, then",
+  "v2": {
+   "class": "E",
+   "where": "e-arrive-stoke-moran; e-helen-returns (offscreen); c-roylott-away; e-holmes-tells-helen"
+  }
+ },
+ {
+  "ref": "P131",
+  "quote": "The building was of gray, lichen-blotched stone ... two curving wings, like the claws of a crab ... Some scaffolding",
+  "v2": {
+   "class": "S",
+   "where": "s-estate-wing; things scaffolding"
+  }
+ },
+ {
+  "ref": "P132-P135",
+  "quote": "This, I take it, belongs to the room in which you used to sleep ... there does not seem to be any very pressing need for repairs ... an excuse to move me",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-notes-repairs; c-repairs-pretext"
+  }
+ },
+ {
+  "ref": "P136-P139",
+  "quote": "Now, would you have the kindness to go into your room and bar your shutters ... my theory certainly presents some difficulties",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-tests-shutters; s-shutters; c-band-gypsies, c-gypsies-involved, c-clang-bar undermined"
+  }
+ },
+ {
+  "ref": "P140",
+  "quote": "A small side door led into the whitewashed corridor ... a homely little room ... worm-eaten oak",
+  "v2": {
+   "class": "S",
+   "where": "s-room-middle; s-corridor"
+  },
+  "note": "description"
+ },
+ {
+  "ref": "P141-P146",
+  "quote": "Where does that bell communicate with? ... Your sister asked for it, I suppose? ... No, I never heard of her using it.",
+  "v2": {
+   "class": "E",
+   "where": "e-bell-asked"
+  }
+ },
+ {
+  "ref": "P147",
+  "quote": "He threw himself down upon his face with his lens ... walked over to the bed, and spent some time in staring at it",
+  "v2": {
+   "class": "E",
+   "where": "e-bed-clamped-seen (the clamp itself is told at P214)"
+  }
+ },
+ {
+  "ref": "P148-P151",
+  "quote": "Why, it's a dummy ... fastened to a hook just above ... the ventilator",
+  "v2": {
+   "class": "E",
+   "where": "e-bell-rope-dummy; s-wiring"
+  }
+ },
+ {
+  "ref": "P152-P156",
+  "quote": "what a fool a builder must be to open a ventilator into another room ... dummy bell-ropes, and ventilators which do not ventilate",
+  "v2": {
+   "class": "E",
+   "where": "e-ventilator-found; s-ventilator; claim c-room-sealed contradicted"
+  }
+ },
+ {
+  "ref": "P157",
+  "quote": "Dr. Grimesby Roylott's chamber ... A camp-bed ... a large iron safe",
+  "v2": {
+   "class": "S",
+   "where": "s-roylott-room"
+  },
+  "note": "description"
+ },
+ {
+  "ref": "P158-P161",
+  "quote": "What's in here? ... My step-father's business papers ... Only once, some years ago",
+  "v2": {
+   "class": "E",
+   "where": "e-roylott-room-search; knowledge helen of the safe"
+  }
+ },
+ {
+  "ref": "P162-P166",
+  "quote": "There isn't a cat in it, for example? ... a small saucer of milk ... a cheetah is just a big cat",
+  "v2": {
+   "class": "E",
+   "where": "e-milk-seen; s-milk"
+  }
+ },
+ {
+  "ref": "P166-P167",
+  "quote": "He squatted down in front of the wooden chair, and examined the seat of it ... That is quite settled",
+  "v2": {
+   "class": "E",
+   "where": "e-chair-examined; s-chair-marks (told only at P249)"
+  }
+ },
+ {
+  "ref": "P168-P171",
+  "quote": "a small dog-lash ... curled upon itself, and tied so as to make a loop of whip-cord ... it's a wicked world",
+  "v2": {
+   "class": "E",
+   "where": "e-lash-seen; s-lash"
+  },
+  "note": "Holmes's aside about clever men and crime is a remark"
+ },
+ {
+  "ref": "P172",
+  "quote": "I had never seen my friend's face so grim or his brow so dark",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-grim"
+  }
+ },
+ {
+  "ref": "P173-P187",
+  "quote": "you should absolutely follow my advice ... we must spend the night in your room ... you must open the shutters ... put your lamp there as a signal to us",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-instructs; h-helen-signal; h-holmes-night; s-signal-lamp"
+  }
+ },
+ {
+  "ref": "P183",
+  "quote": "You must confine yourself to your room, on pretence of a headache",
+  "v2": {
+   "class": "S",
+   "where": "e-holmes-conceals-plan (conceal, from roylott)"
+  },
+  "note": "the pretence is held in the instruction event, not as the act it will be"
+ },
+ {
+  "ref": "P188-P193",
+  "quote": "tell me what was the cause of my sister's death ... I think that there was probably some more tangible cause",
+  "v2": {
+   "class": "E",
+   "where": "e-helen-asks-cause; c-julia-fear undermined"
+  }
+ },
+ {
+  "ref": "P194",
+  "quote": "'GOOD-BYE, AND BE BRAVE'",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "a page heading of the transcription, not part of the text"
+ },
+ {
+  "ref": "P195.1",
+  "quote": "leave you, for if Dr. Roylott returned and saw us ... Good-bye, and be brave",
+  "v2": {
+   "class": "E",
+   "where": "e-farewell"
+  }
+ },
+ {
+  "ref": "P195.2",
+  "quote": "engaging a bedroom and sitting-room at the 'Crown Inn' ... At dusk we saw Dr. Grimesby Roylott drive past ... a sudden light spring up",
+  "v2": {
+   "class": "E",
+   "where": "e-crown-inn; e-roylott-drives-past (confirms c-roylott-away)"
+  }
+ },
+ {
+  "ref": "P196-P200",
+  "quote": "I have really some scruples as to taking you to-night. There is a distinct element of danger.",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-warns-watson"
+  }
+ },
+ {
+  "ref": "P201-P208",
+  "quote": "I knew that we should find a ventilator before ever we came to Stoke Moran ... I deduced a ventilator.",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-deduces-vent (made at t 590, told here); e-ventilator-explained; c-ventilator-expected"
+  },
+  "note": "the one place the story is told later than it happened and Holmes's own mind is the event"
+ },
+ {
+  "ref": "P209-P211",
+  "quote": "there is at least a curious coincidence of dates. A ventilator is made, a cord is hung, and a lady who sleeps in the bed dies.",
+  "v2": {
+   "class": "E",
+   "where": "e-ventilator-explained; b-installs (approx, after b-julia-engaged, before b-julia-dies)"
+  },
+  "note": "the agent of the works is unnamed"
+ },
+ {
+  "ref": "P212-P218",
+  "quote": "It was clamped to the floor ... Holmes, I seem to see dimly what you are hinting at ... When a doctor does go wrong, he is the first of criminals.",
+  "v2": {
+   "class": "E",
+   "where": "e-bed-reasoning; s-bed; c-roylott-installed; c-snake-method; knowledge reader of s-bed from para:P214"
+  }
+ },
+ {
+  "ref": "P218",
+  "quote": "Palmer and Pritchard were among the heads of their profession",
+  "v2": {
+   "class": "N",
+   "where": "r-sheba (text only)"
+  },
+  "note": "an allusion to real poisoners, who are not in the story's world"
+ },
+ {
+  "ref": "P218.2",
+  "quote": "for goodness' sake let us have a quiet pipe",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "an ordinary act, no field"
+ },
+ {
+  "ref": "P219-P221",
+  "quote": "About nine o'clock the light ... was extinguished ... at the stroke of eleven, a single bright light shone ... That is our signal",
+  "v2": {
+   "class": "E",
+   "where": "e-roylott-light-out; e-signal; e-leave-inn"
+  }
+ },
+ {
+  "ref": "P222-P225",
+  "quote": "there darted what seemed to be a hideous and distorted child ... That is the baboon.",
+  "v2": {
+   "class": "E",
+   "where": "e-baboon-dart; c-hideous-child; c-baboon; e-baboon-named"
+  },
+  "note": "the perceived and the real is a pair of claims"
+ },
+ {
+  "ref": "P226",
+  "quote": "perhaps we might find it upon our shoulders at any moment ... into the bedroom",
+  "v2": {
+   "class": "S",
+   "where": "r-cheetah-hypothetical (text only); e-enter-room"
+  },
+  "note": "a narrator's hypothetical"
+ },
+ {
+  "ref": "P227-P233",
+  "quote": "The least sound would be fatal to our plans ... We must sit without light. He would see it through the ventilator.",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-silence-order; e-holmes-conceals-light (conceal, from roylott)"
+  }
+ },
+ {
+  "ref": "P234",
+  "quote": "How shall I ever forget that dreadful vigil? ... Twelve struck, and one and two and three",
+  "v2": {
+   "class": "S",
+   "where": "e-vigil (t 1430-1660); r-vigil"
+  },
+  "note": "an exclamation of memory is a reading"
+ },
+ {
+  "ref": "P235",
+  "quote": "the momentary gleam of a light up in the direction of the ventilator ... a very gentle, soothing sound, like that of a small jet of steam",
+  "v2": {
+   "class": "E",
+   "where": "e-lantern-lit; e-hiss-heard; e-roylott-sends-snake (offscreen, established at P248); e-holmes-lashes"
+  },
+  "note": "what is going through the ventilator is never seen"
+ },
+ {
+  "ref": "P236-P237",
+  "quote": "You see it, Watson? ... But I saw nothing ... a low, clear whistle",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-lashes; e-whistle-watson; knowledge watson unaware of the descent"
+  }
+ },
+ {
+  "ref": "P238",
+  "quote": "the most horrible cry to which I have ever listened ... They say that away down in the village ... that cry raised the sleepers",
+  "v2": {
+   "class": "E",
+   "where": "e-roylott-cry (reported); e-snake-bites-roylott (offscreen)"
+  }
+ },
+ {
+  "ref": "P239-P241",
+  "quote": "What can it mean? ... It means that it is all over ... we will enter Dr. Roylott's room",
+  "v2": {
+   "class": "E",
+   "where": "e-enter-roylott-room"
+  }
+ },
+ {
+  "ref": "P242",
+  "quote": "On the table stood a dark-lantern ... Round his brow he had a peculiar yellow band, with brownish speckles",
+  "v2": {
+   "class": "E",
+   "where": "e-roylott-found; s-roylott-room; things"
+  }
+ },
+ {
+  "ref": "P243-P245",
+  "quote": "The band! the speckled band! ... It is a swamp adder ... He has died within ten seconds of being bitten.",
+  "v2": {
+   "class": "E",
+   "where": "e-band-is-snake; e-roylott-dies (offscreen); c-band-snake (true); c-roylott-killed-by-snake (true)"
+  }
+ },
+ {
+  "ref": "P246",
+  "quote": "he drew the dog-whip swiftly ... threw it into the iron safe, which he closed upon it",
+  "v2": {
+   "class": "E",
+   "where": "e-snake-into-safe; s-snake-place"
+  }
+ },
+ {
+  "ref": "P247",
+  "quote": "Such are the true facts of the death of Dr. Grimesby Roylott ... the official inquiry ... while indiscreetly playing with a dangerous pet",
+  "v2": {
+   "class": "E",
+   "where": "e-aftermath (summary); c-official-finding; harrow; knowledge"
+  },
+  "note": "the narrator's 'true facts' and his refusal to prolong the narrative are voice, kept nowhere"
+ },
+ {
+  "ref": "P248",
+  "quote": "I had come to an entirely erroneous conclusion ... The idea of a snake instantly occurred to me",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-drops-gypsies; e-holmes-suspects-snake (both made on site, told here); c-snake-method; c-snake-trained; r-holmes-erroneous"
+  }
+ },
+ {
+  "ref": "P249",
+  "quote": "An inspection of his chair showed me that he had been in the habit of standing on it ... The metallic clang ... was obviously caused by her step-father hastily closing the door of his safe",
+  "v2": {
+   "class": "E",
+   "where": "s-chair-marks; c-clang-safe; e-holmes-explains"
+  }
+ },
+ {
+  "ref": "P250-P251",
+  "quote": "With the result of driving it through the ventilator ... I am no doubt indirectly responsible for Dr. Grimesby Roylott's death",
+  "v2": {
+   "class": "E",
+   "where": "e-holmes-self-blame; r-holmes-blame; causes e-snake-bites-roylott from e-holmes-lashes"
+  }
+ }
+]

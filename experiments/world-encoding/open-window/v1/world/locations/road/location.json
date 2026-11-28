@@ -1,0 +1,12 @@
+{
+  "id": "road",
+  "name": "The road",
+  "description": "The road outside the Sappletons' gate, with a hedge.",
+  "exits": [
+    {
+      "to": "drive",
+      "description": "the front gate",
+      "travel_time_seconds": 20
+    }
+  ]
+}

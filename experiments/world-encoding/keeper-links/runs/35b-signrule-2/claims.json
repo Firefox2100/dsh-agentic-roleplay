@@ -1,0 +1,337 @@
+{
+ "claims": [
+  {
+   "id": "c-julia-fear",
+   "text": "Julia died of pure fear and nervous shock.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-tells"
+    }
+   ]
+  },
+  {
+   "id": "c-band-gypsies",
+   "text": "The 'speckled band' Julia named meant the gypsies, perhaps their spotted handkerchiefs.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-tells"
+    }
+   ]
+  },
+  {
+   "id": "c-gypsies-involved",
+   "text": "The gypsies in the plantation had a hand in Julia's death.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-theory",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-theory"
+    },
+    {
+     "as": "undermines",
+     "ref": "e-holmes-drops-gypsies"
+    }
+   ]
+  },
+  {
+   "id": "c-whistle-julia",
+   "text": "A low whistle and a metallic clang sounded just before Julia came out of her room.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-tells"
+    }
+   ]
+  },
+  {
+   "id": "c-whistle-last-night",
+   "text": "A low whistle sounded in Julia's old room the night before the visit.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-tells"
+    }
+   ]
+  },
+  {
+   "id": "c-room-sealed",
+   "text": "Nothing and no one could have got into Julia's room from outside, and the rooms have no communication with each other.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-tells"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-notes-repairs"
+    }
+   ]
+  },
+  {
+   "id": "c-repairs-pretext",
+   "text": "The repairs to the end wall were an excuse to move Helen out of her room.",
+   "by": "helen",
+   "asserted_in": "e-holmes-notes-repairs",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-notes-repairs"
+    }
+   ]
+  },
+  {
+   "id": "c-roylott-motive",
+   "text": "Roylott has the strongest motive for preventing either daughter's marriage: it would cut his income by \u00a3250 each.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-returns",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-returns"
+    }
+   ]
+  },
+  {
+   "id": "c-bruise-roylott",
+   "text": "Roylott made the marks on Helen's wrist.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-sees-bruise",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-sees-bruise"
+    }
+   ]
+  },
+  {
+   "id": "c-journey",
+   "text": "Helen came by dog-cart (seated on the driver's left) and the first train.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-deduces-journey",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-deduces-journey"
+    },
+    {
+     "as": "confirms",
+     "ref": "e-helen-confirms-journey"
+    }
+   ]
+  },
+  {
+   "id": "c-armitage-fancies",
+   "text": "The man she looks to for help (named only later, Armitage) takes Helen's fears for a nervous woman's fancies.",
+   "by": "helen",
+   "asserted_in": "e-helen-fears",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-fears"
+    }
+   ]
+  },
+  {
+   "id": "c-roylott-traced",
+   "text": "Roylott traced his stepdaughter to Baker Street.",
+   "by": "roylott",
+   "asserted_in": "e-roylott-bursts-in",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-roylott-bursts-in"
+    }
+   ]
+  },
+  {
+   "id": "c-ventilator-expected",
+   "text": "There is a ventilator joining Julia's room to Roylott's.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-deduces-vent",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-deduces-vent"
+    },
+    {
+     "as": "confirms",
+     "ref": "e-ventilator-found"
+    }
+   ]
+  },
+  {
+   "id": "c-roylott-installed",
+   "text": "Roylott had the ventilator cut, the dummy rope hung and the bed clamped, so that something could pass to the bed.",
+   "by": "holmes",
+   "asserted_in": "e-bed-reasoning",
+   "bears_on": []
+  },
+  {
+   "id": "c-snake-method",
+   "text": "Roylott killed Julia with a trained snake sent through the ventilator.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-suspects-snake",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-suspects-snake"
+    },
+    {
+     "as": "supports",
+     "ref": "e-holmes-drops-gypsies"
+    }
+   ]
+  },
+  {
+   "id": "c-snake-trained",
+   "text": "The snake was trained to return to a whistle by milk as a reward.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-explains",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-explains"
+    }
+   ]
+  },
+  {
+   "id": "c-clang-safe",
+   "text": "The metallic clang Julia's sister heard was Roylott shutting the safe on the snake.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-explains",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-explains"
+    }
+   ]
+  },
+  {
+   "id": "c-band-snake",
+   "text": "Julia's 'speckled band' was the snake.",
+   "by": "holmes",
+   "asserted_in": "e-band-is-snake",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-band-is-snake"
+    }
+   ]
+  },
+  {
+   "id": "c-roylott-killed-by-snake",
+   "text": "Roylott died of a snake bite.",
+   "by": "holmes",
+   "asserted_in": "e-band-is-snake",
+   "bears_on": [
+    {
+     "as": "confirms",
+     "ref": "e-band-is-snake"
+    }
+   ]
+  },
+  {
+   "id": "c-official-finding",
+   "text": "Roylott died while indiscreetly playing with a dangerous pet.",
+   "by": "inquiry",
+   "asserted_in": "e-aftermath",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-aftermath"
+    }
+   ]
+  },
+  {
+   "id": "c-hideous-child",
+   "text": "A hideous distorted child ran across the lawn.",
+   "by": "watson",
+   "asserted_in": "e-baboon-dart",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-baboon-dart"
+    }
+   ]
+  },
+  {
+   "id": "c-baboon",
+   "text": "The creature on the lawn was the baboon.",
+   "by": "holmes",
+   "asserted_in": "e-baboon-named",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-baboon-named"
+    }
+   ]
+  },
+  {
+   "id": "c-clang-bar",
+   "text": "The metallic clang Helen heard was one of the metal bars of the shutters falling back into place.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-theory",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-holmes-theory"
+    },
+    {
+     "as": "undermines",
+     "ref": "e-holmes-drops-gypsies"
+    }
+   ]
+  },
+  {
+   "id": "c-roylott-away",
+   "text": "Roylott will not be back from town before evening.",
+   "by": "helen",
+   "asserted_in": "e-helen-returns",
+   "bears_on": [
+    {
+     "as": "supports",
+     "ref": "e-helen-returns"
+    }
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "id": "q-speckled-band",
+   "rivals": [
+    "c-band-gypsies",
+    "c-band-snake"
+   ],
+   "text": "What did Julia mean by 'the speckled band'?"
+  },
+  {
+   "id": "q-cause-of-death",
+   "rivals": [
+    "c-julia-fear",
+    "c-snake-method"
+   ],
+   "text": "What caused Julia's death?"
+  },
+  {
+   "id": "q-clang",
+   "rivals": [
+    "c-clang-bar",
+    "c-clang-safe"
+   ],
+   "text": "What caused the metallic clang heard by Helen?"
+  }
+ ]
+}

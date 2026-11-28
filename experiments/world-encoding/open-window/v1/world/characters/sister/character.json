@@ -1,0 +1,16 @@
+{
+  "id": "sister",
+  "name": "Framton's sister",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "Gave him the letters of introduction; offstage throughout, quoted once.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "elsewhere"
+  },
+  "gender": "female",
+  "pronouns": "she/her"
+}

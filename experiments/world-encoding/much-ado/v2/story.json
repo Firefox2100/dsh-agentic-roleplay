@@ -1,0 +1,2900 @@
+{
+ "model": "history/2",
+ "work": {
+  "title": "Much Ado About Nothing (Act 2 scene 2 to Act 3 scene 2)",
+  "author": "William Shakespeare",
+  "published": "about 1598",
+  "source": "source/text.txt"
+ },
+ "time": {
+  "note": "A play has no narrator and gives no clock. The days are only 'the evening' of Act 2 scene 3, 'tomorrow night' for the serenade, 'tonight' and 'tomorrow' in Act 3 scene 2. There are no `when.t` values; order is in `when.seq` (a linearisation of the text) and in the `after`/`before` relations that the text itself supports.",
+  "anchors": [],
+  "spans": []
+ },
+ "entities": {
+  "people": [
+   {
+    "id": "don-john",
+    "name": "Don John",
+    "src": [
+     "P02"
+    ]
+   },
+   {
+    "id": "borachio",
+    "name": "Borachio",
+    "src": [
+     "P02"
+    ]
+   },
+   {
+    "id": "don-pedro",
+    "name": "Don Pedro",
+    "src": [
+     "P32"
+    ]
+   },
+   {
+    "id": "claudio",
+    "name": "Claudio",
+    "src": [
+     "P03"
+    ]
+   },
+   {
+    "id": "leonato",
+    "name": "Leonato",
+    "src": [
+     "P03"
+    ]
+   },
+   {
+    "id": "hero",
+    "name": "Hero",
+    "src": [
+     "P03"
+    ]
+   },
+   {
+    "id": "margaret",
+    "name": "Margaret",
+    "src": [
+     "P08"
+    ]
+   },
+   {
+    "id": "ursula",
+    "name": "Ursula",
+    "src": [
+     "P117"
+    ]
+   },
+   {
+    "id": "beatrice",
+    "name": "Beatrice",
+    "src": [
+     "P57"
+    ]
+   },
+   {
+    "id": "benedick",
+    "name": "Benedick",
+    "src": [
+     "P22"
+    ]
+   },
+   {
+    "id": "balthasar",
+    "name": "Balthasar",
+    "src": [
+     "P37"
+    ]
+   },
+   {
+    "id": "boy",
+    "name": "Benedick's boy",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P24"
+    ]
+   }
+  ],
+  "places": [
+   {
+    "id": "house",
+    "name": "Leonato's house (the same place as Act 2 scene 1)",
+    "src": [
+     "P01"
+    ]
+   },
+   {
+    "id": "orchard",
+    "name": "Leonato's orchard",
+    "parent": "house",
+    "src": [
+     "P21"
+    ]
+   },
+   {
+    "id": "arbour",
+    "name": "The arbour in the orchard",
+    "parent": "orchard",
+    "src": [
+     "P30"
+    ]
+   },
+   {
+    "id": "garden",
+    "name": "Leonato's garden",
+    "parent": "house",
+    "src": [
+     "P116"
+    ]
+   },
+   {
+    "id": "bower",
+    "name": "The pleached bower",
+    "parent": "garden",
+    "src": [
+     "P118"
+    ]
+   },
+   {
+    "id": "parlor",
+    "name": "The parlor",
+    "parent": "house",
+    "src": [
+     "P118"
+    ]
+   },
+   {
+    "id": "room",
+    "name": "A room in Leonato's house",
+    "parent": "house",
+    "src": [
+     "P151"
+    ]
+   },
+   {
+    "id": "hero-window",
+    "name": "Hero's chamber-window",
+    "parent": "house",
+    "src": [
+     "P10"
+    ]
+   }
+  ],
+  "things": []
+ },
+ "frames": [],
+ "claims": [
+  {
+   "id": "c-john-spite",
+   "text": "Don John acts out of displeasure at Claudio, only to despite them.",
+   "by": "don-john",
+   "asserted_in": "e-john-sulks",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-john-agrees",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P03",
+    "P05",
+    "P15"
+   ]
+  },
+  {
+   "id": "c-margaret-window",
+   "text": "Borachio can at any unseasonable hour make Margaret look out of Hero's chamber-window.",
+   "by": "borachio",
+   "asserted_in": "e-borachio-margaret",
+   "about": [],
+   "bears_on": [],
+   "src": [
+    "P10"
+   ]
+  },
+  {
+   "id": "c-benedick-never-love",
+   "text": "Benedick will never be made a fool by love like Claudio and will not marry.",
+   "by": "benedick",
+   "asserted_in": "e-benedick-soliloquy",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-benedick-resolves",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P30"
+   ]
+  },
+  {
+   "id": "c-beatrice-loves-benedick",
+   "text": "Beatrice loves Benedick with an enraged affection, though she has always seemed to abhor him.",
+   "by": "leonato",
+   "asserted_in": "e-leonato-asserts",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-claudio-stalk",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-claudio-bait",
+     "as": "undermines"
+    },
+    {
+     "ref": "b-gull-planned",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-pedro-sport",
+     "as": "contradicts"
+    }
+   ],
+   "src": [
+    "P57",
+    "P59",
+    "P61",
+    "P64"
+   ]
+  },
+  {
+   "id": "c-letter-story",
+   "text": "By Hero's report Beatrice sits up at night writing to Benedick, tears the letter, kneels, weeps and curses, and may do herself a harm.",
+   "by": "leonato",
+   "asserted_in": "e-letter-story",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-claudio-bait",
+     "as": "undermines"
+    },
+    {
+     "ref": "b-gull-planned",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-pedro-sport",
+     "as": "contradicts"
+    }
+   ],
+   "src": [
+    "P67",
+    "P75",
+    "P76",
+    "P77",
+    "P78",
+    "P79",
+    "P80",
+    "P81",
+    "P82"
+   ],
+   "cites": [
+    "hero"
+   ]
+  },
+  {
+   "id": "c-no-trick",
+   "text": "The conference Benedick overheard can be no trick.",
+   "by": "benedick",
+   "asserted_in": "e-benedick-resolves",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-pedro-spots",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-claudio-bait",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-pedro-sport",
+     "as": "contradicts"
+    }
+   ],
+   "src": [
+    "P108"
+   ]
+  },
+  {
+   "id": "c-beatrice-scornful",
+   "text": "Beatrice is disdainful and self-endeared and mocks every man.",
+   "by": "hero",
+   "asserted_in": "e-hero-garden-talk",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-beatrice-dinner-scorn",
+     "as": "supports"
+    },
+    {
+     "ref": "e-beatrice-soliloquy",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P127",
+    "P133",
+    "P135",
+    "P137"
+   ]
+  },
+  {
+   "id": "c-benedick-loves-beatrice",
+   "text": "Benedick loves Beatrice so entirely that he is sick of it.",
+   "by": "hero",
+   "asserted_in": "e-hero-garden-talk",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-pedro-sport",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-hero-baits",
+     "as": "contradicts"
+    }
+   ],
+   "src": [
+    "P127",
+    "P128",
+    "P129",
+    "P139"
+   ]
+  },
+  {
+   "id": "c-entreaty",
+   "text": "The prince and Claudio entreated Hero to tell Beatrice of Benedick's love, and Hero persuaded them not to.",
+   "by": "hero",
+   "asserted_in": "e-hero-garden-talk",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-hero-baits",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-pedro-sport",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P129",
+    "P130",
+    "P131"
+   ]
+  },
+  {
+   "id": "c-beatrice-caught",
+   "text": "Beatrice has been limed by the talk in the garden.",
+   "by": "ursula",
+   "asserted_in": "e-ursula-limed",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-beatrice-soliloquy",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P146"
+   ]
+  },
+  {
+   "id": "c-benedick-in-love",
+   "text": "Benedick is in love.",
+   "by": "claudio",
+   "asserted_in": "e-claudio-says-love",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-benedick-resolves",
+     "as": "supports"
+    },
+    {
+     "ref": "e-benedick-admits",
+     "as": "supports"
+    },
+    {
+     "ref": "e-benedick-toothache",
+     "as": "supports"
+    },
+    {
+     "ref": "e-teasing-benedick",
+     "as": "supports"
+    },
+    {
+     "ref": "e-benedick-walks-aside",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P158",
+    "P167",
+    "P174",
+    "P179"
+   ]
+  },
+  {
+   "id": "c-hero-played-parts",
+   "text": "Hero and Margaret have played their parts with Beatrice.",
+   "by": "claudio",
+   "asserted_in": "e-claudio-says-played",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-hero-garden-talk",
+     "as": "supports"
+    },
+    {
+     "ref": "e-margaret-fetches",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P187"
+   ]
+  },
+  {
+   "id": "c-john-zeal",
+   "text": "Don John speaks out of regard for his brother and Claudio.",
+   "by": "don-john",
+   "asserted_in": "e-john-feigns-zeal",
+   "about": [],
+   "bears_on": [],
+   "src": [
+    "P199"
+   ]
+  },
+  {
+   "id": "c-hero-disloyal",
+   "text": "Hero is disloyal.",
+   "by": "don-john",
+   "asserted_in": "e-john-accuses",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-borachio-plans",
+     "as": "contradicts"
+    }
+   ],
+   "src": [
+    "P201",
+    "P205"
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "id": "q-john-motive",
+   "text": "Why does Don John speak?",
+   "rivals": [
+    "c-john-spite",
+    "c-john-zeal"
+   ]
+  }
+ ],
+ "events": [
+  {
+   "id": "b-borachio-margaret",
+   "when": {
+    "seq": -990,
+    "approx": "a year ago"
+   },
+   "kind": "habit",
+   "place": null,
+   "text": "A year ago Borachio told Don John how much he stands in the favour of Margaret, Hero's waiting-gentlewoman.",
+   "who": [
+    {
+     "id": "borachio",
+     "role": "agent"
+    },
+    {
+     "id": "margaret",
+     "role": "present"
+    },
+    {
+     "id": "don-john",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P08",
+    "P09"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-borachio-margaret"
+  },
+  {
+   "id": "b-gull-planned",
+   "when": {
+    "seq": -980,
+    "approx": "before Act 2 scene 3"
+   },
+   "kind": "agreement",
+   "place": null,
+   "text": "Before the scene Don Pedro, Claudio and Leonato agreed to gull Benedick with a story that Beatrice loves him; Don Pedro later calls the plan for Beatrice 'the same net'.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "agent"
+    },
+    {
+     "id": "claudio",
+     "role": "agent"
+    },
+    {
+     "id": "leonato",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P57",
+    "P106"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-pedro-sport"
+  },
+  {
+   "id": "b-leonato-told-pedro",
+   "when": {
+    "seq": -970,
+    "approx": "earlier today"
+   },
+   "kind": "speech",
+   "place": null,
+   "text": "Earlier today Leonato told Don Pedro that his niece Beatrice is in love with Benedick.",
+   "who": [
+    {
+     "id": "leonato",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P57"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-pedro-opens"
+  },
+  {
+   "id": "e-john-sulks",
+   "when": {
+    "seq": 10
+   },
+   "kind": "speech",
+   "place": "house",
+   "text": "Don John says Claudio is to marry Leonato's daughter and that any impediment would please him: he is sick in displeasure at Claudio, and whatever crosses Claudio's affection suits his own.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "speaker"
+    },
+    {
+     "id": "borachio",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P01",
+    "P02",
+    "P03",
+    "P05"
+   ],
+   "scene": "s22"
+  },
+  {
+   "id": "e-borachio-offers",
+   "when": {
+    "seq": 20
+   },
+   "kind": "speech",
+   "place": "house",
+   "text": "Borachio says he can cross the marriage, not honestly but so covertly that no dishonesty will appear in him.",
+   "who": [
+    {
+     "id": "borachio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-john",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P04",
+    "P06",
+    "P07"
+   ],
+   "scene": "s22"
+  },
+  {
+   "id": "e-borachio-margaret",
+   "when": {
+    "seq": 30
+   },
+   "kind": "speech",
+   "place": "house",
+   "text": "Borachio says he can, at any unseasonable hour of the night, make Margaret look out of Hero's chamber-window; Don John asks how that kills the marriage.",
+   "who": [
+    {
+     "id": "borachio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-john",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P08",
+    "P09",
+    "P10",
+    "P11"
+   ],
+   "scene": "s22"
+  },
+  {
+   "id": "e-borachio-plans",
+   "when": {
+    "seq": 40
+   },
+   "kind": "plan",
+   "place": "house",
+   "text": "Borachio's plan: Don John is to tell Don Pedro and Claudio that Hero loves Borachio and offer proof: they will see Borachio at her window and hear him call Margaret Hero and Margaret call him Claudio, the very night before the wedding, with Hero kept away so that the seeming truth overthrows the preparations.",
+   "who": [
+    {
+     "id": "borachio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-john",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P12",
+    "P13",
+    "P14",
+    "P16"
+   ],
+   "scene": "s22",
+   "intent": "deceive don-pedro, claudio and leonato"
+  },
+  {
+   "id": "e-john-agrees",
+   "when": {
+    "seq": 50
+   },
+   "kind": "agreement",
+   "place": "house",
+   "text": "Don John says he will do anything only to despite them, agrees to put it into practice and promises Borachio a thousand ducats.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "agent"
+    },
+    {
+     "id": "borachio",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P15",
+    "P17",
+    "P18"
+   ],
+   "scene": "s22"
+  },
+  {
+   "id": "e-plot-concealed",
+   "when": {
+    "seq": 60
+   },
+   "kind": "conceal",
+   "place": "house",
+   "text": "The plot is to be worked so that no dishonesty shows in Borachio, and Don John is to 'be constant in the accusation': what they intend is hidden from Don Pedro, Claudio, Leonato and Hero.",
+   "who": [
+    {
+     "id": "borachio",
+     "role": "agent"
+    },
+    {
+     "id": "don-john",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P06",
+    "P16",
+    "P17",
+    "P18"
+   ],
+   "scene": "s22",
+   "from": [
+    "don-pedro",
+    "claudio",
+    "leonato",
+    "hero"
+   ]
+  },
+  {
+   "id": "e-john-goes",
+   "when": {
+    "seq": 70
+   },
+   "kind": "departure",
+   "place": "house",
+   "text": "Don John says he will go at once to learn their day of marriage; they leave.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "agent"
+    },
+    {
+     "id": "borachio",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P19",
+    "P20"
+   ],
+   "scene": "s22"
+  },
+  {
+   "id": "e-boy-sent",
+   "when": {
+    "seq": 80
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Benedick sends the boy for a book from his chamber-window; the boy is already there, and Benedick sends him away and back again.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "speaker"
+    },
+    {
+     "id": "boy",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P21",
+    "P22",
+    "P23",
+    "P24",
+    "P25",
+    "P26",
+    "P27",
+    "P28",
+    "P29"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-benedick-soliloquy",
+   "when": {
+    "seq": 90
+   },
+   "kind": "monologue",
+   "place": "orchard",
+   "text": "Benedick wonders at Claudio, who has turned lover and orthographer; he swears he will not be so converted and lists the perfections one woman must have before he would love.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P30"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-benedick-hides",
+   "when": {
+    "seq": 100
+   },
+   "kind": "conceal",
+   "place": "arbour",
+   "text": "Seeing the prince and Claudio, Benedick says he will hide in the arbour and withdraws.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P30",
+    "P31"
+   ],
+   "scene": "s23",
+   "from": [
+    "don-pedro",
+    "claudio",
+    "leonato",
+    "balthasar"
+   ]
+  },
+  {
+   "id": "e-pedro-spots",
+   "when": {
+    "seq": 110
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Don Pedro asks Claudio whether he sees where Benedick has hidden himself; Claudio says very well and that once the music ends they will 'fit the kid-fox with a pennyworth'.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P32",
+    "P33",
+    "P34",
+    "P35",
+    "P36"
+   ],
+   "scene": "s23",
+   "manner": "within hearing, pointed",
+   "intent": "to be overheard by Benedick"
+  },
+  {
+   "id": "e-balthasar-sings",
+   "when": {
+    "seq": 120
+   },
+   "kind": "performance",
+   "place": "orchard",
+   "text": "Balthasar, at first reluctant, sings 'Sigh no more, ladies' to the prince's company.",
+   "who": [
+    {
+     "id": "balthasar",
+     "role": "agent"
+    },
+    {
+     "id": "don-pedro",
+     "role": "witness"
+    },
+    {
+     "id": "claudio",
+     "role": "witness"
+    },
+    {
+     "id": "leonato",
+     "role": "witness"
+    },
+    {
+     "id": "benedick",
+     "role": "overhearer"
+    }
+   ],
+   "src": [
+    "P37",
+    "P38",
+    "P39",
+    "P40",
+    "P41",
+    "P42",
+    "P43",
+    "P44",
+    "P45",
+    "P47",
+    "P48"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-benedick-mocks-song",
+   "when": {
+    "seq": 130
+   },
+   "kind": "reaction",
+   "place": "arbour",
+   "text": "Benedick, hidden, mocks the song and the singer.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P46",
+    "P52"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-pedro-arranges-serenade",
+   "when": {
+    "seq": 140
+   },
+   "kind": "agreement",
+   "place": "orchard",
+   "text": "Don Pedro praises the song and asks Balthasar for some excellent music for tomorrow night at Lady Hero's chamber-window; Balthasar says he will do his best and leaves.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "balthasar",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P49",
+    "P50",
+    "P51",
+    "P53",
+    "P54",
+    "P55",
+    "P56"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-pedro-opens",
+   "when": {
+    "seq": 150
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Don Pedro asks Leonato to repeat what he told him today, that Beatrice is in love with Benedick.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P57"
+   ],
+   "scene": "s23",
+   "intent": "to be overheard by Benedick"
+  },
+  {
+   "id": "e-claudio-stalk",
+   "when": {
+    "seq": 160
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Claudio says low to Don Pedro: stalk on, the fowl sits; and that he never thought that lady would have loved any man.",
+   "who": [
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P58"
+   ],
+   "scene": "s23",
+   "audience": [
+    "don-pedro"
+   ]
+  },
+  {
+   "id": "e-leonato-asserts",
+   "when": {
+    "seq": 170
+   },
+   "kind": "testimony",
+   "place": "orchard",
+   "text": "Leonato says he cannot tell what to think but that Beatrice loves Benedick with an enraged affection, past the infinite of thought, though she has always seemed to abhor him.",
+   "who": [
+    {
+     "id": "leonato",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    },
+    {
+     "id": "claudio",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P59",
+    "P61",
+    "P64"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-benedick-doubts",
+   "when": {
+    "seq": 180
+   },
+   "kind": "reaction",
+   "place": "arbour",
+   "text": "Benedick, hidden, says 'Is't possible?' and that he would think it a gull but that the white-bearded fellow speaks it, knavery not hiding in such reverence.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P60",
+    "P71"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-pedro-counterfeit",
+   "when": {
+    "seq": 190
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Don Pedro suggests she may be counterfeiting; Claudio says like enough; Leonato says no counterfeit ever came so near the life of passion.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P62",
+    "P63"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-claudio-bait",
+   "when": {
+    "seq": 200
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "As Don Pedro asks what effects of passion she shows, Claudio says low: bait the hook well, this fish will bite.",
+   "who": [
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P65",
+    "P66"
+   ],
+   "scene": "s23",
+   "audience": [
+    "don-pedro"
+   ]
+  },
+  {
+   "id": "e-letter-story",
+   "when": {
+    "seq": 210
+   },
+   "kind": "testimony",
+   "place": "orchard",
+   "text": "Leonato and Claudio tell how, by Hero's report, Beatrice sits up twenty times a night to write to Benedick, finds 'Benedick and Beatrice between the sheet', tears the letter, kneels, weeps, prays and curses, and may do herself a desperate harm.",
+   "who": [
+    {
+     "id": "leonato",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P67",
+    "P68",
+    "P69",
+    "P70",
+    "P73",
+    "P74",
+    "P75",
+    "P76",
+    "P77",
+    "P78",
+    "P79",
+    "P80",
+    "P81",
+    "P82"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-claudio-infection",
+   "when": {
+    "seq": 220
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Claudio says low that Benedick has taken the infection: hold it up.",
+   "who": [
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P72"
+   ],
+   "scene": "s23",
+   "audience": [
+    "don-pedro"
+   ]
+  },
+  {
+   "id": "e-staged-debate",
+   "when": {
+    "seq": 230
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Don Pedro says it would be good if Benedick knew; Claudio says to what end, he would make sport; Don Pedro says he would pity her; Claudio says never tell him, let her wear it out; Don Pedro agrees to let it cool.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P83",
+    "P84",
+    "P85",
+    "P86",
+    "P87",
+    "P88",
+    "P89",
+    "P90",
+    "P100",
+    "P101",
+    "P102",
+    "P103",
+    "P104",
+    "P105"
+   ],
+   "scene": "s23",
+   "intent": "to keep Benedick from being told directly"
+  },
+  {
+   "id": "e-praise-benedick",
+   "when": {
+    "seq": 240
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Claudio, Don Pedro and Leonato praise Benedick as proper, wise, valiant and God-fearing, with ironic edges, and Claudio says Hero thinks Beatrice will die if he does not love her.",
+   "who": [
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P91",
+    "P92",
+    "P93",
+    "P94",
+    "P95",
+    "P96",
+    "P97",
+    "P98",
+    "P99"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-pedro-sport",
+   "when": {
+    "seq": 250
+   },
+   "kind": "plan",
+   "place": "orchard",
+   "text": "Don Pedro says: let the same net be spread for Beatrice, which Leonato's daughter and her gentlewomen must carry; the sport will be when each holds an opinion of the other's dotage 'and no such matter': a dumb-show.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "witness"
+    },
+    {
+     "id": "leonato",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P106"
+   ],
+   "scene": "s23",
+   "audience": [
+    "claudio",
+    "leonato"
+   ],
+   "manner": "not heard by Benedick: at P108 he still takes the report as true",
+   "intent": "deceive Beatrice and Benedick"
+  },
+  {
+   "id": "e-party-leaves",
+   "when": {
+    "seq": 260
+   },
+   "kind": "departure",
+   "place": "orchard",
+   "text": "Don Pedro, Claudio and Leonato leave for dinner.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "agent"
+    },
+    {
+     "id": "claudio",
+     "role": "agent"
+    },
+    {
+     "id": "leonato",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P107"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-benedick-resolves",
+   "when": {
+    "seq": 270
+   },
+   "kind": "monologue",
+   "place": "orchard",
+   "text": "Benedick comes forward: it can be no trick, they have it from Hero, the lady must be requited; he is horribly in love with her and the world must be peopled. He sees marks of love in Beatrice as she comes.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P108"
+   ],
+   "scene": "s23",
+   "causes": [
+    {
+     "event": "e-leonato-asserts",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-beatrice-dinner-scorn",
+   "when": {
+    "seq": 280
+   },
+   "kind": "speech",
+   "place": "orchard",
+   "text": "Beatrice, sent to bid him to dinner, says she came against her will and took no more pains than he in thanking her; she leaves with 'you have no stomach, signior'.",
+   "who": [
+    {
+     "id": "beatrice",
+     "role": "speaker"
+    },
+    {
+     "id": "benedick",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P109",
+    "P110",
+    "P111",
+    "P112",
+    "P113",
+    "P114",
+    "P115"
+   ],
+   "scene": "s23"
+  },
+  {
+   "id": "e-hero-recruited",
+   "when": {
+    "seq": 290,
+    "after": [
+     "e-pedro-sport"
+    ],
+    "before": [
+     "e-hero-instructs-margaret"
+    ]
+   },
+   "kind": "agreement",
+   "place": null,
+   "text": "Between the scenes Don Pedro and Claudio brief Hero and her gentlewomen on the net for Beatrice; Hero comes to the garden knowing her part.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "agent"
+    },
+    {
+     "id": "claudio",
+     "role": "agent"
+    },
+    {
+     "id": "hero",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P106",
+    "P118",
+    "P129"
+   ],
+   "origin": "offscreen",
+   "established_in": "e-hero-plans"
+  },
+  {
+   "id": "e-hero-instructs-margaret",
+   "when": {
+    "seq": 300
+   },
+   "kind": "speech",
+   "place": "garden",
+   "text": "Hero sends Margaret to the parlor, where Beatrice is talking with the prince and Claudio, to whisper that Hero and Ursula are talking of her in the orchard, that Margaret overheard it, and that she should hide in the bower to listen.",
+   "who": [
+    {
+     "id": "hero",
+     "role": "speaker"
+    },
+    {
+     "id": "margaret",
+     "role": "addressee"
+    },
+    {
+     "id": "ursula",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P116",
+    "P117",
+    "P118"
+   ],
+   "scene": "s31",
+   "intent": "deceive Beatrice"
+  },
+  {
+   "id": "e-margaret-fetches",
+   "when": {
+    "seq": 310,
+    "after": [
+     "e-hero-instructs-margaret"
+    ],
+    "before": [
+     "e-beatrice-enters-bower"
+    ]
+   },
+   "kind": "act",
+   "place": "parlor",
+   "text": "Margaret carries the message to Beatrice, who comes at once.",
+   "who": [
+    {
+     "id": "margaret",
+     "role": "agent"
+    },
+    {
+     "id": "beatrice",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P119",
+    "P120",
+    "P122"
+   ],
+   "origin": "offscreen",
+   "established_in": "e-beatrice-enters-bower"
+  },
+  {
+   "id": "e-hero-plans",
+   "when": {
+    "seq": 320
+   },
+   "kind": "plan",
+   "place": "garden",
+   "text": "Hero tells Ursula their talk must be only of Benedick: Ursula is to praise him, and Hero will say Benedick is sick in love with Beatrice, a wound made only by hearsay.",
+   "who": [
+    {
+     "id": "hero",
+     "role": "speaker"
+    },
+    {
+     "id": "ursula",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P121"
+   ],
+   "scene": "s31",
+   "intent": "deceive Beatrice"
+  },
+  {
+   "id": "e-beatrice-enters-bower",
+   "when": {
+    "seq": 330
+   },
+   "kind": "arrival",
+   "place": "bower",
+   "text": "Beatrice enters behind and hides near the bower; Hero says she runs like a lapwing close to the ground to hear their conference.",
+   "who": [
+    {
+     "id": "beatrice",
+     "role": "agent"
+    },
+    {
+     "id": "hero",
+     "role": "witness"
+    },
+    {
+     "id": "ursula",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P122",
+    "P123"
+   ],
+   "scene": "s31"
+  },
+  {
+   "id": "e-hero-baits",
+   "when": {
+    "seq": 340
+   },
+   "kind": "speech",
+   "place": "garden",
+   "text": "Hero says that they will go near her, so her ear may lose nothing of the false sweet bait they lay for it.",
+   "who": [
+    {
+     "id": "hero",
+     "role": "speaker"
+    },
+    {
+     "id": "ursula",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P124",
+    "P125"
+   ],
+   "scene": "s31",
+   "audience": [
+    "ursula"
+   ],
+   "manner": "before going near her"
+  },
+  {
+   "id": "e-hero-garden-talk",
+   "when": {
+    "seq": 350
+   },
+   "kind": "testimony",
+   "place": "garden",
+   "text": "Walking up and down, Hero and Ursula talk loudly: Hero says Benedick loves Beatrice so entirely, the prince and Claudio entreated her to tell her but she persuaded them not to; Beatrice is too disdainful, so self-endeared that she mocks every man; Hero will counsel Benedick to fight his passion and devise honest slanders against her; Ursula protests Benedick's worth.",
+   "who": [
+    {
+     "id": "hero",
+     "role": "speaker"
+    },
+    {
+     "id": "ursula",
+     "role": "speaker"
+    },
+    {
+     "id": "beatrice",
+     "role": "overhearer"
+    }
+   ],
+   "src": [
+    "P124",
+    "P126",
+    "P127",
+    "P128",
+    "P129",
+    "P130",
+    "P131",
+    "P132",
+    "P133",
+    "P134",
+    "P135",
+    "P136",
+    "P137",
+    "P138",
+    "P139",
+    "P140",
+    "P141",
+    "P142",
+    "P143",
+    "P144",
+    "P145"
+   ],
+   "scene": "s31",
+   "fulfils": "h-net-for-beatrice"
+  },
+  {
+   "id": "e-ursula-limed",
+   "when": {
+    "seq": 360
+   },
+   "kind": "speech",
+   "place": "garden",
+   "text": "Ursula tells Hero as they go: she's limed, we have caught her; Hero hopes it proves so.",
+   "who": [
+    {
+     "id": "ursula",
+     "role": "speaker"
+    },
+    {
+     "id": "hero",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P146",
+    "P147",
+    "P148"
+   ],
+   "scene": "s31"
+  },
+  {
+   "id": "e-beatrice-soliloquy",
+   "when": {
+    "seq": 370
+   },
+   "kind": "monologue",
+   "place": "bower",
+   "text": "Beatrice, coming forward, asks what fire is in her ears, bids contempt and maiden pride farewell and vows to requite Benedick, taming her wild heart to his loving hand.",
+   "who": [
+    {
+     "id": "beatrice",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P149",
+    "P150"
+   ],
+   "scene": "s31",
+   "causes": [
+    {
+     "event": "e-hero-garden-talk",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-pedro-stays",
+   "when": {
+    "seq": 380
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Don Pedro says he will stay till the marriage is over and then go to Arragon; Claudio offers to go with him; Don Pedro says he will only borrow Benedick, all mirth, for company.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "benedick",
+     "role": "witness"
+    },
+    {
+     "id": "leonato",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P151",
+    "P152",
+    "P153",
+    "P154",
+    "P155"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-benedick-admits",
+   "when": {
+    "seq": 390
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Benedick says 'Gallants, I am not as I have been'; Leonato says he is sadder.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P156",
+    "P157"
+   ],
+   "scene": "s32",
+   "causes": [
+    {
+     "event": "e-benedick-resolves",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-claudio-says-love",
+   "when": {
+    "seq": 400
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Claudio says he hopes Benedick is in love, and repeats it as the others joke: 'yet say I, he is in love'.",
+   "who": [
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P158",
+    "P167",
+    "P174",
+    "P179"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-benedick-toothache",
+   "when": {
+    "seq": 410
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Asked what ails him, Benedick says he has the toothache and parries the others' jokes.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    },
+    {
+     "id": "claudio",
+     "role": "addressee"
+    },
+    {
+     "id": "leonato",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P160",
+    "P161",
+    "P162",
+    "P163",
+    "P164",
+    "P165",
+    "P166"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-benedick-conceals-cause",
+   "when": {
+    "seq": 420
+   },
+   "kind": "conceal",
+   "place": "room",
+   "text": "Benedick names a toothache rather than say he is in love.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P160",
+    "P166"
+   ],
+   "scene": "s32",
+   "from": [
+    "don-pedro",
+    "claudio",
+    "leonato"
+   ]
+  },
+  {
+   "id": "e-teasing-benedick",
+   "when": {
+    "seq": 430
+   },
+   "kind": "observation",
+   "place": "room",
+   "text": "Don Pedro, Claudio and Leonato list the signs: he brushes his hat in the morning, has lost his beard (the barber's man was seen with him), rubs himself with civet, is melancholy, no longer washes in the old way, and his jesting spirit is governed by stops; they conclude he is in love.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "speaker"
+    },
+    {
+     "id": "benedick",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P159",
+    "P168",
+    "P169",
+    "P170",
+    "P171",
+    "P172",
+    "P173",
+    "P174",
+    "P175",
+    "P176",
+    "P177",
+    "P178",
+    "P179",
+    "P180",
+    "P181",
+    "P182",
+    "P183"
+   ],
+   "scene": "s32",
+   "causes": [
+    {
+     "event": "e-benedick-resolves",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-benedick-walks-aside",
+   "when": {
+    "seq": 440
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Benedick takes Leonato aside to speak eight or nine wise words which the 'hobby-horses' must not hear; they leave.",
+   "who": [
+    {
+     "id": "benedick",
+     "role": "speaker"
+    },
+    {
+     "id": "leonato",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P184",
+    "P185"
+   ],
+   "scene": "s32",
+   "from": [
+    "don-pedro",
+    "claudio"
+   ]
+  },
+  {
+   "id": "e-claudio-says-played",
+   "when": {
+    "seq": 450,
+    "after": [
+     "e-hero-garden-talk"
+    ]
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Don Pedro says he means to break with Benedick about Beatrice; Claudio says Hero and Margaret have by this played their parts with Beatrice, and then the two bears will not bite one another when they meet.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P186",
+    "P187"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-john-enters",
+   "when": {
+    "seq": 460
+   },
+   "kind": "arrival",
+   "place": "room",
+   "text": "Don John enters, greets his brother and says he would speak with him, with Claudio present since it concerns him.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "agent"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    },
+    {
+     "id": "claudio",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P188",
+    "P189",
+    "P190",
+    "P191",
+    "P192",
+    "P193",
+    "P194"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-john-asks-day",
+   "when": {
+    "seq": 470
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Don John asks whether Claudio means to be married tomorrow; Don Pedro says he knows he does; Don John says he knows not that, when Claudio knows what he knows.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    },
+    {
+     "id": "claudio",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P195",
+    "P196",
+    "P197"
+   ],
+   "scene": "s32",
+   "fulfils": "h-john-learn-day"
+  },
+  {
+   "id": "e-john-feigns-zeal",
+   "when": {
+    "seq": 480
+   },
+   "kind": "conceal",
+   "place": "room",
+   "text": "Don John tells them they may think he loves them not, but his brother holds Claudio well and he speaks out of regard for Don Pedro's help in the match: a loyalty he does not have.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "agent"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    },
+    {
+     "id": "claudio",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P198",
+    "P199"
+   ],
+   "scene": "s32",
+   "from": [
+    "don-pedro",
+    "claudio"
+   ]
+  },
+  {
+   "id": "e-john-accuses",
+   "when": {
+    "seq": 490
+   },
+   "kind": "testimony",
+   "place": "room",
+   "text": "Don John tells them the lady is disloyal; 'Leonato's Hero, your Hero, every man's Hero'; he says he will show them her chamber-window entered tonight, the night before the wedding, and that it would better fit Claudio's honour to change his mind.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    },
+    {
+     "id": "claudio",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P200",
+    "P201",
+    "P202",
+    "P203",
+    "P204",
+    "P205",
+    "P208"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-claudio-doubts",
+   "when": {
+    "seq": 500
+   },
+   "kind": "reaction",
+   "place": "room",
+   "text": "Claudio asks 'Who, Hero?', 'Disloyal?' and 'May this be so?'; Don Pedro says he will not think it.",
+   "who": [
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P202",
+    "P204",
+    "P206",
+    "P207"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-claudio-vows",
+   "when": {
+    "seq": 510
+   },
+   "kind": "vow",
+   "place": "room",
+   "text": "Claudio says that if he sees anything tonight to bar the marriage, he will shame Hero in the congregation where he should wed her; Don Pedro says he will join with him to disgrace her.",
+   "who": [
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P209",
+    "P210"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-john-sets-terms",
+   "when": {
+    "seq": 520
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Don John will disparage her no further until they are his witnesses: bear it coldly till midnight and let the issue show itself.",
+   "who": [
+    {
+     "id": "don-john",
+     "role": "speaker"
+    },
+    {
+     "id": "don-pedro",
+     "role": "addressee"
+    },
+    {
+     "id": "claudio",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P211"
+   ],
+   "scene": "s32"
+  },
+  {
+   "id": "e-lament",
+   "when": {
+    "seq": 530
+   },
+   "kind": "speech",
+   "place": "room",
+   "text": "Don Pedro and Claudio lament the day turned untowardly and the mischief thwarting; Don John says the plague is well prevented, as they will say when they have seen the sequel.",
+   "who": [
+    {
+     "id": "don-pedro",
+     "role": "speaker"
+    },
+    {
+     "id": "claudio",
+     "role": "speaker"
+    },
+    {
+     "id": "don-john",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P212",
+    "P213",
+    "P214",
+    "P215"
+   ],
+   "scene": "s32"
+  }
+ ],
+ "held": [
+  {
+   "id": "h-window-staging",
+   "who": "borachio",
+   "kind": "anticipates",
+   "text": "Borachio will show Don Pedro and Claudio Margaret at Hero's window the night before the wedding, with Hero kept away.",
+   "from": "e-borachio-plans",
+   "src": [
+    "P10",
+    "P16"
+   ]
+  },
+  {
+   "id": "h-fee",
+   "who": "borachio",
+   "kind": "anticipates",
+   "text": "Don John will pay Borachio a thousand ducats for his cunning in the working of the plot.",
+   "from": "e-john-agrees",
+   "src": [
+    "P17"
+   ],
+   "if": [
+    "h-window-staging"
+   ],
+   "amount": {
+    "value": 1000,
+    "unit": "ducats"
+   },
+   "payer": "don-john",
+   "payee": "borachio"
+  },
+  {
+   "id": "h-john-learn-day",
+   "who": "don-john",
+   "kind": "anticipates",
+   "text": "Don John will learn the day of the marriage.",
+   "from": "e-john-goes",
+   "src": [
+    "P19"
+   ]
+  },
+  {
+   "id": "h-serenade",
+   "who": "don-pedro",
+   "kind": "anticipates",
+   "text": "Balthasar will play at Hero's chamber-window tomorrow night.",
+   "from": "e-pedro-arranges-serenade",
+   "src": [
+    "P53",
+    "P54",
+    "P55"
+   ]
+  },
+  {
+   "id": "h-net-for-beatrice",
+   "who": "don-pedro",
+   "kind": "anticipates",
+   "text": "Hero and her gentlewomen will spread the same net for Beatrice.",
+   "from": "e-pedro-sport",
+   "src": [
+    "P106"
+   ]
+  },
+  {
+   "id": "h-benedick-woo",
+   "who": "benedick",
+   "kind": "anticipates",
+   "text": "Benedick will return Beatrice's love and perhaps marry her.",
+   "from": "e-benedick-resolves",
+   "src": [
+    "P108"
+   ]
+  },
+  {
+   "id": "h-benedick-speaks",
+   "who": "benedick",
+   "kind": "anticipates",
+   "text": "Benedick will speak his eight or nine wise words to Leonato.",
+   "from": "e-benedick-walks-aside",
+   "src": [
+    "P184"
+   ]
+  },
+  {
+   "id": "h-wedding",
+   "who": "claudio",
+   "kind": "anticipates",
+   "text": "Claudio will marry Hero tomorrow.",
+   "from": "e-john-asks-day",
+   "src": [
+    "P153",
+    "P195",
+    "P196"
+   ]
+  },
+  {
+   "id": "h-john-shows",
+   "who": "don-john",
+   "kind": "anticipates",
+   "text": "Don John will show Don Pedro and Claudio Hero's chamber-window entered, tonight.",
+   "from": "e-john-accuses",
+   "src": [
+    "P205",
+    "P208",
+    "P211"
+   ]
+  },
+  {
+   "id": "h-claudio-shame",
+   "who": "claudio",
+   "kind": "anticipates",
+   "text": "If Claudio sees anything tonight against the marriage, he will shame Hero in the congregation.",
+   "from": "e-claudio-vows",
+   "src": [
+    "P209",
+    "P210"
+   ],
+   "if": [
+    "h-john-shows"
+   ]
+  }
+ ],
+ "knowledge": [
+  {
+   "who": "don-pedro",
+   "of": "b-gull-planned",
+   "stance": "knows",
+   "from": "b-gull-planned",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P57",
+    "P106"
+   ]
+  },
+  {
+   "who": "claudio",
+   "of": "b-gull-planned",
+   "stance": "knows",
+   "from": "b-gull-planned",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P57",
+    "P106"
+   ]
+  },
+  {
+   "who": "leonato",
+   "of": "b-gull-planned",
+   "stance": "knows",
+   "from": "b-gull-planned",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P57",
+    "P106"
+   ]
+  },
+  {
+   "who": "reader",
+   "of": "e-borachio-plans",
+   "stance": "knows",
+   "from": "para:P16",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P16"
+   ],
+   "source": "borachio"
+  },
+  {
+   "who": "reader",
+   "of": "c-hero-disloyal",
+   "stance": "doubts",
+   "from": "para:P201",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P201"
+   ],
+   "note": "the reader already holds the plot"
+  },
+  {
+   "who": "reader",
+   "of": "e-benedick-hides",
+   "stance": "knows",
+   "from": "para:P31",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P30",
+    "P31"
+   ]
+  },
+  {
+   "who": "reader",
+   "of": "c-beatrice-loves-benedick",
+   "stance": "doubts",
+   "from": "para:P58",
+   "until": null,
+   "how": "heard",
+   "src": [
+    "P58",
+    "P62",
+    "P66"
+   ],
+   "source": "claudio",
+   "note": "the asides tell the reader before the plan is named"
+  },
+  {
+   "who": "reader",
+   "of": "e-pedro-sport",
+   "stance": "knows",
+   "from": "para:P106",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P106"
+   ],
+   "source": "don-pedro"
+  },
+  {
+   "who": "reader",
+   "of": "e-hero-baits",
+   "stance": "knows",
+   "from": "para:P125",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P124",
+    "P125"
+   ],
+   "source": "hero"
+  },
+  {
+   "who": "don-john",
+   "of": "e-borachio-plans",
+   "stance": "knows",
+   "from": "e-borachio-plans",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P16"
+   ],
+   "source": "borachio"
+  },
+  {
+   "who": "borachio",
+   "of": "e-borachio-plans",
+   "stance": "knows",
+   "from": "e-borachio-plans",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P12",
+    "P13",
+    "P14",
+    "P15",
+    "P16"
+   ]
+  },
+  {
+   "who": "don-pedro",
+   "of": "e-benedick-hides",
+   "stance": "knows",
+   "from": "e-pedro-spots",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P35"
+   ]
+  },
+  {
+   "who": "claudio",
+   "of": "e-benedick-hides",
+   "stance": "knows",
+   "from": "e-pedro-spots",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P35",
+    "P36"
+   ],
+   "source": "don-pedro"
+  },
+  {
+   "who": "leonato",
+   "of": "e-benedick-hides",
+   "stance": "believes",
+   "from": "e-pedro-opens",
+   "until": null,
+   "how": "inferred",
+   "src": [
+    "P57",
+    "P58",
+    "P59"
+   ],
+   "note": "no line says he knows; his acting along implies it"
+  },
+  {
+   "who": "benedick",
+   "of": "c-beatrice-loves-benedick",
+   "stance": "doubts",
+   "from": "e-benedick-doubts",
+   "until": "e-benedick-resolves",
+   "how": "overheard",
+   "src": [
+    "P60",
+    "P71"
+   ],
+   "source": "leonato",
+   "note": "doubts, but trusts a white-bearded speaker"
+  },
+  {
+   "who": "benedick",
+   "of": "c-beatrice-loves-benedick",
+   "stance": "believes",
+   "from": "e-benedick-resolves",
+   "until": null,
+   "how": "overheard",
+   "src": [
+    "P108"
+   ],
+   "source": "leonato"
+  },
+  {
+   "who": "benedick",
+   "of": "c-no-trick",
+   "stance": "believes",
+   "from": "e-benedick-resolves",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P108"
+   ]
+  },
+  {
+   "who": "hero",
+   "of": "e-pedro-sport",
+   "stance": "knows",
+   "from": "e-hero-recruited",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P106",
+    "P118"
+   ],
+   "source": "don-pedro"
+  },
+  {
+   "who": "hero",
+   "of": "e-hero-baits",
+   "stance": "knows",
+   "from": "e-hero-baits",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P124",
+    "P125"
+   ]
+  },
+  {
+   "who": "ursula",
+   "of": "e-hero-baits",
+   "stance": "knows",
+   "from": "e-hero-baits",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P121",
+    "P124",
+    "P125"
+   ],
+   "source": "hero"
+  },
+  {
+   "who": "margaret",
+   "of": "e-hero-baits",
+   "stance": "knows",
+   "from": "e-hero-instructs-margaret",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P118"
+   ],
+   "source": "hero",
+   "note": "told to say she overheard; she knows it is invented"
+  },
+  {
+   "who": "beatrice",
+   "of": "c-benedick-loves-beatrice",
+   "stance": "doubts",
+   "from": "e-hero-garden-talk",
+   "until": "e-beatrice-soliloquy",
+   "how": "overheard",
+   "src": [
+    "P149"
+   ],
+   "source": "hero",
+   "note": "'can this be true?'"
+  },
+  {
+   "who": "beatrice",
+   "of": "c-benedick-loves-beatrice",
+   "stance": "believes",
+   "from": "e-beatrice-soliloquy",
+   "until": null,
+   "how": "overheard",
+   "src": [
+    "P149"
+   ],
+   "source": "hero"
+  },
+  {
+   "who": "hero",
+   "of": "e-beatrice-enters-bower",
+   "stance": "knows",
+   "from": "e-beatrice-enters-bower",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P123"
+   ]
+  },
+  {
+   "who": "ursula",
+   "of": "e-beatrice-enters-bower",
+   "stance": "knows",
+   "from": "e-beatrice-enters-bower",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P123",
+    "P125"
+   ],
+   "source": "hero"
+  },
+  {
+   "who": "claudio",
+   "of": "c-hero-disloyal",
+   "stance": "doubts",
+   "from": "e-claudio-doubts",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P202",
+    "P204",
+    "P206"
+   ],
+   "source": "don-john"
+  },
+  {
+   "who": "don-pedro",
+   "of": "c-hero-disloyal",
+   "stance": "doubts",
+   "from": "e-claudio-doubts",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P207",
+    "P210"
+   ],
+   "source": "don-john",
+   "note": "'I will not think it', yet joins the test"
+  },
+  {
+   "who": "don-pedro",
+   "of": "c-john-zeal",
+   "stance": "believes",
+   "from": "e-john-feigns-zeal",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P198",
+    "P199"
+   ],
+   "source": "don-john",
+   "note": "taken at face value; nothing says he doubts it"
+  },
+  {
+   "who": "claudio",
+   "of": "c-john-zeal",
+   "stance": "believes",
+   "from": "e-john-feigns-zeal",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P198",
+    "P199"
+   ],
+   "source": "don-john"
+  },
+  {
+   "who": "don-pedro",
+   "of": "c-benedick-in-love",
+   "stance": "believes",
+   "from": "e-benedick-admits",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P159",
+    "P168",
+    "P169",
+    "P170",
+    "P171",
+    "P172",
+    "P173",
+    "P174",
+    "P175",
+    "P176",
+    "P177",
+    "P178",
+    "P179"
+   ]
+  },
+  {
+   "who": "claudio",
+   "of": "c-benedick-in-love",
+   "stance": "knows",
+   "from": "e-claudio-says-love",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P158",
+    "P167"
+   ],
+   "note": "he knows the cause: he helped make it"
+  },
+  {
+   "who": "don-pedro",
+   "of": "e-pedro-sport",
+   "stance": "knows",
+   "from": "e-pedro-sport",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P106"
+   ]
+  },
+  {
+   "who": "claudio",
+   "of": "e-pedro-sport",
+   "stance": "knows",
+   "from": "e-pedro-sport",
+   "until": null,
+   "how": "heard",
+   "src": [
+    "P106"
+   ],
+   "source": "don-pedro"
+  },
+  {
+   "who": "leonato",
+   "of": "e-pedro-sport",
+   "stance": "knows",
+   "from": "e-pedro-sport",
+   "until": null,
+   "how": "heard",
+   "src": [
+    "P106"
+   ],
+   "source": "don-pedro"
+  },
+  {
+   "who": "benedick",
+   "of": "r-benedick-sees-love",
+   "stance": "believes",
+   "from": "e-benedick-resolves",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P108"
+   ]
+  }
+ ],
+ "states": [
+  {
+   "id": "s-benedick-hidden",
+   "of": "benedick",
+   "kind": "concealment",
+   "value": "Hidden in the arbour while the prince's company talks and sings.",
+   "src": [
+    "P30",
+    "P31",
+    "P35",
+    "P107",
+    "P108"
+   ],
+   "from": "e-benedick-hides",
+   "until": "e-benedick-resolves"
+  },
+  {
+   "id": "s-beatrice-hidden",
+   "of": "beatrice",
+   "kind": "concealment",
+   "value": "Hidden behind the bower to listen to Hero and Ursula.",
+   "src": [
+    "P122",
+    "P123",
+    "P149"
+   ],
+   "from": "e-beatrice-enters-bower",
+   "until": "e-beatrice-soliloquy"
+  },
+  {
+   "id": "s-benedick-stance",
+   "of": "benedick",
+   "kind": "habit",
+   "value": "Resists love and marriage; vows to die a bachelor.",
+   "src": [
+    "P30",
+    "P108"
+   ],
+   "from": "start",
+   "until": "e-benedick-resolves"
+  },
+  {
+   "id": "s-beatrice-stance",
+   "of": "beatrice",
+   "kind": "habit",
+   "value": "Meets Benedick with scorn and keeps up a show of contempt.",
+   "src": [
+    "P59",
+    "P110",
+    "P111",
+    "P112",
+    "P113",
+    "P114",
+    "P149"
+   ],
+   "from": "start",
+   "until": "e-beatrice-soliloquy"
+  },
+  {
+   "id": "s-benedick-looks",
+   "of": "benedick",
+   "kind": "appearance",
+   "value": "Sadder, shaved of his beard, perfumed with civet, melancholy, his jesting spirit governed by stops.",
+   "src": [
+    "P156",
+    "P157",
+    "P169",
+    "P170",
+    "P171",
+    "P172",
+    "P173",
+    "P174",
+    "P175",
+    "P176",
+    "P177",
+    "P178"
+   ],
+   "from": "e-benedick-resolves"
+  },
+  {
+   "id": "s-john-displeasure",
+   "of": "don-john",
+   "kind": "feeling",
+   "value": "Sick in displeasure at Claudio; bent on whatever crosses his affection.",
+   "src": [
+    "P03",
+    "P05",
+    "P15"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-wedding",
+   "of": "claudio",
+   "kind": "status",
+   "value": "Betrothed to Hero; the wedding is fixed for tomorrow.",
+   "src": [
+    "P03",
+    "P153",
+    "P195",
+    "P196"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-hero-away",
+   "of": "hero",
+   "kind": "location",
+   "value": "Fixed in the garden as Beatrice's lure while the men talk in the room (the timing is not given).",
+   "src": [
+    "P187"
+   ],
+   "from": "e-hero-instructs-margaret"
+  }
+ ],
+ "readings": [
+  {
+   "id": "r-benedick-sees-love",
+   "holder": "benedick",
+   "text": "Beatrice's scorn at the dinner message shows 'some marks of love' in her.",
+   "status": "stated",
+   "src": [
+    "P108"
+   ],
+   "supports": [
+    "e-beatrice-dinner-scorn"
+   ],
+   "note": "a misreading: the text gives the scorn, and the reading is Benedick's"
+  },
+  {
+   "id": "r-beatrice-condemned",
+   "holder": "beatrice",
+   "text": "She stands condemned for pride and scorn; contempt and maiden pride must go.",
+   "status": "stated",
+   "src": [
+    "P149"
+   ],
+   "supports": [
+    "e-hero-garden-talk"
+   ]
+  },
+  {
+   "id": "r-john-irony",
+   "holder": "reader",
+   "text": "Don John's 'O plague right well prevented!' reads as sympathy to Don Pedro and Claudio and triumph to anyone who knows his plot.",
+   "status": "implied",
+   "src": [
+    "P214"
+   ],
+   "note": "the line is the same text for both audiences; only the reader's knowledge row tells them apart"
+  },
+  {
+   "id": "r-bears",
+   "holder": "claudio",
+   "text": "The two bears, Benedick and Beatrice, will not bite one another when they meet.",
+   "status": "stated",
+   "src": [
+    "P187"
+   ]
+  }
+ ],
+ "gaps_found": [
+  "who hears a line cannot be derived from presence and hiding alone: asides are spoken a few steps from a hidden listener who does not hear them; the transcription marks none, so `audience` is the encoder's inference from what the hidden listener does next",
+  "a play gives no clock: there are no `when.t` values, so simultaneity cannot be derived; only partial order from relations the text supports, plus a default that events of one scene are ordered by their text order",
+  "a lie told to an audience is not a field: it is derived (the asserter was a party to an event, or holds a knowledge row, that contradicts the claim, at the time of asserting); an overhearer who misreads has the evidence but is not lying, so only parties and explicit rows count; `intent` stays free text",
+  "conditions: a held item takes `if` (other held items); the vow waits on the window being shown and the fee on the plot, derived `waiting`. A deadline ('till midnight') and an amount (a thousand ducats) are still text",
+  "compound claims: Hero's report of Beatrice's night-writing is one claim of five details, all untrue together, so one verdict is right here; `parts` exists (used in the Speckled Band) for claims whose parts differ",
+  "a claim names a source who is not present (Leonato says Hero told him): `cites` on the claim, and the check derives that the cited person never spoke before the claim",
+  "in an ensemble, not knowing is derived: a person who was not a party to an event, not within hearing and not told it, does not know it; eleven `unaware` rows (of 43) became unnecessary and were removed. A person who learns it from a source still needs a row",
+  "a feeling caused by a false claim (Benedick in love; Beatrice moved) is tied to the false claim through `causes` on events, and the check derives that it rests on an untrue claim",
+  "a lyric (the song) is a performance event with no content",
+  "the transcription gives P203 to Don Pedro; the sense is Don John's, and the encoding follows the sense"
+ ]
+}

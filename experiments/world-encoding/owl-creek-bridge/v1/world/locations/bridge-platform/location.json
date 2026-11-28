@@ -1,0 +1,23 @@
+{
+  "id": "bridge-platform",
+  "name": "The centre of the bridge",
+  "description": "A railroad bridge over a swift stream twenty feet below, with loose boards laid on the sleepers as a temporary platform.",
+  "features": [
+    {
+      "id": "pier",
+      "name": "The wooden pier at the south end",
+      "description": "Where the flood of last winter lodged a great quantity of driftwood."
+    },
+    {
+      "id": "plank",
+      "name": "The plank",
+      "description": "Spans three of the cross-ties; held in place by weight."
+    }
+  ],
+  "exits": [
+    {
+      "to": "north-bank",
+      "description": "the foot planking to the north bank"
+    }
+  ]
+}

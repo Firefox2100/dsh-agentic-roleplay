@@ -1,0 +1,5448 @@
+{
+ "model": "history/2",
+ "work": {
+  "title": "The Adventure of the Speckled Band",
+  "author": "Arthur Conan Doyle",
+  "published": "1892",
+  "source": "source/text.txt"
+ },
+ "time": {
+  "note": "The visit is a day in early April 1883; Julia died about two years earlier (early 1881); the twins' mother eight years before the visit (1875); Watson writes about 1891. `when.t` is minutes from midnight of the day Helen comes; `when.epoch` names the other nights.",
+  "anchors": [
+   {
+    "id": "d0",
+    "at": "1883-04",
+    "precision": "month",
+    "src": [
+     "P01"
+    ]
+   },
+   {
+    "id": "julia-night",
+    "at": "1881",
+    "precision": "year",
+    "approx": "two years before d0, a fortnight before her wedding",
+    "src": [
+     "P29"
+    ]
+   },
+   {
+    "id": "writing",
+    "at": "1891",
+    "precision": "year",
+    "approx": "eight years after the case",
+    "src": [
+     "P01"
+    ]
+   }
+  ],
+  "spans": [
+   {
+    "id": "span-vigil",
+    "from": "e-enter-room",
+    "to": "e-roylott-dies",
+    "approx": "about 23:15 to about 03:30",
+    "src": [
+     "P234",
+     "P238"
+    ]
+   }
+  ]
+ },
+ "entities": {
+  "people": [
+   {
+    "id": "holmes",
+    "name": "Sherlock Holmes",
+    "src": [
+     "P01"
+    ]
+   },
+   {
+    "id": "watson",
+    "name": "Dr Watson",
+    "role": "narrator",
+    "src": [
+     "P01"
+    ]
+   },
+   {
+    "id": "helen",
+    "name": "Helen Stoner",
+    "src": [
+     "P21"
+    ]
+   },
+   {
+    "id": "julia",
+    "name": "Julia Stoner",
+    "src": [
+     "P24",
+     "P27"
+    ]
+   },
+   {
+    "id": "roylott",
+    "name": "Dr Grimesby Roylott",
+    "src": [
+     "P21",
+     "P97"
+    ]
+   },
+   {
+    "id": "mrs-stoner",
+    "name": "Mrs Stoner, the twins' mother",
+    "src": [
+     "P24"
+    ]
+   },
+   {
+    "id": "armitage",
+    "name": "Percy Armitage",
+    "src": [
+     "P66"
+    ]
+   },
+   {
+    "id": "farintosh",
+    "name": "Mrs Farintosh",
+    "tier": "background",
+    "src": [
+     "P16",
+     "P18"
+    ]
+   },
+   {
+    "id": "honoria",
+    "name": "Miss Honoria Westphail",
+    "src": [
+     "P29"
+    ]
+   },
+   {
+    "id": "major",
+    "name": "The half-pay major of marines",
+    "unnamed": true,
+    "src": [
+     "P29"
+    ]
+   },
+   {
+    "id": "coroner",
+    "name": "The county coroner",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P51",
+     "P55"
+    ]
+   },
+   {
+    "id": "blacksmith",
+    "name": "The local blacksmith",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P26"
+    ]
+   },
+   {
+    "id": "correspondent",
+    "name": "Roylott's correspondent in India",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P26"
+    ]
+   },
+   {
+    "id": "boy",
+    "name": "The lad who drives Roylott",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P195"
+    ]
+   },
+   {
+    "id": "driver",
+    "name": "The Leatherhead driver",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P119",
+     "P121"
+    ]
+   },
+   {
+    "id": "landlord",
+    "name": "The landlord of the Crown",
+    "unnamed": true,
+    "tier": "background",
+    "src": [
+     "P221"
+    ]
+   },
+   {
+    "id": "doctors",
+    "name": "The doctors who examined Julia",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P57"
+    ]
+   },
+   {
+    "id": "gypsies",
+    "name": "The gypsies in the plantation",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P26",
+     "P61"
+    ]
+   },
+   {
+    "id": "villagers",
+    "name": "The villagers",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P25",
+     "P238"
+    ]
+   },
+   {
+    "id": "inquiry",
+    "name": "The official inquiry",
+    "kind": "group",
+    "tier": "background",
+    "src": [
+     "P247"
+    ]
+   },
+   {
+    "id": "cheetah",
+    "name": "The cheetah",
+    "kind": "animal",
+    "src": [
+     "P26"
+    ]
+   },
+   {
+    "id": "baboon",
+    "name": "The baboon",
+    "kind": "animal",
+    "src": [
+     "P26"
+    ]
+   },
+   {
+    "id": "snake",
+    "name": "The swamp adder",
+    "kind": "animal",
+    "src": [
+     "P244-P245"
+    ]
+   }
+  ],
+  "places": [
+   {
+    "id": "baker-street",
+    "name": "Holmes and Watson's rooms, Baker Street",
+    "src": [
+     "P01"
+    ]
+   },
+   {
+    "id": "sitting-room",
+    "name": "The sitting-room",
+    "parent": "baker-street",
+    "src": [
+     "P04",
+     "P06"
+    ]
+   },
+   {
+    "id": "doctors-commons",
+    "name": "Doctors' Commons",
+    "src": [
+     "P112"
+    ]
+   },
+   {
+    "id": "road",
+    "name": "The road to Stoke Moran",
+    "src": [
+     "P115"
+    ]
+   },
+   {
+    "id": "stoke-moran",
+    "name": "Stoke Moran manor house",
+    "src": [
+     "P21",
+     "P117"
+    ]
+   },
+   {
+    "id": "lawn",
+    "name": "The lawn",
+    "parent": "stoke-moran",
+    "src": [
+     "P34",
+     "P131"
+    ]
+   },
+   {
+    "id": "corridor",
+    "name": "The corridor of the three bedrooms",
+    "parent": "stoke-moran",
+    "src": [
+     "P32",
+     "P140"
+    ]
+   },
+   {
+    "id": "room-roylott",
+    "name": "Roylott's bedroom (the first)",
+    "parent": "stoke-moran",
+    "src": [
+     "P32",
+     "P157"
+    ]
+   },
+   {
+    "id": "room-middle",
+    "name": "The middle bedroom (Julia's, now Helen's)",
+    "parent": "stoke-moran",
+    "src": [
+     "P32",
+     "P140"
+    ]
+   },
+   {
+    "id": "room-third",
+    "name": "Helen's original bedroom (the third)",
+    "parent": "stoke-moran",
+    "src": [
+     "P32",
+     "P183"
+    ]
+   },
+   {
+    "id": "plantation",
+    "name": "The plantation",
+    "parent": "stoke-moran",
+    "src": [
+     "P40",
+     "P60"
+    ]
+   },
+   {
+    "id": "avenue-gate",
+    "name": "The avenue gate",
+    "parent": "stoke-moran",
+    "src": [
+     "P195"
+    ]
+   },
+   {
+    "id": "crown-inn",
+    "name": "The Crown Inn",
+    "src": [
+     "P66",
+     "P179-P180"
+    ]
+   },
+   {
+    "id": "harrow",
+    "name": "Miss Westphail's house near Harrow",
+    "src": [
+     "P29",
+     "P130"
+    ]
+   }
+  ],
+  "things": [
+   {
+    "id": "will",
+    "name": "Mrs Stoner's will",
+    "src": [
+     "P24",
+     "P114"
+    ]
+   },
+   {
+    "id": "casebook",
+    "name": "Holmes's case-book",
+    "src": [
+     "P17"
+    ]
+   },
+   {
+    "id": "blue-paper",
+    "name": "The sheet of blue paper with notes",
+    "src": [
+     "P113"
+    ]
+   },
+   {
+    "id": "poker",
+    "name": "The steel poker",
+    "src": [
+     "P109",
+     "P111"
+    ]
+   },
+   {
+    "id": "ventilator",
+    "name": "The ventilator",
+    "src": [
+     "P150",
+     "P152"
+    ]
+   },
+   {
+    "id": "bell-rope",
+    "name": "The dummy bell-rope",
+    "src": [
+     "P141",
+     "P148"
+    ]
+   },
+   {
+    "id": "bed",
+    "name": "The clamped bed",
+    "src": [
+     "P140",
+     "P214"
+    ]
+   },
+   {
+    "id": "shutters",
+    "name": "The barred shutters",
+    "src": [
+     "P55",
+     "P139"
+    ]
+   },
+   {
+    "id": "safe",
+    "name": "The iron safe",
+    "src": [
+     "P157-P158",
+     "P242"
+    ]
+   },
+   {
+    "id": "milk-saucer",
+    "name": "The saucer of milk",
+    "src": [
+     "P164"
+    ]
+   },
+   {
+    "id": "chair",
+    "name": "Roylott's wooden chair",
+    "src": [
+     "P157",
+     "P166"
+    ]
+   },
+   {
+    "id": "dog-lash",
+    "name": "The dog-lash with the whipcord loop",
+    "src": [
+     "P168",
+     "P242"
+    ]
+   },
+   {
+    "id": "dark-lantern",
+    "name": "The dark-lantern",
+    "src": [
+     "P235",
+     "P242"
+    ]
+   },
+   {
+    "id": "match-stump",
+    "name": "Julia's charred match stump",
+    "src": [
+     "P53"
+    ]
+   },
+   {
+    "id": "matchbox",
+    "name": "Julia's matchbox",
+    "src": [
+     "P53"
+    ]
+   },
+   {
+    "id": "scaffolding",
+    "name": "Scaffolding at the end wall",
+    "src": [
+     "P131"
+    ]
+   },
+   {
+    "id": "revolver",
+    "name": "Watson's revolver",
+    "src": [
+     "P114",
+     "P232"
+    ]
+   },
+   {
+    "id": "cane",
+    "name": "Holmes's cane",
+    "src": [
+     "P233"
+    ]
+   },
+   {
+    "id": "matches",
+    "name": "Matches",
+    "src": [
+     "P233"
+    ]
+   },
+   {
+    "id": "candle",
+    "name": "The candle stump",
+    "src": [
+     "P233"
+    ]
+   },
+   {
+    "id": "parish-clock",
+    "name": "The parish clock",
+    "src": [
+     "P234"
+    ]
+   },
+   {
+    "id": "snake-thing",
+    "name": "The yellow speckled band",
+    "src": [
+     "P242"
+    ],
+    "note": "the snake as seen: a headband"
+   }
+  ]
+ },
+ "frames": [],
+ "claims": [
+  {
+   "id": "c-julia-fear",
+   "text": "Julia died of pure fear and nervous shock.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-helen-asks-cause",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P59"
+   ]
+  },
+  {
+   "id": "c-band-gypsies",
+   "text": "The 'speckled band' Julia named meant the gypsies, perhaps their spotted handkerchiefs.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-holmes-tests-shutters",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "contradicts"
+    }
+   ],
+   "src": [
+    "P62",
+    "P63",
+    "P89"
+   ]
+  },
+  {
+   "id": "c-gypsies-involved",
+   "text": "The gypsies in the plantation had a hand in Julia's death.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-theory",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-holmes-tests-shutters",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-bell-rope-dummy",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P89",
+    "P90",
+    "P91",
+    "P92",
+    "P93"
+   ]
+  },
+  {
+   "id": "c-whistle-julia",
+   "text": "A low whistle and a metallic clang sounded just before Julia came out of her room.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-whistle-watson",
+     "as": "supports"
+    },
+    {
+     "ref": "e-snake-into-safe",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P49",
+    "P51"
+   ]
+  },
+  {
+   "id": "c-whistle-last-night",
+   "text": "A low whistle sounded in Julia's old room the night before the visit.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-whistle-watson",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P66"
+   ]
+  },
+  {
+   "id": "c-room-sealed",
+   "text": "Nothing and no one could have got into Julia's room from outside, and the rooms have no communication with each other.",
+   "by": "helen",
+   "asserted_in": "e-helen-tells",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-ventilator-found",
+     "as": "contradicts"
+    }
+   ],
+   "src": [
+    "P32",
+    "P55"
+   ]
+  },
+  {
+   "id": "c-repairs-pretext",
+   "text": "The repairs to the end wall were an excuse to move Helen out of her room.",
+   "by": "helen",
+   "asserted_in": "e-holmes-notes-repairs",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-holmes-notes-repairs",
+     "as": "supports"
+    },
+    {
+     "ref": "e-bed-clamped-seen",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P135"
+   ]
+  },
+  {
+   "id": "c-roylott-motive",
+   "text": "Roylott has the strongest motive for preventing either daughter's marriage: it would cut his income by £250 each.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-returns",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-holmes-returns",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P114"
+   ]
+  },
+  {
+   "id": "c-bruise-roylott",
+   "text": "Roylott made the marks on Helen's wrist.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-sees-bruise",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-helen-excuses",
+     "as": "supports"
+    },
+    {
+     "ref": "e-poker-bent",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P69",
+    "P70",
+    "P71",
+    "P72",
+    "P73"
+   ]
+  },
+  {
+   "id": "c-journey",
+   "text": "Helen came by dog-cart (seated on the driver's left) and the first train.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-deduces-journey",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-helen-confirms-journey",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P13",
+    "P15"
+   ]
+  },
+  {
+   "id": "c-armitage-fancies",
+   "text": "The man she looks to for help (named only later, Armitage) takes Helen's fears for a nervous woman's fancies.",
+   "by": "helen",
+   "asserted_in": "e-helen-fears",
+   "about": [
+    "armitage"
+   ],
+   "bears_on": [],
+   "src": [
+    "P19"
+   ]
+  },
+  {
+   "id": "c-roylott-traced",
+   "text": "Roylott traced his stepdaughter to Baker Street.",
+   "by": "roylott",
+   "asserted_in": "e-roylott-bursts-in",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-roylott-bursts-in",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P99",
+    "P109"
+   ]
+  },
+  {
+   "id": "c-ventilator-expected",
+   "text": "There is a ventilator joining Julia's room to Roylott's.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-deduces-vent",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-ventilator-found",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P206",
+    "P207",
+    "P208"
+   ]
+  },
+  {
+   "id": "c-roylott-installed",
+   "text": "Roylott had the ventilator cut, the dummy rope hung and the bed clamped, so that something could pass to the bed.",
+   "by": "holmes",
+   "asserted_in": "e-bed-reasoning",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-bell-rope-dummy",
+     "as": "supports"
+    },
+    {
+     "ref": "e-bed-clamped-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-chair-examined",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P210",
+    "P216",
+    "P248"
+   ]
+  },
+  {
+   "id": "c-snake-method",
+   "text": "Roylott killed Julia with a trained snake sent through the ventilator.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-suspects-snake",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-bell-rope-dummy",
+     "as": "supports"
+    },
+    {
+     "ref": "e-milk-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-lash-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-found",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P217",
+    "P218",
+    "P248"
+   ]
+  },
+  {
+   "id": "c-snake-trained",
+   "text": "The snake was trained to return to a whistle by milk as a reward.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-explains",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-milk-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-whistle-watson",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P248"
+   ]
+  },
+  {
+   "id": "c-clang-safe",
+   "text": "The metallic clang Julia's sister heard was Roylott shutting the safe on the snake.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-explains",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-snake-into-safe",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P249"
+   ]
+  },
+  {
+   "id": "c-band-snake",
+   "text": "Julia's 'speckled band' was the snake.",
+   "by": "holmes",
+   "asserted_in": "e-band-is-snake",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-band-is-snake",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P243",
+    "P248"
+   ]
+  },
+  {
+   "id": "c-roylott-killed-by-snake",
+   "text": "Roylott died of a snake bite.",
+   "by": "holmes",
+   "asserted_in": "e-band-is-snake",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-roylott-found",
+     "as": "supports"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "confirms"
+    },
+    {
+     "ref": "e-aftermath",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P245"
+   ]
+  },
+  {
+   "id": "c-official-finding",
+   "text": "Roylott died while indiscreetly playing with a dangerous pet.",
+   "by": "inquiry",
+   "asserted_in": "e-aftermath",
+   "about": [],
+   "src": [
+    "P247"
+   ],
+   "parts": [
+    {
+     "id": "died-of-pet",
+     "text": "Roylott died of an animal he kept.",
+     "bears_on": [
+      {
+       "ref": "e-roylott-found",
+       "as": "supports"
+      },
+      {
+       "ref": "e-band-is-snake",
+       "as": "confirms"
+      }
+     ]
+    },
+    {
+     "id": "was-playing",
+     "text": "He was indiscreetly playing with it: an accident.",
+     "bears_on": [
+      {
+       "ref": "e-roylott-sends-snake",
+       "as": "undermines"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "c-hideous-child",
+   "text": "A hideous distorted child ran across the lawn.",
+   "by": "watson",
+   "asserted_in": "e-baboon-dart",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-baboon-named",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-vigil",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P222",
+    "P223"
+   ]
+  },
+  {
+   "id": "c-baboon",
+   "text": "The creature on the lawn was the baboon.",
+   "by": "holmes",
+   "asserted_in": "e-baboon-named",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-vigil",
+     "as": "supports"
+    }
+   ],
+   "src": [
+    "P225"
+   ]
+  },
+  {
+   "id": "c-clang-bar",
+   "text": "The metallic clang Helen heard was one of the metal bars of the shutters falling back into place.",
+   "by": "holmes",
+   "asserted_in": "e-holmes-theory",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-holmes-tests-shutters",
+     "as": "undermines"
+    }
+   ],
+   "src": [
+    "P89"
+   ]
+  },
+  {
+   "id": "c-roylott-away",
+   "text": "Roylott will not be back from town before evening.",
+   "by": "helen",
+   "asserted_in": "e-helen-returns",
+   "about": [],
+   "bears_on": [
+    {
+     "ref": "e-roylott-drives-past",
+     "as": "confirms"
+    }
+   ],
+   "src": [
+    "P76",
+    "P125"
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "id": "q-julia-cause",
+   "text": "What killed Julia?",
+   "rivals": [
+    "c-julia-fear",
+    "c-gypsies-involved",
+    "c-snake-method"
+   ]
+  },
+  {
+   "id": "q-clang",
+   "text": "What made the metallic clang?",
+   "rivals": [
+    "c-clang-bar",
+    "c-clang-safe"
+   ]
+  },
+  {
+   "id": "q-band",
+   "text": "What was the speckled band?",
+   "rivals": [
+    "c-band-gypsies",
+    "c-band-snake"
+   ]
+  }
+ ],
+ "events": [
+  {
+   "id": "b-roylott-india",
+   "when": {
+    "seq": -990,
+    "approx": "decades before",
+    "gap": "long"
+   },
+   "kind": "summary",
+   "place": null,
+   "text": "Roylott, the last of a ruined family, took a medical degree on a relative's advance, went to Calcutta and built a large practice.",
+   "who": [],
+   "src": [
+    "P23"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-butler",
+   "when": {
+    "seq": -980
+   },
+   "kind": "violence",
+   "place": null,
+   "text": "In a fit of anger over robberies at his house Roylott beat his native butler to death, narrowly escaped hanging, served a long prison term and came back to England embittered.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P23"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-marries",
+   "when": {
+    "seq": -970
+   },
+   "kind": "marriage",
+   "place": null,
+   "text": "In India Roylott married Mrs Stoner, widow of Major-general Stoner; her twin daughters Julia and Helen were two years old.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "mrs-stoner",
+     "role": "agent"
+    },
+    {
+     "id": "julia",
+     "role": "present"
+    },
+    {
+     "id": "helen",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P24"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-bequest",
+   "when": {
+    "seq": -960
+   },
+   "kind": "agreement",
+   "place": null,
+   "text": "Mrs Stoner left her whole income to Roylott for as long as the twins lived with him, with a fixed annual sum to each daughter on her marriage.",
+   "who": [
+    {
+     "id": "mrs-stoner",
+     "role": "agent"
+    },
+    {
+     "id": "roylott",
+     "role": "beneficiary"
+    }
+   ],
+   "src": [
+    "P24"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "things": [
+    "will"
+   ]
+  },
+  {
+   "id": "b-mother-dies",
+   "when": {
+    "seq": -950,
+    "approx": "eight years ago"
+   },
+   "kind": "death",
+   "place": null,
+   "text": "Mrs Stoner was killed in a railway accident near Crewe, eight years before; the family had come back to England shortly before.",
+   "who": [
+    {
+     "id": "mrs-stoner",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P24"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-moves-in",
+   "when": {
+    "seq": -940,
+    "after": [
+     "b-mother-dies"
+    ]
+   },
+   "kind": "move",
+   "place": "stoke-moran",
+   "text": "Roylott gave up his London practice and took the twins to the old family house at Stoke Moran.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "julia",
+     "role": "present"
+    },
+    {
+     "id": "helen",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P24"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-withdraws",
+   "when": {
+    "seq": -930
+   },
+   "kind": "habit",
+   "place": "stoke-moran",
+   "text": "Roylott shut himself up, quarrelled with all comers, brawled (twice ending in the police-court) and became the terror of the village.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P25"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "frequency": "iterative"
+  },
+  {
+   "id": "b-gypsies",
+   "when": {
+    "seq": -920
+   },
+   "kind": "habit",
+   "place": "plantation",
+   "text": "Roylott befriended the wandering gypsies, let them camp on the estate and sometimes went off with them for weeks.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "gypsies",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P26"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "frequency": "iterative"
+  },
+  {
+   "id": "b-pets-arrive",
+   "when": {
+    "seq": -910
+   },
+   "kind": "habit",
+   "place": "stoke-moran",
+   "text": "Roylott had Indian animals sent over by a correspondent; a cheetah and a baboon roam his grounds.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "cheetah",
+     "role": "present"
+    },
+    {
+     "id": "baboon",
+     "role": "present"
+    },
+    {
+     "id": "correspondent",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P26"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "frequency": "iterative"
+  },
+  {
+   "id": "b-julia-engaged",
+   "when": {
+    "seq": -900,
+    "approx": "Christmas, two years ago"
+   },
+   "kind": "engagement",
+   "place": "harrow",
+   "text": "At her aunt's near Harrow at Christmas two years before, Julia met a half-pay major of marines and became engaged.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "agent"
+    },
+    {
+     "id": "major",
+     "role": "agent"
+    },
+    {
+     "id": "honoria",
+     "role": "host"
+    }
+   ],
+   "src": [
+    "P29"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-no-objection",
+   "when": {
+    "seq": -890
+   },
+   "kind": "speech",
+   "place": null,
+   "text": "Roylott learned of the engagement and offered no objection.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "julia",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P29"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-installs",
+   "when": {
+    "seq": -880,
+    "after": [
+     "b-julia-engaged"
+    ],
+    "before": [
+     "b-julia-dies"
+    ],
+    "approx": "a couple of years ago"
+   },
+   "kind": "works",
+   "place": "room-middle",
+   "text": "A ventilator was cut between Roylott's room and the middle bedroom, a dummy bell-rope hung beside its bed and the bed clamped to the floor; nobody is named as the doer.",
+   "who": [],
+   "src": [
+    "P144",
+    "P153",
+    "P154",
+    "P155",
+    "P210",
+    "P214"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-ventilator-found",
+   "things": [
+    "ventilator",
+    "bell-rope",
+    "bed"
+   ]
+  },
+  {
+   "id": "b-julia-whistles",
+   "when": {
+    "seq": -870,
+    "before": [
+     "b-julia-asks"
+    ]
+   },
+   "kind": "habit",
+   "place": "room-middle",
+   "text": "For some nights Julia was woken about three in the morning by a low, clear whistle, whose direction she could not tell.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "experiencer"
+    }
+   ],
+   "src": [
+    "P39"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "reported_by": "julia",
+   "frequency": "iterative"
+  },
+  {
+   "id": "b-roylott-retires",
+   "when": {
+    "seq": -860,
+    "epoch": "julia-night"
+   },
+   "kind": "habit",
+   "place": "room-roylott",
+   "text": "On Julia's last night Roylott went to his room early; the smell of his strong Indian cigars came into her room.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P34"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-julia-visits",
+   "when": {
+    "seq": -850,
+    "epoch": "julia-night"
+   },
+   "kind": "visit",
+   "place": "room-third",
+   "text": "Julia left her room for Helen's and chatted there about her wedding until eleven.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "host"
+    }
+   ],
+   "src": [
+    "P34"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-julia-asks",
+   "when": {
+    "seq": -840,
+    "epoch": "julia-night"
+   },
+   "kind": "speech",
+   "place": "room-third",
+   "text": "Julia asked Helen whether she had ever heard a whistle in the night, or could whistle in her sleep; Helen had heard none and blamed the gypsies.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "speaker"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P35",
+    "P36",
+    "P37",
+    "P38",
+    "P39",
+    "P40",
+    "P41",
+    "P42"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "says": "Have you ever heard any one whistle in the dead of the night?"
+  },
+  {
+   "id": "b-julia-locks",
+   "when": {
+    "seq": -830,
+    "epoch": "julia-night"
+   },
+   "kind": "act",
+   "place": "room-middle",
+   "text": "Julia went back to her room and Helen heard her key turn in the lock.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P43"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-helen-wakeful",
+   "when": {
+    "seq": -820,
+    "epoch": "julia-night"
+   },
+   "kind": "state-change",
+   "place": "room-third",
+   "text": "Helen could not sleep; a wild night of wind and rain.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "experiencer"
+    }
+   ],
+   "src": [
+    "P49"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-julia-screams",
+   "when": {
+    "seq": -810,
+    "epoch": "julia-night"
+   },
+   "kind": "event",
+   "place": "corridor",
+   "text": "A woman's wild scream broke through the gale; Helen knew it was her sister's.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P49"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-julia-emerges",
+   "when": {
+    "seq": -800,
+    "epoch": "julia-night"
+   },
+   "kind": "event",
+   "place": "corridor",
+   "text": "Julia's door, unlocked, swung open and she staggered out, blanched, and fell, convulsed.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P49"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "things": [
+    "match-stump",
+    "matchbox"
+   ]
+  },
+  {
+   "id": "b-julia-words",
+   "when": {
+    "seq": -790,
+    "epoch": "julia-night"
+   },
+   "kind": "speech",
+   "place": "corridor",
+   "text": "Julia cried out 'Oh, my God! Helen! It was the band! The speckled band!' and stabbed her finger toward Roylott's room.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "speaker"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P49"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "says": "Oh, my God! Helen! It was the band! The speckled band!"
+  },
+  {
+   "id": "b-roylott-comes",
+   "when": {
+    "seq": -780,
+    "epoch": "julia-night"
+   },
+   "kind": "event",
+   "place": "corridor",
+   "text": "Roylott came from his room in his dressing-gown, gave her brandy and sent for medical aid.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "julia",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P49"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-julia-dies",
+   "when": {
+    "seq": -770,
+    "epoch": "julia-night",
+    "approx": "two years ago"
+   },
+   "kind": "death",
+   "place": "corridor",
+   "text": "Julia died without regaining consciousness, aged thirty, a fortnight before her wedding.",
+   "who": [
+    {
+     "id": "julia",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P27",
+    "P29",
+    "P49"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "prevents": "h-julia-wedding"
+  },
+  {
+   "id": "b-inquiry",
+   "when": {
+    "seq": -760,
+    "after": [
+     "b-julia-dies"
+    ]
+   },
+   "kind": "inquiry",
+   "place": null,
+   "text": "The coroner found no satisfactory cause: the door was fastened inside, the shutters barred, walls, floor and chimney sound, no marks of violence, no poison found.",
+   "who": [
+    {
+     "id": "coroner",
+     "role": "agent"
+    },
+    {
+     "id": "doctors",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P51",
+    "P53",
+    "P54",
+    "P55",
+    "P56",
+    "P57"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells",
+   "things": [
+    "match-stump",
+    "matchbox"
+   ],
+   "causes": [
+    {
+     "event": "b-julia-dies",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "b-repairs-begin",
+   "when": {
+    "seq": -750,
+    "approx": "two days ago"
+   },
+   "kind": "works",
+   "place": "room-middle",
+   "text": "Two days ago repairs began in the west wing and Helen's bedroom wall was pierced, so she moved into Julia's old room and bed.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "experiencer"
+    }
+   ],
+   "src": [
+    "P66",
+    "P133",
+    "P134",
+    "P135"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-armitage",
+   "when": {
+    "seq": -740,
+    "approx": "a month ago"
+   },
+   "kind": "engagement",
+   "place": null,
+   "text": "A month ago Percy Armitage asked Helen to marry him; Roylott raised no opposition and the wedding is to be in the spring.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "agent"
+    },
+    {
+     "id": "armitage",
+     "role": "agent"
+    },
+    {
+     "id": "roylott",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P66"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-blacksmith",
+   "when": {
+    "seq": -730,
+    "approx": "last week"
+   },
+   "kind": "violence",
+   "place": null,
+   "text": "Last week Roylott hurled the blacksmith over a parapet into a stream; Helen paid all she could gather to avert exposure.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "blacksmith",
+     "role": "patient"
+    },
+    {
+     "id": "helen",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P26"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-night-whistle",
+   "when": {
+    "seq": -720,
+    "approx": "the night before"
+   },
+   "kind": "event",
+   "place": "room-middle",
+   "text": "The night before, awake in Julia's bed, Helen heard the low whistle; she lit the lamp and saw nothing.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "experiencer"
+    }
+   ],
+   "src": [
+    "P66"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "b-farintosh",
+   "when": {
+    "seq": -710,
+    "gap": "before Watson"
+   },
+   "kind": "case",
+   "place": null,
+   "text": "Holmes helped Mrs Farintosh in her hour of need, in a case of an opal tiara, before Watson's time; she gave Helen his address.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "farintosh",
+     "role": "client"
+    }
+   ],
+   "src": [
+    "P16",
+    "P18"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-holmes-casebook",
+   "things": [
+    "casebook"
+   ]
+  },
+  {
+   "id": "b-helen-leaves",
+   "when": {
+    "seq": -700,
+    "t": [
+     350,
+     440
+    ]
+   },
+   "kind": "travel",
+   "place": null,
+   "text": "Before six Helen slipped out, took a dog-cart from the Crown Inn to Leatherhead (20 past six) and the first train to Waterloo.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P16",
+    "P66"
+   ],
+   "origin": "backfilled",
+   "established_in": "e-helen-tells"
+  },
+  {
+   "id": "e-watson-woken",
+   "when": {
+    "seq": 10,
+    "t": [
+     435,
+     450
+    ]
+   },
+   "kind": "scene",
+   "place": "baker-street",
+   "text": "Early in April '83, at a quarter past seven, Holmes, dressed, wakes Watson in their Baker Street rooms: a client is waiting.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P01",
+    "P02",
+    "P03",
+    "P04",
+    "P05"
+   ]
+  },
+  {
+   "id": "e-holmes-prepares",
+   "when": {
+    "seq": 20,
+    "t": [
+     450,
+     460
+    ]
+   },
+   "kind": "scene",
+   "place": "sitting-room",
+   "text": "Watson dresses; Holmes's deductions are praised; the veiled client sits by the window of the sitting-room.",
+   "who": [
+    {
+     "id": "watson",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P06"
+   ]
+  },
+  {
+   "id": "e-helen-arrives",
+   "when": {
+    "seq": 30,
+    "t": [
+     420,
+     460
+    ]
+   },
+   "kind": "arrival",
+   "place": "sitting-room",
+   "text": "Helen Stoner, in great agitation, has come to see Holmes.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P06",
+    "P07",
+    "P08",
+    "P09",
+    "P10"
+   ]
+  },
+  {
+   "id": "e-holmes-deduces-journey",
+   "when": {
+    "seq": 40,
+    "t": [
+     460,
+     470
+    ]
+   },
+   "kind": "inference",
+   "place": "sitting-room",
+   "text": "Holmes reads the return-ticket half in her glove and the seven fresh mud spots on her left sleeve: she came by train after a dog-cart drive, sitting on the driver's left.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P11",
+    "P12",
+    "P13",
+    "P14",
+    "P15"
+   ]
+  },
+  {
+   "id": "e-helen-confirms-journey",
+   "when": {
+    "seq": 50,
+    "t": [
+     470,
+     475
+    ]
+   },
+   "kind": "speech",
+   "place": "sitting-room",
+   "text": "Helen confirms it exactly and says she came on Mrs Farintosh's recommendation.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P16"
+   ],
+   "says": "you are perfectly correct"
+  },
+  {
+   "id": "e-holmes-casebook",
+   "when": {
+    "seq": 60,
+    "t": [
+     475,
+     480
+    ]
+   },
+   "kind": "act",
+   "place": "sitting-room",
+   "text": "Holmes consults his case-book, recalls the Farintosh case and takes Helen's on.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P17",
+    "P18"
+   ],
+   "things": [
+    "casebook"
+   ]
+  },
+  {
+   "id": "e-helen-fears",
+   "when": {
+    "seq": 70,
+    "t": [
+     480,
+     485
+    ]
+   },
+   "kind": "speech",
+   "place": "sitting-room",
+   "text": "Helen says her fears are vague and rest on small points, and that the one man she looks to for help treats them as a nervous woman's fancies.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "speaker"
+    },
+    {
+     "id": "holmes",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P19",
+    "P20"
+   ]
+  },
+  {
+   "id": "e-helen-tells",
+   "when": {
+    "seq": 80,
+    "t": [
+     485,
+     540
+    ]
+   },
+   "kind": "testimony",
+   "place": "sitting-room",
+   "text": "Helen tells her history: her family, her stepfather, Julia's death, her own fear.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "speaker"
+    },
+    {
+     "id": "holmes",
+     "role": "addressee"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P21",
+    "P22",
+    "P23",
+    "P24",
+    "P25",
+    "P26",
+    "P27",
+    "P28",
+    "P29",
+    "P32",
+    "P34",
+    "P35",
+    "P36",
+    "P37",
+    "P38",
+    "P39",
+    "P40",
+    "P41",
+    "P42",
+    "P43",
+    "P44",
+    "P45",
+    "P46",
+    "P47",
+    "P48",
+    "P49",
+    "P50",
+    "P51",
+    "P52",
+    "P53",
+    "P54",
+    "P55",
+    "P56",
+    "P57",
+    "P58",
+    "P59",
+    "P60",
+    "P61",
+    "P62",
+    "P63",
+    "P66"
+   ],
+   "says": "the statement of P21-P66"
+  },
+  {
+   "id": "e-holmes-attends",
+   "when": {
+    "seq": 90,
+    "t": [
+     485,
+     540
+    ]
+   },
+   "kind": "act",
+   "place": "sitting-room",
+   "text": "Holmes, eyes closed, half opens them and asks for precise details; he asks about locking, whistles, the coroner, poison, gypsies and the band.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P30",
+    "P31",
+    "P33",
+    "P44",
+    "P45",
+    "P46",
+    "P47",
+    "P48",
+    "P50",
+    "P52",
+    "P54",
+    "P56",
+    "P58",
+    "P60",
+    "P62"
+   ]
+  },
+  {
+   "id": "e-holmes-unsatisfied",
+   "when": {
+    "seq": 100,
+    "t": [
+     540,
+     542
+    ]
+   },
+   "kind": "reaction",
+   "place": "sitting-room",
+   "text": "Holmes shakes his head, dissatisfied: 'very deep waters.'",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P64",
+    "P65"
+   ]
+  },
+  {
+   "id": "e-holmes-sees-bruise",
+   "when": {
+    "seq": 110,
+    "t": [
+     545,
+     550
+    ]
+   },
+   "kind": "inference",
+   "place": "sitting-room",
+   "text": "Holmes pushes back her lace cuff: five livid marks of four fingers and a thumb on her wrist. 'You have been cruelly used.'",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P67",
+    "P68",
+    "P69",
+    "P70",
+    "P71",
+    "P72"
+   ]
+  },
+  {
+   "id": "e-helen-excuses",
+   "when": {
+    "seq": 120,
+    "t": [
+     550,
+     552
+    ]
+   },
+   "kind": "reaction",
+   "place": "sitting-room",
+   "text": "Helen colours, covers her wrist and says he is a hard man who perhaps hardly knows his own strength.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P73"
+   ]
+  },
+  {
+   "id": "e-holmes-asks-visit",
+   "when": {
+    "seq": 130,
+    "t": [
+     552,
+     570
+    ]
+   },
+   "kind": "speech",
+   "place": "sitting-room",
+   "text": "After a long silence Holmes asks to see the rooms at Stoke Moran today without Roylott's knowledge; Helen says he is going to town for the day and she can get the housekeeper out of the way, and will be back by the twelve o'clock train.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P74",
+    "P75",
+    "P76",
+    "P77",
+    "P78",
+    "P79",
+    "P80",
+    "P81"
+   ]
+  },
+  {
+   "id": "e-helen-leaves",
+   "when": {
+    "seq": 140,
+    "t": [
+     570,
+     575
+    ]
+   },
+   "kind": "departure",
+   "place": "sitting-room",
+   "text": "Helen, her heart lightened, lowers her veil and leaves.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P82"
+   ]
+  },
+  {
+   "id": "e-holmes-theory",
+   "when": {
+    "seq": 150,
+    "t": [
+     575,
+     590
+    ]
+   },
+   "kind": "speech",
+   "place": "sitting-room",
+   "text": "Holmes and Watson talk it over: with the rooms sealed, Julia must have been alone; he links the whistles, the gypsies, Roylott's motive and the 'band' and thinks the mystery may clear 'along those lines', though he sees objections.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P83",
+    "P84",
+    "P85",
+    "P86",
+    "P87",
+    "P88",
+    "P89",
+    "P90",
+    "P91",
+    "P92",
+    "P93"
+   ]
+  },
+  {
+   "id": "e-holmes-deduces-vent",
+   "when": {
+    "seq": 160,
+    "t": [
+     590,
+     600
+    ]
+   },
+   "kind": "inference",
+   "place": "sitting-room",
+   "text": "Reasoning from Julia smelling Roylott's cigar through the wall, Holmes concludes there must be a small communication between the two rooms: a ventilator.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P206",
+    "P207",
+    "P208"
+   ]
+  },
+  {
+   "id": "e-roylott-bursts-in",
+   "when": {
+    "seq": 170,
+    "t": [
+     590,
+     605
+    ]
+   },
+   "kind": "arrival",
+   "place": "sitting-room",
+   "text": "A huge man in a top-hat and gaiters bursts in: Dr Grimesby Roylott. He says he traced his stepdaughter, demands what she said and threatens Holmes.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "holmes",
+     "role": "addressee"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P94",
+    "P95",
+    "P96",
+    "P97",
+    "P98",
+    "P99",
+    "P100",
+    "P101",
+    "P102",
+    "P103",
+    "P104",
+    "P105",
+    "P106",
+    "P107",
+    "P108",
+    "P109"
+   ],
+   "things": [
+    "poker"
+   ]
+  },
+  {
+   "id": "e-holmes-baits-roylott",
+   "when": {
+    "seq": 180,
+    "t": [
+     595,
+     605
+    ]
+   },
+   "kind": "speech",
+   "place": "sitting-room",
+   "text": "Holmes answers with remarks on the cold and the crocuses and asks him to close the door.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "roylott",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P98",
+    "P99",
+    "P100",
+    "P101",
+    "P102",
+    "P103",
+    "P104",
+    "P105",
+    "P106",
+    "P107",
+    "P108"
+   ],
+   "causes": [
+    {
+     "event": "e-roylott-bursts-in",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-poker-bent",
+   "when": {
+    "seq": 190,
+    "t": [
+     600,
+     605
+    ]
+   },
+   "kind": "act",
+   "place": "sitting-room",
+   "text": "Roylott bends the poker into a curve and throws it into the fireplace; he leaves with a threat.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P109",
+    "P110"
+   ],
+   "things": [
+    "poker"
+   ]
+  },
+  {
+   "id": "e-holmes-straightens-poker",
+   "when": {
+    "seq": 200,
+    "t": [
+     605,
+     610
+    ]
+   },
+   "kind": "act",
+   "place": "sitting-room",
+   "text": "Holmes picks up the poker and straightens it with a single effort, and orders breakfast.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P111",
+    "P112"
+   ],
+   "things": [
+    "poker"
+   ]
+  },
+  {
+   "id": "e-holmes-doctors-commons",
+   "when": {
+    "seq": 210,
+    "t": [
+     620,
+     770
+    ]
+   },
+   "kind": "act",
+   "place": "doctors-commons",
+   "text": "Holmes goes to Doctors' Commons, reads Mrs Stoner's will and works out the present value of its investments.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P112",
+    "P114"
+   ],
+   "origin": "offscreen",
+   "things": [
+    "will",
+    "blue-paper"
+   ],
+   "fulfils": "h-holmes-commons"
+  },
+  {
+   "id": "e-holmes-returns",
+   "when": {
+    "seq": 220,
+    "t": [
+     770,
+     790
+    ]
+   },
+   "kind": "arrival",
+   "place": "sitting-room",
+   "text": "Holmes returns nearly at one with a blue sheet of notes and reports: the income, once nearly £1100, is now £750; each daughter would take £250 on marrying.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P113",
+    "P114"
+   ],
+   "says": "the total income... is now not more than £750. Each daughter can claim an income of £250",
+   "things": [
+    "blue-paper"
+   ]
+  },
+  {
+   "id": "e-train-to-leatherhead",
+   "when": {
+    "seq": 230,
+    "t": [
+     800,
+     930
+    ]
+   },
+   "kind": "travel",
+   "place": "road",
+   "text": "Holmes and Watson take a cab to Waterloo, a train to Leatherhead and a trap for four or five miles through spring lanes; Holmes, buried in thought, suddenly points out the house.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    },
+    {
+     "id": "driver",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P114",
+    "P115",
+    "P116",
+    "P117",
+    "P118",
+    "P119",
+    "P120",
+    "P121",
+    "P122",
+    "P123"
+   ]
+  },
+  {
+   "id": "e-roylott-in-town",
+   "when": {
+    "seq": 240,
+    "t": [
+     560,
+     1170
+    ]
+   },
+   "kind": "act",
+   "place": null,
+   "text": "Roylott goes to town on business during the day and does not return until dusk.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P76",
+    "P125"
+   ],
+   "origin": "offscreen",
+   "fulfils": "h-roylott-town"
+  },
+  {
+   "id": "e-helen-returns",
+   "when": {
+    "seq": 250,
+    "t": [
+     720,
+     900
+    ]
+   },
+   "kind": "travel",
+   "place": null,
+   "text": "Helen returns by the twelve o'clock train and waits for them in the lane.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P80",
+    "P121",
+    "P125"
+   ],
+   "origin": "offscreen",
+   "fulfils": "h-helen-twelve"
+  },
+  {
+   "id": "e-arrive-stoke-moran",
+   "when": {
+    "seq": 260,
+    "t": [
+     930,
+     940
+    ]
+   },
+   "kind": "arrival",
+   "place": "lawn",
+   "text": "They get down at the stile; Holmes says he told the driver nothing, so Roylott may think them architects; Helen greets them gladly.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    },
+    {
+     "id": "helen",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P123",
+    "P124",
+    "P125"
+   ]
+  },
+  {
+   "id": "e-holmes-conceals-purpose",
+   "when": {
+    "seq": 270,
+    "t": [
+     925,
+     935
+    ]
+   },
+   "kind": "conceal",
+   "place": "lawn",
+   "text": "Holmes let it appear they came as architects or on other business, so that Roylott's gossip about them will be stopped.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P124"
+   ],
+   "from": "roylott"
+  },
+  {
+   "id": "e-holmes-tells-helen",
+   "when": {
+    "seq": 280,
+    "t": [
+     940,
+     950
+    ]
+   },
+   "kind": "speech",
+   "place": "lawn",
+   "text": "Holmes tells Helen of Roylott's visit; she turns white and fears he followed her; Holmes tells her to lock herself in tonight and offers to take her to her aunt at Harrow.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P126",
+    "P127",
+    "P128",
+    "P129",
+    "P130"
+   ]
+  },
+  {
+   "id": "e-holmes-notes-repairs",
+   "when": {
+    "seq": 290,
+    "t": [
+     950,
+     960
+    ]
+   },
+   "kind": "observation",
+   "place": "lawn",
+   "text": "Holmes sees the house, scaffolding and broken stonework but no workmen, and remarks that the end wall needs no pressing repair; Helen believes it an excuse to move her.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    },
+    {
+     "id": "helen",
+     "role": "speaker"
+    }
+   ],
+   "src": [
+    "P131",
+    "P132",
+    "P133",
+    "P134",
+    "P135"
+   ],
+   "things": [
+    "scaffolding"
+   ]
+  },
+  {
+   "id": "e-holmes-tests-shutters",
+   "when": {
+    "seq": 300,
+    "t": [
+     960,
+     975
+    ]
+   },
+   "kind": "test",
+   "place": "lawn",
+   "text": "Holmes has Helen bar her shutters and tries every way to force them, with knife and lens; they hold. 'My theory certainly presents some difficulties.'",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P136",
+    "P137",
+    "P138",
+    "P139"
+   ],
+   "things": [
+    "shutters"
+   ]
+  },
+  {
+   "id": "e-holmes-drops-gypsies",
+   "when": {
+    "seq": 310,
+    "t": [
+     975,
+     980
+    ]
+   },
+   "kind": "inference",
+   "place": "lawn",
+   "text": "Seeing that neither window nor door can be passed, Holmes drops the gypsy theory and looks for danger from inside.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P248"
+   ],
+   "causes": [
+    {
+     "event": "e-holmes-tests-shutters",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-holmes-searches-room",
+   "when": {
+    "seq": 320,
+    "t": [
+     975,
+     990
+    ]
+   },
+   "kind": "observation",
+   "place": "room-middle",
+   "text": "Inside the middle bedroom Holmes sits silent in a corner and studies every detail.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    }
+   ],
+   "src": [
+    "P140"
+   ]
+  },
+  {
+   "id": "e-bell-asked",
+   "when": {
+    "seq": 330,
+    "t": [
+     990,
+     995
+    ]
+   },
+   "kind": "speech",
+   "place": "room-middle",
+   "text": "Holmes asks where the bell-rope goes, learns it was put up a couple of years ago and that Julia never used it.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P141",
+    "P142",
+    "P143",
+    "P144",
+    "P145",
+    "P146"
+   ],
+   "things": [
+    "bell-rope"
+   ]
+  },
+  {
+   "id": "e-bed-clamped-seen",
+   "when": {
+    "seq": 340,
+    "t": [
+     995,
+     1000
+    ]
+   },
+   "kind": "observation",
+   "place": "room-middle",
+   "text": "Holmes crawls over the floor and panelling, then stares at the bed and the wall above it: the bed is clamped to the floor.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    }
+   ],
+   "src": [
+    "P147",
+    "P212",
+    "P213",
+    "P214",
+    "P215",
+    "P216"
+   ],
+   "things": [
+    "bed"
+   ]
+  },
+  {
+   "id": "e-bell-rope-dummy",
+   "when": {
+    "seq": 350,
+    "t": [
+     1000,
+     1010
+    ]
+   },
+   "kind": "discovery",
+   "place": "room-middle",
+   "text": "Holmes tugs the bell-rope: it is a dummy, tied to a hook just above the ventilator.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P148",
+    "P149",
+    "P150",
+    "P151"
+   ],
+   "things": [
+    "bell-rope"
+   ]
+  },
+  {
+   "id": "e-ventilator-found",
+   "when": {
+    "seq": 360,
+    "t": [
+     1015,
+     1025
+    ]
+   },
+   "kind": "discovery",
+   "place": "room-middle",
+   "text": "Holmes notes the new ventilator that opens into the next room instead of the outside air, put in about the same time as the rope.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P152",
+    "P153",
+    "P154",
+    "P155",
+    "P156"
+   ],
+   "things": [
+    "ventilator"
+   ]
+  },
+  {
+   "id": "e-holmes-suspects-snake",
+   "when": {
+    "seq": 370,
+    "t": [
+     1025,
+     1030
+    ]
+   },
+   "kind": "inference",
+   "place": "room-middle",
+   "text": "The dummy rope, the ventilator and the clamped bed make Holmes think of a snake, and he remembers Roylott's supply of Indian animals.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P248"
+   ],
+   "causes": [
+    {
+     "event": "e-bell-rope-dummy",
+     "stated": true
+    },
+    {
+     "event": "e-ventilator-found",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-roylott-room-search",
+   "when": {
+    "seq": 380,
+    "t": [
+     1030,
+     1050
+    ]
+   },
+   "kind": "observation",
+   "place": "room-roylott",
+   "text": "In Roylott's room Holmes examines the camp-bed, books, chairs and iron safe; Helen has seen inside the safe once.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    },
+    {
+     "id": "helen",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P157",
+    "P158",
+    "P159",
+    "P160",
+    "P161"
+   ],
+   "things": [
+    "safe"
+   ]
+  },
+  {
+   "id": "e-milk-seen",
+   "when": {
+    "seq": 390,
+    "t": [
+     1050,
+     1055
+    ]
+   },
+   "kind": "observation",
+   "place": "room-roylott",
+   "text": "On the safe stands a saucer of milk; Holmes asks if they keep a cat and is told only a cheetah and a baboon.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    },
+    {
+     "id": "helen",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P162",
+    "P163",
+    "P164",
+    "P165",
+    "P166"
+   ],
+   "things": [
+    "milk-saucer"
+   ]
+  },
+  {
+   "id": "e-chair-examined",
+   "when": {
+    "seq": 400,
+    "t": [
+     1055,
+     1060
+    ]
+   },
+   "kind": "observation",
+   "place": "room-roylott",
+   "text": "Holmes squats and examines the seat of the wooden chair closely, then rises satisfied.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    }
+   ],
+   "src": [
+    "P166",
+    "P167"
+   ],
+   "things": [
+    "chair"
+   ]
+  },
+  {
+   "id": "e-lash-seen",
+   "when": {
+    "seq": 410,
+    "t": [
+     1060,
+     1070
+    ]
+   },
+   "kind": "observation",
+   "place": "room-roylott",
+   "text": "On the bed hangs a small dog-lash curled and tied into a loop of whipcord; Watson sees nothing odd; Holmes finds it uncommon.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    },
+    {
+     "id": "watson",
+     "role": "observer"
+    }
+   ],
+   "src": [
+    "P168",
+    "P169",
+    "P170",
+    "P171"
+   ],
+   "things": [
+    "dog-lash"
+   ]
+  },
+  {
+   "id": "e-holmes-grim",
+   "when": {
+    "seq": 420,
+    "t": [
+     1070,
+     1085
+    ]
+   },
+   "kind": "reaction",
+   "place": "lawn",
+   "text": "Holmes, grim, walks the lawn in silence; Helen and Watson do not break in.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "present"
+    },
+    {
+     "id": "watson",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P171",
+    "P172"
+   ]
+  },
+  {
+   "id": "e-holmes-instructs",
+   "when": {
+    "seq": 430,
+    "t": [
+     1085,
+     1100
+    ]
+   },
+   "kind": "speech",
+   "place": "lawn",
+   "text": "Holmes tells Helen to follow his advice absolutely: he and Watson will spend the night in her room; she must plead a headache when her stepfather returns, show a lamp from her window once he retires, and slip into her old room.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P173",
+    "P174",
+    "P175",
+    "P176",
+    "P177",
+    "P178",
+    "P179",
+    "P180",
+    "P181",
+    "P182",
+    "P183",
+    "P184",
+    "P185",
+    "P186",
+    "P187"
+   ]
+  },
+  {
+   "id": "e-holmes-conceals-plan",
+   "when": {
+    "seq": 440,
+    "t": [
+     1085,
+     1100
+    ]
+   },
+   "kind": "conceal",
+   "place": "lawn",
+   "text": "Holmes will not say what he has concluded, preferring clearer proof; he tells Helen she must feign a headache and take the lamp trick, and the rest is theirs.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P183",
+    "P184",
+    "P185",
+    "P186",
+    "P187",
+    "P188",
+    "P189",
+    "P190",
+    "P191",
+    "P192",
+    "P193"
+   ],
+   "from": "roylott"
+  },
+  {
+   "id": "e-helen-asks-cause",
+   "when": {
+    "seq": 450,
+    "t": [
+     1095,
+     1105
+    ]
+   },
+   "kind": "speech",
+   "place": "lawn",
+   "text": "Helen asks him what caused her sister's death; he says only that he thinks there was probably some more tangible cause than fright.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "speaker"
+    },
+    {
+     "id": "holmes",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P188",
+    "P189",
+    "P190",
+    "P191",
+    "P192",
+    "P193"
+   ],
+   "says": "I think that there was probably some more tangible cause."
+  },
+  {
+   "id": "e-farewell",
+   "when": {
+    "seq": 460,
+    "t": [
+     1105,
+     1110
+    ]
+   },
+   "kind": "speech",
+   "place": "lawn",
+   "text": "Holmes tells her to be brave; they leave before Roylott returns.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "helen",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P194",
+    "P195"
+   ]
+  },
+  {
+   "id": "e-crown-inn",
+   "when": {
+    "seq": 470,
+    "t": [
+     1110,
+     1160
+    ]
+   },
+   "kind": "scene",
+   "place": "crown-inn",
+   "text": "They take a bedroom and sitting-room at the Crown Inn, with a view of the avenue gate and the inhabited wing.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P195"
+   ]
+  },
+  {
+   "id": "e-roylott-drives-past",
+   "when": {
+    "seq": 480,
+    "t": [
+     1160,
+     1180
+    ]
+   },
+   "kind": "arrival",
+   "place": "avenue-gate",
+   "text": "At dusk Roylott drives past, fuming at the boy who struggles with the heavy iron gates; a lamp is lit in a sitting-room.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "boy",
+     "role": "present"
+    },
+    {
+     "id": "holmes",
+     "role": "witness"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P195"
+   ]
+  },
+  {
+   "id": "e-holmes-warns-watson",
+   "when": {
+    "seq": 490,
+    "t": [
+     1180,
+     1190
+    ]
+   },
+   "kind": "speech",
+   "place": "crown-inn",
+   "text": "Holmes admits scruples about the danger tonight; Watson says he will come.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P196",
+    "P197",
+    "P198",
+    "P199",
+    "P200"
+   ]
+  },
+  {
+   "id": "e-ventilator-explained",
+   "when": {
+    "seq": 500,
+    "t": [
+     1180,
+     1215
+    ]
+   },
+   "kind": "speech",
+   "place": "crown-inn",
+   "text": "At the inn Holmes tells Watson he foresaw the ventilator, and points to the coincidence of dates: a ventilator made, a cord hung, a lady dies in that bed.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P201",
+    "P202",
+    "P203",
+    "P204",
+    "P205",
+    "P209",
+    "P210",
+    "P211"
+   ],
+   "says": "I deduced a ventilator."
+  },
+  {
+   "id": "e-bed-reasoning",
+   "when": {
+    "seq": 510,
+    "t": [
+     1215,
+     1245
+    ]
+   },
+   "kind": "inference",
+   "place": "crown-inn",
+   "text": "Holmes points to the clamped bed and the rope that was never a bell-pull; Watson sees what he is hinting at: a subtle and horrible crime.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P212",
+    "P213",
+    "P214",
+    "P215",
+    "P216",
+    "P217",
+    "P218"
+   ]
+  },
+  {
+   "id": "e-roylott-light-out",
+   "when": {
+    "seq": 520,
+    "t": [
+     1260,
+     1262
+    ]
+   },
+   "kind": "observation",
+   "place": "avenue-gate",
+   "text": "About nine the light among the trees goes out.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "observer"
+    },
+    {
+     "id": "watson",
+     "role": "observer"
+    }
+   ],
+   "src": [
+    "P219"
+   ]
+  },
+  {
+   "id": "e-signal",
+   "when": {
+    "seq": 530,
+    "t": [
+     1380,
+     1382
+    ]
+   },
+   "kind": "act",
+   "place": "room-middle",
+   "text": "Just at eleven a single bright light shines from the middle window.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "agent"
+    },
+    {
+     "id": "holmes",
+     "role": "witness"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P219",
+    "P220"
+   ],
+   "fulfils": "h-helen-signal"
+  },
+  {
+   "id": "e-leave-inn",
+   "when": {
+    "seq": 540,
+    "t": [
+     1382,
+     1395
+    ]
+   },
+   "kind": "departure",
+   "place": "crown-inn",
+   "text": "They tell the landlord they are going on a late visit to an acquaintance and take the dark road toward the light.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    },
+    {
+     "id": "landlord",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P221"
+   ]
+  },
+  {
+   "id": "e-baboon-dart",
+   "when": {
+    "seq": 550,
+    "t": [
+     1400,
+     1405
+    ]
+   },
+   "kind": "event",
+   "place": "lawn",
+   "text": "As they cross the lawn something like a hideous distorted child darts from the laurels, writhes on the grass and runs off.",
+   "who": [
+    {
+     "id": "watson",
+     "role": "witness"
+    },
+    {
+     "id": "holmes",
+     "role": "witness"
+    },
+    {
+     "id": "baboon",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P222"
+   ]
+  },
+  {
+   "id": "e-baboon-named",
+   "when": {
+    "seq": 560,
+    "t": [
+     1405,
+     1408
+    ]
+   },
+   "kind": "speech",
+   "place": "lawn",
+   "text": "Holmes laughs low: 'That is the baboon.'",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P223",
+    "P224",
+    "P225"
+   ],
+   "says": "That is the baboon."
+  },
+  {
+   "id": "e-enter-room",
+   "when": {
+    "seq": 570,
+    "t": [
+     1408,
+     1420
+    ]
+   },
+   "kind": "arrival",
+   "place": "room-middle",
+   "text": "They enter the middle bedroom by the window; Holmes closes the shutters and moves the lamp; all is as by day.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P226"
+   ]
+  },
+  {
+   "id": "e-holmes-silence-order",
+   "when": {
+    "seq": 580,
+    "t": [
+     1420,
+     1430
+    ]
+   },
+   "kind": "speech",
+   "place": "room-middle",
+   "text": "Holmes whispers that the least sound would be fatal, they must sit without light as Roylott would see it through the ventilator, and Watson must stay awake with his pistol ready.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P227",
+    "P228",
+    "P229",
+    "P230",
+    "P231",
+    "P232",
+    "P233"
+   ],
+   "things": [
+    "revolver",
+    "cane",
+    "matches",
+    "candle"
+   ]
+  },
+  {
+   "id": "e-holmes-conceals-light",
+   "when": {
+    "seq": 590,
+    "t": [
+     1420,
+     1620
+    ]
+   },
+   "kind": "conceal",
+   "place": "room-middle",
+   "text": "They sit in the dark in the bedroom so that no light shows through the ventilator.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P229",
+    "P233",
+    "P234"
+   ],
+   "from": "roylott"
+  },
+  {
+   "id": "e-vigil",
+   "when": {
+    "seq": 600,
+    "t": [
+     1430,
+     1660
+    ]
+   },
+   "kind": "scene",
+   "place": "room-middle",
+   "text": "The long vigil in the dark; a night-bird, the cheetah's whine at the window, the parish clock striking the quarters; twelve, one, two, three.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    },
+    {
+     "id": "cheetah",
+     "role": "present"
+    }
+   ],
+   "src": [
+    "P234"
+   ],
+   "things": [
+    "parish-clock"
+   ],
+   "fulfils": "h-holmes-night"
+  },
+  {
+   "id": "e-lantern-lit",
+   "when": {
+    "seq": 610,
+    "t": [
+     1620,
+     1630
+    ]
+   },
+   "kind": "event",
+   "place": "room-middle",
+   "text": "A gleam of light at the ventilator, quickly gone, then a smell of burning oil and hot metal; someone in the next room has lit a dark-lantern.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "witness"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P235"
+   ]
+  },
+  {
+   "id": "e-roylott-sends-snake",
+   "when": {
+    "seq": 620,
+    "t": [
+     1625,
+     1650
+    ]
+   },
+   "kind": "act",
+   "place": "room-roylott",
+   "text": "Roylott, in his room with the lantern lit, puts the snake through the ventilator onto the rope.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "snake",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P235",
+    "P248"
+   ],
+   "origin": "offscreen",
+   "established_in": "e-holmes-explains",
+   "things": [
+    "ventilator",
+    "dark-lantern"
+   ]
+  },
+  {
+   "id": "e-hiss-heard",
+   "when": {
+    "seq": 630,
+    "t": [
+     1650,
+     1655
+    ]
+   },
+   "kind": "event",
+   "place": "room-middle",
+   "text": "After half an hour a gentle sound like a small jet of steam from a kettle begins.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "witness"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P235"
+   ]
+  },
+  {
+   "id": "e-holmes-lashes",
+   "when": {
+    "seq": 640,
+    "t": [
+     1655,
+     1658
+    ]
+   },
+   "kind": "act",
+   "place": "room-middle",
+   "text": "Holmes springs from the bed, strikes a match and lashes furiously at the bell-pull with his cane, crying 'You see it, Watson?'",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P235",
+    "P236"
+   ],
+   "things": [
+    "cane",
+    "bell-rope"
+   ]
+  },
+  {
+   "id": "e-whistle-watson",
+   "when": {
+    "seq": 650,
+    "t": [
+     1655,
+     1660
+    ]
+   },
+   "kind": "event",
+   "place": "room-middle",
+   "text": "Watson sees nothing but hears a low, clear whistle at the moment of the light; he sees Holmes's face deadly pale with horror and loathing.",
+   "who": [
+    {
+     "id": "watson",
+     "role": "witness"
+    },
+    {
+     "id": "holmes",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P237"
+   ]
+  },
+  {
+   "id": "e-roylott-cry",
+   "when": {
+    "seq": 660,
+    "t": [
+     1660,
+     1670
+    ]
+   },
+   "kind": "event",
+   "place": "room-roylott",
+   "text": "A hoarse yell of pain, fear and anger swells up and dies away; it is said that the village and parsonage heard it.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "agent"
+    },
+    {
+     "id": "holmes",
+     "role": "witness"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    },
+    {
+     "id": "villagers",
+     "role": "witness"
+    }
+   ],
+   "src": [
+    "P238"
+   ],
+   "mode": "reported"
+  },
+  {
+   "id": "e-snake-bites-roylott",
+   "when": {
+    "seq": 670,
+    "t": [
+     1658,
+     1665
+    ]
+   },
+   "kind": "event",
+   "place": "room-roylott",
+   "text": "The snake, roused by Holmes's blows, turns on the first person it finds: Roylott, in the next room, bitten.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "patient"
+    },
+    {
+     "id": "snake",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P238",
+    "P245",
+    "P251"
+   ],
+   "origin": "offscreen",
+   "established_in": "e-roylott-found",
+   "causes": [
+    {
+     "event": "e-holmes-lashes",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-roylott-dies",
+   "when": {
+    "seq": 680,
+    "t": [
+     1665,
+     1675
+    ]
+   },
+   "kind": "death",
+   "place": "room-roylott",
+   "text": "Roylott dies within ten seconds of the bite.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P245"
+   ],
+   "origin": "offscreen",
+   "established_in": "e-roylott-found",
+   "causes": [
+    {
+     "event": "e-snake-bites-roylott",
+     "stated": true
+    }
+   ]
+  },
+  {
+   "id": "e-enter-roylott-room",
+   "when": {
+    "seq": 690,
+    "t": [
+     1680,
+     1690
+    ]
+   },
+   "kind": "arrival",
+   "place": "room-roylott",
+   "text": "Holmes, grim, lights the lamp and goes down the corridor; twice he strikes the door with no answer; they go in with the pistol cocked.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P239",
+    "P240",
+    "P241"
+   ]
+  },
+  {
+   "id": "e-roylott-found",
+   "when": {
+    "seq": 700,
+    "t": [
+     1690,
+     1695
+    ]
+   },
+   "kind": "discovery",
+   "place": "room-roylott",
+   "text": "Roylott sits dead on the wooden chair in dressing-gown and Turkish slippers, the whip-stock across his lap, a dark-lantern lighting the safe, whose door is ajar; round his brow is a tight speckled yellow band.",
+   "who": [
+    {
+     "id": "roylott",
+     "role": "patient"
+    },
+    {
+     "id": "holmes",
+     "role": "observer"
+    },
+    {
+     "id": "watson",
+     "role": "observer"
+    }
+   ],
+   "src": [
+    "P242"
+   ],
+   "things": [
+    "dark-lantern",
+    "safe",
+    "dog-lash",
+    "chair"
+   ]
+  },
+  {
+   "id": "e-band-is-snake",
+   "when": {
+    "seq": 710,
+    "t": [
+     1695,
+     1698
+    ]
+   },
+   "kind": "discovery",
+   "place": "room-roylott",
+   "text": "'The band! the speckled band!' The 'head-gear' moves and a squat, diamond-headed snake rears from his hair: a swamp adder.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "witness"
+    },
+    {
+     "id": "snake",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P243",
+    "P244",
+    "P245"
+   ],
+   "says": "It is a swamp adder, the deadliest snake in India.",
+   "things": [
+    "snake-thing"
+   ]
+  },
+  {
+   "id": "e-snake-into-safe",
+   "when": {
+    "seq": 720,
+    "t": [
+     1698,
+     1705
+    ]
+   },
+   "kind": "act",
+   "place": "room-roylott",
+   "text": "Holmes draws the lash from the dead man's lap, loops the noose round the snake's neck, lifts it off and throws it into the iron safe, which he closes.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "snake",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P246"
+   ],
+   "things": [
+    "dog-lash",
+    "safe",
+    "snake-thing"
+   ]
+  },
+  {
+   "id": "e-aftermath",
+   "when": {
+    "seq": 730,
+    "t": [
+     1705,
+     2400
+    ],
+    "gap": "a day"
+   },
+   "kind": "summary",
+   "place": "stoke-moran",
+   "text": "The morning train takes Helen to her aunt at Harrow; the official inquiry decides the doctor died indiscreetly playing with a dangerous pet; Holmes tells Watson the rest as they travel back next day.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "agent"
+    },
+    {
+     "id": "watson",
+     "role": "agent"
+    },
+    {
+     "id": "helen",
+     "role": "patient"
+    },
+    {
+     "id": "honoria",
+     "role": "host"
+    }
+   ],
+   "src": [
+    "P247"
+   ]
+  },
+  {
+   "id": "e-holmes-explains",
+   "when": {
+    "seq": 740,
+    "t": [
+     2400,
+     2800
+    ]
+   },
+   "kind": "speech",
+   "place": "road",
+   "text": "On the journey back Holmes admits he had reasoned wrongly from the gypsies and the word 'band', reconsidered when the window and door proved impassable, and then lays out how the snake was trained by milk, sent through the ventilator, called back by the whistle and the safe's clang.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P248",
+    "P249"
+   ],
+   "things": [
+    "milk-saucer",
+    "safe",
+    "snake-thing"
+   ]
+  },
+  {
+   "id": "e-holmes-self-blame",
+   "when": {
+    "seq": 750,
+    "t": [
+     2800,
+     2830
+    ]
+   },
+   "kind": "speech",
+   "place": "road",
+   "text": "Holmes concedes that his blows drove the snake back through the ventilator and onto its master, and that he is indirectly responsible for Roylott's death, which he will not lose sleep over.",
+   "who": [
+    {
+     "id": "holmes",
+     "role": "speaker"
+    },
+    {
+     "id": "watson",
+     "role": "addressee"
+    }
+   ],
+   "src": [
+    "P250",
+    "P251"
+   ]
+  },
+  {
+   "id": "e-helen-dies",
+   "when": {
+    "seq": 760,
+    "after": [
+     "e-aftermath"
+    ],
+    "gap": "years"
+   },
+   "kind": "death",
+   "place": null,
+   "text": "Helen Stoner has since died young, within the month before Watson writes.",
+   "who": [
+    {
+     "id": "helen",
+     "role": "patient"
+    }
+   ],
+   "src": [
+    "P01"
+   ],
+   "origin": "offscreen"
+  },
+  {
+   "id": "e-watson-writes",
+   "when": {
+    "seq": 770,
+    "after": [
+     "e-helen-dies"
+    ],
+    "at": "about 1891"
+   },
+   "kind": "writes",
+   "place": null,
+   "text": "Watson, freed by Helen's death from his promise of secrecy, writes up the case, since rumours make Roylott's death out more terrible than the truth.",
+   "who": [
+    {
+     "id": "watson",
+     "role": "agent"
+    }
+   ],
+   "src": [
+    "P01"
+   ]
+  }
+ ],
+ "held": [
+  {
+   "id": "h-helen-marry",
+   "who": "helen",
+   "kind": "anticipates",
+   "text": "Helen will marry Percy Armitage in the spring and then control her own income.",
+   "from": "b-armitage",
+   "src": [
+    "P16",
+    "P66"
+   ]
+  },
+  {
+   "id": "h-julia-wedding",
+   "who": "julia",
+   "kind": "anticipates",
+   "text": "Julia will marry the major a fortnight hence.",
+   "from": "b-julia-engaged",
+   "src": [
+    "P29",
+    "P34"
+   ]
+  },
+  {
+   "id": "h-roylott-town",
+   "who": "helen",
+   "kind": "anticipates",
+   "text": "Roylott will go into town on important business and be away all day.",
+   "from": "e-holmes-asks-visit",
+   "src": [
+    "P76"
+   ]
+  },
+  {
+   "id": "h-helen-twelve",
+   "who": "helen",
+   "kind": "anticipates",
+   "text": "Helen will return by the twelve o'clock train in time for their coming.",
+   "from": "e-holmes-asks-visit",
+   "src": [
+    "P80"
+   ],
+   "due": {
+    "epoch": null,
+    "t": 720,
+    "note": "by the twelve o'clock train; minutes from midnight, as the events' t"
+   }
+  },
+  {
+   "id": "h-holmes-commons",
+   "who": "holmes",
+   "kind": "anticipates",
+   "text": "Holmes will go to Doctors' Commons for data about the will.",
+   "from": "e-roylott-bursts-in",
+   "src": [
+    "P112"
+   ]
+  },
+  {
+   "id": "h-helen-signal",
+   "who": "helen",
+   "kind": "anticipates",
+   "text": "Helen will feign a headache, show her lamp when Roylott retires and withdraw to her old room.",
+   "from": "e-holmes-instructs",
+   "src": [
+    "P183",
+    "P184",
+    "P185"
+   ]
+  },
+  {
+   "id": "h-holmes-night",
+   "who": "holmes",
+   "kind": "anticipates",
+   "text": "Holmes and Watson will spend the night in Helen's room and investigate the noise.",
+   "from": "e-holmes-instructs",
+   "src": [
+    "P177",
+    "P187"
+   ]
+  }
+ ],
+ "knowledge": [
+  {
+   "who": "reader",
+   "of": "e-watson-woken",
+   "stance": "knows",
+   "from": "para:P01",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P01"
+   ],
+   "source": "watson"
+  },
+  {
+   "who": "reader",
+   "of": "b-julia-dies",
+   "stance": "knows",
+   "from": "para:P29",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P29"
+   ],
+   "source": "helen"
+  },
+  {
+   "who": "reader",
+   "of": "c-julia-fear",
+   "stance": "believes",
+   "from": "para:P59",
+   "until": "para:P243",
+   "how": "told",
+   "src": [
+    "P59"
+   ],
+   "source": "helen",
+   "note": "the reader holds Helen's belief until the snake appears"
+  },
+  {
+   "who": "reader",
+   "of": "c-band-snake",
+   "stance": "knows",
+   "from": "para:P243",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P243",
+    "P244",
+    "P245"
+   ],
+   "source": "watson"
+  },
+  {
+   "who": "holmes",
+   "of": "b-julia-dies",
+   "stance": "knows",
+   "from": "e-helen-tells",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P29"
+   ],
+   "source": "helen"
+  },
+  {
+   "who": "holmes",
+   "of": "c-julia-fear",
+   "stance": "doubts",
+   "from": "e-helen-asks-cause",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P193"
+   ]
+  },
+  {
+   "who": "holmes",
+   "of": "c-gypsies-involved",
+   "stance": "believes",
+   "from": "e-holmes-theory",
+   "until": "e-holmes-drops-gypsies",
+   "how": "reasoned",
+   "src": [
+    "P89",
+    "P139",
+    "P248"
+   ],
+   "note": "tentative from the start; dropped when the shutters hold"
+  },
+  {
+   "who": "holmes",
+   "of": "c-ventilator-expected",
+   "stance": "believes",
+   "from": "e-helen-tells",
+   "until": "e-ventilator-found",
+   "how": "reasoned",
+   "src": [
+    "P206",
+    "P207",
+    "P208"
+   ],
+   "note": "from Julia's smelling the cigar; confirmed on site"
+  },
+  {
+   "who": "holmes",
+   "of": "c-snake-method",
+   "stance": "believes",
+   "from": "e-holmes-suspects-snake",
+   "until": "e-band-is-snake",
+   "how": "reasoned",
+   "src": [
+    "P148",
+    "P149",
+    "P150",
+    "P248"
+   ],
+   "note": "Holmes suspects the snake from the dummy rope and milk"
+  },
+  {
+   "who": "holmes",
+   "of": "c-snake-method",
+   "stance": "knows",
+   "from": "e-band-is-snake",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P243",
+    "P244",
+    "P245",
+    "P246",
+    "P247",
+    "P248",
+    "P249"
+   ]
+  },
+  {
+   "who": "holmes",
+   "of": "c-roylott-motive",
+   "stance": "knows",
+   "from": "e-holmes-returns",
+   "until": null,
+   "how": "read",
+   "src": [
+    "P114"
+   ]
+  },
+  {
+   "who": "holmes",
+   "of": "c-roylott-installed",
+   "stance": "believes",
+   "from": "e-bed-reasoning",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P210",
+    "P211",
+    "P212",
+    "P213",
+    "P214",
+    "P215",
+    "P216",
+    "P248"
+   ]
+  },
+  {
+   "who": "holmes",
+   "of": "c-snake-trained",
+   "stance": "believes",
+   "from": "e-milk-seen",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P248"
+   ]
+  },
+  {
+   "who": "holmes",
+   "of": "c-clang-safe",
+   "stance": "believes",
+   "from": "e-holmes-explains",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P249"
+   ]
+  },
+  {
+   "who": "holmes",
+   "of": "e-roylott-sends-snake",
+   "stance": "believes",
+   "from": "e-lantern-lit",
+   "until": null,
+   "how": "inferred",
+   "src": [
+    "P235",
+    "P248"
+   ],
+   "note": "lantern, smell, steam sound; never seen"
+  },
+  {
+   "who": "holmes",
+   "of": "e-holmes-lashes",
+   "stance": "knows",
+   "from": "e-holmes-lashes",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P235",
+    "P236"
+   ],
+   "note": "Holmes sees what descends the rope"
+  },
+  {
+   "who": "watson",
+   "of": "e-holmes-lashes",
+   "stance": "unaware",
+   "from": "e-holmes-lashes",
+   "until": null,
+   "how": "unseen",
+   "src": [
+    "P237"
+   ],
+   "note": "Watson sees nothing at the moment Holmes strikes the light"
+  },
+  {
+   "who": "watson",
+   "of": "e-whistle-watson",
+   "stance": "knows",
+   "from": "e-whistle-watson",
+   "until": null,
+   "how": "heard",
+   "src": [
+    "P237"
+   ]
+  },
+  {
+   "who": "watson",
+   "of": "c-hideous-child",
+   "stance": "believes",
+   "from": "e-baboon-dart",
+   "until": "e-baboon-named",
+   "how": "seen",
+   "src": [
+    "P222",
+    "P223"
+   ]
+  },
+  {
+   "who": "watson",
+   "of": "c-baboon",
+   "stance": "believes",
+   "from": "e-baboon-named",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P225",
+    "P226"
+   ],
+   "source": "holmes"
+  },
+  {
+   "who": "watson",
+   "of": "c-ventilator-expected",
+   "stance": "unaware",
+   "from": "e-watson-woken",
+   "until": "e-ventilator-explained",
+   "how": "unseen",
+   "src": [
+    "P203",
+    "P204",
+    "P205",
+    "P206",
+    "P207",
+    "P208"
+   ]
+  },
+  {
+   "who": "watson",
+   "of": "c-snake-method",
+   "stance": "believes",
+   "from": "e-bed-reasoning",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P217"
+   ],
+   "source": "holmes"
+  },
+  {
+   "who": "helen",
+   "of": "c-julia-fear",
+   "stance": "believes",
+   "from": "b-julia-dies",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P59"
+   ]
+  },
+  {
+   "who": "helen",
+   "of": "c-band-gypsies",
+   "stance": "believes",
+   "from": "b-julia-dies",
+   "until": "e-band-is-snake",
+   "how": "reasoned",
+   "src": [
+    "P62",
+    "P63"
+   ]
+  },
+  {
+   "who": "helen",
+   "of": "c-band-gypsies",
+   "stance": "doubts",
+   "from": "b-julia-dies",
+   "until": "e-band-is-snake",
+   "how": "reasoned",
+   "src": [
+    "P63"
+   ],
+   "note": "also thinks it may have been delirium"
+  },
+  {
+   "who": "helen",
+   "of": "c-whistle-julia",
+   "stance": "doubts",
+   "from": "b-inquiry",
+   "until": null,
+   "how": "heard",
+   "src": [
+    "P51"
+   ]
+  },
+  {
+   "who": "helen",
+   "of": "c-room-sealed",
+   "stance": "believes",
+   "from": "b-inquiry",
+   "until": "e-ventilator-found",
+   "how": "told",
+   "src": [
+    "P32",
+    "P55"
+   ],
+   "source": "coroner"
+  },
+  {
+   "who": "helen",
+   "of": "c-repairs-pretext",
+   "stance": "believes",
+   "from": "b-repairs-begin",
+   "until": null,
+   "how": "reasoned",
+   "src": [
+    "P135"
+   ]
+  },
+  {
+   "who": "helen",
+   "of": "c-armitage-fancies",
+   "stance": "believes",
+   "from": "e-helen-fears",
+   "until": null,
+   "how": "inferred",
+   "src": [
+    "P19"
+   ],
+   "note": "she reads it from his soothing answers and averted eyes"
+  },
+  {
+   "who": "helen",
+   "of": "c-roylott-away",
+   "stance": "believes",
+   "from": "e-holmes-asks-visit",
+   "until": "e-roylott-drives-past",
+   "how": "told",
+   "src": [
+    "P76",
+    "P125"
+   ],
+   "source": "roylott"
+  },
+  {
+   "who": "helen",
+   "of": "e-roylott-sends-snake",
+   "stance": "unaware",
+   "from": "e-watson-woken",
+   "until": null,
+   "how": "unseen",
+   "src": [
+    "P66"
+   ],
+   "note": "Helen never learns what was sent through the vent"
+  },
+  {
+   "who": "julia",
+   "of": "b-julia-whistles",
+   "stance": "knows",
+   "from": "b-julia-whistles",
+   "until": "b-julia-dies",
+   "how": "heard",
+   "src": [
+    "P39"
+   ]
+  },
+  {
+   "who": "julia",
+   "of": "b-julia-asks",
+   "stance": "knows",
+   "from": "b-julia-asks",
+   "until": "b-julia-dies",
+   "how": "did",
+   "src": [
+    "P35",
+    "P36",
+    "P37",
+    "P38",
+    "P39",
+    "P40",
+    "P41",
+    "P42"
+   ]
+  },
+  {
+   "who": "julia",
+   "of": "c-band-snake",
+   "stance": "knows",
+   "from": "b-julia-emerges",
+   "until": "b-julia-dies",
+   "how": "seen",
+   "src": [
+    "P49"
+   ],
+   "note": "she saw the thing by the light of her match, per Holmes's reading"
+  },
+  {
+   "who": "roylott",
+   "of": "c-roylott-traced",
+   "stance": "knows",
+   "from": "e-roylott-bursts-in",
+   "until": null,
+   "how": "did",
+   "src": [
+    "P99"
+   ]
+  },
+  {
+   "who": "roylott",
+   "of": "e-holmes-doctors-commons",
+   "stance": "unaware",
+   "from": "e-roylott-bursts-in",
+   "until": null,
+   "how": "unseen",
+   "src": [
+    "P112",
+    "P113",
+    "P114"
+   ]
+  },
+  {
+   "who": "roylott",
+   "of": "e-holmes-conceals-purpose",
+   "stance": "unaware",
+   "from": "e-holmes-conceals-purpose",
+   "until": null,
+   "how": "unseen",
+   "src": [
+    "P124"
+   ],
+   "note": "Holmes intends him to think they are architects; whether he does is never shown"
+  },
+  {
+   "who": "roylott",
+   "of": "e-holmes-instructs",
+   "stance": "unaware",
+   "from": "e-holmes-instructs",
+   "until": "e-roylott-cry",
+   "how": "unseen",
+   "src": [
+    "P183",
+    "P184",
+    "P185",
+    "P186",
+    "P187",
+    "P229"
+   ]
+  },
+  {
+   "who": "holmes",
+   "of": "e-roylott-drives-past",
+   "stance": "knows",
+   "from": "e-roylott-drives-past",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P195"
+   ]
+  },
+  {
+   "who": "watson",
+   "of": "s-promise",
+   "stance": "knows",
+   "from": "e-farewell",
+   "until": "e-helen-dies",
+   "how": "did",
+   "src": [
+    "P01"
+   ],
+   "source": "helen"
+  },
+  {
+   "who": "reader",
+   "of": "s-bed",
+   "stance": "knows",
+   "from": "para:P214",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P214",
+    "P215",
+    "P216"
+   ],
+   "source": "holmes",
+   "note": "the reader learns the clamp at the inn though Holmes saw it on the first visit"
+  },
+  {
+   "who": "holmes",
+   "of": "s-bed",
+   "stance": "knows",
+   "from": "e-bed-clamped-seen",
+   "until": null,
+   "how": "seen",
+   "src": [
+    "P147",
+    "P214"
+   ]
+  },
+  {
+   "who": "reader",
+   "of": "s-rumours",
+   "stance": "knows",
+   "from": "para:P01",
+   "until": null,
+   "how": "told",
+   "src": [
+    "P01"
+   ],
+   "source": "watson"
+  }
+ ],
+ "states": [
+  {
+   "id": "s-estate",
+   "of": "roylott",
+   "kind": "circumstance",
+   "value": "The family estate is a few bramble acres and a mortgaged old house.",
+   "src": [
+    "P23"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-will",
+   "of": "mrs-stoner",
+   "kind": "circumstance",
+   "value": "Her income (just under £1100 at her death, now £750) goes to Roylott, with £250 to each daughter on marriage.",
+   "src": [
+    "P24",
+    "P114"
+   ],
+   "from": "b-bequest"
+  },
+  {
+   "id": "s-roylott-nature",
+   "of": "roylott",
+   "kind": "habit",
+   "value": "Violent, immensely strong, given to mania; hereditary and worse for the tropics.",
+   "src": [
+    "P25",
+    "P94"
+   ],
+   "from": "b-moves-in",
+   "precision": "trait"
+  },
+  {
+   "id": "s-roylott-pets",
+   "of": "roylott",
+   "kind": "habit",
+   "value": "Keeps a cheetah and a baboon loose in the grounds, and a supply of Indian animals.",
+   "src": [
+    "P26"
+   ],
+   "from": "b-pets-arrive"
+  },
+  {
+   "id": "s-roylott-friends",
+   "of": "roylott",
+   "kind": "habit",
+   "value": "His only friends are the wandering gypsies, who nearly always have someone camped in the plantation.",
+   "src": [
+    "P26",
+    "P61"
+   ],
+   "from": "b-gypsies"
+  },
+  {
+   "id": "s-twins",
+   "of": "helen",
+   "kind": "circumstance",
+   "value": "Helen and Julia were twins; Julia was thirty at her death and her hair had begun to whiten, as Helen's has.",
+   "src": [
+    "P24",
+    "P27",
+    "P49"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-servants",
+   "of": "stoke-moran",
+   "kind": "circumstance",
+   "value": "No servant stays at Stoke Moran; the sisters did all the housework for years. There is now an old, foolish housekeeper.",
+   "src": [
+    "P27",
+    "P76"
+   ],
+   "from": "b-moves-in"
+  },
+  {
+   "id": "s-layout",
+   "of": "stoke-moran",
+   "kind": "circumstance",
+   "value": "Only one wing is lived in; the three ground-floor bedrooms (Roylott's, Julia's, Helen's) open onto one corridor and onto the lawn, with no door between them.",
+   "src": [
+    "P32",
+    "P34",
+    "P131",
+    "P132",
+    "P136",
+    "P137"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-lock-habit",
+   "of": "julia",
+   "kind": "habit",
+   "value": "The sisters always lock their doors at night for fear of the cheetah and the baboon.",
+   "src": [
+    "P44",
+    "P45",
+    "P46",
+    "P47"
+   ],
+   "from": "b-moves-in",
+   "until": "b-julia-dies"
+  },
+  {
+   "id": "s-shutters",
+   "of": "room-middle",
+   "kind": "circumstance",
+   "value": "The windows are blocked by old iron-barred shutters, bolted every night; the hinges are solid iron set in masonry.",
+   "src": [
+    "P55",
+    "P139"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-wiring",
+   "of": "room-middle",
+   "kind": "circumstance",
+   "value": "A bell-rope hangs by the bed with its tassel on the pillow; it is a dummy tied to a hook above the ventilator.",
+   "src": [
+    "P141",
+    "P148",
+    "P149",
+    "P150"
+   ],
+   "from": "b-installs"
+  },
+  {
+   "id": "s-ventilator",
+   "of": "room-middle",
+   "kind": "circumstance",
+   "value": "A small ventilator opens between Roylott's room and this one.",
+   "src": [
+    "P150",
+    "P152",
+    "P205"
+   ],
+   "from": "b-installs"
+  },
+  {
+   "id": "s-bed",
+   "of": "room-middle",
+   "kind": "circumstance",
+   "value": "The narrow white-counterpaned bed is clamped to the floor, always in the same position relative to the ventilator and rope.",
+   "src": [
+    "P140",
+    "P214",
+    "P215",
+    "P216"
+   ],
+   "from": "b-installs"
+  },
+  {
+   "id": "s-room-middle",
+   "of": "room-middle",
+   "kind": "appearance",
+   "value": "Low ceiling, gaping fireplace, brown chest of drawers, dressing-table, wicker chairs, carpet; worm-eaten panelling.",
+   "src": [
+    "P140"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-roylott-room",
+   "of": "room-roylott",
+   "kind": "appearance",
+   "value": "Camp-bed, shelf of technical books, armchair, wooden chair, round table and an iron safe.",
+   "src": [
+    "P157"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-chair-marks",
+   "of": "chair",
+   "kind": "condition",
+   "value": "The seat bears marks of someone's standing on it, enough to reach the ventilator.",
+   "src": [
+    "P166",
+    "P249"
+   ],
+   "from": "b-installs"
+  },
+  {
+   "id": "s-milk",
+   "of": "milk-saucer",
+   "kind": "location",
+   "value": "A small saucer of milk stands on top of the safe.",
+   "src": [
+    "P164",
+    "P165",
+    "P166",
+    "P249"
+   ],
+   "from": "e-milk-seen"
+  },
+  {
+   "id": "s-lash",
+   "of": "dog-lash",
+   "kind": "condition",
+   "value": "The lash is curled upon itself and tied into a loop of whipcord, hanging on the corner of Roylott's bed.",
+   "src": [
+    "P168",
+    "P246",
+    "P249"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-helen-looks",
+   "of": "helen",
+   "kind": "appearance",
+   "value": "Looks about thirty with premature grey in her hair, drawn, haggard and frightened like a hunted animal.",
+   "src": [
+    "P10",
+    "P27"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-helen-fear",
+   "of": "helen",
+   "kind": "feeling",
+   "value": "Terror and strain; she says she will go mad if it continues.",
+   "src": [
+    "P08",
+    "P09",
+    "P10",
+    "P16"
+   ],
+   "from": "b-night-whistle",
+   "until": "e-helen-leaves"
+  },
+  {
+   "id": "s-helen-engaged",
+   "of": "helen",
+   "kind": "status",
+   "value": "Engaged to Percy Armitage, to marry in the spring.",
+   "src": [
+    "P16",
+    "P66"
+   ],
+   "from": "b-armitage"
+  },
+  {
+   "id": "s-helen-dependence",
+   "of": "helen",
+   "kind": "circumstance",
+   "value": "Helen has no income of her own until her marriage and is dependent on her stepfather's house.",
+   "src": [
+    "P16",
+    "P24"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-helen-bruise",
+   "of": "helen",
+   "kind": "appearance",
+   "value": "Five livid marks of four fingers and a thumb on her wrist.",
+   "src": [
+    "P71"
+   ],
+   "from": "start",
+   "until": "e-helen-leaves"
+  },
+  {
+   "id": "s-holmes-habit",
+   "of": "holmes",
+   "kind": "habit",
+   "value": "Holmes is a late riser as a rule; he took a case for love of its strangeness, not for money.",
+   "src": [
+    "P01",
+    "P06"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-promise",
+   "of": "watson",
+   "kind": "obligation",
+   "value": "Watson promised Helen secrecy about the case.",
+   "src": [
+    "P01"
+   ],
+   "from": "e-farewell",
+   "until": "e-helen-dies"
+  },
+  {
+   "id": "s-rumours",
+   "of": "roylott",
+   "kind": "circumstance",
+   "value": "Wide-spread rumours as to Roylott's death make the matter more terrible than the truth.",
+   "src": [
+    "P01"
+   ],
+   "from": "e-aftermath"
+  },
+  {
+   "id": "s-baboon",
+   "of": "baboon",
+   "kind": "location",
+   "value": "Loose in the grounds at night.",
+   "src": [
+    "P26",
+    "P222",
+    "P223",
+    "P224",
+    "P225"
+   ],
+   "from": "b-pets-arrive"
+  },
+  {
+   "id": "s-cheetah",
+   "of": "cheetah",
+   "kind": "location",
+   "value": "At liberty in the grounds; heard whining at the window.",
+   "src": [
+    "P26",
+    "P226",
+    "P234"
+   ],
+   "from": "b-pets-arrive"
+  },
+  {
+   "id": "s-snake-place",
+   "of": "snake",
+   "kind": "location",
+   "value": "In Roylott's room, then in the ventilator and down the rope; then in the iron safe, locked in.",
+   "src": [
+    "P235",
+    "P244",
+    "P246"
+   ],
+   "from": "e-roylott-sends-snake"
+  },
+  {
+   "id": "s-signal-lamp",
+   "of": "room-middle",
+   "kind": "condition",
+   "value": "The lamp in the middle window is the agreed signal.",
+   "src": [
+    "P183",
+    "P219",
+    "P220"
+   ],
+   "from": "e-holmes-instructs"
+  },
+  {
+   "id": "s-gypsy-camp",
+   "of": "plantation",
+   "kind": "circumstance",
+   "value": "Gypsies are nearly always camped in the plantation; spotted handkerchiefs are common among them.",
+   "src": [
+    "P60",
+    "P61",
+    "P62",
+    "P63"
+   ],
+   "from": "b-gypsies"
+  },
+  {
+   "id": "s-corridor",
+   "of": "corridor",
+   "kind": "appearance",
+   "value": "Whitewashed corridor with three bedroom doors; small windows too narrow to pass through.",
+   "src": [
+    "P136",
+    "P137",
+    "P140"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-roylott-looks",
+   "of": "roylott",
+   "kind": "appearance",
+   "value": "Huge, brushing the door-bar with his hat; yellow, wrinkled, bile-shot deep-set eyes and a thin fleshless nose, like a fierce old bird of prey; top-hat, frock-coat, gaiters, hunting-crop.",
+   "src": [
+    "P94"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-estate-wing",
+   "of": "stoke-moran",
+   "kind": "appearance",
+   "value": "A gray lichened house with a high centre and two crab-claw wings; one wing in ruins, the inhabited wing newer; scaffolding at one end wall.",
+   "src": [
+    "P117",
+    "P131"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-lawn-hist",
+   "of": "stoke-moran",
+   "kind": "circumstance",
+   "value": "Roylott's family: four dissolute heirs and a Regency gambler ruined the old house.",
+   "src": [
+    "P23"
+   ],
+   "from": "start"
+  },
+  {
+   "id": "s-julia-engaged",
+   "of": "julia",
+   "kind": "status",
+   "value": "Engaged to the half-pay major of marines; the wedding fixed within a fortnight of her death.",
+   "src": [
+    "P29"
+   ],
+   "from": "b-julia-engaged",
+   "until": "b-julia-dies"
+  },
+  {
+   "id": "s-julia-last",
+   "of": "julia",
+   "kind": "circumstance",
+   "value": "In her right hand a charred match stump, in her left the matchbox; in her night-dress.",
+   "src": [
+    "P53"
+   ],
+   "from": "b-julia-emerges"
+  },
+  {
+   "id": "s-spring-day",
+   "of": "road",
+   "kind": "appearance",
+   "value": "A perfect April day: bright sun, fleecy clouds, first green shoots, a strange contrast to the sinister quest.",
+   "src": [
+    "P115"
+   ],
+   "from": "e-train-to-leatherhead"
+  }
+ ],
+ "readings": [
+  {
+   "id": "r-method",
+   "holder": "narrator",
+   "text": "Holmes's deductions are swift as intuitions yet founded on logic.",
+   "status": "stated",
+   "src": [
+    "P06"
+   ],
+   "supports": [
+    "e-holmes-deduces-journey"
+   ]
+  },
+  {
+   "id": "r-roylott-heredity",
+   "holder": "helen",
+   "text": "The violence of temper runs in the family and the tropics have worsened it.",
+   "status": "stated",
+   "src": [
+    "P25"
+   ]
+  },
+  {
+   "id": "r-twins",
+   "holder": "helen",
+   "text": "The bond between twins is why she knew the scream was her sister's, and a vague feeling of misfortune kept her awake.",
+   "status": "stated",
+   "src": [
+    "P49"
+   ]
+  },
+  {
+   "id": "r-delirium",
+   "holder": "helen",
+   "text": "Julia's last words may have been delirium rather than a reference to a band of people.",
+   "status": "stated",
+   "src": [
+    "P63"
+   ],
+   "against": [
+    "c-band-snake"
+   ]
+  },
+  {
+   "id": "r-helen-evasion",
+   "holder": "narrator",
+   "text": "Helen's blush and excuse read as an admission that Roylott made the marks.",
+   "status": "implied",
+   "src": [
+    "P73"
+   ],
+   "supports": [
+    "e-helen-excuses"
+   ]
+  },
+  {
+   "id": "r-contrast",
+   "holder": "narrator",
+   "text": "The sweet spring contrasts with the sinister quest.",
+   "status": "stated",
+   "src": [
+    "P115"
+   ],
+   "supports": [
+    "s-spring-day"
+   ]
+  },
+  {
+   "id": "r-cheetah-hypothetical",
+   "holder": "narrator",
+   "text": "Perhaps the cheetah might be found upon their shoulders at any moment.",
+   "status": "stated",
+   "src": [
+    "P226"
+   ]
+  },
+  {
+   "id": "r-vigil",
+   "holder": "narrator",
+   "text": "A dreadful vigil Watson will never forget.",
+   "status": "stated",
+   "src": [
+    "P234"
+   ]
+  },
+  {
+   "id": "r-sheba",
+   "holder": "narrator",
+   "text": "Palmer and Pritchard were among the heads of their profession; this man strikes deeper.",
+   "status": "stated",
+   "src": [
+    "P218"
+   ],
+   "note": "allusion to real poisoners; not entities of the story"
+  },
+  {
+   "id": "r-rumours",
+   "holder": "narrator",
+   "text": "The truth is less terrible than the rumours.",
+   "status": "stated",
+   "src": [
+    "P01"
+   ]
+  },
+  {
+   "id": "r-holmes-erroneous",
+   "holder": "holmes",
+   "text": "'I had come to an entirely erroneous conclusion.' He reasoned from insufficient data.",
+   "status": "stated",
+   "src": [
+    "P248"
+   ]
+  },
+  {
+   "id": "r-holmes-blame",
+   "holder": "holmes",
+   "text": "He is indirectly responsible for Roylott's death and does not much regret it.",
+   "status": "stated",
+   "src": [
+    "P251"
+   ]
+  }
+ ],
+ "gaps_found": [
+  "bearings carry only a direction (confirms, contradicts, supports, undermines); nothing says how strong, so 'likely' covers a reconstruction with one good clue and one with five",
+  "rival explanations of one thing needed a questions list of exclusive claims; the rule changed one verdict, and a keeper would have to notice which claims answer the same question",
+  "a doubt the claimant voices (Helen unsure she heard the whistle) is a stance of the holder, not a bearing event; encoding it as a bearing wrongly turned 'likely' into 'open'",
+  "a compound claim ('died while indiscreetly playing with a dangerous pet') needed `parts`, each with its own bearings; the whole derives 'mixed'",
+  "the story never settles how Julia died: the solution is Holmes's reconstruction, so the derived verdict is 'likely', which is what the text supports; the narrator vouches only for Roylott's death (P247), which derives true",
+  "Helen's 'he' (P19) and 'poor fellow' (P16) are never named as Armitage; the encoder inferred it from P66, and a claim has nowhere to say that its subject is an inference",
+  "a promise to pay (P16: 'at present it is out of my power to reward you; in a month or six weeks I shall be married') has no home: it is an obligation with a condition and a date",
+  "src does not distinguish where an event is told from where it is mentioned: the clamped bed is seen at P147 and disclosed to the reader at P214; only the reader's knowledge row carries the second",
+  "allusions to the outside world (Palmer and Pritchard, Doctors' Commons as an institution, the Regency, the Bengal Artillery) are not entities of the story and sit in readings and texts",
+  "simultaneity is derived from `when.t`, which only exists for the one day; the night of Julia's death and the years before have order but no clock"
+ ]
+}

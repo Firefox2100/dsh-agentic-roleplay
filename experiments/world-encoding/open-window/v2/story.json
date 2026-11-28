@@ -1,0 +1,1144 @@
+{
+  "model": "history/2",
+  "work": {
+    "title": "The Open Window",
+    "author": "Saki (H. H. Munro)",
+    "published": "1914",
+    "source": "source/text.txt"
+  },
+  "time": {
+    "note": "An October afternoon running into dusk. The tale's 'three years ago to a day' is false. 'Some four years ago' (the sister's stay) is Framton's statement.",
+    "anchors": [
+      {
+        "id": "the-day",
+        "at": "--10",
+        "precision": "month",
+        "src": [
+          "P12"
+        ]
+      }
+    ],
+    "spans": [
+      {
+        "id": "span-visit",
+        "from": "e02",
+        "to": "e12",
+        "approx": "from afternoon to deepening twilight",
+        "src": [
+          "P12",
+          "P24"
+        ]
+      }
+    ]
+  },
+  "entities": {
+    "people": [
+      {
+        "id": "framton",
+        "name": "Framton Nuttel",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "vera",
+        "name": "Vera",
+        "age": 15,
+        "src": [
+          "P01",
+          "P16"
+        ]
+      },
+      {
+        "id": "mrs-sappleton",
+        "name": "Mrs. Sappleton",
+        "src": [
+          "P04",
+          "P18"
+        ]
+      },
+      {
+        "id": "mr-sappleton",
+        "name": "Mrs. Sappleton's husband",
+        "src": [
+          "P14",
+          "P24"
+        ]
+      },
+      {
+        "id": "ronnie",
+        "name": "Ronnie",
+        "src": [
+          "P14"
+        ]
+      },
+      {
+        "id": "brother",
+        "name": "Mrs. Sappleton's other brother",
+        "unnamed": true,
+        "src": [
+          "P14",
+          "P24"
+        ]
+      },
+      {
+        "id": "spaniel",
+        "name": "The little brown spaniel",
+        "kind": "animal",
+        "src": [
+          "P14",
+          "P24"
+        ]
+      },
+      {
+        "id": "sister",
+        "name": "Framton's sister",
+        "src": [
+          "P03"
+        ]
+      },
+      {
+        "id": "cyclist",
+        "name": "A cyclist",
+        "tier": "background",
+        "src": [
+          "P25"
+        ]
+      },
+      {
+        "id": "doctors",
+        "name": "Framton's doctors",
+        "kind": "group",
+        "tier": "background",
+        "src": [
+          "P20"
+        ]
+      }
+    ],
+    "places": [
+      {
+        "id": "sitting-room",
+        "name": "The sitting-room with the French window",
+        "src": [
+          "P09",
+          "P12"
+        ]
+      },
+      {
+        "id": "lawn",
+        "name": "The lawn",
+        "src": [
+          "P12",
+          "P24"
+        ]
+      },
+      {
+        "id": "hall-drive-gate",
+        "name": "The hall door, gravel drive and front gate",
+        "src": [
+          "P25"
+        ]
+      },
+      {
+        "id": "road",
+        "name": "The road",
+        "src": [
+          "P25"
+        ]
+      },
+      {
+        "id": "marshes",
+        "name": "The marshes",
+        "src": [
+          "P18"
+        ]
+      },
+      {
+        "id": "rectory",
+        "name": "The rectory",
+        "src": [
+          "P06"
+        ]
+      },
+      {
+        "id": "moor-bog",
+        "name": "The moor and the treacherous bog (in the tale)",
+        "frame": "vera-tale",
+        "src": [
+          "P14"
+        ]
+      }
+    ],
+    "things": [
+      {
+        "id": "french-window",
+        "name": "The French window",
+        "in": "sitting-room",
+        "src": [
+          "P12"
+        ]
+      },
+      {
+        "id": "white-coat",
+        "name": "White waterproof coat",
+        "src": [
+          "P14",
+          "P24"
+        ]
+      },
+      {
+        "id": "letter",
+        "name": "Letter of introduction",
+        "src": [
+          "P04"
+        ]
+      },
+      {
+        "id": "stick-hat",
+        "name": "Framton's stick and hat",
+        "src": [
+          "P25"
+        ]
+      }
+    ]
+  },
+  "frames": [],
+  "claims": [
+    {
+      "id": "c-men-died",
+      "text": "Mrs. Sappleton's husband and two brothers were lost in a bog three years ago.",
+      "about": [],
+      "bears_on": [
+        {
+          "ref": "e10",
+          "as": "contradicts"
+        },
+        {
+          "ref": "s11",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P14",
+        "P22",
+        "P24"
+      ]
+    },
+    {
+      "id": "c-anniversary",
+      "text": "Today is the third anniversary of that day.",
+      "about": [],
+      "bears_on": [
+        {
+          "ref": "e10",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P14"
+      ]
+    },
+    {
+      "id": "c-coat-arm",
+      "text": "The husband went out with his white waterproof over his arm.",
+      "about": [],
+      "bears_on": [
+        {
+          "ref": "s08",
+          "as": "confirms"
+        }
+      ],
+      "src": [
+        "P14",
+        "P24"
+      ]
+    },
+    {
+      "id": "c-ghosts",
+      "text": "The three figures on the lawn are the ghosts of the drowned men.",
+      "about": [],
+      "bears_on": [
+        {
+          "ref": "e10",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P23",
+        "P24"
+      ]
+    },
+    {
+      "id": "c-aunt-deluded",
+      "text": "Mrs. Sappleton is deluded and waits for the dead.",
+      "about": [],
+      "bears_on": [
+        {
+          "ref": "s11",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P18",
+        "P19"
+      ]
+    },
+    {
+      "id": "c-nuttel-dog-horror",
+      "text": "Framton Nuttel has a horror of dogs and once spent a night in a newly dug grave on the Ganges.",
+      "about": [],
+      "bears_on": [
+        {
+          "ref": "r-vera",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P28",
+        "P29"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "b01",
+      "when": {
+        "seq": -3,
+        "approx": "when he was preparing to migrate, weeks before"
+      },
+      "kind": "speech",
+      "place": "rectory",
+      "text": "Framton's sister stayed at the rectory some four years ago and gave him letters of introduction; when he left for the country she warned he would bury himself and gave him more.",
+      "who": [
+        {
+          "id": "sister",
+          "role": "speaker"
+        },
+        {
+          "id": "framton",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P03",
+        "P06"
+      ],
+      "says": "I know how it will be: you will bury yourself down there and not speak to a living soul, and your nerves will be worse than ever from moping. I shall just give you letters of introduction to all the people I know there. Some of them were quite nice.",
+      "mode": "reported"
+    },
+    {
+      "id": "b02",
+      "when": {
+        "seq": -2
+      },
+      "kind": "state-change",
+      "place": null,
+      "text": "The doctors ordered Framton complete rest, an absence of mental excitement and no violent exercise; they disagree on diet.",
+      "who": [
+        {
+          "id": "doctors",
+          "role": "agent"
+        },
+        {
+          "id": "framton",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P20"
+      ],
+      "mode": "reported",
+      "says": "complete rest, an absence of mental excitement, and avoidance of anything in the nature of violent physical exercise"
+    },
+    {
+      "id": "b03",
+      "when": {
+        "seq": -1,
+        "approx": "earlier that day",
+        "before": [
+          "e01"
+        ]
+      },
+      "kind": "depart",
+      "place": "marshes",
+      "text": "Mr. Sappleton and his wife's two young brothers, with the spaniel, went out by the window to shoot snipe in the marshes.",
+      "who": [
+        {
+          "id": "mr-sappleton",
+          "role": "agent"
+        },
+        {
+          "id": "ronnie",
+          "role": "agent"
+        },
+        {
+          "id": "brother",
+          "role": "agent"
+        },
+        {
+          "id": "spaniel",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P18"
+      ],
+      "reported_by": "mrs-sappleton",
+      "basis": "reported",
+      "origin": "offscreen"
+    },
+    {
+      "id": "e01",
+      "when": {
+        "seq": 1
+      },
+      "kind": "arrive",
+      "place": "sitting-room",
+      "text": "Framton called on Mrs. Sappleton with a letter of introduction and was received by her niece Vera, who said her aunt would be down presently.",
+      "who": [
+        {
+          "id": "framton",
+          "role": "agent"
+        },
+        {
+          "id": "vera",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P01",
+        "P02",
+        "P04"
+      ],
+      "things": [
+        "letter"
+      ]
+    },
+    {
+      "id": "e02",
+      "when": {
+        "seq": 2
+      },
+      "kind": "thought",
+      "place": "sitting-room",
+      "text": "Framton privately doubted these formal visits would help his nerve cure, and wondered whether Mrs. Sappleton was one of his sister's 'nice' acquaintances.",
+      "who": [
+        {
+          "id": "framton",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P02",
+        "P04"
+      ]
+    },
+    {
+      "id": "e03",
+      "when": {
+        "seq": 3
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "Vera asked whether Framton knew many people; he said hardly a soul, that his sister had been at the rectory four years ago, and that he knew only Mrs. Sappleton's name and address; he wondered whether she was married or widowed, sensing masculine habitation in the room.",
+      "who": [
+        {
+          "id": "vera",
+          "role": "speaker"
+        },
+        {
+          "id": "framton",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P05",
+        "P06",
+        "P07",
+        "P08",
+        "P09"
+      ],
+      "says": "(Vera) Do you know many of the people round here? Then you know practically nothing about my aunt? (Framton) Hardly a soul ... Only her name and address.",
+      "importance": 4
+    },
+    {
+      "id": "e04",
+      "when": {
+        "seq": 4
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "Vera told Framton an invented story: three years ago to the day her aunt's husband and two young brothers went out through that window to shoot, were engulfed in a bog and never recovered, and her aunt waits for them and keeps the window open every evening till dusk.",
+      "who": [
+        {
+          "id": "vera",
+          "role": "speaker"
+        },
+        {
+          "id": "framton",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14"
+      ],
+      "importance": 5,
+      "intent": "to give the stranger a fright for her own amusement",
+      "intent_status": "implied",
+      "says": "Her great tragedy happened just three years ago ... Out through that window, three years ago to a day, her husband and her two young brothers went off for their day's shooting. They never came back ...",
+      "tale": "vera-tale",
+      "claims": [
+        "c-men-died",
+        "c-anniversary",
+        "c-coat-arm",
+        "s12",
+        "s10"
+      ],
+      "causes": [
+        {
+          "event": "e03",
+          "status": "implied"
+        }
+      ],
+      "manner": "the child's voice lost its self-possessed note and became falteringly human (a performance)"
+    },
+    {
+      "id": "e05",
+      "when": {
+        "seq": 5
+      },
+      "kind": "arrive",
+      "place": "sitting-room",
+      "text": "Vera broke off with a little shudder; Mrs. Sappleton bustled in with apologies for being late.",
+      "who": [
+        {
+          "id": "vera",
+          "role": "agent"
+        },
+        {
+          "id": "mrs-sappleton",
+          "role": "agent"
+        },
+        {
+          "id": "framton",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P15",
+        "P16",
+        "P17"
+      ]
+    },
+    {
+      "id": "e06",
+      "when": {
+        "seq": 6
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "Mrs. Sappleton said she hoped he did not mind the open window, since her husband and brothers would be home directly from shooting snipe in the marshes and always came in that way, and that they would make a mess of her carpets.",
+      "who": [
+        {
+          "id": "mrs-sappleton",
+          "role": "speaker"
+        },
+        {
+          "id": "framton",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P18"
+      ],
+      "says": "I hope you don't mind the open window; my husband and brothers will be home directly from shooting, and they always come in this way. They've been out for snipe in the marshes to-day ...",
+      "claims": [
+        "s11",
+        "s10"
+      ],
+      "importance": 4
+    },
+    {
+      "id": "e07",
+      "when": {
+        "seq": 7
+      },
+      "kind": "state",
+      "place": "sitting-room",
+      "text": "Mrs. Sappleton chattered on about shooting and the prospects for duck, her eyes straying past Framton to the window; Framton found it horrible and tried unsuccessfully to change the subject.",
+      "who": [
+        {
+          "id": "mrs-sappleton",
+          "role": "agent"
+        },
+        {
+          "id": "framton",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P19"
+      ],
+      "misread_by": [
+        {
+          "who": "framton",
+          "as": "the obsession of a woman who waits for the dead"
+        }
+      ]
+    },
+    {
+      "id": "e08",
+      "when": {
+        "seq": 8
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "Framton announced his doctors' orders and began on diet; Mrs. Sappleton answered with a voice that replaced a yawn at the last moment.",
+      "who": [
+        {
+          "id": "framton",
+          "role": "speaker"
+        },
+        {
+          "id": "mrs-sappleton",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P20",
+        "P21"
+      ],
+      "says": "The doctors agree in ordering me complete rest ... On the matter of diet they are not so much in agreement."
+    },
+    {
+      "id": "e09",
+      "when": {
+        "seq": 9,
+        "approx": "deepening twilight"
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "Mrs. Sappleton cried 'Here they are at last! Just in time for tea', brightening into attention; Framton shivered and looked at Vera, who stared out of the window with dazed horror in her eyes.",
+      "who": [
+        {
+          "id": "mrs-sappleton",
+          "role": "speaker"
+        },
+        {
+          "id": "vera",
+          "role": "agent"
+        },
+        {
+          "id": "framton",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P21",
+        "P22",
+        "P23"
+      ],
+      "says": "Here they are at last! Just in time for tea, and don't they look as if they were muddy up to the eyes!",
+      "note": "Vera's horror is acted (implied by P28, P29)"
+    },
+    {
+      "id": "e10",
+      "when": {
+        "seq": 10
+      },
+      "kind": "arrive",
+      "place": "lawn",
+      "text": "Three figures with guns and a tired brown spaniel walked noiselessly across the lawn towards the window, one with a white coat over his shoulders, and a hoarse young voice chanted 'I said, Bertie, why do you bound?'",
+      "who": [
+        {
+          "id": "mr-sappleton",
+          "role": "agent"
+        },
+        {
+          "id": "ronnie",
+          "role": "agent"
+        },
+        {
+          "id": "brother",
+          "role": "agent"
+        },
+        {
+          "id": "spaniel",
+          "role": "agent"
+        },
+        {
+          "id": "framton",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P24"
+      ],
+      "things": [
+        "white-coat"
+      ],
+      "importance": 5,
+      "claims": [
+        "s11",
+        "s12",
+        "c-coat-arm"
+      ]
+    },
+    {
+      "id": "e11",
+      "when": {
+        "seq": 11
+      },
+      "kind": "depart",
+      "place": "road",
+      "text": "Framton grabbed his stick and hat and fled headlong through the hall door, down the drive and out of the gate, forcing a cyclist into the hedge.",
+      "who": [
+        {
+          "id": "framton",
+          "role": "agent"
+        },
+        {
+          "id": "cyclist",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P25"
+      ],
+      "things": [
+        "stick-hat"
+      ],
+      "causes": [
+        {
+          "event": "e10",
+          "status": "stated"
+        },
+        {
+          "event": "e04",
+          "status": "implied"
+        }
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e12",
+      "when": {
+        "seq": 12
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "The man with the white coat came in through the window and asked who had bolted out as they came up.",
+      "who": [
+        {
+          "id": "mr-sappleton",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P26"
+      ],
+      "says": "Here we are, my dear; fairly muddy, but most of it's dry. Who was that who bolted out as we came up?"
+    },
+    {
+      "id": "e13",
+      "when": {
+        "seq": 13
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "Mrs. Sappleton said it was a most extraordinary Mr. Nuttel who could talk only about his illnesses and dashed off without a word, as though he had seen a ghost.",
+      "who": [
+        {
+          "id": "mrs-sappleton",
+          "role": "speaker"
+        }
+      ],
+      "src": [
+        "P27"
+      ],
+      "says": "A most extraordinary man, a Mr. Nuttel ... One would think he had seen a ghost.",
+      "irony": "she names the truth without knowing it"
+    },
+    {
+      "id": "e14",
+      "when": {
+        "seq": 14
+      },
+      "kind": "speech",
+      "place": "sitting-room",
+      "text": "Vera said calmly that she expected it was the spaniel: Mr. Nuttel had told her he had a horror of dogs, having once been hunted into a cemetery on the Ganges by pariah dogs and spent the night in a newly dug grave.",
+      "who": [
+        {
+          "id": "vera",
+          "role": "speaker"
+        },
+        {
+          "id": "mrs-sappleton",
+          "role": "addressee"
+        },
+        {
+          "id": "mr-sappleton",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P28"
+      ],
+      "tale": "vera-tale-2",
+      "claims": [
+        "c-nuttel-dog-horror"
+      ],
+      "says": "I expect it was the spaniel; he told me he had a horror of dogs ...",
+      "intent": "to explain Framton's flight so as to cover her first story",
+      "intent_status": "implied",
+      "importance": 4
+    }
+  ],
+  "held": [],
+  "knowledge": [
+    {
+      "who": "vera",
+      "of": "s13",
+      "stance": "knows",
+      "from": "e03",
+      "until": "e04",
+      "how": "heard",
+      "source": "framton",
+      "src": [
+        "P08",
+        "P09"
+      ],
+      "note": "this is what makes the hoax possible"
+    },
+    {
+      "who": "framton",
+      "of": "c-men-died",
+      "stance": "believes",
+      "from": "e04",
+      "until": null,
+      "how": "told",
+      "source": "vera",
+      "src": [
+        "P14",
+        "P19",
+        "P23"
+      ],
+      "note": "never corrected: he has fled"
+    },
+    {
+      "who": "framton",
+      "of": "c-aunt-deluded",
+      "stance": "believes",
+      "from": "e06",
+      "until": null,
+      "how": "inferred",
+      "src": [
+        "P19"
+      ],
+      "misreading_of": "e06",
+      "content": "the hostess waits for the dead and is not herself"
+    },
+    {
+      "who": "framton",
+      "of": "c-ghosts",
+      "stance": "believes",
+      "from": "e10",
+      "until": null,
+      "how": "witnessed",
+      "src": [
+        "P23",
+        "P24",
+        "P25"
+      ],
+      "misreading_of": "e10"
+    },
+    {
+      "who": "mrs-sappleton",
+      "of": "c-men-died",
+      "stance": "unaware",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P27"
+      ],
+      "note": "she has no idea of the story told on her account"
+    },
+    {
+      "who": "mrs-sappleton",
+      "of": "c-nuttel-dog-horror",
+      "stance": "believes",
+      "from": "e14",
+      "until": null,
+      "how": "told",
+      "source": "vera",
+      "src": [
+        "P28"
+      ]
+    },
+    {
+      "who": "mr-sappleton",
+      "of": "c-nuttel-dog-horror",
+      "stance": "believes",
+      "from": "e14",
+      "until": null,
+      "how": "told",
+      "source": "vera",
+      "src": [
+        "P28"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "mrs-sappleton",
+      "of": "s00",
+      "stance": "unaware",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P29"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "reader",
+      "of": "c-men-died",
+      "stance": "believes",
+      "from": "para:P10",
+      "until": "para:P19",
+      "src": [
+        "P14",
+        "P18"
+      ],
+      "note": "taken at face value until Mrs. Sappleton contradicts it (P18), then doubted"
+    },
+    {
+      "who": "reader",
+      "of": "s00",
+      "stance": "unaware",
+      "from": "start",
+      "until": "para:P28",
+      "src": [
+        "P29"
+      ]
+    },
+    {
+      "who": "reader",
+      "of": "c-nuttel-dog-horror",
+      "stance": "believes",
+      "from": "para:P28",
+      "until": "para:P29",
+      "src": [
+        "P28",
+        "P29"
+      ],
+      "note": "read as true until the last sentence"
+    }
+  ],
+  "states": [
+    {
+      "of": "vera",
+      "kind": "habit",
+      "value": "invents romances at short notice",
+      "src": [
+        "P29"
+      ],
+      "id": "s00"
+    },
+    {
+      "of": "vera",
+      "kind": "age",
+      "value": 15,
+      "src": [
+        "P01"
+      ],
+      "id": "s01"
+    },
+    {
+      "of": "vera",
+      "kind": "manner",
+      "value": "very self-possessed",
+      "src": [
+        "P01"
+      ],
+      "id": "s02"
+    },
+    {
+      "of": "framton",
+      "kind": "health",
+      "value": "nerve cure; ordered rest",
+      "src": [
+        "P02",
+        "P20"
+      ],
+      "id": "s03"
+    },
+    {
+      "of": "framton",
+      "kind": "disposition",
+      "value": "labours under the delusion that strangers are hungry for details of his ailments",
+      "src": [
+        "P20"
+      ],
+      "status": "narrator's reading",
+      "id": "s04"
+    },
+    {
+      "of": "framton",
+      "kind": "location",
+      "value": "sitting-room",
+      "from": "e01",
+      "until": "e11",
+      "src": [
+        "P01",
+        "P25"
+      ],
+      "id": "s05"
+    },
+    {
+      "of": "sitting-room",
+      "kind": "description",
+      "value": "an undefinable something about the room suggests masculine habitation; the French window is wide open on an October afternoon, 'quite warm for the time of year'",
+      "src": [
+        "P09",
+        "P12",
+        "P13"
+      ],
+      "id": "s06"
+    },
+    {
+      "of": "mrs-sappleton",
+      "kind": "attention",
+      "value": "half on the window, expecting the men",
+      "from": "e05",
+      "until": "e10",
+      "src": [
+        "P19",
+        "P21"
+      ],
+      "id": "s07"
+    },
+    {
+      "of": "mr-sappleton",
+      "kind": "appearance",
+      "value": "carries a gun under his arm, a white coat hung over his shoulders",
+      "from": "e10",
+      "src": [
+        "P24"
+      ],
+      "id": "s08"
+    },
+    {
+      "of": "spaniel",
+      "kind": "appearance",
+      "value": "tired, brown, at the men's heels",
+      "from": "e10",
+      "src": [
+        "P24"
+      ],
+      "id": "s09"
+    },
+    {
+      "id": "s10",
+      "of": "mrs-sappleton",
+      "kind": "circumstance",
+      "value": "Keeps the window open because she expects her husband and brothers back from shooting",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P12",
+        "P18"
+      ]
+    },
+    {
+      "id": "s11",
+      "of": "mr-sappleton",
+      "kind": "circumstance",
+      "value": "Alive, out shooting snipe in the marshes with the two brothers",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P18",
+        "P24",
+        "P26"
+      ]
+    },
+    {
+      "id": "s12",
+      "of": "ronnie",
+      "kind": "habit",
+      "value": "Sings 'Bertie, why do you bound?' to tease his sister",
+      "from": "start",
+      "until": null,
+      "src": [
+        "P14",
+        "P24"
+      ]
+    },
+    {
+      "id": "s13",
+      "of": "framton",
+      "kind": "circumstance",
+      "value": "Knows nothing about the Sappletons beyond a name and address",
+      "from": "start",
+      "until": "e04",
+      "src": [
+        "P08",
+        "P09"
+      ]
+    }
+  ],
+  "readings": [
+    {
+      "id": "r-framton",
+      "holder": "narrator",
+      "text": "Framton has the common delusion that total strangers are hungry for the details of one's ailments.",
+      "status": "stated",
+      "supports": [
+        "e08"
+      ],
+      "src": [
+        "P20"
+      ]
+    },
+    {
+      "id": "r-coincidence",
+      "holder": "narrator",
+      "text": "It was an unfortunate coincidence that he should have paid his visit on a 'tragic anniversary'.",
+      "status": "stated",
+      "against": [
+        "c-anniversary"
+      ],
+      "supports": [
+        "e07"
+      ],
+      "src": [
+        "P19"
+      ],
+      "note": "reported from Framton's point of view; the anniversary is false"
+    },
+    {
+      "id": "r-vera",
+      "holder": "narrator",
+      "text": "Romance at short notice was her speciality: both stories are inventions on the spot.",
+      "status": "stated",
+      "supports": [
+        "e04",
+        "e14"
+      ],
+      "src": [
+        "P29"
+      ]
+    }
+  ],
+  "gaps_found": [
+    "v1: Vera's tale can only be an event whose perception is marked mistaken; none of its parts (which are true, which false) can be held",
+    "v1: the true details inside the false tale (window open, white coat, spaniel, the song) cannot be separated from the false core",
+    "v1: Framton's misreading of Mrs. Sappleton's true words as proof of the tale's truth has no home except a perception's accuracy",
+    "v1: no animal kind (a spaniel is a 'person'); several placeholders for unnamed people and places",
+    "v1: the year and the day had to be invented"
+  ]
+}

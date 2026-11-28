@@ -1,0 +1,8 @@
+{
+  "id": "watch",
+  "name": "Jim's gold watch",
+  "description": "A gold watch that was his father's and his grandfather's; Jim's pride. He keeps it on an old leather strap.",
+  "held_by": "jim",
+  "unique": true,
+  "notable": true
+}

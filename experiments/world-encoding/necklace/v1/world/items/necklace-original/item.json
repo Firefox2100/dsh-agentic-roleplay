@@ -1,0 +1,8 @@
+{
+  "id": "necklace-original",
+  "name": "Mme. Forestier's necklace",
+  "description": "A superb diamond necklace in a black satin box. It is paste, worth at most five hundred francs.",
+  "held_by": "forestier",
+  "unique": true,
+  "notable": true
+}

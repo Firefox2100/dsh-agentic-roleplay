@@ -1,0 +1,17 @@
+{
+  "id": "clerks",
+  "name": "The clerks of the stores",
+  "role": "npc",
+  "kind": "group",
+  "tier": "background",
+  "summary": "PLACEHOLDER: 'they' who took twenty-one dollars for the chain and sold Jim the combs. The text names no one.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "stores",
+    "variables": {
+      "cash": 100000
+    }
+  }
+}

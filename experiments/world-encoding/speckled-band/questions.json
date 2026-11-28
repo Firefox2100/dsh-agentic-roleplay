@@ -1,0 +1,230 @@
+[
+ {
+  "id": "q01",
+  "question": "Was Helen right, when she told her story, that nothing could have got into Julia's room?",
+  "answer": "No: the ventilator joins it to Roylott's room.",
+  "needs": [
+   "a claim and the later event that refutes it"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-room-sealed: unresolved at e-helen-tells, false after e-ventilator-found (verdict_at)"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "What did Holmes believe about the gypsies, and when did he stop?",
+  "answer": "He took a gypsy theory as promising after Helen's story and dropped it on the lawn when the shutters held, on seeing that nothing could come through window or door.",
+  "needs": [
+   "belief over a span, ended by an event, with its cause"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge holmes believes c-gypsies-involved from e-holmes-theory until e-holmes-drops-gypsies, causes e-holmes-tests-shutters"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "When did Holmes first suspect a snake, and what made him?",
+  "answer": "On the first visit, after the dummy rope and ventilator, in Julia's room; told only at the end.",
+  "needs": [
+   "time of an inference told later"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "e-holmes-suspects-snake (when.t 1025, src P248), causes e-bell-rope-dummy and e-ventilator-found; told_late"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "Which events are told after later events have already been told?",
+  "answer": "Holmes's deducing the ventilator, dropping the gypsy theory and suspecting the snake.",
+  "needs": [
+   "order of telling against order of events"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "told_late: compare src[0] with when.seq (validated)"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "What could Watson see at the moment Holmes struck the light?",
+  "answer": "Nothing; he heard a whistle. Holmes saw the thing on the rope.",
+  "needs": [
+   "two witnesses of one event with different knowledge"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge watson unaware of e-holmes-lashes; e-whistle-watson"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "Was the whistle Helen thought she heard on Julia's night real?",
+  "answer": "Probably: Watson hears the same whistle in the same room, and the snake is called by one; Helen herself doubted it.",
+  "needs": [
+   "a doubted perception borne out later"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-whistle-julia: likely (e-whistle-watson, e-snake-into-safe support); helen doubts is a stance"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "Who was Holmes hiding his purpose from, and by what?",
+  "answer": "From Roylott: the architect pretence, the instructions to Helen, and the dark room.",
+  "needs": [
+   "concealment as acts"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "events of kind conceal with from roylott (e-holmes-conceals-purpose, -plan, -light); knowledge roylott unaware"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "Did Roylott believe the architect pretence?",
+  "answer": "Not told.",
+  "needs": [
+   "a belief the story never states"
+  ],
+  "v2": {
+   "answerable": "no",
+   "how": "e-holmes-conceals-purpose says what Holmes intended; nothing records the effect"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "Who was where during the vigil, and what was going on at the same time?",
+  "answer": "Holmes and Watson in the middle bedroom; Roylott in the next room with the lantern, sending the snake.",
+  "needs": [
+   "simultaneity across rooms"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "e-vigil (t 1430-1660) overlaps e-roylott-sends-snake (t 1625-1650), derived from when.t (validated)"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "When did Roylott become dangerous to Helen by Holmes's account?",
+  "answer": "Once she had moved into Julia's bed (two days before), with the bed clamped under the ventilator.",
+  "needs": [
+   "a danger that depends on a state and a date"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "b-repairs-begin (approx two days); s-bed, s-ventilator; the danger itself is the claim c-snake-method (likely)"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "How much income would Roylott have if both daughters married?",
+  "answer": "£250 (from £750, less £250 each).",
+  "needs": [
+   "arithmetic over figures in text"
+  ],
+  "v2": {
+   "answerable": "no",
+   "how": "s-will and e-holmes-returns hold the figures as text; nothing sums them"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "Which things we know of Julia's last night rest on Helen's word alone?",
+  "answer": "Almost all: the whistles, the words, the scream, the match; only the inquiry's findings are Helen's report of another's.",
+  "needs": [
+   "provenance of backstory"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "backfilled events with established_in e-helen-tells; knowledge how=told source helen"
+  }
+ },
+ {
+  "id": "q13",
+  "question": "Did Helen marry Armitage?",
+  "answer": "Not told: the story ends before and Helen later dies young.",
+  "needs": [
+   "an anticipation with no outcome"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "h-helen-marry is open (held_outcomes): no event fulfils or prevents it; a closed-world rule would wrongly say it did not happen"
+  }
+ },
+ {
+  "id": "q14",
+  "question": "What was Julia's dying word about, and when did the reader learn?",
+  "answer": "The snake, in the last scene at P243; before that the reader holds Helen's own belief in fear.",
+  "needs": [
+   "a reader's belief that changes"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-band-snake true at e-band-is-snake (verdict_at); knowledge reader believes c-julia-fear until para:P243"
+  }
+ },
+ {
+  "id": "q15",
+  "question": "What did the official inquiry conclude about Roylott's death, and was it true?",
+  "answer": "That he died playing with a dangerous pet; partly true, it misses the plot.",
+  "needs": [
+   "one claim with a true part and a false part"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "claim c-official-finding has two parts: died-of-pet (true) and was-playing (unlikely, since e-roylott-sends-snake undermines it); the whole derives mixed"
+  }
+ },
+ {
+  "id": "q16",
+  "question": "When was the ventilator installed and by whom?",
+  "answer": "About two years ago, between Julia's engagement and her death; the text never says who.",
+  "needs": [
+   "an event with unknown agent and relative time"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "b-installs: after b-julia-engaged, before b-julia-dies; agent unknown; c-roylott-installed (likely) holds Holmes's view"
+  }
+ },
+ {
+  "id": "q17",
+  "question": "Why did the narrator wait so long to write, and when did he write?",
+  "answer": "A promise of secrecy to Helen, ended by her death a month before.",
+  "needs": [
+   "an obligation with an end"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "s-promise from e-farewell until e-helen-dies; e-watson-writes after it, about 1891"
+  }
+ },
+ {
+  "id": "q18",
+  "question": "Was the creature on the lawn a child or the baboon?",
+  "answer": "The baboon.",
+  "needs": [
+   "perception and reality"
+  ],
+  "v2": {
+   "answerable": "yes",
+   "how": "c-hideous-child: unlikely after e-baboon-named; c-baboon likely; the baboon is a loose animal in s-roylott-pets"
+  }
+ },
+ {
+  "id": "q19",
+  "question": "Why did the clang Helen heard matter, and what was it?",
+  "answer": "Holmes first thought it a shutter bar, then the safe door.",
+  "needs": [
+   "two rival explanations of one thing"
+  ],
+  "v2": {
+   "answerable": "partly",
+   "how": "claims c-clang-bar (unlikely) and c-clang-safe (likely) exist, but nothing marks them as rivals"
+  }
+ }
+]

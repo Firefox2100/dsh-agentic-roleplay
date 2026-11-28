@@ -101,6 +101,26 @@ description: 记录、回忆、世界状态、时间、日程、变量、触发�
 
 `recall_my_lore` 只返回角色知道的设定正文——即它有知识边的条目，以及 `scope` 为 `everyone` 的条目（迁移 9 增加 `lore.scope`，默认为 `listed`）；不搜索未知设定。角色简报只列出这些设定的标题，不给正文；有此类设定的角色在首次提交回答时会被问一次：此刻是否涉及自己的背景，若涉及则自行查阅条目。游戏主持人的 `search_lore` 可搜索完整规范设定库。 进行中的故事可以添加或移除世界书（`GET`/`POST`/`DELETE /sessions/lorebooks`）：条目以 `<书名>:<id>` 为编号，在同一个事务中复制或删除，条目的知识边随之变化，元数据 `roleplay.lorebooks` 同步更新；回合进行中拒绝操作，移除时若其他设定或剧情仍引用这些条目也拒绝。
 
+## 主张、隐瞒与群体
+
+主张是某个人所断言、相信或怀疑、而事件并没有简单定论的东西：一个推测、一项指控、一则传闻、可能有误的证词。主张本身没有真假。它的状况是根据与它链接的已记录事件推算出来的，从不存储（`claim_links`：事件本身就表明主张为真或为假时用 `confirms` 或 `contradicts`，只是对它有分量时用 `supports` 或 `undermines`）。迁移 13 增加了 `claims`、`claim_links`、`claim_questions` 和 `claim_question_members`。
+
+| 链接 | 状况 |
+|---|---|
+| 既有 confirms 又有 contradicts | disputed（有争议） |
+| 只有 contradicts | false |
+| 只有 confirms | true |
+| 既有 supports 又有 undermines | open |
+| 只有 supports | likely |
+| 只有 undermines | unlikely |
+| 没有链接 | unresolved |
+
+带有 `parts` 的主张，其各部分不同时为 `mixed`。只有当主张已经提出（`asserted_in`）并且事件已经发生时，链接才算数。一个问题（`claim_questions`）列出两到四个互相竞争、不可能同时为真的主张：一个仅凭自己的链接就为真的对手，对其他主张相当于一个 `contradicts`；为 likely 的则相当于 `undermines`；只有对手自己的链接才算，所以不会形成循环；更大的集合会被拒绝。角色自己的看法（`verdictFor`）用同样的规则，只看该角色感知到的事件。
+
+模型写的主张是 `proposed`，由人确认后是 `confirmed`。记录员只提议。确认有两条路：由人在故事编辑器里确认，或由游戏主持人调用 `confirm_claim`。后者是可选的主持人工具，默认开启，可在故事的工具设置（`tools.gameMaster`）里关掉，这样确认就只由人决定。提议中的主张连同它的状况只作为记录员的看法显示，绝不当作定论；它只属于游戏主持人和编辑器：绝不当作事实告诉角色，也绝不在聊天或侧边栏中显示。已确认的主张只经由角色自己经历过的事件到达角色：角色的简报会列出它听到过、且与当下相关的已确认主张（与当下共用词语或提到在场的人，最多四条，最新的在前），并附上 `verdictFor` 给出的、属于该角色的状况。所以亲眼见过证据的角色会说出来，什么都没见过的角色会说无法判断。`read_records` 和 `list_claims` 显示它们；`edit_records` 写入它们（`claims`、`claim_links`、`claim_unlinks`、`claim_retractions`、`claim_questions`）。
+
+`concealments` 记录被有意瞒着某个角色的事件：无论该角色所属的群体感知到了什么，`who_knows` 里它都是 `no`；既被瞒着又被它感知到的事件会作为问题报告。`group_members` 记录谁可能是某个群体（人群、一家人）感知某事时的一员：一个感知到某事件的群体中的成员，“可能”知道它，这是介于知道与不知道之间的第三种回答；不会推断谁站在人群里。
+
 ## 扩展世界
 
 只有故事确实需要时，游戏主持人才通过 `expand_world {need, what}` 请求世界作者。`need` 可为 `scene_change`、`arrival` 或 `introduction`。气氛、路人、群体、顺带提及的内容以及已有实体能承担的用途都不满足门槛。作者必须先搜索并复用，拒绝创建也是正常结果。

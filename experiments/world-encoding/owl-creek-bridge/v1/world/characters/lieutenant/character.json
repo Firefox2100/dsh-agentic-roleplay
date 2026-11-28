@@ -1,0 +1,16 @@
+{
+  "id": "lieutenant",
+  "name": "The lieutenant",
+  "gender": "male",
+  "pronouns": "he/him",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "Stands at the right of the company on the slope.",
+  "start": {
+    "public_state": "At his post.",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "north-bank"
+  }
+}

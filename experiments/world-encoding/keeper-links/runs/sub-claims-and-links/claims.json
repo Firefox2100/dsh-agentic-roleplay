@@ -1,0 +1,391 @@
+{
+ "claims": [
+  {
+   "id": "c-fright",
+   "text": "Julia died of sudden fright and nervous shock, with no further cause",
+   "by": "coroner",
+   "asserted_in": "b-inquiry",
+   "bears_on": [
+    {
+     "ref": "e-band-is-snake",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "contradicts"
+    },
+    {
+     "ref": "b-julia-words",
+     "as": "undermines"
+    }
+   ]
+  },
+  {
+   "id": "c-gypsy-whistle",
+   "text": "The night whistle Julia heard came from the gypsies",
+   "by": "helen",
+   "asserted_in": "b-julia-asks",
+   "bears_on": [
+    {
+     "ref": "e-whistle-watson",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "contradicts"
+    },
+    {
+     "ref": "b-roylott-retires",
+     "as": "undermines"
+    }
+   ]
+  },
+  {
+   "id": "c-gypsy-band",
+   "text": "The 'speckled band' was the gypsies, and they were involved in Julia's death",
+   "by": "holmes",
+   "asserted_in": "e-holmes-theory",
+   "bears_on": [
+    {
+     "ref": "e-holmes-tests-shutters",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-holmes-drops-gypsies",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "contradicts"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "contradicts"
+    }
+   ]
+  },
+  {
+   "id": "c-snake-killed-julia",
+   "text": "Julia was killed by a snake sent through the ventilator, the same method as planned for Helen",
+   "by": "holmes",
+   "asserted_in": "e-bed-reasoning",
+   "bears_on": [
+    {
+     "ref": "b-installs",
+     "as": "supports"
+    },
+    {
+     "ref": "b-julia-words",
+     "as": "supports"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "supports"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "supports"
+    }
+   ]
+  },
+  {
+   "id": "c-snake-suspected",
+   "text": "A snake and Roylott's Indian animals lie behind the ventilator, dummy rope and clamped bed",
+   "by": "holmes",
+   "asserted_in": "e-holmes-suspects-snake",
+   "bears_on": [
+    {
+     "ref": "e-milk-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-lash-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-hiss-heard",
+     "as": "supports"
+    },
+    {
+     "ref": "e-band-is-snake",
+     "as": "confirms"
+    }
+   ]
+  },
+  {
+   "id": "c-roylott-guilty",
+   "text": "Roylott caused Julia's death (her 'speckled band' points at him)",
+   "by": "julia",
+   "asserted_in": "b-julia-words",
+   "bears_on": [
+    {
+     "ref": "e-roylott-found",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "confirms"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "supports"
+    }
+   ]
+  },
+  {
+   "id": "c-vent",
+   "text": "A small ventilator communicates between Roylott's room and Julia's bedroom",
+   "by": "holmes",
+   "asserted_in": "e-holmes-deduces-vent",
+   "bears_on": [
+    {
+     "ref": "e-ventilator-found",
+     "as": "confirms"
+    }
+   ]
+  },
+  {
+   "id": "c-motive-money",
+   "text": "Roylott's motive is money: marriage of either daughter cuts his income",
+   "by": "holmes",
+   "asserted_in": "e-holmes-theory",
+   "bears_on": [
+    {
+     "ref": "b-bequest",
+     "as": "supports"
+    },
+    {
+     "ref": "e-holmes-returns",
+     "as": "confirms"
+    },
+    {
+     "ref": "b-julia-engaged",
+     "as": "supports"
+    },
+    {
+     "ref": "b-armitage",
+     "as": "supports"
+    }
+   ]
+  },
+  {
+   "id": "c-no-objection",
+   "text": "Roylott genuinely does not object to his stepdaughters marrying",
+   "by": "helen",
+   "asserted_in": "b-no-objection",
+   "bears_on": [
+    {
+     "ref": "e-holmes-returns",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "undermines"
+    }
+   ]
+  },
+  {
+   "id": "c-repairs-excuse",
+   "text": "The west-wing repairs are only an excuse to move Helen into Julia's room",
+   "by": "helen",
+   "asserted_in": "e-holmes-notes-repairs",
+   "bears_on": [
+    {
+     "ref": "b-repairs-begin",
+     "as": "supports"
+    },
+    {
+     "ref": "e-bed-reasoning",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "supports"
+    }
+   ]
+  },
+  {
+   "id": "c-followed",
+   "text": "Roylott followed Helen and learned she consulted Holmes",
+   "by": "helen",
+   "asserted_in": "e-holmes-tells-helen",
+   "bears_on": [
+    {
+     "ref": "e-roylott-bursts-in",
+     "as": "confirms"
+    }
+   ]
+  },
+  {
+   "id": "c-danger-inside",
+   "text": "The danger lies inside the rooms, not through window or door",
+   "by": "holmes",
+   "asserted_in": "e-holmes-drops-gypsies",
+   "bears_on": [
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "confirms"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "supports"
+    }
+   ]
+  },
+  {
+   "id": "c-trained-snake",
+   "text": "Roylott trained the snake with milk, sent it through the ventilator and called it back by whistle",
+   "by": "holmes",
+   "asserted_in": "e-holmes-explains",
+   "bears_on": [
+    {
+     "ref": "e-milk-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-lash-seen",
+     "as": "supports"
+    },
+    {
+     "ref": "e-whistle-watson",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "supports"
+    },
+    {
+     "ref": "e-snake-into-safe",
+     "as": "supports"
+    }
+   ]
+  },
+  {
+   "id": "c-holmes-responsible",
+   "text": "Holmes is indirectly responsible for Roylott's death",
+   "by": "holmes",
+   "asserted_in": "e-holmes-self-blame",
+   "bears_on": [
+    {
+     "ref": "e-holmes-lashes",
+     "as": "supports"
+    },
+    {
+     "ref": "e-snake-bites-roylott",
+     "as": "confirms"
+    }
+   ]
+  },
+  {
+   "id": "c-pet-accident",
+   "text": "Roylott died by indiscreetly playing with a dangerous pet",
+   "by": "inquiry",
+   "asserted_in": "e-aftermath",
+   "bears_on": [
+    {
+     "ref": "e-roylott-found",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-holmes-explains",
+     "as": "undermines"
+    }
+   ]
+  },
+  {
+   "id": "c-sealed-alone",
+   "text": "With the rooms sealed, Julia must have been alone when she died",
+   "by": "holmes",
+   "asserted_in": "e-holmes-theory",
+   "bears_on": [
+    {
+     "ref": "b-inquiry",
+     "as": "supports"
+    },
+    {
+     "ref": "e-ventilator-found",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "undermines"
+    }
+   ]
+  },
+  {
+   "id": "c-bruise-innocent",
+   "text": "Helen's bruised wrist is an accident: Roylott hardly knows his own strength",
+   "by": "helen",
+   "asserted_in": "e-helen-excuses",
+   "bears_on": [
+    {
+     "ref": "e-poker-bent",
+     "as": "undermines"
+    },
+    {
+     "ref": "e-roylott-bursts-in",
+     "as": "undermines"
+    }
+   ]
+  },
+  {
+   "id": "c-roylott-installed",
+   "text": "Roylott had the ventilator, dummy rope and clamped bed fitted for his plan",
+   "by": "holmes",
+   "asserted_in": "e-ventilator-explained",
+   "bears_on": [
+    {
+     "ref": "e-roylott-sends-snake",
+     "as": "supports"
+    },
+    {
+     "ref": "e-roylott-found",
+     "as": "supports"
+    }
+   ]
+  },
+  {
+   "id": "c-tangible-cause",
+   "text": "Julia's death had a more tangible cause than fright",
+   "by": "holmes",
+   "asserted_in": "e-helen-asks-cause",
+   "bears_on": [
+    {
+     "ref": "e-band-is-snake",
+     "as": "confirms"
+    }
+   ]
+  }
+ ],
+ "questions": [
+  {
+   "id": "q-julia-death",
+   "text": "What killed Julia?",
+   "rivals": [
+    "c-fright",
+    "c-gypsy-band",
+    "c-snake-killed-julia"
+   ]
+  },
+  {
+   "id": "q-whistle",
+   "text": "Who or what made the night whistle?",
+   "rivals": [
+    "c-gypsy-whistle",
+    "c-trained-snake"
+   ]
+  }
+ ]
+}

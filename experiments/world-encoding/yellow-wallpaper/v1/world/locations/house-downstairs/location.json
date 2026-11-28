@@ -1,0 +1,23 @@
+{
+  "id": "house-downstairs",
+  "name": "The rooms below",
+  "parent": "house",
+  "description": "Dining-room, parlor, hall, stairs, and a piazza with roses.",
+  "exits": [
+    {
+      "to": "nursery",
+      "description": "the stairs, with a gate at the head",
+      "travel_time_seconds": 60
+    },
+    {
+      "to": "garden",
+      "description": "the garden door",
+      "travel_time_seconds": 30
+    },
+    {
+      "to": "town",
+      "description": "the road",
+      "travel_time_seconds": 3600
+    }
+  ]
+}

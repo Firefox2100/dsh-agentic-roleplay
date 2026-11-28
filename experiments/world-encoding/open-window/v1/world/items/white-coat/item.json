@@ -1,0 +1,7 @@
+{
+  "id": "white-coat",
+  "name": "White waterproof coat",
+  "description": "A white mackintosh worn by Mr. Sappleton.",
+  "held_by": "mr-sappleton",
+  "unique": true
+}

@@ -1,0 +1,21 @@
+{
+  "expected_verdicts": {
+    "c-necklace-diamond": "false",
+    "c-clasp-broken": "false"
+  },
+  "accepted_differences": {},
+  "exempt_paragraphs": {},
+  "fact_map": {
+    "f-necklace-lost": "e-loss",
+    "f-replacement-real": "e16",
+    "f-last-seen": "e08",
+    "f-debt-paid": "e20",
+    "f-forestier-never-noticed": "e18",
+    "f-necklace-paste": "s14",
+    "f-necklace-diamond": "c-necklace-diamond",
+    "f-clasp-broken": "c-clasp-broken",
+    "d01": "h-d01",
+    "f01": "h-f01",
+    "c01": "r-c01"
+  }
+}

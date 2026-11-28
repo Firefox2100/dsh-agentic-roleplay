@@ -1,0 +1,23 @@
+{
+  "id": "forestier",
+  "name": "Mme. Forestier",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Mathilde's rich former schoolmate at the convent; lends her jewels.",
+  "start": {
+    "public_state": "At home.",
+    "activity": "Receiving.",
+    "inner_state": "-",
+    "location": "forestier-home",
+    "variables": {
+      "francs": 100000
+    }
+  },
+  "aliases": [
+    "Jeanne"
+  ],
+  "gender": "female",
+  "pronouns": "she/her",
+  "personality": "Open-handed; chilly when her property is kept."
+}

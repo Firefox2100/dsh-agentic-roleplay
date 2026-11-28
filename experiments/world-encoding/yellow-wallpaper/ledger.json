@@ -1,0 +1,1035 @@
+[
+ {
+  "ref": "P01-P05",
+  "quote": "It is very seldom that mere ordinary people like John and myself secure ancestral halls for the summer ... something queer about it. Else, why should it be let so cheaply? ... John laughs at me, of course",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r1 text; house and narrator"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b01; fact f-queer-house; people john, narrator"
+  },
+  "v2": {
+   "class": "E",
+   "where": "b01; c-queer-house; people john, narrator"
+  }
+ },
+ {
+  "ref": "P06",
+  "quote": "John is practical in the extreme. He has no patience with faith, an intense horror of superstition",
+  "v1": {
+   "class": "E",
+   "where": "john personality"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states john manner"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states john manner"
+  }
+ },
+ {
+  "ref": "P07-P12",
+  "quote": "John is a physician ... he does not believe I am sick! ... My brother is also a physician ... temporary nervous depression ... I take phosphates or phosphites ... am absolutely forbidden to 'work'",
+  "v1": {
+   "class": "S",
+   "where": "lore john-treatment; relationship text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b02; facts f-sick (disputed), f-forbidden-work; people brother"
+  },
+  "v2": {
+   "class": "E",
+   "where": "b02; c-sick (disputed), s14; people brother"
+  }
+ },
+ {
+  "ref": "P07.2",
+  "quote": "(I would not say it to a living soul, of course, but this is dead paper and a great relief to my mind)",
+  "v1": {
+   "class": "S",
+   "where": "item diary description"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling.entries; thing diary; narrator form secret diary"
+  },
+  "v2": {
+   "class": "E",
+   "where": "telling.entries; thing diary; narrator form secret diary"
+  }
+ },
+ {
+  "ref": "P13-P15",
+  "quote": "Personally I disagree with their ideas. Personally I believe that congenial work, with excitement and change, would do me good.",
+  "v1": {
+   "class": "S",
+   "where": "narrator background text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "knowledge narrator doubts f-sick"
+  },
+  "v2": {
+   "class": "E",
+   "where": "knowledge narrator doubts c-sick"
+  }
+ },
+ {
+  "ref": "P16",
+  "quote": "I did write for a while in spite of them; but it does exhaust me ... having to be so sly about it",
+  "v1": {
+   "class": "S",
+   "where": "item diary; turn 1 r2 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "state concealment; reading r-concealment"
+  },
+  "v2": {
+   "class": "E",
+   "where": "state concealment; reading r-concealment"
+  }
+ },
+ {
+  "ref": "P17",
+  "quote": "John says the very worst thing I can do is to think about my condition",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A piece of John's advice, quoted.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P18-P22",
+  "quote": "The most beautiful place! ... quite three miles from the village ... a delicious garden ... greenhouses, too, but they are all broken now ... some legal trouble ... the place has been empty for years.",
+  "v1": {
+   "class": "E",
+   "where": "places house, garden; lore none"
+  },
+  "draft": {
+   "class": "E",
+   "where": "places house, garden-lane; b01 text"
+  },
+  "v2": {
+   "class": "E",
+   "where": "places house, garden-lane; b01 text"
+  }
+ },
+ {
+  "ref": "P23-P24",
+  "quote": "there is something strange about the house—I can feel it. I even said so to John one moonlight evening, but he said what I felt was a draught, and shut the window.",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e00; fact f-queer-house"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e00; c-queer-house"
+  }
+ },
+ {
+  "ref": "P25-P26",
+  "quote": "I get unreasonably angry with John sometimes ... I take pains to control myself,—before him, at least,—and that makes me very tired.",
+  "v1": {
+   "class": "S",
+   "where": "relationship summary; start inner_state"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states narrator feeling; concealment"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states narrator feeling; concealment"
+  }
+ },
+ {
+  "ref": "P27-P28",
+  "quote": "I don't like our room a bit. I wanted one downstairs ... but John would not hear of it. He said there was only one window and not room for two beds",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r2 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e01"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e01"
+  }
+ },
+ {
+  "ref": "P29-P31",
+  "quote": "He is very careful and loving, and hardly lets me stir without special direction. I have a schedule prescription for each hour in the day ... 'air you can absorb all the time.' So we took the nursery, at the top of the house.",
+  "v1": {
+   "class": "S",
+   "where": "lore john-treatment; turn 1 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e01 says; reading r-john"
+  },
+  "note": "Care and control are one act in the text; v2 keeps the reading as the reader's.",
+  "v2": {
+   "class": "E",
+   "where": "e01 says; reading r-john"
+  }
+ },
+ {
+  "ref": "P32-P33",
+  "quote": "It is a big, airy room ... the windows are barred for little children, and there are rings and things in the walls. ... The paint and paper look as if a boys' school had used it.",
+  "v1": {
+   "class": "E",
+   "where": "place nursery description and features"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states nursery description"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states nursery description"
+  }
+ },
+ {
+  "ref": "P34-P35",
+  "quote": "One of those sprawling flamboyant patterns committing every artistic sin ... the lame, uncertain curves ... suddenly commit suicide",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "P",
+   "where": "-"
+  },
+  "note": "Figures of speech about a pattern.",
+  "v2": {
+   "class": "P",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P36-P38",
+  "quote": "The color is repellant ... a smouldering, unclean yellow ... a dull yet lurid orange ... No wonder the children hated it!",
+  "v1": {
+   "class": "S",
+   "where": "feature wallpaper description"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states wallpaper description"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states wallpaper description"
+  }
+ },
+ {
+  "ref": "P39",
+  "quote": "There comes John, and I must put this away,—he hates to have me write a word.",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r2: put away"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02; state concealment; knowledge john unaware"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02; state concealment; knowledge john unaware"
+  }
+ },
+ {
+  "ref": "P41-P43",
+  "quote": "We have been here two weeks ... I am sitting by the window now ... John is away all day, and even some nights when his cases are serious.",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r1 text; 'two weeks' in the clock sidecar"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 when after e02 gap P14D; state john location town"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 when after e02 gap P14D; state john location town"
+  }
+ },
+ {
+  "ref": "P44-P48",
+  "quote": "John does not know how much I really suffer ... I meant to be such a help to John ... here I am a comparative burden already!",
+  "v1": {
+   "class": "S",
+   "where": "relationship summary; inner_state"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e04; state feeling"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e04; state feeling"
+  }
+ },
+ {
+  "ref": "P49-P50",
+  "quote": "It is fortunate Mary is so good with the baby. Such a dear baby! And yet I cannot be with him, it makes me so nervous.",
+  "v1": {
+   "class": "E",
+   "where": "characters mary, baby"
+  },
+  "draft": {
+   "class": "E",
+   "where": "people mary, baby"
+  },
+  "v2": {
+   "class": "E",
+   "where": "people mary, baby"
+  }
+ },
+ {
+  "ref": "P51-P58",
+  "quote": "He laughs at me so about this wall paper! At first he meant to repaper the room ... 'I don't care to renovate the house just for a three months' rental.' ... called me a blessed little goose",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r1"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 says; fact f-lease"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 says; s15"
+  }
+ },
+ {
+  "ref": "P59-P65",
+  "quote": "I'm really getting quite fond of the big room ... I always fancy I see people walking in these numerous paths and arbors, but John has cautioned me not to give way to fancy ... Cousin Henry and Julia",
+  "v1": {
+   "class": "S",
+   "where": "nursery window features; turn 2 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e04; people henry-julia"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e04; people henry-julia"
+  }
+ },
+ {
+  "ref": "P66-P68",
+  "quote": "This paper looks to me as if it knew what a vicious influence it had! There is a recurrent spot where the pattern lolls like a broken neck and two bulbous eyes stare at you upside-down.",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r3 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e05"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e05"
+  }
+ },
+ {
+  "ref": "P69-P71",
+  "quote": "I used to lie awake as a child and get more entertainment and terror out of blank walls and plain furniture ... the knobs of our big old bureau ... one chair that always seemed like a strong friend.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A childhood memory that explains how she sees things.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P72-P75",
+  "quote": "The furniture in this room is no worse than inharmonious ... I never saw such ravages as the children have made here ... the floor is scratched and gouged and splintered, the plaster itself is dug out here and there",
+  "v1": {
+   "class": "S",
+   "where": "place nursery description"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states nursery description"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states nursery description"
+  }
+ },
+ {
+  "ref": "P76-P79",
+  "quote": "There comes John's sister. Such a dear girl ... I verily believe she thinks it is the writing which made me sick! But I can write when she is out",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r2; character jennie"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e06; people jennie"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e06; people jennie"
+  }
+ },
+ {
+  "ref": "P80-P81",
+  "quote": "This wall paper has a kind of sub-pattern in a different shade ... a strange, provoking, formless sort of figure, that seems to sulk about behind that silly and conspicuous front design.",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r3 perception partial"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e05; frame wallpaper-woman begins at e11"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e05; frame wallpaper-woman begins at e11"
+  }
+ },
+ {
+  "ref": "P82",
+  "quote": "There's sister on the stairs!",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "Ends an entry on an interruption.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P84-P85",
+  "quote": "Well, the Fourth of July is over! ... we just had mother and Nellie and the children down for a week. ... But it tired me all the same.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r1; group visitors"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e07; anchor july-4"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e07; anchor july-4"
+  }
+ },
+ {
+  "ref": "P84.2",
+  "quote": "(the Fourth of July: a date)",
+  "v1": {
+   "class": "S",
+   "where": "clock sidecar only"
+  },
+  "draft": {
+   "class": "E",
+   "where": "time.anchors july-4"
+  },
+  "v2": {
+   "class": "E",
+   "where": "time.anchors july-4"
+  }
+ },
+ {
+  "ref": "P86-P88",
+  "quote": "John says if I don't pick up faster he shall send me to Weir Mitchell in the fall. ... I had a friend who was in his hands once",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e08; people weir-mitchell"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e08; people weir-mitchell"
+  }
+ },
+ {
+  "ref": "P89-P93",
+  "quote": "I cry at nothing, and cry most of the time. Of course I don't when John is here ... I am alone a good deal just now. John is kept in town ... Jennie is good and lets me alone",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e09 iterative; state feeling"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e09 iterative; state feeling"
+  }
+ },
+ {
+  "ref": "P94-P95",
+  "quote": "I'm getting really fond of the room in spite of the wall paper. Perhaps because of the wall paper. It dwells in my mind so!",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e09 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e09 text"
+  }
+ },
+ {
+  "ref": "P96-P103",
+  "quote": "I lie here on this great immovable bed ... and follow that pattern about by the hour. ... 'debased Romanesque' with delirium tremens ... interminable grotesques seem to form around a common centre",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "Her long analysis of the pattern is not kept; only that she follows it for hours.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P104",
+  "quote": "It makes me tired to follow it. I will take a nap, I guess.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e09 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e09 text"
+  }
+ },
+ {
+  "ref": "P106-P110",
+  "quote": "I don't know why I should write this. I don't want to. ... I must say what I feel and think in some way—it is such a relief! But the effort is getting to be greater than the relief.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "reading r-concealment"
+  },
+  "v2": {
+   "class": "S",
+   "where": "reading r-concealment"
+  }
+ },
+ {
+  "ref": "P111-P117",
+  "quote": "John says I mustn't lose my strength, and has me take cod-liver oil ... I tried to have a real earnest reasonable talk with him ... he said I wasn't able to go ... carried me upstairs ... use my will and self-control",
+  "v1": {
+   "class": "E",
+   "where": "turn 4 r1; lore john-treatment"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e10 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e10 says"
+  }
+ },
+ {
+  "ref": "P118-P120",
+  "quote": "the baby is well and happy, and does not have to occupy this nursery ... it is lucky that John kept me here, after all. I can stand it so much easier than a baby",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 r2 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e11 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e11 text"
+  }
+ },
+ {
+  "ref": "P121",
+  "quote": "Of course I never mention it to them any more,—I am too wise,—but I keep watch of it all the same.",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 r2 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "state concealment; knowledge john, jennie unaware"
+  },
+  "v2": {
+   "class": "E",
+   "where": "state concealment; knowledge john, jennie unaware"
+  }
+ },
+ {
+  "ref": "P122-P125",
+  "quote": "There are things in that paper that nobody knows but me ... it is like a woman stooping down and creeping about behind that pattern. ... I wish John would take me away from here!",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 r2 perception, accuracy mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 in frame wallpaper-woman; fact f-woman unknown; knowledge narrator believes (accuracy unknown)"
+  },
+  "note": "'Mistaken' is the encoder's reading; the text never says the woman is not there.",
+  "v2": {
+   "class": "E",
+   "where": "e11 in frame wallpaper-woman; c-woman unknown; knowledge narrator believes (accuracy unknown)"
+  }
+ },
+ {
+  "ref": "P127-P134",
+  "quote": "It was moonlight ... The faint figure behind seemed to shake the pattern, just as if she wanted to get out. ... when I came back John was awake. ... I told him that I really was not gaining here, and that I wished he would take me away.",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 r1"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12"
+  }
+ },
+ {
+  "ref": "P135-P142",
+  "quote": "'Our lease will be up in three weeks ... you are gaining flesh and color ... Can you not trust me as a physician, dear?' ... a stern, reproachful look",
+  "v1": {
+   "class": "S",
+   "where": "turn 5 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12 says; claims f-better, f-lease; when before lease-end gap P21D; r-john"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12 says; claims c-better, s15; when before lease-end gap P21D; r-john"
+  }
+ },
+ {
+  "ref": "P143",
+  "quote": "He thought I was asleep first, but I wasn't,—I lay there for hours trying to decide whether that front pattern and the back pattern really did move together or separately.",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e13"
+  }
+ },
+ {
+  "ref": "P145-P155",
+  "quote": "On a pattern like this, by daylight, there is a lack of sequence ... it changes as the light changes ... At night ... it becomes bars! ... the woman behind it is as plain as can be. By daylight she is subdued, quiet.",
+  "v1": {
+   "class": "S",
+   "where": "turn 6 r1 perception mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e14 in frame wallpaper-woman"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e14 in frame wallpaper-woman"
+  }
+ },
+ {
+  "ref": "P156-P159",
+  "quote": "I lie down ever so much now ... he started the habit by making me lie down for an hour after each meal. ... And that cultivates deceit, for I don't tell them I'm awake",
+  "v1": {
+   "class": "S",
+   "where": "lore john-treatment; turn 6 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "state habit; state concealment; e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "state habit; state concealment; e13"
+  }
+ },
+ {
+  "ref": "P160-P161",
+  "quote": "The fact is, I am getting a little afraid of John. He seems very queer sometimes, and even Jennie has an inexplicable look.",
+  "v1": {
+   "class": "E",
+   "where": "relationships narrator -> john trust 0.2, tension 0.8; -> jennie"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states narrator feeling text; frame narrator-suspicion"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states narrator feeling text; frame narrator-suspicion"
+  }
+ },
+ {
+  "ref": "P162-P166",
+  "quote": "perhaps it is the paper! I have watched John ... I've caught him several times looking at the paper! And Jennie too. ... she said that the paper stained everything it touched, that she had found yellow smooches on all my clothes and John's",
+  "v1": {
+   "class": "E",
+   "where": "turn 6 r2: perceptions both ways"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e15; facts f-paper-stains true, f-jj-study-paper unknown; frame narrator-suspicion"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e15; s16 true, c-jj-study-paper unknown; frame narrator-suspicion"
+  }
+ },
+ {
+  "ref": "P168-P171",
+  "quote": "Life is very much more exciting now ... I really do eat better ... John is so pleased ... I had no intention of telling him it was because of the wall paper ... There is a week more",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e16 intent; claims f-better; state concealment"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e16 intent; claims c-better; state concealment"
+  }
+ },
+ {
+  "ref": "P172-P174",
+  "quote": "There are always new shoots on the fungus, and new shades of yellow all over it ... the strangest yellow ... old foul, bad yellow things.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P175-P184",
+  "quote": "the smell! ... It creeps all over the house ... I thought seriously of burning the house—to reach the smell. ... a yellow smell!",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 r1 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e17 text"
+  },
+  "note": "A smell is a perception; neither model has a field for it in a place.",
+  "v2": {
+   "class": "S",
+   "where": "e17 text"
+  }
+ },
+ {
+  "ref": "P185-P186",
+  "quote": "There is a very funny mark on this wall, low down, near the mopboard. A streak that runs around the room ... as if it had been rubbed over and over.",
+  "v1": {
+   "class": "E",
+   "where": "nursery feature smooch"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-smooch; thing smooch; reading r-prior"
+  },
+  "v2": {
+   "class": "E",
+   "where": "s17; thing smooch; reading r-prior"
+  }
+ },
+ {
+  "ref": "P188-P194",
+  "quote": "I really have discovered something at last ... The front pattern does move—and no wonder! The woman behind shakes it! ... that is why it has so many heads.",
+  "v1": {
+   "class": "S",
+   "where": "turn 8 r1 perception mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e18 in frame wallpaper-woman"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e18 in frame wallpaper-woman"
+  }
+ },
+ {
+  "ref": "P196-P207",
+  "quote": "I think that woman gets out in the daytime! ... I've seen her! I can see her out of every one of my windows! ... I always lock the door when I creep by daylight.",
+  "v1": {
+   "class": "S",
+   "where": "turn 9 r1 perception mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e19 in frame wallpaper-woman; claims f-woman-outside"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e19 in frame wallpaper-woman; claims c-woman-outside"
+  }
+ },
+ {
+  "ref": "P209",
+  "quote": "If only that top pattern could be gotten off from the under one! I mean to try it, little by little. I have found out another funny thing, but I shan't tell it this time!",
+  "v1": {
+   "class": "S",
+   "where": "turn 10 r1 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e20 intent; state concealment"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e20 intent; state concealment"
+  }
+ },
+ {
+  "ref": "P210-P217",
+  "quote": "There are only two more days to get this paper off, and I believe John is beginning to notice ... I heard him ask Jennie a lot of professional questions about me ... I feel sure John and Jennie are secretly affected by it.",
+  "v1": {
+   "class": "E",
+   "where": "turn 10 r1 perceptions (narrator mistaken)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e20; frame narrator-suspicion; fact f-jj-study-paper"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e20; frame narrator-suspicion; c-jj-study-paper"
+  }
+ },
+ {
+  "ref": "P219-P222",
+  "quote": "Hurrah! This is the last day ... John is to stay in town over night ... Jennie wanted to sleep with me ... As soon as it was moonlight, and that poor thing began to crawl and shake the pattern, I got up and ran to help her. ... we had peeled off yards of that paper.",
+  "v1": {
+   "class": "S",
+   "where": "turn 11 r1 perception mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e21; effects set wallpaper condition"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e21; effects set wallpaper condition"
+  }
+ },
+ {
+  "ref": "P223-P229",
+  "quote": "And then when the sun came and that awful pattern began to laugh at me I declared I would finish it today! ... I told her merrily that I did it out of pure spite ... How she betrayed herself that time! ... no person touches this paper but me—not alive!",
+  "v1": {
+   "class": "S",
+   "where": "turn 11 r2 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e22"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e22"
+  }
+ },
+ {
+  "ref": "P230-P238",
+  "quote": "So now she is gone, and the servants are gone, and the things are gone ... I have locked the door and thrown the key down into the front path. ... I want to astonish him.",
+  "v1": {
+   "class": "S",
+   "where": "turn 11 r3 text; the key is hidden because it cannot be thrown"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e22 effects move key to front-path; state key location"
+  },
+  "note": "No item action throws a thing to another place.",
+  "v2": {
+   "class": "E",
+   "where": "e22 effects move key to front-path; state key location"
+  }
+ },
+ {
+  "ref": "P239-P245",
+  "quote": "I've got a rope up here that even Jennie did not find. ... This bed will not move! ... I bit off a little piece at one corner ... I peeled off all the paper I could reach ... To jump out of the window would be admirable exercise, but the bars are too strong",
+  "v1": {
+   "class": "E",
+   "where": "item rope; turn 11 r3"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e23; things rope, bed"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e23; things rope, bed"
+  }
+ },
+ {
+  "ref": "P246-P249",
+  "quote": "I don't like to look out of the windows even—there are so many of those creeping women ... I wonder if they all come out of that wall paper, as I did? ... I suppose I shall have to get back behind the pattern when it comes night",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e23; state identity (implied); reading r-woman-is-her"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e23; state identity (implied); reading r-woman-is-her"
+  }
+ },
+ {
+  "ref": "P250-P253",
+  "quote": "It is so pleasant to be out in this great room and creep around as I please! ... my shoulder just fits in that long smooch around the wall, so I cannot lose my way.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e23; thing smooch"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e23; thing smooch"
+  }
+ },
+ {
+  "ref": "P254-P263",
+  "quote": "Why, there's John at the door! ... Now he's crying for an axe. ... 'John, dear!' ... 'the key is down by the front steps, under a plantain leaf!' ... he had to go and see, and he got it, of course, and came in.",
+  "v1": {
+   "class": "E",
+   "where": "turn 11 r4"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e24 says; fact f-key-under-leaf; knowledge john knows"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e24 says; s11; knowledge john knows"
+  }
+ },
+ {
+  "ref": "P264-P266",
+  "quote": "'What is the matter?' he cried. 'For God's sake, what are you doing?' ... 'I've got out at last,' said I, 'in spite of you and Jane! And I've pulled off most of the paper, so you can't put me back!'",
+  "v1": {
+   "class": "S",
+   "where": "turn 11 r5 text; 'Jane' is in the event text, which assumes it is not a person"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e25 says; fact f-jane-is-narrator unknown; reading r-jane ambiguous"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e25 says; c-jane-is-narrator unknown; reading r-jane ambiguous"
+  }
+ },
+ {
+  "ref": "P267",
+  "quote": "Now why should that man have fainted? But he did, and right across my path by the wall, so that I had to creep over him every time!",
+  "v1": {
+   "class": "E",
+   "where": "turn 11 r5"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e25"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e25"
+  }
+ },
+ {
+  "ref": "form",
+  "quote": "the whole is a secret diary of eleven entries, written as events happen, with her reliability falling",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling.entries n01..n11; narrator form secret diary"
+  },
+  "v2": {
+   "class": "P",
+   "where": "telling: projection, not stored (the turn order is the telling)"
+  }
+ }
+]

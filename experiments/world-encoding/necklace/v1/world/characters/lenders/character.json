@@ -1,0 +1,17 @@
+{
+  "id": "lenders",
+  "name": "The lenders and usurers",
+  "role": "npc",
+  "kind": "group",
+  "tier": "background",
+  "summary": "The people Loisel borrows from.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "streets",
+    "variables": {
+      "francs": 1000000
+    }
+  }
+}

@@ -1,0 +1,956 @@
+[
+ {
+  "ref": "P01.1",
+  "quote": "'My aunt will be down presently, Mr. Nuttel,' said a very self-possessed young lady of fifteen",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r1; vera age 15, personality"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e01; states vera age, manner"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e01; states vera age, manner"
+  }
+ },
+ {
+  "ref": "P02.1",
+  "quote": "Framton Nuttel endeavoured to say the correct something which should duly flatter the niece ... without unduly discounting the aunt that was to come.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "A social strategy that is never carried out in words.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P02.2",
+  "quote": "Privately he doubted more than ever whether these formal visits ... would do much towards helping the nerve cure",
+  "v1": {
+   "class": "S",
+   "where": "framton start inner_state and background"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02; states health"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02; states health"
+  }
+ },
+ {
+  "ref": "P03.1",
+  "quote": "'I know how it will be,' his sister had said when he was preparing to migrate ... 'you will bury yourself ... I shall just give you letters of introduction'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b01 says, mode reported; telling s03 analepsis"
+  },
+  "note": "v1 has the sister as a character but no past event.",
+  "v2": {
+   "class": "E",
+   "where": "b01 says, mode reported"
+  }
+ },
+ {
+  "ref": "P04.1",
+  "quote": "Framton wondered whether Mrs. Sappleton ... came into the nice division.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e02 text"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e02 text"
+  }
+ },
+ {
+  "ref": "P05.1",
+  "quote": "'Do you know many of the people round here?' asked the niece",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 says"
+  }
+ },
+ {
+  "ref": "P05.2",
+  "quote": "when she judged that they had had sufficient silent communion",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "Her sense of timing.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P06.1",
+  "quote": "'Hardly a soul ... My sister was staying here, at the rectory, you know, some four years ago, and she gave me letters of introduction'",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r2 text; relationship framton -> sister"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 says; b01"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 says; b01"
+  }
+ },
+ {
+  "ref": "P06.2",
+  "quote": "(four years ago)",
+  "v1": {
+   "class": "S",
+   "where": "event text only"
+  },
+  "draft": {
+   "class": "S",
+   "where": "b01 text"
+  },
+  "note": "A relative time from an unnamed 'now'.",
+  "v2": {
+   "class": "S",
+   "where": "b01 text"
+  }
+ },
+ {
+  "ref": "P07.1",
+  "quote": "He made the last statement in a tone of distinct regret.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P08.1",
+  "quote": "'Then you know practically nothing about my aunt?' pursued the self-possessed young lady.",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 says"
+  }
+ },
+ {
+  "ref": "P09.1",
+  "quote": "'Only her name and address,' admitted the caller.",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r2 perception: vera heard 'he knows nothing about my aunt'"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03; fact f-framton-ignorant; knowledge vera knows"
+  },
+  "note": "What makes the hoax possible is what Vera has learnt.",
+  "v2": {
+   "class": "E",
+   "where": "e03; s13; knowledge vera knows"
+  }
+ },
+ {
+  "ref": "P09.2",
+  "quote": "He was wondering whether Mrs. Sappleton was in the married or widowed state.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e03 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e03 text"
+  }
+ },
+ {
+  "ref": "P09.3",
+  "quote": "An undefinable something about the room seemed to suggest masculine habitation.",
+  "v1": {
+   "class": "S",
+   "where": "sitting-room description"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states sitting-room description"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states sitting-room description"
+  }
+ },
+ {
+  "ref": "P10.1",
+  "quote": "'Her great tragedy happened just three years ago,' said the child; 'that would be since your sister's time.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r3"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e04 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e04 says"
+  }
+ },
+ {
+  "ref": "P11.1",
+  "quote": "'Her tragedy?' asked Framton; somehow in this restful country spot tragedies seemed out of place.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P12.1",
+  "quote": "'You may wonder why we keep that window wide open on an October afternoon,' said the niece, indicating a large French window that opened on to a lawn.",
+  "v1": {
+   "class": "S",
+   "where": "sitting-room feature French window; the day and hour invented"
+  },
+  "draft": {
+   "class": "E",
+   "where": "time.anchors the-day; thing french-window; state description"
+  },
+  "v2": {
+   "class": "E",
+   "where": "time.anchors the-day; thing french-window; state description"
+  }
+ },
+ {
+  "ref": "P13.1",
+  "quote": "'It is quite warm for the time of the year,' said Framton; 'but has that window got anything to do with the tragedy?'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "states sitting-room description"
+  },
+  "v2": {
+   "class": "S",
+   "where": "states sitting-room description"
+  }
+ },
+ {
+  "ref": "P14.1",
+  "quote": "'Out through that window, three years ago to a day, her husband and her two young brothers went off for their day's shooting. They never came back. ... engulfed in a treacherous piece of bog ... Their bodies were never recovered.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r3: the event states it was invented and the perception content, marked mistaken, holds the tale"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e04; frame vera-tale; t01; claims f-men-died, f-anniversary"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e04; frame vera-tale; e04 says; claims c-men-died, c-anniversary"
+  }
+ },
+ {
+  "ref": "P14.2",
+  "quote": "'Poor aunt always thinks that they will come back some day ... That is why the window is kept open every evening till it is quite dusk.'",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r3 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "t02 realised partly; fact f-window-for-return true"
+  },
+  "note": "The aunt really does wait for them; the tale's reason is false but the habit is true.",
+  "v2": {
+   "class": "E",
+   "where": "e04 says realised partly; s10 true"
+  }
+ },
+ {
+  "ref": "P14.3",
+  "quote": "'her husband with his white waterproof coat over his arm'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-coat-arm contradicted by e10 (over his shoulders)"
+  },
+  "note": "A detail that does not match what comes later.",
+  "v2": {
+   "class": "E",
+   "where": "c-coat-arm contradicted by e10 (over his shoulders)"
+  }
+ },
+ {
+  "ref": "P14.4",
+  "quote": "'Ronnie, her youngest brother, singing 'Bertie, why do you bound?' as he always did to tease her'",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-ronnie-song true; e10 claims it"
+  },
+  "v2": {
+   "class": "E",
+   "where": "s12 true; e10 claims it"
+  }
+ },
+ {
+  "ref": "P14.5",
+  "quote": "Here the child's voice lost its self-possessed note and became falteringly human.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e04 manner: a performance"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e04 manner: a performance"
+  }
+ },
+ {
+  "ref": "P14.6",
+  "quote": "'Do you know, sometimes on still, quiet evenings like this, I almost get a creepy feeling that they will all walk in through that window – '",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e04 says"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e04 says"
+  }
+ },
+ {
+  "ref": "P15.1",
+  "quote": "She broke off with a little shudder.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e05 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e05 text"
+  }
+ },
+ {
+  "ref": "P15.2",
+  "quote": "It was a relief to Framton when the aunt bustled into the room with a whirl of apologies for being late",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r1; move mrs-sappleton -> sitting-room"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e05"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e05"
+  }
+ },
+ {
+  "ref": "P16-P17",
+  "quote": "'I hope Vera has been amusing you?' ... 'She has been very interesting,' said Framton.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "N",
+   "where": "-"
+  },
+  "note": "Small talk; Framton's politeness is the opposite of what he feels.",
+  "v2": {
+   "class": "N",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P18.1",
+  "quote": "'I hope you don't mind the open window; my husband and brothers will be home directly from shooting, and they always come in this way.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r1 perception: framton heard, accuracy mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e06 says; claims f-men-alive, f-window-for-return"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e06 says; claims s11, s10"
+  }
+ },
+ {
+  "ref": "P18.2",
+  "quote": "'They've been out for snipe in the marshes to-day, so they'll make a fine mess over my poor carpets. So like you men-folk, isn't it?'",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r1: an offstage event invented so the shoot has a time and a place; tagged reported-later"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b03 status reported, reported_by mrs-sappleton"
+  },
+  "v2": {
+   "class": "E",
+   "where": "b03 basis reported, origin offscreen, reported_by mrs-sappleton"
+  }
+ },
+ {
+  "ref": "P18.3",
+  "quote": "(her words are true and confirm what Vera said in every way that matters except that the men are alive)",
+  "v1": {
+   "class": "S",
+   "where": "lore no-tragedy (hidden)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "facts f-men-alive, f-window-for-return"
+  },
+  "v2": {
+   "class": "E",
+   "where": "s11, s10"
+  }
+ },
+ {
+  "ref": "P19.1",
+  "quote": "She rattled on cheerfully about the shooting and the scarcity of birds, and the prospects for duck in the winter.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e07 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e07 text"
+  }
+ },
+ {
+  "ref": "P19.2",
+  "quote": "To Framton it was all purely horrible. He made a desperate but only partially successful effort to turn the talk on to a less ghastly topic",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text, perception partial"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e07 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e07 text"
+  }
+ },
+ {
+  "ref": "P19.3",
+  "quote": "he was conscious that his hostess was giving him only a fragment of her attention, and her eyes were constantly straying past him to the open window and the lawn beyond.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r2 perception content"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e07 misread_by; state mrs-sappleton attention; knowledge framton believes f-aunt-deluded"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e07 misread_by; state mrs-sappleton attention; knowledge framton believes c-aunt-deluded"
+  }
+ },
+ {
+  "ref": "P19.4",
+  "quote": "It was certainly an unfortunate coincidence that he should have paid his visit on this tragic anniversary.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-coincidence against f-anniversary"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-coincidence against c-anniversary"
+  }
+ },
+ {
+  "ref": "P20.1",
+  "quote": "'The doctors agree in ordering me complete rest, an absence of mental excitement, and avoidance of anything in the nature of violent physical exercise,' announced Framton",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text; framton background"
+  },
+  "draft": {
+   "class": "E",
+   "where": "b02; e08 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "b02; e08 says"
+  }
+ },
+ {
+  "ref": "P20.2",
+  "quote": "Framton, who laboured under the tolerably widespread delusion that total strangers ... are hungry for the least detail of one's ailments",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-framton; state disposition"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-framton; state disposition"
+  }
+ },
+ {
+  "ref": "P20.3",
+  "quote": "'On the matter of diet they are not so much in agreement,' he continued.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e08 says"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e08 says"
+  }
+ },
+ {
+  "ref": "P21.1",
+  "quote": "'No?' said Mrs. Sappleton, in a voice which only replaced a yawn at the last moment.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text ('little attention')"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e08 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e08 text"
+  }
+ },
+ {
+  "ref": "P21.2",
+  "quote": "Then she suddenly brightened into alert attention – but not to what Framton was saying.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e09 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e09 text"
+  }
+ },
+ {
+  "ref": "P22.1",
+  "quote": "'Here they are at last!' she cried. 'Just in time for tea, and don't they look as if they were muddy up to the eyes!'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e09 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e09 says"
+  }
+ },
+ {
+  "ref": "P23.1",
+  "quote": "Framton shivered slightly and turned towards the niece with a look intended to convey sympathetic comprehension.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e09 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e09 text"
+  }
+ },
+ {
+  "ref": "P23.2",
+  "quote": "The child was staring out through the open window with dazed horror in her eyes.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text; nothing says it is acted"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e09 note: acted, implied by P28-P29"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e09 note: acted, implied by P28-P29"
+  }
+ },
+ {
+  "ref": "P23.3",
+  "quote": "In a chill shock of nameless fear Framton swung round in his seat and looked in the same direction.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 perception"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e10 who framton witness"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e10 who framton witness"
+  }
+ },
+ {
+  "ref": "P24.1",
+  "quote": "In the deepening twilight three figures were walking across the lawn towards the window; they all carried guns under their arms, and one of them was additionally burdened with a white coat hung over his shoulders. A tired brown spaniel kept close at their heels.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r3; items guns, white-coat; characters"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e10; states mr-sappleton appearance, spaniel"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e10; states mr-sappleton appearance, spaniel"
+  }
+ },
+ {
+  "ref": "P24.1",
+  "quote": "(deepening twilight)",
+  "v1": {
+   "class": "S",
+   "where": "the hour only in the clock sidecar"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e09 when approx deepening twilight"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e09 when approx deepening twilight"
+  }
+ },
+ {
+  "ref": "P24.2",
+  "quote": "Noiselessly they neared the house",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 perception text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e10 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e10 text"
+  }
+ },
+ {
+  "ref": "P24.3",
+  "quote": "and then a hoarse young voice chanted out of the dusk: 'I said, Bertie, why do you bound?'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e10; claims f-ronnie-song"
+  },
+  "note": "That the voice is Ronnie's is implied by P14.",
+  "v2": {
+   "class": "E",
+   "where": "e10; claims s12"
+  }
+ },
+ {
+  "ref": "P24.4",
+  "quote": "(Framton takes the three for the dead men)",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 perception, accuracy mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "knowledge framton believes f-ghosts false, misreading_of e10"
+  },
+  "v2": {
+   "class": "E",
+   "where": "knowledge framton believes c-ghosts false, misreading_of e10"
+  }
+ },
+ {
+  "ref": "P25.1",
+  "quote": "Framton grabbed wildly at his stick and hat; the hall-door, the gravel-drive, and the front gate were dimly-noted stages in his headlong retreat.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r4; items stick, hat; places hall, drive, road"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11; things stick-hat"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11; things stick-hat"
+  }
+ },
+ {
+  "ref": "P25.2",
+  "quote": "A cyclist coming along the road had to run into the hedge to avoid an imminent collision.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r4; character cyclist"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 who cyclist patient"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 who cyclist patient"
+  }
+ },
+ {
+  "ref": "P25.3",
+  "quote": "(why he fled: the tale, the aunt's behaviour, the sight)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 causes e10 stated, e04 implied"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 causes e10 stated, e04 implied"
+  }
+ },
+ {
+  "ref": "P26.1",
+  "quote": "'Here we are, my dear,' said the bearer of the white mackintosh, coming in through the window; 'fairly muddy, but most of it's dry. Who was that who bolted out as we came up?'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r5; moves"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12 says"
+  }
+ },
+ {
+  "ref": "P27.1",
+  "quote": "'A most extraordinary man, a Mr. Nuttel,' said Mrs. Sappleton; 'could only talk about his illnesses, and dashed off without a word of good-bye or apology when you arrived.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r6"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e13 says"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e13 says"
+  }
+ },
+ {
+  "ref": "P27.2",
+  "quote": "'One would think he had seen a ghost.'",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e13 irony"
+  },
+  "note": "She says the truth without knowing it.",
+  "v2": {
+   "class": "S",
+   "where": "e13 irony"
+  }
+ },
+ {
+  "ref": "P28.1",
+  "quote": "'I expect it was the spaniel,' said the niece calmly; 'he told me he had a horror of dogs.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r7"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e14"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e14"
+  }
+ },
+ {
+  "ref": "P28.2",
+  "quote": "'He was once hunted into a cemetery somewhere on the banks of the Ganges by a pack of pariah dogs, and had to spend the night in a newly dug grave ...'",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r7: the event text says it was invented; the listeners' perceptions are marked mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "frame vera-tale-2; claims f-nuttel-dog-horror false"
+  },
+  "v2": {
+   "class": "E",
+   "where": "frame vera-tale-2; claims c-nuttel-dog-horror false"
+  }
+ },
+ {
+  "ref": "P28.3",
+  "quote": "(why she says it: to cover the first story)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e14 intent, status implied-intent"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e14 intent, basis implied, origin offscreen-intent"
+  }
+ },
+ {
+  "ref": "P29.1",
+  "quote": "Romance at short notice was her speciality.",
+  "v1": {
+   "class": "S",
+   "where": "vera personality text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-vera-invents; state habit; reading r-vera"
+  },
+  "v2": {
+   "class": "E",
+   "where": "s00; state habit; reading r-vera"
+  }
+ },
+ {
+  "ref": "P29.2",
+  "quote": "(the last sentence relabels both stories as inventions)",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling s15 reveals f-vera-invents, f-nuttel-dog-horror"
+  },
+  "v2": {
+   "class": "P",
+   "where": "telling: projection, not stored (the turn order is the telling)"
+  }
+ }
+]

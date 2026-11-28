@@ -32,6 +32,7 @@ export const OPTIONAL_TOOLS: readonly OptionalTool[] = [
   { id: 'set_trigger', agent: 'gameMaster', default: true },
   { id: 'cancel_trigger', agent: 'gameMaster', default: true },
   { id: 'list_triggers', agent: 'gameMaster', default: true },
+  { id: 'confirm_claim', agent: 'gameMaster', default: true },
   { id: 'recall_my_memories', agent: 'characters', default: true },
   { id: 'recall_my_known_entities', agent: 'characters', default: true },
   { id: 'recall_my_lore', agent: 'characters', default: true },

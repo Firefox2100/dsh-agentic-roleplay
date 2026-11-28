@@ -1,0 +1,248 @@
+[
+ {
+  "id": "q01",
+  "question": "Where was Louise when she took in the spring scene?",
+  "answer": "In her room, at the open window.",
+  "needs": [
+   "place of an event",
+   "who perceived it"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "turn 3 r2: location louise-room, perceived_by louise"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e11 place louise-room, who louise"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e11 place louise-room, who louise"
+  }
+ },
+ {
+  "id": "q02",
+  "question": "When Brently walked in, who believed he was dead, and was it true?",
+  "answer": "Louise, Josephine and Richards; it was false.",
+  "needs": [
+   "beliefs per person",
+   "truth of the belief",
+   "which belief is current"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "three belief rows exist, but nothing says they were false (the truth is a hidden lore entry) or ended; 'Brently is alive' is added beside the old belief, which cannot be retracted by a static file"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge rows stance believes accuracy false from e04/e05/e07 until e21; fact f-bm-dead truth false"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge rows believes of claim c-bm-dead; verdict derived: false, because e19 (Brently enters alive) contradicts it"
+  }
+ },
+ {
+  "id": "q03",
+  "question": "What did Josephine think Louise was doing behind the door, and what was she doing?",
+  "answer": "She thought Louise was grieving herself ill; Louise was exulting in freedom.",
+  "needs": [
+   "a person's wrong belief",
+   "the truth about another person's inner state"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "perception accuracy 'mistaken' on turn 4 r1, and Louise's inner_state; the wrong belief is text"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge josephine unaware of f-free, believes_instead; state feeling joy"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge josephine unaware of state s05 (Louise's joy), believes_instead; state feeling joy"
+  }
+ },
+ {
+  "id": "q04",
+  "question": "Who knew Louise felt free?",
+  "answer": "Nobody but Louise.",
+  "needs": [
+   "who perceived or was told an inner state"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "the freedom events have perceived_by louise only"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge: josephine and richards unaware of f-free; only louise's states"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge: josephine and richards unaware of s05; only louise's states hold it"
+  }
+ },
+ {
+  "id": "q05",
+  "question": "Why did Richards go to the house?",
+  "answer": "To bring the news before a less careful friend did.",
+  "needs": [
+   "a stated motive",
+   "a cause between events"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "intent text on richards; no link from the telegram to the departure"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e05 intent, causes e04 stated"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e05 intent, causes e04 stated"
+  }
+ },
+ {
+  "id": "q06",
+  "question": "Which events does the narration tell later than they happened?",
+  "answer": "The newsroom events (told after Josephine's telling) and 'yesterday'.",
+  "needs": [
+   "order of telling versus order of happening"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "history is chronological; nothing records the telling"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "telling segments with order analepsis: s02, s10"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "event src paragraph order against when.seq: e07, e03-e05 are told before earlier events; derivable, no stored telling"
+  }
+ },
+ {
+  "id": "q07",
+  "question": "What had Louise thought the day before she prayed that life be long?",
+  "answer": "That life might be long, with a shudder.",
+  "needs": [
+   "an event before the story start with a time relation"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "inside the text of the prayer event; not a dated event"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e01 before e07 by P1D, contrasted by e17"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e01 before e07 by P1D, contrasted by e17"
+  }
+ },
+ {
+  "id": "q08",
+  "question": "How long did the main scene last?",
+  "answer": "About an hour (the title).",
+  "needs": [
+   "a duration from the source, not invented"
+  ],
+  "v1": {
+   "answerable": "no",
+   "how": "the clock sidecar holds invented times, so any answer would be made up"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "time.spans span-hour approx PT1H, src title"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "time.spans span-hour approx PT1H, src title"
+  }
+ },
+ {
+  "id": "q09",
+  "question": "What did the doctors conclude, and does the story endorse it?",
+  "answer": "Heart disease, 'the joy that kills'; the narration's irony points elsewhere.",
+  "needs": [
+   "a claim distinguished from truth",
+   "an implied cause"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "the doctors' perception has accuracy mistaken, which is the encoder's judgement written as if it were canon"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e23 claim f-doc-cause truth disputed; reading r-cause implied"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e23 claims c-doc-cause; reading r-cause disputes it; derived verdict: disputed"
+  }
+ },
+ {
+  "id": "q10",
+  "question": "Did Louise ever weep over her husband's body?",
+  "answer": "No: it is only something she foresaw.",
+  "needs": [
+   "future that never happens"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "only a belief about a future; the absence of a later event is the evidence"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "a01 frame louise-anticipates realised false"
+  },
+  "v2": {
+   "answerable": "partly",
+   "how": "held h-a01 (anticipates) has no realised_by; closed-world absence only, not a stated 'did not happen'"
+  }
+ },
+ {
+  "id": "q11",
+  "question": "Who stood at the bottom of the stairs when Louise came down?",
+  "answer": "Richards.",
+  "needs": [
+   "presence at a place and time"
+  ],
+  "v1": {
+   "answerable": "yes",
+   "how": "richards moved to house-downstairs in turn 1; turn 5 r1 perceived_by richards"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "e18 who richards witness, place house-downstairs"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "e18 who richards witness, place house-downstairs"
+  }
+ },
+ {
+  "id": "q12",
+  "question": "When did Brently learn there had been an accident?",
+  "answer": "The text does not say.",
+  "needs": [
+   "a gap in the source that must stay a gap"
+  ],
+  "v1": {
+   "answerable": "partly",
+   "how": "no event records it, but the invented 'away' place and the clock do not say it is unknown"
+  },
+  "draft": {
+   "answerable": "yes",
+   "how": "knowledge brently unaware of f-accident until null, note says not told"
+  },
+  "v2": {
+   "answerable": "yes",
+   "how": "knowledge brently unaware of e02 with until null; nothing says when he learns"
+  }
+ }
+]

@@ -1,0 +1,1283 @@
+{
+  "model": "history/2",
+  "work": {
+    "title": "An Occurrence at Owl Creek Bridge",
+    "author": "Ambrose Bierce",
+    "published": "1890",
+    "source": "source/text.txt"
+  },
+  "time": {
+    "note": "No dates. The war is the American Civil War, after the fall of Corinth (30 May 1862 is the anchor). The scout scene is 'one evening'; the execution is at early sun some days later. The vision takes a night and a day of felt time inside the instant of the fall.",
+    "anchors": [
+      {
+        "id": "corinth",
+        "at": "1862-05-30",
+        "precision": "day",
+        "relation": "all events are after this",
+        "src": [
+          "P09"
+        ]
+      }
+    ],
+    "spans": [
+      {
+        "id": "span-vision-felt",
+        "frame": "farquhar-vision",
+        "approx": "a day and a night",
+        "src": [
+          "P35",
+          "P36",
+          "P38"
+        ]
+      },
+      {
+        "id": "span-vision-real",
+        "from": "e12",
+        "to": "e13",
+        "approx": "an instant (less than a second)",
+        "src": [
+          "P20",
+          "P38"
+        ],
+        "status": "inferred"
+      }
+    ]
+  },
+  "entities": {
+    "people": [
+      {
+        "id": "farquhar",
+        "name": "Peyton Farquhar",
+        "src": [
+          "P03",
+          "P09",
+          "P39"
+        ]
+      },
+      {
+        "id": "wife",
+        "name": "Mrs. Farquhar",
+        "src": [
+          "P10"
+        ]
+      },
+      {
+        "id": "children",
+        "name": "Farquhar's little ones",
+        "kind": "group",
+        "src": [
+          "P05",
+          "P06"
+        ]
+      },
+      {
+        "id": "scout",
+        "name": "The gray-clad rider",
+        "src": [
+          "P10",
+          "P18"
+        ]
+      },
+      {
+        "id": "commandant",
+        "name": "The commandant",
+        "tier": "background",
+        "src": [
+          "P11"
+        ]
+      },
+      {
+        "id": "captain",
+        "name": "The captain",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "sergeant",
+        "name": "The sergeant",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "privates",
+        "name": "The two privates",
+        "kind": "group",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "sentinels",
+        "name": "The two sentinels",
+        "kind": "group",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "lieutenant",
+        "name": "The lieutenant",
+        "src": [
+          "P02",
+          "P25"
+        ]
+      },
+      {
+        "id": "company",
+        "name": "The company of infantry",
+        "kind": "group",
+        "src": [
+          "P02"
+        ]
+      }
+    ],
+    "places": [
+      {
+        "id": "plantation-gate",
+        "name": "The gate of Farquhar's grounds",
+        "src": [
+          "P10"
+        ]
+      },
+      {
+        "id": "farquhar-home",
+        "name": "Farquhar's house",
+        "src": [
+          "P38"
+        ]
+      },
+      {
+        "id": "road",
+        "name": "The road past the plantation",
+        "src": [
+          "P18"
+        ]
+      },
+      {
+        "id": "bridge-platform",
+        "name": "The centre of the Owl Creek bridge",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "south-approach",
+        "name": "The south end of the bridge",
+        "src": [
+          "P02",
+          "P15"
+        ]
+      },
+      {
+        "id": "north-bank",
+        "name": "The north bank, slope and fort",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "stream",
+        "name": "The stream below the bridge",
+        "src": [
+          "P01",
+          "P04"
+        ]
+      }
+    ],
+    "things": [
+      {
+        "id": "rope",
+        "name": "The rope",
+        "src": [
+          "P01"
+        ]
+      },
+      {
+        "id": "plank",
+        "name": "The plank",
+        "src": [
+          "P04"
+        ]
+      },
+      {
+        "id": "driftwood",
+        "name": "The driftwood at the pier",
+        "src": [
+          "P17"
+        ]
+      },
+      {
+        "id": "watch",
+        "name": "Farquhar's watch",
+        "src": [
+          "P05"
+        ]
+      },
+      {
+        "id": "cannon",
+        "name": "The brass cannon",
+        "src": [
+          "P02"
+        ]
+      },
+      {
+        "id": "order",
+        "name": "The commandant's posted order",
+        "carries": "f-order",
+        "src": [
+          "P11"
+        ]
+      }
+    ]
+  },
+  "frames": [
+    {
+      "id": "farquhar-vision",
+      "kind": "hallucination",
+      "owner": "farquhar",
+      "starts_at": "e12",
+      "ends_at": "e13",
+      "felt_duration": "a day and a night",
+      "real_duration": "an instant"
+    }
+  ],
+  "claims": [
+    {
+      "id": "c-driftwood",
+      "text": "A great quantity of dry driftwood lies against the near pier and would burn like tow.",
+      "about": [],
+      "bears_on": [],
+      "src": [
+        "P17"
+      ]
+    },
+    {
+      "id": "c-scout-confederate",
+      "text": "The gray-clad rider was a Confederate soldier.",
+      "about": [
+        "scout"
+      ],
+      "bears_on": [
+        {
+          "ref": "e06",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P10",
+        "P18"
+      ]
+    },
+    {
+      "id": "c-trap",
+      "text": "The scout meant to lure Farquhar into attacking the bridge.",
+      "about": [
+        "scout",
+        "farquhar"
+      ],
+      "bears_on": [],
+      "src": [
+        "P18"
+      ]
+    },
+    {
+      "id": "c-escaped",
+      "text": "Farquhar escaped the hanging.",
+      "about": [
+        "farquhar"
+      ],
+      "bears_on": [
+        {
+          "ref": "e13",
+          "as": "contradicts"
+        }
+      ],
+      "src": [
+        "P39"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "id": "b01",
+      "when": {
+        "seq": -10,
+        "approx": "the months since the fall of Corinth"
+      },
+      "kind": "state-change",
+      "place": null,
+      "text": "Farquhar, an ardent secessionist, longed for a soldier's life he was kept from by circumstances 'unnecessary to relate'; he did what he could for the South.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P09"
+      ],
+      "frequency": "iterative",
+      "note": "the circumstances that kept him from service are withheld"
+    },
+    {
+      "id": "e01",
+      "when": {
+        "seq": 1
+      },
+      "kind": "arrive",
+      "place": "plantation-gate",
+      "text": "One evening a gray-clad rider stopped at the gate and asked for water; Mrs. Farquhar served him with her own hands.",
+      "who": [
+        {
+          "id": "scout",
+          "role": "agent"
+        },
+        {
+          "id": "wife",
+          "role": "agent"
+        },
+        {
+          "id": "farquhar",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P10",
+        "P18"
+      ]
+    },
+    {
+      "id": "e02",
+      "when": {
+        "seq": 2
+      },
+      "kind": "speech",
+      "place": "plantation-gate",
+      "text": "Farquhar eagerly asked for news; the rider said the Yankees were repairing the railroads, had put the Owl Creek bridge in order, built a stockade on the north bank, and posted an order to hang any civilian interfering; the bridge was thirty miles off with only a picket post and a single sentinel on this side.",
+      "who": [
+        {
+          "id": "scout",
+          "role": "speaker"
+        },
+        {
+          "id": "farquhar",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P10",
+        "P11",
+        "P12",
+        "P13",
+        "P14",
+        "P15"
+      ],
+      "says": "(Scout) The Yanks are repairing the railroads ... any civilian caught interfering ... will be summarily hanged. (Farquhar) How far is it? Is there no force this side? (Scout) About thirty miles. Only a picket post half a mile out, and a single sentinel at this end.",
+      "claims": [
+        "e02"
+      ]
+    },
+    {
+      "id": "e03",
+      "when": {
+        "seq": 3
+      },
+      "kind": "speech",
+      "place": "plantation-gate",
+      "text": "Farquhar asked, smiling, what a civilian could accomplish who eluded the picket and got the better of the sentinel.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "speaker"
+        },
+        {
+          "id": "scout",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P16"
+      ],
+      "says": "Suppose a man, a civilian and student of hanging, should elude the picket post and perhaps get the better of the sentinel; what could he accomplish?"
+    },
+    {
+      "id": "e04",
+      "when": {
+        "seq": 4
+      },
+      "kind": "speech",
+      "place": "plantation-gate",
+      "text": "The rider recalled that a month ago the flood had lodged a great quantity of driftwood against the pier at the near end of the bridge, now dry and burning like tow.",
+      "who": [
+        {
+          "id": "scout",
+          "role": "speaker"
+        },
+        {
+          "id": "farquhar",
+          "role": "addressee"
+        }
+      ],
+      "src": [
+        "P17"
+      ],
+      "says": "I observed that the flood of last winter had lodged a great quantity of driftwood against the wooden pier at this end of the bridge. It is now dry and would burn like tow.",
+      "claims": [
+        "c-driftwood"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e05",
+      "when": {
+        "seq": 5,
+        "after": [
+          "e04"
+        ],
+        "gap": "PT1H"
+      },
+      "kind": "depart",
+      "place": "road",
+      "text": "The rider drank, thanked the lady, bowed to her husband and rode off; an hour later, after nightfall, he repassed the plantation going north.",
+      "who": [
+        {
+          "id": "scout",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P18"
+      ]
+    },
+    {
+      "id": "e06",
+      "when": {
+        "seq": 6
+      },
+      "kind": "fact-stated",
+      "place": null,
+      "text": "The rider was a Federal scout.",
+      "who": [
+        {
+          "id": "scout",
+          "role": "subject"
+        }
+      ],
+      "src": [
+        "P18"
+      ],
+      "note": "stated by the narrator in the last sentence of the scene; Farquhar never learns it",
+      "importance": 5
+    },
+    {
+      "id": "e07",
+      "when": {
+        "seq": 7,
+        "approx": "days after e05, before the morning of the hanging",
+        "after": [
+          "e05"
+        ],
+        "before": [
+          "e09"
+        ]
+      },
+      "kind": "act",
+      "place": "south-approach",
+      "text": "Farquhar acted on what he had been told: he went to the bridge to burn it.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "agent"
+        }
+      ],
+      "src": [],
+      "importance": 5,
+      "note": "never narrated; inferred from the order, the hanging and what the scout planted",
+      "basis": "implied",
+      "origin": "offscreen"
+    },
+    {
+      "id": "e08",
+      "when": {
+        "seq": 8
+      },
+      "kind": "act",
+      "place": "bridge-platform",
+      "text": "Farquhar was caught while interfering with the bridge, and condemned under the commandant's order to be hanged from it.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "patient"
+        },
+        {
+          "id": "commandant",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P01",
+        "P03"
+      ],
+      "causes": [
+        {
+          "event": "e07",
+          "status": "implied"
+        }
+      ],
+      "importance": 5,
+      "basis": "implied",
+      "origin": "offscreen"
+    },
+    {
+      "id": "e09",
+      "when": {
+        "seq": 9,
+        "approx": "early morning",
+        "precision": "hour"
+      },
+      "kind": "state",
+      "place": "bridge-platform",
+      "text": "Farquhar stood on the bridge, wrists bound, noose around his neck, watched by captain, sergeant, two privates, a sentinel at each end, and a company at parade rest on the north slope; nobody moved.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "patient"
+        },
+        {
+          "id": "captain",
+          "role": "witness"
+        },
+        {
+          "id": "sergeant",
+          "role": "agent"
+        },
+        {
+          "id": "privates",
+          "role": "agent"
+        },
+        {
+          "id": "sentinels",
+          "role": "witness"
+        },
+        {
+          "id": "company",
+          "role": "witness"
+        },
+        {
+          "id": "lieutenant",
+          "role": "witness"
+        }
+      ],
+      "src": [
+        "P01",
+        "P02",
+        "P03"
+      ],
+      "things": [
+        "rope",
+        "cannon"
+      ]
+    },
+    {
+      "id": "e10",
+      "when": {
+        "seq": 10
+      },
+      "kind": "act",
+      "place": "bridge-platform",
+      "text": "The privates stepped aside and drew away their planks; the sergeant and Farquhar stood on one plank, held by the sergeant's weight; at the captain's signal the sergeant would step aside and the plank would tilt.",
+      "who": [
+        {
+          "id": "privates",
+          "role": "agent"
+        },
+        {
+          "id": "sergeant",
+          "role": "agent"
+        },
+        {
+          "id": "captain",
+          "role": "agent"
+        },
+        {
+          "id": "farquhar",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P04"
+      ],
+      "things": [
+        "plank"
+      ]
+    },
+    {
+      "id": "e11",
+      "when": {
+        "seq": 11
+      },
+      "kind": "perceive",
+      "place": "bridge-platform",
+      "text": "Farquhar watched the water and a piece of driftwood, then closed his eyes to think of his wife and children; he heard a slow metallic ringing, hurting his ear: his watch ticking, stretched by his state.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        },
+        {
+          "id": "wife",
+          "role": "subject"
+        },
+        {
+          "id": "children",
+          "role": "subject"
+        }
+      ],
+      "src": [
+        "P04",
+        "P05"
+      ],
+      "things": [
+        "watch"
+      ],
+      "distortion": "time seems to slow: the ticks come as slow as a death knell",
+      "causes": []
+    },
+    {
+      "id": "e12",
+      "when": {
+        "seq": 13
+      },
+      "kind": "act",
+      "place": "bridge-platform",
+      "text": "The captain nodded to the sergeant, who stepped aside; the plank tilted and Farquhar fell through the bridge.",
+      "who": [
+        {
+          "id": "captain",
+          "role": "agent"
+        },
+        {
+          "id": "sergeant",
+          "role": "agent"
+        },
+        {
+          "id": "farquhar",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P07",
+        "P20"
+      ],
+      "things": [
+        "plank",
+        "rope"
+      ],
+      "importance": 5
+    },
+    {
+      "id": "e13",
+      "when": {
+        "seq": 14
+      },
+      "kind": "death",
+      "place": "bridge-platform",
+      "text": "The rope stopped Farquhar's fall and broke his neck; he died.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P38",
+        "P39"
+      ],
+      "things": [
+        "rope"
+      ],
+      "causes": [
+        {
+          "event": "e12",
+          "status": "stated"
+        }
+      ],
+      "importance": 5,
+      "note": "the moment is never narrated; P38 gives the blow and a light and sound like a cannon, P39 gives the dead body",
+      "origin": "backfilled"
+    },
+    {
+      "id": "e14",
+      "when": {
+        "seq": 15
+      },
+      "kind": "state",
+      "place": "bridge-platform",
+      "text": "Farquhar's body swung gently from side to side beneath the timbers of the bridge.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "patient"
+        }
+      ],
+      "src": [
+        "P39"
+      ],
+      "things": [
+        "rope"
+      ]
+    },
+    {
+      "id": "v01",
+      "when": {
+        "seq": 100
+      },
+      "kind": "sensation",
+      "place": "bridge-platform",
+      "text": "Farquhar fell and lost consciousness, then was awakened by the pain of pressure on his throat and by suffocation, and lived through burning pain and swinging like a pendulum in a luminous cloud.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P20"
+      ],
+      "frame": "farquhar-vision",
+      "grounded_in": [
+        "e12",
+        "e13"
+      ],
+      "note": "the noose tightening, rendered as pain and arcs of oscillation"
+    },
+    {
+      "id": "v02",
+      "when": {
+        "seq": 101
+      },
+      "kind": "act",
+      "place": "stream",
+      "text": "The rope seemed to break and he fell into the stream, sank, then rose toward the light, thinking it not so bad to be hanged and drowned but that he did not want to be shot.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P20"
+      ],
+      "frame": "farquhar-vision",
+      "fulfils": "h-p01"
+    },
+    {
+      "id": "v03",
+      "when": {
+        "seq": 102
+      },
+      "kind": "act",
+      "place": "stream",
+      "text": "His hands freed themselves and tore away the noose; he swam up against the pain and shrieked as his lungs filled with air.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P21"
+      ],
+      "frame": "farquhar-vision",
+      "fulfils": "h-p01",
+      "grounded_in": [
+        "e13"
+      ]
+    },
+    {
+      "id": "v04",
+      "when": {
+        "seq": 103
+      },
+      "kind": "perceive",
+      "place": "stream",
+      "text": "His senses became preternaturally keen: ripples, forest, leaves, insects, dewdrops, gnats, a fish.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P22"
+      ],
+      "frame": "farquhar-vision"
+    },
+    {
+      "id": "v05",
+      "when": {
+        "seq": 104
+      },
+      "kind": "perceive",
+      "place": "stream",
+      "text": "He saw the soldiers on the bridge shouting and pointing, the captain with his pistol drawn; a sentinel fired and missed, his gray eye through the sights.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        },
+        {
+          "id": "captain",
+          "role": "subject"
+        },
+        {
+          "id": "sentinels",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P23",
+        "P24"
+      ],
+      "frame": "farquhar-vision"
+    },
+    {
+      "id": "v06",
+      "when": {
+        "seq": 105
+      },
+      "kind": "act",
+      "place": "stream",
+      "text": "The lieutenant's chant of commands rang out; Farquhar dived; a volley's flattened bullets fell around him; later the soldiers reloaded, the sentinels fired again, and a cannon shot plashed within two yards.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        },
+        {
+          "id": "lieutenant",
+          "role": "agent"
+        },
+        {
+          "id": "company",
+          "role": "agent"
+        }
+      ],
+      "src": [
+        "P25",
+        "P26",
+        "P27",
+        "P28",
+        "P29",
+        "P30",
+        "P31",
+        "P32"
+      ],
+      "frame": "farquhar-vision",
+      "says": "Attention, company! Shoulder arms! Ready! Aim! Fire!"
+    },
+    {
+      "id": "v07",
+      "when": {
+        "seq": 106
+      },
+      "kind": "act",
+      "place": "stream",
+      "text": "He was whirled in a vortex and flung on the gravel of the south bank, hidden from his enemies; the sand looked like gems and the trees like garden plants; a grapeshot's whiz roused him and he ran into the forest.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P33",
+        "P34"
+      ],
+      "frame": "farquhar-vision"
+    },
+    {
+      "id": "v08",
+      "when": {
+        "seq": 107
+      },
+      "kind": "act",
+      "place": null,
+      "text": "All that day he traveled through an interminable forest, found at nightfall a wide, straight, untraveled road under unfamiliar stars, and heard whispers in an unknown tongue.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P35",
+        "P36"
+      ],
+      "frame": "farquhar-vision",
+      "note": "the journey of a day and a night, at 'about thirty miles'"
+    },
+    {
+      "id": "v09",
+      "when": {
+        "seq": 108
+      },
+      "kind": "sensation",
+      "place": null,
+      "text": "His neck was swollen and bruised, his tongue swollen with thirst, his eyes could not close.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        }
+      ],
+      "src": [
+        "P37"
+      ],
+      "frame": "farquhar-vision",
+      "grounded_in": [
+        "e13"
+      ],
+      "note": "the bruise from the rope"
+    },
+    {
+      "id": "v10",
+      "when": {
+        "seq": 109
+      },
+      "kind": "act",
+      "place": "farquhar-home",
+      "text": "He seemed to wake and stood at the gate of his home in the morning sun; his wife came down from the veranda to meet him with a smile of ineffable joy; as he sprang forward to embrace her he felt a stunning blow upon the neck and a blinding white light like a cannon, and then darkness and silence.",
+      "who": [
+        {
+          "id": "farquhar",
+          "role": "experiencer"
+        },
+        {
+          "id": "wife",
+          "role": "subject"
+        }
+      ],
+      "src": [
+        "P38"
+      ],
+      "frame": "farquhar-vision",
+      "grounded_in": [
+        "e13"
+      ],
+      "tense": "present",
+      "note": "the telling shifts to the present tense; the blow is the neck breaking"
+    }
+  ],
+  "held": [
+    {
+      "id": "h-p01",
+      "who": "farquhar",
+      "stance": "anticipates",
+      "content": "Farquhar thought he might free his hands, throw off the noose, dive, swim under the bullets to the bank and the woods and get home, which was outside the invader's lines.",
+      "when": {
+        "seq": 12
+      },
+      "src": [
+        "P06"
+      ]
+    }
+  ],
+  "knowledge": [
+    {
+      "who": "farquhar",
+      "of": "c-scout-confederate",
+      "stance": "believes",
+      "from": "e01",
+      "until": null,
+      "how": "witnessed",
+      "source": "scout",
+      "src": [
+        "P10",
+        "P18"
+      ],
+      "status": "implied",
+      "note": "he treats the rider as a friend; his belief is never stated"
+    },
+    {
+      "who": "farquhar",
+      "of": "e06",
+      "stance": "unaware",
+      "from": "e01",
+      "until": null,
+      "src": [
+        "P18"
+      ],
+      "note": "never learns it"
+    },
+    {
+      "who": "wife",
+      "of": "e06",
+      "stance": "unaware",
+      "from": "e01",
+      "until": null,
+      "src": [
+        "P18"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "farquhar",
+      "of": "c-driftwood",
+      "stance": "believes",
+      "from": "e04",
+      "until": "e12",
+      "how": "told",
+      "source": "scout",
+      "src": [
+        "P17"
+      ]
+    },
+    {
+      "who": "farquhar",
+      "of": "e02",
+      "stance": "knows",
+      "from": "e02",
+      "how": "told",
+      "source": "scout",
+      "src": [
+        "P11"
+      ]
+    },
+    {
+      "who": "farquhar",
+      "of": "c-escaped",
+      "stance": "believes",
+      "from": "v02",
+      "until": "e13",
+      "how": "inferred",
+      "src": [
+        "P20",
+        "P38"
+      ],
+      "note": "inside the vision he believes he is escaping and then home"
+    },
+    {
+      "who": "reader",
+      "of": "c-escaped",
+      "stance": "believes",
+      "from": "para:P20",
+      "until": "para:P39",
+      "src": [
+        "P20",
+        "P39"
+      ],
+      "note": "the narration gives no sign the vision is not actual until the present tense at P38 and the last paragraph"
+    },
+    {
+      "who": "reader",
+      "of": "e06",
+      "stance": "unaware",
+      "from": "para:P10",
+      "until": "para:P10",
+      "src": [
+        "P10",
+        "P18"
+      ],
+      "note": "until the last sentence of the scene"
+    },
+    {
+      "who": "reader",
+      "of": "e13",
+      "stance": "unaware",
+      "from": "start",
+      "until": "para:P39",
+      "src": [
+        "P39"
+      ]
+    },
+    {
+      "who": "scout",
+      "of": "c-trap",
+      "stance": "knows",
+      "from": "e01",
+      "src": [
+        "P18"
+      ],
+      "status": "implied"
+    },
+    {
+      "who": "captain",
+      "of": "e13",
+      "stance": "knows",
+      "from": "e13",
+      "how": "witnessed",
+      "src": [
+        "P39"
+      ],
+      "status": "implied"
+    }
+  ],
+  "states": [
+    {
+      "of": "farquhar",
+      "kind": "appearance",
+      "value": "about thirty-five; planter's dress, frock-coat; straight nose, firm mouth, broad forehead, long dark hair, mustache and pointed beard, large dark gray kindly eyes",
+      "src": [
+        "P03"
+      ],
+      "id": "s00"
+    },
+    {
+      "of": "farquhar",
+      "kind": "background",
+      "value": "well-to-do planter of an old, respected Alabama family; slave owner; politician; original secessionist",
+      "src": [
+        "P09"
+      ],
+      "id": "s01"
+    },
+    {
+      "of": "farquhar",
+      "kind": "location",
+      "value": "plantation-gate",
+      "from": "start",
+      "until": "e07",
+      "src": [
+        "P10"
+      ],
+      "id": "s02"
+    },
+    {
+      "of": "farquhar",
+      "kind": "location",
+      "value": "bridge-platform",
+      "from": "e08",
+      "until": "e14",
+      "src": [
+        "P01"
+      ],
+      "id": "s03"
+    },
+    {
+      "of": "farquhar",
+      "kind": "restraint",
+      "value": "wrists bound with a cord; noose around neck",
+      "from": "e08",
+      "until": "e13",
+      "src": [
+        "P01"
+      ],
+      "id": "s04"
+    },
+    {
+      "of": "farquhar",
+      "kind": "life",
+      "value": "dead",
+      "from": "e13",
+      "src": [
+        "P39"
+      ],
+      "id": "s05"
+    },
+    {
+      "of": "driftwood",
+      "kind": "location",
+      "value": "against the wooden pier at the south end of the bridge",
+      "from": "start",
+      "src": [
+        "P17"
+      ],
+      "status": "claimed",
+      "id": "s06"
+    },
+    {
+      "of": "bridge-platform",
+      "kind": "description",
+      "value": "a railroad bridge over a swift stream twenty feet below; loose boards on the sleepers as a footing; railroad runs into forest a hundred yards then curves",
+      "src": [
+        "P01",
+        "P02"
+      ],
+      "id": "s07"
+    },
+    {
+      "of": "north-bank",
+      "kind": "description",
+      "value": "open ground, a gentle slope topped by a loop-holed stockade with a brass cannon in an embrasure commanding the bridge",
+      "src": [
+        "P02"
+      ],
+      "id": "s08"
+    },
+    {
+      "of": "sergeant",
+      "kind": "background",
+      "value": "in civil life may have been a deputy sheriff (a guess)",
+      "src": [
+        "P01"
+      ],
+      "status": "conjecture",
+      "id": "s09"
+    }
+  ],
+  "readings": [
+    {
+      "id": "r-etiquette",
+      "holder": "narrator",
+      "text": "Death is a dignitary to be received with formal respect; in military etiquette silence and fixity are deference.",
+      "status": "stated",
+      "supports": [
+        "e09"
+      ],
+      "src": [
+        "P02"
+      ]
+    },
+    {
+      "id": "r-gentleman",
+      "holder": "narrator",
+      "text": "The condemned man is no vulgar assassin: the military code provides for hanging gentlemen too.",
+      "status": "stated",
+      "supports": [
+        "e09"
+      ],
+      "src": [
+        "P03"
+      ]
+    },
+    {
+      "id": "r-vision",
+      "holder": "reader",
+      "text": "Section III is a vision during the fall, not events: the clues are the tense shift, the impossible senses, the 'unfamiliar stars', the cannon-sound of the last blow and the final paragraph.",
+      "status": "implied",
+      "supports": [
+        "e12",
+        "e13",
+        "v10"
+      ],
+      "src": [
+        "P38",
+        "P39"
+      ]
+    },
+    {
+      "id": "r-bait",
+      "holder": "reader",
+      "text": "The 'Confederate' rider is a trap: his information is exactly the bait that draws Farquhar to the bridge.",
+      "status": "implied",
+      "supports": [
+        "e04",
+        "e06",
+        "e07"
+      ],
+      "src": [
+        "P18"
+      ]
+    }
+  ],
+  "gaps_found": [
+    "v1: the vision is only expressible as a few events whose perception is marked mistaken; its places, a day and a night of felt time, and its pairing with the real noose are lost",
+    "v1: the capture and the sentence are never narrated; v1 has to invent two events, with nothing marking them as implied",
+    "v1: whether the scout's claims are true is unknowable; accuracy has no 'unknown' value",
+    "v1: a belief has no accuracy, so Farquhar's false belief about the rider had to go through a perception of the rider; the reader's mistaken belief has nowhere to live",
+    "v1: no time anchor 'after the fall of Corinth'; starting_time is an invented instant"
+  ]
+}

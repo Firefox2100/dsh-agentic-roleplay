@@ -1,0 +1,31 @@
+{
+  "id": "loisel",
+  "name": "M. Loisel",
+  "role": "npc",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A little clerk at the Ministry of Public Instruction, economical and fond of his wife.",
+  "start": {
+    "public_state": "Home from the office.",
+    "activity": "Eating his soup.",
+    "inner_state": "Pleased with a fine opportunity he has got for her.",
+    "location": "loisel-flat",
+    "variables": {
+      "francs": 18400
+    }
+  },
+  "gender": "male",
+  "pronouns": "he/him",
+  "personality": "Mild, thrifty, anxious to please her.",
+  "background": "Has 18,000 francs left him by his father and is saving 400 for a gun to shoot larks at Nanterre on Sundays.",
+  "relationships": [
+    {
+      "to": "mathilde",
+      "label": "wife",
+      "familiarity": 0.9,
+      "trust": 0.8,
+      "affinity": 0.8,
+      "tension": 0.1
+    }
+  ]
+}

@@ -10,6 +10,7 @@ import { PlotsPanel } from './PlotsPanel.tsx'
 import { PacksPanel } from './PacksPanel.tsx'
 import { CheckpointsPanel } from './CheckpointsPanel.tsx'
 import { TriggersPanel } from './TriggersPanel.tsx'
+import { ClaimsPanel } from './ClaimsPanel.tsx'
 import { InfoPanel } from './InfoPanel.tsx'
 import { PromptsPanel } from './PromptsPanel.tsx'
 import { RoutinesPanel } from './RoutinesPanel.tsx'
@@ -47,6 +48,7 @@ const SECTIONS = [
   { id: 'plots', label: 'plots', built: true },
   { id: 'triggers', label: 'trig_title', built: true },
   { id: 'relations', label: 'relationships', built: true },
+  { id: 'claims', label: 'cl_title', built: true, story: true },
   { id: 'routines', label: 'sectionRoutines', built: true, ownFiles: true },
   { id: 'calendar', label: 'sectionCalendar', built: true, ownFiles: true },
   { id: 'variables', label: 'sectionVariables', built: true, ownFiles: true },
@@ -57,7 +59,7 @@ const SECTIONS = [
   { id: 'interface', label: 'pk_title', built: true, ownFiles: true },
   { id: 'images', label: 'sectionImages', built: true, ownFiles: true },
   { id: 'checkpoints', label: 'cp_title', built: true, ownFiles: true },
-] as const satisfies readonly { id: string; label: WorldLocaleKey; built: boolean; ownFiles?: boolean }[]
+] as const satisfies readonly { id: string; label: WorldLocaleKey; built: boolean; ownFiles?: boolean; story?: boolean }[]
 
 /**
  * The world as it can be authored: a drawer of its parts and the part that is open. It reads from and saves to a source, so the same
@@ -66,7 +68,7 @@ const SECTIONS = [
 export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = true, focus, onInfoSaved }: { t: Translate; source: WorldSource; notEditable: string; /** Shows just these parts, without the drawer when it is one. */ only?: readonly SectionId[]; warnNoPlayable?: boolean; /** The character that is open first. */ focus?: string; /** Called after the world's own information was saved. */ onInfoSaved?: () => void }) {
   const [load, setLoad] = useState<Load>({ status: 'loading' })
   const [section, setSection] = useState<SectionId>(only?.[0] ?? (focus !== undefined || source.worldId === undefined ? 'characters' : 'info'))
-  const sections = SECTIONS.filter(entry => (only === undefined || only.includes(entry.id)) && (!('ownFiles' in entry) || source.worldId !== undefined))
+  const sections = SECTIONS.filter(entry => (only === undefined || only.includes(entry.id)) && (!('ownFiles' in entry) || source.worldId !== undefined) && (!('story' in entry) || source.claims !== undefined))
   const [reload, setReload] = useState(0)
 
   useEffect(() => {
@@ -135,6 +137,7 @@ export function WorldEditor({ t, source, notEditable, only, warnNoPlayable = tru
         {section === 'lore' && <LorePanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'plots' && <PlotsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'triggers' && <TriggersPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
+        {section === 'claims' && source.claims !== undefined && <ClaimsPanel t={t} api={source.claims} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
         {section === 'relations' && <RelationsPanel t={t} world={load.world} source={source} onChanged={changed} actions={<Button variant="ghost" size="sm" icon={<IconRefresh />} onClick={refresh}>{t('editorRefresh')}</Button>} />}
       </div>
     </div>

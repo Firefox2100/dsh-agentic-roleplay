@@ -1,0 +1,14 @@
+{
+  "id": "visitors",
+  "name": "Mother, Nellie and the children",
+  "role": "npc",
+  "kind": "group",
+  "tier": "background",
+  "summary": "The relatives who come to stay a week after the Fourth of July.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "town"
+  }
+}

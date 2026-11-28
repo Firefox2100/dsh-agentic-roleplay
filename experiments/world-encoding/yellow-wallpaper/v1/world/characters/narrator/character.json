@@ -1,0 +1,38 @@
+{
+  "id": "narrator",
+  "name": "The narrator",
+  "role": "playable",
+  "kind": "person",
+  "tier": "principal",
+  "summary": "A young wife and mother under a rest cure for 'temporary nervous depression', forbidden to write; she keeps a secret diary.",
+  "start": {
+    "public_state": "Resting in the nursery.",
+    "activity": "Following the wallpaper pattern with her eyes.",
+    "inner_state": "Irritable, tired, and secretly interested in the paper.",
+    "location": "nursery"
+  },
+  "gender": "female",
+  "pronouns": "she/her",
+  "personality": "Imaginative, anxious, dutiful; she conceals what she feels and learns to conceal more.",
+  "background": "Her husband and her brother are physicians; both say there is nothing really the matter and that work is forbidden. She believes congenial work and society would do her good. She is nameless in the text (a single 'Jane' near the end may be her).",
+  "appearance": "Not described.",
+  "relationships": [
+    {
+      "to": "john",
+      "label": "husband",
+      "summary": "He is careful and loving and treats her as a patient and a child; she is grateful, guilty and secretly resentful.",
+      "familiarity": 0.9,
+      "trust": 0.6,
+      "affinity": 0.7,
+      "tension": 0.4
+    },
+    {
+      "to": "jennie",
+      "label": "sister-in-law",
+      "familiarity": 0.5,
+      "trust": 0.6,
+      "affinity": 0.6,
+      "tension": 0.2
+    }
+  ]
+}

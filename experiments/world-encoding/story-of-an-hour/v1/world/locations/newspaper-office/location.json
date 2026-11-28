@@ -1,0 +1,12 @@
+{
+  "id": "newspaper-office",
+  "name": "The newspaper office",
+  "description": "Where dispatches and telegrams come in.",
+  "exits": [
+    {
+      "to": "house-downstairs",
+      "description": "the street to the Mallard house",
+      "travel_time_seconds": 900
+    }
+  ]
+}

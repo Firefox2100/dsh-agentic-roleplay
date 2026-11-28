@@ -1,0 +1,7 @@
+{
+  "id": "invitation",
+  "name": "The invitation card",
+  "description": "'The Minister of Public Instruction and Mme. Georges Ramponneau request the honor of M. and Mme. Loisel's company at the palace of the Ministry on Monday evening, January 18th.'",
+  "held_by": "loisel",
+  "unique": true
+}

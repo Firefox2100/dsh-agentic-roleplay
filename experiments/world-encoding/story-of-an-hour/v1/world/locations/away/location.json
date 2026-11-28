@@ -1,0 +1,12 @@
+{
+  "id": "away",
+  "name": "Away",
+  "description": "Somewhere else, unspecified: wherever Brently is until he comes home. The text names no place.",
+  "exits": [
+    {
+      "to": "house-downstairs",
+      "description": "the way home",
+      "travel_time_seconds": 1800
+    }
+  ]
+}

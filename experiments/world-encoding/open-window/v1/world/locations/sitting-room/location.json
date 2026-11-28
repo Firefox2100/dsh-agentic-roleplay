@@ -1,0 +1,30 @@
+{
+  "id": "sitting-room",
+  "name": "The sitting-room",
+  "parent": "house",
+  "description": "A room with an undefinable air of masculine habitation, and a large French window opening onto the lawn, wide open though it is an October afternoon.",
+  "features": [
+    {
+      "id": "french-window",
+      "name": "The French window",
+      "description": "A large window opening onto the lawn; the Sappleton men always come in this way."
+    }
+  ],
+  "exits": [
+    {
+      "to": "lawn",
+      "description": "the open French window",
+      "travel_time_seconds": 5
+    },
+    {
+      "to": "hall",
+      "description": "the door to the hall",
+      "travel_time_seconds": 10
+    },
+    {
+      "to": "rest-of-house",
+      "description": "the door to the rest of the house",
+      "travel_time_seconds": 15
+    }
+  ]
+}

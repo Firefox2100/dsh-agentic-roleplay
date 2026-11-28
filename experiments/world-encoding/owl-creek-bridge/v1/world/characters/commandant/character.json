@@ -1,0 +1,14 @@
+{
+  "id": "commandant",
+  "name": "The commandant",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "The Federal officer who ordered that civilians interfering with the railroad be hanged; never seen.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "fort"
+  }
+}

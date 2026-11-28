@@ -69,6 +69,17 @@ describe('relationships', () => {
   })
 })
 
+describe('the world lint and concealment', () => {
+  it('warns about an event kept from a character who also took it in, and says nothing once that is mended', () => {
+    const event = store.edit({ turn: 2, events: [{ turn: 2, round: 1, text: 'Alice hides the letter.', importance: 3, involves: ['alice'], perceivedBy: [{ character: 'alice', mode: 'witnessed' }, { character: 'bob', mode: 'witnessed' }] }] }).eventIds[0]!
+    expect(lintWorld(store).filter(finding => finding.code === 'hidden-but-perceived')).toEqual([])
+    store.edit({ turn: 2, concealments: [{ event, from: 'bob' }] })
+    expect(lintWorld(store).filter(finding => finding.code === 'hidden-but-perceived')).toEqual([{ severity: 'warning', code: 'hidden-but-perceived', subject: { kind: 'event', key: String(event) }, message: `event ${event} is recorded as kept from Bob, who also has a perception of it` }])
+    store.edit({ turn: 2, concealments: [{ event, from: 'bob', lift: true }] })
+    expect(lintWorld(store).filter(finding => finding.code === 'hidden-but-perceived')).toEqual([])
+  })
+})
+
 describe('making up characters', () => {
   it('creates the character with its state and place, played by an agent, and queues it to be fitted into the world', () => {
     const result = store.edit({

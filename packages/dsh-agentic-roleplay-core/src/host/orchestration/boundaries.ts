@@ -148,6 +148,8 @@ export interface CharacterRequest {
   upcoming?: readonly { text: string; when?: string }[]
   /** What is tracked of the character that it can tell (its feelings and whatever else is its own or public), and what it can tell of those here. */
   tracked?: { self: string; others: { name: string; text: string }[] }
+  /** What it has heard said that the story has settled as worth weighing, and how each stands by the events it took in itself. */
+  heard?: readonly { text: string; by?: string; standing: ClaimVerdict }[]
 }
 
 /** A character's profile of someone present, as it is told to it. */
@@ -331,7 +333,7 @@ export interface Recaller {
 
 /** The state of the scene the game master is told at the start of a turn. */
 export interface SceneContextProvider {
-  scene(input: { /** What the story keeps track of, as lines. */ tracked?: readonly string[]; /** What time it is, and how long the story went on without the player when time follows the wall clock; and what the days of the characters say. */ time?: { now: StoryTime; away?: number; agenda?: SceneAgenda }; /** What the world did since the last turn, and what the game master has still to weave in; and what is known beforehand of what is coming. */ world?: { happened: string[]; beats: { id: number; text: string }[]; upcoming?: { text: string; who: string; when?: string }[] }; cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems; /** The language of the chat's instructions (English when left out). */ language?: string; /** Told how the notice was made, for the turn's trace. */ report?: SceneReport }): string
+  scene(input: { /** What the story keeps track of, as lines. */ tracked?: readonly string[]; /** How many claims the record keeper proposed that nobody has settled, when the game master may settle them. */ unsettled?: number; /** What time it is, and how long the story went on without the player when time follows the wall clock; and what the days of the characters say. */ time?: { now: StoryTime; away?: number; agenda?: SceneAgenda }; /** What the world did since the last turn, and what the game master has still to weave in; and what is known beforehand of what is coming. */ world?: { happened: string[]; beats: { id: number; text: string }[]; upcoming?: { text: string; who: string; when?: string }[] }; cast: readonly CastMember[]; turn: number; /** What the player just did or said. */ input: string; /** Its vector, when stored vectors exist to compare with. */ queryVector?: readonly number[]; story: TurnStore['story']; /** What is where, for the scene. */ items?: SceneItems; /** The language of the chat's instructions (English when left out). */ language?: string; /** Told how the notice was made, for the turn's trace. */ report?: SceneReport }): string
 }
 
 /** What the scene provider says of how it made the notice: the sections it wrote and what it chose to remind the game master of. */
@@ -347,7 +349,7 @@ export interface SceneItems {
 }
 
 /** Why the game master may ask for something to be made up: the story genuinely needs it. */
-import type { AuthoringNeed } from 'dsh-roleplay-model'
+import type { AuthoringNeed, Verdict as ClaimVerdict } from 'dsh-roleplay-model'
 export { AUTHORING_NEEDS, type AuthoringNeed } from 'dsh-roleplay-model'
 
 export interface CreateJob {
@@ -612,7 +614,7 @@ export interface TriggerReport {
 /** Where a turn reads the cast and writes what it decided. */
 export interface TurnStore {
   /** What the story has recorded: events, what characters know, threads and summaries. */
-  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'triggers' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers' | 'dice' | 'transaction'>
+  readonly story: Pick<Session, 'metadata' | 'characters' | 'factions' | 'factionStates' | 'factionMemberships' | 'factionRelationships' | 'factionIntents' | 'lore' | 'events' | 'memories' | 'threads' | 'summaries' | 'recallRanked' | 'searchEvents' | 'edit' | 'records' | 'locations' | 'placements' | 'relationships' | 'knowledge' | 'consolidation' | 'planMove' | 'planKnownMove' | 'items' | 'slots' | 'triggers' | 'intents' | 'routines' | 'engagements' | 'clock' | 'variables' | 'triggers' | 'dice' | 'claims' | 'concealment' | 'groups' | 'transaction'>
   cast(): CastMember[]
   /** What the chat's settings say now; read at each round, so a change applies at once. */
   settings(): ChatSettings
@@ -634,6 +636,8 @@ export interface TurnStore {
   endRound(turn: number, round: number, stated?: number, minimum?: number): { from: number; to: number; zone: string; moved: RoutineMove[] }
   /** Skips ahead in the story's time. @throws {ClockError} */
   skipTime(turn: number, round: number, request: SkipRequest): { from: number; to: number; zone: string; reason: string; moved: RoutineMove[] }
+  /** Settled claims the character heard that bear on the moment, with the standing its own events give them. */
+  heardBy?(characterId: Character['id'], situation: string, presentIds: readonly number[]): { text: string; by?: string; standing: ClaimVerdict }[]
   /** What is tracked that a character can tell: of itself, and of those with it. */
   trackedFor(characterId: Character['id'], presentIds: readonly number[]): { self: string; others: { name: string; text: string }[] }
   /** What the story tracks, as the game master is told it: the scene first (who is with the player, the place, what lies there, the world), then the rest. */

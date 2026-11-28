@@ -1,0 +1,13 @@
+{
+  "id": "rest-of-house",
+  "name": "The rest of the house",
+  "parent": "house",
+  "description": "PLACEHOLDER: wherever Mrs. Sappleton is before she bustles in.",
+  "exits": [
+    {
+      "to": "sitting-room",
+      "description": "the sitting-room door",
+      "travel_time_seconds": 15
+    }
+  ]
+}

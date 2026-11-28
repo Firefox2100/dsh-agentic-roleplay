@@ -1,0 +1,18 @@
+{
+  "id": "hall",
+  "name": "The hall",
+  "parent": "house",
+  "description": "The hall inside the front door.",
+  "exits": [
+    {
+      "to": "sitting-room",
+      "description": "the sitting-room door",
+      "travel_time_seconds": 10
+    },
+    {
+      "to": "drive",
+      "description": "the hall door",
+      "travel_time_seconds": 20
+    }
+  ]
+}

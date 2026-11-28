@@ -9,11 +9,11 @@ export interface LintFinding {
   /** An error leaves the world inconsistent (nobody can get to a place, two characters share a name); a warning is something that should be fitted in; an info is only worth knowing. */
   severity: LintSeverity
   code: string
-  subject: { kind: 'character' | 'location' | 'exit' | 'relationship' | 'item'; key: string }
+  subject: { kind: 'character' | 'location' | 'exit' | 'relationship' | 'item' | 'event'; key: string }
   message: string
 }
 
-export type LintTarget = Pick<RecordsTarget, 'characters' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'items'>
+export type LintTarget = Pick<RecordsTarget, 'characters' | 'locations' | 'placements' | 'relationships' | 'consolidation' | 'items' | 'events' | 'concealment'>
 
 /**
  * What is inconsistent or unfinished in the world's graph of places and characters. Things made up in
@@ -116,6 +116,15 @@ export function lintWorld(target: LintTarget): LintFinding[] {
     const from = placeById.get(exit.fromId)
     const to = placeById.get(exit.toId)
     if (from !== undefined && to !== undefined) findings.push({ severity: 'info', code: 'lock-without-key', subject: { kind: 'exit', key: `${keyOfPlace(from)}->${keyOfPlace(to)}` }, message: `the way from ${from.name} to ${to.name} is locked and nothing says what opens it` })
+  }
+  for (const event of target.events.list()) {
+    const hidden = target.concealment.hiddenFrom(event.id)
+    if (hidden.length === 0) continue
+    const perceivers = new Set(target.events.perceptionsOf(event.id).map(perception => perception.characterId))
+    for (const characterId of hidden.filter(id => perceivers.has(id))) {
+      const who = characters.find(character => character.id === characterId)
+      findings.push({ severity: 'warning', code: 'hidden-but-perceived', subject: { kind: 'event', key: String(event.id) }, message: `event ${event.id} is recorded as kept from ${who?.name ?? characterId}, who also has a perception of it` })
+    }
   }
   const order = { error: 0, warning: 1, info: 2 } as const
   return findings.sort((a, b) => order[a.severity] - order[b.severity])

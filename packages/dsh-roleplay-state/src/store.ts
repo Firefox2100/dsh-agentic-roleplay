@@ -13,13 +13,14 @@ import type {
   ClockRepository, VariableRepository, EngagementRepository, TriggerRepository, DiceRepository, RoutineRepository, CharacterRepository, CharacterStateRepository, EventRepository, IntentRepository, MemoryRepository, MetadataRepository,
   ConsolidationRepository, ItemRepository, KnowledgeRepository, LocationRepository, PendingCommitRepository, RelationshipRepository, PlacementRepository, RecallIndexRepository, SlotRepository, SummaryRepository, ThreadRepository, VectorSupport, VisualIdentityRepository,
   FactionRepository, FactionStateRepository, FactionMembershipRepository, FactionRelationshipRepository, FactionIntentRepository,
-  LoreRepository,
+  LoreRepository, ClaimRepository, ConcealmentRepository, GroupRepository,
 } from './repositories.ts'
 import { denseScore, finishRecall, recall, recallCandidates, recallPool, type RecallPool, type MemoryPolicy, type RecallCandidate, type RecallEvidence, type RecallQuery, type Recalled } from './memory/recall.ts'
 import { applyRecordsEdit, type EditResult, type RecordsEdit } from './records/edit.ts'
 import { readRecords, type RecordsScope, type RecordsView } from './records/read.ts'
 import { SqliteEventRepository } from './sqlite/event-repository.ts'
 import { SqliteMemoryRepository } from './sqlite/memory-repository.ts'
+import { SqliteClaimRepository, SqliteConcealmentRepository, SqliteGroupRepository } from './sqlite/claim-repositories.ts'
 import { SqlitePendingCommitRepository, SqliteSummaryRepository, SqliteThreadRepository } from './sqlite/narrative-repositories.ts'
 import { SqliteRecallIndex } from './sqlite/recall-index.ts'
 import { SqliteEngagementRepository, SqliteRoutineRepository } from './sqlite/agenda-repositories.ts'
@@ -66,6 +67,9 @@ export interface SessionStore {
   readonly events: EventRepository
   readonly memories: MemoryRepository
   readonly threads: ThreadRepository
+  readonly claims: ClaimRepository
+  readonly concealment: ConcealmentRepository
+  readonly groups: GroupRepository
   readonly summaries: SummaryRepository
   readonly pendingCommits: PendingCommitRepository
   readonly locations: LocationRepository
@@ -159,6 +163,9 @@ class SqliteSessionStore implements SessionStore {
   readonly events: EventRepository
   readonly memories: MemoryRepository
   readonly threads: ThreadRepository
+  readonly claims: ClaimRepository
+  readonly concealment: ConcealmentRepository
+  readonly groups: GroupRepository
   readonly summaries: SummaryRepository
   readonly pendingCommits: PendingCommitRepository
   readonly locations: LocationRepository
@@ -210,6 +217,9 @@ class SqliteSessionStore implements SessionStore {
     this.events = this.eventRepository
     this.memories = new SqliteMemoryRepository(db, clock, this.recallIndex)
     this.threads = new SqliteThreadRepository(db, clock)
+    this.claims = new SqliteClaimRepository(db, clock)
+    this.concealment = new SqliteConcealmentRepository(db)
+    this.groups = new SqliteGroupRepository(db)
     this.summaries = new SqliteSummaryRepository(db, clock)
     this.pendingCommits = new SqlitePendingCommitRepository(db, clock)
   }

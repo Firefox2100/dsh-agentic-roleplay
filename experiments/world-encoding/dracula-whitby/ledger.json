@@ -1,0 +1,454 @@
+[
+ {
+  "ref": "P01-P05",
+  "quote": "CHAPTER VII. CUTTING FROM “THE DAILYGRAPH,” 8 AUGUST (Pasted in Mina Murray’s Journal.) From a Correspondent. Whitby.",
+  "v2": {
+   "class": "E",
+   "where": "e-cutting-written (kind document, epoch none); e-cutting-pasted (after e-mina-harbour)"
+  },
+  "note": "three layers of telling begin here: the correspondent, the paste and, inside, the log"
+ },
+ {
+  "ref": "P06.1",
+  "quote": "One of the greatest and suddenest storms on record ... Saturday evening was as fine as was ever known ... holiday-makers ... Mulgrave Woods, Robin Hood’s Bay",
+  "v2": {
+   "class": "E",
+   "where": "e-saturday-fine"
+  }
+ },
+ {
+  "ref": "P06.2",
+  "quote": "some of the gossips who frequent the East Cliff churchyard ... mares’-tails ... the coastguard on duty at once made report ... one old fisherman ... foretold ... a sudden storm",
+  "v2": {
+   "class": "E",
+   "where": "e-mares-tails"
+  }
+ },
+ {
+  "ref": "P06.3",
+  "quote": "The approach of sunset was so very beautiful ... myriad clouds of every sunset-colour ... More than one captain made up his mind ... would remain in the harbour",
+  "v2": {
+   "class": "S",
+   "where": "e-sunset-watch (the colours are text)"
+  },
+  "note": "a description, with a decision (boats stay in harbour) inside it"
+ },
+ {
+  "ref": "P06.4",
+  "quote": "The wind fell away ... at midnight there was a dead calm ... The only sail noticeable was a foreign schooner with all sails set ... efforts were made to signal her to reduce sail",
+  "v2": {
+   "class": "E",
+   "where": "e-schooner-seen-early; e-stillness"
+  },
+  "note": "the foolhardiness comment is text"
+ },
+ {
+  "ref": "P07",
+  "quote": "“As idle as a painted ship upon a painted ocean.”",
+  "v2": {
+   "class": "P",
+   "where": "-"
+  },
+  "note": "a quotation used as a figure"
+ },
+ {
+  "ref": "P08",
+  "quote": "Shortly before ten o’clock the stillness ... the band on the pier ... A little after midnight came a strange sound from over the sea",
+  "v2": {
+   "class": "E",
+   "where": "e-stillness; e-storm-breaks (start)"
+  }
+ },
+ {
+  "ref": "P09.1",
+  "quote": "Then without warning the tempest broke ... the waves rose in growing fury ... It was found necessary to clear the entire piers from the mass of onlookers",
+  "v2": {
+   "class": "E",
+   "where": "e-storm-breaks; s-storm"
+  }
+ },
+ {
+  "ref": "P09.2",
+  "quote": "masses of sea-fog came drifting inland ... the spirits of those lost at sea were touching their living brethren with the clammy hands of death",
+  "v2": {
+   "class": "P",
+   "where": "s-storm (fog as a state)"
+  },
+  "note": "the spirits figure is voice"
+ },
+ {
+  "ref": "P10",
+  "quote": "Some of the scenes thus revealed were of immeasurable grandeur ... the new searchlight ... a fishing-boat ... rushed into the harbour ... a shout of joy",
+  "v2": {
+   "class": "E",
+   "where": "e-searchlight-sweeps"
+  },
+  "note": "the grandeur is voice"
+ },
+ {
+  "ref": "P11.1",
+  "quote": "Before long the searchlight discovered some distance away a schooner with all sails set ... the great flat reef ... “she must fetch up somewhere, if it was only in hell.”",
+  "v2": {
+   "class": "E",
+   "where": "e-schooner-in-danger"
+  },
+  "note": "the old salt's line is voice"
+ },
+ {
+  "ref": "P11.2",
+  "quote": "then, mirabile dictu, between the piers, leaping from wave to wave ... lashed to the helm was a corpse ... pitched herself on that accumulation of sand ... Tate Hill Pier.",
+  "v2": {
+   "class": "E",
+   "where": "e-demeter-beaches; s-schooner-aground; s-corpse-at-wheel"
+  }
+ },
+ {
+  "ref": "P12",
+  "quote": "an immense dog sprang up on deck from below ... jumped from the bow on the sand. Making straight for the steep cliff ... it disappeared in the darkness",
+  "v2": {
+   "class": "E",
+   "where": "e-dog-leaps; s-dog-loose"
+  },
+  "note": "whose dog it is is not said; the later reader knows more than this chapter does"
+ },
+ {
+  "ref": "P13.1",
+  "quote": "no one at the moment on Tate Hill Pier ... the coastguard on duty on the eastern side ... was the first to climb on board ... recoiled at once",
+  "v2": {
+   "class": "E",
+   "where": "e-coastguard-boards"
+  }
+ },
+ {
+  "ref": "P13.2",
+  "quote": "your correspondent is a fairly good runner ... By the courtesy of the chief boatman, I was ... permitted to climb on deck",
+  "v2": {
+   "class": "E",
+   "where": "e-correspondent-runs"
+  }
+ },
+ {
+  "ref": "P14.1",
+  "quote": "The man was simply fastened by his hands ... a crucifix ... the cords ... had cut the flesh to the bone",
+  "v2": {
+   "class": "E",
+   "where": "e-corpse-examined; s-corpse-at-wheel"
+  }
+ },
+ {
+  "ref": "P14.2",
+  "quote": "a doctor ... Surgeon J. M. Caffyn ... declared ... the man must have been dead for quite two days. In his pocket was a bottle ... the addendum to the log.",
+  "v2": {
+   "class": "E",
+   "where": "e-corpse-examined; c-dead-two-days"
+  }
+ },
+ {
+  "ref": "P14.3",
+  "quote": "The coastguard said the man must have tied up his own hands, fastening the knots with his teeth.",
+  "v2": {
+   "class": "E",
+   "where": "e-coastguard-says; c-captain-tied-himself"
+  }
+ },
+ {
+  "ref": "P14.4",
+  "quote": "The fact that a coastguard was the first on board may save some complications ... salvage ... mortmain ... Casabianca ... placed in the mortuary",
+  "v2": {
+   "class": "S",
+   "where": "e-corpse-removed (the removal); the salvage law is text"
+  },
+  "note": "an obligation or right (salvage) with legal terms has no field"
+ },
+ {
+  "ref": "P15-P16",
+  "quote": "Already the sudden storm is passing ... I shall send ... further details ... Whitby",
+  "v2": {
+   "class": "E",
+   "where": "e-storm-abates; h-sequel (fulfilled by e-ship-identified)"
+  }
+ },
+ {
+  "ref": "P17.1",
+  "quote": "9 August.--The sequel ... a Russian from Varna ... the Demeter ... silver sand ... great wooden boxes filled with mould ... consigned to a Whitby solicitor, Mr. S. F. Billington",
+  "v2": {
+   "class": "E",
+   "where": "e-ship-identified; c-ship-varna; s-boxes; c-storm-night-8"
+  },
+  "note": "the dateline and 'last night' conflict with Mina's journal; held as two open claims"
+ },
+ {
+  "ref": "P17.2",
+  "quote": "this morning went aboard and formally took possession ... The Russian consul ... paid all harbour dues ... the officials of the Board of Trade have been most exacting",
+  "v2": {
+   "class": "E",
+   "where": "e-billington-takes-cargo"
+  }
+ },
+ {
+  "ref": "P17.3",
+  "quote": "A good deal of interest ... the dog which landed ... S. P. C. A. ... not to be found ... may be ... on the moors ... a fierce brute",
+  "v2": {
+   "class": "E",
+   "where": "e-dog-missing; h-dog-found; s-dog-loose"
+  }
+ },
+ {
+  "ref": "P17.4",
+  "quote": "Early this morning a large dog, a half-bred mastiff ... found dead in the roadway ... throat was torn away, and its belly was slit open as if with a savage claw.",
+  "v2": {
+   "class": "E",
+   "where": "e-mastiff-found"
+  },
+  "note": "that the immense dog did it is only implied (the text says 'a savage opponent'); no claim is made for it"
+ },
+ {
+  "ref": "P18",
+  "quote": "* * * * *",
+  "v2": {
+   "class": "P",
+   "where": "-"
+  },
+  "note": "a separator"
+ },
+ {
+  "ref": "P19.1",
+  "quote": "Later.--By the kindness of the Board of Trade inspector ... the log-book of the Demeter ... the paper found in the bottle ... produced at the inquest",
+  "v2": {
+   "class": "E",
+   "where": "e-log-read"
+  }
+ },
+ {
+  "ref": "P19.2",
+  "quote": "It almost seems as though the captain had been seized with some kind of mania ... my statement must be taken cum grano ... the dictation of a clerk of the Russian consul, who kindly translated",
+  "v2": {
+   "class": "E",
+   "where": "r-mania (a reading; the provenance is in its note); knowledge correspondent read"
+  },
+  "note": "the translation and dictation are free text of the reading, not a link"
+ },
+ {
+  "ref": "P20-P22",
+  "quote": "LOG OF THE “DEMETER.” Varna to Whitby. Written 18 July, things so strange happening, that I shall keep accurate note henceforth till we land.",
+  "v2": {
+   "class": "E",
+   "where": "e-log-read; events b-* established in it"
+  },
+  "note": "the log was written from 18 July: earlier entries are written after the fact, which the date line does not carry"
+ },
+ {
+  "ref": "P23-P25",
+  "quote": "On 6 July we finished taking in cargo, silver sand and boxes of earth. At noon set sail. Crew, five hands ... two mates, cook, and myself (captain).",
+  "v2": {
+   "class": "E",
+   "where": "b-loaded; s-crew-count; s-boxes"
+  }
+ },
+ {
+  "ref": "P26-P29",
+  "quote": "On 11 July at dawn entered Bosphorus ... Backsheesh. All correct. ... On 12 July through Dardanelles ... Want us off soon.",
+  "v2": {
+   "class": "E",
+   "where": "b-bosphorus; b-dardanelles"
+  },
+  "note": "the customs officers are a group; the bribery is text"
+ },
+ {
+  "ref": "P30-P33",
+  "quote": "On 13 July passed Cape Matapan. Crew dissatisfied about something ... Mate lost temper with one of them that day and struck him.",
+  "v2": {
+   "class": "E",
+   "where": "b-crew-withholds (conceal, from the captain); b-mate-strikes; s-crew-fear"
+  }
+ },
+ {
+  "ref": "P34-P35",
+  "quote": "On 16 July mate reported ... Petrofsky, was missing ... did not go to bunk. ... they expected something of the kind",
+  "v2": {
+   "class": "E",
+   "where": "b-petrofsky-missing"
+  }
+ },
+ {
+  "ref": "P36",
+  "quote": "Olgaren ... a tall, thin man, who was not like any of the crew, come up the companion-way ... hatchways were all closed.",
+  "v2": {
+   "class": "E",
+   "where": "b-olgaren-sees; b-olgaren-confides; c-stranger-aboard"
+  },
+  "note": "the stranger is an entity with no name and no kind of being; the chapter never says what It is"
+ },
+ {
+  "ref": "P37-P39",
+  "quote": "Later in the day I got together the whole crew ... we would search from stem to stern ... First mate scowled, but said nothing.",
+  "v2": {
+   "class": "E",
+   "where": "b-search-ship"
+  },
+  "note": "the mate's folly speech is text"
+ },
+ {
+  "ref": "P40-P41",
+  "quote": "22 July.--Rough weather last three days ... Men seem to have forgotten their dread ... Passed Gibralter",
+  "v2": {
+   "class": "E",
+   "where": "b-calm"
+  }
+ },
+ {
+  "ref": "P42-P43",
+  "quote": "24 July.--There seems some doom over this ship ... another man lost ... sent a round robin",
+  "v2": {
+   "class": "E",
+   "where": "b-second-lost; r-doom"
+  },
+  "note": "the round robin is an act, a request for a double watch: held as text"
+ },
+ {
+  "ref": "P44-P45",
+  "quote": "28 July.--Four days in hell ... Second mate volunteered to steer and watch",
+  "v2": {
+   "class": "E",
+   "where": "b-maelstrom"
+  }
+ },
+ {
+  "ref": "P46-P49",
+  "quote": "29 July.--Another tragedy ... 30 July.--Last night. Rejoiced we are nearing England ... both man of watch and steersman missing",
+  "v2": {
+   "class": "E",
+   "where": "b-second-mate-lost; b-two-lost; s-crew-count"
+  },
+  "note": "the counts of who is left are text in a state"
+ },
+ {
+  "ref": "P50-P53",
+  "quote": "1 August.--Two days of fog ... They are Russian, he Roumanian. 2 August, midnight.--... a cry ... North Foreland",
+  "v2": {
+   "class": "E",
+   "where": "b-fog; b-another-gone; s-fog"
+  }
+ },
+ {
+  "ref": "P54.1",
+  "quote": "3 August.--... the mate ... whispered hoarsely, with his mouth to my ear, as though fearing the very air might hear: “It is here; I know it, now.” ... the knife went through It, empty as the air.",
+  "v2": {
+   "class": "E",
+   "where": "b-mate-sees-it; b-mate-whispers (conceal from the stranger)"
+  },
+  "note": "to hide a whisper from a thing that is claimed to be insubstantial is concealment from a possible non-person"
+ },
+ {
+  "ref": "P54.2",
+  "quote": "“It is in the hold, perhaps in one of those boxes. I’ll unscrew them one by one” ... they are invoiced as “clay” ... He is mad, stark, raving mad",
+  "v2": {
+   "class": "E",
+   "where": "b-mate-searches-hold (fulfils h-mate-opens-boxes); s-mate-mad; c-cargo-clay"
+  },
+  "note": "the captain's judgment of madness is a state, not a claim"
+ },
+ {
+  "ref": "P55-P56",
+  "quote": "It is nearly all over now ... a sudden, startled scream ... “Save me! save me!” ... sprang on the bulwark and deliberately threw himself into the sea ... It was this madman who had got rid of the men",
+  "v2": {
+   "class": "E",
+   "where": "b-mate-screams; b-mate-jumps; c-mate-killed-crew"
+  }
+ },
+ {
+  "ref": "P57-P58",
+  "quote": "4 August.--Still fog ... I saw It--Him! ... the mate was right to jump overboard",
+  "v2": {
+   "class": "E",
+   "where": "b-captain-sees-it; c-stranger-killed-crew"
+  }
+ },
+ {
+  "ref": "P58.2",
+  "quote": "I shall tie my hands to the wheel when my strength begins to fail, and along with them I shall tie that which He--It!--dare not touch ... this bottle may be found",
+  "v2": {
+   "class": "E",
+   "where": "b-captain-resolves; h-captain-ties (fulfilled by e-corpse-examined)"
+  },
+  "note": "what 'He--It' dare not touch is the crucifix: carried only by the dead man's observation event"
+ },
+ {
+  "ref": "P59-P60",
+  "quote": "Of course the verdict was an open one ... whether or not the man himself committed the murders there is now none to say ... The folk here hold almost universally that the captain is simply a hero ... public funeral",
+  "v2": {
+   "class": "E",
+   "where": "e-inquest; c-captain-killed-crew; r-captain-hero; h-funeral"
+  },
+  "note": "the funeral route (boats up the Esk, abbey steps, a hundred boat-owners) is text of the held item"
+ },
+ {
+  "ref": "P61",
+  "quote": "No trace has ever been found of the great dog ... To-morrow will see the funeral; and so will end this one more “mystery of the sea.”",
+  "v2": {
+   "class": "E",
+   "where": "e-dog-never-found (prevents h-dog-found)"
+  },
+  "note": "'ever' is the writer's later view: the dispatch reads as if from after the events"
+ },
+ {
+  "ref": "P62-P63",
+  "quote": "Mina Murray’s Journal. 8 August.--Lucy was very restless all night, and I, too, could not sleep. The storm was fearful",
+  "v2": {
+   "class": "E",
+   "where": "e-mina-night; c-storm-night-7"
+  }
+ },
+ {
+  "ref": "P63.2",
+  "quote": "she got up twice and dressed herself ... I awoke in time and managed to undress her without waking her ... It is a very strange thing, this sleep-walking",
+  "v2": {
+   "class": "E",
+   "where": "e-lucy-walk-1; e-lucy-walk-2; c-lucy-walked; s-lucy-sleepwalking; knowledge lucy unaware"
+  },
+  "note": "the general remark about her will being thwarted is part of the state's text"
+ },
+ {
+  "ref": "P64-P65",
+  "quote": "Early in the morning we both got up and went down to the harbour ... Somehow I felt glad that Jonathan was not on the sea last night, but on land. But, oh, is he on land or sea?",
+  "v2": {
+   "class": "E",
+   "where": "e-mina-harbour; c-jonathan-on-land (unresolved); h-jonathan-news; s-mina-anxious"
+  },
+  "note": "the waves 'like a bullying man going through a crowd' is a figure"
+ },
+ {
+  "ref": "P66.1",
+  "quote": "10 August.--The funeral of the poor sea-captain to-day ... Every boat ... the coffin was carried by captains ... Lucy came with me",
+  "v2": {
+   "class": "E",
+   "where": "e-funeral (fulfils h-funeral)"
+  }
+ },
+ {
+  "ref": "P66.2",
+  "quote": "poor old Mr. Swales was found dead this morning on our seat, his neck being broken ... a look of fear and horror ... Perhaps he had seen Death with his dying eyes!",
+  "v2": {
+   "class": "E",
+   "where": "e-swales-found; c-swales-fright; r-swales-saw-death"
+  },
+  "note": "whether a link joins Mr Swales's death to the ship or the dog is not said; the reader links them"
+ },
+ {
+  "ref": "P66.3",
+  "quote": "Lucy is so sweet and sensitive ... she will not admit to me that there is any cause for restlessness ... One of the men ... was followed by his dog.",
+  "v2": {
+   "class": "E",
+   "where": "e-lucy-upset; r-lucy-feels; knowledge lucy doubts"
+  },
+  "note": "'will not admit' may be concealment or lack of understanding; the text says both"
+ },
+ {
+  "ref": "P67",
+  "quote": "I think it will be best for her to go to bed tired out physically, so I shall take her for a long walk by the cliffs to Robin Hood’s Bay and back.",
+  "v2": {
+   "class": "E",
+   "where": "e-mina-plans-walk; h-mina-walk (open)"
+  }
+ }
+]

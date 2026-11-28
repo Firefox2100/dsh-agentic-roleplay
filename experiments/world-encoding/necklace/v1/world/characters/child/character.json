@@ -1,0 +1,14 @@
+{
+  "id": "child",
+  "name": "The child with Mme. Forestier",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "A child Mme. Forestier leads by the hand.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "streets"
+  }
+}

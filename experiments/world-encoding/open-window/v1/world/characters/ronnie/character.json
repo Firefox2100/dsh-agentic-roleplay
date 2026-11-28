@@ -1,0 +1,16 @@
+{
+  "id": "ronnie",
+  "name": "Ronnie",
+  "role": "npc",
+  "kind": "person",
+  "tier": "supporting",
+  "summary": "Mrs. Sappleton's youngest brother, who teases her by singing 'Bertie, why do you bound?'.",
+  "start": {
+    "public_state": "Out shooting.",
+    "activity": "Shooting snipe.",
+    "inner_state": "-",
+    "location": "marshes"
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

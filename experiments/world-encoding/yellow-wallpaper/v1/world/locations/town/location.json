@@ -1,0 +1,12 @@
+{
+  "id": "town",
+  "name": "In town and elsewhere",
+  "description": "PLACEHOLDER: wherever John is on his cases and where offstage people are.",
+  "exits": [
+    {
+      "to": "house-downstairs",
+      "description": "the road home",
+      "travel_time_seconds": 3600
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "baby",
+  "name": "The baby",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "The narrator's child; she cannot be near him because it makes her nervous.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "house-downstairs"
+  },
+  "gender": "male",
+  "pronouns": "he/him"
+}

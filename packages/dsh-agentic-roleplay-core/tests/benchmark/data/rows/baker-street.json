@@ -115,5 +115,68 @@
         "maxUnanswered": 2
       }
     }
+  },
+  {
+    "id": "baker-street-claims-en",
+    "world": "baker-street",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "A theory voiced in the room (the milk boy and the mud on the stairs) while the story goes on: the record keeper writes it as a claim, an ordinary action (opening a window) never becomes one, and the game master may settle the claim with confirm_claim, which is on unless switched off.",
+    "script": "claims-baker-en",
+    "report": [
+      "fan"
+    ],
+    "settings": {
+      "memory": {
+        "backlogRounds": 1
+      }
+    }
+  },
+  {
+    "id": "baker-street-claims-off-en",
+    "world": "baker-street",
+    "language": "en",
+    "layers": [],
+    "cast": {
+      "player": "visitor",
+      "npcs": 4
+    },
+    "features": [
+      "places",
+      "lore",
+      "variables",
+      "routines",
+      "calendar",
+      "rules",
+      "prompts"
+    ],
+    "why": "The control for claims: the game master's confirm_claim is switched off, so the voiced theory is recorded but stays proposed, for the person to settle in the story editor.",
+    "script": "claims-baker-off-en",
+    "report": [
+      "fan"
+    ],
+    "settings": {
+      "memory": {
+        "backlogRounds": 1
+      },
+      "tools": {
+        "gameMaster": {
+          "confirm_claim": false
+        }
+      }
+    }
   }
 ]

@@ -1,0 +1,18 @@
+{
+  "id": "encoding-yellow-wallpaper",
+  "name": "The Yellow Wall Paper",
+  "description": "An encoding of Charlotte Perkins Gilman's story (1892): a woman under a rest cure keeps a secret diary during a summer in a rented mansion, and becomes absorbed in the wallpaper of her room.",
+  "starting_time": "1891-06-20T12:00",
+  "time_zone": "UTC",
+  "metadata": {
+    "tags": [
+      "encoding",
+      "short-story",
+      "diary",
+      "unreliable-narrator"
+    ]
+  },
+  "rules": [
+    "The narrator is unnamed; she writes in secret and her account of what she sees cannot be fully trusted."
+  ]
+}

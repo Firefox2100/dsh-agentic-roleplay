@@ -1,0 +1,8 @@
+{
+  "id": "necklace-copy",
+  "name": "The replacement necklace",
+  "description": "A string of diamonds that seemed exactly like the other; worth forty thousand francs; sold for thirty-six.",
+  "held_by": "jeweller2",
+  "unique": true,
+  "notable": true
+}

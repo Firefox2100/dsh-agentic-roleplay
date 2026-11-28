@@ -641,6 +641,52 @@ export const MIGRATIONS: readonly Migration[] = [
       ALTER TABLE routine_windows ADD COLUMN sleep INTEGER NOT NULL DEFAULT 0 CHECK (sleep IN (0, 1));
     `,
   },
+  {
+    version: 13,
+    sql: `
+      CREATE TABLE claims (
+        id INTEGER PRIMARY KEY,
+        text TEXT NOT NULL,
+        by_character_id INTEGER REFERENCES characters (id) ON DELETE SET NULL,
+        by_label TEXT NOT NULL DEFAULT '',
+        asserted_event_id INTEGER REFERENCES events (id) ON DELETE SET NULL,
+        status TEXT NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed', 'confirmed')),
+        parts TEXT NOT NULL DEFAULT '[]',
+        created_turn INTEGER NOT NULL,
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE claim_links (
+        claim_id INTEGER NOT NULL REFERENCES claims (id) ON DELETE CASCADE,
+        event_id INTEGER NOT NULL REFERENCES events (id) ON DELETE CASCADE,
+        bearing TEXT NOT NULL CHECK (bearing IN ('confirms', 'contradicts', 'supports', 'undermines')),
+        part TEXT NOT NULL DEFAULT '',
+        PRIMARY KEY (claim_id, event_id, part)
+      ) STRICT;
+      CREATE INDEX claim_links_event ON claim_links (event_id);
+      CREATE TABLE claim_questions (
+        id INTEGER PRIMARY KEY,
+        text TEXT NOT NULL,
+        created_at TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE claim_question_members (
+        question_id INTEGER NOT NULL REFERENCES claim_questions (id) ON DELETE CASCADE,
+        claim_id INTEGER NOT NULL REFERENCES claims (id) ON DELETE CASCADE,
+        PRIMARY KEY (question_id, claim_id)
+      ) STRICT;
+      CREATE INDEX claim_question_members_claim ON claim_question_members (claim_id);
+      CREATE TABLE event_concealment (
+        event_id INTEGER NOT NULL REFERENCES events (id) ON DELETE CASCADE,
+        character_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        PRIMARY KEY (event_id, character_id)
+      ) STRICT;
+      CREATE TABLE character_members (
+        group_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        member_id INTEGER NOT NULL REFERENCES characters (id) ON DELETE CASCADE,
+        PRIMARY KEY (group_id, member_id),
+        CHECK (group_id <> member_id)
+      ) STRICT;
+    `,
+  },
 ]
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1]?.version ?? 0

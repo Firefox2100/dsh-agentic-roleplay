@@ -1,0 +1,964 @@
+[
+ {
+  "ref": "P01.1",
+  "quote": "Knowing that Mrs. Mallard was afflicted with a heart trouble",
+  "v1": {
+   "class": "S",
+   "where": "lore louise-heart-trouble (text); no health field on a character"
+  },
+  "draft": {
+   "class": "E",
+   "where": "facts f-heart + states health"
+  },
+  "v2": {
+   "class": "E",
+   "where": "s01 + states health"
+  }
+ },
+ {
+  "ref": "P01.1",
+  "quote": "great care was taken to break to her as gently as possible the news of her husband's death",
+  "v1": {
+   "class": "S",
+   "where": "richards intent (agenda); the manner is in the event text of turn 2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "event e07 manner; e05 intent"
+  },
+  "note": "Who took the care is not stated; v2 keeps it as manner on the telling event.",
+  "v2": {
+   "class": "E",
+   "where": "event e07 manner; e05 intent"
+  }
+ },
+ {
+  "ref": "P02.1",
+  "quote": "It was her sister Josephine who told her, in broken sentences; veiled hints...",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r1 (the manner is in its text)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e07 who josephine/louise, manner"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e07 who josephine/louise, manner"
+  }
+ },
+ {
+  "ref": "P02.2",
+  "quote": "Her husband's friend Richards was there, too, near her.",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r1 perceived_by richards; relationship richards->brently 'friend'"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e07 who richards witness"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e07 who richards witness"
+  }
+ },
+ {
+  "ref": "P02.3",
+  "quote": "It was he who had been in the newspaper office when intelligence of the railroad disaster was received, with Brently Mallard's name leading the list of 'killed.'",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r2 with item list-of-killed; place newspaper-office"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e03 + thing list-of-killed (carries f-list)"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e03 + thing list-of-killed (carries e03)"
+  }
+ },
+ {
+  "ref": "P02.3",
+  "quote": "(told after the scene it precedes)",
+  "v1": {
+   "class": "P",
+   "where": "v1 stores events in story order only; the telling order is not kept"
+  },
+  "draft": {
+   "class": "E",
+   "where": "telling s02 order analepsis"
+  },
+  "note": "Telling order is a v2 field; v1 cannot say a thing was told late.",
+  "v2": {
+   "class": "P",
+   "where": "telling: projection, not stored (the turn order is the telling)"
+  }
+ },
+ {
+  "ref": "P02.4",
+  "quote": "He had only taken the time to assure himself of its truth by a second telegram",
+  "v1": {
+   "class": "E",
+   "where": "turn 1 r3, item second-telegram"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e04 + thing second-telegram"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e04 + thing second-telegram"
+  }
+ },
+ {
+  "ref": "P02.4",
+  "quote": "...and had hastened to forestall any less careful, less tender friend in bearing the sad message.",
+  "v1": {
+   "class": "S",
+   "where": "richards intent name; the 'less careful friend' only exists in that text; move richards -> house"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e05 intent text"
+  },
+  "note": "A hypothetical person who might have told her first is not an entity in either model.",
+  "v2": {
+   "class": "S",
+   "where": "e05 intent text"
+  }
+ },
+ {
+  "ref": "P03.1",
+  "quote": "She did not hear the story as many women have heard the same, with a paralyzed inability to accept its significance.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e08 note"
+  },
+  "note": "A comparison with 'many women' is neither an event nor a state.",
+  "v2": {
+   "class": "S",
+   "where": "e08 note"
+  }
+ },
+ {
+  "ref": "P03.2",
+  "quote": "She wept at once, with sudden, wild abandonment, in her sister's arms.",
+  "v1": {
+   "class": "E",
+   "where": "turn 2 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e08 feeling, who louise/josephine"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e08 feeling, who louise/josephine"
+  }
+ },
+ {
+  "ref": "P03.3",
+  "quote": "When the storm of grief had spent itself she went away to her room alone.",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r3 + move; how long the grief lasted is not stored"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e09 depart; state feeling grief e08..e12"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e09 depart; state feeling grief e08..e12"
+  }
+ },
+ {
+  "ref": "P03.4",
+  "quote": "She would have no one follow her.",
+  "v1": {
+   "class": "S",
+   "where": "turn 2 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e09 text"
+  },
+  "note": "An intention about others' behaviour; no field for a wish.",
+  "v2": {
+   "class": "S",
+   "where": "e09 text"
+  }
+ },
+ {
+  "ref": "P04.1",
+  "quote": "There stood, facing the open window, a comfortable, roomy armchair.",
+  "v1": {
+   "class": "S",
+   "where": "feature armchair of louise-room; 'facing the open window' is in its description"
+  },
+  "draft": {
+   "class": "E",
+   "where": "things armchair in louise-room"
+  },
+  "v2": {
+   "class": "E",
+   "where": "things armchair in louise-room"
+  }
+ },
+ {
+  "ref": "P04.2",
+  "quote": "Into this she sank, pressed down by a physical exhaustion that haunted her body and seemed to reach into her soul.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r1; exhaustion only in text and inner_state"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e10; states body exhaustion e10..e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e10; states body exhaustion e10..e13"
+  }
+ },
+ {
+  "ref": "P05.1",
+  "quote": "She could see in the open square before her house the tops of trees that were all aquiver with the new spring life.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r2 perceived witnessed"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 perceive"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 perceive"
+  }
+ },
+ {
+  "ref": "P05.1",
+  "quote": "(new spring)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e11 when.approx spring"
+  },
+  "note": "No season or date: starting_time must be an instant, so the model invents one.",
+  "v2": {
+   "class": "S",
+   "where": "e11 when.approx spring"
+  }
+ },
+ {
+  "ref": "P05.2",
+  "quote": "The delicious breath of rain was in the air.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e11 text"
+  },
+  "note": "Smell and weather are perceptions with content; not world state of the place.",
+  "v2": {
+   "class": "S",
+   "where": "e11 text"
+  }
+ },
+ {
+  "ref": "P05.3",
+  "quote": "In the street below a peddler was crying his wares.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 heard; the peddler is not a character"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 who peddler source; people peddler"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 who peddler source; people peddler"
+  }
+ },
+ {
+  "ref": "P05.4",
+  "quote": "The notes of a distant song which some one was singing reached her faintly",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 heard"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e11 who singer source"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e11 who singer source"
+  }
+ },
+ {
+  "ref": "P05.5",
+  "quote": "countless sparrows were twittering in the eaves",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r3 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e11 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e11 text"
+  }
+ },
+ {
+  "ref": "P05.6",
+  "quote": "patches of blue sky ... in the west",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r2 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e11 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e11 text"
+  }
+ },
+ {
+  "ref": "P06.1",
+  "quote": "She sat with her head thrown back upon the cushion ... quite motionless, except when a sob came up",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r4; public_state"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12 state spanning e12..e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12 state spanning e12..e13"
+  }
+ },
+ {
+  "ref": "P06.1",
+  "quote": "as a child who has cried itself to sleep continues to sob in its dreams",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "P",
+   "where": "-"
+  },
+  "note": "A simile: voice, not world.",
+  "v2": {
+   "class": "P",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P07.1",
+  "quote": "She was young, with a fair, calm face, whose lines bespoke repression and even a certain strength.",
+  "v1": {
+   "class": "S",
+   "where": "character appearance and summary; 'repression' as a reading of a face is in text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states appearance"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states appearance"
+  }
+ },
+ {
+  "ref": "P07.2",
+  "quote": "But now there was a dull stare in her eyes, whose gaze was fixed away off yonder on one of those patches of blue sky.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r4 text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e12 text; state appearance"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e12 text; state appearance"
+  }
+ },
+ {
+  "ref": "P07.3",
+  "quote": "It was not a glance of reflection, but rather indicated a suspension of intelligent thought.",
+  "v1": {
+   "class": "S",
+   "where": "inner_state text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e12 text"
+  },
+  "note": "The narrator's reading of her mind.",
+  "v2": {
+   "class": "S",
+   "where": "e12 text"
+  }
+ },
+ {
+  "ref": "P08.1",
+  "quote": "There was something coming to her and she was waiting for it, fearfully.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r5 text and inner_state"
+  },
+  "draft": {
+   "class": "E",
+   "where": "state feeling 'fearful waiting' e12..e13"
+  },
+  "v2": {
+   "class": "E",
+   "where": "state feeling 'fearful waiting' e12..e13"
+  }
+ },
+ {
+  "ref": "P08.2",
+  "quote": "What was it? She did not know; it was too subtle and elusive to name.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "state value text"
+  },
+  "note": "A character not knowing what she feels is not a knowledge edge.",
+  "v2": {
+   "class": "S",
+   "where": "state value text"
+  }
+ },
+ {
+  "ref": "P08.3",
+  "quote": "But she felt it, creeping out of the sky, reaching toward her through the sounds, the scents, the color",
+  "v1": {
+   "class": "P",
+   "where": "-"
+  },
+  "draft": {
+   "class": "P",
+   "where": "-"
+  },
+  "note": "Figurative description of a feeling.",
+  "v2": {
+   "class": "P",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P09.1",
+  "quote": "Now her bosom rose and fell tumultuously. She was beginning to recognize this thing ... striving to beat it back with her will",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r5 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e13 text"
+  },
+  "note": "A struggle inside one event; no sub-steps.",
+  "v2": {
+   "class": "S",
+   "where": "e13 text"
+  }
+ },
+ {
+  "ref": "P09.2",
+  "quote": "When she abandoned herself a little whispered word escaped her... 'free, free, free!'",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r5 text; its content"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e13 feeling / speech"
+  },
+  "note": "Whispered to herself; nobody perceives it.",
+  "v2": {
+   "class": "E",
+   "where": "e13 feeling / speech"
+  }
+ },
+ {
+  "ref": "P09.3",
+  "quote": "The vacant stare and the look of terror ... went from her eyes. They stayed keen and bright. Her pulses beat fast",
+  "v1": {
+   "class": "S",
+   "where": "public_state replaced (the old one is lost)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "states feeling joy e13..e21"
+  },
+  "v2": {
+   "class": "E",
+   "where": "states feeling joy e13..e21"
+  }
+ },
+ {
+  "ref": "P09.4",
+  "quote": "She did not stop to ask if it were or were not a monstrous joy that held her.",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "S",
+   "where": "reading r-joy"
+  },
+  "note": "A thing she did not do, and a social judgement she sets aside.",
+  "v2": {
+   "class": "S",
+   "where": "reading r-joy"
+  }
+ },
+ {
+  "ref": "P10.1",
+  "quote": "She knew that she would weep again when she saw the kind, tender hands folded in death",
+  "v1": {
+   "class": "S",
+   "where": "belief of louise (a prediction)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "event a01 in frame louise-anticipates, realised false"
+  },
+  "v2": {
+   "class": "E",
+   "where": "event h-a01 as held (not realised)"
+  }
+ },
+ {
+  "ref": "P10.2",
+  "quote": "But she saw beyond that bitter moment a long procession of years to come that would belong to her absolutely.",
+  "v1": {
+   "class": "S",
+   "where": "belief of louise"
+  },
+  "draft": {
+   "class": "E",
+   "where": "event a02 in frame louise-anticipates"
+  },
+  "v2": {
+   "class": "E",
+   "where": "event h-a02 as held (not realised)"
+  }
+ },
+ {
+  "ref": "P10.3",
+  "quote": "And she opened and spread her arms out to them in welcome.",
+  "v1": {
+   "class": "S",
+   "where": "turn 3 r6 text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e14 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e14 text"
+  }
+ },
+ {
+  "ref": "P10.4",
+  "quote": "There would be no one to live for her during those coming years; she would live for herself. There would be no powerful will bending hers...",
+  "v1": {
+   "class": "S",
+   "where": "belief text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "a02; reading r-will held by louise"
+  },
+  "v2": {
+   "class": "E",
+   "where": "h-a02; reading r-will held by louise"
+  }
+ },
+ {
+  "ref": "P10.5",
+  "quote": "A kind intention or a cruel intention made the act seem no less a crime as she looked upon it in that brief moment of illumination.",
+  "v1": {
+   "class": "S",
+   "where": "belief text"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-will"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-will"
+  }
+ },
+ {
+  "ref": "P11.1",
+  "quote": "And yet she had loved him — sometimes. Often she had not.",
+  "v1": {
+   "class": "S",
+   "where": "relationship summary louise->brently; belief kind relationship"
+  },
+  "draft": {
+   "class": "S",
+   "where": "state relation value"
+  },
+  "note": "How often she loved him is a frequency over a marriage; no field holds it.",
+  "v2": {
+   "class": "S",
+   "where": "state relation value"
+  }
+ },
+ {
+  "ref": "P11.2",
+  "quote": "What did it matter! What could love, the unsolved mystery, count for in face of this possession of self-assertion",
+  "v1": {
+   "class": "S",
+   "where": "belief text"
+  },
+  "draft": {
+   "class": "S",
+   "where": "e14 text"
+  },
+  "v2": {
+   "class": "S",
+   "where": "e14 text"
+  }
+ },
+ {
+  "ref": "P12.1",
+  "quote": "'Free! Body and soul free!' she kept whispering.",
+  "v1": {
+   "class": "E",
+   "where": "turn 3 r7"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e15 speech"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e15 speech"
+  }
+ },
+ {
+  "ref": "P13.1",
+  "quote": "Josephine was kneeling before the closed door with her lips to the keyhole, imploring for admission.",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 r1; the door's closedness is text (exits are open/locked/blocked)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e16 who josephine; place landing"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e16 who josephine; place landing"
+  }
+ },
+ {
+  "ref": "P13.2",
+  "quote": "'Louise, open the door! ... you will make yourself ill. What are you doing, Louise?'",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 r1 text; josephine's belief that she is making herself ill"
+  },
+  "draft": {
+   "class": "E",
+   "where": "knowledge josephine believes instead; e16"
+  },
+  "v2": {
+   "class": "E",
+   "where": "knowledge josephine believes instead; e16"
+  }
+ },
+ {
+  "ref": "P13.2",
+  "quote": "(first use of 'Louise')",
+  "v1": {
+   "class": "P",
+   "where": "aliases on the character"
+  },
+  "draft": {
+   "class": "P",
+   "where": "-"
+  },
+  "note": "The narrator calls her Mrs. Mallard until her sister names her: a choice of naming.",
+  "v2": {
+   "class": "P",
+   "where": "-"
+  }
+ },
+ {
+  "ref": "P14.1",
+  "quote": "'Go away. I am not making myself ill.' No; she was drinking in a very elixir of life through that open window.",
+  "v1": {
+   "class": "E",
+   "where": "turn 4 r1; josephine's perception accuracy mistaken"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e16; knowledge josephine unaware of f-free"
+  },
+  "note": "The irony (her words are true but not as her sister reads them) is for the reader.",
+  "v2": {
+   "class": "E",
+   "where": "e16; knowledge josephine unaware of s05"
+  }
+ },
+ {
+  "ref": "P14.2",
+  "quote": "Her fancy was running riot along those days ahead of her. Spring days, and summer days, and all sorts of days that would be her own.",
+  "v1": {
+   "class": "S",
+   "where": "turn 4 inner_state"
+  },
+  "draft": {
+   "class": "E",
+   "where": "a02 in frame louise-anticipates"
+  },
+  "v2": {
+   "class": "E",
+   "where": "h-a02 as held (not realised)"
+  }
+ },
+ {
+  "ref": "P14.3",
+  "quote": "She breathed a quick prayer that life might be long.",
+  "v1": {
+   "class": "E",
+   "where": "turn 4 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e17"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e17"
+  }
+ },
+ {
+  "ref": "P14.4",
+  "quote": "It was only yesterday she had thought with a shudder that life might be long.",
+  "v1": {
+   "class": "S",
+   "where": "inside the text of turn 4 r2; an event of the day before cannot be dated"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e01 before e07 by about a day; e17 contrasts e01"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e01 before e07 by about a day; e17 contrasts e01"
+  }
+ },
+ {
+  "ref": "P15.1",
+  "quote": "She arose at length and opened the door to her sister's importunities.",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 r1 and moves"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e18"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e18"
+  }
+ },
+ {
+  "ref": "P15.2",
+  "quote": "There was a feverish triumph in her eyes, and she carried herself unwittingly like a goddess of Victory.",
+  "v1": {
+   "class": "S",
+   "where": "public_state; 'unwittingly' is not stored"
+  },
+  "draft": {
+   "class": "E",
+   "where": "state feeling joy; e18"
+  },
+  "v2": {
+   "class": "E",
+   "where": "state feeling joy; e18"
+  }
+ },
+ {
+  "ref": "P15.3",
+  "quote": "She clasped her sister's waist, and together they descended the stairs. Richards stood waiting for them at the bottom.",
+  "v1": {
+   "class": "E",
+   "where": "turn 5 moves; perceived_by richards"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e18 who richards witness"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e18 who richards witness"
+  }
+ },
+ {
+  "ref": "P16.1",
+  "quote": "Someone was opening the front door with a latchkey. It was Brently Mallard who entered, a little travel-stained, composedly carrying his grip-sack and umbrella.",
+  "v1": {
+   "class": "E",
+   "where": "turn 6 r1, move, items latchkey grip-sack umbrella"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e19 things"
+  },
+  "note": "In v1 a thing's use is not an event: the key appears only as a listed item of the event.",
+  "v2": {
+   "class": "E",
+   "where": "e19 things"
+  }
+ },
+ {
+  "ref": "P16.2",
+  "quote": "He had been far from the scene of the accident, and did not even know there had been one.",
+  "v1": {
+   "class": "S",
+   "where": "turn 1 r4 (an event that states an absence); lore brently-not-in-accident; the unnamed place 'away'"
+  },
+  "draft": {
+   "class": "E",
+   "where": "fact f-bm-away; knowledge brently unaware of f-accident"
+  },
+  "v2": {
+   "class": "E",
+   "where": "s07; knowledge brently unaware of e02"
+  }
+ },
+ {
+  "ref": "P16.3",
+  "quote": "He stood amazed at Josephine's piercing cry; at Richards' quick motion to screen him from the view of his wife.",
+  "v1": {
+   "class": "E",
+   "where": "turn 6 r2"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e20"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e20"
+  }
+ },
+ {
+  "ref": "P17.1",
+  "quote": "But Richards was too late.",
+  "v1": {
+   "class": "S",
+   "where": "turn 6 r3, tag 'implied' (nothing says the event is implied)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e21 status implied; causes e22"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e21 basis implied, origin offscreen; causes e22"
+  }
+ },
+ {
+  "ref": "P18.1",
+  "quote": "When the doctors came they said she had died of heart disease — of the joy that kills.",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 r2 with accuracy 'mistaken' on the doctors' perception (the encoder's judgement)"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e23 claim f-doc-cause; reading r-cause against it"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e23 claim c-doc-cause; reading r-cause against it"
+  }
+ },
+ {
+  "ref": "P18.1",
+  "quote": "(she died; the moment is not narrated)",
+  "v1": {
+   "class": "S",
+   "where": "turn 7 r1, invented as an event; public_state 'Dead.'"
+  },
+  "draft": {
+   "class": "E",
+   "where": "e22 status stated-afterwards; state life dead"
+  },
+  "v2": {
+   "class": "E",
+   "where": "e22 origin backfilled; state life dead"
+  }
+ },
+ {
+  "ref": "P18.1",
+  "quote": "(the true cause of death is not stated)",
+  "v1": {
+   "class": "N",
+   "where": "-"
+  },
+  "draft": {
+   "class": "E",
+   "where": "reading r-cause status implied"
+  },
+  "v2": {
+   "class": "E",
+   "where": "reading r-cause basis implied, origin offscreen"
+  }
+ },
+ {
+  "ref": "title",
+  "quote": "The Story of an Hour",
+  "v1": {
+   "class": "N",
+   "where": "clock sidecar only: invented instants"
+  },
+  "draft": {
+   "class": "E",
+   "where": "time.spans span-hour approx PT1H, source title"
+  },
+  "v2": {
+   "class": "E",
+   "where": "time.spans span-hour approx PT1H, source title"
+  }
+ }
+]

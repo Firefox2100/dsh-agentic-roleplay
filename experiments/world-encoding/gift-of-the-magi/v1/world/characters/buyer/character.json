@@ -1,0 +1,18 @@
+{
+  "id": "buyer",
+  "name": "The buyer of the watch",
+  "gender": "male",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "PLACEHOLDER: the text never says who bought Jim's watch. Needed only so the watch can change hands.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "jim-errands",
+    "variables": {
+      "cash": 100000
+    }
+  }
+}

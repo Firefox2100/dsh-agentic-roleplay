@@ -1,6 +1,6 @@
-import { languageOf } from 'dsh-roleplay-model'
+import { languageOf, type Verdict as ClaimVerdict } from 'dsh-roleplay-model'
 import { shippedText } from '../prompts/library.ts'
-import { changeVariable, planVariableChange, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from '@dsh-agentic-roleplay/state'
+import { changeVariable, knowsEvent, planVariableChange, verdictFor, shownVariables, changeItem, itemKey, locationKey, planItemChange, applyItemPlan, sessionFolder, type ItemEffect, type RoleplayState, type Session } from '@dsh-agentic-roleplay/state'
 import { roleplaySessionOf } from '../../shared/chat.ts'
 import { COMMANDS_KEY, commandFlagKey, commandsOf } from '../../shared/commands.ts'
 import { parsePins, pinsOf, ruledPinsOf } from '../../shared/pins.ts'
@@ -179,6 +179,27 @@ function trackedFor(session: Session, characterId: number, presentIds: readonly 
   return { self, others }
 }
 
+/** Settled claims shown to a character at once. */
+const MAX_HEARD = 4
+
+const wordsOf = (text: string): Set<string> => new Set(text.toLowerCase().match(/[\p{L}\p{N}]{4,}|[\p{Script=Han}]{2}/gu) ?? [])
+
+/**
+ * What a character has heard said that has been settled as a claim, by the standing its own events give it: only claims whose saying it took in (or made), only those that
+ * share words with the moment or name someone present, the latest first. What the record shows beyond what the character took in is never read.
+ */
+export function heardBy(session: Session, characterId: number, situation: string, presentIds: readonly number[]): { text: string; by?: string; standing: ClaimVerdict }[] {
+  const moment = wordsOf(situation)
+  const present = presentIds.map(id => session.characters.get(id)?.name.toLowerCase()).filter((name): name is string => name !== undefined)
+  return session.claims.list({ status: 'confirmed' }).filter(claim => claim.byCharacterId === characterId || (claim.assertedEventId !== undefined && knowsEvent(session, characterId, claim.assertedEventId) === 'knows')).flatMap((claim) => {
+    const text = claim.text.toLowerCase()
+    const bears = [...wordsOf(claim.text)].some(word => moment.has(word)) || present.some(name => name.length > 0 && text.includes(name))
+    if (!bears) return []
+    const by = claim.byCharacterId === undefined ? claim.byLabel : session.characters.get(claim.byCharacterId)?.name
+    return [{ claim, entry: { text: claim.text, ...by === undefined || by === '' ? {} : { by }, standing: verdictFor(session, claim.id, characterId) ?? 'unresolved' as ClaimVerdict } }]
+  }).sort((a, b) => b.claim.createdTurn - a.claim.createdTurn).slice(0, MAX_HEARD).map(({ entry }) => entry)
+}
+
 /** At most this many lines of what the story tracks are told to the game master at once. */
 const MAX_TRACKED_LINES = 14
 
@@ -249,6 +270,7 @@ function storeOf(session: Session, folder: string, problem: (message: string) =>
     checkVariableChanges: changes => changes.flatMap((spec) => { const planned = planVariableChange(session, spec); return planned.ok ? [] : planned.problems }),
     changeVariables: (turn, changes) => session.transaction(() => changes.map(spec => changeVariable(session, spec, turn))),
     trackedFor: (characterId, presentIds) => trackedFor(session, characterId, presentIds),
+    heardBy: (characterId, situation, presentIds) => heardBy(session, characterId, situation, presentIds),
     tracked: () => trackedLines(session),
     dueOffScene: turn => dueOffScene(session, zoneOf(settings().clock), readTime(session, settings().clock, turn, wall()).now, languageOf(settings().prompts.language)),
     markHandled: keys => { markHandled(session, keys) },

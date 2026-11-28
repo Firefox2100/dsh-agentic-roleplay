@@ -28,6 +28,8 @@ export interface Observation {
   /** How many characters the story began with. */
   castAtStart?: number
   things?: { key: string; holder: string }[]
+  /** The claims the story's records hold, with the standing the events give each and whether anyone settled it; absent when the run could not read them. */
+  claims?: { text: string; by?: string; status: string; verdict: string }[]
   triggers?: { key: string; fired: boolean }[]
   /** The tracked values the player may read, now and when the story began. */
   values?: { of: string[]; name: string; value: string }[]
@@ -101,6 +103,19 @@ function judge(expectation: Expectation, observation: Observation, turns: Observ
     case 'player-silent': {
       const spoken = turns.flatMap(turn => turn.segments).filter(segment => segment.type === 'utterance' && segment.character === observation.player)
       return spoken.length === 0 ? { held: true } : { held: false, found: textOf(spoken).slice(0, 200) }
+    }
+    case 'claim-recorded':
+    case 'claim-absent':
+    case 'claim-standing':
+    case 'claim-status': {
+      if (observation.claims === undefined) return { held: undefined }
+      const words = expectation.text.toLowerCase()
+      const found = observation.claims.filter(claim => claim.text.toLowerCase().includes(words))
+      const shown = found.map(claim => `${claim.text} [${claim.status}, ${claim.verdict}]`).join('; ') || 'no such claim'
+      if (expectation.type === 'claim-absent') return { held: found.length === 0, found: shown }
+      if (expectation.type === 'claim-recorded') return { held: found.some(claim => expectation.by === undefined || claim.by?.toLowerCase() === expectation.by.toLowerCase()), found: shown }
+      if (expectation.type === 'claim-standing') return { held: found.some(claim => claim.verdict === expectation.standing), found: shown }
+      return { held: found.some(claim => claim.status === expectation.status), found: shown }
     }
     case 'turns': return { held: observation.turns.length >= expectation.count, found: String(observation.turns.length) }
     case 'value-changed': {

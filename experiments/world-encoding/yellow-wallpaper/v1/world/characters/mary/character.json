@@ -1,0 +1,16 @@
+{
+  "id": "mary",
+  "name": "Mary",
+  "role": "npc",
+  "kind": "person",
+  "tier": "background",
+  "summary": "Looks after the baby.",
+  "start": {
+    "public_state": "-",
+    "activity": "-",
+    "inner_state": "-",
+    "location": "house-downstairs"
+  },
+  "gender": "female",
+  "pronouns": "she/her"
+}
